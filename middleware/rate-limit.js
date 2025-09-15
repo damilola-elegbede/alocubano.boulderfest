@@ -113,16 +113,18 @@ export function createRateLimitMiddleware(endpointType, options = {}) {
         let statusCode = 429;
 
         switch (result.reason) {
-          case "blacklisted":
+          case "blacklisted": {
             message = "Access denied due to suspicious activity.";
             statusCode = 403;
             break;
-          case "rate_limit_exceeded":
+          }
+          case "rate_limit_exceeded": {
             if (result.retryAfter) {
               const minutes = Math.ceil(result.retryAfter / 60);
               message = `Rate limit exceeded. Please wait ${minutes} minute${minutes !== 1 ? "s" : ""} before trying again.`;
             }
             break;
+          }
         }
 
         const error = new ApplicationError(

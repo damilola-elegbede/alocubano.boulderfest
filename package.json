@@ -5,11 +5,12 @@
   "type": "module",
   "private": true,
   "engines": {
-    "node": "22.x"
+    "node": "18.x || 20.x || 22.x || 24.x"
   },
   "scripts": {
     "build": "NODE_OPTIONS='--max-old-space-size=4096' node -e \"if(process.env.VERCEL === '1') { console.log('🚀 Vercel build complete'); } else { console.log('🔧 Local build - running verification'); require('child_process').execSync('npm run verify-structure', {stdio:'inherit'}); }\" && echo 'Build process completed'",
     "start": "node scripts/start-with-ngrok.js",
+    "start:local": "node scripts/vercel-dev-start.js",
     "dev": "npm run start",
     "test": "NODE_OPTIONS='--max-old-space-size=6144' vitest run --config tests/vitest.config.js",
     "test:integration": "NODE_OPTIONS='--max-old-space-size=4096' vitest run --config tests/config/vitest.integration.config.js",

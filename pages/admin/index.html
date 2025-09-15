@@ -24,29 +24,49 @@
         padding: var(--space-lg);
       }
 
-      /* Endpoints Grid Styling */
+      /* Interactive Endpoints Grid Styling */
       .endpoints-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
         gap: var(--space-lg);
       }
 
       .endpoint-item {
         display: flex;
-        align-items: center;
+        flex-direction: column;
         gap: var(--space-md);
-        padding: var(--space-md);
-        background: var(--color-background-secondary);
-        border-radius: var(--radius-md);
-        border: 1px solid var(--color-border);
+        padding: var(--space-lg);
+        background: var(--color-surface);
+        border-radius: var(--radius-lg);
+        border: 2px solid var(--color-border);
         font-size: var(--font-size-sm);
         transition: all var(--transition-base);
+        position: relative;
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .endpoint-item::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--color-blue), var(--color-red));
       }
 
       .endpoint-item:hover {
         transform: translateY(-2px);
-        box-shadow: var(--shadow-md);
+        box-shadow: var(--shadow-lg);
         border-color: var(--color-blue);
+      }
+
+      .endpoint-header {
+        display: flex;
+        align-items: center;
+        gap: var(--space-md);
+        flex-wrap: wrap;
       }
 
       .endpoint-item .method {
@@ -60,16 +80,96 @@
         min-width: 50px;
         text-align: center;
         text-transform: uppercase;
+        flex-shrink: 0;
       }
 
       .endpoint-item .method.post {
         background: var(--color-blue);
       }
 
-      .endpoint-item code {
-        color: var(--color-red);
+      .endpoint-item .method.put {
+        background: var(--color-warning, #f59e0b);
+      }
+
+      .endpoint-item .method.delete {
+        background: var(--color-error);
+      }
+
+      .endpoint-path {
+        color: var(--color-text-primary);
         font-family: var(--font-code);
+        font-size: var(--font-size-sm);
+        font-weight: 600;
+        word-break: break-all;
+        flex: 1;
+      }
+
+      .endpoint-actions {
+        display: flex;
+        gap: var(--space-sm);
+        flex-wrap: wrap;
+      }
+
+      .endpoint-actions .admin-btn-sm {
+        padding: var(--space-xs) var(--space-sm);
         font-size: var(--font-size-xs);
+        min-height: 32px;
+        min-width: auto;
+      }
+
+      .endpoint-security-indicator {
+        position: absolute;
+        top: var(--space-sm);
+        right: var(--space-sm);
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--color-success);
+      }
+
+      .endpoint-security-indicator.restricted {
+        background: var(--color-error);
+        animation: pulse 2s infinite;
+      }
+
+      .endpoint-feedback {
+        margin-top: var(--space-sm);
+        padding: var(--space-sm);
+        border-radius: var(--radius-sm);
+        font-size: var(--font-size-xs);
+        font-family: var(--font-code);
+        display: none;
+        position: relative;
+        animation: slideInAlert 0.3s ease-out;
+      }
+
+      .endpoint-feedback.success {
+        background: rgba(34, 197, 94, 0.1);
+        color: var(--color-success);
+        border: 1px solid rgba(34, 197, 94, 0.2);
+      }
+
+      .endpoint-feedback.error {
+        background: rgba(204, 41, 54, 0.1);
+        color: var(--color-error);
+        border: 1px solid rgba(204, 41, 54, 0.2);
+      }
+
+      .endpoint-feedback.info {
+        background: rgba(91, 107, 181, 0.1);
+        color: var(--color-blue);
+        border: 1px solid rgba(91, 107, 181, 0.2);
+      }
+
+      .endpoint-response-preview {
+        max-height: 120px;
+        overflow-y: auto;
+        margin-top: var(--space-xs);
+        padding: var(--space-xs);
+        background: var(--color-background-secondary);
+        border-radius: var(--radius-sm);
+        white-space: pre-wrap;
+        word-break: break-word;
       }
 
       /* Mobile Responsiveness */
@@ -80,6 +180,390 @@
 
         .endpoints-grid {
           grid-template-columns: 1fr;
+        }
+      }
+
+      /* API Response Modal Styles */
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(4px);
+      }
+
+      .modal-overlay.show {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .modal {
+        background: var(--color-background-primary);
+        border: 2px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        width: 90%;
+        max-width: 900px;
+        max-height: 90%;
+        overflow: hidden;
+        transform: scale(0.9);
+        transition: transform 0.3s ease;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      }
+
+      .modal-overlay.show .modal {
+        transform: scale(1);
+      }
+
+      .modal::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--color-info), var(--color-error));
+      }
+
+      .modal-header {
+        padding: var(--space-xl);
+        border-bottom: 2px solid var(--color-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: var(--color-background-secondary);
+      }
+
+      .modal-title {
+        font-family: var(--font-display);
+        font-size: var(--font-size-xl);
+        font-weight: 900;
+        color: var(--color-text-primary);
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+        margin: 0;
+      }
+
+      .modal-close {
+        background: none;
+        border: none;
+        font-size: var(--font-size-2xl);
+        color: var(--color-text-tertiary);
+        cursor: pointer;
+        padding: var(--space-sm);
+        border-radius: var(--radius-md);
+        transition: all var(--transition-base);
+        line-height: 1;
+      }
+
+      .modal-close:hover {
+        background: var(--color-error);
+        color: var(--color-text-inverse);
+      }
+
+      .modal-tabs {
+        display: flex;
+        background: var(--color-background-secondary);
+        border-bottom: 2px solid var(--color-border);
+      }
+
+      .modal-tab {
+        flex: 1;
+        padding: var(--space-md) var(--space-lg);
+        background: none;
+        border: none;
+        font-family: var(--font-display);
+        font-weight: 600;
+        color: var(--color-text-secondary);
+        cursor: pointer;
+        transition: all var(--transition-base);
+        border-right: 1px solid var(--color-border);
+        text-transform: uppercase;
+        font-size: var(--font-size-sm);
+        letter-spacing: var(--letter-spacing-wide);
+      }
+
+      .modal-tab:last-child {
+        border-right: none;
+      }
+
+      .modal-tab.active {
+        background: var(--color-info);
+        color: var(--color-text-inverse);
+      }
+
+      .modal-tab:hover:not(.active) {
+        background: var(--color-surface);
+        color: var(--color-text-primary);
+      }
+
+      .modal-content {
+        padding: var(--space-xl);
+        max-height: 60vh;
+        overflow-y: auto;
+      }
+
+      .response-actions {
+        display: flex;
+        gap: var(--space-md);
+        align-items: center;
+        margin-bottom: var(--space-lg);
+        padding-bottom: var(--space-md);
+        border-bottom: 1px solid var(--color-border);
+      }
+
+      .response-btn {
+        background: var(--color-info);
+        color: var(--color-text-inverse);
+        border: 1px solid var(--color-info);
+        padding: var(--space-sm) var(--space-md);
+        border-radius: var(--radius-md);
+        font-family: var(--font-display);
+        font-weight: 600;
+        cursor: pointer;
+        transition: all var(--transition-base);
+        font-size: var(--font-size-sm);
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+      }
+
+      .response-btn:hover {
+        background: var(--color-info-hover);
+        transform: translateY(-1px);
+      }
+
+      .response-timing {
+        margin-left: auto;
+        font-family: var(--font-mono);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        font-weight: 500;
+      }
+
+      .response-content {
+        font-family: var(--font-mono);
+        font-size: var(--font-size-sm);
+        line-height: var(--line-height-relaxed);
+        background: var(--color-background-secondary);
+        padding: var(--space-lg);
+        border-radius: var(--radius-md);
+        border: 1px solid var(--color-border);
+        max-height: 50vh;
+        overflow-y: auto;
+        white-space: pre-wrap;
+      }
+
+      /* JSON Syntax Highlighting */
+      .json-key {
+        color: var(--color-info);
+        font-weight: 600;
+      }
+
+      .json-string {
+        color: var(--color-success);
+      }
+
+      .json-number {
+        color: var(--color-warning);
+      }
+
+      .json-boolean {
+        color: var(--color-error);
+        font-weight: 600;
+      }
+
+      .json-null {
+        color: var(--color-text-tertiary);
+        font-style: italic;
+      }
+
+      /* History Panel Styles */
+      .history-panel {
+        position: fixed;
+        top: 0;
+        right: -400px;
+        width: 400px;
+        height: 100%;
+        background: var(--color-background-primary);
+        border-left: 2px solid var(--color-border);
+        z-index: 999;
+        transition: right 0.3s ease;
+        box-shadow: -4px 0 20px rgba(0, 0, 0, 0.2);
+      }
+
+      .history-panel.show {
+        right: 0;
+      }
+
+      .history-header {
+        padding: var(--space-xl);
+        border-bottom: 2px solid var(--color-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: var(--color-background-secondary);
+      }
+
+      .history-header h3 {
+        font-family: var(--font-display);
+        font-size: var(--font-size-lg);
+        font-weight: 800;
+        color: var(--color-text-primary);
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+        margin: 0;
+      }
+
+      .history-toggle {
+        background: none;
+        border: none;
+        font-size: var(--font-size-xl);
+        color: var(--color-text-tertiary);
+        cursor: pointer;
+        padding: var(--space-xs);
+        border-radius: var(--radius-md);
+        transition: all var(--transition-base);
+      }
+
+      .history-toggle:hover {
+        background: var(--color-error);
+        color: var(--color-text-inverse);
+      }
+
+      .history-content {
+        padding: var(--space-lg);
+        height: calc(100% - 80px);
+        overflow-y: auto;
+      }
+
+      .history-entry {
+        background: var(--color-background-secondary);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        padding: var(--space-md);
+        margin-bottom: var(--space-md);
+        cursor: pointer;
+        transition: all var(--transition-base);
+      }
+
+      .history-entry:hover {
+        background: var(--color-surface);
+        border-color: var(--color-info);
+        transform: translateY(-1px);
+      }
+
+      .history-entry-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--space-sm);
+      }
+
+      .history-entry-method {
+        font-family: var(--font-mono);
+        font-weight: 600;
+        font-size: var(--font-size-xs);
+        padding: 2px 6px;
+        border-radius: var(--radius-sm);
+        text-transform: uppercase;
+      }
+
+      .history-entry-path {
+        font-family: var(--font-mono);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-primary);
+        font-weight: 500;
+      }
+
+      .history-entry-time {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
+      }
+
+      .history-entry-status {
+        font-size: var(--font-size-xs);
+        font-weight: 600;
+        padding: 2px 6px;
+        border-radius: var(--radius-sm);
+      }
+
+      .status-success {
+        background: var(--color-success-light);
+        color: var(--color-success);
+      }
+
+      .status-error {
+        background: var(--color-error-light);
+        color: var(--color-error);
+      }
+
+      /* History FAB */
+      .history-fab {
+        position: fixed;
+        bottom: var(--space-xl);
+        right: var(--space-xl);
+        width: 56px;
+        height: 56px;
+        background: var(--color-info);
+        color: var(--color-text-inverse);
+        border: none;
+        border-radius: 50%;
+        font-size: var(--font-size-lg);
+        cursor: pointer;
+        transition: all var(--transition-base);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        z-index: 998;
+      }
+
+      .history-fab:hover {
+        background: var(--color-info-hover);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+      }
+
+      /* Enhanced Mobile Responsive for Modal */
+      @media (max-width: 768px) {
+        .modal {
+          width: 95%;
+          max-height: 95%;
+        }
+
+        .modal-header,
+        .modal-content {
+          padding: var(--space-lg);
+        }
+
+        .modal-tabs {
+          overflow-x: auto;
+          scroll-snap-type: x mandatory;
+        }
+
+        .modal-tab {
+          scroll-snap-align: start;
+          min-width: 120px;
+        }
+
+        .response-content {
+          font-size: var(--font-size-xs);
+          max-height: 40vh;
+        }
+
+        .history-panel {
+          width: 100%;
+          right: -100%;
+        }
+
+        .history-fab {
+          bottom: var(--space-lg);
+          right: var(--space-lg);
         }
       }
     </style>
@@ -133,6 +617,11 @@
         <li class="admin-nav-item">
           <a href="/admin/checkin" class="admin-nav-link">
             <span>Check-in Scanner</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/api-endpoints" class="admin-nav-link">
+            <span>API Endpoints</span>
           </a>
         </li>
       </ul>
@@ -235,71 +724,895 @@
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- API Endpoints Section -->
-    <div class="admin-card">
-      <div class="admin-card-header">
-        <h2 class="admin-card-title">Available API Endpoints</h2>
-      </div>
-      <div class="admin-card-body">
-        <div class="endpoints-grid">
-          <div class="endpoint-item">
-            <span class="method">GET</span>
-            <code>/api/admin/dashboard</code>
+      <!-- Interactive API Portal -->
+      <div class="admin-card admin-action-card" onclick="window.location.href='/admin/api-endpoints'">
+        <div class="admin-card-header">
+          <h2 class="admin-card-title">
+            <span class="card-icon">A</span>
+            <span>Interactive API Portal</span>
+          </h2>
+        </div>
+        <div class="admin-card-body">
+          <p>Advanced API testing and documentation portal with live endpoint testing, response inspection, search & filtering, and comprehensive interactive features.</p>
+          <div style="margin-top: var(--space-lg); display: flex; gap: var(--space-sm); flex-wrap: wrap; align-items: center;">
+            <div class="status-badge success">
+              <span>29 Endpoints</span>
+            </div>
+            <div class="status-badge info">
+              <span>Live Testing</span>
+            </div>
+            <div class="status-badge pending">
+              <span>Real-time</span>
+            </div>
           </div>
-          <div class="endpoint-item">
-            <span class="method post">POST</span>
-            <code>/api/admin/login</code>
+          <div style="margin-top: var(--space-md); font-size: var(--font-size-sm); color: var(--color-text-tertiary);">
+            Features: Search & Filter • Response Modal • Copy & Download • Toast Notifications • Keyboard Shortcuts
           </div>
-          <div class="endpoint-item">
-            <span class="method post">POST</span>
-            <code>/api/admin/mobile-login</code>
-          </div>
-          <div class="endpoint-item">
-            <span class="method">GET</span>
-            <code>/api/admin/registrations</code>
-          </div>
-          <div class="endpoint-item">
-            <span class="method">GET</span>
-            <code>/api/admin/transactions</code>
-          </div>
-          <div class="endpoint-item">
-            <span class="method">GET</span>
-            <code>/api/admin/analytics</code>
-          </div>
-          <div class="endpoint-item">
-            <span class="method">GET</span>
-            <code>/api/admin/events</code>
-          </div>
-          <div class="endpoint-item">
-            <span class="method">GET</span>
-            <code>/api/admin/generate-report</code>
-          </div>
-          <div class="endpoint-item">
-            <span class="method">GET</span>
-            <code>/api/admin/csrf-token</code>
-          </div>
-          <div class="endpoint-item">
-            <span class="method post">POST</span>
-            <code>/api/sheets/sync</code>
-          </div>
-          <div class="endpoint-item">
-            <span class="method">GET</span>
-            <code>/api/sheets/scheduled-sync</code>
-          </div>
-          <div class="endpoint-item">
-            <span class="method post">POST</span>
-            <code>/api/tickets/validate</code>
-          </div>
-          <div class="endpoint-item">
-            <span class="method">GET</span>
-            <code>/api/test-db</code>
+          <div style="margin-top: var(--space-lg); display: flex; gap: var(--space-sm); flex-wrap: wrap;">
+            <a href="/admin/api-endpoints" class="admin-btn admin-btn-sm admin-btn-primary">
+              <span>Open Interactive Portal</span>
+            </a>
           </div>
         </div>
       </div>
     </div>
 
+    <!-- Enhanced Interactive API Endpoints Section -->
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <h2 class="admin-card-title">
+          <span class="card-icon">API</span>
+          <span>Interactive API Endpoints</span>
+        </h2>
+        <div class="admin-card-actions">
+          <div class="endpoint-controls">
+            <input
+              type="text"
+              placeholder="Filter endpoints..."
+              class="endpoint-search"
+              id="endpoint-search"
+              autocomplete="off"
+            >
+            <div class="endpoint-status-filter">
+              <button class="filter-btn active" data-filter="all" title="Show all endpoints">
+                <span class="status-dot status-all"></span>
+                All
+              </button>
+              <button class="filter-btn" data-filter="tested" title="Show tested endpoints">
+                <span class="status-dot status-success"></span>
+                Tested
+              </button>
+              <button class="filter-btn" data-filter="untested" title="Show untested endpoints">
+                <span class="status-dot status-untested"></span>
+                Pending
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="admin-card-body">
+        <!-- Endpoint Categories -->
+        <div class="endpoint-categories">
+
+          <!-- Admin & Authentication Endpoints -->
+          <div class="endpoint-category" data-category="admin">
+            <div class="category-header">
+              <h3 class="category-title">
+                <span class="category-icon admin-icon">🔐</span>
+                Admin & Authentication
+                <span class="category-count">(6)</span>
+              </h3>
+              <button class="category-toggle" data-target="admin-endpoints">
+                <span class="toggle-icon">−</span>
+              </button>
+            </div>
+            <div class="endpoints-group" id="admin-endpoints">
+              <div class="endpoint-item interactive" data-method="GET" data-endpoint="/api/admin/dashboard" data-description="Retrieve admin dashboard data with statistics and overview">
+                <div class="endpoint-content">
+                  <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <code class="endpoint-path">/api/admin/dashboard</code>
+                    <div class="endpoint-status">
+                      <span class="status-indicator status-untested" title="Not tested"></span>
+                    </div>
+                  </div>
+                  <p class="endpoint-description">Retrieve admin dashboard data with statistics and overview</p>
+                  <div class="endpoint-actions">
+                    <button class="endpoint-btn test-btn" onclick="testEndpoint('/api/admin/dashboard', 'GET', this)">
+                      <span class="btn-icon">▶</span>
+                      Test
+                    </button>
+                    <button class="endpoint-btn details-btn" onclick="toggleEndpointDetails(this)">
+                      <span class="btn-icon">📋</span>
+                      Details
+                    </button>
+                  </div>
+                </div>
+                <div class="endpoint-details hidden">
+                  <div class="detail-section">
+                    <h4>Response Example</h4>
+                    <pre class="response-preview">{"registrations": 150, "revenue": "$12,500", "status": "healthy"}</pre>
+                  </div>
+                </div>
+              </div>
+
+              <div class="endpoint-item interactive" data-method="POST" data-endpoint="/api/admin/login" data-description="Authenticate admin user with credentials">
+                <div class="endpoint-content">
+                  <div class="endpoint-header">
+                    <span class="method method-post">POST</span>
+                    <code class="endpoint-path">/api/admin/login</code>
+                    <div class="endpoint-status">
+                      <span class="status-indicator status-untested" title="Not tested"></span>
+                    </div>
+                  </div>
+                  <p class="endpoint-description">Authenticate admin user with credentials</p>
+                  <div class="endpoint-actions">
+                    <button class="endpoint-btn test-btn" onclick="testEndpoint('/api/admin/login', 'POST', this)">
+                      <span class="btn-icon">▶</span>
+                      Test
+                    </button>
+                    <button class="endpoint-btn details-btn" onclick="toggleEndpointDetails(this)">
+                      <span class="btn-icon">📋</span>
+                      Details
+                    </button>
+                  </div>
+                </div>
+                <div class="endpoint-details hidden">
+                  <div class="detail-section">
+                    <h4>Request Body</h4>
+                    <pre class="request-preview">{"username": "admin", "password": "***"}</pre>
+                  </div>
+                </div>
+              </div>
+
+              <div class="endpoint-item interactive" data-method="POST" data-endpoint="/api/admin/mobile-login" data-description="Mobile-optimized admin authentication">
+                <div class="endpoint-content">
+                  <div class="endpoint-header">
+                    <span class="method method-post">POST</span>
+                    <code class="endpoint-path">/api/admin/mobile-login</code>
+                    <div class="endpoint-status">
+                      <span class="status-indicator status-untested" title="Not tested"></span>
+                    </div>
+                  </div>
+                  <p class="endpoint-description">Mobile-optimized admin authentication</p>
+                  <div class="endpoint-actions">
+                    <button class="endpoint-btn test-btn" onclick="testEndpoint('/api/admin/mobile-login', 'POST', this)">
+                      <span class="btn-icon">▶</span>
+                      Test
+                    </button>
+                    <button class="endpoint-btn details-btn" onclick="toggleEndpointDetails(this)">
+                      <span class="btn-icon">📋</span>
+                      Details
+                    </button>
+                  </div>
+                </div>
+                <div class="endpoint-details hidden">
+                  <div class="detail-section">
+                    <h4>Mobile Features</h4>
+                    <ul class="feature-list">
+                      <li>Touch-optimized interface</li>
+                      <li>Biometric authentication support</li>
+                      <li>Offline token caching</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div class="endpoint-item interactive" data-method="GET" data-endpoint="/api/admin/registrations" data-description="Fetch all registration records">
+                <div class="endpoint-content">
+                  <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <code class="endpoint-path">/api/admin/registrations</code>
+                    <div class="endpoint-status">
+                      <span class="status-indicator status-untested" title="Not tested"></span>
+                    </div>
+                  </div>
+                  <p class="endpoint-description">Fetch all registration records</p>
+                  <div class="endpoint-actions">
+                    <button class="endpoint-btn test-btn" onclick="testEndpoint('/api/admin/registrations', 'GET', this)">
+                      <span class="btn-icon">▶</span>
+                      Test
+                    </button>
+                    <button class="endpoint-btn details-btn" onclick="toggleEndpointDetails(this)">
+                      <span class="btn-icon">📋</span>
+                      Details
+                    </button>
+                  </div>
+                </div>
+                <div class="endpoint-details hidden">
+                  <div class="detail-section">
+                    <h4>Query Parameters</h4>
+                    <ul class="param-list">
+                      <li><code>?limit=50</code> - Maximum records to return</li>
+                      <li><code>?offset=0</code> - Records to skip</li>
+                      <li><code>?status=active</code> - Filter by status</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div class="endpoint-item interactive" data-method="GET" data-endpoint="/api/admin/transactions" data-description="Retrieve transaction history">
+                <div class="endpoint-content">
+                  <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <code class="endpoint-path">/api/admin/transactions</code>
+                    <div class="endpoint-status">
+                      <span class="status-indicator status-untested" title="Not tested"></span>
+                    </div>
+                  </div>
+                  <p class="endpoint-description">Retrieve transaction history</p>
+                  <div class="endpoint-actions">
+                    <button class="endpoint-btn test-btn" onclick="testEndpoint('/api/admin/transactions', 'GET', this)">
+                      <span class="btn-icon">▶</span>
+                      Test
+                    </button>
+                    <button class="endpoint-btn details-btn" onclick="toggleEndpointDetails(this)">
+                      <span class="btn-icon">📋</span>
+                      Details
+                    </button>
+                  </div>
+                </div>
+                <div class="endpoint-details hidden">
+                  <div class="detail-section">
+                    <h4>Transaction Types</h4>
+                    <div class="tag-list">
+                      <span class="tag tag-success">Payment</span>
+                      <span class="tag tag-info">Refund</span>
+                      <span class="tag tag-warning">Pending</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="endpoint-item interactive" data-method="GET" data-endpoint="/api/admin/csrf-token" data-description="Get CSRF protection token">
+                <div class="endpoint-content">
+                  <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <code class="endpoint-path">/api/admin/csrf-token</code>
+                    <div class="endpoint-status">
+                      <span class="status-indicator status-untested" title="Not tested"></span>
+                    </div>
+                  </div>
+                  <p class="endpoint-description">Get CSRF protection token</p>
+                  <div class="endpoint-actions">
+                    <button class="endpoint-btn test-btn" onclick="testEndpoint('/api/admin/csrf-token', 'GET', this)">
+                      <span class="btn-icon">▶</span>
+                      Test
+                    </button>
+                    <button class="endpoint-btn details-btn" onclick="toggleEndpointDetails(this)">
+                      <span class="btn-icon">📋</span>
+                      Details
+                    </button>
+                  </div>
+                </div>
+                <div class="endpoint-details hidden">
+                  <div class="detail-section">
+                    <h4>Security Note</h4>
+                    <p class="security-note">Include this token in POST requests as <code>X-CSRF-Token</code> header</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Analytics & Reporting -->
+          <div class="endpoint-category" data-category="analytics">
+            <div class="category-header">
+              <h3 class="category-title">
+                <span class="category-icon analytics-icon">📊</span>
+                Analytics & Reporting
+                <span class="category-count">(2)</span>
+              </h3>
+              <button class="category-toggle" data-target="analytics-endpoints">
+                <span class="toggle-icon">−</span>
+              </button>
+            </div>
+            <div class="endpoints-group" id="analytics-endpoints">
+              <div class="endpoint-item interactive" data-method="GET" data-endpoint="/api/admin/analytics" data-description="Generate comprehensive analytics data">
+                <div class="endpoint-content">
+                  <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <code class="endpoint-path">/api/admin/analytics</code>
+                    <div class="endpoint-status">
+                      <span class="status-indicator status-untested" title="Not tested"></span>
+                    </div>
+                  </div>
+                  <p class="endpoint-description">Generate comprehensive analytics data</p>
+                  <div class="endpoint-actions">
+                    <button class="endpoint-btn test-btn" onclick="testEndpoint('/api/admin/analytics', 'GET', this)">
+                      <span class="btn-icon">▶</span>
+                      Test
+                    </button>
+                    <button class="endpoint-btn details-btn" onclick="toggleEndpointDetails(this)">
+                      <span class="btn-icon">📋</span>
+                      Details
+                    </button>
+                  </div>
+                </div>
+                <div class="endpoint-details hidden">
+                  <div class="detail-section">
+                    <h4>Analytics Includes</h4>
+                    <div class="feature-grid">
+                      <div class="feature-item">User engagement</div>
+                      <div class="feature-item">Revenue trends</div>
+                      <div class="feature-item">Geographic data</div>
+                      <div class="feature-item">Device metrics</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="endpoint-item interactive" data-method="GET" data-endpoint="/api/admin/generate-report" data-description="Export detailed reports in multiple formats">
+                <div class="endpoint-content">
+                  <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <code class="endpoint-path">/api/admin/generate-report</code>
+                    <div class="endpoint-status">
+                      <span class="status-indicator status-untested" title="Not tested"></span>
+                    </div>
+                  </div>
+                  <p class="endpoint-description">Export detailed reports in multiple formats</p>
+                  <div class="endpoint-actions">
+                    <button class="endpoint-btn test-btn" onclick="testEndpoint('/api/admin/generate-report', 'GET', this)">
+                      <span class="btn-icon">▶</span>
+                      Test
+                    </button>
+                    <button class="endpoint-btn details-btn" onclick="toggleEndpointDetails(this)">
+                      <span class="btn-icon">📋</span>
+                      Details
+                    </button>
+                  </div>
+                </div>
+                <div class="endpoint-details hidden">
+                  <div class="detail-section">
+                    <h4>Export Formats</h4>
+                    <div class="format-list">
+                      <span class="format-badge csv">CSV</span>
+                      <span class="format-badge json">JSON</span>
+                      <span class="format-badge pdf">PDF</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Integration Services -->
+          <div class="endpoint-category" data-category="integrations">
+            <div class="category-header">
+              <h3 class="category-title">
+                <span class="category-icon integration-icon">🔗</span>
+                Integration Services
+                <span class="category-count">(3)</span>
+              </h3>
+              <button class="category-toggle" data-target="integration-endpoints">
+                <span class="toggle-icon">−</span>
+              </button>
+            </div>
+            <div class="endpoints-group" id="integration-endpoints">
+              <div class="endpoint-item interactive" data-method="POST" data-endpoint="/api/sheets/sync" data-description="Synchronize data with Google Sheets">
+                <div class="endpoint-content">
+                  <div class="endpoint-header">
+                    <span class="method method-post">POST</span>
+                    <code class="endpoint-path">/api/sheets/sync</code>
+                    <div class="endpoint-status">
+                      <span class="status-indicator status-untested" title="Not tested"></span>
+                    </div>
+                  </div>
+                  <p class="endpoint-description">Synchronize data with Google Sheets</p>
+                  <div class="endpoint-actions">
+                    <button class="endpoint-btn test-btn" onclick="testEndpoint('/api/sheets/sync', 'POST', this)">
+                      <span class="btn-icon">▶</span>
+                      Test
+                    </button>
+                    <button class="endpoint-btn details-btn" onclick="toggleEndpointDetails(this)">
+                      <span class="btn-icon">📋</span>
+                      Details
+                    </button>
+                  </div>
+                </div>
+                <div class="endpoint-details hidden">
+                  <div class="detail-section">
+                    <h4>Sync Operations</h4>
+                    <ul class="operation-list">
+                      <li>Export registrations</li>
+                      <li>Update ticket status</li>
+                      <li>Backup transaction data</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div class="endpoint-item interactive" data-method="GET" data-endpoint="/api/sheets/scheduled-sync" data-description="Check scheduled synchronization status">
+                <div class="endpoint-content">
+                  <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <code class="endpoint-path">/api/sheets/scheduled-sync</code>
+                    <div class="endpoint-status">
+                      <span class="status-indicator status-untested" title="Not tested"></span>
+                    </div>
+                  </div>
+                  <p class="endpoint-description">Check scheduled synchronization status</p>
+                  <div class="endpoint-actions">
+                    <button class="endpoint-btn test-btn" onclick="testEndpoint('/api/sheets/scheduled-sync', 'GET', this)">
+                      <span class="btn-icon">▶</span>
+                      Test
+                    </button>
+                    <button class="endpoint-btn details-btn" onclick="toggleEndpointDetails(this)">
+                      <span class="btn-icon">📋</span>
+                      Details
+                    </button>
+                  </div>
+                </div>
+                <div class="endpoint-details hidden">
+                  <div class="detail-section">
+                    <h4>Schedule Info</h4>
+                    <p class="schedule-info">Next sync: Every 6 hours at :00 minutes</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="endpoint-item interactive" data-method="POST" data-endpoint="/api/tickets/validate" data-description="Validate ticket QR codes for check-in">
+                <div class="endpoint-content">
+                  <div class="endpoint-header">
+                    <span class="method method-post">POST</span>
+                    <code class="endpoint-path">/api/tickets/validate</code>
+                    <div class="endpoint-status">
+                      <span class="status-indicator status-untested" title="Not tested"></span>
+                    </div>
+                  </div>
+                  <p class="endpoint-description">Validate ticket QR codes for check-in</p>
+                  <div class="endpoint-actions">
+                    <button class="endpoint-btn test-btn" onclick="testEndpoint('/api/tickets/validate', 'POST', this)">
+                      <span class="btn-icon">▶</span>
+                      Test
+                    </button>
+                    <button class="endpoint-btn details-btn" onclick="toggleEndpointDetails(this)">
+                      <span class="btn-icon">📋</span>
+                      Details
+                    </button>
+                  </div>
+                </div>
+                <div class="endpoint-details hidden">
+                  <div class="detail-section">
+                    <h4>Validation Response</h4>
+                    <pre class="validation-example">{"valid": true, "attendee": "John Doe", "ticket": "VIP"}</pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- System Health -->
+          <div class="endpoint-category" data-category="system">
+            <div class="category-header">
+              <h3 class="category-title">
+                <span class="category-icon system-icon">⚙️</span>
+                System Health
+                <span class="category-count">(2)</span>
+              </h3>
+              <button class="category-toggle" data-target="system-endpoints">
+                <span class="toggle-icon">−</span>
+              </button>
+            </div>
+            <div class="endpoints-group" id="system-endpoints">
+              <div class="endpoint-item interactive" data-method="GET" data-endpoint="/api/admin/events" data-description="Monitor system events and logs">
+                <div class="endpoint-content">
+                  <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <code class="endpoint-path">/api/admin/events</code>
+                    <div class="endpoint-status">
+                      <span class="status-indicator status-untested" title="Not tested"></span>
+                    </div>
+                  </div>
+                  <p class="endpoint-description">Monitor system events and logs</p>
+                  <div class="endpoint-actions">
+                    <button class="endpoint-btn test-btn" onclick="testEndpoint('/api/admin/events', 'GET', this)">
+                      <span class="btn-icon">▶</span>
+                      Test
+                    </button>
+                    <button class="endpoint-btn details-btn" onclick="toggleEndpointDetails(this)">
+                      <span class="btn-icon">📋</span>
+                      Details
+                    </button>
+                  </div>
+                </div>
+                <div class="endpoint-details hidden">
+                  <div class="detail-section">
+                    <h4>Event Types</h4>
+                    <div class="event-types">
+                      <span class="event-badge info">Info</span>
+                      <span class="event-badge warning">Warning</span>
+                      <span class="event-badge error">Error</span>
+                      <span class="event-badge success">Success</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="endpoint-item interactive" data-method="GET" data-endpoint="/api/test-db" data-description="Test database connectivity and health">
+                <div class="endpoint-content">
+                  <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <code class="endpoint-path">/api/test-db</code>
+                    <div class="endpoint-status">
+                      <span class="status-indicator status-untested" title="Not tested"></span>
+                    </div>
+                  </div>
+                  <p class="endpoint-description">Test database connectivity and health</p>
+                  <div class="endpoint-actions">
+                    <button class="endpoint-btn test-btn" onclick="testEndpoint('/api/test-db', 'GET', this)">
+                      <span class="btn-icon">▶</span>
+                      Test
+                    </button>
+                    <button class="endpoint-btn details-btn" onclick="toggleEndpointDetails(this)">
+                      <span class="btn-icon">📋</span>
+                      Details
+                    </button>
+                  </div>
+                </div>
+                <div class="endpoint-details hidden">
+                  <div class="detail-section">
+                    <h4>Health Checks</h4>
+                    <ul class="health-list">
+                      <li>Connection status</li>
+                      <li>Query performance</li>
+                      <li>Table integrity</li>
+                      <li>Index optimization</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Enhanced Endpoint System JavaScript
+
+      // Toggle category sections
+      document.addEventListener('DOMContentLoaded', function() {
+        const categoryToggles = document.querySelectorAll('.category-toggle');
+
+        categoryToggles.forEach(toggle => {
+          toggle.addEventListener('click', function() {
+            const targetId = this.getAttribute('data-target');
+            const targetGroup = document.getElementById(targetId);
+            const toggleIcon = this.querySelector('.toggle-icon');
+
+            if (targetGroup.classList.contains('collapsed')) {
+              targetGroup.classList.remove('collapsed');
+              toggleIcon.textContent = '−';
+              this.classList.remove('collapsed');
+            } else {
+              targetGroup.classList.add('collapsed');
+              toggleIcon.textContent = '+';
+              this.classList.add('collapsed');
+            }
+          });
+        });
+
+        // Search and filter functionality
+        const searchInput = document.getElementById('endpoint-search');
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        const endpointItems = document.querySelectorAll('.endpoint-item');
+
+        // Search function
+        if (searchInput) {
+          searchInput.addEventListener('input', function() {
+            const query = this.value.toLowerCase();
+
+            endpointItems.forEach(item => {
+              const endpoint = item.getAttribute('data-endpoint').toLowerCase();
+              const description = item.getAttribute('data-description')?.toLowerCase() || '';
+
+              if (endpoint.includes(query) || description.includes(query)) {
+                item.style.display = 'block';
+              } else {
+                item.style.display = 'none';
+              }
+            });
+          });
+        }
+
+        // Filter buttons
+        filterBtns.forEach(btn => {
+          btn.addEventListener('click', function() {
+            // Remove active from all buttons
+            filterBtns.forEach(b => b.classList.remove('active'));
+            // Add active to clicked button
+            this.classList.add('active');
+
+            const filter = this.getAttribute('data-filter');
+
+            endpointItems.forEach(item => {
+              const statusIndicator = item.querySelector('.status-indicator');
+
+              if (filter === 'all') {
+                item.style.display = 'block';
+              } else if (filter === 'tested') {
+                if (statusIndicator.classList.contains('status-success')) {
+                  item.style.display = 'block';
+                } else {
+                  item.style.display = 'none';
+                }
+              } else if (filter === 'untested') {
+                if (statusIndicator.classList.contains('status-untested')) {
+                  item.style.display = 'block';
+                } else {
+                  item.style.display = 'none';
+                }
+              }
+            });
+          });
+        });
+      });
+
+      // Response History Manager
+      class ResponseHistoryManager {
+        constructor(maxHistory = 10) {
+          this.maxHistory = maxHistory;
+          this.loadHistory();
+        }
+
+        loadHistory() {
+          try {
+            this.history = JSON.parse(localStorage.getItem('adminApiTestHistory') || '[]');
+          } catch (error) {
+            console.warn('Failed to load response history:', error);
+            this.history = [];
+          }
+        }
+
+        addResponse(endpoint, method, responseData, requestData = {}) {
+          const entry = {
+            id: Date.now(),
+            timestamp: new Date().toISOString(),
+            endpoint,
+            method,
+            response: responseData,
+            request: requestData,
+            starred: false
+          };
+
+          this.history.unshift(entry);
+          if (this.history.length > this.maxHistory) {
+            this.history = this.history.slice(0, this.maxHistory);
+          }
+
+          this.saveHistory();
+          this.updateHistoryPanel();
+          return entry;
+        }
+
+        saveHistory() {
+          try {
+            localStorage.setItem('adminApiTestHistory', JSON.stringify(this.history));
+          } catch (error) {
+            console.warn('Failed to save response history:', error);
+          }
+        }
+
+        updateHistoryPanel() {
+          const historyContent = document.getElementById('historyContent');
+          if (!historyContent) return;
+
+          if (this.history.length === 0) {
+            historyContent.innerHTML = '<p style="text-align: center; color: var(--color-text-tertiary); margin-top: var(--space-xl);">No API tests yet</p>';
+            return;
+          }
+
+          historyContent.innerHTML = this.history.map(entry => `
+            <div class="history-entry" onclick="showResponseFromHistory('${entry.id}')">
+              <div class="history-entry-header">
+                <div>
+                  <span class="history-entry-method method-${entry.method.toLowerCase()}">${entry.method}</span>
+                  <span class="history-entry-path">${entry.endpoint}</span>
+                </div>
+                <div>
+                  <span class="history-entry-status status-${entry.response.status >= 200 && entry.response.status < 300 ? 'success' : 'error'}">
+                    ${entry.response.status}
+                  </span>
+                </div>
+              </div>
+              <div class="history-entry-time">
+                ${new Date(entry.timestamp).toLocaleString()}
+                ${entry.response.timing ? ` • ${entry.response.timing}ms` : ''}
+              </div>
+            </div>
+          `).join('');
+        }
+
+        getEntry(id) {
+          return this.history.find(entry => entry.id === parseInt(id));
+        }
+
+        clearHistory() {
+          this.history = [];
+          this.saveHistory();
+          this.updateHistoryPanel();
+        }
+      }
+
+      // Initialize response history manager
+      const responseHistory = new ResponseHistoryManager();
+
+      // Current modal data
+      let currentModalData = null;
+
+      // Enhanced test endpoint function with modal response viewer
+      async function testEndpoint(endpoint, method, buttonElement) {
+        const endpointItem = buttonElement.closest('.endpoint-item');
+        const statusIndicator = endpointItem.querySelector('.status-indicator');
+
+        // Update status to loading
+        statusIndicator.className = 'status-indicator status-loading';
+        buttonElement.disabled = true;
+        buttonElement.querySelector('span:last-child').textContent = 'Testing...';
+
+        const startTime = performance.now();
+        let responseData = null;
+        let requestData = {};
+
+        try {
+          const headers = method === 'POST' ? { 'Content-Type': 'application/json' } : {};
+
+          // Add CSRF token for state-changing operations
+          if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+            try {
+              const csrfResponse = await fetch('/api/admin/csrf-token', {
+                credentials: 'same-origin'
+              });
+              if (csrfResponse.ok) {
+                const csrfData = await csrfResponse.json();
+                headers['X-CSRF-Token'] = csrfData.token || csrfData.csrfToken;
+              }
+            } catch (error) {
+              console.warn('Could not fetch CSRF token:', error);
+            }
+          }
+
+          // Store request data for history
+          requestData = {
+            method,
+            headers: { ...headers },
+            credentials: 'include'
+          };
+
+          const response = await fetch(endpoint, {
+            method: method,
+            credentials: 'include',
+            headers: headers
+          });
+
+          const endTime = performance.now();
+          const timing = Math.round(endTime - startTime);
+
+          // Get response headers
+          const responseHeaders = {};
+          response.headers.forEach((value, key) => {
+            responseHeaders[key] = value;
+          });
+
+          // Get response body
+          let responseBody = null;
+          let bodyText = '';
+          try {
+            bodyText = await response.text();
+            if (bodyText) {
+              // Try to parse as JSON
+              try {
+                responseBody = JSON.parse(bodyText);
+              } catch {
+                responseBody = bodyText;
+              }
+            }
+          } catch (error) {
+            console.warn('Failed to read response body:', error);
+          }
+
+          responseData = {
+            status: response.status,
+            statusText: response.statusText,
+            headers: responseHeaders,
+            body: responseBody,
+            bodyText: bodyText,
+            timing: timing,
+            ok: response.ok
+          };
+
+          if (response.ok) {
+            statusIndicator.className = 'status-indicator status-success';
+            statusIndicator.setAttribute('title', `Test successful • ${timing}ms`);
+
+            // Show success feedback
+            showEndpointFeedback(endpointItem, 'success', `${method} ${endpoint} - Success (${response.status}) • ${timing}ms`);
+
+            // Show response modal
+            showResponseModal(endpoint, method, responseData, requestData);
+
+          } else {
+            statusIndicator.className = 'status-indicator status-error';
+            statusIndicator.setAttribute('title', `Test failed • ${timing}ms`);
+
+            // Show error feedback
+            showEndpointFeedback(endpointItem, 'error', `${method} ${endpoint} - Error (${response.status}) • ${timing}ms`);
+
+            // Show response modal even for errors
+            showResponseModal(endpoint, method, responseData, requestData);
+          }
+
+          // Add to history
+          responseHistory.addResponse(endpoint, method, responseData, requestData);
+
+        } catch (error) {
+          const endTime = performance.now();
+          const timing = Math.round(endTime - startTime);
+
+          statusIndicator.className = 'status-indicator status-error';
+          statusIndicator.setAttribute('title', `Network error • ${timing}ms`);
+
+          // Show error feedback
+          showEndpointFeedback(endpointItem, 'error', `${method} ${endpoint} - Network Error • ${timing}ms`);
+
+          // Create error response data
+          responseData = {
+            status: 0,
+            statusText: 'Network Error',
+            headers: {},
+            body: error.message,
+            bodyText: error.message,
+            timing: timing,
+            ok: false,
+            error: true
+          };
+
+          // Show response modal for network errors
+          showResponseModal(endpoint, method, responseData, requestData);
+
+          // Add to history
+          responseHistory.addResponse(endpoint, method, responseData, requestData);
+
+        } finally {
+          buttonElement.disabled = false;
+          buttonElement.querySelector('span:last-child').textContent = 'Test';
+        }
+      }
+
+      // Toggle endpoint details
+      function toggleEndpointDetails(buttonElement) {
+        const endpointItem = buttonElement.closest('.endpoint-item');
+        const detailsSection = endpointItem.querySelector('.endpoint-details');
+        const buttonText = buttonElement.querySelector('span:last-child');
+
+        if (detailsSection.classList.contains('hidden')) {
+          detailsSection.classList.remove('hidden');
+          buttonText.textContent = 'Hide';
+        } else {
+          detailsSection.classList.add('hidden');
+          buttonText.textContent = 'Details';
+        }
+      }
+
+      // Show endpoint feedback
+      function showEndpointFeedback(endpointItem, type, message) {
+        const feedbackEl = endpointItem.querySelector('.endpoint-feedback');
+        if (!feedbackEl) return;
+
+        feedbackEl.className = `endpoint-feedback ${type}`;
+        feedbackEl.textContent = message;
+        feedbackEl.style.display = 'block';
+
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+          feedbackEl.style.display = 'none';
+        }, 5000);
+      }
+    </script>
     <!-- Footer -->
     <div class="admin-card" style="text-align: center; margin-top: var(--space-4xl);">
       <div class="admin-card-body">
@@ -501,8 +1814,25 @@
         if (!confirm("Are you sure you want to logout?")) return;
 
         try {
+          const headers = {};
+
+          // Add CSRF token for secure logout
+          try {
+            const csrfResponse = await fetch("/api/admin/csrf-token", {
+              credentials: "same-origin"
+            });
+            if (csrfResponse.ok) {
+              const csrfData = await csrfResponse.json();
+              headers["X-CSRF-Token"] = csrfData.token || csrfData.csrfToken;
+            }
+          } catch (error) {
+            console.warn("Could not fetch CSRF token for logout:", error);
+          }
+
           await fetch("/api/admin/login", {
             method: "DELETE",
+            headers: headers,
+            credentials: "same-origin"
           });
         } finally {
           // Clear client storage
@@ -513,8 +1843,569 @@
         }
       }
 
+      // Interactive Endpoint Manager
+      class AdminDashboardEndpointManager {
+        constructor() {
+          this.baseUrl = window.location.origin;
+          this.safeEndpoints = new Set([
+            '/api/admin/dashboard',
+            '/api/admin/registrations',
+            '/api/admin/transactions',
+            '/api/admin/analytics',
+            '/api/admin/events',
+            '/api/admin/generate-report',
+            '/api/admin/csrf-token',
+            '/api/sheets/scheduled-sync',
+            '/api/test-db',
+            '/api/health/check',
+            '/api/health/database'
+          ]);
+        }
+
+        // Copy endpoint URL to clipboard
+        async copyEndpoint(button) {
+          const endpointItem = button.closest('.endpoint-item');
+          const endpoint = endpointItem.dataset.endpoint;
+          const method = endpointItem.dataset.method;
+          const fullUrl = `${method} ${this.baseUrl}${endpoint}`;
+
+          try {
+            await navigator.clipboard.writeText(fullUrl);
+            this.showFeedback(endpointItem, 'success', 'Copied to clipboard!');
+          } catch (error) {
+            // Fallback for older browsers
+            this.fallbackCopyTextToClipboard(fullUrl, endpointItem);
+          }
+        }
+
+        // Fallback copy method
+        fallbackCopyTextToClipboard(text, endpointItem) {
+          const textArea = document.createElement("textarea");
+          textArea.value = text;
+          document.body.appendChild(textArea);
+          textArea.focus();
+          textArea.select();
+
+          try {
+            const successful = document.execCommand('copy');
+            if (successful) {
+              this.showFeedback(endpointItem, 'success', 'Copied to clipboard!');
+            } else {
+              this.showFeedback(endpointItem, 'error', 'Copy failed');
+            }
+          } catch (err) {
+            this.showFeedback(endpointItem, 'error', 'Copy not supported');
+          }
+
+          document.body.removeChild(textArea);
+        }
+
+        // Try endpoint - only for safe GET endpoints
+        async tryEndpoint(button) {
+          const endpointItem = button.closest('.endpoint-item');
+          const endpoint = endpointItem.dataset.endpoint;
+          const method = endpointItem.dataset.method;
+          const isSafe = endpointItem.dataset.safe === 'true';
+
+          // Security check
+          if (!isSafe || method !== 'GET') {
+            this.showSecurityWarning(button);
+            return;
+          }
+
+          if (!this.safeEndpoints.has(endpoint)) {
+            this.showFeedback(endpointItem, 'error', 'Endpoint not in safe list');
+            return;
+          }
+
+          // Show loading state
+          button.classList.add('admin-btn-loading');
+          button.disabled = true;
+
+          try {
+            const response = await fetch(endpoint, {
+              method: method,
+              credentials: 'include', // Include cookies for auth
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+              }
+            });
+
+            const responseText = await response.text();
+            let responseData;
+
+            try {
+              responseData = JSON.parse(responseText);
+            } catch {
+              responseData = responseText;
+            }
+
+            if (response.ok) {
+              this.showFeedback(endpointItem, 'success',
+                `✓ ${response.status} ${response.statusText}`,
+                this.formatResponse(responseData)
+              );
+            } else {
+              this.showFeedback(endpointItem, 'error',
+                `✗ ${response.status} ${response.statusText}`,
+                this.formatResponse(responseData)
+              );
+            }
+          } catch (error) {
+            this.showFeedback(endpointItem, 'error',
+              `Network error: ${error.message}`
+            );
+          } finally {
+            // Remove loading state
+            button.classList.remove('admin-btn-loading');
+            button.disabled = false;
+          }
+        }
+
+        // Show security warning for restricted endpoints
+        showSecurityWarning(button) {
+          const endpointItem = button.closest('.endpoint-item');
+          const endpoint = endpointItem.dataset.endpoint;
+          const method = endpointItem.dataset.method;
+
+          const warningMessage = `
+            🔒 SECURITY RESTRICTED
+
+            ${method} ${endpoint}
+
+            This endpoint modifies server state and cannot be tested directly through the UI for security reasons.
+
+            • Use external tools like Postman or cURL
+            • Include proper authentication headers
+            • Add CSRF tokens for POST requests
+            • Review API documentation first
+          `;
+
+          this.showFeedback(endpointItem, 'error', warningMessage);
+        }
+
+        // Show documentation info
+        showDocs(button) {
+          const endpointItem = button.closest('.endpoint-item');
+          const endpoint = endpointItem.dataset.endpoint;
+          const method = endpointItem.dataset.method;
+
+          // Generate basic documentation
+          const docInfo = this.generateDocInfo(endpoint, method);
+          this.showFeedback(endpointItem, 'info', docInfo);
+        }
+
+        // Generate documentation information
+        generateDocInfo(endpoint, method) {
+          const docMap = {
+            '/api/admin/dashboard': {
+              description: 'Fetch admin dashboard overview data',
+              auth: 'Admin session required',
+              response: 'Dashboard statistics and metrics'
+            },
+            '/api/admin/login': {
+              description: 'Admin authentication endpoint',
+              auth: 'Password in request body',
+              response: 'Session cookie and auth status'
+            },
+            '/api/admin/registrations': {
+              description: 'List all event registrations',
+              auth: 'Admin session required',
+              response: 'Array of registration records'
+            },
+            '/api/admin/transactions': {
+              description: 'List payment transactions',
+              auth: 'Admin session required',
+              response: 'Array of payment records'
+            },
+            '/api/admin/analytics': {
+              description: 'Analytics and reporting data',
+              auth: 'Admin session required',
+              response: 'Analytics metrics and charts data'
+            },
+            '/api/admin/csrf-token': {
+              description: 'Get CSRF token for secure operations',
+              auth: 'Admin session required',
+              response: 'CSRF token for form submissions'
+            },
+            '/api/test-db': {
+              description: 'Database health check',
+              auth: 'None required',
+              response: 'Database status and connection info'
+            }
+          };
+
+          const info = docMap[endpoint] || {
+            description: 'API endpoint',
+            auth: 'Authentication may be required',
+            response: 'Varies by endpoint'
+          };
+
+          return `
+📚 ENDPOINT DOCUMENTATION
+
+${method} ${endpoint}
+
+Description: ${info.description}
+Authentication: ${info.auth}
+Response: ${info.response}
+
+Full API docs: /docs/api/README.md
+          `;
+        }
+
+        // Format response data for display
+        formatResponse(data) {
+          if (typeof data === 'object') {
+            return JSON.stringify(data, null, 2);
+          }
+          return String(data);
+        }
+
+        // Show feedback message
+        showFeedback(endpointItem, type, message, details = null) {
+          const feedbackElement = endpointItem.querySelector('.endpoint-feedback');
+
+          // Clear existing content
+          feedbackElement.innerHTML = '';
+          feedbackElement.className = `endpoint-feedback ${type}`;
+
+          // Add message
+          const messageElement = document.createElement('div');
+          messageElement.textContent = message;
+          feedbackElement.appendChild(messageElement);
+
+          // Add details if provided
+          if (details) {
+            const detailsElement = document.createElement('div');
+            detailsElement.className = 'endpoint-response-preview';
+            detailsElement.textContent = details;
+            feedbackElement.appendChild(detailsElement);
+          }
+
+          // Show feedback
+          feedbackElement.style.display = 'block';
+
+          // Auto-hide after delay (except for errors)
+          if (type !== 'error') {
+            setTimeout(() => {
+              feedbackElement.style.display = 'none';
+            }, 5000);
+          }
+        }
+      }
+
+      // Modal management functions
+      function showResponseModal(endpoint, method, responseData, requestData) {
+        const modal = document.getElementById('responseModal');
+        const title = document.getElementById('modalTitle');
+        const timing = document.getElementById('responseTiming');
+
+        title.textContent = `${method} ${endpoint}`;
+        timing.textContent = `${responseData.timing}ms • Status: ${responseData.status}`;
+
+        currentModalData = {
+          endpoint,
+          method,
+          response: responseData,
+          request: requestData
+        };
+
+        // Set initial tab content
+        switchResponseTab('formatted');
+
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+
+        // Close modal on escape key
+        document.addEventListener('keydown', handleModalKeyboard);
+      }
+
+      function switchResponseTab(tabName) {
+        if (!currentModalData) return;
+
+        const tabs = document.querySelectorAll('.modal-tab');
+        const content = document.getElementById('responseContent');
+
+        // Update active tab
+        tabs.forEach(tab => tab.classList.remove('active'));
+        document.querySelector(`[onclick="switchResponseTab('${tabName}')"]`).classList.add('active');
+
+        // Update content based on tab
+        switch (tabName) {
+          case 'formatted':
+            content.innerHTML = formatJsonContent(currentModalData.response.body);
+            break;
+          case 'raw':
+            content.textContent = currentModalData.response.bodyText || 'No response body';
+            break;
+          case 'headers':
+            content.innerHTML = formatHeaders(currentModalData.response.headers);
+            break;
+          case 'request':
+            content.innerHTML = formatRequestData(currentModalData.request);
+            break;
+        }
+      }
+
+      function formatJsonContent(data) {
+        if (typeof data === 'object' && data !== null) {
+          return syntaxHighlightJson(JSON.stringify(data, null, 2));
+        } else {
+          return escapeHtml(String(data));
+        }
+      }
+
+      function syntaxHighlightJson(json) {
+        json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+        return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+          let cls = 'json-number';
+          if (/^"/.test(match)) {
+            if (/:$/.test(match)) {
+              cls = 'json-key';
+            } else {
+              cls = 'json-string';
+            }
+          } else if (/true|false/.test(match)) {
+            cls = 'json-boolean';
+          } else if (/null/.test(match)) {
+            cls = 'json-null';
+          }
+          return '<span class="' + cls + '">' + match + '</span>';
+        });
+      }
+
+      function formatHeaders(headers) {
+        if (!headers || Object.keys(headers).length === 0) {
+          return '<p style="color: var(--color-text-tertiary);">No headers</p>';
+        }
+
+        return Object.entries(headers)
+          .map(([key, value]) => `<div><strong class="json-key">${escapeHtml(key)}:</strong> <span class="json-string">${escapeHtml(value)}</span></div>`)
+          .join('');
+      }
+
+      function formatRequestData(request) {
+        const sections = [];
+
+        sections.push(`<div><strong class="json-key">Method:</strong> <span class="json-string">${request.method}</span></div>`);
+        sections.push(`<div><strong class="json-key">Credentials:</strong> <span class="json-string">${request.credentials}</span></div>`);
+
+        if (request.headers && Object.keys(request.headers).length > 0) {
+          sections.push('<br><strong class="json-key">Headers:</strong>');
+          Object.entries(request.headers).forEach(([key, value]) => {
+            sections.push(`<div style="margin-left: var(--space-md);"><strong>${escapeHtml(key)}:</strong> ${escapeHtml(value)}</div>`);
+          });
+        }
+
+        return sections.join('');
+      }
+
+      function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      function closeResponseModal() {
+        const modal = document.getElementById('responseModal');
+        modal.classList.remove('show');
+        document.body.style.overflow = '';
+        currentModalData = null;
+        document.removeEventListener('keydown', handleModalKeyboard);
+      }
+
+      function copyResponse() {
+        if (!currentModalData) return;
+
+        const activeTab = document.querySelector('.modal-tab.active').textContent.toLowerCase();
+        let textToCopy = '';
+
+        switch (activeTab) {
+          case 'formatted':
+            textToCopy = JSON.stringify(currentModalData.response.body, null, 2);
+            break;
+          case 'raw':
+            textToCopy = currentModalData.response.bodyText || '';
+            break;
+          case 'headers':
+            textToCopy = Object.entries(currentModalData.response.headers)
+              .map(([key, value]) => `${key}: ${value}`)
+              .join('\n');
+            break;
+          case 'request':
+            textToCopy = JSON.stringify(currentModalData.request, null, 2);
+            break;
+        }
+
+        navigator.clipboard.writeText(textToCopy).then(() => {
+          showToast('success', 'Copied!', `${activeTab} data copied to clipboard`);
+        }).catch(() => {
+          showToast('error', 'Copy Failed', 'Unable to copy to clipboard');
+        });
+      }
+
+      function downloadResponse() {
+        if (!currentModalData) return;
+
+        const activeTab = document.querySelector('.modal-tab.active').textContent.toLowerCase();
+        const { endpoint, method, response } = currentModalData;
+
+        let content = '';
+        let filename = '';
+        let mimeType = 'text/plain';
+
+        switch (activeTab) {
+          case 'formatted':
+            content = JSON.stringify(response.body, null, 2);
+            filename = `${method}_${endpoint.replace(/[^a-zA-Z0-9]/g, '_')}_response.json`;
+            mimeType = 'application/json';
+            break;
+          case 'raw':
+            content = response.bodyText || '';
+            filename = `${method}_${endpoint.replace(/[^a-zA-Z0-9]/g, '_')}_raw.txt`;
+            break;
+          case 'headers':
+            content = Object.entries(response.headers)
+              .map(([key, value]) => `${key}: ${value}`)
+              .join('\n');
+            filename = `${method}_${endpoint.replace(/[^a-zA-Z0-9]/g, '_')}_headers.txt`;
+            break;
+          case 'request':
+            content = JSON.stringify(currentModalData.request, null, 2);
+            filename = `${method}_${endpoint.replace(/[^a-zA-Z0-9]/g, '_')}_request.json`;
+            mimeType = 'application/json';
+            break;
+        }
+
+        const blob = new Blob([content], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        showToast('success', 'Downloaded!', `${filename} downloaded successfully`);
+      }
+
+      function showResponseFromHistory(id) {
+        const entry = responseHistory.getEntry(id);
+        if (entry) {
+          showResponseModal(entry.endpoint, entry.method, entry.response, entry.request);
+        }
+      }
+
+      function toggleHistoryPanel() {
+        const panel = document.getElementById('historyPanel');
+        panel.classList.toggle('show');
+
+        if (panel.classList.contains('show')) {
+          responseHistory.updateHistoryPanel();
+        }
+      }
+
+      function handleModalKeyboard(event) {
+        if (event.key === 'Escape') {
+          closeResponseModal();
+        }
+      }
+
+      function showToast(type, title, message) {
+        // Simple toast implementation
+        const toast = document.createElement('div');
+        toast.className = `toast-notification toast-${type}`;
+        toast.style.cssText = `
+          position: fixed;
+          top: var(--space-lg);
+          right: var(--space-lg);
+          background: var(--color-${type === 'success' ? 'success' : 'error'});
+          color: var(--color-text-inverse);
+          padding: var(--space-md);
+          border-radius: var(--radius-md);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+          z-index: 1001;
+          font-family: var(--font-display);
+          font-weight: 600;
+          animation: slideInRight 0.3s ease;
+        `;
+        toast.innerHTML = `<strong>${title}</strong><br>${message}`;
+
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+          toast.style.animation = 'slideOutRight 0.3s ease';
+          setTimeout(() => {
+            if (toast.parentNode) {
+              document.body.removeChild(toast);
+            }
+          }, 300);
+        }, 3000);
+      }
+
+      // Click outside modal to close
+      document.addEventListener('click', (event) => {
+        const modal = document.getElementById('responseModal');
+        if (event.target === modal && modal.classList.contains('show')) {
+          closeResponseModal();
+        }
+      });
+
+      // Initialize endpoint manager
+      const endpointManager = new AdminDashboardEndpointManager();
+
+      // Initialize history panel
+      responseHistory.updateHistoryPanel();
+
       // Initialize
       checkAuth();
     </script>
+
+    <!-- Response Modal -->
+    <div class="modal-overlay" id="responseModal">
+      <div class="modal">
+        <div class="modal-header">
+          <h2 class="modal-title" id="modalTitle">API Response</h2>
+          <button class="modal-close" onclick="closeResponseModal()">&times;</button>
+        </div>
+        <div class="modal-tabs">
+          <button class="modal-tab active" onclick="switchResponseTab('formatted')">Formatted</button>
+          <button class="modal-tab" onclick="switchResponseTab('raw')">Raw</button>
+          <button class="modal-tab" onclick="switchResponseTab('headers')">Headers</button>
+          <button class="modal-tab" onclick="switchResponseTab('request')">Request</button>
+        </div>
+        <div class="modal-content">
+          <div class="response-actions">
+            <button class="response-btn" onclick="copyResponse()">📋 Copy</button>
+            <button class="response-btn" onclick="downloadResponse()">⬇️ Download</button>
+            <span class="response-timing" id="responseTiming"></span>
+          </div>
+          <div class="response-content" id="responseContent">
+            <!-- Response content will be dynamically inserted here -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Response History Panel -->
+    <div class="history-panel" id="historyPanel">
+      <div class="history-header">
+        <h3>Response History</h3>
+        <button class="history-toggle" onclick="toggleHistoryPanel()">✕</button>
+      </div>
+      <div class="history-content" id="historyContent">
+        <!-- History entries will be dynamically inserted here -->
+      </div>
+    </div>
+
+    <!-- History Toggle Button -->
+    <button class="history-fab" onclick="toggleHistoryPanel()" title="Show Response History">
+      📚
+    </button>
+
   </body>
 </html>

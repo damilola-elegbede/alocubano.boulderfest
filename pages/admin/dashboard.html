@@ -61,6 +61,11 @@
             <span>Check-in Scanner</span>
           </a>
         </li>
+        <li class="admin-nav-item">
+          <a href="/admin/api-endpoints" class="admin-nav-link">
+            <span>API Endpoints</span>
+          </a>
+        </li>
       </ul>
       
       <!-- Event Selector -->
@@ -456,6 +461,7 @@
             `/api/admin/registrations?ticketId=${encodeURIComponent(ticketId)}`,
             {
               method: "PUT",
+              credentials: "same-origin", // CRITICAL: Include cookies for production
               headers: headers,
               body: JSON.stringify({ action: "checkin" }),
             },
@@ -486,6 +492,7 @@
             `/api/admin/registrations?ticketId=${encodeURIComponent(ticketId)}`,
             {
               method: "PUT",
+              credentials: "same-origin", // CRITICAL: Include cookies for production
               headers: headers,
               body: JSON.stringify({ action: "undo_checkin" }),
             },
@@ -604,7 +611,7 @@
           }
 
           await fetch("/api/admin/login", {
-            credentials: "include", // Include cookies for production
+            credentials: "same-origin", // Include cookies for production
             method: "DELETE",
             headers: headers,
           });
@@ -627,7 +634,7 @@
 
         try {
           const response = await fetch("/api/sheets/sync", {
-            credentials: "include", // Include cookies for production
+            credentials: "same-origin", // Include cookies for production
             method: "POST",
             headers: {
               "Content-Type": "application/json",
