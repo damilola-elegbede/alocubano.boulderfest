@@ -168,7 +168,7 @@ class EndpointManager {
   async performRequest(path, method, options = {}) {
     let requestOptions = {
       method: method,
-      credentials: 'include',
+      credentials: 'same-origin',
       headers: {
         'Content-Type': 'application/json',
         ...options.headers
@@ -179,11 +179,11 @@ class EndpointManager {
     if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
       try {
         const csrfResponse = await fetch('/api/admin/csrf-token', {
-          credentials: 'include'
+          credentials: 'same-origin'
         });
         if (csrfResponse.ok) {
           const csrfData = await csrfResponse.json();
-          requestOptions.headers['X-CSRF-Token'] = csrfData.token;
+          requestOptions.headers['X-CSRF-Token'] = csrfData.token || csrfData.csrfToken;
         }
       } catch (error) {
         console.warn('Could not fetch CSRF token:', error);
@@ -499,18 +499,20 @@ class EndpointManager {
     let content, filename, mimeType;
 
     switch (format) {
-      case 'csv':
+      case 'csv': {
         content = this.convertToCSV(this.requestHistory);
         filename = `api-endpoint-results-${Date.now()}.csv`;
         mimeType = 'text/csv';
         break;
+      }
 
       case 'json':
-      default:
+      default: {
         content = JSON.stringify(data, null, 2);
         filename = `api-endpoint-results-${Date.now()}.json`;
         mimeType = 'application/json';
         break;
+      }
     }
 
     const blob = new Blob([content], { type: mimeType });
@@ -678,12 +680,12 @@ window.showExample = function(type) {
 };
 
 // Enhanced switchTab function with syntax highlighting
-window.switchTabEnhanced = function(tabName) {
+window.switchTabEnhanced = function(tabName, eventTarget = null) {
   const tabs = document.querySelectorAll('.modal-tab');
   const content = document.getElementById('responseContent');
 
   tabs.forEach(tab => tab.classList.remove('active'));
-  event?.target?.classList.add('active') || document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
+  eventTarget?.classList.add('active') || document.querySelector(`[onclick="switchTabEnhanced('${tabName}', this)"]`).classList.add('active');
 
   if (!currentModal) return;
 
@@ -706,9 +708,10 @@ window.switchTabEnhanced = function(tabName) {
       break;
     }
 
-    case 'raw':
+    case 'raw': {
       content.innerHTML = `<pre>${typeof response.data === 'object' ? JSON.stringify(response.data) : response.data}</pre>`;
       break;
+    }
 
     case 'headers': {
       const headersFormatted = Object.entries(response.headers)

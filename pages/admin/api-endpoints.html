@@ -1452,12 +1452,12 @@
       }
 
       // Switch modal tab with enhanced formatting
-      function switchTab(tabName) {
+      function switchTab(tabName, eventTarget = null) {
         const tabs = document.querySelectorAll('.modal-tab');
         const content = document.getElementById('responseContent');
 
         tabs.forEach(tab => tab.classList.remove('active'));
-        event?.target?.classList.add('active') || document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
+        eventTarget?.classList.add('active') || document.querySelector(`[onclick="switchTab('${tabName}', this)"]`).classList.add('active');
 
         if (!currentModal) return;
 
@@ -1760,11 +1760,11 @@
           // Add CSRF token if available - fetch it dynamically for security
           try {
             const csrfResponse = await fetch("/api/admin/csrf-token", {
-              credentials: "include"
+              credentials: "same-origin"
             });
             if (csrfResponse.ok) {
               const csrfData = await csrfResponse.json();
-              headers["X-CSRF-Token"] = csrfData.token;
+              headers["X-CSRF-Token"] = csrfData.token || csrfData.csrfToken;
             }
           } catch (error) {
             console.warn("Could not fetch CSRF token for logout:", error);
@@ -1773,7 +1773,7 @@
           await fetch("/api/admin/login", {
             method: "DELETE",
             headers: headers,
-            credentials: "include"
+            credentials: "same-origin"
           });
         } finally {
           localStorage.removeItem('adminToken');

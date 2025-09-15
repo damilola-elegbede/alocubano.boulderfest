@@ -1465,11 +1465,11 @@
           if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
             try {
               const csrfResponse = await fetch('/api/admin/csrf-token', {
-                credentials: 'include'
+                credentials: 'same-origin'
               });
               if (csrfResponse.ok) {
                 const csrfData = await csrfResponse.json();
-                headers['X-CSRF-Token'] = csrfData.csrfToken || csrfData.token;
+                headers['X-CSRF-Token'] = csrfData.token || csrfData.csrfToken;
               }
             } catch (error) {
               console.warn('Could not fetch CSRF token:', error);
@@ -1814,8 +1814,25 @@
         if (!confirm("Are you sure you want to logout?")) return;
 
         try {
+          const headers = {};
+
+          // Add CSRF token for secure logout
+          try {
+            const csrfResponse = await fetch("/api/admin/csrf-token", {
+              credentials: "same-origin"
+            });
+            if (csrfResponse.ok) {
+              const csrfData = await csrfResponse.json();
+              headers["X-CSRF-Token"] = csrfData.token || csrfData.csrfToken;
+            }
+          } catch (error) {
+            console.warn("Could not fetch CSRF token for logout:", error);
+          }
+
           await fetch("/api/admin/login", {
             method: "DELETE",
+            headers: headers,
+            credentials: "same-origin"
           });
         } finally {
           // Clear client storage
@@ -1827,7 +1844,7 @@
       }
 
       // Interactive Endpoint Manager
-      class EndpointManager {
+      class AdminDashboardEndpointManager {
         constructor() {
           this.baseUrl = window.location.origin;
           this.safeEndpoints = new Set([
@@ -2339,7 +2356,7 @@ Full API docs: /docs/api/README.md
       });
 
       // Initialize endpoint manager
-      const endpointManager = new EndpointManager();
+      const endpointManager = new AdminDashboardEndpointManager();
 
       // Initialize history panel
       responseHistory.updateHistoryPanel();

@@ -66,7 +66,7 @@
 
 /* Enhanced method badges with gradients */
 .endpoint-method.get {
-  background: linear-gradient(135deg, var(--color-success), #16a34a);
+  background: linear-gradient(135deg, var(--color-success), var(--color-success-dark, var(--color-success-700, #16a34a)));
   box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
 }
 
@@ -76,17 +76,17 @@
 }
 
 .endpoint-method.put {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
+  background: linear-gradient(135deg, var(--color-warning, #f59e0b), var(--color-warning-dark, var(--color-warning-600, #d97706)));
   box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
 }
 
 .endpoint-method.delete {
-  background: linear-gradient(135deg, var(--color-error), #b91c1c);
+  background: linear-gradient(135deg, var(--color-error), var(--color-error-dark, var(--color-error-700, #b91c1c)));
   box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
 }
 
 .endpoint-method.patch {
-  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  background: linear-gradient(135deg, var(--color-purple, #8b5cf6), var(--color-purple-dark, var(--color-purple-600, #7c3aed)));
   box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
 }
 
@@ -97,37 +97,37 @@
 }
 
 .endpoint-category.sheets {
-  background: linear-gradient(135deg, #059669, #047857);
+  background: linear-gradient(135deg, var(--color-emerald-600, #059669), var(--color-emerald-700, #047857));
   color: var(--color-text-inverse);
 }
 
 .endpoint-category.tickets {
-  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  background: linear-gradient(135deg, var(--color-purple-dark, var(--color-purple-600, #7c3aed)), var(--color-purple-700, #6d28d9));
   color: var(--color-text-inverse);
 }
 
 .endpoint-category.health {
-  background: linear-gradient(135deg, var(--color-success), #16a34a);
+  background: linear-gradient(135deg, var(--color-success), var(--color-success-dark, var(--color-success-700, #16a34a)));
   color: var(--color-text-inverse);
 }
 
 .endpoint-category.gallery {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
+  background: linear-gradient(135deg, var(--color-warning, #f59e0b), var(--color-warning-dark, var(--color-warning-600, #d97706)));
   color: var(--color-text-inverse);
 }
 
 .endpoint-category.email {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
+  background: linear-gradient(135deg, var(--color-red-500, #ef4444), var(--color-error-600, #dc2626));
   color: var(--color-text-inverse);
 }
 
 .endpoint-category.payments {
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: linear-gradient(135deg, var(--color-emerald-500, #10b981), var(--color-emerald-600, #059669));
   color: var(--color-text-inverse);
 }
 
 .endpoint-category.registration {
-  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  background: linear-gradient(135deg, var(--color-purple, #8b5cf6), var(--color-purple-dark, var(--color-purple-600, #7c3aed)));
   color: var(--color-text-inverse);
 }
 
@@ -677,7 +677,7 @@
   .endpoint-card {
     break-inside: avoid;
     box-shadow: none;
-    border: 1px solid #ccc;
+    border: 1px solid var(--color-gray-300-alpha, #ccc);
   }
 
   .endpoint-card::before {

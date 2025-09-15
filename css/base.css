@@ -90,6 +90,45 @@
   --color-info: var(--color-blue);                 /* Informational states */
   --color-info-light: #eff6ff;                     /* Info background tints */
 
+  /* Extended State Colors - Additional variants for advanced UI needs */
+  --color-success-600: #16a34a;                   /* Medium success green */
+  --color-success-700: #15803d;                   /* Dark success green */
+  --color-success-dark: var(--color-success-700); /* Success dark variant */
+  --color-warning-600: #d97706;                   /* Medium warning orange */
+  --color-warning-700: #b45309;                   /* Dark warning orange */
+  --color-warning-dark: var(--color-warning-700); /* Warning dark variant */
+  --color-error-600: #dc2626;                     /* Medium error red */
+  --color-error-700: #b91c1c;                     /* Dark error red */
+  --color-error-dark: var(--color-error-700);     /* Error dark variant */
+  --color-info-500: #0ea5e9;                      /* Medium info blue */
+  --color-info-600: #0284c7;                      /* Dark info blue */
+  --color-primary-500: var(--color-blue);         /* Primary medium */
+  --color-purple: #8b5cf6;                        /* Purple for categories */
+  --color-purple-600: #7c3aed;                    /* Medium purple */
+  --color-purple-700: #6d28d9;                    /* Dark purple */
+  --color-purple-dark: var(--color-purple-600);   /* Purple dark variant */
+  --color-green: #22c55e;                         /* Alias for success */
+  --color-green-600: #16a34a;                     /* Medium green */
+  --color-green-700: #15803d;                     /* Dark green */
+  --color-green-800: #166534;                     /* Extra dark green */
+  --color-teal-600: #0d9488;                      /* Medium teal */
+  --color-teal-700: #0f766e;                      /* Dark teal */
+  --color-emerald-500: #10b981;                   /* Emerald medium */
+  --color-emerald-600: #059669;                   /* Emerald dark */
+  --color-emerald-700: #047857;                   /* Emerald extra dark */
+  --color-red-500: #ef4444;                       /* Red medium */
+  --color-red-600: var(--color-error-600);        /* Red dark */
+  --color-red-700: var(--color-error-700);        /* Red extra dark */
+  --color-red-800: #991b1b;                       /* Red darkest */
+  --color-amber-500: #f59e0b;                     /* Amber alias for warning */
+  --color-amber-600: var(--color-warning-600);    /* Amber dark */
+  --color-blue-500: #0ea5e9;                      /* Sky blue medium */
+  --color-blue-600: #0284c7;                      /* Sky blue dark */
+  --color-gray-300-alpha: #ccc;                   /* Gray for borders */
+  --color-warning-bg: #856404;                    /* Warning text color */
+  --color-google-blue: #4285f4;                   /* Google brand blue */
+  --color-google-green: #34a853;                  /* Google brand green */
+
   /* Typography Scale
    * Consistent type sizing based on a modular scale for visual harmony */
   --font-size-xs: 0.75rem;     /* 12px - Small labels, captions */
@@ -232,6 +271,45 @@
   --color-error-light: rgba(204, 41, 54, 0.1);        /* Error background */
   --color-info-light: rgba(91, 107, 181, 0.1);        /* Info background */
 
+  /* Extended State Colors - Dark mode variants */
+  --color-success-600: #16a34a;
+  --color-success-700: #15803d;
+  --color-success-dark: var(--color-success-700);
+  --color-warning-600: #d97706;
+  --color-warning-700: #b45309;
+  --color-warning-dark: var(--color-warning-700);
+  --color-error-600: #dc2626;
+  --color-error-700: #b91c1c;
+  --color-error-dark: var(--color-error-700);
+  --color-info-500: #0ea5e9;
+  --color-info-600: #0284c7;
+  --color-primary-500: var(--color-blue);
+  --color-purple: #8b5cf6;
+  --color-purple-600: #7c3aed;
+  --color-purple-700: #6d28d9;
+  --color-purple-dark: var(--color-purple-600);
+  --color-green: #22c55e;
+  --color-green-600: #16a34a;
+  --color-green-700: #15803d;
+  --color-green-800: #166534;
+  --color-teal-600: #0d9488;
+  --color-teal-700: #0f766e;
+  --color-emerald-500: #10b981;
+  --color-emerald-600: #059669;
+  --color-emerald-700: #047857;
+  --color-red-500: #ef4444;
+  --color-red-600: var(--color-error-600);
+  --color-red-700: var(--color-error-700);
+  --color-red-800: #991b1b;
+  --color-amber-500: #f59e0b;
+  --color-amber-600: var(--color-warning-600);
+  --color-blue-500: #0ea5e9;
+  --color-blue-600: #0284c7;
+  --color-gray-300-alpha: #ccc;
+  --color-warning-bg: #856404;
+  --color-google-blue: #4285f4;
+  --color-google-green: #34a853;
+
   /* Shadow Colors - Optimized performance
    * Deeper shadows for proper depth perception on dark backgrounds */
   --shadow-color: rgba(0, 0, 0, 0.3);                 /* Stronger base shadows */
@@ -287,6 +365,45 @@
     --color-warning-light: rgba(251, 191, 36, 0.1);
     --color-error-light: rgba(204, 41, 54, 0.1);
     --color-info-light: rgba(91, 107, 181, 0.1);
+
+    /* Extended State Colors - Auto theme variants */
+    --color-success-600: #16a34a;
+    --color-success-700: #15803d;
+    --color-success-dark: var(--color-success-700);
+    --color-warning-600: #d97706;
+    --color-warning-700: #b45309;
+    --color-warning-dark: var(--color-warning-700);
+    --color-error-600: #dc2626;
+    --color-error-700: #b91c1c;
+    --color-error-dark: var(--color-error-700);
+    --color-info-500: #0ea5e9;
+    --color-info-600: #0284c7;
+    --color-primary-500: var(--color-blue);
+    --color-purple: #8b5cf6;
+    --color-purple-600: #7c3aed;
+    --color-purple-700: #6d28d9;
+    --color-purple-dark: var(--color-purple-600);
+    --color-green: #22c55e;
+    --color-green-600: #16a34a;
+    --color-green-700: #15803d;
+    --color-green-800: #166534;
+    --color-teal-600: #0d9488;
+    --color-teal-700: #0f766e;
+    --color-emerald-500: #10b981;
+    --color-emerald-600: #059669;
+    --color-emerald-700: #047857;
+    --color-red-500: #ef4444;
+    --color-red-600: var(--color-error-600);
+    --color-red-700: var(--color-error-700);
+    --color-red-800: #991b1b;
+    --color-amber-500: #f59e0b;
+    --color-amber-600: var(--color-warning-600);
+    --color-blue-500: #0ea5e9;
+    --color-blue-600: #0284c7;
+    --color-gray-300-alpha: #ccc;
+    --color-warning-bg: #856404;
+    --color-google-blue: #4285f4;
+    --color-google-green: #34a853;
 
     /* Shadow Colors - Darker shadows for dark mode */
     --shadow-color: rgba(0, 0, 0, 0.3);

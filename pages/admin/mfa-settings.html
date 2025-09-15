@@ -374,7 +374,7 @@
       }
       
       // SECURITY: Proper session cleanup helper
-      cleanupSession() {
+      function cleanupSession() {
         // Clear all session-related storage
         localStorage.removeItem("adminToken");
         sessionStorage.clear();
@@ -532,7 +532,7 @@
               method: "POST",
               headers: headers,
               body: JSON.stringify({ deviceName: "Admin Authenticator" }),
-              credentials: "include"
+              credentials: "same-origin"
             },
           );
 
@@ -659,7 +659,7 @@
                 token: code,
                 deviceName: "Admin Authenticator",
               }),
-              credentials: "include"
+              credentials: "same-origin"
             },
           );
 
@@ -739,7 +739,7 @@
             {
               method: "POST",
               headers: headers,
-              credentials: "include"
+              credentials: "same-origin"
             },
           );
 
@@ -870,7 +870,7 @@ Instructions:
           await fetch("/api/admin/login", {
             method: "DELETE",
             headers: headers,
-            credentials: "include"
+            credentials: "same-origin"
           });
         } finally {
           // Clear client storage

@@ -537,12 +537,12 @@
 }
 
 .admin-btn-success::before {
-  background: #16a34a;
+  background: var(--color-success-dark, var(--color-success-700, #16a34a));
 }
 
 .admin-btn-success:hover {
   color: var(--color-text-inverse);
-  border-color: #16a34a;
+  border-color: var(--color-success-dark, var(--color-success-700, #16a34a));
 }
 
 .admin-btn-danger {
@@ -552,12 +552,12 @@
 }
 
 .admin-btn-danger::before {
-  background: #b91c1c;
+  background: var(--color-error-dark, var(--color-error-700, #b91c1c));
 }
 
 .admin-btn-danger:hover {
   color: var(--color-text-inverse);
-  border-color: #b91c1c;
+  border-color: var(--color-error-dark, var(--color-error-700, #b91c1c));
 }
 
 .admin-btn-outline {
@@ -986,7 +986,7 @@
 
 .admin-alert.warning {
   background: rgba(255, 193, 7, 0.1);
-  color: #856404;
+  color: var(--color-warning-bg, #856404);
   border: 1px solid rgba(255, 193, 7, 0.2);
 }
 
@@ -3044,20 +3044,20 @@
 
 /* Apple Wallet specific styling */
 .apple-wallet-card {
-  border-left: 4px solid #000000;
+  border-left: 4px solid var(--color-black, #000000);
 }
 
 .apple-wallet-card::before {
-  background: linear-gradient(90deg, #000000, #333333);
+  background: linear-gradient(90deg, var(--color-black, #000000), var(--color-gray-800, #333333));
 }
 
 /* Google Wallet specific styling */
 .google-wallet-card {
-  border-left: 4px solid #4285f4;
+  border-left: 4px solid var(--color-google-blue, #4285f4);
 }
 
 .google-wallet-card::before {
-  background: linear-gradient(90deg, #4285f4, #34a853);
+  background: linear-gradient(90deg, var(--color-google-blue, #4285f4), var(--color-google-green, #34a853));
 }
 
 /* Ensure wallet cards don't have conflicting borders */
@@ -3087,11 +3087,11 @@
 }
 
 .wallet-card-icon.apple {
-  background: #000000;
+  background: var(--color-black, #000000);
 }
 
 .wallet-card-icon.google {
-  background: #4285f4;
+  background: var(--color-google-blue, #4285f4);
 }
 
 .wallet-card-title {

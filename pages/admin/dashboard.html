@@ -461,7 +461,7 @@
             `/api/admin/registrations?ticketId=${encodeURIComponent(ticketId)}`,
             {
               method: "PUT",
-              credentials: "include", // CRITICAL: Include cookies for production
+              credentials: "same-origin", // CRITICAL: Include cookies for production
               headers: headers,
               body: JSON.stringify({ action: "checkin" }),
             },
@@ -492,7 +492,7 @@
             `/api/admin/registrations?ticketId=${encodeURIComponent(ticketId)}`,
             {
               method: "PUT",
-              credentials: "include", // CRITICAL: Include cookies for production
+              credentials: "same-origin", // CRITICAL: Include cookies for production
               headers: headers,
               body: JSON.stringify({ action: "undo_checkin" }),
             },
@@ -611,7 +611,7 @@
           }
 
           await fetch("/api/admin/login", {
-            credentials: "include", // Include cookies for production
+            credentials: "same-origin", // Include cookies for production
             method: "DELETE",
             headers: headers,
           });
@@ -634,7 +634,7 @@
 
         try {
           const response = await fetch("/api/sheets/sync", {
-            credentials: "include", // Include cookies for production
+            credentials: "same-origin", // Include cookies for production
             method: "POST",
             headers: {
               "Content-Type": "application/json",

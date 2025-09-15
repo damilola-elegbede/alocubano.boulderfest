@@ -29,24 +29,27 @@ async function processImage(inputBuffer, options = {}) {
 
     // Apply format conversion with appropriate quality
     switch (format) {
-      case "avif":
+      case "avif": {
         pipeline = pipeline.avif({
           quality: quality || AVIF_QUALITY,
           effort: 4,
         });
         break;
-      case "webp":
+        }
+      case "webp": {
         pipeline = pipeline.webp({
           quality: quality || WEBP_QUALITY,
           effort: 4,
         });
         break;
-      default:
+        }
+      default: {
         pipeline = pipeline.jpeg({
           quality: quality || JPEG_QUALITY,
           progressive: true,
         });
         break;
+        }
     }
 
     const buffer = await pipeline.toBuffer();
