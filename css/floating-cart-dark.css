@@ -6,27 +6,33 @@
 /* Dark mode floating cart styles */
 [data-theme="dark"] {
   /* Floating Cart Variables - Button variables removed */
-  --floating-cart-bg: rgba(0, 0, 0, 0.95);
-  --floating-cart-border: var(--color-border);
-  --floating-cart-panel-bg: rgba(0, 0, 0, 0.95);
+  --floating-cart-bg: rgba(0, 0, 0, 0.85);
+  --floating-cart-border: rgba(255, 255, 255, 0.1);
+  --floating-cart-panel-bg: rgba(0, 0, 0, 0.85);
   --floating-cart-panel-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   --floating-cart-backdrop: rgba(0, 0, 0, 0.8);
   --floating-cart-item-bg: var(--color-gray-900);
   --floating-cart-item-border: var(--color-border);
-  --floating-cart-header-border: var(--color-border);
-  --floating-cart-footer-border: var(--color-border);
+  --floating-cart-header-border: rgba(255, 255, 255, 0.1);
+  --floating-cart-footer-border: rgba(255, 255, 255, 0.1);
   --floating-cart-clear-button-bg: var(--color-surface-elevated);
   --floating-cart-clear-button-hover: var(--color-error-light);
 
-  /* Override base cart variables for dark mode */
-  --cart-bg: rgba(0, 0, 0, 0.95);
+  /* Override base cart variables for dark mode - ensure consistency */
+  --cart-bg: rgba(0, 0, 0, 0.85) !important;
+  --cart-border: rgba(255, 255, 255, 0.1);
   --cart-text: var(--color-white);
   --cart-text-secondary: var(--color-gray-300);
+  --cart-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 }
 
 /* Floating Cart Container */
 [data-theme="dark"] .floating-cart-container {
-  /* Container is positioned fixed, no background needed */
+  /* Override any media query rules with higher specificity */
+  --cart-bg: rgba(0, 0, 0, 0.85) !important;
+  --cart-border: rgba(255, 255, 255, 0.1) !important;
+  --cart-text: var(--color-white) !important;
+  --cart-text-secondary: var(--color-gray-300) !important;
 }
 
 /* Button and badge styles removed - header cart only */
@@ -120,13 +126,12 @@
 /* Cart Item */
 [data-theme="dark"] .cart-item {
   background: var(--floating-cart-item-bg);
-  border: 1px solid var(--floating-cart-item-border);
+  border: none;
   border-radius: 6px;
 }
 
 [data-theme="dark"] .cart-item:hover {
   background: var(--color-surface-elevated);
-  border-color: var(--color-blue);
   box-shadow: 0 2px 8px var(--shadow-color-light);
 }
 
@@ -366,10 +371,7 @@
     border-width: 2px;
   }
 
-  [data-theme="dark"] .cart-item {
-    border-width: 2px;
-    border-color: var(--color-text-primary);
-  }
+  /* Cart item borders removed for cleaner look */
 
   [data-theme="dark"] .qty-adjust {
     border-width: 2px;
