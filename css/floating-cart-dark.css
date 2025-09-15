@@ -100,7 +100,7 @@
 
 /* Cart Items */
 [data-theme="dark"] .cart-items {
-  background: var(--floating-cart-panel-bg);
+  background: transparent;
 }
 
 /* Cart Category Headers */
