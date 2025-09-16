@@ -256,13 +256,8 @@ class VercelDeploymentManager {
     console.log('-'.repeat(40));
 
     try {
-      // Check if Vercel CLI is installed
-      try {
-        execSync('npx vercel --version', { stdio: 'ignore' });
-      } catch {
-        console.log('📥 Installing Vercel CLI...');
-        execSync('npm install -g vercel', { stdio: 'inherit' });
-      }
+      // Ensure CLI is available (uses the pinned devDependency)
+      execSync('npx --yes vercel --version', { stdio: 'ignore' });
 
       // Build the deployment command
       let deployCommand = 'npx vercel deploy';

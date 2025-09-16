@@ -109,7 +109,7 @@ describe('Gallery API Integration Tests', () => {
             expect(result2023.source).toMatch(/runtime-generated|google-drive/);
           } catch (error) {
             // Expected if 2023 year doesn't exist in Google Drive
-            expect(error.message).toMatch(/No gallery found for year 2023|FATAL.*secret not configured/);
+            expect(error.message).toMatch(/No gallery found for year 2023/);
           }
         }
       }
@@ -211,12 +211,13 @@ describe('Gallery API Integration Tests', () => {
         // If featured photos fails, it should be for specific reasons:
         // 1. No cache file AND unable to generate from gallery data
         // 2. Gallery data generation fails due to missing credentials
-        
+
         const hasCredentials = hasGoogleDriveCredentials();
         if (!hasCredentials) {
           // Without credentials, should only fail if no cache AND no real gallery cache available
-          // But now with graceful degradation, this might not throw an error
-          expect(error.message).toMatch(/FATAL.*secret not configured|Google Drive credentials not configured/);
+          // With graceful degradation, this should now return empty fallback instead of throwing
+          // If we still get an error here, it means the graceful degradation isn't working as expected
+          expect(error.message).toMatch(/Google Drive credentials not configured/);
         } else {
           // With credentials, should not fail unless Google Drive has issues
           throw error; // Re-throw unexpected errors
@@ -671,9 +672,9 @@ describe('Gallery API Integration Tests', () => {
             // If cache exists but still fails, it's unexpected
             throw new Error(`Featured photos should work with cache file present: ${error.message}`);
           } catch (cacheError) {
-            // No cache file - failure might happen without credentials, but with graceful degradation
-            // the gallery service itself might return empty data instead of failing
-            expect(error.message).toMatch(/FATAL.*secret not configured|Google Drive credentials not configured/);
+            // No cache file - with graceful degradation, this should return empty fallback instead of failing
+            // If we still get an error here, it should only be the expected graceful message
+            expect(error.message).toMatch(/Google Drive credentials not configured/);
           }
         } else {
           // With credentials, should not fail unless Google Drive has issues
