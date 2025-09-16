@@ -120,43 +120,38 @@ async function runVercelBuild() {
       log(`   Executed migrations: ${status.executed}`, colors.cyan);
       log(`   Pending migrations: ${status.pending}`, colors.cyan);
 
-      // Verify critical tables exist even if migrations claim to be complete
-      try {
-        const client = await migration.db.ensureInitialized();
-        const tableCheck = await client.execute(
-          "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('tickets', 'transactions', 'registrations', 'events') ORDER BY name"
-        );
+      // Only verify and potentially re-run if we have executed migrations
+      // Don't do this check on fresh databases
+      if (status.executed > 0) {
+        try {
+          const client = await migration.db.ensureInitialized();
+          const tableCheck = await client.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('tickets', 'transactions', 'registrations', 'events') ORDER BY name"
+          );
 
-        const existingTables = tableCheck.rows.map(r => r.name);
-        const expectedTables = ['events', 'registrations', 'tickets', 'transactions'];
-        const missingTables = expectedTables.filter(t => !existingTables.includes(t));
+          const existingTables = tableCheck.rows.map(r => r.name);
+          const expectedTables = ['events', 'registrations', 'tickets', 'transactions'];
+          const missingTables = expectedTables.filter(t => !existingTables.includes(t));
 
-        if (missingTables.length > 0) {
-          log("", colors.red);
-          log("⚠️  WARNING: Database inconsistency detected!", colors.yellow);
-          log(`   Migrations table shows ${status.executed} completed`, colors.yellow);
-          log(`   But critical tables are missing: ${missingTables.join(', ')}`, colors.red);
-          log("", colors.red);
-          log("🔧 Attempting to force re-run migrations...", colors.yellow);
-
-          // Force re-run migrations by clearing the migrations table
-          await client.execute("DELETE FROM migrations");
-          log("   Cleared migration tracking table", colors.cyan);
-
-          // Re-run all migrations
-          const result = await migration.runMigrations();
-          migrationResult = result;
-
-          log("");
-          log("✅ Forced migration re-run completed!", colors.green);
-          log(`   Executed: ${result.executed} migration(s)`, colors.cyan);
-          log(`   Skipped: ${result.skipped} migration(s)`, colors.cyan);
-        } else {
-          log("✅ Database structure verified - all critical tables exist", colors.green);
+          if (missingTables.length > 0) {
+            log("", colors.red);
+            log("⚠️  WARNING: Database inconsistency detected!", colors.yellow);
+            log(`   Migrations table shows ${status.executed} completed`, colors.yellow);
+            log(`   But critical tables are missing: ${missingTables.join(', ')}`, colors.red);
+            log(`   This should not happen - please check the migration files`, colors.red);
+            // DON'T automatically clear and re-run - this might cause issues
+            // Just report the problem
+            process.exit(1);
+          } else {
+            log("✅ Database structure verified - all critical tables exist", colors.green);
+            migrationResult.skipped = status.executed;
+          }
+        } catch (verifyError) {
+          log("⚠️  Could not verify table existence: " + verifyError.message, colors.yellow);
           migrationResult.skipped = status.executed;
         }
-      } catch (verifyError) {
-        log("⚠️  Could not verify table existence: " + verifyError.message, colors.yellow);
+      } else {
+        log("📌 Fresh database - skipping consistency check", colors.cyan);
         migrationResult.skipped = status.executed;
       }
     } else {

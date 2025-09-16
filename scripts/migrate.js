@@ -405,12 +405,17 @@ class MigrationSystem {
         throw new Error(`Migration filename is invalid: ${migration.filename}`);
       }
       
-      await client.execute(
-        "INSERT INTO migrations (filename, checksum) VALUES (?, ?)",
-        [migration.filename, checksum],
-      );
-
-      console.log(`✅ Migration completed: ${migration.filename}`);
+      try {
+        await client.execute(
+          "INSERT OR REPLACE INTO migrations (filename, checksum, executed_at) VALUES (?, ?, datetime('now'))",
+          [migration.filename, checksum],
+        );
+        console.log(`✅ Migration completed and recorded: ${migration.filename}`);
+      } catch (insertError) {
+        console.error(`⚠️  Failed to record migration in tracking table: ${insertError.message}`);
+        // Don't fail the entire migration if we can't record it
+        // The migration itself succeeded
+      }
     } catch (error) {
       // Enhanced error reporting for migration failures
       const errorDetails = {
