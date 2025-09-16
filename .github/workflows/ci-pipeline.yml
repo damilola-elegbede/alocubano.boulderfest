@@ -506,4 +506,4 @@ jobs:
             echo ""
             echo "ℹ️  Note: E2E tests are handled separately and do not block this pipeline"
             exit 1
-          fi
+          fi# Trigger fresh CI run
