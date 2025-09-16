@@ -1,7 +1,7 @@
 {
   "outputDirectory": ".",
   "framework": null,
-  "buildCommand": "echo '🔥🔥🔥 RUNNING UPDATED BUILD SCRIPT v2 🔥🔥🔥' && npm run migrate:vercel",
+  "buildCommand": "npm run migrate:vercel && npm run build",
   "crons": [
     {
       "path": "/api/sheets/scheduled-sync",
