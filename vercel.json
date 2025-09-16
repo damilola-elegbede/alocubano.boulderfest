@@ -28,11 +28,11 @@
     },
     {
       "source": "/gallery-data/:path*",
-      "destination": "/public/gallery-data/:path*"
+      "destination": "/gallery-data/:path*"
     },
     {
       "source": "/featured-photos.json",
-      "destination": "/public/featured-photos.json"
+      "destination": "/featured-photos.json"
     },
     {
       "source": "/",
