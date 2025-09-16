@@ -63,19 +63,19 @@ Use the built-in dashboard viewer to analyze test reliability:
 
 ```bash
 # View dashboard summary
-npm run test:stability
+npm run test:e2e
 
 # Generate fresh dashboard data
-npm run test:stability:generate
+npm run test:e2e:generate
 
 # View only flaky tests
-npm run test:stability:flaky
+npm run test:e2e:flaky
 
 # View performance regressions
-npm run test:stability:performance
+npm run test:e2e:performance
 
 # View recommendations
-npm run test:stability:recommendations
+npm run test:e2e:recommendations
 ```
 
 ## Advanced Usage
@@ -216,11 +216,11 @@ Monitoring data is stored in `.tmp/e2e-monitoring/`:
 
 | Command | Description |
 |---------|-------------|
-| `npm run test:stability` | View dashboard summary |
-| `npm run test:stability:generate` | Generate fresh dashboard data |
-| `npm run test:stability:flaky` | Show flaky tests only |
-| `npm run test:stability:performance` | Show performance regressions |
-| `npm run test:stability:recommendations` | Show actionable recommendations |
+| `npm run test:e2e` | View dashboard summary |
+| `npm run test:e2e:generate` | Generate fresh dashboard data |
+| `npm run test:e2e:flaky` | Show flaky tests only |
+| `npm run test:e2e:performance` | Show performance regressions |
+| `npm run test:e2e:recommendations` | Show actionable recommendations |
 
 ### Command Line Options
 
@@ -244,7 +244,7 @@ node scripts/view-test-stability.js --help
 
 1. **No dashboard data found**
    - Run tests to generate data: `npm run test:e2e`
-   - Or generate manually: `npm run test:stability:generate`
+   - Or generate manually: `npm run test:e2e:generate`
 
 2. **Environment consistency failures**
    - Check for system changes (Node version, Git branch)

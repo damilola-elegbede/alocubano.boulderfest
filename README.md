@@ -33,7 +33,7 @@ The official website for **A Lo Cubano Boulder Fest**, Boulder's premier Cuban s
    ```bash
    # Copy environment template
    cp .env.example .env.local
-   
+
    # Edit .env.local with your configuration
    # See INSTALLATION.md for detailed setup instructions
    ```
@@ -42,16 +42,16 @@ The official website for **A Lo Cubano Boulder Fest**, Boulder's premier Cuban s
 
    ```bash
    # Development server with full API support
-   npm run dev
+   npm run vercel:dev
    ```
 
 5. **Open in browser**: http://localhost:3000
 
 ## 📅 Festival Information
 
-**Dates**: May 15-17, 2026 (Friday-Sunday)  
-**Location**: Avalon Ballroom, 6185 Arapahoe Rd, Boulder, CO  
-**Contact**: alocubanoboulderfest@gmail.com  
+**Dates**: May 15-17, 2026 (Friday-Sunday)
+**Location**: Avalon Ballroom, 6185 Arapahoe Rd, Boulder, CO
+**Contact**: alocubanoboulderfest@gmail.com
 **Instagram**: [@alocubano.boulderfest](https://www.instagram.com/alocubano.boulderfest/)
 
 ## 🎨 Design Philosophy
@@ -150,40 +150,37 @@ alocubano.boulderfest/
 
 ### Streamlined npm Scripts
 
-The project has been optimized from 199 complex scripts to **15 essential commands**:
+The project uses essential commands for all development needs:
 
 ```bash
 # Core Development
-npm run dev                    # Development server with ngrok tunnel
+npm run vercel:dev             # Development server with ngrok tunnel
 npm run build                  # Production build
-npm run preview                # Vercel preview deployment
+npm run vercel:preview         # Vercel preview deployment
 
 # Testing (Streamlined)
 npm test                       # Unit tests (fast execution)
 npm run test:integration       # Integration tests
 npm run test:e2e               # E2E tests with Vercel Preview Deployments
-npm run test:watch             # Watch mode for development
 npm run test:coverage          # Coverage reports
 
-# Quality & Deployment
+# Quality & Build Verification
 npm run lint                   # Code quality (ESLint + HTMLHint + Markdown)
-npm run deploy                 # Production deployment
-npm run health                 # Health checks
+npm run verify-structure       # Verify project structure (via build)
 
 # Database Management
 npm run migrate:up             # Run database migrations
 npm run migrate:status         # Check migration status
-npm run db:shell               # SQLite shell access
 
 # Utilities
-npm start                      # Alias for npm run dev
+npm start                      # Alias for npm run vercel:dev
 ```
 
 ## 🧪 Testing Strategy
 
-### Radical Simplification Achievement
+### Streamlined Testing Achievement
 
-We've achieved a **dramatic simplification** by eliminating complex test infrastructure:
+We've achieved a **dramatic simplification** by focusing on essential testing:
 
 - **Streamlined execution**: Single commands for all test types
 - **Fast feedback**: Complete test suite runs quickly
@@ -195,7 +192,6 @@ We've achieved a **dramatic simplification** by eliminating complex test infrast
 ```bash
 # Unit Testing
 npm test                       # Run all unit tests
-npm run test:watch             # Watch mode for development
 npm run test:coverage          # Generate coverage reports
 
 # Integration Testing
@@ -203,7 +199,6 @@ npm run test:integration       # Integration test suite
 
 # E2E Testing (Vercel Preview Deployments)
 npm run test:e2e               # Full E2E test suite
-npm run health                 # API health verification
 ```
 
 ### Database Strategy
@@ -245,8 +240,7 @@ npm run test:e2e               # E2E test validation
 
 # Deployment Pipeline
 npm run build                  # Production build
-npm run deploy                 # Production deployment
-npm run preview                # Preview deployment
+npm run vercel:preview         # Preview deployment
 ```
 
 #### Performance Benchmarks
@@ -264,10 +258,6 @@ npm run preview                # Preview deployment
 # Migrations
 npm run migrate:up             # Run pending migrations
 npm run migrate:status         # Check migration status
-
-# Database access
-npm run db:shell               # SQLite shell
-npm run health                 # Health check
 ```
 
 ## 📱 Browser Support
@@ -301,7 +291,6 @@ npm run health                 # Health check
 
 - [Main API Documentation](/docs/api/README.md) - Gallery, performance, and core APIs
 - [Registration API](/docs/api/REGISTRATION_API.md) - Ticket registration system endpoints
-- [Async Initialization Guide](/docs/ASYNC_INITIALIZATION_GUIDE.md) - Database service patterns
 
 ### Setup Documentation
 
@@ -319,30 +308,40 @@ npm run health                 # Health check
 - **E2E Testing**: Comprehensive browser automation with Vercel Preview Deployments
 - **Admin Panel**: Complete administration dashboard with security features
 
-## Migration Notes
+## Streamlined Development Experience
 
-### Breaking Changes - Script Simplification
+### Current Essential Scripts
 
-**What Changed:**
+The project focuses on the commands you actually need:
 
-- **Reduced complexity**: From 199 scripts to 15 essential commands
-- **Standardized naming**: Clear, consistent command naming conventions
-- **Simplified testing**: Single commands for each test type
-- **Modern E2E approach**: All E2E testing uses Vercel Preview Deployments
+```bash
+# Core Development
+npm run vercel:dev             # Development server with ngrok tunnel
+npm start                      # Alias for npm run vercel:dev
+npm run build                  # Production build
+npm run vercel:preview         # Vercel preview deployment
 
-**Migration Required:**
+# Testing Suite
+npm test                       # Unit tests (fast execution)
+npm run test:integration       # Integration tests
+npm run test:e2e               # E2E tests with Vercel Preview Deployments
+npm run test:coverage          # Coverage reports
 
-1. **Update development workflows**: Use `npm run dev` for development
-2. **Update testing commands**: Use `npm test` for unit tests
-3. **Update E2E testing**: Use `npm run test:e2e` (Vercel Preview Deployments)
-4. **Update CI/CD pipelines**: Ensure workflows use current script names
+# Quality & Build Verification
+npm run lint                   # Complete code quality (ESLint + HTMLHint + Markdown)
+npm run verify-structure       # Verify project structure (via build)
+
+# Database Management
+npm run migrate:up             # Run database migrations
+npm run migrate:status         # Check migration status
+```
 
 **Benefits:**
 
-- **Simplified development**: Clear purpose for each command
-- **Faster onboarding**: Predictable script names following standard conventions
-- **Reduced confusion**: No duplicate commands or conflicting approaches
-- **Better maintenance**: Fewer scripts to maintain and update
+- **Clear purpose**: Each script has a single, well-defined responsibility
+- **Simplified workflow**: Focus on Vercel Preview Deployments for E2E testing
+- **Predictable naming**: Standard command naming conventions
+- **Essential only**: Only the commands needed for development
 
 ## 🎪 About the Festival
 

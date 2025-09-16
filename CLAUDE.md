@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## A Lo Cubano Boulder Fest - Cuban Salsa Festival Website
 
-**Festival Dates**: May 15-17, 2026  
+**Festival Dates**: May 15-17, 2026
 **Location**: Avalon Ballroom, Boulder, CO
 
 ## Critical Development Rules
@@ -27,23 +27,21 @@ npm test && git push
 
 ```bash
 # Development server
-npm run dev                     # Development server with ngrok tunnel
-npm start                       # Alias for npm run dev
+npm run vercel:dev              # Development server with ngrok tunnel
+npm start                       # Alias for npm run vercel:dev
 
 # Build and deployment
 npm run build                   # Production build (Vercel)
-npm run preview                 # Vercel preview deployment
-npm run deploy                  # Production deployment
+npm run vercel:preview          # Vercel preview deployment
 ```
 
 ### Testing
 
 ```bash
-# Streamlined Test Suite (15 Essential Scripts)
+# Streamlined Test Suite
 npm test                        # Unit tests (fast execution)
 npm run test:integration        # Integration tests
 npm run test:e2e                # E2E tests with Vercel Preview Deployments
-npm run test:watch              # Watch mode for development
 npm run test:coverage           # Generate coverage reports
 
 # Individual E2E test flows - Run specific tests:
@@ -67,19 +65,13 @@ npm run test:e2e -- tests/e2e/flows/user-engagement.test.js                 # Us
 # Database migrations
 npm run migrate:up              # Run pending migrations
 npm run migrate:status          # Check migration status
-
-# Database access
-npm run db:shell                # SQLite shell access
 ```
 
-### Quality & Deployment
+### Quality & Build Verification
 
 ```bash
 # Code quality
 npm run lint                    # ESLint + HTMLHint + Markdown linting
-
-# Health monitoring
-npm run health                  # Run health checks
 
 # Build verification
 npm run verify-structure        # Verify project structure (via build)
@@ -128,10 +120,10 @@ npm run verify-structure        # Verify project structure (via build)
 
 **Revolutionary Script Simplification**:
 
-- **From 199 to 15 scripts**: Eliminated complexity and redundancy
-- **Essential commands only**: Focus on core development workflows
+- **Simplified commands**: Focus on core development workflows
+- **Essential commands only**: Clear purpose for each script
 - **Modern E2E approach**: E2E tests use **Vercel Preview Deployments**
-- **Benefits**: 
+- **Benefits**:
   - Simplified developer experience
   - Faster onboarding
   - Reduced maintenance burden
@@ -164,13 +156,13 @@ class AsyncService {
     if (this.initialized && this.instance) {
       return this.instance; // Fast path
     }
-    
+
     if (this.initializationPromise) {
       return this.initializationPromise; // Wait for existing
     }
-    
+
     this.initializationPromise = this._performInitialization();
-    
+
     try {
       return await this.initializationPromise;
     } catch (error) {
@@ -248,7 +240,7 @@ TEST_ADMIN_PASSWORD=     # Plain text password for admin panel E2E testing (not 
 E2E_STARTUP_TIMEOUT=     # Server startup timeout in ms (default: 60000)
 E2E_TEST_TIMEOUT=        # Individual test timeout in ms (default: varies by scenario)
 E2E_ACTION_TIMEOUT=      # Action timeout (clicks, inputs) in ms (default: varies by scenario)
-E2E_NAVIGATION_TIMEOUT=  # Page navigation timeout in ms (default: varies by scenario) 
+E2E_NAVIGATION_TIMEOUT=  # Page navigation timeout in ms (default: varies by scenario)
 E2E_WEBSERVER_TIMEOUT=   # Webserver startup timeout in ms (default: varies by scenario)
 E2E_EXPECT_TIMEOUT=      # Expect assertion timeout in ms (default: varies by scenario)
 E2E_HEALTH_CHECK_INTERVAL= # Health check interval in ms (default: 2000)
@@ -343,7 +335,7 @@ Features:
 - **Unit Test Suite**: Essential tests covering critical functionality
   - api-contracts.test.js - API contract validation
   - basic-validation.test.js - Input validation and security
-  - smoke-tests.test.js - Basic functionality verification  
+  - smoke-tests.test.js - Basic functionality verification
   - registration-api.test.js - Registration API unit tests
   - registration-flow.test.js - Registration flow tests
 - **Integration Test Suite**: Service and API integration validation
@@ -448,62 +440,44 @@ console.log("Theme performance:", getPerformanceMetrics());
 └── config/             # ESLint, HTMLHint configs
 ```
 
-## Streamlined Script Revolution
+## Streamlined Script System
 
-### Complete Script Optimization (Breaking Change)
+### Current Essential Scripts
 
-**What Changed:**
-
-- **Radical simplification**: From 199 complex scripts to 15 essential commands
-- **Clear purpose**: Each script has a single, well-defined responsibility
-- **Modern workflow**: Focus on Vercel Preview Deployments for E2E testing
-- **Developer experience**: Predictable, standard command naming conventions
-
-**Current Essential Scripts (Complete List):**
+The project uses a streamlined set of commands for all development needs:
 
 ```bash
-# Core Development (4 scripts)
-npm run dev                     # Development server with ngrok tunnel
-npm start                       # Alias for npm run dev
+# Core Development
+npm run vercel:dev              # Development server with ngrok tunnel
+npm start                       # Alias for npm run vercel:dev
 npm run build                   # Production build (Vercel)
-npm run preview                 # Vercel preview deployment
+npm run vercel:preview          # Vercel preview deployment
 
-# Testing Suite (5 scripts)
+# Testing Suite
 npm test                        # Unit tests (fast execution)
 npm run test:integration        # Integration tests
 npm run test:e2e                # E2E tests with Vercel Preview Deployments
-npm run test:watch              # Watch mode for development
 npm run test:coverage           # Coverage reports
 
-# Quality & Deployment (3 scripts)
+# Quality & Build Verification
 npm run lint                    # Complete code quality (ESLint + HTMLHint + Markdown)
-npm run deploy                  # Production deployment
-npm run health                  # Health checks
+npm run verify-structure        # Verify project structure (via build)
 
-# Database Management (3 scripts)
+# Database Management
 npm run migrate:up              # Run database migrations
 npm run migrate:status          # Check migration status
-npm run db:shell                # SQLite shell access
 ```
 
 **Benefits:**
 
-- **Zero confusion**: No duplicate commands or conflicting approaches
-- **Faster onboarding**: New developers understand the workflow immediately
-- **Better maintenance**: Fewer scripts to maintain, document, and troubleshoot
-- **Standard conventions**: Predictable naming following npm best practices
-- **Focus on essentials**: Only the commands you actually need for development
-
-**Migration Impact:**
-
-- **No legacy scripts**: All deprecated commands removed
-- **Clean slate**: Fresh, purposeful command structure
-- **Modern approach**: Embraces Vercel Preview Deployments for testing
-- **Simplified CI/CD**: Easier to configure and maintain automated workflows
+- **Clear purpose**: Each script has a single, well-defined responsibility
+- **Simplified workflow**: Focus on Vercel Preview Deployments for E2E testing
+- **Predictable naming**: Standard command naming conventions
+- **Essential only**: Only the commands needed for development
 
 ## Contact & Resources
 
-**Email**: alocubanoboulderfest@gmail.com  
+**Email**: alocubanoboulderfest@gmail.com
 **Instagram**: [@alocubano.boulderfest](https://www.instagram.com/alocubano.boulderfest/)
 
 **Documentation**:
@@ -512,5 +486,4 @@ npm run db:shell                # SQLite shell access
 - [Security Policy](SECURITY.md)
 - [Changelog](CHANGELOG.md)
 - [Theme System Guide](docs/THEME_SYSTEM.md)
-- [Async Initialization Guide](/docs/ASYNC_INITIALIZATION_GUIDE.md)
 - [API Documentation](/docs/api/README.md)

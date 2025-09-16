@@ -93,15 +93,15 @@ The CI mock server now includes comprehensive health check functionality:
 - **Memory Monitoring** - Real-time memory usage tracking
 - **Status Tracking** - Server state transitions from "starting" to "healthy"
 
-### Wait Helper Script
-Use `npm run test:wait-mock` or `node scripts/wait-for-mock-server.js` to wait for server readiness:
+### Health Check Script
+Use health check endpoints to verify server readiness:
 
 ```bash
-# Wait for server with default settings
-npm run test:wait-mock
+# Check server health
+npm run health
 
-# Wait with custom timeout and detailed health info
-node scripts/wait-for-mock-server.js --timeout 60 --health-endpoint
+# Run basic health validation
+curl http://localhost:3000/api/health/check
 
 # Silent mode for CI scripts
 node scripts/wait-for-mock-server.js --quiet
