@@ -129,13 +129,17 @@ async function runVercelBuild() {
       const verification = await migration.verifyMigrations();
 
       if (verification.checksumErrors > 0 || verification.missingFiles.length > 0) {
-        log("⚠️  WARNING: Migration verification found issues:", colors.yellow);
+        log("❌ CRITICAL: Migration verification failed!", colors.red);
         if (verification.checksumErrors > 0) {
-          log(`   - Checksum errors: ${verification.checksumErrors}`, colors.yellow);
+          log(`   - Checksum errors: ${verification.checksumErrors}`, colors.red);
         }
         if (verification.missingFiles.length > 0) {
-          log(`   - Missing files: ${verification.missingFiles.join(", ")}`, colors.yellow);
+          log(`   - Missing files: ${verification.missingFiles.join(", ")}`, colors.red);
         }
+        log("");
+        log("🛑 Failing build due to migration integrity issues", colors.red);
+        log("   Production deployments require verified migrations", colors.red);
+        process.exit(1);
       } else {
         log("✅ Migration integrity verified", colors.green);
       }

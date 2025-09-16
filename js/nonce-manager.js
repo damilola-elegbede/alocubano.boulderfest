@@ -65,8 +65,8 @@ class NonceManager {
       return nonce;
     } catch (error) {
       console.error('Error fetching nonce:', error);
-      // Return a fallback nonce (this should not be used in production CSP)
-      return 'fallback-nonce-' + Math.random().toString(36).substr(2, 9);
+      // Fail safely - don't return a predictable nonce
+      throw new Error('Failed to fetch CSP nonce: ' + error.message);
     } finally {
       this.noncePromise = null;
     }
