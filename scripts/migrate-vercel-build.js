@@ -45,7 +45,10 @@ async function runVercelBuild() {
 
   let migrationResult = { executed: 0, skipped: 0 }; // Track migration results
 
-  logSection("VERCEL BUILD PROCESS", "🚀");
+  logSection("VERCEL BUILD PROCESS v2", "🚀");
+  log(`📍 Script Version: 2.0 (with consistency check)`, colors.magenta);
+  log(`📍 Commit: ${process.env.VERCEL_GIT_COMMIT_SHA?.substring(0, 8) || 'unknown'}`, colors.magenta);
+  log("");
 
   log("📋 Build Environment Information:", colors.bright);
   log(`   Environment Type: ${vercelEnv || 'unknown'}`, colors.cyan);
