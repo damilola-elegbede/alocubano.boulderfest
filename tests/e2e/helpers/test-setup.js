@@ -9,7 +9,7 @@ import { validateSecretsForTestFile, quickValidateBasicSecrets } from '../secret
 
 /**
  * Setup function to be called at the beginning of each test file
- * 
+ *
  * @param {Object} options - Setup options
  * @param {Array<string>} options.testTypes - Types of tests in this file
  * @param {boolean} options.requireSecrets - Whether to fail on missing secrets
@@ -23,6 +23,18 @@ export function setupTest(options = {}) {
     testFile = ''
   } = options;
 
+  // Skip secret validation when running against Vercel preview deployments
+  const isPreviewMode = process.env.PREVIEW_URL || process.env.CI_EXTRACTED_PREVIEW_URL;
+  if (isPreviewMode) {
+    console.log('✅ Running against Vercel preview deployment - skipping local secret validation');
+    return {
+      passed: true,
+      secrets: null,
+      canRunTests: true,
+      isPreviewMode: true
+    };
+  }
+
   // Quick validation for basic secrets
   if (!quickValidateBasicSecrets()) {
     if (requireSecrets) {
@@ -35,11 +47,11 @@ export function setupTest(options = {}) {
   if (testFile) {
     try {
       const validation = validateSecretsForTestFile(testFile);
-      
+
       if (!validation.passed && requireSecrets) {
         throw new Error(`Secret validation failed for test file: ${testFile}`);
       }
-      
+
       return {
         passed: validation.passed,
         secrets: validation,

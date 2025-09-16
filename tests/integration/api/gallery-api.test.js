@@ -337,8 +337,11 @@ describe('Gallery API Integration Tests', () => {
       
       // Test non-existent year
       if (!hasCredentials) {
-        // Should fail fast if no cache and no credentials
-        await expect(galleryService.getGalleryData('1999')).rejects.toThrow(/FATAL.*secret not configured/);
+        // Should now gracefully return empty data when no credentials
+        const emptyData = await galleryService.getGalleryData('1999');
+        expect(emptyData).toBeDefined();
+        expect(emptyData.totalCount).toBe(0);
+        expect(emptyData.source).toMatch(/empty-fallback|error-fallback/);
       } else {
         // With credentials, should attempt runtime generation and get meaningful error
         try {
@@ -456,15 +459,21 @@ describe('Gallery API Integration Tests', () => {
           expect(result.totalCount).toBeGreaterThan(0);
         }
         
-        // Test 2: Placeholder cache should fail fast
+        // Test 2: Placeholder cache should now gracefully return empty data
         const cache2023 = await getCacheFileContent('2023.json');
         if (cache2023 && cache2023.isPlaceholder) {
-          await expect(galleryService.getGalleryData('2023')).rejects.toThrow(/FATAL.*secret not configured/);
+          const emptyData = await galleryService.getGalleryData('2023');
+          expect(emptyData).toBeDefined();
+          expect(emptyData.totalCount).toBe(0);
+          expect(emptyData.source).toMatch(/empty-fallback|error-fallback/);
         }
-        
-        // Test 3: Non-existent cache should fail fast (forces runtime generation)
-        // Without credentials, should fail at credentials check before attempting API calls
-        await expect(galleryService.getGalleryData('1999')).rejects.toThrow(/FATAL.*secret not configured/);
+
+        // Test 3: Non-existent cache should now gracefully return empty data
+        // Without credentials, should return empty data instead of failing
+        const emptyData = await galleryService.getGalleryData('1999');
+        expect(emptyData).toBeDefined();
+        expect(emptyData.totalCount).toBe(0);
+        expect(emptyData.source).toMatch(/empty-fallback|error-fallback/);
         
       } finally {
         // Restore environment variables

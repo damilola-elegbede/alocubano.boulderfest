@@ -516,22 +516,29 @@ function getValueDisplay(secretName, value) {
  * Quick validation for basic E2E test startup
  */
 export function quickValidateBasicSecrets() {
+  // Skip validation when running against Vercel preview deployments
+  const isPreviewMode = process.env.PREVIEW_URL || process.env.CI_EXTRACTED_PREVIEW_URL;
+  if (isPreviewMode) {
+    console.log('✅ Preview mode detected - skipping local secret validation');
+    return true;
+  }
+
   console.log('⚡ Quick secret validation for basic E2E tests...');
-  
+
   const basicSecrets = [
     'NODE_ENV',
     'TEST_ADMIN_PASSWORD',
     'ADMIN_SECRET'
   ];
-  
+
   const missing = [];
-  
+
   basicSecrets.forEach(secret => {
     if (!process.env[secret]) {
       missing.push(secret);
     }
   });
-  
+
   if (missing.length > 0) {
     console.log(`❌ Missing basic secrets: ${missing.join(', ')}`);
     return false;
