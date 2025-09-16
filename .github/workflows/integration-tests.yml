@@ -170,28 +170,29 @@ jobs:
       - name: "🗃️ Setup SQLite Database"
         env:
           NODE_ENV: test
-          DATABASE_URL: "file:./data/integration-tests.db"
+          DATABASE_URL: "file:./data/test-integration.db"
+          INTEGRATION_DATABASE_URL: "file:./data/test-integration.db"
           CI: true
         run: |
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "🗃️ Setting up Integration Test Database"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "🗃️ Database URL: $DATABASE_URL"
-          
+
           # Create data directory if it doesn't exist
           mkdir -p data
-          
+
           # Remove any existing integration test database
-          rm -f data/integration-tests.db
-          
+          rm -f data/test-integration.db
+
           # Run database migrations
           echo "🔄 Running database migrations..."
           node scripts/migrate.js
-          
+
           # Verify database creation
-          if [ -f "data/integration-tests.db" ]; then
+          if [ -f "data/test-integration.db" ]; then
             echo "✅ Integration test database created successfully"
-            echo "📊 Database size: $(du -h data/integration-tests.db | cut -f1)"
+            echo "📊 Database size: $(du -h data/test-integration.db | cut -f1)"
           else
             echo "❌ Failed to create integration test database"
             exit 1
@@ -228,7 +229,8 @@ jobs:
           cat > .env.local << EOF
           NODE_ENV=test
           CI=true
-          DATABASE_URL="file:./data/integration-tests.db"
+          DATABASE_URL="file:./data/test-integration.db"
+          INTEGRATION_DATABASE_URL="file:./data/test-integration.db"
           
           # Pass secrets from GitHub (fail-fast if not configured)
           TEST_ADMIN_PASSWORD=${TEST_ADMIN_PASSWORD}
@@ -436,7 +438,8 @@ jobs:
         id: integration-test
         env:
           NODE_ENV: test
-          DATABASE_URL: "file:./data/integration-tests.db"
+          DATABASE_URL: "file:./data/test-integration.db"
+          INTEGRATION_DATABASE_URL: "file:./data/test-integration.db"
           CI: true
           # Pass secrets from GitHub - Admin Authentication
           TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
@@ -534,7 +537,7 @@ jobs:
         if: always()
         run: |
           echo "🧹 Cleaning up integration test database..."
-          rm -f data/integration-tests.db
+          rm -f data/test-integration.db
           echo "✅ Integration test database cleanup completed"
 
       - name: "📤 Upload Test Results"
