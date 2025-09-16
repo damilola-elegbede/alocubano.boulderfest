@@ -640,7 +640,7 @@
           <button onclick="generateReport()" class="admin-btn admin-btn-secondary">
             <span>Export</span>
           </button>
-          <button onclick="testDatabase()" class="admin-btn admin-btn-ghost">
+          <button onclick="testDatabase()" class="admin-btn admin-btn-ghost" id="dbHealthBtn">
             <span>DB Health</span>
           </button>
           <button onclick="clearCache()" class="admin-btn admin-btn-ghost">
@@ -1469,7 +1469,7 @@
               });
               if (csrfResponse.ok) {
                 const csrfData = await csrfResponse.json();
-                headers['X-CSRF-Token'] = csrfData.token || csrfData.csrfToken;
+                headers['X-CSRF-Token'] = csrfData.csrfToken;
               }
             } catch (error) {
               console.warn('Could not fetch CSRF token:', error);
@@ -1667,7 +1667,7 @@
             });
             if (csrfResponse.ok) {
               const csrfData = await csrfResponse.json();
-              headers["X-CSRF-Token"] = csrfData.token;
+              headers["X-CSRF-Token"] = csrfData.csrfToken;
             }
           } catch (error) {
             console.warn("Could not fetch CSRF token:", error);
@@ -1702,23 +1702,44 @@
         );
       }
 
-      // Test database
+      // Test database - uses production-safe endpoint
       async function testDatabase() {
         try {
-          const response = await fetch("/api/test-db");
+          // Use the new production-safe health endpoint
+          const response = await fetch("/api/health/database-status");
           const data = await response.json();
 
-          if (data.success) {
-            alert(
-              `Database Healthy!\n\nStatus: ${data.status}\nLatency: ${data.latency}ms\nTables: ${data.tests.tables.count}`,
-            );
-          } else {
-            alert("Database issues detected. Check console for details.");
-            console.error("Database test:", data);
+          // Format the alert message based on health status
+          let message = `Database Health Status\n`;
+          message += `${'═'.repeat(30)}\n\n`;
+          message += `Status: ${data.status.toUpperCase()}\n`;
+          message += `Environment: ${data.environment}\n`;
+          message += `Response Time: ${data.responseTime}ms\n\n`;
+
+          message += `Checks:\n`;
+          message += `├─ Connection: ${data.checks.database.status}\n`;
+          message += `│  └─ Type: ${data.checks.database.type || 'N/A'}\n`;
+          message += `├─ Migrations: ${data.checks.migrations.status}\n`;
+          message += `│  ├─ Applied: ${data.checks.migrations.applied || 0}\n`;
+          message += `│  └─ Latest: ${data.checks.migrations.latest || 'none'}\n`;
+          message += `└─ Query Test: ${data.checks.query.status}\n`;
+          message += `   └─ Latency: ${data.checks.query.latency || 'N/A'}ms\n`;
+
+          if (data.checks.migrations.warning) {
+            message += `\n⚠️ Warning: ${data.checks.migrations.warning}\n`;
           }
+
+          // Use different icons based on status
+          const statusIcon = data.status === 'healthy' ? '✅' :
+                            data.status === 'degraded' ? '⚠️' : '❌';
+
+          alert(`${statusIcon} ${message}`);
+
+          // Log full details to console
+          console.log("Database health details:", data);
         } catch (error) {
-          alert("Database test failed");
-          console.error(error);
+          alert("Database health check failed\n\nCheck console for details.");
+          console.error("Health check error:", error);
         }
       }
 
@@ -1737,8 +1758,8 @@
             });
             if (csrfResponse.ok) {
               const csrfData = await csrfResponse.json();
-              headers["X-CSRF-Token"] = csrfData.token;
-              csrfToken = csrfData.token;
+              headers["X-CSRF-Token"] = csrfData.csrfToken;
+              csrfToken = csrfData.csrfToken;
             }
           } catch (error) {
             console.warn("Could not fetch CSRF token:", error);
@@ -1823,7 +1844,7 @@
             });
             if (csrfResponse.ok) {
               const csrfData = await csrfResponse.json();
-              headers["X-CSRF-Token"] = csrfData.token || csrfData.csrfToken;
+              headers["X-CSRF-Token"] = csrfData.csrfToken;
             }
           } catch (error) {
             console.warn("Could not fetch CSRF token for logout:", error);
@@ -2363,6 +2384,7 @@ Full API docs: /docs/api/README.md
 
       // Initialize
       checkAuth();
+      // Note: DB Health button now always visible as it uses production-safe endpoint
     </script>
 
     <!-- Response Modal -->
