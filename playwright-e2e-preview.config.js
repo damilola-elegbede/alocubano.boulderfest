@@ -118,9 +118,39 @@ export default defineConfig({
           ? parseInt(process.env.E2E_NAVIGATION_TIMEOUT || '120000', 10)  // 120s in CI (Firefox needs more)
           : parseInt(process.env.E2E_NAVIGATION_TIMEOUT || '75000', 10),  // 75s locally
 
-        // Firefox handles network requests differently in CI
+        // FIXED: Firefox-specific cache handling and network configuration
         extraHTTPHeaders: {
-          'User-Agent': 'Playwright-E2E-Tests-Preview-Firefox'
+          'User-Agent': 'Playwright-E2E-Tests-Preview-Firefox',
+          // Disable cache to prevent 304 issues in CI
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        },
+
+        // Firefox browser context options to handle caching
+        contextOptions: {
+          // Clear any existing cache/storage
+          storageState: undefined,
+          // Disable cache at browser level
+          extraHTTPHeaders: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate'
+          }
+        },
+
+        // Firefox launch options for better CI stability
+        launchOptions: {
+          // Firefox-specific flags for CI environment
+          args: [
+            '--no-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--disable-web-security',
+            '--disable-features=VizDisplayCompositor',
+            // Cache-related flags
+            '--disk-cache-size=0',
+            '--media-cache-size=0',
+            '--aggressive-cache-discard'
+          ]
         }
       },
     },
@@ -178,6 +208,7 @@ export default defineConfig({
   // - Single worker configuration to prevent deployment overload
   // - Increased retries for deployment stability
   // - Browser-specific timeout multipliers for known performance differences
+  // - Firefox-specific cache handling to prevent 304 errors
   //
   // Environment-Adaptive Timeouts:
   // - CI environments get extended timeouts due to resource constraints + deployment latency
@@ -185,7 +216,7 @@ export default defineConfig({
   // - All timeouts can be overridden via environment variables
   //
   // Browser-Specific Optimizations:
-  // - Firefox: Gets 33% longer timeouts (known to be slower in CI + deployment)
+  // - Firefox: Gets 33% longer timeouts + cache disabling (known to be slower in CI + deployment)
   // - Mobile Safari: Gets longest timeouts (most resource intensive + mobile network simulation)
   // - Mobile Chrome: Gets moderate mobile timeout boosts + deployment latency
   // - Desktop Chrome/Safari: Use standard timeouts with deployment latency buffer
@@ -204,6 +235,7 @@ export default defineConfig({
   //
   // Special Cases with INFRASTRUCTURE OPTIMIZATIONS:
   // - Firefox timeouts: +33% longer than base (deployment + browser overhead)
+  // - Firefox caching: Disabled via headers and launch flags to prevent 304 errors
   // - Mobile timeouts: +50-75% longer than desktop (deployment + mobile simulation)
   // - Safari mobile: +100% longer than base (most demanding + deployment latency)
 

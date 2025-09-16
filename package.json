@@ -5,18 +5,18 @@
   "type": "module",
   "private": true,
   "engines": {
-    "node": "18.x || 20.x || 22.x || 24.x"
+    "node": ">=20.0.0 <21.0.0"
   },
   "scripts": {
     "build": "NODE_OPTIONS='--max-old-space-size=4096' node -e \"const isVercel = process.env.VERCEL === '1'; const env = process.env.VERCEL_ENV || 'local'; console.log(''); console.log('🔨 Build Process'); console.log('================'); console.log('Environment: ' + env); console.log('Platform: ' + (isVercel ? 'Vercel' : 'Local')); if(!isVercel) { console.log(''); console.log('📋 Running structure verification...'); require('child_process').execSync('npm run verify-structure', {stdio:'inherit'}); } console.log(''); console.log('✅ Build completed successfully!'); console.log('');\"",
     "start": "npm run vercel:dev",
     "vercel:dev": "vercel dev --listen 3000",
     "vercel:preview": "vercel --target preview",
-    "test": "NODE_OPTIONS='--max-old-space-size=6144' vitest run --config tests/vitest.config.js",
+    "test": "NODE_OPTIONS='--max-old-space-size=4096' vitest run --config tests/vitest.config.js",
     "test:integration": "NODE_OPTIONS='--max-old-space-size=4096' vitest run --config tests/config/vitest.integration.config.js",
-    "test:e2e": "NODE_OPTIONS='--max-old-space-size=6144' PLAYWRIGHT_WORKERS=1 node scripts/vercel-deployment-manager.js && npx playwright test --config playwright-e2e-preview.config.js",
-    "test:e2e:ci": "NODE_OPTIONS='--max-old-space-size=6144' PLAYWRIGHT_WORKERS=1 npx playwright test --config playwright-e2e-preview.config.js",
-    "test:coverage": "NODE_OPTIONS='--max-old-space-size=6144' vitest run --coverage --config tests/vitest.config.js",
+    "test:e2e": "NODE_OPTIONS='--max-old-space-size=4096' PLAYWRIGHT_WORKERS=1 node scripts/vercel-deployment-manager.js && npx playwright test --config playwright-e2e-preview.config.js",
+    "test:e2e:ci": "NODE_OPTIONS='--max-old-space-size=4096' PLAYWRIGHT_WORKERS=1 npx playwright test --config playwright-e2e-preview.config.js",
+    "test:coverage": "NODE_OPTIONS='--max-old-space-size=4096' vitest run --coverage --config tests/vitest.config.js",
     "test:all": "npm test && npm run test:integration && npm run test:coverage && npm run test:e2e",
     "lint": "npm run lint:js && npm run lint:html && npm run lint:markdown",
     "lint:js": "eslint --config config/eslint.config.js js/**/*.js",
@@ -33,7 +33,7 @@
     "@libsql/client": "^0.15.14",
     "@sentry/node": "^7.120.4",
     "@stripe/stripe-js": "^7.9.0",
-    "@types/node": "^24.3.0",
+    "@types/node": "^20.19.0",
     "bcryptjs": "^3.0.2",
     "better-sqlite3": "^12.2.0",
     "cookie": "^1.0.2",

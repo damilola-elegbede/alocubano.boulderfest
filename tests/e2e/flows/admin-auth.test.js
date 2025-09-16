@@ -38,8 +38,10 @@ test.describe('Admin Authentication', () => {
     try {
       const response = await page.goto(route, { waitUntil: 'load', timeout: 60000 });
       
-      // Check if response is successful
-      if (!response.ok()) {
+      // Handle HTTP status codes properly
+      // 304 (Not Modified) is a valid success response, especially common in Firefox
+      const isSuccessStatus = response.ok() || response.status() === 304;
+      if (!isSuccessStatus) {
         throw new Error(`Route ${route} returned ${response.status()}: ${response.statusText()}`);
       }
       
