@@ -512,16 +512,11 @@ class MigrationSystem {
           return;
         }
 
-        // Explicitly start a transaction for recording
-        await client.execute("BEGIN IMMEDIATE");
-
+        // Record migration (LibSQL will auto-commit this statement)
         await client.execute(
           "INSERT INTO migrations (filename, checksum, executed_at) VALUES (?, ?, datetime('now'))",
           [migration.filename, checksum],
         );
-
-        // Force commit the migration record
-        await client.execute("COMMIT");
 
         console.log(`✅ Migration completed and recorded: ${migration.filename}`);
 
@@ -536,9 +531,7 @@ class MigrationSystem {
         }
       } catch (insertError) {
         console.error(`⚠️  Failed to record migration in tracking table: ${insertError.message}`);
-        try {
-          await client.execute("ROLLBACK");
-        } catch {}
+        // No rollback needed since LibSQL auto-commits individual statements
       }
     } catch (error) {
       // Enhanced error reporting for migration failures
