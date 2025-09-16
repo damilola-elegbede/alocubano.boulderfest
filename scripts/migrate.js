@@ -28,6 +28,23 @@ class MigrationSystem {
     return this.dbClient;
   }
 
+  /**
+   * Get the current database client (may be null)
+   */
+  getDbClient() {
+    return this.dbClient;
+  }
+
+  /**
+   * Manually close the database connection
+   */
+  async closeConnection() {
+    if (this.dbClient && typeof this.dbClient.close === 'function') {
+      await this.dbClient.close();
+      this.dbClient = null;
+    }
+  }
+
   debugLog(message) {
     if (this.debug) {
       console.log(message);
@@ -706,6 +723,24 @@ class MigrationSystem {
       }
 
       console.log(`🎉 Successfully executed ${executedCount} migrations`);
+
+      // CRITICAL: Ensure WAL checkpoint for SQLite databases
+      // This forces SQLite to write WAL contents to the main database file
+      if (this.dbClient) {
+        try {
+          // Check if this is a SQLite database (file-based)
+          const dbUrl = process.env.DATABASE_URL || process.env.TURSO_DATABASE_URL || '';
+          if (dbUrl.includes('file:') || dbUrl.includes('.db')) {
+            console.log("📝 Performing WAL checkpoint for SQLite database...");
+            await this.dbClient.execute('PRAGMA wal_checkpoint(TRUNCATE)');
+            console.log("✅ WAL checkpoint completed");
+          }
+        } catch (walError) {
+          console.warn("⚠️  WAL checkpoint warning:", walError.message);
+          // Non-fatal: continue even if checkpoint fails
+        }
+      }
+
       return {
         executed: executedCount,
         skipped: availableMigrations.length - pendingMigrations.length,
@@ -714,15 +749,23 @@ class MigrationSystem {
       console.error("❌ Migration system failed:", error.message);
       throw error;
     } finally {
-      // Always clean up database connections, whether success or failure
-      try {
-        if (this.dbClient && typeof this.dbClient.close === 'function') {
-          console.log("🧹 Closing database connection...");
-          await this.dbClient.close();
-          console.log("✅ Database connection closed successfully");
+      // For integration tests, keep connection open if requested
+      const keepConnectionOpen = process.env.KEEP_MIGRATION_CONNECTION === 'true' ||
+                                 process.env.INTEGRATION_TEST_MODE === 'true';
+
+      if (!keepConnectionOpen) {
+        // Only close connection for standalone migration runs
+        try {
+          if (this.dbClient && typeof this.dbClient.close === 'function') {
+            console.log("🧹 Closing database connection...");
+            await this.dbClient.close();
+            console.log("✅ Database connection closed successfully");
+          }
+        } catch (cleanupError) {
+          console.warn("⚠️  Failed to close database connection:", cleanupError.message);
         }
-      } catch (cleanupError) {
-        console.warn("⚠️  Failed to close database connection:", cleanupError.message);
+      } else {
+        console.log("🔌 Keeping database connection open for integration tests");
       }
     }
   }

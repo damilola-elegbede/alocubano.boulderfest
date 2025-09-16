@@ -154,25 +154,41 @@ const initializeDatabase = async () => {
     const { getDatabaseClient, resetDatabaseInstance } = await import('../lib/database.js');
     const { MigrationSystem } = await import('../scripts/migrate.js');
 
-    // Run migrations first (this will close the database connection in its finally block)
+    // Set flag to keep migration connection open
+    process.env.KEEP_MIGRATION_CONNECTION = 'true';
+
+    // Run migrations (connection will stay open due to INTEGRATION_TEST_MODE flag)
     console.log('🔄 Running database migrations for integration tests...');
     const migrationSystem = new MigrationSystem();
     const migrationResult = await migrationSystem.runMigrations();
     console.log(`✅ Migration completed: ${migrationResult.executed} executed, ${migrationResult.skipped} skipped`);
 
-    // Reset the database singleton instance after migrations close the connection
-    console.log('🔄 Resetting database instance after migration...');
-    await resetDatabaseInstance();
+    // Try to reuse the migration system's connection if available
+    let client = migrationSystem.getDbClient();
 
-    // Get a fresh database client AFTER migrations and reset
-    console.log('🔄 Getting fresh database client...');
-    dbClient = await getDatabaseClient();
+    if (client) {
+      console.log('♻️ Reusing migration system database connection');
+      dbClient = client;
+    } else {
+      // Fallback: get a fresh connection if migration didn't keep one
+      console.log('🔄 Getting fresh database client...');
+      dbClient = await getDatabaseClient();
+    }
 
-    // Basic connection test
+    // Verify the connection works
     const testResult = await dbClient.execute('SELECT 1 as test');
     if (!testResult || !testResult.rows || testResult.rows.length !== 1) {
       throw new Error('Database connection test failed');
     }
+
+    // Verify tables exist
+    const tableCheck = await dbClient.execute(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='transactions'"
+    );
+    if (tableCheck.rows.length === 0) {
+      throw new Error('Migration verification failed: transactions table not found');
+    }
+    console.log('✅ Verified transactions table exists');
 
     console.log('✅ Integration database initialized and tested');
     return dbClient;
@@ -308,6 +324,17 @@ afterAll(async () => {
   // Final cleanup
   if (dbClient) {
     try {
+      // Ensure WAL checkpoint before closing to persist all changes
+      try {
+        await dbClient.execute('PRAGMA wal_checkpoint(TRUNCATE)');
+        console.log('✅ Final WAL checkpoint completed');
+      } catch (walError) {
+        // Ignore WAL errors during cleanup
+        if (!walError.message.includes('CLIENT_CLOSED')) {
+          console.warn('⚠️ WAL checkpoint warning:', walError.message);
+        }
+      }
+
       // Check if connection is still valid before attempting to close
       if (typeof dbClient.close === 'function') {
         await dbClient.close();
@@ -327,6 +354,27 @@ afterAll(async () => {
     await resetDatabaseInstance();
   } catch (error) {
     // Ignore reset errors during cleanup
+  }
+
+  // Clean up test database files
+  try {
+    const fs = await import('fs');
+    const dbPath = './data/test-integration.db';
+    const walPath = './data/test-integration.db-wal';
+    const shmPath = './data/test-integration.db-shm';
+
+    if (fs.existsSync(dbPath)) {
+      fs.unlinkSync(dbPath);
+      console.log('🧹 Cleaned up test database: ' + dbPath);
+    }
+    if (fs.existsSync(walPath)) {
+      fs.unlinkSync(walPath);
+    }
+    if (fs.existsSync(shmPath)) {
+      fs.unlinkSync(shmPath);
+    }
+  } catch (error) {
+    console.warn('⚠️ Failed to clean up test database files:', error.message);
   }
 
   await cleanupEnvironment(TEST_ENVIRONMENTS.INTEGRATION);
