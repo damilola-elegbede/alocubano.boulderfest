@@ -39,6 +39,32 @@ class MigrationSystem {
     try {
       await this.db.execute(createTableSQL);
       await this.db.execute(createIndexSQL);
+
+      // Clean up any duplicate migration records
+      const client = await this.db.ensureInitialized();
+      const duplicates = await client.execute(`
+        SELECT filename, COUNT(*) as count
+        FROM migrations
+        GROUP BY filename
+        HAVING COUNT(*) > 1
+      `);
+
+      if (duplicates.rows.length > 0) {
+        console.log(`⚠️  Found duplicate migration entries for: ${duplicates.rows.map(r => r.filename).join(', ')}`);
+
+        // Keep only the oldest entry for each filename
+        await client.execute(`
+          DELETE FROM migrations
+          WHERE id NOT IN (
+            SELECT MIN(id)
+            FROM migrations
+            GROUP BY filename
+          )
+        `);
+
+        console.log("✅ Duplicate migration entries cleaned up");
+      }
+
       console.log("✅ Migrations table initialized");
     } catch (error) {
       console.error("❌ Failed to initialize migrations table:", error.message);
@@ -406,11 +432,22 @@ class MigrationSystem {
       }
       
       try {
+        // Check if this migration is already recorded
+        const existing = await client.execute(
+          "SELECT COUNT(*) as count FROM migrations WHERE filename = ?",
+          [migration.filename]
+        );
+
+        if (existing.rows[0].count > 0) {
+          console.log(`⏭️  Migration already recorded, skipping: ${migration.filename}`);
+          return;
+        }
+
         // Explicitly start a transaction for recording
         await client.execute("BEGIN IMMEDIATE");
 
         await client.execute(
-          "INSERT OR REPLACE INTO migrations (filename, checksum, executed_at) VALUES (?, ?, datetime('now'))",
+          "INSERT INTO migrations (filename, checksum, executed_at) VALUES (?, ?, datetime('now'))",
           [migration.filename, checksum],
         );
 
