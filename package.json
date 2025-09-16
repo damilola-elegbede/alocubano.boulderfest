@@ -8,7 +8,7 @@
     "node": "18.x || 20.x || 22.x || 24.x"
   },
   "scripts": {
-    "build": "NODE_OPTIONS='--max-old-space-size=4096' node -e \"if(process.env.VERCEL === '1') { console.log('🚀 Vercel build complete'); } else { console.log('🔧 Local build - running verification'); require('child_process').execSync('npm run verify-structure', {stdio:'inherit'}); }\" && echo 'Build process completed'",
+    "build": "NODE_OPTIONS='--max-old-space-size=4096' node -e \"const isVercel = process.env.VERCEL === '1'; const env = process.env.VERCEL_ENV || 'local'; console.log(''); console.log('🔨 Build Process'); console.log('================'); console.log('Environment: ' + env); console.log('Platform: ' + (isVercel ? 'Vercel' : 'Local')); if(!isVercel) { console.log(''); console.log('📋 Running structure verification...'); require('child_process').execSync('npm run verify-structure', {stdio:'inherit'}); } console.log(''); console.log('✅ Build completed successfully!'); console.log('');\"",
     "start": "node scripts/start-with-ngrok.js",
     "start:local": "node scripts/vercel-dev-start.js",
     "dev": "npm run start",
