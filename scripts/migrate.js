@@ -796,11 +796,18 @@ class MigrationSystem {
         this.getAvailableMigrations(),
       ]);
 
-      console.log(`Available migrations: ${availableMigrations.length}`);
-      console.log(`Executed migrations:  ${executedMigrations.length}`);
-      console.log(
-        `Pending migrations:   ${availableMigrations.length - executedMigrations.length}`,
+      // Calculate actual pending by checking which available migrations aren't executed
+      const pendingMigrations = availableMigrations.filter(
+        migration => !executedMigrations.includes(migration)
       );
+      const executedAvailableMigrations = availableMigrations.filter(
+        migration => executedMigrations.includes(migration)
+      );
+
+      console.log(`📂 Found ${availableMigrations.length} migration files`);
+      console.log(`Available migrations: ${availableMigrations.length}`);
+      console.log(`Executed migrations:  ${executedAvailableMigrations.length}`);
+      console.log(`Pending migrations:   ${pendingMigrations.length}`);
 
       if (availableMigrations.length > 0) {
         console.log("\nMigration Details:");
@@ -814,8 +821,8 @@ class MigrationSystem {
 
       return {
         total: availableMigrations.length,
-        executed: executedMigrations.length,
-        pending: availableMigrations.length - executedMigrations.length,
+        executed: executedAvailableMigrations.length,
+        pending: pendingMigrations.length,
       };
     } catch (error) {
       console.error("❌ Failed to get migration status:", error.message);
