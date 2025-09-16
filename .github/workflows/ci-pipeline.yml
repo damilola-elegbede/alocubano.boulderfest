@@ -133,9 +133,8 @@ jobs:
 
     env:
       DATABASE_URL: "file:./data/test-integration.db"
-      # Force local development environment detection for build-time cache access
-      VERCEL: ""  # Ensure isLocalDevelopment() returns true
-      FORCE_RUNTIME_API: false  # Explicitly enable build-time cache
+      # Force build-time cache access for integration tests
+      INTEGRATION_TEST_MODE: "true"  # Force shouldUseBuildTimeCache() to return true
       # Test environment variables for integration tests
       STRIPE_SECRET_KEY: ${{ secrets.TEST_STRIPE_SECRET_KEY || 'sk_test_dummy_integration_key' }}
       STRIPE_PUBLISHABLE_KEY: ${{ secrets.TEST_STRIPE_PUBLISHABLE_KEY || 'pk_test_dummy_integration_key' }}
