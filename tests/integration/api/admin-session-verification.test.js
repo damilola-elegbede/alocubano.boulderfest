@@ -17,7 +17,7 @@ describe('Admin Session Verification Integration', () => {
   let dbClient;
 
   beforeEach(async () => {
-    dbClient = getDbClient();
+    dbClient = await getDbClient();
   });
 
   /**

@@ -17,7 +17,7 @@ describe('Admin Authentication Integration', () => {
   let dbClient;
 
   beforeEach(async () => {
-    dbClient = getDbClient();
+    dbClient = await getDbClient();
   });
 
   test('admin login creates session and returns JWT token', async () => {

@@ -151,27 +151,37 @@ let dbClient = null;
 const initializeDatabase = async () => {
   try {
     // Import database client and migration system
-    const { getDatabaseClient } = await import('../lib/database.js');
+    const { getDatabaseClient, resetDatabaseInstance } = await import('../lib/database.js');
     const { MigrationSystem } = await import('../scripts/migrate.js');
-    
+
+    // Run migrations first (this will close the database connection in its finally block)
+    console.log('🔄 Running database migrations for integration tests...');
+    const migrationSystem = new MigrationSystem();
+    const migrationResult = await migrationSystem.runMigrations();
+    console.log(`✅ Migration completed: ${migrationResult.executed} executed, ${migrationResult.skipped} skipped`);
+
+    // Reset the database singleton instance after migrations close the connection
+    console.log('🔄 Resetting database instance after migration...');
+    await resetDatabaseInstance();
+
+    // Get a fresh database client AFTER migrations and reset
+    console.log('🔄 Getting fresh database client...');
     dbClient = await getDatabaseClient();
-    
+
     // Basic connection test
     const testResult = await dbClient.execute('SELECT 1 as test');
     if (!testResult || !testResult.rows || testResult.rows.length !== 1) {
       throw new Error('Database connection test failed');
     }
-    
-    // Run migrations to ensure database schema is up to date
-    console.log('🔄 Running database migrations for integration tests...');
-    const migrationSystem = new MigrationSystem();
-    const migrationResult = await migrationSystem.runMigrations();
-    
-    console.log(`✅ Migration completed: ${migrationResult.executed} executed, ${migrationResult.skipped} skipped`);
-    console.log('✅ Integration database initialized');
+
+    console.log('✅ Integration database initialized and tested');
     return dbClient;
   } catch (error) {
     console.error('❌ Failed to initialize integration database:', error);
+
+    // If initialization fails, reset the dbClient so next attempt gets a fresh connection
+    dbClient = null;
+
     throw error;
   }
 };
@@ -180,20 +190,25 @@ const initializeDatabase = async () => {
  * Clean Database Between Tests
  */
 const cleanDatabase = async () => {
-  if (!dbClient) return;
-  
   try {
+    // Get fresh database client to handle closed connections
+    const { getDatabaseClient } = await import('../lib/database.js');
+    const client = await getDatabaseClient();
+
+    // Update global dbClient reference for future operations
+    dbClient = client;
+
     // Get all tables from database to avoid checking individual existence
-    const tableQuery = await dbClient.execute(
+    const tableQuery = await client.execute(
       "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
     );
     const existingTables = new Set(tableQuery.rows.map(row => row.name));
-    
+
     // Clean test data while preserving schema (ordered by foreign key dependencies)
     const tables = [
       'email_events',           // Clean child tables first (foreign key dependencies)
       'email_audit_log',
-      'payment_events', 
+      'payment_events',
       'transaction_items',
       'qr_validations',
       'wallet_pass_events',
@@ -204,15 +219,15 @@ const cleanDatabase = async () => {
       'newsletter_subscriptions', // Legacy newsletter table
       'admin_sessions'
     ];
-    
+
     // Batch cleanup using prepared statements for performance
     const cleanupPromises = [];
     let cleanedTables = 0;
-    
+
     for (const table of tables) {
       if (existingTables.has(table)) {
         cleanupPromises.push(
-          dbClient.execute(`DELETE FROM "${table}"`)
+          client.execute(`DELETE FROM "${table}"`)
             .then(result => {
               const deletedCount = result.rowsAffected ?? result.changes ?? 0;
               if (deletedCount > 0) {
@@ -226,14 +241,29 @@ const cleanDatabase = async () => {
         );
       }
     }
-    
+
     // Execute cleanup in parallel for better performance
     await Promise.all(cleanupPromises);
     const skippedTables = tables.length - cleanedTables;
-    
+
     console.log(`🧹 Database cleanup completed: ${cleanedTables} tables cleaned, ${skippedTables} skipped`);
   } catch (error) {
     console.warn('⚠️ Database cleanup warning:', error.message);
+
+    // If cleanup fails due to connection issues, try to get a fresh connection
+    if (error.message.includes('CLIENT_CLOSED') || error.message.includes('connection') || error.message.includes('closed')) {
+      console.log('🔄 Attempting to recover from connection error...');
+      try {
+        const { resetDatabaseInstance, getDatabaseClient } = await import('../lib/database.js');
+        await resetDatabaseInstance();
+        dbClient = await getDatabaseClient();
+        console.log('✅ Database connection recovered');
+      } catch (recoveryError) {
+        console.error('❌ Failed to recover database connection:', recoveryError.message);
+        // Set dbClient to null so next operation will get a fresh connection
+        dbClient = null;
+      }
+    }
   }
 };
 
@@ -278,18 +308,40 @@ afterAll(async () => {
   // Final cleanup
   if (dbClient) {
     try {
-      await dbClient.close?.();
+      // Check if connection is still valid before attempting to close
+      if (typeof dbClient.close === 'function') {
+        await dbClient.close();
+        console.log('✅ Database connection closed');
+      }
     } catch (error) {
-      console.warn('⚠️ Database connection cleanup warning:', error.message);
+      // Ignore close errors - connection may already be closed
+      if (!error.message.includes('CLIENT_CLOSED') && !error.message.includes('closed')) {
+        console.warn('⚠️ Database connection cleanup warning:', error.message);
+      }
     }
   }
-  
+
+  // Reset the database instance for good measure
+  try {
+    const { resetDatabaseInstance } = await import('../lib/database.js');
+    await resetDatabaseInstance();
+  } catch (error) {
+    // Ignore reset errors during cleanup
+  }
+
   await cleanupEnvironment(TEST_ENVIRONMENTS.INTEGRATION);
   console.log('✅ Integration test cleanup completed');
 }, config.timeouts.cleanup);
 
 // Export database client for tests
-export const getDbClient = () => dbClient;
+export const getDbClient = async () => {
+  // Always return a fresh client to avoid closed connection issues
+  if (!dbClient) {
+    const { getDatabaseClient } = await import('../lib/database.js');
+    dbClient = await getDatabaseClient();
+  }
+  return dbClient;
+};
 
 // Export secret validation result for tests that need to check availability
 export const getSecretValidation = () => secretValidation;

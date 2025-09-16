@@ -12,7 +12,7 @@ describe('Ticket Validation Integration', () => {
 
   beforeEach(async () => {
     testEmail = generateTestEmail();
-    dbClient = getDbClient();
+    dbClient = await getDbClient();
   });
 
   test('valid QR code validation returns ticket details and logs event', async () => {

@@ -25,7 +25,7 @@ describe('Payment Integration Tests - Final Implementation', () => {
   let testEventIds = [];
 
   beforeEach(async () => {
-    db = getDbClient();
+    db = await getDbClient(); // Note: getDbClient is async, must await it
     testTransactionIds = [];
     testEventIds = [];
   });
