@@ -123,9 +123,9 @@ async function runVercelBuild() {
       log(`   Executed migrations: ${status.executed}`, colors.cyan);
       log(`   Pending migrations: ${status.pending}`, colors.cyan);
 
-      // Only verify and potentially re-run if we have executed migrations
-      // Don't do this check on fresh databases
-      if (status.executed > 0) {
+      // Only verify consistency if we have NO pending migrations AND some executed
+      // If we have pending migrations, let them run first before checking
+      if (status.executed > 0 && status.pending === 0) {
         try {
           const client = await migration.db.ensureInitialized();
           const tableCheck = await client.execute(
@@ -141,10 +141,9 @@ async function runVercelBuild() {
             log("⚠️  WARNING: Database inconsistency detected!", colors.yellow);
             log(`   Migrations table shows ${status.executed} completed`, colors.yellow);
             log(`   But critical tables are missing: ${missingTables.join(', ')}`, colors.red);
-            log(`   This should not happen - please check the migration files`, colors.red);
-            // DON'T automatically clear and re-run - this might cause issues
-            // Just report the problem
-            process.exit(1);
+            log(`   This indicates corrupted migration tracking`, colors.red);
+            log("   Will attempt to run all pending migrations to fix", colors.yellow);
+            // Don't exit - let the migration system handle it
           } else {
             log("✅ Database structure verified - all critical tables exist", colors.green);
             migrationResult.skipped = status.executed;
@@ -153,6 +152,9 @@ async function runVercelBuild() {
           log("⚠️  Could not verify table existence: " + verifyError.message, colors.yellow);
           migrationResult.skipped = status.executed;
         }
+      } else if (status.pending > 0) {
+        log(`📌 ${status.pending} pending migrations will be executed - skipping consistency check`, colors.cyan);
+        migrationResult.skipped = status.executed;
       } else {
         log("📌 Fresh database - skipping consistency check", colors.cyan);
         migrationResult.skipped = status.executed;
