@@ -712,19 +712,18 @@ class MigrationSystem {
       };
     } catch (error) {
       console.error("❌ Migration system failed:", error.message);
-      
-      // Attempt to clean up database connections on failure
+      throw error;
+    } finally {
+      // Always clean up database connections, whether success or failure
       try {
         if (this.dbClient && typeof this.dbClient.close === 'function') {
-          console.log("🧹 Cleaning up database connections after migration failure...");
+          console.log("🧹 Closing database connection...");
           await this.dbClient.close();
-          console.log("✅ Database connections cleaned up");
+          console.log("✅ Database connection closed successfully");
         }
       } catch (cleanupError) {
-        console.warn("⚠️  Failed to clean up database connections:", cleanupError.message);
+        console.warn("⚠️  Failed to close database connection:", cleanupError.message);
       }
-      
-      throw error;
     }
   }
 
@@ -850,6 +849,15 @@ class MigrationSystem {
     } catch (error) {
       console.error("❌ Failed to get migration status:", error.message);
       throw error;
+    } finally {
+      // Clean up database connection
+      try {
+        if (this.dbClient && typeof this.dbClient.close === 'function') {
+          await this.dbClient.close();
+        }
+      } catch (cleanupError) {
+        // Silently ignore cleanup errors for status command
+      }
     }
   }
 }
