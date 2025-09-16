@@ -2,6 +2,10 @@
  * Integration Test Setup - Real Database & Services
  * Target: ~30-50 tests with proper database isolation
  */
+
+// Force build-time cache access for integration tests (must be before any imports)
+process.env.INTEGRATION_TEST_MODE = 'true';
+
 import { beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 import { configureEnvironment, cleanupEnvironment, validateEnvironment, TEST_ENVIRONMENTS } from './config/test-environment.js';
 
@@ -112,8 +116,7 @@ delete process.env.TURSO_DATABASE_URL;
 delete process.env.E2E_TEST_MODE;
 delete process.env.PLAYWRIGHT_BROWSER;
 delete process.env.VERCEL_DEV_STARTUP;
-// Set explicit integration test context
-process.env.INTEGRATION_TEST_MODE = 'true';
+// Set explicit integration test context (already set at top of file)
 
 // Additional safety measures for integration test isolation
 process.env.TEST_DATABASE_TYPE = 'sqlite_file';
