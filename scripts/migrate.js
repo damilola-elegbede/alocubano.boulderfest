@@ -50,6 +50,35 @@ class MigrationSystem {
       `);
       console.log(`   Total migration records: ${allRecords.rows[0].total}`);
 
+      // Debug: Show all unique filenames
+      const allFilenames = await client.execute(`
+        SELECT DISTINCT filename, LENGTH(filename) as len
+        FROM migrations
+        ORDER BY filename
+      `);
+
+      console.log(`   Found ${allFilenames.rows.length} unique filenames in migrations table`);
+      if (allFilenames.rows.length > 30) {
+        console.log("   First 10 filenames:");
+        allFilenames.rows.slice(0, 10).forEach(row => {
+          console.log(`     - "${row.filename}" (length: ${row.len})`);
+        });
+      }
+
+      // Show files with counts
+      const allCounts = await client.execute(`
+        SELECT filename, COUNT(*) as cnt
+        FROM migrations
+        GROUP BY filename
+        ORDER BY cnt DESC, filename
+        LIMIT 10
+      `);
+
+      console.log("   Top files by record count:");
+      allCounts.rows.forEach(row => {
+        console.log(`     ${row.filename}: ${row.cnt} record(s)`);
+      });
+
       const duplicates = await client.execute(`
         SELECT filename, COUNT(*) as count
         FROM migrations
@@ -76,6 +105,27 @@ class MigrationSystem {
         console.log(`✅ Cleaned up ${deleteResult.rowsAffected || 'unknown number of'} duplicate migration entries`);
 
         // Verify cleanup
+        const afterCleanup = await client.execute(`
+          SELECT COUNT(*) as total FROM migrations
+        `);
+        console.log(`   Migration records after cleanup: ${afterCleanup.rows[0].total}`);
+      } else if (allRecords.rows[0].total > 30) {
+        // If we have way more records than expected, something is wrong
+        console.log("   ⚠️  No duplicates found, but record count is suspiciously high!");
+        console.log("   Forcing cleanup - keeping only most recent 23 migrations");
+
+        // Nuclear option: Delete all but the most recent 23
+        const deleteOld = await client.execute(`
+          DELETE FROM migrations
+          WHERE id NOT IN (
+            SELECT id FROM migrations
+            ORDER BY id DESC
+            LIMIT 23
+          )
+        `);
+
+        console.log(`   Deleted ${deleteOld.rowsAffected || 'unknown number of'} old migration records`);
+
         const afterCleanup = await client.execute(`
           SELECT COUNT(*) as total FROM migrations
         `);
