@@ -1,6 +1,10 @@
 -- Multi-Factor Authentication System for Admin
 -- This migration creates tables for TOTP secrets, backup codes, and MFA audit logs
 
+-- Drop any views that might reference admin_sessions or have incorrect column references
+-- This is needed because SQLite doesn't allow dropping tables referenced by views
+DROP VIEW IF EXISTS transactions_with_payment_info;
+
 -- Admin MFA configuration table
 CREATE TABLE IF NOT EXISTS admin_mfa_config (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
