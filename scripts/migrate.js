@@ -15,6 +15,13 @@ class MigrationSystem {
   constructor() {
     this.db = getDatabase();
     this.migrationsDir = path.join(__dirname, "..", "migrations");
+    this.debug = process.env.DEBUG_MIGRATION === 'true';
+  }
+
+  debugLog(message) {
+    if (this.debug) {
+      console.log(message);
+    }
   }
 
   /**
@@ -43,41 +50,43 @@ class MigrationSystem {
       // Clean up any duplicate migration records
       const client = await this.db.ensureInitialized();
 
-      console.log("🔍 Checking for duplicate migration records...");
+      this.debugLog("🔍 Checking for duplicate migration records...");
 
       const allRecords = await client.execute(`
         SELECT COUNT(*) as total FROM migrations
       `);
-      console.log(`   Total migration records: ${allRecords.rows[0].total}`);
+      this.debugLog(`   Total migration records: ${allRecords.rows[0].total}`);
 
-      // Debug: Show all unique filenames
-      const allFilenames = await client.execute(`
-        SELECT DISTINCT filename, LENGTH(filename) as len
-        FROM migrations
-        ORDER BY filename
-      `);
+      // Debug-only detailed analysis
+      if (this.debug) {
+        const allFilenames = await client.execute(`
+          SELECT DISTINCT filename, LENGTH(filename) as len
+          FROM migrations
+          ORDER BY filename
+        `);
 
-      console.log(`   Found ${allFilenames.rows.length} unique filenames in migrations table`);
-      if (allFilenames.rows.length > 30) {
-        console.log("   First 10 filenames:");
-        allFilenames.rows.slice(0, 10).forEach(row => {
-          console.log(`     - "${row.filename}" (length: ${row.len})`);
+        console.log(`   Found ${allFilenames.rows.length} unique filenames in migrations table`);
+        if (allFilenames.rows.length > 30) {
+          console.log("   First 10 filenames:");
+          allFilenames.rows.slice(0, 10).forEach(row => {
+            console.log(`     - "${row.filename}" (length: ${row.len})`);
+          });
+        }
+
+        // Show files with counts
+        const allCounts = await client.execute(`
+          SELECT filename, COUNT(*) as cnt
+          FROM migrations
+          GROUP BY filename
+          ORDER BY cnt DESC, filename
+          LIMIT 10
+        `);
+
+        console.log("   Top files by record count:");
+        allCounts.rows.forEach(row => {
+          console.log(`     ${row.filename}: ${row.cnt} record(s)`);
         });
       }
-
-      // Show files with counts
-      const allCounts = await client.execute(`
-        SELECT filename, COUNT(*) as cnt
-        FROM migrations
-        GROUP BY filename
-        ORDER BY cnt DESC, filename
-        LIMIT 10
-      `);
-
-      console.log("   Top files by record count:");
-      allCounts.rows.forEach(row => {
-        console.log(`     ${row.filename}: ${row.cnt} record(s)`);
-      });
 
       const duplicates = await client.execute(`
         SELECT filename, COUNT(*) as count
@@ -448,9 +457,9 @@ class MigrationSystem {
         const statement = migration.statements[idx];
         if (statement.trim()) {
           try {
-            console.log(`   Executing statement ${idx + 1}/${migration.statements.length}: ${statement.substring(0, 60)}...`);
+            this.debugLog(`   Executing statement ${idx + 1}/${migration.statements.length}: ${statement.substring(0, 60)}...`);
             const result = await client.execute(statement);
-            console.log(`   ✅ Statement ${idx + 1} completed successfully`);
+            this.debugLog(`   ✅ Statement ${idx + 1} completed successfully`);
           } catch (statementError) {
             // Handle idempotent operations gracefully
             if (this._isIdempotentError(statementError.message, statement)) {
@@ -651,7 +660,7 @@ class MigrationSystem {
       if (!connectionTest) {
         throw new Error("Database connection test failed - cannot proceed with migrations");
       }
-      console.log("✅ Database connection verified");
+      this.debugLog("✅ Database connection verified");
 
       // Initialize migrations table
       await this.initializeMigrationsTable();
@@ -777,8 +786,11 @@ class MigrationSystem {
    * Show migration status
    */
   async status() {
-    console.log("📊 Migration Status Report");
-    console.log("========================");
+    // Only show detailed status in debug mode
+    if (this.debug) {
+      console.log("📊 Migration Status Report");
+      console.log("========================");
+    }
 
     try {
       // Initialize migrations table (and clean up duplicates)
@@ -797,12 +809,14 @@ class MigrationSystem {
         migration => executedMigrations.includes(migration)
       );
 
+      // Essential status info
       console.log(`📂 Found ${availableMigrations.length} migration files`);
       console.log(`Available migrations: ${availableMigrations.length}`);
       console.log(`Executed migrations:  ${executedAvailableMigrations.length}`);
       console.log(`Pending migrations:   ${pendingMigrations.length}`);
 
-      if (availableMigrations.length > 0) {
+      // Debug-only detailed migration list
+      if (this.debug && availableMigrations.length > 0) {
         console.log("\nMigration Details:");
         for (const migration of availableMigrations) {
           const status = executedMigrations.includes(migration)

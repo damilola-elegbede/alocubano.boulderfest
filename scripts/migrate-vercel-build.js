@@ -9,6 +9,9 @@
 import { MigrationSystem } from "./migrate.js";
 import { execSync } from "child_process";
 
+// Debug mode - set DEBUG_MIGRATION=true for verbose logging
+const DEBUG = process.env.DEBUG_MIGRATION === 'true';
+
 // Color codes for console output
 const colors = {
   reset: "\x1b[0m",
@@ -23,6 +26,12 @@ const colors = {
 
 function log(message, color = colors.reset) {
   console.log(`${color}${message}${colors.reset}`);
+}
+
+function debugLog(message, color = colors.reset) {
+  if (DEBUG) {
+    console.log(`${color}${message}${colors.reset}`);
+  }
 }
 
 function logSection(title, emoji = "📦") {
@@ -45,23 +54,30 @@ async function runVercelBuild() {
 
   let migrationResult = { executed: 0, skipped: 0 }; // Track migration results
 
-  logSection("VERCEL BUILD PROCESS v2", "🚀");
-  log(`📍 Script Version: 2.0 (with consistency check)`, colors.magenta);
-  log(`📍 Commit: ${process.env.VERCEL_GIT_COMMIT_SHA?.substring(0, 8) || 'unknown'}`, colors.magenta);
-  log("");
+  // Essential startup info
+  log("🚀 Starting Vercel deployment with auto-migrations", colors.bright);
+  log(`📍 ${vercelEnv} environment • ${gitCommit.substring(0, 8)}`, colors.cyan);
 
-  log("📋 Build Environment Information:", colors.bright);
-  log(`   Environment Type: ${vercelEnv || 'unknown'}`, colors.cyan);
-  log(`   Is Vercel: ${isVercel ? 'Yes' : 'No'}`, colors.cyan);
-  log(`   Git Branch: ${gitBranch}`, colors.cyan);
-  log(`   Git Commit: ${gitCommit.substring(0, 8)}`, colors.cyan);
-  log(`   Deployment URL: ${deploymentUrl}`, colors.cyan);
-  log("");
+  // Debug-only detailed info
+  debugLog("", colors.reset);
+  debugLog("📋 Detailed Build Environment:", colors.bright);
+  debugLog(`   Environment Type: ${vercelEnv || 'unknown'}`, colors.cyan);
+  debugLog(`   Is Vercel: ${isVercel ? 'Yes' : 'No'}`, colors.cyan);
+  debugLog(`   Git Branch: ${gitBranch}`, colors.cyan);
+  debugLog(`   Git Commit: ${gitCommit}`, colors.cyan);
+  debugLog(`   Deployment URL: ${deploymentUrl}`, colors.cyan);
+  debugLog("");
 
-  log("🔐 Database Configuration:", colors.bright);
-  log(`   Turso URL Configured: ${hasTursoUrl ? '✅ Yes' : '❌ No'}`, hasTursoUrl ? colors.green : colors.red);
-  log(`   Turso Token Configured: ${hasTursoToken ? '✅ Yes' : '❌ No'}`, hasTursoToken ? colors.green : colors.red);
-  log("");
+  debugLog("🔐 Database Configuration:", colors.bright);
+  debugLog(`   Turso URL Configured: ${hasTursoUrl ? '✅ Yes' : '❌ No'}`, hasTursoUrl ? colors.green : colors.red);
+  debugLog(`   Turso Token Configured: ${hasTursoToken ? '✅ Yes' : '❌ No'}`, hasTursoToken ? colors.green : colors.red);
+
+  // Essential database check
+  if (!hasTursoUrl || !hasTursoToken) {
+    log("❌ Missing Turso database credentials", colors.red);
+  } else {
+    log("✅ Database credentials configured", colors.green);
+  }
 
   // Skip migrations for development builds or if not in Vercel
   if (!isVercel) {
@@ -92,20 +108,19 @@ async function runVercelBuild() {
   }
 
   try {
-    logSection("DATABASE MIGRATION PHASE", "🗄️");
+    log("");
+    log("🗄️ Running database migrations...", colors.bright);
 
-    log("🚀 Starting database migrations for Vercel deployment...", colors.green);
+    // Debug-only database details
+    debugLog("");
     const dbUrl = process.env.TURSO_DATABASE_URL || 'NOT SET';
     const dbHost = dbUrl.includes('//') ? dbUrl.split('//')[1]?.split('.')[0] : 'unknown';
-    log(`   Database URL: ${dbUrl.substring(0, 50)}...`, colors.cyan);
-    log(`   Database Host: ${dbHost}`, colors.cyan);
-    log(`   Auth Token: ${process.env.TURSO_AUTH_TOKEN ? 'Configured' : 'MISSING'}`, colors.cyan);
-    log("");
+    debugLog(`   Database URL: ${dbUrl.substring(0, 50)}...`, colors.cyan);
+    debugLog(`   Database Host: ${dbHost}`, colors.cyan);
+    debugLog(`   Auth Token: ${process.env.TURSO_AUTH_TOKEN ? 'Configured' : 'MISSING'}`, colors.cyan);
+    debugLog("");
 
     const migration = new MigrationSystem();
-
-    // First check migration status
-    log("📊 Checking migration status...", colors.blue);
 
     let status;
     try {
@@ -234,15 +249,18 @@ async function runVercelBuild() {
       log("");
       log("✅ Build completed successfully!", colors.bright + colors.green);
 
-      // Summary
-      logSection("BUILD SUMMARY", "📊");
-      log("✅ Database Migrations: Success", colors.green);
-      log(`   • ${migrationResult.executed} migrations executed`, colors.cyan);
-      log(`   • ${migrationResult.skipped} migrations skipped`, colors.cyan);
+      // Clean summary
       log("");
-      log("✅ Build Process: Success", colors.green);
-      log("");
-      log(`🎉 Deployment ready for: ${deploymentUrl}`, colors.bright + colors.green);
+      log("✅ Migration and build completed successfully!", colors.bright + colors.green);
+      if (migrationResult.executed > 0) {
+        log(`📊 Executed ${migrationResult.executed} migration(s)`, colors.cyan);
+      }
+
+      debugLog("");
+      debugLog("📊 Detailed Summary:", colors.bright);
+      debugLog(`   Migrations executed: ${migrationResult.executed}`, colors.cyan);
+      debugLog(`   Migrations skipped: ${migrationResult.skipped}`, colors.cyan);
+      debugLog(`   Deployment URL: ${deploymentUrl}`, colors.cyan);
 
       process.exit(0);
     } catch (buildError) {
