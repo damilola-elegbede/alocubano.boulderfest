@@ -61,7 +61,13 @@ describe('Gallery API Integration Tests', () => {
       
       // Test 2025 data (real cache) - should always work
       const cache2025 = await getCacheFileContent('2025.json');
-      if (cache2025 && !cache2025.isPlaceholder) {
+      const isPlaceholder2025 = cache2025 && (
+        cache2025.isPlaceholder ||
+        (cache2025.totalCount === 0 &&
+         cache2025.message &&
+         cache2025.message.includes('Empty event gallery cache'))
+      );
+      if (cache2025 && !isPlaceholder2025) {
         // Real cached data should be served successfully even without credentials
         const result2025 = await galleryService.getGalleryData('2025');
         
@@ -112,7 +118,16 @@ describe('Gallery API Integration Tests', () => {
         
         for (const filename of defaultCacheFiles) {
           const cacheContent = await getCacheFileContent(filename);
-          if (cacheContent && !cacheContent.isPlaceholder) {
+          // Check if cache has real data (not placeholder)
+          // Consider cache as placeholder if explicitly marked OR if it has no real data
+          const isPlaceholderCache = cacheContent && (
+            cacheContent.isPlaceholder ||
+            (cacheContent.totalCount === 0 &&
+             cacheContent.message &&
+             cacheContent.message.includes('Empty event gallery cache'))
+          );
+
+          if (cacheContent && !isPlaceholderCache) {
             foundRealCache = true;
             break;
           }
@@ -211,7 +226,13 @@ describe('Gallery API Integration Tests', () => {
       
       // Test behavior based on available data
       const cache2025 = await getCacheFileContent('2025.json');
-      const hasRealCache = cache2025 && !cache2025.isPlaceholder;
+      const isPlaceholder2025 = cache2025 && (
+        cache2025.isPlaceholder ||
+        (cache2025.totalCount === 0 &&
+         cache2025.message &&
+         cache2025.message.includes('Empty event gallery cache'))
+      );
+      const hasRealCache = cache2025 && !isPlaceholder2025;
       
       if (hasRealCache) {
         // With real cached data, should work regardless of credentials
@@ -278,7 +299,13 @@ describe('Gallery API Integration Tests', () => {
         
         // Test that real cache data works even without credentials
         const cache2025 = await getCacheFileContent('2025.json');
-        if (cache2025 && !cache2025.isPlaceholder) {
+        const isPlaceholder2025 = cache2025 && (
+          cache2025.isPlaceholder ||
+          (cache2025.totalCount === 0 &&
+           cache2025.message &&
+           cache2025.message.includes('Empty event gallery cache'))
+        );
+        if (cache2025 && !isPlaceholder2025) {
           const result = await galleryService.getGalleryData('2025');
           expect(result).toHaveProperty('totalCount');
           expect(result).toHaveProperty('categories');
@@ -305,7 +332,13 @@ describe('Gallery API Integration Tests', () => {
       
       // Test 2025 - should work if real cache exists
       const cache2025 = await getCacheFileContent('2025.json');
-      if (cache2025 && !cache2025.isPlaceholder) {
+      const isPlaceholder2025 = cache2025 && (
+        cache2025.isPlaceholder ||
+        (cache2025.totalCount === 0 &&
+         cache2025.message &&
+         cache2025.message.includes('Empty event gallery cache'))
+      );
+      if (cache2025 && !isPlaceholder2025) {
         // Real cache should work regardless of credentials
         const result2025 = await galleryService.getGalleryData('2025');
         expect(result2025).toHaveProperty('totalCount');
@@ -452,7 +485,13 @@ describe('Gallery API Integration Tests', () => {
         
         // Test 1: Real cached data should work even without credentials
         const cache2025 = await getCacheFileContent('2025.json');
-        if (cache2025 && !cache2025.isPlaceholder) {
+        const isPlaceholder2025 = cache2025 && (
+          cache2025.isPlaceholder ||
+          (cache2025.totalCount === 0 &&
+           cache2025.message &&
+           cache2025.message.includes('Empty event gallery cache'))
+        );
+        if (cache2025 && !isPlaceholder2025) {
           const result = await galleryService.getGalleryData('2025');
           expect(result).toHaveProperty('totalCount');
           expect(result.source).toBe('build-time-cache');
@@ -495,7 +534,13 @@ describe('Gallery API Integration Tests', () => {
       
       // Test build-time cache behavior
       const cache2025 = await getCacheFileContent('2025.json');
-      if (cache2025 && !cache2025.isPlaceholder) {
+      const isPlaceholder2025 = cache2025 && (
+        cache2025.isPlaceholder ||
+        (cache2025.totalCount === 0 &&
+         cache2025.message &&
+         cache2025.message.includes('Empty event gallery cache'))
+      );
+      if (cache2025 && !isPlaceholder2025) {
         // Build-time cache should work and count as cache hit
         const result1 = await galleryService.getGalleryData('2025');
         expect(result1.source).toBe('build-time-cache');
