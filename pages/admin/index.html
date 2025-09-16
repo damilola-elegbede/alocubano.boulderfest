@@ -1469,7 +1469,7 @@
               });
               if (csrfResponse.ok) {
                 const csrfData = await csrfResponse.json();
-                headers['X-CSRF-Token'] = csrfData.token || csrfData.csrfToken;
+                headers['X-CSRF-Token'] = csrfData.csrfToken;
               }
             } catch (error) {
               console.warn('Could not fetch CSRF token:', error);
@@ -1844,7 +1844,7 @@
             });
             if (csrfResponse.ok) {
               const csrfData = await csrfResponse.json();
-              headers["X-CSRF-Token"] = csrfData.token || csrfData.csrfToken;
+              headers["X-CSRF-Token"] = csrfData.csrfToken;
             }
           } catch (error) {
             console.warn("Could not fetch CSRF token for logout:", error);

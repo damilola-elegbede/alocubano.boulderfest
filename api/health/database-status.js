@@ -38,30 +38,42 @@ export default async function handler(req, res) {
   };
 
   try {
-    // Check 1: Database Connection
+    // Get database client once for all checks
+    let db;
     try {
-      const db = await getDatabaseClient();
-
-      if (db) {
-        healthCheck.checks.database.status = "healthy";
-        healthCheck.checks.database.type = process.env.TURSO_DATABASE_URL ? "turso" : "sqlite";
-      } else {
+      db = await getDatabaseClient();
+      if (!db) {
         throw new Error("Database client not initialized");
       }
     } catch (error) {
+      // If we can't get the database client, all checks fail
       healthCheck.checks.database.status = "unhealthy";
       healthCheck.checks.database.error = "Connection failed";
-      console.error("Database connection check failed:", error.message);
+      healthCheck.checks.migrations.status = "unhealthy";
+      healthCheck.checks.migrations.error = "Database unavailable";
+      healthCheck.checks.query.status = "unhealthy";
+      healthCheck.checks.query.error = "Database unavailable";
+      console.error("Database client acquisition failed:", error.message);
+
+      // Skip to the end since we can't perform any database operations
+      const checks = Object.values(healthCheck.checks);
+      const unhealthyChecks = checks.filter(check => check.status === "unhealthy");
+      healthCheck.status = unhealthyChecks.length > 0 ? "unhealthy" : "healthy";
+      healthCheck.responseTime = Date.now() - startTime;
+      return res.status(503).json(healthCheck);
     }
+
+    // Check 1: Database Connection (already verified above)
+    healthCheck.checks.database.status = "healthy";
+    healthCheck.checks.database.type = process.env.TURSO_DATABASE_URL ? "turso" : "sqlite";
 
     // Check 2: Migration Status
     try {
-      const db = await getDatabaseClient();
       const migrationStatus = await getMigrationStatus(db);
 
       healthCheck.checks.migrations.status = "healthy";
-      healthCheck.checks.migrations.applied = migrationStatus.appliedMigrations?.length || 0;
-      healthCheck.checks.migrations.latest = migrationStatus.latestMigration || "none";
+      healthCheck.checks.migrations.applied = Array.isArray(migrationStatus.applied) ? migrationStatus.applied.length : 0;
+      healthCheck.checks.migrations.latest = migrationStatus.lastMigration || "none";
 
       // Check if critical tables exist
       const criticalTables = [
@@ -93,12 +105,14 @@ export default async function handler(req, res) {
 
     // Check 3: Basic Query Execution
     try {
-      const db = await getDatabaseClient();
+      // Measure only the query execution time
+      const queryStartTime = Date.now();
       const testQuery = await db.execute("SELECT 1 as test");
+      const queryLatency = Date.now() - queryStartTime;
 
       if (testQuery.rows[0]?.test === 1) {
         healthCheck.checks.query.status = "healthy";
-        healthCheck.checks.query.latency = Date.now() - startTime;
+        healthCheck.checks.query.latency = queryLatency;
       } else {
         throw new Error("Query returned unexpected result");
       }
