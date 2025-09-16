@@ -11,40 +11,39 @@
 import { execSync } from 'child_process';
 import { writeFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
-import VercelPreviewURLExtractor from '../../scripts/get-vercel-preview-url.js';
+import VercelDeploymentManager from '../../scripts/vercel-deployment-manager.js';
 
 const PROJECT_ROOT = resolve(process.cwd());
 
 async function globalSetupPreview() {
   console.log('🚀 Global E2E Setup - Preview Deployment Mode');
   console.log('='.repeat(60));
-  
+
   // For E2E tests against Vercel preview deployments, we don't validate local secrets
   // The deployment has its own environment variables configured in Vercel
   console.log('\n📝 E2E Testing Mode: Vercel Preview Deployment');
   console.log('-'.repeat(40));
-  console.log('✅ Skipping local secret validation - using Vercel deployment environment');
-  console.log('   The deployment has its own secrets configured in Vercel dashboard');
-  
+  console.log('✅ No local secret validation needed - Vercel deployments have their own secrets');
+
   try {
-    // Step 1: Extract preview URL if not already provided
+    // Step 1: Get or create preview deployment
     let previewUrl = process.env.PREVIEW_URL;
-    
+
     if (!previewUrl) {
-      console.log('📡 Extracting Vercel preview URL...');
-      
-      const extractor = new VercelPreviewURLExtractor();
-      previewUrl = await extractor.getPreviewURL();
-      
+      console.log('📡 Managing Vercel preview deployment...');
+
+      const deploymentManager = new VercelDeploymentManager();
+      previewUrl = await deploymentManager.getDeploymentUrl();
+
       if (!previewUrl) {
-        throw new Error('Failed to extract preview URL. Ensure deployment exists and credentials are configured.');
+        throw new Error('Failed to get preview URL. Ensure Vercel is configured correctly.');
       }
-      
+
       // Set for other processes
       process.env.CI_EXTRACTED_PREVIEW_URL = previewUrl;
       process.env.PREVIEW_URL = previewUrl;
     }
-    
+
     console.log(`✅ Preview URL: ${previewUrl}`);
     
     // Step 2: Validate deployment health and environment

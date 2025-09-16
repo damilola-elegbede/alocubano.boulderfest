@@ -48,7 +48,7 @@ describe('Admin Authentication Edge Cases and Error Recovery', () => {
   let originalAdminSecret;
 
   beforeEach(async () => {
-    dbClient = getDbClient();
+    dbClient = await getDbClient();
     
     // Store original environment variables for restoration
     originalTestPassword = process.env.TEST_ADMIN_PASSWORD;

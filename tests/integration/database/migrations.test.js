@@ -9,7 +9,7 @@ describe('Database Migration Integration', () => {
   let dbClient;
 
   beforeEach(async () => {
-    dbClient = getDbClient();
+    dbClient = await getDbClient();
   });
 
   test('migration system tracks executed migrations correctly', async () => {

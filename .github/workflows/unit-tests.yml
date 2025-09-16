@@ -53,10 +53,130 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
+      - name: "🏗️ Install System Dependencies"
+        run: |
+          echo "🔧 Installing system dependencies for native modules..."
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            python3-dev \
+            libsqlite3-dev \
+            libc6-dev \
+            libvips-dev \
+            pkg-config
+          echo "✅ System dependencies installed"
+
       - name: "📦 Install Dependencies"
-        run: npm ci --prefer-offline --no-audit
+        run: |
+          echo "📦 Installing npm dependencies..."
+
+          # Install dependencies with npm ci for reproducibility
+          npm ci --prefer-offline --no-audit
+
+          # Workaround for npm optional dependencies bug #4828
+          # Force install Linux-specific binaries that npm ci might skip
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            echo "🔧 Checking for platform-specific binaries..."
+
+            # Install Rollup Linux binary if missing
+            if [ ! -d "node_modules/@rollup/rollup-linux-x64-gnu" ]; then
+              echo "⚠️  Rollup Linux binary missing (npm bug #4828)"
+              echo "🔧 Installing @rollup/rollup-linux-x64-gnu..."
+              npm install @rollup/rollup-linux-x64-gnu@4.50.0 --no-save --no-audit
+            fi
+
+            # Install LibSQL Linux binary if missing
+            if [ ! -d "node_modules/@libsql/linux-x64-gnu" ]; then
+              echo "⚠️  LibSQL Linux binary missing (npm bug #4828)"
+              echo "🔧 Installing @libsql/linux-x64-gnu..."
+              npm install @libsql/linux-x64-gnu --no-save --no-audit || true
+            fi
+
+            # Rebuild native modules for current platform
+            echo "🔄 Rebuilding native modules..."
+            npm rebuild
+          fi
+
+          echo "✅ Dependencies installed and verified"
         env:
           NGROK_SKIP_DOWNLOAD: true
+          npm_config_build_from_source: true
+          # Force npm to rebuild native binaries for current platform
+          npm_config_build_from_source: true
+          # Ensure proper Python for node-gyp
+          PYTHON: python3
+
+      - name: "🔍 Verify Native Dependencies"
+        run: |
+          echo "🔍 Verifying native module installations..."
+
+          # Check better-sqlite3
+          node -e "try { require('better-sqlite3'); console.log('✅ better-sqlite3: OK'); } catch(e) { console.log('❌ better-sqlite3:', e.message); process.exit(1); }"
+
+          # Check sharp
+          # Check sharp with platform-specific binary verification
+          node -e "
+            try {
+              const sharp = require('sharp');
+              console.log('✅ sharp: OK');
+              console.log('📋 sharp platform info:', process.platform, process.arch);
+              // Test actual functionality to verify native binary
+              sharp.concurrency(1);
+              console.log('✅ sharp native binary: functional');
+            } catch(e) {
+              console.log('❌ sharp:', e.message);
+              console.log('🔍 Platform:', process.platform, process.arch);
+              console.log('🔍 Node version:', process.version);
+              if (e.message.includes('linux-x64')) {
+                console.log('💡 Sharp linux-x64 binary missing - this may be a package-lock.json platform issue');
+                console.log('💡 Run: npm rebuild sharp --platform=linux --arch=x64');
+              }
+              process.exit(1);
+            }
+          "
+
+          # Check bcryptjs (pure JS, should always work)
+          node -e "try { require('bcryptjs'); console.log('✅ bcryptjs: OK'); } catch(e) { console.log('❌ bcryptjs:', e.message); process.exit(1); }"
+
+          # Check Rollup platform-specific binary (critical for Vitest)
+          echo "🔍 Verifying Rollup platform-specific binary..."
+          node -e "
+            const fs = require('fs');
+            const path = require('path');
+            const platform = process.platform;
+            const arch = process.arch;
+
+            // Expected platform-specific package for Linux x64
+            const expectedPackage = '@rollup/rollup-linux-x64-gnu';
+            const packagePath = path.join('node_modules', expectedPackage);
+
+            console.log('Platform:', platform, 'Arch:', arch);
+            console.log('Expected package:', expectedPackage);
+            console.log('Package path:', packagePath);
+
+            if (fs.existsSync(packagePath)) {
+              console.log('✅ Rollup platform binary: OK');
+            } else {
+              console.log('❌ Rollup platform binary missing:', expectedPackage);
+              console.log('Available @rollup packages:');
+              try {
+                const rollupDir = path.join('node_modules', '@rollup');
+                if (fs.existsSync(rollupDir)) {
+                  fs.readdirSync(rollupDir).forEach(pkg => console.log('  -', pkg));
+                } else {
+                  console.log('  @rollup directory not found');
+                }
+              } catch(e) {
+                console.log('  Error listing @rollup packages:', e.message);
+              }
+              process.exit(1);
+            }
+          "
+
+          # Verify Rollup can be required (end-to-end test)
+          node -e "try { require('rollup'); console.log('✅ rollup: OK'); } catch(e) { console.log('❌ rollup:', e.message); process.exit(1); }"
+
+          echo "✅ All native dependencies verified"
 
       - name: "🧪 Run Unit Tests (806+ tests)"
         id: test
@@ -181,6 +301,11 @@ jobs:
             - **Individual Test Timeout**: 15 seconds per test
             - **Hook Timeout**: 20 seconds for setup/teardown
             - **Performance Target**: <2 seconds total execution time
+
+            ### 🏗️ Native Dependencies
+            - **System packages**: build-essential, python3-dev, libsqlite3-dev, libvips-dev
+            - **Native rebuilds**: All platform-specific binaries rebuilt for Ubuntu
+            - **Verification**: Dependencies verified before test execution
 
             ${testReport.status === 'success' ?
               '### 🏆 All tests passed successfully!' :

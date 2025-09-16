@@ -5,37 +5,36 @@
   "type": "module",
   "private": true,
   "engines": {
-    "node": "18.x || 20.x || 22.x || 24.x"
+    "node": ">=20.0.0 <25.0.0"
   },
   "scripts": {
-    "build": "NODE_OPTIONS='--max-old-space-size=4096' node -e \"const isVercel = process.env.VERCEL === '1'; const env = process.env.VERCEL_ENV || 'local'; console.log(''); console.log('🔨 Build Process'); console.log('================'); console.log('Environment: ' + env); console.log('Platform: ' + (isVercel ? 'Vercel' : 'Local')); if(!isVercel) { console.log(''); console.log('📋 Running structure verification...'); require('child_process').execSync('npm run verify-structure', {stdio:'inherit'}); } console.log(''); console.log('✅ Build completed successfully!'); console.log('');\"",
-    "start": "node scripts/start-with-ngrok.js",
-    "start:local": "node scripts/vercel-dev-start.js",
-    "dev": "npm run start",
-    "test": "NODE_OPTIONS='--max-old-space-size=6144' vitest run --config tests/vitest.config.js",
+    "build": "NODE_OPTIONS='--max-old-space-size=4096' node -e \"import('child_process').then(({execSync}) => { const isVercel = process.env.VERCEL === '1'; const env = process.env.VERCEL_ENV || 'local'; console.log(''); console.log('🔨 Build Process'); console.log('================'); console.log('Environment: ' + env); console.log('Platform: ' + (isVercel ? 'Vercel' : 'Local')); if(!isVercel) { console.log(''); console.log('📋 Running structure verification...'); execSync('npm run verify-structure', {stdio:'inherit'}); } console.log(''); console.log('✅ Build completed successfully!'); console.log(''); }).catch(console.error);\"",
+    "start": "npm run vercel:dev",
+    "vercel:dev": "vercel dev --listen 3000",
+    "vercel:preview": "vercel --target preview",
+    "test": "NODE_OPTIONS='--max-old-space-size=4096' vitest run --config tests/vitest.config.js",
     "test:integration": "NODE_OPTIONS='--max-old-space-size=4096' vitest run --config tests/config/vitest.integration.config.js",
-    "test:e2e": "NODE_OPTIONS='--max-old-space-size=3072' playwright test --config playwright-e2e-preview.config.js",
-    "test:watch": "NODE_OPTIONS='--max-old-space-size=6144' vitest --config tests/vitest.config.js",
-    "test:coverage": "NODE_OPTIONS='--max-old-space-size=6144' vitest run --coverage --config tests/vitest.config.js",
+    "test:e2e": "NODE_OPTIONS='--max-old-space-size=4096' PLAYWRIGHT_WORKERS=1 node scripts/vercel-deployment-manager.js && npx playwright test --config playwright-e2e-preview.config.js",
+    "test:e2e:ci": "NODE_OPTIONS='--max-old-space-size=4096' PLAYWRIGHT_WORKERS=1 npx playwright test --config playwright-e2e-preview.config.js",
+    "test:coverage": "NODE_OPTIONS='--max-old-space-size=4096' vitest run --coverage --config tests/vitest.config.js",
+    "test:all": "npm test && npm run test:integration && npm run test:coverage && npm run test:e2e",
     "lint": "npm run lint:js && npm run lint:html && npm run lint:markdown",
     "lint:js": "eslint --config config/eslint.config.js js/**/*.js",
     "lint:html": "htmlhint --config config/.htmlhintrc pages/**/*.html",
     "lint:markdown": "markdownlint *.md CLAUDE.md INSTALLATION.md SECURITY.md --ignore node_modules --ignore .tmp",
     "migrate:up": "DOTENV_CONFIG_PATH=.env.local node -r dotenv/config scripts/migrate.js",
+    "migrate:down": "echo '⚠️  Warning: SQLite migration rollback not implemented. Manual database restoration required.' && echo 'Current migration system does not support automated rollback due to SQLite DDL limitations.' && exit 1",
     "migrate:status": "node scripts/migrate.js status",
     "migrate:check": "DOTENV_CONFIG_PATH=.env.local node -r dotenv/config scripts/check-migration-status.js",
     "migrate:vercel": "node scripts/migrate-vercel-build.js",
-    "deploy": "NODE_OPTIONS='--max-old-space-size=4096' npm run lint && npm run test && vercel --target production",
-    "health": "node scripts/test-health-endpoint.js",
-    "preview": "vercel --target preview",
-    "db:shell": "sqlite3 data/development.db",
-    "verify-structure": "node scripts/verify-structure.js"
+    "verify-structure": "node scripts/verify-structure.js",
+    "validate-ci-fixes": "node scripts/validate-ci-fixes.js"
   },
   "dependencies": {
     "@libsql/client": "^0.15.14",
     "@sentry/node": "^7.120.4",
     "@stripe/stripe-js": "^7.9.0",
-    "@types/node": "^24.3.0",
+    "@types/node": "^20.19.0",
     "bcryptjs": "^3.0.2",
     "better-sqlite3": "^12.2.0",
     "cookie": "^1.0.2",
@@ -78,5 +77,11 @@
     "nodemon": "^3.1.10",
     "vercel": "^47.0.1",
     "vitest": "^2.1.9"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "^4.50.0",
+    "@rollup/rollup-darwin-arm64": "^4.50.0",
+    "@rollup/rollup-darwin-x64": "^4.50.0",
+    "@rollup/rollup-win32-x64-msvc": "^4.50.0"
   }
 }

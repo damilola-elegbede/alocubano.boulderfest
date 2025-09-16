@@ -19,7 +19,6 @@ const TestRunner = {
     console.log("🔍 Running comprehensive test suite...");
     execSync("npm run test:all", { stdio: "inherit" });
     execSync("npm run test:integration", { stdio: "inherit" });
-    execSync("npm run test:performance", { stdio: "inherit" });
   },
 
   // Coverage validation

@@ -6,16 +6,43 @@
 import { promises as fs } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { getDatabase } from "../lib/database.js";
+import { getDatabaseClient } from "../lib/database.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 class MigrationSystem {
   constructor() {
-    this.db = getDatabase();
+    this.dbClient = null; // Will be initialized when needed
     this.migrationsDir = path.join(__dirname, "..", "migrations");
     this.debug = process.env.DEBUG_MIGRATION === 'true';
+  }
+
+  /**
+   * Ensure database client is initialized
+   */
+  async ensureDbClient() {
+    if (!this.dbClient) {
+      this.dbClient = await getDatabaseClient();
+    }
+    return this.dbClient;
+  }
+
+  /**
+   * Get the current database client (may be null)
+   */
+  getDbClient() {
+    return this.dbClient;
+  }
+
+  /**
+   * Manually close the database connection
+   */
+  async closeConnection() {
+    if (this.dbClient && typeof this.dbClient.close === 'function') {
+      await this.dbClient.close();
+      this.dbClient = null;
+    }
   }
 
   debugLog(message) {
@@ -39,16 +66,16 @@ class MigrationSystem {
     `;
 
     const createIndexSQL = `
-      CREATE INDEX IF NOT EXISTS idx_migrations_filename 
+      CREATE INDEX IF NOT EXISTS idx_migrations_filename
       ON migrations(filename)
     `;
 
     try {
-      await this.db.execute(createTableSQL);
-      await this.db.execute(createIndexSQL);
+      const client = await this.ensureDbClient();
+      await client.execute(createTableSQL);
+      await client.execute(createIndexSQL);
 
       // Clean up any duplicate migration records
-      const client = await this.db.ensureInitialized();
 
       this.debugLog("🔍 Checking for duplicate migration records...");
 
@@ -155,7 +182,8 @@ class MigrationSystem {
    */
   async getExecutedMigrations() {
     try {
-      const result = await this.db.execute(
+      const client = await this.ensureDbClient();
+      const result = await client.execute(
         "SELECT filename FROM migrations ORDER BY id",
       );
       return result.rows.map((row) => row.filename);
@@ -439,7 +467,7 @@ class MigrationSystem {
     try {
       // For problematic migrations, use statement-by-statement execution without transactions
       // to avoid rollback issues with complex table/index creation dependencies
-      const client = await this.db.ensureInitialized();
+      const client = await this.ensureDbClient();
       
       // First ensure migrations table exists
       await client.execute(`
@@ -656,8 +684,10 @@ class MigrationSystem {
 
     try {
       // Test database connection first to catch early issues
-      const connectionTest = await this.db.testConnection();
-      if (!connectionTest) {
+      const client = await this.ensureDbClient();
+      // Simple connection test
+      const testResult = await client.execute('SELECT 1 as test');
+      if (!testResult || !testResult.rows || testResult.rows.length !== 1) {
         throw new Error("Database connection test failed - cannot proceed with migrations");
       }
       this.debugLog("✅ Database connection verified");
@@ -693,23 +723,50 @@ class MigrationSystem {
       }
 
       console.log(`🎉 Successfully executed ${executedCount} migrations`);
+
+      // CRITICAL: Ensure WAL checkpoint for SQLite databases
+      // This forces SQLite to write WAL contents to the main database file
+      if (this.dbClient) {
+        try {
+          // Check if this is a SQLite database (file-based)
+          const dbUrl = process.env.DATABASE_URL || process.env.TURSO_DATABASE_URL || '';
+          if (dbUrl.includes('file:') || dbUrl.includes('.db')) {
+            console.log("📝 Performing WAL checkpoint for SQLite database...");
+            await this.dbClient.execute('PRAGMA wal_checkpoint(TRUNCATE)');
+            console.log("✅ WAL checkpoint completed");
+          }
+        } catch (walError) {
+          console.warn("⚠️  WAL checkpoint warning:", walError.message);
+          // Non-fatal: continue even if checkpoint fails
+        }
+      }
+
       return {
         executed: executedCount,
         skipped: availableMigrations.length - pendingMigrations.length,
       };
     } catch (error) {
       console.error("❌ Migration system failed:", error.message);
-      
-      // Attempt to clean up database connections on failure
-      try {
-        console.log("🧹 Cleaning up database connections after migration failure...");
-        await this.db.close(5000);
-        console.log("✅ Database connections cleaned up");
-      } catch (cleanupError) {
-        console.warn("⚠️  Failed to clean up database connections:", cleanupError.message);
-      }
-      
       throw error;
+    } finally {
+      // For integration tests, keep connection open if requested
+      const keepConnectionOpen = process.env.KEEP_MIGRATION_CONNECTION === 'true' ||
+                                 process.env.INTEGRATION_TEST_MODE === 'true';
+
+      if (!keepConnectionOpen) {
+        // Only close connection for standalone migration runs
+        try {
+          if (this.dbClient && typeof this.dbClient.close === 'function') {
+            console.log("🧹 Closing database connection...");
+            await this.dbClient.close();
+            console.log("✅ Database connection closed successfully");
+          }
+        } catch (cleanupError) {
+          console.warn("⚠️  Failed to close database connection:", cleanupError.message);
+        }
+      } else {
+        console.log("🔌 Keeping database connection open for integration tests");
+      }
     }
   }
 
@@ -745,7 +802,8 @@ class MigrationSystem {
               migration.content,
             );
 
-            const result = await this.db.execute(
+            const client = await this.ensureDbClient();
+            const result = await client.execute(
               "SELECT checksum FROM migrations WHERE filename = ?",
               [migrationFile],
             );
@@ -834,6 +892,15 @@ class MigrationSystem {
     } catch (error) {
       console.error("❌ Failed to get migration status:", error.message);
       throw error;
+    } finally {
+      // Clean up database connection
+      try {
+        if (this.dbClient && typeof this.dbClient.close === 'function') {
+          await this.dbClient.close();
+        }
+      } catch (cleanupError) {
+        // Silently ignore cleanup errors for status command
+      }
     }
   }
 }

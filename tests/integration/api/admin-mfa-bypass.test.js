@@ -45,7 +45,7 @@ describe('Admin MFA Bypass Integration', () => {
   };
 
   beforeEach(async () => {
-    dbClient = getDbClient();
+    dbClient = await getDbClient();
     
     // Backup current environment variables
     originalEnv = backupEnv([

@@ -12,7 +12,7 @@ describe('Database Transaction Integration', () => {
 
   beforeEach(async () => {
     testEmail = generateTestEmail();
-    dbClient = getDbClient();
+    dbClient = await getDbClient(); // Note: getDbClient is async, must await it
   });
 
   test('transaction rollback on payment failure maintains data integrity', async () => {

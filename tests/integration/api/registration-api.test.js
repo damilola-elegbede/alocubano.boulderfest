@@ -12,7 +12,7 @@ describe('Registration API Integration', () => {
 
   beforeEach(async () => {
     testEmail = generateTestEmail();
-    dbClient = getDbClient();
+    dbClient = await getDbClient();
   });
 
   test('ticket registration creates complete database records', async () => {

@@ -45,7 +45,7 @@ npm test                       # Run unit tests (fast execution)
 npm run test:e2e               # Run E2E tests (Vercel Preview Deployments)
 
 # Start development
-npm run dev                    # Development server with ngrok tunnel
+npm run vercel:dev             # Development server with ngrok tunnel
 ```
 
 ## Installation Steps
@@ -104,7 +104,7 @@ ADMIN_PASSWORD=            # Generate with bcrypt hashing
 ADMIN_SECRET=your-secure-session-secret-min-32-chars
 
 # ================================================
-# OPTIONAL FOR EXTENDED FUNCTIONALITY  
+# OPTIONAL FOR EXTENDED FUNCTIONALITY
 # ================================================
 
 # Email Service (Brevo/SendinBlue)
@@ -136,9 +136,6 @@ npm run migrate:up
 
 # Verify database setup
 npm run migrate:status
-
-# Test database connectivity
-npm run health
 ```
 
 #### Turso Database Setup for E2E Testing and Production
@@ -181,9 +178,6 @@ TURSO_AUTH_TOKEN=your-auth-token-here
 ```bash
 # Run migrations on Turso database
 npm run migrate:up
-
-# Verify Turso connection
-npm run health
 ```
 
 ### 5. Verification
@@ -192,7 +186,7 @@ Start the development server to verify installation:
 
 ```bash
 # Start development server with ngrok tunnel (recommended)
-npm run dev
+npm run vercel:dev
 
 # Alternative: Start development server locally
 npm start
@@ -267,31 +261,28 @@ GOOGLE_PRIVATE_KEY="your-private-key-with-newlines"
 
 ### Streamlined Script Set
 
-The project uses **15 essential commands** for all development needs:
+The project uses essential commands for all development needs:
 
 ```bash
 # Core Development
-npm run dev                    # Development server with ngrok tunnel
-npm start                      # Alias for npm run dev
+npm run vercel:dev             # Development server with ngrok tunnel
+npm start                      # Alias for npm run vercel:dev
 npm run build                  # Production build
-npm run preview                # Vercel preview deployment
+npm run vercel:preview         # Vercel preview deployment
 
 # Testing (Streamlined)
 npm test                       # Unit tests (fast execution)
 npm run test:integration       # Integration tests
 npm run test:e2e               # E2E tests with Vercel Preview Deployments
-npm run test:watch             # Watch mode for development
 npm run test:coverage          # Coverage reports
 
-# Quality & Deployment
+# Quality & Build Verification
 npm run lint                   # Code quality (ESLint + HTMLHint + Markdown)
-npm run deploy                 # Production deployment
-npm run health                 # Health checks
+npm run verify-structure       # Verify project structure (via build)
 
 # Database Management
 npm run migrate:up             # Run database migrations
 npm run migrate:status         # Check migration status
-npm run db:shell               # SQLite shell access
 ```
 
 ## CI/CD Setup
@@ -346,7 +337,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -355,14 +346,14 @@ jobs:
 
       - name: Install Vercel CLI
         run: npm i -g vercel
-          
+
       - name: Cache dependencies
         id: cache-deps
         uses: actions/cache@v4
         with:
           path: node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
-          
+
       - name: Install dependencies
         if: steps.cache-deps.outputs.cache-hit != 'true'
         run: npm ci
@@ -373,19 +364,19 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
-          
+
       - name: Restore dependencies
         uses: actions/cache@v4
         with:
           path: node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
-          
+
       - name: Run unit tests
         run: npm test
         env:
@@ -398,19 +389,19 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
-          
+
       - name: Restore dependencies
         uses: actions/cache@v4
         with:
           path: node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
-          
+
       - name: Run integration tests
         run: npm run test:integration
         env:
@@ -429,7 +420,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -438,13 +429,13 @@ jobs:
 
       - name: Install Vercel CLI
         run: npm i -g vercel
-          
+
       - name: Restore dependencies
         uses: actions/cache@v4
         with:
           path: node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
-          
+
       - name: Run E2E tests with Vercel Preview Deployments
         run: npm run test:e2e
         env:
@@ -461,19 +452,19 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
-          
+
       - name: Restore dependencies
         uses: actions/cache@v4
         with:
           path: node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
-          
+
       - name: Run linting
         run: npm run lint
 ```
@@ -489,14 +480,14 @@ Configure branch protection rules in GitHub (Settings → Branches):
 ✅ Dismiss stale PR approvals when new commits are pushed
 ✅ Require review from code owners
 ✅ Require status checks to pass before merging
-   - Required status checks:
-     ✅ setup
-     ✅ unit-tests  
-     ✅ integration-tests
-     ✅ e2e-tests (chromium)
-     ✅ e2e-tests (firefox)
-     ✅ e2e-tests (webkit)
-     ✅ quality-gates
+  - Required status checks:
+    ✅ setup
+    ✅ unit-tests
+    ✅ integration-tests
+    ✅ e2e-tests (chromium)
+    ✅ e2e-tests (firefox)
+    ✅ e2e-tests (webkit)
+    ✅ quality-gates
 ✅ Require branches to be up to date before merging
 ✅ Require linear history
 ✅ Include administrators
@@ -515,7 +506,6 @@ npm test && npm run test:integration && npm run test:e2e
 
 # Test specific components
 npm run lint                   # Test quality gates
-npm run health                 # Test health checks
 ```
 
 ## Troubleshooting
@@ -547,7 +537,7 @@ vercel --version
 vercel login
 
 # Test Vercel dev server
-npm run dev
+npm run vercel:dev
 ```
 
 #### Database Connection Issues
@@ -559,9 +549,6 @@ npm run migrate:up
 
 # Check SQLite installation
 sqlite3 --version
-
-# Test database connectivity
-npm run health
 ```
 
 #### Turso Connection Issues
@@ -613,7 +600,7 @@ lsof -ti:3000
 kill -9 $(lsof -ti:3000)
 
 # Use different port
-PORT=3001 npm run dev
+PORT=3001 npm run vercel:dev
 ```
 
 #### Environment Variable Issues
@@ -637,7 +624,7 @@ rm -rf node_modules package-lock.json
 npm install
 
 # Use lightweight development approach
-npm run dev
+npm run vercel:dev
 ```
 
 ## IDE Setup
@@ -682,10 +669,7 @@ Add to `.vscode/settings.json`:
 npm i -g vercel
 
 # Deploy to preview
-npm run preview
-
-# Deploy to production
-npm run deploy
+npm run vercel:preview
 ```
 
 ### Environment Variables for Production
@@ -708,30 +692,40 @@ The GitHub Actions workflow automatically deploys to production when:
 - E2E tests pass across all browsers with **Vercel Preview Deployments**
 - Performance benchmarks are met
 
-## Migration Notes
+## Streamlined Development Experience
 
-### Breaking Changes - Script Simplification
+### Current Essential Scripts
 
-**What Changed:**
+The project focuses on the commands you actually need:
 
-- **Reduced complexity**: From 199 scripts to 15 essential commands
-- **Standardized naming**: Clear, consistent command naming conventions
-- **Simplified testing**: Single commands for each test type
-- **Modern E2E approach**: All E2E testing uses Vercel Preview Deployments
+```bash
+# Core Development
+npm run vercel:dev             # Development server with ngrok tunnel
+npm start                      # Alias for npm run vercel:dev
+npm run build                  # Production build
+npm run vercel:preview         # Vercel preview deployment
 
-**Migration Required:**
+# Testing Suite
+npm test                       # Unit tests (fast execution)
+npm run test:integration       # Integration tests
+npm run test:e2e               # E2E tests with Vercel Preview Deployments
+npm run test:coverage          # Coverage reports
 
-1. **Update development workflows**: Use `npm run dev` for development
-2. **Update testing commands**: Use `npm test` for unit tests
-3. **Update E2E testing**: Use `npm run test:e2e` (Vercel Preview Deployments)
-4. **Update CI/CD pipelines**: Ensure workflows use current script names
+# Quality & Build Verification
+npm run lint                   # Complete code quality (ESLint + HTMLHint + Markdown)
+npm run verify-structure       # Verify project structure (via build)
+
+# Database Management
+npm run migrate:up             # Run database migrations
+npm run migrate:status         # Check migration status
+```
 
 **Benefits:**
 
-- **Simplified development**: Clear purpose for each command
-- **Faster onboarding**: Predictable script names following standard conventions
-- **Reduced confusion**: No duplicate commands or conflicting approaches
-- **Better maintenance**: Fewer scripts to maintain and update
+- **Clear purpose**: Each script has a single, well-defined responsibility
+- **Simplified workflow**: Focus on Vercel Preview Deployments for E2E testing
+- **Predictable naming**: Standard command naming conventions
+- **Essential only**: Only the commands needed for development
 
 ## Support
 

@@ -133,3 +133,11 @@ deployment-check-report.json
 
 # Temporary documentation and analysis
 .tmp/
+
+# E2E test environment files
+.env.preview
+.vercel-deployment-cache.json
+
+# Debug and test scripts (should be in proper directories)
+debug_test.js
+test_constraint.js

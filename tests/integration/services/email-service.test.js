@@ -12,7 +12,7 @@ describe('Email Service Integration', () => {
 
   beforeEach(async () => {
     testEmail = generateTestEmail();
-    dbClient = getDbClient();
+    dbClient = await getDbClient();
   });
 
   test('newsletter subscription creates database record and sends to Brevo', async () => {

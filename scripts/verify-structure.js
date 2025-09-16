@@ -229,12 +229,15 @@ if (fs.existsSync(vercelJsonPath)) {
       console.log("  ✅ Has rewrite rules:");
       
       // Check for critical routing rules - Updated for build architecture
-      const rootRoute = config.rewrites.find(r => r.source === "/" && r.destination === "/index.html");
-      
+      const rootRoute = config.rewrites.find(r =>
+        r.source === "/" &&
+        (r.destination === "/index.html" || r.destination === "/pages/home.html")
+      );
+
       if (rootRoute) {
-        console.log("    ✅ Root route (/) -> index.html configured");
+        console.log(`    ✅ Root route (/) -> ${rootRoute.destination} configured`);
       } else {
-        console.log("    ❌ Root route (/) -> index.html MISSING");
+        console.log("    ❌ Root route (/) -> index.html or /pages/home.html MISSING");
         allGood = false;
       }
       

@@ -22,8 +22,8 @@ describe('Cache Placeholder Logic', () => {
     galleryService.clearCache();
   });
 
-  describe('Placeholder Detection and Fail-Fast Behavior', () => {
-    it('should fail fast when placeholder cache data has isPlaceholder: true', async () => {
+  describe('Placeholder Detection and Graceful Degradation', () => {
+    it('should gracefully handle placeholder cache data with isPlaceholder: true', async () => {
       // Mock build-time cache that is a placeholder
       const mockCacheData = {
         eventId: 'test-event',
@@ -37,11 +37,19 @@ describe('Cache Placeholder Logic', () => {
 
       // Mock the getBuildTimeCache method to return placeholder data
       vi.spyOn(galleryService, 'getBuildTimeCache').mockResolvedValue(mockCacheData);
-      
-      // Should fail fast with clear error message
-      await expect(galleryService.getGalleryData('test-event'))
-        .rejects
-        .toThrow(/FATAL.*Google Drive secret not configured.*placeholder data/);
+
+      // Should gracefully degrade and return empty data
+      const result = await galleryService.getGalleryData('test-event');
+      expect(result).toBeDefined();
+      expect(result.totalCount).toBe(0);
+      expect(result.source).toBe('empty-fallback');
+      expect(result.message).toBe('Google Drive credentials not configured - gallery disabled');
+      expect(result.categories).toEqual({
+        workshops: [],
+        socials: [],
+        performances: [],
+        other: []
+      });
     });
 
     it('should accept cache data without isPlaceholder flag (real data)', async () => {
@@ -78,8 +86,9 @@ describe('Cache Placeholder Logic', () => {
       expect(result.categories.socials).toHaveLength(2);
     });
 
-    it('should accept empty cache data without isPlaceholder flag (empty but valid)', async () => {
-      // Mock build-time cache that is empty but valid (no isPlaceholder field)
+    it('should gracefully handle empty cache data with placeholder-like characteristics', async () => {
+      // Mock build-time cache that has empty data with placeholder message
+      // This should now be detected as placeholder even without explicit isPlaceholder field
       const mockEmptyData = {
         eventId: 'empty-event',
         totalCount: 0,
@@ -87,28 +96,30 @@ describe('Cache Placeholder Logic', () => {
         hasMore: false,
         cacheTimestamp: new Date().toISOString(),
         message: "Empty event gallery cache - to be populated when Google Drive folder is configured"
-        // Note: no isPlaceholder field - this indicates valid empty cache
+        // Note: no isPlaceholder field but has totalCount:0 and placeholder-like message
       };
 
-      // Mock the getBuildTimeCache method to return empty but valid data
+      // Mock the getBuildTimeCache method to return empty data
       vi.spyOn(galleryService, 'getBuildTimeCache').mockResolvedValue(mockEmptyData);
-      
-      // Should successfully return the empty cached data
+
+      // Should gracefully degrade and return empty data
       const result = await galleryService.getGalleryData('empty-event');
-      
-      expect(result).toMatchObject({
-        eventId: 'empty-event',
-        totalCount: 0,
-        source: 'build-time-cache'
+      expect(result).toBeDefined();
+      expect(result.totalCount).toBe(0);
+      expect(result.source).toBe('empty-fallback');
+      expect(result.message).toBe('Google Drive credentials not configured - gallery disabled');
+      expect(result.categories).toEqual({
+        workshops: [],
+        socials: [],
+        performances: [],
+        other: []
       });
-      expect(result.categories.workshops).toHaveLength(0);
-      expect(result.categories.socials).toHaveLength(0);
     });
 
-    it('should fail fast when runtime cache has isPlaceholder: true', async () => {
+    it('should gracefully handle runtime cache with isPlaceholder: true', async () => {
       // Mock no build-time cache available
       vi.spyOn(galleryService, 'getBuildTimeCache').mockResolvedValue(null);
-      
+
       // Set placeholder data in runtime cache
       const placeholderData = {
         eventId: 'runtime-placeholder',
@@ -119,13 +130,21 @@ describe('Cache Placeholder Logic', () => {
         isPlaceholder: true,
         message: "Placeholder data - Google Drive credentials not available"
       };
-      
+
       galleryService.setRuntimeCache('runtime-placeholder', galleryService.compressData(placeholderData));
-      
-      // Should fail fast when trying to use placeholder runtime cache
-      await expect(galleryService.getGalleryData(null, 'runtime-placeholder'))
-        .rejects
-        .toThrow(/FATAL.*Google Drive secret not configured.*placeholder data/);
+
+      // Should gracefully degrade and return empty data
+      const result = await galleryService.getGalleryData(null, 'runtime-placeholder');
+      expect(result).toBeDefined();
+      expect(result.totalCount).toBe(0);
+      expect(result.source).toBe('empty-fallback');
+      expect(result.message).toBe('Google Drive credentials not configured - gallery disabled');
+      expect(result.categories).toEqual({
+        workshops: [],
+        socials: [],
+        performances: [],
+        other: []
+      });
     });
   });
 
@@ -149,11 +168,11 @@ describe('Cache Placeholder Logic', () => {
       const emptyValidData = {
         totalCount: 0,
         categories: { workshops: [], socials: [], other: [] },
-        message: "Empty cache waiting for population"
-        // No isPlaceholder field
+        message: "Gallery data currently unavailable"
+        // No isPlaceholder field, different message to avoid triggering enhanced detection
       };
 
-      // Placeholder detection should be explicit
+      // Placeholder detection should be explicit or based on specific message patterns
       expect(placeholderData.isPlaceholder).toBe(true);
       expect(realData.isPlaceholder).toBeUndefined();
       expect(emptyValidData.isPlaceholder).toBeUndefined();

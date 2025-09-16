@@ -4,6 +4,9 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } 
 process.env.WALLET_AUTH_SECRET = 'test-wallet-auth-secret-key-for-testing-purposes';
 process.env.APPLE_PASS_KEY = 'dGVzdC1hcHBsZS1wYXNzLWtleQ=='; // base64 encoded 'test-apple-pass-key'
 
+// Import the database client from integration setup
+import { getDbClient } from '../../setup-integration.js';
+
 describe('Wallet Pass Integration Tests', () => {
   let database;
   let testTicketId;
@@ -11,25 +14,20 @@ describe('Wallet Pass Integration Tests', () => {
   let AppleWalletService;
   let GoogleWalletService;
   let QRTokenService;
-  let getDatabase;
-  let getDatabaseClient;
 
   beforeAll(async () => {
     // Dynamic imports after environment variables are set
-    const databaseModule = await import('../../../lib/database.js');
-    getDatabase = databaseModule.getDatabase;
-    getDatabaseClient = databaseModule.getDatabaseClient;
-    
     const appleModule = await import('../../../lib/apple-wallet-service.js');
     AppleWalletService = appleModule.AppleWalletService;
-    
+
     const googleModule = await import('../../../lib/google-wallet-service.js');
     GoogleWalletService = googleModule.GoogleWalletService;
-    
+
     const qrModule = await import('../../../lib/qr-token-service.js');
     QRTokenService = qrModule.QRTokenService;
-    
-    database = await getDatabase();
+
+    // Use the database client from integration setup instead of creating our own
+    database = await getDbClient(); // Note: getDbClient is async, must await it
   });
 
 
@@ -71,26 +69,8 @@ describe('Wallet Pass Integration Tests', () => {
     });
   });
 
-  afterAll(async () => {
-    // Cleanup test data
-    if (testTicketId) {
-      await database.execute({
-        sql: 'DELETE FROM wallet_pass_events WHERE ticket_id = (SELECT id FROM tickets WHERE ticket_id = ?)',
-        args: [testTicketId]
-      }).catch(() => {}); // Ignore if table doesn't exist
-
-      await database.execute({
-        sql: 'DELETE FROM tickets WHERE ticket_id = ?',
-        args: [testTicketId]
-      }).catch(() => {});
-
-      // Use the correct transaction_id format for cleanup
-      await database.execute({
-        sql: 'DELETE FROM transactions WHERE transaction_id = ?',
-        args: [`stripe-tx-${testTransactionId}`]
-      }).catch(() => {});
-    }
-  });
+  // Note: Database cleanup is handled by setup-integration.js
+  // No need for manual cleanup in afterAll since beforeEach/afterEach in setup cleans the database
 
   describe('Apple Wallet Service', () => {
     let appleWalletService;

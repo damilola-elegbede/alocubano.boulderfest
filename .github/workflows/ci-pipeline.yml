@@ -59,7 +59,37 @@ jobs:
           cache-dependency-path: package-lock.json
 
       - name: "📦 Install Dependencies"
-        run: npm ci --prefer-offline --no-audit --no-fund
+        run: |
+          echo "📦 Installing dependencies..."
+
+          # Install with npm ci for reproducibility
+          npm ci --prefer-offline --no-audit --no-fund
+
+          # Workaround for npm optional dependencies bug #4828
+          # Force install Linux-specific binaries that npm ci might skip
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            echo "🔧 Checking for platform-specific binaries..."
+
+            # Install Rollup Linux binary if missing
+            if [ ! -d "node_modules/@rollup/rollup-linux-x64-gnu" ]; then
+              echo "⚠️  Rollup Linux binary missing (npm bug #4828)"
+              echo "🔧 Installing @rollup/rollup-linux-x64-gnu..."
+              npm install @rollup/rollup-linux-x64-gnu@4.50.0 --no-save --no-audit
+            fi
+
+            # Install LibSQL Linux binary if missing
+            if [ ! -d "node_modules/@libsql/linux-x64-gnu" ]; then
+              echo "⚠️  LibSQL Linux binary missing (npm bug #4828)"
+              echo "🔧 Installing @libsql/linux-x64-gnu..."
+              npm install @libsql/linux-x64-gnu --no-save --no-audit || true
+            fi
+
+            # Rebuild native modules
+            echo "🔄 Rebuilding native modules..."
+            npm rebuild
+          fi
+
+          echo "✅ Dependencies installed and verified"
         env:
           NGROK_SKIP_DOWNLOAD: true
 
@@ -133,6 +163,10 @@ jobs:
 
     env:
       DATABASE_URL: "file:./data/test-integration.db"
+      # Force build-time cache access for integration tests (like integration-tests.yml)
+      INTEGRATION_TEST_MODE: "true"  # Force shouldUseBuildTimeCache() to return true
+      NODE_ENV: "test"  # Match integration-tests.yml environment
+      VERCEL: ""  # Explicitly unset to ensure isLocalDevelopment() returns true
       # Test environment variables for integration tests
       STRIPE_SECRET_KEY: ${{ secrets.TEST_STRIPE_SECRET_KEY || 'sk_test_dummy_integration_key' }}
       STRIPE_PUBLISHABLE_KEY: ${{ secrets.TEST_STRIPE_PUBLISHABLE_KEY || 'pk_test_dummy_integration_key' }}
@@ -175,7 +209,37 @@ jobs:
             ${{ runner.os }}-node-
 
       - name: "📦 Install Dependencies"
-        run: npm ci --prefer-offline --no-audit --no-fund
+        run: |
+          echo "📦 Installing dependencies..."
+
+          # Install with npm ci for reproducibility
+          npm ci --prefer-offline --no-audit --no-fund
+
+          # Workaround for npm optional dependencies bug #4828
+          # Force install Linux-specific binaries that npm ci might skip
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            echo "🔧 Checking for platform-specific binaries..."
+
+            # Install Rollup Linux binary if missing
+            if [ ! -d "node_modules/@rollup/rollup-linux-x64-gnu" ]; then
+              echo "⚠️  Rollup Linux binary missing (npm bug #4828)"
+              echo "🔧 Installing @rollup/rollup-linux-x64-gnu..."
+              npm install @rollup/rollup-linux-x64-gnu@4.50.0 --no-save --no-audit
+            fi
+
+            # Install LibSQL Linux binary if missing
+            if [ ! -d "node_modules/@libsql/linux-x64-gnu" ]; then
+              echo "⚠️  LibSQL Linux binary missing (npm bug #4828)"
+              echo "🔧 Installing @libsql/linux-x64-gnu..."
+              npm install @libsql/linux-x64-gnu --no-save --no-audit || true
+            fi
+
+            # Rebuild native modules
+            echo "🔄 Rebuilding native modules..."
+            npm rebuild
+          fi
+
+          echo "✅ Dependencies installed and verified"
         env:
           NGROK_SKIP_DOWNLOAD: true
 
