@@ -92,12 +92,16 @@ describe('Gallery API Integration Tests', () => {
         expect(categories.workshops.length).toBeGreaterThan(0);
       }
       
-      // Test 2023/2024 data (placeholder cache) - should fail fast when credentials missing
+      // Test 2023/2024 data (placeholder cache) - should gracefully degrade when credentials missing
       const cache2023 = await getCacheFileContent('2023.json');
       if (cache2023 && cache2023.isPlaceholder) {
         if (!hasCredentials) {
-          // Should fail fast with placeholder data when credentials missing
-          await expect(galleryService.getGalleryData('2023')).rejects.toThrow(/FATAL.*secret not configured/);
+          // Should gracefully return empty data with placeholder cache when credentials missing
+          const emptyData = await galleryService.getGalleryData('2023');
+          expect(emptyData).toBeDefined();
+          expect(emptyData.totalCount).toBe(0);
+          expect(emptyData.source).toBe('empty-fallback');
+          expect(emptyData.message).toBe('Google Drive credentials not configured - gallery disabled');
         } else {
           // With credentials, should attempt runtime generation
           try {
@@ -139,8 +143,18 @@ describe('Gallery API Integration Tests', () => {
           expect(defaultResult).toHaveProperty('totalCount');
           expect(defaultResult.source).toBe('build-time-cache');
         } else {
-          // Should fail fast if only placeholder data available
-          await expect(galleryService.getGalleryData()).rejects.toThrow(/FATAL.*secret not configured/);
+          // Should gracefully return empty data if only placeholder data available
+          const emptyData = await galleryService.getGalleryData();
+          expect(emptyData).toBeDefined();
+          expect(emptyData.totalCount).toBe(0);
+          expect(emptyData.source).toBe('empty-fallback');
+          expect(emptyData.message).toBe('Google Drive credentials not configured - gallery disabled');
+          expect(emptyData.categories).toEqual({
+            workshops: [],
+            socials: [],
+            performances: [],
+            other: []
+          });
         }
       } else {
         // With credentials, should return valid structure
@@ -201,7 +215,8 @@ describe('Gallery API Integration Tests', () => {
         const hasCredentials = hasGoogleDriveCredentials();
         if (!hasCredentials) {
           // Without credentials, should only fail if no cache AND no real gallery cache available
-          expect(error.message).toMatch(/FATAL.*secret not configured/);
+          // But now with graceful degradation, this might not throw an error
+          expect(error.message).toMatch(/FATAL.*secret not configured|Google Drive credentials not configured/);
         } else {
           // With credentials, should not fail unless Google Drive has issues
           throw error; // Re-throw unexpected errors
@@ -252,18 +267,23 @@ describe('Gallery API Integration Tests', () => {
         expect(metrics2.cacheHits).toBe(2);
         
       } else if (!hasCredentials) {
-        // No real cache and no credentials - should fail fast
-        try {
-          await galleryService.getGalleryData();
-          expect.fail('Should have thrown error');
-        } catch (error) {
-          expect(error.message).toMatch(/FATAL.*secret not configured/);
-          
-          // Metrics should still increment despite error
-          let errorMetrics = galleryService.getMetrics();
-          expect(errorMetrics.apiCalls).toBe(1);
-          expect(errorMetrics.cacheMisses).toBe(1);
-        }
+        // No real cache and no credentials - should gracefully return empty data
+        const emptyData = await galleryService.getGalleryData();
+        expect(emptyData).toBeDefined();
+        expect(emptyData.totalCount).toBe(0);
+        expect(emptyData.source).toBe('empty-fallback');
+        expect(emptyData.message).toBe('Google Drive credentials not configured - gallery disabled');
+        expect(emptyData.categories).toEqual({
+          workshops: [],
+          socials: [],
+          performances: [],
+          other: []
+        });
+
+        // Metrics should still increment
+        let metrics = galleryService.getMetrics();
+        expect(metrics.apiCalls).toBe(1);
+        expect(metrics.cacheMisses).toBe(1);
       } else {
         // Has credentials but no real cache - should attempt runtime generation
         try {
@@ -282,19 +302,27 @@ describe('Gallery API Integration Tests', () => {
       }
     });
 
-    it('should implement fail-fast behavior when credentials missing and only placeholder data available', async () => {
+    it('should implement graceful degradation when credentials missing and only placeholder data available', async () => {
       const hasCredentials = hasGoogleDriveCredentials();
       
       if (!hasCredentials) {
-        // Test that placeholder cache data triggers fail-fast
+        // Test that placeholder cache data triggers graceful degradation
         const cache2023 = await getCacheFileContent('2023.json');
         if (cache2023 && cache2023.isPlaceholder) {
-          await expect(galleryService.getGalleryData('2023')).rejects.toThrow(/FATAL.*secret not configured/);
+          const emptyData2023 = await galleryService.getGalleryData('2023');
+          expect(emptyData2023).toBeDefined();
+          expect(emptyData2023.totalCount).toBe(0);
+          expect(emptyData2023.source).toBe('empty-fallback');
+          expect(emptyData2023.message).toBe('Google Drive credentials not configured - gallery disabled');
         }
-        
+
         const cache2024 = await getCacheFileContent('2024.json');
         if (cache2024 && cache2024.isPlaceholder) {
-          await expect(galleryService.getGalleryData('2024')).rejects.toThrow(/FATAL.*secret not configured/);
+          const emptyData2024 = await galleryService.getGalleryData('2024');
+          expect(emptyData2024).toBeDefined();
+          expect(emptyData2024.totalCount).toBe(0);
+          expect(emptyData2024.source).toBe('empty-fallback');
+          expect(emptyData2024.message).toBe('Google Drive credentials not configured - gallery disabled');
         }
         
         // Test that real cache data works even without credentials
@@ -351,11 +379,15 @@ describe('Gallery API Integration Tests', () => {
         expect(result2025.totalCount).toBeGreaterThan(0);
       }
       
-      // Test 2023 - placeholder cache should fail fast without credentials
+      // Test 2023 - placeholder cache should gracefully degrade without credentials
       const cache2023 = await getCacheFileContent('2023.json');
       if (cache2023 && cache2023.isPlaceholder) {
         if (!hasCredentials) {
-          await expect(galleryService.getGalleryData('2023')).rejects.toThrow(/FATAL.*secret not configured/);
+          const emptyData2023 = await galleryService.getGalleryData('2023');
+          expect(emptyData2023).toBeDefined();
+          expect(emptyData2023.totalCount).toBe(0);
+          expect(emptyData2023.source).toBe('empty-fallback');
+          expect(emptyData2023.message).toBe('Google Drive credentials not configured - gallery disabled');
         } else {
           // With credentials, should attempt runtime generation
           try {
@@ -639,8 +671,9 @@ describe('Gallery API Integration Tests', () => {
             // If cache exists but still fails, it's unexpected
             throw new Error(`Featured photos should work with cache file present: ${error.message}`);
           } catch (cacheError) {
-            // No cache file - failure is expected without credentials
-            expect(error.message).toMatch(/FATAL.*secret not configured/);
+            // No cache file - failure might happen without credentials, but with graceful degradation
+            // the gallery service itself might return empty data instead of failing
+            expect(error.message).toMatch(/FATAL.*secret not configured|Google Drive credentials not configured/);
           }
         } else {
           // With credentials, should not fail unless Google Drive has issues
