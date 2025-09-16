@@ -90,11 +90,10 @@ jobs:
           fi
 
           echo "🔍 Verifying critical dependencies..."
-          # Check if key dependencies are available (ES module compatible)
-          node -e "
+          # Check if key dependencies are available using ES modules
+          node --input-type=module -e "
             import('vitest').then(() => {
               console.log('✅ Vitest available');
-              process.exit(0);
             }).catch((e) => {
               console.log('❌ Vitest missing:', e.message);
               process.exit(1);
@@ -250,11 +249,10 @@ jobs:
           fi
 
           echo "🔍 Verifying critical dependencies..."
-          # Check if key dependencies are available (ES module compatible)
-          node -e "
+          # Check if key dependencies are available using ES modules
+          node --input-type=module -e "
             import('vitest').then(() => {
               console.log('✅ Vitest available');
-              process.exit(0);
             }).catch((e) => {
               console.log('❌ Vitest missing:', e.message);
               process.exit(1);

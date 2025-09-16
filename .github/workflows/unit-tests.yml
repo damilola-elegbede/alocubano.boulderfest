@@ -178,6 +178,20 @@ jobs:
 
           echo "✅ All native dependencies verified"
 
+      - name: "✅ Verify Test Framework"
+        run: |
+          echo "🔍 Verifying Vitest availability..."
+          node --input-type=module -e "
+            import('vitest').then(() => {
+              console.log('✅ Vitest: OK');
+              process.exit(0);
+            }).catch((e) => {
+              console.log('❌ Vitest missing:', e.message);
+              process.exit(1);
+            });
+          "
+          echo "✅ Test framework verified"
+
       - name: "🧪 Run Unit Tests (806+ tests)"
         id: test
         run: |
