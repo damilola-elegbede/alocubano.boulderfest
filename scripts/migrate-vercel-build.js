@@ -81,27 +81,35 @@ async function runVercelBuild() {
     log("   Please add these as environment variables in your Vercel project settings.", colors.yellow);
     log("   Go to: Settings → Environment Variables", colors.yellow);
 
-    // Fail the build if we're in production
-    if (vercelEnv === "production") {
-      process.exit(1);
-    }
-
-    // For preview deployments, warn but continue (allows testing without DB)
-    log("⚠️  WARNING: Continuing build without migrations (preview environment)", colors.yellow);
-    process.exit(0);
+    // Always fail the build if Turso credentials are missing
+    // Both production and preview need a working database
+    log("❌ Build failed: Database configuration required", colors.red);
+    log("   Vercel deployments require Turso credentials to function properly", colors.red);
+    process.exit(1);
   }
 
   try {
     logSection("DATABASE MIGRATION PHASE", "🗄️");
 
     log("🚀 Starting database migrations for Vercel deployment...", colors.green);
+    log(`   Database URL: ${process.env.TURSO_DATABASE_URL ? 'Configured' : 'MISSING'}`, colors.cyan);
+    log(`   Auth Token: ${process.env.TURSO_AUTH_TOKEN ? 'Configured' : 'MISSING'}`, colors.cyan);
     log("");
 
     const migration = new MigrationSystem();
 
     // First check migration status
     log("📊 Checking migration status...", colors.blue);
-    const status = await migration.status();
+
+    let status;
+    try {
+      status = await migration.status();
+      log(`   Database connection: ✅ Success`, colors.green);
+    } catch (statusError) {
+      log(`   Database connection: ❌ Failed`, colors.red);
+      log(`   Error: ${statusError.message}`, colors.red);
+      throw statusError;
+    }
 
     if (status.pending === 0) {
       log("✨ Database is up to date - no migrations to run", colors.green);
