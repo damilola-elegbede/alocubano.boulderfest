@@ -6,16 +6,26 @@
 import { promises as fs } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { getDatabase } from "../lib/database.js";
+import { getDatabaseClient } from "../lib/database.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 class MigrationSystem {
   constructor() {
-    this.db = getDatabase();
+    this.dbClient = null; // Will be initialized when needed
     this.migrationsDir = path.join(__dirname, "..", "migrations");
     this.debug = process.env.DEBUG_MIGRATION === 'true';
+  }
+
+  /**
+   * Ensure database client is initialized
+   */
+  async ensureDbClient() {
+    if (!this.dbClient) {
+      this.dbClient = await getDatabaseClient();
+    }
+    return this.dbClient;
   }
 
   debugLog(message) {
@@ -39,16 +49,16 @@ class MigrationSystem {
     `;
 
     const createIndexSQL = `
-      CREATE INDEX IF NOT EXISTS idx_migrations_filename 
+      CREATE INDEX IF NOT EXISTS idx_migrations_filename
       ON migrations(filename)
     `;
 
     try {
-      await this.db.execute(createTableSQL);
-      await this.db.execute(createIndexSQL);
+      const client = await this.ensureDbClient();
+      await client.execute(createTableSQL);
+      await client.execute(createIndexSQL);
 
       // Clean up any duplicate migration records
-      const client = await this.db.ensureInitialized();
 
       this.debugLog("🔍 Checking for duplicate migration records...");
 
@@ -155,7 +165,8 @@ class MigrationSystem {
    */
   async getExecutedMigrations() {
     try {
-      const result = await this.db.execute(
+      const client = await this.ensureDbClient();
+      const result = await client.execute(
         "SELECT filename FROM migrations ORDER BY id",
       );
       return result.rows.map((row) => row.filename);
@@ -439,7 +450,7 @@ class MigrationSystem {
     try {
       // For problematic migrations, use statement-by-statement execution without transactions
       // to avoid rollback issues with complex table/index creation dependencies
-      const client = await this.db.ensureInitialized();
+      const client = await this.ensureDbClient();
       
       // First ensure migrations table exists
       await client.execute(`
@@ -656,8 +667,10 @@ class MigrationSystem {
 
     try {
       // Test database connection first to catch early issues
-      const connectionTest = await this.db.testConnection();
-      if (!connectionTest) {
+      const client = await this.ensureDbClient();
+      // Simple connection test
+      const testResult = await client.execute('SELECT 1 as test');
+      if (!testResult || !testResult.rows || testResult.rows.length !== 1) {
         throw new Error("Database connection test failed - cannot proceed with migrations");
       }
       this.debugLog("✅ Database connection verified");
@@ -702,9 +715,11 @@ class MigrationSystem {
       
       // Attempt to clean up database connections on failure
       try {
-        console.log("🧹 Cleaning up database connections after migration failure...");
-        await this.db.close(5000);
-        console.log("✅ Database connections cleaned up");
+        if (this.dbClient && typeof this.dbClient.close === 'function') {
+          console.log("🧹 Cleaning up database connections after migration failure...");
+          await this.dbClient.close();
+          console.log("✅ Database connections cleaned up");
+        }
       } catch (cleanupError) {
         console.warn("⚠️  Failed to clean up database connections:", cleanupError.message);
       }
@@ -745,7 +760,8 @@ class MigrationSystem {
               migration.content,
             );
 
-            const result = await this.db.execute(
+            const client = await this.ensureDbClient();
+            const result = await client.execute(
               "SELECT checksum FROM migrations WHERE filename = ?",
               [migrationFile],
             );
