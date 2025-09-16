@@ -15,6 +15,13 @@ class MigrationSystem {
   constructor() {
     this.db = getDatabase();
     this.migrationsDir = path.join(__dirname, "..", "migrations");
+    this.debug = process.env.DEBUG_MIGRATION === 'true';
+  }
+
+  debugLog(message) {
+    if (this.debug) {
+      console.log(message);
+    }
   }
 
   /**
@@ -39,6 +46,103 @@ class MigrationSystem {
     try {
       await this.db.execute(createTableSQL);
       await this.db.execute(createIndexSQL);
+
+      // Clean up any duplicate migration records
+      const client = await this.db.ensureInitialized();
+
+      this.debugLog("🔍 Checking for duplicate migration records...");
+
+      const allRecords = await client.execute(`
+        SELECT COUNT(*) as total FROM migrations
+      `);
+      this.debugLog(`   Total migration records: ${allRecords.rows[0].total}`);
+
+      // Debug-only detailed analysis
+      if (this.debug) {
+        const allFilenames = await client.execute(`
+          SELECT DISTINCT filename, LENGTH(filename) as len
+          FROM migrations
+          ORDER BY filename
+        `);
+
+        console.log(`   Found ${allFilenames.rows.length} unique filenames in migrations table`);
+        if (allFilenames.rows.length > 30) {
+          console.log("   First 10 filenames:");
+          allFilenames.rows.slice(0, 10).forEach(row => {
+            console.log(`     - "${row.filename}" (length: ${row.len})`);
+          });
+        }
+
+        // Show files with counts
+        const allCounts = await client.execute(`
+          SELECT filename, COUNT(*) as cnt
+          FROM migrations
+          GROUP BY filename
+          ORDER BY cnt DESC, filename
+          LIMIT 10
+        `);
+
+        console.log("   Top files by record count:");
+        allCounts.rows.forEach(row => {
+          console.log(`     ${row.filename}: ${row.cnt} record(s)`);
+        });
+      }
+
+      const duplicates = await client.execute(`
+        SELECT filename, COUNT(*) as count
+        FROM migrations
+        GROUP BY filename
+        HAVING COUNT(*) > 1
+      `);
+
+      if (duplicates.rows.length > 0) {
+        console.log(`⚠️  Found ${duplicates.rows.length} files with duplicates:`);
+        duplicates.rows.forEach(row => {
+          console.log(`   - ${row.filename}: ${row.count} records`);
+        });
+
+        // Delete duplicates, keeping only the oldest entry for each filename
+        const deleteResult = await client.execute(`
+          DELETE FROM migrations
+          WHERE id NOT IN (
+            SELECT MIN(id)
+            FROM migrations
+            GROUP BY filename
+          )
+        `);
+
+        console.log(`✅ Cleaned up ${deleteResult.rowsAffected || 'unknown number of'} duplicate migration entries`);
+
+        // Verify cleanup
+        const afterCleanup = await client.execute(`
+          SELECT COUNT(*) as total FROM migrations
+        `);
+        console.log(`   Migration records after cleanup: ${afterCleanup.rows[0].total}`);
+      } else if (allRecords.rows[0].total > 30) {
+        // If we have way more records than expected, something is wrong
+        console.log("   ⚠️  No duplicates found, but record count is suspiciously high!");
+        console.log("   Forcing cleanup - keeping only most recent 23 migrations");
+
+        // Nuclear option: Delete all but the most recent 23
+        const deleteOld = await client.execute(`
+          DELETE FROM migrations
+          WHERE id NOT IN (
+            SELECT id FROM migrations
+            ORDER BY id DESC
+            LIMIT 23
+          )
+        `);
+
+        console.log(`   Deleted ${deleteOld.rowsAffected || 'unknown number of'} old migration records`);
+
+        const afterCleanup = await client.execute(`
+          SELECT COUNT(*) as total FROM migrations
+        `);
+        console.log(`   Migration records after cleanup: ${afterCleanup.rows[0].total}`);
+      } else {
+        console.log("   No duplicate migration records found");
+      }
+
       console.log("✅ Migrations table initialized");
     } catch (error) {
       console.error("❌ Failed to initialize migrations table:", error.message);
@@ -353,9 +457,9 @@ class MigrationSystem {
         const statement = migration.statements[idx];
         if (statement.trim()) {
           try {
-            console.log(`   Executing statement ${idx + 1}/${migration.statements.length}: ${statement.substring(0, 60)}...`);
+            this.debugLog(`   Executing statement ${idx + 1}/${migration.statements.length}: ${statement.substring(0, 60)}...`);
             const result = await client.execute(statement);
-            console.log(`   ✅ Statement ${idx + 1} completed successfully`);
+            this.debugLog(`   ✅ Statement ${idx + 1} completed successfully`);
           } catch (statementError) {
             // Handle idempotent operations gracefully
             if (this._isIdempotentError(statementError.message, statement)) {
@@ -405,12 +509,39 @@ class MigrationSystem {
         throw new Error(`Migration filename is invalid: ${migration.filename}`);
       }
       
-      await client.execute(
-        "INSERT INTO migrations (filename, checksum) VALUES (?, ?)",
-        [migration.filename, checksum],
-      );
+      try {
+        // Check if this migration is already recorded
+        const existing = await client.execute(
+          "SELECT COUNT(*) as count FROM migrations WHERE filename = ?",
+          [migration.filename]
+        );
 
-      console.log(`✅ Migration completed: ${migration.filename}`);
+        if (existing.rows[0].count > 0) {
+          console.log(`⏭️  Migration already recorded, skipping: ${migration.filename}`);
+          return;
+        }
+
+        // Record migration (LibSQL will auto-commit this statement)
+        await client.execute(
+          "INSERT INTO migrations (filename, checksum, executed_at) VALUES (?, ?, datetime('now'))",
+          [migration.filename, checksum],
+        );
+
+        console.log(`✅ Migration completed and recorded: ${migration.filename}`);
+
+        // Verify it was actually recorded
+        const verify = await client.execute(
+          "SELECT COUNT(*) as count FROM migrations WHERE filename = ?",
+          [migration.filename]
+        );
+
+        if (verify.rows[0].count === 0) {
+          console.error(`❌ CRITICAL: Migration ${migration.filename} was NOT recorded despite commit!`);
+        }
+      } catch (insertError) {
+        console.error(`⚠️  Failed to record migration in tracking table: ${insertError.message}`);
+        // No rollback needed since LibSQL auto-commits individual statements
+      }
     } catch (error) {
       // Enhanced error reporting for migration failures
       const errorDetails = {
@@ -529,7 +660,7 @@ class MigrationSystem {
       if (!connectionTest) {
         throw new Error("Database connection test failed - cannot proceed with migrations");
       }
-      console.log("✅ Database connection verified");
+      this.debugLog("✅ Database connection verified");
 
       // Initialize migrations table
       await this.initializeMigrationsTable();
@@ -655,22 +786,37 @@ class MigrationSystem {
    * Show migration status
    */
   async status() {
-    console.log("📊 Migration Status Report");
-    console.log("========================");
+    // Only show detailed status in debug mode
+    if (this.debug) {
+      console.log("📊 Migration Status Report");
+      console.log("========================");
+    }
 
     try {
+      // Initialize migrations table (and clean up duplicates)
+      await this.initializeMigrationsTable();
+
       const [executedMigrations, availableMigrations] = await Promise.all([
         this.getExecutedMigrations(),
         this.getAvailableMigrations(),
       ]);
 
-      console.log(`Available migrations: ${availableMigrations.length}`);
-      console.log(`Executed migrations:  ${executedMigrations.length}`);
-      console.log(
-        `Pending migrations:   ${availableMigrations.length - executedMigrations.length}`,
+      // Calculate actual pending by checking which available migrations aren't executed
+      const pendingMigrations = availableMigrations.filter(
+        migration => !executedMigrations.includes(migration)
+      );
+      const executedAvailableMigrations = availableMigrations.filter(
+        migration => executedMigrations.includes(migration)
       );
 
-      if (availableMigrations.length > 0) {
+      // Essential status info
+      console.log(`📂 Found ${availableMigrations.length} migration files`);
+      console.log(`Available migrations: ${availableMigrations.length}`);
+      console.log(`Executed migrations:  ${executedAvailableMigrations.length}`);
+      console.log(`Pending migrations:   ${pendingMigrations.length}`);
+
+      // Debug-only detailed migration list
+      if (this.debug && availableMigrations.length > 0) {
         console.log("\nMigration Details:");
         for (const migration of availableMigrations) {
           const status = executedMigrations.includes(migration)
@@ -682,8 +828,8 @@ class MigrationSystem {
 
       return {
         total: availableMigrations.length,
-        executed: executedMigrations.length,
-        pending: availableMigrations.length - executedMigrations.length,
+        executed: executedAvailableMigrations.length,
+        pending: pendingMigrations.length,
       };
     } catch (error) {
       console.error("❌ Failed to get migration status:", error.message);

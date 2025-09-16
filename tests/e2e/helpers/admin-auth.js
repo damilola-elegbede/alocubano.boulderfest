@@ -173,7 +173,7 @@ class SecurityTestHelper {
       if (parts.length !== 3) return 'invalid.token';
 
       // Decode payload using Node.js Buffer
-      const payload = JSON.parse(Buffer.from(parts[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString());
+      const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString());
       
       // Tamper with payload (elevate privileges)
       payload.role = 'super-admin';
@@ -365,7 +365,7 @@ class JWTTestHelper {
       const parts = token.split('.');
       if (parts.length !== 3) return null;
 
-      const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
+      const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString());
       return payload;
     } catch (error) {
       return null;

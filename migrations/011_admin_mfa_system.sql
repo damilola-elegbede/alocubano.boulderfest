@@ -1,6 +1,10 @@
 -- Multi-Factor Authentication System for Admin
 -- This migration creates tables for TOTP secrets, backup codes, and MFA audit logs
 
+-- Drop any views that might reference admin_sessions or have incorrect column references
+-- This is needed because SQLite doesn't allow dropping tables referenced by views
+DROP VIEW IF EXISTS transactions_with_payment_info;
+
 -- Admin MFA configuration table
 CREATE TABLE IF NOT EXISTS admin_mfa_config (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -73,9 +77,15 @@ CREATE INDEX IF NOT EXISTS idx_admin_mfa_rate_limits_admin_ip ON admin_mfa_rate_
 CREATE INDEX IF NOT EXISTS idx_admin_mfa_rate_limits_locked_until ON admin_mfa_rate_limits(locked_until);
 CREATE INDEX IF NOT EXISTS idx_admin_mfa_rate_limits_updated_at ON admin_mfa_rate_limits(updated_at);
 
--- Add MFA status to existing admin_sessions table (if column doesn't exist)
--- Using IF NOT EXISTS pattern for SQLite
-CREATE TABLE IF NOT EXISTS admin_sessions_temp (
+-- Admin sessions table with MFA support
+-- Since sessions are temporary and expire, we can safely recreate this table
+-- This approach works for both fresh databases and existing ones
+
+-- Drop the old admin_sessions table if it exists (sessions are temporary anyway)
+DROP TABLE IF EXISTS admin_sessions;
+
+-- Create the admin_sessions table with all MFA columns
+CREATE TABLE admin_sessions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     session_token TEXT NOT NULL UNIQUE,
     ip_address TEXT NOT NULL,
@@ -88,20 +98,6 @@ CREATE TABLE IF NOT EXISTS admin_sessions_temp (
     last_accessed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     is_active BOOLEAN NOT NULL DEFAULT TRUE
 );
-
--- Copy existing data if admin_sessions exists and doesn't have mfa columns
-INSERT OR IGNORE INTO admin_sessions_temp (
-    session_token, ip_address, user_agent, created_at, expires_at, last_accessed_at, is_active
-)
-SELECT session_token, ip_address, user_agent, created_at, expires_at, last_accessed_at, is_active
-FROM admin_sessions 
-WHERE EXISTS (SELECT name FROM pragma_table_info('admin_sessions') WHERE name = 'session_token')
-AND NOT EXISTS (SELECT name FROM pragma_table_info('admin_sessions') WHERE name = 'mfa_verified');
-
--- Replace the table if we needed to add columns
--- Note: This will only happen if admin_sessions exists but doesn't have MFA columns
-DROP TABLE IF EXISTS admin_sessions;
-ALTER TABLE admin_sessions_temp RENAME TO admin_sessions;
 
 -- Recreate admin_sessions indexes
 CREATE INDEX IF NOT EXISTS idx_admin_sessions_token ON admin_sessions(session_token);
