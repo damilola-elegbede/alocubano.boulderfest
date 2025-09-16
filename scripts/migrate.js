@@ -738,6 +738,9 @@ class MigrationSystem {
     console.log("========================");
 
     try {
+      // Initialize migrations table (and clean up duplicates)
+      await this.initializeMigrationsTable();
+
       const [executedMigrations, availableMigrations] = await Promise.all([
         this.getExecutedMigrations(),
         this.getAvailableMigrations(),
