@@ -400,9 +400,17 @@ describe('Payment Integration Tests - Final Implementation', () => {
 
   describe('Database Constraints and Integrity', () => {
     test('should enforce transaction type constraints', async () => {
+      // Debug: Check if constraints are enabled
+      const fkStatus = await db.execute("PRAGMA foreign_keys");
+      console.log("DEBUG: Foreign keys status in test:", fkStatus.rows);
+
+      // Check the table structure
+      const tableSQL = await db.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='transactions'");
+      console.log("DEBUG: Table SQL:", tableSQL.rows[0]?.sql);
+
       const transactionId = 'TXN-INVALID-' + Date.now();
       const invalidTypeInsert = async () => {
-        return await db.execute({
+        return db.execute({
           sql: `INSERT INTO transactions (
             transaction_id, uuid, type, status, amount_cents, total_amount,
             currency, customer_email, order_data, source
@@ -452,7 +460,7 @@ describe('Payment Integration Tests - Final Implementation', () => {
       testTransactionIds.push(transactionId);
 
       const invalidItemInsert = async () => {
-        await db.execute({
+        return db.execute({
           sql: `INSERT INTO transaction_items (
             transaction_id, item_type, item_name, unit_price_cents, total_price_cents
           ) VALUES (?, ?, ?, ?, ?)`,
@@ -472,7 +480,7 @@ describe('Payment Integration Tests - Final Implementation', () => {
     test('should enforce foreign key relationships', async () => {
       // Try to create transaction item with non-existent transaction_id
       const invalidItemInsert = async () => {
-        await db.execute({
+        return db.execute({
           sql: `INSERT INTO transaction_items (
             transaction_id, item_type, item_name, unit_price_cents, total_price_cents
           ) VALUES (?, ?, ?, ?, ?)`,
