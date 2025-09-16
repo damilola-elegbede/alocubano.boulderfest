@@ -76,5 +76,11 @@
     "nodemon": "^3.1.10",
     "vercel": "^47.0.1",
     "vitest": "^2.1.9"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "^4.50.0",
+    "@rollup/rollup-darwin-arm64": "^4.50.0",
+    "@rollup/rollup-darwin-x64": "^4.50.0",
+    "@rollup/rollup-win32-x64-msvc": "^4.50.0"
   }
 }
