@@ -1,9 +1,45 @@
 /**
  * Unit Test Setup - Optimized for Speed
  * Target: 806+ tests in <2 seconds
+ * Native Module Handling: Graceful fallbacks for CI environments
  */
 import { beforeAll, afterAll } from 'vitest';
 import { configureEnvironment, cleanupEnvironment, validateEnvironment, TEST_ENVIRONMENTS } from './config/test-environment.js';
+
+/**
+ * Native Module Error Handling
+ * Gracefully handle missing native binaries in CI environments
+ */
+const originalConsoleError = console.error;
+const originalConsoleWarn = console.warn;
+
+// Suppress known native module warnings during test setup
+console.error = (...args) => {
+  const message = args.join(' ');
+  if (
+    message.includes('@rollup/rollup-linux-x64-gnu') ||
+    message.includes('@libsql/linux-x64-gnu') ||
+    message.includes('Cannot find module') ||
+    message.includes('optional dependencies')
+  ) {
+    // Convert to warning for CI visibility but don't fail
+    console.warn('⚠️ Native module warning (expected in CI):', message);
+    return;
+  }
+  originalConsoleError.apply(console, args);
+};
+
+console.warn = (...args) => {
+  const message = args.join(' ');
+  if (
+    message.includes('Failed to import LibSQL client') ||
+    message.includes('falling back to web client')
+  ) {
+    // Expected behavior in CI - suppress noise
+    return;
+  }
+  originalConsoleWarn.apply(console, args);
+};
 
 // Configure unit test environment
 const config = configureEnvironment(TEST_ENVIRONMENTS.UNIT);

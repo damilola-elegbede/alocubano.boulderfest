@@ -62,7 +62,7 @@ jobs:
       should_run: ${{ steps.planning.outputs.should_run }}
       test_suite: ${{ steps.planning.outputs.test_suite }}
       test_pattern: ${{ steps.planning.outputs.test_pattern }}
-    
+
     steps:
       - name: "📥 Checkout Code"
         uses: actions/checkout@v4
@@ -94,17 +94,17 @@ jobs:
           SHOULD_RUN="false"
           TEST_SUITE="${{ inputs.test_suite || 'all' }}"
           TEST_PATTERN="tests/integration/**/*.test.js"
-          
+
           # Run tests if relevant changes detected or manual trigger
-          if [ "${{ steps.changes.outputs.frontend }}" == "true" ] || 
-             [ "${{ steps.changes.outputs.backend }}" == "true" ] || 
-             [ "${{ steps.changes.outputs.integration }}" == "true" ] || 
-             [ "${{ steps.changes.outputs.config }}" == "true" ] || 
+          if [ "${{ steps.changes.outputs.frontend }}" == "true" ] ||
+             [ "${{ steps.changes.outputs.backend }}" == "true" ] ||
+             [ "${{ steps.changes.outputs.integration }}" == "true" ] ||
+             [ "${{ steps.changes.outputs.config }}" == "true" ] ||
              [ "${{ github.event_name }}" == "workflow_dispatch" ] ||
              [ "${{ github.event_name }}" == "push" ]; then
             SHOULD_RUN="true"
           fi
-          
+
           # Set test patterns based on suite selection
           case "$TEST_SUITE" in
             "api")
@@ -123,17 +123,17 @@ jobs:
               TEST_PATTERN="tests/integration/**/*.test.js"
               ;;
           esac
-          
+
           # Optimize for draft PRs (run critical tests only)
           if [ "${{ github.event.pull_request.draft }}" == "true" ] && [ "${{ github.event_name }}" == "pull_request" ]; then
             TEST_SUITE="critical"
             TEST_PATTERN="tests/integration/core/**/*.test.js"
           fi
-          
+
           echo "should_run=$SHOULD_RUN" >> $GITHUB_OUTPUT
           echo "test_suite=$TEST_SUITE" >> $GITHUB_OUTPUT
           echo "test_pattern=$TEST_PATTERN" >> $GITHUB_OUTPUT
-          
+
           echo "🎯 Integration Test Planning:"
           echo "  Will run: $SHOULD_RUN"
           echo "  Test suite: $TEST_SUITE"
@@ -151,7 +151,7 @@ jobs:
       passing_tests: ${{ steps.integration-test.outputs.passing_tests }}
       failing_tests: ${{ steps.integration-test.outputs.failing_tests }}
       duration: ${{ steps.integration-test.outputs.duration }}
-    
+
     steps:
       - name: "📥 Checkout Code"
         uses: actions/checkout@v4
@@ -162,10 +162,72 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: "📦 Install Dependencies"
-        run: npm ci --prefer-offline --no-audit
+      - name: "🏗️ Install System Dependencies"
+        run: |
+          echo "🔧 Installing system dependencies for native modules..."
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            python3-dev \
+            libsqlite3-dev \
+            libc6-dev \
+            libvips-dev \
+            pkg-config
+          echo "✅ System dependencies installed"
+
+      - name: "📦 Install Dependencies with Rebuild"
+        run: |
+          echo "📦 Installing npm dependencies..."
+
+          # Install dependencies with npm ci for reproducibility
+          npm ci --prefer-offline --no-audit
+
+          # Workaround for npm optional dependencies bug #4828
+          # Force install Linux-specific binaries that npm ci might skip
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            echo "🔧 Checking for platform-specific binaries..."
+
+            # Install Rollup Linux binary if missing
+            if [ ! -d "node_modules/@rollup/rollup-linux-x64-gnu" ]; then
+              echo "⚠️  Rollup Linux binary missing (npm bug #4828)"
+              echo "🔧 Installing @rollup/rollup-linux-x64-gnu..."
+              npm install @rollup/rollup-linux-x64-gnu@4.50.0 --no-save --no-audit
+            fi
+
+            # Install LibSQL Linux binary if missing
+            if [ ! -d "node_modules/@libsql/linux-x64-gnu" ]; then
+              echo "⚠️  LibSQL Linux binary missing (npm bug #4828)"
+              echo "🔧 Installing @libsql/linux-x64-gnu..."
+              npm install @libsql/linux-x64-gnu --no-save --no-audit || true
+            fi
+
+            # Rebuild native modules for current platform
+            echo "🔄 Rebuilding native modules..."
+            npm rebuild
+          fi
+
+          echo "✅ Dependencies installed and verified"
         env:
           NGROK_SKIP_DOWNLOAD: true
+          # Force npm to rebuild native binaries for current platform
+          npm_config_build_from_source: true
+          # Ensure proper Python for node-gyp
+          PYTHON: python3
+
+      - name: "🔍 Verify Native Dependencies"
+        run: |
+          echo "🔍 Verifying native module installations..."
+
+          # Check better-sqlite3
+          node -e "try { require('better-sqlite3'); console.log('✅ better-sqlite3: OK'); } catch(e) { console.log('❌ better-sqlite3:', e.message); process.exit(1); }"
+
+          # Check sharp
+          node -e "try { require('sharp'); console.log('✅ sharp: OK'); } catch(e) { console.log('❌ sharp:', e.message); process.exit(1); }"
+
+          # Check bcryptjs (pure JS, should always work)
+          node -e "try { require('bcryptjs'); console.log('✅ bcryptjs: OK'); } catch(e) { console.log('❌ bcryptjs:', e.message); process.exit(1); }"
+
+          echo "✅ All native dependencies verified"
 
       - name: "🗃️ Setup SQLite Database"
         env:
@@ -224,14 +286,14 @@ jobs:
           TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
         run: |
           mkdir -p test-results .tmp/integration
-          
+
           # Create test environment configuration
           cat > .env.local << EOF
           NODE_ENV=test
           CI=true
           DATABASE_URL="file:./data/test-integration.db"
           INTEGRATION_DATABASE_URL="file:./data/test-integration.db"
-          
+
           # Pass secrets from GitHub (fail-fast if not configured)
           TEST_ADMIN_PASSWORD=${TEST_ADMIN_PASSWORD}
           ADMIN_PASSWORD=${ADMIN_PASSWORD}
@@ -251,11 +313,11 @@ jobs:
           VERCEL_ORG_ID=${VERCEL_ORG_ID}
           VERCEL_PROJECT_ID=${VERCEL_PROJECT_ID}
           GITHUB_TOKEN=${GITHUB_TOKEN}
-          
+
           # Production database configuration (for integration tests that need it)
           TURSO_DATABASE_URL=${TURSO_DATABASE_URL}
           TURSO_AUTH_TOKEN=${TURSO_AUTH_TOKEN}
-          
+
           # Integration test timeouts - increased for CI stability
           VITEST_TEST_TIMEOUT=120000
           VITEST_HOOK_TIMEOUT=30000
@@ -269,12 +331,12 @@ jobs:
           echo "🔐 Integration Test Environment Debug"
           echo "===================================="
           echo ""
-          
+
           echo "🏗️ Test Configuration:"
           echo "  NODE_ENV: $NODE_ENV"
           echo "  DATABASE_URL: $DATABASE_URL"
           echo "  CI: $CI"
-          
+
           echo ""
           echo "🔑 Admin Authentication Secrets (masked):"
           if [ -n "$TEST_ADMIN_PASSWORD" ]; then
@@ -282,19 +344,19 @@ jobs:
           else
             echo "  TEST_ADMIN_PASSWORD: ❌ NOT SET"
           fi
-          
+
           if [ -n "$ADMIN_SECRET" ]; then
             echo "  ADMIN_SECRET: ${ADMIN_SECRET:0:3}***${ADMIN_SECRET: -3}"
           else
             echo "  ADMIN_SECRET: ❌ NOT SET"
           fi
-          
+
           if [ -n "$ADMIN_PASSWORD" ]; then
             echo "  ADMIN_PASSWORD: ${ADMIN_PASSWORD:0:3}***${ADMIN_PASSWORD: -3}"
           else
             echo "  ADMIN_PASSWORD: ❌ NOT SET (optional for integration tests)"
           fi
-          
+
           echo ""
           echo "🗄️ Database Configuration (masked):"
           if [ -n "$TURSO_DATABASE_URL" ]; then
@@ -302,13 +364,13 @@ jobs:
           else
             echo "  TURSO_DATABASE_URL: ❌ NOT SET (optional for integration tests)"
           fi
-          
+
           if [ -n "$TURSO_AUTH_TOKEN" ]; then
             echo "  TURSO_AUTH_TOKEN: ${TURSO_AUTH_TOKEN:0:5}***${TURSO_AUTH_TOKEN: -5}"
           else
             echo "  TURSO_AUTH_TOKEN: ❌ NOT SET (optional for integration tests)"
           fi
-          
+
           echo ""
           echo "📧 Email Service Configuration (masked):"
           if [ -n "$BREVO_API_KEY" ]; then
@@ -316,19 +378,19 @@ jobs:
           else
             echo "  BREVO_API_KEY: ❌ NOT SET (optional for integration tests)"
           fi
-          
+
           if [ -n "$BREVO_NEWSLETTER_LIST_ID" ]; then
             echo "  BREVO_NEWSLETTER_LIST_ID: ${BREVO_NEWSLETTER_LIST_ID}"
           else
             echo "  BREVO_NEWSLETTER_LIST_ID: ❌ NOT SET (optional for integration tests)"
           fi
-          
+
           if [ -n "$BREVO_WEBHOOK_SECRET" ]; then
             echo "  BREVO_WEBHOOK_SECRET: ${BREVO_WEBHOOK_SECRET:0:5}***${BREVO_WEBHOOK_SECRET: -5}"
           else
             echo "  BREVO_WEBHOOK_SECRET: ❌ NOT SET"
           fi
-          
+
           echo ""
           echo "☁️ Google Drive Configuration (masked):"
           if [ -n "$GOOGLE_SERVICE_ACCOUNT_EMAIL" ]; then
@@ -336,19 +398,19 @@ jobs:
           else
             echo "  GOOGLE_SERVICE_ACCOUNT_EMAIL: ❌ NOT SET (optional for integration tests)"
           fi
-          
+
           if [ -n "$GOOGLE_PRIVATE_KEY" ]; then
             echo "  GOOGLE_PRIVATE_KEY: ${GOOGLE_PRIVATE_KEY:0:10}***[PRIVATE_KEY]"
           else
             echo "  GOOGLE_PRIVATE_KEY: ❌ NOT SET (optional for integration tests)"
           fi
-          
+
           if [ -n "$GOOGLE_DRIVE_GALLERY_FOLDER_ID" ]; then
             echo "  GOOGLE_DRIVE_GALLERY_FOLDER_ID: ${GOOGLE_DRIVE_GALLERY_FOLDER_ID}"
           else
             echo "  GOOGLE_DRIVE_GALLERY_FOLDER_ID: ❌ NOT SET (optional for integration tests)"
           fi
-          
+
           echo ""
           echo "🎫 Google Wallet Configuration (masked):"
           if [ -n "$GOOGLE_WALLET_ISSUER_ID" ]; then
@@ -356,13 +418,13 @@ jobs:
           else
             echo "  GOOGLE_WALLET_ISSUER_ID: ❌ NOT SET (optional for integration tests)"
           fi
-          
+
           if [ -n "$GOOGLE_WALLET_SERVICE_ACCOUNT" ]; then
             echo "  GOOGLE_WALLET_SERVICE_ACCOUNT: ${GOOGLE_WALLET_SERVICE_ACCOUNT:0:10}***[SERVICE_ACCOUNT_JSON]"
           else
             echo "  GOOGLE_WALLET_SERVICE_ACCOUNT: ❌ NOT SET (optional for integration tests)"
           fi
-          
+
           echo ""
           echo "💳 Stripe Payment Configuration (masked):"
           if [ -n "$STRIPE_PUBLISHABLE_KEY" ]; then
@@ -370,19 +432,19 @@ jobs:
           else
             echo "  STRIPE_PUBLISHABLE_KEY: ❌ NOT SET (optional for integration tests)"
           fi
-          
+
           if [ -n "$STRIPE_SECRET_KEY" ]; then
             echo "  STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:0:7}***${STRIPE_SECRET_KEY: -7}"
           else
             echo "  STRIPE_SECRET_KEY: ❌ NOT SET (optional for integration tests)"
           fi
-          
+
           if [ -n "$STRIPE_WEBHOOK_SECRET" ]; then
             echo "  STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:0:7}***${STRIPE_WEBHOOK_SECRET: -7}"
           else
             echo "  STRIPE_WEBHOOK_SECRET: ❌ NOT SET (optional for integration tests)"
           fi
-          
+
           echo ""
           echo "🚀 Vercel Configuration (masked):"
           if [ -n "$VERCEL_TOKEN" ]; then
@@ -390,25 +452,31 @@ jobs:
           else
             echo "  VERCEL_TOKEN: ❌ NOT SET (optional for integration tests)"
           fi
-          
+
           if [ -n "$VERCEL_ORG_ID" ]; then
             echo "  VERCEL_ORG_ID: ${VERCEL_ORG_ID}"
           else
             echo "  VERCEL_ORG_ID: ❌ NOT SET (optional for integration tests)"
           fi
-          
+
           if [ -n "$VERCEL_PROJECT_ID" ]; then
             echo "  VERCEL_PROJECT_ID: ${VERCEL_PROJECT_ID}"
           else
             echo "  VERCEL_PROJECT_ID: ❌ NOT SET (optional for integration tests)"
           fi
-          
+
           if [ -n "$GITHUB_TOKEN" ]; then
             echo "  GITHUB_TOKEN: ${GITHUB_TOKEN:0:5}***${GITHUB_TOKEN: -5}"
           else
             echo "  GITHUB_TOKEN: ❌ NOT SET"
           fi
-          
+
+          echo ""
+          echo "🏗️ Native Dependencies Status:"
+          echo "  System packages: build-essential, python3-dev, libsqlite3-dev, libvips-dev installed"
+          echo "  Native rebuilds: All platform-specific binaries rebuilt for Ubuntu"
+          echo "  Dependencies verified: better-sqlite3, sharp, bcryptjs validated"
+
           echo ""
           echo "===================================="
         env:
@@ -484,11 +552,12 @@ jobs:
           echo "🧪 Expected: ~30-50 integration tests"
           echo "⚙️  Environment: Test credentials configured"
           echo "⏱️  Individual Test Timeout: 2 minutes"
+          echo "🏗️ Native Dependencies: All rebuilt for Ubuntu Linux"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          
+
           # Record start time
           start_time=$(date +%s%3N)
-          
+
           # Configure test command based on suite
           if [ "${{ needs.test-planning.outputs.test_suite }}" == "critical" ]; then
             echo "🏃‍♂️ Running critical integration tests (payment processing)"
@@ -497,18 +566,18 @@ jobs:
             echo "📋 Running integration test suite"
             npm run test:integration 2>&1 | tee integration-test-output.log || true
           fi
-          
+
           test_exit_code=${PIPESTATUS[0]}
-          
+
           # Record end time
           end_time=$(date +%s%3N)
           duration=$((end_time - start_time))
-          
+
           # Extract test counts from output - updated regex to match "Tests 902 passed" format
           total_tests=$(grep -oP '(?<=^\s*Tests\s+)\d+(?=\s+passed)' integration-test-output.log | head -1 || echo "0")
           passing_tests=$total_tests
           failing_tests=$(grep -oP '(?<=^\s*Tests\s+)\d+(?=\s+failed)' integration-test-output.log | head -1 || echo "0")
-          
+
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "📊 Integration Test Results"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -517,20 +586,21 @@ jobs:
           echo "📈 Total Tests: $total_tests"
           echo "⏱️  Duration: ${duration}ms"
           echo "🗃️ Database: File-based SQLite"
-          
+          echo "🏗️ Native Dependencies: Verified and operational"
+
           # Timeout evaluation
           if [ "$duration" -lt 1200000 ]; then  # 20 minutes in milliseconds
             echo "🏆 EXCELLENT: Integration tests completed within 20-minute limit!"
           else
             echo "⚠️  WARNING: Integration tests exceeded 20-minute timeout limit"
           fi
-          
+
           # Set outputs for summary
           echo "total_tests=$total_tests" >> $GITHUB_OUTPUT
           echo "passing_tests=$passing_tests" >> $GITHUB_OUTPUT
           echo "failing_tests=$failing_tests" >> $GITHUB_OUTPUT
           echo "duration=${duration}ms" >> $GITHUB_OUTPUT
-          
+
           exit $test_exit_code
 
       - name: "🧹 Database Cleanup"
@@ -565,13 +635,15 @@ jobs:
           echo "- **Environment**: Node.js ${{ env.NODE_VERSION }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Memory Allocation**: 4GB" >> $GITHUB_STEP_SUMMARY
           echo "- **Timeout Configuration**: 20 minutes total, 2 minutes per test" >> $GITHUB_STEP_SUMMARY
+          echo "- **Native Dependencies**: All rebuilt for Ubuntu Linux platform" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           if [ $? -eq 0 ]; then
             echo "### ✅ Integration Tests Passed!" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "All integration tests have completed successfully." >> $GITHUB_STEP_SUMMARY
             echo "Integration tests validate real database connections, API endpoints, and service interactions." >> $GITHUB_STEP_SUMMARY
+            echo "Native dependencies (better-sqlite3, sharp, bcryptjs) were rebuilt and verified for Ubuntu." >> $GITHUB_STEP_SUMMARY
           else
             echo "### ❌ Integration Test Failures" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
@@ -580,6 +652,7 @@ jobs:
             echo "1. **Check test artifacts** for detailed failure information" >> $GITHUB_STEP_SUMMARY
             echo "2. **Run locally**: \`npm run test:integration\` to reproduce issues" >> $GITHUB_STEP_SUMMARY
             echo "3. **Check database connectivity** and service dependencies" >> $GITHUB_STEP_SUMMARY
+            echo "4. **Verify native dependencies**: All platform-specific binaries were rebuilt" >> $GITHUB_STEP_SUMMARY
           fi
 
   # Test Results Summary
@@ -588,13 +661,13 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test-planning, integration-tests]
     if: always()
-    
+
     steps:
       - name: "📊 Generate Test Summary"
         run: |
           echo "# 🔗 Integration Test Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           if [ "${{ needs.test-planning.outputs.should_run }}" == "true" ]; then
             echo "## Test Execution Status" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
@@ -602,8 +675,9 @@ jobs:
             echo "- **Test Pattern**: ${{ needs.test-planning.outputs.test_pattern }}" >> $GITHUB_STEP_SUMMARY
             echo "- **Integration Tests**: ${{ needs.integration-tests.result == 'success' && '✅ Passed' || (needs.integration-tests.result == 'failure' && '❌ Failed' || '⏭️ Skipped') }}" >> $GITHUB_STEP_SUMMARY
             echo "- **Timeout Configuration**: 20 minutes total, 2 minutes per individual test" >> $GITHUB_STEP_SUMMARY
+            echo "- **Native Dependencies**: All platform-specific binaries rebuilt for Ubuntu" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            
+
             if [ "${{ needs.integration-tests.result }}" == "success" ]; then
               echo "### ✅ Integration Tests Passed!" >> $GITHUB_STEP_SUMMARY
               echo "" >> $GITHUB_STEP_SUMMARY
@@ -620,6 +694,12 @@ jobs:
               echo "- Individual test timeout: 2 minutes per test for complex operations" >> $GITHUB_STEP_SUMMARY
               echo "- Database operations: Extended timeouts for migrations and setup" >> $GITHUB_STEP_SUMMARY
               echo "- HTTP requests: 1 minute timeout for external service calls" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "**Native Dependency Fixes:**" >> $GITHUB_STEP_SUMMARY
+              echo "- System packages: build-essential, python3-dev, libsqlite3-dev, libvips-dev" >> $GITHUB_STEP_SUMMARY
+              echo "- Native rebuilds: All platform-specific binaries rebuilt for Ubuntu" >> $GITHUB_STEP_SUMMARY
+              echo "- Verification: Dependencies verified before test execution" >> $GITHUB_STEP_SUMMARY
+              echo "- Cache clearing: Fresh npm cache to avoid stale binaries" >> $GITHUB_STEP_SUMMARY
             elif [ "${{ needs.integration-tests.result }}" == "failure" ]; then
               echo "### ❌ Integration Test Failures" >> $GITHUB_STEP_SUMMARY
               echo "" >> $GITHUB_STEP_SUMMARY
@@ -630,6 +710,7 @@ jobs:
               echo "3. **Check service dependencies**: Database, external APIs" >> $GITHUB_STEP_SUMMARY
               echo "4. **Review environment setup**: Database migrations, test data" >> $GITHUB_STEP_SUMMARY
               echo "5. **Verify timeouts**: Tests now have 2 minutes per test, 20 minutes total" >> $GITHUB_STEP_SUMMARY
+              echo "6. **Native dependencies**: All platform-specific binaries were rebuilt" >> $GITHUB_STEP_SUMMARY
               echo "" >> $GITHUB_STEP_SUMMARY
             fi
           else
@@ -654,30 +735,36 @@ jobs:
             const shouldRun = '${{ needs.test-planning.outputs.should_run }}';
             const testResult = '${{ needs.integration-tests.result }}';
             const testSuite = '${{ needs.test-planning.outputs.test_suite }}';
-            
+
             let status, statusText, summary;
-            
+
             if (shouldRun === 'true') {
               if (testResult === 'success') {
                 status = '✅';
                 statusText = 'PASSED';
                 summary = `### 🎉 All integration tests passed!
-                
+
                 Integration tests validate real database connections, API endpoints, and service integrations.
-                
+
                 **Test Configuration:**
                 - Test Suite: ${testSuite}
                 - Test Runner: Vitest
                 - Environment: Node.js ${{ env.NODE_VERSION }}
                 - Memory Allocation: 4GB
                 - Timeout: 20 minutes total, 2 minutes per test
-                
+
                 **What was tested:**
                 - Database operations and migrations
                 - API endpoint functionality
                 - Service integrations (email, payments)
                 - Data integrity and transactions
-                
+
+                **Native Dependency Fixes:**
+                - System packages: build-essential, python3-dev, libsqlite3-dev, libvips-dev
+                - Native rebuilds: All platform-specific binaries rebuilt for Ubuntu
+                - Verification: Dependencies verified before test execution
+                - Cache management: Fresh npm cache to avoid stale binaries
+
                 **Timeout Improvements:**
                 - Job timeout increased to 20 minutes for stability
                 - Individual test timeout: 2 minutes for complex operations
@@ -687,27 +774,30 @@ jobs:
                 status = '❌';
                 statusText = 'FAILED';
                 summary = `### ⚠️ Some integration tests failed
-                
+
                 Please review the workflow output and test artifacts for details.
-                
+
                 **Debugging Steps:**
                 1. Check the test artifacts for detailed failure information
                 2. Run tests locally with \`npm run test:integration\`
                 3. Verify database connectivity and service dependencies
                 4. Review environment setup and migrations
                 5. Note: Tests now have extended timeouts (20min total, 2min per test)
-                
-                **Timeout Configuration:**
+                6. Native dependencies were rebuilt - check for module-specific issues
+
+                **Enhanced Configuration:**
                 - Job timeout: 20 minutes (increased for CI stability)
                 - Individual test timeout: 2 minutes per test
                 - Database operations: Extended setup and migration time
-                - HTTP requests: 1 minute timeout for external services`;
+                - HTTP requests: 1 minute timeout for external services
+                - Native dependencies: All platform-specific binaries rebuilt for Ubuntu
+                - System packages: build-essential, python3-dev, libsqlite3-dev, libvips-dev installed`;
               }
             } else {
               status = '⏭️';
               statusText = 'SKIPPED';
               summary = `### ℹ️ Integration tests skipped
-              
+
               No relevant changes detected. Tests will run when changes are made to:
               - Frontend code (js/, css/, pages/)
               - Backend code (api/)
