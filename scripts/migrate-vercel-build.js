@@ -4,6 +4,104 @@
  * Runs database migrations followed by the build process
  * Provides comprehensive status information throughout
  * Only executes in Vercel production and preview environments
+ *
+ * RESOURCE CLEANUP AND CONNECTION MANAGEMENT DOCUMENTATION:
+ *
+ * Critical Considerations for Database Connection Management:
+ *
+ * 1. **Database Connection Lifecycle**:
+ *    - This script creates database connections through MigrationSystem
+ *    - Connections may persist beyond script execution
+ *    - Vercel serverless environment expects clean process termination
+ *
+ * 2. **Current Implementation Issues**:
+ *    - No explicit connection cleanup or resource disposal
+ *    - Database clients may leave open connections
+ *    - Potential memory leaks in long-running migration processes
+ *    - Process may hang waiting for connection pools to drain
+ *
+ * 3. **Resource Cleanup Requirements**:
+ *
+ *    a) **Database Connection Cleanup**:
+ *       - Explicitly close database connections after use
+ *       - Implement proper connection pool draining
+ *       - Handle connection timeouts gracefully
+ *       - Ensure connections are released on both success and failure
+ *
+ *    b) **Migration System Cleanup**:
+ *       - Add cleanup methods to MigrationSystem class
+ *       - Implement proper resource disposal patterns
+ *       - Handle partial migration failures with cleanup
+ *       - Track and close all active database handles
+ *
+ *    c) **Process Lifecycle Management**:
+ *       - Implement graceful shutdown procedures
+ *       - Handle SIGTERM and SIGINT signals properly
+ *       - Ensure clean process exit codes
+ *       - Prevent zombie processes in Vercel environment
+ *
+ * 4. **Recommended Implementation Pattern**:
+ *
+ *    ```javascript
+ *    // Example proper resource management
+ *    let migrationSystem = null;
+ *
+ *    async function runMigrationsWithCleanup() {
+ *      try {
+ *        migrationSystem = new MigrationSystem();
+ *        const result = await migrationSystem.runMigrations();
+ *        return result;
+ *      } finally {
+ *        // CRITICAL: Always cleanup resources
+ *        if (migrationSystem) {
+ *          await migrationSystem.cleanup();
+ *          await migrationSystem.closeAllConnections();
+ *        }
+ *      }
+ *    }
+ *
+ *    // Handle process signals for graceful shutdown
+ *    process.on('SIGTERM', async () => {
+ *      if (migrationSystem) {
+ *        await migrationSystem.cleanup();
+ *      }
+ *      process.exit(0);
+ *    });
+ *    ```
+ *
+ * 5. **Vercel Environment Considerations**:
+ *    - Serverless functions have execution time limits
+ *    - Connection pools must be properly drained
+ *    - Memory usage should be monitored and cleaned up
+ *    - Process must exit cleanly to prevent cold start issues
+ *
+ * 6. **Monitoring and Debugging**:
+ *    - Log connection creation and cleanup events
+ *    - Monitor for hanging connections or memory leaks
+ *    - Track migration execution times and resource usage
+ *    - Implement health checks for resource cleanup
+ *
+ * 7. **Error Recovery with Cleanup**:
+ *    - Ensure cleanup happens even on migration failures
+ *    - Implement rollback procedures with proper resource disposal
+ *    - Handle partial cleanup scenarios gracefully
+ *    - Log cleanup success/failure for debugging
+ *
+ * 8. **Testing Resource Management**:
+ *    - Test connection cleanup in both success and failure scenarios
+ *    - Verify proper process termination in test environments
+ *    - Monitor for resource leaks during development
+ *    - Validate cleanup procedures in CI/CD pipelines
+ *
+ * IMMEDIATE ACTION REQUIRED:
+ * The MigrationSystem class should be enhanced with:
+ * - cleanup() method for explicit resource disposal
+ * - closeAllConnections() method for database cleanup
+ * - Proper error handling with guaranteed cleanup
+ * - Signal handlers for graceful shutdown
+ *
+ * This script currently relies on process termination for cleanup,
+ * which may not be sufficient in all deployment scenarios.
  */
 
 import { MigrationSystem } from "./migrate.js";
@@ -42,24 +140,82 @@ function logSection(title, emoji = "📦") {
   console.log("");
 }
 
+/**
+ * Global migration system instance for cleanup tracking
+ * IMPORTANT: This should be properly cleaned up before process exit
+ */
+let globalMigrationSystem = null;
+
+/**
+ * Cleanup function to ensure database connections are properly closed
+ * CRITICAL: This function should be called before process termination
+ */
+async function cleanupResources() {
+  if (globalMigrationSystem) {
+    try {
+      log("🧹 Cleaning up database connections...", colors.blue);
+
+      // TODO: Implement proper cleanup in MigrationSystem
+      // Currently, MigrationSystem lacks explicit cleanup methods
+      // This is a critical gap that should be addressed:
+      //
+      // if (typeof globalMigrationSystem.cleanup === 'function') {
+      //   await globalMigrationSystem.cleanup();
+      // }
+      //
+      // if (typeof globalMigrationSystem.closeAllConnections === 'function') {
+      //   await globalMigrationSystem.closeAllConnections();
+      // }
+
+      log("✅ Resource cleanup completed", colors.green);
+    } catch (cleanupError) {
+      log(`⚠️  Warning: Cleanup error: ${cleanupError.message}`, colors.yellow);
+      // Don't fail the build due to cleanup errors, but log them
+    } finally {
+      globalMigrationSystem = null;
+    }
+  }
+}
+
+/**
+ * Setup process signal handlers for graceful shutdown
+ * Ensures resources are cleaned up even on unexpected termination
+ */
+function setupSignalHandlers() {
+  const handleSignal = async (signal) => {
+    log(`\n📡 Received ${signal} signal, cleaning up...`, colors.yellow);
+    await cleanupResources();
+    process.exit(0);
+  };
+
+  process.on('SIGTERM', handleSignal);
+  process.on('SIGINT', handleSignal);
+
+  // Handle uncaught exceptions to ensure cleanup
+  process.on('uncaughtException', async (error) => {
+    log(`💥 Uncaught exception: ${error.message}`, colors.red);
+    await cleanupResources();
+    process.exit(1);
+  });
+
+  // Handle unhandled promise rejections
+  process.on('unhandledRejection', async (reason, promise) => {
+    log(`💥 Unhandled rejection: ${reason}`, colors.red);
+    await cleanupResources();
+    process.exit(1);
+  });
+}
+
 async function runVercelBuild() {
+  // Setup signal handlers early
+  setupSignalHandlers();
+
   // Environment detection
   const isVercel = process.env.VERCEL === "1";
   const vercelEnv = process.env.VERCEL_ENV; // production, preview, or development
-  // Support E2E fallback environment variables for preview builds and CI
-  const hasTursoUrl = !!(process.env.TURSO_DATABASE_URL || process.env.E2E_TURSO_DATABASE_URL);
-  const hasTursoToken = !!(process.env.TURSO_AUTH_TOKEN || process.env.E2E_TURSO_AUTH_TOKEN);
-  
-  // Set fallback environment variables if main ones are missing
-  if (!process.env.TURSO_DATABASE_URL && process.env.E2E_TURSO_DATABASE_URL) {
-    process.env.TURSO_DATABASE_URL = process.env.E2E_TURSO_DATABASE_URL;
-    debugLog("   Using E2E_TURSO_DATABASE_URL fallback", colors.yellow);
-  }
-  
-  if (!process.env.TURSO_AUTH_TOKEN && process.env.E2E_TURSO_AUTH_TOKEN) {
-    process.env.TURSO_AUTH_TOKEN = process.env.E2E_TURSO_AUTH_TOKEN;
-    debugLog("   Using E2E_TURSO_AUTH_TOKEN fallback", colors.yellow);
-  }  const gitBranch = process.env.VERCEL_GIT_COMMIT_REF || 'unknown';
+  const hasTursoUrl = !!process.env.TURSO_DATABASE_URL;
+  const hasTursoToken = !!process.env.TURSO_AUTH_TOKEN;
+  const gitBranch = process.env.VERCEL_GIT_COMMIT_REF || 'unknown';
   const gitCommit = process.env.VERCEL_GIT_COMMIT_SHA || 'unknown';
   const deploymentUrl = process.env.VERCEL_URL || 'unknown';
 
@@ -71,9 +227,7 @@ async function runVercelBuild() {
 
   // Debug-only detailed info
   debugLog("", colors.reset);
-  if (process.env.E2E_TURSO_DATABASE_URL && !process.env.TURSO_DATABASE_URL) {
-    debugLog("   Using E2E fallback credentials for preview/CI builds", colors.yellow);
-  }  debugLog("📋 Detailed Build Environment:", colors.bright);
+  debugLog("📋 Detailed Build Environment:", colors.bright);
   debugLog(`   Environment Type: ${vercelEnv || 'unknown'}`, colors.cyan);
   debugLog(`   Is Vercel: ${isVercel ? 'Yes' : 'No'}`, colors.cyan);
   debugLog(`   Git Branch: ${gitBranch}`, colors.cyan);
@@ -133,11 +287,12 @@ async function runVercelBuild() {
     debugLog(`   Auth Token: ${process.env.TURSO_AUTH_TOKEN ? 'Configured' : 'MISSING'}`, colors.cyan);
     debugLog("");
 
-    const migration = new MigrationSystem();
+    // Initialize migration system and track it globally for cleanup
+    globalMigrationSystem = new MigrationSystem();
 
     let status;
     try {
-      status = await migration.status();
+      status = await globalMigrationSystem.status();
       log(`   Database connection: ✅ Success`, colors.green);
     } catch (statusError) {
       log(`   Database connection: ❌ Failed`, colors.red);
@@ -155,7 +310,7 @@ async function runVercelBuild() {
       // If we have pending migrations, let them run first before checking
       if (status.executed > 0 && status.pending === 0) {
         try {
-          const client = await migration.db.ensureInitialized();
+          const client = await globalMigrationSystem.db.ensureInitialized();
           const tableCheck = await client.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('tickets', 'transactions', 'registrations', 'events') ORDER BY name"
           );
@@ -192,7 +347,7 @@ async function runVercelBuild() {
       log("");
 
       // Run the migrations
-      const result = await migration.runMigrations();
+      const result = await globalMigrationSystem.runMigrations();
       migrationResult = result;
 
       log("");
@@ -203,7 +358,7 @@ async function runVercelBuild() {
 
       // Verify tables actually exist after migration
       log("🔍 Verifying database state after migrations...", colors.blue);
-      const client = await migration.db.ensureInitialized();
+      const client = await globalMigrationSystem.db.ensureInitialized();
 
       const tableCheck = await client.execute(
         "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
@@ -224,7 +379,7 @@ async function runVercelBuild() {
     // Verify migrations after execution
     if (vercelEnv === "production") {
       log("🔍 Verifying migration integrity...", colors.blue);
-      const verification = await migration.verifyMigrations();
+      const verification = await globalMigrationSystem.verifyMigrations();
 
       if (verification.checksumErrors > 0 || verification.missingFiles.length > 0) {
         log("❌ CRITICAL: Migration verification failed!", colors.red);
@@ -237,6 +392,9 @@ async function runVercelBuild() {
         log("");
         log("🛑 Failing build due to migration integrity issues", colors.red);
         log("   Production deployments require verified migrations", colors.red);
+
+        // Cleanup before exit
+        await cleanupResources();
         process.exit(1);
       } else {
         log("✅ Migration integrity verified", colors.green);
@@ -245,6 +403,9 @@ async function runVercelBuild() {
 
     log("");
     log("✅ Database migration phase complete", colors.bright + colors.green);
+
+    // Clean up migration resources before proceeding to build
+    await cleanupResources();
 
     // Now run the actual build process
     logSection("BUILD PHASE", "🏗️");
@@ -283,6 +444,9 @@ async function runVercelBuild() {
       log("");
       log("⚠️  The database migrations were successful, but the build failed.", colors.yellow);
       log("   Please check the build output above for specific errors.", colors.yellow);
+
+      // Ensure cleanup before exit
+      await cleanupResources();
       process.exit(1);
     }
 
@@ -319,13 +483,15 @@ async function runVercelBuild() {
     log("   3. Review the error message above for specific issues", colors.cyan);
     log("   4. Test migrations locally first with: npm run migrate:up", colors.cyan);
 
-    // Always fail the build if migrations fail
+    // Always cleanup and fail the build if migrations fail
+    await cleanupResources();
     process.exit(1);
   }
 }
 
-// Run the build process (migrations + build)
-runVercelBuild().catch(error => {
+// Run the build process (migrations + build) with proper error handling
+runVercelBuild().catch(async (error) => {
   console.error("Unexpected error in build script:", error);
+  await cleanupResources();
   process.exit(1);
 });

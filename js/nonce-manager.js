@@ -14,7 +14,7 @@ class NonceManager {
    * Get the current nonce, fetching a new one if needed
    * @returns {Promise<string>} The current nonce
    */
-  async getNonce() {
+    async getNonce() {
     // Return cached nonce if it exists and is less than 5 minutes old
     if (this.currentNonce && this.cache.has(this.currentNonce)) {
       const cacheEntry = this.cache.get(this.currentNonce);
@@ -25,12 +25,25 @@ class NonceManager {
 
     // If a request is already in progress, wait for it
     if (this.noncePromise) {
-      return this.noncePromise;
+      try {
+        return await this.noncePromise;
+      } catch (error) {
+        // If the promise failed, reset it and try again
+        this.noncePromise = null;
+        return this.getNonce();
+      }
     }
 
     // Fetch a new nonce
     this.noncePromise = this._fetchNewNonce();
-    return this.noncePromise;
+    try {
+      const nonce = await this.noncePromise;
+      this.noncePromise = null; // Clear promise after success
+      return nonce;
+    } catch (error) {
+      this.noncePromise = null; // Clear promise after failure
+      throw error;
+    }
   }
 
   /**
@@ -65,11 +78,16 @@ class NonceManager {
       return nonce;
     } catch (error) {
       console.error('Error fetching nonce:', error);
-      // Fail safely - don't return a predictable nonce
-      throw new Error('Failed to fetch CSP nonce: ' + error.message);
-    } finally {
-      this.noncePromise = null;
-    }
+
+      // SECURITY: Never return a predictable fallback nonce as this defeats CSP protection
+      // Any predictable nonce like 'fallback-nonce-' + Math.random() would be a critical vulnerability
+      // Instead, we fail securely by throwing an error
+      const secureError = new Error('CSP nonce generation failed - cannot proceed safely');
+      secureError.originalError = error.message;
+      secureError.securityNote = 'Failed safely - no predictable fallback nonce provided';
+
+      throw secureError;
+    } // Promise cleanup handled in getNonce method
   }
 
   /**
@@ -138,6 +156,6 @@ const nonceManager = new NonceManager();
 export default nonceManager;
 
 // Also make it available globally for non-module scripts
-if (typeof window !== 'undefined') {
+if (typeof globalThis !== 'undefined' && typeof globalThis.window !== 'undefined') {
   window.nonceManager = nonceManager;
 }

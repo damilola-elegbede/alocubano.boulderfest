@@ -11,19 +11,32 @@ import { getSecurityMonitor } from '../lib/security/security-monitor.js';
  */
 
 /**
- * Suspicious user agent patterns
+ * Configurable suspicious user agent patterns
+ * Can be overridden via environment variables for production flexibility
  */
+const getAggressivePatterns = () => {
+  // Only use aggressive patterns if explicitly enabled
+  if (process.env.ENABLE_AGGRESSIVE_UA_BLOCKING !== 'true') {
+    return [];
+  }
+
+  return [
+    // Automated tools (configurable - may block legitimate monitoring)
+    /curl|wget|python-requests|apache-httpclient|java|go-http-client/i
+  ];
+};
+
 const SUSPICIOUS_USER_AGENT_PATTERNS = [
-  // Automated tools
-  /curl|wget|python-requests|apache-httpclient|java|go-http-client/i,
-  // Scanners and bots
+  // Always block security scanners and malicious tools
   /nmap|nikto|sqlmap|burp|metasploit|nessus|openvas/i,
-  // Suspicious keywords
-  /bot|crawler|spider|scraper|exploit|hack|injection|payload/i,
-  // Empty or very short user agents
+  // Always block obvious malicious patterns
+  /exploit|hack|injection|payload|vulnerability|scanner/i,
+  // Always block empty or very short user agents
   /^.{0,5}$/,
-  // Unusual patterns
-  /^mozilla\/[0-9]\.0$/i
+  // Always block unusual patterns that aren't legitimate browsers
+  /^mozilla\/[0-9]\.0$/i,
+  // Add aggressive patterns only if configured
+  ...getAggressivePatterns()
 ];
 
 /**
@@ -151,33 +164,54 @@ function checkSuspiciousRequestPatterns(req) {
 }
 
 /**
- * Check for rate limiting violations
+ * Check for rate limiting violations using actual rate limiter
  */
-function checkRateLimitViolation(req, clientIP) {
-  // This would integrate with your rate limiting service
-  // For now, we'll return false, but in practice you'd check against
-  // rate limiting storage (Redis, memory, etc.)
+async function checkRateLimitViolation(req, clientIP) {
+  try {
+    // Get actual request count from rate limiter
+    const requestsPerMinute = await getRequestCount(clientIP);
 
-  // Example: Check if this IP has made too many requests
-  const requestsPerMinute = getRequestCount(clientIP);
-  if (requestsPerMinute > 60) { // 60 requests per minute threshold
-    return {
-      violated: true,
-      limitType: 'requests_per_minute',
-      requestCount: requestsPerMinute,
-      timeWindow: '1 minute'
-    };
+    // Configure thresholds based on environment
+    const threshold = parseInt(process.env.SECURITY_MONITOR_RATE_LIMIT) || 60;
+
+    if (requestsPerMinute > threshold) {
+      return {
+        violated: true,
+        limitType: 'requests_per_minute',
+        requestCount: requestsPerMinute,
+        timeWindow: '1 minute',
+        threshold
+      };
+    }
+
+    return { violated: false, requestCount: requestsPerMinute };
+  } catch (error) {
+    console.warn('[SecurityMonitoring] Rate limit check failed:', error.message);
+    // Return safe default - don't block on error
+    return { violated: false, error: error.message };
   }
-
-  return { violated: false };
 }
 
 /**
- * Mock function to get request count (replace with actual implementation)
+ * Get actual request count from rate limiter service
+ * This function integrates with the Redis rate limiter for accurate counts
  */
-function getRequestCount(clientIP) {
-  // In a real implementation, this would query your rate limiting store
-  return Math.floor(Math.random() * 100); // Mock value
+async function getRequestCount(clientIP) {
+  try {
+    // Import rate limiter dynamically to avoid circular dependencies
+    const { getRedisRateLimiter } = await import('../lib/redis-rate-limiter.js');
+    const rateLimiter = getRedisRateLimiter();
+
+    // Use rate limiter's internal tracking for accurate request counts
+    const mockReq = { headers: { 'x-forwarded-for': clientIP } };
+    const result = await rateLimiter.checkRateLimit(mockReq, 'general', { dryRun: true });
+
+    return result.count || 0;
+  } catch (error) {
+    console.warn('[SecurityMonitoring] Could not get request count from rate limiter:', error.message);
+    // Return safe default that won't trigger false positives
+    return 0;
+  }
 }
 
 /**
@@ -260,9 +294,9 @@ export function securityMonitoringMiddleware(options = {}) {
         }
       }
 
-      // Check rate limiting
+      // Check rate limiting (async)
       if (enableRateLimitCheck) {
-        const rateLimitCheck = checkRateLimitViolation(req, clientIP);
+        const rateLimitCheck = await checkRateLimitViolation(req, clientIP);
         if (rateLimitCheck.violated) {
           violations.push('rate_limit_exceeded');
 
@@ -270,7 +304,8 @@ export function securityMonitoringMiddleware(options = {}) {
             await logRateLimitViolation(clientIP, endpoint, rateLimitCheck.limitType, {
               ...metadata,
               requestCount: rateLimitCheck.requestCount,
-              timeWindow: rateLimitCheck.timeWindow
+              timeWindow: rateLimitCheck.timeWindow,
+              threshold: rateLimitCheck.threshold
             });
           }
         }

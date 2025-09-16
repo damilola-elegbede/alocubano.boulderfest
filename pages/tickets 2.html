@@ -41,16 +41,51 @@
 
     <!-- Critical resource preloading -->
     <script>
-      // Inline critical path optimization - Standard hero image preload
+      // Inline critical path optimization - Event hero images with responsive variants
       (function () {
+        // Check if optimized variants exist for event heroes
         const heroPath = "/images/hero/tickets.jpg";
-        
-        // Standard hero image preload
-        const heroPreload = document.createElement("link");
-        heroPreload.rel = "preload";
-        heroPreload.as = "image";
-        heroPreload.href = heroPath;
-        document.head.appendChild(heroPreload);
+        const isEventHero = false;
+
+        if (isEventHero) {
+          // Preload optimized variants for event heroes (WebP first, then JPEG fallback)
+          const isMobile = window.innerWidth <= 768;
+          const variant = isMobile ? "mobile" : "desktop";
+          const baseName = "tickets";
+
+          // Preload WebP variant
+          const webpPreload = document.createElement("link");
+          webpPreload.rel = "preload";
+          webpPreload.as = "image";
+          webpPreload.href = `/images/hero-optimized/${variant}/${baseName}.webp`;
+          webpPreload.type = "image/webp";
+          document.head.appendChild(webpPreload);
+
+          // Preload AVIF variant for supported browsers
+          if (typeof window !== "undefined" && "OffscreenCanvas" in window) {
+            const avifPreload = document.createElement("link");
+            avifPreload.rel = "preload";
+            avifPreload.as = "image";
+            avifPreload.href = `/images/hero-optimized/${variant}/${baseName}.avif`;
+            avifPreload.type = "image/avif";
+            document.head.appendChild(avifPreload);
+          }
+
+          // Fallback JPEG preload
+          const jpegPreload = document.createElement("link");
+          jpegPreload.rel = "preload";
+          jpegPreload.as = "image";
+          jpegPreload.href = `/images/hero-optimized/${variant}/${baseName}.jpg`;
+          jpegPreload.type = "image/jpeg";
+          document.head.appendChild(jpegPreload);
+        } else {
+          // Standard hero image preload for top-level pages
+          const heroPreload = document.createElement("link");
+          heroPreload.rel = "preload";
+          heroPreload.as = "image";
+          heroPreload.href = heroPath;
+          document.head.appendChild(heroPreload);
+        }
 
         // Preload gallery data for gallery pages
         const pageId = window.location.pathname.split("/").pop() || "home";
@@ -205,7 +240,7 @@
         <div class="hero-image-container">
           <img
             id="hero-splash-image"
-            data-src="/images/hero/tickets.jpg"
+            src=""
             alt="Excited festival attendees enjoying A Lo Cubano Boulder Fest events, highlighting the experience visitors can expect"
             class="hero-splash-img"
             style="object-position: top center !important"
@@ -565,8 +600,68 @@
     <script src="https://js.stripe.com/v3/"></script>
 
     <!-- Add Stripe publishable key to window -->
+    <!--
+      STRIPE CONFIGURATION ERROR HANDLING DOCUMENTATION
+
+      Critical Error Scenarios and User Experience Guidelines:
+
+      1. **API Configuration Failures**:
+         - Missing STRIPE_PUBLISHABLE_KEY environment variable
+         - Network failures when fetching /api/config/stripe-public
+         - Invalid API responses (non-200 status codes)
+
+      2. **Current Implementation Issues**:
+         - Silent failures in console.error() - users unaware of problems
+         - No user-facing error messages or fallback experiences
+         - No graceful degradation when payment system is unavailable
+
+      3. **Recommended User-Facing Error Handling**:
+
+         a) **Display Clear Error Messages**:
+            - Show user-friendly notification when payment system is unavailable
+            - Provide alternative contact methods (email, phone) for ticket purchases
+            - Include estimated resolution time if possible
+
+         b) **Graceful Degradation Options**:
+            - Disable checkout buttons with explanatory tooltip
+            - Show "Payment system temporarily unavailable" message
+            - Redirect to alternative ticket purchasing methods
+
+         c) **Error Recovery Strategies**:
+            - Implement retry logic with exponential backoff
+            - Allow users to refresh and try again
+            - Provide manual ordering instructions via email
+
+      4. **Example User-Friendly Error Implementation**:
+
+         ```javascript
+         // Replace current error handling with user-facing messages
+         if (!response.ok) {
+           showUserError(
+             'Payment system temporarily unavailable',
+             'Please try again in a few minutes or contact us directly at alocubanoboulderfest@gmail.com'
+           );
+           disableCheckoutButtons();
+         }
+         ```
+
+      5. **Production Monitoring Requirements**:
+         - Log Stripe configuration failures to monitoring systems
+         - Set up alerts for payment system availability
+         - Track error rates and user impact metrics
+         - Implement health checks for payment dependencies
+
+      6. **User Communication Strategy**:
+         - Show loading states while configuration loads
+         - Provide clear error messages with next steps
+         - Include support contact information
+         - Offer alternative purchasing methods
+
+      SECURITY NOTE: Never expose sensitive Stripe configuration details in client-side error messages.
+      Keep error messages user-friendly while logging detailed errors server-side for debugging.
+    -->
     <script>
-      // Fetch Stripe publishable key from API
+      // Fetch Stripe publishable key from API with error handling
       (async function () {
         try {
           const response = await fetch("/api/config/stripe-public");
@@ -574,10 +669,28 @@
             const data = await response.json();
             window.STRIPE_PUBLISHABLE_KEY = data.publishableKey;
           } else {
+            // TODO: Implement user-facing error messages
+            // Current: Silent failure with console.error
+            // Recommended: Show user notification and disable checkout
             console.error("Failed to load payment configuration");
+
+            // DEVELOPER NOTE: Add user-facing error handling here:
+            // - Display "Payment system temporarily unavailable" message
+            // - Disable checkout buttons with explanatory tooltip
+            // - Provide alternative contact methods for ticket purchases
+            // - Implement retry mechanism for transient failures
           }
         } catch (error) {
+          // TODO: Implement user-facing error recovery
+          // Current: Silent failure with console.error
+          // Recommended: Show error message with retry option and contact info
           console.error("Error loading payment configuration:", error);
+
+          // DEVELOPER NOTE: Add comprehensive error handling:
+          // - Show user-friendly error message
+          // - Provide manual ordering instructions
+          // - Include support contact information
+          // - Implement graceful degradation
         }
       })();
     </script>
@@ -589,16 +702,67 @@
     <script src="/js/typography.js"></script>
     <script src="/js/gallery-hero.js"></script>
     <script type="module" src="/js/ticket-selection.js"></script>
+    <script>
+      function handleTicketForm(event) {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+
+        // Collect form data
+        const name = formData.get("name") || "";
+        const email = formData.get("email") || "";
+        const phone = formData.get("phone") || "";
+        const ticketType = formData.get("ticket-type") || "";
+        const quantity = formData.get("quantity") || "1";
+        const addons = [];
+
+        // Collect addon selections
+        for (const [key, value] of formData.entries()) {
+          if (key.startsWith("addon-") && value === "on") {
+            addons.push(key.replace("addon-", "").replace("-", " "));
+          }
+        }
+
+        const specialRequests = formData.get("special-requests") || "";
+
+        // Create email body
+        const emailBody = `Ticket Purchase Request - A Lo Cubano Boulder Fest
+
+Name: ${name}
+Email: ${email}
+Phone: ${phone}
+Ticket Type: ${ticketType}
+Quantity: ${quantity}
+Add-ons: ${addons.length > 0 ? addons.join(", ") : "None"}
+
+Special Requests:
+${specialRequests}
+
+---
+Please reply with payment instructions and confirmation details.
+Sent from A Lo Cubano Boulder Fest website`;
+
+        // Create mailto URL
+        const subject = encodeURIComponent(
+          "Ticket Purchase - A Lo Cubano Boulder Fest",
+        );
+        const body = encodeURIComponent(emailBody);
+        const mailtoUrl = `mailto:alocubanoboulderfest@gmail.com?subject=${subject}&body=${body}`;
+
+        // Open email client
+        window.location.href = mailtoUrl;
+      }
+    </script>
 
     <!-- Global Cart System -->
     <script type="module" src="/js/global-cart.js"></script>
-    
-    
+
+
     <!-- Theme Management -->
     <script type="module">
       import { initializeThemeToggle } from '/js/theme-toggle.js';
       import themeManager from '/js/theme-manager.js';
-      
+
       // Initialize theme system
       document.addEventListener('DOMContentLoaded', () => {
         themeManager.initializeTheme();
