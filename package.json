@@ -23,6 +23,7 @@
     "lint:markdown": "markdownlint *.md CLAUDE.md INSTALLATION.md SECURITY.md --ignore node_modules --ignore .tmp",
     "migrate:up": "DOTENV_CONFIG_PATH=.env.local node -r dotenv/config scripts/migrate.js",
     "migrate:status": "node scripts/migrate.js status",
+    "migrate:check": "DOTENV_CONFIG_PATH=.env.local node -r dotenv/config scripts/check-migration-status.js",
     "migrate:vercel": "node scripts/migrate-vercel-build.js",
     "deploy": "NODE_OPTIONS='--max-old-space-size=4096' npm run lint && npm run test && vercel --target production",
     "health": "node scripts/test-health-endpoint.js",

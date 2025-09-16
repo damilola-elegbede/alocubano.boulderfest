@@ -1,0 +1,4 @@
+-- Migration: Add wallet pass tracking fields to tickets table (IDEMPOTENT)
+-- Date: 2025-01-07
+-- Description: Wallet pass fields and events table are now defined in 018_tickets_table.sql
+-- This migration is now a no-op as all structures are defined in the tickets table schema
