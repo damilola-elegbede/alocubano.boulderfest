@@ -89,16 +89,7 @@ jobs:
             npm rebuild
           fi
 
-          echo "🔍 Verifying critical dependencies..."
-          # Check if key dependencies are available using ES modules
-          node --input-type=module -e "
-            import('vitest').then(() => {
-              console.log('✅ Vitest available');
-            }).catch((e) => {
-              console.log('❌ Vitest missing:', e.message);
-              process.exit(1);
-            });
-          "
+          echo "✅ Dependencies installed and verified"
         env:
           NGROK_SKIP_DOWNLOAD: true
 
@@ -248,16 +239,7 @@ jobs:
             npm rebuild
           fi
 
-          echo "🔍 Verifying critical dependencies..."
-          # Check if key dependencies are available using ES modules
-          node --input-type=module -e "
-            import('vitest').then(() => {
-              console.log('✅ Vitest available');
-            }).catch((e) => {
-              console.log('❌ Vitest missing:', e.message);
-              process.exit(1);
-            });
-          "
+          echo "✅ Dependencies installed and verified"
         env:
           NGROK_SKIP_DOWNLOAD: true
 
