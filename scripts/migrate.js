@@ -42,6 +42,14 @@ class MigrationSystem {
 
       // Clean up any duplicate migration records
       const client = await this.db.ensureInitialized();
+
+      console.log("🔍 Checking for duplicate migration records...");
+
+      const allRecords = await client.execute(`
+        SELECT COUNT(*) as total FROM migrations
+      `);
+      console.log(`   Total migration records: ${allRecords.rows[0].total}`);
+
       const duplicates = await client.execute(`
         SELECT filename, COUNT(*) as count
         FROM migrations
@@ -50,10 +58,13 @@ class MigrationSystem {
       `);
 
       if (duplicates.rows.length > 0) {
-        console.log(`⚠️  Found duplicate migration entries for: ${duplicates.rows.map(r => r.filename).join(', ')}`);
+        console.log(`⚠️  Found ${duplicates.rows.length} files with duplicates:`);
+        duplicates.rows.forEach(row => {
+          console.log(`   - ${row.filename}: ${row.count} records`);
+        });
 
-        // Keep only the oldest entry for each filename
-        await client.execute(`
+        // Delete duplicates, keeping only the oldest entry for each filename
+        const deleteResult = await client.execute(`
           DELETE FROM migrations
           WHERE id NOT IN (
             SELECT MIN(id)
@@ -62,7 +73,15 @@ class MigrationSystem {
           )
         `);
 
-        console.log("✅ Duplicate migration entries cleaned up");
+        console.log(`✅ Cleaned up ${deleteResult.rowsAffected || 'unknown number of'} duplicate migration entries`);
+
+        // Verify cleanup
+        const afterCleanup = await client.execute(`
+          SELECT COUNT(*) as total FROM migrations
+        `);
+        console.log(`   Migration records after cleanup: ${afterCleanup.rows[0].total}`);
+      } else {
+        console.log("   No duplicate migration records found");
       }
 
       console.log("✅ Migrations table initialized");
