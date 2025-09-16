@@ -406,15 +406,33 @@ class MigrationSystem {
       }
       
       try {
+        // Explicitly start a transaction for recording
+        await client.execute("BEGIN IMMEDIATE");
+
         await client.execute(
           "INSERT OR REPLACE INTO migrations (filename, checksum, executed_at) VALUES (?, ?, datetime('now'))",
           [migration.filename, checksum],
         );
+
+        // Force commit the migration record
+        await client.execute("COMMIT");
+
         console.log(`✅ Migration completed and recorded: ${migration.filename}`);
+
+        // Verify it was actually recorded
+        const verify = await client.execute(
+          "SELECT COUNT(*) as count FROM migrations WHERE filename = ?",
+          [migration.filename]
+        );
+
+        if (verify.rows[0].count === 0) {
+          console.error(`❌ CRITICAL: Migration ${migration.filename} was NOT recorded despite commit!`);
+        }
       } catch (insertError) {
         console.error(`⚠️  Failed to record migration in tracking table: ${insertError.message}`);
-        // Don't fail the entire migration if we can't record it
-        // The migration itself succeeded
+        try {
+          await client.execute("ROLLBACK");
+        } catch {}
       }
     } catch (error) {
       // Enhanced error reporting for migration failures

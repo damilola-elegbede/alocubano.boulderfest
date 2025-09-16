@@ -95,7 +95,10 @@ async function runVercelBuild() {
     logSection("DATABASE MIGRATION PHASE", "🗄️");
 
     log("🚀 Starting database migrations for Vercel deployment...", colors.green);
-    log(`   Database URL: ${process.env.TURSO_DATABASE_URL ? 'Configured' : 'MISSING'}`, colors.cyan);
+    const dbUrl = process.env.TURSO_DATABASE_URL || 'NOT SET';
+    const dbHost = dbUrl.includes('//') ? dbUrl.split('//')[1]?.split('.')[0] : 'unknown';
+    log(`   Database URL: ${dbUrl.substring(0, 50)}...`, colors.cyan);
+    log(`   Database Host: ${dbHost}`, colors.cyan);
     log(`   Auth Token: ${process.env.TURSO_AUTH_TOKEN ? 'Configured' : 'MISSING'}`, colors.cyan);
     log("");
 
@@ -167,6 +170,25 @@ async function runVercelBuild() {
       log(`   Executed: ${result.executed} migration(s)`, colors.cyan);
       log(`   Skipped: ${result.skipped} migration(s)`, colors.cyan);
       log("");
+
+      // Verify tables actually exist after migration
+      log("🔍 Verifying database state after migrations...", colors.blue);
+      const client = await migration.db.ensureInitialized();
+
+      const tableCheck = await client.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+      );
+      log(`   Tables found: ${tableCheck.rows.length}`, colors.cyan);
+
+      const migrationCheck = await client.execute(
+        "SELECT COUNT(*) as count FROM migrations"
+      );
+      log(`   Migrations recorded: ${migrationCheck.rows[0].count}`, colors.cyan);
+
+      if (tableCheck.rows.length < 10) {
+        log("❌ WARNING: Very few tables exist after migration!", colors.red);
+        log(`   Tables: ${tableCheck.rows.map(r => r.name).join(', ')}`, colors.red);
+      }
     }
 
     // Verify migrations after execution
