@@ -133,8 +133,10 @@ jobs:
 
     env:
       DATABASE_URL: "file:./data/test-integration.db"
-      # Force build-time cache access for integration tests
+      # Force build-time cache access for integration tests (like integration-tests.yml)
       INTEGRATION_TEST_MODE: "true"  # Force shouldUseBuildTimeCache() to return true
+      NODE_ENV: "test"  # Match integration-tests.yml environment
+      VERCEL: ""  # Explicitly unset to ensure isLocalDevelopment() returns true
       # Test environment variables for integration tests
       STRIPE_SECRET_KEY: ${{ secrets.TEST_STRIPE_SECRET_KEY || 'sk_test_dummy_integration_key' }}
       STRIPE_PUBLISHABLE_KEY: ${{ secrets.TEST_STRIPE_PUBLISHABLE_KEY || 'pk_test_dummy_integration_key' }}
