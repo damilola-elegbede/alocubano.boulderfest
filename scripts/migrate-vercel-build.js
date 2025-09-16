@@ -112,10 +112,50 @@ async function runVercelBuild() {
     }
 
     if (status.pending === 0) {
-      log("✨ Database is up to date - no migrations to run", colors.green);
+      log("📋 Migration status check:", colors.blue);
       log(`   Total migrations: ${status.total}`, colors.cyan);
       log(`   Executed migrations: ${status.executed}`, colors.cyan);
-      migrationResult.skipped = status.executed;
+      log(`   Pending migrations: ${status.pending}`, colors.cyan);
+
+      // Verify critical tables exist even if migrations claim to be complete
+      try {
+        const client = await migration.db.ensureInitialized();
+        const tableCheck = await client.execute(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('tickets', 'transactions', 'registrations', 'events') ORDER BY name"
+        );
+
+        const existingTables = tableCheck.rows.map(r => r.name);
+        const expectedTables = ['events', 'registrations', 'tickets', 'transactions'];
+        const missingTables = expectedTables.filter(t => !existingTables.includes(t));
+
+        if (missingTables.length > 0) {
+          log("", colors.red);
+          log("⚠️  WARNING: Database inconsistency detected!", colors.yellow);
+          log(`   Migrations table shows ${status.executed} completed`, colors.yellow);
+          log(`   But critical tables are missing: ${missingTables.join(', ')}`, colors.red);
+          log("", colors.red);
+          log("🔧 Attempting to force re-run migrations...", colors.yellow);
+
+          // Force re-run migrations by clearing the migrations table
+          await client.execute("DELETE FROM migrations");
+          log("   Cleared migration tracking table", colors.cyan);
+
+          // Re-run all migrations
+          const result = await migration.runMigrations();
+          migrationResult = result;
+
+          log("");
+          log("✅ Forced migration re-run completed!", colors.green);
+          log(`   Executed: ${result.executed} migration(s)`, colors.cyan);
+          log(`   Skipped: ${result.skipped} migration(s)`, colors.cyan);
+        } else {
+          log("✅ Database structure verified - all critical tables exist", colors.green);
+          migrationResult.skipped = status.executed;
+        }
+      } catch (verifyError) {
+        log("⚠️  Could not verify table existence: " + verifyError.message, colors.yellow);
+        migrationResult.skipped = status.executed;
+      }
     } else {
       log(`📋 Found ${status.pending} pending migration(s)`, colors.yellow);
       log("");
