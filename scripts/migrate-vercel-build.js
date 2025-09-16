@@ -46,9 +46,20 @@ async function runVercelBuild() {
   // Environment detection
   const isVercel = process.env.VERCEL === "1";
   const vercelEnv = process.env.VERCEL_ENV; // production, preview, or development
-  const hasTursoUrl = !!process.env.TURSO_DATABASE_URL;
-  const hasTursoToken = !!process.env.TURSO_AUTH_TOKEN;
-  const gitBranch = process.env.VERCEL_GIT_COMMIT_REF || 'unknown';
+  // Support E2E fallback environment variables for preview builds and CI
+  const hasTursoUrl = !!(process.env.TURSO_DATABASE_URL || process.env.E2E_TURSO_DATABASE_URL);
+  const hasTursoToken = !!(process.env.TURSO_AUTH_TOKEN || process.env.E2E_TURSO_AUTH_TOKEN);
+  
+  // Set fallback environment variables if main ones are missing
+  if (!process.env.TURSO_DATABASE_URL && process.env.E2E_TURSO_DATABASE_URL) {
+    process.env.TURSO_DATABASE_URL = process.env.E2E_TURSO_DATABASE_URL;
+    debugLog("   Using E2E_TURSO_DATABASE_URL fallback", colors.yellow);
+  }
+  
+  if (!process.env.TURSO_AUTH_TOKEN && process.env.E2E_TURSO_AUTH_TOKEN) {
+    process.env.TURSO_AUTH_TOKEN = process.env.E2E_TURSO_AUTH_TOKEN;
+    debugLog("   Using E2E_TURSO_AUTH_TOKEN fallback", colors.yellow);
+  }  const gitBranch = process.env.VERCEL_GIT_COMMIT_REF || 'unknown';
   const gitCommit = process.env.VERCEL_GIT_COMMIT_SHA || 'unknown';
   const deploymentUrl = process.env.VERCEL_URL || 'unknown';
 
@@ -60,7 +71,9 @@ async function runVercelBuild() {
 
   // Debug-only detailed info
   debugLog("", colors.reset);
-  debugLog("📋 Detailed Build Environment:", colors.bright);
+  if (process.env.E2E_TURSO_DATABASE_URL && !process.env.TURSO_DATABASE_URL) {
+    debugLog("   Using E2E fallback credentials for preview/CI builds", colors.yellow);
+  }  debugLog("📋 Detailed Build Environment:", colors.bright);
   debugLog(`   Environment Type: ${vercelEnv || 'unknown'}`, colors.cyan);
   debugLog(`   Is Vercel: ${isVercel ? 'Yes' : 'No'}`, colors.cyan);
   debugLog(`   Git Branch: ${gitBranch}`, colors.cyan);

@@ -41,51 +41,16 @@
 
     <!-- Critical resource preloading -->
     <script>
-      // Inline critical path optimization - Event hero images with responsive variants
+      // Inline critical path optimization - Standard hero image preload
       (function () {
-        // Check if optimized variants exist for event heroes
         const heroPath = "/images/hero/tickets.jpg";
-        const isEventHero = false;
-
-        if (isEventHero) {
-          // Preload optimized variants for event heroes (WebP first, then JPEG fallback)
-          const isMobile = window.innerWidth <= 768;
-          const variant = isMobile ? "mobile" : "desktop";
-          const baseName = "tickets";
-
-          // Preload WebP variant
-          const webpPreload = document.createElement("link");
-          webpPreload.rel = "preload";
-          webpPreload.as = "image";
-          webpPreload.href = `/images/hero-optimized/${variant}/${baseName}.webp`;
-          webpPreload.type = "image/webp";
-          document.head.appendChild(webpPreload);
-
-          // Preload AVIF variant for supported browsers
-          if (typeof window !== "undefined" && "OffscreenCanvas" in window) {
-            const avifPreload = document.createElement("link");
-            avifPreload.rel = "preload";
-            avifPreload.as = "image";
-            avifPreload.href = `/images/hero-optimized/${variant}/${baseName}.avif`;
-            avifPreload.type = "image/avif";
-            document.head.appendChild(avifPreload);
-          }
-
-          // Fallback JPEG preload
-          const jpegPreload = document.createElement("link");
-          jpegPreload.rel = "preload";
-          jpegPreload.as = "image";
-          jpegPreload.href = `/images/hero-optimized/${variant}/${baseName}.jpg`;
-          jpegPreload.type = "image/jpeg";
-          document.head.appendChild(jpegPreload);
-        } else {
-          // Standard hero image preload for top-level pages
-          const heroPreload = document.createElement("link");
-          heroPreload.rel = "preload";
-          heroPreload.as = "image";
-          heroPreload.href = heroPath;
-          document.head.appendChild(heroPreload);
-        }
+        
+        // Standard hero image preload
+        const heroPreload = document.createElement("link");
+        heroPreload.rel = "preload";
+        heroPreload.as = "image";
+        heroPreload.href = heroPath;
+        document.head.appendChild(heroPreload);
 
         // Preload gallery data for gallery pages
         const pageId = window.location.pathname.split("/").pop() || "home";
@@ -240,7 +205,7 @@
         <div class="hero-image-container">
           <img
             id="hero-splash-image"
-            src=""
+            data-src="/images/hero/tickets.jpg"
             alt="Excited festival attendees enjoying A Lo Cubano Boulder Fest events, highlighting the experience visitors can expect"
             class="hero-splash-img"
             style="object-position: top center !important"
@@ -624,57 +589,6 @@
     <script src="/js/typography.js"></script>
     <script src="/js/gallery-hero.js"></script>
     <script type="module" src="/js/ticket-selection.js"></script>
-    <script>
-      function handleTicketForm(event) {
-        event.preventDefault();
-        const form = event.target;
-        const formData = new FormData(form);
-
-        // Collect form data
-        const name = formData.get("name") || "";
-        const email = formData.get("email") || "";
-        const phone = formData.get("phone") || "";
-        const ticketType = formData.get("ticket-type") || "";
-        const quantity = formData.get("quantity") || "1";
-        const addons = [];
-
-        // Collect addon selections
-        for (const [key, value] of formData.entries()) {
-          if (key.startsWith("addon-") && value === "on") {
-            addons.push(key.replace("addon-", "").replace("-", " "));
-          }
-        }
-
-        const specialRequests = formData.get("special-requests") || "";
-
-        // Create email body
-        const emailBody = `Ticket Purchase Request - A Lo Cubano Boulder Fest
-
-Name: ${name}
-Email: ${email}
-Phone: ${phone}
-Ticket Type: ${ticketType}
-Quantity: ${quantity}
-Add-ons: ${addons.length > 0 ? addons.join(", ") : "None"}
-
-Special Requests:
-${specialRequests}
-
----
-Please reply with payment instructions and confirmation details.
-Sent from A Lo Cubano Boulder Fest website`;
-
-        // Create mailto URL
-        const subject = encodeURIComponent(
-          "Ticket Purchase - A Lo Cubano Boulder Fest",
-        );
-        const body = encodeURIComponent(emailBody);
-        const mailtoUrl = `mailto:alocubanoboulderfest@gmail.com?subject=${subject}&body=${body}`;
-
-        // Open email client
-        window.location.href = mailtoUrl;
-      }
-    </script>
 
     <!-- Global Cart System -->
     <script type="module" src="/js/global-cart.js"></script>
