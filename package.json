@@ -8,7 +8,7 @@
     "node": ">=20.0.0 <25.0.0"
   },
   "scripts": {
-    "build": "NODE_OPTIONS='--max-old-space-size=4096' node -e \"const isVercel = process.env.VERCEL === '1'; const env = process.env.VERCEL_ENV || 'local'; console.log(''); console.log('🔨 Build Process'); console.log('================'); console.log('Environment: ' + env); console.log('Platform: ' + (isVercel ? 'Vercel' : 'Local')); if(!isVercel) { console.log(''); console.log('📋 Running structure verification...'); require('child_process').execSync('npm run verify-structure', {stdio:'inherit'}); } console.log(''); console.log('✅ Build completed successfully!'); console.log('');\"",
+    "build": "NODE_OPTIONS='--max-old-space-size=4096' node -e \"import('child_process').then(({execSync}) => { const isVercel = process.env.VERCEL === '1'; const env = process.env.VERCEL_ENV || 'local'; console.log(''); console.log('🔨 Build Process'); console.log('================'); console.log('Environment: ' + env); console.log('Platform: ' + (isVercel ? 'Vercel' : 'Local')); if(!isVercel) { console.log(''); console.log('📋 Running structure verification...'); execSync('npm run verify-structure', {stdio:'inherit'}); } console.log(''); console.log('✅ Build completed successfully!'); console.log(''); }).catch(console.error);\"",
     "start": "npm run vercel:dev",
     "vercel:dev": "vercel dev --listen 3000",
     "vercel:preview": "vercel --target preview",
@@ -27,7 +27,8 @@
     "migrate:status": "node scripts/migrate.js status",
     "migrate:check": "DOTENV_CONFIG_PATH=.env.local node -r dotenv/config scripts/check-migration-status.js",
     "migrate:vercel": "node scripts/migrate-vercel-build.js",
-    "verify-structure": "node scripts/verify-structure.js"
+    "verify-structure": "node scripts/verify-structure.js",
+    "validate-ci-fixes": "node scripts/validate-ci-fixes.js"
   },
   "dependencies": {
     "@libsql/client": "^0.15.14",

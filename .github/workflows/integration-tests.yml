@@ -221,8 +221,26 @@ jobs:
           # Check better-sqlite3
           node -e "try { require('better-sqlite3'); console.log('✅ better-sqlite3: OK'); } catch(e) { console.log('❌ better-sqlite3:', e.message); process.exit(1); }"
 
-          # Check sharp
-          node -e "try { require('sharp'); console.log('✅ sharp: OK'); } catch(e) { console.log('❌ sharp:', e.message); process.exit(1); }"
+          # Check sharp with platform-specific binary verification
+          node -e "
+            try {
+              const sharp = require('sharp');
+              console.log('✅ sharp: OK');
+              console.log('📋 sharp platform info:', process.platform, process.arch);
+              // Test actual functionality to verify native binary
+              sharp.concurrency(1);
+              console.log('✅ sharp native binary: functional');
+            } catch(e) {
+              console.log('❌ sharp:', e.message);
+              console.log('🔍 Platform:', process.platform, process.arch);
+              console.log('🔍 Node version:', process.version);
+              if (e.message.includes('linux-x64')) {
+                console.log('💡 Sharp linux-x64 binary missing - this may be a package-lock.json platform issue');
+                console.log('💡 Run: npm rebuild sharp --platform=linux --arch=x64');
+              }
+              process.exit(1);
+            }
+          "
 
           # Check bcryptjs (pure JS, should always work)
           node -e "try { require('bcryptjs'); console.log('✅ bcryptjs: OK'); } catch(e) { console.log('❌ bcryptjs:', e.message); process.exit(1); }"

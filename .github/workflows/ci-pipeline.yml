@@ -90,15 +90,15 @@ jobs:
           fi
 
           echo "🔍 Verifying critical dependencies..."
-          # Check if key dependencies are available
+          # Check if key dependencies are available (ES module compatible)
           node -e "
-            try {
-              require('vitest');
+            import('vitest').then(() => {
               console.log('✅ Vitest available');
-            } catch (e) {
+              process.exit(0);
+            }).catch((e) => {
               console.log('❌ Vitest missing:', e.message);
               process.exit(1);
-            }
+            });
           "
         env:
           NGROK_SKIP_DOWNLOAD: true
@@ -250,15 +250,15 @@ jobs:
           fi
 
           echo "🔍 Verifying critical dependencies..."
-          # Check if key dependencies are available
+          # Check if key dependencies are available (ES module compatible)
           node -e "
-            try {
-              require('vitest');
+            import('vitest').then(() => {
               console.log('✅ Vitest available');
-            } catch (e) {
+              process.exit(0);
+            }).catch((e) => {
               console.log('❌ Vitest missing:', e.message);
               process.exit(1);
-            }
+            });
           "
         env:
           NGROK_SKIP_DOWNLOAD: true
