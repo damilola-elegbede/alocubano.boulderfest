@@ -161,8 +161,8 @@ export const getApiUrl = (path) => `${process.env.TEST_BASE_URL}${path}`;
 export const isCI = () => process.env.CI === 'true';
 export const getTestTimeout = () => Number(process.env.VITEST_TEST_TIMEOUT || config.timeouts.test);
 
-// Database client reference (will be initialized in beforeAll)
-let dbClient = null;
+// REMOVED: Global dbClient caused stale reference issues
+// Each operation should get its own fresh connection from the singleton
 
 /**
  * Initialize Database for Integration Tests
@@ -182,17 +182,10 @@ const initializeDatabase = async () => {
     const migrationResult = await migrationSystem.runMigrations();
     console.log(`✅ Migration completed: ${migrationResult.executed} executed, ${migrationResult.skipped} skipped`);
 
-    // Try to reuse the migration system's connection if available
-    let client = migrationSystem.getDbClient();
-
-    if (client) {
-      console.log('♻️ Reusing migration system database connection');
-      dbClient = client;
-    } else {
-      // Fallback: get a fresh connection if migration didn't keep one
-      console.log('🔄 Getting fresh database client...');
-      dbClient = await getDatabaseClient();
-    }
+    // Don't reuse connections - always get fresh from singleton
+    // Migration system now properly clears its cached reference
+    console.log('🔄 Getting fresh database client...');
+    const dbClient = await getDatabaseClient();
 
     // Verify the connection works
     const testResult = await dbClient.execute('SELECT 1 as test');
@@ -210,13 +203,9 @@ const initializeDatabase = async () => {
     console.log('✅ Verified transactions table exists');
 
     console.log('✅ Integration database initialized and tested');
-    return dbClient;
+    // Don't return or store the client - let each test get its own
   } catch (error) {
     console.error('❌ Failed to initialize integration database:', error);
-
-    // If initialization fails, reset the dbClient so next attempt gets a fresh connection
-    dbClient = null;
-
     throw error;
   }
 };
@@ -226,12 +215,9 @@ const initializeDatabase = async () => {
  */
 const cleanDatabase = async () => {
   try {
-    // Get fresh database client to handle closed connections
+    // ALWAYS get fresh database client - no caching
     const { getDatabaseClient } = await import('../lib/database.js');
     const client = await getDatabaseClient();
-
-    // Update global dbClient reference for future operations
-    dbClient = client;
 
     // Get all tables from database to avoid checking individual existence
     const tableQuery = await client.execute(
@@ -285,18 +271,15 @@ const cleanDatabase = async () => {
   } catch (error) {
     console.warn('⚠️ Database cleanup warning:', error.message);
 
-    // If cleanup fails due to connection issues, try to get a fresh connection
+    // If cleanup fails due to connection issues, try to reset the singleton
     if (error.message.includes('CLIENT_CLOSED') || error.message.includes('connection') || error.message.includes('closed')) {
       console.log('🔄 Attempting to recover from connection error...');
       try {
-        const { resetDatabaseInstance, getDatabaseClient } = await import('../lib/database.js');
+        const { resetDatabaseInstance } = await import('../lib/database.js');
         await resetDatabaseInstance();
-        dbClient = await getDatabaseClient();
-        console.log('✅ Database connection recovered');
+        console.log('✅ Database singleton reset for recovery');
       } catch (recoveryError) {
-        console.error('❌ Failed to recover database connection:', recoveryError.message);
-        // Set dbClient to null so next operation will get a fresh connection
-        dbClient = null;
+        console.error('❌ Failed to reset database singleton:', recoveryError.message);
       }
     }
   }
@@ -330,36 +313,16 @@ beforeAll(async () => {
 }, config.timeouts.setup);
 
 beforeEach(async () => {
-  // Reset singletons FIRST to ensure clean state
-  // This prevents CLIENT_CLOSED errors from previous test's connections
+  // CRITICAL: Reset database singleton FIRST
+  // This closes all existing connections from previous test
   await resetDatabaseInstance();
 
-  // Only reset these if they're actually being used
-  // Check the FEATURE_ prefixed variables that the feature flag system uses
-  if (process.env.FEATURE_ENABLE_CONNECTION_POOL !== 'false') {
-    try {
-      await resetConnectionManager();
-    } catch (error) {
-      // Ignore errors if the manager wasn't initialized
-      if (!error.message.includes('not initialized')) {
-        console.warn('⚠️ Connection manager reset warning:', error.message);
-      }
-    }
-  }
+  // Skip enterprise services - they're disabled for integration tests
+  // The environment flags prevent their initialization, so no need to reset
+  // This avoids unnecessary errors and complexity
 
-  if (process.env.FEATURE_ENABLE_ENTERPRISE_MONITORING !== 'false' ||
-      process.env.SKIP_ENTERPRISE_INIT !== 'true') {
-    try {
-      await resetEnterpriseDatabaseService();
-    } catch (error) {
-      // Ignore errors if the service wasn't initialized
-      if (!error.message.includes('not initialized')) {
-        console.warn('⚠️ Enterprise service reset warning:', error.message);
-      }
-    }
-  }
-
-  // THEN clean database with fresh connections
+  // THEN clean database with fresh connection
+  // cleanDatabase will get its own fresh connection from the reset singleton
   await cleanDatabase();
 }, config.timeouts.hook);
 
@@ -369,30 +332,31 @@ afterEach(async () => {
 }, config.timeouts.hook);
 
 afterAll(async () => {
-  // Final cleanup
-  if (dbClient) {
-    try {
-      // Ensure WAL checkpoint before closing to persist all changes
-      try {
-        await dbClient.execute('PRAGMA wal_checkpoint(TRUNCATE)');
-        console.log('✅ Final WAL checkpoint completed');
-      } catch (walError) {
-        // Ignore WAL errors during cleanup
-        if (!walError.message.includes('CLIENT_CLOSED')) {
-          console.warn('⚠️ WAL checkpoint warning:', walError.message);
-        }
-      }
+  // Final cleanup - get fresh client for WAL checkpoint
+  try {
+    const { getDatabaseClient } = await import('../lib/database.js');
+    const client = await getDatabaseClient();
 
-      // Check if connection is still valid before attempting to close
-      if (typeof dbClient.close === 'function') {
-        await dbClient.close();
-        console.log('✅ Database connection closed');
+    // Ensure WAL checkpoint before closing to persist all changes
+    try {
+      await client.execute('PRAGMA wal_checkpoint(TRUNCATE)');
+      console.log('✅ Final WAL checkpoint completed');
+    } catch (walError) {
+      // Ignore WAL errors during cleanup
+      if (!walError.message.includes('CLIENT_CLOSED')) {
+        console.warn('⚠️ WAL checkpoint warning:', walError.message);
       }
-    } catch (error) {
-      // Ignore close errors - connection may already be closed
-      if (!error.message.includes('CLIENT_CLOSED') && !error.message.includes('closed')) {
-        console.warn('⚠️ Database connection cleanup warning:', error.message);
-      }
+    }
+
+    // Check if connection is still valid before attempting to close
+    if (typeof client.close === 'function') {
+      await client.close();
+      console.log('✅ Database connection closed');
+    }
+  } catch (error) {
+    // Ignore errors - connection may already be closed
+    if (!error.message.includes('CLIENT_CLOSED') && !error.message.includes('closed')) {
+      console.warn('⚠️ Database connection cleanup warning:', error.message);
     }
   }
 
@@ -432,14 +396,9 @@ afterAll(async () => {
 // Export database client for tests
 export const getDbClient = async () => {
   // ALWAYS get a fresh client from the singleton
-  // Don't cache it as we reset singletons between tests
+  // No caching to prevent stale references
   const { getDatabaseClient } = await import('../lib/database.js');
-  const freshClient = await getDatabaseClient();
-
-  // Update the global reference for consistency
-  dbClient = freshClient;
-
-  return freshClient;
+  return await getDatabaseClient();
 };
 
 // Export secret validation result for tests that need to check availability

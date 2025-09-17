@@ -823,9 +823,42 @@ class MigrationSystem {
         } catch (cleanupError) {
           console.warn("⚠️  Failed to close database connection:", cleanupError.message);
         }
+        // Clear cached reference after closing
+        this.dbClient = null;
+        this.connectionActive = false;
       } else {
         console.log("🔌 Keeping database connection open for integration tests");
+        // CRITICAL: Still clear cached reference to prevent stale connections
+        // Integration tests will get fresh connections from the singleton
+        this.dbClient = null;
+        this.connectionActive = false;
       }
+      // Always mark as not closing
+      this.isClosing = false;
+    }
+  }
+
+  /**
+   * Explicitly close the database connection
+   * Used by migrate-vercel-build.js for cleanup
+   */
+  async closeConnection() {
+    try {
+      if (this.dbClient && typeof this.dbClient.close === 'function') {
+        console.log("🧹 Closing migration system database connection...");
+        await this.dbClient.close();
+        console.log("✅ Migration system database connection closed successfully");
+      }
+    } catch (error) {
+      // Ignore already closed errors
+      if (!error.message.includes('CLIENT_CLOSED') && !error.message.includes('closed')) {
+        console.warn("⚠️  Error closing migration connection:", error.message);
+      }
+    } finally {
+      // Always clear cached references
+      this.dbClient = null;
+      this.connectionActive = false;
+      this.isClosing = false;
     }
   }
 

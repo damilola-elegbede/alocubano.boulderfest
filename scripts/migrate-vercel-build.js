@@ -155,12 +155,8 @@ async function cleanupResources() {
     try {
       log("🧹 Cleaning up database connections...", colors.blue);
 
-      // Use a single cleanup call to prevent race conditions
-      if (typeof globalMigrationSystem.cleanup === 'function') {
-        await globalMigrationSystem.cleanup();
-      } else if (typeof globalMigrationSystem.closeAllConnections === 'function') {
-        await globalMigrationSystem.closeAllConnections();
-      } else if (typeof globalMigrationSystem.closeConnection === 'function') {
+      // Use the new explicit closeConnection method
+      if (typeof globalMigrationSystem.closeConnection === 'function') {
         await globalMigrationSystem.closeConnection();
       }
 
@@ -314,7 +310,10 @@ async function runVercelBuild() {
       // If we have pending migrations, let them run first before checking
       if (status.executed > 0 && status.pending === 0) {
         try {
+          // CRITICAL: Keep connection alive during verification
           const client = await globalMigrationSystem.ensureDbClient();
+
+          // Perform verification BEFORE any cleanup
           const tableCheck = await client.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('tickets', 'transactions', 'registrations', 'events') ORDER BY name"
           );
@@ -336,7 +335,10 @@ async function runVercelBuild() {
             migrationResult.skipped = status.executed;
           }
         } catch (verifyError) {
-          log("⚠️  Could not verify table existence: " + verifyError.message, colors.yellow);
+          // Don't warn about CLIENT_CLOSED during verification - it's expected if migrations didn't run
+          if (!verifyError.message.includes('CLIENT_CLOSED') && !verifyError.message.includes('manually closed')) {
+            log("⚠️  Could not verify table existence: " + verifyError.message, colors.yellow);
+          }
           migrationResult.skipped = status.executed;
         }
       } else if (status.pending > 0) {
