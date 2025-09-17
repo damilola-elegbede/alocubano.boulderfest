@@ -944,8 +944,9 @@ class MigrationSystem {
 
   /**
    * Show migration status
+   * @param {boolean} keepConnectionOpen - If true, don't close the connection after status check
    */
-  async status() {
+  async status(keepConnectionOpen = false) {
     // Only show detailed status in debug mode
     if (this.debug) {
       console.log("📊 Migration Status Report");
@@ -995,13 +996,15 @@ class MigrationSystem {
       console.error("❌ Failed to get migration status:", error.message);
       throw error;
     } finally {
-      // Clean up database connection
-      try {
-        if (this.dbClient && typeof this.dbClient.close === 'function') {
-          await this.dbClient.close();
+      // Clean up database connection only if not keeping it open
+      if (!keepConnectionOpen) {
+        try {
+          if (this.dbClient && typeof this.dbClient.close === 'function') {
+            await this.dbClient.close();
+          }
+        } catch (cleanupError) {
+          // Silently ignore cleanup errors for status command
         }
-      } catch (cleanupError) {
-        // Silently ignore cleanup errors for status command
       }
     }
   }

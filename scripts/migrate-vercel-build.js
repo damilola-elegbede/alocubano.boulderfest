@@ -292,7 +292,8 @@ async function runVercelBuild() {
 
     let status;
     try {
-      status = await globalMigrationSystem.status();
+      // CRITICAL: Keep connection open for subsequent operations
+      status = await globalMigrationSystem.status(true);
       log(`   Database connection: ✅ Success`, colors.green);
     } catch (statusError) {
       log(`   Database connection: ❌ Failed`, colors.red);
@@ -310,7 +311,7 @@ async function runVercelBuild() {
       // If we have pending migrations, let them run first before checking
       if (status.executed > 0 && status.pending === 0) {
         try {
-          // CRITICAL: Keep connection alive during verification
+          // Get database client for verification
           const client = await globalMigrationSystem.ensureDbClient();
 
           // Perform verification BEFORE any cleanup
