@@ -8,6 +8,9 @@ process.env.INTEGRATION_TEST_MODE = 'true';
 
 import { beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 import { configureEnvironment, cleanupEnvironment, validateEnvironment, TEST_ENVIRONMENTS } from './config/test-environment.js';
+import { resetDatabaseInstance } from '../lib/database.js';
+import { resetConnectionManager } from '../lib/connection-manager.js';
+import { resetEnterpriseDatabaseService } from '../lib/enterprise-database-integration.js';
 
 // Import secret validation for integration tests (simplified version of E2E secret validation)
 const validateIntegrationSecrets = () => {
@@ -314,6 +317,12 @@ beforeAll(async () => {
 }, config.timeouts.setup);
 
 beforeEach(async () => {
+  // Reset all database singletons before each test
+  // This ensures each test gets a fresh connection to the same database file
+  await resetDatabaseInstance();
+  await resetConnectionManager();
+  await resetEnterpriseDatabaseService();
+
   // Clean database before each test to ensure isolation
   await cleanDatabase();
 }, config.timeouts.hook);
