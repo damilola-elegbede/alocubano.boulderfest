@@ -1,4 +1,4 @@
-import fs from 'fs/promises';
+import fs from 'fs';
 import path from 'path';
 import { marked } from 'marked';
 
@@ -30,18 +30,37 @@ export default async function handler(req, res) {
     ? requestedPath
     : `${requestedPath}.md`;
 
-  // Construct full file path
-  const docsDir = path.join(process.cwd(), 'docs');
-  const filePath = path.join(docsDir, mdPath);
+  // Construct full file path - use explicit reference for Vercel
+  // Try multiple possible locations
+  const possiblePaths = [
+    path.join(process.cwd(), 'docs', mdPath),
+    path.join(process.cwd(), '../docs', mdPath),
+    path.join(__dirname, '../docs', mdPath),
+    path.join(__dirname, '../../docs', mdPath)
+  ];
 
-  // Security: Ensure the resolved path is within docs directory
-  if (!filePath.startsWith(docsDir)) {
-    return res.status(403).json({ error: 'Access denied' });
+  let filePath = null;
+  let markdown = null;
+
+  for (const testPath of possiblePaths) {
+    try {
+      markdown = fs.readFileSync(testPath, 'utf-8');
+      filePath = testPath;
+      break;
+    } catch (e) {
+      // Try next path
+    }
+  }
+
+  if (!markdown) {
+    return res.status(404).json({
+      error: 'Documentation not found',
+      requested: mdPath,
+      tried: possiblePaths
+    });
   }
 
   try {
-    // Read the markdown file
-    const markdown = await fs.readFile(filePath, 'utf-8');
 
     // Convert markdown to HTML
     const htmlContent = marked(markdown);
@@ -239,54 +258,49 @@ export default async function handler(req, res) {
 /**
  * Serve an index of available documentation
  */
-async function serveDocsIndex(res) {
+function serveDocsIndex(res) {
+  // Hardcoded list of available docs for Vercel deployment
+  const availableDocs = [
+    'ADMIN_DESIGN_SYSTEM.md',
+    'CONNECTION_MANAGER.md',
+    'ENTERPRISE_DATABASE_DEPLOYMENT.md',
+    'GOOGLE_DRIVE_INTEGRATION.md',
+    'SECRET_VALIDATION.md',
+    'THEME_SYSTEM.md',
+    'architecture/ENTERPRISE_DATABASE_SYSTEM.md',
+    'architecture/MULTI_EVENT_ARCHITECTURE.md',
+    'architecture/MULTI_EVENT_IMPLEMENTATION_PLAN.md',
+    'architecture/TEST_ISOLATION_ARCHITECTURE.md'
+  ];
+
   try {
-    const docsDir = path.join(process.cwd(), 'docs');
-    const files = await fs.readdir(docsDir);
-
-    // Filter for markdown files
-    const mdFiles = files.filter(file => file.endsWith('.md'));
-
     // Group files by category
     const categorized = {
       admin: [],
       api: [],
       system: [],
-      other: []
+      architecture: []
     };
 
-    for (const file of mdFiles) {
-      const name = file.replace('.md', '');
+    for (const file of availableDocs) {
+      const name = file.replace('.md', '').replace('architecture/', '');
       const item = {
         name: name.replace(/_/g, ' '),
         path: file,
         url: `/api/docs?path=${file}`
       };
 
-      if (name.toLowerCase().includes('admin')) {
+      if (file.startsWith('architecture/')) {
+        categorized.architecture.push(item);
+      } else if (name.toLowerCase().includes('admin')) {
         categorized.admin.push(item);
       } else if (name.toLowerCase().includes('api')) {
         categorized.api.push(item);
       } else if (name.toLowerCase().includes('system') || name.toLowerCase().includes('theme')) {
         categorized.system.push(item);
       } else {
-        categorized.other.push(item);
+        categorized.system.push(item);
       }
-    }
-
-    // Check for api subdirectory
-    try {
-      const apiDir = path.join(docsDir, 'api');
-      const apiFiles = await fs.readdir(apiDir);
-      for (const file of apiFiles.filter(f => f.endsWith('.md'))) {
-        categorized.api.push({
-          name: file.replace('.md', '').replace(/_/g, ' '),
-          path: `api/${file}`,
-          url: `/api/docs?path=api/${file}`
-        });
-      }
-    } catch (e) {
-      // API subdirectory might not exist
     }
 
     const html = `
@@ -422,11 +436,11 @@ async function serveDocsIndex(res) {
         </ul>
       </div>` : ''}
 
-      ${categorized.other.length > 0 ? `
+      ${categorized.architecture.length > 0 ? `
       <div class="docs-category">
-        <h2>Other Documentation</h2>
+        <h2>Architecture Documentation</h2>
         <ul class="docs-list">
-          ${categorized.other.map(doc => `
+          ${categorized.architecture.map(doc => `
             <li><a href="${doc.url}">${doc.name}</a></li>
           `).join('')}
         </ul>

@@ -6,7 +6,7 @@
   "buildCommand": "npm run migrate:vercel && npm run build",
   "functions": {
     "api/docs.js": {
-      "includeFiles": "docs/**"
+      "maxDuration": 10
     }
   },
   "crons": [
