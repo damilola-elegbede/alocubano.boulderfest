@@ -1,5 +1,5 @@
 import { getMobileAuthService } from '../../lib/mobile-auth-service.js';
-import { getCsrfService } from '../../lib/csrf-service.js';
+import csrfService from '../../lib/csrf-service.js';
 import { addSecurityHeaders } from '../../lib/security-headers-serverless.js';
 import { getRateLimitService } from '../../lib/rate-limit-service.js';
 
@@ -21,7 +21,6 @@ export default async function handler(req, res) {
 
   try {
     const mobileAuth = getMobileAuthService();
-    const csrfService = getCsrfService();
     const rateLimitService = getRateLimitService();
 
     // Get client IP address for rate limiting
@@ -115,7 +114,8 @@ export default async function handler(req, res) {
       message: 'Login successful',
       role: 'checkin_staff',
       sessionDuration: '72 hours',
-      expiresAt: new Date(Date.now() + sessionDuration).toISOString()
+      expiresAt: new Date(Date.now() + sessionDuration).toISOString(),
+      token: sessionToken
     });
   } catch (error) {
     console.error('Mobile login error:', error);
