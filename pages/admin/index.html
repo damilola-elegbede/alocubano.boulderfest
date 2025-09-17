@@ -718,7 +718,7 @@
         <div class="admin-card-body">
           <p>Database health checks, cache management, system utilities, and comprehensive documentation. Common utilities are available in Quick Actions above.</p>
           <div style="margin-top: var(--space-lg); display: flex; gap: var(--space-sm); flex-wrap: wrap;">
-            <a href="/docs/ADMIN_GUIDE.md" target="_blank" rel="noopener noreferrer" class="admin-btn admin-btn-sm">
+            <a href="/api/docs?path=ADMIN_DESIGN_SYSTEM.md" target="_blank" rel="noopener noreferrer" class="admin-btn admin-btn-sm">
               <span>Documentation</span>
             </a>
           </div>
@@ -1625,7 +1625,7 @@
         <div style="display: flex; gap: var(--space-lg); justify-content: center; flex-wrap: wrap;">
           <a href="mailto:alocubanoboulderfest@gmail.com" style="color: var(--color-blue); text-decoration: none; font-size: var(--font-size-sm);">Support</a>
           <a href="https://github.com/damilola-elegbede/alocubano.boulderfest" target="_blank" rel="noopener noreferrer" style="color: var(--color-blue); text-decoration: none; font-size: var(--font-size-sm);">GitHub</a>
-          <a href="/docs" target="_blank" rel="noopener noreferrer" style="color: var(--color-blue); text-decoration: none; font-size: var(--font-size-sm);">Documentation</a>
+          <a href="/api/docs" target="_blank" rel="noopener noreferrer" style="color: var(--color-blue); text-decoration: none; font-size: var(--font-size-sm);">Documentation</a>
         </div>
       </div>
     </div>
@@ -1663,26 +1663,52 @@
           const headers = { "Content-Type": "application/json" };
           try {
             const csrfResponse = await fetch("/api/admin/csrf-token", {
-              credentials: "include" // Include cookies for production
+              credentials: "same-origin", // Use same-origin for better compatibility
+              headers: {
+                "Accept": "application/json"
+              }
             });
             if (csrfResponse.ok) {
               const csrfData = await csrfResponse.json();
               headers["X-CSRF-Token"] = csrfData.csrfToken;
+            } else {
+              console.error("Failed to get CSRF token:", csrfResponse.status);
+              alert("Authentication required. Please login again.");
+              window.location.href = "/admin/login";
+              return;
             }
           } catch (error) {
-            console.warn("Could not fetch CSRF token:", error);
+            console.error("Could not fetch CSRF token:", error);
+            alert("Network error. Please check your connection.");
+            return;
           }
 
           const response = await fetch("/api/sheets/sync", {
             method: "POST",
             headers: headers,
-            credentials: "include" // Include cookies for production
+            credentials: "same-origin" // Use same-origin for better compatibility
           });
 
           if (response.ok) {
+            const data = await response.json();
+            // Save the sheet URL for the Open Sheets button
+            if (data.sheetUrl) {
+              localStorage.setItem('googleSheetUrl', data.sheetUrl);
+            }
             alert("Successfully synced to Google Sheets!");
           } else {
-            alert("Sync failed. Please try again.");
+            const errorData = await response.json();
+            if (response.status === 503 && errorData.missingVariables) {
+              alert(
+                "Google Sheets integration not configured.\n\n" +
+                "Missing environment variables:\n" +
+                errorData.missingVariables.join("\n") +
+                "\n\nPlease add these to your .env.local file.\n" +
+                "See docs for setup instructions."
+              );
+            } else {
+              alert(`Sync failed: ${errorData.error || "Please try again."}`);
+            }
           }
         } catch (error) {
           console.error("Sync error:", error);
@@ -1822,12 +1848,60 @@
       }
 
       // Open Google Sheets
-      function openGoogleSheets() {
-        alert(
-          "Google Sheets integration requires proper setup.\nPlease refer to the documentation for sheet ID configuration.",
-        );
-        // In production, this would open the actual Google Sheets URL
-        // window.open('https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID', '_blank', 'noopener,noreferrer');
+      async function openGoogleSheets() {
+        // Try to get the saved URL from localStorage
+        let sheetUrl = localStorage.getItem('googleSheetUrl');
+
+        if (!sheetUrl) {
+          // If no saved URL, try to get it by doing a lightweight sync
+          try {
+            const headers = { "Content-Type": "application/json" };
+
+            // Get CSRF token
+            try {
+              const csrfResponse = await fetch("/api/admin/csrf-token", {
+                credentials: "include"
+              });
+              if (csrfResponse.ok) {
+                const csrfData = await csrfResponse.json();
+                headers["X-CSRF-Token"] = csrfData.csrfToken;
+              }
+            } catch (error) {
+              console.warn("Could not fetch CSRF token:", error);
+            }
+
+            // Call sync to get the URL (this also syncs data)
+            const response = await fetch("/api/sheets/sync", {
+              method: "POST",
+              headers: headers,
+              credentials: "include"
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+              if (data.sheetUrl) {
+                sheetUrl = data.sheetUrl;
+                // Save for future use
+                localStorage.setItem('googleSheetUrl', sheetUrl);
+              }
+            } else if (response.status === 503) {
+              // Google Sheets not configured, don't try to open
+              const errorData = await response.json();
+              console.log("Google Sheets not configured:", errorData);
+            }
+          } catch (error) {
+            console.error("Failed to fetch sheet URL:", error);
+          }
+        }
+
+        if (sheetUrl) {
+          // Open the Google Sheet in a new tab
+          window.open(sheetUrl, '_blank', 'noopener,noreferrer');
+        } else {
+          alert(
+            "Google Sheets URL not available.\nPlease sync data first using the 'Sync Sheets' button.",
+          );
+        }
       }
 
       // Logout

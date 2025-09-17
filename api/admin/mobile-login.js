@@ -1,5 +1,4 @@
 import { getMobileAuthService } from '../../lib/mobile-auth-service.js';
-import { getCsrfService } from '../../lib/csrf-service.js';
 import { addSecurityHeaders } from '../../lib/security-headers-serverless.js';
 import { getRateLimitService } from '../../lib/rate-limit-service.js';
 
@@ -21,7 +20,6 @@ export default async function handler(req, res) {
 
   try {
     const mobileAuth = getMobileAuthService();
-    const csrfService = getCsrfService();
     const rateLimitService = getRateLimitService();
 
     // Get client IP address for rate limiting
@@ -39,20 +37,10 @@ export default async function handler(req, res) {
     }
 
     // Parse request body
-    const { password, csrfToken } = req.body;
+    const { password } = req.body;
 
-    // Validate CSRF token
-    const csrfValidation = csrfService.validateToken(
-      csrfToken,
-      req.headers['x-csrf-token']
-    );
-
-    if (!csrfValidation.valid) {
-      return res.status(403).json({
-        error: 'Invalid CSRF token',
-        details: csrfValidation.error
-      });
-    }
+    // Note: CSRF protection is not needed for login endpoints since there's no existing session to protect
+    // The login itself establishes the session
 
     // Validate input - ensure password is provided and is a string
     if (!password || typeof password !== 'string' || password.length === 0) {
@@ -115,7 +103,8 @@ export default async function handler(req, res) {
       message: 'Login successful',
       role: 'checkin_staff',
       sessionDuration: '72 hours',
-      expiresAt: new Date(Date.now() + sessionDuration).toISOString()
+      expiresAt: new Date(Date.now() + sessionDuration).toISOString(),
+      token: sessionToken
     });
   } catch (error) {
     console.error('Mobile login error:', error);

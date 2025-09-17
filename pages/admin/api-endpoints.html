@@ -536,14 +536,18 @@
         position: fixed;
         top: var(--space-xl);
         right: var(--space-xl);
-        z-index: 2000;
+        z-index: 10000;
         display: flex;
         flex-direction: column;
         gap: var(--space-sm);
       }
 
       .toast {
-        background: var(--color-surface);
+        /* Solid dark background to match admin theme */
+        background: #111111;
+        background: var(--color-gray-900, #111111);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
         border: 2px solid var(--color-border);
         border-radius: var(--radius-lg);
         padding: var(--space-lg);
@@ -553,6 +557,7 @@
         overflow: hidden;
         transform: translateX(120%);
         transition: transform var(--transition-base);
+        opacity: 1;
       }
 
       .toast.show {

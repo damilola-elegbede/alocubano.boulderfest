@@ -430,6 +430,29 @@ async function runVercelBuild() {
     // Clean up migration resources before proceeding to build
     await cleanupResources();
 
+    // Embed documentation before build
+    logSection("DOCUMENTATION PHASE", "📚");
+
+    try {
+      log("📚 Embedding documentation files...", colors.blue);
+      log("");
+
+      // Run embed-docs script
+      execSync("node scripts/embed-docs.cjs", {
+        stdio: 'inherit',
+        env: { ...process.env }
+      });
+
+      log("");
+      log("✅ Documentation embedded successfully!", colors.green);
+    } catch (embedError) {
+      log("");
+      log("❌ Documentation embedding failed!", colors.red);
+      log(`   Error: ${embedError.message}`, colors.red);
+      log("");
+      log("⚠️  Continuing with build despite documentation embedding failure", colors.yellow);
+    }
+
     // Now run the actual build process
     logSection("BUILD PHASE", "🏗️");
 

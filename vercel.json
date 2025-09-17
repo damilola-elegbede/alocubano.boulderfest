@@ -4,6 +4,11 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "buildCommand": "npm run migrate:vercel && npm run build",
+  "functions": {
+    "api/docs.js": {
+      "maxDuration": 10
+    }
+  },
   "crons": [
     {
       "path": "/api/sheets/scheduled-sync",
@@ -85,7 +90,7 @@
       "destination": "/pages/admin/index"
     },
     {
-      "source": "/admin/(login|dashboard|checkin|analytics|mfa-settings|registrations|tickets)",
+      "source": "/admin/(login|dashboard|checkin|analytics|mfa-settings|registrations|tickets|api-endpoints)",
       "destination": "/pages/admin/$1"
     }
   ],
