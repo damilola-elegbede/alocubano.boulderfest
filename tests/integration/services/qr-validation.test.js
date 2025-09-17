@@ -4,7 +4,7 @@
  */
 import { test, expect } from 'vitest';
 import { getDbClient } from '../../setup-integration.js';
-import { testRequest, generateTestEmail, HTTP_STATUS } from '../../helpers.js';
+import { testRequest, generateTestEmail, HTTP_STATUS } from '../handler-test-helper.js';
 import jwt from 'jsonwebtoken';
 
 test('QR validation service handles valid JWT tokens correctly', async () => {

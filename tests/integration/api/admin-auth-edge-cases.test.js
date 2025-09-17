@@ -31,7 +31,7 @@
  * and CI/CD environments.
  */
 import { describe, test, expect, beforeEach, vi } from 'vitest';
-import { testRequest, HTTP_STATUS } from '../../helpers.js';
+import { testRequest, HTTP_STATUS } from '../handler-test-helper.js';
 import { getDbClient } from '../../setup-integration.js';
 
 // Additional HTTP status codes for edge case testing

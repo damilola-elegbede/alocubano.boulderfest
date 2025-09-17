@@ -37,7 +37,7 @@ jobs:
       VERCEL: ""
       # Admin authentication - CRITICAL for integration tests
       TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD || 'test-admin-password-123' }}
-      ADMIN_PASSWORD: "$2b$10$dummy.bcrypt.hash.for.integration.testing"
+      # Do NOT set ADMIN_PASSWORD in test environments - use TEST_ADMIN_PASSWORD instead
       ADMIN_SECRET: ${{ secrets.TEST_ADMIN_SECRET || 'test_admin_secret_minimum_32_characters_for_jwt_signing' }}
       # Test environment variables for integration tests
       STRIPE_SECRET_KEY: ${{ secrets.TEST_STRIPE_SECRET_KEY || 'sk_test_dummy_integration_key' }}

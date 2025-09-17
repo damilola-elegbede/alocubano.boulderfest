@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import { testRequest, HTTP_STATUS } from '../../helpers.js';
+import { testRequest, HTTP_STATUS } from '../handler-test-helper.js';
 import { getDbClient } from '../../setup-integration.js';
 import jwt from 'jsonwebtoken';
 

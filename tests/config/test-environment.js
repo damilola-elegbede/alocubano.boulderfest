@@ -242,7 +242,8 @@ export const configureEnvironment = (testType) => {
   
   // Test admin credentials (required for admin panel integration tests)
   process.env.TEST_ADMIN_PASSWORD = process.env.TEST_ADMIN_PASSWORD || 'test-admin-password-123';
-  process.env.ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '$2b$10$test.bcrypt.hash.for.testing.purposes.only';
+  // Do NOT set ADMIN_PASSWORD in test environments - it interferes with TEST_ADMIN_PASSWORD
+  delete process.env.ADMIN_PASSWORD;
   
   console.log(`🧪 Test environment configured for: ${testType.toUpperCase()}`);
   console.log(`📍 Database: ${dbConfig.description}`);

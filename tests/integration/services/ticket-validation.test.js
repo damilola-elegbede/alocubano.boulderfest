@@ -3,7 +3,7 @@
  * Tests ticket validation, QR code processing, and validation logging
  */
 import { describe, test, expect, beforeEach } from 'vitest';
-import { testRequest, generateTestEmail, HTTP_STATUS } from '../../helpers.js';
+import { testRequest, generateTestEmail, HTTP_STATUS } from '../handler-test-helper.js';
 import { getDbClient } from '../../setup-integration.js';
 
 describe('Ticket Validation Integration', () => {

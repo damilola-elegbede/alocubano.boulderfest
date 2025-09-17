@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vite
 import { getDbClient } from '../../setup-integration.js';
 import { getGalleryService } from '../../../lib/gallery-service.js';
 import { resetGoogleDriveService } from '../../../lib/google-drive-service.js';
-import { testRequest, HTTP_STATUS } from '../../helpers.js';
+import { testRequest, HTTP_STATUS } from '../handler-test-helper.js';
 import fs from 'fs/promises';
 import path from 'path';
 

@@ -3,7 +3,7 @@
  * Tests email service functionality with real Brevo API integration
  */
 import { describe, test, expect, beforeEach } from 'vitest';
-import { testRequest, generateTestEmail, HTTP_STATUS } from '../../helpers.js';
+import { testRequest, generateTestEmail, HTTP_STATUS } from '../handler-test-helper.js';
 import { getDbClient } from '../../setup-integration.js';
 
 describe('Email Service Integration', () => {

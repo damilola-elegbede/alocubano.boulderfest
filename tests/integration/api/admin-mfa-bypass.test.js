@@ -11,7 +11,7 @@
  * 6. Simple login returns 404 in production
  */
 import { describe, test, expect, beforeEach, afterEach } from 'vitest';
-import { testRequest, HTTP_STATUS } from '../../helpers.js';
+import { testRequest, HTTP_STATUS } from '../handler-test-helper.js';
 import { getDbClient } from '../../setup-integration.js';
 
 // Fail-fast: Check for required environment variable at module level

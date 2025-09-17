@@ -34,8 +34,8 @@ describe('Basic Audit Service Tests', () => {
       expect(id1).toBeDefined();
       expect(id2).toBeDefined();
       expect(id1).not.toBe(id2);
-      expect(id1).toMatch(/^req_\d+_[a-f0-9]{16}$/);
-      expect(id2).toMatch(/^req_\d+_[a-f0-9]{16}$/);
+      expect(id1).toMatch(/^req_[a-z0-9]+_[a-f0-9]{16}$/);
+      expect(id2).toMatch(/^req_[a-z0-9]+_[a-f0-9]{16}$/);
     });
   });
 

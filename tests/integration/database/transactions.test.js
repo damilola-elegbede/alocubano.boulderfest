@@ -4,7 +4,7 @@
  */
 import { describe, test, expect, beforeEach } from 'vitest';
 import { getDbClient } from '../../setup-integration.js';
-import { generateTestEmail } from '../../helpers.js';
+import { generateTestEmail } from '../handler-test-helper.js';
 
 describe('Database Transaction Integration', () => {
   let testEmail;

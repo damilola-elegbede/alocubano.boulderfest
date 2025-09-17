@@ -3,7 +3,7 @@
  */
 import { test, expect } from 'vitest';
 import { getDbClient } from '../../setup-integration.js';
-import { testRequest, generateTestEmail, HTTP_STATUS } from '../../helpers.js';
+import { testRequest, generateTestEmail, HTTP_STATUS } from '../handler-test-helper.js';
 
 test('payment API creates valid Stripe checkout session', async () => {
   const validPaymentData = {

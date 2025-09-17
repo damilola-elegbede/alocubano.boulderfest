@@ -5,7 +5,7 @@
  */
 
 import { describe, test, expect, beforeEach, afterEach } from 'vitest';
-import { testRequest, HTTP_STATUS, generateTestId } from '../helpers.js';
+import { testRequest, HTTP_STATUS, generateTestId } from './handler-test-helper.js';
 import { getDbClient } from '../setup-integration.js';
 import auditService from '../../lib/audit-service.js';
 
@@ -38,7 +38,14 @@ describe('Audit Performance Integration Tests', () => {
     });
 
     if (loginResponse.status === HTTP_STATUS.OK) {
-      adminToken = loginResponse.data.token;
+      // Extract token from cookie
+      const setCookie = loginResponse.headers && loginResponse.headers['set-cookie'];
+      if (setCookie) {
+        const tokenMatch = setCookie.match(/admin_session=([^;]+)/);
+        if (tokenMatch) {
+          adminToken = tokenMatch[1];
+        }
+      }
     } else {
       console.warn('⚠️ Could not obtain admin token - some tests may be skipped');
       adminToken = null;

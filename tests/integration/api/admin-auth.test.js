@@ -3,7 +3,7 @@
  * Tests admin login, session management, and protected route access
  */
 import { describe, test, expect, beforeEach } from 'vitest';
-import { testRequest, HTTP_STATUS } from '../../helpers.js';
+import { testRequest, HTTP_STATUS } from '../handler-test-helper.js';
 import { getDbClient } from '../../setup-integration.js';
 
 // Fail-fast: Check for required environment variable at module level
@@ -22,6 +22,7 @@ describe('Admin Authentication Integration', () => {
 
   test('admin login creates session and returns JWT token', async () => {
     const loginData = {
+      username: 'admin',
       password: adminPassword
     };
 
@@ -35,10 +36,19 @@ describe('Admin Authentication Integration', () => {
 
     // Validate login response
     if (response.status === HTTP_STATUS.OK) {
-      expect(response.data).toHaveProperty('token');
+      expect(response.data).toHaveProperty('success');
+      expect(response.data.success).toBe(true);
       expect(response.data).toHaveProperty('expiresIn');
-      expect(typeof response.data.token).toBe('string');
-      expect(response.data.token.length).toBeGreaterThan(50); // JWT tokens are long
+
+      // Extract JWT from Set-Cookie header if present
+      const setCookie = response.headers && response.headers['set-cookie'];
+      if (setCookie) {
+        // Extract token from cookie string
+        const tokenMatch = setCookie.match(/admin_session=([^;]+)/);
+        expect(tokenMatch).toBeTruthy();
+        const token = tokenMatch[1];
+        expect(token.length).toBeGreaterThan(50); // JWT tokens are long
+      }
       
       // Verify session was created in database
       if (dbClient) {
@@ -68,6 +78,7 @@ describe('Admin Authentication Integration', () => {
 
   test('invalid admin password returns unauthorized', async () => {
     const invalidLoginData = {
+      username: 'admin',
       password: 'wrongpassword123'
     };
 
@@ -86,7 +97,7 @@ describe('Admin Authentication Integration', () => {
 
   test('protected admin dashboard requires valid authentication', async () => {
     // First, get a valid token
-    const loginData = { password: adminPassword };
+    const loginData = { username: 'admin', password: adminPassword };
     const loginResponse = await testRequest('POST', '/api/admin/login', loginData);
     
     if (loginResponse.status === 0) {
@@ -95,7 +106,15 @@ describe('Admin Authentication Integration', () => {
     }
 
     if (loginResponse.status === HTTP_STATUS.OK) {
-      const token = loginResponse.data.token;
+      // Extract token from cookie
+      const setCookie = loginResponse.headers && loginResponse.headers['set-cookie'];
+      let token = null;
+      if (setCookie) {
+        const tokenMatch = setCookie.match(/admin_session=([^;]+)/);
+        if (tokenMatch) {
+          token = tokenMatch[1];
+        }
+      }
       
       // Test protected dashboard endpoint with valid token
       const dashboardResponse = await testRequest('GET', '/api/admin/dashboard', null, {
@@ -151,7 +170,7 @@ describe('Admin Authentication Integration', () => {
 
   test('admin registrations endpoint returns registration data', async () => {
     // First authenticate
-    const loginData = { password: adminPassword };
+    const loginData = { username: 'admin', password: adminPassword };
     const loginResponse = await testRequest('POST', '/api/admin/login', loginData);
     
     if (loginResponse.status !== HTTP_STATUS.OK) {
@@ -159,7 +178,15 @@ describe('Admin Authentication Integration', () => {
       return;
     }
 
-    const token = loginResponse.data.token;
+    // Extract token from cookie
+    const setCookie = loginResponse.headers && loginResponse.headers['set-cookie'];
+    let token = null;
+    if (setCookie) {
+      const tokenMatch = setCookie.match(/admin_session=([^;]+)/);
+      if (tokenMatch) {
+        token = tokenMatch[1];
+      }
+    }
     
     // Test admin registrations endpoint
     const registrationsResponse = await testRequest('GET', '/api/admin/registrations', null, {

@@ -3,7 +3,7 @@
  * Tests /api/admin/verify-session endpoint for session validation
  */
 import { describe, test, expect, beforeEach } from 'vitest';
-import { testRequest, HTTP_STATUS } from '../../helpers.js';
+import { testRequest, HTTP_STATUS } from '../handler-test-helper.js';
 import { getDbClient } from '../../setup-integration.js';
 
 // Fail-fast: Check for required environment variable at module level

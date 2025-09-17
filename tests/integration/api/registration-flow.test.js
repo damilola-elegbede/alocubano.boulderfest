@@ -1,6 +1,6 @@
 import { test, expect } from 'vitest';
 import { getDbClient } from '../../setup-integration.js';
-import { testRequest, generateTestEmail, HTTP_STATUS } from '../../helpers.js';
+import { testRequest, generateTestEmail, HTTP_STATUS } from '../handler-test-helper.js';
 
 test('registration flow works end-to-end', async () => {
   const registrationData = {

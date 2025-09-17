@@ -11,7 +11,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { getDbClient } from '../../setup-integration.js';
 
-import { testRequest, HTTP_STATUS, generateTestEmail } from '../../helpers.js';
+import { testRequest, HTTP_STATUS, generateTestEmail } from '../handler-test-helper.js';
 
 describe('Integration: Email API', () => {
   let db;

@@ -3,7 +3,7 @@
  * Tests registration functionality with database integration
  */
 import { describe, test, expect, beforeEach } from 'vitest';
-import { testRequest, generateTestEmail, HTTP_STATUS } from '../../helpers.js';
+import { testRequest, generateTestEmail, HTTP_STATUS } from '../handler-test-helper.js';
 import { getDbClient } from '../../setup-integration.js';
 
 describe('Registration API Integration', () => {

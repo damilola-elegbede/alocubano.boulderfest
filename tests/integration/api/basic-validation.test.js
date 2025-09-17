@@ -6,7 +6,7 @@
  */
 import { test, expect } from 'vitest';
 import { getDbClient } from '../../setup-integration.js';
-import { testRequest, generateTestEmail, HTTP_STATUS } from '../../helpers.js';
+import { testRequest, generateTestEmail, HTTP_STATUS } from '../handler-test-helper.js';
 
 // Skip business logic validation tests in CI - these need real API logic
 const skipInCI = process.env.CI ? test.skip : test;

@@ -4,9 +4,9 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { getDatabaseClient } from '../../../lib/database.js';
-import auditService from '../../../lib/audit-service.js';
-import paymentEventLogger from '../../../lib/payment-event-logger.js';
+import { getDatabaseClient } from '../../lib/database.js';
+import auditService from '../../lib/audit-service.js';
+import paymentEventLogger from '../../lib/payment-event-logger.js';
 
 // Mock the stripe webhook handler without importing the actual handler
 const mockStripeHandler = {

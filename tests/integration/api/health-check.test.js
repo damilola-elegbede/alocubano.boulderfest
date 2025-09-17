@@ -4,7 +4,7 @@
  */
 import { test, expect } from 'vitest';
 import { getDbClient } from '../../setup-integration.js';
-import { testRequest, HTTP_STATUS } from '../../helpers.js';
+import { testRequest, HTTP_STATUS } from '../handler-test-helper.js';
 
 test('general health check endpoint returns valid system status', async () => {
   const response = await testRequest('GET', '/api/health/check');
