@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import { getDatabaseClient, resetDatabaseInstance } from '../../../lib/database.js';
+import { getDbClient } from '../../setup-integration.js';
 
 describe('Integration: Database Data Integrity', () => {
   let db;
@@ -19,13 +19,9 @@ describe('Integration: Database Data Integrity', () => {
   let testEmailSubscriberId;
 
   beforeAll(async () => {
-    // Set up test environment variables
-    process.env.NODE_ENV = 'test';
-    process.env.DATABASE_URL = `file:/tmp/data-integrity-integration-test-${Date.now()}.db`;
-    
-    // Reset database instance to ensure clean state
-    await resetDatabaseInstance();
-    db = await getDatabaseClient();
+    // Use the integration test database client
+    // Don't reset or manage lifecycle - let setup-integration.js handle it
+    db = await getDbClient();
     
     // Verify database connection
     const testResult = await db.execute('SELECT 1 as test');
@@ -147,18 +143,14 @@ describe('Integration: Database Data Integrity', () => {
   });
 
   afterAll(async () => {
-    // Clean up database connections
-    if (db && typeof db.close === 'function') {
-      try {
-        await db.close();
-      } catch (error) {
-        // Ignore close errors in tests
-      }
-    }
-    await resetDatabaseInstance();
+    // Don't manage database lifecycle - let setup-integration.js handle it
+    // The integration test setup will clean up connections
   });
 
   beforeEach(async () => {
+    // Get fresh client for each test to avoid stale connections
+    db = await getDbClient();
+
     // Clean up test data before each test
     await db.execute({
       sql: 'DELETE FROM qr_validations WHERE ticket_id IN (SELECT id FROM tickets WHERE ticket_id LIKE ?)',
