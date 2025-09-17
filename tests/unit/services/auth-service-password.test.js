@@ -18,6 +18,38 @@ describe("AuthService Password Verification", () => {
   let authService;
   let originalEnv;
 
+  // Helper to create clean environment for tests
+  const createCleanAuthService = (envVars = {}) => {
+    // Clear environment variables that affect production detection
+    delete process.env.NODE_ENV;
+    delete process.env.VERCEL_ENV;
+    delete process.env.CI;
+    delete process.env.E2E_TEST_MODE;
+
+    // Set default values unless explicitly overridden
+    if (!envVars.hasOwnProperty('ADMIN_SECRET')) {
+      process.env.ADMIN_SECRET = "test-admin-jwt-secret-minimum-32-characters-for-security";
+    }
+    if (!envVars.hasOwnProperty('TEST_ADMIN_PASSWORD')) {
+      process.env.TEST_ADMIN_PASSWORD = "test-admin-password-123";
+    }
+    if (!envVars.hasOwnProperty('ADMIN_PASSWORD')) {
+      process.env.ADMIN_PASSWORD = "$2b$10$test.bcrypt.hash.for.testing.purposes.only";
+    }
+
+    // Set custom environment variables (can override defaults, including undefined)
+    Object.keys(envVars).forEach(key => {
+      if (envVars[key] === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = envVars[key];
+      }
+    });
+
+    // Create fresh service instance
+    return new AuthService();
+  };
+
   beforeEach(() => {
     // Save original environment
     originalEnv = { ...process.env };
@@ -108,24 +140,21 @@ describe("AuthService Password Verification", () => {
 
     it("should use production only when both NODE_ENV and VERCEL_ENV are production", async () => {
       // Arrange
-      process.env.NODE_ENV = "production";
-      process.env.VERCEL_ENV = "production";
-      delete process.env.E2E_TEST_MODE;
-      delete process.env.CI;
-      delete process.env.TEST_ADMIN_PASSWORD;
-
-      process.env.ADMIN_PASSWORD = "$2a$10$hashedpassword";
       bcrypt.compare.mockResolvedValue(true);
 
-      // Create fresh service instance after setting environment
-      authService = new AuthService();
+      // Create clean environment for production test - use realistic bcrypt hash
+      authService = createCleanAuthService({
+        NODE_ENV: "production",
+        VERCEL_ENV: "production",
+        ADMIN_PASSWORD: "$2b$10$N9qo8uLOickgx2ZMRZoMye.YjZyGqI6nw/mDIHG/J7QXUY7nJlxH."
+      });
 
       // Act
       const result = await authService.verifyPassword("production123");
 
       // Assert
       expect(result).toBe(true);
-      expect(bcrypt.compare).toHaveBeenCalledWith("production123", "$2a$10$hashedpassword");
+      expect(bcrypt.compare).toHaveBeenCalledWith("production123", "$2b$10$N9qo8uLOickgx2ZMRZoMye.YjZyGqI6nw/mDIHG/J7QXUY7nJlxH.");
     });
   });
 
@@ -209,45 +238,49 @@ describe("AuthService Password Verification", () => {
 
     it("should use bcrypt in production", async () => {
       // Arrange
-      delete process.env.TEST_ADMIN_PASSWORD;
-      process.env.ADMIN_PASSWORD = "$2a$10$hashedpassword";
       bcrypt.compare.mockResolvedValue(true);
 
-      // Create fresh service instance after setting environment
-      authService = new AuthService();
+      // Create clean environment for production test
+      authService = createCleanAuthService({
+        NODE_ENV: "production",
+        VERCEL_ENV: "production",
+        ADMIN_PASSWORD: "$2b$10$N9qo8uLOickgx2ZMRZoMye.YjZyGqI6nw/mDIHG/J7QXUY7nJlxH."
+      });
 
       // Act
       const result = await authService.verifyPassword("password123");
 
       // Assert
       expect(result).toBe(true);
-      expect(bcrypt.compare).toHaveBeenCalledWith("password123", "$2a$10$hashedpassword");
+      expect(bcrypt.compare).toHaveBeenCalledWith("password123", "$2b$10$N9qo8uLOickgx2ZMRZoMye.YjZyGqI6nw/mDIHG/J7QXUY7nJlxH.");
     });
 
     it("should return false when bcrypt comparison fails", async () => {
       // Arrange
-      delete process.env.TEST_ADMIN_PASSWORD;
-      process.env.ADMIN_PASSWORD = "$2a$10$hashedpassword";
       bcrypt.compare.mockResolvedValue(false);
 
-      // Create fresh service instance after setting environment
-      authService = new AuthService();
+      // Create clean environment for production test
+      authService = createCleanAuthService({
+        NODE_ENV: "production",
+        VERCEL_ENV: "production",
+        ADMIN_PASSWORD: "$2b$10$N9qo8uLOickgx2ZMRZoMye.YjZyGqI6nw/mDIHG/J7QXUY7nJlxH."
+      });
 
       // Act
       const result = await authService.verifyPassword("wrongpassword");
 
       // Assert
       expect(result).toBe(false);
-      expect(bcrypt.compare).toHaveBeenCalledWith("wrongpassword", "$2a$10$hashedpassword");
+      expect(bcrypt.compare).toHaveBeenCalledWith("wrongpassword", "$2b$10$N9qo8uLOickgx2ZMRZoMye.YjZyGqI6nw/mDIHG/J7QXUY7nJlxH.");
     });
 
     it("should validate bcrypt hash format", async () => {
-      // Arrange
-      delete process.env.TEST_ADMIN_PASSWORD;
-      process.env.ADMIN_PASSWORD = "not-a-bcrypt-hash";
-
-      // Create fresh service instance after setting environment
-      authService = new AuthService();
+      // Arrange - Create clean environment with invalid hash format
+      authService = createCleanAuthService({
+        NODE_ENV: "production",
+        VERCEL_ENV: "production",
+        ADMIN_PASSWORD: "not-a-bcrypt-hash"
+      });
 
       // Act
       const result = await authService.verifyPassword("password");
@@ -259,12 +292,14 @@ describe("AuthService Password Verification", () => {
 
     it("should handle bcrypt comparison errors", async () => {
       // Arrange
-      delete process.env.TEST_ADMIN_PASSWORD;
-      process.env.ADMIN_PASSWORD = "$2a$10$hashedpassword";
       bcrypt.compare.mockRejectedValue(new Error("Bcrypt error"));
 
-      // Create fresh service instance after setting environment
-      authService = new AuthService();
+      // Create clean environment for production test
+      authService = createCleanAuthService({
+        NODE_ENV: "production",
+        VERCEL_ENV: "production",
+        ADMIN_PASSWORD: "$2b$10$N9qo8uLOickgx2ZMRZoMye.YjZyGqI6nw/mDIHG/J7QXUY7nJlxH."
+      });
 
       // Act
       const result = await authService.verifyPassword("password");
@@ -274,12 +309,12 @@ describe("AuthService Password Verification", () => {
     });
 
     it("should return false when ADMIN_PASSWORD is not configured", async () => {
-      // Arrange
-      delete process.env.TEST_ADMIN_PASSWORD;
-      delete process.env.ADMIN_PASSWORD;
-
-      // Create fresh service instance after setting environment
-      authService = new AuthService();
+      // Arrange - Create clean environment without ADMIN_PASSWORD
+      authService = createCleanAuthService({
+        NODE_ENV: "production",
+        VERCEL_ENV: "production",
+        ADMIN_PASSWORD: undefined  // Explicitly remove ADMIN_PASSWORD
+      });
 
       // Act
       const result = await authService.verifyPassword("password");
