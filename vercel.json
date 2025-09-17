@@ -49,6 +49,14 @@
       "destination": "/pages/core/$1"
     },
     {
+      "source": "/(gallery|artists|schedule)",
+      "destination": "/pages/events/2026-boulder/$1"
+    },
+    {
+      "source": "/registration",
+      "destination": "/pages/core/tickets"
+    },
+    {
       "source": "/boulder-fest-2025",
       "destination": "/pages/events/2025-boulder/index"
     },
