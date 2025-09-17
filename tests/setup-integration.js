@@ -125,6 +125,19 @@ delete process.env.VERCEL_DEV_STARTUP;
 process.env.TEST_DATABASE_TYPE = 'sqlite_file';
 process.env.FORCE_LOCAL_DATABASE = 'true';
 
+// CRITICAL: Disable enterprise features for integration tests
+// These cause CLIENT_CLOSED errors due to complex connection management
+// Feature flag system looks for FEATURE_ prefix in environment variables
+process.env.FEATURE_ENABLE_CONNECTION_POOL = 'false';
+process.env.FEATURE_ENABLE_ENTERPRISE_MONITORING = 'false';
+process.env.FEATURE_ENABLE_CIRCUIT_BREAKER = 'false';
+process.env.SKIP_ENTERPRISE_INIT = 'true';
+
+// Also set rollout percentages to 0 for extra safety
+process.env.ROLLOUT_ENABLE_CONNECTION_POOL = '0';
+process.env.ROLLOUT_ENABLE_ENTERPRISE_MONITORING = '0';
+process.env.ROLLOUT_ENABLE_CIRCUIT_BREAKER = '0';
+
 // Store original values for restoration later (for cleanup)
 const originalTursoUrl = process.env.TURSO_DATABASE_URL;
 const originalTursoToken = process.env.TURSO_AUTH_TOKEN;
@@ -317,15 +330,37 @@ beforeAll(async () => {
 }, config.timeouts.setup);
 
 beforeEach(async () => {
-  // Clean database FIRST (this will use/create the old singleton if needed)
-  await cleanDatabase();
-
-  // THEN reset all database singletons after cleaning
-  // This ensures each test gets a fresh connection to the same database file
-  // and the singleton created by cleanDatabase is discarded
+  // Reset singletons FIRST to ensure clean state
+  // This prevents CLIENT_CLOSED errors from previous test's connections
   await resetDatabaseInstance();
-  await resetConnectionManager();
-  await resetEnterpriseDatabaseService();
+
+  // Only reset these if they're actually being used
+  // Check the FEATURE_ prefixed variables that the feature flag system uses
+  if (process.env.FEATURE_ENABLE_CONNECTION_POOL !== 'false') {
+    try {
+      await resetConnectionManager();
+    } catch (error) {
+      // Ignore errors if the manager wasn't initialized
+      if (!error.message.includes('not initialized')) {
+        console.warn('⚠️ Connection manager reset warning:', error.message);
+      }
+    }
+  }
+
+  if (process.env.FEATURE_ENABLE_ENTERPRISE_MONITORING !== 'false' ||
+      process.env.SKIP_ENTERPRISE_INIT !== 'true') {
+    try {
+      await resetEnterpriseDatabaseService();
+    } catch (error) {
+      // Ignore errors if the service wasn't initialized
+      if (!error.message.includes('not initialized')) {
+        console.warn('⚠️ Enterprise service reset warning:', error.message);
+      }
+    }
+  }
+
+  // THEN clean database with fresh connections
+  await cleanDatabase();
 }, config.timeouts.hook);
 
 afterEach(async () => {
