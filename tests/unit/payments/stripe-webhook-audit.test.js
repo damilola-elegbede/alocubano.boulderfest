@@ -371,11 +371,11 @@ describe('Stripe Webhook Audit Tests', () => {
       const settlementDate = new Date().toISOString().split('T')[0];
 
       await auditService.logFinancialEvent({
-        requestId: `settlement_${Date.now()}`,
+        requestId: `settlement_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         action: 'SETTLEMENT_INITIATED',
         amountCents: 47500, // $475.00 net after fees
         currency: 'USD',
-        transactionReference: `po_${Date.now()}`,
+        transactionReference: `po_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         paymentStatus: 'settled',
         targetType: 'settlement',
         targetId: settlementDate,
