@@ -317,14 +317,15 @@ beforeAll(async () => {
 }, config.timeouts.setup);
 
 beforeEach(async () => {
-  // Reset all database singletons before each test
+  // Clean database FIRST (this will use/create the old singleton if needed)
+  await cleanDatabase();
+
+  // THEN reset all database singletons after cleaning
   // This ensures each test gets a fresh connection to the same database file
+  // and the singleton created by cleanDatabase is discarded
   await resetDatabaseInstance();
   await resetConnectionManager();
   await resetEnterpriseDatabaseService();
-
-  // Clean database before each test to ensure isolation
-  await cleanDatabase();
 }, config.timeouts.hook);
 
 afterEach(async () => {
