@@ -186,8 +186,9 @@ const initializeDatabase = async () => {
     console.log('🔄 Running database migrations for integration tests (suite-level)...');
     const migrationSystem = new MigrationSystem();
 
-    // Override the migration system to use our scoped client
+    // Override BOTH methods to use our scoped client (ensureDbClient is what runMigrations actually calls)
     migrationSystem.getClient = async () => dbClient;
+    migrationSystem.ensureDbClient = async () => dbClient;
 
     const migrationResult = await migrationSystem.runMigrations();
     console.log(`✅ Migration completed: ${migrationResult.executed} executed, ${migrationResult.skipped} skipped`);
