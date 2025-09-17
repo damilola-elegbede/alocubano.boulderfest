@@ -21,13 +21,10 @@ describe("AuthService Password Verification", () => {
   beforeEach(() => {
     // Save original environment
     originalEnv = { ...process.env };
-    
+
     // Set required ADMIN_SECRET for initialization
     process.env.ADMIN_SECRET = "test-admin-secret-that-is-long-enough-for-validation";
-    
-    // Create fresh service instance
-    authService = new AuthService();
-    
+
     // Reset mock
     bcrypt.compare.mockReset();
   });
@@ -44,7 +41,10 @@ describe("AuthService Password Verification", () => {
       process.env.VERCEL_ENV = "preview";
       delete process.env.NODE_ENV;
       process.env.TEST_ADMIN_PASSWORD = "test123";
-      
+
+      // Create fresh service instance after setting environment
+      authService = new AuthService();
+
       // Act
       const result = await authService.verifyPassword("test123");
 
@@ -58,6 +58,9 @@ describe("AuthService Password Verification", () => {
       process.env.NODE_ENV = "test";
       delete process.env.VERCEL_ENV;
       process.env.TEST_ADMIN_PASSWORD = "test123";
+
+      // Create fresh service instance after setting environment
+      authService = new AuthService();
 
       // Act
       const result = await authService.verifyPassword("test123");
@@ -74,6 +77,9 @@ describe("AuthService Password Verification", () => {
       delete process.env.VERCEL_ENV;
       process.env.TEST_ADMIN_PASSWORD = "test123";
 
+      // Create fresh service instance after setting environment
+      authService = new AuthService();
+
       // Act
       const result = await authService.verifyPassword("test123");
 
@@ -88,6 +94,9 @@ describe("AuthService Password Verification", () => {
       delete process.env.NODE_ENV;
       delete process.env.VERCEL_ENV;
       process.env.TEST_ADMIN_PASSWORD = "test123";
+
+      // Create fresh service instance after setting environment
+      authService = new AuthService();
 
       // Act
       const result = await authService.verifyPassword("test123");
@@ -104,9 +113,12 @@ describe("AuthService Password Verification", () => {
       delete process.env.E2E_TEST_MODE;
       delete process.env.CI;
       delete process.env.TEST_ADMIN_PASSWORD;
-      
+
       process.env.ADMIN_PASSWORD = "$2a$10$hashedpassword";
       bcrypt.compare.mockResolvedValue(true);
+
+      // Create fresh service instance after setting environment
+      authService = new AuthService();
 
       // Act
       const result = await authService.verifyPassword("production123");
@@ -201,6 +213,9 @@ describe("AuthService Password Verification", () => {
       process.env.ADMIN_PASSWORD = "$2a$10$hashedpassword";
       bcrypt.compare.mockResolvedValue(true);
 
+      // Create fresh service instance after setting environment
+      authService = new AuthService();
+
       // Act
       const result = await authService.verifyPassword("password123");
 
@@ -215,6 +230,9 @@ describe("AuthService Password Verification", () => {
       process.env.ADMIN_PASSWORD = "$2a$10$hashedpassword";
       bcrypt.compare.mockResolvedValue(false);
 
+      // Create fresh service instance after setting environment
+      authService = new AuthService();
+
       // Act
       const result = await authService.verifyPassword("wrongpassword");
 
@@ -227,6 +245,9 @@ describe("AuthService Password Verification", () => {
       // Arrange
       delete process.env.TEST_ADMIN_PASSWORD;
       process.env.ADMIN_PASSWORD = "not-a-bcrypt-hash";
+
+      // Create fresh service instance after setting environment
+      authService = new AuthService();
 
       // Act
       const result = await authService.verifyPassword("password");
@@ -242,6 +263,9 @@ describe("AuthService Password Verification", () => {
       process.env.ADMIN_PASSWORD = "$2a$10$hashedpassword";
       bcrypt.compare.mockRejectedValue(new Error("Bcrypt error"));
 
+      // Create fresh service instance after setting environment
+      authService = new AuthService();
+
       // Act
       const result = await authService.verifyPassword("password");
 
@@ -253,6 +277,9 @@ describe("AuthService Password Verification", () => {
       // Arrange
       delete process.env.TEST_ADMIN_PASSWORD;
       delete process.env.ADMIN_PASSWORD;
+
+      // Create fresh service instance after setting environment
+      authService = new AuthService();
 
       // Act
       const result = await authService.verifyPassword("password");
