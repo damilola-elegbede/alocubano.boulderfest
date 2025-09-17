@@ -230,7 +230,7 @@ test.describe('Admin Dashboard & Security', () => {
 
   test('should validate admin session token', async ({ page }) => {
     // FIXED: Simple session validation test
-    await expect(page).toHaveURL(/dashboard/);
+    await expect(page).toHaveURL(/\/dashboard(\/|$)/);
     
     // Verify we can see admin content (proves session is valid)
     await expect(page.locator('[data-testid="dashboard-stats"]')).toBeVisible();
@@ -244,7 +244,7 @@ test.describe('Admin Dashboard & Security', () => {
     
     // Login in second context
     await loginAsAdmin(page2);
-    await expect(page2).toHaveURL(/dashboard/);
+    await expect(page2).toHaveURL(/\/dashboard(\/|$)/);
     
     // Both should work
     await expect(page.locator('h1')).toContainText('Admin Dashboard');

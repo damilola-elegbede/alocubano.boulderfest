@@ -14,9 +14,9 @@ test.describe('Basic Navigation', () => {
 
   test('should navigate between main pages', async ({ page }) => {
     const navigationPages = [
-      { link: 'About', url: /about/, timeout: 10000 },
-      { link: 'Tickets', url: /tickets/, timeout: 10000 },
-      { link: 'Contact', url: /contact/, timeout: 10000 },
+      { link: 'About', url: /\/about(\/|$)/, timeout: 10000 },
+      { link: 'Tickets', url: /\/tickets(\/|$)/, timeout: 10000 },
+      { link: 'Contact', url: /\/contact(\/|$)/, timeout: 10000 },
     ];
 
     for (const pageConfig of navigationPages) {
@@ -46,7 +46,7 @@ test.describe('Basic Navigation', () => {
     
     if (homeLinkCount > 0) {
       await homeLink.click();
-      await expect(page).toHaveURL(/home/, { timeout });
+      await expect(page).toHaveURL(/\/home(\/|$)/, { timeout });
     }
   }
 
@@ -91,7 +91,7 @@ test.describe('Basic Navigation', () => {
     if (festivalLinkCount > 0) {
       await festivalLink.first().click();
       // Update expectation to match actual behavior - links go to boulder-fest-YYYY pages
-      await expect(page).toHaveURL(/boulder-fest-20\d{2}/);
+      await expect(page).toHaveURL(/\/boulder-fest-20\d{2}(\/|$)/);
     }
   }
 

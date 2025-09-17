@@ -11,8 +11,9 @@ test.describe('Transactional Email Flows', () => {
   
   test('should trigger purchase confirmation email on successful payment', async ({ page, request }) => {
     // Navigate to tickets page
-    await page.goto('/pages/tickets.html');
-    
+    await page.goto('/tickets');
+    await expect(page).toHaveURL(/\/tickets\/?$/);
+
     // Add ticket to cart
     const weekendButton = page.locator('button').filter({ hasText: 'Weekend' }).first();
     await weekendButton.click();
@@ -98,7 +99,8 @@ test.describe('Transactional Email Flows', () => {
     const testEmail = generateTestEmail('unsubscribe', 'newsletter');
     
     // First subscribe to newsletter
-    await page.goto('/pages/contact.html');
+    await page.goto('/contact');
+    await expect(page).toHaveURL(/\/contact\/?$/);
     await page.locator('#newsletter-email').fill(testEmail);
     await page.locator('.custom-checkbox').click();
     

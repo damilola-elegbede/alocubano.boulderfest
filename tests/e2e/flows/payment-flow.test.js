@@ -14,7 +14,7 @@ test.describe('Payment Processing Flow', () => {
     console.log('ℹ️ Payment tests will use mock responses due to missing Stripe credentials');
   }
   test.beforeEach(async ({ page }) => {
-    await page.goto('/pages/tickets.html');
+    await page.goto('/tickets');
     
     // Wait for floating cart to be initialized (it exists but may be hidden initially)
     await page.waitForFunction(() => {
@@ -186,7 +186,7 @@ test.describe('Payment Processing Flow', () => {
     
     // If we're still on the same domain, simulate going to success page
     if (!hasStripeRedirect) {
-      await page.goto('/pages/success.html?session_id=test_session_123');
+      await page.goto('/success?session_id=test_session_123');
       
       // Verify success page elements
       const successElements = page.locator('h1:has-text("Success"), .success-message, .confirmation');
@@ -453,7 +453,7 @@ test.describe('Payment Processing Flow', () => {
     });
     
     // Skip to success page directly to test confirmation flow (simulates post-payment state)
-    await page.goto('/pages/success.html?session_id=test_session_123');
+    await page.goto('/success?session_id=test_session_123');
     
     // Wait for page to load
     await expect(page.locator('body')).toBeVisible();
@@ -489,7 +489,7 @@ test.describe('Payment Processing Flow', () => {
 
   test('should provide downloadable tickets post-payment', async ({ page }) => {
     // Navigate to success page (simulating post-payment state)
-    await page.goto('/pages/success.html?session_id=test_session_123');
+    await page.goto('/success?session_id=test_session_123');
     
     // Wait for page to load
     await expect(page.locator('body')).toBeVisible();
@@ -545,7 +545,7 @@ test.describe('Payment Processing Flow', () => {
     await expect(page.locator('.nav-cart-badge')).toBeVisible({ timeout: 5000 });
     
     // Navigate away and back to test persistence
-    await page.goto('/pages/about.html');
+    await page.goto('/about');
     
     // Wait for cart to initialize on new page
     await page.waitForFunction(() => {
@@ -553,7 +553,7 @@ test.describe('Payment Processing Flow', () => {
     }, { timeout: 10000 });
     
     // Navigate back to tickets
-    await page.goto('/pages/tickets.html');
+    await page.goto('/tickets');
     
     // Wait for cart to initialize again
     await page.waitForFunction(() => {

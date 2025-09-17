@@ -16,6 +16,9 @@ import { createStorageUtils } from '../helpers/storage-utils.js';
 import { warnIfOptionalSecretsUnavailable } from '../helpers/test-setup.js';
 import { trackTestEmail, isTestEmail } from '../helpers/brevo-cleanup.js';
 
+// Route constants to eliminate duplicate literals
+const CONTACT_ROUTE = '/contact';
+
 // Check for email service secrets
 const secretWarnings = warnIfOptionalSecretsUnavailable(['email', 'newsletter'], 'newsletter-simple.test.js');
 
@@ -51,7 +54,8 @@ test.describe('Newsletter Subscription - Real API Test', () => {
 
   test('should load contact page with newsletter form', async ({ page }) => {
     // Navigate to contact page
-    await page.goto('/pages/contact.html');
+    await page.goto(CONTACT_ROUTE);
+    await expect(page).toHaveURL(/\/contact\/?$/);
     
     // Wait for page to load with extended timeout for preview deployments
     await page.waitForLoadState('domcontentloaded');
@@ -68,7 +72,8 @@ test.describe('Newsletter Subscription - Real API Test', () => {
   });
   
   test('should validate email and consent requirements', async ({ page }) => {
-    await page.goto('/pages/contact.html');
+    await page.goto(CONTACT_ROUTE);
+    await expect(page).toHaveURL(/\/contact\/?$/);
     
     // Wait for form to load with extended timeout for preview deployments
     await page.waitForLoadState('domcontentloaded');
@@ -101,7 +106,8 @@ test.describe('Newsletter Subscription - Real API Test', () => {
   });
 
   test('should handle successful subscription with real API', async ({ page }) => {
-    await page.goto('/pages/contact.html');
+    await page.goto(CONTACT_ROUTE);
+    await expect(page).toHaveURL(/\/contact\/?$/);
     
     // Wait for form to load with extended timeout for preview deployments
     await page.waitForLoadState('domcontentloaded');

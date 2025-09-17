@@ -111,7 +111,7 @@ test.describe('Admin Authentication', () => {
     // Should show error message and not navigate to dashboard
     const errorElement = page.locator('#errorMessage');
     await expect(errorElement).toBeVisible({ timeout: 30000 });
-    await expect(page).not.toHaveURL(/dashboard/);
+    await expect(page).not.toHaveURL(/\/dashboard(\/|$)/);
   });
 
   test('should authenticate valid admin credentials', async ({ page }) => {
@@ -263,11 +263,11 @@ test.describe('Admin Authentication', () => {
     }
     
     // Navigate away and back - should remain logged in
-    await page.goto('/pages/tickets.html');
+    await page.goto('/tickets');
     await page.goto('/admin/dashboard');
     
     // Should still be on dashboard, not redirected to login
-    await expect(page).toHaveURL(/dashboard/);
+    await expect(page).toHaveURL(/\/dashboard(\/|$)/);
   });
 
   test('should logout successfully', async ({ page }) => {
@@ -307,7 +307,7 @@ test.describe('Admin Authentication', () => {
       
       // Should redirect to login page with longer timeout
       await page.waitForURL('**/admin/login', { timeout: 30000 });
-      await expect(page).toHaveURL(/login/);
+      await expect(page).toHaveURL(/\/login(\/|$)/);
     } else {
       console.log('No logout button found - skipping logout test');
     }

@@ -8,6 +8,9 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Ticket Purchase - Essential Flow', () => {
+  // Route constants to eliminate duplicate literals
+  const TICKETS_ROUTE = '/tickets';
+
   test.beforeEach(async ({ page, browserName }) => {
     // Clear storage safely - wrap in try/catch for browsers with security restrictions
     try {
@@ -23,7 +26,7 @@ test.describe('Ticket Purchase - Essential Flow', () => {
   });
 
   test('should load tickets page and display purchase options', async ({ page }) => {
-    await page.goto('/pages/tickets.html');
+    await page.goto(TICKETS_ROUTE);
     
     // Wait for network requests to complete and JavaScript to initialize
     await page.waitForLoadState('domcontentloaded');
@@ -47,7 +50,7 @@ test.describe('Ticket Purchase - Essential Flow', () => {
   });
 
   test('should handle add to cart and display floating cart', async ({ page }) => {
-    await page.goto('/pages/tickets.html');
+    await page.goto(TICKETS_ROUTE);
     await page.waitForLoadState('domcontentloaded');
     
     // Wait for ticket cards to be fully initialized
@@ -96,7 +99,7 @@ test.describe('Ticket Purchase - Essential Flow', () => {
   });
 
   test('should show functional quantity controls', async ({ page }) => {
-    await page.goto('/pages/tickets.html');
+    await page.goto(TICKETS_ROUTE);
     await page.waitForLoadState('domcontentloaded');
     
     // Wait for ticket cards to be fully initialized

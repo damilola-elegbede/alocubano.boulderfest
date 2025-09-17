@@ -1,6 +1,8 @@
 {
   "outputDirectory": ".",
   "framework": null,
+  "cleanUrls": true,
+  "trailingSlash": false,
   "buildCommand": "npm run migrate:vercel && npm run build",
   "crons": [
     {
@@ -27,225 +29,153 @@
       "destination": "/images/favicon.ico"
     },
     {
+      "source": "/manifest.json",
+      "destination": "/public/manifest.json"
+    },
+    {
       "source": "/gallery-data/:path*",
-      "destination": "/public/gallery-data/:path*"
+      "destination": "/gallery-data/:path*"
     },
     {
       "source": "/featured-photos.json",
-      "destination": "/public/featured-photos.json"
-    },
-    {
-      "source": "/",
-      "destination": "/pages/home.html"
+      "destination": "/featured-photos.json"
     },
     {
       "source": "/home",
-      "destination": "/pages/home.html"
+      "destination": "/pages/core/home"
     },
     {
-      "source": "/about",
-      "destination": "/pages/about.html"
+      "source": "/(about|tickets|donations|contact|checkout-success|checkout-cancel|my-tickets|success|failure)",
+      "destination": "/pages/core/$1"
     },
     {
-      "source": "/boulder-fest-2026/home",
-      "destination": "/pages/home.html"
+      "source": "/(gallery|artists|schedule)",
+      "destination": "/pages/events/2026-boulder/$1"
     },
     {
-      "source": "/boulder-fest-2026/about",
-      "destination": "/pages/about.html"
-    },
-    {
-      "source": "/boulder-fest-2026/donations",
-      "destination": "/pages/donations.html"
+      "source": "/registration",
+      "destination": "/pages/core/tickets"
     },
     {
       "source": "/boulder-fest-2025",
-      "destination": "/pages/boulder-fest-2025-index.html"
+      "destination": "/pages/events/2025-boulder/index"
     },
     {
-      "source": "/boulder-fest-2025/artists",
-      "destination": "/pages/boulder-fest-2025-artists.html"
-    },
-    {
-      "source": "/boulder-fest-2025/schedule",
-      "destination": "/pages/boulder-fest-2025-schedule.html"
-    },
-    {
-      "source": "/boulder-fest-2025/gallery",
-      "destination": "/pages/boulder-fest-2025-gallery.html"
+      "source": "/boulder-fest-2025/(artists|schedule|gallery)",
+      "destination": "/pages/events/2025-boulder/$1"
     },
     {
       "source": "/boulder-fest-2026",
-      "destination": "/pages/boulder-fest-2026-index.html"
+      "destination": "/pages/events/2026-boulder/index"
     },
     {
-      "source": "/boulder-fest-2026/artists",
-      "destination": "/pages/boulder-fest-2026-artists.html"
-    },
-    {
-      "source": "/boulder-fest-2026/schedule",
-      "destination": "/pages/boulder-fest-2026-schedule.html"
-    },
-    {
-      "source": "/boulder-fest-2026/gallery",
-      "destination": "/pages/boulder-fest-2026-gallery.html"
+      "source": "/boulder-fest-2026/(artists|schedule|gallery)",
+      "destination": "/pages/events/2026-boulder/$1"
     },
     {
       "source": "/weekender-2026-09",
-      "destination": "/pages/weekender-2026-09-index.html"
+      "destination": "/pages/events/2026-weekender/index"
     },
     {
-      "source": "/weekender-2026-09/artists",
-      "destination": "/pages/weekender-2026-09-artists.html"
-    },
-    {
-      "source": "/weekender-2026-09/schedule",
-      "destination": "/pages/weekender-2026-09-schedule.html"
-    },
-    {
-      "source": "/weekender-2026-09/gallery",
-      "destination": "/pages/weekender-2026-09-gallery.html"
-    },
-    {
-      "source": "/about-festival",
-      "destination": "/pages/about.html"
-    },
-    {
-      "source": "/contact",
-      "destination": "/pages/contact.html"
-    },
-    {
-      "source": "/donations",
-      "destination": "/pages/donations.html"
-    },
-    {
-      "source": "/2026-artists",
-      "destination": "/pages/boulder-fest-2026-artists.html"
-    },
-    {
-      "source": "/2026-schedule",
-      "destination": "/pages/boulder-fest-2026-schedule.html"
-    },
-    {
-      "source": "/2026-gallery",
-      "destination": "/pages/boulder-fest-2026-gallery.html"
-    },
-    {
-      "source": "/2025-artists",
-      "destination": "/pages/boulder-fest-2025-artists.html"
-    },
-    {
-      "source": "/2025-schedule",
-      "destination": "/pages/boulder-fest-2025-schedule.html"
-    },
-    {
-      "source": "/2025-gallery",
-      "destination": "/pages/boulder-fest-2025-gallery.html"
-    },
-    {
-      "source": "/2026-sept-artists",
-      "destination": "/pages/weekender-2026-09-artists.html"
-    },
-    {
-      "source": "/2026-sept-schedule",
-      "destination": "/pages/weekender-2026-09-schedule.html"
-    },
-    {
-      "source": "/2026-sept-gallery",
-      "destination": "/pages/weekender-2026-09-gallery.html"
-    },
-    {
-      "source": "/weekender-2026-09/:page",
-      "destination": "/pages/:page.html"
-    },
-    {
-      "source": "/workshop-series-2026/:page",
-      "destination": "/pages/:page.html"
-    },
-    {
-      "source": "/tickets",
-      "destination": "/pages/tickets.html"
-    },
-    {
-      "source": "/success",
-      "destination": "/pages/success.html"
-    },
-    {
-      "source": "/failure",
-      "destination": "/pages/failure.html"
-    },
-    {
-      "source": "/my-tickets",
-      "destination": "/pages/my-tickets.html"
-    },
-    {
-      "source": "/checkout-success",
-      "destination": "/pages/checkout-success.html"
-    },
-    {
-      "source": "/checkout-cancel",
-      "destination": "/pages/checkout-cancel.html"
-    },
-    {
-      "source": "/admin/login",
-      "destination": "/pages/admin/login.html"
-    },
-    {
-      "source": "/admin/dashboard",
-      "destination": "/pages/admin/dashboard.html"
-    },
-    {
-      "source": "/admin/checkin",
-      "destination": "/pages/admin/checkin.html"
-    },
-    {
-      "source": "/admin/analytics",
-      "destination": "/pages/admin/analytics.html"
-    },
-    {
-      "source": "/admin/mfa-settings",
-      "destination": "/pages/admin/mfa-settings.html"
-    },
-    {
-      "source": "/admin/registrations",
-      "destination": "/pages/admin/registrations.html"
-    },
-    {
-      "source": "/admin/tickets",
-      "destination": "/pages/admin/tickets.html"
+      "source": "/weekender-2026-09/(artists|schedule|gallery)",
+      "destination": "/pages/events/2026-weekender/$1"
     },
     {
       "source": "/admin",
-      "destination": "/pages/admin/index.html"
+      "destination": "/pages/admin/index"
     },
     {
-      "source": "/manifest.json",
-      "destination": "/public/manifest.json"
+      "source": "/admin/(login|dashboard|checkin|analytics|mfa-settings|registrations|tickets)",
+      "destination": "/pages/admin/$1"
     }
   ],
   "redirects": [
     {
+      "source": "/about-festival",
+      "destination": "/about",
+      "permanent": true
+    },
+    {
+      "source": "/2025-artists",
+      "destination": "/boulder-fest-2025/artists",
+      "permanent": true
+    },
+    {
+      "source": "/2025-schedule",
+      "destination": "/boulder-fest-2025/schedule",
+      "permanent": true
+    },
+    {
+      "source": "/2025-gallery",
+      "destination": "/boulder-fest-2025/gallery",
+      "permanent": true
+    },
+    {
       "source": "/gallery-2025",
-      "destination": "/2025-gallery",
-      "permanent": false
+      "destination": "/boulder-fest-2025/gallery",
+      "permanent": true
+    },
+    {
+      "source": "/2026-artists",
+      "destination": "/boulder-fest-2026/artists",
+      "permanent": true
+    },
+    {
+      "source": "/2026-schedule",
+      "destination": "/boulder-fest-2026/schedule",
+      "permanent": true
+    },
+    {
+      "source": "/2026-gallery",
+      "destination": "/boulder-fest-2026/gallery",
+      "permanent": true
+    },
+    {
+      "source": "/2026-sept-artists",
+      "destination": "/weekender-2026-09/artists",
+      "permanent": true
+    },
+    {
+      "source": "/2026-sept-schedule",
+      "destination": "/weekender-2026-09/schedule",
+      "permanent": true
+    },
+    {
+      "source": "/2026-sept-gallery",
+      "destination": "/weekender-2026-09/gallery",
+      "permanent": true
     },
     {
       "source": "/boulder-fest-2025/tickets",
-      "destination": "/pages/tickets.html",
-      "permanent": false
+      "destination": "/tickets",
+      "permanent": true
     },
     {
       "source": "/boulder-fest-2026/tickets",
-      "destination": "/pages/tickets.html",
-      "permanent": false
+      "destination": "/tickets",
+      "permanent": true
     },
     {
       "source": "/weekender-2026-09/tickets",
-      "destination": "/pages/tickets.html",
-      "permanent": false
+      "destination": "/tickets",
+      "permanent": true
+    },
+    {
+      "source": "/boulder-fest-2026/home",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/boulder-fest-2026/about",
+      "destination": "/about",
+      "permanent": true
+    },
+    {
+      "source": "/boulder-fest-2026/donations",
+      "destination": "/donations",
+      "permanent": true
     }
   ],
-  "trailingSlash": false,
   "headers": [
     {
       "source": "/(.*)",

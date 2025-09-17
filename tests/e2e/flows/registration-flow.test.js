@@ -14,7 +14,8 @@ test.describe('Registration Process', () => {
   
   test.beforeEach(async ({ page }) => {
     // Start from tickets page
-    await page.goto('/pages/tickets.html');
+    await page.goto('/tickets');
+    await expect(page).toHaveURL(/\/tickets\/?$/);
   });
 
   test('should access registration via ticket purchase', async ({ page }) => {
@@ -39,7 +40,7 @@ test.describe('Registration Process', () => {
   test('should access registration via direct ticket URL', async ({ page }) => {
     // Try to access registration page directly with test ticket ID
     try {
-      await page.goto(`/pages/registration.html?ticket=${testTicketId}`);
+      await page.goto(`/registration?ticket=${testTicketId}`);
       
       // Should either show registration form or redirect appropriately
       const registrationElements = page.locator('form, .registration-form, h1:has-text("Registration")');
@@ -207,7 +208,8 @@ test.describe('Registration Process', () => {
         }
         
         // Navigate away and back
-        await page.goto('/pages/tickets.html');
+        await page.goto('/tickets');
+        await expect(page).toHaveURL(/\/tickets(\/|$)/);
         await page.goBack();
         
         // Form data should be preserved

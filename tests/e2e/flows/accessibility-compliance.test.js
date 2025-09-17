@@ -7,8 +7,16 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 test.describe('Accessibility Compliance', () => {
+  // Route constants to eliminate duplicate literals
+  const HOME_ROUTE = '/';
+  const TICKETS_ROUTE = '/tickets';
+  const ABOUT_ROUTE = '/about';
+  const ARTISTS_ROUTE = '/artists';
+  const SCHEDULE_ROUTE = '/schedule';
+  const GALLERY_ROUTE = '/gallery';
+
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    await page.goto(HOME_ROUTE);
   });
 
   test('should pass WCAG 2.1 standards on homepage', async ({ page }) => {
@@ -20,7 +28,7 @@ test.describe('Accessibility Compliance', () => {
   });
 
   test('should pass WCAG 2.1 standards on tickets page', async ({ page }) => {
-    await page.goto('/pages/tickets.html');
+    await page.goto(TICKETS_ROUTE);
     
     const accessibilityScanResults = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
@@ -30,7 +38,7 @@ test.describe('Accessibility Compliance', () => {
   });
 
   test('should be fully keyboard navigable through purchase flow', async ({ page }) => {
-    await page.goto('/pages/tickets.html');
+    await page.goto(TICKETS_ROUTE);
     
     // Tab through page elements
     await page.keyboard.press('Tab');
@@ -58,7 +66,7 @@ test.describe('Accessibility Compliance', () => {
   });
 
   test('should have proper focus indicators', async ({ page }) => {
-    await page.goto('/pages/tickets.html');
+    await page.goto(TICKETS_ROUTE);
     
     // Check focus styles are visible
     const focusableElements = page.locator('button, a, input, select, textarea, [tabindex]:not([tabindex="-1"])');
@@ -80,7 +88,7 @@ test.describe('Accessibility Compliance', () => {
   });
 
   test('should have proper ARIA labels on interactive elements', async ({ page }) => {
-    await page.goto('/pages/tickets.html');
+    await page.goto(TICKETS_ROUTE);
     
     // Check buttons have accessible names
     const buttons = page.locator('button');
@@ -119,7 +127,7 @@ test.describe('Accessibility Compliance', () => {
 
   test('should meet minimum touch target sizes on mobile', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
-    await page.goto('/pages/tickets.html');
+    await page.goto(TICKETS_ROUTE);
     
     // Wait for page to fully load in preview environment
     await page.waitForLoadState('networkidle', { timeout: 30000 });
@@ -181,7 +189,7 @@ test.describe('Accessibility Compliance', () => {
   });
 
   test('should have sufficient color contrast ratios', async ({ page }) => {
-    await page.goto('/pages/tickets.html');
+    await page.goto(TICKETS_ROUTE);
     
     // Use axe-core to check color contrast
     const accessibilityScanResults = await new AxeBuilder({ page })
@@ -192,7 +200,7 @@ test.describe('Accessibility Compliance', () => {
   });
 
   test('should support screen reader navigation', async ({ page }) => {
-    await page.goto('/pages/tickets.html');
+    await page.goto(TICKETS_ROUTE);
     
     // Check for proper heading structure
     const headings = await page.locator('h1, h2, h3, h4, h5, h6').all();
@@ -214,7 +222,7 @@ test.describe('Accessibility Compliance', () => {
 
   test('should handle form validation accessibly', async ({ page }) => {
     // Try to find a form with validation
-    await page.goto('/pages/tickets.html');
+    await page.goto(TICKETS_ROUTE);
     
     // Add a ticket to potentially trigger forms
     const addButton = page.locator('button:has-text("Add")').first();
@@ -241,11 +249,11 @@ test.describe('Accessibility Compliance', () => {
 
   test('should maintain accessibility across all main pages', async ({ page }) => {
     const pages = [
-      '/',
-      '/pages/about.html',
-      '/pages/artists.html', 
-      '/pages/schedule.html',
-      '/pages/gallery.html'
+      HOME_ROUTE,
+      ABOUT_ROUTE,
+      ARTISTS_ROUTE,
+      SCHEDULE_ROUTE,
+      GALLERY_ROUTE
     ];
     
     for (const pagePath of pages) {

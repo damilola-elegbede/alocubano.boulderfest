@@ -6,13 +6,17 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Mobile Registration Experience', () => {
+  // Route constants to eliminate duplicate literals
+  const TICKETS_ROUTE = '/tickets';
+  const HOME_ROUTE = '/';
+
   test.beforeEach(async ({ page }) => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
   });
 
   test('should handle mobile ticket purchase flow', async ({ page }) => {
-    await page.goto('/pages/tickets.html');
+    await page.goto(TICKETS_ROUTE);
     
     // Mobile navigation should be accessible
     const mobileMenu = page.locator('.mobile-menu, .hamburger, .menu-toggle');
@@ -36,7 +40,7 @@ test.describe('Mobile Registration Experience', () => {
 
   test('should optimize form inputs for mobile', async ({ page }) => {
     // Navigate to a form (either direct registration or after ticket purchase)
-    await page.goto('/pages/tickets.html');
+    await page.goto(TICKETS_ROUTE);
     
     // Add ticket to trigger registration flow
     const addButton = page.locator('button:has-text("Weekend"), button:has-text("Add")').first();
@@ -67,7 +71,7 @@ test.describe('Mobile Registration Experience', () => {
   });
 
   test('should handle mobile header cart interactions', async ({ page }) => {
-    await page.goto('/pages/tickets.html');
+    await page.goto(TICKETS_ROUTE);
 
     // Add item to cart
     const addButton = page.locator('button:has-text("Weekend")').first();
@@ -100,7 +104,7 @@ test.describe('Mobile Registration Experience', () => {
   });
 
   test('should provide mobile-friendly navigation', async ({ page }) => {
-    await page.goto('/');
+    await page.goto(HOME_ROUTE);
     
     // Check for mobile navigation
     const navigation = page.locator('nav, .navigation, .header-nav');
@@ -121,7 +125,7 @@ test.describe('Mobile Registration Experience', () => {
 
   test('should handle mobile form validation', async ({ page }) => {
     // Try to access a registration form
-    await page.goto('/pages/tickets.html');
+    await page.goto(TICKETS_ROUTE);
     
     // Simulate form submission with invalid data
     const forms = page.locator('form');
@@ -148,7 +152,7 @@ test.describe('Mobile Registration Experience', () => {
   });
 
   test('should optimize mobile scrolling and performance', async ({ page }) => {
-    await page.goto('/pages/tickets.html');
+    await page.goto(TICKETS_ROUTE);
     
     // Test smooth scrolling behavior
     await page.evaluate(() => {
@@ -169,7 +173,7 @@ test.describe('Mobile Registration Experience', () => {
   });
 
   test('should handle mobile payment flow', async ({ page }) => {
-    await page.goto('/pages/tickets.html');
+    await page.goto(TICKETS_ROUTE);
     
     // Add ticket and proceed to payment
     const addButton = page.locator('button:has-text("Weekend")').first();
@@ -191,7 +195,7 @@ test.describe('Mobile Registration Experience', () => {
   });
 
   test('should provide mobile accessibility features', async ({ page }) => {
-    await page.goto('/');
+    await page.goto(HOME_ROUTE);
     
     // Check for proper heading structure
     const h1 = page.locator('h1');
@@ -223,7 +227,7 @@ test.describe('Mobile Registration Experience', () => {
   });
 
   test('should handle mobile keyboard interactions', async ({ page }) => {
-    await page.goto('/pages/tickets.html');
+    await page.goto(TICKETS_ROUTE);
     
     // Focus on first interactive element
     const firstButton = page.locator('button').first();
@@ -244,8 +248,8 @@ test.describe('Mobile Registration Experience', () => {
 
   test('should optimize mobile loading performance', async ({ page }) => {
     const startTime = Date.now();
-    
-    await page.goto('/pages/tickets.html');
+
+    await page.goto(TICKETS_ROUTE);
     await page.waitForLoadState('domcontentloaded');
     
     const loadTime = Date.now() - startTime;
@@ -263,7 +267,7 @@ test.describe('Mobile Registration Experience', () => {
     await page.route('**/*', route => route.abort());
     
     try {
-      await page.goto('/pages/tickets.html');
+      await page.goto(TICKETS_ROUTE);
     } catch (error) {
       // Should handle network errors gracefully
     }

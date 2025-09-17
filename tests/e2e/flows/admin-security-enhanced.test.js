@@ -97,7 +97,7 @@ test.describe('Admin Security Enhanced', () => {
     await page.goto('/admin/dashboard');
 
     // Should redirect to login due to expired session
-    await expect(page).toHaveURL(/login/);
+    await expect(page).toHaveURL(/\/login(\/|$)/);
   });
 
   test('should log admin activities for audit trail', async ({ page }) => {
@@ -210,7 +210,7 @@ test.describe('Admin Security Enhanced', () => {
 
     // Session should still be valid
     await page.goto('/admin/dashboard');
-    await expect(page).toHaveURL(/dashboard/);
+    await expect(page).toHaveURL(/\/dashboard(\/|$)/);
   });
 
   test('should validate input lengths and formats', async ({ page }) => {

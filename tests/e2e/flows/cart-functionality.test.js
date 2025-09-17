@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Cart Functionality', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/pages/tickets.html');
+    await page.goto('/tickets');
     // Wait for page to fully load including network idle for preview deployments
     await page.waitForLoadState('domcontentloaded');
     await page.waitForLoadState('networkidle', { timeout: 30000 });
@@ -302,10 +302,10 @@ test.describe('Cart Functionality', () => {
     }
     
     // Navigate to another page
-    await page.goto('/pages/about.html');
-    
+    await page.goto('/about');
+
     // Navigate back to tickets
-    await page.goto('/pages/tickets.html');
+    await page.goto('/tickets');
     
     // Header cart badge should still show items
     const cartBadge = page.locator('.nav-cart-badge');
