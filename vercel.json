@@ -41,10 +41,6 @@
       "destination": "/featured-photos.json"
     },
     {
-      "source": "/",
-      "destination": "/pages/core/home"
-    },
-    {
       "source": "/(about|tickets|donations|contact|checkout-success|checkout-cancel|my-tickets|success|failure)",
       "destination": "/pages/core/$1"
     },
