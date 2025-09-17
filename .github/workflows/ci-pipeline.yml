@@ -104,8 +104,6 @@ jobs:
           fi
 
           echo "✅ Dependencies installed and verified"
-        env:
-          NGROK_SKIP_DOWNLOAD: true
 
       - name: "🧪 Run Unit Tests"
         id: unit-test
@@ -260,8 +258,6 @@ jobs:
           fi
 
           echo "✅ Dependencies installed and verified"
-        env:
-          NGROK_SKIP_DOWNLOAD: true
 
       - name: "🗃️ Setup SQLite Database"
         run: |
