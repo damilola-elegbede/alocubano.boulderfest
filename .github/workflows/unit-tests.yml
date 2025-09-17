@@ -1,0 +1,199 @@
+name: "🧪 Unit Tests"
+
+on:
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+
+concurrency:
+  group: unit-tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  NODE_ENV: test
+  CI: true
+  NODE_OPTIONS: "--max-old-space-size=4096"
+
+jobs:
+  test:
+    name: "🧪 Unit Tests (Node ${{ matrix.node-version }})"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    strategy:
+      matrix:
+        node-version: ['20.x', '22.x']
+
+    env:
+      DATABASE_URL: ":memory:"
+      PHASE3_PERFORMANCE_TARGET_MS: 2000
+      VITEST_TEST_TIMEOUT: 10000
+      VITEST_HOOK_TIMEOUT: 15000
+      VITEST_SETUP_TIMEOUT: 15000
+      VITEST_CLEANUP_TIMEOUT: 10000
+      # Critical API secrets configuration - required for services to initialize
+      QR_SECRET_KEY: 'test-qr-secret-key-minimum-32-characters-long-for-security-compliance'
+      ADMIN_SECRET: 'test-admin-jwt-secret-minimum-32-characters-for-security'
+      WALLET_AUTH_SECRET: 'test-wallet-auth-secret-key-for-testing-purposes-32-chars'
+      APPLE_PASS_KEY: 'dGVzdC1hcHBsZS1wYXNzLWtleQ=='
+      INTERNAL_API_KEY: 'test-internal-api-key-32-chars-min'
+      TEST_ADMIN_PASSWORD: 'test-admin-password-123'
+      ADMIN_PASSWORD: '$2b$10$test.bcrypt.hash.for.testing.purposes.only'
+
+    steps:
+      - name: "📥 Checkout Code"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: "🔧 Setup Node.js ${{ matrix.node-version }}"
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: "📦 Install Dependencies"
+        env:
+          NGROK_SKIP_DOWNLOAD: true
+          npm_config_build_from_source: true
+          PYTHON: python3
+        run: |
+          echo "📦 Installing dependencies..."
+
+          # Install with npm ci for reproducibility
+          npm ci --prefer-offline --no-audit --no-fund
+
+          # Workaround for npm optional dependencies bug #4828
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            echo "🔧 Checking for platform-specific binaries..."
+
+            # Install Rollup Linux binary if missing
+            if [ ! -d "node_modules/@rollup/rollup-linux-x64-gnu" ]; then
+              echo "⚠️  Rollup Linux binary missing (npm bug #4828)"
+              echo "🔧 Installing @rollup/rollup-linux-x64-gnu..."
+              npm install @rollup/rollup-linux-x64-gnu@4.50.0 --no-save --no-audit
+            fi
+
+            # Install LibSQL Linux binary if missing
+            if [ ! -d "node_modules/@libsql/linux-x64-gnu" ]; then
+              echo "⚠️  LibSQL Linux binary missing (npm bug #4828)"
+              echo "🔧 Installing @libsql/linux-x64-gnu..."
+              npm install @libsql/linux-x64-gnu --no-save --no-audit || true
+            fi
+
+            # Rebuild native modules
+            echo "🔄 Rebuilding native modules..."
+            npm rebuild
+          fi
+
+          echo "✅ Dependencies installed and verified"
+
+      - name: "🧪 Run Unit Tests"
+        id: test
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🚀 Running Unit Test Suite"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📊 Expected: 800+ unit tests"
+          echo "🎯 Performance Target: <2 seconds"
+          echo "💾 Database: In-memory SQLite"
+          echo "⏱️  Timeout: 15 minutes (CI buffer)"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+          start_time=$(date +%s%3N)
+          npm test 2>&1 | tee unit-test-output.log
+          test_exit_code=${PIPESTATUS[0]}
+          end_time=$(date +%s%3N)
+          duration=$((end_time - start_time))
+
+          # Extract test counts
+          total_tests=$(grep -E "Tests.*passed" unit-test-output.log | sed -E "s/.*Tests[[:space:]]+([0-9]+)[[:space:]]+passed.*/\1/" | head -1 || echo "0")
+          passing_tests=$total_tests
+          failing_tests=$(grep -E "Tests.*failed" unit-test-output.log | sed -E "s/.*Tests[[:space:]]+([0-9]+)[[:space:]]+failed.*/\1/" | head -1 || echo "0")
+
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📊 Unit Test Results"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "✅ Tests Passed: $passing_tests"
+          echo "❌ Tests Failed: $failing_tests"
+          echo "📈 Total Tests: $total_tests"
+          echo "⏱️  Duration: ${duration}ms"
+
+          if [ "$duration" -lt "$PHASE3_PERFORMANCE_TARGET_MS" ]; then
+            echo "🏆 EXCELLENT: Unit tests completed within 2-second target!"
+          else
+            echo "⚠️  WARNING: Unit tests exceeded 2-second target"
+          fi
+
+          exit $test_exit_code
+
+      - name: "📤 Upload Test Results"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results-node-${{ matrix.node-version }}
+          path: unit-test-output.log
+          retention-days: 7
+
+      - name: "📊 Report to PR"
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const output = fs.readFileSync('unit-test-output.log', 'utf8');
+            const nodeVersion = '${{ matrix.node-version }}';
+            const status = '${{ job.status }}';
+
+            const statusIcon = status === 'success' ? '✅' : '❌';
+            const statusText = status === 'success' ? 'PASSED' : 'FAILED';
+
+            const comment = `## ${statusIcon} Unit Tests ${statusText} (Node ${nodeVersion})
+
+            <details>
+            <summary>View Test Output</summary>
+
+            \`\`\`
+            ${output.slice(-3000)}
+            \`\`\`
+
+            </details>
+            `;
+
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes(`Unit Tests`) &&
+              comment.body.includes(`Node ${nodeVersion}`)
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment
+              });
+            }
