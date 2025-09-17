@@ -4,11 +4,12 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { withAdminAudit } from '../../lib/admin-audit-middleware.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   // Only allow in non-production for security
   if (process.env.VERCEL_ENV === 'production') {
     return res.status(404).json({ error: 'Not found' });
@@ -79,3 +80,9 @@ export default async function handler(req, res) {
 
   res.status(200).json(results);
 }
+
+export default withAdminAudit(handler, {
+  logBody: false,
+  logMetadata: true,
+  skipMethods: [] // Track debug file system access for security
+});

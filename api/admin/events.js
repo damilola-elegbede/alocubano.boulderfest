@@ -1,6 +1,7 @@
 import authService from "../../lib/auth-service.js";
 import { getDatabaseClient } from "../../lib/database.js";
 import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
+import { withAdminAudit } from '../../lib/admin-audit-middleware.js';
 
 /**
  * Mock events data for development when events table doesn't exist yet
@@ -88,5 +89,9 @@ async function handler(req, res) {
   }
 }
 
-// Wrap with auth middleware and security headers
-export default withSecurityHeaders(authService.requireAuth(handler));
+// Wrap with auth middleware, audit, and security headers
+export default withSecurityHeaders(authService.requireAuth(withAdminAudit(handler, {
+  logBody: false, // Events GET requests don't need body logging
+  logMetadata: true,
+  skipMethods: [] // Log all event management access
+})));

@@ -1,5 +1,7 @@
+import { withAdminAudit } from '../../lib/admin-audit-middleware.js';
+
 // Simple health check endpoint to test if functions are working
-export default async function handler(req, res) {
+async function handler(req, res) {
   try {
     const envCheck = {
       hasAdminSecret: !!process.env.ADMIN_SECRET,
@@ -22,3 +24,9 @@ export default async function handler(req, res) {
     });
   }
 }
+
+export default withAdminAudit(handler, {
+  logBody: false,
+  logMetadata: false,
+  skipMethods: [] // Still track health check access for monitoring
+});

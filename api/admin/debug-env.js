@@ -2,8 +2,9 @@
  * Diagnostic endpoint to check environment variable availability
  * This helps debug Vercel deployment issues
  */
+import { withAdminAudit } from '../../lib/admin-audit-middleware.js';
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   // Only allow in non-production for security
   if (process.env.VERCEL_ENV === 'production') {
     return res.status(404).json({ error: 'Not found' });
@@ -44,3 +45,9 @@ export default async function handler(req, res) {
 
   res.status(200).json(envCheck);
 }
+
+export default withAdminAudit(handler, {
+  logBody: false,
+  logMetadata: true,
+  skipMethods: [] // Track debug environment access for security
+});

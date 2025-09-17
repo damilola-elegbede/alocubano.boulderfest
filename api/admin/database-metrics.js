@@ -12,10 +12,10 @@
 import { getHealthMonitor } from '../../lib/connection-health-monitor.js';
 import { getPoolStatistics } from '../../lib/connection-manager.js';
 import { getDatabaseClient } from "../../lib/database.js";
-
 import { logger } from '../../lib/logger.js';
 import authService from '../../lib/auth-service.js';
 import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
+import { withAdminAudit } from '../../lib/admin-audit-middleware.js';
 
 async function handler(req, res) {
   const startTime = Date.now();
@@ -730,5 +730,9 @@ function validateQueryParams(query) {
   return errors;
 }
 
-// Export with security headers
-export default withSecurityHeaders(handler);
+// Export with security headers and audit
+export default withSecurityHeaders(authService.requireAuth(withAdminAudit(handler, {
+  logBody: false,
+  logMetadata: true,
+  skipMethods: [] // Track database metrics monitoring access
+})));

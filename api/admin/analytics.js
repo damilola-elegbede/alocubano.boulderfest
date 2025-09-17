@@ -3,6 +3,7 @@ import authService from '../../lib/auth-service.js';
 import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
 import rateLimitService from '../../lib/rate-limit-service.js';
 import { getDatabaseClient } from '../../lib/database.js';
+import { withAdminAudit } from '../../lib/admin-audit-middleware.js';
 
 async function handler(req, res) {
   // Initialize database client
@@ -154,4 +155,8 @@ async function handler(req, res) {
   }
 }
 
-export default withSecurityHeaders(authService.requireAuth(handler));
+export default withSecurityHeaders(authService.requireAuth(withAdminAudit(handler, {
+  logBody: false, // Analytics requests don't need body logging
+  logMetadata: true,
+  skipMethods: [] // Log all analytics access for compliance
+})));

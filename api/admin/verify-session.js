@@ -1,12 +1,13 @@
 import authService from "../../lib/auth-service.js";
+import { withAdminAudit } from '../../lib/admin-audit-middleware.js';
 
 /**
  * Verify admin session endpoint
  * GET/POST /api/admin/verify-session
- * 
+ *
  * Checks if the current session is valid without requiring full authentication
  */
-export default async function handler(req, res) {
+async function handler(req, res) {
   // Set Cache-Control headers to prevent caching of sensitive auth data
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   
@@ -74,3 +75,9 @@ export default async function handler(req, res) {
     });
   }
 }
+
+export default withAdminAudit(handler, {
+  logBody: false, // Session verification doesn't need body logging
+  logMetadata: false, // Keep lightweight for session checks
+  skipMethods: [] // Still log session verification attempts
+});

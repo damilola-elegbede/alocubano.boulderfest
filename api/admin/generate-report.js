@@ -2,6 +2,7 @@ import analyticsService from '../../lib/analytics-service.js';
 import authService from '../../lib/auth-service.js';
 import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
 import { getDatabaseClient } from '../../lib/database.js';
+import { withHighSecurityAudit } from '../../lib/admin-audit-middleware.js';
 
 /**
  * Safely quote and sanitize CSV values to prevent formula injection
@@ -223,4 +224,8 @@ async function handler(req, res) {
   }
 }
 
-export default withSecurityHeaders(authService.requireAuth(handler));
+export default withSecurityHeaders(authService.requireAuth(withHighSecurityAudit(handler, {
+  requireExplicitAction: true,
+  logFullRequest: true,
+  alertOnFailure: false // Reports are less critical than transactions
+})));

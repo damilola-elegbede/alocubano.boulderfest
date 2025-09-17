@@ -2,6 +2,7 @@ import authService from '../../lib/auth-service.js';
 import { getDatabaseClient } from '../../lib/database.js';
 import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
 import { columnExists, safeParseInt } from '../../lib/db-utils.js';
+import { withAdminAudit } from '../../lib/admin-audit-middleware.js';
 
 async function handler(req, res) {
   let db;
@@ -204,7 +205,11 @@ async function safeHandler(req, res) {
   try {
     // Build the middleware chain inside the try-catch
     // This ensures any middleware initialization errors are caught
-    const securedHandler = withSecurityHeaders(authService.requireAuth(handler));
+    const securedHandler = withSecurityHeaders(authService.requireAuth(withAdminAudit(handler, {
+      logBody: false, // Dashboard requests don't need body logging
+      logMetadata: true,
+      skipMethods: [] // Log all methods including GET for dashboard access tracking
+    })));
 
     // Execute the secured handler
     return await securedHandler(req, res);

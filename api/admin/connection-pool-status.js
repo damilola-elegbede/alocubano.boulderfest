@@ -7,8 +7,9 @@
 
 import { getConnectionManager, getPoolStatistics, getPoolHealthStatus } from '../../lib/connection-manager.js';
 import { logger } from '../../lib/logger.js';
+import { withAdminAudit } from '../../lib/admin-audit-middleware.js';
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   try {
     // Only allow GET requests
     if (req.method !== 'GET') {
@@ -155,3 +156,9 @@ function generateRecommendations(statistics, health, derivedMetrics) {
 
   return recommendations;
 }
+
+export default withAdminAudit(handler, {
+  logBody: false,
+  logMetadata: true,
+  skipMethods: [] // Track connection pool monitoring access
+});

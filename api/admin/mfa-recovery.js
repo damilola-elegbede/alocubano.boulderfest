@@ -5,6 +5,7 @@ import { verifyMfaCode } from '../../lib/mfa-middleware.js';
 import { getMfaRateLimitService } from '../../lib/mfa-rate-limit-service.js';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
+import { withHighSecurityAudit } from '../../lib/admin-audit-middleware.js';
 
 /**
  * MFA Recovery Endpoint
@@ -599,5 +600,9 @@ async function logRecoveryAttempt(
   }
 }
 
-// Apply security headers (note: this endpoint should NOT require auth for recovery scenarios)
-export default withSecurityHeaders(mfaRecoveryHandler);
+// Apply security headers and audit (note: this endpoint should NOT require auth for recovery scenarios)
+export default withSecurityHeaders(withHighSecurityAudit(mfaRecoveryHandler, {
+  requireExplicitAction: true,
+  logFullRequest: true,
+  alertOnFailure: true
+}));

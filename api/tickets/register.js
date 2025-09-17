@@ -1,6 +1,7 @@
 import { getDatabaseClient } from '../../lib/database.js';
 import { getBrevoClient } from '../../lib/brevo-client.js';
 import rateLimit from '../../lib/rate-limiter.js';
+import { auditService } from '../../lib/audit-service.js';
 
 // Input validation regex patterns
 const NAME_REGEX = /^[a-zA-Z\s\-']{2,50}$/;
@@ -25,7 +26,68 @@ function sanitizeInput(input) {
     .trim();
 }
 
+/**
+ * Extract client IP address from request headers
+ */
+function getClientIP(req) {
+  return req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+         req.headers['x-real-ip'] ||
+         req.connection?.remoteAddress ||
+         req.socket?.remoteAddress ||
+         'unknown';
+}
+
+/**
+ * Audit ticket registration operation (non-blocking)
+ */
+async function auditTicketRegistration(params) {
+  try {
+    await auditService.logDataChange({
+      requestId: params.requestId,
+      action: 'INDIVIDUAL_TICKET_REGISTRATION',
+      targetType: 'ticket',
+      targetId: params.ticketId,
+      beforeValue: {
+        registration_status: params.beforeStatus,
+        attendee_first_name: params.beforeFirstName || null,
+        attendee_last_name: params.beforeLastName || null,
+        attendee_email: params.beforeEmail || null
+      },
+      afterValue: {
+        registration_status: 'completed',
+        attendee_first_name: params.afterFirstName,
+        attendee_last_name: params.afterLastName,
+        attendee_email: params.afterEmail,
+        registered_at: new Date().toISOString()
+      },
+      changedFields: params.changedFields,
+      adminUser: params.adminUser,
+      sessionId: params.sessionId,
+      ipAddress: params.ipAddress,
+      userAgent: params.userAgent,
+      metadata: {
+        registration_method: 'individual',
+        ticket_type: params.ticketType,
+        is_purchaser: params.isPurchaser,
+        registration_deadline: params.registrationDeadline,
+        processing_time_ms: params.processingTimeMs,
+        deadline_compliance: params.deadlineCompliance,
+        concurrent_prevention: params.concurrentPrevention || false
+      },
+      severity: 'info'
+    });
+  } catch (auditError) {
+    // Non-blocking: log error but don't fail the operation
+    console.error('Individual ticket registration audit failed (non-blocking):', auditError.message);
+  }
+}
+
 export default async function handler(req, res) {
+  const startTime = Date.now();
+  const requestId = auditService.generateRequestId();
+  const clientIP = getClientIP(req);
+  const userAgent = req.headers['user-agent'] || '';
+
   // Apply rate limiting with early return on limit
   try {
     await new Promise((resolve, reject) => {
@@ -95,6 +157,14 @@ export default async function handler(req, res) {
 
     const ticket = ticketResult.rows[0];
 
+    // Capture before state for audit
+    const beforeState = {
+      status: ticket.registration_status,
+      firstName: ticket.attendee_first_name,
+      lastName: ticket.attendee_last_name,
+      email: ticket.attendee_email
+    };
+
     // Check if ticket is already registered
     if (ticket.registration_status === 'completed') {
       return res.status(400).json({ error: 'Ticket is already registered' });
@@ -103,7 +173,9 @@ export default async function handler(req, res) {
     // Check if ticket is expired
     const now = new Date();
     const deadline = new Date(ticket.registration_deadline);
-    if (now > deadline) {
+    const deadlineCompliance = now <= deadline;
+
+    if (!deadlineCompliance) {
       // Update status to expired
       await db.execute({
         sql: 'UPDATE tickets SET registration_status = ? WHERE ticket_id = ?',
@@ -129,9 +201,45 @@ export default async function handler(req, res) {
     
     // Use portable rows changed check for different database implementations (prevents double registration)
     const rowsChanged = updateRes?.rowsAffected ?? updateRes?.changes ?? 0;
-    if (rowsChanged === 0) {
+    const concurrentPrevention = rowsChanged === 0;
+    if (concurrentPrevention) {
       return res.status(409).json({ error: 'Ticket was registered concurrently; please refresh.' });
     }
+
+    // Determine changed fields for audit
+    const changedFields = [];
+    if (beforeState.status !== 'completed') changedFields.push('registration_status');
+    if (beforeState.firstName !== cleanFirstName) changedFields.push('attendee_first_name');
+    if (beforeState.lastName !== cleanLastName) changedFields.push('attendee_last_name');
+    if (beforeState.email !== cleanEmail) changedFields.push('attendee_email');
+    changedFields.push('registered_at');
+
+    // Audit individual registration (non-blocking)
+    const processingTime = Date.now() - startTime;
+    const isPurchaser = cleanEmail.toLowerCase() === ticket.customer_email.toLowerCase();
+
+    auditTicketRegistration({
+      requestId: requestId,
+      ticketId: ticketId,
+      beforeStatus: beforeState.status,
+      beforeFirstName: beforeState.firstName,
+      beforeLastName: beforeState.lastName,
+      beforeEmail: beforeState.email,
+      afterFirstName: cleanFirstName,
+      afterLastName: cleanLastName,
+      afterEmail: cleanEmail,
+      changedFields: changedFields,
+      adminUser: null, // Individual registrations are self-service
+      sessionId: null,
+      ipAddress: clientIP,
+      userAgent: userAgent,
+      ticketType: ticket.ticket_type,
+      isPurchaser: isPurchaser,
+      registrationDeadline: ticket.registration_deadline,
+      processingTimeMs: processingTime,
+      deadlineCompliance: deadlineCompliance,
+      concurrentPrevention: concurrentPrevention
+    });
 
     // Cancel remaining reminders
     await db.execute({

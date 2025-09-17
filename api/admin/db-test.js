@@ -1,7 +1,8 @@
 // Test database initialization
 import { getDatabaseClient } from '../../lib/database.js';
+import { withAdminAudit } from '../../lib/admin-audit-middleware.js';
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   console.log('[DB-Test] Handler started');
   
   try {
@@ -37,3 +38,9 @@ export default async function handler(req, res) {
     });
   }
 }
+
+export default withAdminAudit(handler, {
+  logBody: false,
+  logMetadata: true,
+  skipMethods: [] // Track database test access for diagnostics
+});

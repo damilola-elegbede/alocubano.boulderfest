@@ -1,6 +1,7 @@
 import { getDatabaseClient } from "../../lib/database.js";
 import { getRateLimitService } from "../../lib/rate-limit-service.js";
 import { withSecurityHeaders } from "../../lib/security-headers.js";
+import { auditService } from "../../lib/audit-service.js";
 import jwt from "jsonwebtoken";
 
 // Enhanced rate limiting configuration
@@ -287,16 +288,17 @@ async function validateTicket(db, validationCode, source) {
 }
 
 /**
- * Log validation attempt
+ * Log validation attempt with comprehensive audit trail
  * @param {object} db - Database instance
  * @param {object} params - Logging parameters
  */
 async function logValidation(db, params) {
   try {
+    // Legacy QR validation logging (keep for compatibility)
     await db.execute({
       sql: `
         INSERT INTO qr_validations (
-          ticket_id, validation_token, validation_result, 
+          ticket_id, validation_token, validation_result,
           validation_source, ip_address, device_info, failure_reason
         ) VALUES (?, ?, ?, ?, ?, ?, ?)
       `,
@@ -312,7 +314,47 @@ async function logValidation(db, params) {
     });
   } catch (error) {
     // Log error but don't throw - validation logging is not critical
-    console.error("Failed to log validation:", error.message);
+    console.error("Failed to log QR validation:", error.message);
+  }
+}
+
+/**
+ * Enhanced audit logging for validation attempts (non-blocking)
+ */
+async function auditValidationAttempt(params) {
+  try {
+    const action = params.success ? 'QR_CODE_VALIDATION_SUCCESS' : 'QR_CODE_VALIDATION_FAILURE';
+    const severity = params.success ? 'info' : 'warning';
+
+    await auditService.logDataChange({
+      requestId: params.requestId,
+      action: action,
+      targetType: 'ticket_validation',
+      targetId: params.ticketId || 'unknown',
+      beforeValue: params.beforeState || null,
+      afterValue: params.afterState || null,
+      changedFields: params.changedFields || [],
+      adminUser: null, // QR validations are typically user-initiated
+      sessionId: null,
+      ipAddress: params.ipAddress,
+      userAgent: params.userAgent,
+      metadata: {
+        validation_source: params.source,
+        validation_token_type: params.tokenType,
+        scan_count_before: params.scanCountBefore,
+        scan_count_after: params.scanCountAfter,
+        max_scan_count: params.maxScanCount,
+        validation_time_ms: params.validationTimeMs,
+        device_info: params.deviceInfo,
+        geolocation: params.geolocation || null,
+        failure_reason: params.failureReason || null,
+        security_flags: params.securityFlags || {}
+      },
+      severity: severity
+    });
+  } catch (auditError) {
+    // Non-blocking: log error but don't fail the operation
+    console.error('Validation audit failed (non-blocking):', auditError.message);
   }
 }
 
@@ -462,10 +504,13 @@ function isValidIPv6Groups(groups) {
  * @param {object} res - Response object
  */
 async function handler(req, res) {
+  const startTime = Date.now();
+  const requestId = auditService.generateRequestId();
+
   // Only accept POST for security (tokens should not be in URL)
   if (req.method !== "POST") {
     res.setHeader("Allow", ["POST"]);
-    return res.status(405).json({ 
+    return res.status(405).json({
       error: "Method not allowed - use POST",
       allowedMethods: ["POST"]
     });
@@ -473,6 +518,7 @@ async function handler(req, res) {
 
   // Enhanced IP extraction and validation
   const clientIP = extractClientIP(req);
+  const userAgent = req.headers["user-agent"] || '';
   
   if (clientIP === "unknown") {
     console.warn('Unable to determine client IP address for rate limiting');
@@ -568,15 +614,48 @@ async function handler(req, res) {
     // Actual validation with scan count update
     const validationResult = await validateTicket(db, validationCode, source);
     const ticket = validationResult.ticket;
+    const validationTimeMs = Date.now() - startTime;
 
-    // Log successful validation
+    // Log successful validation (legacy format)
     await logValidation(db, {
       ticketId: ticket.ticket_id,
       token: token.substring(0, 10) + "...", // Don't log full token
       result: "success",
       source: source,
       ip: clientIP,
-      deviceInfo: req.headers["user-agent"],
+      deviceInfo: userAgent,
+    });
+
+    // Enhanced audit logging for successful validation (non-blocking)
+    auditValidationAttempt({
+      requestId: requestId,
+      success: true,
+      ticketId: ticket.ticket_id,
+      beforeState: {
+        scan_count: ticket.scan_count - 1,
+        status: ticket.status,
+        qr_access_method: ticket.qr_access_method || null
+      },
+      afterState: {
+        scan_count: ticket.scan_count,
+        status: ticket.status,
+        qr_access_method: source,
+        last_scanned_at: new Date().toISOString()
+      },
+      changedFields: ['scan_count', 'qr_access_method', 'last_scanned_at'],
+      ipAddress: clientIP,
+      userAgent: userAgent,
+      source: source,
+      tokenType: extractionResult.isJWT ? 'JWT' : 'direct',
+      scanCountBefore: ticket.scan_count - 1,
+      scanCountAfter: ticket.scan_count,
+      maxScanCount: ticket.max_scan_count,
+      validationTimeMs: validationTimeMs,
+      deviceInfo: userAgent.substring(0, 200), // Truncate for storage
+      securityFlags: {
+        rate_limited: false,
+        suspicious_pattern: tokenValidation.securityRisk || false
+      }
     });
 
     res.status(200).json({
@@ -648,6 +727,34 @@ async function handler(req, res) {
     } catch (logError) {
       console.error("Failed to log validation error:", logError.message);
     }
+
+    // Enhanced audit logging for failed validation (non-blocking)
+    const validationTimeMs = Date.now() - startTime;
+    auditValidationAttempt({
+      requestId: requestId,
+      success: false,
+      ticketId: logDetails.ticketId || null,
+      beforeState: null,
+      afterState: null,
+      changedFields: [],
+      ipAddress: clientIP,
+      userAgent: userAgent,
+      source: source,
+      tokenType: token ? (token.includes('.') ? 'JWT' : 'direct') : 'invalid',
+      scanCountBefore: null,
+      scanCountAfter: null,
+      maxScanCount: null,
+      validationTimeMs: validationTimeMs,
+      deviceInfo: userAgent.substring(0, 200), // Truncate for storage
+      failureReason: safeErrorMessage,
+      securityFlags: {
+        rate_limited: error.message?.includes('Rate limit') || false,
+        suspicious_pattern: tokenValidation?.securityRisk || false,
+        configuration_error: logDetails.category === 'configuration_error',
+        token_error: logDetails.category === 'token_error',
+        ticket_status_error: logDetails.category === 'ticket_status'
+      }
+    });
 
     res.status(400).json({
       valid: false,

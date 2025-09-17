@@ -1,6 +1,7 @@
 /**
  * Stripe Webhook Handler
  * Processes Stripe webhook events for payment status updates
+ * Enhanced with comprehensive financial audit logging for compliance
  *
  * Supported Events:
  * - checkout.session.completed - Main success event for Checkout
@@ -11,6 +12,8 @@
  * - payment_intent.payment_failed - Payment Intent failure
  * - payment_intent.canceled - Payment Intent cancellation
  * - charge.refunded - Charge refund event
+ * - charge.dispute.created - Dispute initiated
+ * - payout.created - Settlement/payout to bank account
  */
 
 import Stripe from "stripe";
@@ -22,6 +25,7 @@ import { RegistrationTokenService } from "../../lib/registration-token-service.j
 import { generateTicketId } from "../../lib/ticket-id-generator.js";
 import { scheduleRegistrationReminders } from "../../lib/reminder-scheduler.js";
 import { getDatabaseClient } from "../../lib/database.js";
+import auditService from "../../lib/audit-service.js";
 
 // Initialize Stripe with strict error handling
 if (!process.env.STRIPE_SECRET_KEY) {
@@ -40,9 +44,9 @@ function parseCustomerName(stripeCustomerName) {
   if (!stripeCustomerName) {
     return { firstName: 'Guest', lastName: 'Attendee' };
   }
-  
+
   const parts = stripeCustomerName.trim().split(/\s+/);
-  
+
   if (parts.length === 1) {
     return { firstName: parts[0], lastName: '' };
   } else if (parts.length === 2) {
@@ -52,6 +56,16 @@ function parseCustomerName(stripeCustomerName) {
     const lastName = parts[parts.length - 1];
     const firstName = parts.slice(0, -1).join(' ');
     return { firstName, lastName };
+  }
+}
+
+// Helper to log financial audit events (non-blocking)
+async function logFinancialAudit(params) {
+  try {
+    await auditService.logFinancialEvent(params);
+  } catch (auditError) {
+    console.error("Financial audit logging failed (non-blocking):", auditError.message);
+    // Never throw - audit failures must not break payment processing
   }
 }
 
@@ -275,6 +289,30 @@ export default async function handler(req, res) {
             transaction.id,
           );
 
+          // Log financial audit for successful payment
+          await logFinancialAudit({
+            requestId: `stripe_${event.id}`,
+            action: 'PAYMENT_SUCCESSFUL',
+            amountCents: fullSession.amount_total,
+            currency: fullSession.currency?.toUpperCase() || 'USD',
+            transactionReference: transaction.uuid,
+            paymentStatus: 'completed',
+            targetType: 'stripe_session',
+            targetId: session.id,
+            metadata: {
+              stripe_event_id: event.id,
+              stripe_session_id: session.id,
+              payment_intent_id: fullSession.payment_intent,
+              customer_email: fullSession.customer_details?.email,
+              customer_name: fullSession.customer_details?.name,
+              payment_method_types: fullSession.payment_method_types,
+              mode: fullSession.mode,
+              line_items_count: fullSession.line_items?.data?.length || 0,
+              checkout_url: fullSession.url
+            },
+            severity: 'info'
+          });
+
           // Universal registration flow for all tickets
           try {
             await processUniversalRegistration(fullSession, transaction);
@@ -314,6 +352,29 @@ export default async function handler(req, res) {
               `Created transaction from async payment: ${transaction.uuid}`,
             );
 
+            // Log financial audit for async payment success
+            await logFinancialAudit({
+              requestId: `stripe_${event.id}`,
+              action: 'ASYNC_PAYMENT_SUCCESSFUL',
+              amountCents: fullSession.amount_total,
+              currency: fullSession.currency?.toUpperCase() || 'USD',
+              transactionReference: transaction.uuid,
+              paymentStatus: 'completed',
+              targetType: 'stripe_session',
+              targetId: session.id,
+              metadata: {
+                stripe_event_id: event.id,
+                stripe_session_id: session.id,
+                payment_intent_id: fullSession.payment_intent,
+                customer_email: fullSession.customer_details?.email,
+                customer_name: fullSession.customer_details?.name,
+                payment_method_types: fullSession.payment_method_types,
+                mode: fullSession.mode,
+                async_payment: true
+              },
+              severity: 'info'
+            });
+
             // Universal registration flow for async payments
             try {
               await processUniversalRegistration(fullSession, transaction);
@@ -345,6 +406,26 @@ export default async function handler(req, res) {
           );
           if (transaction) {
             await transactionService.updateStatus(transaction.uuid, "failed");
+
+            // Log financial audit for payment failure
+            await logFinancialAudit({
+              requestId: `stripe_${event.id}`,
+              action: 'ASYNC_PAYMENT_FAILED',
+              amountCents: session.amount_total || 0,
+              currency: session.currency?.toUpperCase() || 'USD',
+              transactionReference: transaction.uuid,
+              paymentStatus: 'failed',
+              targetType: 'stripe_session',
+              targetId: session.id,
+              metadata: {
+                stripe_event_id: event.id,
+                stripe_session_id: session.id,
+                payment_intent_id: session.payment_intent,
+                failure_reason: 'async_payment_failed',
+                async_payment: true
+              },
+              severity: 'warning'
+            });
           }
         } catch (error) {
           console.error(
@@ -404,6 +485,29 @@ export default async function handler(req, res) {
 
           if (transaction) {
             await transactionService.updateStatus(transaction.uuid, "failed");
+
+            // Log financial audit for payment failure
+            await logFinancialAudit({
+              requestId: `stripe_${event.id}`,
+              action: 'PAYMENT_FAILED',
+              amountCents: paymentIntent.amount || 0,
+              currency: paymentIntent.currency?.toUpperCase() || 'USD',
+              transactionReference: transaction.uuid,
+              paymentStatus: 'failed',
+              targetType: 'payment_intent',
+              targetId: paymentIntent.id,
+              metadata: {
+                stripe_event_id: event.id,
+                payment_intent_id: paymentIntent.id,
+                failure_code: paymentIntent.last_payment_error?.code,
+                failure_message: paymentIntent.last_payment_error?.message,
+                failure_type: paymentIntent.last_payment_error?.type,
+                payment_method_id: paymentIntent.payment_method,
+                client_secret: paymentIntent.client_secret ? '[REDACTED]' : null,
+                confirmation_method: paymentIntent.confirmation_method
+              },
+              severity: 'warning'
+            });
           }
         } catch (error) {
           console.error(
@@ -457,11 +561,37 @@ export default async function handler(req, res) {
             );
 
             if (transaction) {
-              const status =
-                charge.amount_refunded === charge.amount
-                  ? "refunded"
-                  : "partially_refunded";
+              const isFullRefund = charge.amount_refunded === charge.amount;
+              const status = isFullRefund ? "refunded" : "partially_refunded";
               await transactionService.updateStatus(transaction.uuid, status);
+
+              // Log comprehensive refund audit
+              await logFinancialAudit({
+                requestId: `stripe_${event.id}`,
+                action: isFullRefund ? 'REFUND_FULL' : 'REFUND_PARTIAL',
+                amountCents: charge.amount_refunded || 0,
+                currency: charge.currency?.toUpperCase() || 'USD',
+                transactionReference: transaction.uuid,
+                paymentStatus: status,
+                targetType: 'charge',
+                targetId: charge.id,
+                metadata: {
+                  stripe_event_id: event.id,
+                  charge_id: charge.id,
+                  payment_intent_id: charge.payment_intent,
+                  original_amount_cents: charge.amount,
+                  refunded_amount_cents: charge.amount_refunded,
+                  refund_count: charge.refunds?.data?.length || 0,
+                  refund_reason: charge.refunds?.data?.[0]?.reason || 'unknown',
+                  refund_status: charge.refunds?.data?.[0]?.status || 'unknown',
+                  refund_id: charge.refunds?.data?.[0]?.id,
+                  is_full_refund: isFullRefund,
+                  balance_transaction_id: charge.balance_transaction,
+                  receipt_url: charge.receipt_url,
+                  customer_id: charge.customer
+                },
+                severity: 'warning'
+              });
             }
           } catch (error) {
             console.error(
@@ -473,6 +603,97 @@ export default async function handler(req, res) {
         }
 
         // Event already logged at line 70
+
+        break;
+      }
+
+      case "charge.dispute.created": {
+        const dispute = event.data.object;
+        console.log(`Dispute created: ${dispute.id} for charge ${dispute.charge}`);
+
+        // Log financial audit for dispute creation
+        try {
+          // Try to find associated transaction via charge payment intent
+          let transaction = null;
+          try {
+            const charge = await stripe.charges.retrieve(dispute.charge);
+            if (charge.payment_intent) {
+              transaction = await transactionService.getByPaymentIntentId(
+                charge.payment_intent,
+              );
+            }
+          } catch (chargeError) {
+            console.error("Failed to retrieve charge for dispute:", chargeError.message);
+          }
+
+          await logFinancialAudit({
+            requestId: `stripe_${event.id}`,
+            action: 'DISPUTE_CREATED',
+            amountCents: dispute.amount || 0,
+            currency: dispute.currency?.toUpperCase() || 'USD',
+            transactionReference: transaction?.uuid || null,
+            paymentStatus: 'disputed',
+            targetType: 'dispute',
+            targetId: dispute.id,
+            metadata: {
+              stripe_event_id: event.id,
+              dispute_id: dispute.id,
+              charge_id: dispute.charge,
+              dispute_reason: dispute.reason,
+              dispute_status: dispute.status,
+              evidence_due_by: dispute.evidence_details?.due_by,
+              evidence_has_evidence: dispute.evidence_details?.has_evidence,
+              evidence_submission_count: dispute.evidence_details?.submission_count,
+              is_charge_refundable: dispute.is_charge_refundable,
+              network_reason_code: dispute.network_reason_code,
+              created_timestamp: dispute.created
+            },
+            severity: 'error'
+          });
+        } catch (error) {
+          console.error("Failed to process dispute audit logging:", error.message);
+          // Don't throw - let webhook succeed to prevent Stripe retries
+        }
+
+        break;
+      }
+
+      case "payout.created": {
+        const payout = event.data.object;
+        console.log(`Payout created: ${payout.id} for ${payout.amount / 100} ${payout.currency}`);
+
+        // Log financial audit for settlement/payout
+        try {
+          await logFinancialAudit({
+            requestId: `stripe_${event.id}`,
+            action: 'SETTLEMENT_PAYOUT',
+            amountCents: payout.amount || 0,
+            currency: payout.currency?.toUpperCase() || 'USD',
+            transactionReference: null, // Payouts don't map to specific transactions
+            paymentStatus: payout.status,
+            targetType: 'payout',
+            targetId: payout.id,
+            metadata: {
+              stripe_event_id: event.id,
+              payout_id: payout.id,
+              payout_type: payout.type,
+              payout_method: payout.method,
+              payout_status: payout.status,
+              arrival_date: payout.arrival_date,
+              automatic: payout.automatic,
+              balance_transaction_id: payout.balance_transaction,
+              destination_bank_account: payout.destination ? '[REDACTED]' : null,
+              failure_code: payout.failure_code,
+              failure_message: payout.failure_message,
+              statement_descriptor: payout.statement_descriptor,
+              source_type: payout.source_type
+            },
+            severity: 'info'
+          });
+        } catch (error) {
+          console.error("Failed to process payout audit logging:", error.message);
+          // Don't throw - let webhook succeed to prevent Stripe retries
+        }
 
         break;
       }

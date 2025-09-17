@@ -1,6 +1,7 @@
 import authService from '../../lib/auth-service.js';
 import csrfService from '../../lib/csrf-service.js';
 import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
+import { withAdminAudit } from '../../lib/admin-audit-middleware.js';
 
 async function csrfTokenHandler(req, res) {
   if (req.method !== 'GET') {
@@ -40,4 +41,8 @@ async function csrfTokenHandler(req, res) {
   }
 }
 
-export default withSecurityHeaders(csrfTokenHandler);
+export default withSecurityHeaders(withAdminAudit(csrfTokenHandler, {
+  logBody: false,
+  logMetadata: false,
+  skipMethods: [] // Track CSRF token requests for security monitoring
+}));

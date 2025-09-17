@@ -1,12 +1,13 @@
 import { getMobileAuthService } from '../../lib/mobile-auth-service.js';
 import { addSecurityHeaders } from '../../lib/security-headers-serverless.js';
 import { getRateLimitService } from '../../lib/rate-limit-service.js';
+import { withAuthAudit } from '../../lib/admin-audit-middleware.js';
 
 /**
  * Mobile check-in login endpoint with extended 72-hour sessions
  * Simplified authentication for event staff
  */
-export default async function handler(req, res) {
+async function handler(req, res) {
   // Apply security headers
   addSecurityHeaders(res);
 
@@ -115,3 +116,9 @@ export default async function handler(req, res) {
     });
   }
 }
+
+export default withAuthAudit(handler, {
+  logLoginAttempts: true,
+  logFailedAttempts: true,
+  logSessionEvents: true
+});

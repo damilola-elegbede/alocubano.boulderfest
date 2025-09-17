@@ -5,6 +5,7 @@ import { getValidationService } from '../../lib/validation-service.js';
 import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
 import { columnExists } from '../../lib/db-utils.js';
 import csrfService from '../../lib/csrf-service.js';
+import { withAdminAudit } from '../../lib/admin-audit-middleware.js';
 
 async function handler(req, res) {
   let db;
@@ -265,8 +266,12 @@ async function safeHandler(req, res) {
     console.log(`⚙️  Building middleware chain...`);
 
     // Build each middleware layer with individual error handling
-    let currentHandler = handler;
-    console.log(`📝 Base handler: OK`);
+    let currentHandler = withAdminAudit(handler, {
+      logBody: true, // Log registration modifications
+      logMetadata: true,
+      skipMethods: [] // Log all methods for registration management
+    });
+    console.log(`📝 Base handler with audit: OK`);
 
     // Wrap auth middleware with error handling
     try {

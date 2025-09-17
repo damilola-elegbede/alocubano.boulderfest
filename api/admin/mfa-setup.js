@@ -11,6 +11,7 @@ import {
   encryptSecret,
   decryptSecret
 } from '../../lib/encryption-utils.js';
+import { withHighSecurityAudit } from '../../lib/admin-audit-middleware.js';
 
 /**
  * MFA Setup and Management Endpoint
@@ -518,9 +519,13 @@ async function logMfaEvent(adminId, eventType, req, details = null) {
   }
 }
 
-// Apply auth middleware and security headers
+// Apply auth middleware, audit, and security headers
 const protectedHandler = authService.requireAuth
   ? authService.requireAuth(mfaSetupHandler)
   : mfaSetupHandler;
 
-export default withSecurityHeaders(protectedHandler);
+export default withSecurityHeaders(withHighSecurityAudit(protectedHandler, {
+  requireExplicitAction: true,
+  logFullRequest: true,
+  alertOnFailure: true
+}));

@@ -3,6 +3,7 @@ import csrfService from '../../lib/csrf-service.js';
 import { getDatabaseClient } from '../../lib/database.js';
 import { getValidationService } from '../../lib/validation-service.js';
 import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
+import { withHighSecurityAudit } from '../../lib/admin-audit-middleware.js';
 
 async function handler(req, res) {
   let db;
@@ -194,7 +195,11 @@ async function safeHandler(req, res) {
   try {
     // Build the middleware chain inside the try-catch
     // This ensures any middleware initialization errors are caught
-    const securedHandler = withSecurityHeaders(authService.requireAuth(handler));
+    const securedHandler = withSecurityHeaders(authService.requireAuth(withHighSecurityAudit(handler, {
+      requireExplicitAction: true,
+      logFullRequest: true,
+      alertOnFailure: true
+    })));
 
     // Execute the secured handler
     return await securedHandler(req, res);
