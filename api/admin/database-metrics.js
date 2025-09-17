@@ -11,6 +11,8 @@
 
 import { getHealthMonitor } from '../../lib/connection-health-monitor.js';
 import { getPoolStatistics } from '../../lib/connection-manager.js';
+import { getDatabaseClient } from "../../lib/database.js";
+
 import { logger } from '../../lib/logger.js';
 import authService from '../../lib/auth-service.js';
 import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
@@ -35,6 +37,10 @@ async function handler(req, res) {
         message: 'Database metrics require admin access'
       });
     }
+
+    // Initialize database service before reading metrics
+    await getDatabaseClient();
+
 
     // Parse and validate query parameters
     const {
@@ -96,7 +102,7 @@ async function handler(req, res) {
     };
 
     // Set appropriate cache headers
-    res.setHeader('Cache-Control', 'public, max-age=30'); // 30 second cache for metrics
+    res.setHeader('Cache-Control', 'private, max-age=30'); // 30 second cache for metrics
     res.setHeader('X-Response-Time', `${Date.now() - startTime}ms`);
     res.setHeader('X-Sample-Count', metricsData.timeSeries?.length || 0);
 
@@ -270,9 +276,9 @@ function buildPerformanceMetrics(timeSeries, granularity) {
     utilization: {
       current: utilizationValues[utilizationValues.length - 1] || 0,
       average: calculateAverage(utilizationValues),
-      median: calculatePercentile(utilizationValues.sort(), 0.5),
-      p95: calculatePercentile(utilizationValues.sort(), 0.95),
-      p99: calculatePercentile(utilizationValues.sort(), 0.99),
+      median: calculatePercentile([...utilizationValues].sort((a, b) => a - b), 0.5),
+      p95: calculatePercentile([...utilizationValues].sort((a, b) => a - b), 0.95),
+      p99: calculatePercentile([...utilizationValues].sort((a, b) => a - b), 0.99),
       max: Math.max(...utilizationValues, 0),
       min: Math.min(...utilizationValues, 0),
       trend: calculateTrendDirection(utilizationValues.slice(-10))

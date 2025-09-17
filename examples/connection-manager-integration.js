@@ -136,20 +136,20 @@ export class RegistrationService {
   }
 
   async getRegistrationStats() {
-    const lease = await this.connectionManager.acquireLease('registration-stats');
+    const lease = await this.connectionManager.acquireLease("registration-stats");
 
     try {
-      const [totalResult, todayResult] = await Promise.all([
-        lease.execute('SELECT COUNT(*) as total FROM registrations'),
-        lease.execute(
-          `SELECT COUNT(*) as today FROM registrations
-           WHERE date(created_at) = date('now')`
-        )
-      ]);
+      // Fix: Combine into one query instead of concurrent queries on same connection
+      const result = await lease.execute(`
+        SELECT 
+          COUNT(*) as total,
+          SUM(CASE WHEN date(created_at) = date("now") THEN 1 ELSE 0 END) as today
+        FROM registrations
+      `);
 
       return {
-        total: totalResult.rows[0].total,
-        today: todayResult.rows[0].today,
+        total: result.rows[0].total,
+        today: result.rows[0].today,
         connectionPoolStats: this.connectionManager.getPoolStatistics()
       };
     } finally {

@@ -5,7 +5,7 @@
  * for monitoring and debugging purposes
  */
 
-import { getPoolStatistics, getPoolHealthStatus } from '../../lib/connection-manager.js';
+import { getConnectionManager, getPoolStatistics, getPoolHealthStatus } from '../../lib/connection-manager.js';
 import { logger } from '../../lib/logger.js';
 
 export default async function handler(req, res) {
@@ -17,6 +17,9 @@ export default async function handler(req, res) {
         allowedMethods: ['GET']
       });
     }
+
+    // Initialize connection manager before use
+    getConnectionManager();
 
     // Get comprehensive pool information
     const [statistics, health] = await Promise.all([

@@ -13,6 +13,7 @@
 
 import { performSystemHealthCheck, getHealthMonitor } from '../../lib/connection-health-monitor.js';
 import { getPoolStatistics, getPoolHealthStatus } from '../../lib/connection-manager.js';
+import { getDatabaseClient } from '../../lib/database.js';
 import { logger } from '../../lib/logger.js';
 import authService from '../../lib/auth-service.js';
 import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
@@ -38,6 +39,9 @@ async function handler(req, res) {
       });
     }
 
+    // Initialize database client before reading metrics
+    await getDatabaseClient();
+
     // Parse query parameters for detailed reporting
     const {
       includeHistory = 'false',
@@ -46,6 +50,15 @@ async function handler(req, res) {
       includeRecommendations = 'true',
       timeRange = '3600000' // 1 hour default
     } = req.query;
+
+    // Validate query parameters and return 400 on errors
+    const validationErrors = validateQueryParams(req.query);
+    if (validationErrors.length > 0) {
+      return res.status(400).json({
+        error: 'Invalid query parameters',
+        details: validationErrors
+      });
+    }
 
     const includeHistoricalData = includeHistory === 'true';
     const includeAlertData = includeAlerts === 'true';
@@ -81,28 +94,28 @@ async function handler(req, res) {
       // Component health details
       components: {
         connectionPool: {
-          status: healthCheck.components.connectionPool?.status || 'unknown',
+          status: healthCheck.components?.connectionPool?.status || 'unknown',
           metrics: {
-            utilization: healthCheck.components.connectionPool?.metrics?.utilization || 0,
-            totalConnections: healthCheck.components.connectionPool?.metrics?.totalConnections || 0,
-            activeLeases: healthCheck.components.connectionPool?.metrics?.activeLeases || 0,
-            availableConnections: healthCheck.components.connectionPool?.metrics?.availableConnections || 0,
-            errorRate: healthCheck.components.connectionPool?.metrics?.errorRate || 0,
-            leaseEfficiency: healthCheck.components.connectionPool?.metrics?.leaseEfficiency || 100
+            utilization: healthCheck.components?.connectionPool?.metrics?.utilization || 0,
+            totalConnections: healthCheck.components?.connectionPool?.metrics?.totalConnections || 0,
+            activeLeases: healthCheck.components?.connectionPool?.metrics?.activeLeases || 0,
+            availableConnections: healthCheck.components?.connectionPool?.metrics?.availableConnections || 0,
+            errorRate: healthCheck.components?.connectionPool?.metrics?.errorRate || 0,
+            leaseEfficiency: healthCheck.components?.connectionPool?.metrics?.leaseEfficiency || 100
           },
           details: includePerformanceData ? poolStatistics : null
         },
 
         circuitBreaker: {
-          status: healthCheck.components.circuitBreaker?.status || 'unknown',
-          metrics: healthCheck.components.circuitBreaker?.metrics || {},
-          state: healthCheck.components.circuitBreaker?.metrics?.state || 'UNKNOWN'
+          status: healthCheck.components?.circuitBreaker?.status || 'unknown',
+          metrics: healthCheck.components?.circuitBreaker?.metrics || {},
+          state: healthCheck.components?.circuitBreaker?.metrics?.state || 'UNKNOWN'
         },
 
         stateMachine: {
-          status: healthCheck.components.stateMachine?.status || 'unknown',
-          metrics: healthCheck.components.stateMachine?.metrics || {},
-          healthRatio: healthCheck.components.stateMachine?.metrics?.healthRatio || 0
+          status: healthCheck.components?.stateMachine?.status || 'unknown',
+          metrics: healthCheck.components?.stateMachine?.metrics || {},
+          healthRatio: healthCheck.components?.stateMachine?.metrics?.healthRatio || 0
         }
       },
 
@@ -168,7 +181,7 @@ async function handler(req, res) {
     logger.debug('Database health check completed', {
       status: healthCheck.status,
       responseTime: Date.now() - startTime,
-      components: Object.keys(healthCheck.components),
+      components: healthCheck.components ? Object.keys(healthCheck.components) : [],
       alertCount: healthCheck.alerts?.length || 0
     });
 
