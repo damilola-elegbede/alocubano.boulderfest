@@ -31,7 +31,8 @@
     "validate-ci-fixes": "node scripts/validate-ci-fixes.js",
     "enterprise:migrate": "DOTENV_CONFIG_PATH=.env.local node -r dotenv/config scripts/migrate-to-enterprise.js",
     "enterprise:health": "DOTENV_CONFIG_PATH=.env.local node -r dotenv/config scripts/deployment-health-check.js",
-    "enterprise:tools": "DOTENV_CONFIG_PATH=.env.local node -r dotenv/config scripts/platform-tools.js"
+    "enterprise:tools": "DOTENV_CONFIG_PATH=.env.local node -r dotenv/config scripts/platform-tools.js",
+    "drift:check": "node scripts/detect-package-drift.js"
   },
   "dependencies": {
     "@libsql/client": "^0.15.14",
