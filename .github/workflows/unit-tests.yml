@@ -100,7 +100,6 @@ jobs:
           echo "✅ Dependencies installed and verified"
         env:
           NGROK_SKIP_DOWNLOAD: true
-          npm_config_build_from_source: true
           # Force npm to rebuild native binaries for current platform
           npm_config_build_from_source: true
           # Ensure proper Python for node-gyp
