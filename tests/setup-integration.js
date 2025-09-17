@@ -1,6 +1,9 @@
 /**
  * Integration Test Setup - Real Database & Services
  * Target: ~30-50 tests with proper database isolation
+ *
+ * Uses Test Isolation Manager to ensure complete isolation between tests
+ * and prevent CLIENT_CLOSED errors.
  */
 
 // Force build-time cache access for integration tests (must be before any imports)
@@ -8,9 +11,7 @@ process.env.INTEGRATION_TEST_MODE = 'true';
 
 import { beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 import { configureEnvironment, cleanupEnvironment, validateEnvironment, TEST_ENVIRONMENTS } from './config/test-environment.js';
-import { resetDatabaseInstance } from '../lib/database.js';
-import { resetConnectionManager } from '../lib/connection-manager.js';
-import { resetEnterpriseDatabaseService } from '../lib/enterprise-database-integration.js';
+import { getTestIsolationManager } from '../lib/test-isolation-manager.js';
 
 // Import secret validation for integration tests (simplified version of E2E secret validation)
 const validateIntegrationSecrets = () => {
@@ -58,14 +59,14 @@ const validateIntegrationSecrets = () => {
   };
 
   console.log('🔐 Validating Integration Test Secrets...');
-  
+
   let allValid = true;
   const warnings = [];
 
   // Validate and set required secrets with fallbacks
   Object.entries(requiredSecrets).forEach(([key, config]) => {
     const currentValue = process.env[key];
-    
+
     if (!currentValue || !config.validator(currentValue)) {
       if (config.fallback) {
         console.log(`⚠️ ${key} missing or invalid - using test fallback`);
@@ -83,7 +84,7 @@ const validateIntegrationSecrets = () => {
   // Validate optional secrets (don't fail if missing)
   Object.entries(optionalSecrets).forEach(([key, config]) => {
     const currentValue = process.env[key];
-    
+
     if (currentValue && !config.validator(currentValue)) {
       console.warn(`⚠️ ${key}: Present but invalid format - ${config.description}`);
       warnings.push(`${key}: Present but invalid format`);
@@ -119,7 +120,6 @@ delete process.env.TURSO_DATABASE_URL;
 delete process.env.E2E_TEST_MODE;
 delete process.env.PLAYWRIGHT_BROWSER;
 delete process.env.VERCEL_DEV_STARTUP;
-// Set explicit integration test context (already set at top of file)
 
 // Additional safety measures for integration test isolation
 process.env.TEST_DATABASE_TYPE = 'sqlite_file';
@@ -127,7 +127,6 @@ process.env.FORCE_LOCAL_DATABASE = 'true';
 
 // CRITICAL: Disable enterprise features for integration tests
 // These cause CLIENT_CLOSED errors due to complex connection management
-// Feature flag system looks for FEATURE_ prefix in environment variables
 process.env.FEATURE_ENABLE_CONNECTION_POOL = 'false';
 process.env.FEATURE_ENABLE_ENTERPRISE_MONITORING = 'false';
 process.env.FEATURE_ENABLE_CIRCUIT_BREAKER = 'false';
@@ -154,6 +153,10 @@ const config = configureEnvironment(TEST_ENVIRONMENTS.INTEGRATION);
 console.log('🔧 Step 3: Environment Validation');
 validateEnvironment(TEST_ENVIRONMENTS.INTEGRATION);
 
+// Initialize Test Isolation Manager
+console.log('🔧 Step 4: Initializing Test Isolation Manager');
+const isolationManager = getTestIsolationManager();
+
 console.log('✅ Integration test environment fully configured and validated');
 
 // Export utilities for integration tests
@@ -161,31 +164,31 @@ export const getApiUrl = (path) => `${process.env.TEST_BASE_URL}${path}`;
 export const isCI = () => process.env.CI === 'true';
 export const getTestTimeout = () => Number(process.env.VITEST_TEST_TIMEOUT || config.timeouts.test);
 
-// REMOVED: Global dbClient caused stale reference issues
-// Each operation should get its own fresh connection from the singleton
-
 /**
- * Initialize Database for Integration Tests
+ * Initialize Database for Integration Tests with Test Isolation
  */
 const initializeDatabase = async () => {
   try {
-    // Import database client and migration system
-    const { getDatabaseClient, resetDatabaseInstance } = await import('../lib/database.js');
+    // Initialize test isolation mode
+    await isolationManager.initializeTestMode();
+
+    // Create initial scope for migrations
+    const scope = await isolationManager.createTestScope('migration-init');
+
+    // Get scoped database client
+    const dbClient = await isolationManager.getScopedDatabaseClient();
+
+    // Import migration system
     const { MigrationSystem } = await import('../scripts/migrate.js');
 
-    // Set flag to keep migration connection open
-    process.env.KEEP_MIGRATION_CONNECTION = 'true';
-
-    // Run migrations (connection will stay open due to INTEGRATION_TEST_MODE flag)
+    // Run migrations with the scoped client
     console.log('🔄 Running database migrations for integration tests...');
     const migrationSystem = new MigrationSystem();
     const migrationResult = await migrationSystem.runMigrations();
     console.log(`✅ Migration completed: ${migrationResult.executed} executed, ${migrationResult.skipped} skipped`);
 
-    // Don't reuse connections - always get fresh from singleton
-    // Migration system now properly clears its cached reference
-    console.log('🔄 Getting fresh database client...');
-    const dbClient = await getDatabaseClient();
+    // Mark migration as completed in scope
+    scope.migrationCompleted = true;
 
     // Verify the connection works
     const testResult = await dbClient.execute('SELECT 1 as test');
@@ -202,8 +205,10 @@ const initializeDatabase = async () => {
     }
     console.log('✅ Verified transactions table exists');
 
-    console.log('✅ Integration database initialized and tested');
-    // Don't return or store the client - let each test get its own
+    console.log('✅ Integration database initialized and tested with isolation');
+
+    // Clean up migration scope - tests will create their own
+    await isolationManager.completeTest();
   } catch (error) {
     console.error('❌ Failed to initialize integration database:', error);
     throw error;
@@ -211,16 +216,15 @@ const initializeDatabase = async () => {
 };
 
 /**
- * Clean Database Between Tests
+ * Clean Database Between Tests using Test Isolation
  */
 const cleanDatabase = async () => {
   try {
-    // ALWAYS get fresh database client - no caching
-    const { getDatabaseClient } = await import('../lib/database.js');
-    const client = await getDatabaseClient();
+    // Get scoped database client for cleaning
+    const dbClient = await isolationManager.getScopedDatabaseClient();
 
     // Get all tables from database to avoid checking individual existence
-    const tableQuery = await client.execute(
+    const tableQuery = await dbClient.execute(
       "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
     );
     const existingTables = new Set(tableQuery.rows.map(row => row.name));
@@ -234,7 +238,7 @@ const cleanDatabase = async () => {
       'qr_validations',
       'wallet_pass_events',
       'registrations',         // Then parent tables
-      'transactions',          // Fixed: was 'payments', should be 'transactions'
+      'transactions',
       'tickets',
       'email_subscribers',     // Newsletter system table
       'newsletter_subscriptions', // Legacy newsletter table
@@ -248,7 +252,7 @@ const cleanDatabase = async () => {
     for (const table of tables) {
       if (existingTables.has(table)) {
         cleanupPromises.push(
-          client.execute(`DELETE FROM "${table}"`)
+          dbClient.execute(`DELETE FROM "${table}"`)
             .then(result => {
               const deletedCount = result.rowsAffected ?? result.changes ?? 0;
               if (deletedCount > 0) {
@@ -271,17 +275,8 @@ const cleanDatabase = async () => {
   } catch (error) {
     console.warn('⚠️ Database cleanup warning:', error.message);
 
-    // If cleanup fails due to connection issues, try to reset the singleton
-    if (error.message.includes('CLIENT_CLOSED') || error.message.includes('connection') || error.message.includes('closed')) {
-      console.log('🔄 Attempting to recover from connection error...');
-      try {
-        const { resetDatabaseInstance } = await import('../lib/database.js');
-        await resetDatabaseInstance();
-        console.log('✅ Database singleton reset for recovery');
-      } catch (recoveryError) {
-        console.error('❌ Failed to reset database singleton:', recoveryError.message);
-      }
-    }
+    // If cleanup fails, it's handled by test isolation manager
+    // The next test will get a fresh scope anyway
   }
 };
 
@@ -295,78 +290,53 @@ if (!globalThis.fetch) {
   }
 }
 
-// Integration test lifecycle
+// Integration test lifecycle with Test Isolation
 beforeAll(async () => {
-  console.log('🚀 Integration test environment initialized');
+  console.log('🚀 Integration test suite starting with Test Isolation');
   console.log(`📊 Target: ~30-50 tests with real database`);
   console.log(`🗄️ Database: ${config.database.description}`);
   console.log(`🔧 Port: ${config.port.port} (${config.port.description})`);
   console.log(`🔐 Secrets: ${secretValidation.totalChecked} checked, ${secretValidation.warnings.length} warnings`);
-  
+  console.log(`🧪 Test Isolation: ENABLED - Each test gets fresh connections`);
+
   if (secretValidation.warnings.length > 0) {
     console.log('⚠️ Integration test warnings:');
     secretValidation.warnings.forEach(warning => console.log(`   - ${warning}`));
   }
-  
-  // Initialize database
+
+  // Initialize database with migrations
   await initializeDatabase();
 }, config.timeouts.setup);
 
-beforeEach(async () => {
-  // CRITICAL: Reset database singleton FIRST
-  // This closes all existing connections from previous test
-  await resetDatabaseInstance();
+// Global test counter for unique test IDs
+let testCounter = 0;
 
-  // Skip enterprise services - they're disabled for integration tests
-  // The environment flags prevent their initialization, so no need to reset
-  // This avoids unnecessary errors and complexity
+beforeEach(async (context) => {
+  // Create unique test ID
+  testCounter++;
+  const testName = context?.task?.name || `test-${testCounter}`;
 
-  // THEN clean database with fresh connection
-  // cleanDatabase will get its own fresh connection from the reset singleton
+  console.log(`🧪 Starting test: ${testName}`);
+
+  // CRITICAL: Ensure complete isolation for this test
+  await isolationManager.ensureTestIsolation(testName);
+
+  // Clean database with fresh connection
   await cleanDatabase();
 }, config.timeouts.hook);
 
 afterEach(async () => {
-  // Optional: Additional cleanup after each test
-  // await cleanDatabase(); // Uncomment if needed
+  // CRITICAL: Complete test and clean up all resources
+  await isolationManager.completeTest();
+
+  console.log(`✅ Test completed and isolated`);
 }, config.timeouts.hook);
 
 afterAll(async () => {
-  // Final cleanup - get fresh client for WAL checkpoint
-  try {
-    const { getDatabaseClient } = await import('../lib/database.js');
-    const client = await getDatabaseClient();
+  console.log('🧹 Starting integration test suite cleanup');
 
-    // Ensure WAL checkpoint before closing to persist all changes
-    try {
-      await client.execute('PRAGMA wal_checkpoint(TRUNCATE)');
-      console.log('✅ Final WAL checkpoint completed');
-    } catch (walError) {
-      // Ignore WAL errors during cleanup
-      if (!walError.message.includes('CLIENT_CLOSED')) {
-        console.warn('⚠️ WAL checkpoint warning:', walError.message);
-      }
-    }
-
-    // Check if connection is still valid before attempting to close
-    if (typeof client.close === 'function') {
-      await client.close();
-      console.log('✅ Database connection closed');
-    }
-  } catch (error) {
-    // Ignore errors - connection may already be closed
-    if (!error.message.includes('CLIENT_CLOSED') && !error.message.includes('closed')) {
-      console.warn('⚠️ Database connection cleanup warning:', error.message);
-    }
-  }
-
-  // Reset the database instance for good measure
-  try {
-    const { resetDatabaseInstance } = await import('../lib/database.js');
-    await resetDatabaseInstance();
-  } catch (error) {
-    // Ignore reset errors during cleanup
-  }
+  // Clean up all test scopes
+  await isolationManager.cleanupAllScopes();
 
   // Clean up test database files
   try {
@@ -393,15 +363,19 @@ afterAll(async () => {
   console.log('✅ Integration test cleanup completed');
 }, config.timeouts.cleanup);
 
-// Export database client for tests
+/**
+ * Export database client getter that uses Test Isolation
+ * Each call gets a scoped client for the current test
+ */
 export const getDbClient = async () => {
-  // ALWAYS get a fresh client from the singleton
-  // No caching to prevent stale references
-  const { getDatabaseClient } = await import('../lib/database.js');
-  return await getDatabaseClient();
+  // Always get a scoped client from the isolation manager
+  return await isolationManager.getScopedDatabaseClient();
 };
+
+// Export isolation manager stats for debugging
+export const getIsolationStats = () => isolationManager.getStats();
 
 // Export secret validation result for tests that need to check availability
 export const getSecretValidation = () => secretValidation;
 
-console.log('🧪 Integration test environment ready - database & services configured');
+console.log('🧪 Integration test environment ready - database & services configured with Test Isolation');
