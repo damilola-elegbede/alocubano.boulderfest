@@ -188,7 +188,8 @@ describe('Database Transaction Integration', () => {
     const testPrefix = 'concurrent_' + Math.random().toString(36).slice(2);
     
     // TRUE concurrent operations using separate database clients for real concurrency
-    const { getDatabaseClient } = await import('../../../lib/database.js');
+    // For concurrent testing, we'll use the same client pool
+    // The integration test setup handles connection pooling
     
     const concurrentOperations = Array.from({ length: 3 }, (_, index) => {
       const sessionId = `cs_test_${testPrefix}_${index}`;
@@ -199,7 +200,7 @@ describe('Database Transaction Integration', () => {
         let separateClient;
         try {
           // Get separate database client for true concurrent testing
-          separateClient = await getDatabaseClient();
+          separateClient = await getDbClient();
           
           await separateClient.execute(`
             INSERT INTO "transactions" (

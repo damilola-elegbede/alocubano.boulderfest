@@ -3,6 +3,7 @@
  * Tests QR code generation, validation, and security features
  */
 import { test, expect } from 'vitest';
+import { getDbClient } from '../../setup-integration.js';
 import { testRequest, generateTestEmail, HTTP_STATUS } from '../../helpers.js';
 import jwt from 'jsonwebtoken';
 

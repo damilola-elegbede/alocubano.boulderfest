@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import { getDatabaseClient, resetDatabaseInstance } from '../../../lib/database.js';
+import { getDbClient } from '../../setup-integration.js';
 
 import { testRequest, HTTP_STATUS, generateTestEmail } from '../../helpers.js';
 
@@ -17,13 +17,8 @@ describe('Integration: Email API', () => {
   let db;
 
   beforeAll(async () => {
-    // Set up test environment variables
-    process.env.NODE_ENV = 'test';
-    process.env.DATABASE_URL = `file:/tmp/email-api-integration-test-${Date.now()}.db`;
-    
-    // Reset database instance to ensure clean state
-    await resetDatabaseInstance();
-    db = await getDatabaseClient();
+    // Use the integration test database
+    db = await getDbClient();
     
     // Verify database connection
     const testResult = await db.execute('SELECT 1 as test');
@@ -86,17 +81,17 @@ describe('Integration: Email API', () => {
 
   afterAll(async () => {
     // Clean up database connections
-    if (db && typeof db.close === 'function') {
-      try {
-        await db.close();
-      } catch (error) {
+    try {
+      // Database cleanup handled by setup-integration.js
+    } catch (error) {
         // Ignore close errors in tests
       }
-    }
-    await resetDatabaseInstance();
   });
 
   beforeEach(async () => {
+    // Get fresh client for each test
+    db = await getDbClient();
+
     // Clean up test data before each test
     await db.execute({
       sql: 'DELETE FROM email_subscribers WHERE email LIKE ?',

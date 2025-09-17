@@ -5,14 +5,15 @@
   "type": "module",
   "private": true,
   "engines": {
-    "node": ">=20.0.0 <25.0.0"
+    "node": "20.x || 21.x || 22.x || 24.x"
   },
   "scripts": {
     "build": "NODE_OPTIONS='--max-old-space-size=4096' node -e \"import('child_process').then(({execSync}) => { const isVercel = process.env.VERCEL === '1'; const env = process.env.VERCEL_ENV || 'local'; console.log(''); console.log('🔨 Build Process'); console.log('================'); console.log('Environment: ' + env); console.log('Platform: ' + (isVercel ? 'Vercel' : 'Local')); if(!isVercel) { console.log(''); console.log('📋 Running structure verification...'); execSync('npm run verify-structure', {stdio:'inherit'}); } console.log(''); console.log('✅ Build completed successfully!'); console.log(''); }).catch(console.error);\"",
     "start": "npm run vercel:dev",
     "vercel:dev": "vercel dev --listen 3000",
     "vercel:preview": "vercel --target preview",
-    "test": "NODE_OPTIONS='--max-old-space-size=4096' vitest run --config tests/vitest.config.js",
+    "test": "NODE_OPTIONS='--max-old-space-size=2048' vitest run --config tests/vitest.config.js",
+    "test:cleanup": "bash scripts/cleanup-tests.sh",
     "test:integration": "NODE_OPTIONS='--max-old-space-size=4096' vitest run --config tests/config/vitest.integration.config.js",
     "test:e2e": "NODE_OPTIONS='--max-old-space-size=4096' PLAYWRIGHT_WORKERS=1 node scripts/vercel-deployment-manager.js && npx playwright test --config playwright-e2e-preview.config.js",
     "test:e2e:ci": "NODE_OPTIONS='--max-old-space-size=4096' PLAYWRIGHT_WORKERS=1 npx playwright test --config playwright-e2e-preview.config.js",
@@ -28,7 +29,11 @@
     "migrate:check": "DOTENV_CONFIG_PATH=.env.local node -r dotenv/config scripts/check-migration-status.js",
     "migrate:vercel": "node scripts/migrate-vercel-build.js",
     "verify-structure": "node scripts/verify-structure.js",
-    "validate-ci-fixes": "node scripts/validate-ci-fixes.js"
+    "validate-ci-fixes": "node scripts/validate-ci-fixes.js",
+    "enterprise:migrate": "DOTENV_CONFIG_PATH=.env.local node -r dotenv/config scripts/migrate-to-enterprise.js",
+    "enterprise:health": "DOTENV_CONFIG_PATH=.env.local node -r dotenv/config scripts/deployment-health-check.js",
+    "enterprise:tools": "DOTENV_CONFIG_PATH=.env.local node -r dotenv/config scripts/platform-tools.js",
+    "drift:check": "node scripts/detect-package-drift.js"
   },
   "dependencies": {
     "@libsql/client": "^0.15.14",
@@ -62,7 +67,7 @@
     "@babel/core": "^7.28.3",
     "@babel/preset-env": "^7.28.3",
     "@playwright/test": "^1.55.0",
-    "@vitest/coverage-v8": "^2.1.9",
+    "@vitest/coverage-v8": "^3.2.4",
     "eslint": "^9.34.0",
     "express": "^5.1.0",
     "glob": "^11.0.3",
@@ -75,13 +80,27 @@
     "markdownlint-cli": "^0.45.0",
     "ngrok": "^5.0.0-beta.2",
     "nodemon": "^3.1.10",
-    "vercel": "^47.0.1",
-    "vitest": "^2.1.9"
+    "vercel": "^48.0.2",
+    "vitest": "^3.2.4"
+  },
+  "overrides": {
+    "esbuild": "^0.25.9",
+    "path-to-regexp": "^8.3.0",
+    "undici": "^6.21.0"
   },
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "^4.50.0",
     "@rollup/rollup-darwin-arm64": "^4.50.0",
     "@rollup/rollup-darwin-x64": "^4.50.0",
-    "@rollup/rollup-win32-x64-msvc": "^4.50.0"
+    "@rollup/rollup-win32-x64-msvc": "^4.50.0",
+    "@libsql/darwin-arm64": "0.5.22",
+    "@libsql/darwin-x64": "0.5.22",
+    "@libsql/linux-x64-gnu": "0.5.22",
+    "@libsql/linux-x64-musl": "0.5.22",
+    "@libsql/win32-x64-msvc": "0.5.22",
+    "@libsql/linux-arm64-gnu": "0.5.22",
+    "@libsql/linux-arm64-musl": "0.5.22",
+    "@libsql/linux-arm-gnueabihf": "0.5.22",
+    "@libsql/linux-arm-musleabihf": "0.5.22"
   }
 }

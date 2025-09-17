@@ -11,7 +11,7 @@
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { testRequest, HTTP_STATUS } from '../../helpers.js';
-import { getDatabaseClient, resetDatabaseInstance } from '../../../lib/database.js';
+import { getDbClient } from '../../setup-integration.js';
 import jwt from 'jsonwebtoken';
 
 describe('Integration: Tickets API', () => {
@@ -32,115 +32,38 @@ describe('Integration: Tickets API', () => {
     };
     // Set up test environment variables
     process.env.NODE_ENV = 'test';
-    process.env.DATABASE_URL = `file:/tmp/tickets-api-integration-test-${Date.now()}.db`;
     process.env.QR_SECRET_KEY = TEST_QR_SECRET;
     
-    // Reset database instance to ensure clean state
-    await resetDatabaseInstance();
-    db = await getDatabaseClient();
+    // Get database client - Tables should be created by migration system
+    db = await getDbClient();
     
     // Verify database connection
     const testResult = await db.execute('SELECT 1 as test');
     expect(testResult.rows).toBeDefined();
     expect(testResult.rows.length).toBe(1);
     
-    // Create necessary tables for integration tests
-    await db.execute(`
-      CREATE TABLE IF NOT EXISTS tickets (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        ticket_id TEXT UNIQUE NOT NULL,
-        transaction_id INTEGER,
-        ticket_type TEXT NOT NULL,
-        event_id TEXT NOT NULL,
-        event_date DATE,
-        price_cents INTEGER NOT NULL,
-        attendee_first_name TEXT,
-        attendee_last_name TEXT,
-        attendee_email TEXT,
-        attendee_phone TEXT,
-        status TEXT DEFAULT 'valid' CHECK (
-          status IN ('valid', 'used', 'cancelled', 'refunded', 'transferred')
-        ),
-        validation_code TEXT UNIQUE,
-        cancellation_reason TEXT,
-        qr_token TEXT,
-        qr_code_generated_at TIMESTAMP,
-        scan_count INTEGER DEFAULT 0 CHECK (scan_count >= 0),
-        max_scan_count INTEGER DEFAULT 10 CHECK (max_scan_count >= 0),
-        first_scanned_at TIMESTAMP,
-        last_scanned_at TIMESTAMP,
-        qr_access_method TEXT,
-        wallet_source TEXT CHECK (wallet_source IN ('apple_wallet', 'google_wallet') OR wallet_source IS NULL),
-        registration_status TEXT NOT NULL DEFAULT 'pending' CHECK (registration_status IN ('pending', 'completed', 'expired')),
-        registered_at DATETIME,
-        registration_deadline DATETIME,
-        validation_signature TEXT,
-        qr_code_data TEXT,
-        apple_pass_serial TEXT,
-        google_pass_id TEXT,
-        wallet_pass_generated_at TIMESTAMP,
-        wallet_pass_updated_at TIMESTAMP,
-        wallet_pass_revoked_at TIMESTAMP,
-        wallet_pass_revoked_reason TEXT,
-        checked_in_at TIMESTAMP,
-        checked_in_by TEXT,
-        check_in_location TEXT,
-        ticket_metadata TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
+    // Verify required tables exist (created by migrations)
+    const tablesCheck = await db.execute(`
+      SELECT name FROM sqlite_master 
+      WHERE type='table' AND name IN ('tickets', 'qr_validations', 'wallet_pass_events')
+      ORDER BY name
     `);
     
-    await db.execute(`
-      CREATE TABLE IF NOT EXISTS qr_validations (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        ticket_id INTEGER REFERENCES tickets(id) ON DELETE CASCADE,
-        validation_token TEXT NOT NULL,
-        validation_result TEXT NOT NULL CHECK (validation_result IN ('success', 'failed')),
-        failure_reason TEXT,
-        validation_source TEXT DEFAULT 'web' CHECK (validation_source IN ('web', 'apple_wallet', 'google_wallet', 'email')),
-        ip_address TEXT,
-        device_info TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
+    const existingTables = tablesCheck.rows.map(row => row.name);
+    expect(existingTables).toContain('tickets');
+    expect(existingTables).toContain('qr_validations');
+    expect(existingTables).toContain('wallet_pass_events');
     
-    await db.execute(`
-      CREATE TABLE IF NOT EXISTS wallet_pass_events (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        ticket_id INTEGER REFERENCES tickets(id) ON DELETE CASCADE,
-        pass_type TEXT CHECK (pass_type IN ('apple', 'google')),
-        event_type TEXT CHECK (event_type IN ('created', 'updated', 'downloaded', 'installed', 'removed', 'revoked')),
-        event_data TEXT,
-        device_info TEXT,
-        ip_address TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
+    console.log('✅ Verified required tables exist:', existingTables);
   });
 
   afterAll(async () => {
     // Clean up test data before closing connection
-    if (db) {
-      try {
-        await db.execute({
-          sql: 'DELETE FROM tickets WHERE ticket_id LIKE ?',
-          args: ['TKT-TEST-%']
-        });
-      } catch (error) {
-        // Ignore cleanup errors in tests
-      }
-    }
-    
-    // Clean up database connections
-    if (db && typeof db.close === 'function') {
-      try {
-        await db.close();
-      } catch (error) {
+    try {
+      // Database cleanup handled by setup-integration.js
+    } catch (error) {
         // Ignore close errors in tests
       }
-    }
-    await resetDatabaseInstance();
     
     // Restore environment
     if (prevEnv.NODE_ENV === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = prevEnv.NODE_ENV;
@@ -149,6 +72,8 @@ describe('Integration: Tickets API', () => {
   });
 
   beforeEach(async () => {
+    // Get fresh database client for each test
+    db = await getDbClient();
     // Create a test ticket for validation tests
     const ticketId = `TKT-TEST-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const validationCode = `VAL-${Date.now()}-${Math.random().toString(36).slice(2)}`;

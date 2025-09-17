@@ -1,5 +1,5 @@
 // Essential test helpers - zero abstractions, maximum readability
-import { getApiUrl } from './setup.js';
+import { getApiUrl } from './setup-integration.js';
 
 // HTTP status codes for readable test assertions
 export const HTTP_STATUS = {

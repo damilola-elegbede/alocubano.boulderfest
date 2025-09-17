@@ -1,37 +1,56 @@
 import { defineConfig } from 'vitest/config';
 
 /**
- * Unit Test Configuration - UNIT-ONLY MODE
- * Target: 806+ tests in <2 seconds (extraordinary performance!)
- * 
- * UNIT-ONLY MODE: Integration and E2E tests are disabled for focused unit testing.
- * This configuration exclusively handles unit tests with maximum speed optimization.
- * 
+ * Unit Test Configuration - OPTIMIZED FOR <2 SECOND TARGET
+ * Current: 1126+ tests in 5.13s → Target: <2 seconds (61% performance improvement needed)
+ *
+ * PERFORMANCE OPTIMIZATIONS:
+ * - Aggressive timeout reduction
+ * - Memory allocation optimization
+ * - Enhanced concurrency settings
+ * - Database migration optimization
+ * - Resource pooling improvements
+ *
  * Key Features:
  * - In-memory SQLite database (unit test only)
  * - No external service dependencies
  * - Maximum speed optimization
  * - Isolated test environment
- * - Memory optimized for 806+ tests
+ * - Memory optimized for 1126+ tests
  * - Sub-2-second execution target
  */
 export default defineConfig({
   test: {
-    // Use jsdom as default since most failing tests need DOM
-    environment: 'jsdom',
-    
+    // Use node environment for maximum speed in unit tests
+    environment: 'node',
+
     // Unit-only mode environment variables
     env: {
       UNIT_ONLY_MODE: 'true',
       CI_ENVIRONMENT: process.env.CI === 'true' ? 'unit-only' : 'unit-dev',
-      NODE_ENV: 'test'
+      NODE_ENV: 'test',
+      // Performance optimization flags
+      SKIP_DATABASE_MIGRATIONS: 'true',  // Skip per-test migrations
+      UNIT_TEST_PERFORMANCE_MODE: 'true',
+
+      // Critical API secrets configuration - required for services to initialize
+      QR_SECRET_KEY: 'test-qr-secret-key-minimum-32-characters-long-for-security-compliance',
+      ADMIN_SECRET: 'test-admin-jwt-secret-minimum-32-characters-for-security',
+      WALLET_AUTH_SECRET: 'test-wallet-auth-secret-key-for-testing-purposes-32-chars',
+      APPLE_PASS_KEY: 'dGVzdC1hcHBsZS1wYXNzLWtleQ==', // base64 encoded 'test-apple-pass-key'
+      INTERNAL_API_KEY: 'test-internal-api-key-32-chars-min',
+      TEST_ADMIN_PASSWORD: 'test-admin-password-123',
+      ADMIN_PASSWORD: '$2b$10$test.bcrypt.hash.for.testing.purposes.only',
+
+      // Database configuration for unit tests
+      DATABASE_URL: 'file::memory:?cache=shared'
     },
-    
-    // Optimized timeouts for massive unit test suite
-    testTimeout: Number(process.env.VITEST_TEST_TIMEOUT || (process.env.CI === 'true' ? 15000 : 10000)),
-    hookTimeout: Number(process.env.VITEST_HOOK_TIMEOUT || (process.env.CI === 'true' ? 8000 : 5000)),
-    setupTimeout: Number(process.env.VITEST_SETUP_TIMEOUT || 10000),
-    teardownTimeout: Number(process.env.VITEST_CLEANUP_TIMEOUT || 5000),
+
+    // AGGRESSIVE timeout optimization for <2s target
+    testTimeout: Number(process.env.VITEST_TEST_TIMEOUT || (process.env.CI === 'true' ? 8000 : 5000)),
+    hookTimeout: Number(process.env.VITEST_HOOK_TIMEOUT || (process.env.CI === 'true' ? 3000 : 2000)),
+    setupTimeout: Number(process.env.VITEST_SETUP_TIMEOUT || 5000),
+    teardownTimeout: Number(process.env.VITEST_CLEANUP_TIMEOUT || 2000),
     
     // Unit test specific setup (UNIT-ONLY)
     setupFiles: ['./tests/setup-unit.js'],
@@ -48,28 +67,33 @@ export default defineConfig({
       'tests/fixtures/**'     // Test fixtures (utilities only)
     ],
     
-    // Speed optimization settings for massive unit test suite
+    // MOST STABLE pooling - single fork for reliability
     pool: 'forks',
     poolOptions: {
       forks: {
-        singleFork: true, // Single process for consistent performance with 806+ tests
-        isolate: true     // Ensure test isolation
+        singleFork: true,       // Single fork for maximum stability
+        isolate: false,         // Reduce overhead while maintaining stability
+        execArgv: ['--max-old-space-size=1024']  // Limit memory per worker
       }
     },
-    
-    // Maximum concurrency optimized for unit tests only
-    maxConcurrency: process.env.CI === 'true' ? 4 : 12, // Increased for unit-only workload
-    
-    // Minimal retry for fast unit tests
-    retry: process.env.CI === 'true' ? 1 : 0,
-    
-    // Streamlined reporting optimized for large unit test suite
-    reporter: process.env.CI === 'true' ? ['verbose', 'junit'] : 'verbose',
+
+    // CONSERVATIVE concurrency for stability
+    maxConcurrency: process.env.CI === 'true' ? 4 : 6,  // Conservative for single fork
+
+    // Zero retry for maximum speed (unit tests should be deterministic)
+    retry: 0,
+
+    // CRITICAL: Force process cleanup after tests complete
+    forceRerunTriggers: ['**/package.json', '**/vitest.config.*'],
+    isolate: false,  // Reduce isolation for faster cleanup
+
+    // MINIMAL reporting for speed
+    reporter: process.env.CI === 'true' ? ['dot', 'junit'] : 'dot',  // Dot reporter is fastest
     outputFile: process.env.CI === 'true' ? './unit-test-results.xml' : undefined,
-    
-    // Performance tracking for 806+ tests
-    logHeapUsage: process.env.CI === 'true',
-    slowTestThreshold: 1000, // Flag slow unit tests (should be fast)
+
+    // Performance tracking optimized
+    logHeapUsage: false,  // Disable for speed unless CI
+    slowTestThreshold: 500,  // Flag slow unit tests more aggressively
     
     // Coverage configuration for unit tests only
     coverage: {

@@ -44,6 +44,14 @@ jobs:
       VITEST_HOOK_TIMEOUT: 15000       # Increased from 10000 to 15 seconds for hooks
       VITEST_SETUP_TIMEOUT: 15000      # Increased from 10000 to 15 seconds for setup
       VITEST_CLEANUP_TIMEOUT: 10000    # Increased from 5000 to 10 seconds for cleanup
+      # Critical API secrets configuration - required for services to initialize (matching vitest.unit.config.js)
+      QR_SECRET_KEY: 'test-qr-secret-key-minimum-32-characters-long-for-security-compliance'
+      ADMIN_SECRET: 'test-admin-jwt-secret-minimum-32-characters-for-security'
+      WALLET_AUTH_SECRET: 'test-wallet-auth-secret-key-for-testing-purposes-32-chars'
+      APPLE_PASS_KEY: 'dGVzdC1hcHBsZS1wYXNzLWtleQ=='
+      INTERNAL_API_KEY: 'test-internal-api-key-32-chars-min'
+      TEST_ADMIN_PASSWORD: 'test-admin-password-123'
+      ADMIN_PASSWORD: '$2b$10$test.bcrypt.hash.for.testing.purposes.only'
 
     steps:
       - name: "📥 Checkout Code"
@@ -111,10 +119,10 @@ jobs:
           end_time=$(date +%s%3N)
           duration=$((end_time - start_time))
 
-          # Extract test counts - updated regex to match "Tests 902 passed" format
-          total_tests=$(grep -oP '(?<=^\s*Tests\s+)\d+(?=\s+passed)' unit-test-output.log | head -1 || echo "0")
+          # Extract test counts - using simple sed approach instead of variable-length lookbehind
+          total_tests=$(grep -E "Tests.*passed" unit-test-output.log | sed -E "s/.*Tests[[:space:]]+([0-9]+)[[:space:]]+passed.*/\1/" | head -1 || echo "0")
           passing_tests=$total_tests
-          failing_tests=$(grep -oP '(?<=^\s*Tests\s+)\d+(?=\s+failed)' unit-test-output.log | head -1 || echo "0")
+          failing_tests=$(grep -E "Tests.*failed" unit-test-output.log | sed -E "s/.*Tests[[:space:]]+([0-9]+)[[:space:]]+failed.*/\1/" | head -1 || echo "0")
 
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "📊 Unit Test Results"
@@ -293,10 +301,10 @@ jobs:
           end_time=$(date +%s%3N)
           duration=$((end_time - start_time))
 
-          # Extract test counts from output - updated regex to match "Tests 902 passed" format
-          total_tests=$(grep -oP '(?<=^\s*Tests\s+)\d+(?=\s+passed)' integration-test-output.log | head -1 || echo "0")
+          # Extract test counts from output - using simple sed approach instead of variable-length lookbehind
+          total_tests=$(grep -E "Tests.*passed" integration-test-output.log | sed -E "s/.*Tests[[:space:]]+([0-9]+)[[:space:]]+passed.*/\1/" | head -1 || echo "0")
           passing_tests=$total_tests
-          failing_tests=$(grep -oP '(?<=^\s*Tests\s+)\d+(?=\s+failed)' integration-test-output.log | head -1 || echo "0")
+          failing_tests=$(grep -E "Tests.*failed" integration-test-output.log | sed -E "s/.*Tests[[:space:]]+([0-9]+)[[:space:]]+failed.*/\1/" | head -1 || echo "0")
 
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "📊 Integration Test Results"
@@ -358,7 +366,7 @@ jobs:
   # To re-enable E2E tests in this pipeline, uncomment the job below and
   # update the summary job dependencies to include e2e-tests again.
   # ============================================================================
-  
+
   # e2e-tests:
   #   name: "🎭 E2E Tests"
   #   runs-on: ubuntu-latest

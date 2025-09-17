@@ -201,10 +201,10 @@ jobs:
           end_time=$(date +%s%3N)
           duration=$((end_time - start_time))
 
-          # Extract test counts from output - updated regex to match "Tests 902 passed" format
-          total_tests=$(grep -oP '(?<=^\s*Tests\s+)\d+(?=\s+passed)' test-output.log | head -1 || echo "0")
+          # Extract test counts from output - using simple sed approach instead of variable-length lookbehind
+          total_tests=$(grep -E "Tests.*passed" test-output.log | sed -E "s/.*Tests[[:space:]]+([0-9]+)[[:space:]]+passed.*/\1/" | head -1 || echo "0")
           passing_tests=$total_tests
-          failing_tests=$(grep -oP '(?<=^\s*Tests\s+)\d+(?=\s+failed)' test-output.log | head -1 || echo "0")
+          failing_tests=$(grep -E "Tests.*failed" test-output.log | sed -E "s/.*Tests[[:space:]]+([0-9]+)[[:space:]]+failed.*/\1/" | head -1 || echo "0")
 
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "📊 Test Results Summary"
@@ -237,12 +237,22 @@ jobs:
             exit $test_exit_code
           fi
         env:
-          NODE_ENV: ${{ env.NODE_ENV }}
-          CI: ${{ env.CI }}
-          DATABASE_URL: ${{ env.DATABASE_URL }}
-          # Test environment variables for auth service - from GitHub secrets
-          ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
-          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          NODE_ENV: test
+          CI: true
+          DATABASE_URL: ":memory:"
+          # Unit test environment variables - MATCHING vitest.unit.config.js EXACTLY
+          UNIT_ONLY_MODE: 'true'
+          CI_ENVIRONMENT: 'unit-only'
+          SKIP_DATABASE_MIGRATIONS: 'true'
+          UNIT_TEST_PERFORMANCE_MODE: 'true'
+          # Critical API secrets for unit tests - must match vitest.unit.config.js
+          QR_SECRET_KEY: 'test-qr-secret-key-minimum-32-characters-long-for-security-compliance'
+          ADMIN_SECRET: 'test-admin-jwt-secret-minimum-32-characters-for-security'
+          WALLET_AUTH_SECRET: 'test-wallet-auth-secret-key-for-testing-purposes-32-chars'
+          APPLE_PASS_KEY: 'dGVzdC1hcHBsZS1wYXNzLWtleQ=='
+          INTERNAL_API_KEY: 'test-internal-api-key-32-chars-min'
+          TEST_ADMIN_PASSWORD: 'test-admin-password-123'
+          ADMIN_PASSWORD: '$2b$10$test.bcrypt.hash.for.testing.purposes.only'
           # Pass timeout configurations to Vitest
           VITEST_TEST_TIMEOUT: ${{ env.VITEST_TEST_TIMEOUT }}
           VITEST_HOOK_TIMEOUT: ${{ env.VITEST_HOOK_TIMEOUT }}

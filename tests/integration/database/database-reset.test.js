@@ -5,16 +5,39 @@
 
 import { describe, test, expect, beforeAll } from 'vitest';
 import { resetTestDatabase, DatabaseResetManager, RESET_CONFIG } from '../../../scripts/reset-test-database.js';
-import { getDatabaseClient } from '../../../lib/database.js';
+import { getDbClient } from '../../setup-integration.js';
 
 describe('Database Reset Mechanism', () => {
   let manager;
-  
-  beforeAll(() => {
+
+  beforeAll(async () => {
     // Set test environment
     process.env.NODE_ENV = 'test';
     process.env.TEST_DATABASE_RESET_ALLOWED = 'true';
+
+    // Use the isolation manager's database client instead of creating our own
     manager = new DatabaseResetManager();
+
+    // Override the manager's initializeClient to use our isolated client
+    manager.initializeClient = async () => {
+      manager.client = await getDbClient();
+      return manager.client;
+    };
+
+    // CRITICAL FIX: Override getTableList to always get fresh client
+    manager.getTableList = async () => {
+      // Always get a fresh scoped client for each operation
+      const freshClient = await getDbClient();
+
+      const result = await freshClient.execute(`
+        SELECT name FROM sqlite_master
+        WHERE type='table'
+        AND name NOT LIKE 'sqlite_%'
+        AND name != 'migrations'
+      `);
+
+      return result.rows.map(row => row.name);
+    };
   });
 
   test('safety checks prevent reset in production', async () => {
@@ -78,17 +101,24 @@ describe('Database Reset Mechanism', () => {
   test('soft reset preserves schema', async () => {
     // Get tables before reset
     const tablesBefore = await manager.getTableList();
-    
+
     // Perform soft reset
     const result = await resetTestDatabase('soft', { seedData: false });
-    
+
     // Verify result
     expect(result.mode).toBe('soft');
     expect(typeof result.recordsCleaned).toBe('number');
-    
-    // Get tables after reset
-    const tablesAfter = await manager.getTableList();
-    
+
+    // Get tables after reset - use fresh client to avoid CLIENT_CLOSED
+    const freshClient = await getDbClient();
+    const tablesAfterResult = await freshClient.execute(`
+      SELECT name FROM sqlite_master
+      WHERE type='table'
+      AND name NOT LIKE 'sqlite_%'
+      AND name != 'migrations'
+    `);
+    const tablesAfter = tablesAfterResult.rows.map(row => row.name);
+
     // Schema should be preserved (same tables)
     expect(tablesAfter.length).toBeGreaterThanOrEqual(tablesBefore.length);
   });
@@ -106,7 +136,7 @@ describe('Database Reset Mechanism', () => {
     expect(result.mode).toBe('soft');
     
     // Verify database is accessible after seeding
-    const client = await getDatabaseClient();
+    const client = await getDbClient();
     const testResult = await client.execute('SELECT 1 as test');
     expect(testResult.rows).toHaveLength(1);
     expect(testResult.rows[0].test).toBe(1);
@@ -125,7 +155,7 @@ describe('Database Reset Integration', () => {
     await resetTestDatabase('soft');
     
     // Verify we can perform basic database operations
-    const client = await getDatabaseClient();
+    const client = await getDbClient();
     
     // Test basic query
     const result = await client.execute('SELECT datetime(CURRENT_TIMESTAMP) as now');

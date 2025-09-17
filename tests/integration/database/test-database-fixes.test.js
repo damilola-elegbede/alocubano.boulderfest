@@ -4,11 +4,11 @@
  */
 
 import { describe, test, expect } from 'vitest';
-import { getDatabaseClient } from '../../../lib/database.js';
+import { getDbClient } from '../../setup-integration.js';
 
 describe('Database Cleanup Fixes Verification', () => {
   test('should have correct table names in database schema', async () => {
-    const client = await getDatabaseClient();
+    const client = await getDbClient();
     
     // Check that the correct tables exist in the database
     const result = await client.execute(`
@@ -33,7 +33,7 @@ describe('Database Cleanup Fixes Verification', () => {
   });
 
   test('should be able to clean data from existing tables', async () => {
-    const client = await getDatabaseClient();
+    const client = await getDbClient();
     
     // Test that we can perform DELETE operations on the fixed table names
     const tablesToTest = [
@@ -72,7 +72,7 @@ describe('Database Cleanup Fixes Verification', () => {
   });
 
   test('should verify column names in key tables', async () => {
-    const client = await getDatabaseClient();
+    const client = await getDbClient();
     
     // Test the column names that were mentioned in the issues
     try {

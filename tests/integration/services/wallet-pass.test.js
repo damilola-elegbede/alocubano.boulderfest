@@ -36,6 +36,9 @@ describe('Wallet Pass Integration Tests', () => {
   });
 
   beforeEach(async () => {
+    // Get fresh database client for each test
+    database = await getDbClient();
+
     // Create a test ticket for wallet pass generation
     testTransactionId = Math.floor(Math.random() * 1000000); // Generate random integer ID
     testTicketId = `test-ticket-${Date.now()}`;
