@@ -86,9 +86,14 @@
     "@rollup/rollup-darwin-arm64": "^4.50.0",
     "@rollup/rollup-darwin-x64": "^4.50.0",
     "@rollup/rollup-win32-x64-msvc": "^4.50.0",
-    "@libsql/linux-x64-gnu": "^0.4.7",
-    "@libsql/darwin-arm64": "^0.4.7",
-    "@libsql/darwin-x64": "^0.4.7",
-    "@libsql/win32-x64-msvc": "^0.4.7"
+    "@libsql/darwin-arm64": "0.5.22",
+    "@libsql/darwin-x64": "0.5.22",
+    "@libsql/linux-x64-gnu": "0.5.22",
+    "@libsql/linux-x64-musl": "0.5.22",
+    "@libsql/win32-x64-msvc": "0.5.22",
+    "@libsql/linux-arm64-gnu": "0.5.22",
+    "@libsql/linux-arm64-musl": "0.5.22",
+    "@libsql/linux-arm-gnueabihf": "0.5.22",
+    "@libsql/linux-arm-musleabihf": "0.5.22"
   }
 }
