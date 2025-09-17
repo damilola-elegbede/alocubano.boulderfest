@@ -24,7 +24,7 @@ env:
 
 jobs:
   unit-tests:
-    name: "🧪 Unit Tests"
+    name: "🧪 Unit Tests (Node ${{ matrix.node-version }})"
     runs-on: ubuntu-latest
     timeout-minutes: 15  # Increased from 10 to allow for cold starts
     outputs:
@@ -35,7 +35,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: ['20.x']
+        node-version: ['20.x', '22.x']
 
     env:
       DATABASE_URL: ":memory:"
@@ -67,6 +67,12 @@ jobs:
           cache-dependency-path: package-lock.json
 
       - name: "📦 Install Dependencies"
+        env:
+          NGROK_SKIP_DOWNLOAD: true
+          # Force npm to rebuild native binaries for current platform
+          npm_config_build_from_source: true
+          # Ensure proper Python for node-gyp
+          PYTHON: python3
         run: |
           echo "📦 Installing dependencies..."
 
@@ -155,7 +161,7 @@ jobs:
           retention-days: 7
 
   integration-tests:
-    name: "🔗 Integration Tests"
+    name: "🔗 Integration Tests (Node ${{ matrix.node-version }})"
     runs-on: ubuntu-latest
     timeout-minutes: 5  # Increased from 1 to 5 minutes for database initialization and migration
     needs: unit-tests   # Run after unit tests pass
@@ -167,7 +173,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: ['20.x']
+        node-version: ['20.x', '22.x']
 
     env:
       DATABASE_URL: "file:./data/test-integration.db"
@@ -217,6 +223,12 @@ jobs:
             ${{ runner.os }}-node-
 
       - name: "📦 Install Dependencies"
+        env:
+          NGROK_SKIP_DOWNLOAD: true
+          # Force npm to rebuild native binaries for current platform
+          npm_config_build_from_source: true
+          # Ensure proper Python for node-gyp
+          PYTHON: python3
         run: |
           echo "📦 Installing dependencies..."
 
