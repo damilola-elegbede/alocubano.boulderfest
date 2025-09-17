@@ -3,7 +3,7 @@
  * Tests the gallery loading fallback mechanism when static JSON files are not available
  */
 import { test, expect, describe, vi, beforeEach, afterEach } from 'vitest';
-import { HTTP_STATUS } from '../../helpers.js';
+import { HTTP_STATUS } from '../../test-constants.js';
 
 // Mock gallery data for testing fallback scenarios
 const mockGalleryData = {
