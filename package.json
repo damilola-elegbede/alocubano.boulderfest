@@ -13,6 +13,7 @@
     "vercel:dev": "vercel dev --listen 3000",
     "vercel:preview": "vercel --target preview",
     "test": "NODE_OPTIONS='--max-old-space-size=2048' vitest run --config tests/vitest.config.js",
+    "test:cleanup": "bash scripts/cleanup-tests.sh",
     "test:integration": "NODE_OPTIONS='--max-old-space-size=4096' vitest run --config tests/config/vitest.integration.config.js",
     "test:e2e": "NODE_OPTIONS='--max-old-space-size=4096' PLAYWRIGHT_WORKERS=1 node scripts/vercel-deployment-manager.js && npx playwright test --config playwright-e2e-preview.config.js",
     "test:e2e:ci": "NODE_OPTIONS='--max-old-space-size=4096' PLAYWRIGHT_WORKERS=1 npx playwright test --config playwright-e2e-preview.config.js",

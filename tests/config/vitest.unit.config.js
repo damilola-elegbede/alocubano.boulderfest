@@ -21,8 +21,8 @@ import { defineConfig } from 'vitest/config';
  */
 export default defineConfig({
   test: {
-    // Use jsdom as default since most failing tests need DOM
-    environment: 'jsdom',
+    // Use node environment for maximum speed in unit tests
+    environment: 'node',
 
     // Unit-only mode environment variables
     env: {
@@ -31,7 +31,19 @@ export default defineConfig({
       NODE_ENV: 'test',
       // Performance optimization flags
       SKIP_DATABASE_MIGRATIONS: 'true',  // Skip per-test migrations
-      UNIT_TEST_PERFORMANCE_MODE: 'true'
+      UNIT_TEST_PERFORMANCE_MODE: 'true',
+
+      // Critical API secrets configuration - required for services to initialize
+      QR_SECRET_KEY: 'test-qr-secret-key-minimum-32-characters-long-for-security-compliance',
+      ADMIN_SECRET: 'test-admin-jwt-secret-minimum-32-characters-for-security',
+      WALLET_AUTH_SECRET: 'test-wallet-auth-secret-key-for-testing-purposes-32-chars',
+      APPLE_PASS_KEY: 'dGVzdC1hcHBsZS1wYXNzLWtleQ==', // base64 encoded 'test-apple-pass-key'
+      INTERNAL_API_KEY: 'test-internal-api-key-32-chars-min',
+      TEST_ADMIN_PASSWORD: 'test-admin-password-123',
+      ADMIN_PASSWORD: '$2b$10$test.bcrypt.hash.for.testing.purposes.only',
+
+      // Database configuration for unit tests
+      DATABASE_URL: 'file::memory:?cache=shared'
     },
 
     // AGGRESSIVE timeout optimization for <2s target
@@ -55,24 +67,25 @@ export default defineConfig({
       'tests/fixtures/**'     // Test fixtures (utilities only)
     ],
     
-    // OPTIMIZED pooling for maximum performance with stability
-    pool: 'forks',  // Use forks for better stability (still very fast)
+    // MOST STABLE pooling - single fork for reliability
+    pool: 'forks',
     poolOptions: {
       forks: {
-        singleFork: false,    // Enable multi-process for performance
-        isolate: false,       // Reduce isolation overhead for unit tests
-        minForks: process.env.CI === 'true' ? 1 : 2,
-        maxForks: process.env.CI === 'true' ? 3 : 6
+        singleFork: true,       // Single fork for maximum stability
+        isolate: false,         // Reduce overhead while maintaining stability
+        execArgv: ['--max-old-space-size=1024']  // Limit memory per worker
       }
     },
 
-    // ENHANCED concurrency for unit test performance
-    maxConcurrency: process.env.CI === 'true' ? 6 : 12,  // Optimized concurrency
-    minWorkers: process.env.CI === 'true' ? 1 : 2,
-    maxWorkers: process.env.CI === 'true' ? 3 : 6,
+    // CONSERVATIVE concurrency for stability
+    maxConcurrency: process.env.CI === 'true' ? 4 : 6,  // Conservative for single fork
 
     // Zero retry for maximum speed (unit tests should be deterministic)
     retry: 0,
+
+    // CRITICAL: Force process cleanup after tests complete
+    forceRerunTriggers: ['**/package.json', '**/vitest.config.*'],
+    isolate: false,  // Reduce isolation for faster cleanup
 
     // MINIMAL reporting for speed
     reporter: process.env.CI === 'true' ? ['dot', 'junit'] : 'dot',  // Dot reporter is fastest

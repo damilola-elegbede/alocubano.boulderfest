@@ -13,6 +13,42 @@ import { beforeAll, afterAll } from 'vitest';
 import { configureEnvironment, cleanupEnvironment, validateEnvironment, TEST_ENVIRONMENTS } from './config/test-environment.js';
 
 /**
+ * CRITICAL: Process cleanup handlers
+ * Ensures vitest processes don't hang after test completion
+ */
+const forceCleanup = () => {
+  // Close any open database connections
+  if (global.testDbClient) {
+    try {
+      global.testDbClient.close();
+    } catch (e) {
+      // Ignore errors during cleanup
+    }
+  }
+
+  // Clear any timers/intervals
+  if (typeof clearInterval !== 'undefined') {
+    // Clear any lingering intervals
+    const highestId = setTimeout(() => {}, 0);
+    for (let i = 0; i < highestId; i++) {
+      clearTimeout(i);
+      clearInterval(i);
+    }
+  }
+};
+
+// Register cleanup handlers
+process.on('exit', forceCleanup);
+process.on('SIGINT', () => {
+  forceCleanup();
+  process.exit(0);
+});
+process.on('SIGTERM', () => {
+  forceCleanup();
+  process.exit(0);
+});
+
+/**
  * Native Module Error Handling
  * Gracefully handle missing native binaries in CI environments
  */
@@ -83,7 +119,8 @@ beforeAll(async () => {
 }, config.timeouts.setup);
 
 afterAll(async () => {
-  // Minimal cleanup for unit tests
+  // Minimal cleanup for unit tests + force cleanup to prevent hanging processes
+  forceCleanup();
   console.log('✅ Unit test cleanup completed (minimal overhead)');
 }, config.timeouts.cleanup);
 
