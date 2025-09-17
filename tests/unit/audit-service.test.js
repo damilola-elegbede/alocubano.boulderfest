@@ -17,7 +17,10 @@ class MockAuditService {
   }
 
   generateRequestId() {
-    return `req_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+    // Use nanosecond-based timestamp like the real service
+    const timestamp = process.hrtime.bigint().toString(36);
+    const randomBytes = Math.random().toString(36).substring(2, 11) + Math.random().toString(36).substring(2, 8);
+    return `req_${timestamp}_${randomBytes.substring(0, 16)}`;
   }
 
   async logDataChange(table, operation, recordId, changes, metadata = {}) {
@@ -192,8 +195,8 @@ describe('AuditService', () => {
     it('should generate request ID when context not set', () => {
       const requestId = auditService.generateRequestId();
 
-      expect(requestId).toMatch(/^req_\d+_\w+$/);
-      expect(requestId).toContain('1234567890000');
+      expect(requestId).toMatch(/^req_[a-z0-9]+_[a-z0-9]+$/);
+      expect(requestId).toMatch(/^req_/);
     });
 
     it('should generate unique request IDs', () => {
@@ -247,7 +250,7 @@ describe('AuditService', () => {
     it('should use generated request ID when context not set', async () => {
       const requestId = await auditService.logDataChange('products', 'DELETE', 'prod_456', { id: 'prod_456' });
 
-      expect(requestId).toMatch(/^req_\d+_\w+$/);
+      expect(requestId).toMatch(/^req_[a-z0-9]+_[a-z0-9]+$/);
       expect(auditService._lastLogEntry.request_id).toBe(requestId);
     });
   });
