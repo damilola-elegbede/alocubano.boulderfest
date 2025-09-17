@@ -243,18 +243,30 @@ describe('DatabaseCircuitBreaker', () => {
 
   describe('Timeout Protection', () => {
     it('should timeout long-running operations', async () => {
-      const longOperation = () => new Promise(resolve =>
-        setTimeout(resolve, 200) // Longer than timeout threshold
-      );
+      const longOperation = () => new Promise((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          // Clean up the timeout to prevent unhandled rejections
+          clearTimeout(timeoutId);
+          resolve('should not reach here');
+        }, 200); // Longer than timeout threshold
+
+        // Handle cleanup properly
+        return timeoutId;
+      });
 
       await expect(circuitBreaker.execute(longOperation)).rejects.toThrow();
       expect(circuitBreaker.metrics.timeoutRequests).toBe(1);
     });
 
     it('should complete fast operations without timeout', async () => {
-      const fastOperation = () => new Promise(resolve =>
-        setTimeout(() => resolve('success'), 10) // Faster than timeout
-      );
+      const fastOperation = () => new Promise((resolve) => {
+        const timeoutId = setTimeout(() => {
+          clearTimeout(timeoutId);
+          resolve('success');
+        }, 10); // Faster than timeout
+
+        return timeoutId;
+      });
 
       const result = await circuitBreaker.execute(fastOperation);
       expect(result).toBe('success');
@@ -419,9 +431,13 @@ describe('DatabaseCircuitBreaker', () => {
 
       // Simulate operations with known response times
       for (const time of responseTimes) {
-        const operation = () => new Promise(resolve =>
-          setTimeout(() => resolve('success'), time)
-        );
+        const operation = () => new Promise(resolve => {
+          const timeoutId = setTimeout(() => {
+            clearTimeout(timeoutId);
+            resolve('success');
+          }, time);
+          return timeoutId;
+        });
         await circuitBreaker.execute(operation);
       }
 

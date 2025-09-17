@@ -111,10 +111,10 @@ jobs:
           end_time=$(date +%s%3N)
           duration=$((end_time - start_time))
 
-          # Extract test counts - updated regex to match "Tests 902 passed" format
-          total_tests=$(grep -oP '(?<=^\s*Tests\s+)\d+(?=\s+passed)' unit-test-output.log | head -1 || echo "0")
+          # Extract test counts - using simple sed approach instead of variable-length lookbehind
+          total_tests=$(grep -E "Tests.*passed" unit-test-output.log | sed -E "s/.*Tests[[:space:]]+([0-9]+)[[:space:]]+passed.*/\1/" | head -1 || echo "0")
           passing_tests=$total_tests
-          failing_tests=$(grep -oP '(?<=^\s*Tests\s+)\d+(?=\s+failed)' unit-test-output.log | head -1 || echo "0")
+          failing_tests=$(grep -E "Tests.*failed" unit-test-output.log | sed -E "s/.*Tests[[:space:]]+([0-9]+)[[:space:]]+failed.*/\1/" | head -1 || echo "0")
 
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "📊 Unit Test Results"
@@ -293,10 +293,10 @@ jobs:
           end_time=$(date +%s%3N)
           duration=$((end_time - start_time))
 
-          # Extract test counts from output - updated regex to match "Tests 902 passed" format
-          total_tests=$(grep -oP '(?<=^\s*Tests\s+)\d+(?=\s+passed)' integration-test-output.log | head -1 || echo "0")
+          # Extract test counts from output - using simple sed approach instead of variable-length lookbehind
+          total_tests=$(grep -E "Tests.*passed" integration-test-output.log | sed -E "s/.*Tests[[:space:]]+([0-9]+)[[:space:]]+passed.*/\1/" | head -1 || echo "0")
           passing_tests=$total_tests
-          failing_tests=$(grep -oP '(?<=^\s*Tests\s+)\d+(?=\s+failed)' integration-test-output.log | head -1 || echo "0")
+          failing_tests=$(grep -E "Tests.*failed" integration-test-output.log | sed -E "s/.*Tests[[:space:]]+([0-9]+)[[:space:]]+failed.*/\1/" | head -1 || echo "0")
 
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "📊 Integration Test Results"
