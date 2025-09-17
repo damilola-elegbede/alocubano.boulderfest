@@ -4,11 +4,11 @@ import { marked } from 'marked';
 
 /**
  * Serves markdown documentation files as HTML
- * Accessible at /api/docs/[path-to-md-file]
+ * Accessible at /api/docs?path=[path-to-md-file]
  */
 export default async function handler(req, res) {
-  // Get the path segments from the catch-all route
-  const { path: pathSegments } = req.query;
+  // Get the path from the query parameter
+  const pathSegments = req.query.path;
 
   if (!pathSegments || pathSegments.length === 0) {
     // If no path specified, show index of available docs
@@ -260,7 +260,7 @@ async function serveDocsIndex(res) {
       const item = {
         name: name.replace(/_/g, ' '),
         path: file,
-        url: `/api/docs/${file}`
+        url: `/api/docs?path=${file}`
       };
 
       if (name.toLowerCase().includes('admin')) {
@@ -282,7 +282,7 @@ async function serveDocsIndex(res) {
         categorized.api.push({
           name: file.replace('.md', '').replace(/_/g, ' '),
           path: `api/${file}`,
-          url: `/api/docs/api/${file}`
+          url: `/api/docs?path=api/${file}`
         });
       }
     } catch (e) {
