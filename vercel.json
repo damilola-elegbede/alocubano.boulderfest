@@ -41,6 +41,10 @@
       "destination": "/featured-photos.json"
     },
     {
+      "source": "/home",
+      "destination": "/pages/core/home"
+    },
+    {
       "source": "/(about|tickets|donations|contact|checkout-success|checkout-cancel|my-tickets|success|failure)",
       "destination": "/pages/core/$1"
     },
@@ -78,11 +82,6 @@
     }
   ],
   "redirects": [
-    {
-      "source": "/home",
-      "destination": "/",
-      "permanent": true
-    },
     {
       "source": "/about-festival",
       "destination": "/about",
