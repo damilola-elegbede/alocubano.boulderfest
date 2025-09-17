@@ -70,7 +70,7 @@ test.describe('Mobile Debug Test', () => {
   });
 
   test('check mobile viewport and touch targets', async ({ page }) => {
-    await page.goto('/pages/tickets.html');
+    await page.goto('/tickets');
     
     // Check viewport
     const viewport = page.viewportSize();

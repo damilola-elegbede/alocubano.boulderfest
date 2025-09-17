@@ -261,7 +261,7 @@ test.describe('Admin Authentication', () => {
     }
     
     // Navigate away and back - should remain logged in
-    await page.goto('/pages/tickets.html');
+    await page.goto('/tickets');
     await page.goto('/admin/dashboard');
     
     // Should still be on dashboard, not redirected to login

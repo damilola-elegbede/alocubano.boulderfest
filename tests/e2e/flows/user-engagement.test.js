@@ -20,13 +20,13 @@ test.describe('User Engagement Metrics', () => {
     });
     
     // Navigate through key pages
-    await page.goto('/pages/tickets.html');
+    await page.goto('/tickets');
     await page.waitForTimeout(2000);
-    
-    await page.goto('/pages/about.html');
+
+    await page.goto('/about');
     await page.waitForTimeout(2000);
-    
-    await page.goto('/pages/gallery.html');
+
+    await page.goto('/gallery');
     await page.waitForTimeout(2000);
     
     // Should have tracked navigation
@@ -35,7 +35,7 @@ test.describe('User Engagement Metrics', () => {
   });
 
   test('should track user interaction with ticket options', async ({ page }) => {
-    await page.goto('/pages/tickets.html');
+    await page.goto('/tickets');
     
     // Interact with ticket options
     const ticketButtons = page.locator('button:has-text("Weekend"), button:has-text("Saturday"), button:has-text("Sunday")');
@@ -71,7 +71,7 @@ test.describe('User Engagement Metrics', () => {
     await page.waitForTimeout(3000); // Simulate user reading time
     
     // Move to tickets page
-    await page.goto('/pages/tickets.html');
+    await page.goto('/tickets');
     await page.waitForTimeout(2000);
     
     const endTime = Date.now();
@@ -82,7 +82,7 @@ test.describe('User Engagement Metrics', () => {
   });
 
   test('should track gallery engagement patterns', async ({ page }) => {
-    await page.goto('/pages/gallery.html');
+    await page.goto('/gallery');
     await page.waitForTimeout(2000);
     
     // Interact with gallery elements
@@ -106,7 +106,7 @@ test.describe('User Engagement Metrics', () => {
   });
 
   test('should monitor cart abandonment patterns', async ({ page }) => {
-    await page.goto('/pages/tickets.html');
+    await page.goto('/tickets');
     
     // Add items to cart
     const addButton = page.locator('button:has-text("Weekend")').first();
@@ -115,11 +115,11 @@ test.describe('User Engagement Metrics', () => {
       await page.waitForTimeout(1000);
       
       // Navigate away without completing purchase (cart abandonment)
-      await page.goto('/pages/about.html');
+      await page.goto('/about');
       await page.waitForTimeout(2000);
-      
+
       // Return to tickets page
-      await page.goto('/pages/tickets.html');
+      await page.goto('/tickets');
       
       // Header cart badge should still be persistent
       const headerCartBadge = page.locator('.nav-cart-badge');
@@ -157,8 +157,8 @@ test.describe('User Engagement Metrics', () => {
   test('should measure mobile engagement metrics', async ({ page }) => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
-    
-    await page.goto('/pages/tickets.html');
+
+    await page.goto('/tickets');
     await page.waitForTimeout(2000);
     
     // Test mobile interactions
@@ -205,7 +205,7 @@ test.describe('User Engagement Metrics', () => {
   });
 
   test('should measure search and filtering behavior', async ({ page }) => {
-    await page.goto('/pages/gallery.html');
+    await page.goto('/gallery');
     
     // Look for filtering options
     const filters = page.locator('.filter, .year-filter, button:has-text("2025")');
@@ -236,9 +236,9 @@ test.describe('User Engagement Metrics', () => {
       }
     });
     
-    await page.goto('/pages/tickets.html');
+    await page.goto('/tickets');
     await page.waitForTimeout(2000);
-    
+
     // Try to interact despite potential errors
     const addButton = page.locator('button:has-text("Weekend")').first();
     if (await addButton.count() > 0) {
@@ -247,7 +247,7 @@ test.describe('User Engagement Metrics', () => {
     }
     
     // User should still be able to navigate
-    await page.goto('/pages/about.html');
+    await page.goto('/about');
     
     // Should track error recovery behavior
     expect(page.url()).toContain('about');
@@ -266,7 +266,7 @@ test.describe('User Engagement Metrics', () => {
       await ticketsLink.first().click();
       await page.waitForTimeout(2000);
     } else {
-      await page.goto('/pages/tickets.html');
+      await page.goto('/tickets');
     }
     
     // 3. Add to cart
@@ -312,7 +312,7 @@ test.describe('User Engagement Metrics', () => {
     // Simulate user engagement based on performance
     if (performanceMetrics.loadTime < 2000) {
       // Fast load - simulate high engagement
-      await page.goto('/pages/tickets.html');
+      await page.goto('/tickets');
       
       const addButton = page.locator('button:has-text("Weekend")').first();
       if (await addButton.count() > 0) {

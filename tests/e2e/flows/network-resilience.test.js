@@ -3,14 +3,14 @@ import { test, expect } from '@playwright/test';
 test.describe('Network Resilience', () => {
   test('should handle offline mode gracefully', async ({ page, context }) => {
     // Start online and load page
-    await page.goto('/pages/tickets.html');
+    await page.goto('/tickets');
     await expect(page.locator('h1')).toContainText('Tickets');
     
     // Go offline
     await context.setOffline(true);
     
     // Try to navigate - should show cached content or error message
-    await page.click('a[href="/pages/about.html"]');
+    await page.click('a[href="/about"]');
     
     // Should either show cached content or appropriate offline message
     await page.waitForTimeout(2000);
@@ -31,7 +31,7 @@ test.describe('Network Resilience', () => {
       setTimeout(() => route.continue(), 800);
     });
     
-    await page.goto('/pages/gallery.html');
+    await page.goto('/gallery');
     
     // Should still load within reasonable time (10s for slow network)
     await expect(page.locator('h1')).toContainText('Gallery', { timeout: 10000 });
@@ -44,7 +44,7 @@ test.describe('Network Resilience', () => {
   });
 
   test('should recover from network interruption during cart operations', async ({ page, context }) => {
-    await page.goto('/pages/tickets.html');
+    await page.goto('/tickets');
     
     // Add item to cart
     const addToCartBtn = page.locator('button:has-text("Add to Cart")').first();
@@ -84,7 +84,7 @@ test.describe('Network Resilience', () => {
       }
     });
     
-    await page.goto('/pages/tickets.html');
+    await page.goto('/tickets');
     
     // Trigger API call (like newsletter signup)
     await page.fill('#newsletter-email', 'test@example.com');
@@ -103,7 +103,7 @@ test.describe('Network Resilience', () => {
       setTimeout(() => route.continue(), 3000);
     });
     
-    await page.goto('/pages/tickets.html');
+    await page.goto('/tickets');
     
     // Add item to cart
     await page.click('button:has-text("Add to Cart")');
@@ -121,18 +121,18 @@ test.describe('Network Resilience', () => {
 
   test('should cache content for offline browsing', async ({ page, context }) => {
     // Load page normally first
-    await page.goto('/pages/about.html');
+    await page.goto('/about');
     await expect(page.locator('h1')).toBeVisible();
     
     // Load some other pages to populate cache
-    await page.goto('/pages/artists.html');
+    await page.goto('/artists');
     await expect(page.locator('h1')).toBeVisible();
     
     // Go offline
     await context.setOffline(true);
     
     // Try to navigate to previously visited page
-    await page.goto('/pages/about.html');
+    await page.goto('/about');
     
     // Should still show content (from cache or service worker)
     const pageContent = await page.locator('body').textContent();
@@ -143,7 +143,7 @@ test.describe('Network Resilience', () => {
   });
 
   test('should handle intermittent connectivity', async ({ page, context }) => {
-    await page.goto('/pages/gallery.html');
+    await page.goto('/gallery');
     
     let toggleCount = 0;
     
@@ -169,7 +169,7 @@ test.describe('Network Resilience', () => {
   });
 
   test('should show appropriate error messages for network failures', async ({ page, context }) => {
-    await page.goto('/pages/tickets.html');
+    await page.goto('/tickets');
     
     // Go offline
     await context.setOffline(true);

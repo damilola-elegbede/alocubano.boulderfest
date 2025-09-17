@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Database Integrity', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/pages/tickets.html');
+    await page.goto('/tickets');
   });
 
   test('should handle concurrent ticket purchases', async ({ browser }) => {
@@ -19,8 +19,8 @@ test.describe('Database Integrity', () => {
 
     // Navigate both pages to tickets
     await Promise.all([
-      page1.goto('/pages/tickets.html'),
-      page2.goto('/pages/tickets.html')
+      page1.goto('/tickets'),
+      page2.goto('/tickets')
     ]);
 
     // Start concurrent purchase attempts for same ticket type
@@ -194,7 +194,7 @@ test.describe('Database Integrity', () => {
 
     const loadOperations = contexts.map(async (context, index) => {
       const page = await context.newPage();
-      await page.goto('/pages/tickets.html');
+      await page.goto('/tickets');
       
       // Different ticket types to avoid exact conflicts
       const ticketTypes = ['Weekend', 'Saturday', 'Sunday'];
@@ -238,8 +238,8 @@ test.describe('Database Integrity', () => {
       const cartCount1 = await page.locator('.cart-count, .cart-badge').textContent().catch(() => '0');
       
       // Navigate away and back
-      await page.goto('/pages/about.html');
-      await page.goto('/pages/tickets.html');
+      await page.goto('/about');
+      await page.goto('/tickets');
       
       // Verify cart state persisted
       const cartCount2 = await page.locator('.cart-count, .cart-badge').textContent().catch(() => '0');

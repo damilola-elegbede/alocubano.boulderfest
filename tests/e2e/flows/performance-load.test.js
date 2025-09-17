@@ -16,7 +16,7 @@ test.describe('Performance Under Load', () => {
 
   test('should load tickets page quickly during peak sales', async ({ page }) => {
     const startTime = Date.now();
-    await page.goto('/pages/tickets.html');
+    await page.goto('/tickets');
     await page.waitForSelector('.ticket-option', { timeout: 5000 });
     
     const loadTime = Date.now() - startTime;
@@ -28,7 +28,7 @@ test.describe('Performance Under Load', () => {
   });
 
   test('should handle gallery with many images efficiently', async ({ page }) => {
-    await page.goto('/pages/gallery.html');
+    await page.goto('/gallery');
     
     // Start performance measurement
     const startTime = Date.now();
@@ -51,7 +51,7 @@ test.describe('Performance Under Load', () => {
   });
 
   test('should respond to API calls within acceptable time', async ({ page }) => {
-    await page.goto('/pages/gallery.html');
+    await page.goto('/gallery');
     
     // Intercept and measure API response time
     const apiPromise = page.waitForResponse(response => 
@@ -79,7 +79,7 @@ test.describe('Performance Under Load', () => {
     const startTime = Date.now();
     
     const registrationPromises = pages.map(async (page, index) => {
-      await page.goto('/pages/registration.html');
+      await page.goto('/registration');
       await page.waitForSelector('form', { timeout: 5000 });
       
       // Fill form with unique data
@@ -100,7 +100,7 @@ test.describe('Performance Under Load', () => {
   });
 
   test('should maintain performance during long gallery session', async ({ page }) => {
-    await page.goto('/pages/gallery.html');
+    await page.goto('/gallery');
     await page.waitForSelector('.gallery-grid', { timeout: 5000 });
     
     // Simulate extended browsing session
@@ -149,7 +149,7 @@ test.describe('Performance Under Load', () => {
       }
     });
     
-    await page.goto('/pages/tickets.html');
+    await page.goto('/tickets');
     await page.waitForLoadState('domcontentloaded');
     
     // Verify critical resources loaded successfully
@@ -161,7 +161,7 @@ test.describe('Performance Under Load', () => {
   });
 
   test('should handle cart operations under load', async ({ page }) => {
-    await page.goto('/pages/tickets.html');
+    await page.goto('/tickets');
     await page.waitForSelector('.ticket-option', { timeout: 5000 });
     
     const startTime = Date.now();

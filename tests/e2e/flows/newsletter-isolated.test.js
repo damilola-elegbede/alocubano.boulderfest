@@ -39,7 +39,7 @@ test.describe('Newsletter Subscription with Test Isolation', () => {
     await storageUtils.setupCleanState(page);
     
     // Navigate to contact page
-    await page.goto('/pages/contact.html');
+    await page.goto('/contact');
     await page.waitForLoadState('domcontentloaded');
     
     console.log(`🧹 Clean test environment setup for: ${test.info().title}`);
@@ -156,7 +156,7 @@ test.describe('Newsletter Subscription with Test Isolation', () => {
           const userStorage = createStorageUtils(userTestTitle);
           
           await userStorage.setupCleanState(testPage);
-          await testPage.goto('/pages/contact.html');
+          await testPage.goto('/contact');
           await testPage.waitForLoadState('domcontentloaded');
           
           const userSubscription = NewsletterFixtures.validSubscription(userTestTitle);
