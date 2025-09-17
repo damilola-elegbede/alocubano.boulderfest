@@ -40,6 +40,7 @@ test.describe('Newsletter Subscription with Test Isolation', () => {
     
     // Navigate to contact page
     await page.goto('/contact');
+    await expect(page).toHaveURL(/\/contact\/?$/);
     await page.waitForLoadState('domcontentloaded');
     
     console.log(`🧹 Clean test environment setup for: ${test.info().title}`);
@@ -158,6 +159,7 @@ test.describe('Newsletter Subscription with Test Isolation', () => {
           await userStorage.setupCleanState(testPage);
           await testPage.goto('/contact');
           await testPage.waitForLoadState('domcontentloaded');
+          await expect(testPage).toHaveURL(/\/contact\/?$/);
           
           const userSubscription = NewsletterFixtures.validSubscription(userTestTitle);
           console.log(`👤 User ${index} using email: ${userSubscription.email}`);

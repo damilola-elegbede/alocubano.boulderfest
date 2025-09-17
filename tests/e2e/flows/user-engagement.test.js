@@ -6,8 +6,14 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('User Engagement Metrics', () => {
+  // Route constants to eliminate duplicate literals
+  const HOME_ROUTE = '/';
+  const TICKETS_ROUTE = '/tickets';
+  const ABOUT_ROUTE = '/about';
+  const GALLERY_ROUTE = '/gallery';
+
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    await page.goto(HOME_ROUTE);
   });
 
   test('should track page views and navigation patterns', async ({ page }) => {
@@ -20,13 +26,13 @@ test.describe('User Engagement Metrics', () => {
     });
     
     // Navigate through key pages
-    await page.goto('/tickets');
+    await page.goto(TICKETS_ROUTE);
     await page.waitForTimeout(2000);
 
-    await page.goto('/about');
+    await page.goto(ABOUT_ROUTE);
     await page.waitForTimeout(2000);
 
-    await page.goto('/gallery');
+    await page.goto(GALLERY_ROUTE);
     await page.waitForTimeout(2000);
     
     // Should have tracked navigation
@@ -35,7 +41,7 @@ test.describe('User Engagement Metrics', () => {
   });
 
   test('should track user interaction with ticket options', async ({ page }) => {
-    await page.goto('/tickets');
+    await page.goto(TICKETS_ROUTE);
     
     // Interact with ticket options
     const ticketButtons = page.locator('button:has-text("Weekend"), button:has-text("Saturday"), button:has-text("Sunday")');
@@ -67,11 +73,11 @@ test.describe('User Engagement Metrics', () => {
   test('should measure time spent on key pages', async ({ page }) => {
     // Start timing on homepage
     const startTime = Date.now();
-    await page.goto('/');
+    await page.goto(HOME_ROUTE);
     await page.waitForTimeout(3000); // Simulate user reading time
     
     // Move to tickets page
-    await page.goto('/tickets');
+    await page.goto(TICKETS_ROUTE);
     await page.waitForTimeout(2000);
     
     const endTime = Date.now();
@@ -82,7 +88,7 @@ test.describe('User Engagement Metrics', () => {
   });
 
   test('should track gallery engagement patterns', async ({ page }) => {
-    await page.goto('/gallery');
+    await page.goto(GALLERY_ROUTE);
     await page.waitForTimeout(2000);
     
     // Interact with gallery elements
@@ -106,7 +112,7 @@ test.describe('User Engagement Metrics', () => {
   });
 
   test('should monitor cart abandonment patterns', async ({ page }) => {
-    await page.goto('/tickets');
+    await page.goto(TICKETS_ROUTE);
     
     // Add items to cart
     const addButton = page.locator('button:has-text("Weekend")').first();
@@ -115,11 +121,11 @@ test.describe('User Engagement Metrics', () => {
       await page.waitForTimeout(1000);
       
       // Navigate away without completing purchase (cart abandonment)
-      await page.goto('/about');
+      await page.goto(ABOUT_ROUTE);
       await page.waitForTimeout(2000);
 
       // Return to tickets page
-      await page.goto('/tickets');
+      await page.goto(TICKETS_ROUTE);
       
       // Header cart badge should still be persistent
       const headerCartBadge = page.locator('.nav-cart-badge');
@@ -158,7 +164,7 @@ test.describe('User Engagement Metrics', () => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
 
-    await page.goto('/tickets');
+    await page.goto(TICKETS_ROUTE);
     await page.waitForTimeout(2000);
     
     // Test mobile interactions
@@ -205,7 +211,7 @@ test.describe('User Engagement Metrics', () => {
   });
 
   test('should measure search and filtering behavior', async ({ page }) => {
-    await page.goto('/gallery');
+    await page.goto(GALLERY_ROUTE);
     
     // Look for filtering options
     const filters = page.locator('.filter, .year-filter, button:has-text("2025")');
@@ -236,7 +242,7 @@ test.describe('User Engagement Metrics', () => {
       }
     });
     
-    await page.goto('/tickets');
+    await page.goto(TICKETS_ROUTE);
     await page.waitForTimeout(2000);
 
     // Try to interact despite potential errors
@@ -247,7 +253,7 @@ test.describe('User Engagement Metrics', () => {
     }
     
     // User should still be able to navigate
-    await page.goto('/about');
+    await page.goto(ABOUT_ROUTE);
     
     // Should track error recovery behavior
     expect(page.url()).toContain('about');
@@ -257,7 +263,7 @@ test.describe('User Engagement Metrics', () => {
     // Track complete user journey from landing to (attempted) purchase
     
     // 1. Landing page
-    await page.goto('/');
+    await page.goto(HOME_ROUTE);
     await page.waitForTimeout(2000);
     
     // 2. Navigate to tickets
@@ -266,7 +272,7 @@ test.describe('User Engagement Metrics', () => {
       await ticketsLink.first().click();
       await page.waitForTimeout(2000);
     } else {
-      await page.goto('/tickets');
+      await page.goto(TICKETS_ROUTE);
     }
     
     // 3. Add to cart
@@ -312,7 +318,7 @@ test.describe('User Engagement Metrics', () => {
     // Simulate user engagement based on performance
     if (performanceMetrics.loadTime < 2000) {
       // Fast load - simulate high engagement
-      await page.goto('/tickets');
+      await page.goto(TICKETS_ROUTE);
       
       const addButton = page.locator('button:has-text("Weekend")').first();
       if (await addButton.count() > 0) {

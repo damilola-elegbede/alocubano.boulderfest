@@ -15,6 +15,7 @@ test.describe('Registration Process', () => {
   test.beforeEach(async ({ page }) => {
     // Start from tickets page
     await page.goto('/tickets');
+    await expect(page).toHaveURL(/\/tickets\/?$/);
   });
 
   test('should access registration via ticket purchase', async ({ page }) => {
@@ -208,6 +209,7 @@ test.describe('Registration Process', () => {
         
         // Navigate away and back
         await page.goto('/tickets');
+        await expect(page).toHaveURL(/\/tickets(\/|$)/);
         await page.goBack();
         
         // Form data should be preserved

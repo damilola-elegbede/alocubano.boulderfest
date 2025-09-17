@@ -1,9 +1,15 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Performance Under Load', () => {
+  // Route constants to eliminate duplicate literals
+  const HOME_ROUTE = '/';
+  const TICKETS_ROUTE = '/tickets';
+  const GALLERY_ROUTE = '/gallery';
+  const REGISTRATION_ROUTE = '/registration';
+
   test('should load homepage within performance budget', async ({ page }) => {
     const startTime = Date.now();
-    await page.goto('/');
+    await page.goto(HOME_ROUTE);
     await page.waitForLoadState('domcontentloaded');
     
     const loadTime = Date.now() - startTime;
@@ -16,7 +22,7 @@ test.describe('Performance Under Load', () => {
 
   test('should load tickets page quickly during peak sales', async ({ page }) => {
     const startTime = Date.now();
-    await page.goto('/tickets');
+    await page.goto(TICKETS_ROUTE);
     await page.waitForSelector('.ticket-option', { timeout: 5000 });
     
     const loadTime = Date.now() - startTime;
@@ -28,7 +34,7 @@ test.describe('Performance Under Load', () => {
   });
 
   test('should handle gallery with many images efficiently', async ({ page }) => {
-    await page.goto('/gallery');
+    await page.goto(GALLERY_ROUTE);
     
     // Start performance measurement
     const startTime = Date.now();
@@ -51,7 +57,7 @@ test.describe('Performance Under Load', () => {
   });
 
   test('should respond to API calls within acceptable time', async ({ page }) => {
-    await page.goto('/gallery');
+    await page.goto(GALLERY_ROUTE);
     
     // Intercept and measure API response time
     const apiPromise = page.waitForResponse(response => 
@@ -79,7 +85,7 @@ test.describe('Performance Under Load', () => {
     const startTime = Date.now();
     
     const registrationPromises = pages.map(async (page, index) => {
-      await page.goto('/registration');
+      await page.goto(REGISTRATION_ROUTE);
       await page.waitForSelector('form', { timeout: 5000 });
       
       // Fill form with unique data
@@ -100,7 +106,7 @@ test.describe('Performance Under Load', () => {
   });
 
   test('should maintain performance during long gallery session', async ({ page }) => {
-    await page.goto('/gallery');
+    await page.goto(GALLERY_ROUTE);
     await page.waitForSelector('.gallery-grid', { timeout: 5000 });
     
     // Simulate extended browsing session
@@ -130,7 +136,7 @@ test.describe('Performance Under Load', () => {
     await expect(page.locator('.gallery-grid')).toBeVisible();
     
     // Check for memory leaks by ensuring page can still navigate
-    await page.goto('/');
+    await page.goto(HOME_ROUTE);
     await expect(page.locator('h1')).toBeVisible();
   });
 
@@ -149,7 +155,7 @@ test.describe('Performance Under Load', () => {
       }
     });
     
-    await page.goto('/tickets');
+    await page.goto(TICKETS_ROUTE);
     await page.waitForLoadState('domcontentloaded');
     
     // Verify critical resources loaded successfully
@@ -161,7 +167,7 @@ test.describe('Performance Under Load', () => {
   });
 
   test('should handle cart operations under load', async ({ page }) => {
-    await page.goto('/tickets');
+    await page.goto(TICKETS_ROUTE);
     await page.waitForSelector('.ticket-option', { timeout: 5000 });
     
     const startTime = Date.now();

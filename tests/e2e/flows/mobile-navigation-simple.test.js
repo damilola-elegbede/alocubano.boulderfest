@@ -19,7 +19,7 @@ test.describe('Mobile Navigation - Essential UX', () => {
     await page.goto('/tickets');
     
     // Should navigate to tickets page
-    await expect(page).toHaveURL(/.*tickets/);
+    await expect(page).toHaveURL(/\/tickets(\/|$)/);
     
     // Check if the page has basic content
     const pageContent = await page.locator('html').count();
@@ -30,6 +30,7 @@ test.describe('Mobile Navigation - Essential UX', () => {
 
   test('should maintain mobile header cart functionality', async ({ page }) => {
     await page.goto('/tickets');
+    await expect(page).toHaveURL(/\/tickets(\/|$)/);
 
     // Verify header cart is accessible on mobile
     const headerCart = page.locator('.nav-cart-button');

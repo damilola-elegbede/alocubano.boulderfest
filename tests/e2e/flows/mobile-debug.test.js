@@ -71,7 +71,8 @@ test.describe('Mobile Debug Test', () => {
 
   test('check mobile viewport and touch targets', async ({ page }) => {
     await page.goto('/tickets');
-    
+    await expect(page).toHaveURL(/\/tickets\/?$/);
+
     // Check viewport
     const viewport = page.viewportSize();
     console.log('Viewport size:', viewport);
