@@ -4,16 +4,24 @@ on:
   pull_request:
     branches: [main, develop]
     types: [opened, synchronize, reopened, ready_for_review]
+  deployment_status:
+    # Trigger E2E tests when Vercel deployment completes
   workflow_dispatch:
+    inputs:
+      preview_url:
+        description: 'Preview URL for E2E tests (optional)'
+        required: false
+        type: string
 
 concurrency:
-  group: ci-pipeline-${{ github.workflow }}-${{ github.ref }}
+  group: ci-pipeline-${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 permissions:
   contents: read
   pull-requests: write
   deployments: read
+  statuses: write
   # Optional: issues: write  # For PR comments and issue creation
 
 env:
@@ -354,109 +362,350 @@ jobs:
           retention-days: 7
 
   # ============================================================================
-  # E2E TESTS DISABLED - Handled by separate e2e-tests-preview.yml workflow
+  # PREVIEW URL EXTRACTION - For E2E Testing with Vercel Deployments
   # ============================================================================
-  #
-  # The E2E testing has been moved to a dedicated workflow (e2e-tests-preview.yml)
-  # to prevent duplicate test execution and conflicts. The dedicated workflow:
-  #
-  # - Triggers on deployment_status (when Vercel deployments succeed)
-  # - Uses modern Vercel Preview Deployments approach
-  # - Runs 12 comprehensive Playwright tests
-  # - Provides better browser matrix support
-  # - Eliminates port conflicts and server management complexity
-  #
-  # This CI pipeline now focuses on:
-  # - Unit tests (fast feedback)
-  # - Integration tests (API contracts)
-  # - E2E tests are handled separately and asynchronously
-  #
-  # To re-enable E2E tests in this pipeline, uncomment the job below and
-  # update the summary job dependencies to include e2e-tests again.
-  # ============================================================================
+  extract-preview-url:
+    name: "🔗 Extract Preview URL"
+    runs-on: ubuntu-latest
+    if: github.event_name == 'deployment_status' && github.event.deployment_status.state == 'success'
+    outputs:
+      preview_url: ${{ steps.extract_url.outputs.preview_url }}
+      commit_sha: ${{ steps.extract_url.outputs.commit_sha }}
+      pr_number: ${{ steps.extract_url.outputs.pr_number }}
 
-  # e2e-tests:
-  #   name: "🎭 E2E Tests"
-  #   runs-on: ubuntu-latest
-  #   timeout-minutes: 15  # E2E tests can take longer due to browser automation
-  #   needs: [unit-tests, integration-tests]  # Run only after previous tests pass
-  #   if: github.event_name == 'pull_request'  # Only run on PR events
-  #   outputs:
-  #     total_tests: ${{ steps.e2e-test.outputs.total_tests }}
-  #     passing_tests: ${{ steps.e2e-test.outputs.passing_tests }}
-  #     failing_tests: ${{ steps.e2e-test.outputs.failing_tests }}
-  #     duration: ${{ steps.e2e-test.outputs.duration }}
-  #     preview_url: ${{ steps.wait-for-vercel.outputs.url }}
-  #
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       browser: ['chromium', 'firefox'] # Fixed: removed webkit due to CI resource constraints
-  #
-  #   env:
-  #     # PLAYWRIGHT_BROWSERS_PATH: Fixed browser caching path for better matrix handling
-  #     PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.playwright-browsers
-  #     # Admin Authentication Test Variables
-  #     TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
-  #     ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
-  #     ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
-  #     # Database Configuration (using repository variable for URL)
-  #     TURSO_DATABASE_URL: ${{ vars.TURSO_DATABASE_URL }}
-  #     TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
-  #     # Google Drive Service Account Configuration
-  #     GOOGLE_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
-  #     GOOGLE_PRIVATE_KEY: ${{ secrets.GOOGLE_PRIVATE_KEY }}
-  #     GOOGLE_DRIVE_GALLERY_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_GALLERY_FOLDER_ID }}
-  #     # GitHub Token (automatically provided by GitHub Actions)
-  #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #
-  #   steps:
-  #     - name: "📥 Checkout Code"
-  #       uses: actions/checkout@v4
-  #       with:
-  #         fetch-depth: 0
-  #
-  #     - name: "🔧 Setup Node.js"
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         node-version: ${{ env.NODE_VERSION }}
-  #         cache: 'npm'
-  #         cache-dependency-path: package-lock.json
-  #
-  #     - name: "📦 Install Dependencies"
-  #       run: npm ci --prefer-offline --no-audit --no-fund
-  #       env:
-  #         NGROK_SKIP_DOWNLOAD: true
-  #
-  #     - name: "🧩 Cache Playwright Browsers"
-  #       uses: actions/cache@v4
-  #       with:
-  #         path: .playwright-browsers
-  #         # Fixed: More specific cache key per browser for better matrix handling
-  #         key: ${{ runner.os }}-playwright-${{ matrix.browser }}-${{ hashFiles('package-lock.json') }}-v2
-  #         restore-keys: |
-  #           ${{ runner.os }}-playwright-${{ matrix.browser }}-
-  #           ${{ runner.os }}-playwright-
-  #
-  #     - name: "🎭 Install Playwright Browsers"
-  #       run: |
-  #         # Fixed: Install only the specific browser for this matrix job
-  #         echo "🔄 Installing Playwright browser: ${{ matrix.browser }}..."
-  #         npx playwright install --with-deps ${{ matrix.browser }}
-  #         echo "✅ Browser installed: ${{ matrix.browser }}"
-  #
-  #   [... rest of e2e-tests job commented out ...]
+    steps:
+      - name: "🔍 Extract Deployment Info"
+        id: extract_url
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🔗 Extracting Preview URL from Deployment"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+          PREVIEW_URL="${{ github.event.deployment_status.target_url }}"
+          COMMIT_SHA="${{ github.event.deployment.sha }}"
+          ENVIRONMENT="${{ github.event.deployment.environment }}"
+
+          echo "📌 Deployment Environment: $ENVIRONMENT"
+          echo "🔗 Preview URL: $PREVIEW_URL"
+          echo "📝 Commit SHA: $COMMIT_SHA"
+
+          # Extract PR number from deployment ref
+          DEPLOYMENT_REF="${{ github.event.deployment.ref }}"
+          if [[ "$DEPLOYMENT_REF" =~ ^refs/pull/([0-9]+)/ ]]; then
+            PR_NUMBER="${BASH_REMATCH[1]}"
+            echo "🔢 PR Number: $PR_NUMBER"
+          else
+            echo "⚠️ Could not extract PR number from ref: $DEPLOYMENT_REF"
+            PR_NUMBER=""
+          fi
+
+          # Set outputs
+          echo "preview_url=$PREVIEW_URL" >> $GITHUB_OUTPUT
+          echo "commit_sha=$COMMIT_SHA" >> $GITHUB_OUTPUT
+          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "✅ Preview URL extracted successfully"
+
+  # ============================================================================
+  # E2E TESTS - With Dynamic Test Matrix and Browser Support
+  # ============================================================================
+  build-test-matrix:
+    name: "📊 Build E2E Test Matrix"
+    runs-on: ubuntu-latest
+    needs: extract-preview-url
+    if: github.event_name == 'deployment_status' || github.event.inputs.preview_url != ''
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      has_tests: ${{ steps.set-matrix.outputs.has_tests }}
+
+    steps:
+      - name: "📥 Checkout Code"
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.extract-preview-url.outputs.commit_sha || github.sha }}
+
+      - name: "🔧 Build Test Matrix"
+        id: set-matrix
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📊 Building E2E Test Execution Matrix"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+          # Discover test files
+          TEST_FILES=$(find tests/e2e/flows -name "*.test.js" -type f | sort)
+
+          # Build browser-test combinations
+          MATRIX_JSON='{"include":['
+          FIRST=true
+
+          for TEST_FILE in $TEST_FILES; do
+            TEST_NAME=$(basename "$TEST_FILE" .test.js)
+
+            # Add combinations for each browser
+            for BROWSER in chromium firefox webkit; do
+              if [ "$FIRST" = true ]; then
+                FIRST=false
+              else
+                MATRIX_JSON+=','
+              fi
+
+              MATRIX_JSON+="{\"browser\":\"$BROWSER\",\"test_suite\":\"$TEST_NAME\",\"test_file\":\"$TEST_FILE\"}"
+            done
+          done
+
+          # Add mobile browser tests for specific suites
+          MOBILE_TESTS=("mobile-registration-experience" "basic-navigation" "gallery-basic")
+          for TEST in "${MOBILE_TESTS[@]}"; do
+            if echo "$TEST_FILES" | grep -q "$TEST.test.js"; then
+              TEST_FILE=$(echo "$TEST_FILES" | grep "$TEST.test.js")
+
+              # Mobile Chrome
+              MATRIX_JSON+=",{\"browser\":\"mobile-chrome\",\"test_suite\":\"$TEST\",\"test_file\":\"$TEST_FILE\"}"
+
+              # Mobile Safari
+              MATRIX_JSON+=",{\"browser\":\"mobile-safari\",\"test_suite\":\"$TEST\",\"test_file\":\"$TEST_FILE\"}"
+            fi
+          done
+
+          MATRIX_JSON+=']}'
+
+          # Count tests
+          TEST_COUNT=$(echo "$TEST_FILES" | wc -l)
+
+          echo "📋 Found $TEST_COUNT test files"
+          echo "🌐 Browsers: chromium, firefox, webkit, mobile-chrome, mobile-safari"
+          echo "📊 Matrix combinations: $(echo "$MATRIX_JSON" | jq '.include | length')"
+
+          # Set outputs
+          echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
+          echo "has_tests=$( [ "$TEST_COUNT" -gt 0 ] && echo "true" || echo "false" )" >> $GITHUB_OUTPUT
+
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "✅ Test matrix built successfully"
+
+  e2e-tests:
+    name: "🎭 E2E: ${{ matrix.test_suite }} (${{ matrix.browser }})"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [extract-preview-url, build-test-matrix]
+    if: (github.event_name == 'deployment_status' || github.event.inputs.preview_url != '') && needs.build-test-matrix.outputs.has_tests == 'true'
+
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.build-test-matrix.outputs.matrix) }}
+
+    env:
+      PREVIEW_URL: ${{ needs.extract-preview-url.outputs.preview_url || github.event.inputs.preview_url }}
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.playwright-browsers
+      # E2E Test Environment Variables
+      TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
+      ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+      ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
+      TURSO_DATABASE_URL: ${{ vars.TURSO_DATABASE_URL }}
+      TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+      GOOGLE_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
+      GOOGLE_PRIVATE_KEY: ${{ secrets.GOOGLE_PRIVATE_KEY }}
+      GOOGLE_DRIVE_GALLERY_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_GALLERY_FOLDER_ID }}
+      # Stripe Test Credentials
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+      STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+      # Timeout Configuration
+      E2E_STARTUP_TIMEOUT: ${{ vars.E2E_STARTUP_TIMEOUT || '60000' }}
+      E2E_TEST_TIMEOUT: ${{ vars.E2E_TEST_TIMEOUT || '120000' }}
+      E2E_ACTION_TIMEOUT: ${{ vars.E2E_ACTION_TIMEOUT || '30000' }}
+      E2E_NAVIGATION_TIMEOUT: ${{ vars.E2E_NAVIGATION_TIMEOUT || '30000' }}
+      E2E_WEBSERVER_TIMEOUT: ${{ vars.E2E_WEBSERVER_TIMEOUT || '180000' }}
+      E2E_EXPECT_TIMEOUT: ${{ vars.E2E_EXPECT_TIMEOUT || '10000' }}
+      E2E_HEALTH_CHECK_INTERVAL: ${{ vars.E2E_HEALTH_CHECK_INTERVAL || '2000' }}
+
+    steps:
+      - name: "📥 Checkout Code"
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.extract-preview-url.outputs.commit_sha || github.sha }}
+
+      - name: "🔧 Setup Node.js"
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: "📦 Install Dependencies"
+        run: |
+          npm ci --prefer-offline --no-audit --no-fund
+        env:
+          NGROK_SKIP_DOWNLOAD: true
+
+      - name: "🧩 Cache Playwright Browsers"
+        uses: actions/cache@v4
+        with:
+          path: .playwright-browsers
+          key: ${{ runner.os }}-playwright-${{ matrix.browser }}-${{ hashFiles('package-lock.json') }}-v3
+          restore-keys: |
+            ${{ runner.os }}-playwright-${{ matrix.browser }}-
+
+      - name: "🎭 Install Playwright Browser"
+        run: |
+          # Map mobile browsers to their base browser
+          INSTALL_BROWSER="${{ matrix.browser }}"
+
+          case "${{ matrix.browser }}" in
+            mobile-chrome)
+              INSTALL_BROWSER="chromium"
+              ;;
+            mobile-safari)
+              INSTALL_BROWSER="webkit"
+              ;;
+          esac
+
+          echo "🔄 Installing Playwright browser: $INSTALL_BROWSER"
+          npx playwright install --with-deps "$INSTALL_BROWSER"
+          echo "✅ Browser installed: $INSTALL_BROWSER"
+
+      - name: "🎯 Run E2E Test: ${{ matrix.test_suite }}"
+        id: run-test
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🎭 Running E2E Test Suite"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📝 Test: ${{ matrix.test_suite }}"
+          echo "🌐 Browser: ${{ matrix.browser }}"
+          echo "🔗 Preview URL: $PREVIEW_URL"
+          echo "📁 Test File: ${{ matrix.test_file }}"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+          # Map browser to Playwright project
+          BROWSER_PROJECT="${{ matrix.browser }}"
+          case "${{ matrix.browser }}" in
+            mobile-chrome)
+              BROWSER_PROJECT="Mobile Chrome"
+              ;;
+            mobile-safari)
+              BROWSER_PROJECT="Mobile Safari"
+              ;;
+          esac
+
+          # Run the test
+          npx playwright test "${{ matrix.test_file }}" \
+            --project="$BROWSER_PROJECT" \
+            --reporter=list \
+            --retries=2 \
+            || TEST_EXIT_CODE=$?
+
+          # Handle results
+          if [ "${TEST_EXIT_CODE:-0}" -eq 0 ]; then
+            echo "✅ Test passed: ${{ matrix.test_suite }} on ${{ matrix.browser }}"
+            echo "status=passed" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Test failed: ${{ matrix.test_suite }} on ${{ matrix.browser }}"
+            echo "status=failed" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      - name: "📸 Upload Test Artifacts"
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-artifacts-${{ matrix.test_suite }}-${{ matrix.browser }}
+          path: |
+            playwright-report/
+            test-results/
+            screenshots/
+          retention-days: 7
+
+  # ============================================================================
+  # E2E TEST RESULTS COLLECTION
+  # ============================================================================
+  e2e-results:
+    name: "📊 E2E Test Results"
+    runs-on: ubuntu-latest
+    needs: [extract-preview-url, e2e-tests]
+    if: always() && (github.event_name == 'deployment_status' || github.event.inputs.preview_url != '')
+
+    steps:
+      - name: "📊 Post E2E Results to PR"
+        if: needs.extract-preview-url.outputs.pr_number != ''
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = '${{ needs.extract-preview-url.outputs.pr_number }}';
+            const previewUrl = '${{ needs.extract-preview-url.outputs.preview_url }}';
+
+            // Analyze job results
+            const jobs = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId
+            });
+
+            const e2eJobs = jobs.data.jobs.filter(job => job.name.startsWith('🎭 E2E:'));
+            const passedJobs = e2eJobs.filter(job => job.conclusion === 'success');
+            const failedJobs = e2eJobs.filter(job => job.conclusion === 'failure');
+
+            const overallStatus = failedJobs.length === 0 ? '✅' : '❌';
+            const statusText = failedJobs.length === 0 ? 'PASSED' : 'FAILED';
+
+            // Build results table
+            let resultsTable = `| Test Suite | Browser | Status | Duration |\n|------------|---------|--------|----------|\n`;
+
+            for (const job of e2eJobs) {
+              const match = job.name.match(/E2E: ([\w-]+) \(([\w-]+)\)/);
+              if (match) {
+                const [, testSuite, browser] = match;
+                const status = job.conclusion === 'success' ? '✅' : '❌';
+                const duration = job.completed_at && job.started_at ?
+                  `${Math.round((new Date(job.completed_at) - new Date(job.started_at)) / 1000)}s` :
+                  'N/A';
+
+                resultsTable += `| ${testSuite} | ${browser} | ${status} | ${duration} |\n`;
+              }
+            }
+
+            const comment = `## ${overallStatus} E2E Tests ${statusText}
+
+            ### 🎭 Test Execution Summary
+            - **Preview URL**: ${previewUrl}
+            - **Total Tests**: ${e2eJobs.length}
+            - **Passed**: ${passedJobs.length} ✅
+            - **Failed**: ${failedJobs.length} ❌
+
+            ### 📊 Detailed Results
+            ${resultsTable}
+
+            ### 🌐 Browser Coverage
+            - **Desktop**: Chromium, Firefox, WebKit
+            - **Mobile**: Chrome Mobile, Safari Mobile
+
+            ${failedJobs.length > 0 ? `
+            ### ⚠️ Failed Tests
+            Please review the failed tests and their artifacts in the workflow run.
+            ` : `
+            ### 🎉 All E2E tests passed successfully!
+            The application is working correctly in the preview environment.
+            `}
+
+            [View Full Workflow Run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})
+            `;
+
+            // Post or update comment
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: parseInt(prNumber),
+              body: comment
+            });
 
   summary:
     name: "📊 CI Pipeline Summary"
     runs-on: ubuntu-latest
-    needs: [unit-tests, integration-tests]  # Removed e2e-tests dependency
-    if: always()
+    needs: [unit-tests, integration-tests]
+    if: always() && github.event_name == 'pull_request'
 
     steps:
       - name: "📊 Generate CI Pipeline Report"
         uses: actions/github-script@v7
-        if: github.event_name == 'pull_request'
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -475,51 +724,40 @@ jobs:
             ### 🚀 Pipeline Results
             | Stage | Status | Tests | Duration | Details |
             |-------|--------|-------|----------|---------|
-            | **Unit Tests** | ${unitStatus === 'success' ? '✅ Passed' : '❌ Failed'} | ${unitOutputs?.total_tests || 'N/A'} | ${unitOutputs?.duration || 'N/A'} | In-memory SQLite, <2s target, 15min timeout |
-            | **Integration Tests** | ${integrationStatus === 'success' ? '✅ Passed' : '❌ Failed'} | ${integrationOutputs?.total_tests || 'N/A'} | ${integrationOutputs?.duration || 'N/A'} | File SQLite, <5min limit, with migrations |
-            | **E2E Tests** | ⚙️ Separate Workflow | See e2e-tests-preview.yml | See separate workflow | Vercel Preview Deployments, Production-like environment |
+            | **Unit Tests** | ${unitStatus === 'success' ? '✅ Passed' : '❌ Failed'} | ${unitOutputs?.total_tests || 'N/A'} | ${unitOutputs?.duration || 'N/A'} | In-memory SQLite, <2s target, Node 20.x & 22.x |
+            | **Integration Tests** | ${integrationStatus === 'success' ? '✅ Passed' : '❌ Failed'} | ${integrationOutputs?.total_tests || 'N/A'} | ${integrationOutputs?.duration || 'N/A'} | File SQLite, <5min limit, Node 20.x & 22.x |
+            | **E2E Tests** | ⏳ Pending | 12 test suites × 5 browsers | Runs on deployment | Triggered by Vercel deployment completion |
 
-            ### 🎯 E2E Testing Architecture
-            - **Dedicated Workflow**: E2E tests run in separate \`e2e-tests-preview.yml\` workflow
-            - **Trigger**: Runs on successful Vercel Preview Deployments (\`deployment_status\`)
-            - **Environment**: Real production environment via Vercel Preview Deployments
-            - **Tests**: 12 comprehensive Playwright tests across multiple browsers
-            - **Benefits**: No duplicate execution, eliminates port conflicts, modern approach
+            ### 🎯 Unified CI/CD Architecture
+            - **Pull Request Tests**: Unit + Integration tests run immediately on PR
+            - **E2E Tests**: Automatically triggered when Vercel deployment succeeds
+            - **Single Workflow**: All testing consolidated into unified CI Pipeline
+            - **Smart Triggers**: Different test stages activate based on event type
+            - **Browser Matrix**: Chromium, Firefox, WebKit, Mobile Chrome, Mobile Safari
 
             ### ⚙️ Pipeline Features
+            - **Multi-Node Support**: Tests run on Node.js 20.x and 22.x
             - **Sequential Execution**: Each stage runs only after previous stages pass
             - **Quality Gates**: Unit and Integration tests must pass for PR approval
-            - **Timeout Controls**: 15min unit, 5min integration limits
-            - **Database Isolation**: In-memory (unit) → File (integration)
-            - **Environment Progression**: Local → Isolated testing
+            - **Deployment-Triggered E2E**: E2E tests run automatically on preview deployments
+            - **Database Isolation**: In-memory (unit) → File (integration) → Production (E2E)
             - **Dependency Caching**: NPM dependencies cached for faster execution
             - **Automated Cleanup**: Database and artifact cleanup after tests
-            - **Separate E2E Testing**: Dedicated workflow prevents conflicts and duplication
-
-            ### 🔧 Environment Configuration
-            - **Node.js**: 20.x with optimized memory allocation (4GB base)
-            - **Databases**: SQLite in-memory (unit) → file-based (integration)
-            - **Timeouts**: Progressive timeout increases: unit (10s) → integration (60s)
-            - **Caching**: NPM dependencies and Node modules
-            - **Security**: Test credentials isolated from production
-            - **Parsing**: Robust test output parsing for Vitest framework
 
             ${overallStatus === '✅' ?
-              '### 🎉 All pipeline stages passed successfully!' :
+              '### 🎉 Unit and Integration tests passed!' :
               '### ⚠️ Pipeline failures detected - review workflow output'}
 
             ### 📋 Next Steps
-            ${unitStatus !== 'success' ? '- ❌ Fix failing unit tests (subsequent stages skipped)\n' : ''}
-            ${unitStatus === 'success' && integrationStatus !== 'success' ? '- ❌ Review integration test failures and database setup\n' : ''}
-            ${overallStatus === '✅' ? '- ✅ Pipeline ready for deployment - unit and integration tests passed\n- 🎭 E2E tests will run automatically via separate workflow on deployment\n' : ''}
+            ${unitStatus !== 'success' ? '- ❌ Fix failing unit tests\n' : ''}
+            ${unitStatus === 'success' && integrationStatus !== 'success' ? '- ❌ Fix integration test failures\n' : ''}
+            ${overallStatus === '✅' ? '- ✅ Ready for deployment - E2E tests will run automatically when Vercel deployment completes\n' : ''}
 
-            ### 🔄 Recent Improvements
-            - **E2E Separation**: E2E tests moved to dedicated workflow to prevent conflicts
-            - **Modern Architecture**: Eliminated duplicate E2E execution across workflows
-            - **Vercel Integration**: E2E tests use modern Preview Deployment approach
-            - **Enhanced Reporting**: Clear separation between CI pipeline and E2E testing
-            - **Optimized Performance**: Cached dependencies and faster execution
-            - **Conflict Resolution**: Single E2E workflow prevents parallel execution issues
+            ### 🔄 Workflow Consolidation
+            - **Unified Pipeline**: All tests now in single CI Pipeline workflow
+            - **Event-Based Execution**: PR tests → Deploy → E2E tests
+            - **No Duplicate Runs**: Smart conditional logic prevents redundant execution
+            - **Streamlined Maintenance**: Single workflow file to maintain
             `;
 
             // Find existing comment
@@ -561,21 +799,21 @@ jobs:
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "🧪 Unit Tests: $UNIT_STATUS"
           echo "🔗 Integration Tests: $INTEGRATION_STATUS"
-          echo "🎭 E2E Tests: Handled by separate workflow"
+          echo "🎭 E2E Tests: Will run on deployment"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
           if [ "$UNIT_STATUS" = "success" ] && [ "$INTEGRATION_STATUS" = "success" ]; then
             echo "✅ CI PIPELINE QUALITY GATES PASSED - Ready for deployment"
             echo "🎉 This PR meets CI pipeline requirements:"
-            echo "   - Unit tests: Fast feedback loop validated"
-            echo "   - Integration tests: API contracts verified"
-            echo "   - E2E tests: Will be validated separately via e2e-tests-preview.yml"
+            echo "   - Unit tests: Fast feedback loop validated (Node 20.x & 22.x)"
+            echo "   - Integration tests: API contracts verified (Node 20.x & 22.x)"
+            echo "   - E2E tests: Will run automatically when Vercel deployment completes"
             echo ""
-            echo "📋 E2E Testing Notes:"
-            echo "   - E2E tests run in dedicated workflow (e2e-tests-preview.yml)"
-            echo "   - Triggers on successful Vercel Preview Deployments"
-            echo "   - Uses production-like environment for realistic testing"
-            echo "   - Prevents duplicate test execution and workflow conflicts"
+            echo "📋 Unified Pipeline Benefits:"
+            echo "   - All tests in single CI Pipeline workflow"
+            echo "   - E2E tests trigger automatically on deployment_status"
+            echo "   - No duplicate test execution or conflicts"
+            echo "   - Streamlined workflow maintenance"
             exit 0
           else
             echo "❌ CI PIPELINE QUALITY GATE FAILURE - Deployment blocked"
@@ -584,6 +822,6 @@ jobs:
             [ "$INTEGRATION_STATUS" != "success" ] && echo "   - Integration tests failed or skipped"
             echo "📋 Action required: Fix failing tests before deployment"
             echo ""
-            echo "ℹ️  Note: E2E tests are handled separately and do not block this pipeline"
+            echo "ℹ️  E2E tests will only run after unit and integration tests pass"
             exit 1
           fi
