@@ -155,17 +155,19 @@ async function cleanupResources() {
     try {
       log("🧹 Cleaning up database connections...", colors.blue);
 
-      // TODO: Implement proper cleanup in MigrationSystem
-      // Currently, MigrationSystem lacks explicit cleanup methods
-      // This is a critical gap that should be addressed:
-      //
-      // if (typeof globalMigrationSystem.cleanup === 'function') {
-      //   await globalMigrationSystem.cleanup();
-      // }
-      //
-      // if (typeof globalMigrationSystem.closeAllConnections === 'function') {
-      //   await globalMigrationSystem.closeAllConnections();
-      // }
+      // Implement proper cleanup using the cleanup methods
+      if (typeof globalMigrationSystem.cleanup === 'function') {
+        await globalMigrationSystem.cleanup();
+      }
+
+      if (typeof globalMigrationSystem.closeAllConnections === 'function') {
+        await globalMigrationSystem.closeAllConnections();
+      }
+
+      // Also try the legacy method
+      if (typeof globalMigrationSystem.closeConnection === 'function') {
+        await globalMigrationSystem.closeConnection();
+      }
 
       log("✅ Resource cleanup completed", colors.green);
     } catch (cleanupError) {
@@ -310,7 +312,7 @@ async function runVercelBuild() {
       // If we have pending migrations, let them run first before checking
       if (status.executed > 0 && status.pending === 0) {
         try {
-          const client = await globalMigrationSystem.db.ensureInitialized();
+          const client = await globalMigrationSystem.ensureDbClient();
           const tableCheck = await client.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('tickets', 'transactions', 'registrations', 'events') ORDER BY name"
           );
@@ -358,7 +360,7 @@ async function runVercelBuild() {
 
       // Verify tables actually exist after migration
       log("🔍 Verifying database state after migrations...", colors.blue);
-      const client = await globalMigrationSystem.db.ensureInitialized();
+      const client = await globalMigrationSystem.ensureDbClient();
 
       const tableCheck = await client.execute(
         "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
