@@ -16,13 +16,17 @@ import { createEnterpriseDatabaseClient, getEnterpriseDatabaseService, resetEnte
 import { EnterpriseMigration, MIGRATION_PHASES } from '../../scripts/migrate-to-enterprise.js';
 import { DeploymentHealthCheck } from '../../scripts/deployment-health-check.js';
 import { PlatformTools } from '../../scripts/platform-tools.js';
+import { resetConnectionManager } from '../../lib/connection-manager.js';
+import { resetDatabaseInstance } from '../../lib/database.js';
 
 describe('Enterprise Database Integration', () => {
   beforeEach(async () => {
     // Reset all singletons before each test
     resetConfiguration();
     resetFeatureFlags();
+    await resetDatabaseInstance();
     await resetEnterpriseDatabaseService();
+    await resetConnectionManager();
 
     // Mock environment for testing
     vi.stubEnv('NODE_ENV', 'test');
