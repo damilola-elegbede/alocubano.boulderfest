@@ -188,4 +188,30 @@ async function handler(req, res) {
   }
 }
 
-export default withSecurityHeaders(authService.requireAuth(handler));
+// Wrap the entire middleware chain in an error-handling function
+// to ensure all errors are returned as JSON
+async function safeHandler(req, res) {
+  try {
+    // Build the middleware chain inside the try-catch
+    // This ensures any initialization errors are caught
+    const securedHandler = withSecurityHeaders(authService.requireAuth(handler));
+
+    // Execute the secured handler
+    return await securedHandler(req, res);
+  } catch (error) {
+    console.error('Fatal error in transactions endpoint:', error);
+
+    // Always return JSON error response
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: 'Internal server error',
+        message: process.env.NODE_ENV === 'development' || process.env.VERCEL_ENV === 'preview'
+          ? error.message
+          : 'A server error occurred while processing your request',
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+}
+
+export default safeHandler;

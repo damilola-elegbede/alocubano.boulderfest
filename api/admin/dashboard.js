@@ -59,7 +59,22 @@ async function handler(req, res) {
       statsParams.push(eventId);
     }
     
-    const stats = await db.execute(statsQuery, statsParams);
+    const statsResult = await db.execute(statsQuery, statsParams);
+
+    // Handle empty results gracefully
+    const stats = statsResult.rows[0] || {
+      total_tickets: 0,
+      checked_in: 0,
+      total_orders: 0,
+      total_revenue: 0,
+      workshop_tickets: 0,
+      vip_tickets: 0,
+      today_sales: 0,
+      qr_generated: 0,
+      apple_wallet_users: 0,
+      google_wallet_users: 0,
+      web_only_users: 0
+    };
 
     // Get recent registrations with event filtering
     let recentRegistrationsQuery = `
@@ -155,10 +170,10 @@ async function handler(req, res) {
     }
 
     res.status(200).json({
-      stats: stats.rows[0],
-      recentRegistrations: recentRegistrations.rows,
-      ticketBreakdown: ticketBreakdown.rows,
-      dailySales: dailySales.rows,
+      stats: stats,
+      recentRegistrations: recentRegistrations.rows || [],
+      ticketBreakdown: ticketBreakdown.rows || [],
+      dailySales: dailySales.rows || [],
       eventInfo,
       eventId,
       hasEventFiltering: {
@@ -183,5 +198,30 @@ async function handler(req, res) {
   }
 }
 
-// Wrap with auth middleware
-export default withSecurityHeaders(authService.requireAuth(handler));
+// Wrap the entire middleware chain in an error-handling function
+// to ensure all errors are returned as JSON
+async function safeHandler(req, res) {
+  try {
+    // Build the middleware chain inside the try-catch
+    // This ensures any initialization errors are caught
+    const securedHandler = withSecurityHeaders(authService.requireAuth(handler));
+
+    // Execute the secured handler
+    return await securedHandler(req, res);
+  } catch (error) {
+    console.error('Fatal error in dashboard endpoint:', error);
+
+    // Always return JSON error response
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: 'Internal server error',
+        message: process.env.NODE_ENV === 'development' || process.env.VERCEL_ENV === 'preview'
+          ? error.message
+          : 'A server error occurred while processing your request',
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+}
+
+export default safeHandler;

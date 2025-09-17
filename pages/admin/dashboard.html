@@ -271,6 +271,11 @@
       function displayStats(stats) {
         const statsGrid = document.getElementById("statsGrid");
 
+        // Calculate percentage safely when division by zero might occur
+        const checkinPercentage = stats.total_tickets > 0
+          ? Math.round((stats.checked_in / stats.total_tickets) * 100)
+          : 0;
+
         statsGrid.innerHTML = `
                 <div class="admin-stat-card">
                     <h3 class="stat-label">Total Tickets</h3>
@@ -279,7 +284,7 @@
                 <div class="admin-stat-card">
                     <h3 class="stat-label">Checked In</h3>
                     <div class="stat-number">${stats.checked_in || 0}</div>
-                    <div class="stat-label admin-mt-sm">${Math.round((stats.checked_in / stats.total_tickets) * 100) || 0}%</div>
+                    <div class="stat-label admin-mt-sm">${checkinPercentage}%</div>
                 </div>
                 <div class="admin-stat-card">
                     <h3 class="stat-label">Total Revenue</h3>
