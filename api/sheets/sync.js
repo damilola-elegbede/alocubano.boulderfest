@@ -85,8 +85,9 @@ async function handler(req, res) {
 }
 
 // Require authentication and CSRF protection
+// Order is important: auth must run before CSRF to set req.admin
 export default withSecurityHeaders(
-  csrfService.validateCSRF(
-    authService.requireAuth(handler)
+  authService.requireAuth(
+    csrfService.validateCSRF(handler)
   )
 );
