@@ -45,6 +45,32 @@ class MigrationSystem {
     }
   }
 
+  /**
+   * Comprehensive cleanup method for resources
+   * CRITICAL: This method ensures all database connections are properly closed
+   */
+  async cleanup() {
+    try {
+      if (this.dbClient) {
+        // Try to close the connection gracefully
+        if (typeof this.dbClient.close === 'function') {
+          await this.dbClient.close();
+        }
+        this.dbClient = null;
+      }
+    } catch (error) {
+      // Log cleanup error but don't throw - cleanup should be non-throwing
+      console.warn('Warning: Database cleanup error:', error.message);
+    }
+  }
+
+  /**
+   * Alias for cleanup - ensures compatibility with build script expectations
+   */
+  async closeAllConnections() {
+    await this.cleanup();
+  }
+
   debugLog(message) {
     if (this.debug) {
       console.log(message);
