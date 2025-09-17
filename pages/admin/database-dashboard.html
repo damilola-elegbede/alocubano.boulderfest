@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Monitoring Dashboard - A Lo Cubano Boulder Fest Admin</title>
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/admin.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <style>
+        /* Database Dashboard Specific Styles */
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        .dashboard-header {
+            background: var(--color-bg-secondary);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border-left: 4px solid var(--color-primary);
+        }
+
+        .status-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .status-card {
+            background: var(--color-bg-secondary);
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .status-card.healthy {
+            border-color: #22c55e;
+            background: rgba(34, 197, 94, 0.1);
+        }
+
+        .status-card.warning {
+            border-color: #f59e0b;
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .status-card.critical {
+            border-color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .status-card h3 {
+            margin: 0 0 0.5rem 0;
+            color: var(--color-text-primary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 0.5rem 0;
+        }
+
+        .status-trend {
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .dashboard-panel {
+            background: var(--color-bg-secondary);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .panel-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--color-text-primary);
+            margin: 0;
+        }
+
+        .panel-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .refresh-btn {
+            background: var(--color-primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .refresh-btn:hover {
+            background: var(--color-primary-dark);
+        }
+
+        .refresh-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 1rem;
+        }
+
+        .metrics-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .metrics-table th,
+        .metrics-table td {
+            text-align: left;
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .metrics-table th {
+            background: var(--color-bg-primary);
+            font-weight: 600;
+            color: var(--color-text-primary);
+        }
+
+        .alert-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            border-radius: 4px;
+            border-left: 4px solid;
+        }
+
+        .alert-item.critical {
+            border-left-color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .alert-item.warning {
+            border-left-color: #f59e0b;
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .alert-message {
+            flex: 1;
+            font-size: 0.9rem;
+        }
+
+        .alert-time {
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+
+        .recommendations {
+            background: var(--color-bg-primary);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .recommendation-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 4px;
+            border-left: 4px solid var(--color-primary);
+            background: var(--color-bg-secondary);
+        }
+
+        .recommendation-priority {
+            background: var(--color-primary);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-right: 1rem;
+            flex-shrink: 0;
+        }
+
+        .recommendation-content {
+            flex: 1;
+        }
+
+        .recommendation-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .recommendation-action {
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--color-text-secondary);
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid #ef4444;
+            border-radius: 4px;
+            padding: 1rem;
+            color: #ef4444;
+            text-align: center;
+        }
+
+        .auto-refresh {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--color-text-secondary);
+        }
+
+        .auto-refresh input[type="checkbox"] {
+            margin: 0;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .status-overview {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .chart-container {
+                height: 250px;
+            }
+        }
+
+        /* Loading spinner */
+        .spinner {
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid var(--color-primary);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 0.5rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Navigation -->
+        <nav class="admin-nav">
+            <div class="nav-brand">
+                <h1>A Lo Cubano Admin</h1>
+            </div>
+            <div class="nav-links">
+                <a href="/pages/admin/dashboard.html">Dashboard</a>
+                <a href="/pages/admin/registrations.html">Registrations</a>
+                <a href="/pages/admin/tickets.html">Tickets</a>
+                <a href="/pages/admin/database-dashboard.html" class="active">Database</a>
+                <a href="/pages/admin/analytics.html">Analytics</a>
+            </div>
+            <div class="nav-user">
+                <button onclick="logout()" class="logout-btn">Logout</button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <div class="dashboard-container">
+                <!-- Dashboard Header -->
+                <div class="dashboard-header">
+                    <h2>Database Monitoring Dashboard</h2>
+                    <p>Enterprise connection management system monitoring and performance analytics</p>
+                    <div class="auto-refresh">
+                        <input type="checkbox" id="autoRefresh" checked>
+                        <label for="autoRefresh">Auto-refresh (30s)</label>
+                        <span id="lastUpdated"></span>
+                    </div>
+                </div>
+
+                <!-- Status Overview -->
+                <div class="status-overview" id="statusOverview">
+                    <div class="status-card" id="overallHealthCard">
+                        <h3>Overall Health</h3>
+                        <div class="status-value" id="overallHealth">Loading...</div>
+                        <div class="status-trend" id="healthTrend"></div>
+                    </div>
+                    <div class="status-card" id="poolUtilizationCard">
+                        <h3>Pool Utilization</h3>
+                        <div class="status-value" id="poolUtilization">Loading...</div>
+                        <div class="status-trend" id="utilizationTrend"></div>
+                    </div>
+                    <div class="status-card" id="activeAlertsCard">
+                        <h3>Active Alerts</h3>
+                        <div class="status-value" id="activeAlerts">Loading...</div>
+                        <div class="status-trend" id="alertsTrend"></div>
+                    </div>
+                    <div class="status-card" id="errorRateCard">
+                        <h3>Error Rate</h3>
+                        <div class="status-value" id="errorRate">Loading...</div>
+                        <div class="status-trend" id="errorTrend"></div>
+                    </div>
+                </div>
+
+                <!-- Dashboard Grid -->
+                <div class="dashboard-grid">
+                    <!-- Connection Pool Chart -->
+                    <div class="dashboard-panel">
+                        <div class="panel-header">
+                            <h3 class="panel-title">Connection Pool Utilization</h3>
+                            <div class="panel-controls">
+                                <button class="refresh-btn" onclick="refreshChart('poolChart')">
+                                    <span class="refresh-icon">⟳</span> Refresh
+                                </button>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="poolChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Performance Metrics Chart -->
+                    <div class="dashboard-panel">
+                        <div class="panel-header">
+                            <h3 class="panel-title">Performance Metrics</h3>
+                            <div class="panel-controls">
+                                <button class="refresh-btn" onclick="refreshChart('performanceChart')">
+                                    <span class="refresh-icon">⟳</span> Refresh
+                                </button>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="performanceChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Circuit Breaker Status -->
+                    <div class="dashboard-panel">
+                        <div class="panel-header">
+                            <h3 class="panel-title">Circuit Breaker Status</h3>
+                            <div class="panel-controls">
+                                <button class="refresh-btn" onclick="refreshCircuitBreakerStatus()">
+                                    <span class="refresh-icon">⟳</span> Refresh
+                                </button>
+                            </div>
+                        </div>
+                        <div id="circuitBreakerStatus">
+                            <div class="loading">Loading circuit breaker status...</div>
+                        </div>
+                    </div>
+
+                    <!-- Active Alerts -->
+                    <div class="dashboard-panel">
+                        <div class="panel-header">
+                            <h3 class="panel-title">Active Alerts</h3>
+                            <div class="panel-controls">
+                                <button class="refresh-btn" onclick="refreshAlerts()">
+                                    <span class="refresh-icon">⟳</span> Refresh
+                                </button>
+                            </div>
+                        </div>
+                        <div id="activeAlertsList">
+                            <div class="loading">Loading alerts...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Performance Metrics Table -->
+                <div class="dashboard-panel">
+                    <div class="panel-header">
+                        <h3 class="panel-title">Detailed Metrics</h3>
+                        <div class="panel-controls">
+                            <button class="refresh-btn" onclick="refreshMetricsTable()">
+                                <span class="refresh-icon">⟳</span> Refresh
+                            </button>
+                        </div>
+                    </div>
+                    <div id="metricsTableContainer">
+                        <div class="loading">Loading metrics...</div>
+                    </div>
+                </div>
+
+                <!-- Recommendations -->
+                <div class="recommendations">
+                    <h3>Operational Recommendations</h3>
+                    <div id="recommendationsList">
+                        <div class="loading">Loading recommendations...</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Dashboard state
+        let charts = {};
+        let refreshInterval = null;
+        let isRefreshing = false;
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDashboard();
+            setupAutoRefresh();
+        });
+
+        async function initializeDashboard() {
+            try {
+                await loadDashboardData();
+                initializeCharts();
+                updateLastUpdatedTime();
+            } catch (error) {
+                console.error('Failed to initialize dashboard:', error);
+                showError('Failed to load dashboard data');
+            }
+        }
+
+        async function loadDashboardData() {
+            if (isRefreshing) return;
+            isRefreshing = true;
+
+            try {
+                // Load health data
+                const healthResponse = await fetch('/api/admin/database-health?includeHistory=false&includePerformance=true');
+                if (!healthResponse.ok) throw new Error('Failed to fetch health data');
+                const healthData = await healthResponse.json();
+
+                // Load metrics data
+                const metricsResponse = await fetch('/api/admin/database-metrics?metrics=all&granularity=medium');
+                if (!metricsResponse.ok) throw new Error('Failed to fetch metrics data');
+                const metricsData = await metricsResponse.json();
+
+                // Update status overview
+                updateStatusOverview(healthData);
+
+                // Update circuit breaker status
+                updateCircuitBreakerStatus(healthData);
+
+                // Update alerts
+                updateActiveAlerts(healthData);
+
+                // Update metrics table
+                updateMetricsTable(metricsData);
+
+                // Update recommendations
+                updateRecommendations(healthData);
+
+                // Update charts
+                updateCharts(metricsData);
+
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                showError('Failed to load dashboard data: ' + error.message);
+            } finally {
+                isRefreshing = false;
+            }
+        }
+
+        function updateStatusOverview(healthData) {
+            // Overall Health
+            const healthCard = document.getElementById('overallHealthCard');
+            const healthValue = document.getElementById('overallHealth');
+            const healthTrend = document.getElementById('healthTrend');
+
+            const status = healthData.health?.status || 'unknown';
+            healthValue.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+            healthCard.className = `status-card ${status}`;
+            healthTrend.textContent = `Uptime: ${formatUptime(healthData.health?.uptime || 0)}`;
+
+            // Pool Utilization
+            const poolCard = document.getElementById('poolUtilizationCard');
+            const poolValue = document.getElementById('poolUtilization');
+            const poolTrend = document.getElementById('utilizationTrend');
+
+            const utilization = healthData.components?.connectionPool?.metrics?.utilization || 0;
+            poolValue.textContent = `${utilization.toFixed(1)}%`;
+            poolCard.className = `status-card ${getUtilizationStatus(utilization)}`;
+            poolTrend.textContent = `${healthData.components?.connectionPool?.metrics?.activeLeases || 0} active`;
+
+            // Active Alerts
+            const alertsCard = document.getElementById('activeAlertsCard');
+            const alertsValue = document.getElementById('activeAlerts');
+            const alertsTrend = document.getElementById('alertsTrend');
+
+            const totalAlerts = healthData.alerts?.total || 0;
+            const criticalAlerts = healthData.alerts?.critical || 0;
+            alertsValue.textContent = totalAlerts;
+            alertsCard.className = `status-card ${getAlertsStatus(criticalAlerts)}`;
+            alertsTrend.textContent = `${criticalAlerts} critical`;
+
+            // Error Rate
+            const errorCard = document.getElementById('errorRateCard');
+            const errorValue = document.getElementById('errorRate');
+            const errorTrend = document.getElementById('errorTrend');
+
+            const errorRate = healthData.components?.connectionPool?.metrics?.errorRate || 0;
+            errorValue.textContent = `${errorRate.toFixed(2)}%`;
+            errorCard.className = `status-card ${getErrorRateStatus(errorRate)}`;
+            errorTrend.textContent = 'Last 24h';
+        }
+
+        function updateCircuitBreakerStatus(healthData) {
+            const container = document.getElementById('circuitBreakerStatus');
+            const cbData = healthData.components?.circuitBreaker;
+
+            if (!cbData) {
+                container.innerHTML = '<div class="error-message">Circuit breaker data unavailable</div>';
+                return;
+            }
+
+            const state = cbData.state || 'UNKNOWN';
+            const isHealthy = cbData.metrics?.isHealthy !== false;
+
+            container.innerHTML = `
+                <div class="metrics-table">
+                    <table style="width: 100%;">
+                        <tr>
+                            <td><strong>State</strong></td>
+                            <td><span class="status-badge ${state.toLowerCase()}">${state}</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Health Status</strong></td>
+                            <td><span class="status-badge ${isHealthy ? 'healthy' : 'unhealthy'}">${isHealthy ? 'Healthy' : 'Unhealthy'}</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Failure Rate</strong></td>
+                            <td>${(cbData.metrics?.failureRate || 0).toFixed(2)}%</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Last Failure</strong></td>
+                            <td>${formatTimeAgo(cbData.metrics?.timeSinceLastFailure)}</td>
+                        </tr>
+                    </table>
+                </div>
+            `;
+        }
+
+        function updateActiveAlerts(healthData) {
+            const container = document.getElementById('activeAlertsList');
+            const alerts = healthData.alerts?.active || [];
+
+            if (alerts.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: var(--color-text-secondary); padding: 2rem;">No active alerts</div>';
+                return;
+            }
+
+            const alertsHtml = alerts.slice(0, 5).map(alert => `
+                <div class="alert-item ${alert.type}">
+                    <div class="alert-message">
+                        <strong>${alert.component}</strong>: ${alert.message}
+                    </div>
+                    <div class="alert-time">${formatTimeAgo(Date.now() - alert.lastSeen)}</div>
+                </div>
+            `).join('');
+
+            container.innerHTML = alertsHtml;
+        }
+
+        function updateMetricsTable(metricsData) {
+            const container = document.getElementById('metricsTableContainer');
+            const current = metricsData.metrics?.current;
+
+            if (!current) {
+                container.innerHTML = '<div class="error-message">Metrics data unavailable</div>';
+                return;
+            }
+
+            container.innerHTML = `
+                <table class="metrics-table">
+                    <thead>
+                        <tr>
+                            <th>Metric</th>
+                            <th>Current Value</th>
+                            <th>Status</th>
+                            <th>Trend</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Connection Pool Utilization</td>
+                            <td>${current.pool?.utilization?.toFixed(1) || 0}%</td>
+                            <td><span class="status-badge ${getUtilizationStatus(current.pool?.utilization || 0)}">${getUtilizationStatus(current.pool?.utilization || 0)}</span></td>
+                            <td>Stable</td>
+                        </tr>
+                        <tr>
+                            <td>Active Connections</td>
+                            <td>${current.pool?.connections || 0}</td>
+                            <td><span class="status-badge healthy">Normal</span></td>
+                            <td>Stable</td>
+                        </tr>
+                        <tr>
+                            <td>Active Leases</td>
+                            <td>${current.pool?.activeLeases || 0}</td>
+                            <td><span class="status-badge healthy">Normal</span></td>
+                            <td>Stable</td>
+                        </tr>
+                        <tr>
+                            <td>Available Connections</td>
+                            <td>${current.pool?.availableConnections || 0}</td>
+                            <td><span class="status-badge healthy">Normal</span></td>
+                            <td>Stable</td>
+                        </tr>
+                        <tr>
+                            <td>Active Alerts</td>
+                            <td>${current.alerts?.active || 0}</td>
+                            <td><span class="status-badge ${getAlertsStatus(current.alerts?.critical || 0)}">${getAlertsStatus(current.alerts?.critical || 0)}</span></td>
+                            <td>Stable</td>
+                        </tr>
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function updateRecommendations(healthData) {
+            const container = document.getElementById('recommendationsList');
+            const recommendations = healthData.recommendations || [];
+
+            if (recommendations.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: var(--color-text-secondary); padding: 2rem;">No recommendations at this time</div>';
+                return;
+            }
+
+            const recsHtml = recommendations.slice(0, 5).map(rec => `
+                <div class="recommendation-item">
+                    <div class="recommendation-priority ${rec.priority}">${rec.priority}</div>
+                    <div class="recommendation-content">
+                        <div class="recommendation-title">${rec.issue}</div>
+                        <div class="recommendation-action">${rec.action}</div>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = recsHtml;
+        }
+
+        function initializeCharts() {
+            // Initialize Pool Utilization Chart
+            const poolCtx = document.getElementById('poolChart').getContext('2d');
+            charts.poolChart = new Chart(poolCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Pool Utilization %',
+                        data: [],
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        },
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'minute'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            // Initialize Performance Chart
+            const perfCtx = document.getElementById('performanceChart').getContext('2d');
+            charts.performanceChart = new Chart(perfCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Error Rate %',
+                        data: [],
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        tension: 0.4,
+                        yAxisID: 'y'
+                    }, {
+                        label: 'Active Connections',
+                        data: [],
+                        borderColor: '#22c55e',
+                        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                        tension: 0.4,
+                        yAxisID: 'y1'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            beginAtZero: true,
+                            grid: {
+                                drawOnChartArea: false,
+                            }
+                        },
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'minute'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateCharts(metricsData) {
+            const timeSeries = metricsData.metrics?.timeSeries || [];
+
+            if (timeSeries.length === 0) return;
+
+            // Update Pool Chart
+            const poolData = timeSeries.map(ts => ({
+                x: new Date(ts.timestamp),
+                y: ts.metrics?.connectionPool?.utilization || 0
+            }));
+
+            charts.poolChart.data.datasets[0].data = poolData;
+            charts.poolChart.update();
+
+            // Update Performance Chart
+            const errorData = timeSeries.map(ts => ({
+                x: new Date(ts.timestamp),
+                y: ts.metrics?.connectionPool?.errorRate || 0
+            }));
+
+            const connectionData = timeSeries.map(ts => ({
+                x: new Date(ts.timestamp),
+                y: ts.metrics?.connectionPool?.totalConnections || 0
+            }));
+
+            charts.performanceChart.data.datasets[0].data = errorData;
+            charts.performanceChart.data.datasets[1].data = connectionData;
+            charts.performanceChart.update();
+        }
+
+        function setupAutoRefresh() {
+            const autoRefreshCheckbox = document.getElementById('autoRefresh');
+
+            autoRefreshCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    startAutoRefresh();
+                } else {
+                    stopAutoRefresh();
+                }
+            });
+
+            // Start auto-refresh by default
+            if (autoRefreshCheckbox.checked) {
+                startAutoRefresh();
+            }
+        }
+
+        function startAutoRefresh() {
+            stopAutoRefresh(); // Clear any existing interval
+            refreshInterval = setInterval(async () => {
+                try {
+                    await loadDashboardData();
+                    updateLastUpdatedTime();
+                } catch (error) {
+                    console.error('Auto-refresh failed:', error);
+                }
+            }, 30000); // 30 seconds
+        }
+
+        function stopAutoRefresh() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+                refreshInterval = null;
+            }
+        }
+
+        function updateLastUpdatedTime() {
+            const lastUpdated = document.getElementById('lastUpdated');
+            lastUpdated.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+        }
+
+        // Refresh functions for individual components
+        async function refreshChart(chartId) {
+            const button = event.target.closest('.refresh-btn');
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner"></span> Refreshing...';
+
+            try {
+                await loadDashboardData();
+                updateLastUpdatedTime();
+            } catch (error) {
+                console.error(`Failed to refresh ${chartId}:`, error);
+            } finally {
+                button.disabled = false;
+                button.innerHTML = '<span class="refresh-icon">⟳</span> Refresh';
+            }
+        }
+
+        async function refreshCircuitBreakerStatus() {
+            const button = event.target.closest('.refresh-btn');
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner"></span> Refreshing...';
+
+            try {
+                await loadDashboardData();
+                updateLastUpdatedTime();
+            } catch (error) {
+                console.error('Failed to refresh circuit breaker status:', error);
+            } finally {
+                button.disabled = false;
+                button.innerHTML = '<span class="refresh-icon">⟳</span> Refresh';
+            }
+        }
+
+        async function refreshAlerts() {
+            const button = event.target.closest('.refresh-btn');
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner"></span> Refreshing...';
+
+            try {
+                await loadDashboardData();
+                updateLastUpdatedTime();
+            } catch (error) {
+                console.error('Failed to refresh alerts:', error);
+            } finally {
+                button.disabled = false;
+                button.innerHTML = '<span class="refresh-icon">⟳</span> Refresh';
+            }
+        }
+
+        async function refreshMetricsTable() {
+            const button = event.target.closest('.refresh-btn');
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner"></span> Refreshing...';
+
+            try {
+                await loadDashboardData();
+                updateLastUpdatedTime();
+            } catch (error) {
+                console.error('Failed to refresh metrics table:', error);
+            } finally {
+                button.disabled = false;
+                button.innerHTML = '<span class="refresh-icon">⟳</span> Refresh';
+            }
+        }
+
+        // Utility functions
+        function getUtilizationStatus(utilization) {
+            if (utilization >= 95) return 'critical';
+            if (utilization >= 85) return 'warning';
+            return 'healthy';
+        }
+
+        function getAlertsStatus(criticalCount) {
+            if (criticalCount > 0) return 'critical';
+            return 'healthy';
+        }
+
+        function getErrorRateStatus(errorRate) {
+            if (errorRate >= 10) return 'critical';
+            if (errorRate >= 5) return 'warning';
+            return 'healthy';
+        }
+
+        function formatUptime(seconds) {
+            const days = Math.floor(seconds / (24 * 3600));
+            const hours = Math.floor((seconds % (24 * 3600)) / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+
+            if (days > 0) return `${days}d ${hours}h`;
+            if (hours > 0) return `${hours}h ${minutes}m`;
+            return `${minutes}m`;
+        }
+
+        function formatTimeAgo(milliseconds) {
+            if (!milliseconds) return 'Never';
+
+            const seconds = Math.floor(milliseconds / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+            const days = Math.floor(hours / 24);
+
+            if (days > 0) return `${days}d ago`;
+            if (hours > 0) return `${hours}h ago`;
+            if (minutes > 0) return `${minutes}m ago`;
+            return `${seconds}s ago`;
+        }
+
+        function showError(message) {
+            // Show error in all main containers
+            const containers = [
+                'statusOverview',
+                'circuitBreakerStatus',
+                'activeAlertsList',
+                'metricsTableContainer',
+                'recommendationsList'
+            ];
+
+            containers.forEach(containerId => {
+                const container = document.getElementById(containerId);
+                if (container) {
+                    container.innerHTML = `<div class="error-message">${message}</div>`;
+                }
+            });
+        }
+
+        // Logout function
+        async function logout() {
+            try {
+                await fetch('/api/admin/logout', { method: 'POST' });
+                window.location.href = '/pages/admin/login.html';
+            } catch (error) {
+                console.error('Logout failed:', error);
+                window.location.href = '/pages/admin/login.html';
+            }
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            stopAutoRefresh();
+        });
+    </script>
+
+    <!-- Additional CSS for status badges -->
+    <style>
+        .status-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .status-badge.healthy {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+
+        .status-badge.warning {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+        }
+
+        .status-badge.critical,
+        .status-badge.unhealthy {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .status-badge.closed {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+
+        .status-badge.open {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .status-badge.half_open {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+        }
+    </style>
+</body>
+</html>

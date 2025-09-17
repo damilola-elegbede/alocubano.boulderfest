@@ -16,14 +16,21 @@ class MigrationSystem {
     this.dbClient = null; // Will be initialized when needed
     this.migrationsDir = path.join(__dirname, "..", "migrations");
     this.debug = process.env.DEBUG_MIGRATION === 'true';
+    this.isClosing = false; // Track cleanup state
+    this.connectionActive = false; // Track if we have an active connection
   }
 
   /**
    * Ensure database client is initialized
    */
   async ensureDbClient() {
+    if (this.isClosing) {
+      throw new Error("Migration system is shutting down - no new operations allowed");
+    }
+
     if (!this.dbClient) {
       this.dbClient = await getDatabaseClient();
+      this.connectionActive = true;
     }
     return this.dbClient;
   }
@@ -50,17 +57,43 @@ class MigrationSystem {
    * CRITICAL: This method ensures all database connections are properly closed
    */
   async cleanup() {
+    // Prevent multiple concurrent cleanup operations
+    if (this.isClosing) {
+      console.log("Migration cleanup already in progress - waiting...");
+      while (this.isClosing) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      return;
+    }
+
+    this.isClosing = true;
+
     try {
-      if (this.dbClient) {
-        // Try to close the connection gracefully
-        if (typeof this.dbClient.close === 'function') {
-          await this.dbClient.close();
-        }
-        this.dbClient = null;
+      if (this.dbClient && this.connectionActive) {
+        console.log("🧹 Closing migration system database connection...");
+
+        // Try to close the connection gracefully with timeout
+        const closeOperation = Promise.race([
+          (async () => {
+            if (typeof this.dbClient.close === 'function') {
+              await this.dbClient.close();
+            }
+          })(),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("Connection close timeout after 5 seconds")), 5000)
+          )
+        ]);
+
+        await closeOperation;
+        console.log("✅ Migration system database connection closed successfully");
       }
     } catch (error) {
       // Log cleanup error but don't throw - cleanup should be non-throwing
-      console.warn('Warning: Database cleanup error:', error.message);
+      console.warn('⚠️  Warning: Migration database cleanup error:', error.message);
+    } finally {
+      this.dbClient = null;
+      this.connectionActive = false;
+      this.isClosing = false;
     }
   }
 
@@ -800,9 +833,19 @@ class MigrationSystem {
    * Verify migration integrity
    */
   async verifyMigrations() {
+    if (this.isClosing) {
+      throw new Error("Cannot verify migrations - system is shutting down");
+    }
+
     console.log("🔍 Verifying migration integrity...");
 
     try {
+      // Ensure we have a valid connection before verification
+      const client = await this.ensureDbClient();
+
+      // Test connection before proceeding
+      await client.execute('SELECT 1 as test');
+
       const [executedMigrations, availableMigrations] = await Promise.all([
         this.getExecutedMigrations(),
         this.getAvailableMigrations(),

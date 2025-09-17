@@ -28,7 +28,10 @@
     "migrate:check": "DOTENV_CONFIG_PATH=.env.local node -r dotenv/config scripts/check-migration-status.js",
     "migrate:vercel": "node scripts/migrate-vercel-build.js",
     "verify-structure": "node scripts/verify-structure.js",
-    "validate-ci-fixes": "node scripts/validate-ci-fixes.js"
+    "validate-ci-fixes": "node scripts/validate-ci-fixes.js",
+    "enterprise:migrate": "DOTENV_CONFIG_PATH=.env.local node -r dotenv/config scripts/migrate-to-enterprise.js",
+    "enterprise:health": "DOTENV_CONFIG_PATH=.env.local node -r dotenv/config scripts/deployment-health-check.js",
+    "enterprise:tools": "DOTENV_CONFIG_PATH=.env.local node -r dotenv/config scripts/platform-tools.js"
   },
   "dependencies": {
     "@libsql/client": "^0.15.14",
