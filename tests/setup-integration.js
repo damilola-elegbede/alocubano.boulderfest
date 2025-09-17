@@ -396,12 +396,15 @@ afterAll(async () => {
 
 // Export database client for tests
 export const getDbClient = async () => {
-  // Always return a fresh client to avoid closed connection issues
-  if (!dbClient) {
-    const { getDatabaseClient } = await import('../lib/database.js');
-    dbClient = await getDatabaseClient();
-  }
-  return dbClient;
+  // ALWAYS get a fresh client from the singleton
+  // Don't cache it as we reset singletons between tests
+  const { getDatabaseClient } = await import('../lib/database.js');
+  const freshClient = await getDatabaseClient();
+
+  // Update the global reference for consistency
+  dbClient = freshClient;
+
+  return freshClient;
 };
 
 // Export secret validation result for tests that need to check availability
