@@ -1,5 +1,5 @@
 import { test, expect } from 'vitest';
-import { getDbClient } from '../setup-integration.js';
+import { getDbClient } from '../../setup-integration.js';
 import { testRequest, generateTestEmail, HTTP_STATUS } from '../../helpers.js';
 
 test('system health check validates critical services', async () => {

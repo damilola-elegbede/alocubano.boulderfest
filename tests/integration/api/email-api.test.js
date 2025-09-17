@@ -81,10 +81,11 @@ describe('Integration: Email API', () => {
 
   afterAll(async () => {
     // Clean up database connections
-     catch (error) {
+    try {
+      // Database cleanup handled by setup-integration.js
+    } catch (error) {
         // Ignore close errors in tests
       }
-    }
   });
 
   beforeEach(async () => {

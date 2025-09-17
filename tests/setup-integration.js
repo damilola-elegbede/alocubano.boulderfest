@@ -166,6 +166,7 @@ export const getTestTimeout = () => Number(process.env.VITEST_TEST_TIMEOUT || co
 
 /**
  * Initialize Database for Integration Tests with Test Isolation
+ * Run migrations once at suite level to improve performance
  */
 const initializeDatabase = async () => {
   try {
@@ -181,14 +182,18 @@ const initializeDatabase = async () => {
     // Import migration system
     const { MigrationSystem } = await import('../scripts/migrate.js');
 
-    // Run migrations with the scoped client
-    console.log('🔄 Running database migrations for integration tests...');
+    // Run migrations with the scoped client ONCE at suite level
+    console.log('🔄 Running database migrations for integration tests (suite-level)...');
     const migrationSystem = new MigrationSystem();
+
+    // Override the migration system to use our scoped client
+    migrationSystem.getClient = async () => dbClient;
+
     const migrationResult = await migrationSystem.runMigrations();
     console.log(`✅ Migration completed: ${migrationResult.executed} executed, ${migrationResult.skipped} skipped`);
 
-    // Mark migration as completed in scope
-    scope.migrationCompleted = true;
+    // Mark migration as completed globally for all test scopes
+    process.env.INTEGRATION_MIGRATIONS_COMPLETED = 'true';
 
     // Verify the connection works
     const testResult = await dbClient.execute('SELECT 1 as test');
@@ -223,6 +228,10 @@ const cleanDatabase = async () => {
     // Get scoped database client for cleaning
     const dbClient = await isolationManager.getScopedDatabaseClient();
 
+    // Temporarily disable foreign key constraints for faster cleanup
+    // We handle the correct order manually to avoid constraint violations
+    await dbClient.execute('PRAGMA foreign_keys = OFF');
+
     // Get all tables from database to avoid checking individual existence
     const tableQuery = await dbClient.execute(
       "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
@@ -230,19 +239,45 @@ const cleanDatabase = async () => {
     const existingTables = new Set(tableQuery.rows.map(row => row.name));
 
     // Clean test data while preserving schema (ordered by foreign key dependencies)
+    // CRITICAL: Child tables MUST be deleted before parent tables to avoid foreign key constraint violations
     const tables = [
-      'email_events',           // Clean child tables first (foreign key dependencies)
-      'email_audit_log',
-      'payment_events',
-      'transaction_items',
-      'qr_validations',
-      'wallet_pass_events',
-      'registrations',         // Then parent tables
-      'transactions',
-      'tickets',
-      'email_subscribers',     // Newsletter system table
-      'newsletter_subscriptions', // Legacy newsletter table
-      'admin_sessions'
+      // Level 1: Tables with foreign keys to other tables (delete first)
+      'email_events',                 // → email_subscribers
+      'email_audit_log',             // General audit table (no FK constraints)
+      'payment_events',              // → transactions
+      'transaction_items',           // → transactions
+      'access_tokens',               // → transactions
+      'qr_validations',              // → tickets
+      'wallet_pass_events',          // → tickets
+      'registration_emails',         // → tickets
+      'admin_mfa_backup_codes',      // → admin_mfa_config
+      'admin_mfa_attempts',          // → admin_mfa_config
+      'admin_mfa_rate_limits',       // → admin_mfa_config
+      'event_settings',              // → events
+      'event_access',                // → events
+      'event_audit_log',             // → events
+      'registrations',               // May reference tickets indirectly
+
+      // Level 2: Tables that are referenced by Level 1 but may reference Level 3
+      'tickets',                     // → transactions (but referenced by qr_validations, wallet_pass_events, etc.)
+
+      // Level 3: Parent tables with no foreign key dependencies (delete last)
+      'transactions',                // Referenced by tickets, transaction_items, payment_events, access_tokens
+      'email_subscribers',           // Referenced by email_events
+      'admin_mfa_config',            // Referenced by admin_mfa_backup_codes, etc.
+      'events',                      // Referenced by event_settings, event_access, event_audit_log
+      'admin_sessions',              // Standalone table
+      'newsletter_subscriptions',    // Legacy newsletter table
+
+      // Additional tables that may exist
+      'wallet_passes',               // Standalone table
+      'performance_metrics',         // Standalone table
+      'image_cache',                 // Standalone table
+      'admin_audit_log',             // Standalone table
+      'featured_photos',             // Standalone table
+      'checkin_sessions',            // Standalone table
+      'health_checks',               // Standalone table
+      'error_logs'                   // Standalone table
     ];
 
     // Batch cleanup using prepared statements for performance
@@ -270,6 +305,9 @@ const cleanDatabase = async () => {
     // Execute cleanup in parallel for better performance
     await Promise.all(cleanupPromises);
     const skippedTables = tables.length - cleanedTables;
+
+    // Re-enable foreign key constraints after cleanup
+    await dbClient.execute('PRAGMA foreign_keys = ON');
 
     console.log(`🧹 Database cleanup completed: ${cleanedTables} tables cleaned, ${skippedTables} skipped`);
   } catch (error) {

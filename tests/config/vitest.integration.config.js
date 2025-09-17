@@ -14,9 +14,9 @@ export default defineConfig({
   test: {
     environment: 'node',
     
-    // Temporarily increased timeouts while optimizing (will reduce after performance fixes)
-    testTimeout: Number(process.env.VITEST_TEST_TIMEOUT || (process.env.CI === 'true' ? 120000 : 90000)),
-    hookTimeout: Number(process.env.VITEST_HOOK_TIMEOUT || (process.env.CI === 'true' ? 30000 : 20000)),
+    // Optimized timeouts after performance improvements
+    testTimeout: Number(process.env.VITEST_TEST_TIMEOUT || (process.env.CI === 'true' ? 60000 : 30000)),
+    hookTimeout: Number(process.env.VITEST_HOOK_TIMEOUT || (process.env.CI === 'true' ? 15000 : 10000)),
     
     // Integration test specific setup
     setupFiles: ['./tests/setup-integration.js'],
@@ -39,8 +39,11 @@ export default defineConfig({
         isolate: true         // Maintain test isolation
       }
     },
-    
-    // Limited concurrency for database safety
+
+    // Sequential execution for database safety
+    maxConcurrency: 1,
+    minWorkers: 1,
+    maxWorkers: 1,
     
     // More retry attempts for integration tests (network/database issues)
     retry: process.env.CI === 'true' ? 2 : 1,

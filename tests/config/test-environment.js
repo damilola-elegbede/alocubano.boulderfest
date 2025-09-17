@@ -19,10 +19,12 @@ export const getDatabaseConfig = (testType) => {
   switch (testType) {
     case TEST_ENVIRONMENTS.UNIT:
       return {
-        url: 'file::memory:',
+        url: 'file::memory:?cache=shared',  // Shared cache for performance
         authToken: null,
-        description: 'In-memory SQLite for fast unit tests',
-        persistent: false
+        description: 'Shared in-memory SQLite for fast unit tests (no migrations)',
+        persistent: false,
+        skipMigrations: true,  // Skip migrations for unit test performance
+        useSharedCache: true   // Share cache across tests for speed
       };
       
     case TEST_ENVIRONMENTS.INTEGRATION:
@@ -125,10 +127,10 @@ export const getTimeoutConfig = (testType) => {
   switch (testType) {
     case TEST_ENVIRONMENTS.UNIT:
       return {
-        test: isCI ? 30000 : 15000,
-        hook: isCI ? 10000 : 5000,
-        setup: isCI ? 15000 : 10000,
-        cleanup: isCI ? 10000 : 5000
+        test: isCI ? 8000 : 5000,    // Aggressive timeout reduction for <2s target
+        hook: isCI ? 3000 : 2000,    // Minimal hook time for unit tests
+        setup: isCI ? 5000 : 3000,   // Fast setup for unit tests
+        cleanup: isCI ? 2000 : 1000  // Minimal cleanup for unit tests
       };
       
     case TEST_ENVIRONMENTS.INTEGRATION:

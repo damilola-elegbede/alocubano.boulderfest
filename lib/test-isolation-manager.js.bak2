@@ -80,8 +80,8 @@ class TestIsolationManager {
         createdAt: new Date().toISOString(),
         connections: new Set(),
         moduleSnapshots: new Map(),
-        databaseClient: null, // Cache for database client within this scope
         migrationCompleted: false,
+        databaseClient: null, // Cache for database client within this scope
         options: {
           // Default options
           isolateModules: true,
@@ -219,47 +219,27 @@ class TestIsolationManager {
         throw new Error(`Test scope ${scopeId} not found`);
       }
 
-      // Return cached client if it exists and is still valid
-      if (scope.databaseClient) {
-        try {
-          // Validate cached client is still functional
-          await scope.databaseClient.execute('SELECT 1');
-          logger.debug(`🔗 Returning validated cached database client for scope ${scopeId}`);
-          return scope.databaseClient;
-        } catch (error) {
-          logger.warn(`⚠️ Cached client invalid for scope ${scopeId}, creating new one`);
-          if (scope.databaseClient) {
-            scope.connections.delete(scope.databaseClient);
-            this.globalConnectionRegistry.delete(scope.databaseClient);
-          }
-          scope.databaseClient = null;
-        }
-      }
-
       try {
         // Clear module cache to ensure fresh database instance
         await this.clearModuleCache();
 
         // Import fresh database module - this will create a new singleton instance
-        const databaseModule = await import("./database.js?" + Date.now());
+        const databaseModule = await import('./database.js?' + Date.now());
 
         // Get fresh client from the new module instance
         const client = await databaseModule.getDatabaseClient();
 
         // Verify client is valid
-        if (!client || typeof client.execute !== "function") {
-          throw new Error("Invalid database client returned from fresh import");
+        if (!client || typeof client.execute !== 'function') {
+          throw new Error('Invalid database client returned from fresh import');
         }
-
-        // Cache the client in the scope for reuse
-        scope.databaseClient = client;
 
         // Track this connection in the scope
         scope.connections.add(client);
         this.globalConnectionRegistry.add(client);
         this.performanceMetrics.connectionsCreated++;
 
-        logger.debug(`🔗 Created and cached scoped database client for scope ${scopeId}`);
+        logger.debug(`🔗 Created scoped database client for scope ${scopeId}`);
 
         return client;
       } catch (error) {
@@ -280,24 +260,6 @@ class TestIsolationManager {
       throw new Error(`Test scope not found: ${this.currentTestId}`);
     }
 
-    // Return cached client if it exists and is valid (legacy API caching)
-    if (scope.databaseClient) {
-      try {
-        // Validate cached client is still functional
-        await scope.databaseClient.execute('SELECT 1');
-        logger.debug(`🔗 Returning validated cached database client for legacy test scope: ${this.currentTestId}`);
-        return scope.databaseClient;
-      } catch (error) {
-        logger.warn(`⚠️ Cached client invalid for scope ${this.currentTestId}, creating new one`);
-        if (scope.databaseClient) {
-          scope.connections.delete(scope.databaseClient);
-          this.globalConnectionRegistry.delete(scope.databaseClient);
-        }
-        scope.databaseClient = null;
-      }
-    }
-
-
     // CRITICAL: Clear module cache to force fresh singleton
     await this.clearDatabaseModuleCache();
 
@@ -305,15 +267,13 @@ class TestIsolationManager {
     const { getDatabaseClient, resetDatabaseInstance } = await this.getFreshDatabaseModule();
 
     // Reset the singleton first to ensure clean state
-    if (resetDatabaseInstance) {
-      await resetDatabaseInstance();
-    }
+    await resetDatabaseInstance();
 
     // Get fresh client
     const client = await getDatabaseClient();
 
-    // Skip migrations if they were already run at suite level
-    if (process.env.INTEGRATION_MIGRATIONS_COMPLETED !== 'true' && !scope.migrationCompleted) {
+    // Run migrations on the fresh client if not done for this scope
+    if (!scope.migrationCompleted) {
       try {
         // Import migration system
         const { MigrationSystem } = await import('../scripts/migrate.js');
@@ -333,13 +293,7 @@ class TestIsolationManager {
         logger.warn(`⚠️ Migration failed for scope ${this.currentTestId}:`, migrationError.message);
         // Don't fail the test, but log the warning
       }
-    } else {
-      logger.debug(`⏭️ Skipping migrations for scope ${this.currentTestId} - already completed at suite level`);
-      scope.migrationCompleted = true;
     }
-
-    // Cache the client in the scope for reuse (legacy API)
-    scope.databaseClient = client;
 
     // Track this connection in the scope
     scope.connections.add(client);
