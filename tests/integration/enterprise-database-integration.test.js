@@ -128,6 +128,9 @@ describe('Enterprise Database Integration', () => {
       const flags = getFeatureFlagManager();
       const context = createContext({ userId: 'test-user' });
 
+      // Ensure clean state - explicitly remove any lingering overrides
+      flags.removeOverride('ENABLE_CONNECTION_POOL');
+
       // Set 0% rollout
       flags.updateRolloutPercentage('ENABLE_CONNECTION_POOL', 0);
       expect(flags.isEnabled('ENABLE_CONNECTION_POOL', context)).toBe(false);
