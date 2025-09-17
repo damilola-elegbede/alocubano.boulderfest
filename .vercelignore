@@ -31,12 +31,13 @@ build/
 *.tmp
 tmp/
 
-# Documentation
-docs/
-*.md
+# Documentation (excluding docs/ which is needed for build)
+README.md
+INSTALLATION.md
+CLAUDE.md
+CHANGELOG.md
+SECURITY.md
 LICENSE
-CHANGELOG
-SECURITY
 
 # IDE and OS files
 .vscode/
