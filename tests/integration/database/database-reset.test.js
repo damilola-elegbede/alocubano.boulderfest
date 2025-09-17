@@ -5,7 +5,7 @@
 
 import { describe, test, expect, beforeAll } from 'vitest';
 import { resetTestDatabase, DatabaseResetManager, RESET_CONFIG } from '../../../scripts/reset-test-database.js';
-import { getDatabaseClient } from '../../../lib/database.js';
+import { getDbClient } from '../../setup-integration.js';
 
 describe('Database Reset Mechanism', () => {
   let manager;
@@ -106,7 +106,7 @@ describe('Database Reset Mechanism', () => {
     expect(result.mode).toBe('soft');
     
     // Verify database is accessible after seeding
-    const client = await getDatabaseClient();
+    const client = await getDbClient();
     const testResult = await client.execute('SELECT 1 as test');
     expect(testResult.rows).toHaveLength(1);
     expect(testResult.rows[0].test).toBe(1);
@@ -125,7 +125,7 @@ describe('Database Reset Integration', () => {
     await resetTestDatabase('soft');
     
     // Verify we can perform basic database operations
-    const client = await getDatabaseClient();
+    const client = await getDbClient();
     
     // Test basic query
     const result = await client.execute('SELECT datetime(CURRENT_TIMESTAMP) as now');

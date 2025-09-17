@@ -4,11 +4,11 @@
  */
 
 import { describe, test, expect } from 'vitest';
-import { getDatabaseClient } from '../../../lib/database.js';
+import { getDbClient } from '../../setup-integration.js';
 
 describe('Database Cleanup Fixes Validation', () => {
   test('should validate table name fixes are syntactically correct', async () => {
-    const client = await getDatabaseClient();
+    const client = await getDbClient();
     
     // Test that our fixed table names have valid SQL syntax
     const fixedTableNames = [
@@ -53,7 +53,7 @@ describe('Database Cleanup Fixes Validation', () => {
   });
 
   test('should validate column name references are correct', async () => {
-    const client = await getDatabaseClient();
+    const client = await getDbClient();
     
     // Test our column name references that were mentioned in the fixes
     const columnTests = [
@@ -103,7 +103,7 @@ describe('Database Cleanup Fixes Validation', () => {
   });
   
   test('should confirm database cleanup error handling works', async () => {
-    const client = await getDatabaseClient();
+    const client = await getDbClient();
     
     // Test that our improved error handling in cleanup functions works
     const testCleanupQuery = async (tableName) => {

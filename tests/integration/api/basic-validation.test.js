@@ -5,6 +5,7 @@
  * Locally: Tests full business logic validation
  */
 import { test, expect } from 'vitest';
+import { getDbClient } from '../setup-integration.js';
 import { testRequest, generateTestEmail, HTTP_STATUS } from '../../helpers.js';
 
 // Skip business logic validation tests in CI - these need real API logic

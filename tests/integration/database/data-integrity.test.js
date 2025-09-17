@@ -628,7 +628,7 @@ describe('Integration: Database Data Integrity', () => {
       let separateClient;
       try {
         // Each attempt uses a separate database connection for true concurrency
-        separateClient = await getDatabaseClient();
+        separateClient = await getDbClient();
         
         const updateResult = await separateClient.execute({
           sql: `

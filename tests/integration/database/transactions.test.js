@@ -199,7 +199,7 @@ describe('Database Transaction Integration', () => {
         let separateClient;
         try {
           // Get separate database client for true concurrent testing
-          separateClient = await getDatabaseClient();
+          separateClient = await getDbClient();
           
           await separateClient.execute(`
             INSERT INTO "transactions" (

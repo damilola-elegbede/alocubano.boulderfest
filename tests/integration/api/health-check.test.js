@@ -3,6 +3,7 @@
  * Tests actual health check endpoints and monitoring capabilities
  */
 import { test, expect } from 'vitest';
+import { getDbClient } from '../setup-integration.js';
 import { testRequest, HTTP_STATUS } from '../../helpers.js';
 
 test('general health check endpoint returns valid system status', async () => {

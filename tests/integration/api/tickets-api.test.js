@@ -11,7 +11,7 @@
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { testRequest, HTTP_STATUS } from '../../helpers.js';
-import { getDatabaseClient, resetDatabaseInstance } from '../../../lib/database.js';
+import { getDbClient } from '../../setup-integration.js';
 import jwt from 'jsonwebtoken';
 
 describe('Integration: Tickets API', () => {
@@ -32,12 +32,11 @@ describe('Integration: Tickets API', () => {
     };
     // Set up test environment variables
     process.env.NODE_ENV = 'test';
-    process.env.DATABASE_URL = `file:/tmp/tickets-api-integration-test-${Date.now()}.db`;
+    ;
     process.env.QR_SECRET_KEY = TEST_QR_SECRET;
     
     // Reset database instance to ensure clean state
-    await resetDatabaseInstance();
-    db = await getDatabaseClient();
+    db = await getDbClient();
     
     // Verify database connection
     const testResult = await db.execute('SELECT 1 as test');
@@ -121,26 +120,10 @@ describe('Integration: Tickets API', () => {
 
   afterAll(async () => {
     // Clean up test data before closing connection
-    if (db) {
-      try {
-        await db.execute({
-          sql: 'DELETE FROM tickets WHERE ticket_id LIKE ?',
-          args: ['TKT-TEST-%']
-        });
-      } catch (error) {
-        // Ignore cleanup errors in tests
-      }
-    }
-    
-    // Clean up database connections
-    if (db && typeof db.close === 'function') {
-      try {
-        await db.close();
-      } catch (error) {
+     catch (error) {
         // Ignore close errors in tests
       }
     }
-    await resetDatabaseInstance();
     
     // Restore environment
     if (prevEnv.NODE_ENV === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = prevEnv.NODE_ENV;
@@ -149,6 +132,8 @@ describe('Integration: Tickets API', () => {
   });
 
   beforeEach(async () => {
+    // Get fresh database client for each test
+    db = await getDbClient();
     // Create a test ticket for validation tests
     const ticketId = `TKT-TEST-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const validationCode = `VAL-${Date.now()}-${Math.random().toString(36).slice(2)}`;
