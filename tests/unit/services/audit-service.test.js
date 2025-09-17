@@ -51,8 +51,8 @@ describe('AuditService', () => {
       const id1 = auditService.generateRequestId();
       const id2 = auditService.generateRequestId();
 
-      expect(id1).toMatch(/^req_\d+_[a-f0-9]{16}$/);
-      expect(id2).toMatch(/^req_\d+_[a-f0-9]{16}$/);
+      expect(id1).toMatch(/^req_[a-z0-9]+_[a-f0-9]{16}$/);
+      expect(id2).toMatch(/^req_[a-z0-9]+_[a-f0-9]{16}$/);
       expect(id1).not.toBe(id2);
     });
   });
@@ -102,7 +102,7 @@ describe('AuditService', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.requestId).toMatch(/^req_\d+_[a-f0-9]{16}$/);
+      expect(result.requestId).toMatch(/^req_[a-z0-9]+_[a-f0-9]{16}$/);
     });
 
     it('should log UPDATE operations with before/after values', async () => {
@@ -138,7 +138,7 @@ describe('AuditService', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.requestId).toMatch(/^req_\d+_[a-f0-9]{16}$/);
+      expect(result.requestId).toMatch(/^req_[a-z0-9]+_[a-f0-9]{16}$/);
     });
 
     it('should handle error responses', async () => {

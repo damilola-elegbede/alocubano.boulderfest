@@ -23,8 +23,8 @@ describe('Audit Service - Mocked Unit Tests', () => {
 
   describe('Request ID Generation', () => {
     test('should generate unique request IDs', async () => {
-      const { default: AuditService } = await import('../../lib/audit-service.js');
-      auditService = new AuditService();
+      const { default: auditServiceInstance } = await import('../../lib/audit-service.js');
+      auditService = auditServiceInstance;
 
       const ids = new Set();
 
@@ -40,8 +40,8 @@ describe('Audit Service - Mocked Unit Tests', () => {
     });
 
     test('should use high-resolution timestamp', async () => {
-      const { default: AuditService } = await import('../../lib/audit-service.js');
-      auditService = new AuditService();
+      const { default: auditServiceInstance } = await import('../../lib/audit-service.js');
+      auditService = auditServiceInstance;
 
       const id1 = auditService.generateRequestId();
       const id2 = auditService.generateRequestId();
@@ -60,8 +60,8 @@ describe('Audit Service - Mocked Unit Tests', () => {
 
   describe('Data Sanitization', () => {
     test('should sanitize sensitive fields', async () => {
-      const { default: AuditService } = await import('../../lib/audit-service.js');
-      auditService = new AuditService();
+      const { default: auditServiceInstance } = await import('../../lib/audit-service.js');
+      auditService = auditServiceInstance;
 
       const data = {
         username: 'admin',
@@ -83,8 +83,8 @@ describe('Audit Service - Mocked Unit Tests', () => {
     });
 
     test('should handle nested objects', async () => {
-      const { default: AuditService } = await import('../../lib/audit-service.js');
-      auditService = new AuditService();
+      const { default: auditServiceInstance } = await import('../../lib/audit-service.js');
+      auditService = auditServiceInstance;
 
       const data = {
         user: {
@@ -107,7 +107,7 @@ describe('Audit Service - Mocked Unit Tests', () => {
   describe('Audit Log Creation (Mocked)', () => {
     test('should create audit log with mocked database', async () => {
       const { getDatabaseClient } = await import('../../lib/database.js');
-      const { default: AuditService } = await import('../../lib/audit-service.js');
+      const { default: auditServiceInstance } = await import('../../lib/audit-service.js');
 
       const mockExecute = vi.fn().mockResolvedValue({
         rows: [],
@@ -119,7 +119,7 @@ describe('Audit Service - Mocked Unit Tests', () => {
         close: vi.fn()
       });
 
-      auditService = new AuditService();
+      auditService = auditServiceInstance;
       await auditService.ensureInitialized();
 
       const auditData = {
@@ -141,7 +141,7 @@ describe('Audit Service - Mocked Unit Tests', () => {
 
     test('should handle database errors gracefully', async () => {
       const { getDatabaseClient } = await import('../../lib/database.js');
-      const { default: AuditService } = await import('../../lib/audit-service.js');
+      const { default: auditServiceInstance } = await import('../../lib/audit-service.js');
 
       const mockExecute = vi.fn().mockRejectedValue(new Error('Database error'));
 
@@ -150,7 +150,7 @@ describe('Audit Service - Mocked Unit Tests', () => {
         close: vi.fn()
       });
 
-      auditService = new AuditService();
+      auditService = auditServiceInstance;
       await auditService.ensureInitialized();
 
       // Should not throw, but log error
@@ -172,8 +172,8 @@ describe('Audit Service - Mocked Unit Tests', () => {
 
   describe('GDPR Compliance', () => {
     test('should support data retention policy flags', async () => {
-      const { default: AuditService } = await import('../../lib/audit-service.js');
-      auditService = new AuditService();
+      const { default: auditServiceInstance } = await import('../../lib/audit-service.js');
+      auditService = auditServiceInstance;
 
       const auditData = {
         event_type: 'USER_DATA_ACCESS',
@@ -194,7 +194,7 @@ describe('Audit Service - Mocked Unit Tests', () => {
   describe('Performance', () => {
     test('should handle high-volume logging efficiently', async () => {
       const { getDatabaseClient } = await import('../../lib/database.js');
-      const { default: AuditService } = await import('../../lib/audit-service.js');
+      const { default: auditServiceInstance } = await import('../../lib/audit-service.js');
 
       const mockExecute = vi.fn().mockResolvedValue({ rows: [] });
       getDatabaseClient.mockResolvedValue({
@@ -202,7 +202,7 @@ describe('Audit Service - Mocked Unit Tests', () => {
         close: vi.fn()
       });
 
-      auditService = new AuditService();
+      auditService = auditServiceInstance;
       await auditService.ensureInitialized();
 
       const startTime = Date.now();
