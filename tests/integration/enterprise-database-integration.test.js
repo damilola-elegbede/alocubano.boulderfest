@@ -125,19 +125,30 @@ describe('Enterprise Database Integration', () => {
     });
 
     it('should support rollout percentages', () => {
+      console.log('🧪 [DEBUG] Starting rollout percentage test');
       const flags = getFeatureFlagManager();
       const context = createContext({ userId: 'test-user' });
 
       // Ensure clean state - explicitly remove any lingering overrides
+      console.log('🧹 [DEBUG] Cleaning state - removing any overrides');
       flags.removeOverride('ENABLE_CONNECTION_POOL');
 
       // Set 0% rollout
+      console.log('🧪 [DEBUG] Setting 0% rollout');
       flags.updateRolloutPercentage('ENABLE_CONNECTION_POOL', 0);
-      expect(flags.isEnabled('ENABLE_CONNECTION_POOL', context)).toBe(false);
+      console.log('🧪 [DEBUG] Checking 0% rollout - should be false');
+      const result0 = flags.isEnabled('ENABLE_CONNECTION_POOL', context);
+      console.log(`🧪 [DEBUG] 0% rollout result: ${result0}`);
+      expect(result0).toBe(false);
 
       // Set 100% rollout
+      console.log('🧪 [DEBUG] Setting 100% rollout');
       flags.updateRolloutPercentage('ENABLE_CONNECTION_POOL', 100);
-      expect(flags.isEnabled('ENABLE_CONNECTION_POOL', context)).toBe(true);
+      console.log('🧪 [DEBUG] Checking 100% rollout - should be true');
+      const result100 = flags.isEnabled('ENABLE_CONNECTION_POOL', context);
+      console.log(`🧪 [DEBUG] 100% rollout result: ${result100}`);
+      expect(result100).toBe(true);
+      console.log('🧪 [DEBUG] Rollout percentage test completed');
     });
 
     it('should handle emergency killswitch', () => {
