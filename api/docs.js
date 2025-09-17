@@ -1,10 +1,9 @@
-import fs from 'fs';
-import path from 'path';
 import { marked } from 'marked';
+import { embeddedDocs, availableDocs } from './embedded-docs.js';
 
 /**
  * Serves markdown documentation files as HTML
- * Accessible at /api/docs?path=[path-to-md-file]
+ * Uses embedded content for reliable Vercel deployment
  */
 export default async function handler(req, res) {
   // Get the path from the query parameter
@@ -30,38 +29,18 @@ export default async function handler(req, res) {
     ? requestedPath
     : `${requestedPath}.md`;
 
-  // Construct full file path - use explicit reference for Vercel
-  // Try multiple possible locations
-  const possiblePaths = [
-    path.join(process.cwd(), 'docs', mdPath),
-    path.join(process.cwd(), '../docs', mdPath),
-    path.join(__dirname, '../docs', mdPath),
-    path.join(__dirname, '../../docs', mdPath)
-  ];
-
-  let filePath = null;
-  let markdown = null;
-
-  for (const testPath of possiblePaths) {
-    try {
-      markdown = fs.readFileSync(testPath, 'utf-8');
-      filePath = testPath;
-      break;
-    } catch (e) {
-      // Try next path
-    }
-  }
+  // Get the embedded content
+  const markdown = embeddedDocs[mdPath];
 
   if (!markdown) {
     return res.status(404).json({
       error: 'Documentation not found',
       requested: mdPath,
-      tried: possiblePaths
+      available: availableDocs
     });
   }
 
   try {
-
     // Convert markdown to HTML
     const htmlContent = marked(markdown);
 
@@ -72,7 +51,7 @@ export default async function handler(req, res) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${path.basename(mdPath, '.md')} - Documentation</title>
+  <title>${mdPath.replace('.md', '').replace(/_/g, ' ')} - Documentation</title>
   <link rel="stylesheet" href="/css/base.css">
   <link rel="stylesheet" href="/css/typography.css">
   <style>
@@ -241,16 +220,10 @@ export default async function handler(req, res) {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.status(200).send(html);
   } catch (error) {
-    if (error.code === 'ENOENT') {
-      return res.status(404).json({
-        error: 'Documentation not found',
-        requested: mdPath
-      });
-    }
-
     console.error('Error serving documentation:', error);
     return res.status(500).json({
-      error: 'Failed to load documentation'
+      error: 'Failed to render documentation',
+      details: error.message
     });
   }
 }
@@ -259,20 +232,6 @@ export default async function handler(req, res) {
  * Serve an index of available documentation
  */
 function serveDocsIndex(res) {
-  // Hardcoded list of available docs for Vercel deployment
-  const availableDocs = [
-    'ADMIN_DESIGN_SYSTEM.md',
-    'CONNECTION_MANAGER.md',
-    'ENTERPRISE_DATABASE_DEPLOYMENT.md',
-    'GOOGLE_DRIVE_INTEGRATION.md',
-    'SECRET_VALIDATION.md',
-    'THEME_SYSTEM.md',
-    'architecture/ENTERPRISE_DATABASE_SYSTEM.md',
-    'architecture/MULTI_EVENT_ARCHITECTURE.md',
-    'architecture/MULTI_EVENT_IMPLEMENTATION_PLAN.md',
-    'architecture/TEST_ISOLATION_ARCHITECTURE.md'
-  ];
-
   try {
     // Group files by category
     const categorized = {
@@ -457,7 +416,8 @@ function serveDocsIndex(res) {
   } catch (error) {
     console.error('Error generating docs index:', error);
     return res.status(500).json({
-      error: 'Failed to generate documentation index'
+      error: 'Failed to generate documentation index',
+      details: error.message
     });
   }
 }

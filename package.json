@@ -8,7 +8,7 @@
     "node": "20.x || 21.x || 22.x || 24.x"
   },
   "scripts": {
-    "build": "NODE_OPTIONS='--max-old-space-size=4096' node -e \"import('child_process').then(({execSync}) => { const isVercel = process.env.VERCEL === '1'; const env = process.env.VERCEL_ENV || 'local'; console.log(''); console.log('🔨 Build Process'); console.log('================'); console.log('Environment: ' + env); console.log('Platform: ' + (isVercel ? 'Vercel' : 'Local')); if(!isVercel) { console.log(''); console.log('📋 Running structure verification...'); execSync('npm run verify-structure', {stdio:'inherit'}); } console.log(''); console.log('✅ Build completed successfully!'); console.log(''); }).catch(console.error);\"",
+    "build": "NODE_OPTIONS='--max-old-space-size=4096' node -e \"import('child_process').then(({execSync}) => { const isVercel = process.env.VERCEL === '1'; const env = process.env.VERCEL_ENV || 'local'; console.log(''); console.log('🔨 Build Process'); console.log('================'); console.log('Environment: ' + env); console.log('Platform: ' + (isVercel ? 'Vercel' : 'Local')); console.log(''); console.log('📚 Embedding documentation...'); execSync('node scripts/embed-docs.cjs', {stdio:'inherit'}); if(!isVercel) { console.log(''); console.log('📋 Running structure verification...'); execSync('npm run verify-structure', {stdio:'inherit'}); } console.log(''); console.log('✅ Build completed successfully!'); console.log(''); }).catch(console.error);\"",
     "start": "npm run vercel:dev",
     "vercel:dev": "vercel dev --listen 3000",
     "vercel:preview": "vercel --target preview",
