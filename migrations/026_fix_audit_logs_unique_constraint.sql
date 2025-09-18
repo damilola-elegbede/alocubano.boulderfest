@@ -51,7 +51,22 @@ CREATE TABLE audit_logs_new (
   severity TEXT DEFAULT 'info' CHECK (severity IN ('debug', 'info', 'warning', 'error', 'critical')),
   source_service TEXT DEFAULT 'festival-platform',
 
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  -- Financial reconciliation fields (added in migration 025)
+  reconciliation_status TEXT DEFAULT 'pending' CHECK (
+    reconciliation_status IN ('pending', 'reconciled', 'discrepancy', 'resolved', 'investigating')
+  ),
+  reconciliation_date TIMESTAMP NULL,
+  reconciliation_notes TEXT NULL,
+  settlement_id TEXT NULL,
+  settlement_date TIMESTAMP NULL,
+  fees_cents INTEGER DEFAULT 0,
+  net_amount_cents INTEGER NULL,
+  external_reference TEXT NULL,
+  dispute_status TEXT NULL CHECK (
+    dispute_status IS NULL OR dispute_status IN ('none', 'pending', 'warning_needs_response', 'under_review', 'charge_refunded', 'won', 'lost')
+  )
 
   -- Note: Removed UNIQUE(request_id, action) constraint to allow legitimate concurrent scenarios
   -- The primary key (id) provides sufficient uniqueness for audit logs
