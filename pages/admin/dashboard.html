@@ -346,16 +346,48 @@
           const response = await fetch(`/api/admin/registrations-debug?${params}`, {
             credentials: "include" // Include cookies for production
           });
-          const data = await response.json();
 
-          if (!response.ok) throw new Error(data.error);
+          console.log("🔍 Debug response status:", response.status);
+          console.log("🔍 Debug response headers:", Object.fromEntries(response.headers.entries()));
+
+          const data = await response.json();
+          console.log("🔍 Debug response data:", data);
+
+          // Store response for error handling
+          window.lastDebugResponse = data;
+
+          if (!response.ok) {
+            console.error("🔍 Debug endpoint returned error:", data);
+            throw new Error(data.error || data.message || `HTTP ${response.status}`);
+          }
 
           displayRegistrations(data.registrations);
           displayPagination(data.total, page);
         } catch (error) {
           console.error("Failed to load registrations:", error);
+
+          // Enhanced error display for debugging
+          let errorDetails = error.message;
+
+          // If it's an import failure, try to extract more details from the response
+          if (error.message.includes("Import failure")) {
+            try {
+              // Try to extract the response data for more details
+              if (window.lastDebugResponse && window.lastDebugResponse.service && window.lastDebugResponse.message) {
+                errorDetails = `Import failed in ${window.lastDebugResponse.service}: ${window.lastDebugResponse.message}`;
+                console.error("🔍 Full import error:", window.lastDebugResponse);
+              }
+            } catch (parseError) {
+              console.error("Could not parse error details:", parseError);
+            }
+          }
+
           document.getElementById("registrationsTable").innerHTML = `
-                    <div class="error">Failed to load registrations: ${escapeHtml(error.message)}</div>
+                    <div class="error">
+                      <strong>Failed to load registrations:</strong><br>
+                      ${escapeHtml(errorDetails)}<br>
+                      <small>Check browser console and Network tab for more details</small>
+                    </div>
                 `;
         }
       }
