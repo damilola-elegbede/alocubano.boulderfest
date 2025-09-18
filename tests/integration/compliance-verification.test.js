@@ -16,6 +16,9 @@ describe('Compliance Verification Tests', () => {
   let testAdminUser;
   let testTransactionRef;
 
+  // Helper function to add small delays between operations for unique timestamps
+  const addTimestampDelay = (ms = 10) => new Promise(resolve => setTimeout(resolve, ms));
+
   beforeAll(async () => {
     db = await getDatabaseClient();
     await auditService.ensureInitialized();
@@ -79,7 +82,7 @@ describe('Compliance Verification Tests', () => {
         }
       ];
 
-      // Log all GDPR processing activities
+      // Log all GDPR processing activities with small delays to ensure unique timestamps
       for (let i = 0; i < gdprProcessingActivities.length; i++) {
         const activity = gdprProcessingActivities[i];
 
@@ -99,6 +102,11 @@ describe('Compliance Verification Tests', () => {
             dataProcessor: 'festival_platform'
           }
         });
+
+        // Add small delay to ensure unique timestamps for reliable ordering
+        if (i < gdprProcessingActivities.length - 1) {
+          await addTimestampDelay();
+        }
       }
 
       // Verify comprehensive GDPR audit coverage
