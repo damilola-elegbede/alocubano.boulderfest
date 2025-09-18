@@ -239,6 +239,72 @@ const initializeDatabase = async () => {
 };
 
 /**
+ * Clean tables in dependency order to avoid foreign key constraint violations
+ */
+async function cleanTablesInOrder(dbClient, tables) {
+  // Define table cleaning order: child tables first, parent tables last
+  // This order respects foreign key constraints
+  const orderedTables = [
+    // Child tables that reference other tables
+    'admin_activity_log',
+    'admin_sessions',
+    'audit_logs',
+    'ticket_registrations',
+    'ticket_validation_log',
+    'transaction_items',
+    'payment_events',
+    'tokens',
+    'email_events',
+    'registration_reminders',
+    'registration_emails',
+    'financial_reconciliation_entries',
+    'financial_reconciliation_reports',
+    'security_metrics',
+    'session_security_scores',
+    'admin_login_attempts',
+    'admin_mfa_config',
+    'admin_mfa_backup_codes',
+    'event_settings',
+    'event_access',
+    'event_audit_log',
+
+    // Tables that reference tickets/transactions
+    'tickets',
+    'transactions',
+    'newsletter_subscribers',
+    'email_subscribers',
+
+    // Parent tables (referenced by other tables)
+    'events',
+
+    // Independent tables (no foreign key dependencies)
+    'system_configuration',
+    'admin_sessions_archive'
+  ];
+
+  // Clean tables in dependency order first
+  for (const table of orderedTables) {
+    if (tables.includes(table)) {
+      try {
+        await dbClient.execute(`DELETE FROM "${table}"`);
+      } catch (error) {
+        console.warn(`⚠️ Failed to clean table ${table}: ${error.message}`);
+      }
+    }
+  }
+
+  // Clean any remaining tables that weren't in the ordered list
+  const remainingTables = tables.filter(table => !orderedTables.includes(table));
+  for (const table of remainingTables) {
+    try {
+      await dbClient.execute(`DELETE FROM "${table}"`);
+    } catch (error) {
+      console.warn(`⚠️ Failed to clean remaining table ${table}: ${error.message}`);
+    }
+  }
+}
+
+/**
  * Clean Database Between Tests using Test Isolation
  * With worker-level databases, we clean data but keep the database
  */
@@ -254,13 +320,8 @@ const cleanDatabase = async () => {
     const tables = tableQuery.rows.map(row => row.name);
 
     // Clear all tables (except migrations) - data only, keep structure
-    for (const table of tables) {
-      try {
-        await dbClient.execute(`DELETE FROM "${table}"`);
-      } catch (error) {
-        console.warn(`⚠️ Failed to clean table ${table}: ${error.message}`);
-      }
-    }
+    // Use dependency-aware cleaning order to handle foreign key constraints
+    await cleanTablesInOrder(dbClient, tables);
 
     // Log cleanup but less verbosely
     if (tables.length > 0) {
