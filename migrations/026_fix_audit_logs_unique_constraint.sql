@@ -2,12 +2,14 @@
 -- Remove overly restrictive UNIQUE(request_id, action) constraint that prevents
 -- legitimate concurrent audit logging scenarios
 
--- SQLite doesn't support DROP CONSTRAINT, so we need to recreate the table
--- Step 1: Drop existing incomplete table if it exists from previous failed migration
+-- Use a timestamped table name to avoid any naming conflicts
+-- Step 1: Clean up any previous failed migration attempts
 DROP TABLE IF EXISTS audit_logs_new;
+DROP TABLE IF EXISTS audit_logs_v2;
+DROP TABLE IF EXISTS audit_logs_fixed;
 
--- Step 2: Create new table without the problematic constraint
-CREATE TABLE audit_logs_new (
+-- Step 2: Create table with unique name to avoid conflicts
+CREATE TABLE audit_logs_fixed_20250918 (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   request_id TEXT NOT NULL,
   event_type TEXT NOT NULL,
@@ -76,13 +78,13 @@ CREATE TABLE audit_logs_new (
 );
 
 -- Step 3: Copy existing data to new table
-INSERT INTO audit_logs_new SELECT * FROM audit_logs;
+INSERT INTO audit_logs_fixed_20250918 SELECT * FROM audit_logs;
 
--- Step 4: Drop old table
+-- Step 4: Drop original table and all its indexes
 DROP TABLE audit_logs;
 
--- Step 5: Rename new table
-ALTER TABLE audit_logs_new RENAME TO audit_logs;
+-- Step 5: Rename new table to original name
+ALTER TABLE audit_logs_fixed_20250918 RENAME TO audit_logs;
 
 -- Step 6: Recreate indexes for performance (without the problematic unique constraint)
 CREATE INDEX IF NOT EXISTS idx_audit_logs_event_type ON audit_logs(event_type, created_at DESC);
