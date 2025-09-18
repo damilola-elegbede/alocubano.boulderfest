@@ -104,8 +104,8 @@ async function handler(req, res) {
       message: 'Login successful',
       role: 'checkin_staff',
       sessionDuration: '72 hours',
-      expiresAt: new Date(Date.now() + sessionDuration).toISOString(),
-      token: sessionToken
+      expiresAt: new Date(Date.now() + sessionDuration).toISOString()
+      // token removed for security - session token is provided via httpOnly cookie only
     });
   } catch (error) {
     console.error('Mobile login error:', error);

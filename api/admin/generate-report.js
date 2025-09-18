@@ -205,6 +205,10 @@ async function handler(req, res) {
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const filename = `alocubano-${primaryType}-report-${timestamp}.csv`;
 
+      // Set security headers for PII reports
+      res.setHeader('Cache-Control', 'private, no-store');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader(
         'Content-Disposition',
@@ -212,6 +216,11 @@ async function handler(req, res) {
       );
       return res.status(200).send(csvData);
     } else {
+      // Set security headers for PII data
+      res.setHeader('Cache-Control', 'private, no-store');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+
       // JSON response
       res.status(200).json(report);
     }

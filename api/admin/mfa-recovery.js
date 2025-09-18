@@ -205,6 +205,11 @@ async function handleVerifyBackupCode(req, res) {
     // Log successful recovery
     await logRecoveryAttempt(adminId, 'backup_code', true, req);
 
+    // Set security headers to prevent caching of recovery tokens
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
     // Generate temporary recovery session
     const recoveryToken = await generateRecoveryToken(adminId);
 
@@ -349,6 +354,11 @@ async function handleGenerateRecoveryToken(req, res) {
 
     // Log recovery token generation
     await logRecoveryAttempt(adminId, 'recovery_token_generated', true, req);
+
+    // Set security headers to prevent caching of recovery tokens
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
 
     res.status(200).json({
       recoveryToken,

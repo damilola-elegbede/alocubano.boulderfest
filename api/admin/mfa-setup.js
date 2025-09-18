@@ -152,6 +152,11 @@ async function handleGenerateSecret(req, res) {
       deviceName
     });
 
+    // Set security headers to prevent caching of TOTP secrets
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
     res.status(200).json({
       secret: secret.base32, // Return for manual entry
       qrCodeUrl: qrCodeDataUrl,
@@ -255,6 +260,11 @@ async function handleVerifySetup(req, res) {
     await logMfaEvent(adminId, 'mfa_enabled', req, {
       deviceName: deviceName || 'Authenticator App'
     });
+
+    // Set security headers to prevent caching of backup codes
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
 
     res.status(200).json({
       success: true,

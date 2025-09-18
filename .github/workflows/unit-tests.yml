@@ -28,6 +28,7 @@ jobs:
     timeout-minutes: 15
 
     strategy:
+      fail-fast: false
       matrix:
         node-version: ['20.x', '22.x']
 
@@ -43,7 +44,7 @@ jobs:
       ADMIN_SECRET: 'test-admin-jwt-secret-minimum-32-characters-for-security'
       WALLET_AUTH_SECRET: 'test-wallet-auth-secret-key-for-testing-purposes-32-chars'
       APPLE_PASS_KEY: 'dGVzdC1hcHBsZS1wYXNzLWtleQ=='
-      INTERNAL_API_KEY: 'test-internal-api-key-32-chars-min'
+      INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY || 'test-internal-api-key-32-chars-min' }}
       TEST_ADMIN_PASSWORD: 'test-admin-password-123'
       ADMIN_PASSWORD: '$2b$10$test.bcrypt.hash.for.testing.purposes.only'
 
@@ -114,10 +115,10 @@ jobs:
           end_time=$(date +%s%3N)
           duration=$((end_time - start_time))
 
-          # Extract test counts
-          total_tests=$(grep -E "Tests.*passed" unit-test-output.log | sed -E "s/.*Tests[[:space:]]+([0-9]+)[[:space:]]+passed.*/\1/" | head -1 || echo "0")
-          passing_tests=$total_tests
+          # Extract test counts - Fix: Calculate total_tests correctly
+          passing_tests=$(grep -E "Tests.*passed" unit-test-output.log | sed -E "s/.*Tests[[:space:]]+([0-9]+)[[:space:]]+passed.*/\1/" | head -1 || echo "0")
           failing_tests=$(grep -E "Tests.*failed" unit-test-output.log | sed -E "s/.*Tests[[:space:]]+([0-9]+)[[:space:]]+failed.*/\1/" | head -1 || echo "0")
+          total_tests=$((passing_tests + failing_tests))
 
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "📊 Unit Test Results"
@@ -145,6 +146,7 @@ jobs:
 
       - name: "📊 Report to PR"
         if: github.event_name == 'pull_request' && always()
+        continue-on-error: true
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}

@@ -85,7 +85,17 @@ async function handler(req, res) {
         sql += ' AND t.checked_in_at IS NULL';
       }
 
-    sql += ` ORDER BY t.${sanitized.sortBy} ${sanitized.sortOrder}`;
+    // Whitelist allowed columns for ORDER BY to prevent SQL injection
+    const allowedSortColumns = ['created_at', 'updated_at', 'checked_in_at', 'ticket_id', 'status', 'ticket_type'];
+    const allowedSortOrders = ['ASC', 'DESC'];
+
+    // Validate sortBy column is in whitelist
+    const safeColumn = allowedSortColumns.includes(sanitized.sortBy) ? sanitized.sortBy : 'created_at';
+
+    // Validate sortOrder is in whitelist
+    const safeSortOrder = allowedSortOrders.includes(sanitized.sortOrder?.toUpperCase()) ? sanitized.sortOrder.toUpperCase() : 'DESC';
+
+    sql += ` ORDER BY t.${safeColumn} ${safeSortOrder}`;
     sql += ` LIMIT ? OFFSET ?`;
     args.push(sanitized.limit, sanitized.offset);
 

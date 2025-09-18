@@ -213,7 +213,6 @@ async function loginHandler(req, res) {
     console.log("[Login] POST data:", {
       hasUsername: !!username,
       hasPassword: !!password,
-      passwordLength: password?.length,
       hasMfaCode: !!mfaCode,
       step: step,
       clientIP: clientIP?.substring(0, 15)
@@ -436,15 +435,12 @@ async function handlePasswordStep(req, res, username, password, clientIP) {
   const startTime = Date.now();
   console.log('[Login] Verifying username...');
   const isUsernameValid = verifyUsername(username);
-  console.log('[Login] Username valid:', isUsernameValid);
   
   console.log('[Login] Verifying password...');
   const isPasswordValid = await authService.verifyPassword(password);
-  console.log('[Login] Password valid:', isPasswordValid);
   
   const isValid = isUsernameValid && isPasswordValid;
   const verificationTime = Date.now() - startTime;
-  console.log('[Login] Verification complete:', { isValid, timeMs: verificationTime });
 
   // Log authentication failure in test environments
   if (isE2ETest && !isValid) {
