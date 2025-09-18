@@ -264,7 +264,20 @@ async function handler(req, res) {
   }
 }
 
-// Wrap the entire middleware chain in an error-handling function
+// Build the middleware chain once, outside of request handling
+const securedHandler = withSecurityHeaders(
+  csrfService.validateCSRF(
+    authService.requireAuth(
+      withAdminAudit(handler, {
+        logBody: true, // Log registration modifications
+        logMetadata: true,
+        skipMethods: [] // Log all methods for registration management
+      })
+    )
+  )
+);
+
+// Wrap the secured handler in an error-handling function
 // to ensure all errors are returned as JSON
 async function safeHandler(req, res) {
   console.log(`🔍 [${new Date().toISOString()}] Registrations endpoint called`);
@@ -273,52 +286,9 @@ async function safeHandler(req, res) {
   console.log(`🔧 Environment: NODE_ENV=${process.env.NODE_ENV}, VERCEL_ENV=${process.env.VERCEL_ENV}`);
 
   try {
-    console.log(`⚙️  Building middleware chain...`);
+    console.log(`🚀 Executing pre-built middleware chain...`);
 
-    // Build each middleware layer with individual error handling
-    let currentHandler = withAdminAudit(handler, {
-      logBody: true, // Log registration modifications
-      logMetadata: true,
-      skipMethods: [] // Log all methods for registration management
-    });
-    console.log(`📝 Base handler with audit: OK`);
-
-    // Wrap auth middleware with error handling
-    try {
-      console.log(`🔐 Adding auth middleware...`);
-      currentHandler = authService.requireAuth(currentHandler);
-      console.log(`🔐 Auth middleware: OK`);
-    } catch (authError) {
-      console.error(`❌ Auth middleware construction failed:`, authError);
-      throw new Error(`Auth middleware failed: ${authError.message}`);
-    }
-
-    // Wrap CSRF middleware with error handling
-    try {
-      console.log(`🛡️  Adding CSRF middleware...`);
-      currentHandler = csrfService.validateCSRF(currentHandler);
-      console.log(`🛡️  CSRF middleware: OK`);
-    } catch (csrfError) {
-      console.error(`❌ CSRF middleware construction failed:`, csrfError);
-      throw new Error(`CSRF middleware failed: ${csrfError.message}`);
-    }
-
-    // Wrap security headers middleware with error handling
-    try {
-      console.log(`🔒 Adding security headers middleware...`);
-      currentHandler = withSecurityHeaders(currentHandler);
-      console.log(`🔒 Security headers middleware: OK`);
-    } catch (securityError) {
-      console.error(`❌ Security headers middleware construction failed:`, securityError);
-      throw new Error(`Security headers middleware failed: ${securityError.message}`);
-    }
-
-    console.log(`✅ Middleware chain built successfully`);
-
-    // Execute the secured handler with detailed error handling
-    console.log(`🚀 Executing middleware chain...`);
-
-    const result = await currentHandler(req, res);
+    const result = await securedHandler(req, res);
 
     console.log(`✅ Request completed successfully`);
     return result;

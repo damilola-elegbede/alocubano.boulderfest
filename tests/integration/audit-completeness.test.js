@@ -107,8 +107,15 @@ describe('Audit Completeness Tests', () => {
         expect(loggedOperations).toContain(operation);
       });
 
+      // Sort logs by operationIndex to ensure correct order for assertions
+      const sortedLogs = testFinancialLogs.sort((a, b) => {
+        const metadataA = JSON.parse(a.metadata || '{}');
+        const metadataB = JSON.parse(b.metadata || '{}');
+        return metadataA.operationIndex - metadataB.operationIndex;
+      });
+
       // Verify financial data completeness
-      testFinancialLogs.forEach((log, index) => {
+      sortedLogs.forEach((log, index) => {
         expect(log.amount_cents).toBe(5000 + (index * 100));
         expect(log.currency).toBe('USD');
         expect(log.transaction_reference).toBe(`${testTransactionRef}_${index}`);
@@ -194,8 +201,15 @@ describe('Audit Completeness Tests', () => {
         expect(loggedActions).toContain(operation.action);
       });
 
+      // Sort logs by operationIndex to ensure correct order for assertions
+      const sortedDataLogs = testDataLogs.sort((a, b) => {
+        const metadataA = JSON.parse(a.metadata || '{}');
+        const metadataB = JSON.parse(b.metadata || '{}');
+        return metadataA.operationIndex - metadataB.operationIndex;
+      });
+
       // Verify before/after values are properly captured
-      testDataLogs.forEach((log, index) => {
+      sortedDataLogs.forEach((log, index) => {
         const operation = dataOperations[index];
 
         if (operation.operation === 'CREATE') {
@@ -300,8 +314,15 @@ describe('Audit Completeness Tests', () => {
         expect(log.user_agent).toBe(userAgent);
       });
 
+      // Sort logs by operationIndex to ensure correct order for assertions
+      const sortedAdminLogs = testAdminLogs.sort((a, b) => {
+        const metadataA = JSON.parse(a.metadata || '{}');
+        const metadataB = JSON.parse(b.metadata || '{}');
+        return metadataA.operationIndex - metadataB.operationIndex;
+      });
+
       // Verify response time tracking
-      testAdminLogs.forEach((log, index) => {
+      sortedAdminLogs.forEach((log, index) => {
         expect(log.response_time_ms).toBe(100 + (index * 10));
       });
     });

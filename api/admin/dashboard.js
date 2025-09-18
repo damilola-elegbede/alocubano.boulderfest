@@ -199,19 +199,22 @@ async function handler(req, res) {
   }
 }
 
-// Wrap the entire middleware chain in an error-handling function
-// to ensure all errors are returned as JSON
-async function safeHandler(req, res) {
-  try {
-    // Build the middleware chain inside the try-catch
-    // This ensures any middleware initialization errors are caught
-    const securedHandler = withSecurityHeaders(authService.requireAuth(withAdminAudit(handler, {
+// Build the middleware chain once, outside of request handling
+const securedHandler = withSecurityHeaders(
+  authService.requireAuth(
+    withAdminAudit(handler, {
       logBody: false, // Dashboard requests don't need body logging
       logMetadata: true,
       skipMethods: [] // Log all methods including GET for dashboard access tracking
-    })));
+    })
+  )
+);
 
-    // Execute the secured handler
+// Wrap the secured handler in an error-handling function
+// to ensure all errors are returned as JSON
+async function safeHandler(req, res) {
+  try {
+    // Execute the pre-built secured handler
     return await securedHandler(req, res);
   } catch (error) {
     console.error('Fatal error in dashboard endpoint:', error);

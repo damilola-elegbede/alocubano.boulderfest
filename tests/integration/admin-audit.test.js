@@ -9,7 +9,7 @@ import { testRequest, HTTP_STATUS, generateTestId } from './handler-test-helper.
 import { getDbClient } from '../setup-integration.js';
 import auditService from '../../lib/audit-service.js';
 import securityAlertService from '../../lib/security-alert-service.js';
-import sessionMonitorService from '../../lib/session-monitor-service.js';
+import sessionMonitorService from '../../lib/admin-session-monitor.js';
 
 // Test admin credentials
 const adminPassword = process.env.TEST_ADMIN_PASSWORD;
@@ -28,10 +28,18 @@ describe('Admin Audit Integration Tests', () => {
     // Reset ALL service states that cache database connections
     // This prevents CLIENT_CLOSED errors from stale connections
 
-    // Reset audit service state
+    // Reset audit service state and force reinitialization with test database
     auditService.initialized = false;
     auditService.initializationPromise = null;
     auditService.db = null;
+    // Force audit service to reinitialize with the test database
+    try {
+      await auditService.ensureInitialized();
+      console.log('✅ Audit service initialized successfully, has db:', !!auditService.db);
+    } catch (error) {
+      console.error('❌ Failed to initialize audit service:', error);
+      throw error;
+    }
 
     // Reset security alert service state
     securityAlertService.initialized = false;
@@ -42,9 +50,6 @@ describe('Admin Audit Integration Tests', () => {
     sessionMonitorService.initialized = false;
     sessionMonitorService.initializationPromise = null;
     sessionMonitorService.db = null;
-
-    // Initialize audit service (others will lazy-initialize as needed)
-    await auditService.ensureInitialized();
 
     // Get admin token for authenticated requests
     const loginResponse = await testRequest('POST', '/api/admin/login', {
