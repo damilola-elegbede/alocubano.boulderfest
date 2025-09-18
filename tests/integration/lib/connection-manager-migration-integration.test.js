@@ -9,9 +9,19 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { acquireDbLease, resetConnectionManager } from '../../../lib/connection-manager.js';
 import { MigrationSystem } from '../../../scripts/migrate.js';
 
-// Mock the database client
+// Mock the database client - provide full implementation for migrations
 vi.mock('../../../lib/database.js', () => ({
-  getDatabaseClient: vi.fn()
+  getDatabaseClient: vi.fn().mockResolvedValue({
+    execute: vi.fn().mockResolvedValue({ rows: [{ test: 1 }] }),
+    transaction: vi.fn().mockResolvedValue({
+      execute: vi.fn().mockResolvedValue({ rows: [] }),
+      commit: vi.fn().mockResolvedValue(),
+      rollback: vi.fn().mockResolvedValue()
+    }),
+    batch: vi.fn().mockResolvedValue([]),
+    close: vi.fn().mockResolvedValue()
+  }),
+  resetDatabaseInstance: vi.fn().mockResolvedValue()
 }));
 
 // Mock the logger
