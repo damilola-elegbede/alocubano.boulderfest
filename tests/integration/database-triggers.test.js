@@ -54,7 +54,7 @@ describe('Database Triggers Tests', () => {
       await db.execute('DELETE FROM tickets WHERE ticket_id LIKE ?', [`test_ticket_%`]);
     } catch (e) { /* Table may not exist in unit tests */ }
     try {
-      await db.execute('DELETE FROM admin_sessions WHERE admin_id LIKE ?', [`test_admin_%`]);
+      await db.execute('DELETE FROM admin_sessions WHERE session_token LIKE ?', [`session_test_%`]);
     } catch (e) { /* Table may not exist in unit tests */ }
     try {
       await db.execute('DELETE FROM financial_discrepancies WHERE transaction_reference LIKE ?', [`test_txn_%`]);
@@ -73,7 +73,7 @@ describe('Database Triggers Tests', () => {
       await db.execute('DELETE FROM tickets WHERE ticket_id LIKE ?', [`test_ticket_%`]);
     } catch (e) { /* Table may not exist in unit tests */ }
     try {
-      await db.execute('DELETE FROM admin_sessions WHERE admin_id LIKE ?', [`test_admin_%`]);
+      await db.execute('DELETE FROM admin_sessions WHERE session_token LIKE ?', [`session_test_%`]);
     } catch (e) { /* Table may not exist in unit tests */ }
     try {
       await db.execute('DELETE FROM financial_discrepancies WHERE transaction_reference LIKE ?', [`test_txn_%`]);
@@ -127,18 +127,19 @@ describe('Database Triggers Tests', () => {
       if (await skipIfTableMissing('admin_sessions')) return;
 
       // Insert admin session
+      const sessionToken = `session_test_${testAdminId}`;
       await db.execute(`
         INSERT INTO admin_sessions (
-          session_token, admin_id, expires_at, created_at
+          session_token, ip_address, expires_at, created_at
         ) VALUES (?, ?, ?, ?)
-      `, [`session_${testAdminId}`, testAdminId,
+      `, [sessionToken, '127.0.0.1',
           new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
           new Date().toISOString()]);
 
       // Get initial timestamp
       const initialResult = await db.execute(
-        'SELECT updated_at FROM admin_sessions WHERE admin_id = ?',
-        [testAdminId]
+        'SELECT updated_at FROM admin_sessions WHERE session_token = ?',
+        [sessionToken]
       );
       const initialTimestamp = initialResult.rows[0]?.updated_at;
 
@@ -150,14 +151,14 @@ describe('Database Triggers Tests', () => {
         // Update the session
         await db.execute(`
           UPDATE admin_sessions
-          SET last_activity = ?
-          WHERE admin_id = ?
-        `, [new Date().toISOString(), testAdminId]);
+          SET last_accessed_at = ?
+          WHERE session_token = ?
+        `, [new Date().toISOString(), sessionToken]);
 
         // Verify timestamp was updated
         const updatedResult = await db.execute(
-          'SELECT updated_at FROM admin_sessions WHERE admin_id = ?',
-          [testAdminId]
+          'SELECT updated_at FROM admin_sessions WHERE session_token = ?',
+          [sessionToken]
         );
         const updatedTimestamp = updatedResult.rows[0].updated_at;
 

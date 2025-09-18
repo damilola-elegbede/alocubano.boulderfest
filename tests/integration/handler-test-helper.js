@@ -144,8 +144,13 @@ export async function testRequest(method, path, data = null, headers = {}) {
   // Map URL paths to API handler files
   const pathMappings = {
     '/api/admin/login': 'api/admin/login',
+    '/api/admin/simple-login': 'api/admin/simple-login',
+    '/api/admin/verify-session': 'api/admin/verify-session',
     '/api/admin/dashboard': 'api/admin/dashboard',
     '/api/admin/registrations': 'api/admin/registrations',
+    '/api/admin/transactions': 'api/admin/transactions',
+    '/api/admin/audit-logs': 'api/admin/audit-logs',
+    '/api/admin/search': 'api/admin/search',
     '/api/email/subscribe': 'api/email/subscribe',
     '/api/email/unsubscribe': 'api/email/unsubscribe',
     '/api/email/brevo-webhook': 'api/email/brevo-webhook',

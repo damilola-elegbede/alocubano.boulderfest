@@ -223,21 +223,21 @@ describe('Admin Authentication Integration', () => {
 
     try {
       // Create an expired session record directly in database
-      const expiredSessionId = 'session_' + Math.random().toString(36).slice(2);
+      const expiredSessionToken = 'session_' + Math.random().toString(36).slice(2);
       const pastDate = new Date(Date.now() - 24 * 60 * 60 * 1000); // 24 hours ago
-      
+
       await dbClient.execute(`
         INSERT INTO "admin_sessions" (
-          session_id, expires_at, created_at
-        ) VALUES (?, ?, ?)
-      `, [expiredSessionId, pastDate.toISOString(), pastDate.toISOString()]);
-      
+          session_token, ip_address, expires_at, created_at
+        ) VALUES (?, ?, ?, ?)
+      `, [expiredSessionToken, '127.0.0.1', pastDate.toISOString(), pastDate.toISOString()]);
+
       // Verify session was created
       const beforeCleanup = await dbClient.execute(
-        'SELECT COUNT(*) as count FROM "admin_sessions" WHERE session_id = ?',
-        [expiredSessionId]
+        'SELECT COUNT(*) as count FROM "admin_sessions" WHERE session_token = ?',
+        [expiredSessionToken]
       );
-      
+
       expect(Number(beforeCleanup.rows[0].count)).toBe(1);
       
       // Trigger session cleanup (this would normally happen automatically)
