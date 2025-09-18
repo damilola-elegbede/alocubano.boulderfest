@@ -168,18 +168,27 @@ export const getTestTimeout = () => Number(process.env.VITEST_TEST_TIMEOUT || co
 
 /**
  * Initialize Database for Integration Tests with Test Isolation
- * Run migrations once at suite level to improve performance
+ * With in-memory databases, each test scope handles its own migrations
  */
 const initializeDatabase = async () => {
   try {
     // Initialize test isolation mode
     await isolationManager.initializeTestMode();
 
+    // For in-memory databases, we don't run migrations here
+    // Each test scope will get its own database with migrations
+    if (process.env.DATABASE_URL === ':memory:') {
+      console.log('✅ Using in-memory SQLite - migrations will run per test scope');
+      console.log('🚀 Each test gets its own isolated database instance');
+      return;
+    }
+
+    // For file-based databases, run migrations once at suite level
     // Create initial scope for migrations
     const scope = await isolationManager.createTestScope('migration-init');
 
     // Get scoped database client
-    const dbClient = await isolationManager.getScopedDatabaseClient();
+    const dbClient = await isolationManager.getScopedDatabaseClient('migration-init');
 
     // Import migration system
     const { MigrationSystem } = await import('../scripts/migrate.js');
@@ -213,7 +222,7 @@ const initializeDatabase = async () => {
     }
     console.log('✅ Verified transactions table exists');
 
-    console.log('✅ Integration database initialized with in-memory SQLite');
+    console.log('✅ Integration database initialized');
 
     // Clean up migration scope - tests will create their own
     await isolationManager.completeTest();
