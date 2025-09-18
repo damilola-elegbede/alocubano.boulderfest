@@ -3,7 +3,10 @@
 -- legitimate concurrent audit logging scenarios
 
 -- SQLite doesn't support DROP CONSTRAINT, so we need to recreate the table
--- Step 1: Create new table without the problematic constraint
+-- Step 1: Drop existing incomplete table if it exists from previous failed migration
+DROP TABLE IF EXISTS audit_logs_new;
+
+-- Step 2: Create new table without the problematic constraint
 CREATE TABLE audit_logs_new (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   request_id TEXT NOT NULL,
@@ -72,16 +75,16 @@ CREATE TABLE audit_logs_new (
   -- The primary key (id) provides sufficient uniqueness for audit logs
 );
 
--- Step 2: Copy existing data to new table
+-- Step 3: Copy existing data to new table
 INSERT INTO audit_logs_new SELECT * FROM audit_logs;
 
--- Step 3: Drop old table
+-- Step 4: Drop old table
 DROP TABLE audit_logs;
 
--- Step 4: Rename new table
+-- Step 5: Rename new table
 ALTER TABLE audit_logs_new RENAME TO audit_logs;
 
--- Step 5: Recreate indexes for performance (without the problematic unique constraint)
+-- Step 6: Recreate indexes for performance (without the problematic unique constraint)
 CREATE INDEX IF NOT EXISTS idx_audit_logs_event_type ON audit_logs(event_type, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_admin_user ON audit_logs(admin_user, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_target ON audit_logs(target_type, target_id);
