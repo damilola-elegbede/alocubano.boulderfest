@@ -192,22 +192,8 @@ async function handler(req, res) {
 // to ensure all errors are returned as JSON
 async function safeHandler(req, res) {
   try {
-    // Pre-initialize services to catch configuration errors early
-    try {
-      await authService.ensureInitialized();
-    } catch (initError) {
-      console.error('Auth service initialization failed:', initError);
-      return res.status(500).json({
-        error: 'Authentication service unavailable',
-        message: process.env.NODE_ENV === 'development' || process.env.VERCEL_ENV === 'preview'
-          ? `Auth initialization failed: ${initError.message}`
-          : 'Authentication service is temporarily unavailable',
-        timestamp: new Date().toISOString()
-      });
-    }
-
     // Build the middleware chain inside the try-catch
-    // This ensures any initialization errors are caught
+    // This ensures any middleware initialization errors are caught
     const securedHandler = withSecurityHeaders(authService.requireAuth(handler));
 
     // Execute the secured handler
@@ -215,7 +201,18 @@ async function safeHandler(req, res) {
   } catch (error) {
     console.error('Fatal error in transactions endpoint:', error);
 
-    // Always return JSON error response
+    // Check if this is an auth initialization error
+    if (error.message.includes('ADMIN_SECRET')) {
+      return res.status(500).json({
+        error: 'Authentication service unavailable',
+        message: process.env.NODE_ENV === 'development' || process.env.VERCEL_ENV === 'preview'
+          ? `Auth configuration error: ${error.message}`
+          : 'Authentication service is temporarily unavailable',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Always return JSON error response for other errors
     if (!res.headersSent) {
       res.status(500).json({
         error: 'Internal server error',

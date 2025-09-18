@@ -256,43 +256,113 @@ async function handler(req, res) {
 // Wrap the entire middleware chain in an error-handling function
 // to ensure all errors are returned as JSON
 async function safeHandler(req, res) {
+  console.log(`🔍 [${new Date().toISOString()}] Registrations endpoint called`);
+  console.log(`📡 Request: ${req.method} ${req.url}`);
+  console.log(`🏷️  Headers:`, Object.keys(req.headers));
+  console.log(`🔧 Environment: NODE_ENV=${process.env.NODE_ENV}, VERCEL_ENV=${process.env.VERCEL_ENV}`);
+
   try {
-    // Pre-initialize services to catch configuration errors early
+    console.log(`⚙️  Building middleware chain...`);
+
+    // Build each middleware layer with individual error handling
+    let currentHandler = handler;
+    console.log(`📝 Base handler: OK`);
+
+    // Wrap auth middleware with error handling
     try {
-      await authService.ensureInitialized();
-    } catch (initError) {
-      console.error('Auth service initialization failed:', initError);
-      return res.status(500).json({
-        error: 'Authentication service unavailable',
-        message: process.env.NODE_ENV === 'development' || process.env.VERCEL_ENV === 'preview'
-          ? `Auth initialization failed: ${initError.message}`
-          : 'Authentication service is temporarily unavailable',
-        timestamp: new Date().toISOString()
-      });
+      console.log(`🔐 Adding auth middleware...`);
+      currentHandler = authService.requireAuth(currentHandler);
+      console.log(`🔐 Auth middleware: OK`);
+    } catch (authError) {
+      console.error(`❌ Auth middleware construction failed:`, authError);
+      throw new Error(`Auth middleware failed: ${authError.message}`);
     }
 
-    // Build the middleware chain inside the try-catch
-    // This ensures any initialization errors are caught
-    const securedHandler = withSecurityHeaders(
-      csrfService.validateCSRF(
-        authService.requireAuth(handler)
-      )
-    );
+    // Wrap CSRF middleware with error handling
+    try {
+      console.log(`🛡️  Adding CSRF middleware...`);
+      currentHandler = csrfService.validateCSRF(currentHandler);
+      console.log(`🛡️  CSRF middleware: OK`);
+    } catch (csrfError) {
+      console.error(`❌ CSRF middleware construction failed:`, csrfError);
+      throw new Error(`CSRF middleware failed: ${csrfError.message}`);
+    }
 
-    // Execute the secured handler
-    return await securedHandler(req, res);
+    // Wrap security headers middleware with error handling
+    try {
+      console.log(`🔒 Adding security headers middleware...`);
+      currentHandler = withSecurityHeaders(currentHandler);
+      console.log(`🔒 Security headers middleware: OK`);
+    } catch (securityError) {
+      console.error(`❌ Security headers middleware construction failed:`, securityError);
+      throw new Error(`Security headers middleware failed: ${securityError.message}`);
+    }
+
+    console.log(`✅ Middleware chain built successfully`);
+
+    // Execute the secured handler with detailed error handling
+    console.log(`🚀 Executing middleware chain...`);
+
+    const result = await currentHandler(req, res);
+
+    console.log(`✅ Request completed successfully`);
+    return result;
+
   } catch (error) {
-    console.error('Fatal error in registrations endpoint:', error);
+    console.error(`💥 FATAL ERROR in registrations endpoint:`, {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      timestamp: new Date().toISOString(),
+      method: req.method,
+      url: req.url,
+      headers: req.headers,
+      query: req.query
+    });
+
+    // Detailed error classification for debugging
+    let errorType = 'UNKNOWN';
+    let debugMessage = error.message;
+
+    if (error.message.includes('ADMIN_SECRET')) {
+      errorType = 'AUTH_CONFIG';
+      debugMessage = `Auth configuration error: ${error.message}`;
+    } else if (error.message.includes('CSRF')) {
+      errorType = 'CSRF_ERROR';
+      debugMessage = `CSRF validation error: ${error.message}`;
+    } else if (error.message.includes('database') || error.message.includes('Database')) {
+      errorType = 'DATABASE_ERROR';
+      debugMessage = `Database error: ${error.message}`;
+    } else if (error.message.includes('Auth middleware')) {
+      errorType = 'AUTH_MIDDLEWARE';
+      debugMessage = error.message;
+    } else if (error.message.includes('CSRF middleware')) {
+      errorType = 'CSRF_MIDDLEWARE';
+      debugMessage = error.message;
+    } else if (error.message.includes('Security headers middleware')) {
+      errorType = 'SECURITY_MIDDLEWARE';
+      debugMessage = error.message;
+    }
+
+    console.error(`🏷️  Error classified as: ${errorType}`);
 
     // Always return JSON error response
     if (!res.headersSent) {
-      res.status(500).json({
+      const errorResponse = {
         error: 'Internal server error',
+        errorType: errorType,
         message: process.env.NODE_ENV === 'development' || process.env.VERCEL_ENV === 'preview'
-          ? error.message
+          ? debugMessage
           : 'A server error occurred while processing your request',
-        timestamp: new Date().toISOString()
-      });
+        timestamp: new Date().toISOString(),
+        requestId: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+      };
+
+      console.log(`📤 Returning error response:`, errorResponse);
+
+      res.status(500).json(errorResponse);
+    } else {
+      console.warn(`⚠️  Headers already sent, cannot return JSON error response`);
     }
   }
 }
