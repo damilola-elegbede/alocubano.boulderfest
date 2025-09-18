@@ -104,7 +104,9 @@ describe('Compliance Verification Tests', () => {
       // Verify comprehensive GDPR audit coverage
       const gdprAudit = await auditService.queryAuditLogs({
         eventType: 'data_processing',
-        limit: 50
+        limit: 50,
+        orderBy: 'created_at',
+        orderDirection: 'ASC'  // Fix: match insertion order for correct test validation
       });
 
       const gdprLogs = gdprAudit.logs.filter(log => {
