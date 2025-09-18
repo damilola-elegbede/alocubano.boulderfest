@@ -343,7 +343,7 @@
         });
 
         try {
-          const response = await fetch(`/api/admin/registrations-debug?${params}`, {
+          const response = await fetch(`/api/admin/registrations?${params}`, {
             credentials: "include" // Include cookies for production
           });
 
@@ -495,7 +495,7 @@
           }
 
           const response = await fetch(
-            `/api/admin/registrations-debug?ticketId=${encodeURIComponent(ticketId)}`,
+            `/api/admin/registrations?ticketId=${encodeURIComponent(ticketId)}`,
             {
               method: "PUT",
               credentials: "same-origin", // CRITICAL: Include cookies for production
@@ -526,7 +526,7 @@
           }
 
           const response = await fetch(
-            `/api/admin/registrations-debug?ticketId=${encodeURIComponent(ticketId)}`,
+            `/api/admin/registrations?ticketId=${encodeURIComponent(ticketId)}`,
             {
               method: "PUT",
               credentials: "same-origin", // CRITICAL: Include cookies for production
@@ -564,7 +564,7 @@
         });
 
         try {
-          const response = await fetch(`/api/admin/registrations-debug?${params}`, {
+          const response = await fetch(`/api/admin/registrations?${params}`, {
             credentials: "include" // Include cookies for production
           });
           const data = await response.json();
