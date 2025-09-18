@@ -172,20 +172,20 @@ export const getTestTimeout = () => Number(process.env.VITEST_TEST_TIMEOUT || co
 
 /**
  * Initialize Database for Integration Tests with Test Isolation
- * With in-memory databases, each test scope handles its own migrations
+ * With in-memory databases and worker-level management, migrations run once per worker
  */
 const initializeDatabase = async () => {
   try {
     // Initialize test isolation mode
     await isolationManager.initializeTestMode();
 
-    // For in-memory databases, skip suite-level initialization
-    // Each test worker and scope will get its own database with migrations
+    // For in-memory databases with worker-level management
     if (process.env.DATABASE_URL === ':memory:') {
-      console.log('✅ Using in-memory SQLite - each test gets isolated database');
-      console.log('🚀 Migrations will run per test scope automatically');
+      console.log('✅ Using in-memory SQLite with worker-level database management');
+      console.log('🚀 Each worker (4 total) will initialize its own database with migrations');
+      console.log('📊 Expected: 4 migration runs total (1 per worker), not 398 (1 per test)');
       console.log('🔒 Perfect isolation - no lock contention possible');
-      // No scope creation needed here - each test creates its own
+      // Worker databases are initialized lazily when first test in that worker runs
       return;
     }
 
@@ -240,18 +240,11 @@ const initializeDatabase = async () => {
 
 /**
  * Clean Database Between Tests using Test Isolation
- * With in-memory databases, this is now much simpler
+ * With worker-level databases, we clean data but keep the database
  */
 const cleanDatabase = async () => {
   try {
-    // For in-memory databases, each test gets a fresh database
-    // No cleaning needed as each scope has its own database instance
-    if (process.env.DATABASE_URL === ':memory:') {
-      // Each test scope gets a completely fresh database
-      return;
-    }
-
-    // For file-based databases, clean the shared database
+    // Get the worker database (shared by all tests in this worker)
     const dbClient = await isolationManager.getScopedDatabaseClient();
 
     // Get all tables from database
@@ -260,7 +253,7 @@ const cleanDatabase = async () => {
     );
     const tables = tableQuery.rows.map(row => row.name);
 
-    // Clear all tables (except migrations)
+    // Clear all tables (except migrations) - data only, keep structure
     for (const table of tables) {
       try {
         await dbClient.execute(`DELETE FROM "${table}"`);
@@ -269,10 +262,13 @@ const cleanDatabase = async () => {
       }
     }
 
-    console.log(`🧹 Database cleaned: ${tables.length} tables`);
+    // Log cleanup but less verbosely
+    if (tables.length > 0) {
+      console.log(`🧹 Cleaned ${tables.length} tables in worker database`);
+    }
   } catch (error) {
     console.warn('⚠️ Database cleanup warning:', error.message);
-    // With in-memory databases, cleanup failures are less critical
+    // Non-fatal - tests can continue
   }
 };
 
@@ -288,19 +284,19 @@ if (!globalThis.fetch) {
 
 // Integration test lifecycle with Test Isolation
 beforeAll(async () => {
-  console.log('🚀 Integration test suite starting with in-memory SQLite');
-  console.log(`📊 Target: ~30-50 tests with isolated databases`);
-  console.log(`🗄️ Database: In-memory SQLite (complete isolation)`);
+  console.log('🚀 Integration test suite starting with worker-level database management');
+  console.log(`📊 Target: ~30-50 tests across 4 parallel workers`);
+  console.log(`🗄️ Database: In-memory SQLite (1 per worker, 4 total)`);
   console.log(`🔧 Port: ${config.port.port} (${config.port.description})`);
   console.log(`🔐 Secrets: ${secretValidation.totalChecked} checked, ${secretValidation.warnings.length} warnings`);
-  console.log(`🧪 Test Isolation: PERFECT - Each test gets fresh in-memory database`);
+  console.log(`🧪 Test Isolation: Worker-level - 4 databases total, not 398`);
 
   if (secretValidation.warnings.length > 0) {
     console.log('⚠️ Integration test warnings:');
     secretValidation.warnings.forEach(warning => console.log(`   - ${warning}`));
   }
 
-  // Initialize database with migrations
+  // Initialize test isolation manager
   await initializeDatabase();
 }, config.timeouts.setup);
 
@@ -313,33 +309,33 @@ beforeEach(async (context) => {
   testCounter++;
   const testName = context?.task?.name || `test-${workerId}-${testCounter}`;
 
-  console.log(`🧪 Starting test: ${testName} (worker: ${workerId})`);
+  // Less verbose logging
+  if (testCounter === 1) {
+    console.log(`🧪 Worker ${workerId} starting - initializing worker database...`);
+  }
 
-  // CRITICAL: Ensure complete isolation for this test
+  // CRITICAL: Ensure test scope is created (will use worker database)
   await isolationManager.ensureTestIsolation(testName);
 
-  // Clean database with fresh connection
+  // Clean database data between tests (keep structure)
   await cleanDatabase();
 }, config.timeouts.hook);
 
 afterEach(async () => {
-  // CRITICAL: Complete test and clean up all resources
+  // CRITICAL: Complete test and clean up test scope (not worker database)
   await isolationManager.completeTest();
-
-  console.log(`✅ Test completed and isolated`);
 }, config.timeouts.hook);
 
 afterAll(async () => {
-  console.log('🧹 Starting integration test suite cleanup');
+  console.log(`🧹 Worker ${workerId} cleanup starting`);
 
-  // Clean up all test scopes
+  // Clean up all test scopes (but keep worker database for other tests in this worker)
   await isolationManager.cleanupAllScopes();
 
-  // No need to clean up database files with in-memory SQLite!
-  console.log('✅ No file cleanup needed with in-memory databases');
+  // Worker database will be garbage collected when worker exits
+  console.log(`✅ Worker ${workerId} cleanup completed`);
 
   await cleanupEnvironment(TEST_ENVIRONMENTS.INTEGRATION);
-  console.log('✅ Integration test cleanup completed');
 }, config.timeouts.cleanup);
 
 /**
@@ -357,4 +353,5 @@ export const getIsolationStats = () => isolationManager.getStats();
 // Export secret validation result for tests that need to check availability
 export const getSecretValidation = () => secretValidation;
 
-console.log('🧪 Integration test environment ready - using in-memory SQLite for perfect isolation');
+console.log('🧪 Integration test environment ready - using worker-level database management');
+console.log('📊 Expected behavior: 4 databases total (1 per worker), 4 migration runs total');
