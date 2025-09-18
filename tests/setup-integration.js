@@ -175,11 +175,14 @@ const initializeDatabase = async () => {
     // Initialize test isolation mode
     await isolationManager.initializeTestMode();
 
-    // For in-memory databases, we don't run migrations here
+    // For in-memory databases, we still need to create a scope but skip suite-level migrations
     // Each test scope will get its own database with migrations
     if (process.env.DATABASE_URL === ':memory:') {
       console.log('✅ Using in-memory SQLite - migrations will run per test scope');
       console.log('🚀 Each test gets its own isolated database instance');
+      // Still need to create and complete an initial scope for the framework
+      const scope = await isolationManager.createTestScope('migration-init');
+      await isolationManager.completeTest();
       return;
     }
 
