@@ -33,7 +33,8 @@ jobs:
         node-version: ['20.x', '22.x']
 
     env:
-      DATABASE_URL: "file:./data/test-integration.db"
+      # Use in-memory SQLite for perfect test isolation (no lock contention!)
+      DATABASE_URL: ":memory:"
       INTEGRATION_TEST_MODE: "true"
       VERCEL: ""
       # Admin authentication - CRITICAL for integration tests
@@ -111,24 +112,11 @@ jobs:
           echo "🗃️ Setting up Integration Test Database"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-          # Create data directory if it doesn't exist
-          mkdir -p data
-
-          # Remove any existing integration test database
-          rm -f data/test-integration.db
-
-          # Run database migrations first
-          echo "🔄 Running database migrations..."
-          NODE_ENV=test node scripts/migrate.js
-
-          # Verify database creation
-          if [ -f "data/test-integration.db" ]; then
-            echo "✅ Integration test database created successfully"
-            echo "📊 Database size: $(du -h data/test-integration.db | cut -f1)"
-          else
-            echo "❌ Failed to create integration test database"
-            exit 1
-          fi
+          # No database setup needed for in-memory SQLite!
+          # Each test worker gets its own isolated in-memory database
+          echo "✅ Using in-memory SQLite for perfect test isolation"
+          echo "🚀 No file cleanup or setup needed"
+          echo "⚡ Tests can run in parallel without lock contention"
 
       - name: "🔗 Run Integration Tests"
         id: test
@@ -181,8 +169,7 @@ jobs:
       - name: "🧹 Database Cleanup"
         if: always()
         run: |
-          echo "🧹 Cleaning up integration test database..."
-          rm -f data/test-integration.db
+          echo "✅ No cleanup needed for in-memory databases"
           echo "✅ Integration test database cleanup completed"
 
       - name: "📤 Upload Test Results"
