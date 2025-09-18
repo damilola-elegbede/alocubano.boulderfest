@@ -7,6 +7,7 @@
 import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { testRequest, HTTP_STATUS, generateTestId } from './handler-test-helper.js';
 import { getDbClient } from '../setup-integration.js';
+import { resetAllServices } from './reset-services.js';
 import auditService from '../../lib/audit-service.js';
 
 // Test admin credentials
@@ -21,12 +22,9 @@ describe('Audit Performance Integration Tests', () => {
   let adminToken;
 
   beforeEach(async () => {
-    dbClient = await getDbClient();
+    await resetAllServices();
 
-    // Reset audit service state
-    auditService.initialized = false;
-    auditService.initializationPromise = null;
-    auditService.db = null;
+    dbClient = await getDbClient();
 
     // Initialize audit service
     await auditService.ensureInitialized();

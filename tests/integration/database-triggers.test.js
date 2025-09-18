@@ -5,6 +5,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, beforeAll } from 'vitest';
 import { getDatabaseClient } from '../../lib/database.js';
+import { resetAllServices } from './reset-services.js';
 import crypto from 'crypto';
 
 describe('Database Triggers Tests', () => {
@@ -38,6 +39,8 @@ describe('Database Triggers Tests', () => {
   }
 
   beforeEach(async () => {
+    await resetAllServices();
+
     // Generate unique test identifiers
     testTransactionId = `test_txn_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
     testTicketId = `test_ticket_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;

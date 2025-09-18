@@ -5,6 +5,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { getDatabaseClient } from '../../lib/database.js';
+import { resetAllServices } from './reset-services.js';
 import auditService from '../../lib/audit-service.js';
 
 // Mock Financial Reconciliation Service
@@ -369,6 +370,8 @@ describe('Financial Reconciliation Tests', () => {
   let reconciliationService;
 
   beforeEach(async () => {
+    await resetAllServices();
+
     db = await getDatabaseClient();
     reconciliationService = new FinancialReconciliationService();
 

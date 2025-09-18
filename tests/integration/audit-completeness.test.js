@@ -7,6 +7,7 @@
 import { describe, it, expect, beforeEach, afterEach, beforeAll } from 'vitest';
 import { getDatabaseClient } from '../../lib/database.js';
 import { auditService } from '../../lib/audit-service.js';
+import { resetAllServices } from './reset-services.js';
 import crypto from 'crypto';
 
 describe('Audit Completeness Tests', () => {
@@ -22,6 +23,12 @@ describe('Audit Completeness Tests', () => {
   });
 
   beforeEach(async () => {
+    await resetAllServices();
+
+    // Get fresh database client after reset
+    db = await getDatabaseClient();
+    await auditService.ensureInitialized();
+
     // Generate unique test identifiers
     testRequestId = `completeness_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
     testTicketId = `ticket_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;

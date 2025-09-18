@@ -3,10 +3,15 @@
  * Simple verification that the audit service can be initialized and basic operations work
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeEach, beforeAll } from 'vitest';
 import { auditService } from '../../lib/audit-service.js';
+import { resetAllServices } from './reset-services.js';
 
 describe('Basic Audit Service Tests', () => {
+  beforeEach(async () => {
+    await resetAllServices();
+  });
+
   beforeAll(async () => {
     await auditService.ensureInitialized();
   });

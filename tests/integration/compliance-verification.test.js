@@ -6,7 +6,9 @@
 
 import { describe, it, expect, beforeEach, afterEach, beforeAll } from 'vitest';
 import { getDatabaseClient } from '../../lib/database.js';
-import { auditService } from '../../lib/audit-service.js';
+import auditService from '../../lib/audit-service.js';
+import securityAlertService from '../../lib/security-alert-service.js';
+import sessionMonitorService from '../../lib/session-monitor-service.js';
 import crypto from 'crypto';
 
 describe('Compliance Verification Tests', () => {
@@ -25,6 +27,27 @@ describe('Compliance Verification Tests', () => {
   });
 
   beforeEach(async () => {
+    // Reset ALL service states that cache database connections
+    // This prevents CLIENT_CLOSED errors from stale connections
+
+    // Reset audit service state
+    auditService.initialized = false;
+    auditService.initializationPromise = null;
+    auditService.db = null;
+
+    // Reset security alert service state
+    securityAlertService.initialized = false;
+    securityAlertService.initializationPromise = null;
+    securityAlertService.db = null;
+
+    // Reset session monitor service state
+    sessionMonitorService.initialized = false;
+    sessionMonitorService.initializationPromise = null;
+    sessionMonitorService.db = null;
+
+    // Re-initialize audit service
+    await auditService.ensureInitialized();
+
     // Generate unique test identifiers
     testRequestId = `compliance_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
     testDataSubjectId = `subject_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;

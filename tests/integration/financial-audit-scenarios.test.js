@@ -6,6 +6,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { getDatabaseClient } from '../../lib/database.js';
+import { resetAllServices } from './reset-services.js';
 import auditService from '../../lib/audit-service.js';
 
 // Mock advanced scenario testing utilities
@@ -495,6 +496,8 @@ describe('Financial Audit Scenarios Tests', () => {
   let scenarioTester;
 
   beforeEach(async () => {
+    await resetAllServices();
+
     db = await getDatabaseClient();
     scenarioTester = new FinancialAuditScenarioTester();
 

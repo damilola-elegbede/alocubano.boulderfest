@@ -8,6 +8,8 @@ import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { testRequest, HTTP_STATUS, generateTestId } from './handler-test-helper.js';
 import { getDbClient } from '../setup-integration.js';
 import auditService from '../../lib/audit-service.js';
+import securityAlertService from '../../lib/security-alert-service.js';
+import sessionMonitorService from '../../lib/session-monitor-service.js';
 
 // Test admin credentials
 const adminPassword = process.env.TEST_ADMIN_PASSWORD;
@@ -23,12 +25,25 @@ describe('Admin Audit Integration Tests', () => {
   beforeEach(async () => {
     dbClient = await getDbClient();
 
+    // Reset ALL service states that cache database connections
+    // This prevents CLIENT_CLOSED errors from stale connections
+
     // Reset audit service state
     auditService.initialized = false;
     auditService.initializationPromise = null;
     auditService.db = null;
 
-    // Initialize audit service
+    // Reset security alert service state
+    securityAlertService.initialized = false;
+    securityAlertService.initializationPromise = null;
+    securityAlertService.db = null;
+
+    // Reset session monitor service state
+    sessionMonitorService.initialized = false;
+    sessionMonitorService.initializationPromise = null;
+    sessionMonitorService.db = null;
+
+    // Initialize audit service (others will lazy-initialize as needed)
     await auditService.ensureInitialized();
 
     // Get admin token for authenticated requests

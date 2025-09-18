@@ -5,6 +5,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { getDatabaseClient } from '../../lib/database.js';
+import { resetAllServices } from './reset-services.js';
 import auditService from '../../lib/audit-service.js';
 import paymentEventLogger from '../../lib/payment-event-logger.js';
 
@@ -34,6 +35,8 @@ describe('Stripe Webhook Audit Tests', () => {
   let db;
 
   beforeEach(async () => {
+    await resetAllServices();
+
     db = await getDatabaseClient();
 
     // Ensure audit service is initialized (creates table if needed)

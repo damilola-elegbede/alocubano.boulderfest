@@ -6,6 +6,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { getDatabaseClient } from '../../lib/database.js';
 import auditService from '../../lib/audit-service.js';
+import securityAlertService from '../../lib/security-alert-service.js';
+import sessionMonitorService from '../../lib/session-monitor-service.js';
 
 // Mock Financial Reporting Service
 class FinancialReportingService {
@@ -467,6 +469,24 @@ describe('Financial Reporting Integration Tests', () => {
   beforeEach(async () => {
     db = await getDatabaseClient();
     reportingService = new FinancialReportingService();
+
+    // Reset ALL service states that cache database connections
+    // This prevents CLIENT_CLOSED errors from stale connections
+
+    // Reset audit service state
+    auditService.initialized = false;
+    auditService.initializationPromise = null;
+    auditService.db = null;
+
+    // Reset security alert service state
+    securityAlertService.initialized = false;
+    securityAlertService.initializationPromise = null;
+    securityAlertService.db = null;
+
+    // Reset session monitor service state
+    sessionMonitorService.initialized = false;
+    sessionMonitorService.initializationPromise = null;
+    sessionMonitorService.db = null;
 
     // Initialize services first (creates tables if needed)
     await auditService.ensureInitialized();

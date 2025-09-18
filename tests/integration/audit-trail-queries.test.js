@@ -7,6 +7,7 @@
 import { describe, it, expect, beforeEach, afterEach, beforeAll } from 'vitest';
 import { getDatabaseClient } from '../../lib/database.js';
 import { auditService } from '../../lib/audit-service.js';
+import { resetAllServices } from './reset-services.js';
 import crypto from 'crypto';
 
 describe('Audit Trail Queries Tests', () => {
@@ -19,6 +20,8 @@ describe('Audit Trail Queries Tests', () => {
   });
 
   beforeEach(async () => {
+    await resetAllServices();
+
     // Clean up any existing test data
     await db.execute('DELETE FROM audit_logs WHERE request_id LIKE ?', [`audit_query_test_%`]);
 
