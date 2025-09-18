@@ -316,7 +316,7 @@ async function safeHandler(req, res) {
       timestamp: new Date().toISOString(),
       method: req.method,
       url: req.url,
-      headers: req.headers,
+      headerKeys: Object.keys(req.headers).slice(0, 10), // Log only header names, not values
       query: req.query
     });
 

@@ -353,8 +353,7 @@
           const data = await response.json();
           console.log("🔍 Debug response data:", data);
 
-          // Store response for error handling
-          window.lastDebugResponse = data;
+          // Response handled locally for security
 
           if (!response.ok) {
             console.error("🔍 Debug endpoint returned error:", data);

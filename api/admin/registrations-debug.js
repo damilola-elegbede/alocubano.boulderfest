@@ -76,7 +76,7 @@ export default async function handler(req, res) {
       error: 'Import failure during module loading',
       service: importError.service,
       message: importError.error.message,
-      stack: importError.error.stack,
+      // Never expose stack traces in production
       timestamp: new Date().toISOString()
     });
   }
