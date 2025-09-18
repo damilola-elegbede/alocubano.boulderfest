@@ -9,7 +9,7 @@ const MOCK_EVENTS = [
   {
     id: 1,
     slug: "boulderfest-2026",
-    name: "A Lo Cubano Boulder Fest 2026",
+    name: "[Mock] Boulder Fest 2026",
     type: "festival",
     status: "upcoming",
     start_date: "2026-05-15",
@@ -17,21 +17,12 @@ const MOCK_EVENTS = [
   },
   {
     id: 2,
-    slug: "spring-weekender-2026",
-    name: "Spring Salsa Weekender 2026",
+    slug: "weekender-09-2026",
+    name: "[Mock] Weekender 09/2026",
     type: "weekender",
     status: "upcoming",
-    start_date: "2026-03-20",
-    end_date: "2026-03-22"
-  },
-  {
-    id: 3,
-    slug: "winter-weekender-2025",
-    name: "Winter Salsa Weekender 2025",
-    type: "weekender",
-    status: "completed",
-    start_date: "2025-02-14",
-    end_date: "2025-02-16"
+    start_date: "2026-09-18",
+    end_date: "2026-09-20"
   }
 ];
 

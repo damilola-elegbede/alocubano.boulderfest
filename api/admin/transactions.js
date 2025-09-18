@@ -188,4 +188,41 @@ async function handler(req, res) {
   }
 }
 
-export default withSecurityHeaders(authService.requireAuth(handler));
+// Wrap the entire middleware chain in an error-handling function
+// to ensure all errors are returned as JSON
+async function safeHandler(req, res) {
+  try {
+    // Build the middleware chain inside the try-catch
+    // This ensures any middleware initialization errors are caught
+    const securedHandler = withSecurityHeaders(authService.requireAuth(handler));
+
+    // Execute the secured handler
+    return await securedHandler(req, res);
+  } catch (error) {
+    console.error('Fatal error in transactions endpoint:', error);
+
+    // Check if this is an auth initialization error
+    if (error.message.includes('ADMIN_SECRET')) {
+      return res.status(500).json({
+        error: 'Authentication service unavailable',
+        message: process.env.NODE_ENV === 'development' || process.env.VERCEL_ENV === 'preview'
+          ? `Auth configuration error: ${error.message}`
+          : 'Authentication service is temporarily unavailable',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Always return JSON error response for other errors
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: 'Internal server error',
+        message: process.env.NODE_ENV === 'development' || process.env.VERCEL_ENV === 'preview'
+          ? error.message
+          : 'A server error occurred while processing your request',
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+}
+
+export default safeHandler;

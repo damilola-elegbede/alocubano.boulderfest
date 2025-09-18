@@ -253,8 +253,118 @@ async function handler(req, res) {
   }
 }
 
-export default withSecurityHeaders(
-  csrfService.validateCSRF(
-    authService.requireAuth(handler)
-  )
-);
+// Wrap the entire middleware chain in an error-handling function
+// to ensure all errors are returned as JSON
+async function safeHandler(req, res) {
+  console.log(`🔍 [${new Date().toISOString()}] Registrations endpoint called`);
+  console.log(`📡 Request: ${req.method} ${req.url}`);
+  console.log(`🏷️  Headers:`, Object.keys(req.headers));
+  console.log(`🔧 Environment: NODE_ENV=${process.env.NODE_ENV}, VERCEL_ENV=${process.env.VERCEL_ENV}`);
+
+  try {
+    console.log(`⚙️  Building middleware chain...`);
+
+    // Build each middleware layer with individual error handling
+    let currentHandler = handler;
+    console.log(`📝 Base handler: OK`);
+
+    // Wrap auth middleware with error handling
+    try {
+      console.log(`🔐 Adding auth middleware...`);
+      currentHandler = authService.requireAuth(currentHandler);
+      console.log(`🔐 Auth middleware: OK`);
+    } catch (authError) {
+      console.error(`❌ Auth middleware construction failed:`, authError);
+      throw new Error(`Auth middleware failed: ${authError.message}`);
+    }
+
+    // Wrap CSRF middleware with error handling
+    try {
+      console.log(`🛡️  Adding CSRF middleware...`);
+      currentHandler = csrfService.validateCSRF(currentHandler);
+      console.log(`🛡️  CSRF middleware: OK`);
+    } catch (csrfError) {
+      console.error(`❌ CSRF middleware construction failed:`, csrfError);
+      throw new Error(`CSRF middleware failed: ${csrfError.message}`);
+    }
+
+    // Wrap security headers middleware with error handling
+    try {
+      console.log(`🔒 Adding security headers middleware...`);
+      currentHandler = withSecurityHeaders(currentHandler);
+      console.log(`🔒 Security headers middleware: OK`);
+    } catch (securityError) {
+      console.error(`❌ Security headers middleware construction failed:`, securityError);
+      throw new Error(`Security headers middleware failed: ${securityError.message}`);
+    }
+
+    console.log(`✅ Middleware chain built successfully`);
+
+    // Execute the secured handler with detailed error handling
+    console.log(`🚀 Executing middleware chain...`);
+
+    const result = await currentHandler(req, res);
+
+    console.log(`✅ Request completed successfully`);
+    return result;
+
+  } catch (error) {
+    console.error(`💥 FATAL ERROR in registrations endpoint:`, {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      timestamp: new Date().toISOString(),
+      method: req.method,
+      url: req.url,
+      headerKeys: Object.keys(req.headers).slice(0, 10), // Log only header names, not values
+      query: req.query
+    });
+
+    // Detailed error classification for debugging
+    let errorType = 'UNKNOWN';
+    let debugMessage = error.message;
+
+    if (error.message.includes('ADMIN_SECRET')) {
+      errorType = 'AUTH_CONFIG';
+      debugMessage = `Auth configuration error: ${error.message}`;
+    } else if (error.message.includes('CSRF')) {
+      errorType = 'CSRF_ERROR';
+      debugMessage = `CSRF validation error: ${error.message}`;
+    } else if (error.message.includes('database') || error.message.includes('Database')) {
+      errorType = 'DATABASE_ERROR';
+      debugMessage = `Database error: ${error.message}`;
+    } else if (error.message.includes('Auth middleware')) {
+      errorType = 'AUTH_MIDDLEWARE';
+      debugMessage = error.message;
+    } else if (error.message.includes('CSRF middleware')) {
+      errorType = 'CSRF_MIDDLEWARE';
+      debugMessage = error.message;
+    } else if (error.message.includes('Security headers middleware')) {
+      errorType = 'SECURITY_MIDDLEWARE';
+      debugMessage = error.message;
+    }
+
+    console.error(`🏷️  Error classified as: ${errorType}`);
+
+    // Always return JSON error response
+    if (!res.headersSent) {
+      const errorResponse = {
+        error: 'Internal server error',
+        errorType: errorType,
+        message: process.env.NODE_ENV === 'development' || process.env.VERCEL_ENV === 'preview'
+          ? debugMessage
+          : 'A server error occurred while processing your request',
+        timestamp: new Date().toISOString(),
+        requestId: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+      };
+
+      console.log(`📤 Returning error response:`, errorResponse);
+
+      res.status(500).json(errorResponse);
+    } else {
+      console.warn(`⚠️  Headers already sent, cannot return JSON error response`);
+    }
+  }
+}
+
+export default safeHandler;

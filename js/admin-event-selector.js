@@ -49,9 +49,8 @@ class EventSelector {
       console.error('Error loading events:', error);
       // Fallback to mock data if API not available
       this.events = [
-        { id: 1, name: 'A Lo Cubano Boulder Fest 2026', slug: 'boulderfest-2026', type: 'festival', status: 'upcoming' },
-        { id: 2, name: 'Winter Salsa Weekender 2025', slug: 'winter-weekender-2025', type: 'weekender', status: 'completed' },
-        { id: 3, name: 'Spring Salsa Weekender 2026', slug: 'spring-weekender-2026', type: 'weekender', status: 'upcoming' }
+        { id: 1, name: '[Mock] Boulder Fest 2026', slug: 'boulderfest-2026', type: 'festival', status: 'upcoming' },
+        { id: 2, name: '[Mock] Weekender 09/2026', slug: 'weekender-09-2026', type: 'weekender', status: 'upcoming' }
       ];
     }
   }
