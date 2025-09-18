@@ -66,11 +66,8 @@ async function handler(req, res) {
     }
 
     // Generate session token (no MFA required)
-    const token = await authService.generateSessionToken({
-      adminId: username,
-      ipAddress: req.headers['x-forwarded-for'] || req.connection?.remoteAddress,
-      userAgent: req.headers['user-agent']
-    });
+    const authServiceInstance = authService.default || authService;
+    const token = await authServiceInstance.createSessionToken(username);
 
     // Set secure cookie
     const isSecure = process.env.NODE_ENV === 'production' || req.headers['x-forwarded-proto'] === 'https';
