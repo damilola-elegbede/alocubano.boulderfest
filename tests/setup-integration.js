@@ -112,9 +112,7 @@ const validateIntegrationSecrets = () => {
   };
 };
 
-// CRITICAL FIX: Use in-memory SQLite for complete test isolation
-// This prevents SQLITE_BUSY, SQLITE_LOCKED, and race condition errors
-process.env.DATABASE_URL = ':memory:';
+// Clean up environment variables to ensure proper test isolation
 delete process.env.TURSO_AUTH_TOKEN;
 delete process.env.TURSO_DATABASE_URL;
 // Ensure this is not detected as E2E test
@@ -150,6 +148,12 @@ const secretValidation = validateIntegrationSecrets();
 console.log('🔧 Step 2: Environment Configuration');
 const config = configureEnvironment(TEST_ENVIRONMENTS.INTEGRATION);
 
+// CRITICAL FIX: Set DATABASE_URL AFTER configureEnvironment to prevent override
+// Use in-memory SQLite for complete test isolation
+// This prevents SQLITE_BUSY, SQLITE_LOCKED, and race condition errors
+process.env.DATABASE_URL = ':memory:';
+console.log('✅ Forced DATABASE_URL to :memory: for perfect test isolation');
+
 // Validate environment setup
 console.log('🔧 Step 3: Environment Validation');
 validateEnvironment(TEST_ENVIRONMENTS.INTEGRATION);
@@ -175,14 +179,13 @@ const initializeDatabase = async () => {
     // Initialize test isolation mode
     await isolationManager.initializeTestMode();
 
-    // For in-memory databases, we still need to create a scope but skip suite-level migrations
-    // Each test scope will get its own database with migrations
+    // For in-memory databases, skip suite-level initialization
+    // Each test worker and scope will get its own database with migrations
     if (process.env.DATABASE_URL === ':memory:') {
-      console.log('✅ Using in-memory SQLite - migrations will run per test scope');
-      console.log('🚀 Each test gets its own isolated database instance');
-      // Still need to create and complete an initial scope for the framework
-      const scope = await isolationManager.createTestScope('migration-init');
-      await isolationManager.completeTest();
+      console.log('✅ Using in-memory SQLite - each test gets isolated database');
+      console.log('🚀 Migrations will run per test scope automatically');
+      console.log('🔒 Perfect isolation - no lock contention possible');
+      // No scope creation needed here - each test creates its own
       return;
     }
 
@@ -241,10 +244,16 @@ const initializeDatabase = async () => {
  */
 const cleanDatabase = async () => {
   try {
-    // Get scoped database client for cleaning
+    // For in-memory databases, each test gets a fresh database
+    // No cleaning needed as each scope has its own database instance
+    if (process.env.DATABASE_URL === ':memory:') {
+      // Each test scope gets a completely fresh database
+      return;
+    }
+
+    // For file-based databases, clean the shared database
     const dbClient = await isolationManager.getScopedDatabaseClient();
 
-    // With in-memory database, we can simply clear tables without worrying about locks
     // Get all tables from database
     const tableQuery = await dbClient.execute(
       "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name != 'migrations'"
@@ -295,15 +304,16 @@ beforeAll(async () => {
   await initializeDatabase();
 }, config.timeouts.setup);
 
-// Global test counter for unique test IDs
+// Global test counter for unique test IDs (include worker ID to prevent conflicts)
 let testCounter = 0;
+const workerId = process.env.VITEST_POOL_ID || process.pid || Math.random().toString(36).substring(7);
 
 beforeEach(async (context) => {
-  // Create unique test ID
+  // Create unique test ID including worker ID to prevent conflicts
   testCounter++;
-  const testName = context?.task?.name || `test-${testCounter}`;
+  const testName = context?.task?.name || `test-${workerId}-${testCounter}`;
 
-  console.log(`🧪 Starting test: ${testName}`);
+  console.log(`🧪 Starting test: ${testName} (worker: ${workerId})`);
 
   // CRITICAL: Ensure complete isolation for this test
   await isolationManager.ensureTestIsolation(testName);

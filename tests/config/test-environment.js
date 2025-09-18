@@ -28,40 +28,30 @@ export const getDatabaseConfig = (testType) => {
       };
       
     case TEST_ENVIRONMENTS.INTEGRATION:
-      // Ensure data directory exists for integration tests
+      // Determine best database URL for integration tests
       const getIntegrationDbUrl = () => {
-        // Force local SQLite file for integration tests - never use remote databases
-        if (process.env.INTEGRATION_DATABASE_URL && 
+        // Prefer in-memory databases for perfect test isolation
+        // Each test worker gets its own isolated database instance
+        if (process.env.DATABASE_URL === ':memory:' ||
+            process.env.INTEGRATION_DATABASE_URL === ':memory:') {
+          return ':memory:';
+        }
+
+        // Allow file-based SQLite if explicitly requested
+        if (process.env.INTEGRATION_DATABASE_URL &&
             process.env.INTEGRATION_DATABASE_URL.startsWith('file:')) {
           return process.env.INTEGRATION_DATABASE_URL;
         }
-        
-        // Warn if someone tried to set a remote database URL for integration tests
-        if (process.env.INTEGRATION_DATABASE_URL && 
-            !process.env.INTEGRATION_DATABASE_URL.startsWith('file:')) {
-          console.warn('⚠️ Integration tests cannot use remote database URLs - forcing local SQLite');
-        }
-        
-        // Create data directory if it doesn't exist
-        try {
-          const fs = require('fs');
-          const path = require('path');
-          const dataDir = path.join(process.cwd(), 'data');
-          if (!fs.existsSync(dataDir)) {
-            fs.mkdirSync(dataDir, { recursive: true });
-            console.log(`📁 Created data directory for integration tests: ${dataDir}`);
-          }
-        } catch (error) {
-          console.warn('⚠️ Could not create data directory:', error.message);
-        }
-        
-        return 'file:./data/test-integration.db';
+
+        // Default to in-memory for better isolation and performance
+        // File-based databases cause lock contention with parallel workers
+        return ':memory:';
       };
-      
+
       return {
         url: getIntegrationDbUrl(),
         authToken: null, // Integration tests never need auth tokens
-        description: 'Local SQLite file for integration tests (remote databases forbidden)',
+        description: 'In-memory SQLite for perfect test isolation (or local file if specified)',
         persistent: true,
         cleanup: true,
         remoteAllowed: false // Explicitly flag that remote databases are not allowed
@@ -209,11 +199,12 @@ export const configureEnvironment = (testType) => {
   if (testType === TEST_ENVIRONMENTS.INTEGRATION) {
     delete process.env.TURSO_DATABASE_URL;
     delete process.env.TURSO_AUTH_TOKEN;
-    
-    // Ensure DATABASE_URL is always a local file for integration tests
-    if (!process.env.DATABASE_URL.startsWith('file:')) {
+
+    // Allow both file-based and in-memory databases for integration tests
+    // :memory: is valid for perfect test isolation
+    if (!process.env.DATABASE_URL.startsWith('file:') && process.env.DATABASE_URL !== ':memory:') {
       console.warn('⚠️ Fixing invalid DATABASE_URL for integration test');
-      process.env.DATABASE_URL = 'file:./data/test-integration.db';
+      process.env.DATABASE_URL = ':memory:'; // Default to in-memory for better isolation
     }
   }
   
