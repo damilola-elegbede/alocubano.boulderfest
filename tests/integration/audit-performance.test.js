@@ -9,6 +9,7 @@ import { testRequest, HTTP_STATUS, generateTestId } from './handler-test-helper.
 import { getDbClient } from '../setup-integration.js';
 import { resetAllServices } from './reset-services.js';
 import auditService from '../../lib/audit-service.js';
+import { getDatabaseClient } from '../../lib/database.js';
 
 // Test admin credentials
 const adminPassword = process.env.TEST_ADMIN_PASSWORD;
@@ -19,12 +20,14 @@ if (!adminPassword) {
 
 describe('Audit Performance Integration Tests', () => {
   let dbClient;
+  let db;
   let adminToken;
 
   beforeEach(async () => {
     await resetAllServices();
 
     dbClient = await getDbClient();
+    db = await getDatabaseClient();
 
     // Initialize audit service
     // Force audit service to use the test database
@@ -622,9 +625,9 @@ describe('Audit Performance Integration Tests', () => {
 
         // Force audit service to get database client
         // Force audit service to use the test database
-    auditService.db = db || dbClient || (await getDatabaseClient());
-    auditService.initialized = true;
-    auditService.initializationPromise = Promise.resolve(auditService);
+        auditService.db = db || dbClient || (await getDatabaseClient());
+        auditService.initialized = true;
+        auditService.initializationPromise = Promise.resolve(auditService);
 
         const connectionEndTime = performance.now();
         const connectionDuration = connectionEndTime - connectionStartTime;

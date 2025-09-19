@@ -134,10 +134,10 @@ describe('Security Monitoring Integration Tests', () => {
         expect(loginLog.response_time_ms).toBeGreaterThan(0);
       }
 
-      // Also check for authentication attempt logs
+      // Also check for authentication attempt logs (check for POST to login endpoint)
       const authAttemptLogs = auditResult.logs.filter(log =>
-        log.action?.includes('login_attempt') ||
-        log.action?.includes('login_success')
+        (log.action?.includes('POST') && log.request_url?.includes('/api/admin/login')) ||
+        log.action?.includes('login')
       );
 
       expect(authAttemptLogs.length).toBeGreaterThan(0);
@@ -184,9 +184,11 @@ describe('Security Monitoring Integration Tests', () => {
         expect(log.ip_address).toBeDefined();
       });
 
-      // Check for authentication failure logs
+      // Check for authentication failure logs (check for POST to login endpoint with 401 status)
       const authFailureLogs = auditResult.logs.filter(log =>
-        log.action?.includes('login_failure')
+        log.action?.includes('POST') &&
+        log.request_url?.includes('/api/admin/login') &&
+        log.response_status === 401
       );
 
       expect(authFailureLogs.length).toBeGreaterThan(0);

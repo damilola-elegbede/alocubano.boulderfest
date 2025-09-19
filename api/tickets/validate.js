@@ -571,7 +571,8 @@ async function handler(req, res) {
       });
     }
     
-    return res.status(400).json({ 
+    return res.status(400).json({
+      valid: false,
       error: "Invalid token format",
       details: process.env.NODE_ENV === 'development' ? tokenValidation.error : undefined
     });

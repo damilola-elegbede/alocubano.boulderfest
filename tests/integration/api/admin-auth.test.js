@@ -126,9 +126,11 @@ describe('Admin Authentication Integration', () => {
       
       if (dashboardResponse.status === HTTP_STATUS.OK) {
         expect(dashboardResponse.data).toHaveProperty('stats');
-        expect(dashboardResponse.data.stats).toHaveProperty('totalTransactions');
-        expect(dashboardResponse.data.stats).toHaveProperty('totalRevenue');
-        expect(dashboardResponse.data.stats).toHaveProperty('totalRegistrations');
+
+        // API returns snake_case properties, not camelCase
+        expect(dashboardResponse.data.stats).toHaveProperty('total_orders'); // Dashboard shows order count
+        expect(dashboardResponse.data.stats).toHaveProperty('total_revenue'); // Dashboard shows revenue
+        expect(dashboardResponse.data.stats).toHaveProperty('total_tickets'); // Dashboard shows ticket count
       }
       
       // Test dashboard without token (should fail)

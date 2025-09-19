@@ -695,8 +695,13 @@ describe('Financial Audit Scenarios Tests', () => {
       const refundEvents = auditLogs.logs.filter(log => log.action.includes('REFUND'));
       expect(refundEvents).toHaveLength(3);
 
-      // Check cumulative amounts in metadata
-      const lastRefund = refundEvents[refundEvents.length - 1];
+      // Check cumulative amounts in metadata - find the event with the highest sequence number
+      const lastRefund = refundEvents.reduce((latest, current) => {
+        const currentMetadata = JSON.parse(current.metadata);
+        const latestMetadata = JSON.parse(latest.metadata);
+        return currentMetadata.refund_sequence_number > latestMetadata.refund_sequence_number ? current : latest;
+      });
+
       const metadata = JSON.parse(lastRefund.metadata);
       expect(metadata.cumulative_refunded_amount).toBe(6500);
       expect(metadata.remaining_amount).toBe(3500);
@@ -724,7 +729,16 @@ describe('Financial Audit Scenarios Tests', () => {
         limit: 10
       });
 
-      const lastRefund = auditLogs.logs[auditLogs.logs.length - 1];
+      const refundEvents = auditLogs.logs.filter(log => log.action.includes('REFUND'));
+      expect(refundEvents).toHaveLength(2);
+
+      // Find the refund event with the highest sequence number (the last refund)
+      const lastRefund = refundEvents.reduce((latest, current) => {
+        const currentMetadata = JSON.parse(current.metadata);
+        const latestMetadata = JSON.parse(latest.metadata);
+        return currentMetadata.refund_sequence_number > latestMetadata.refund_sequence_number ? current : latest;
+      });
+
       expect(lastRefund.action).toBe('REFUND_FULL');
       expect(lastRefund.payment_status).toBe('refunded');
     });

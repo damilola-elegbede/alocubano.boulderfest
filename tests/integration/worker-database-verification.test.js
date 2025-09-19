@@ -59,17 +59,17 @@ describe('Integration: Worker Database Verification', () => {
     // Insert a test transaction
     const insertResult = await db.execute({
       sql: `INSERT INTO transactions (
-        id, stripe_payment_intent_id, stripe_session_id, total_amount_cents,
-        currency, status, customer_email, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
-      args: ['test-tx-1', 'pi_test', 'cs_test', 5000, 'USD', 'completed', 'test@example.com']
+        transaction_id, type, stripe_payment_intent_id, stripe_session_id, amount_cents,
+        currency, status, customer_email, order_data, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
+      args: ['test-tx-1', 'tickets', 'pi_test', 'cs_test', 5000, 'USD', 'completed', 'test@example.com', '{"test": true}']
     });
 
     console.log('✅ Insert successful, lastInsertRowid:', insertResult.lastInsertRowid);
 
     // Query it back
     const queryResult = await db.execute({
-      sql: 'SELECT * FROM transactions WHERE id = ?',
+      sql: 'SELECT * FROM transactions WHERE transaction_id = ?',
       args: ['test-tx-1']
     });
 
@@ -83,7 +83,7 @@ describe('Integration: Worker Database Verification', () => {
 
     // The previous test's data should be cleaned up by the setup-integration.js beforeEach
     const queryResult = await db.execute({
-      sql: 'SELECT COUNT(*) as count FROM transactions WHERE id = ?',
+      sql: 'SELECT COUNT(*) as count FROM transactions WHERE transaction_id = ?',
       args: ['test-tx-1']
     });
 
