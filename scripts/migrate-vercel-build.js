@@ -427,74 +427,28 @@ async function runVercelBuild() {
       }
     }
 
-    // Clean up migration resources before proceeding to build
+    // Clean up migration resources - migration phase complete
     await cleanupResources();
 
-    // Embed documentation before build
-    logSection("DOCUMENTATION PHASE", "📚");
+    log("");
+    log("✅ Database migration phase complete", colors.bright + colors.green);
 
-    try {
-      log("📚 Embedding documentation files...", colors.blue);
-      log("");
-
-      // Run embed-docs script
-      execSync("node scripts/embed-docs.cjs", {
-        stdio: 'inherit',
-        env: { ...process.env }
-      });
-
-      log("");
-      log("✅ Documentation embedded successfully!", colors.green);
-    } catch (embedError) {
-      log("");
-      log("❌ Documentation embedding failed!", colors.red);
-      log(`   Error: ${embedError.message}`, colors.red);
-      log("");
-      log("⚠️  Continuing with build despite documentation embedding failure", colors.yellow);
+    // Summary of migration work
+    if (migrationResult.executed > 0) {
+      log(`📊 Executed ${migrationResult.executed} migration(s)`, colors.cyan);
     }
 
-    // Now run the actual build process
-    logSection("BUILD PHASE", "🏗️");
+    debugLog("");
+    debugLog("📊 Migration Summary:", colors.bright);
+    debugLog(`   Migrations executed: ${migrationResult.executed}`, colors.cyan);
+    debugLog(`   Migrations skipped: ${migrationResult.skipped}`, colors.cyan);
+    debugLog(`   Deployment URL: ${deploymentUrl}`, colors.cyan);
 
-    try {
-      log("📦 Running build process...", colors.blue);
-      log("");
+    log("");
+    log("🏗️  Migration script complete - build will continue with 'vercel build'", colors.cyan);
+    log("   Note: Documentation embedding and build execution handled by build script", colors.blue);
 
-      // Run npm build command
-      execSync("npm run build", {
-        stdio: 'inherit',
-        env: { ...process.env }
-      });
-
-      log("");
-      log("✅ Build completed successfully!", colors.bright + colors.green);
-
-      // Clean summary
-      log("");
-      log("✅ Migration and build completed successfully!", colors.bright + colors.green);
-      if (migrationResult.executed > 0) {
-        log(`📊 Executed ${migrationResult.executed} migration(s)`, colors.cyan);
-      }
-
-      debugLog("");
-      debugLog("📊 Detailed Summary:", colors.bright);
-      debugLog(`   Migrations executed: ${migrationResult.executed}`, colors.cyan);
-      debugLog(`   Migrations skipped: ${migrationResult.skipped}`, colors.cyan);
-      debugLog(`   Deployment URL: ${deploymentUrl}`, colors.cyan);
-
-      process.exit(0);
-    } catch (buildError) {
-      log("");
-      log("❌ Build failed after successful migrations!", colors.red);
-      log(`   Error: ${buildError.message}`, colors.red);
-      log("");
-      log("⚠️  The database migrations were successful, but the build failed.", colors.yellow);
-      log("   Please check the build output above for specific errors.", colors.yellow);
-
-      // Ensure cleanup before exit
-      await cleanupResources();
-      process.exit(1);
-    }
+    process.exit(0);
 
   } catch (error) {
     log("");
