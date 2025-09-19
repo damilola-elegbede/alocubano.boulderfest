@@ -7,17 +7,6 @@ export default async function handler(req, res) {
     process.env.VERCEL_ENV === "production";
 
   if (!isProduction) {
-    console.log("=== DEBUG ENDPOINT CALLED ===");
-    console.log("Method:", req.method);
-    console.log("URL:", req.url);
-    console.log("Path:", req.path || "undefined");
-    console.log("Headers:", JSON.stringify(req.headers, null, 2));
-    console.log("Query:", JSON.stringify(req.query, null, 2));
-    console.log("Body:", req.body || "empty");
-    console.log("Timestamp:", new Date().toISOString());
-    console.log("Node version:", process.version);
-    console.log("Platform:", process.platform);
-    console.log("=== END DEBUG ===");
   }
 
   // CORS headers

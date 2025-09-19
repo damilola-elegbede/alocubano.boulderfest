@@ -1,7 +1,7 @@
 import { getDatabaseClient } from "../../lib/database.js";
 import { getRateLimitService } from "../../lib/rate-limit-service.js";
 import { withSecurityHeaders } from "../../lib/security-headers.js";
-import { auditService } from "../../lib/audit-service.js";
+import auditService from "../../lib/audit-service.js";
 import jwt from "jsonwebtoken";
 
 // Enhanced rate limiting configuration
@@ -519,6 +519,11 @@ function isValidIPv6Groups(groups) {
  */
 async function handler(req, res) {
   const startTime = Date.now();
+  // Ensure audit service is initialized to prevent race conditions
+  if (auditService.ensureInitialized) {
+    await auditService.ensureInitialized();
+  }
+
   const requestId = auditService.generateRequestId();
 
   // Only accept POST for security (tokens should not be in URL)

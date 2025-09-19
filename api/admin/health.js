@@ -1,3 +1,5 @@
+import authService from '../../lib/auth-service.js';
+import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
 import { withAdminAudit } from '../../lib/admin-audit-middleware.js';
 
 // Simple health check endpoint to test if functions are working
@@ -25,8 +27,13 @@ async function handler(req, res) {
   }
 }
 
-export default withAdminAudit(handler, {
-  logBody: false,
-  logMetadata: false,
-  skipMethods: [] // Still track health check access for monitoring
-});
+export default withSecurityHeaders(
+  authService.requireAuth(
+    withAdminAudit(handler, {
+      logBody: false,
+      logMetadata: false,
+      skipMethods: [] // Still track health check access for monitoring
+    })
+  ),
+  { isAPI: true }
+);

@@ -136,6 +136,14 @@ export default async function handler(req, res) {
       return;
     }
 
+    // Ensure all services are initialized to prevent race conditions
+    if (financialReconciliationService.ensureInitialized) {
+      await financialReconciliationService.ensureInitialized();
+    }
+    if (auditService.ensureInitialized) {
+      await auditService.ensureInitialized();
+    }
+
     const { type, format = 'json' } = req.query;
 
     try {

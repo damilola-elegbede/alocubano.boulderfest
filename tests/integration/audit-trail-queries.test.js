@@ -6,7 +6,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, beforeAll } from 'vitest';
 import { getDatabaseClient } from '../../lib/database.js';
-import { auditService } from '../../lib/audit-service.js';
+import auditService from '../../lib/audit-service.js';
 import { resetAllServices } from './reset-services.js';
 import crypto from 'crypto';
 

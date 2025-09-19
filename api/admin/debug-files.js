@@ -4,6 +4,8 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import authService from '../../lib/auth-service.js';
+import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
 import { withAdminAudit } from '../../lib/admin-audit-middleware.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -81,8 +83,13 @@ async function handler(req, res) {
   res.status(200).json(results);
 }
 
-export default withAdminAudit(handler, {
-  logBody: false,
-  logMetadata: true,
-  skipMethods: [] // Track debug file system access for security
-});
+export default withSecurityHeaders(
+  authService.requireAuth(
+    withAdminAudit(handler, {
+      logBody: false,
+      logMetadata: true,
+      skipMethods: [] // Track debug file system access for security
+    })
+  ),
+  { isAPI: true }
+);

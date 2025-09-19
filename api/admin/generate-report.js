@@ -11,19 +11,19 @@ function q(value) {
   if (value === null || value === undefined) {
     return '""';
   }
-  
+
   // Convert to string
   const str = String(value);
-  
+
   // Escape double quotes by doubling them
   let escaped = str.replace(/"/g, '""');
-  
+
   // Check for potentially dangerous leading characters that could be interpreted as formulas
   if (escaped.match(/^[=+\-@]/)) {
     // Prefix with single quote to prevent formula execution
-    escaped = "'" + escaped;
+    escaped = '\'' + escaped;
   }
-  
+
   // Always wrap in double quotes for safety
   return '"' + escaped + '"';
 }
@@ -96,7 +96,7 @@ function convertToCSV(data, type) {
 async function handler(req, res) {
   // Initialize database client
   await getDatabaseClient();
-  
+
   if (req.method !== 'GET') {
     res.setHeader('Allow', ['GET']);
     return res.status(405).end(`Method ${req.method} Not Allowed`);

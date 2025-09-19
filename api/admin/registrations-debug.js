@@ -1,6 +1,10 @@
 // Debug version of registrations endpoint to isolate import failures
 console.log('🐛 [DEBUG] Starting registrations-debug endpoint load...');
 
+import authService from '../../lib/auth-service.js';
+import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
+import { withAdminAudit } from '../../lib/admin-audit-middleware.js';
+
 let importError = null;
 
 // Test each import individually to find the problematic one
@@ -67,7 +71,7 @@ try {
   importError = { service: 'csrf-service', error };
 }
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   console.log('🐛 [DEBUG] Handler called - all imports completed');
 
   if (importError) {
@@ -88,3 +92,14 @@ export default async function handler(req, res) {
     url: req.url
   });
 }
+
+export default withSecurityHeaders(
+  authService.requireAuth(
+    withAdminAudit(handler, {
+      logBody: false,
+      logMetadata: true,
+      skipMethods: [] // Track debug registrations access for security
+    })
+  ),
+  { isAPI: true }
+);

@@ -1,4 +1,5 @@
 import authService from "../../lib/auth-service.js";
+import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
 import { withAdminAudit } from '../../lib/admin-audit-middleware.js';
 
 /**
@@ -76,8 +77,11 @@ async function handler(req, res) {
   }
 }
 
-export default withAdminAudit(handler, {
-  logBody: false, // Session verification doesn't need body logging
-  logMetadata: false, // Keep lightweight for session checks
-  skipMethods: [] // Still log session verification attempts
-});
+export default withSecurityHeaders(
+  withAdminAudit(handler, {
+    logBody: false, // Session verification doesn't need body logging
+    logMetadata: false, // Keep lightweight for session checks
+    skipMethods: [] // Still log session verification attempts
+  }),
+  { isAPI: true }
+);

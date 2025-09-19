@@ -1,7 +1,6 @@
 import authService from '../../lib/auth-service.js';
 import { getDatabaseClient } from '../../lib/database.js';
 import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
-import { verifyMfaCode } from '../../lib/mfa-middleware.js';
 import { getMfaRateLimitService } from '../../lib/mfa-rate-limit-service.js';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
@@ -442,7 +441,7 @@ async function verifyRecoveryToken(token) {
       adminId: decoded.admin.adminId,
       exp: decoded.admin.exp
     };
-  } catch (error) {
+  } catch {
     return { valid: false };
   }
 }

@@ -5,8 +5,8 @@
 
 import authService from '../../lib/auth-service.js';
 import { adminSessionMonitor } from '../../lib/admin-session-monitor.js';
-import { securityAlertService } from '../../lib/security-alert-service.js';
-import { auditService } from '../../lib/audit-service.js';
+import securityAlertService from '../../lib/security-alert-service.js';
+import auditService from '../../lib/audit-service.js';
 import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
 import { withActivityAudit } from '../../lib/admin-audit-middleware.js';
 
@@ -24,6 +24,18 @@ async function securityDashboardHandler(req, res) {
     }
 
     const timeframe = parseInt(req.query.timeframe) || 24; // Default 24 hours
+
+    // Ensure all services are initialized to prevent race conditions before parallel operations
+    if (adminSessionMonitor.ensureInitialized) {
+      await adminSessionMonitor.ensureInitialized();
+    }
+    if (securityAlertService.ensureInitialized) {
+      await securityAlertService.ensureInitialized();
+    }
+    if (auditService.ensureInitialized) {
+      await auditService.ensureInitialized();
+    }
+
 
     // Gather comprehensive security data in parallel
     const [

@@ -8,7 +8,7 @@ import {
 } from '../../lib/mfa-middleware.js';
 import { withAuthAudit } from '../../lib/admin-audit-middleware.js';
 import { adminSessionMonitor } from '../../lib/admin-session-monitor.js';
-import { securityAlertService } from '../../lib/security-alert-service.js';
+import securityAlertService from '../../lib/security-alert-service.js';
 
 /**
  * Input validation schemas
@@ -196,32 +196,27 @@ function verifyUsername(username) {
 }
 
 async function loginHandler(req, res) {
-  console.log("[Login] Request received:", {
-    method: req.method,
-    hasBody: !!req.body,
-    bodyKeys: req.body ? Object.keys(req.body) : [],
-    headers: {
-      contentType: req.headers['content-type'],
-      userAgent: req.headers['user-agent']?.substring(0, 50)
+
+  try {
+    // Ensure all services are initialized to prevent race conditions
+    if (adminSessionMonitor.ensureInitialized) {
+      await adminSessionMonitor.ensureInitialized();
     }
-  });
+    if (securityAlertService.ensureInitialized) {
+      await securityAlertService.ensureInitialized();
+    }
+  } catch (error) {
+    console.error('[Login] Service initialization error:', error);
+    return res.status(500).json({ error: 'Service initialization failed' });
+  }
 
   if (req.method === 'POST') {
     const { username, password, mfaCode, step } = req.body || {};
     const clientIP = getClientIP(req);
 
-    console.log("[Login] POST data:", {
-      hasUsername: !!username,
-      hasPassword: !!password,
-      // do not log length or content
-      hasMfaCode: !!mfaCode,
-      step: step,
-      clientIP: clientIP?.substring(0, 15)
-    });
-
     // Enhanced IP validation
     if (!clientIP || clientIP === 'unknown') {
-      console.error("[Login] Failed: Unable to identify client IP");
+      console.error('[Login] Failed: Unable to identify client IP');
       return res.status(400).json({ error: 'Unable to identify client' });
     }
 
@@ -393,7 +388,7 @@ async function loginHandler(req, res) {
  */
 async function handlePasswordStep(req, res, username, password, clientIP) {
   console.log('[Login] Starting password verification step');
-  
+
   // Additional username validation
   if (!username || typeof username !== 'string' || username.length > 50) {
     console.log('[Login] Invalid username format');
@@ -436,10 +431,10 @@ async function handlePasswordStep(req, res, username, password, clientIP) {
   const startTime = Date.now();
   console.log('[Login] Verifying username...');
   const isUsernameValid = verifyUsername(username);
-  
+
   console.log('[Login] Verifying password...');
   const isPasswordValid = await authService.verifyPassword(password);
-  
+
   const isValid = isUsernameValid && isPasswordValid;
   const verificationTime = Date.now() - startTime;
 
@@ -720,7 +715,7 @@ async function completeLogin(
         session_token, action, ip_address, user_agent, request_details, success
       ) VALUES (?, ?, ?, ?, ?, ?)`,
       args: [
-        token.substring(0, 8) + "...",
+        token.substring(0, 8) + '...',
         mfaUsed ? 'login_with_mfa' : 'login',
         clientIP,
         getSafeUserAgent(req), // Use safe user agent extraction

@@ -7,6 +7,8 @@
 
 import { getConnectionManager, getPoolStatistics, getPoolHealthStatus } from '../../lib/connection-manager.js';
 import { logger } from '../../lib/logger.js';
+import authService from '../../lib/auth-service.js';
+import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
 import { withAdminAudit } from '../../lib/admin-audit-middleware.js';
 
 async function handler(req, res) {
@@ -157,8 +159,13 @@ function generateRecommendations(statistics, health, derivedMetrics) {
   return recommendations;
 }
 
-export default withAdminAudit(handler, {
-  logBody: false,
-  logMetadata: true,
-  skipMethods: [] // Track connection pool monitoring access
-});
+export default withSecurityHeaders(
+  authService.requireAuth(
+    withAdminAudit(handler, {
+      logBody: false,
+      logMetadata: true,
+      skipMethods: [] // Track connection pool monitoring access
+    })
+  ),
+  { isAPI: true }
+);

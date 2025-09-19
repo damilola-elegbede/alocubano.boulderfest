@@ -5,7 +5,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { adminSessionMonitor } from '../../lib/admin-session-monitor.js';
-import { securityAlertService } from '../../lib/security-alert-service.js';
+import securityAlertService from '../../lib/security-alert-service.js';
 
 describe('Security Monitoring Services', () => {
   describe('Admin Session Monitor', () => {

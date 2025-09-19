@@ -223,6 +223,20 @@ async function getRawBody(req) {
 }
 
 export default async function handler(req, res) {
+  // Ensure all services are initialized to prevent race conditions
+  if (auditService.ensureInitialized) {
+    await auditService.ensureInitialized();
+  }
+  if (transactionService.ensureInitialized) {
+    await transactionService.ensureInitialized();
+  }
+  if (paymentEventLogger.ensureInitialized) {
+    await paymentEventLogger.ensureInitialized();
+  }
+  if (ticketService.ensureInitialized) {
+    await ticketService.ensureInitialized();
+  }
+
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }

@@ -1,7 +1,7 @@
 import { getDatabaseClient } from '../../lib/database.js';
 import { getBrevoClient } from '../../lib/brevo-client.js';
 import rateLimit from '../../lib/rate-limiter.js';
-import { auditService } from '../../lib/audit-service.js';
+import auditService from '../../lib/audit-service.js';
 
 // Input validation regex patterns
 const NAME_REGEX = /^[a-zA-Z\s\-']{2,50}$/;
@@ -84,6 +84,11 @@ async function auditTicketRegistration(params) {
 
 export default async function handler(req, res) {
   const startTime = Date.now();
+  // Ensure audit service is initialized to prevent race conditions
+  if (auditService.ensureInitialized) {
+    await auditService.ensureInitialized();
+  }
+
   const requestId = auditService.generateRequestId();
   const clientIP = getClientIP(req);
   const userAgent = req.headers['user-agent'] || '';

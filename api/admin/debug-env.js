@@ -2,6 +2,8 @@
  * Diagnostic endpoint to check environment variable availability
  * This helps debug Vercel deployment issues
  */
+import authService from '../../lib/auth-service.js';
+import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
 import { withAdminAudit } from '../../lib/admin-audit-middleware.js';
 
 async function handler(req, res) {
@@ -49,8 +51,13 @@ async function handler(req, res) {
   res.status(200).json(envCheck);
 }
 
-export default withAdminAudit(handler, {
-  logBody: false,
-  logMetadata: true,
-  skipMethods: [] // Track debug environment access for security
-});
+export default withSecurityHeaders(
+  authService.requireAuth(
+    withAdminAudit(handler, {
+      logBody: false,
+      logMetadata: true,
+      skipMethods: [] // Track debug environment access for security
+    })
+  ),
+  { isAPI: true }
+);

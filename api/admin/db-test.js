@@ -1,5 +1,7 @@
 // Test database initialization
 import { getDatabaseClient } from '../../lib/database.js';
+import authService from '../../lib/auth-service.js';
+import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
 import { withAdminAudit } from '../../lib/admin-audit-middleware.js';
 
 async function handler(req, res) {
@@ -39,8 +41,13 @@ async function handler(req, res) {
   }
 }
 
-export default withAdminAudit(handler, {
-  logBody: false,
-  logMetadata: true,
-  skipMethods: [] // Track database test access for diagnostics
-});
+export default withSecurityHeaders(
+  authService.requireAuth(
+    withAdminAudit(handler, {
+      logBody: false,
+      logMetadata: true,
+      skipMethods: [] // Track database test access for diagnostics
+    })
+  ),
+  { isAPI: true }
+);
