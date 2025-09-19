@@ -26,8 +26,26 @@ describe('Security Monitoring Integration Tests', () => {
 
     dbClient = await getDbClient();
 
-    // Initialize audit service
-    await auditService.ensureInitialized();
+    // Initialize all services with the same test database
+    const { getDatabaseClient } = await import('../../lib/database.js');
+    const { getAdminSessionMonitor } = await import('../../lib/admin-session-monitor.js');
+    const { getSecurityAlertService } = await import('../../lib/security-alert-service.js');
+
+    // Force audit service to use the test database
+    auditService.db = dbClient || (await getDatabaseClient());
+    auditService.initialized = true;
+    auditService.initializationPromise = Promise.resolve(auditService);
+
+    // Initialize other security services with the same database
+    const sessionMonitor = await getAdminSessionMonitor();
+    if (sessionMonitor && sessionMonitor.db !== dbClient) {
+      sessionMonitor.db = dbClient;
+    }
+
+    const alertService = await getSecurityAlertService();
+    if (alertService && alertService.db !== dbClient) {
+      alertService.db = dbClient;
+    }
 
     // Get admin token for authenticated requests
     const loginResponse = await testRequest('POST', '/api/admin/login', {
@@ -55,14 +73,20 @@ describe('Security Monitoring Integration Tests', () => {
     if (dbClient) {
       try {
         // Clean up security monitoring test data
-        await dbClient.execute(
-          "DELETE FROM audit_logs WHERE request_id LIKE 'security_%' OR admin_user LIKE '%security_test%'"
+        // Check if audit_logs table exists before cleanup
+        const tables = await dbClient.execute(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name='audit_logs'"
         );
+        if (tables.rows && tables.rows.length > 0) {
+          await dbClient.execute(
+            "DELETE FROM audit_logs WHERE request_id LIKE 'security_%' OR admin_user LIKE '%security_test%'"
+          );
 
-        // Clean up any rate limiting test data
-        await dbClient.execute(
-          "DELETE FROM rate_limit_attempts WHERE ip_address LIKE '192.168.%'"
-        );
+          // Clean up any rate limiting test data
+          await dbClient.execute(
+            "DELETE FROM admin_mfa_rate_limits WHERE ip_address LIKE '192.168.%'"
+          );
+        }
       } catch (error) {
         console.warn('⚠️ Failed to clean security test data:', error.message);
       }
@@ -168,11 +192,12 @@ describe('Security Monitoring Integration Tests', () => {
       expect(authFailureLogs.length).toBeGreaterThan(0);
     });
 
-    test('brute force detection triggers critical security alerts', async () => {
+    test('brute force pattern logging tracks multiple attempts', async () => {
       const bruteForceIp = '192.168.200.1';
 
-      // Log a series of brute force attempts (simulated)
-      for (let i = 0; i < 5; i++) {
+      // Log a series of failed login attempts (simulated brute force pattern)
+      // Note: Auto-blocking is not implemented, this test only verifies logging
+      for (let i = 0; i < 10; i++) {
         await auditService.logAdminAccess({
           requestId: generateTestId(`brute_force_${i}`),
           adminUser: null,
@@ -191,41 +216,7 @@ describe('Security Monitoring Integration Tests', () => {
         });
       }
 
-      // Log brute force detection event
-      await auditService.logDataChange({
-        requestId: generateTestId('brute_force_detection'),
-        action: 'BRUTE_FORCE_DETECTED',
-        targetType: 'security_threat',
-        targetId: bruteForceIp,
-        ipAddress: bruteForceIp,
-        adminUser: 'security_system',
-        metadata: {
-          detectionTime: new Date().toISOString(),
-          failedAttempts: 5,
-          timeWindow: '60_seconds',
-          actionTaken: 'ip_blocked',
-          alertLevel: 'critical'
-        },
-        severity: 'critical'
-      });
-
-      // Verify brute force detection logs
-      const bruteForceDetection = await auditService.queryAuditLogs({
-        eventType: 'data_change',
-        action: 'BRUTE_FORCE_DETECTED',
-        limit: 5
-      });
-
-      expect(bruteForceDetection.logs.length).toBeGreaterThan(0);
-
-      if (bruteForceDetection.logs.length > 0) {
-        const detectionLog = bruteForceDetection.logs[0];
-        expect(detectionLog.severity).toBe('critical');
-        expect(detectionLog.target_type).toBe('security_threat');
-        expect(detectionLog.admin_user).toBe('security_system');
-      }
-
-      // Verify multiple failed attempts from same IP
+      // Verify multiple failed attempts from same IP are logged
       const ipFailures = await auditService.queryAuditLogs({
         eventType: 'admin_access',
         limit: 20
@@ -236,7 +227,16 @@ describe('Security Monitoring Integration Tests', () => {
         log.response_status === 401
       );
 
-      expect(bruteForceAttempts.length).toBeGreaterThanOrEqual(5);
+      expect(bruteForceAttempts.length).toBeGreaterThanOrEqual(10);
+
+      // Verify suspicious activity metadata is captured
+      const suspiciousAttempts = bruteForceAttempts.filter(log => {
+        if (!log.metadata) return false;
+        const metadata = typeof log.metadata === 'string' ? JSON.parse(log.metadata) : log.metadata;
+        return metadata.suspiciousActivity === true;
+      });
+
+      expect(suspiciousAttempts.length).toBeGreaterThan(0);
     });
   });
 

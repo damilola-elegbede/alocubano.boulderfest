@@ -31,6 +31,16 @@ const validateIntegrationSecrets = () => {
       description: 'Admin JWT signing secret',
       validator: (value) => value && value.length >= 32,
       fallback: 'admin-secret-for-integration-tests-32-chars-plus'
+    },
+    TEST_ADMIN_PASSWORD: {
+      description: 'Test admin password for integration tests',
+      validator: (value) => value && value.length >= 4,
+      fallback: 'test-admin-password-for-integration-testing'
+    },
+    QR_SECRET_KEY: {
+      description: 'QR code validation secret key',
+      validator: (value) => value && value.length >= 32,
+      fallback: 'test-qr-secret-key-for-integration-testing-32-chars'
     }
   };
 
@@ -119,6 +129,9 @@ delete process.env.TURSO_DATABASE_URL;
 delete process.env.E2E_TEST_MODE;
 delete process.env.PLAYWRIGHT_BROWSER;
 delete process.env.VERCEL_DEV_STARTUP;
+
+// Enable debug logging for integration tests to see migration progress
+process.env.DEBUG = 'true';
 
 // Additional safety measures for integration test isolation
 process.env.TEST_DATABASE_TYPE = 'sqlite_memory';
@@ -242,6 +255,13 @@ const initializeDatabase = async () => {
  * Clean tables in dependency order to avoid foreign key constraint violations
  */
 async function cleanTablesInOrder(dbClient, tables) {
+  // Disable foreign key constraints during cleanup to avoid cascade issues
+  try {
+    await dbClient.execute('PRAGMA foreign_keys = OFF');
+  } catch (error) {
+    console.warn('⚠️ Could not disable foreign keys:', error.message);
+  }
+
   // Define table cleaning order: child tables first, parent tables last
   // This order respects foreign key constraints
   const orderedTables = [
@@ -286,9 +306,18 @@ async function cleanTablesInOrder(dbClient, tables) {
   for (const table of orderedTables) {
     if (tables.includes(table)) {
       try {
-        await dbClient.execute(`DELETE FROM "${table}"`);
+        // Verify table exists before attempting to clean
+        const tableCheck = await dbClient.execute(`
+          SELECT name FROM sqlite_master
+          WHERE type='table' AND name='${table}'
+        `);
+
+        if (tableCheck.rows.length > 0) {
+          await dbClient.execute(`DELETE FROM "${table}"`);
+        }
       } catch (error) {
         console.warn(`⚠️ Failed to clean table ${table}: ${error.message}`);
+        // Don't rethrow - continue with other tables
       }
     }
   }
@@ -297,12 +326,81 @@ async function cleanTablesInOrder(dbClient, tables) {
   const remainingTables = tables.filter(table => !orderedTables.includes(table));
   for (const table of remainingTables) {
     try {
-      await dbClient.execute(`DELETE FROM "${table}"`);
+      // Verify table exists before attempting to clean
+      const tableCheck = await dbClient.execute(`
+        SELECT name FROM sqlite_master
+        WHERE type='table' AND name='${table}'
+      `);
+
+      if (tableCheck.rows.length > 0) {
+        await dbClient.execute(`DELETE FROM "${table}"`);
+      }
     } catch (error) {
       console.warn(`⚠️ Failed to clean remaining table ${table}: ${error.message}`);
+      // Don't rethrow - continue with other tables
     }
   }
+
+  // Re-enable foreign key constraints after cleanup
+  try {
+    await dbClient.execute('PRAGMA foreign_keys = ON');
+  } catch (error) {
+    console.warn('⚠️ Could not re-enable foreign keys:', error.message);
+  }
 }
+
+/**
+ * Verify that migration completion is actually finished
+ * This prevents race conditions where services try to use tables before they exist
+ */
+const verifyMigrationCompletion = async (dbClient) => {
+  const maxRetries = 10;
+  const retryDelay = 100; // ms
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      // CRITICAL FIX 5: Check that key tables exist including qr_validations
+      const coreTablesCheck = await dbClient.execute(`
+        SELECT name FROM sqlite_master
+        WHERE type='table' AND name IN (
+          'transactions', 'tickets', 'qr_validations', 'audit_logs', 'admin_sessions'
+        )
+        ORDER BY name
+      `);
+
+      const existingTables = coreTablesCheck.rows.map(row => row.name || row[0]);
+      console.log(`🔍 Migration verification attempt ${attempt}: Found ${existingTables.length} core tables:`, existingTables);
+
+      // Need at minimum: transactions, tickets, qr_validations
+      if (existingTables.length >= 3 && existingTables.includes('qr_validations')) {
+        // Verify table structure by testing a basic insert/select
+        try {
+          await dbClient.execute('SELECT COUNT(*) FROM transactions LIMIT 1');
+          await dbClient.execute('SELECT COUNT(*) FROM tickets LIMIT 1');
+          await dbClient.execute('SELECT COUNT(*) FROM qr_validations LIMIT 1');
+          console.log(`✅ Migration verification successful - tables are accessible`);
+          return;
+        } catch (structError) {
+          console.warn(`⚠️ Tables exist but not accessible (attempt ${attempt}):`, structError.message);
+        }
+      } else {
+        console.warn(`⚠️ Migration verification failed (attempt ${attempt}): Expected at least 3 core tables, found ${existingTables.length}`);
+      }
+
+      if (attempt < maxRetries) {
+        console.log(`🔄 Retrying migration verification in ${retryDelay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+      }
+    } catch (error) {
+      console.warn(`⚠️ Migration verification error (attempt ${attempt}):`, error.message);
+      if (attempt < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+      }
+    }
+  }
+
+  throw new Error('Migration verification failed - tables not ready after maximum retries');
+};
 
 /**
  * Clean Database Between Tests using Test Isolation
@@ -378,8 +476,61 @@ beforeEach(async (context) => {
   // CRITICAL: Ensure test scope is created (will use worker database)
   await isolationManager.ensureTestIsolation(testName);
 
+  // CRITICAL FIX: For in-memory databases, ensure worker database is initialized with migrations
+  // before any test runs and WAIT for completion
+  if (process.env.DATABASE_URL === ':memory:' && testCounter === 1) {
+    try {
+      // Force worker database initialization with migrations and WAIT for completion
+      await isolationManager.initializeWorkerDatabase();
+      console.log(`✅ Worker ${workerId} database initialized with migrations`);
+
+      // CRITICAL: Wait for migrations to actually complete before proceeding
+      // Add explicit verification that tables exist
+      const dbClient = await isolationManager.getScopedDatabaseClient();
+      await verifyMigrationCompletion(dbClient);
+      console.log(`✅ Worker ${workerId} migration completion verified`);
+    } catch (error) {
+      console.error(`❌ Worker ${workerId} database initialization failed:`, error.message);
+      throw error;
+    }
+  }
+
   // Clean database data between tests (keep structure)
   await cleanDatabase();
+
+  // CRITICAL FIX: Reset all services after database cleanup to prevent stale connections
+  try {
+    // Import and reset all services with fresh database connections
+    const { resetAllServices } = await import('./integration/reset-services.js');
+    await resetAllServices();
+  } catch (error) {
+    console.warn(`⚠️ Service reset failed: ${error.message}`);
+    // Continue - tests may still work with existing service state
+  }
+
+  // CRITICAL VERIFICATION: Ensure core tables still exist after cleanup
+  if (testCounter === 1) {
+    try {
+      const dbClient = await isolationManager.getScopedDatabaseClient();
+      const coreTablesCheck = await dbClient.execute(`
+        SELECT name FROM sqlite_master
+        WHERE type='table' AND name IN ('tickets', 'qr_validations', 'transactions')
+        ORDER BY name
+      `);
+      const existingCoreTables = coreTablesCheck.rows.map(row => row.name || row[0]);
+
+      // CRITICAL FIX 5: Ensure qr_validations table exists
+      if (existingCoreTables.length < 3 || !existingCoreTables.includes('qr_validations')) {
+        console.error(`❌ CRITICAL: Core tables missing after cleanup!`, existingCoreTables);
+        throw new Error(`Core tables missing after cleanup: expected 3 including qr_validations, found ${existingCoreTables.length}`);
+      } else {
+        console.log(`✅ Core tables verified after cleanup:`, existingCoreTables);
+      }
+    } catch (error) {
+      console.error(`❌ Table verification failed:`, error.message);
+      throw error;
+    }
+  }
 }, config.timeouts.hook);
 
 afterEach(async () => {

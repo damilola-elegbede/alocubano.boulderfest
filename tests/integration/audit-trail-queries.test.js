@@ -16,14 +16,29 @@ describe('Audit Trail Queries Tests', () => {
 
   beforeAll(async () => {
     db = await getDatabaseClient();
-    await auditService.ensureInitialized();
+    // Force audit service to use the test database
+    auditService.db = db || dbClient || (await getDatabaseClient());
+    auditService.initialized = true;
+    auditService.initializationPromise = Promise.resolve(auditService);
   });
 
   beforeEach(async () => {
     await resetAllServices();
 
     // Clean up any existing test data
-    await db.execute('DELETE FROM audit_logs WHERE request_id LIKE ?', [`audit_query_test_%`]);
+    // Check if audit_logs table exists before cleanup
+    try {
+      const tables = await db.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='audit_logs'"
+      );
+      if (tables.rows && tables.rows.length > 0) {
+        await db.execute(
+          'DELETE FROM audit_logs WHERE request_id LIKE ?', [`audit_query_test_%`]
+        );
+      }
+    } catch (error) {
+      // Ignore if table doesn't exist yet
+    }
 
     // Create comprehensive test datasets
     testDatasets = {
@@ -44,7 +59,19 @@ describe('Audit Trail Queries Tests', () => {
 
   afterEach(async () => {
     // Clean up test data after each test
-    await db.execute('DELETE FROM audit_logs WHERE request_id LIKE ?', [`audit_query_test_%`]);
+    // Check if audit_logs table exists before cleanup
+    try {
+      const tables = await db.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='audit_logs'"
+      );
+      if (tables.rows && tables.rows.length > 0) {
+        await db.execute(
+          'DELETE FROM audit_logs WHERE request_id LIKE ?', [`audit_query_test_%`]
+        );
+      }
+    } catch (error) {
+      // Ignore if table doesn't exist yet
+    }
   });
 
   async function createTestDataset() {

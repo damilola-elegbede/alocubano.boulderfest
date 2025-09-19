@@ -1,18 +1,8 @@
--- Three-tier token system for secure ticket access
--- Phase 1: Access tokens for multi-use ticket viewing
+-- Migration: 012 - Action Tokens Table
+-- Purpose: Single-use security tokens for critical operations
+-- Dependencies: 003_transactions.sql
 
-CREATE TABLE IF NOT EXISTS access_tokens (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    token_hash TEXT UNIQUE NOT NULL,
-    transaction_id INTEGER NOT NULL REFERENCES transactions(id) ON DELETE CASCADE,
-    email TEXT NOT NULL,
-    expires_at TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_used_at TIMESTAMP,
-    use_count INTEGER DEFAULT 0
-);
-
--- Phase 2: Action tokens for single-use security-critical operations
+-- Action tokens for single-use security-critical operations (EXACT schema from 007_token_system.sql)
 CREATE TABLE IF NOT EXISTS action_tokens (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     token_hash TEXT UNIQUE NOT NULL,
@@ -26,21 +16,14 @@ CREATE TABLE IF NOT EXISTS action_tokens (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Phase 3: Validation fields are now part of the tickets table schema (018_tickets_table.sql)
-
--- Create indexes for performance
-CREATE INDEX IF NOT EXISTS idx_access_tokens_hash ON access_tokens(token_hash);
-CREATE INDEX IF NOT EXISTS idx_access_tokens_transaction ON access_tokens(transaction_id);
-CREATE INDEX IF NOT EXISTS idx_access_tokens_email ON access_tokens(email);
-CREATE INDEX IF NOT EXISTS idx_access_tokens_expires ON access_tokens(expires_at);
-
+-- Indexes for action tokens
 CREATE INDEX IF NOT EXISTS idx_action_tokens_hash ON action_tokens(token_hash);
 CREATE INDEX IF NOT EXISTS idx_action_tokens_target ON action_tokens(target_id);
 CREATE INDEX IF NOT EXISTS idx_action_tokens_email ON action_tokens(email);
 CREATE INDEX IF NOT EXISTS idx_action_tokens_expires ON action_tokens(expires_at);
 CREATE INDEX IF NOT EXISTS idx_action_tokens_action_target ON action_tokens(action_type, target_id);
 
--- Trigger to clean up related tokens when transactions are deleted
+-- Trigger to clean up related tokens when transactions are deleted (EXACT from 007_token_system.sql)
 CREATE TRIGGER IF NOT EXISTS cleanup_tokens_on_transaction_delete
     AFTER DELETE ON transactions
 BEGIN

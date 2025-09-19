@@ -51,11 +51,22 @@ async function handler(req, res) {
       });
     }
 
-    // Verify credentials
+    // Verify credentials - both username and password must be correct
+    if (username !== 'admin') {
+      logger.warn('[SimpleLogin] Failed login attempt - invalid username in test environment', {
+        username,
+        environment: process.env.NODE_ENV
+      });
+
+      return res.status(401).json({
+        error: 'Invalid credentials'
+      });
+    }
+
     const isValid = await authService.verifyPassword(password);
 
     if (!isValid) {
-      logger.warn('[SimpleLogin] Failed login attempt in test environment', {
+      logger.warn('[SimpleLogin] Failed login attempt - invalid password in test environment', {
         username,
         environment: process.env.NODE_ENV
       });
@@ -66,8 +77,7 @@ async function handler(req, res) {
     }
 
     // Generate session token (no MFA required)
-    const authServiceInstance = authService.default || authService;
-    const token = await authServiceInstance.createSessionToken(username);
+    const token = await authService.createSessionToken(username);
 
     // Set secure cookie
     const isSecure = process.env.NODE_ENV === 'production' || req.headers['x-forwarded-proto'] === 'https';
@@ -89,7 +99,9 @@ async function handler(req, res) {
     return res.status(200).json({
       success: true,
       adminId: username,
-      message: 'Login successful (test environment)'
+      token: token,
+      expiresIn: authService.sessionDuration,
+      message: 'Login successful (test environment) - MFA bypassed'
     });
 
   } catch (error) {

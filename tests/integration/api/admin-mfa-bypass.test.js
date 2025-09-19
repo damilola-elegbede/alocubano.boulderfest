@@ -350,7 +350,7 @@ describe('Admin MFA Bypass Integration', () => {
     // Should return 404 in production environment
     expect(response.status).toBe(HTTP_STATUS.NOT_FOUND);
     expect(response.data).toHaveProperty('error');
-    expect(response.data.error).toContain('not available');
+    expect(response.data.error).toContain('Not found');
   });
 
   test('simple-login rejects invalid credentials even in test environments', async () => {

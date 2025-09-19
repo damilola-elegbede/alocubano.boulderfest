@@ -6,6 +6,7 @@
 import { describe, it, expect, beforeEach, beforeAll } from 'vitest';
 import { auditService } from '../../lib/audit-service.js';
 import { resetAllServices } from './reset-services.js';
+import { getDbClient } from "../setup-integration.js";
 
 describe('Basic Audit Service Tests', () => {
   beforeEach(async () => {
@@ -13,7 +14,10 @@ describe('Basic Audit Service Tests', () => {
   });
 
   beforeAll(async () => {
-    await auditService.ensureInitialized();
+    // Force audit service to use the test database
+    auditService.db = await getDbClient();
+    auditService.initialized = true;
+    auditService.initializationPromise = Promise.resolve(auditService);
   });
 
   describe('Service Initialization', () => {

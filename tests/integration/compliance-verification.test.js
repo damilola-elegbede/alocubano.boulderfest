@@ -8,7 +8,7 @@ import { describe, it, expect, beforeEach, afterEach, beforeAll } from 'vitest';
 import { getDatabaseClient } from '../../lib/database.js';
 import auditService from '../../lib/audit-service.js';
 import securityAlertService from '../../lib/security-alert-service.js';
-import sessionMonitorService from '../../lib/session-monitor-service.js';
+import sessionMonitorService from '../../lib/admin-session-monitor.js';
 import crypto from 'crypto';
 
 describe('Compliance Verification Tests', () => {
@@ -23,30 +23,41 @@ describe('Compliance Verification Tests', () => {
 
   beforeAll(async () => {
     db = await getDatabaseClient();
-    await auditService.ensureInitialized();
+    // Force audit service to use the same database as tests
+    auditService.db = db;
+    auditService.initialized = true;
+    auditService.initializationPromise = Promise.resolve(auditService);
   });
 
   beforeEach(async () => {
     // Reset ALL service states that cache database connections
     // This prevents CLIENT_CLOSED errors from stale connections
 
-    // Reset audit service state
+    // Reset audit service state and force it to use the test database
     auditService.initialized = false;
     auditService.initializationPromise = null;
     auditService.db = null;
+    // Force same database for audit service
+    auditService.db = db;
+    auditService.initialized = true;
+    auditService.initializationPromise = Promise.resolve(auditService);
 
-    // Reset security alert service state
+    // Add small delay to ensure services are fully ready
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    // Reset security alert service state and force same database
     securityAlertService.initialized = false;
     securityAlertService.initializationPromise = null;
     securityAlertService.db = null;
+    securityAlertService.db = db;
+    securityAlertService.initialized = true;
 
-    // Reset session monitor service state
+    // Reset session monitor service state and force same database
     sessionMonitorService.initialized = false;
     sessionMonitorService.initializationPromise = null;
     sessionMonitorService.db = null;
-
-    // Re-initialize audit service
-    await auditService.ensureInitialized();
+    sessionMonitorService.db = db;
+    sessionMonitorService.initialized = true;
 
     // Generate unique test identifiers
     testRequestId = `compliance_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
@@ -54,15 +65,31 @@ describe('Compliance Verification Tests', () => {
     testAdminUser = 'compliance_admin';
     testTransactionRef = `txn_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
 
-    // Clean up any existing test data
-    await db.execute('DELETE FROM audit_logs WHERE request_id LIKE ? OR admin_user = ?',
-      [`compliance_%`, testAdminUser]);
+    // Clean up any existing test data (check table exists first)
+    const tables = await db.execute(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='audit_logs'"
+    );
+    if (tables.rows && tables.rows.length > 0) {
+      await db.execute('DELETE FROM audit_logs WHERE request_id LIKE ? OR admin_user = ?',
+        [`compliance_%`, testAdminUser]);
+    }
   });
 
   afterEach(async () => {
-    // Clean up test data after each test
-    await db.execute('DELETE FROM audit_logs WHERE request_id LIKE ? OR admin_user = ?',
-      [`compliance_%`, testAdminUser]);
+    // Clean up test data after each test (check table exists first)
+    if (db) {
+      try {
+        const tables = await db.execute(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name='audit_logs'"
+        );
+        if (tables.rows && tables.rows.length > 0) {
+          await db.execute('DELETE FROM audit_logs WHERE request_id LIKE ? OR admin_user = ?',
+            [`compliance_%`, testAdminUser]);
+        }
+      } catch (error) {
+        console.warn('⚠️ Failed to clean audit logs:', error.message);
+      }
+    }
   });
 
   describe('GDPR Audit Trail Completeness', () => {
@@ -1357,8 +1384,20 @@ describe('Compliance Verification Tests', () => {
       expect(bulkDetailLogs.length).toBeGreaterThan(0);
 
       // Verify bulk operation summary tracking
-      bulkSummaryLogs.forEach((log, index) => {
-        const bulkOp = bulkOperations[index];
+      // Sort logs by bulkOperation metadata to ensure correct matching
+      const sortedBulkLogs = bulkSummaryLogs.sort((a, b) => {
+        const metadataA = JSON.parse(a.metadata);
+        const metadataB = JSON.parse(b.metadata);
+        return metadataA.bulkOperation.localeCompare(metadataB.bulkOperation);
+      });
+
+      // Sort bulkOperations by operation name for consistent comparison
+      const sortedBulkOperations = [...bulkOperations].sort((a, b) =>
+        a.operation.localeCompare(b.operation)
+      );
+
+      sortedBulkLogs.forEach((log, index) => {
+        const bulkOp = sortedBulkOperations[index];
         const afterValue = JSON.parse(log.after_value);
 
         expect(afterValue.operation).toBe(bulkOp.operation);

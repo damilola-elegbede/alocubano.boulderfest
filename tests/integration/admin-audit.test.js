@@ -28,28 +28,27 @@ describe('Admin Audit Integration Tests', () => {
     // Reset ALL service states that cache database connections
     // This prevents CLIENT_CLOSED errors from stale connections
 
-    // Reset audit service state and force reinitialization with test database
+    // Reset audit service state so initializeTestServices can configure it properly
     auditService.initialized = false;
     auditService.initializationPromise = null;
     auditService.db = null;
-    // Force audit service to reinitialize with the test database
-    try {
-      await auditService.ensureInitialized();
-      console.log('✅ Audit service initialized successfully, has db:', !!auditService.db);
-    } catch (error) {
-      console.error('❌ Failed to initialize audit service:', error);
-      throw error;
-    }
+    console.log('✅ Audit service reset for test isolation');
 
-    // Reset security alert service state
+    // Reset security alert service state and force same database
     securityAlertService.initialized = false;
     securityAlertService.initializationPromise = null;
     securityAlertService.db = null;
+    // Force same database for security alert service
+    securityAlertService.db = dbClient;
+    securityAlertService.initialized = true;
 
-    // Reset session monitor service state
+    // Reset session monitor service state and force same database
     sessionMonitorService.initialized = false;
     sessionMonitorService.initializationPromise = null;
     sessionMonitorService.db = null;
+    // Force same database for session monitor
+    sessionMonitorService.db = dbClient;
+    sessionMonitorService.initialized = true;
 
     // Get admin token for authenticated requests
     const loginResponse = await testRequest('POST', '/api/admin/login', {
@@ -76,9 +75,16 @@ describe('Admin Audit Integration Tests', () => {
     // Clean up test data from audit_logs
     if (dbClient) {
       try {
-        await dbClient.execute(
-          "DELETE FROM audit_logs WHERE request_id LIKE 'test_%' OR action LIKE '%test%'"
+        // Check if audit_logs table exists before trying to delete from it
+        const tables = await dbClient.execute(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name='audit_logs'"
         );
+
+        if (tables.rows && tables.rows.length > 0) {
+          await dbClient.execute(
+            "DELETE FROM audit_logs WHERE request_id LIKE 'test_%' OR action LIKE '%test%'"
+          );
+        }
       } catch (error) {
         console.warn('⚠️ Failed to clean audit logs:', error.message);
       }

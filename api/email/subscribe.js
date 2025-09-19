@@ -165,6 +165,21 @@ export default async function handler(req, res) {
     // Ensure services are initialized
     const emailService = await getEmailSubscriberService().ensureInitialized();
 
+    // Check if we're in test mode
+    const isTestMode = process.env.NODE_ENV === 'test' || process.env.INTEGRATION_TEST_MODE === 'true';
+
+    // Get newsletter list ID with test mode fallback
+    let newsletterListId;
+    if (isTestMode && !process.env.BREVO_NEWSLETTER_LIST_ID) {
+      // Use test default list ID
+      newsletterListId = 1;
+      console.log('📧 Using test mode newsletter list ID: 1');
+    } else if (!process.env.BREVO_NEWSLETTER_LIST_ID) {
+      throw new Error("❌ FATAL: BREVO_NEWSLETTER_LIST_ID secret not configured");
+    } else {
+      newsletterListId = parseInt(process.env.BREVO_NEWSLETTER_LIST_ID);
+    }
+
     // Prepare subscriber data
     const subscriberData = {
       email: sanitized.email,
@@ -175,9 +190,7 @@ export default async function handler(req, res) {
         process.env.REQUIRE_EMAIL_VERIFICATION === "true"
           ? "pending"
           : "active",
-      listIds: req.body.lists || [parseInt(process.env.BREVO_NEWSLETTER_LIST_ID) || (() => {
-        throw new Error("❌ FATAL: BREVO_NEWSLETTER_LIST_ID secret not configured");
-      })()], // Require newsletter list ID
+      listIds: req.body.lists || [newsletterListId], // Require newsletter list ID
       attributes: {
         SIGNUP_PAGE: req.body.source || "unknown",
         SIGNUP_DATE: new Date().toISOString(),

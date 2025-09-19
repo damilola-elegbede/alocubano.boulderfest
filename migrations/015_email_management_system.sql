@@ -1,7 +1,8 @@
--- Email Subscriber System Tables
--- Migration 011: Create email subscriber system for newsletter management
+-- Migration: 015 - Email Management System
+-- Purpose: Advanced email subscribers system (email_subscribers used by application)
+-- Dependencies: 014_admin_mfa_system.sql
 
--- Main email subscribers table
+-- Main email subscribers table (EXACT schema from 012_email_subscriber_system.sql)
 CREATE TABLE IF NOT EXISTS email_subscribers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     email TEXT UNIQUE NOT NULL,
@@ -24,7 +25,7 @@ CREATE TABLE IF NOT EXISTS email_subscribers (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Email events table for tracking email interactions
+-- Email events table for tracking email interactions (EXACT schema from 012_email_subscriber_system.sql)
 CREATE TABLE IF NOT EXISTS email_events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     subscriber_id INTEGER NOT NULL,
@@ -36,7 +37,7 @@ CREATE TABLE IF NOT EXISTS email_events (
     FOREIGN KEY (subscriber_id) REFERENCES email_subscribers(id) ON DELETE CASCADE
 );
 
--- Audit log for email subscriber operations
+-- Audit log for email subscriber operations (EXACT schema from 012_email_subscriber_system.sql)
 CREATE TABLE IF NOT EXISTS email_audit_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     entity_type TEXT NOT NULL, -- email_subscribers, email_events, etc.
@@ -50,7 +51,7 @@ CREATE TABLE IF NOT EXISTS email_audit_log (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Indexes for performance
+-- Indexes for performance (EXACT from 012_email_subscriber_system.sql)
 CREATE INDEX IF NOT EXISTS idx_email_subscribers_email ON email_subscribers(email);
 CREATE INDEX IF NOT EXISTS idx_email_subscribers_status ON email_subscribers(status);
 CREATE INDEX IF NOT EXISTS idx_email_subscribers_brevo_contact_id ON email_subscribers(brevo_contact_id);
@@ -59,7 +60,3 @@ CREATE INDEX IF NOT EXISTS idx_email_events_event_type ON email_events(event_typ
 CREATE INDEX IF NOT EXISTS idx_email_events_occurred_at ON email_events(occurred_at);
 CREATE INDEX IF NOT EXISTS idx_email_audit_log_entity ON email_audit_log(entity_type, entity_id);
 CREATE INDEX IF NOT EXISTS idx_email_audit_log_created_at ON email_audit_log(created_at);
-
--- Note: Triggers with BEGIN/END blocks can cause issues with migration parsers
--- The trigger for updated_at has been removed to ensure compatibility
--- Application code should handle updated_at timestamp updates

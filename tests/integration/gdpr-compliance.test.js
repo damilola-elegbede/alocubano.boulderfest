@@ -27,7 +27,38 @@ describe('GDPR Compliance Integration Tests', () => {
     dbClient = await getDbClient();
 
     // Initialize audit service
-    await auditService.ensureInitialized();
+    // Force audit service to use the test database
+    auditService.db = dbClient;
+    auditService.initialized = true;
+    auditService.initializationPromise = Promise.resolve(auditService);
+
+    // Ensure the email_subscribers table exists with required columns
+    try {
+      // Check if email_subscribers table exists
+      const tableCheck = await dbClient.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='email_subscribers'"
+      );
+
+      if (tableCheck.rows.length === 0) {
+        // Create email_subscribers table if it doesn't exist
+        await dbClient.execute(`
+          CREATE TABLE email_subscribers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT UNIQUE NOT NULL,
+            first_name TEXT,
+            last_name TEXT,
+            subscribed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            unsubscribed_at DATETIME,
+            bounce_count INTEGER DEFAULT 0,
+            consent_given BOOLEAN DEFAULT 1,
+            source TEXT DEFAULT 'website'
+          )
+        `);
+        console.log('✅ Created email_subscribers table for GDPR tests');
+      }
+    } catch (error) {
+      console.warn('⚠️ Failed to ensure email_subscribers table exists:', error.message);
+    }
 
     // Get admin token for authenticated requests
     const loginResponse = await testRequest('POST', '/api/admin/login', {
@@ -55,9 +86,16 @@ describe('GDPR Compliance Integration Tests', () => {
     if (dbClient) {
       try {
         // Clean up audit logs for GDPR test data
-        await dbClient.execute(
-          "DELETE FROM audit_logs WHERE data_subject_id LIKE 'test_%' OR action LIKE '%GDPR%'"
+        // Check if audit_logs table exists before cleanup
+        const tables = await dbClient.execute(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name='audit_logs'"
         );
+        if (tables.rows && tables.rows.length > 0) {
+          await dbClient.execute(
+            'DELETE FROM audit_logs WHERE data_subject_id LIKE ? OR action LIKE ?',
+            ['test_%', '%GDPR%']
+          );
+        }
 
         // Clean up test email subscriptions
         await dbClient.execute(

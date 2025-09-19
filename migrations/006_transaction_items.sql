@@ -1,4 +1,8 @@
--- Transaction items for line-item details
+-- Migration: 006 - Transaction Items Table
+-- Purpose: Transaction line items for detailed transaction breakdown
+-- Dependencies: 003_transactions.sql
+
+-- Transaction items (EXACT schema from 020_transaction_items.sql)
 CREATE TABLE IF NOT EXISTS transaction_items (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     transaction_id INTEGER NOT NULL REFERENCES transactions(id) ON DELETE CASCADE,

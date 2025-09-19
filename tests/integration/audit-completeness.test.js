@@ -19,7 +19,10 @@ describe('Audit Completeness Tests', () => {
 
   beforeAll(async () => {
     db = await getDatabaseClient();
-    await auditService.ensureInitialized();
+    // Force audit service to use the test database
+    auditService.db = db || dbClient || (await getDatabaseClient());
+    auditService.initialized = true;
+    auditService.initializationPromise = Promise.resolve(auditService);
   });
 
   beforeEach(async () => {
@@ -27,7 +30,13 @@ describe('Audit Completeness Tests', () => {
 
     // Get fresh database client after reset
     db = await getDatabaseClient();
-    await auditService.ensureInitialized();
+    // Force audit service to use the test database
+    auditService.db = db || dbClient || (await getDatabaseClient());
+    auditService.initialized = true;
+    auditService.initializationPromise = Promise.resolve(auditService);
+
+    // Add small delay to ensure services are fully ready
+    await new Promise(resolve => setTimeout(resolve, 10));
 
     // Generate unique test identifiers
     testRequestId = `completeness_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
@@ -36,14 +45,38 @@ describe('Audit Completeness Tests', () => {
     testAdminUser = 'completeness_admin';
 
     // Clean up any existing test data
-    await db.execute('DELETE FROM audit_logs WHERE request_id LIKE ? OR admin_user = ?',
-      [`completeness_%`, testAdminUser]);
+    // Check if audit_logs table exists before cleanup
+    try {
+      const tables = await db.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='audit_logs'"
+      );
+      if (tables.rows && tables.rows.length > 0) {
+        await db.execute(
+          'DELETE FROM audit_logs WHERE request_id LIKE ? OR admin_user = ?',
+          [`completeness_%`, testAdminUser]
+        );
+      }
+    } catch (error) {
+      // Ignore if table doesn't exist yet
+    }
   });
 
   afterEach(async () => {
     // Clean up test data after each test
-    await db.execute('DELETE FROM audit_logs WHERE request_id LIKE ? OR admin_user = ?',
-      [`completeness_%`, testAdminUser]);
+    // Check if audit_logs table exists before cleanup
+    try {
+      const tables = await db.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='audit_logs'"
+      );
+      if (tables.rows && tables.rows.length > 0) {
+        await db.execute(
+          'DELETE FROM audit_logs WHERE request_id LIKE ? OR admin_user = ?',
+          [`completeness_%`, testAdminUser]
+        );
+      }
+    } catch (error) {
+      // Ignore if table doesn't exist yet
+    }
   });
 
   describe('Critical Operations Audit Coverage', () => {
@@ -850,7 +883,15 @@ describe('Audit Completeness Tests', () => {
       const cleanupStart = Date.now();
 
       // Cleanup test entries
-      await db.execute('DELETE FROM audit_logs WHERE request_id LIKE ?', [`${testRequestId}_volume_%`]);
+      // Check if audit_logs table exists before cleanup
+      const tables = await db.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='audit_logs'"
+      );
+      if (tables.rows && tables.rows.length > 0) {
+        await db.execute(
+          'DELETE FROM audit_logs WHERE request_id LIKE ?', [`${testRequestId}_volume_%`]
+        );
+      }
 
       const cleanupEnd = Date.now();
       const cleanupTime = cleanupEnd - cleanupStart;

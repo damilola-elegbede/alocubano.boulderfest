@@ -376,12 +376,50 @@ describe('Financial Reconciliation Tests', () => {
     reconciliationService = new FinancialReconciliationService();
 
     // Initialize services first (creates tables if needed)
-    await auditService.ensureInitialized();
+    // Force audit service to use the test database
+    auditService.db = db || dbClient || (await getDatabaseClient());
+    auditService.initialized = true;
+    auditService.initializationPromise = Promise.resolve(auditService);
+
+    // Ensure audit_logs table exists with proper schema
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS audit_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        request_id TEXT NOT NULL,
+        event_type TEXT NOT NULL,
+        action TEXT NOT NULL,
+        target_type TEXT,
+        target_id TEXT,
+        admin_user TEXT,
+        session_id TEXT,
+        ip_address TEXT,
+        user_agent TEXT,
+        before_value TEXT,
+        after_value TEXT,
+        changed_fields TEXT,
+        amount_cents INTEGER,
+        currency TEXT DEFAULT 'USD',
+        transaction_reference TEXT,
+        payment_status TEXT,
+        metadata TEXT,
+        severity TEXT DEFAULT 'info',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     await reconciliationService.ensureInitialized();
 
     // Clean up tables
     try {
-      await db.execute('DELETE FROM audit_logs WHERE event_type = ?', ['financial_event']);
+      // Check if audit_logs table exists before cleanup
+      const tables = await db.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='audit_logs'"
+      );
+      if (tables.rows && tables.rows.length > 0) {
+        await db.execute(
+          'DELETE FROM audit_logs WHERE event_type = ?', ['financial_event']
+        );
+      }
     } catch (error) {
       // Ignore if table doesn't exist yet
     }
@@ -402,7 +440,15 @@ describe('Financial Reconciliation Tests', () => {
   afterEach(async () => {
     // Clean up after tests
     try {
-      await db.execute('DELETE FROM audit_logs WHERE event_type = ?', ['financial_event']);
+      // Check if audit_logs table exists before cleanup
+      const tables = await db.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='audit_logs'"
+      );
+      if (tables.rows && tables.rows.length > 0) {
+        await db.execute(
+          'DELETE FROM audit_logs WHERE event_type = ?', ['financial_event']
+        );
+      }
       await db.execute('DROP TABLE IF EXISTS daily_reconciliation');
       await db.execute('DROP TABLE IF EXISTS settlement_tracking');
       await db.execute('DROP TABLE IF EXISTS reconciliation_discrepancies');

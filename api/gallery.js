@@ -32,7 +32,7 @@ export default async function handler(req, res) {
     console.log('Gallery API: Processing request');
     
     // Parse and validate query parameters
-    const { event, year, offset: rawOffset = '0', limit: rawLimit = '20' } = req.query;
+    const { event, year, offset: rawOffset = '0', limit: rawLimit = '20' } = req.query || {};
     
     // Validate and parse numeric parameters
     const parsedOffset = parseQueryParam(rawOffset, 0, { min: 0, max: 10000 });

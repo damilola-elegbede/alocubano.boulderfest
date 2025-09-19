@@ -29,10 +29,15 @@ describe('Integration: Tickets API', () => {
       NODE_ENV: process.env.NODE_ENV,
       DATABASE_URL: process.env.DATABASE_URL,
       QR_SECRET_KEY: process.env.QR_SECRET_KEY,
+      WALLET_AUTH_SECRET: process.env.WALLET_AUTH_SECRET,
     };
     // Set up test environment variables
     process.env.NODE_ENV = 'test';
     process.env.QR_SECRET_KEY = TEST_QR_SECRET;
+    // Ensure wallet auth secret is set for wallet tests
+    if (!process.env.WALLET_AUTH_SECRET) {
+      process.env.WALLET_AUTH_SECRET = 'test-wallet-secret-key-minimum-32-characters-for-security';
+    }
     
     // Get database client - Tables should be created by migration system
     db = await getDbClient();
@@ -69,6 +74,7 @@ describe('Integration: Tickets API', () => {
     if (prevEnv.NODE_ENV === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = prevEnv.NODE_ENV;
     if (prevEnv.DATABASE_URL === undefined) delete process.env.DATABASE_URL; else process.env.DATABASE_URL = prevEnv.DATABASE_URL;
     if (prevEnv.QR_SECRET_KEY === undefined) delete process.env.QR_SECRET_KEY; else process.env.QR_SECRET_KEY = prevEnv.QR_SECRET_KEY;
+    if (prevEnv.WALLET_AUTH_SECRET === undefined) delete process.env.WALLET_AUTH_SECRET; else process.env.WALLET_AUTH_SECRET = prevEnv.WALLET_AUTH_SECRET;
   });
 
   beforeEach(async () => {

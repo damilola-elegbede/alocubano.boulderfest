@@ -7,7 +7,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { getDatabaseClient } from '../../lib/database.js';
 import auditService from '../../lib/audit-service.js';
 import securityAlertService from '../../lib/security-alert-service.js';
-import sessionMonitorService from '../../lib/session-monitor-service.js';
+import sessionMonitorService from '../../lib/admin-session-monitor.js';
 
 // Mock Financial Reporting Service
 class FinancialReportingService {
@@ -473,28 +473,68 @@ describe('Financial Reporting Integration Tests', () => {
     // Reset ALL service states that cache database connections
     // This prevents CLIENT_CLOSED errors from stale connections
 
-    // Reset audit service state
+    // Reset audit service state and force it to use the test database
     auditService.initialized = false;
     auditService.initializationPromise = null;
     auditService.db = null;
+    // Force same database for audit service
+    auditService.db = db;
+    auditService.initialized = true;
+    auditService.initializationPromise = Promise.resolve(auditService);
 
-    // Reset security alert service state
+    // Reset security alert service state and force same database
     securityAlertService.initialized = false;
     securityAlertService.initializationPromise = null;
     securityAlertService.db = null;
+    securityAlertService.db = db;
+    securityAlertService.initialized = true;
 
-    // Reset session monitor service state
+    // Reset session monitor service state and force same database
     sessionMonitorService.initialized = false;
     sessionMonitorService.initializationPromise = null;
     sessionMonitorService.db = null;
+    sessionMonitorService.db = db;
+    sessionMonitorService.initialized = true;
 
-    // Initialize services first (creates tables if needed)
-    await auditService.ensureInitialized();
-    await reportingService.ensureInitialized();
+    // Initialize reporting service with same database
+    reportingService.db = db;
+    await reportingService._ensureReportingTables();
+    reportingService.initialized = true;
 
-    // Clean up tables
+    // Ensure audit_logs table exists with proper schema
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS audit_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        request_id TEXT NOT NULL,
+        event_type TEXT NOT NULL,
+        action TEXT NOT NULL,
+        target_type TEXT,
+        target_id TEXT,
+        admin_user TEXT,
+        session_id TEXT,
+        ip_address TEXT,
+        user_agent TEXT,
+        before_value TEXT,
+        after_value TEXT,
+        changed_fields TEXT,
+        amount_cents INTEGER,
+        currency TEXT DEFAULT 'USD',
+        transaction_reference TEXT,
+        payment_status TEXT,
+        metadata TEXT,
+        severity TEXT DEFAULT 'info',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Clean up tables (check existence first)
     try {
-      await db.execute('DELETE FROM audit_logs WHERE event_type = ?', ['financial_event']);
+      const tables = await db.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='audit_logs'"
+      );
+      if (tables.rows && tables.rows.length > 0) {
+        await db.execute('DELETE FROM audit_logs WHERE event_type = ?', ['financial_event']);
+      }
     } catch (error) {
       // Ignore if table doesn't exist yet
     }
@@ -601,7 +641,10 @@ describe('Financial Reporting Integration Tests', () => {
           amountCents: event.amount,
           currency: 'USD',
           transactionReference: event.ref,
-          paymentStatus: 'completed'
+          paymentStatus: 'completed',
+          metadata: {
+            created_at: '2026-05-15T12:00:00.000Z'
+          }
         });
       }
 
@@ -617,7 +660,10 @@ describe('Financial Reporting Integration Tests', () => {
         amountCents: 5000,
         currency: 'USD',
         transactionReference: 'txn_cache',
-        paymentStatus: 'completed'
+        paymentStatus: 'completed',
+        metadata: {
+          created_at: '2026-05-15T12:00:00.000Z'
+        }
       });
 
       const startDate = '2026-05-15';
@@ -669,7 +715,10 @@ describe('Financial Reporting Integration Tests', () => {
           currency: 'USD',
           transactionReference: `ref_${i}`,
           paymentStatus: 'completed',
-          metadata: event.metadata
+          metadata: {
+            ...event.metadata,
+            created_at: '2026-05-15T12:00:00.000Z'
+          }
         });
       }
 
@@ -707,8 +756,10 @@ describe('Financial Reporting Integration Tests', () => {
         amountCents: 5000,
         currency: 'USD',
         transactionReference: 'ref_no_metadata',
-        paymentStatus: 'refunded'
-        // No metadata
+        paymentStatus: 'refunded',
+        metadata: {
+          created_at: '2026-05-15T12:00:00.000Z'
+        }
       });
 
       const report = await reportingService.generateRefundDisputeReport('2026-05-15', '2026-05-15');
@@ -732,7 +783,10 @@ describe('Financial Reporting Integration Tests', () => {
           amountCents: event.amount,
           currency: 'USD',
           transactionReference: event.ref,
-          paymentStatus: 'completed'
+          paymentStatus: 'completed',
+          metadata: {
+            created_at: '2026-05-15T12:00:00.000Z'
+          }
         });
       }
 
@@ -762,20 +816,20 @@ describe('Financial Reporting Integration Tests', () => {
     });
 
     it('should detect audit trail issues', async () => {
-      // Add an event without proper audit trail
+      // Add an event without proper audit trail (missing request_id)
       await db.execute({
         sql: `INSERT INTO audit_logs (
-          event_type, action, amount_cents, currency, target_id, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?)`,
+          request_id, event_type, action, amount_cents, currency, target_id, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
         args: [
+          '', // Empty request_id to simulate incomplete audit trail
           'financial_event',
           'PAYMENT_SUCCESSFUL',
           5000,
           'USD',
           'incomplete_audit',
-          new Date().toISOString()
+          '2026-05-15T12:00:00.000Z'
         ]
-        // Missing request_id and other audit fields
       });
 
       const complianceReport = await reportingService.generateComplianceReport(
@@ -805,7 +859,8 @@ describe('Financial Reporting Integration Tests', () => {
             paymentStatus: 'completed',
             metadata: {
               payment_method_types: ['card'],
-              performance_test: true
+              performance_test: true,
+              created_at: '2026-05-15T12:00:00.000Z'
             }
           })
         );
@@ -847,7 +902,10 @@ describe('Financial Reporting Integration Tests', () => {
             amountCents: 1000 + i,
             currency: 'USD',
             transactionReference: `txn_${dateIndex}_${i}`,
-            paymentStatus: 'completed'
+            paymentStatus: 'completed',
+            metadata: {
+              created_at: `${dates[dateIndex]}T12:00:00.000Z`
+            }
           });
         }
       }
@@ -883,7 +941,10 @@ describe('Financial Reporting Integration Tests', () => {
           amountCents: curr.amount,
           currency: curr.currency,
           transactionReference: `txn_multi_${i}`,
-          paymentStatus: 'completed'
+          paymentStatus: 'completed',
+          metadata: {
+            created_at: '2026-05-15T12:00:00.000Z'
+          }
         });
       }
 

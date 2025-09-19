@@ -1,11 +1,8 @@
--- Multi-Factor Authentication System for Admin
--- This migration creates tables for TOTP secrets, backup codes, and MFA audit logs
+-- Migration: 014 - Admin MFA System
+-- Purpose: Multi-factor authentication for admin security
+-- Dependencies: 013_admin_security_system.sql
 
--- Drop any views that might reference admin_sessions or have incorrect column references
--- This is needed because SQLite doesn't allow dropping tables referenced by views
-DROP VIEW IF EXISTS transactions_with_payment_info;
-
--- Admin MFA configuration table
+-- Admin MFA configuration table (EXACT schema from 011_admin_mfa_system.sql)
 CREATE TABLE IF NOT EXISTS admin_mfa_config (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     admin_id TEXT NOT NULL UNIQUE DEFAULT 'admin',
@@ -20,7 +17,7 @@ CREATE TABLE IF NOT EXISTS admin_mfa_config (
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Backup codes table for recovery
+-- Backup codes table for recovery (EXACT schema from 011_admin_mfa_system.sql)
 CREATE TABLE IF NOT EXISTS admin_mfa_backup_codes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     admin_id TEXT NOT NULL DEFAULT 'admin',
@@ -32,11 +29,11 @@ CREATE TABLE IF NOT EXISTS admin_mfa_backup_codes (
     FOREIGN KEY (admin_id) REFERENCES admin_mfa_config(admin_id) ON DELETE CASCADE
 );
 
--- MFA authentication attempts log
+-- MFA authentication attempts log (EXACT schema from 011_admin_mfa_system.sql)
 CREATE TABLE IF NOT EXISTS admin_mfa_attempts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     admin_id TEXT NOT NULL DEFAULT 'admin',
-    attempt_type TEXT NOT NULL CHECK (attempt_type IN ('totp', 'backup_code')), 
+    attempt_type TEXT NOT NULL CHECK (attempt_type IN ('totp', 'backup_code')),
     success BOOLEAN NOT NULL DEFAULT FALSE,
     ip_address TEXT NOT NULL,
     user_agent TEXT,
@@ -45,7 +42,7 @@ CREATE TABLE IF NOT EXISTS admin_mfa_attempts (
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- MFA rate limiting table
+-- MFA rate limiting table (EXACT schema from 011_admin_mfa_system.sql)
 CREATE TABLE IF NOT EXISTS admin_mfa_rate_limits (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     admin_id TEXT NOT NULL DEFAULT 'admin',
@@ -59,7 +56,7 @@ CREATE TABLE IF NOT EXISTS admin_mfa_rate_limits (
     UNIQUE(admin_id, ip_address)
 );
 
--- Indexes for performance
+-- Indexes for performance (EXACT from 011_admin_mfa_system.sql)
 CREATE INDEX IF NOT EXISTS idx_admin_mfa_config_admin_id ON admin_mfa_config(admin_id);
 CREATE INDEX IF NOT EXISTS idx_admin_mfa_config_enabled ON admin_mfa_config(is_enabled);
 
@@ -77,49 +74,19 @@ CREATE INDEX IF NOT EXISTS idx_admin_mfa_rate_limits_admin_ip ON admin_mfa_rate_
 CREATE INDEX IF NOT EXISTS idx_admin_mfa_rate_limits_locked_until ON admin_mfa_rate_limits(locked_until);
 CREATE INDEX IF NOT EXISTS idx_admin_mfa_rate_limits_updated_at ON admin_mfa_rate_limits(updated_at);
 
--- Admin sessions table with MFA support
--- Since sessions are temporary and expire, we can safely recreate this table
--- This approach works for both fresh databases and existing ones
-
--- Drop the old admin_sessions table if it exists (sessions are temporary anyway)
-DROP TABLE IF EXISTS admin_sessions;
-
--- Create the admin_sessions table with all MFA columns
-CREATE TABLE admin_sessions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    session_token TEXT NOT NULL UNIQUE,
-    ip_address TEXT NOT NULL,
-    user_agent TEXT,
-    mfa_verified BOOLEAN NOT NULL DEFAULT FALSE,
-    mfa_verified_at DATETIME NULL,
-    requires_mfa_setup BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    expires_at DATETIME NOT NULL,
-    last_accessed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE
-);
-
--- Recreate admin_sessions indexes
-CREATE INDEX IF NOT EXISTS idx_admin_sessions_token ON admin_sessions(session_token);
-CREATE INDEX IF NOT EXISTS idx_admin_sessions_expires_at ON admin_sessions(expires_at);
-CREATE INDEX IF NOT EXISTS idx_admin_sessions_is_active ON admin_sessions(is_active);
-CREATE INDEX IF NOT EXISTS idx_admin_sessions_mfa_verified ON admin_sessions(mfa_verified);
-CREATE INDEX IF NOT EXISTS idx_admin_sessions_requires_setup ON admin_sessions(requires_mfa_setup);
-
--- Add trigger to update updated_at timestamp on admin_mfa_config
-CREATE TRIGGER IF NOT EXISTS update_admin_mfa_config_timestamp 
+-- Triggers for timestamp updates (EXACT from 011_admin_mfa_system.sql)
+CREATE TRIGGER IF NOT EXISTS update_admin_mfa_config_timestamp
     AFTER UPDATE ON admin_mfa_config
 BEGIN
-    UPDATE admin_mfa_config 
-    SET updated_at = CURRENT_TIMESTAMP 
+    UPDATE admin_mfa_config
+    SET updated_at = CURRENT_TIMESTAMP
     WHERE id = NEW.id;
 END;
 
--- Add trigger to update updated_at timestamp on admin_mfa_rate_limits
-CREATE TRIGGER IF NOT EXISTS update_admin_mfa_rate_limits_timestamp 
+CREATE TRIGGER IF NOT EXISTS update_admin_mfa_rate_limits_timestamp
     AFTER UPDATE ON admin_mfa_rate_limits
 BEGIN
-    UPDATE admin_mfa_rate_limits 
-    SET updated_at = CURRENT_TIMESTAMP 
+    UPDATE admin_mfa_rate_limits
+    SET updated_at = CURRENT_TIMESTAMP
     WHERE id = NEW.id;
 END;

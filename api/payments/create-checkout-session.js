@@ -5,12 +5,41 @@
 
 import Stripe from "stripe";
 
-// Initialize Stripe with strict error handling
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error("❌ FATAL: STRIPE_SECRET_KEY secret not configured");
-}
+// Check if we're in test mode
+const isTestMode = process.env.NODE_ENV === 'test' || process.env.INTEGRATION_TEST_MODE === 'true';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+// Mock Stripe service for test mode
+const mockStripe = {
+  checkout: {
+    sessions: {
+      create: async (params) => {
+        console.log('🔄 Mock Stripe: Creating checkout session');
+        return {
+          id: 'cs_test_mock_session_' + Math.random().toString(36).substring(7),
+          url: 'https://checkout.stripe.com/c/pay/mock_test_session',
+          payment_intent: 'pi_test_mock_' + Math.random().toString(36).substring(7),
+          amount_total: params.line_items?.reduce((sum, item) => sum + (item.price_data?.unit_amount || 0) * item.quantity, 0) || 0,
+          currency: params.currency || 'usd',
+          status: 'open',
+          metadata: params.metadata || {},
+          customer_details: params.customer_details || null
+        };
+      }
+    }
+  }
+};
+
+// Initialize Stripe with test mode handling
+let stripe;
+if (isTestMode && !process.env.STRIPE_SECRET_KEY) {
+  // Use mock Stripe for integration tests
+  console.log('💳 Using Mock Stripe service for integration tests');
+  stripe = mockStripe;
+} else if (!process.env.STRIPE_SECRET_KEY) {
+  throw new Error("❌ FATAL: STRIPE_SECRET_KEY secret not configured");
+} else {
+  stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+}
 
 export default async function handler(req, res) {
   console.log("=== Checkout Session Handler Started ===");

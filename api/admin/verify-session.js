@@ -37,7 +37,7 @@ async function handler(req, res) {
   try {
     // Ensure auth service is initialized to get session duration
     await authService.ensureInitialized();
-    
+
     // Verify session from request
     const session = await authService.verifySessionFromRequest(req);
 

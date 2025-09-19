@@ -16,7 +16,7 @@ async function handler(req, res) {
     }
 
     // Get query parameters with proper NaN handling
-    const eventId = safeParseInt(req.query.eventId);
+    const eventId = safeParseInt(req.query?.eventId);
     
     // Check if event_id columns exist
     const ticketsHasEventId = await columnExists(db, 'tickets', 'event_id');
@@ -200,13 +200,15 @@ async function handler(req, res) {
 }
 
 // Build the middleware chain once, outside of request handling
+// IMPORTANT: Audit middleware must be outside auth middleware to capture unauthorized access
 const securedHandler = withSecurityHeaders(
-  authService.requireAuth(
-    withAdminAudit(handler, {
+  withAdminAudit(
+    authService.requireAuth(handler),
+    {
       logBody: false, // Dashboard requests don't need body logging
       logMetadata: true,
       skipMethods: [] // Log all methods including GET for dashboard access tracking
-    })
+    }
   )
 );
 

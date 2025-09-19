@@ -5,8 +5,6 @@
  */
 
 import auditService from '../../lib/audit-service.js';
-import securityAlertService from '../../lib/security-alert-service.js';
-import { resetDatabaseInstance } from '../../lib/database.js';
 
 /**
  * Reset all service instances that cache database connections
@@ -14,17 +12,45 @@ import { resetDatabaseInstance } from '../../lib/database.js';
  */
 export async function resetAllServices() {
   // Reset database instance first (all services depend on this)
-  await resetDatabaseInstance();
+  try {
+    const { resetDatabaseInstance } = await import('../../lib/database.js');
+    if (resetDatabaseInstance) {
+      await resetDatabaseInstance();
+    }
+  } catch (error) {
+    console.warn('⚠️ Could not reset database instance:', error.message);
+  }
 
   // Reset audit service state
   auditService.initialized = false;
   auditService.initializationPromise = null;
   auditService.db = null;
 
-  // Reset security alert service state
-  securityAlertService.initialized = false;
-  securityAlertService.initializationPromise = null;
-  securityAlertService.db = null;
+  // Reset security alert service state - gracefully handle if not available
+  try {
+    const securityAlertModule = await import('../../lib/security-alert-service.js');
+    const securityAlertService = securityAlertModule.default || securityAlertModule.securityAlertService;
+    if (securityAlertService) {
+      securityAlertService.initialized = false;
+      securityAlertService.initializationPromise = null;
+      securityAlertService.db = null;
+    }
+  } catch (error) {
+    console.warn('⚠️ Could not reset security alert service:', error.message);
+  }
+
+  // Reset admin session monitor - gracefully handle if not available
+  try {
+    const adminSessionModule = await import('../../lib/admin-session-monitor.js');
+    const adminSessionMonitor = adminSessionModule.default || adminSessionModule.adminSessionMonitor;
+    if (adminSessionMonitor) {
+      adminSessionMonitor.initialized = false;
+      adminSessionMonitor.initializationPromise = null;
+      adminSessionMonitor.db = null;
+    }
+  } catch (error) {
+    console.warn('⚠️ Could not reset admin session monitor:', error.message);
+  }
 
   // Note: Services will lazy-initialize when first used
   // Only pre-initialize if needed for your test
@@ -37,9 +63,30 @@ export async function resetAllServices() {
 export async function resetAndInitializeServices() {
   await resetAllServices();
 
-  // Initialize all services
-  await Promise.all([
-    auditService.ensureInitialized(),
-    securityAlertService.ensureInitialized()
-  ]);
+  // Initialize available services
+  const initPromises = [auditService.ensureInitialized()];
+
+  // Add security alert service if available
+  try {
+    const securityAlertModule = await import('../../lib/security-alert-service.js');
+    const securityAlertService = securityAlertModule.default || securityAlertModule.securityAlertService;
+    if (securityAlertService && typeof securityAlertService.ensureInitialized === 'function') {
+      initPromises.push(securityAlertService.ensureInitialized());
+    }
+  } catch (error) {
+    console.warn('⚠️ Security alert service not available for initialization:', error.message);
+  }
+
+  // Add admin session monitor if available
+  try {
+    const adminSessionModule = await import('../../lib/admin-session-monitor.js');
+    const adminSessionMonitor = adminSessionModule.default || adminSessionModule.adminSessionMonitor;
+    if (adminSessionMonitor && typeof adminSessionMonitor.ensureInitialized === 'function') {
+      initPromises.push(adminSessionMonitor.ensureInitialized());
+    }
+  } catch (error) {
+    console.warn('⚠️ Admin session monitor not available for initialization:', error.message);
+  }
+
+  await Promise.all(initPromises);
 }

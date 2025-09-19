@@ -804,6 +804,7 @@ async function completeLogin(
   res.setHeader('Set-Cookie', cookie);
   res.status(200).json({
     success: true,
+    token: token,
     expiresIn: authService.sessionDuration,
     mfaUsed,
     adminId

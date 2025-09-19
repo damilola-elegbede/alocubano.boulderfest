@@ -294,6 +294,20 @@ async function validateTicket(db, validationCode, source) {
  */
 async function logValidation(db, params) {
   try {
+    // Ensure database exists and qr_validations table is available
+    if (!db) {
+      console.warn("Database client not available for QR validation logging");
+      return;
+    }
+    
+    // Check if qr_validations table exists before attempting insert
+    try {
+      await db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='qr_validations'");
+    } catch (tableCheckError) {
+      console.warn("qr_validations table not available, skipping validation logging");
+      return;
+    }
+    
     // Legacy QR validation logging (keep for compatibility)
     await db.execute({
       sql: `
@@ -313,7 +327,7 @@ async function logValidation(db, params) {
       ],
     });
   } catch (error) {
-    // Log error but don't throw - validation logging is not critical
+    // Log error but dont throw - validation logging is not critical
     console.error("Failed to log QR validation:", error.message);
   }
 }
