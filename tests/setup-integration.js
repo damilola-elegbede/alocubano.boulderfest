@@ -544,6 +544,9 @@ afterAll(async () => {
   // Clean up all test scopes (but keep worker database for other tests in this worker)
   await isolationManager.cleanupAllScopes();
 
+  // Clean up the temporary database file for this worker
+  await isolationManager.cleanupWorkerDatabaseFile();
+
   // Worker database will be garbage collected when worker exits
   console.log(`✅ Worker ${workerId} cleanup completed`);
 
