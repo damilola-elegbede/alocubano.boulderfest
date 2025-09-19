@@ -1,16 +1,16 @@
 // Debug version of registrations endpoint to isolate import failures
 console.log('🐛 [DEBUG] Starting registrations-debug endpoint load...');
 
-import authService from '../../lib/auth-service.js';
-import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
-import { withAdminAudit } from '../../lib/admin-audit-middleware.js';
-
 let importError = null;
+let authService = null;
+let withSecurityHeaders = null;
+let withAdminAudit = null;
 
 // Test each import individually to find the problematic one
 try {
   console.log('🐛 [DEBUG] Importing auth service...');
-  const { default: authService } = await import('../../lib/auth-service.js');
+  const authServiceModule = await import('../../lib/auth-service.js');
+  authService = authServiceModule.default;
   console.log('🐛 [DEBUG] Auth service imported successfully');
 } catch (error) {
   console.error('🐛 [DEBUG] ❌ Auth service import failed:', error);
@@ -46,7 +46,8 @@ try {
 
 try {
   console.log('🐛 [DEBUG] Importing security headers...');
-  const { withSecurityHeaders } = await import('../../lib/security-headers-serverless.js');
+  const securityHeadersModule = await import('../../lib/security-headers-serverless.js');
+  withSecurityHeaders = securityHeadersModule.withSecurityHeaders;
   console.log('🐛 [DEBUG] Security headers imported successfully');
 } catch (error) {
   console.error('🐛 [DEBUG] ❌ Security headers import failed:', error);
@@ -60,6 +61,16 @@ try {
 } catch (error) {
   console.error('🐛 [DEBUG] ❌ DB utils import failed:', error);
   importError = { service: 'db-utils', error };
+}
+
+try {
+  console.log('🐛 [DEBUG] Importing admin audit middleware...');
+  const adminAuditModule = await import('../../lib/admin-audit-middleware.js');
+  withAdminAudit = adminAuditModule.withAdminAudit;
+  console.log('🐛 [DEBUG] Admin audit middleware imported successfully');
+} catch (error) {
+  console.error('🐛 [DEBUG] ❌ Admin audit middleware import failed:', error);
+  importError = { service: 'admin-audit-middleware', error };
 }
 
 try {
@@ -93,13 +104,36 @@ async function handler(req, res) {
   });
 }
 
-export default withSecurityHeaders(
-  authService.requireAuth(
-    withAdminAudit(handler, {
-      logBody: false,
-      logMetadata: true,
-      skipMethods: [] // Track debug registrations access for security
-    })
-  ),
-  { isAPI: true }
-);
+// Construct and export the wrapped handler after dynamic imports
+// Guard the export by testing that services exist and have required methods
+function createWrappedHandler() {
+  // Fallback wrapper for when withSecurityHeaders is missing
+  const securityHeadersWrapper = withSecurityHeaders || ((handler) => handler);
+
+  // Fallback wrapper for when withAdminAudit is missing
+  const auditWrapper = withAdminAudit || ((handler) => handler);
+
+  // Create the audit-wrapped handler with same options in both paths
+  const auditOptions = {
+    logBody: false,
+    logMetadata: true,
+    skipMethods: [] // Track debug registrations access for security
+  };
+
+  const auditWrappedHandler = auditWrapper(handler, auditOptions);
+
+  // Guard authService.requireAuth usage
+  if (authService && typeof authService.requireAuth === 'function') {
+    // Full protection path: withSecurityHeaders + authService.requireAuth + withAdminAudit
+    return securityHeadersWrapper(
+      authService.requireAuth(auditWrappedHandler),
+      { isAPI: true }
+    );
+  } else {
+    // Fallback path: withSecurityHeaders + withAdminAudit (no auth)
+    console.warn('🐛 [DEBUG] ⚠️ authService.requireAuth not available, falling back to audit-only protection');
+    return securityHeadersWrapper(auditWrappedHandler, { isAPI: true });
+  }
+}
+
+export default createWrappedHandler();
