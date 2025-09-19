@@ -527,6 +527,11 @@ async function generateNewBackupCodesWithRecovery(req, res, adminId) {
       req
     );
 
+    // Set security headers to prevent caching of backup codes
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
     res.status(200).json({
       success: true,
       message: 'New backup codes generated successfully',

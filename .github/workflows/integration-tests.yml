@@ -20,6 +20,10 @@ env:
   NODE_ENV: test
   CI: true
   NODE_OPTIONS: "--max-old-space-size=4096"
+  # Consolidated environment variables to reduce duplication
+  NGROK_SKIP_DOWNLOAD: '1'
+  npm_config_build_from_source: 'false'
+  PYTHON: '/usr/bin/python3'
 
 jobs:
   test:
@@ -67,23 +71,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-
-      - name: "📦 Cache node_modules"
-        id: cache-modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            node_modules
-            ~/.npm
-          key: ${{ runner.os }}-node-${{ matrix.node-version }}-integration-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-${{ matrix.node-version }}-integration-
+          cache: 'npm'
 
       - name: "📦 Install Dependencies"
-        if: steps.cache-modules.outputs.cache-hit != 'true'
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
-          NGROK_SKIP_DOWNLOAD: '1'
           PUPPETEER_SKIP_DOWNLOAD: '1'
           SKIP_HEAVYWEIGHT_DOWNLOADS: '1'
         run: |
@@ -106,18 +98,6 @@ jobs:
           fi
 
           echo "✅ Minimal dependencies installed"
-
-      - name: "🔄 Verify Cached Dependencies"
-        if: steps.cache-modules.outputs.cache-hit == 'true'
-        run: |
-          echo "📦 Using cached dependencies"
-          # Quick verification that critical packages exist
-          if [ ! -d "node_modules/@libsql" ]; then
-            echo "⚠️ Cache corrupted, reinstalling..."
-            npm ci --prefer-offline --no-audit --no-fund
-          else
-            echo "✅ Cached dependencies verified"
-          fi
 
       - name: "🧽 Optimize for Integration Tests"
         run: |
@@ -173,9 +153,9 @@ jobs:
           end_time=$(date +%s%3N)
           duration=$((end_time - start_time))
 
-          # Extract test counts - Fix: Calculate total_tests correctly
-          passing_tests=$(grep -E "Tests.*passed" integration-test-output.log | sed -E "s/.*Tests[[:space:]]+([0-9]+)[[:space:]]+passed.*/\1/" | head -1 || echo "0")
-          failing_tests=$(grep -E "Tests.*failed" integration-test-output.log | sed -E "s/.*Tests[[:space:]]+([0-9]+)[[:space:]]+failed.*/\1/" | head -1 || echo "0")
+          # Extract test counts - Fixed: Calculate total_tests as sum of passing_tests + failing_tests
+          passing_tests=$(grep -oE "Tests[[:space:]]+[0-9]+[[:space:]]+passed" integration-test-output.log | grep -oE "[0-9]+" | head -1 || echo "0")
+          failing_tests=$(grep -oE "Tests[[:space:]]+[0-9]+[[:space:]]+failed" integration-test-output.log | grep -oE "[0-9]+" | head -1 || echo "0")
           total_tests=$((passing_tests + failing_tests))
 
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

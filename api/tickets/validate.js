@@ -190,7 +190,7 @@ function detectSource(req, clientIP) {
     
     // Log suspicious wallet source attempts
     console.warn('Invalid wallet source header detected:', {
-      source: String(walletSource).substring(0, 50),
+      source: String(walletSource).slice(0, 50),
       ip: clientIP
     });
     

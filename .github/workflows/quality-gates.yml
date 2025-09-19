@@ -18,6 +18,12 @@ permissions:
   pull-requests: write
   security-events: write
 
+env:
+  # Consolidated environment variables to reduce duplication
+  NGROK_SKIP_DOWNLOAD: '1'
+  npm_config_build_from_source: 'false'
+  PYTHON: '/usr/bin/python3'
+
 jobs:
   code-quality:
     name: "🔍 Code Quality Analysis"
@@ -46,8 +52,6 @@ jobs:
 
       - name: "📦 Install Dependencies"
         run: npm ci --prefer-offline --no-audit
-        env:
-          NGROK_SKIP_DOWNLOAD: true
 
       - name: "🔍 JavaScript Linting (ESLint)"
         id: eslint
@@ -192,8 +196,6 @@ jobs:
 
       - name: "📦 Install Dependencies"
         run: npm ci --prefer-offline --no-audit
-        env:
-          NGROK_SKIP_DOWNLOAD: true
 
       - name: "🔒 Security Vulnerability Scan"
         id: security
@@ -276,6 +278,7 @@ jobs:
 
     steps:
       - name: "📊 Generate Quality Report"
+        continue-on-error: true
         uses: actions/github-script@v7
         if: github.event_name == 'pull_request'
         with:
@@ -283,7 +286,7 @@ jobs:
           script: |
             const codeQuality = '${{ needs.code-quality.result }}';
             const securityScan = '${{ needs.security-scan.result }}';
-            
+
             // Get output values from jobs
             const codeQualityOutputs = ${{ toJSON(needs.code-quality.outputs) }};
             const securityOutputs = ${{ toJSON(needs.security-scan.outputs) }};

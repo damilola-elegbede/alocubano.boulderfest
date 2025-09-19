@@ -311,11 +311,8 @@ async function handleGenerateBackupCodes(req, res) {
       codesCount: backupCodes.length
     });
 
-    // Set cache control headers to prevent caching of backup codes
-    res.setHeader(
-      'Cache-Control',
-      'no-store, no-cache, must-revalidate, proxy-revalidate'
-    );
+    // Set security headers to prevent caching of backup codes
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
 

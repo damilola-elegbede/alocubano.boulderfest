@@ -206,7 +206,7 @@ async function handler(req, res) {
       const filename = `alocubano-${primaryType}-report-${timestamp}.csv`;
 
       // Set security headers for PII reports
-      res.setHeader('Cache-Control', 'private, no-store');
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
       res.setHeader('Content-Type', 'text/csv');
@@ -217,7 +217,7 @@ async function handler(req, res) {
       return res.status(200).send(csvData);
     } else {
       // Set security headers for PII data
-      res.setHeader('Cache-Control', 'private, no-store');
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
 

@@ -213,6 +213,7 @@ async function loginHandler(req, res) {
     console.log("[Login] POST data:", {
       hasUsername: !!username,
       hasPassword: !!password,
+      // do not log length or content
       hasMfaCode: !!mfaCode,
       step: step,
       clientIP: clientIP?.substring(0, 15)
