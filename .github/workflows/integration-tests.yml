@@ -165,7 +165,8 @@ jobs:
           start_time=$(date +%s%3N)
 
           # Run integration tests with increased timeout (280 seconds, 20 seconds buffer)
-          timeout 280s npm run test:integration 2>&1 | tee integration-test-output.log
+          # Colors disabled for CI parsing
+          CI=true timeout 280s npm run test:integration -- --reporter=verbose --no-color 2>&1 | tee integration-test-output.log
           test_exit_code=${PIPESTATUS[0]}
 
           # Record end time

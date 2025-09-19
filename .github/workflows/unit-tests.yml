@@ -130,7 +130,8 @@ jobs:
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
           start_time=$(date +%s%3N)
-          npm test 2>&1 | tee unit-test-output.log
+          # Run tests with colors disabled for CI parsing
+          CI=true npm test -- --reporter=verbose --no-color 2>&1 | tee unit-test-output.log
           test_exit_code=${PIPESTATUS[0]}
           end_time=$(date +%s%3N)
           duration=$((end_time - start_time))
