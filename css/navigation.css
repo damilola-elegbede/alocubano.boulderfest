@@ -1071,6 +1071,12 @@ main,
   transition: all var(--transition-base);
   padding: var(--space-xs) 0;
   font-weight: 500;
+  /* Touch target compliance */
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Dropdown arrow styling */
@@ -1175,6 +1181,12 @@ main,
   position: relative;
   transition: all var(--transition-base);
   padding: var(--space-xs) 0;
+  /* Touch target compliance */
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Typographic slide-down text replacement for nav trigger */
