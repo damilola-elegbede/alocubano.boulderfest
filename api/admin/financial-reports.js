@@ -14,75 +14,12 @@
  */
 
 import authService from "../../lib/auth-service.js";
+import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
+import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
 import financialReconciliationService from "../../lib/financial-reconciliation-service.js";
 import financialAuditQueries from "../../lib/financial-audit-queries.js";
 import auditService from "../../lib/audit-service.js";
 import { logger } from "../../lib/logger.js";
-
-/**
- * Helper function to validate admin authentication
- */
-async function validateAdminAuth(req) {
-  try {
-    const sessionInfo = await authService.validateSession(req);
-
-    if (!sessionInfo.valid) {
-      return { valid: false, error: 'Invalid or expired session' };
-    }
-
-    if (!sessionInfo.user || sessionInfo.user !== 'admin') {
-      return { valid: false, error: 'Insufficient privileges - admin access required' };
-    }
-
-    return {
-      valid: true,
-      sessionInfo,
-      adminUser: sessionInfo.user,
-      sessionId: sessionInfo.sessionId
-    };
-
-  } catch (error) {
-    logger.error('[FinancialReports] Authentication error:', error.message);
-    return { valid: false, error: 'Authentication failed' };
-  }
-}
-
-/**
- * Helper function to log admin access
- */
-async function logAdminAccess(req, authResult, responseData, startTime) {
-  try {
-    const responseTime = Date.now() - startTime;
-    const userAgent = req.headers['user-agent'] || 'Unknown';
-    const forwardedFor = req.headers['x-forwarded-for'];
-    const realIP = req.headers['x-real-ip'];
-    const ipAddress = forwardedFor || realIP || req.socket?.remoteAddress || 'Unknown';
-
-    await auditService.logAdminAccess({
-      adminUser: authResult.valid ? authResult.adminUser : null,
-      sessionId: authResult.valid ? authResult.sessionId : null,
-      ipAddress,
-      userAgent,
-      requestMethod: req.method,
-      requestUrl: req.url,
-      requestBody: req.method === 'POST' ? JSON.stringify(req.body) : null,
-      responseStatus: responseData.status || 200,
-      responseTimeMs: responseTime,
-      metadata: {
-        endpoint: 'financial-reports',
-        report_type: req.query.type || 'unknown',
-        date_range: req.query.startDate || req.query.endDate ? {
-          start: req.query.startDate,
-          end: req.query.endDate
-        } : null,
-        response_size: JSON.stringify(responseData).length
-      }
-    });
-  } catch (auditError) {
-    logger.error('[FinancialReports] Failed to log admin access:', auditError.message);
-    // Never throw - audit failures must not break the API
-  }
-}
 
 /**
  * Parse and validate date parameters
@@ -112,26 +49,20 @@ function parseDateParams(query) {
   };
 }
 
-export default async function handler(req, res) {
-  const startTime = Date.now();
-  let responseData = { status: 500, error: 'Internal server error' };
-
+async function handler(req, res) {
   try {
     // Only allow GET and POST requests
     if (!['GET', 'POST'].includes(req.method)) {
-      responseData = { status: 405, error: 'Method not allowed' };
-      res.status(405).json(responseData);
-      return;
+      return res.status(405).json({
+        error: 'Method not allowed',
+        allowedMethods: ['GET', 'POST']
+      });
     }
 
-    // Validate admin authentication
-    const authResult = await validateAdminAuth(req);
-    if (!authResult.valid) {
-      responseData = { status: 401, error: authResult.error };
-      await logAdminAccess(req, authResult, responseData, startTime);
-      res.status(401).json(responseData);
-      return;
-    }
+    // Set no-cache headers for sensitive financial data
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
 
     // Ensure all services are initialized to prevent race conditions
     if (financialReconciliationService.ensureInitialized) {
@@ -143,123 +74,99 @@ export default async function handler(req, res) {
 
     const { type, format = 'json' } = req.query;
 
-    try {
-      switch (type) {
-      case 'daily-reconciliation':
-        responseData = await handleDailyReconciliation(req, authResult);
-        break;
+    let responseData;
 
-      case 'revenue-reconciliation':
-        responseData = await handleRevenueReconciliation(req, authResult);
-        break;
+    switch (type) {
+    case 'daily-reconciliation':
+      responseData = await handleDailyReconciliation(req);
+      break;
 
-      case 'payment-methods':
-        responseData = await handlePaymentMethodBreakdown(req, authResult);
-        break;
+    case 'revenue-reconciliation':
+      responseData = await handleRevenueReconciliation(req);
+      break;
 
-      case 'compliance':
-        responseData = await handleComplianceReport(req, authResult);
-        break;
+    case 'payment-methods':
+      responseData = await handlePaymentMethodBreakdown(req);
+      break;
 
-      case 'financial-health':
-        responseData = await handleFinancialHealth(req, authResult);
-        break;
+    case 'compliance':
+      responseData = await handleComplianceReport(req);
+      break;
 
-      case 'outstanding-reconciliation':
-        responseData = await handleOutstandingReconciliation(req, authResult);
-        break;
+    case 'financial-health':
+      responseData = await handleFinancialHealth(req);
+      break;
 
-      case 'discrepancies':
-        responseData = await handleDiscrepancyReport(req, authResult);
-        break;
+    case 'outstanding-reconciliation':
+      responseData = await handleOutstandingReconciliation(req);
+      break;
 
-      case 'audit-stats':
-        responseData = await handleAuditStats(req, authResult);
-        break;
+    case 'discrepancies':
+      responseData = await handleDiscrepancyReport(req);
+      break;
 
-      case 'generate-report':
-        if (req.method !== 'POST') {
-          responseData = { status: 405, error: 'POST method required for report generation' };
-          break;
-        }
-        responseData = await handleGenerateReport(req, authResult);
-        break;
+    case 'audit-stats':
+      responseData = await handleAuditStats(req);
+      break;
 
-      case 'resolve-discrepancy':
-        if (req.method !== 'POST') {
-          responseData = { status: 405, error: 'POST method required for discrepancy resolution' };
-          break;
-        }
-        responseData = await handleResolveDiscrepancy(req, authResult);
-        break;
-
-      default:
-        responseData = {
-          status: 400,
-          error: 'Invalid report type',
-          available_types: [
-            'daily-reconciliation',
-            'revenue-reconciliation',
-            'payment-methods',
-            'compliance',
-            'financial-health',
-            'outstanding-reconciliation',
-            'discrepancies',
-            'audit-stats',
-            'generate-report',
-            'resolve-discrepancy'
-          ]
-        };
+    case 'generate-report':
+      if (req.method !== 'POST') {
+        return res.status(405).json({
+          error: 'POST method required for report generation'
+        });
       }
+      responseData = await handleGenerateReport(req);
+      break;
 
-      // Log successful admin access
-      await logAdminAccess(req, authResult, responseData, startTime);
-
-      // Handle different response formats
-      if (format === 'csv' && responseData.data) {
-        // Set security headers for CSV with financial PII data
-        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-        res.setHeader('Pragma', 'no-cache');
-        res.setHeader('Expires', '0');
-        res.setHeader('Content-Type', 'text/csv');
-        res.setHeader('Content-Disposition', `attachment; filename="${type}-${Date.now()}.csv"`);
-        res.status(responseData.status || 200).send(convertToCSV(responseData.data));
-      } else {
-        // Set security headers for JSON with financial data
-        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-        res.setHeader('Pragma', 'no-cache');
-        res.setHeader('Expires', '0');
-        res.status(responseData.status || 200).json(responseData);
+    case 'resolve-discrepancy':
+      if (req.method !== 'POST') {
+        return res.status(405).json({
+          error: 'POST method required for discrepancy resolution'
+        });
       }
+      responseData = await handleResolveDiscrepancy(req);
+      break;
 
-    } catch (serviceError) {
-      logger.error(`[FinancialReports] Service error for type ${type}:`, serviceError.message);
-      responseData = {
-        status: 500,
-        error: 'Financial service error',
-        details: process.env.NODE_ENV === 'development' ? serviceError.message : 'Internal error'
-      };
+    default:
+      return res.status(400).json({
+        error: 'Invalid report type',
+        available_types: [
+          'daily-reconciliation',
+          'revenue-reconciliation',
+          'payment-methods',
+          'compliance',
+          'financial-health',
+          'outstanding-reconciliation',
+          'discrepancies',
+          'audit-stats',
+          'generate-report',
+          'resolve-discrepancy'
+        ]
+      });
+    }
 
-      await logAdminAccess(req, authResult, responseData, startTime);
-      res.status(500).json(responseData);
+    // Handle different response formats
+    if (format === 'csv' && responseData.data) {
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="${type}-${Date.now()}.csv"`);
+      res.status(responseData.status || 200).send(convertToCSV(responseData.data));
+    } else {
+      res.status(responseData.status || 200).json(responseData);
     }
 
   } catch (error) {
     logger.error('[FinancialReports] Handler error:', error.message);
-    responseData = {
-      status: 500,
+    res.status(500).json({
       error: 'Request processing failed',
       details: process.env.NODE_ENV === 'development' ? error.message : 'Internal error'
-    };
-
-    res.status(500).json(responseData);
+    });
   }
 }
 
 /**
  * Handle daily reconciliation report generation
  */
-async function handleDailyReconciliation(req, authResult) {
+async function handleDailyReconciliation(req) {
   const { date } = req.query;
   const reportDate = date || new Date().toISOString().split('T')[0];
 
@@ -271,7 +178,6 @@ async function handleDailyReconciliation(req, authResult) {
       report_type: 'daily_reconciliation',
       report_date: reportDate,
       reconciliation: report,
-      generated_by: authResult.adminUser,
       generated_at: new Date().toISOString()
     }
   };
@@ -280,7 +186,7 @@ async function handleDailyReconciliation(req, authResult) {
 /**
  * Handle revenue reconciliation report
  */
-async function handleRevenueReconciliation(req, authResult) {
+async function handleRevenueReconciliation(req) {
   const { startDate, endDate, period } = parseDateParams(req.query);
   const { currency = 'USD' } = req.query;
 
@@ -297,7 +203,6 @@ async function handleRevenueReconciliation(req, authResult) {
       report_type: 'revenue_reconciliation',
       parameters: { startDate, endDate, period, currency },
       report,
-      generated_by: authResult.adminUser,
       generated_at: new Date().toISOString()
     }
   };
@@ -306,7 +211,7 @@ async function handleRevenueReconciliation(req, authResult) {
 /**
  * Handle payment method breakdown analysis
  */
-async function handlePaymentMethodBreakdown(req, authResult) {
+async function handlePaymentMethodBreakdown(req) {
   const { startDate, endDate } = parseDateParams(req.query);
   const { currency = 'USD' } = req.query;
 
@@ -322,7 +227,6 @@ async function handlePaymentMethodBreakdown(req, authResult) {
       report_type: 'payment_method_breakdown',
       parameters: { startDate, endDate, currency },
       breakdown,
-      generated_by: authResult.adminUser,
       generated_at: new Date().toISOString()
     }
   };
@@ -331,7 +235,7 @@ async function handlePaymentMethodBreakdown(req, authResult) {
 /**
  * Handle financial compliance report
  */
-async function handleComplianceReport(req, authResult) {
+async function handleComplianceReport(req) {
   const { startDate, endDate } = parseDateParams(req.query);
   const { reportType = 'comprehensive' } = req.query;
 
@@ -347,7 +251,6 @@ async function handleComplianceReport(req, authResult) {
       report_type: 'financial_compliance',
       parameters: { startDate, endDate, reportType },
       compliance: complianceReport,
-      generated_by: authResult.adminUser,
       generated_at: new Date().toISOString()
     }
   };
@@ -356,7 +259,7 @@ async function handleComplianceReport(req, authResult) {
 /**
  * Handle financial health status
  */
-async function handleFinancialHealth(req, authResult) {
+async function handleFinancialHealth(req) {
   const healthStatus = await financialReconciliationService.getFinancialHealthStatus();
 
   return {
@@ -364,7 +267,6 @@ async function handleFinancialHealth(req, authResult) {
     data: {
       report_type: 'financial_health',
       health_status: healthStatus,
-      generated_by: authResult.adminUser,
       generated_at: new Date().toISOString()
     }
   };
@@ -373,7 +275,7 @@ async function handleFinancialHealth(req, authResult) {
 /**
  * Handle outstanding reconciliation items
  */
-async function handleOutstandingReconciliation(req, authResult) {
+async function handleOutstandingReconciliation(req) {
   const {
     status = 'pending',
     daysOld = 1,
@@ -394,7 +296,6 @@ async function handleOutstandingReconciliation(req, authResult) {
       report_type: 'outstanding_reconciliation',
       parameters: { status, daysOld, limit, offset },
       outstanding_items: outstandingItems,
-      generated_by: authResult.adminUser,
       generated_at: new Date().toISOString()
     }
   };
@@ -403,7 +304,7 @@ async function handleOutstandingReconciliation(req, authResult) {
 /**
  * Handle discrepancy report
  */
-async function handleDiscrepancyReport(req, authResult) {
+async function handleDiscrepancyReport(req) {
   // This would need to be implemented with a query to financial_discrepancies table
   // For now, return a placeholder structure
   return {
@@ -411,7 +312,6 @@ async function handleDiscrepancyReport(req, authResult) {
     data: {
       report_type: 'discrepancy_report',
       message: 'Discrepancy reporting implementation pending',
-      generated_by: authResult.adminUser,
       generated_at: new Date().toISOString()
     }
   };
@@ -420,7 +320,7 @@ async function handleDiscrepancyReport(req, authResult) {
 /**
  * Handle audit statistics
  */
-async function handleAuditStats(req, authResult) {
+async function handleAuditStats(req) {
   const { timeframe = '24h' } = req.query;
 
   const auditStats = await financialAuditQueries.getFinancialAuditStats(timeframe);
@@ -431,7 +331,6 @@ async function handleAuditStats(req, authResult) {
       report_type: 'audit_statistics',
       timeframe,
       statistics: auditStats,
-      generated_by: authResult.adminUser,
       generated_at: new Date().toISOString()
     }
   };
@@ -440,7 +339,7 @@ async function handleAuditStats(req, authResult) {
 /**
  * Handle report generation request
  */
-async function handleGenerateReport(req, authResult) {
+async function handleGenerateReport(req) {
   const { reportType, date, parameters = {} } = req.body;
 
   if (!reportType) {
@@ -468,7 +367,6 @@ async function handleGenerateReport(req, authResult) {
     data: {
       report_type: reportType,
       report,
-      generated_by: authResult.adminUser,
       generated_at: new Date().toISOString()
     }
   };
@@ -477,7 +375,7 @@ async function handleGenerateReport(req, authResult) {
 /**
  * Handle discrepancy resolution
  */
-async function handleResolveDiscrepancy(req, authResult) {
+async function handleResolveDiscrepancy(req) {
   const { discrepancyId, notes, action } = req.body;
 
   if (!discrepancyId || !notes || !action) {
@@ -489,8 +387,7 @@ async function handleResolveDiscrepancy(req, authResult) {
 
   await financialReconciliationService.resolveDiscrepancy(discrepancyId, {
     notes,
-    action,
-    resolvedBy: authResult.adminUser
+    action
   });
 
   return {
@@ -498,7 +395,6 @@ async function handleResolveDiscrepancy(req, authResult) {
     data: {
       message: 'Discrepancy resolved successfully',
       discrepancy_id: discrepancyId,
-      resolved_by: authResult.adminUser,
       resolved_at: new Date().toISOString()
     }
   };
@@ -528,3 +424,14 @@ function convertToCSV(data) {
 
   return [csvHeaders, ...csvRows].join('\n');
 }
+
+export default withSecurityHeaders(
+  authService.requireAuth(
+    withAdminAudit(handler, {
+      logBody: true, // Log request body for financial operations audit
+      logMetadata: true, // Log comprehensive metadata for financial reports
+      skipMethods: [] // Always audit financial report access
+    })
+  ),
+  { isAPI: true }
+);

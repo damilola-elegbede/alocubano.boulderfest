@@ -12,6 +12,10 @@ import { withSecurityHeaders } from "../../lib/security-headers.js";
 import { logger } from "../../lib/logger.js";
 
 async function handler(req, res) {
+  // Set no-cache headers for sensitive authentication data
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   // Check if we're in a test environment
   const isTestEnvironment =
     process.env.NODE_ENV === 'test' ||

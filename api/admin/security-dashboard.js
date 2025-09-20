@@ -4,7 +4,7 @@
  */
 
 import authService from "../../lib/auth-service.js";
-import { adminSessionMonitor } from "../../lib/admin-session-monitor.js";
+import adminSessionMonitor from "../../lib/admin-session-monitor.js";
 import securityAlertService from "../../lib/security-alert-service.js";
 import auditService from "../../lib/audit-service.js";
 import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";

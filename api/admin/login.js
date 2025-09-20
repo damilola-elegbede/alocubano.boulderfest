@@ -7,7 +7,7 @@ import {
   markSessionMfaVerified
 } from "../../lib/mfa-middleware.js";
 import { withAuthAudit } from "../../lib/admin-audit-middleware.js";
-import { adminSessionMonitor } from "../../lib/admin-session-monitor.js";
+import adminSessionMonitor from "../../lib/admin-session-monitor.js";
 import securityAlertService from "../../lib/security-alert-service.js";
 
 /**
@@ -206,7 +206,7 @@ async function loginHandler(req, res) {
       await securityAlertService.ensureInitialized();
     }
   } catch (error) {
-    console.error('[Login] Service initialization error:', error);
+    console.error('[Login] Service initialization error:', error.message);
     return res.status(500).json({ error: 'Service initialization failed' });
   }
 
@@ -293,7 +293,6 @@ async function loginHandler(req, res) {
     } catch (error) {
       console.error('[Login] Login process failed:', {
         errorMessage: error.message,
-        errorStack: error.stack,
         errorName: error.name,
         clientIP: clientIP?.substring(0, 15) + '...', // Truncate IP for privacy
         timestamp: new Date().toISOString(),
@@ -423,8 +422,7 @@ async function handlePasswordStep(req, res, username, password, clientIP) {
     isE2ETest,
     E2E_TEST_MODE: process.env.E2E_TEST_MODE,
     CI: process.env.CI,
-    VERCEL_ENV: process.env.VERCEL_ENV,
-    userAgent: req.headers['user-agent']?.substring(0, 50)
+    VERCEL_ENV: process.env.VERCEL_ENV
   });
 
   // Verify username and password with timing attack protection
