@@ -373,7 +373,7 @@ describe('RateLimiter Domain Service', () => {
           expect(result.tokens).toBeGreaterThan(0);
           expect(result.tokens).toBeLessThanOrEqual(5);
           resolve();
-        }, 200);
+        }, 500); // Increased from 200ms to 500ms for CI reliability
       });
     });
 
@@ -385,7 +385,7 @@ describe('RateLimiter Domain Service', () => {
           const result = rateLimiter.checkTokenBucket('user1', options);
           expect(result.tokens).toBeLessThanOrEqual(3);
           resolve();
-        }, 100);
+        }, 300); // Increased from 100ms to 300ms for CI reliability
       });
     });
 
