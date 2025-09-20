@@ -314,8 +314,8 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   position: relative;
   transition: all var(--transition-base);
   z-index: 1001; /* Higher than mobile menu (1000) */
@@ -367,8 +367,8 @@
 /* Mobile Menu - Component Style */
 .menu-toggle {
   display: none;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   position: relative;
   z-index: 1001; /* Higher than mobile menu (1000) */
   background: transparent;
