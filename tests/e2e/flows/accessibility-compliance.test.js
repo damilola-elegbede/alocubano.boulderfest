@@ -58,8 +58,8 @@ test.describe('Accessibility Compliance', () => {
       }
     }
 
-    // Verify header cart is accessible via keyboard
-    const headerCart = page.locator('.nav-cart-button');
+    // Verify header cart is accessible via keyboard using correct selector
+    const headerCart = page.locator('.nav-cart-button, [data-testid="view-cart"]');
     if (await headerCart.count() > 0) {
       await expect(headerCart).toBeVisible();
     }
@@ -141,7 +141,7 @@ test.describe('Accessibility Compliance', () => {
       'button:has-text("Buy")', // Purchase buttons
       'button:has-text("Register")', // Registration buttons
       'button:has-text("Submit")', // Form submissions
-      '.nav-cart-button', // Header cart actions
+      '.nav-cart-button, [data-testid="view-cart"]', // Header cart actions
       '.ticket-card button', // Ticket selection buttons
       'nav button', // Navigation buttons
       '.mobile-menu button' // Mobile menu buttons

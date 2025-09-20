@@ -78,12 +78,12 @@ test.describe('Mobile Registration Experience', () => {
     if (await addButton.count() > 0) {
       await addButton.click();
 
-      // Header cart button should be accessible on mobile
-      const headerCart = page.locator('.nav-cart-button');
+      // Header cart button should be accessible on mobile using correct selector
+      const headerCart = page.locator('.nav-cart-button, [data-testid="view-cart"]');
       await expect(headerCart).toBeVisible();
 
-      // Header cart badge should update
-      const cartBadge = page.locator('.nav-cart-badge');
+      // Header cart badge should update using correct selector
+      const cartBadge = page.locator('.nav-cart-badge, [data-testid="cart-counter"]');
       if (await cartBadge.count() > 0) {
         await expect(cartBadge).toBeVisible();
       }

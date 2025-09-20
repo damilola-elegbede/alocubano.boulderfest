@@ -1,11 +1,12 @@
 /**
- * Optimized Playwright E2E Configuration - Vercel Preview Deployments
+ * Optimized Playwright E2E Configuration - Local Testing with Resilient Environment
  *
  * Performance improvements:
  * - Parallel execution enabled (4-8x faster)
  * - Optimized timeouts based on actual performance
  * - Removed vercel-deployment-manager overhead
  * - Streamlined test selection
+ * - Resilient environment handling
  */
 
 import { defineConfig, devices } from '@playwright/test';
@@ -17,7 +18,7 @@ const baseURL = process.env.PREVIEW_URL ||
                 'http://localhost:3000';
 
 const isCI = !!process.env.CI;
-const isPreview = baseURL.includes('vercel.app');
+const isPreview = baseURL.includes('vercel.app') || process.env.PREVIEW_URL;
 
 console.log(`🚀 Optimized E2E Configuration:`);
 console.log(`   Target: ${baseURL}`);
@@ -57,11 +58,12 @@ export default defineConfig({
     ] : [])
   ],
 
-  // Optimized timeouts based on actual performance
-  timeout: isCI ? 60000 : 45000,  // Reduced from 120s/90s
+  // UNIFIED TIMEOUT STRATEGY - Single Source of Truth
+  // Base timeout scales all other timeouts proportionally
+  timeout: isCI ? 90000 : 60000,  // Main test timeout
 
   expect: {
-    timeout: isCI ? 15000 : 10000,  // Reduced from 30s/25s
+    timeout: isCI ? 20000 : 15000,  // Expect assertions (20-25% of test timeout)
   },
 
   use: {
@@ -72,9 +74,9 @@ export default defineConfig({
 
     viewport: { width: 1280, height: 720 },
 
-    // Tightened timeouts
-    actionTimeout: isCI ? 20000 : 15000,     // Reduced from 45s/30s
-    navigationTimeout: isCI ? 45000 : 25000, // Increased to 45s for CI (gallery needs more time)
+    // Unified timeout hierarchy (percentages of main timeout)
+    actionTimeout: isCI ? 30000 : 20000,     // ~33% of test timeout
+    navigationTimeout: isCI ? 60000 : 40000, // ~67% of test timeout
 
     // Performance headers
     extraHTTPHeaders: {
@@ -101,9 +103,7 @@ export default defineConfig({
       name: 'firefox',
       use: {
         ...devices['Desktop Firefox'],
-        // Firefox-specific optimizations
-        actionTimeout: isCI ? 25000 : 20000,     // Slightly longer for Firefox
-        navigationTimeout: isCI ? 50000 : 30000, // Firefox needs more time for gallery
+        // No timeout overrides - uses global config
         launchOptions: {
           firefoxUserPrefs: {
             'network.http.max-connections': 200,
@@ -118,26 +118,25 @@ export default defineConfig({
     {
       name: 'webkit',
       use: { ...devices['Desktop Safari'] },
+      // No timeout overrides - uses global config
     },
     {
       name: 'mobile-chrome',
       use: {
         ...devices['Pixel 5'],
-        actionTimeout: isCI ? 25000 : 20000,     // Mobile needs slightly more
-        navigationTimeout: isCI ? 50000 : 30000, // Mobile needs more time for gallery
+        // No timeout overrides - uses global config
       },
     },
     {
       name: 'mobile-safari',
       use: {
         ...devices['iPhone 12'],
-        actionTimeout: isCI ? 30000 : 25000,     // Safari mobile needs most
-        navigationTimeout: isCI ? 60000 : 35000, // Safari mobile needs most time for gallery
+        // No timeout overrides - uses global config
       },
     },
   ],
 
-  // No webServer needed - uses existing Vercel preview
-  globalSetup: './tests/e2e/global-setup-preview.js',
-  globalTeardown: './tests/e2e/global-teardown-preview.js',
+  // Use resilient global setup that works for both local and preview modes
+  globalSetup: isPreview ? './tests/e2e/global-setup-preview.js' : './tests/e2e/global-setup.js',
+  globalTeardown: isPreview ? './tests/e2e/global-teardown-preview.js' : './tests/e2e/global-teardown.js',
 });

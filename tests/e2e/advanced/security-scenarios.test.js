@@ -386,7 +386,7 @@ test.describe('Security Scenarios', () => {
       // Fill checkout form
       await helper.page.fill('input[name="email"]', 'invalid-card@example.com');
       await helper.page.fill('input[name="firstName"]', 'Invalid');
-      await helper.page.fill('input[name="lastName']', 'Card');
+      await helper.page.fill('input[name="lastName"]', 'Card');
       await helper.page.fill('input[name="phone"]', '555-0100');
 
       // Submit to payment

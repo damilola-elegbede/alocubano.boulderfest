@@ -1,18 +1,50 @@
 /**
  * Playwright Utility Functions
  * Provides compatibility layer for deprecated APIs and common patterns
+ * Features unified timeout management based on Playwright config
  */
+
+/**
+ * Get dynamic timeout values based on test context
+ * This function provides timeouts that scale with the Playwright config
+ * @param {TestInfo} testInfo - Playwright test info object
+ * @returns {Object} Timeout values derived from config
+ */
+export function getTimeouts(testInfo) {
+  const testTimeout = testInfo?.timeout || (process.env.CI ? 90000 : 60000);
+
+  return {
+    // Main timeouts (from config)
+    test: testTimeout,
+    action: Math.floor(testTimeout * 0.33),        // 33% of test timeout
+    navigation: Math.floor(testTimeout * 0.67),     // 67% of test timeout
+    expect: Math.floor(testTimeout * 0.22),        // 22% of test timeout
+
+    // Derived timeouts for common operations
+    short: Math.floor(testTimeout * 0.08),         // 8% for quick operations (5s/3s)
+    medium: Math.floor(testTimeout * 0.17),        // 17% for medium operations (15s/10s)
+    long: Math.floor(testTimeout * 0.50),          // 50% for long operations (45s/30s)
+
+    // Network-related timeouts
+    healthCheck: Math.floor(testTimeout * 0.33),   // Same as action timeout
+    api: Math.floor(testTimeout * 0.22),           // Same as expect timeout
+  };
+}
 
 /**
  * Modern replacement for page.waitForLoadState('networkidle')
  * Uses a more reliable combination of DOM content loaded and network activity check
  * @param {Page} page - Playwright page object
  * @param {Object} options - Configuration options
+ * @param {TestInfo} testInfo - Playwright test info for dynamic timeouts
  * @returns {Promise<void>}
  */
-export async function waitForPageReady(page, options = {}) {
+export async function waitForPageReady(page, options = {}, testInfo = null) {
+  // Get dynamic timeouts based on test configuration
+  const timeouts = getTimeouts(testInfo);
+
   const {
-    timeout = 10000,
+    timeout = timeouts.medium,  // Use dynamic medium timeout instead of hardcoded 10s
     waitForSelector = null,
     checkNetworkIdle = true,
     networkIdleTimeout = 500
@@ -52,10 +84,13 @@ export async function waitForPageReady(page, options = {}) {
  * @param {Page} page - Playwright page object
  * @param {string} selector - Element selector
  * @param {Object} options - Configuration options
+ * @param {TestInfo} testInfo - Playwright test info for dynamic timeouts
  * @returns {Promise<void>}
  */
-export async function waitForElementStable(page, selector, options = {}) {
-  const { timeout = 5000, stableFor = 200 } = options;
+export async function waitForElementStable(page, selector, options = {}, testInfo = null) {
+  // Get dynamic timeouts based on test configuration
+  const timeouts = getTimeouts(testInfo);
+  const { timeout = timeouts.short, stableFor = 200 } = options;
 
   try {
     await page.waitForSelector(selector, { timeout });
@@ -94,10 +129,31 @@ export async function waitForElementStable(page, selector, options = {}) {
 }
 
 /**
+ * Helper to get timeout for common test patterns
+ * @param {TestInfo} testInfo - Playwright test info
+ * @param {string} pattern - Timeout pattern type
+ * @returns {number} Timeout value in milliseconds
+ */
+export function getTestTimeout(testInfo, pattern) {
+  const timeouts = getTimeouts(testInfo);
+
+  switch (pattern) {
+    case 'quick': return timeouts.short;        // For fast operations (5s/3s)
+    case 'normal': return timeouts.medium;      // For normal operations (15s/10s)
+    case 'slow': return timeouts.long;          // For slow operations (45s/30s)
+    case 'navigation': return timeouts.navigation; // For page navigation
+    case 'action': return timeouts.action;      // For user actions
+    case 'api': return timeouts.api;           // For API calls
+    default: return timeouts.medium;            // Default to normal
+  }
+}
+
+/**
  * Wait for all images in viewport to load
  * Good replacement for networkidle when images are the main concern
  * @param {Page} page - Playwright page object
  * @param {Object} options - Configuration options
+ * @param {TestInfo} testInfo - Playwright test info for dynamic timeouts
  * @returns {Promise<void>}
  */
 export async function waitForImagesLoaded(page, options = {}) {

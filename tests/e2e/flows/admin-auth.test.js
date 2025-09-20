@@ -111,7 +111,7 @@ test.describe('Admin Authentication', () => {
     // Should show error message and not navigate to dashboard
     const errorElement = page.locator('#errorMessage');
     await expect(errorElement).toBeVisible({ timeout: 30000 });
-    await expect(page).not.toHaveURL(/\/dashboard(\/|$)/);
+    await expect(page).not.toHaveURL(/\/admin\/dashboard(\/|$)/);
   });
 
   test('should authenticate valid admin credentials', async ({ page }) => {
@@ -179,7 +179,7 @@ test.describe('Admin Authentication', () => {
       const currentUrl = page.url();
       if (currentUrl.includes('/admin/dashboard')) {
         // Success - verify we're on the dashboard page
-        await expect(page).toHaveURL(/admin\/dashboard/);
+        await expect(page).toHaveURL(/\/admin\/dashboard/);
         console.log('Admin login successful - redirected to dashboard');
       } else {
         // Check if there's an error message visible
@@ -267,7 +267,7 @@ test.describe('Admin Authentication', () => {
     await page.goto('/admin/dashboard');
 
     // Should still be on dashboard, not redirected to login
-    await expect(page).toHaveURL(/\/dashboard(\/|$)/);
+    await expect(page).toHaveURL(/\/admin\/dashboard(\/|$)/);
   });
 
   test('should logout successfully', async ({ page }) => {
@@ -307,7 +307,7 @@ test.describe('Admin Authentication', () => {
 
       // Should redirect to login page with longer timeout
       await page.waitForURL('**/admin/login', { timeout: 30000 });
-      await expect(page).toHaveURL(/\/login(\/|$)/);
+      await expect(page).toHaveURL(/\/admin\/login(\/|$)/);
     } else {
       console.log('No logout button found - skipping logout test');
     }

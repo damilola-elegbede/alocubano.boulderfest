@@ -5,7 +5,7 @@
 
 import { test, expect } from '@playwright/test';
 import { getTestDataConstants } from '../../../scripts/seed-test-data.js';
-import { waitForPageReady, waitForConditions } from '../helpers/playwright-utils.js';
+import { waitForPageReady, waitForConditions, getTestTimeout } from '../helpers/playwright-utils.js';
 
 const testConstants = getTestDataConstants();
 
@@ -18,9 +18,11 @@ test.describe('Admin Dashboard & Security', () => {
   /**
    * Validate route accessibility before running tests
    */
-  async function validateAdminRoute(page, route, expectedContent) {
+  async function validateAdminRoute(page, route, expectedContent, testInfo) {
     try {
-      const response = await page.goto(route, { waitUntil: 'load', timeout: 60000 });
+      // Use dynamic navigation timeout from config
+      const navTimeout = getTestTimeout(testInfo, 'navigation');
+      const response = await page.goto(route, { waitUntil: 'load', timeout: navTimeout });
 
       // Handle HTTP status codes properly
       // 304 (Not Modified) is a valid success response, especially common in Firefox
@@ -30,7 +32,9 @@ test.describe('Admin Dashboard & Security', () => {
       }
 
       // Wait for page to load and check for expected content
-      await page.waitForLoadState('domcontentloaded', { timeout: 30000 });
+      // Use dynamic action timeout from config
+      const actionTimeout = getTestTimeout(testInfo, 'action');
+      await page.waitForLoadState('domcontentloaded', { timeout: actionTimeout });
 
       // Check if we actually got the right page (not a fallback)
       const content = await page.content();
@@ -57,16 +61,19 @@ test.describe('Admin Dashboard & Security', () => {
 
     try {
       // First validate login route is accessible
-      await validateAdminRoute(page, '/admin/login', 'Admin Login');
+      await validateAdminRoute(page, '/admin/login', 'Admin Login', test.info());
 
       await page.fill('input[name="username"]', adminCredentials.email);
       await page.fill('input[type="password"]', adminCredentials.password);
       await page.click('button[type="submit"]');
 
       // Wait for either dashboard or error, with timeout handling
+      // Use dynamic timeouts from config
+      const navTimeout = getTestTimeout(test.info(), 'navigation');
+      const actionTimeout = getTestTimeout(test.info(), 'action');
       await Promise.race([
-        page.waitForURL('**/admin/dashboard', { timeout: 60000 }),
-        page.waitForSelector('#errorMessage', { state: 'visible', timeout: 30000 })
+        page.waitForURL('**/admin/dashboard', { timeout: navTimeout }),
+        page.waitForSelector('#errorMessage', { state: 'visible', timeout: actionTimeout })
       ]);
 
       // Check if we successfully reached dashboard
@@ -97,7 +104,7 @@ test.describe('Admin Dashboard & Security', () => {
       }
 
       // Validate dashboard route serves correct content
-      await validateAdminRoute(page, page.url(), 'Dashboard');
+      await validateAdminRoute(page, page.url(), 'Dashboard', test.info());
       return true;
     } catch (error) {
       if (error.message.includes('locked') || error.message.includes('rate limit')) {
@@ -138,10 +145,9 @@ test.describe('Admin Dashboard & Security', () => {
   test('should load dashboard data via API', async ({ page }) => {
     // FIXED: Modern approach using waitForPageReady instead of networkidle
     await waitForPageReady(page, {
-      timeout: 10000,
       waitForSelector: '[data-testid="dashboard-stats"]',
       checkNetworkIdle: true
-    });
+    }, test.info());
 
     // Verify statistics cards are visible and contain data
     await expect(page.locator('[data-testid="dashboard-stats"]')).toBeVisible();
@@ -186,7 +192,7 @@ test.describe('Admin Dashboard & Security', () => {
 
     // Wait for page to stabilize with error handling
     await waitForConditions(page, {
-      timeout: 8000,
+      timeout: getTestTimeout(test.info(), 'normal'),
       domReady: true,
       selector: 'h1',
       noLoadingSpinners: true
@@ -210,7 +216,7 @@ test.describe('Admin Dashboard & Security', () => {
 
     // Wait for redirect or unauthorized message with modern approach
     await waitForConditions(page, {
-      timeout: 5000,
+      timeout: getTestTimeout(test.info(), 'quick'),
       domReady: true,
       customFunction: () => {
         return window.location.href.includes('login') ||
@@ -230,7 +236,7 @@ test.describe('Admin Dashboard & Security', () => {
 
   test('should validate admin session token', async ({ page }) => {
     // FIXED: Simple session validation test
-    await expect(page).toHaveURL(/\/dashboard(\/|$)/);
+    await expect(page).toHaveURL(/\/admin\/dashboard(\/|$)/);
 
     // Verify we can see admin content (proves session is valid)
     await expect(page.locator('[data-testid="dashboard-stats"]')).toBeVisible();
@@ -244,7 +250,7 @@ test.describe('Admin Dashboard & Security', () => {
 
     // Login in second context
     await loginAsAdmin(page2);
-    await expect(page2).toHaveURL(/\/dashboard(\/|$)/);
+    await expect(page2).toHaveURL(/\/admin\/dashboard(\/|$)/);
 
     // Both should work
     await expect(page.locator('h1')).toContainText('Admin Dashboard');

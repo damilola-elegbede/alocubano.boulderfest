@@ -12,7 +12,7 @@ import {
   validateSecretsOrFail,
   setGracefulDegradationFlags,
   initializeSecretValidation
-} from '../helpers/secret-validator.js';
+} from './secret-validator.js';
 
 describe('Secret Validator', () => {
   let originalEnv;

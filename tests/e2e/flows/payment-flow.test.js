@@ -43,11 +43,11 @@ test.describe('Payment Processing Flow', () => {
       return cartManager && !cartManager.getState().isEmpty;
     }, { timeout: 5000 });
 
-    // Wait for header cart badge to appear
-    await expect(page.locator('.nav-cart-badge')).toBeVisible({ timeout: 5000 });
+    // Wait for header cart badge to appear using correct selector
+    await expect(page.locator('.nav-cart-badge, [data-testid="cart-counter"]')).toBeVisible({ timeout: 5000 });
 
-    // Click the header cart button to open cart panel
-    const headerCartButton = page.locator('.nav-cart-button');
+    // Click the header cart button to open cart panel using correct selector
+    const headerCartButton = page.locator('.nav-cart-button, [data-testid="view-cart"]');
     await expect(headerCartButton).toBeVisible();
     await headerCartButton.click();
 

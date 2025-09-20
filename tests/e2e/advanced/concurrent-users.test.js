@@ -323,13 +323,13 @@ test.describe('Concurrent User Scenarios', () => {
 
         // Analyze results
         const successful = results.filter(r => r.status === 'success');
-        const protected = results.filter(r => r.status === 'inventory_protected');
+        const inventoryProtected = results.filter(r => r.status === 'inventory_protected');
         const errors = results.filter(r => r.status === 'error');
         const timeouts = results.filter(r => r.status === 'timeout');
 
         console.log(`Inventory Test Results:`);
         console.log(`  - Successful purchases: ${successful.length}`);
-        console.log(`  - Inventory protected: ${protected.length}`);
+        console.log(`  - Inventory protected: ${inventoryProtected.length}`);
         console.log(`  - Errors: ${errors.length}`);
         console.log(`  - Timeouts: ${timeouts.length}`);
 
@@ -343,7 +343,7 @@ test.describe('Concurrent User Scenarios', () => {
         }
 
         // System should handle concurrent requests gracefully
-        expect(successful.length + protected.length + errors.length).toBeGreaterThanOrEqual(concurrentBuyers / 2);
+        expect(successful.length + inventoryProtected.length + errors.length).toBeGreaterThanOrEqual(concurrentBuyers / 2);
 
       } finally {
         await Promise.all(contexts.map(context => context.close()));

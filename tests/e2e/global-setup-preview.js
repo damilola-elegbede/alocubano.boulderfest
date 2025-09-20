@@ -13,11 +13,13 @@ import { resolve } from 'path';
 
 const PROJECT_ROOT = resolve(process.cwd());
 
-// Configurable timeouts based on environment
-const HEALTH_CHECK_TIMEOUT = process.env.CI ? 30000 : 15000;
-const API_TIMEOUT = process.env.CI ? 20000 : 10000;
-const RETRY_ATTEMPTS = 6; // Reduced from 12
-const RETRY_INTERVAL = 5000; // Increased from 8000ms
+// Dynamic timeouts from Playwright config hierarchy
+// These values match the unified timeout strategy in playwright config
+const BASE_TIMEOUT = process.env.CI ? 90000 : 60000; // Main test timeout from config
+const HEALTH_CHECK_TIMEOUT = Math.floor(BASE_TIMEOUT * 0.33); // 33% of test timeout
+const API_TIMEOUT = Math.floor(BASE_TIMEOUT * 0.22); // 22% of test timeout
+const RETRY_ATTEMPTS = 6;
+const RETRY_INTERVAL = 5000;
 
 async function globalSetupPreview() {
   console.log('🚀 Global E2E Setup - Preview Deployment Mode');
@@ -55,23 +57,27 @@ async function globalSetupPreview() {
 
     console.log(`✅ Preview URL: ${previewUrl}`);
 
-    // Step 2: Validate deployment health and environment
+    // Step 2: Allow deployment to stabilize before validation
+    console.log('\n⏳ Waiting for deployment to stabilize...');
+    await new Promise(resolve => setTimeout(resolve, 5000)); // Wait for deployment to stabilize
+
+    // Step 3: Validate deployment health and environment
     console.log('\n🏥 Validating preview deployment health and environment...');
     await validateDeploymentHealth(previewUrl);
 
-    // Step 3: Verify deployment has required secrets configured
+    // Step 4: Verify deployment has required secrets configured
     console.log('\n🔐 Verifying deployment environment configuration...');
     await verifyDeploymentSecrets(previewUrl);
 
-    // Step 3: Setup test data isolation
+    // Step 5: Setup test data isolation
     console.log('\n🗄️ Setting up test data isolation...');
     await setupTestDataIsolation(previewUrl);
 
-    // Step 4: Warm up critical endpoints
+    // Step 6: Warm up critical endpoints
     console.log('\n🔥 Warming up critical endpoints...');
     await warmupEndpoints(previewUrl);
 
-    // Step 5: Create preview environment file
+    // Step 7: Create preview environment file
     console.log('\n📁 Creating preview environment configuration...');
     await createPreviewEnvironment(previewUrl);
 
@@ -81,7 +87,7 @@ async function globalSetupPreview() {
     console.log(`   Test Data: ✅ Isolated`);
     console.log(`   Critical Endpoints: ✅ Warmed up`);
     console.log(`   Mode: Production-like preview testing`);
-    console.log(`   Timeout Profile: ${process.env.CI ? 'CI-Extended' : 'Local-Fast'} (Test: ${process.env.CI ? '90s' : '60s'}, Action: ${process.env.CI ? '30s' : '15s'}, Nav: ${process.env.CI ? '60s' : '30s'})`);
+    console.log(`   Timeout Profile: ${process.env.CI ? 'CI-Extended' : 'Local-Fast'} (Test: ${process.env.CI ? '90s' : '60s'}, Action: ${process.env.CI ? '30s' : '20s'}, Nav: ${process.env.CI ? '60s' : '40s'})`);
 
     console.log('\n✅ Global preview setup completed successfully');
     console.log('='.repeat(60));
@@ -258,6 +264,10 @@ async function validateDeploymentHealth(previewUrl) {
         // Additional API endpoint checks with retries
         await validateCriticalEndpoints(previewUrl);
 
+        // Wait for services to be fully ready before declaring success
+        console.log(`   ⏳ Ensuring services are fully ready...`);
+        await ensureServicesReady(previewUrl);
+
         // Brief pause for deployment stabilization
         await new Promise(resolve => setTimeout(resolve, 2000));
         return;
@@ -302,12 +312,12 @@ async function validateCriticalEndpoints(previewUrl) {
     endpoints.map(endpoint => validateEndpointWithRetries(previewUrl, endpoint))
   );
 
-  // Circuit breaker: count failures
+  // Circuit breaker: count failures - use 50% threshold instead of 66%
   const failures = results.filter(result => result.status === 'rejected').length;
-  const criticalFailureThreshold = 2; // If 2+ critical services fail, log warning
+  const criticalFailureThreshold = Math.ceil(endpoints.length * 0.5); // 50% threshold for better reliability
 
   if (failures >= criticalFailureThreshold) {
-    console.warn(`   ⚠️ Circuit breaker triggered: ${failures}/${endpoints.length} critical endpoints failed`);
+    console.warn(`   ⚠️ Circuit breaker triggered: ${failures}/${endpoints.length} critical endpoints failed (threshold: ${criticalFailureThreshold})`);
     console.warn(`   ⚠️ Tests will use graceful degradation for affected services`);
   } else {
     console.log(`   ✅ Critical endpoints validation completed: ${endpoints.length - failures}/${endpoints.length} healthy`);
@@ -317,7 +327,7 @@ async function validateCriticalEndpoints(previewUrl) {
 }
 
 /**
- * Validate a single endpoint with retry logic and configurable timeout
+ * Validate a single endpoint with retry logic and proper exponential backoff
  */
 async function validateEndpointWithRetries(previewUrl, endpoint, maxAttempts = 3) {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -350,7 +360,12 @@ async function validateEndpointWithRetries(previewUrl, endpoint, maxAttempts = 3
       }
 
     } catch (error) {
-      console.log(`   ❌ ${endpoint}: ${error.message} (attempt ${attempt}/${maxAttempts})`);
+      if (error.name === 'AbortError') {
+        console.log(`   ❌ ${endpoint}: Request timeout (attempt ${attempt}/${maxAttempts})`);
+      } else {
+        console.log(`   ❌ ${endpoint}: ${error.message} (attempt ${attempt}/${maxAttempts})`);
+      }
+
       if (attempt === maxAttempts) {
         console.log(`   ❌ ${endpoint}: Failed after ${maxAttempts} attempts (will handle gracefully in tests)`);
         throw error; // Let Promise.allSettled handle this
@@ -358,10 +373,96 @@ async function validateEndpointWithRetries(previewUrl, endpoint, maxAttempts = 3
     }
 
     if (attempt < maxAttempts) {
-      // Exponential backoff: 1s, 2s, 4s
-      const backoffMs = Math.pow(2, attempt - 1) * 1000;
-      console.log(`   ⏳ ${endpoint}: Waiting ${backoffMs}ms before retry...`);
+      // Exponential backoff with jitter: 2s, 4s, 8s with ±25% jitter
+      const baseBackoffMs = Math.pow(2, attempt) * 1000;
+      const jitter = Math.random() * 0.5 + 0.75; // 0.75 to 1.25 multiplier
+      const backoffMs = Math.round(baseBackoffMs * jitter);
+      console.log(`   ⏳ ${endpoint}: Waiting ${backoffMs}ms before retry (exponential backoff with jitter)...`);
       await new Promise(resolve => setTimeout(resolve, backoffMs));
+    }
+  }
+}
+
+/**
+ * Ensure services are fully ready by performing multiple consecutive successful checks
+ */
+async function ensureServicesReady(previewUrl) {
+  const readinessChecks = [
+    '/api/health/check',
+    '/api/health/database'
+  ];
+
+  const requiredConsecutiveSuccess = 2; // Require 2 consecutive successful checks
+  const maxReadinessAttempts = 3;
+
+  for (let attempt = 1; attempt <= maxReadinessAttempts; attempt++) {
+    try {
+      console.log(`   🔍 Service readiness check ${attempt}/${maxReadinessAttempts}...`);
+
+      let consecutiveSuccess = 0;
+
+      for (let check = 1; check <= requiredConsecutiveSuccess; check++) {
+        // Test all readiness endpoints in parallel
+        const checkResults = await Promise.allSettled(
+          readinessChecks.map(async (endpoint) => {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout for readiness
+
+            try {
+              const response = await fetch(`${previewUrl}${endpoint}`, {
+                signal: controller.signal,
+                headers: {
+                  'User-Agent': 'E2E-Service-Readiness',
+                  'Cache-Control': 'no-cache'
+                }
+              });
+
+              clearTimeout(timeoutId);
+              return { endpoint, success: response.ok, status: response.status };
+            } catch (error) {
+              clearTimeout(timeoutId);
+              return { endpoint, success: false, error: error.message };
+            }
+          })
+        );
+
+        const allSuccessful = checkResults.every(result =>
+          result.status === 'fulfilled' && result.value.success
+        );
+
+        if (allSuccessful) {
+          consecutiveSuccess++;
+          console.log(`   ✅ Readiness check ${check}/${requiredConsecutiveSuccess} passed`);
+
+          if (consecutiveSuccess < requiredConsecutiveSuccess) {
+            // Wait briefly between consecutive checks
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        } else {
+          console.log(`   ⚠️ Readiness check ${check} failed, will retry attempt`);
+          break; // Exit consecutive check loop, retry the attempt
+        }
+      }
+
+      if (consecutiveSuccess === requiredConsecutiveSuccess) {
+        console.log(`   ✅ Services are fully ready (${requiredConsecutiveSuccess} consecutive successful checks)`);
+        return;
+      }
+
+      if (attempt < maxReadinessAttempts) {
+        const backoffMs = attempt * 3000; // 3s, 6s backoff
+        console.log(`   ⏳ Services not fully ready, waiting ${backoffMs}ms before retry...`);
+        await new Promise(resolve => setTimeout(resolve, backoffMs));
+      }
+
+    } catch (error) {
+      console.log(`   ❌ Service readiness check ${attempt} failed: ${error.message}`);
+
+      if (attempt === maxReadinessAttempts) {
+        console.warn(`   ⚠️ Could not verify service readiness after ${maxReadinessAttempts} attempts`);
+        console.warn(`   ⚠️ Proceeding with tests but may encounter failures`);
+        return; // Don't throw, allow tests to proceed with warnings
+      }
     }
   }
 }
@@ -568,21 +669,22 @@ DEPLOYMENT_READY=true
 # API availability flags (detected during setup)
 ${await checkApiAvailability(previewUrl)}
 
-# Timeout configurations for remote testing (CI-optimized)
-E2E_ACTION_TIMEOUT=${process.env.E2E_ACTION_TIMEOUT || (process.env.CI ? '30000' : '15000')}
-E2E_NAVIGATION_TIMEOUT=${process.env.E2E_NAVIGATION_TIMEOUT || (process.env.CI ? '60000' : '30000')}
-E2E_TEST_TIMEOUT=${process.env.E2E_TEST_TIMEOUT || (process.env.CI ? '90000' : '60000')}
-E2E_EXPECT_TIMEOUT=${process.env.E2E_EXPECT_TIMEOUT || (process.env.CI ? '20000' : '15000')}
-E2E_STARTUP_TIMEOUT=${process.env.E2E_STARTUP_TIMEOUT || '60000'}
-E2E_WEBSERVER_TIMEOUT=${process.env.E2E_WEBSERVER_TIMEOUT || (process.env.CI ? '90000' : '60000')}
-E2E_HEALTH_CHECK_INTERVAL=${process.env.E2E_HEALTH_CHECK_INTERVAL || '2000'}
+# Timeout configurations - derived from Playwright config (unified strategy)
+# These values match the Playwright config timeout hierarchy
+E2E_TEST_TIMEOUT=${process.env.CI ? '90000' : '60000'}        # Main test timeout (matches Playwright config)
+E2E_ACTION_TIMEOUT=${process.env.CI ? '30000' : '20000'}      # Action timeout (~33% of test timeout)
+E2E_NAVIGATION_TIMEOUT=${process.env.CI ? '60000' : '40000'}  # Navigation timeout (~67% of test timeout)
+E2E_EXPECT_TIMEOUT=${process.env.CI ? '20000' : '15000'}      # Expect timeout (~22% of test timeout)
+E2E_STARTUP_TIMEOUT=${process.env.CI ? '60000' : '40000'}     # Startup timeout (~67% of test timeout)
+E2E_WEBSERVER_TIMEOUT=${process.env.CI ? '90000' : '60000'}   # Server timeout (matches test timeout)
+E2E_HEALTH_CHECK_INTERVAL=2000
 
-# Vitest timeout configurations
-VITEST_TEST_TIMEOUT=${process.env.VITEST_TEST_TIMEOUT || (process.env.CI ? '120000' : '60000')}
-VITEST_HOOK_TIMEOUT=${process.env.VITEST_HOOK_TIMEOUT || (process.env.CI ? '60000' : '30000')}
-VITEST_SETUP_TIMEOUT=${process.env.VITEST_SETUP_TIMEOUT || '10000'}
-VITEST_CLEANUP_TIMEOUT=${process.env.VITEST_CLEANUP_TIMEOUT || '5000'}
-VITEST_REQUEST_TIMEOUT=${process.env.VITEST_REQUEST_TIMEOUT || '30000'}
+# Vitest timeout configurations - consistent with E2E timeouts
+VITEST_TEST_TIMEOUT=${process.env.CI ? '120000' : '90000'}    # Slightly longer for unit tests
+VITEST_HOOK_TIMEOUT=${process.env.CI ? '60000' : '40000'}     # Hook timeout
+VITEST_SETUP_TIMEOUT=10000
+VITEST_CLEANUP_TIMEOUT=5000
+VITEST_REQUEST_TIMEOUT=30000
 `;
 
   writeFileSync(previewEnvPath, previewConfig);

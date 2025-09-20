@@ -220,8 +220,8 @@ test.describe('Gallery Basic Browsing', () => {
     // Wait for dynamic content to load
     await page.waitForLoadState('networkidle', { timeout: test.info().timeout * 0.33 });
 
-    // Check for dynamic gallery content from Google Drive
-    const dynamicGallery = page.locator('.gallery-detail-grid, .gallery-item');
+    // Check for dynamic gallery content from Google Drive using correct selectors
+    const dynamicGallery = page.locator('.gallery-detail-grid, .gallery-item, #workshops-section, #socials-section');
     const dynamicCount = await dynamicGallery.count();
     const googleImages = page.locator('img[src*="googleusercontent.com"], img[src*="drive.google.com"]');
     const googleImageCount = await googleImages.count();

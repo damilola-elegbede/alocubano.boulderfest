@@ -182,8 +182,8 @@ test.describe('Performance Under Load', () => {
       }
     }
 
-    // Verify header cart updates
-    const headerCartButton = page.locator('.nav-cart-button');
+    // Verify header cart updates using correct selector
+    const headerCartButton = page.locator('.nav-cart-button, [data-testid="view-cart"]');
     await expect(headerCartButton).toBeVisible({ timeout: 3000 });
 
     const totalTime = Date.now() - startTime;
