@@ -249,7 +249,7 @@
   --color-text-secondary: var(--color-gray-300);       /* Secondary text */
   --color-text-tertiary: var(--color-gray-400);        /* Subtle text */
   --color-text-muted: var(--color-gray-400);           /* Muted/disabled text */
-  --color-text-inverse: var(--color-black);            /* Text on light backgrounds */
+  --color-text-inverse: var(--color-white);            /* Text on dark backgrounds/overlays */
 
   /* Border Colors - Simplified cascade
    * Lighter borders for visibility on dark surfaces */
@@ -354,7 +354,7 @@
     --color-text-secondary: var(--color-gray-300);
     --color-text-tertiary: var(--color-gray-400);
     --color-text-muted: var(--color-gray-400);
-    --color-text-inverse: var(--color-black);
+    --color-text-inverse: var(--color-white);
 
     /* Border Colors - Consistent with explicit dark theme */
     --color-border: var(--color-gray-600);
