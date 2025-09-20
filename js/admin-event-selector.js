@@ -11,7 +11,7 @@ class EventSelector {
 
   async init() {
     if (this.initialized) return;
-    
+
     try {
       await this.loadEvents();
       this.initialized = true;
@@ -29,14 +29,14 @@ class EventSelector {
           'Pragma': 'no-cache'
         }
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to load events');
       }
-      
+
       const data = await response.json();
       this.events = data.events || [];
-      
+
       // If no event is selected or selected event doesn't exist, select the first active event
       if (this.selectedEventId === 'all' || !this.events.find(e => e.id === this.selectedEventId)) {
         const activeEvent = this.events.find(e => e.status === 'active' || e.status === 'upcoming');
@@ -97,11 +97,11 @@ class EventSelector {
       const option = document.createElement('option');
       option.value = this.escapeAttribute(event.id.toString()); // Sanitize attribute
       option.selected = this.selectedEventId === event.id.toString();
-      
+
       // SECURITY: Use textContent for user data to prevent XSS injection
       const displayText = `${this.escapeText(event.name)} (${this.escapeText(event.type)}) - ${this.escapeText(event.status)}`;
       option.textContent = displayText;
-      
+
       select.appendChild(option);
     });
 
@@ -124,7 +124,7 @@ class EventSelector {
   handleEventChange(eventId) {
     this.selectedEventId = eventId;
     localStorage.setItem('selectedEventId', eventId);
-    
+
     // Sync all selector instances
     if (this.selectors) {
       this.selectors.forEach(selectorId => {
@@ -134,12 +134,12 @@ class EventSelector {
         }
       });
     }
-    
+
     // Notify listeners
     this.listeners.forEach(listener => {
       listener(eventId);
     });
-    
+
     // Reload current page data with new event filter
     if (window.loadDashboardData) {
       window.loadDashboardData(eventId);

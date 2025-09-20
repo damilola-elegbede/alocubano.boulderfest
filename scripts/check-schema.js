@@ -7,7 +7,7 @@ async function checkSchema() {
 
   // Get transactions table info
   const result = await db.execute(`
-    SELECT sql FROM sqlite_master 
+    SELECT sql FROM sqlite_master
     WHERE type='table' AND name='transactions'
   `);
 

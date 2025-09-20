@@ -2,23 +2,23 @@
 
 /**
  * DEPRECATED: E2E Test Runner with ngrok Tunnel
- * 
+ *
  * This script is DEPRECATED as of the migration to Vercel Preview Deployments for E2E testing.
- * 
+ *
  * REPLACEMENT: E2E tests now use Vercel Preview Deployments which provide:
  * - Real production environment testing
  * - No need for ngrok tunneling
  * - No local server management
  * - Better CI/CD integration
  * - Eliminated complex orchestration
- * 
+ *
  * LEGACY PURPOSE:
  * This script orchestrated ngrok tunneling + Vercel dev server + E2E tests:
- * 1. Started ngrok tunnel with subdomain 'alocubanoboulderfest'  
+ * 1. Started ngrok tunnel with subdomain 'alocubanoboulderfest'
  * 2. Started Vercel dev server on port 3000
  * 3. Ran E2E tests against the tunnel URL
  * 4. Cleaned up all processes
- * 
+ *
  * @deprecated Use Vercel Preview Deployments for E2E testing instead
  * @see CI/CD workflows for current E2E testing approach
  */
@@ -47,7 +47,7 @@ let playwrightProcess = null;
  */
 async function checkNgrokInstallation() {
   console.log('🔍 Checking ngrok installation...');
-  
+
   try {
     await execAsync('which ngrok');
     console.log('✅ ngrok is installed');
@@ -74,10 +74,10 @@ async function checkNgrokInstallation() {
  */
 async function startNgrokTunnel() {
   console.log(`🌐 Starting ngrok tunnel to port ${SERVER_PORT}...`);
-  
+
   // Use subdomain if auth token is available, otherwise use random URL
   const authToken = process.env.NGROK_AUTHTOKEN;
-  const ngrokCommand = authToken 
+  const ngrokCommand = authToken
     ? `ngrok http ${SERVER_PORT} --subdomain=${NGROK_SUBDOMAIN}`
     : `ngrok http ${SERVER_PORT}`;
 
@@ -89,7 +89,7 @@ async function startNgrokTunnel() {
   return new Promise((resolve, reject) => {
     let tunnelUrl = null;
     let outputBuffer = '';
-    
+
     // Timeout for ngrok startup
     const timeout = setTimeout(() => {
       if (!tunnelUrl) {
@@ -100,18 +100,18 @@ async function startNgrokTunnel() {
     ngrokProcess.stdout.on('data', (data) => {
       const output = data.toString();
       outputBuffer += output;
-      
+
       // Look for tunnel URL in output
       const urlMatch = output.match(/https:\/\/[^\s]+\.ngrok[^\s]*/);
       if (urlMatch && !tunnelUrl) {
         tunnelUrl = urlMatch[0];
         clearTimeout(timeout);
-        
+
         console.log('✅ ngrok tunnel established:');
         console.log(`   Local:  http://localhost:${SERVER_PORT}`);
         console.log(`   Public: ${tunnelUrl}`);
         console.log('📊 ngrok Inspector: http://localhost:4040');
-        
+
         resolve(tunnelUrl);
       }
     });
@@ -139,35 +139,35 @@ async function startNgrokTunnel() {
  */
 async function verifyNgrokTunnel(tunnelUrl) {
   console.log(`🔍 Verifying ngrok tunnel accessibility...`);
-  
+
   const maxAttempts = 10;
   const delay = 2000;
-  
+
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       console.log(`   Attempt ${attempt}/${maxAttempts}: Testing ${tunnelUrl}`);
-      
-      const response = await fetch(tunnelUrl, { 
+
+      const response = await fetch(tunnelUrl, {
         method: 'HEAD',
-        timeout: 5000 
+        timeout: 5000
       });
-      
+
       if (response.ok || response.status === 404) {
         // 404 is acceptable - it means ngrok is working, just no content at root
         console.log('✅ ngrok tunnel is accessible');
         return true;
       }
-      
+
       console.log(`   Status: ${response.status} - retrying...`);
     } catch (error) {
       console.log(`   Error: ${error.message} - retrying...`);
     }
-    
+
     if (attempt < maxAttempts) {
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
-  
+
   throw new Error('ngrok tunnel is not accessible after multiple attempts');
 }
 
@@ -176,7 +176,7 @@ async function verifyNgrokTunnel(tunnelUrl) {
  */
 async function startVercelServer() {
   console.log(`🚀 Starting Vercel dev server on port ${SERVER_PORT}...`);
-  
+
   vercelProcess = spawn('vercel', ['dev', '--yes', '--listen', SERVER_PORT.toString()], {
     stdio: ['pipe', 'pipe', 'pipe'],
     env: {
@@ -190,7 +190,7 @@ async function startVercelServer() {
   return new Promise((resolve, reject) => {
     let serverReady = false;
     let outputBuffer = '';
-    
+
     // Timeout for server startup
     const timeout = setTimeout(() => {
       if (!serverReady) {
@@ -202,7 +202,7 @@ async function startVercelServer() {
       const output = data.toString();
       outputBuffer += output;
       console.log('📝 Vercel:', output.trim());
-      
+
       // Look for "Ready!" or similar indicators
       if (output.includes('Ready!') || output.includes('ready on') || output.includes('Local:')) {
         if (!serverReady) {
@@ -217,7 +217,7 @@ async function startVercelServer() {
     vercelProcess.stderr.on('data', (data) => {
       const error = data.toString();
       console.error('📝 Vercel error:', error.trim());
-      
+
       if (error.includes('Error') && !error.includes('Warning')) {
         clearTimeout(timeout);
         reject(new Error(`Vercel server failed: ${error}`));
@@ -238,37 +238,37 @@ async function startVercelServer() {
  */
 async function waitForApplicationReady() {
   console.log('🔍 Waiting for application to be ready...');
-  
+
   const maxAttempts = 20;
   const delay = 3000;
-  
+
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       console.log(`   Health check ${attempt}/${maxAttempts}: ${HEALTH_CHECK_URL}`);
-      
-      const response = await fetch(HEALTH_CHECK_URL, { 
+
+      const response = await fetch(HEALTH_CHECK_URL, {
         timeout: 8000,
         headers: {
           'User-Agent': 'E2E-Test-Runner'
         }
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('✅ Application is ready:', data.status || 'healthy');
         return;
       }
-      
+
       console.log(`   Status: ${response.status} - retrying...`);
     } catch (error) {
       console.log(`   Error: ${error.message} - retrying...`);
     }
-    
+
     if (attempt < maxAttempts) {
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
-  
+
   throw new Error('Application health check failed after multiple attempts');
 }
 
@@ -277,12 +277,12 @@ async function waitForApplicationReady() {
  */
 async function runPlaywrightTests(testArgs = []) {
   console.log('🎭 Running Playwright E2E tests...');
-  
+
   const configPath = path.resolve(PLAYWRIGHT_CONFIG);
   const playwrightArgs = ['test', `--config=${configPath}`, ...testArgs];
-  
+
   console.log(`   Command: npx playwright ${playwrightArgs.join(' ')}`);
-  
+
   return new Promise((resolve, reject) => {
     playwrightProcess = spawn('npx', ['playwright', ...playwrightArgs], {
       stdio: 'inherit',
@@ -314,7 +314,7 @@ async function runPlaywrightTests(testArgs = []) {
  */
 async function cleanup() {
   console.log('\n🛑 Cleaning up processes...');
-  
+
   const processes = [
     { name: 'Playwright', process: playwrightProcess },
     { name: 'Vercel', process: vercelProcess },
@@ -328,7 +328,7 @@ async function cleanup() {
         process.kill('SIGTERM');
         // Give process time to gracefully shutdown
         await new Promise(resolve => setTimeout(resolve, 1000));
-        
+
         if (!process.killed) {
           console.log(`   Force killing ${name}...`);
           process.kill('SIGKILL');
@@ -338,7 +338,7 @@ async function cleanup() {
       }
     }
   }
-  
+
   console.log('✅ Cleanup completed');
 }
 
@@ -348,36 +348,36 @@ async function cleanup() {
 async function main() {
   console.log('🎵 A Lo Cubano Boulder Fest - E2E Tests with ngrok');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  
+
   // Get test arguments (everything after --)
   const testArgs = process.argv.slice(2);
-  
+
   let exitCode = 0;
-  
+
   try {
     // Step 1: Check ngrok installation
     await checkNgrokInstallation();
-    
+
     // Step 2: Start ngrok tunnel
     const tunnelUrl = await startNgrokTunnel();
-    
+
     // Step 3: Verify tunnel accessibility
     await verifyNgrokTunnel(tunnelUrl);
-    
+
     // Step 4: Start Vercel dev server
     await startVercelServer();
-    
+
     // Step 5: Wait for application to be ready
     await waitForApplicationReady();
-    
+
     console.log('\n✨ Environment is ready for E2E testing!');
     console.log(`   Application URL: ${NGROK_URL}`);
     console.log(`   Health endpoint: ${HEALTH_CHECK_URL}`);
     console.log('');
-    
+
     // Step 6: Run E2E tests
     exitCode = await runPlaywrightTests(testArgs);
-    
+
   } catch (error) {
     console.error('❌ E2E test setup failed:', error.message);
     exitCode = 1;
@@ -385,7 +385,7 @@ async function main() {
     // Step 7: Clean up
     await cleanup();
   }
-  
+
   console.log('\n👋 E2E test run completed');
   process.exit(exitCode);
 }
@@ -425,10 +425,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   });
 }
 
-export { 
-  checkNgrokInstallation, 
-  startNgrokTunnel, 
-  startVercelServer, 
-  runPlaywrightTests, 
-  cleanup 
+export {
+  checkNgrokInstallation,
+  startNgrokTunnel,
+  startVercelServer,
+  runPlaywrightTests,
+  cleanup
 };

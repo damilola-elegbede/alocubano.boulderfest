@@ -10,9 +10,9 @@ describe('StripeOrderMapper Domain Service', () => {
         quantity: 2,
         type: 'ticket'
       };
-      
+
       const result = StripeOrderMapper.mapCartItemToStripeLineItem(item);
-      
+
       expect(result).toEqual({
         price_data: {
           currency: 'usd',
@@ -43,9 +43,9 @@ describe('StripeOrderMapper Domain Service', () => {
         eventTime: '19:00',
         venue: 'Avalon Ballroom'
       };
-      
+
       const result = StripeOrderMapper.mapCartItemToStripeLineItem(item);
-      
+
       expect(result.price_data.product_data.description).toBe('VIP Experience Package');
       expect(result.price_data.product_data.metadata).toEqual({
         type: 'ticket',
@@ -66,9 +66,9 @@ describe('StripeOrderMapper Domain Service', () => {
         purpose: 'Support local artists',
         taxDeductible: true
       };
-      
+
       const result = StripeOrderMapper.mapCartItemToStripeLineItem(item);
-      
+
       expect(result.price_data.product_data.metadata).toEqual({
         type: 'donation',
         donation_category: 'artists',
@@ -87,9 +87,9 @@ describe('StripeOrderMapper Domain Service', () => {
         color: 'Blue',
         sku: 'TSHIRT-M-BLUE'
       };
-      
+
       const result = StripeOrderMapper.mapCartItemToStripeLineItem(item);
-      
+
       expect(result.price_data.product_data.metadata).toEqual({
         type: 'merchandise',
         size: 'M',
@@ -110,9 +110,9 @@ describe('StripeOrderMapper Domain Service', () => {
           invalidField: { nested: 'object' } // Should be ignored
         }
       };
-      
+
       const result = StripeOrderMapper.mapCartItemToStripeLineItem(item);
-      
+
       expect(result.price_data.product_data.metadata).toEqual({
         type: 'ticket',
         ticket_type: 'general',
@@ -155,7 +155,7 @@ describe('StripeOrderMapper Domain Service', () => {
         quantity: 1,
         type: 'ticket'
       };
-      
+
       const result = StripeOrderMapper.mapCartItemToStripeLineItem(item);
       expect(result.price_data.unit_amount).toBe(1299);
     });
@@ -167,7 +167,7 @@ describe('StripeOrderMapper Domain Service', () => {
         quantity: 1,
         type: 'ticket'
       };
-      
+
       expect(() => {
         StripeOrderMapper.mapCartItemToStripeLineItem(item);
       }).toThrow('Item price must be greater than zero');
@@ -180,9 +180,9 @@ describe('StripeOrderMapper Domain Service', () => {
         { name: 'Weekend Pass', price: 125.00, quantity: 1, type: 'ticket' },
         { name: 'Donation', price: 25.00, quantity: 1, type: 'donation' }
       ];
-      
+
       const result = StripeOrderMapper.mapCartItemsToStripeLineItems(cartItems);
-      
+
       expect(result).toHaveLength(2);
       expect(result[0].price_data.product_data.name).toBe('Weekend Pass');
       expect(result[1].price_data.product_data.name).toBe('Donation');
@@ -199,7 +199,7 @@ describe('StripeOrderMapper Domain Service', () => {
         { name: 'Valid Item', price: 10, quantity: 1, type: 'ticket' },
         { name: 'Invalid Item', price: -10, quantity: 1, type: 'ticket' }
       ];
-      
+
       expect(() => {
         StripeOrderMapper.mapCartItemsToStripeLineItems(cartItems);
       }).toThrow('Error mapping item 2: Item price cannot be negative');
@@ -221,7 +221,7 @@ describe('StripeOrderMapper Domain Service', () => {
         eventTime: '20:00',
         venue: 'Main Stage'
       };
-      
+
       const result = StripeOrderMapper.buildItemMetadata(item);
       expect(result).toEqual({
         type: 'ticket',
@@ -239,7 +239,7 @@ describe('StripeOrderMapper Domain Service', () => {
         purpose: 'Support musicians',
         taxDeductible: false
       };
-      
+
       const result = StripeOrderMapper.buildItemMetadata(item);
       expect(result).toEqual({
         type: 'donation',
@@ -256,7 +256,7 @@ describe('StripeOrderMapper Domain Service', () => {
         color: 'Red',
         sku: 'SHIRT-L-RED'
       };
-      
+
       const result = StripeOrderMapper.buildItemMetadata(item);
       expect(result).toEqual({
         type: 'merchandise',
@@ -276,7 +276,7 @@ describe('StripeOrderMapper Domain Service', () => {
     it('maps email to customer_email', () => {
       const customerInfo = { email: 'test@example.com' };
       const result = StripeOrderMapper.mapCustomerInfoToStripeOptions(customerInfo);
-      
+
       expect(result.customer_email).toBe('test@example.com');
     });
 
@@ -287,9 +287,9 @@ describe('StripeOrderMapper Domain Service', () => {
         lastName: 'Doe',
         phone: '555-123-4567'
       };
-      
+
       const result = StripeOrderMapper.mapCustomerInfoToStripeOptions(customerInfo);
-      
+
       expect(result.customer_email).toBe('test@example.com');
       expect(result.customer_creation).toBe('if_required');
       expect(result.metadata).toEqual({
@@ -303,9 +303,9 @@ describe('StripeOrderMapper Domain Service', () => {
       const customerInfo = {
         firstName: 'John'
       };
-      
+
       const result = StripeOrderMapper.mapCustomerInfoToStripeOptions(customerInfo);
-      
+
       expect(result.customer_creation).toBe('if_required');
       expect(result.metadata).toEqual({
         customer_first_name: 'John'
@@ -325,9 +325,9 @@ describe('StripeOrderMapper Domain Service', () => {
         environment: 'development',
         source: 'web'
       };
-      
+
       const result = StripeOrderMapper.buildSessionMetadata(orderData);
-      
+
       expect(result.orderId).toBe('order_123');
       expect(result.orderType).toBe('tickets');
       expect(result.customerName).toBe('John Doe');
@@ -340,9 +340,9 @@ describe('StripeOrderMapper Domain Service', () => {
       const orderData = {
         orderId: 'order_456'
       };
-      
+
       const result = StripeOrderMapper.buildSessionMetadata(orderData);
-      
+
       expect(result.orderId).toBe('order_456');
       expect(result.created_at).toBeDefined();
       expect(Object.keys(result)).toHaveLength(2);
@@ -401,14 +401,14 @@ describe('StripeOrderMapper Domain Service', () => {
   describe('buildRedirectUrls()', () => {
     it('builds redirect URLs correctly', () => {
       const result = StripeOrderMapper.buildRedirectUrls('https://example.com', 'order_123');
-      
+
       expect(result.success_url).toBe('https://example.com/success?session_id={CHECKOUT_SESSION_ID}');
       expect(result.cancel_url).toBe('https://example.com/failure?session_id={CHECKOUT_SESSION_ID}&order_id=order_123');
     });
 
     it('handles origin with trailing slash', () => {
       const result = StripeOrderMapper.buildRedirectUrls('https://example.com/', 'order_123');
-      
+
       expect(result.success_url).toBe('https://example.com/success?session_id={CHECKOUT_SESSION_ID}');
       expect(result.cancel_url).toBe('https://example.com/failure?session_id={CHECKOUT_SESSION_ID}&order_id=order_123');
     });
@@ -436,9 +436,9 @@ describe('StripeOrderMapper Domain Service', () => {
         orderType: 'tickets',
         environment: 'test'
       };
-      
+
       const result = StripeOrderMapper.mapOrderToStripeSession(orderRequest);
-      
+
       expect(result.payment_method_types).toEqual(['card', 'link']);
       expect(result.mode).toBe('payment');
       expect(result.billing_address_collection).toBe('required');
@@ -478,7 +478,7 @@ describe('StripeOrderMapper Domain Service', () => {
         origin: 'https://example.com',
         orderId: 'order_123'
       };
-      
+
       expect(() => {
         StripeOrderMapper.mapOrderToStripeSession(orderRequest);
       }).toThrow('Failed to map line items');
@@ -497,7 +497,7 @@ describe('StripeOrderMapper Domain Service', () => {
         },
         quantity: 1
       };
-      
+
       const result = StripeOrderMapper.validateStripeLineItem(lineItem);
       expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
@@ -520,7 +520,7 @@ describe('StripeOrderMapper Domain Service', () => {
         },
         quantity: 1
       });
-      
+
       expect(result.valid).toBe(false);
       expect(result.errors).toContain('Currency is required');
       expect(result.errors).toContain('Unit amount must be greater than zero');
@@ -535,7 +535,7 @@ describe('StripeOrderMapper Domain Service', () => {
           product_data: { name: 'Test' }
         }
       });
-      
+
       expect(result.valid).toBe(false);
       expect(result.errors).toContain('Quantity must be greater than zero');
     });

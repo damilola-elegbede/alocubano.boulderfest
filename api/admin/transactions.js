@@ -1,8 +1,9 @@
-import authService from '../../lib/auth-service.js';
-import csrfService from '../../lib/csrf-service.js';
-import { getDatabaseClient } from '../../lib/database.js';
-import { getValidationService } from '../../lib/validation-service.js';
-import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
+import authService from "../../lib/auth-service.js";
+import csrfService from "../../lib/csrf-service.js";
+import { getDatabaseClient } from "../../lib/database.js";
+import { getValidationService } from "../../lib/validation-service.js";
+import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
+import { withHighSecurityAudit } from "../../lib/admin-audit-middleware.js";
 
 async function handler(req, res) {
   let db;
@@ -28,7 +29,7 @@ async function handler(req, res) {
 
       // Build query
       let sql = `
-        SELECT 
+        SELECT
           t.*,
           COUNT(DISTINCT ti.id) as item_count,
           GROUP_CONCAT(DISTINCT ti.item_name) as items
@@ -188,15 +189,22 @@ async function handler(req, res) {
   }
 }
 
-// Wrap the entire middleware chain in an error-handling function
+// Build the middleware chain once, outside of request handling
+const securedHandler = withSecurityHeaders(
+  authService.requireAuth(
+    withHighSecurityAudit(handler, {
+      requireExplicitAction: true,
+      logFullRequest: true,
+      alertOnFailure: true
+    })
+  )
+);
+
+// Wrap the secured handler in an error-handling function
 // to ensure all errors are returned as JSON
 async function safeHandler(req, res) {
   try {
-    // Build the middleware chain inside the try-catch
-    // This ensures any middleware initialization errors are caught
-    const securedHandler = withSecurityHeaders(authService.requireAuth(handler));
-
-    // Execute the secured handler
+    // Execute the pre-built secured handler
     return await securedHandler(req, res);
   } catch (error) {
     console.error('Fatal error in transactions endpoint:', error);

@@ -2,7 +2,7 @@
 
 /**
  * Test Admin Route Accessibility
- * 
+ *
  * This script tests if the admin login route is accessible
  * and serving the correct content, mimicking what the E2E test does
  */
@@ -27,21 +27,21 @@ console.log(`📁 Checking for admin/login.html: ${exists ? "✅ EXISTS" : "❌ 
 if (exists) {
   try {
     const content = fs.readFileSync(adminLoginPath, "utf8");
-    
+
     // Check for expected content that the E2E test looks for
     const hasAdminAccess = content.includes("Admin Access");
     const hasUsernameInput = content.includes('name="username"');
     const hasPasswordInput = content.includes('name="password"');
     const hasSubmitButton = content.includes('type="submit"');
-    
+
     console.log("📋 Content Validation:");
     console.log(`   - Contains "Admin Access": ${hasAdminAccess ? "✅" : "❌"}`);
     console.log(`   - Has username input: ${hasUsernameInput ? "✅" : "❌"}`);
     console.log(`   - Has password input: ${hasPasswordInput ? "✅" : "❌"}`);
     console.log(`   - Has submit button: ${hasSubmitButton ? "✅" : "❌"}`);
-    
+
     const allValidationsPass = hasAdminAccess && hasUsernameInput && hasPasswordInput && hasSubmitButton;
-    
+
     console.log("");
     if (allValidationsPass) {
       console.log("✅ Admin login page is properly configured!");
@@ -50,7 +50,7 @@ if (exists) {
       console.log("❌ Admin login page has validation issues");
       console.log("🔧 This may cause E2E test failures");
     }
-    
+
   } catch (error) {
     console.log(`❌ Error reading admin/login.html: ${error.message}`);
   }
@@ -69,12 +69,12 @@ const vercelJsonPath = path.join(projectRoot, "vercel.json");
 if (fs.existsSync(vercelJsonPath)) {
   try {
     const vercelConfig = JSON.parse(fs.readFileSync(vercelJsonPath, "utf8"));
-    const adminLoginRewrite = vercelConfig.rewrites?.find(r => 
+    const adminLoginRewrite = vercelConfig.rewrites?.find(r =>
       r.source === "/admin/login" && r.destination === "/admin/login.html"
     );
-    
+
     console.log(`📄 Vercel config has admin/login route: ${adminLoginRewrite ? "✅" : "❌"}`);
-    
+
   } catch (error) {
     console.log(`❌ Error parsing vercel.json: ${error.message}`);
   }

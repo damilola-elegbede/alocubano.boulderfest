@@ -470,7 +470,6 @@
 
     // Sequential loading algorithm for category-aware pagination
     function getNextPageItems(allCategories, pageSize = 20) {
-        console.log('🔍 DEBUG - getNextPageItems called:', {
             pageSize,
             workshopOffset: state.workshopOffset,
             workshopTotal: state.workshopTotal,
@@ -489,7 +488,6 @@
                 state.workshopOffset,
                 state.workshopOffset + remainingSpace
             );
-            console.log('🔍 DEBUG - Workshop items sliced:', {
                 from: state.workshopOffset,
                 to: state.workshopOffset + remainingSpace,
                 actualItems: workshopItems.length,
@@ -502,7 +500,6 @@
             state.workshopOffset += workshopItems.length;
             remainingSpace -= workshopItems.length;
         } else {
-            console.log('🔍 DEBUG - Skipping workshops:', {
                 workshopOffset: state.workshopOffset,
                 workshopTotal: state.workshopTotal,
                 remainingSpace: remainingSpace,
@@ -705,7 +702,6 @@
         const event = getEventFromPage();
         const stateKey = `gallery_${event}_state`;
         const hadStaleData = !!sessionStorage.getItem(stateKey);
-        console.log('🧹 DEBUG - Session storage cleanup:', {
             event,
             stateKey,
             hadStaleData,
@@ -739,7 +735,6 @@
         // Extract year from the page
         const year = getYearFromPage();
 
-        console.log('🚀 DEBUG - Starting loadGalleryDetailData:', {
             year,
             loadingElExists: !!loadingEl,
             contentElExists: !!contentEl,
@@ -847,7 +842,6 @@
                 // Try event-specific file first, fallback to year-based
                 const event = getEventFromPage();
                 apiUrl = `/gallery-data/${event}.json?timestamp=${Date.now()}`;
-                console.log('🔥 DEBUG - First page load from static JSON:', {
                     apiUrl,
                     event,
                     year,
@@ -941,7 +935,6 @@
                 );
 
                 // Debug: Log the state before getting first page
-                console.log('🔍 DEBUG - Before getNextPageItems:', {
                     workshopOffset: state.workshopOffset,
                     workshopTotal: state.workshopTotal,
                     socialOffset: state.socialOffset,
@@ -958,7 +951,6 @@
                 );
 
                 // Debug: Log what we got from getNextPageItems
-                console.log('🔍 DEBUG - After getNextPageItems:', {
                     pageItemsLength: pageItems.length,
                     workshopItems: pageItems.filter(
                         (item) => item.category === 'workshops'
@@ -991,7 +983,6 @@
                 state.hasCompleteDataset =
           state.totalItemsAvailable <= CONFIG.PAGINATION_SIZE;
 
-                console.log('📦 DEBUG - Static data loaded successfully:', {
                     totalItemsAvailable: state.totalItemsAvailable,
                     itemsDisplayed: state.itemsDisplayed,
                     hasMorePages: state.hasMorePages,
@@ -1222,15 +1213,15 @@
               <div class="lazy-placeholder">
                 <div class="loading-spinner">📸</div>
               </div>
-              <img data-src="${item.thumbnailUrl}" 
-                   data-thumbnail="${item.thumbnailUrl}" 
+              <img data-src="${item.thumbnailUrl}"
+                   data-thumbnail="${item.thumbnailUrl}"
                    data-dominant-color="#f0f0f0"
-                   data-width="400" 
+                   data-width="400"
                    data-height="300"
                    data-progressive="true"
                    data-image-id="${item.id || globalIndex}"
-                   alt="${title}" 
-                   class="lazy-image gallery-image" 
+                   alt="${title}"
+                   class="lazy-image gallery-image"
                    style="display: none;">
             </div>
           </div>
@@ -1262,7 +1253,6 @@
         loadingEl,
         appendMode = false
     ) {
-        console.log('🎨 DEBUG - displayGalleryData called:', {
             hasData: !!data,
             categories: data?.categories ? Object.keys(data.categories) : [],
             workshopItems: data?.categories?.workshops?.length || 0,

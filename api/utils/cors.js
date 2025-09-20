@@ -4,20 +4,20 @@
 
 // Default allowed origins
 const DEFAULT_ALLOWED_ORIGINS = [
-  "https://alocubano.boulderfest.com",
-  "https://www.alocubano.boulderfest.com",
+  'https://alocubano.boulderfest.com',
+  'https://www.alocubano.boulderfest.com'
 ];
 
 // Add development origins if in development mode
 if (
-  process.env.NODE_ENV === "development" ||
-  process.env.VERCEL_ENV === "preview"
+  process.env.NODE_ENV === 'development' ||
+  process.env.VERCEL_ENV === 'preview'
 ) {
   DEFAULT_ALLOWED_ORIGINS.push(
-    "http://localhost:3000",
-    "http://localhost:8080",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:8080",
+    'http://localhost:3000',
+    'http://localhost:8080',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:8080'
   );
 }
 
@@ -27,8 +27,8 @@ if (
  */
 export function getAllowedOrigins() {
   if (process.env.ALLOWED_ORIGINS) {
-    return process.env.ALLOWED_ORIGINS.split(",").map((origin) =>
-      origin.trim(),
+    return process.env.ALLOWED_ORIGINS.split(',').map((origin) =>
+      origin.trim()
     );
   }
   return DEFAULT_ALLOWED_ORIGINS;
@@ -52,7 +52,7 @@ export function isOriginAllowed(origin) {
   }
 
   // Check for Vercel preview deployments
-  if (process.env.VERCEL_ENV === "preview" && origin.includes(".vercel.app")) {
+  if (process.env.VERCEL_ENV === 'preview' && origin.includes('.vercel.app')) {
     return true;
   }
 
@@ -70,24 +70,24 @@ export function setCorsHeaders(req, res, options = {}) {
 
   // Only set Access-Control-Allow-Origin if the origin is allowed
   if (isOriginAllowed(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
   }
 
   // Set other CORS headers
   res.setHeader(
-    "Access-Control-Allow-Methods",
-    options.methods || "GET, POST, OPTIONS",
+    'Access-Control-Allow-Methods',
+    options.methods || 'GET, POST, OPTIONS'
   );
 
   res.setHeader(
-    "Access-Control-Allow-Headers",
-    options.headers || "Content-Type, Authorization",
+    'Access-Control-Allow-Headers',
+    options.headers || 'Content-Type, Authorization'
   );
 
   res.setHeader(
-    "Access-Control-Max-Age",
-    options.maxAge || "86400", // 24 hours
+    'Access-Control-Max-Age',
+    options.maxAge || '86400' // 24 hours
   );
 }
 
@@ -102,7 +102,7 @@ export function corsMiddleware(options = {}) {
     setCorsHeaders(req, res, options);
 
     // Handle preflight requests
-    if (req.method === "OPTIONS") {
+    if (req.method === 'OPTIONS') {
       res.status(200).end();
       return;
     }
@@ -126,7 +126,7 @@ export function withCors(handler, options = {}) {
     setCorsHeaders(req, res, options);
 
     // Handle preflight requests
-    if (req.method === "OPTIONS") {
+    if (req.method === 'OPTIONS') {
       return res.status(200).end();
     }
 
@@ -140,5 +140,5 @@ export default {
   isOriginAllowed,
   setCorsHeaders,
   corsMiddleware,
-  withCors,
+  withCors
 };

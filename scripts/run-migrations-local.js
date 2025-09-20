@@ -106,8 +106,8 @@ async function runMigrations() {
 
     // Show table structure
     const tables = await db.execute(`
-      SELECT name FROM sqlite_master 
-      WHERE type='table' 
+      SELECT name FROM sqlite_master
+      WHERE type='table'
       ORDER BY name
     `);
 

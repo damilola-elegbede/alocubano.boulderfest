@@ -24,12 +24,12 @@ class E2ETestingSetup {
   async isPortAvailable(port) {
     return new Promise((resolve) => {
       const server = net.createServer();
-      
+
       server.listen(port, () => {
         server.once('close', () => resolve(true));
         server.close();
       });
-      
+
       server.on('error', () => resolve(false));
     });
   }
@@ -39,7 +39,7 @@ class E2ETestingSetup {
    */
   async waitForServer(port, maxAttempts = 60) {
     console.log(`🔍 Waiting for server on port ${port}...`);
-    
+
     for (let i = 0; i < maxAttempts; i++) {
       try {
         const response = await fetch(`http://localhost:${port}/api/health/check`);
@@ -50,11 +50,11 @@ class E2ETestingSetup {
       } catch (error) {
         // Server not ready yet
       }
-      
+
       await new Promise(resolve => setTimeout(resolve, 2000));
       process.stdout.write('.');
     }
-    
+
     console.log('\n❌ Server failed to start within timeout');
     return false;
   }
@@ -64,7 +64,7 @@ class E2ETestingSetup {
    */
   async setupDatabase() {
     console.log('📊 Setting up database for E2E testing...');
-    
+
     try {
       // Run migrations
       await execAsync('npm run migrate:up');
@@ -81,7 +81,7 @@ class E2ETestingSetup {
    */
   async startVercelDev() {
     console.log(`🚀 Starting Vercel dev server on port ${this.port}...`);
-    
+
     // Check if port is available
     const portAvailable = await this.isPortAvailable(this.port);
     if (!portAvailable) {
@@ -98,7 +98,7 @@ class E2ETestingSetup {
       // Start Vercel dev with proper configuration
       this.vercelProcess = spawn('vercel', ['dev', '--listen', `0.0.0.0:${this.port}`, '--yes'], {
         stdio: ['pipe', 'pipe', 'pipe'],
-        env: { 
+        env: {
           ...process.env,
           NODE_ENV: 'development',
           E2E_TEST_MODE: 'true'
@@ -110,7 +110,7 @@ class E2ETestingSetup {
       this.vercelProcess.stdout.on('data', (data) => {
         const output = data.toString();
         console.log(output.trim());
-        
+
         // Look for ready indicators
         if (output.includes('Ready!') || output.includes(`localhost:${this.port}`)) {
           if (!setupComplete) {
@@ -155,7 +155,7 @@ class E2ETestingSetup {
    */
   async validateEnvironment() {
     console.log('🔍 Validating E2E environment...');
-    
+
     try {
       // Check critical API endpoints
       const endpoints = [
@@ -171,11 +171,11 @@ class E2ETestingSetup {
             headers: {
               'Content-Type': 'application/json'
             },
-            body: endpoint.includes('login') 
+            body: endpoint.includes('login')
               ? JSON.stringify({ password: 'invalid' })
               : undefined
           });
-          
+
           // We expect some response (even error responses are fine)
           console.log(`✅ ${endpoint} - Status: ${response.status}`);
         } catch (error) {
@@ -198,7 +198,7 @@ class E2ETestingSetup {
     if (this.vercelProcess) {
       console.log('🛑 Stopping Vercel dev server...');
       this.vercelProcess.kill('SIGTERM');
-      
+
       // Force kill after 5 seconds if still running
       setTimeout(() => {
         if (this.vercelProcess && !this.vercelProcess.killed) {
@@ -239,7 +239,7 @@ class E2ETestingSetup {
       console.log('\n🎉 E2E testing environment is ready!');
       console.log(`📍 Server running at: http://localhost:${this.port}`);
       console.log('🧪 You can now run E2E tests with: npm run test:e2e');
-      
+
       return {
         success: true,
         port: this.port,
@@ -261,10 +261,10 @@ class E2ETestingSetup {
    */
   async runInteractive() {
     const result = await this.setup();
-    
+
     if (result.success) {
       console.log('\n💡 Server is running. Press Ctrl+C to stop.');
-      
+
       // Handle graceful shutdown
       process.on('SIGINT', () => {
         console.log('\n🛑 Shutting down...');
@@ -291,7 +291,7 @@ const command = process.argv[2];
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const setup = new E2ETestingSetup();
-  
+
   if (command === 'interactive' || command === 'start') {
     setup.runInteractive();
   } else {

@@ -2,20 +2,20 @@
 
 /**
  * CI/CD Optimization Final Validation Script
- * 
+ *
  * Comprehensive validation of CI/CD optimizations to ensure production readiness.
- * This script validates workflow syntax, references, path filtering logic, 
+ * This script validates workflow syntax, references, path filtering logic,
  * orchestration logic, and generates performance improvement estimates.
- * 
+ *
  * Usage:
  *   node scripts/validate-ci-optimization.js [options]
- * 
+ *
  * Options:
  *   --verbose     : Show detailed validation output
  *   --fix         : Auto-fix minor issues where possible
  *   --report-only : Generate report without running validation
  *   --export-json : Export results as JSON for CI/CD consumption
- * 
+ *
  * Exit codes:
  *   0 - All validations passed
  *   1 - Validation failures found
@@ -36,7 +36,7 @@ const config = {
   workflows: {
     active: [
       'main-ci.yml',
-      'e2e-tests-optimized.yml', 
+      'e2e-tests-optimized.yml',
       'deploy-optimized.yml',
       'orchestrator.yml',
       'vercel-deployment-validation.yml',
@@ -95,7 +95,7 @@ async function main() {
   try {
     console.log('🔍 Starting CI/CD Optimization Final Validation\n');
     console.log('=' .repeat(60));
-    
+
     if (args.reportOnly) {
       await generateFinalReport();
       return;
@@ -134,13 +134,13 @@ async function main() {
  */
 async function validateWorkflowSyntax() {
   log('📋 Validating Workflow Syntax', 'section');
-  
+
   const workflowsDir = path.join(rootDir, '.github/workflows');
-  
+
   try {
     const files = await fs.readdir(workflowsDir);
     const yamlFiles = files.filter(file => file.endsWith('.yml') || file.endsWith('.yaml'));
-    
+
     for (const file of yamlFiles) {
       await validateYamlFile(path.join(workflowsDir, file), file);
     }
@@ -150,14 +150,14 @@ async function validateWorkflowSyntax() {
     if (await dirExists(archivedDir)) {
       const archivedFiles = await fs.readdir(archivedDir);
       const archivedYamlFiles = archivedFiles.filter(file => file.endsWith('.yml') || file.endsWith('.yaml'));
-      
+
       for (const file of archivedYamlFiles) {
         await validateYamlFile(path.join(archivedDir, file), `archived/${file}`);
       }
     }
 
     log(`✅ Syntax validation complete: ${results.syntax.passed} passed, ${results.syntax.failed} failed`);
-    
+
   } catch (error) {
     results.syntax.failed++;
     results.syntax.issues.push(`Failed to read workflows directory: ${error.message}`);
@@ -172,10 +172,10 @@ async function validateYamlFile(filePath, fileName) {
   try {
     // Check if file exists
     await fs.access(filePath);
-    
+
     // Read file content
     const content = await fs.readFile(filePath, 'utf8');
-    
+
     // Basic YAML structure validation
     if (!content.trim()) {
       results.syntax.failed++;
@@ -200,10 +200,10 @@ async function validateYamlFile(filePath, fileName) {
 
     // Check for common issues
     await validateWorkflowContent(content, fileName);
-    
+
     results.syntax.passed++;
     log(`✅ ${fileName}: Valid syntax`);
-    
+
   } catch (error) {
     results.syntax.failed++;
     results.syntax.issues.push(`${fileName}: ${error.message}`);
@@ -256,15 +256,15 @@ async function validateWorkflowContent(content, fileName) {
  */
 async function validateReferences() {
   log('🔗 Validating Workflow References', 'section');
-  
+
   try {
     await validateOrchestratorReferences();
     await validateReusableWorkflowReferences();
     await validateActionReferences();
     await validateArchivedWorkflowCleanup();
-    
+
     log(`✅ Reference validation complete: ${results.references.passed} passed, ${results.references.failed} failed`);
-    
+
   } catch (error) {
     results.references.failed++;
     results.references.issues.push(`Reference validation failed: ${error.message}`);
@@ -277,7 +277,7 @@ async function validateReferences() {
  */
 async function validateOrchestratorReferences() {
   const orchestratorPath = path.join(rootDir, '.github/workflows/orchestrator.yml');
-  
+
   if (!(await fileExists(orchestratorPath))) {
     results.references.failed++;
     results.references.issues.push('Orchestrator workflow not found');
@@ -285,7 +285,7 @@ async function validateOrchestratorReferences() {
   }
 
   const content = await fs.readFile(orchestratorPath, 'utf8');
-  
+
   // Check references to other workflows
   const workflowReferences = [
     { ref: './.github/workflows/main-ci.yml', file: 'main-ci.yml' },
@@ -324,18 +324,18 @@ async function validateReusableWorkflowReferences() {
   // Check for any reusable workflows and validate their calls
   const workflowsDir = path.join(rootDir, '.github/workflows');
   const files = await fs.readdir(workflowsDir);
-  
+
   for (const file of files) {
     if (file.endsWith('.yml') || file.endsWith('.yaml')) {
       const content = await fs.readFile(path.join(workflowsDir, file), 'utf8');
-      
+
       // Look for uses: ./.github/workflows/ patterns
       const matches = content.match(/uses:\s*\.\/\.github\/workflows\/([^\s]+)/g);
       if (matches) {
         for (const match of matches) {
           const workflowFile = match.replace(/uses:\s*\.\/\.github\/workflows\//, '').trim();
           const referencedPath = path.join(workflowsDir, workflowFile);
-          
+
           if (await fileExists(referencedPath)) {
             results.references.passed++;
             log(`✅ ${file} → ${workflowFile}: Reference valid`);
@@ -364,11 +364,11 @@ async function validateActionReferences() {
 
   const workflowsDir = path.join(rootDir, '.github/workflows');
   const files = await fs.readdir(workflowsDir);
-  
+
   for (const file of files) {
     if (file.endsWith('.yml') || file.endsWith('.yaml')) {
       const content = await fs.readFile(path.join(workflowsDir, file), 'utf8');
-      
+
       for (const [action, description] of Object.entries(commonActions)) {
         if (content.includes(action)) {
           results.references.passed++;
@@ -384,7 +384,7 @@ async function validateActionReferences() {
  */
 async function validateArchivedWorkflowCleanup() {
   const archivedDir = path.join(rootDir, '.github/workflows/archived');
-  
+
   if (!(await dirExists(archivedDir))) {
     results.references.failed++;
     results.references.issues.push('Archived workflows directory not found');
@@ -420,9 +420,9 @@ async function validateArchivedWorkflowCleanup() {
  */
 async function validatePathFilters() {
   log('📁 Validating Path Filters', 'section');
-  
+
   const pathFiltersPath = path.join(rootDir, config.pathFilters);
-  
+
   try {
     if (!(await fileExists(pathFiltersPath))) {
       results.pathFilters.failed++;
@@ -431,7 +431,7 @@ async function validatePathFilters() {
     }
 
     const content = await fs.readFile(pathFiltersPath, 'utf8');
-    
+
     // Validate required filter categories
     const requiredFilters = [
       'frontend', 'backend', 'tests', 'docs', 'ci',
@@ -452,9 +452,9 @@ async function validatePathFilters() {
 
     // Validate filter patterns
     await validateFilterPatterns(content);
-    
+
     log(`✅ Path filters validation complete: ${results.pathFilters.passed} passed, ${results.pathFilters.failed} failed`);
-    
+
   } catch (error) {
     results.pathFilters.failed++;
     results.pathFilters.issues.push(`Path filters validation failed: ${error.message}`);
@@ -469,38 +469,38 @@ async function validateFilterPatterns(content) {
   // Check for common pattern issues
   const lines = content.split('\n');
   let currentFilter = '';
-  
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
-    
+
     if (line.endsWith(':') && !line.startsWith('-')) {
       currentFilter = line.replace(':', '');
     } else if (line.startsWith('-')) {
       const pattern = line.substring(1).trim().replace(/^['"]|['"]$/g, '');
-      
+
       // Validate pattern syntax
       if (pattern.includes('**') && pattern.includes('**/')) {
         // Valid glob pattern
         continue;
       }
-      
+
       if (pattern.startsWith('!')) {
         // Negative pattern, which is valid
         continue;
       }
-      
+
       // Check for file extensions
       if (pattern.includes('.') && !pattern.includes('/')) {
         // Likely a file extension pattern
         continue;
       }
-      
+
       // Check for directory patterns
       if (pattern.endsWith('/**') || pattern.includes('/')) {
         // Directory pattern
         continue;
       }
-      
+
       // Log potential issues for review
       log(`⚠️  ${currentFilter}: Pattern may need review: ${pattern}`, 'warning');
     }
@@ -512,19 +512,19 @@ async function validateFilterPatterns(content) {
  */
 async function validateOrchestrationLogic() {
   log('🎼 Validating Orchestration Logic', 'section');
-  
+
   try {
     const orchestratorPath = path.join(rootDir, '.github/workflows/orchestrator.yml');
     const content = await fs.readFile(orchestratorPath, 'utf8');
-    
+
     // Validate orchestration features
     await validateChangeDetection(content);
     await validateWorkflowRouting(content);
     await validateParallelExecution(content);
     await validateHealthMonitoring(content);
-    
+
     log(`✅ Orchestration validation complete: ${results.orchestration.passed} passed, ${results.orchestration.failed} failed`);
-    
+
   } catch (error) {
     results.orchestration.failed++;
     results.orchestration.issues.push(`Orchestration validation failed: ${error.message}`);
@@ -616,15 +616,15 @@ async function validateHealthMonitoring(content) {
  */
 async function validatePerformanceOptimizations() {
   log('⚡ Validating Performance Optimizations', 'section');
-  
+
   try {
     await validateCachingStrategy();
     await validateMemoryOptimizations();
     await validateConcurrencyControls();
     await calculatePerformanceImprovements();
-    
+
     log(`✅ Performance validation complete: ${results.performance.improvement}% improvement estimated`);
-    
+
   } catch (error) {
     results.performance.issues.push(`Performance validation failed: ${error.message}`);
     log(`❌ Failed to validate performance optimizations: ${error.message}`, 'error');
@@ -644,7 +644,7 @@ async function validateCachingStrategy() {
     if (file.endsWith('.yml') || file.endsWith('.yaml') && !file.includes('archived')) {
       totalWorkflows++;
       const content = await fs.readFile(path.join(workflowsDir, file), 'utf8');
-      
+
       if (content.includes('actions/cache@')) {
         cachingFound++;
         log(`✅ ${file}: Caching configured`);
@@ -670,7 +670,7 @@ async function validateCachingStrategy() {
 async function validateMemoryOptimizations() {
   const packageJsonPath = path.join(rootDir, 'package.json');
   const content = await fs.readFile(packageJsonPath, 'utf8');
-  
+
   if (content.includes('--max-old-space-size=')) {
     results.performance.improvement += 10; // Memory optimization contributes 10%
     log('✅ Memory optimization: Node.js heap size configured');
@@ -697,7 +697,7 @@ async function validateConcurrencyControls() {
     if (file.endsWith('.yml') || file.endsWith('.yaml') && !file.includes('archived')) {
       totalWorkflows++;
       const content = await fs.readFile(path.join(workflowsDir, file), 'utf8');
-      
+
       if (content.includes('concurrency:')) {
         concurrencyFound++;
         log(`✅ ${file}: Concurrency controls configured`);
@@ -723,15 +723,15 @@ async function validateConcurrencyControls() {
 async function calculatePerformanceImprovements() {
   // Estimate baseline performance (before optimization)
   results.performance.baseline = 15; // minutes (from orchestrator comments)
-  
+
   // Calculate optimized performance based on improvements found
   let timeReduction = results.performance.improvement;
-  
+
   // Additional improvements from workflow consolidation
   const archivedCount = config.workflows.archived.length;
   const activeCount = config.workflows.active.length;
   const consolidationRatio = (archivedCount / (archivedCount + activeCount)) * 100;
-  
+
   if (consolidationRatio >= 50) {
     timeReduction += 15; // Workflow consolidation contributes 15%
     log(`✅ Workflow consolidation: ${consolidationRatio.toFixed(0)}% reduction in workflows`);
@@ -740,7 +740,7 @@ async function calculatePerformanceImprovements() {
   // Calculate final optimized time
   results.performance.optimized = results.performance.baseline * (1 - timeReduction / 100);
   results.performance.improvement = timeReduction;
-  
+
   log(`📊 Performance estimate: ${results.performance.baseline}min → ${results.performance.optimized.toFixed(1)}min (${timeReduction}% improvement)`);
 }
 
@@ -749,14 +749,14 @@ async function calculatePerformanceImprovements() {
  */
 async function validateSecurityConfiguration() {
   log('🔒 Validating Security Configuration', 'section');
-  
+
   try {
     await validateWorkflowPermissions();
     await validateSecretManagement();
     await validateSecurityScanning();
-    
+
     log(`✅ Security validation complete: ${results.security.passed} passed, ${results.security.failed} failed`);
-    
+
   } catch (error) {
     results.security.failed++;
     results.security.issues.push(`Security validation failed: ${error.message}`);
@@ -774,7 +774,7 @@ async function validateWorkflowPermissions() {
   for (const file of files) {
     if (file.endsWith('.yml') || file.endsWith('.yaml') && !file.includes('archived')) {
       const content = await fs.readFile(path.join(workflowsDir, file), 'utf8');
-      
+
       if (content.includes('permissions:')) {
         results.security.passed++;
         log(`✅ ${file}: Permissions configured`);
@@ -796,7 +796,7 @@ async function validateSecretManagement() {
   for (const file of files) {
     if (file.endsWith('.yml') || file.endsWith('.yaml') && !file.includes('archived')) {
       const content = await fs.readFile(path.join(workflowsDir, file), 'utf8');
-      
+
       // Check for hardcoded secrets (security issue)
       const secretPatterns = [
         /\$\{\{\s*secrets\./g,
@@ -835,7 +835,7 @@ async function validateSecurityScanning() {
   for (const file of files) {
     if (file.endsWith('.yml') || file.endsWith('.yaml') && !file.includes('archived')) {
       const content = await fs.readFile(path.join(workflowsDir, file), 'utf8');
-      
+
       if (content.includes('security') || content.includes('vulnerability')) {
         results.security.passed++;
         log(`✅ ${file}: Security scanning configured`);
@@ -849,14 +849,14 @@ async function validateSecurityScanning() {
  */
 async function validateDocumentation() {
   log('📚 Validating Documentation', 'section');
-  
+
   try {
     await validateWorkflowDocumentation();
     await validateArchiveDocumentation();
     await validateReadmeUpdates();
-    
+
     log(`✅ Documentation validation complete: ${results.documentation.passed} passed, ${results.documentation.failed} failed`);
-    
+
   } catch (error) {
     results.documentation.failed++;
     results.documentation.issues.push(`Documentation validation failed: ${error.message}`);
@@ -874,7 +874,7 @@ async function validateWorkflowDocumentation() {
   for (const file of files) {
     if (file.endsWith('.yml') || file.endsWith('.yaml') && !file.includes('archived')) {
       const content = await fs.readFile(path.join(workflowsDir, file), 'utf8');
-      
+
       // Check for workflow description/comments
       if (content.includes('#') && content.split('\n').some(line => line.trim().startsWith('#'))) {
         results.documentation.passed++;
@@ -892,11 +892,11 @@ async function validateWorkflowDocumentation() {
  */
 async function validateArchiveDocumentation() {
   const archivedDir = path.join(rootDir, '.github/workflows/archived');
-  
+
   if (await dirExists(archivedDir)) {
     const manifestPath = path.join(archivedDir, 'ARCHIVE_MANIFEST.md');
     const summaryPath = path.join(archivedDir, 'WORKFLOW_ARCHIVE_SUMMARY.md');
-    
+
     if (await fileExists(manifestPath)) {
       results.documentation.passed++;
       log('✅ Archive manifest documentation exists');
@@ -920,10 +920,10 @@ async function validateArchiveDocumentation() {
  */
 async function validateReadmeUpdates() {
   const readmePath = path.join(rootDir, 'README.md');
-  
+
   if (await fileExists(readmePath)) {
     const content = await fs.readFile(readmePath, 'utf8');
-    
+
     if (content.includes('CI/CD') || content.includes('workflow')) {
       results.documentation.passed++;
       log('✅ README includes CI/CD documentation');
@@ -939,14 +939,14 @@ async function validateReadmeUpdates() {
  */
 async function generateFinalReport() {
   log('📊 Generating Final Validation Report', 'section');
-  
+
   const totalPassed = Object.values(results).reduce((sum, category) => sum + (category.passed || 0), 0);
   const totalFailed = Object.values(results).reduce((sum, category) => sum + (category.failed || 0), 0);
   const totalIssues = Object.values(results).reduce((sum, category) => sum + (category.issues?.length || 0), 0);
-  
+
   const overallScore = totalPassed / (totalPassed + totalFailed) * 100;
-  const status = overallScore >= 90 ? '🟢 EXCELLENT' : 
-                 overallScore >= 75 ? '🟡 GOOD' : 
+  const status = overallScore >= 90 ? '🟢 EXCELLENT' :
+                 overallScore >= 75 ? '🟡 GOOD' :
                  overallScore >= 60 ? '🟠 NEEDS IMPROVEMENT' : '🔴 CRITICAL';
 
   console.log('\n' + '='.repeat(80));
@@ -979,7 +979,7 @@ async function generateFinalReport() {
   const criticalIssues = [];
   for (const [category, result] of Object.entries(results)) {
     if (result.issues && result.issues.length > 0) {
-      const categoryIssues = result.issues.filter(issue => 
+      const categoryIssues = result.issues.filter(issue =>
         issue.includes('Critical') || issue.includes('missing') || issue.includes('Failed')
       );
       criticalIssues.push(...categoryIssues.map(issue => `${category}: ${issue}`));
@@ -995,7 +995,7 @@ async function generateFinalReport() {
   const warnings = [];
   for (const [category, result] of Object.entries(results)) {
     if (result.issues && result.issues.length > 0) {
-      const categoryWarnings = result.issues.filter(issue => 
+      const categoryWarnings = result.issues.filter(issue =>
         issue.includes('Warning') || issue.includes('review')
       );
       warnings.push(...categoryWarnings.map(issue => `${category}: ${issue}`));
@@ -1054,10 +1054,10 @@ async function generateFinalReport() {
   // Save report to file
   const reportPath = path.join(rootDir, '.tmp/ci-optimization-validation-report.md');
   await ensureDirectoryExists(path.dirname(reportPath));
-  
+
   const reportContent = generateMarkdownReport(overallScore, status, readyForProduction);
   await fs.writeFile(reportPath, reportContent);
-  
+
   console.log(`\n📄 Detailed report saved to: ${reportPath}`);
 }
 
@@ -1066,12 +1066,12 @@ async function generateFinalReport() {
  */
 function generateMarkdownReport(overallScore, status, readyForProduction) {
   const timestamp = new Date().toISOString();
-  
+
   return `# CI/CD Optimization Final Validation Report
 
-**Generated:** ${timestamp}  
-**Overall Status:** ${status}  
-**Validation Score:** ${overallScore.toFixed(1)}%  
+**Generated:** ${timestamp}
+**Overall Status:** ${status}
+**Validation Score:** ${overallScore.toFixed(1)}%
 **Production Readiness:** ${readyForProduction ? '🟢 READY' : '🟡 NEEDS ATTENTION'}
 
 ## Executive Summary
@@ -1104,7 +1104,7 @@ ${Object.entries(results).map(([category, result]) => {
 
 ${Object.entries(results).map(([category, result]) => {
   if (result.issues && result.issues.length > 0) {
-    const criticalIssues = result.issues.filter(issue => 
+    const criticalIssues = result.issues.filter(issue =>
       issue.includes('Critical') || issue.includes('missing') || issue.includes('Failed')
     );
     return criticalIssues.map(issue => `- ❌ **${category}**: ${issue}`).join('\n');
@@ -1116,14 +1116,14 @@ ${Object.entries(results).map(([category, result]) => {
 
 The CI/CD optimization is ${readyForProduction ? 'ready for production deployment' : 'not yet ready for production deployment'}.
 
-${readyForProduction ? 
+${readyForProduction ?
   '✅ All critical validation checks have passed. The optimization can be safely deployed to production.' :
   '⚠️ Some validation checks require attention before production deployment.'
 }
 
 ## Next Steps
 
-${readyForProduction ? 
+${readyForProduction ?
   '1. Deploy optimization to production\n2. Monitor performance metrics\n3. Update team documentation' :
   '1. Address critical validation issues\n2. Re-run validation\n3. Prepare for production deployment'
 }
@@ -1144,8 +1144,8 @@ async function exportValidationResults() {
     summary: {
       totalPassed: Object.values(results).reduce((sum, category) => sum + (category.passed || 0), 0),
       totalFailed: Object.values(results).reduce((sum, category) => sum + (category.failed || 0), 0),
-      overallScore: Object.values(results).reduce((sum, category) => sum + (category.passed || 0), 0) / 
-                   (Object.values(results).reduce((sum, category) => sum + (category.passed || 0), 0) + 
+      overallScore: Object.values(results).reduce((sum, category) => sum + (category.passed || 0), 0) /
+                   (Object.values(results).reduce((sum, category) => sum + (category.passed || 0), 0) +
                     Object.values(results).reduce((sum, category) => sum + (category.failed || 0), 0)) * 100
     },
     performance: results.performance,
@@ -1156,7 +1156,7 @@ async function exportValidationResults() {
   const exportPath = path.join(rootDir, '.tmp/ci-optimization-validation-results.json');
   await ensureDirectoryExists(path.dirname(exportPath));
   await fs.writeFile(exportPath, JSON.stringify(exportData, null, 2));
-  
+
   console.log(`📊 Validation results exported to: ${exportPath}`);
 }
 
@@ -1192,7 +1192,7 @@ async function ensureDirectoryExists(dirPath) {
 function log(message, type = 'info') {
   const timestamp = new Date().toISOString().substring(11, 19);
   const prefix = args.verbose ? `[${timestamp}] ` : '';
-  
+
   switch (type) {
     case 'section':
       console.log(`\n${prefix}${message}`);

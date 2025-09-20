@@ -2,7 +2,7 @@
 
 /**
  * Test Pattern Validation Script
- * 
+ *
  * This script validates that all E2E test patterns work correctly:
  * - Playwright configurations can discover tests
  * - Workflow patterns reference correct files
@@ -64,14 +64,14 @@ for (const config of configFiles) {
 console.log('\n🎭 Testing Playwright test discovery...');
 for (const config of existingConfigs.slice(0, 2)) { // Test first 2 configs to avoid too much output
   try {
-    const output = execSync(`npx playwright test --list --config=${config} 2>/dev/null`, { 
+    const output = execSync(`npx playwright test --list --config=${config} 2>/dev/null`, {
       encoding: 'utf8',
-      timeout: 30000 
+      timeout: 30000
     });
-    
+
     const testMatches = output.match(/\[.*?\] ›/g) || [];
     const uniqueTests = new Set(testMatches).size;
-    
+
     console.log(`  ✅ ${config}: Discovered ${uniqueTests} tests`);
   } catch (error) {
     console.log(`  ❌ ${config}: Test discovery failed`);
@@ -79,21 +79,21 @@ for (const config of existingConfigs.slice(0, 2)) { // Test first 2 configs to a
   }
 }
 
-// 4. Package.json script validation  
+// 4. Package.json script validation
 console.log('\n📦 Checking package.json E2E script patterns...');
 try {
   const packageJson = JSON.parse(execSync('cat package.json', { encoding: 'utf8' }));
-  
+
   const e2eScripts = Object.keys(packageJson.scripts)
     .filter(key => key.includes('test:e2e'))
     .slice(0, 10); // Check first 10 to avoid clutter
-  
+
   let validScripts = 0;
   let invalidScripts = 0;
-  
+
   for (const script of e2eScripts) {
     const command = packageJson.scripts[script];
-    
+
     // Check if script references existing config files
     const configMatch = command.match(/--config=([^\s]+)/);
     if (configMatch) {
@@ -116,7 +116,7 @@ try {
       }
     }
   }
-  
+
   console.log(`\n  Summary: ${validScripts} valid, ${invalidScripts} invalid scripts`);
 } catch (error) {
   console.log(`  ❌ Failed to validate package.json scripts: ${error.message}`);
@@ -129,18 +129,18 @@ if (existsSync(workflowDir)) {
   const workflowFiles = readdirSync(workflowDir)
     .filter(f => f.endsWith('.yml') || f.endsWith('.yaml'))
     .filter(f => !f.startsWith('archived/'));
-  
+
   for (const workflow of workflowFiles.slice(0, 5)) { // Check first 5
     try {
       const content = execSync(`cat "${join(workflowDir, workflow)}"`, { encoding: 'utf8' });
-      
+
       // Check for config references
       const configRefs = content.match(/--config=([^\s]+)/g) || [];
       const missingConfigs = configRefs.filter(ref => {
         const configFile = ref.replace('--config=', '');
         return !existsConfigs.includes(configFile);
       });
-      
+
       if (missingConfigs.length === 0) {
         console.log(`  ✅ ${workflow}: All config references valid`);
       } else {
@@ -187,7 +187,7 @@ console.log('✅ Test file structure is properly organized in tests/e2e/flows/')
 
 console.log('\n🔧 Files restored:');
 console.log('  - playwright-e2e-preview.config.js');
-console.log('  - playwright-e2e-vercel-main.config.js');  
+console.log('  - playwright-e2e-vercel-main.config.js');
 console.log('  - playwright-e2e-ci.config.js');
 
 console.log('\n✅ All test patterns are now properly aligned!');

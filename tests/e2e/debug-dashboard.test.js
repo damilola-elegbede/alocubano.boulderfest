@@ -30,7 +30,7 @@ test('DEBUG: Check dashboard page content', async ({ page }) => {
   const statsGridExists = await page.locator('#statsGrid').count();
   const dataTestIdExists = await page.locator('[data-testid="dashboard-stats"]').count();
   const h1Text = await page.locator('h1').textContent();
-  
+
   console.log('=== DASHBOARD DEBUG ===');
   console.log('URL:', url);
   console.log('Title:', title);
@@ -39,7 +39,7 @@ test('DEBUG: Check dashboard page content', async ({ page }) => {
   console.log('data-testid count:', dataTestIdExists);
   console.log('Body text (first 500 chars):', bodyText.substring(0, 500));
   console.log('======================');
-  
+
   // Force success for debugging
   expect(true).toBe(true);
 });

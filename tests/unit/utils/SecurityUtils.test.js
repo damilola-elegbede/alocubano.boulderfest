@@ -387,7 +387,7 @@ describe('SecurityUtils', () => {
 
     it('calculates correct scores', () => {
       expect(validatePasswordStrength('password').score).toBe(2); // length + lowercase
-      expect(validatePasswordStrength('Password').score).toBe(3); // length + lowercase + uppercase  
+      expect(validatePasswordStrength('Password').score).toBe(3); // length + lowercase + uppercase
       expect(validatePasswordStrength('Password1').score).toBe(4); // length + lowercase + uppercase + numbers
       expect(validatePasswordStrength('Password1!').score).toBe(5); // all criteria met
     });

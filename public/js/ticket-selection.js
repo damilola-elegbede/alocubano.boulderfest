@@ -12,7 +12,7 @@ class TicketSelection {
     async init() {
         // Initialize ticket cards with default attributes for testing
         this.initializeTicketCards();
-        
+
         this.bindEvents();
 
         // CRITICAL FIX: Wait for cart manager to be fully initialized
@@ -21,7 +21,7 @@ class TicketSelection {
         this.syncWithCartState();
         this.updateDisplay();
     }
-    
+
     initializeTicketCards() {
         // Set up initial test attributes on all ticket cards
         document.querySelectorAll('.ticket-card').forEach((card) => {
@@ -30,13 +30,13 @@ class TicketSelection {
             card.setAttribute('data-selected', 'false');
             card.setAttribute('aria-pressed', 'false');
             card.setAttribute('data-initialized', 'true');
-            
+
             // Make sure quantity displays are initialized
             const quantitySpan = card.querySelector('.quantity');
             if (quantitySpan && !quantitySpan.textContent) {
                 quantitySpan.textContent = '0';
             }
-            
+
             // Initialize add to cart buttons with ready state
             const addToCartBtn = card.querySelector('.add-to-cart-btn');
             if (addToCartBtn) {
@@ -44,7 +44,7 @@ class TicketSelection {
                 // Ensure button is immediately clickable for E2E tests
                 addToCartBtn.disabled = false;
             }
-            
+
             // Set up quantity control buttons
             const qtyButtons = card.querySelectorAll('.qty-btn');
             qtyButtons.forEach(btn => {
@@ -214,7 +214,7 @@ class TicketSelection {
         const btn = event.target;
         const ticketType = btn.dataset.ticketType;
         const price = parseInt(btn.dataset.price);
-        
+
         if (!ticketType || !price) {
             console.error('Missing ticket data for add to cart button');
             return;
@@ -230,7 +230,7 @@ class TicketSelection {
         // Get current quantity
         const quantitySpan = card.querySelector('.quantity');
         let currentQuantity = parseInt(quantitySpan.textContent) || 0;
-        
+
         // Add one ticket
         currentQuantity++;
         quantitySpan.textContent = currentQuantity;
@@ -243,7 +243,7 @@ class TicketSelection {
         });
         card.classList.add('selected');
         card.setAttribute('aria-pressed', 'true');
-        
+
         // Add test attributes for better E2E testing
         card.setAttribute('data-quantity', currentQuantity.toString());
         card.setAttribute('data-selected', 'true');
@@ -269,7 +269,7 @@ class TicketSelection {
         btn.textContent = 'Added!';
         btn.setAttribute('data-action-state', 'added');
         btn.style.backgroundColor = 'var(--color-green, #28a745)';
-        
+
         setTimeout(() => {
             btn.textContent = 'Add to Cart';
             btn.setAttribute('data-action-state', 'ready');

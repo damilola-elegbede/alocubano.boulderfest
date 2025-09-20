@@ -2,17 +2,17 @@
 
 /**
  * PR Status Reporter - Comprehensive status reporting for PR quality gates
- * 
+ *
  * This script provides:
  * - Detailed test result reporting with clear pass/fail indicators
  * - Flaky test detection and retry logic
  * - Performance regression detection and alerts
  * - Test coverage reporting integration
  * - Notification system for test failures
- * 
+ *
  * Usage:
  *   node scripts/pr-status-reporter.js --event=<event> [options]
- * 
+ *
  * Events:
  *   - test-start: Initialize test run tracking
  *   - test-complete: Report final test results
@@ -20,7 +20,7 @@
  *   - performance-check: Check for performance regressions
  *   - coverage-report: Generate coverage report
  *   - status-summary: Generate comprehensive status summary
- * 
+ *
  * Environment Variables:
  *   - GITHUB_TOKEN: GitHub API token for status updates
  *   - GITHUB_REPOSITORY: Repository in format owner/repo
@@ -89,7 +89,7 @@ class PRStatusReporter {
    */
   async handleEvent(event, options = {}) {
     console.log(`🎯 Handling event: ${event}`);
-    
+
     try {
       switch (event) {
         case 'test-start':
@@ -112,13 +112,13 @@ class PRStatusReporter {
     } catch (error) {
       console.error(`❌ Error handling event ${event}:`, error.message);
       await this.reportError(event, error);
-      
+
       // Don't fail CI for non-critical GitHub API errors
       if (this.isNonCriticalError(error)) {
         console.warn('⚠️ Non-critical error encountered, continuing...');
         return { success: true, message: 'Completed with warnings', error: error.message };
       }
-      
+
       throw error;
     }
   }
@@ -134,9 +134,9 @@ class PRStatusReporter {
       'GitHub credentials not available',       // Missing GitHub token
       'PR number not available'                // Missing PR context
     ];
-    
-    return nonCriticalPatterns.some(pattern => 
-      error.message?.includes(pattern) || 
+
+    return nonCriticalPatterns.some(pattern =>
+      error.message?.includes(pattern) ||
       JSON.stringify(error)?.includes(pattern)
     );
   }
@@ -146,9 +146,9 @@ class PRStatusReporter {
    */
   async handleTestStart(options) {
     const { testSuite = 'unknown', browser = null } = options;
-    
+
     console.log(`🚀 Starting test suite: ${testSuite}${browser ? ` on ${browser}` : ''}`);
-    
+
     this.statusData.runs.push({
       id: this.generateRunId(),
       testSuite,
@@ -184,14 +184,14 @@ class PRStatusReporter {
    */
   async handleTestComplete(options) {
     const { testSuite, results, performance = null } = options;
-    
+
     console.log(`✅ Test suite completed: ${testSuite}`);
-    
+
     // Find the current run
-    const runIndex = this.statusData.runs.findIndex(run => 
+    const runIndex = this.statusData.runs.findIndex(run =>
       run.testSuite === testSuite && run.status === 'running'
     );
-    
+
     if (runIndex === -1) {
       console.warn(`⚠️ No running test found for suite: ${testSuite}`);
       // Don't fail - this is a non-critical issue
@@ -202,7 +202,7 @@ class PRStatusReporter {
     run.status = 'completed';
     run.endTime = new Date().toISOString();
     run.duration = new Date(run.endTime) - new Date(run.startTime);
-    
+
     // Parse test results
     if (results) {
       run.tests = this.parseTestResults(results);
@@ -226,7 +226,7 @@ class PRStatusReporter {
     // Update GitHub status (gracefully handle permission errors)
     const state = run.tests.failed > 0 ? 'failure' : 'success';
     const description = this.generateTestSummary(run.tests);
-    
+
     await this.updateGitHubStatus({
       state,
       context: `pr-status-reporter/${testSuite}`,
@@ -237,8 +237,8 @@ class PRStatusReporter {
     // Generate detailed report
     await this.generateDetailedReport(run);
 
-    return { 
-      success: state === 'success', 
+    return {
+      success: state === 'success',
       message: description,
       run: run
     };
@@ -249,20 +249,20 @@ class PRStatusReporter {
    */
   async handleTestFailure(options) {
     const { testSuite, testName, error, attempt = 1 } = options;
-    
+
     console.log(`❌ Test failure: ${testSuite}/${testName} (attempt ${attempt})`);
-    
+
     // Check if this is a flaky test
     const isFlaky = this.isFlakyTest(testSuite, testName);
-    const shouldRetry = attempt < CONFIG.thresholds.flaky.maxRetries && 
+    const shouldRetry = attempt < CONFIG.thresholds.flaky.maxRetries &&
                        (isFlaky || this.shouldRetryBasedOnError(error));
 
     if (shouldRetry) {
       console.log(`🔄 Retrying flaky test: ${testName} (attempt ${attempt + 1})`);
-      
+
       // Wait before retry
       await this.sleep(10000 * attempt); // Exponential backoff
-      
+
       return {
         success: false,
         shouldRetry: true,
@@ -296,40 +296,40 @@ class PRStatusReporter {
    */
   async handlePerformanceCheck(options) {
     const { results } = options;
-    
+
     console.log(`📊 Checking performance against baseline...`);
-    
+
     const regression = await this.detectPerformanceRegression(results);
-    
+
     if (regression) {
       console.warn(`⚠️ Performance regression detected:`);
       console.warn(`  Metric: ${regression.metric}`);
       console.warn(`  Current: ${regression.current}ms`);
       console.warn(`  Baseline: ${regression.baseline}ms`);
       console.warn(`  Regression: ${regression.percentage}%`);
-      
+
       // Create GitHub issue for significant regressions
       if (regression.percentage > CONFIG.thresholds.performance.criticalThreshold) {
         await this.createPerformanceRegressionIssue(regression);
       }
-      
+
       await this.updateGitHubStatus({
         state: 'failure',
         context: 'pr-status-reporter/performance',
         description: `Performance regression: ${regression.metric} increased by ${regression.percentage}%`,
         target_url: this.getRunUrl()
       });
-      
+
       return { success: false, regression };
     }
-    
+
     await this.updateGitHubStatus({
       state: 'success',
       context: 'pr-status-reporter/performance',
       description: 'No performance regressions detected',
       target_url: this.getRunUrl()
     });
-    
+
     return { success: true, message: 'No performance regressions detected' };
   }
 
@@ -338,9 +338,9 @@ class PRStatusReporter {
    */
   async handleCoverageReport(options) {
     const { coverageFile = 'coverage/coverage-summary.json' } = options;
-    
+
     console.log(`📋 Generating coverage report...`);
-    
+
     try {
       const coveragePath = join(projectRoot, coverageFile);
       if (!existsSync(coveragePath)) {
@@ -351,31 +351,31 @@ class PRStatusReporter {
 
       const coverage = JSON.parse(readFileSync(coveragePath, 'utf8'));
       const summary = this.generateCoverageSummary(coverage);
-      
+
       // Update status based on coverage threshold
       const state = summary.total.pct >= CONFIG.thresholds.coverage.minimum ? 'success' : 'failure';
       const description = `Coverage: ${summary.total.pct}% (${summary.total.covered}/${summary.total.total})`;
-      
+
       await this.updateGitHubStatus({
         state,
         context: 'pr-status-reporter/coverage',
         description,
         target_url: this.getRunUrl()
       });
-      
+
       // Generate coverage comment for PR
       await this.generateCoverageComment(summary);
-      
+
       return { success: state === 'success', coverage: summary };
     } catch (error) {
       console.error(`❌ Error generating coverage report:`, error.message);
-      
+
       // Don't fail CI for coverage parsing errors
       if (this.isNonCriticalError(error)) {
         console.warn('⚠️ Coverage report error is non-critical, continuing...');
         return { success: true, message: 'Completed with coverage warnings', error: error.message };
       }
-      
+
       return { success: false, error: error.message };
     }
   }
@@ -385,7 +385,7 @@ class PRStatusReporter {
    */
   async handleStatusSummary(options) {
     console.log(`📊 Generating comprehensive status summary...`);
-    
+
     const summary = {
       timestamp: new Date().toISOString(),
       pr: {
@@ -399,26 +399,26 @@ class PRStatusReporter {
       qualityGates: this.evaluateQualityGates(),
       recommendations: this.generateRecommendations()
     };
-    
+
     // Save summary
     const summaryPath = join(CONFIG.paths.reports, 'pr-status-summary.json');
     this.ensureDirectory(dirname(summaryPath));
     writeFileSync(summaryPath, JSON.stringify(summary, null, 2));
-    
+
     // Update overall PR status (gracefully handle permission errors)
     const overallState = summary.qualityGates.allPassed ? 'success' : 'failure';
     const description = `Quality Gates: ${summary.qualityGates.passed}/${summary.qualityGates.total} passed`;
-    
+
     await this.updateGitHubStatus({
       state: overallState,
       context: 'pr-status-reporter',
       description,
       target_url: this.getRunUrl()
     });
-    
+
     // Generate PR comment with full summary
     await this.generateStatusComment(summary);
-    
+
     return { success: overallState === 'success', summary };
   }
 
@@ -427,9 +427,9 @@ class PRStatusReporter {
    */
   async handleFlakyTestDetected(options) {
     const { testSuite, testName, failureRate, successRate } = options;
-    
+
     console.log(`🔄 Flaky test detected: ${testSuite}/${testName} (success rate: ${(successRate * 100).toFixed(1)}%)`);
-    
+
     // Add to flaky tests database
     const flakyTest = {
       testSuite,
@@ -439,24 +439,24 @@ class PRStatusReporter {
       successRate,
       quarantined: false
     };
-    
+
     this.flakyTests.tests.push(flakyTest);
-    
+
     // Quarantine if success rate is too low
     if (successRate < CONFIG.thresholds.flaky.successRateThreshold) {
       flakyTest.quarantined = true;
       flakyTest.quarantineUntil = new Date(
         Date.now() + CONFIG.thresholds.flaky.quarantineDurationHours * 60 * 60 * 1000
       ).toISOString();
-      
+
       console.warn(`🚨 Test quarantined due to low success rate: ${testName}`);
     }
-    
+
     this.saveFlakyTestData();
-    
+
     // Create GitHub issue for tracking
     await this.createFlakyTestIssue(flakyTest);
-    
+
     return { success: true, quarantined: flakyTest.quarantined };
   }
 
@@ -475,7 +475,7 @@ class PRStatusReporter {
         return { total: 0, passed: 0, failed: 0, skipped: 0, retried: 0 };
       }
     }
-    
+
     // Handle different result formats (Jest, Playwright, Vitest, etc.)
     if (results.testResults) {
       // Jest format
@@ -488,7 +488,7 @@ class PRStatusReporter {
       }, { total: 0, passed: 0, failed: 0, skipped: 0, retried: 0 });
       return stats;
     }
-    
+
     if (results.suites) {
       // Playwright format
       const tests = results.suites.flatMap(suite => suite.tests || []);
@@ -500,7 +500,7 @@ class PRStatusReporter {
         retried: tests.filter(t => t.retry > 0).length
       };
     }
-    
+
     // Generic format
     return {
       total: results.total || 0,
@@ -513,7 +513,7 @@ class PRStatusReporter {
 
   extractFailures(results) {
     const failures = [];
-    
+
     if (results.testResults) {
       // Jest format
       results.testResults.forEach(file => {
@@ -529,7 +529,7 @@ class PRStatusReporter {
         });
       });
     }
-    
+
     if (results.suites) {
       // Playwright format
       results.suites.forEach(suite => {
@@ -545,7 +545,7 @@ class PRStatusReporter {
         });
       });
     }
-    
+
     return failures;
   }
 
@@ -553,16 +553,16 @@ class PRStatusReporter {
     if (tests.total === 0) {
       return 'No tests run';
     }
-    
+
     if (tests.failed === 0) {
       return `✅ All ${tests.total} tests passed`;
     }
-    
+
     return `❌ ${tests.failed}/${tests.total} tests failed`;
   }
 
   isFlakyTest(testSuite, testName) {
-    return this.flakyTests.tests.some(test => 
+    return this.flakyTests.tests.some(test =>
       test.testSuite === testSuite && test.testName === testName
     );
   }
@@ -576,17 +576,17 @@ class PRStatusReporter {
       'Server not responding',
       'Connection refused'
     ];
-    
-    return retryableErrors.some(pattern => 
+
+    return retryableErrors.some(pattern =>
       error.message?.includes(pattern) || error.name?.includes(pattern)
     );
   }
 
   async markAsFlakyTest(testSuite, testName, error) {
-    const existingTest = this.flakyTests.tests.find(test => 
+    const existingTest = this.flakyTests.tests.find(test =>
       test.testSuite === testSuite && test.testName === testName
     );
-    
+
     if (existingTest) {
       existingTest.lastFailure = new Date().toISOString();
       existingTest.failureCount = (existingTest.failureCount || 0) + 1;
@@ -601,7 +601,7 @@ class PRStatusReporter {
         quarantined: false
       });
     }
-    
+
     this.saveFlakyTestData();
   }
 
@@ -609,15 +609,15 @@ class PRStatusReporter {
     if (!this.performanceBaseline || !currentResults) {
       return null;
     }
-    
+
     const regressions = [];
-    
+
     for (const [metric, currentValue] of Object.entries(currentResults)) {
       const baselineValue = this.performanceBaseline[metric];
-      
+
       if (baselineValue && typeof currentValue === 'number' && typeof baselineValue === 'number') {
         const percentage = ((currentValue - baselineValue) / baselineValue) * 100;
-        
+
         if (percentage > CONFIG.thresholds.performance.regressionThreshold) {
           regressions.push({
             metric,
@@ -629,7 +629,7 @@ class PRStatusReporter {
         }
       }
     }
-    
+
     return regressions.length > 0 ? regressions[0] : null; // Return worst regression
   }
 
@@ -641,7 +641,7 @@ class PRStatusReporter {
       statements: { total: 0, covered: 0, pct: 0 },
       total: { total: 0, covered: 0, pct: 0 }
     };
-    
+
     if (coverage.total) {
       Object.keys(summary).forEach(key => {
         if (coverage.total[key]) {
@@ -652,7 +652,7 @@ class PRStatusReporter {
           };
         }
       });
-      
+
       // Calculate overall percentage
       const totalStatements = summary.statements.total;
       const coveredStatements = summary.statements.covered;
@@ -662,21 +662,21 @@ class PRStatusReporter {
         pct: totalStatements > 0 ? Math.round((coveredStatements / totalStatements) * 100) : 0
       };
     }
-    
+
     return summary;
   }
 
   summarizeTestRuns() {
     const allTests = { total: 0, passed: 0, failed: 0, skipped: 0, retried: 0 };
     const runSummary = {};
-    
+
     this.statusData.runs.forEach(run => {
       allTests.total += run.tests.total;
       allTests.passed += run.tests.passed;
       allTests.failed += run.tests.failed;
       allTests.skipped += run.tests.skipped;
       allTests.retried += run.tests.retried;
-      
+
       runSummary[run.testSuite] = {
         status: run.status,
         tests: run.tests,
@@ -684,7 +684,7 @@ class PRStatusReporter {
         browser: run.browser
       };
     });
-    
+
     return { summary: allTests, runs: runSummary };
   }
 
@@ -696,10 +696,10 @@ class PRStatusReporter {
       coverage: this.evaluateCoverage(),
       security: this.evaluateSecurity()
     };
-    
+
     const passed = Object.values(gates).filter(gate => gate.passed).length;
     const total = Object.keys(gates).length;
-    
+
     return {
       gates,
       passed,
@@ -709,14 +709,14 @@ class PRStatusReporter {
   }
 
   evaluateUnitTests() {
-    const unitRuns = this.statusData.runs.filter(run => 
+    const unitRuns = this.statusData.runs.filter(run =>
       run.testSuite.includes('unit') || run.testSuite.includes('simple')
     );
-    
+
     if (unitRuns.length === 0) {
       return { passed: false, reason: 'No unit tests run', required: true };
     }
-    
+
     const hasFailures = unitRuns.some(run => run.tests.failed > 0);
     return {
       passed: !hasFailures,
@@ -730,14 +730,14 @@ class PRStatusReporter {
   }
 
   evaluateE2ETests() {
-    const e2eRuns = this.statusData.runs.filter(run => 
+    const e2eRuns = this.statusData.runs.filter(run =>
       run.testSuite.includes('e2e') || run.testSuite.includes('playwright')
     );
-    
+
     if (e2eRuns.length === 0) {
       return { passed: false, reason: 'No E2E tests run', required: true };
     }
-    
+
     const hasFailures = e2eRuns.some(run => run.tests.failed > 0);
     return {
       passed: !hasFailures,
@@ -753,7 +753,7 @@ class PRStatusReporter {
 
   evaluatePerformance() {
     const perfRuns = this.statusData.runs.filter(run => run.performanceRegression);
-    
+
     if (perfRuns.length > 0) {
       return {
         passed: false,
@@ -762,7 +762,7 @@ class PRStatusReporter {
         severity: 'warning'
       };
     }
-    
+
     return {
       passed: true,
       reason: 'No performance regressions detected',
@@ -790,7 +790,7 @@ class PRStatusReporter {
 
   generateRecommendations() {
     const recommendations = [];
-    
+
     // Check for flaky tests
     if (this.flakyTests.tests.length > 0) {
       recommendations.push({
@@ -800,7 +800,7 @@ class PRStatusReporter {
         action: 'Review flaky test report and implement fixes'
       });
     }
-    
+
     // Check for performance regressions
     const regressionRuns = this.statusData.runs.filter(run => run.performanceRegression);
     if (regressionRuns.length > 0) {
@@ -811,7 +811,7 @@ class PRStatusReporter {
         action: 'Review performance impact and optimize if necessary'
       });
     }
-    
+
     // Check test duration
     const longRuns = this.statusData.runs.filter(run => run.duration > 300000); // 5 minutes
     if (longRuns.length > 0) {
@@ -822,7 +822,7 @@ class PRStatusReporter {
         action: 'Consider optimizing test execution time'
       });
     }
-    
+
     return recommendations;
   }
 
@@ -831,7 +831,7 @@ class PRStatusReporter {
       console.warn('⚠️ GitHub credentials not available, skipping status update');
       return;
     }
-    
+
     try {
       const response = await fetch(
         `${CONFIG.github.api}/repos/${CONFIG.github.repository}/statuses/${CONFIG.github.sha}`,
@@ -845,19 +845,19 @@ class PRStatusReporter {
           body: JSON.stringify(status)
         }
       );
-      
+
       if (!response.ok) {
         const error = await response.text();
-        
+
         // Handle specific GitHub API permission errors gracefully
         if (response.status === 403 && error.includes('Resource not accessible by integration')) {
           console.warn(`⚠️ GitHub status update skipped (insufficient permissions): ${status.context} - ${status.state}`);
           console.warn('  This is expected in some CI environments and does not affect functionality');
           return;
         }
-        
+
         console.error(`❌ Failed to update GitHub status: ${response.status} ${error}`);
-        
+
         // Don't throw for non-critical GitHub API errors
         if (this.isNonCriticalError({ message: error })) {
           console.warn('⚠️ GitHub status update failed but continuing...');
@@ -868,13 +868,13 @@ class PRStatusReporter {
       }
     } catch (error) {
       console.error(`❌ Error updating GitHub status:`, error.message);
-      
+
       // Don't throw for non-critical errors
       if (this.isNonCriticalError(error)) {
         console.warn('⚠️ GitHub status update error is non-critical, continuing...');
         return;
       }
-      
+
       throw error;
     }
   }
@@ -884,15 +884,15 @@ class PRStatusReporter {
       console.warn('⚠️ GitHub credentials not available, skipping PR comment');
       return;
     }
-    
+
     const prNumber = this.getPRNumber();
     if (!prNumber) {
       console.warn('⚠️ PR number not available, skipping PR comment');
       return;
     }
-    
+
     const comment = this.formatStatusComment(summary);
-    
+
     try {
       const response = await fetch(
         `${CONFIG.github.api}/repos/${CONFIG.github.repository}/issues/${prNumber}/comments`,
@@ -906,23 +906,23 @@ class PRStatusReporter {
           body: JSON.stringify({ body: comment })
         }
       );
-      
+
       if (response.ok) {
         console.log(`✅ Posted status comment to PR #${prNumber}`);
       } else {
         const error = await response.text();
-        
+
         // Handle permission errors gracefully
         if (response.status === 403 && error.includes('Resource not accessible by integration')) {
           console.warn(`⚠️ PR comment skipped (insufficient permissions)`);
           return;
         }
-        
+
         console.error(`❌ Failed to post PR comment: ${response.status} ${error}`);
       }
     } catch (error) {
       console.error(`❌ Error posting PR comment:`, error.message);
-      
+
       // Don't fail CI for comment errors
       if (this.isNonCriticalError(error)) {
         console.warn('⚠️ PR comment error is non-critical, continuing...');
@@ -933,21 +933,21 @@ class PRStatusReporter {
   formatStatusComment(summary) {
     const emoji = summary.qualityGates.allPassed ? '✅' : '❌';
     const status = summary.qualityGates.allPassed ? 'PASSED' : 'FAILED';
-    
+
     let comment = `## ${emoji} Quality Gates ${status}\n\n`;
-    
+
     // Test Results Summary
     comment += `### 🧪 Test Results\n\n`;
     comment += `| Suite | Status | Tests | Pass | Fail | Skip |\n`;
     comment += `|-------|--------|-------|------|------|------|\n`;
-    
+
     Object.entries(summary.tests.runs).forEach(([suite, run]) => {
       const statusIcon = run.status === 'completed' && run.tests.failed === 0 ? '✅' : '❌';
       comment += `| ${suite} | ${statusIcon} | ${run.tests.total} | ${run.tests.passed} | ${run.tests.failed} | ${run.tests.skipped} |\n`;
     });
-    
+
     comment += `\n**Total**: ${summary.tests.summary.total} tests, ${summary.tests.summary.passed} passed, ${summary.tests.summary.failed} failed\n\n`;
-    
+
     // Quality Gates
     comment += `### 🚪 Quality Gates\n\n`;
     Object.entries(summary.qualityGates.gates).forEach(([gate, result]) => {
@@ -955,7 +955,7 @@ class PRStatusReporter {
       const required = result.required ? '🔒 Required' : '⚠️ Optional';
       comment += `- ${icon} **${gate.replace('_', ' ').toUpperCase()}**: ${result.reason} (${required})\n`;
     });
-    
+
     // Recommendations
     if (summary.recommendations.length > 0) {
       comment += `\n### 💡 Recommendations\n\n`;
@@ -965,13 +965,13 @@ class PRStatusReporter {
         comment += `  _Action_: ${rec.action}\n\n`;
       });
     }
-    
+
     // Footer
     comment += `\n---\n`;
     comment += `📊 **Run**: [#${CONFIG.github.runNumber}](${this.getRunUrl()}) | `;
     comment += `📝 **Commit**: ${CONFIG.github.sha?.substring(0, 7)} | `;
     comment += `🕒 **Time**: ${new Date(summary.timestamp).toLocaleString()}\n`;
-    
+
     return comment;
   }
 
@@ -999,7 +999,7 @@ class PRStatusReporter {
         console.warn(`⚠️ Failed to load status data: ${error.message}`);
       }
     }
-    
+
     return {
       version: '1.0.0',
       created: new Date().toISOString(),
@@ -1027,7 +1027,7 @@ class PRStatusReporter {
         console.warn(`⚠️ Failed to load flaky test data: ${error.message}`);
       }
     }
-    
+
     return {
       version: '1.0.0',
       updated: new Date().toISOString(),
@@ -1051,7 +1051,7 @@ class PRStatusReporter {
         console.warn(`⚠️ Failed to load performance baseline: ${error.message}`);
       }
     }
-    
+
     return null;
   }
 
@@ -1090,7 +1090,7 @@ class PRStatusReporter {
     } catch (error) {
       console.warn(`⚠️ Failed to load coverage summary: ${error.message}`);
     }
-    
+
     return { total: { pct: 0 } };
   }
 
@@ -1103,10 +1103,10 @@ class PRStatusReporter {
     // Generate detailed HTML report
     const reportPath = join(CONFIG.paths.reports, `${run.testSuite}-${run.id}.html`);
     this.ensureDirectory(dirname(reportPath));
-    
+
     const html = this.generateReportHTML(run);
     writeFileSync(reportPath, html);
-    
+
     console.log(`📄 Detailed report generated: ${reportPath}`);
   }
 
@@ -1134,7 +1134,7 @@ class PRStatusReporter {
         <p><strong>Duration:</strong> ${Math.round(run.duration / 1000)}s</p>
         <p><strong>Browser:</strong> ${run.browser || 'N/A'}</p>
     </div>
-    
+
     <div class="summary">
         <div class="metric">
             <h3>Total Tests</h3>
@@ -1153,7 +1153,7 @@ class PRStatusReporter {
             <p>${run.tests.skipped}</p>
         </div>
     </div>
-    
+
     ${run.failures.length > 0 ? `
     <h2>Failures</h2>
     ${run.failures.map(failure => `
@@ -1164,7 +1164,7 @@ class PRStatusReporter {
         </div>
     `).join('')}
     ` : ''}
-    
+
     <footer>
         <p>Generated at ${new Date().toLocaleString()}</p>
     </footer>
@@ -1213,23 +1213,23 @@ async function main() {
   try {
     const reporter = new PRStatusReporter();
     const result = await reporter.handleEvent(event, options);
-    
+
     console.log('✅ Operation completed successfully');
     console.log(JSON.stringify(result, null, 2));
-    
+
     // Always exit with success code - we handle errors gracefully internally
     // Only exit with failure for truly critical errors that should fail CI
     process.exit(0);
   } catch (error) {
     console.error('❌ Operation failed:', error.message);
-    
+
     // Check if this is a non-critical error that shouldn't fail CI
     const reporter = new PRStatusReporter();
     if (reporter.isNonCriticalError(error)) {
       console.warn('⚠️ Error is non-critical, not failing CI');
       process.exit(0);
     }
-    
+
     // Only exit with failure for critical errors
     process.exit(1);
   }
@@ -1239,7 +1239,7 @@ async function main() {
 if (import.meta.url === `file://${process.argv[1]}`) {
   main().catch(error => {
     console.error('❌ Unhandled error:', error);
-    
+
     // Check if error is non-critical
     const nonCriticalPatterns = [
       'Resource not accessible by integration',
@@ -1247,16 +1247,16 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       'Coverage file not found',
       'GitHub credentials not available'
     ];
-    
-    const isNonCritical = nonCriticalPatterns.some(pattern => 
+
+    const isNonCritical = nonCriticalPatterns.some(pattern =>
       error.message?.includes(pattern)
     );
-    
+
     if (isNonCritical) {
       console.warn('⚠️ Unhandled error is non-critical, not failing CI');
       process.exit(0);
     }
-    
+
     process.exit(1);
   });
 }

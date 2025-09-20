@@ -2,8 +2,17 @@
  * Diagnostic endpoint to check environment variable availability
  * This helps debug Vercel deployment issues
  */
+import authService from "../../lib/auth-service.js";
+import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
+import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
 
-export default async function handler(req, res) {
+async function handler(req, res) {
+  // Restrict to GET method only
+  if (req.method !== 'GET') {
+    res.setHeader('Allow', ['GET']);
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
   // Only allow in non-production for security
   if (process.env.VERCEL_ENV === 'production') {
     return res.status(404).json({ error: 'Not found' });
@@ -19,12 +28,9 @@ export default async function handler(req, res) {
       CI: process.env.CI || 'NOT_SET'
     },
     adminConfig: {
-      ADMIN_SECRET: process.env.ADMIN_SECRET ? 
-        `SET (length: ${process.env.ADMIN_SECRET.length})` : 'NOT_SET',
-      ADMIN_PASSWORD: process.env.ADMIN_PASSWORD ? 
-        `SET (starts with: ${process.env.ADMIN_PASSWORD.substring(0, 4)})` : 'NOT_SET',
-      TEST_ADMIN_PASSWORD: process.env.TEST_ADMIN_PASSWORD ? 
-        `SET (length: ${process.env.TEST_ADMIN_PASSWORD.length})` : 'NOT_SET',
+      ADMIN_SECRET: process.env.ADMIN_SECRET ? 'SET' : 'NOT_SET',
+      ADMIN_PASSWORD: process.env.ADMIN_PASSWORD ? 'SET' : 'NOT_SET',
+      TEST_ADMIN_PASSWORD: process.env.TEST_ADMIN_PASSWORD ? 'SET' : 'NOT_SET',
       ADMIN_SESSION_DURATION: process.env.ADMIN_SESSION_DURATION || 'NOT_SET'
     },
     otherSecrets: {
@@ -44,3 +50,14 @@ export default async function handler(req, res) {
 
   res.status(200).json(envCheck);
 }
+
+export default withSecurityHeaders(
+  authService.requireAuth(
+    withAdminAudit(handler, {
+      logBody: false,
+      logMetadata: true,
+      skipMethods: [] // Track debug environment access for security
+    })
+  ),
+  { isAPI: true }
+);

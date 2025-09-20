@@ -5,10 +5,10 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { 
-  createNetworkSimulator, 
-  NETWORK_CONDITIONS, 
-  testNetworkResilience 
+import {
+  createNetworkSimulator,
+  NETWORK_CONDITIONS,
+  testNetworkResilience
 } from '../helpers/network-simulation.js';
 
 test.describe('Network Simulation Helper Usage', () => {
@@ -56,7 +56,7 @@ test.describe('Network Simulation Helper Usage', () => {
   test('should properly throttle network to slow 3G', async ({ page }) => {
     // Apply slow 3G conditions
     const appliedConditions = await networkSimulator.simulateNetworkCondition(NETWORK_CONDITIONS.SLOW_3G);
-    
+
     expect(appliedConditions.offline).toBe(false);
     expect(appliedConditions.downloadThroughput).toBe(50 * 1024);
     expect(appliedConditions.latency).toBe(2000);
@@ -201,7 +201,7 @@ test.describe('Network Simulation Helper Usage', () => {
     };
 
     const appliedConditions = await networkSimulator.simulateNetworkCondition(customCondition);
-    
+
     expect(appliedConditions.downloadThroughput).toBe(100 * 1024);
     expect(appliedConditions.uploadThroughput).toBe(50 * 1024);
     expect(appliedConditions.latency).toBe(1000);
@@ -223,11 +223,11 @@ test.describe('Network Simulation Helper Usage', () => {
 
     for (const condition of conditions) {
       await networkSimulator.simulateNetworkCondition(condition);
-      
+
       // Navigate to different page under each condition
       const pages = ['/pages/about.html', '/pages/artists.html', '/pages/schedule.html', '/pages/gallery.html'];
       const pageUrl = pages[conditions.indexOf(condition)];
-      
+
       await page.goto(pageUrl);
       await expect(page.locator('h1')).toBeVisible({ timeout: 10000 });
     }
@@ -241,10 +241,10 @@ test.describe('Network Simulation Error Handling', () => {
   test('should handle CDP session initialization failure gracefully', async ({ page }) => {
     // Create simulator
     const simulator = createNetworkSimulator(page);
-    
+
     // Mock CDP session failure by using a detached page
     await page.close();
-    
+
     try {
       await simulator.simulateNetworkCondition(NETWORK_CONDITIONS.OFFLINE);
     } catch (error) {
@@ -254,7 +254,7 @@ test.describe('Network Simulation Error Handling', () => {
 
   test('should handle unknown network condition', async ({ page }) => {
     const simulator = createNetworkSimulator(page);
-    
+
     try {
       await simulator.simulateNetworkCondition('unknown-condition');
     } catch (error) {
@@ -266,16 +266,16 @@ test.describe('Network Simulation Error Handling', () => {
 
   test('should handle cleanup after page is closed', async ({ page }) => {
     const simulator = createNetworkSimulator(page);
-    
+
     // Set up some routes
     await simulator.addRequestInterception('/api/**', { delayMs: 100 });
-    
+
     // Close page
     await page.close();
-    
+
     // Cleanup should not throw errors
     await simulator.cleanup();
-    
+
     // Should be marked as cleaned up
     expect(() => simulator.getNetworkStatus()).toThrow();
   });
@@ -284,46 +284,46 @@ test.describe('Network Simulation Error Handling', () => {
 test.describe('Memory Leak Prevention', () => {
   test('should properly cleanup event listeners', async ({ page }) => {
     const simulator = createNetworkSimulator(page);
-    
+
     // Start intermittent connectivity (adds event listeners)
     const connectivityPromise = simulator.simulateIntermittentConnectivity({
       intervalMs: 500,
       duration: 2000
     });
-    
+
     // Cleanup before completion
     await page.waitForTimeout(1000);
     await simulator.cleanup();
-    
+
     // Wait for original promise to resolve/reject
     try {
       await connectivityPromise;
     } catch (error) {
       // Expected if cleanup interrupted the process
     }
-    
+
     // Should be cleaned up
     expect(() => simulator.getNetworkStatus()).toThrow();
   });
 
   test('should remove all route handlers on cleanup', async ({ page }) => {
     const simulator = createNetworkSimulator(page);
-    
+
     // Add multiple route handlers
     await simulator.addRequestInterception('/api/gallery', { delayMs: 100 });
     await simulator.addRequestInterception('/api/email/**', { failureRate: 0.5 });
     await simulator.simulateSlowResources('**/*.jpg', 500);
-    
+
     const status = await simulator.getNetworkStatus();
     expect(status.activeRoutes).toBe(3);
-    
+
     // Cleanup
     await simulator.cleanup();
-    
+
     // Navigate to trigger any remaining handlers (should be none)
     await page.goto('/pages/gallery.html');
     await expect(page.locator('h1')).toBeVisible();
-    
+
     // Verify cleanup completed
     expect(() => simulator.getNetworkStatus()).toThrow();
   });

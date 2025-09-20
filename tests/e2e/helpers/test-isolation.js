@@ -1,6 +1,6 @@
 /**
  * Test Isolation Helpers
- * 
+ *
  * Provides utilities for isolating tests and managing test data.
  */
 
@@ -35,7 +35,7 @@ export const createTestData = (type = 'user') => {
         email: generateTestEmail('user'),
         phone: '+1234567890'
       };
-      
+
     case 'admin':
       return {
         ...baseData,
@@ -43,7 +43,7 @@ export const createTestData = (type = 'user') => {
         password: process.env.TEST_ADMIN_PASSWORD || 'test-admin-password',
         email: generateTestEmail('admin')
       };
-      
+
     case 'ticket':
       return {
         ...baseData,
@@ -52,7 +52,7 @@ export const createTestData = (type = 'user') => {
         price: 85.00,
         purchaseId: generateTestId('purchase')
       };
-      
+
     default:
       return baseData;
   }
@@ -67,7 +67,7 @@ export const cleanupTestData = async (testData) => {
 // Generate payment test data
 export const generatePaymentData = (type = 'card') => {
   const testId = generateTestId('payment');
-  
+
   switch (type) {
     case 'card':
       return {
@@ -81,7 +81,7 @@ export const generatePaymentData = (type = 'card') => {
         amount: 8500, // $85.00 in cents
         currency: 'usd'
       };
-      
+
     default:
       return {
         id: testId,
@@ -92,16 +92,16 @@ export const generatePaymentData = (type = 'card') => {
   }
 };
 
-// Generate registration test data  
+// Generate registration test data
 export const generateRegistrationData = (ticketType = 'weekend-pass') => {
   const testId = generateTestId('registration');
   const email = generateTestEmail('registration');
-  
+
   return {
     id: testId,
     ticketType,
     firstName: 'Test',
-    lastName: 'Attendee', 
+    lastName: 'Attendee',
     email,
     phone: '+1234567890',
     emergencyContact: {
@@ -139,7 +139,7 @@ export const waitForStability = (ms = 1000) => {
 export const waitMs = (ms = 1000) => {
   return new Promise(resolve => setTimeout(resolve, ms));
 };
-// Generate test ticket ID 
+// Generate test ticket ID
 export const generateTestTicketId = (prefix = 'ticket') => {
   const timestamp = Date.now();
   const randomId = Math.random().toString(36).substring(2, 8);
@@ -149,38 +149,38 @@ export const generateTestTicketId = (prefix = 'ticket') => {
 // Initialize test isolation system
 export const initializeTestIsolation = async () => {
   console.log('🚀 Initializing test isolation system...');
-  
+
   // Set up test environment isolation
   const sessionId = generateTestId('session');
   process.env.E2E_SESSION_ID = sessionId;
-  
+
   console.log(`   🆔 Test session ID: ${sessionId}`);
-  
+
   // Persist for global teardown (separate Node context)
   try {
     const fs = await import('fs/promises');
     const { resolve } = await import('path');
     const root = process.cwd();
     const sessionFilePath = resolve(root, '.tmp', 'e2e-session.json');
-    
+
     await fs.mkdir(resolve(root, '.tmp'), { recursive: true });
     await fs.writeFile(
       sessionFilePath,
       JSON.stringify({ sessionId, createdAt: new Date().toISOString() }, null, 2)
     );
-    
+
     // Also set environment variable with file path for cross-process access
     process.env.E2E_SESSION_FILE = sessionFilePath;
-    
+
     console.log('   💾 Session persisted to .tmp/e2e-session.json');
     console.log(`   📁 Session file path: ${sessionFilePath}`);
   } catch (err) {
     console.error(`   ❌ Failed to persist session file: ${err.message}`);
     // Don't throw - allow tests to continue even if session persistence fails
   }
-  
+
   console.log('   ✅ Test isolation system initialized');
-  
+
   return {
     initialized: true,
     sessionId,
@@ -201,10 +201,10 @@ export const withTestTransaction = async (testTitle, callback) => {
     callback = testTitle;
     testTitle = 'default';
   }
-  
+
   const namespace = getTestNamespace(testTitle);
   console.log(`🔄 Starting test transaction for '${testTitle}' with namespace: ${namespace}`);
-  
+
   try {
     const result = await callback(namespace);
     console.log(`✅ Transaction for '${testTitle}' completed successfully`);

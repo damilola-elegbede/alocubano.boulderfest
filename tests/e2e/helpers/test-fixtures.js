@@ -1,6 +1,6 @@
 /**
  * Test Fixtures - Pre-configured Test Data
- * 
+ *
  * Provides ready-to-use test data fixtures for common E2E test scenarios.
  * All fixtures automatically use the test isolation system to ensure
  * unique data per test run.
@@ -150,7 +150,7 @@ export const TicketFixtures = {
   multipleTickets(testTitle, quantity = 3) {
     const tickets = [];
     const buyer = generateTestUser(testTitle);
-    
+
     for (let i = 0; i < quantity; i++) {
       tickets.push({
         ticketId: generateTestTicketId(testTitle, `MULTI${i + 1}`),
@@ -394,7 +394,7 @@ export const DatabaseFixtures = {
   sampleRecords(testTitle, count = 5) {
     const records = [];
     const namespace = getTestNamespace(testTitle);
-    
+
     for (let i = 1; i <= count; i++) {
       records.push({
         id: `${namespace}_record_${i}`,

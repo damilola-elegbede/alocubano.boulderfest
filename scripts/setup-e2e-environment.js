@@ -57,44 +57,44 @@ async function createBasicHealthCheckTest(filePath) {
 test.describe('Health Check', () => {
   test('should load home page successfully', async ({ page }) => {
     await page.goto('/pages/home.html');
-    
+
     // Wait for page to load
     await page.waitForLoadState('networkidle');
-    
+
     // Check that the page title is set
     await expect(page).toHaveTitle(/A Lo Cubano Boulder Fest/);
-    
+
     // Check for main navigation
     await expect(page.locator('nav')).toBeVisible();
-    
+
     // Verify page content is loaded
     await expect(page.locator('body')).toBeVisible();
-    
+
     console.log('✅ Home page loaded successfully');
   });
-  
+
   test('should navigate between pages', async ({ page }) => {
     // Start at home page
     await page.goto('/pages/home.html');
     await page.waitForLoadState('networkidle');
-    
+
     // Navigate to about page
     await page.click('a[href*="about"]', { timeout: 10000 });
     await page.waitForLoadState('networkidle');
-    
+
     // Verify we're on the about page
     await expect(page).toHaveURL(/about/);
-    
+
     console.log('✅ Navigation between pages works');
   });
-  
+
   test('should have proper meta tags for SEO', async ({ page }) => {
     await page.goto('/pages/home.html');
-    
+
     // Check for essential meta tags
     await expect(page.locator('meta[name="description"]')).toHaveCount(1);
     await expect(page.locator('meta[name="viewport"]')).toHaveCount(1);
-    
+
     console.log('✅ SEO meta tags are present');
   });
 });

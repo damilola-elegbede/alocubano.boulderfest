@@ -7,7 +7,7 @@ export function getE2EDatabaseUrl() {
   // E2E tests use standard Turso environment variables
   const tursoUrl = process.env.TURSO_DATABASE_URL;
   const authToken = process.env.TURSO_AUTH_TOKEN;
-  
+
   if (!tursoUrl || !tursoUrl.startsWith('libsql://')) {
     throw new Error(
       '\n❌ E2E tests require a Turso database URL\n' +
@@ -15,21 +15,21 @@ export function getE2EDatabaseUrl() {
       '\nE2E tests do NOT support SQLite - they must test against real Turso.'
     );
   }
-  
+
   if (!authToken) {
     throw new Error(
       '\n❌ E2E tests require Turso authentication\n' +
       'Please set TURSO_AUTH_TOKEN=eyJ...\n'
     );
   }
-  
+
   // Validate it's a test/staging database (safety check)
-  const isTestDatabase = 
-    tursoUrl.includes('test-') || 
+  const isTestDatabase =
+    tursoUrl.includes('test-') ||
     tursoUrl.includes('staging-') ||
     tursoUrl.includes('e2e-') ||
     process.env.ALLOW_PROD_E2E === 'true'; // Escape hatch if needed
-  
+
   if (!isTestDatabase) {
     throw new Error(
       '\n⚠️ E2E database URL might be production!\n' +
@@ -38,7 +38,7 @@ export function getE2EDatabaseUrl() {
       'Set ALLOW_PROD_E2E=true to override (NOT recommended)'
     );
   }
-  
+
   return {
     url: tursoUrl,
     authToken: authToken,
@@ -57,7 +57,7 @@ function detectEnvironment(url) {
 // Export for use in Playwright global setup
 export async function setupE2EDatabase() {
   const config = getE2EDatabaseUrl();
-  
+
   console.log(`
 🔷 E2E Test Database Configuration
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -66,10 +66,10 @@ export async function setupE2EDatabase() {
   Ready for E2E testing
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 `);
-  
+
   // Set environment variables for the API to use
   process.env.TURSO_DATABASE_URL = config.url;
   process.env.TURSO_AUTH_TOKEN = config.authToken;
-  
+
   return config;
 }

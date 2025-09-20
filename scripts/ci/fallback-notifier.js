@@ -2,7 +2,7 @@
 
 /**
  * Fallback Notification System
- * 
+ *
  * Provides visibility into fallback usage and system health:
  * - Logs fallback events with detailed context
  * - Generates GitHub PR comments for transparency
@@ -23,12 +23,12 @@ class FallbackNotifier {
       timeToRecover: null,
       impactLevel: 'LOW'
     };
-    
+
     this.githubToken = process.env.GITHUB_TOKEN;
     this.repoOwner = process.env.GITHUB_REPOSITORY?.split('/')[0];
     this.repoName = process.env.GITHUB_REPOSITORY?.split('/')[1];
     this.prNumber = process.env.GITHUB_PR_NUMBER || process.env.PR_NUMBER;
-    
+
     console.log('📢 Fallback Notifier initialized');
   }
 
@@ -37,23 +37,23 @@ class FallbackNotifier {
    */
   async processAndNotify(fallbackData) {
     console.log('\n📢 Processing fallback events...');
-    
+
     try {
       // Parse fallback data
       const events = this.parseFallbackData(fallbackData);
-      
+
       // Generate notifications
       await this.generateNotifications(events);
-      
+
       // Calculate metrics
       this.calculateMetrics(events);
-      
+
       // Send notifications
       await this.sendNotifications();
-      
+
       // Generate report
       return this.generateReport();
-      
+
     } catch (error) {
       console.error(`Notification processing failed: ${error.message}`);
       return this.generateErrorReport(error);
@@ -65,7 +65,7 @@ class FallbackNotifier {
    */
   parseFallbackData(data) {
     const events = [];
-    
+
     try {
       // Handle different input formats
       let parsedData;
@@ -161,7 +161,7 @@ class FallbackNotifier {
     for (const event of events) {
       // Create notification based on event type and severity
       const notification = this.createNotification(event);
-      
+
       if (notification) {
         this.notifications.push(notification);
         console.log(`   ➕ Added ${event.severity} notification for ${event.type}`);
@@ -185,21 +185,21 @@ class FallbackNotifier {
         action: this.getServiceFallbackAction(event),
         priority: event.severity
       },
-      
+
       URL_FALLBACK: {
         title: `🔗 Preview URL Fallback`,
         message: `Preview URL extraction used fallback method: **${event.fallbackStrategy}**`,
         action: this.getURLFallbackAction(event),
         priority: event.severity
       },
-      
+
       E2E_FALLBACK: {
         title: `🎭 E2E Testing Fallback`,
         message: `E2E tests encountered issues, using fallback strategy: **${event.fallbackStrategy}**`,
         action: this.getE2EFallbackAction(event),
         priority: event.severity
       },
-      
+
       TEST_SKIP: {
         title: `⏭️ Tests Skipped`,
         message: `E2E tests were skipped: **${event.fallbackStrategy}**`,
@@ -300,7 +300,7 @@ class FallbackNotifier {
     let message = `**${impactLevel} Impact**: CI pipeline used ${events.length} fallback mechanism(s)\n\n`;
     message += `**Services Affected**: ${serviceTypes.join(', ')}\n`;
     message += `**Fallback Types**: ${fallbackTypes.join(', ')}\n\n`;
-    
+
     if (impactLevel === 'CRITICAL') {
       message += '🚨 **Critical fallbacks detected** - immediate attention required\n';
     } else if (impactLevel === 'HIGH') {
@@ -333,7 +333,7 @@ class FallbackNotifier {
     }
 
     action += '\n💡 **Automation**: Fallback mechanisms prevented CI failures and maintained pipeline reliability.';
-    
+
     return action;
   }
 
@@ -362,7 +362,7 @@ class FallbackNotifier {
    */
   sendConsoleNotifications() {
     console.log('\n📢 ═══ FALLBACK NOTIFICATIONS ═══');
-    
+
     for (const notification of this.notifications) {
       console.log(`\n${notification.title}`);
       console.log(notification.message);
@@ -371,7 +371,7 @@ class FallbackNotifier {
       }
       console.log(`   Priority: ${notification.priority} | Time: ${notification.timestamp}`);
     }
-    
+
     console.log('\n═══ END NOTIFICATIONS ═══\n');
   }
 
@@ -382,9 +382,9 @@ class FallbackNotifier {
     try {
       // Combine notifications into a single comment for better UX
       const comment = this.formatGitHubComment();
-      
+
       const url = `https://api.github.com/repos/${this.repoOwner}/${this.repoName}/issues/${this.prNumber}/comments`;
-      
+
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -410,15 +410,15 @@ class FallbackNotifier {
    * Format GitHub comment
    */
   formatGitHubComment() {
-    const highPriorityNotifications = this.notifications.filter(n => 
+    const highPriorityNotifications = this.notifications.filter(n =>
       ['CRITICAL', 'HIGH'].includes(n.priority)
     );
-    
+
     let comment = '## 🛡️ CI Pipeline Fallback Report\n\n';
-    
+
     if (highPriorityNotifications.length > 0) {
       comment += '### ⚠️ High Priority Fallbacks\n\n';
-      
+
       for (const notification of highPriorityNotifications) {
         comment += `#### ${notification.title}\n`;
         comment += `${notification.message}\n\n`;
@@ -431,16 +431,16 @@ class FallbackNotifier {
     // Add summary
     const totalFallbacks = this.metrics.fallbacksUsed;
     const criticalFallbacks = this.metrics.criticalFallbacks;
-    
+
     comment += '### 📊 Summary\n\n';
     comment += `- **Total Fallbacks**: ${totalFallbacks}\n`;
     comment += `- **Critical Fallbacks**: ${criticalFallbacks}\n`;
     comment += `- **Impact Level**: ${this.metrics.impactLevel}\n`;
     comment += `- **Pipeline Status**: ${criticalFallbacks > 0 ? '⚠️ Degraded but functional' : '✅ Operating normally'}\n\n`;
-    
+
     comment += '### 💡 What This Means\n\n';
     comment += 'Fallback mechanisms have activated to maintain CI/CD pipeline reliability. ';
-    
+
     if (criticalFallbacks > 0) {
       comment += 'Critical services experienced issues but the pipeline continued with degraded functionality. ';
       comment += 'Please review the fallback events above and address any critical issues.';
@@ -448,10 +448,10 @@ class FallbackNotifier {
       comment += 'The pipeline is operating normally using backup systems where needed. ';
       comment += 'This is expected behavior designed to maintain high availability.';
     }
-    
+
     comment += '\n\n---\n';
     comment += '*This report was automatically generated by the Fallback Notification System*';
-    
+
     return comment;
   }
 
@@ -482,7 +482,7 @@ class FallbackNotifier {
     this.metrics.fallbacksUsed = events.length;
     this.metrics.criticalFallbacks = events.filter(e => e.severity === 'CRITICAL').length;
     this.metrics.serviceOutages = [...new Set(events.map(e => e.service))];
-    
+
     // Determine impact level
     if (this.metrics.criticalFallbacks > 0) {
       this.metrics.impactLevel = 'CRITICAL';
@@ -556,10 +556,10 @@ class FallbackNotifier {
 // Main execution
 if (import.meta.url === `file://${process.argv[1]}`) {
   const notifier = new FallbackNotifier();
-  
+
   // Get fallback data from command line arguments or stdin
   let fallbackData = {};
-  
+
   if (process.argv.includes('--data-file')) {
     const dataFile = process.argv[process.argv.indexOf('--data-file') + 1];
     fallbackData = dataFile;
@@ -577,7 +577,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
         console.log(`\n✅ Fallback notifications processed successfully`);
         console.log(`   Notifications sent: ${result.notificationsSent}`);
         console.log(`   Impact level: ${result.impactLevel}`);
-        
+
         if (result.recommendations.length > 0) {
           console.log('\n💡 Recommendations:');
           result.recommendations.forEach(rec => console.log(`   - ${rec}`));
@@ -585,7 +585,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       } else {
         console.log(`\n❌ Notification processing failed: ${result.error}`);
       }
-      
+
       process.exit(0);
     })
     .catch(error => {

@@ -41,7 +41,7 @@ npm run vercel:preview          # Vercel preview deployment
 # Streamlined Test Suite
 npm test                        # Unit tests (fast execution)
 npm run test:integration        # Integration tests
-npm run test:e2e                # E2E tests with Vercel Preview Deployments
+npm run test:e2e                # E2E tests (optimized: 2-5 minutes, parallel execution)
 npm run test:coverage           # Generate coverage reports
 
 # Individual E2E test flows - Run specific tests:
@@ -339,19 +339,28 @@ Features:
   - registration-api.test.js - Registration API unit tests
   - registration-flow.test.js - Registration flow tests
 - **Integration Test Suite**: Service and API integration validation
-- **E2E Test Suite (12 comprehensive tests)** with **Vercel Preview Deployments**:
+- **E2E Test Suite (21 comprehensive tests)** with **Vercel Preview Deployments**:
+  - accessibility-compliance.test.js - WCAG compliance and accessibility
   - admin-auth.test.js - Admin authentication flow
   - admin-dashboard.test.js - Admin panel & security testing
   - basic-navigation.test.js - Page navigation and routing
+  - brevo-cleanup-integration.test.js - Email service integration
   - cart-functionality.test.js - Shopping cart operations
+  - dark-mode-admin.test.js - Dark mode functionality in admin
+  - database-integrity.test.js - Database operations and integrity
+  - email-transactional.test.js - Transactional email flows
   - gallery-basic.test.js - Gallery browsing functionality
   - gallery-browsing.test.js - Gallery performance & API integration
   - mobile-registration-experience.test.js - Mobile-optimized registration flow
-  - newsletter-simple.test.js - Newsletter subscription
+  - network-resilience.test.js - Network failure handling
   - payment-flow.test.js - Payment processing workflow
+  - performance-load.test.js - Performance under load
   - registration-flow.test.js - Registration process
+  - stripe-webhook-security.test.js - Webhook security validation
   - ticket-validation.test.js - QR code validation
   - user-engagement.test.js - User engagement metrics and tracking
+  - wallet-pass-apple.test.js - Apple Wallet pass generation
+  - wallet-pass-google.test.js - Google Wallet pass generation
 - **Database Strategy**:
   - **Unit/Integration tests**: SQLite for fast, isolated testing
   - **E2E tests**: Production database via **Vercel Preview Deployments**
@@ -373,7 +382,8 @@ Managed by `determineCartVisibility()` in `floating-cart.js`:
 - **API response**: <100ms target
 - **Browser cache**: 24-hour for static assets
 - **Unit test execution**: Fast completion with essential coverage
-- **E2E test execution**: 2-5 minutes for 12 comprehensive tests via **Vercel Preview Deployments**
+- **E2E test execution**: 2-5 minutes with parallel execution (4-8x faster than legacy)
+- **E2E parallel workers**: 2 (CI) / 4 (local) for optimal resource usage
 - **Test simplicity**: Zero abstractions, readable by any JavaScript developer
 
 ## Debugging

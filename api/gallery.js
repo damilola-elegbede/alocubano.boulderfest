@@ -20,8 +20,8 @@ export default async function handler(req, res) {
 
   // Only allow GET requests
   if (req.method !== 'GET') {
-    res.setHeader("Allow", "GET, OPTIONS");
-    res.status(405).json({ 
+    res.setHeader('Allow', 'GET, OPTIONS');
+    res.status(405).json({
       error: 'Method not allowed',
       message: 'Only GET requests are supported'
     });
@@ -30,41 +30,43 @@ export default async function handler(req, res) {
 
   try {
     console.log('Gallery API: Processing request');
-    
+
     // Parse and validate query parameters
-    const { event, year, offset: rawOffset = '0', limit: rawLimit = '20' } = req.query;
-    
+    // Support both 'event' and 'eventId' for backward compatibility
+    const { event, eventId, year, offset: rawOffset = '0', limit: rawLimit = '20' } = req.query || {};
+    const effectiveEventId = eventId || event; // Prefer eventId if provided
+
     // Validate and parse numeric parameters
     const parsedOffset = parseQueryParam(rawOffset, 0, { min: 0, max: 10000 });
     const parsedLimit = parseQueryParam(rawLimit, 20, { min: 1, max: 100 });
-    
+
     if (parsedOffset === null || parsedLimit === null) {
       return res.status(400).json({
         error: 'Invalid query parameters',
         message: 'offset must be 0-10000, limit must be 1-100'
       });
     }
-    
+
     const galleryService = getGalleryService();
-    const galleryData = await galleryService.getGalleryData(year, event);
-    
+    const galleryData = await galleryService.getGalleryData(year, effectiveEventId);
+
     // Apply pagination if requested
     let paginatedData = galleryData;
     if (parsedOffset > 0 || parsedLimit < 1000) {
       paginatedData = applyPagination(galleryData, parsedOffset, parsedLimit);
     }
-    
+
     // Generate ETag for caching
     const dataHash = generateETag(paginatedData);
     res.setHeader('ETag', `"${dataHash}"`);
-    
+
     // Check if client has current version
     const clientETag = req.headers['if-none-match'];
     if (clientETag === `"${dataHash}"`) {
       res.status(304).end();
       return;
     }
-    
+
     // Add API metadata
     const response = {
       ...paginatedData,
@@ -72,15 +74,15 @@ export default async function handler(req, res) {
         version: '2.1',
         timestamp: new Date().toISOString(),
         environment: process.env.VERCEL ? 'vercel' : 'local',
-        queryParams: { event, year, offset: parsedOffset, limit: parsedLimit },
+        queryParams: { event: effectiveEventId, eventId: effectiveEventId, year, offset: parsedOffset, limit: parsedLimit },
         etag: dataHash
       }
     };
-    
+
     // Set performance headers
     res.setHeader('X-Response-Time', Date.now());
     res.setHeader('Vary', 'Accept-Encoding');
-    
+
     // Set caching headers based on data source
     if (galleryData.source === 'build-time-cache') {
       // Long cache for build-time data
@@ -89,22 +91,22 @@ export default async function handler(req, res) {
       // Shorter cache for runtime data with stale-while-revalidate
       res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=900, stale-if-error=1800'); // 5 min, 15 min SWR, 30 min error
     }
-    
+
     res.status(200).json(response);
-    
+
   } catch (error) {
     console.error('Gallery API Error:', error);
-    
+
     // Enhanced error handling for preview environments
-    const isPreviewEnvironment = process.env.VERCEL_ENV === 'preview' || 
+    const isPreviewEnvironment = process.env.VERCEL_ENV === 'preview' ||
                                   process.env.VERCEL_URL;
-    
+
     // Check if this is a Google Drive API issue in preview
-    const isGoogleDriveError = error.message?.includes('Google') || 
+    const isGoogleDriveError = error.message?.includes('Google') ||
                                error.message?.includes('Drive') ||
                                error.message?.includes('API key') ||
                                error.code === 'GOOGLE_DRIVE_ERROR';
-    
+
     if (isPreviewEnvironment && isGoogleDriveError) {
       // Provide fallback gallery data for preview testing
       const fallbackResponse = {
@@ -133,15 +135,15 @@ export default async function handler(req, res) {
         },
         message: 'Preview environment - using fallback gallery data'
       };
-      
+
       return res.status(200).json(fallbackResponse);
     }
-    
+
     // Standard error response
     const statusCode = isGoogleDriveError ? 503 : 500;
     res.status(statusCode).json({
       error: isGoogleDriveError ? 'Service temporarily unavailable' : 'Internal server error',
-      message: isGoogleDriveError ? 
+      message: isGoogleDriveError ?
         'Gallery service temporarily unavailable. Please try again later.' :
         'Failed to load gallery data',
       timestamp: new Date().toISOString(),
@@ -155,17 +157,19 @@ export default async function handler(req, res) {
  * Apply pagination to gallery data
  */
 function applyPagination(data, offset, limit) {
-  if (!data.categories) return data;
-  
+  if (!data.categories) {
+    return data;
+  }
+
   // Flatten all items for pagination
   const allItems = [];
   Object.entries(data.categories).forEach(([category, items]) => {
     items.forEach(item => allItems.push({ ...item, category }));
   });
-  
+
   // Apply pagination
   const paginatedItems = allItems.slice(offset, offset + limit);
-  
+
   // Group back into categories
   const paginatedCategories = {};
   paginatedItems.forEach(item => {
@@ -175,7 +179,7 @@ function applyPagination(data, offset, limit) {
     const { category, ...itemWithoutCategory } = item;
     paginatedCategories[item.category].push(itemWithoutCategory);
   });
-  
+
   return {
     ...data,
     categories: paginatedCategories,
@@ -195,14 +199,22 @@ function applyPagination(data, offset, limit) {
  * @returns {number|null} Parsed value or null if invalid
  */
 function parseQueryParam(value, defaultValue, options = {}) {
-  if (!value) return defaultValue;
-  
+  if (!value) {
+    return defaultValue;
+  }
+
   const parsed = parseInt(value, 10);
-  if (isNaN(parsed)) return null;
-  
-  if (options.min !== undefined && parsed < options.min) return null;
-  if (options.max !== undefined && parsed > options.max) return null;
-  
+  if (isNaN(parsed)) {
+    return null;
+  }
+
+  if (options.min !== undefined && parsed < options.min) {
+    return null;
+  }
+  if (options.max !== undefined && parsed > options.max) {
+    return null;
+  }
+
   return parsed;
 }
 

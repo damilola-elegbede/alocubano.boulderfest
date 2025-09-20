@@ -11,7 +11,7 @@ const testConstants = getTestDataConstants();
 test.describe('Registration Process', () => {
   // Use test ticket data if available from seeded data
   const testTicketId = `${testConstants.TEST_PREFIX}TICKET_12345678`;
-  
+
   test.beforeEach(async ({ page }) => {
     // Start from tickets page
     await page.goto('/tickets');
@@ -24,12 +24,12 @@ test.describe('Registration Process', () => {
     if (await addButton.count() > 0) {
       await addButton.click();
       await page.waitForLoadState('domcontentloaded');
-      
+
       const checkoutBtn = page.locator('button:has-text("Checkout"), .checkout-btn');
       if (await checkoutBtn.count() > 0) {
         await checkoutBtn.click();
         await page.waitForLoadState('domcontentloaded');
-        
+
         // Should proceed to registration or payment form
         const forms = page.locator('form');
         await expect(forms.first()).toBeVisible();
@@ -41,7 +41,7 @@ test.describe('Registration Process', () => {
     // Try to access registration page directly with test ticket ID
     try {
       await page.goto(`/registration?ticket=${testTicketId}`);
-      
+
       // Should either show registration form or redirect appropriately
       const registrationElements = page.locator('form, .registration-form, h1:has-text("Registration")');
       if (await registrationElements.count() > 0) {
@@ -58,19 +58,19 @@ test.describe('Registration Process', () => {
     const addButton = page.locator('button:has-text("Weekend")').first();
     if (await addButton.count() > 0) {
       await addButton.click();
-      
+
       const checkoutBtn = page.locator('button:has-text("Checkout")').first();
       if (await checkoutBtn.count() > 0) {
         await checkoutBtn.click();
         await page.waitForLoadState('domcontentloaded');
-        
+
         // Look for registration form fields
         const requiredFields = [
           'input[name*="name"], input[placeholder*="name"]',
           'input[type="email"], input[name*="email"]',
           'input[type="tel"], input[name*="phone"]'
         ];
-        
+
         for (const selector of requiredFields) {
           const field = page.locator(selector);
           if (await field.count() > 0) {
@@ -85,17 +85,17 @@ test.describe('Registration Process', () => {
     const addButton = page.locator('button:has-text("Weekend")').first();
     if (await addButton.count() > 0) {
       await addButton.click();
-      
+
       const checkoutBtn = page.locator('button:has-text("Checkout")').first();
       if (await checkoutBtn.count() > 0) {
         await checkoutBtn.click();
         await page.waitForLoadState('domcontentloaded');
-        
+
         // Try to submit form without filling required fields
         const submitBtn = page.locator('button[type="submit"], .submit-btn, button:has-text("Complete")');
         if (await submitBtn.count() > 0) {
           await submitBtn.click();
-          
+
           // Should show validation errors
           const errorElements = page.locator('.error, .invalid-feedback, .required-error');
           if (await errorElements.count() > 0) {
@@ -110,20 +110,20 @@ test.describe('Registration Process', () => {
     const addButton = page.locator('button:has-text("Weekend")').first();
     if (await addButton.count() > 0) {
       await addButton.click();
-      
+
       const checkoutBtn = page.locator('button:has-text("Checkout")').first();
       if (await checkoutBtn.count() > 0) {
         await checkoutBtn.click();
         await page.waitForLoadState('domcontentloaded');
-        
+
         // Look for optional fields
         const dietaryField = page.locator('input[name*="dietary"], textarea[placeholder*="dietary"], select[name*="dietary"]');
         const accessibilityField = page.locator('input[name*="accessibility"], textarea[placeholder*="accessibility"]');
-        
+
         if (await dietaryField.count() > 0) {
           await dietaryField.fill('Vegetarian');
         }
-        
+
         if (await accessibilityField.count() > 0) {
           await accessibilityField.fill('Wheelchair accessible seating');
         }
@@ -135,20 +135,20 @@ test.describe('Registration Process', () => {
     const addButton = page.locator('button:has-text("Weekend")').first();
     if (await addButton.count() > 0) {
       await addButton.click();
-      
+
       const checkoutBtn = page.locator('button:has-text("Checkout")').first();
       if (await checkoutBtn.count() > 0) {
         await checkoutBtn.click();
         await page.waitForLoadState('domcontentloaded');
-        
+
         // Look for emergency contact fields
         const emergencyNameField = page.locator('input[name*="emergency"], input[placeholder*="emergency"]');
         const emergencyPhoneField = page.locator('input[name*="emergency_phone"], input[placeholder*="emergency phone"]');
-        
+
         if (await emergencyNameField.count() > 0) {
           await emergencyNameField.fill('Emergency Contact');
         }
-        
+
         if (await emergencyPhoneField.count() > 0) {
           await emergencyPhoneField.fill('+1-555-0199');
         }
@@ -162,7 +162,7 @@ test.describe('Registration Process', () => {
     if (await weekendBtn.count() > 0) {
       await weekendBtn.click();
       await page.waitForTimeout(500);
-      
+
       // Add quantity or second ticket
       const plusBtn = page.locator('.quantity-plus, button:has-text("+")');
       if (await plusBtn.count() > 0) {
@@ -171,12 +171,12 @@ test.describe('Registration Process', () => {
         // Try adding another ticket
         await weekendBtn.click();
       }
-      
+
       const checkoutBtn = page.locator('button:has-text("Checkout")').first();
       if (await checkoutBtn.count() > 0) {
         await checkoutBtn.click();
         await page.waitForLoadState('domcontentloaded');
-        
+
         // Should show forms for multiple attendees
         const attendeeSections = page.locator('.attendee-form, .attendee-section, fieldset');
         if (await attendeeSections.count() >= 2) {
@@ -190,28 +190,28 @@ test.describe('Registration Process', () => {
     const addButton = page.locator('button:has-text("Weekend")').first();
     if (await addButton.count() > 0) {
       await addButton.click();
-      
+
       const checkoutBtn = page.locator('button:has-text("Checkout")').first();
       if (await checkoutBtn.count() > 0) {
         await checkoutBtn.click();
         await page.waitForLoadState('domcontentloaded');
-        
+
         // Fill some form fields
         const nameField = page.locator('input[name*="name"]').first();
         if (await nameField.count() > 0) {
           await nameField.fill('Test Attendee');
         }
-        
+
         const emailField = page.locator('input[type="email"]').first();
         if (await emailField.count() > 0) {
           await emailField.fill('test@example.com');
         }
-        
+
         // Navigate away and back
         await page.goto('/tickets');
         await expect(page).toHaveURL(/\/tickets(\/|$)/);
         await page.goBack();
-        
+
         // Form data should be preserved
         if (await nameField.count() > 0) {
           const savedValue = await nameField.inputValue();
@@ -225,34 +225,34 @@ test.describe('Registration Process', () => {
     const addButton = page.locator('button:has-text("Weekend")').first();
     if (await addButton.count() > 0) {
       await addButton.click();
-      
+
       const checkoutBtn = page.locator('button:has-text("Checkout")').first();
       if (await checkoutBtn.count() > 0) {
         await checkoutBtn.click();
         await page.waitForLoadState('domcontentloaded');
-        
+
         // Fill required fields
         const nameField = page.locator('input[name*="name"]').first();
         if (await nameField.count() > 0) {
           await nameField.fill('Test Attendee');
         }
-        
+
         const emailField = page.locator('input[type="email"]').first();
         if (await emailField.count() > 0) {
           await emailField.fill('attendee@example.com');
         }
-        
+
         const phoneField = page.locator('input[type="tel"]').first();
         if (await phoneField.count() > 0) {
           await phoneField.fill('+1-555-0100');
         }
-        
+
         // Submit registration
         const submitBtn = page.locator('button[type="submit"], button:has-text("Complete")').first();
         if (await submitBtn.count() > 0) {
           await submitBtn.click();
           await page.waitForLoadState('domcontentloaded');
-          
+
           // Should proceed to payment or show confirmation
           const successElements = page.locator('.success, .confirmation, .payment-form');
           if (await successElements.count() > 0) {
@@ -268,12 +268,12 @@ test.describe('Registration Process', () => {
     const addButton = page.locator('button:has-text("Weekend")').first();
     if (await addButton.count() > 0) {
       await addButton.click();
-      
+
       const checkoutBtn = page.locator('button:has-text("Checkout")').first();
       if (await checkoutBtn.count() > 0) {
         await checkoutBtn.click();
         await page.waitForLoadState('domcontentloaded');
-        
+
         // Fill registration form
         const forms = page.locator('form');
         if (await forms.count() > 0) {
@@ -281,12 +281,12 @@ test.describe('Registration Process', () => {
           if (await nameInput.count() > 0) {
             await nameInput.fill('Test User');
           }
-          
+
           const emailInput = forms.locator('input[type="email"]');
           if (await emailInput.count() > 0) {
             await emailInput.fill('test@example.com');
           }
-          
+
           // Look for payment integration
           const paymentElements = page.locator('#stripe-card-element, iframe[src*="stripe"], .payment-form');
           if (await paymentElements.count() > 0) {
@@ -305,22 +305,22 @@ test.describe('Registration Process', () => {
         registrationApiCalled = true;
       }
     });
-    
+
     const addButton = page.locator('button:has-text("Weekend")').first();
     if (await addButton.count() > 0) {
       await addButton.click();
-      
+
       const checkoutBtn = page.locator('button:has-text("Checkout")').first();
       if (await checkoutBtn.count() > 0) {
         await checkoutBtn.click();
         await page.waitForLoadState('domcontentloaded');
-        
+
         // Complete form and submit
         const submitBtn = page.locator('button[type="submit"]').first();
         if (await submitBtn.count() > 0) {
           await submitBtn.click();
           await page.waitForTimeout(2000);
-          
+
           // Verify API integration exists (even if mocked in tests)
           expect(page.url()).toBeDefined();
         }

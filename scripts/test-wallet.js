@@ -14,9 +14,9 @@ async function testWalletGeneration() {
 
   // Get a test ticket
   const result = await db.execute(`
-    SELECT ticket_id FROM tickets 
-    WHERE status = 'valid' 
-    ORDER BY created_at DESC 
+    SELECT ticket_id FROM tickets
+    WHERE status = 'valid'
+    ORDER BY created_at DESC
     LIMIT 1
   `);
 
@@ -114,7 +114,7 @@ async function testWalletGeneration() {
   console.log("─".repeat(40));
 
   const stats = await db.execute(`
-    SELECT 
+    SELECT
       COUNT(*) as total_tickets,
       COUNT(apple_pass_serial) as apple_passes,
       COUNT(google_pass_id) as google_passes,

@@ -2,10 +2,10 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Payment Recovery', () => {
   let page;
-  
+
   test.beforeEach(async ({ browser }) => {
     page = await browser.newPage();
-    
+
     // Mock successful Stripe checkout session creation
     await page.route('**/api/payments/create-checkout-session', route => {
       route.fulfill({
@@ -24,13 +24,13 @@ test.describe('Payment Recovery', () => {
     await page.route('**/api/payments/stripe-webhook', route => {
       route.fulfill({ status: 500, body: 'Internal Server Error' });
     });
-    
+
     await page.goto('/tickets');
-    
+
     // Add ticket and attempt payment
     await page.click('[data-testid="weekend-pass-btn"]');
     await page.click('.checkout-btn');
-    
+
     // Should show error message for webhook failure
     await expect(page.locator('.error-message')).toBeVisible();
     await expect(page.locator('.error-message')).toContainText('payment processing');
@@ -51,14 +51,14 @@ test.describe('Payment Recovery', () => {
         });
       }, 10000);
     });
-    
+
     await page.goto('/tickets');
     await page.click('[data-testid="weekend-pass-btn"]');
     await page.click('.checkout-btn');
-    
+
     // Should show loading state
     await expect(page.locator('.loading-spinner')).toBeVisible();
-    
+
     // Should show timeout message
     await expect(page.locator('.timeout-message')).toBeVisible({ timeout: 15000 });
     await expect(page.locator('.retry-payment-btn')).toBeVisible();
@@ -66,7 +66,7 @@ test.describe('Payment Recovery', () => {
 
   test('prevents duplicate payments', async () => {
     let requestCount = 0;
-    
+
     await page.route('**/api/payments/create-checkout-session', route => {
       requestCount++;
       if (requestCount > 1) {
@@ -86,14 +86,14 @@ test.describe('Payment Recovery', () => {
         });
       }
     });
-    
+
     await page.goto('/tickets');
     await page.click('[data-testid="weekend-pass-btn"]');
-    
+
     // First payment attempt
     await page.click('.checkout-btn');
     await expect(page.locator('.checkout-btn')).toBeDisabled();
-    
+
     // Attempt duplicate payment (should be prevented)
     await page.click('.checkout-btn', { force: true });
     await expect(page.locator('.error-message')).toContainText('already processing');
@@ -101,7 +101,7 @@ test.describe('Payment Recovery', () => {
 
   test('handles failed payment retry flow', async () => {
     let attemptCount = 0;
-    
+
     await page.route('**/api/payments/create-checkout-session', route => {
       attemptCount++;
       if (attemptCount === 1) {
@@ -123,18 +123,18 @@ test.describe('Payment Recovery', () => {
         });
       }
     });
-    
+
     await page.goto('/tickets');
     await page.click('[data-testid="weekend-pass-btn"]');
     await page.click('.checkout-btn');
-    
+
     // Should show failure message
     await expect(page.locator('.payment-failed')).toBeVisible();
     await expect(page.locator('.retry-payment-btn')).toBeVisible();
-    
+
     // Retry payment
     await page.click('.retry-payment-btn');
-    
+
     // Should succeed on retry
     await expect(page.locator('.payment-success')).toBeVisible();
     expect(attemptCount).toBe(2);

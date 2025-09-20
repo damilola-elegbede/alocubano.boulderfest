@@ -5,27 +5,27 @@
 
 export default async function handler(req, res) {
   // Set CORS headers
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   // Handle preflight requests
-  if (req.method === "OPTIONS") {
+  if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
   // Only accept POST requests
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
     const data = req.body;
 
     // Input validation
-    if (!data || typeof data !== "object") {
+    if (!data || typeof data !== 'object') {
       return res.status(400).json({
-        error: "Invalid request body - expected JSON object",
+        error: 'Invalid request body - expected JSON object'
       });
     }
 
@@ -39,31 +39,31 @@ export default async function handler(req, res) {
       resourceTiming,
       memory,
       network,
-      userAgent,
+      userAgent
     } = data;
 
     // Log performance data for analysis
-    console.log("[PERFORMANCE ANALYTICS]:", {
-      timestamp: timestamp ? new Date(timestamp).toISOString() : "unknown",
-      url: url || "unknown",
-      sessionId: sessionId ? sessionId.substring(0, 8) + "..." : "unknown",
+    console.log('[PERFORMANCE ANALYTICS]:', {
+      timestamp: timestamp ? new Date(timestamp).toISOString() : 'unknown',
+      url: url || 'unknown',
+      sessionId: sessionId ? sessionId.substring(0, 8) + '...' : 'unknown',
       coreWebVitals: coreWebVitals
         ? {
-            lcp: coreWebVitals.lcp
-              ? `${coreWebVitals.lcp.toFixed(0)}ms`
-              : "N/A",
-            fid: coreWebVitals.fid
-              ? `${coreWebVitals.fid.toFixed(0)}ms`
-              : "N/A",
-            cls: coreWebVitals.cls ? coreWebVitals.cls.toFixed(3) : "N/A",
-          }
-        : "N/A",
+          lcp: coreWebVitals.lcp
+            ? `${coreWebVitals.lcp.toFixed(0)}ms`
+            : 'N/A',
+          fid: coreWebVitals.fid
+            ? `${coreWebVitals.fid.toFixed(0)}ms`
+            : 'N/A',
+          cls: coreWebVitals.cls ? coreWebVitals.cls.toFixed(3) : 'N/A'
+        }
+        : 'N/A',
       customMetrics: customMetrics
-        ? Object.keys(customMetrics).length + " metrics"
-        : "N/A",
+        ? Object.keys(customMetrics).length + ' metrics'
+        : 'N/A',
       memory: memory
         ? `${(memory.used / 1024 / 1024).toFixed(1)}MB used`
-        : "N/A",
+        : 'N/A'
     });
 
     // Process Core Web Vitals if present
@@ -71,40 +71,40 @@ export default async function handler(req, res) {
       const insights = [];
 
       if (coreWebVitals.lcp > 2500) {
-        insights.push("LCP needs improvement (>2.5s)");
+        insights.push('LCP needs improvement (>2.5s)');
       }
       if (coreWebVitals.fid > 100) {
-        insights.push("FID needs improvement (>100ms)");
+        insights.push('FID needs improvement (>100ms)');
       }
       if (coreWebVitals.cls > 0.1) {
-        insights.push("CLS needs improvement (>0.1)");
+        insights.push('CLS needs improvement (>0.1)');
       }
 
       if (insights.length > 0) {
-        console.log("[PERFORMANCE INSIGHTS]:", insights);
+        console.log('[PERFORMANCE INSIGHTS]:', insights);
       }
     }
 
     // Process custom metrics if present
-    if (customMetrics && typeof customMetrics === "object") {
+    if (customMetrics && typeof customMetrics === 'object') {
       const interestingMetrics = [];
 
       Object.entries(customMetrics).forEach(([key, value]) => {
-        if (key.includes("virtual_scroll") && value > 16) {
+        if (key.includes('virtual_scroll') && value > 16) {
           interestingMetrics.push(
-            `${key}: ${value.toFixed(1)}ms (slow scroll)`,
+            `${key}: ${value.toFixed(1)}ms (slow scroll)`
           );
         }
-        if (key.includes("api_call") && value > 1000) {
+        if (key.includes('api_call') && value > 1000) {
           interestingMetrics.push(`${key}: ${value.toFixed(0)}ms (slow API)`);
         }
-        if (key.includes("image_load") && value > 3000) {
+        if (key.includes('image_load') && value > 3000) {
           interestingMetrics.push(`${key}: ${value.toFixed(0)}ms (slow image)`);
         }
       });
 
       if (interestingMetrics.length > 0) {
-        console.log("[CUSTOM METRICS INSIGHTS]:", interestingMetrics);
+        console.log('[CUSTOM METRICS INSIGHTS]:', interestingMetrics);
       }
     }
 
@@ -118,16 +118,16 @@ export default async function handler(req, res) {
     // Return success response
     res.status(200).json({
       success: true,
-      message: "Performance metrics received and processed",
+      message: 'Performance metrics received and processed',
       timestamp: Date.now(),
-      insights: generatePerformanceInsights(data),
+      insights: generatePerformanceInsights(data)
     });
   } catch (error) {
-    console.error("[PERFORMANCE API ERROR]:", error);
+    console.error('[PERFORMANCE API ERROR]:', error);
     res.status(500).json({
-      error: "Internal server error",
+      error: 'Internal server error',
       details:
-        process.env.NODE_ENV === "development" ? error.message : undefined,
+        process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 }
@@ -145,37 +145,37 @@ function generatePerformanceInsights(data) {
 
       if (lcp && lcp < 1200) {
         insights.push({
-          type: "positive",
-          message: "Excellent Largest Contentful Paint",
+          type: 'positive',
+          message: 'Excellent Largest Contentful Paint'
         });
       } else if (lcp && lcp > 2500) {
         insights.push({
-          type: "warning",
-          message: "LCP optimization needed - consider image optimization",
+          type: 'warning',
+          message: 'LCP optimization needed - consider image optimization'
         });
       }
 
       if (fid && fid < 50) {
         insights.push({
-          type: "positive",
-          message: "Excellent First Input Delay",
+          type: 'positive',
+          message: 'Excellent First Input Delay'
         });
       } else if (fid && fid > 100) {
         insights.push({
-          type: "warning",
-          message: "FID optimization needed - reduce JavaScript execution time",
+          type: 'warning',
+          message: 'FID optimization needed - reduce JavaScript execution time'
         });
       }
 
       if (cls && cls < 0.05) {
         insights.push({
-          type: "positive",
-          message: "Excellent Cumulative Layout Shift",
+          type: 'positive',
+          message: 'Excellent Cumulative Layout Shift'
         });
       } else if (cls && cls > 0.1) {
         insights.push({
-          type: "warning",
-          message: "CLS optimization needed - avoid layout shifts",
+          type: 'warning',
+          message: 'CLS optimization needed - avoid layout shifts'
         });
       }
     }
@@ -183,11 +183,11 @@ function generatePerformanceInsights(data) {
     // Memory insights
     if (data.memory && data.memory.utilization) {
       if (data.memory.utilization < 50) {
-        insights.push({ type: "positive", message: "Healthy memory usage" });
+        insights.push({ type: 'positive', message: 'Healthy memory usage' });
       } else if (data.memory.utilization > 80) {
         insights.push({
-          type: "warning",
-          message: "High memory usage - consider optimizing",
+          type: 'warning',
+          message: 'High memory usage - consider optimizing'
         });
       }
     }
@@ -197,18 +197,18 @@ function generatePerformanceInsights(data) {
       const hitRate = parseFloat(data.network.cacheHitRate);
       if (hitRate > 85) {
         insights.push({
-          type: "positive",
-          message: "Excellent cache performance",
+          type: 'positive',
+          message: 'Excellent cache performance'
         });
       } else if (hitRate < 60) {
         insights.push({
-          type: "warning",
-          message: "Cache optimization opportunity",
+          type: 'warning',
+          message: 'Cache optimization opportunity'
         });
       }
     }
   } catch (error) {
-    console.warn("[INSIGHTS ERROR]:", error.message);
+    console.warn('[INSIGHTS ERROR]:', error.message);
   }
 
   return insights;

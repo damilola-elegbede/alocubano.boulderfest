@@ -1,6 +1,6 @@
 /**
  * Playwright E2E Configuration - CI with Dynamic Port Allocation
- * 
+ *
  * Key Features:
  * - Dynamic port allocation to prevent conflicts in parallel execution
  * - Isolated database per test suite
@@ -8,7 +8,7 @@
  * - Uses Playwright's webServer for reliable server management
  * - Eliminates dual server startup problem
  * - **FIXED**: Vercel authentication with --token, --scope, and --no-clipboard flags
- * 
+ *
  * Compatible with all 26 E2E tests including advanced scenarios:
  * - Accessibility compliance (WCAG 2.1)
  * - Performance load testing
@@ -59,7 +59,7 @@ function buildVercelCommand(port) {
     '--listen', port.toString(),
     // Removed --no-clipboard as it's not supported in this Vercel CLI version
   ];
-  
+
   // Require authentication - fail immediately if missing
   if (!process.env.VERCEL_TOKEN) {
     throw new Error('❌ FATAL: VERCEL_TOKEN secret not configured');
@@ -67,13 +67,13 @@ function buildVercelCommand(port) {
   if (!process.env.VERCEL_ORG_ID) {
     throw new Error('❌ FATAL: VERCEL_ORG_ID secret not configured');
   }
-  
+
   args.push('--token', process.env.VERCEL_TOKEN);
   console.log('   ✅ Using VERCEL_TOKEN for authentication');
-  
+
   args.push('--scope', process.env.VERCEL_ORG_ID);
   console.log('   ✅ Using VERCEL_ORG_ID as scope');
-  
+
   return args.join(' ');
 }
 
@@ -92,40 +92,40 @@ console.log(`  Vercel Auth: ✅ configured (VERCEL_TOKEN + VERCEL_ORG_ID)`);
 
 export default defineConfig({
   testDir: './tests/e2e/flows',
-  
+
   // Parallel execution disabled for CI stability with isolated resources
   fullyParallel: false,
   forbidOnly: CI_MODE,
   retries: CI_MODE ? 2 : 1,
   workers: 1, // Single worker per suite to avoid race conditions with isolated databases
-  
+
   // CI-optimized reporting
-  reporter: CI_MODE 
+  reporter: CI_MODE
     ? [
-        ['list'], 
-        ['html', { outputFolder: 'playwright-report', open: 'never' }], 
+        ['list'],
+        ['html', { outputFolder: 'playwright-report', open: 'never' }],
         ['junit', { outputFile: 'test-results/junit.xml' }],
         ['json', { outputFile: 'test-results/test-results.json' }]
       ]
     : [['list'], ['html']],
-  
+
   // Global setup for database migrations and configuration
   globalSetup: './tests/e2e/global-setup-ci.js',
   globalTeardown: './tests/e2e/global-teardown.js',
-  
+
   // Extended timeout for advanced scenarios and CI environment
   timeout: E2E_CONFIG.ADVANCED_SCENARIOS ? 120000 : (E2E_CONFIG.CI ? 90000 : 60000),
-  
+
   use: {
     baseURL: E2E_CONFIG.PLAYWRIGHT_BASE_URL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
-    
+
     // Extended timeouts for advanced scenarios and CI stability
     actionTimeout: ACTION_TIMEOUT,
     navigationTimeout: NAVIGATION_TIMEOUT,
-    
+
     // CI-optimized settings for reliability and performance
     ...(E2E_CONFIG.CI && {
       headless: true,
@@ -136,7 +136,7 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { 
+      use: {
         ...devices['Desktop Chrome'],
         // Enhanced for CI stability and advanced scenarios
         ...(CI_MODE && {
@@ -164,10 +164,10 @@ export default defineConfig({
         })
       },
     },
-    
+
     {
       name: 'firefox',
-      use: { 
+      use: {
         ...devices['Desktop Firefox'],
         // Enhanced for CI stability and advanced scenarios
         ...(CI_MODE && {
@@ -193,7 +193,7 @@ export default defineConfig({
     ...(process.env.ALL_BROWSERS !== 'false' || ADVANCED_SCENARIOS ? [
       {
         name: 'webkit',
-        use: { 
+        use: {
           ...devices['Desktop Safari'],
           // Safari-specific configuration for advanced scenarios
           ...(ADVANCED_SCENARIOS && {
@@ -205,7 +205,7 @@ export default defineConfig({
       },
       {
         name: 'mobile-chrome',
-        use: { 
+        use: {
           ...devices['Pixel 5'],
           // Mobile-specific configuration for advanced scenarios
           ...(ADVANCED_SCENARIOS && {
@@ -217,7 +217,7 @@ export default defineConfig({
       },
       {
         name: 'mobile-safari',
-        use: { 
+        use: {
           ...devices['iPhone 12'],
           // iOS Safari specific configuration
           ...(ADVANCED_SCENARIOS && {
@@ -246,7 +246,7 @@ export default defineConfig({
       includeVercel: true,    // Include Vercel credentials for CI authentication
     })
   },
-  
+
   // Expect configuration optimized for CI and advanced scenarios
   expect: {
     // Extended timeout for accessibility and performance tests

@@ -1,6 +1,6 @@
 /**
  * Test Helpers Index - Central export point for all test helpers
- * 
+ *
  * This file provides a single import point for all test helper utilities,
  * making it easy to access helpers from anywhere in the test suite.
  */
@@ -95,15 +95,15 @@ export const HelperFactory = {
     return {
       unit: unitHelper,
       api: apiHelper,
-      
+
       // Common utilities
       generateEmail: generateTestEmail,
       generateId: generateTestId,
       request: testRequest,
-      
+
       // Environment setup
       setup: () => unitHelper.env.create(config.environment),
-      
+
       // Cleanup
       cleanup: () => {
         // Add any global cleanup logic here
@@ -123,7 +123,7 @@ export const QuickHelpers = {
    * @param {Object} data - Response data
    * @returns {Object} Mock response
    */
-  mockResponse: (status = 200, data = {}) => 
+  mockResponse: (status = 200, data = {}) =>
     MockFactory.createMockResponse(status, data),
 
   /**
@@ -131,7 +131,7 @@ export const QuickHelpers = {
    * @param {Object} overrides - Override values
    * @returns {Object} User data
    */
-  testUser: (overrides = {}) => 
+  testUser: (overrides = {}) =>
     TestDataBuilder.user().merge(overrides).build(),
 
   /**
@@ -139,7 +139,7 @@ export const QuickHelpers = {
    * @param {string} prefix - Email prefix
    * @returns {string} Test email
    */
-  testEmail: (prefix = 'test') => 
+  testEmail: (prefix = 'test') =>
     `${prefix}.${Date.now()}.${Math.random().toString(36).slice(2)}@example.com`,
 
   /**

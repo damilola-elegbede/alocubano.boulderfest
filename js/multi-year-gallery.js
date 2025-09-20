@@ -100,19 +100,19 @@ class MultiYearGalleryManager {
                         <!-- Statistics will be inserted here -->
                     </div>
                 </div>
-                
+
                 <!-- Loading Indicator -->
                 <div class="loading-indicator" aria-hidden="true">
                     <div class="loading-spinner"></div>
                     <span class="loading-text">Loading gallery...</span>
                 </div>
-                
+
                 <!-- Error Display -->
                 <div class="error-display" role="alert" aria-hidden="true">
                     <div class="error-message"></div>
                     <button class="error-retry" type="button">Retry</button>
                 </div>
-                
+
                 <!-- Gallery Container -->
                 <div class="gallery-container" role="tabpanel">
                     <!-- Individual year galleries will be inserted here -->
@@ -143,14 +143,27 @@ class MultiYearGalleryManager {
             }
 
             const data = await response.json();
-            // Extract available years from gallery data - fallback to current year if no years found
-            this.availableYears = data.availableYears || ['2025'];
-            this.yearStatistics = new Map(
-                Object.entries(data.statistics || {}).map(([year, stats]) => [
-                    year,
-                    stats
-                ])
-            );
+
+            // Extract available years from API response
+            if (data.availableYears) {
+                this.availableYears = data.availableYears;
+            } else {
+                // Fallback: derive years from current data or use current year
+                this.availableYears = data.year ? [data.year.toString()] : [new Date().getFullYear().toString()];
+            }
+
+            // Extract statistics from API response or calculate from categories
+            if (data.statistics) {
+                this.yearStatistics = new Map(
+                    Object.entries(data.statistics).map(([year, stats]) => [year, stats])
+                );
+            } else {
+                // Calculate statistics from categories data
+                const totalImages = data.categories ?
+                    Object.values(data.categories).reduce((sum, items) => sum + items.length, 0) : 0;
+                const currentYear = data.year || new Date().getFullYear().toString();
+                this.yearStatistics = new Map([[currentYear, { imageCount: totalImages, totalSize: 0 }]]);
+            }
 
             if (this.availableYears.length === 0) {
                 throw new Error('No gallery years available');
@@ -196,9 +209,9 @@ class MultiYearGalleryManager {
                 const imageCount = stats ? stats.imageCount : 0;
 
                 return `
-                <button 
-                    type="button" 
-                    class="year-button" 
+                <button
+                    type="button"
+                    class="year-button"
                     data-year="${year}"
                     role="tab"
                     aria-selected="false"
@@ -777,8 +790,8 @@ class MultiYearGalleryManager {
                         return `
                         <div class="gallery-item" data-index="${index}" data-category="${image.category || ''}">
                             <div class="gallery-item-media">
-                                <img 
-                                    src="${image.thumbnailUrl || image.url}" 
+                                <img
+                                    src="${image.thumbnailUrl || image.url}"
                                     alt="${title || `Festival photo ${index + 1}`}"
                                     loading="lazy"
                                     class="gallery-image"

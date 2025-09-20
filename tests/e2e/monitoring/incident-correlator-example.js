@@ -11,14 +11,14 @@ import { CorrelatorHelpers, createIncidentCorrelator } from './incident-correlat
 async function demonstrateIncidentCorrelation() {
   console.log('Production Incident Correlation System Demo');
   console.log('='.repeat(50));
-  
+
   try {
     // Run sample analysis with built-in data
     const results = await CorrelatorHelpers.runSampleAnalysis();
-    
+
     console.log('\nDetailed Analysis:');
     console.log('='.repeat(25));
-    
+
     // Show correlation details
     if (results.correlations.length > 0) {
       console.log('\nCorrelation Analysis:');
@@ -32,7 +32,7 @@ async function demonstrateIncidentCorrelation() {
         console.log(`   Preventable: ${correlation.metadata.preventable ? 'Yes' : 'No'}`);
       });
     }
-    
+
     // Show generated test scenarios
     if (results.newTestScenarios.length > 0) {
       console.log('\nGenerated Test Scenarios:');
@@ -53,7 +53,7 @@ async function demonstrateIncidentCorrelation() {
         });
       });
     }
-    
+
     // Show actionable recommendations
     if (results.recommendations.length > 0) {
       console.log('\nActionable Recommendations:');
@@ -65,7 +65,7 @@ async function demonstrateIncidentCorrelation() {
         console.log(`   Impact: ${(rec.impact * 100).toFixed(1)}%`);
       });
     }
-    
+
     console.log('\nDemo completed successfully!');
     console.log('\nNext Steps:');
     console.log('1. Integrate with your CI/CD pipeline to collect test results');
@@ -73,7 +73,7 @@ async function demonstrateIncidentCorrelation() {
     console.log('3. Set up alerting channels (Slack, email, SMS)');
     console.log('4. Implement generated test scenarios');
     console.log('5. Monitor reduction in production incidents');
-    
+
   } catch (error) {
     console.error('Demo failed:', error);
     process.exit(1);
@@ -83,10 +83,10 @@ async function demonstrateIncidentCorrelation() {
 // Main execution
 async function main() {
   console.log('Starting Production Incident Correlation System Demo...\n');
-  
+
   // Run the main demonstration
   await demonstrateIncidentCorrelation();
-  
+
   console.log('\nAll demonstrations completed successfully!');
   console.log('\nFor more information, see:');
   console.log('   - incident-correlator.js: Full system implementation');

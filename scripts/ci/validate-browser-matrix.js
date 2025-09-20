@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Browser Matrix Conflict Validation
- * 
+ *
  * Validates browser matrices across all workflows to ensure:
  * - No resource conflicts
  * - Consistent browser coverage
@@ -52,13 +52,13 @@ class BrowserMatrixValidator {
 
   extractBrowserMatrices(config) {
     const matrices = [];
-    
+
     if (!config.jobs) return matrices;
 
     Object.entries(config.jobs).forEach(([jobName, job]) => {
       if (job.strategy?.matrix) {
         const matrix = job.strategy.matrix;
-        
+
         // Handle different matrix formats
         if (matrix.browser) {
           // Simple browser array
@@ -97,9 +97,9 @@ class BrowserMatrixValidator {
 
   validateResourceConflicts() {
     console.log('🔍 Validating resource conflicts...');
-    
+
     const resourceMap = {};
-    
+
     this.workflows.forEach(workflow => {
       workflow.browserMatrices.forEach(matrix => {
         if (matrix.type === 'complex') {
@@ -138,7 +138,7 @@ class BrowserMatrixValidator {
     Object.entries(resourceMap).forEach(([resource, usages]) => {
       if (usages.length > 1) {
         const totalParallelWorkers = usages.reduce((sum, usage) => sum + usage.parallelWorkers, 0);
-        
+
         if (totalParallelWorkers > 4) { // Threshold for resource conflicts
           this.conflicts.push({
             type: 'resource_conflict',
@@ -164,9 +164,9 @@ class BrowserMatrixValidator {
 
   validateConcurrencyGroups() {
     console.log('🔍 Validating concurrency groups...');
-    
+
     const concurrencyGroups = {};
-    
+
     this.workflows.forEach(workflow => {
       workflow.browserMatrices.forEach(matrix => {
         if (matrix.concurrency?.group) {
@@ -200,13 +200,13 @@ class BrowserMatrixValidator {
 
   validateBrowserCoverage() {
     console.log('🔍 Validating browser coverage...');
-    
+
     const allBrowsers = new Set();
     const workflowBrowsers = {};
-    
+
     this.workflows.forEach(workflow => {
       workflowBrowsers[workflow.file] = new Set();
-      
+
       workflow.browserMatrices.forEach(matrix => {
         if (matrix.type === 'complex') {
           matrix.browsers.forEach(browser => {
@@ -225,7 +225,7 @@ class BrowserMatrixValidator {
     // Check for missing core browsers
     const coreBrowsers = ['chromium', 'firefox'];
     const missingCore = coreBrowsers.filter(browser => !allBrowsers.has(browser));
-    
+
     if (missingCore.length > 0) {
       this.conflicts.push({
         type: 'coverage_gap',
@@ -254,16 +254,16 @@ class BrowserMatrixValidator {
 
   validateMemoryAllocation() {
     console.log('🔍 Validating memory allocation...');
-    
+
     const memoryUsage = {};
-    
+
     this.workflows.forEach(workflow => {
       workflow.browserMatrices.forEach(matrix => {
         if (matrix.type === 'complex') {
           matrix.browsers.forEach(browser => {
             const memory = parseInt(browser.memory) || 3;
             const key = `${workflow.file}-${matrix.jobName}`;
-            
+
             if (!memoryUsage[key]) {
               memoryUsage[key] = {
                 workflow: workflow.file,
@@ -272,7 +272,7 @@ class BrowserMatrixValidator {
                 browsers: []
               };
             }
-            
+
             memoryUsage[key].totalMemory += memory * matrix.parallelWorkers;
             memoryUsage[key].browsers.push({
               browser: browser.browser,
@@ -313,7 +313,7 @@ class BrowserMatrixValidator {
   generateReport() {
     console.log('\n📊 Browser Matrix Validation Report');
     console.log('=====================================');
-    
+
     if (this.conflicts.length === 0) {
       console.log('✅ No conflicts detected! All browser matrices are properly configured.');
       return true;
@@ -389,12 +389,12 @@ class BrowserMatrixValidator {
   validate() {
     console.log('🎭 Starting Browser Matrix Validation');
     console.log('====================================\n');
-    
+
     this.validateResourceConflicts();
     this.validateConcurrencyGroups();
     this.validateBrowserCoverage();
     this.validateMemoryAllocation();
-    
+
     return this.generateReport();
   }
 }
@@ -403,12 +403,12 @@ class BrowserMatrixValidator {
 async function main() {
   const validator = new BrowserMatrixValidator();
   const isValid = validator.validate();
-  
+
   if (!isValid) {
     console.log('\n❌ Browser matrix validation failed');
     process.exit(1);
   }
-  
+
   console.log('\n✅ Browser matrix validation passed');
   process.exit(0);
 }

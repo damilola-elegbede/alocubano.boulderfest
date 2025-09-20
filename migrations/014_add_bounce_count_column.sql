@@ -1,4 +1,0 @@
--- Add bounce_count column to email_subscribers table (IDEMPOTENT)
--- Migration 013: Add bounce tracking for email subscribers
--- Note: The email_subscribers table structure has been updated in 011_email_subscriber_system.sql
--- This migration is now a no-op as bounce tracking is handled via the email_events table

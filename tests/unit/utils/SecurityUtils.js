@@ -50,7 +50,7 @@ export function sanitizeHtml(input) {
   if (!input || typeof input !== 'string') {
     return '';
   }
-  
+
   return input.replace(/[&<>"'\/`=]/g, function(match) {
     return HTML_ENTITIES[match];
   });
@@ -63,7 +63,7 @@ export function sanitizeInput(input) {
   if (!input || typeof input !== 'string') {
     return '';
   }
-  
+
   return input
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -80,9 +80,9 @@ export function detectXSS(input) {
   if (!input || typeof input !== 'string') {
     return { hasXSS: false, threats: [] };
   }
-  
+
   const threats = [];
-  
+
   for (const pattern of DANGEROUS_PATTERNS) {
     const matches = input.match(pattern);
     if (matches) {
@@ -93,7 +93,7 @@ export function detectXSS(input) {
       });
     }
   }
-  
+
   return {
     hasXSS: threats.length > 0,
     threats
@@ -107,9 +107,9 @@ export function detectSQLInjection(input) {
   if (!input || typeof input !== 'string') {
     return { hasSQLInjection: false, threats: [] };
   }
-  
+
   const threats = [];
-  
+
   for (const pattern of SQL_INJECTION_PATTERNS) {
     const matches = input.match(pattern);
     if (matches) {
@@ -120,7 +120,7 @@ export function detectSQLInjection(input) {
       });
     }
   }
-  
+
   return {
     hasSQLInjection: threats.length > 0,
     threats
@@ -134,7 +134,7 @@ export function escapeHtml(unsafe) {
   if (!unsafe || typeof unsafe !== 'string') {
     return '';
   }
-  
+
   return unsafe
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -150,7 +150,7 @@ export function stripHtml(input) {
   if (!input || typeof input !== 'string') {
     return '';
   }
-  
+
   return input.replace(/<[^>]*>/g, '').trim();
 }
 
@@ -161,7 +161,7 @@ export function sanitizeFilename(filename) {
   if (!filename || typeof filename !== 'string') {
     return '';
   }
-  
+
   return filename
     .replace(/[^a-zA-Z0-9\-_.]/g, '_') // Replace unsafe chars with underscore
     .replace(/_{2,}/g, '_') // Replace multiple underscores with single
@@ -176,19 +176,19 @@ export function sanitizeUrl(url) {
   if (!url || typeof url !== 'string') {
     return { valid: false, error: 'URL is required' };
   }
-  
+
   const trimmed = url.trim();
-  
+
   // Check for javascript: or data: schemes
   if (/^(javascript|data|vbscript):/i.test(trimmed)) {
     return { valid: false, error: 'Dangerous URL scheme detected' };
   }
-  
+
   // Only allow http, https, mailto
   if (!/^(https?|mailto):/i.test(trimmed) && !trimmed.startsWith('/')) {
     return { valid: false, error: 'Invalid URL scheme' };
   }
-  
+
   return { valid: true, value: trimmed };
 }
 
@@ -199,19 +199,19 @@ export function sanitizeApiInput(input, maxLength = 1000) {
   if (input === null || input === undefined) {
     return '';
   }
-  
+
   if (typeof input === 'number') {
     return input.toString();
   }
-  
+
   if (typeof input === 'boolean') {
     return input.toString();
   }
-  
+
   if (typeof input !== 'string') {
     return '';
   }
-  
+
   return sanitizeInput(input).slice(0, maxLength);
 }
 
@@ -220,24 +220,24 @@ export function sanitizeApiInput(input, maxLength = 1000) {
  */
 export function validateSecurityHeaders(headers) {
   const issues = [];
-  
+
   // Check for missing security headers
   if (!headers['x-frame-options']) {
     issues.push('Missing X-Frame-Options header');
   }
-  
+
   if (!headers['x-content-type-options']) {
     issues.push('Missing X-Content-Type-Options header');
   }
-  
+
   if (!headers['x-xss-protection']) {
     issues.push('Missing X-XSS-Protection header');
   }
-  
+
   if (!headers['content-security-policy']) {
     issues.push('Missing Content-Security-Policy header');
   }
-  
+
   return {
     secure: issues.length === 0,
     issues
@@ -251,40 +251,40 @@ export function validatePasswordStrength(password) {
   if (!password || typeof password !== 'string') {
     return { strong: false, score: 0, issues: ['Password is required'] };
   }
-  
+
   const issues = [];
   let score = 0;
-  
+
   if (password.length < 8) {
     issues.push('Password must be at least 8 characters');
   } else {
     score += 1;
   }
-  
+
   if (!/[a-z]/.test(password)) {
     issues.push('Password must contain lowercase letters');
   } else {
     score += 1;
   }
-  
+
   if (!/[A-Z]/.test(password)) {
     issues.push('Password must contain uppercase letters');
   } else {
     score += 1;
   }
-  
+
   if (!/[0-9]/.test(password)) {
     issues.push('Password must contain numbers');
   } else {
     score += 1;
   }
-  
+
   if (!/[^a-zA-Z0-9]/.test(password)) {
     issues.push('Password must contain special characters');
   } else {
     score += 1;
   }
-  
+
   return {
     strong: score >= 4,
     score,

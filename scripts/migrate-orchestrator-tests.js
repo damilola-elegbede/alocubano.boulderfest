@@ -2,39 +2,39 @@
 
 /**
  * Test Migration Script - Orchestrator to Simple Setup
- * 
- * Automatically migrates test files from complex TestInitializationOrchestrator 
+ *
+ * Automatically migrates test files from complex TestInitializationOrchestrator
  * patterns to the simplified setup helper pattern. This script was created as part
  * of the refactoring effort to eliminate complex test infrastructure (~2000+ lines)
  * in favor of simple, direct setup functions (~100 lines).
- * 
+ *
  * What this script does:
  * 1. Scans all test files for legacy orchestrator patterns
  * 2. Adds deprecation notices to legacy files
  * 3. Provides guidance on migration to new patterns
  * 4. Creates backups of all modified files
  * 5. Validates changes and provides comprehensive reporting
- * 
+ *
  * Migration targets:
  * - TestInitializationOrchestrator usage -> setupTest()/teardownTest()
  * - enhanced-test-setup.js patterns -> tests/helpers/setup.js
  * - Complex orchestration calls -> Simple function calls
  * - Broken import patterns -> Working import statements
- * 
+ *
  * Usage:
  *   node scripts/migrate-orchestrator-tests.js [--dry-run] [--verbose]
- * 
+ *
  * Examples:
  *   node scripts/migrate-orchestrator-tests.js --dry-run    # Preview changes
  *   node scripts/migrate-orchestrator-tests.js --verbose    # Apply with details
  *   node scripts/migrate-orchestrator-tests.js             # Apply quietly
- * 
+ *
  * Safety features:
  * - Automatic backups in .migration-backups/
  * - Dry-run mode to preview changes
  * - Syntax validation after transformations
  * - Conservative transformations to avoid breaking code
- * 
+ *
  * After running:
  * 1. Test your changes: npm test
  * 2. Review modified files
@@ -56,7 +56,7 @@ const config = {
   verbose: process.argv.includes('--verbose'),
   pattern: process.argv.slice(2).find(arg => !arg.startsWith('--')) || 'tests/**/*.js',
   backupDir: path.join(projectRoot, '.migration-backups'),
-  
+
   // Patterns to identify files that need migration
   patterns: {
     orchestratorImport: /import\s*{[^}]*TestInitializationOrchestrator[^}]*}\s*from\s*['"][^'"]*['"];?\s*/g,
@@ -70,7 +70,7 @@ const config = {
     complexBeforeAll: /beforeAll\s*\(\s*async\s*\(\s*\)\s*=>\s*{[^}]*orchestrator[^}]*}\s*\)/g,
     complexAfterAll: /afterAll\s*\(\s*async\s*\(\s*\)\s*=>\s*{[^}]*orchestrator[^}]*}\s*\)/g
   },
-  
+
   // Transformation rules - more conservative and safer
   transforms: [
     {
@@ -125,15 +125,15 @@ function log(message, level = 'info') {
  */
 function createBackup(filePath, content) {
   if (config.dryRun) return;
-  
+
   const relativePath = path.relative(projectRoot, filePath);
   const backupPath = path.join(config.backupDir, relativePath);
   const backupDir = path.dirname(backupPath);
-  
+
   if (!fs.existsSync(backupDir)) {
     fs.mkdirSync(backupDir, { recursive: true });
   }
-  
+
   fs.writeFileSync(backupPath, content);
   log(`Created backup: ${backupPath}`, 'info');
 }
@@ -151,32 +151,32 @@ function needsMigration(content) {
 function transformContent(content, filePath) {
   let transformedContent = content;
   let transformCount = 0;
-  
+
   for (const transform of config.transforms) {
     // Skip transform if fileFilter exists and doesn't match
     if (transform.fileFilter && !transform.fileFilter(filePath)) {
       continue;
     }
-    
+
     const originalContent = transformedContent;
-    
+
     if (typeof transform.replacement === 'function') {
       transformedContent = transformedContent.replace(transform.pattern, transform.replacement);
     } else {
       transformedContent = transformedContent.replace(transform.pattern, transform.replacement);
     }
-    
+
     if (originalContent !== transformedContent) {
       transformCount++;
       log(`  Applied: ${transform.name}`, 'info');
     }
   }
-  
+
   // Additional cleanup: remove excessive empty lines but preserve intentional spacing
   transformedContent = transformedContent
     .replace(/\n{4,}/g, '\n\n\n') // Limit to max 3 consecutive newlines
     .replace(/\/\/ DEPRECATED:.*\n\/\/ Use setupTest.*\n\n\/\*\*/g, '// DEPRECATED: This file has been replaced by tests/helpers/setup.js\n// Use setupTest() and teardownTest() instead\n\n/**'); // Fix deprecation header format
-  
+
   return { content: transformedContent, transformCount };
 }
 
@@ -190,24 +190,24 @@ function validateSyntax(content, filePath) {
     const closeBraces = (content.match(/}/g) || []).length;
     const openParens = (content.match(/\(/g) || []).length;
     const closeParens = (content.match(/\)/g) || []).length;
-    
+
     if (openBraces !== closeBraces) {
       throw new Error(`Unbalanced braces: ${openBraces} open, ${closeBraces} close`);
     }
-    
+
     if (openParens !== closeParens) {
       throw new Error(`Unbalanced parentheses: ${openParens} open, ${closeParens} close`);
     }
-    
+
     // Check for obvious syntax errors
     if (content.includes('import import')) {
       throw new Error('Duplicate import statements detected');
     }
-    
+
     if (content.includes('await await')) {
       throw new Error('Duplicate await keywords detected');
     }
-    
+
     return true;
   } catch (error) {
     log(`Syntax validation failed for ${filePath}: ${error.message}`, 'error');
@@ -221,44 +221,44 @@ function validateSyntax(content, filePath) {
 function processFile(filePath) {
   try {
     stats.filesProcessed++;
-    
+
     const content = fs.readFileSync(filePath, 'utf8');
     const originalLineCount = content.split('\n').length;
-    
+
     // Check if file needs migration
     if (!needsMigration(content)) {
       log(`Skipping ${filePath} - no migration needed`, 'info');
       return;
     }
-    
+
     log(`Processing ${filePath}...`, 'info');
-    
+
     // Create backup
     createBackup(filePath, content);
-    
+
     // Apply transformations
     const { content: transformedContent, transformCount } = transformContent(content, filePath);
     const newLineCount = transformedContent.split('\n').length;
-    
+
     // Validate syntax
     if (!validateSyntax(transformedContent, filePath)) {
       stats.errors.push(`Syntax validation failed: ${filePath}`);
       return;
     }
-    
+
     // Write transformed content
     if (!config.dryRun) {
       fs.writeFileSync(filePath, transformedContent);
     }
-    
+
     // Update stats
     stats.filesModified++;
     stats.transformationsApplied += transformCount;
     stats.linesRemoved += Math.max(0, originalLineCount - newLineCount);
     stats.linesAdded += Math.max(0, newLineCount - originalLineCount);
-    
+
     log(`✅ Migrated ${filePath} (${transformCount} transformations)`, 'success');
-    
+
   } catch (error) {
     const errorMsg = `Failed to process ${filePath}: ${error.message}`;
     log(errorMsg, 'error');
@@ -271,10 +271,10 @@ function processFile(filePath) {
  */
 function findJSFiles(dir, files = []) {
   const entries = fs.readdirSync(dir, { withFileTypes: true });
-  
+
   for (const entry of entries) {
     const fullPath = path.join(dir, entry.name);
-    
+
     if (entry.isDirectory()) {
       // Skip certain directories
       if (['node_modules', 'dist', 'build', '.migration-backups'].includes(entry.name)) {
@@ -285,7 +285,7 @@ function findJSFiles(dir, files = []) {
       files.push(fullPath);
     }
   }
-  
+
   return files;
 }
 
@@ -310,7 +310,7 @@ async function findFiles() {
       log(`Directory not found: ${dirToScan}`, 'warn');
       return [];
     }
-    
+
     return findJSFiles(dirToScan);
   } catch (error) {
     log(`Error finding files: ${error.message}`, 'error');
@@ -326,12 +326,12 @@ function cleanupLegacyFiles() {
     'tests/utils/test-initialization-orchestrator.js',
     'tests/utils/enhanced-test-setup.js'
   ];
-  
+
   for (const file of legacyFiles) {
     const filePath = path.join(projectRoot, file);
     if (fs.existsSync(filePath)) {
       const content = fs.readFileSync(filePath, 'utf8');
-      
+
       // Only add deprecation notice if not already present
       if (!content.includes('// DEPRECATED')) {
         createBackup(filePath, content);
@@ -362,12 +362,12 @@ function generateReport() {
   console.log(`Lines removed: ${stats.linesRemoved}`);
   console.log(`Lines added: ${stats.linesAdded}`);
   console.log(`Net change: ${stats.linesAdded - stats.linesRemoved} lines`);
-  
+
   if (stats.errors.length > 0) {
     console.log('\n❌ Errors:');
     stats.errors.forEach(error => console.log(`  - ${error}`));
   }
-  
+
   if (config.dryRun) {
     console.log('\n⚠️  DRY RUN MODE - No files were actually modified');
     console.log('Run without --dry-run to apply changes');
@@ -377,7 +377,7 @@ function generateReport() {
   } else {
     console.log('\n✅ No files needed migration');
   }
-  
+
   console.log('\n💡 Next steps:');
   console.log('  1. Review the changes and test your migrated files');
   console.log('  2. Run your test suite: npm test');
@@ -391,33 +391,33 @@ function generateReport() {
 async function main() {
   console.log('🔄 Test Migration Script - Orchestrator to Simple Setup');
   console.log('=========================================================');
-  
+
   if (config.dryRun) {
     console.log('🔍 DRY RUN MODE - Previewing changes only');
   }
-  
+
   // Find files to process
   log('Finding test files...', 'info');
   const files = await findFiles();
-  
+
   if (files.length === 0) {
     log('No test files found matching pattern', 'warn');
     return;
   }
-  
+
   log(`Found ${files.length} test files to analyze`, 'info');
-  
+
   // Process each file
   for (const file of files) {
     processFile(file);
   }
-  
+
   // Clean up legacy files
   if (stats.filesModified > 0) {
     log('Cleaning up legacy files...', 'info');
     cleanupLegacyFiles();
   }
-  
+
   // Generate report
   generateReport();
 }

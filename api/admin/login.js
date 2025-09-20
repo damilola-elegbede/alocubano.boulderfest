@@ -1,11 +1,14 @@
-import authService from '../../lib/auth-service.js';
-import { getDatabaseClient } from '../../lib/database.js';
-import { getRateLimitService } from '../../lib/rate-limit-service.js';
-import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
+import authService from "../../lib/auth-service.js";
+import { getDatabaseClient } from "../../lib/database.js";
+import { getRateLimitService } from "../../lib/rate-limit-service.js";
+import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
 import {
   verifyMfaCode,
   markSessionMfaVerified
-} from '../../lib/mfa-middleware.js';
+} from "../../lib/mfa-middleware.js";
+import { withAuthAudit } from "../../lib/admin-audit-middleware.js";
+import adminSessionMonitor from "../../lib/admin-session-monitor.js";
+import securityAlertService from "../../lib/security-alert-service.js";
 
 /**
  * Input validation schemas
@@ -193,32 +196,27 @@ function verifyUsername(username) {
 }
 
 async function loginHandler(req, res) {
-  console.log("[Login] Request received:", {
-    method: req.method,
-    hasBody: !!req.body,
-    bodyKeys: req.body ? Object.keys(req.body) : [],
-    headers: {
-      contentType: req.headers['content-type'],
-      userAgent: req.headers['user-agent']?.substring(0, 50)
+
+  try {
+    // Ensure all services are initialized to prevent race conditions
+    if (adminSessionMonitor.ensureInitialized) {
+      await adminSessionMonitor.ensureInitialized();
     }
-  });
+    if (securityAlertService.ensureInitialized) {
+      await securityAlertService.ensureInitialized();
+    }
+  } catch (error) {
+    console.error('[Login] Service initialization error:', error.message);
+    return res.status(500).json({ error: 'Service initialization failed' });
+  }
 
   if (req.method === 'POST') {
     const { username, password, mfaCode, step } = req.body || {};
     const clientIP = getClientIP(req);
 
-    console.log("[Login] POST data:", {
-      hasUsername: !!username,
-      hasPassword: !!password,
-      passwordLength: password?.length,
-      hasMfaCode: !!mfaCode,
-      step: step,
-      clientIP: clientIP?.substring(0, 15)
-    });
-
     // Enhanced IP validation
     if (!clientIP || clientIP === 'unknown') {
-      console.error("[Login] Failed: Unable to identify client IP");
+      console.error('[Login] Failed: Unable to identify client IP');
       return res.status(400).json({ error: 'Unable to identify client' });
     }
 
@@ -295,7 +293,6 @@ async function loginHandler(req, res) {
     } catch (error) {
       console.error('[Login] Login process failed:', {
         errorMessage: error.message,
-        errorStack: error.stack,
         errorName: error.name,
         clientIP: clientIP?.substring(0, 15) + '...', // Truncate IP for privacy
         timestamp: new Date().toISOString(),
@@ -329,9 +326,11 @@ async function loginHandler(req, res) {
       res.status(500).json({ error: 'A server error occurred. Please try again later.' });
     }
   } else if (req.method === 'DELETE') {
-    // Logout - enhanced with session cleanup
+    // Logout - enhanced with session cleanup and monitoring
     try {
       const sessionToken = authService.getSessionFromRequest(req);
+      const clientIP = getClientIP(req);
+
       if (sessionToken) {
         // Clean up session from database
         const db = await getDatabaseClient();
@@ -339,6 +338,35 @@ async function loginHandler(req, res) {
           sql: 'UPDATE admin_sessions SET expires_at = CURRENT_TIMESTAMP WHERE session_token = ?',
           args: [sessionToken]
         });
+
+        // Track session end for security monitoring
+        try {
+          const sessionEndResult = await adminSessionMonitor.trackSessionEnd(sessionToken, 'manual');
+          console.log('[Logout] Session monitoring ended:', {
+            sessionId: sessionToken.substring(0, 16) + '...',
+            success: sessionEndResult.success,
+            duration: sessionEndResult.durationSeconds
+          });
+
+          // Check for any security patterns on logout
+          await securityAlertService.checkSecurityPatterns({
+            adminId: 'admin', // Default admin ID
+            sessionToken,
+            ipAddress: clientIP,
+            userAgent: getSafeUserAgent(req),
+            eventType: 'session_end',
+            success: true,
+            metadata: {
+              logoutType: 'manual',
+              durationSeconds: sessionEndResult.durationSeconds,
+              timestamp: new Date().toISOString()
+            }
+          });
+
+        } catch (monitoringError) {
+          console.error('[Logout] Session monitoring error:', monitoringError.message);
+          // Don't fail logout due to monitoring errors
+        }
       }
 
       const cookie = authService.clearSessionCookie();
@@ -359,7 +387,7 @@ async function loginHandler(req, res) {
  */
 async function handlePasswordStep(req, res, username, password, clientIP) {
   console.log('[Login] Starting password verification step');
-  
+
   // Additional username validation
   if (!username || typeof username !== 'string' || username.length > 50) {
     console.log('[Login] Invalid username format');
@@ -394,23 +422,19 @@ async function handlePasswordStep(req, res, username, password, clientIP) {
     isE2ETest,
     E2E_TEST_MODE: process.env.E2E_TEST_MODE,
     CI: process.env.CI,
-    VERCEL_ENV: process.env.VERCEL_ENV,
-    userAgent: req.headers['user-agent']?.substring(0, 50)
+    VERCEL_ENV: process.env.VERCEL_ENV
   });
 
   // Verify username and password with timing attack protection
   const startTime = Date.now();
   console.log('[Login] Verifying username...');
   const isUsernameValid = verifyUsername(username);
-  console.log('[Login] Username valid:', isUsernameValid);
-  
+
   console.log('[Login] Verifying password...');
   const isPasswordValid = await authService.verifyPassword(password);
-  console.log('[Login] Password valid:', isPasswordValid);
-  
+
   const isValid = isUsernameValid && isPasswordValid;
   const verificationTime = Date.now() - startTime;
-  console.log('[Login] Verification complete:', { isValid, timeMs: verificationTime });
 
   // Log authentication failure in test environments
   if (isE2ETest && !isValid) {
@@ -428,6 +452,42 @@ async function handlePasswordStep(req, res, username, password, clientIP) {
   if (!isValid) {
     // Record failed attempt
     const attemptResult = await rateLimitService.recordFailedAttempt(clientIP);
+
+    // Enhanced security monitoring for failed login attempts
+    try {
+      // Check for security patterns and trigger alerts if needed
+      await securityAlertService.checkSecurityPatterns({
+        adminId: username || 'unknown',
+        sessionToken: null,
+        ipAddress: clientIP,
+        userAgent: getSafeUserAgent(req),
+        eventType: 'login_attempt',
+        success: false,
+        metadata: {
+          attemptsRemaining: attemptResult.attemptsRemaining,
+          isLocked: attemptResult.isLocked,
+          timestamp: new Date().toISOString()
+        }
+      });
+
+      // Record metric for failed login attempt
+      await securityAlertService.recordMetric({
+        metricType: 'failed_login_attempt',
+        metricValue: 1,
+        timeframe: '1h',
+        entityType: 'ip_address',
+        entityId: clientIP,
+        metadata: {
+          username: username || 'unknown',
+          userAgent: getSafeUserAgent(req)?.substring(0, 100),
+          timestamp: new Date().toISOString()
+        }
+      });
+
+    } catch (securityError) {
+      // Never fail login due to security monitoring errors
+      console.error('[Login] Security monitoring error:', securityError.message);
+    }
 
     const response = {
       error: 'Invalid credentials',
@@ -461,7 +521,7 @@ async function handlePasswordStep(req, res, username, password, clientIP) {
   // Store temporary session (not MFA verified yet)
   try {
     const updateResult = await db.execute({
-      sql: `UPDATE admin_sessions 
+      sql: `UPDATE admin_sessions
             SET ip_address = ?, user_agent = ?, mfa_verified = FALSE, requires_mfa_setup = FALSE, expires_at = ?, last_accessed_at = CURRENT_TIMESTAMP
             WHERE session_token = ?`,
       args: [
@@ -475,8 +535,8 @@ async function handlePasswordStep(req, res, username, password, clientIP) {
     // Check if UPDATE affected any rows, if not, INSERT the session
     if (updateResult.meta?.changes === 0) {
       await db.execute({
-        sql: `INSERT INTO admin_sessions 
-              (session_token, ip_address, user_agent, mfa_verified, requires_mfa_setup, expires_at) 
+        sql: `INSERT INTO admin_sessions
+              (session_token, ip_address, user_agent, mfa_verified, requires_mfa_setup, expires_at)
               VALUES (?, ?, ?, FALSE, FALSE, ?)`,
         args: [
           tempToken,
@@ -534,6 +594,44 @@ async function handleMfaStep(req, res, mfaCode, clientIP) {
   const mfaResult = await verifyMfaCode(adminId, mfaCode, req);
 
   if (!mfaResult.success) {
+    // Enhanced security monitoring for MFA failures
+    try {
+      // Check for MFA-related security patterns
+      await securityAlertService.checkSecurityPatterns({
+        adminId,
+        sessionToken: tempToken,
+        ipAddress: clientIP,
+        userAgent: getSafeUserAgent(req),
+        eventType: 'mfa_verification',
+        success: false,
+        metadata: {
+          errorReason: mfaResult.error,
+          rateLimited: mfaResult.rateLimited,
+          attemptsRemaining: mfaResult.attemptsRemaining,
+          timestamp: new Date().toISOString()
+        }
+      });
+
+      // Record MFA failure metric
+      await securityAlertService.recordMetric({
+        metricType: 'mfa_failure',
+        metricValue: 1,
+        timeframe: '1h',
+        entityType: 'admin_id',
+        entityId: adminId,
+        ipAddress: clientIP,
+        metadata: {
+          errorReason: mfaResult.error,
+          rateLimited: mfaResult.rateLimited,
+          timestamp: new Date().toISOString()
+        }
+      });
+
+    } catch (securityError) {
+      console.error('[MFA] Security monitoring error:', securityError.message);
+      // Don't fail MFA due to monitoring errors
+    }
+
     const response = {
       error: mfaResult.error
     };
@@ -582,8 +680,8 @@ async function completeLogin(
   if (existingToken) {
     // Update existing temporary session to be fully authenticated
     await db.execute({
-      sql: `UPDATE admin_sessions 
-            SET mfa_verified = ?, last_accessed_at = CURRENT_TIMESTAMP 
+      sql: `UPDATE admin_sessions
+            SET mfa_verified = ?, last_accessed_at = CURRENT_TIMESTAMP
             WHERE session_token = ?`,
       args: [mfaUsed, token]
     });
@@ -591,8 +689,8 @@ async function completeLogin(
     // Create new session record (no MFA case)
     try {
       await db.execute({
-        sql: `INSERT INTO admin_sessions 
-              (session_token, ip_address, user_agent, mfa_verified, expires_at) 
+        sql: `INSERT INTO admin_sessions
+              (session_token, ip_address, user_agent, mfa_verified, expires_at)
               VALUES (?, ?, ?, ?, ?)`,
         args: [
           token,
@@ -607,14 +705,15 @@ async function completeLogin(
     }
   }
 
-  // Log successful login with enhanced security logging
+  // Enhanced security monitoring and logging
   try {
+    // Log successful login with enhanced security logging
     await db.execute({
       sql: `INSERT INTO admin_activity_log (
         session_token, action, ip_address, user_agent, request_details, success
       ) VALUES (?, ?, ?, ?, ?, ?)`,
       args: [
-        token.substring(0, 8) + "...",
+        token.substring(0, 8) + '...',
         mfaUsed ? 'login_with_mfa' : 'login',
         clientIP,
         getSafeUserAgent(req), // Use safe user agent extraction
@@ -627,14 +726,79 @@ async function completeLogin(
         true
       ]
     });
+
+    // Start comprehensive session monitoring
+    const sessionMonitorResult = await adminSessionMonitor.trackSessionStart({
+      sessionToken: token,
+      adminId,
+      ipAddress: clientIP,
+      userAgent: getSafeUserAgent(req),
+      mfaUsed,
+      loginMethod: mfaUsed ? 'mfa' : 'password'
+    });
+
+    console.log('[Login] Session monitoring started:', {
+      sessionId: token.substring(0, 16) + '...',
+      securityScore: sessionMonitorResult.securityScore,
+      riskLevel: sessionMonitorResult.riskLevel,
+      success: sessionMonitorResult.success
+    });
+
+    // Check security patterns for successful login
+    await securityAlertService.checkSecurityPatterns({
+      adminId,
+      sessionToken: token,
+      ipAddress: clientIP,
+      userAgent: getSafeUserAgent(req),
+      eventType: 'session_start',
+      success: true,
+      metadata: {
+        mfaUsed,
+        securityScore: sessionMonitorResult.securityScore,
+        riskLevel: sessionMonitorResult.riskLevel,
+        timestamp: new Date().toISOString()
+      }
+    });
+
+    // Record successful login metric
+    await securityAlertService.recordMetric({
+      metricType: 'successful_login',
+      metricValue: 1,
+      timeframe: '1h',
+      entityType: 'admin_id',
+      entityId: adminId,
+      ipAddress: clientIP,
+      metadata: {
+        mfaUsed,
+        securityScore: sessionMonitorResult.securityScore,
+        riskLevel: sessionMonitorResult.riskLevel,
+        timestamp: new Date().toISOString()
+      }
+    });
+
+    // Record active session metric
+    await securityAlertService.recordMetric({
+      metricType: 'active_session',
+      metricValue: 1,
+      timeframe: '24h',
+      entityType: 'admin_id',
+      entityId: adminId,
+      ipAddress: clientIP,
+      metadata: {
+        sessionToken: token.substring(0, 16) + '...',
+        timestamp: new Date().toISOString()
+      }
+    });
+
   } catch (error) {
-    console.error('Failed to log admin login:', error);
-    // Don't fail the login if logging fails
+    console.error('Failed to log admin login or start monitoring:', error);
+    // Don't fail the login if logging/monitoring fails
   }
 
   res.setHeader('Set-Cookie', cookie);
   res.status(200).json({
     success: true,
+    token: token,
     expiresIn: authService.sessionDuration,
     mfaUsed,
     adminId
@@ -662,4 +826,8 @@ async function getMfaStatus(adminId) {
   }
 }
 
-export default withSecurityHeaders(loginHandler);
+export default withSecurityHeaders(withAuthAudit(loginHandler, {
+  logLoginAttempts: true,
+  logFailedAttempts: true,
+  logSessionEvents: true
+}));

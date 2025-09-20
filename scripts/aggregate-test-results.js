@@ -2,13 +2,13 @@
 
 /**
  * Test Results Aggregation Script
- * 
+ *
  * Aggregates test results from various sources and formats them
  * for consumption by GitHub Actions and PR comments.
- * 
+ *
  * Usage:
  *   node scripts/aggregate-test-results.js [options]
- *   
+ *
  * Options:
  *   --unit-results <path>       Path to unit test results JSON
  *   --e2e-results <glob>        Glob pattern for E2E test results
@@ -44,11 +44,11 @@ class TestResultsAggregator {
   async loadUnitResults(filePath) {
     try {
       if (!filePath) return null;
-      
+
       console.log(`📊 Loading unit test results from ${filePath}...`);
       const content = await fs.readFile(filePath, 'utf8');
       const data = JSON.parse(content);
-      
+
       const unitResults = {
         type: 'unit',
         status: data.numFailedTests > 0 ? 'failure' : 'success',
@@ -72,7 +72,7 @@ class TestResultsAggregator {
 
       this.results.unit = unitResults;
       console.log(`✅ Unit test results loaded: ${unitResults.passed_tests}/${unitResults.total_tests} passed`);
-      
+
       return unitResults;
     } catch (error) {
       console.error(`❌ Failed to load unit test results: ${error.message}`);
@@ -83,21 +83,21 @@ class TestResultsAggregator {
   async loadE2EResults(pattern) {
     try {
       if (!pattern) return [];
-      
+
       console.log(`🎭 Loading E2E test results from pattern: ${pattern}...`);
       const files = await glob(pattern);
-      
+
       const e2eResults = [];
-      
+
       for (const file of files) {
         try {
           const content = await fs.readFile(file, 'utf8');
           const data = JSON.parse(content);
-          
+
           // Extract browser name from filename
           const browserMatch = path.basename(file).match(/e2e-(\w+)-results\.json/);
           const browser = browserMatch ? browserMatch[1] : 'unknown';
-          
+
           // Parse Playwright test results
           const suites = data.suites || [];
           let totalTests = 0;
@@ -105,15 +105,15 @@ class TestResultsAggregator {
           let failedTests = 0;
           let skippedTests = 0;
           let flakyTests = [];
-          
+
           for (const suite of suites) {
             const specs = suite.specs || [];
             for (const spec of specs) {
               totalTests++;
-              
+
               if (spec.ok) {
                 passedTests++;
-                
+
                 // Check for flaky tests (passed after retry)
                 const tests = spec.tests || [];
                 for (const test of tests) {
@@ -129,7 +129,7 @@ class TestResultsAggregator {
               }
             }
           }
-          
+
           const e2eResult = {
             type: 'e2e',
             browser,
@@ -141,15 +141,15 @@ class TestResultsAggregator {
             execution_time: this.extractExecutionTime(data),
             flaky_tests: flakyTests
           };
-          
+
           e2eResults.push(e2eResult);
           console.log(`✅ E2E results loaded for ${browser}: ${passedTests}/${totalTests} passed`);
-          
+
         } catch (error) {
           console.error(`⚠️ Failed to parse E2E result file ${file}: ${error.message}`);
         }
       }
-      
+
       this.results.e2e = e2eResults;
       return e2eResults;
     } catch (error) {
@@ -161,11 +161,11 @@ class TestResultsAggregator {
   async loadPerformanceResults(filePath) {
     try {
       if (!filePath) return null;
-      
+
       console.log(`⚡ Loading performance test results from ${filePath}...`);
       const content = await fs.readFile(filePath, 'utf8');
       const data = JSON.parse(content);
-      
+
       const performanceResults = {
         type: 'performance',
         status: 'success', // Will be determined based on thresholds
@@ -185,7 +185,7 @@ class TestResultsAggregator {
 
       this.results.performance = performanceResults;
       console.log(`✅ Performance results loaded: ${performanceResults.status}`);
-      
+
       return performanceResults;
     } catch (error) {
       console.error(`❌ Failed to load performance results: ${error.message}`);
@@ -196,14 +196,14 @@ class TestResultsAggregator {
   async loadSecurityResults(filePath) {
     try {
       if (!filePath) return null;
-      
+
       console.log(`🔒 Loading security scan results from ${filePath}...`);
       const content = await fs.readFile(filePath, 'utf8');
       const lines = content.split('\n');
-      
+
       let vulnerabilities = 0;
       let critical_vulnerabilities = 0;
-      
+
       for (const line of lines) {
         if (line.includes('vulnerabilities')) {
           const match = line.match(/(\d+)\s+vulnerabilities/);
@@ -218,7 +218,7 @@ class TestResultsAggregator {
           }
         }
       }
-      
+
       const securityResults = {
         type: 'security',
         status: critical_vulnerabilities > 0 ? 'failure' : (vulnerabilities > 0 ? 'warning' : 'success'),
@@ -229,7 +229,7 @@ class TestResultsAggregator {
 
       this.results.security = securityResults;
       console.log(`✅ Security results loaded: ${securityResults.summary}`);
-      
+
       return securityResults;
     } catch (error) {
       console.error(`❌ Failed to load security results: ${error.message}`);
@@ -242,11 +242,11 @@ class TestResultsAggregator {
     if (data.config?.metadata?.executionTime) {
       return Math.round(data.config.metadata.executionTime / 1000);
     }
-    
+
     // Fallback: calculate from test durations
     let totalDuration = 0;
     const suites = data.suites || [];
-    
+
     for (const suite of suites) {
       const specs = suite.specs || [];
       for (const spec of specs) {
@@ -259,7 +259,7 @@ class TestResultsAggregator {
         }
       }
     }
-    
+
     return Math.round(totalDuration / 1000); // Convert to seconds
   }
 
@@ -278,7 +278,7 @@ class TestResultsAggregator {
       failed_tests += this.results.unit.failed_tests;
       skipped_tests += this.results.unit.skipped_tests;
       total_execution_time += this.results.unit.execution_time;
-      
+
       if (this.results.unit.status === 'failure') {
         status = 'failure';
       }
@@ -291,7 +291,7 @@ class TestResultsAggregator {
       failed_tests += e2eResult.failed_tests;
       skipped_tests += e2eResult.skipped_tests;
       total_execution_time = Math.max(total_execution_time, e2eResult.execution_time);
-      
+
       if (e2eResult.status === 'failure') {
         status = 'failure';
       }
@@ -325,7 +325,7 @@ class TestResultsAggregator {
   generateGitHubSummary() {
     const overall = this.results.overall;
     const statusEmoji = overall.status === 'success' ? '✅' : (overall.status === 'failure' ? '❌' : '⚠️');
-    
+
     let summary = `## ${statusEmoji} Test Results Summary\n\n`;
     summary += `**Overall Status:** ${overall.status.toUpperCase()}\n`;
     summary += `**Total Tests:** ${overall.total_tests}\n`;
@@ -386,7 +386,7 @@ class TestResultsAggregator {
   async saveResults(outputPath, format = 'json') {
     try {
       let content;
-      
+
       switch (format) {
         case 'json':
           content = JSON.stringify(this.results, null, 2);
@@ -397,7 +397,7 @@ class TestResultsAggregator {
         default:
           throw new Error(`Unsupported format: ${format}`);
       }
-      
+
       await fs.writeFile(outputPath, content, 'utf8');
       console.log(`✅ Results saved to ${outputPath} (${format} format)`);
     } catch (error) {
@@ -411,7 +411,7 @@ class TestResultsAggregator {
 async function main() {
   const args = process.argv.slice(2);
   const options = {};
-  
+
   for (let i = 0; i < args.length; i += 2) {
     const key = args[i]?.replace('--', '').replace(/-/g, '_');
     const value = args[i + 1];
@@ -448,7 +448,7 @@ async function main() {
   // Save results
   const outputPath = options.output || 'aggregated-test-results.json';
   const format = options.format || 'json';
-  
+
   await aggregator.saveResults(outputPath, format);
 
   // Exit with appropriate code

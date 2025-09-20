@@ -7,7 +7,7 @@ export default function handler(req, res) {
   // Set appropriate content type
   res.setHeader('Content-Type', 'text/plain');
   res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
-  
+
   // Generate robots.txt content
   const robotsContent = `User-agent: *
 Allow: /

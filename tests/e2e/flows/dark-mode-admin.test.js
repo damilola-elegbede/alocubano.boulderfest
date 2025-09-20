@@ -1,10 +1,10 @@
 /**
  * E2E Test: Dark Mode Admin Integration
  * Tests dark mode functionality in admin pages and visual regression
- * 
+ *
  * Requirements tested:
  * 1. Admin pages load with dark theme
- * 2. Main site pages remain light theme 
+ * 2. Main site pages remain light theme
  * 3. Visual regression - colors properly inverted
  * 4. All admin components visible in dark mode
  * 5. Contrast ratios meet WCAG standards
@@ -23,7 +23,7 @@ const testConstants = getTestDataConstants();
 test.describe('Dark Mode Admin Integration', () => {
   // Validate secrets before running tests
   const shouldSkip = skipTestIfSecretsUnavailable(['admin'], 'dark-mode-admin.test.js');
-  
+
   if (shouldSkip) {
     test.skip('Skipping dark mode admin tests due to missing required secrets');
     return;
@@ -67,7 +67,7 @@ test.describe('Dark Mode Admin Integration', () => {
         }
         return false;
       }
-      
+
       return true;
     } catch (error) {
       if (error.message.includes('locked') || error.message.includes('rate limit')) {
@@ -102,27 +102,27 @@ test.describe('Dark Mode Admin Integration', () => {
       // Convert RGB/RGBA to luminance values
       function getLuminance(color) {
         if (!color || color === 'transparent' || color === 'rgba(0, 0, 0, 0)') return 0;
-        
+
         const rgbMatch = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)/);
         if (!rgbMatch) return 0;
-        
+
         const [, r, g, b] = rgbMatch.map(Number);
-        
+
         // Convert to relative luminance
         const [rs, gs, bs] = [r, g, b].map(c => {
           c = c / 255;
           return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
         });
-        
+
         return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
       }
 
       const fgLuminance = getLuminance(fg);
       const bgLuminance = getLuminance(bg);
-      
+
       const lighter = Math.max(fgLuminance, bgLuminance);
       const darker = Math.min(fgLuminance, bgLuminance);
-      
+
       const contrastRatio = (lighter + 0.05) / (darker + 0.05);
       return {
         ratio: contrastRatio,
@@ -185,7 +185,7 @@ test.describe('Dark Mode Admin Integration', () => {
     // Check admin header styling in dark mode
     const headerColors = await getComputedColor(page, '.admin-header');
     expect(headerColors.backgroundColor).toBeTruthy();
-    
+
     // Verify dashboard stats cards are visible with proper contrast
     const statsCards = page.locator('.stat-card');
     const statsCount = await statsCards.count();
@@ -195,10 +195,10 @@ test.describe('Dark Mode Admin Integration', () => {
     if (statsCount > 0) {
       const cardColors = await getComputedColor(page, '.stat-card:first-child');
       const titleColors = await getComputedColor(page, '.stat-card:first-child h3');
-      
+
       expect(cardColors.backgroundColor).toBeTruthy();
       expect(titleColors.color).toBeTruthy();
-      
+
       // Test contrast ratio for readability
       const contrast = await checkContrastRatio(page, titleColors.color, cardColors.backgroundColor);
       expect(contrast.meetsAA).toBe(true);
@@ -235,7 +235,7 @@ test.describe('Dark Mode Admin Integration', () => {
       const element = page.locator(selector).first();
       if (await element.count() > 0) {
         await expect(element).toBeVisible();
-        
+
         // Check that the element has proper contrast
         const colors = await getComputedColor(page, selector);
         if (colors.color && colors.backgroundColor) {
@@ -269,16 +269,16 @@ test.describe('Dark Mode Admin Integration', () => {
     const inputColors = await getComputedColor(page, '[data-testid="search-registrations"]');
     expect(inputColors.color).toBeTruthy();
     expect(inputColors.backgroundColor).toBeTruthy();
-    
+
     // Test input functionality
     await searchInput.fill('test search');
     const inputValue = await searchInput.inputValue();
     expect(inputValue).toBe('test search');
-    
+
     // Test select dropdown
     const selectElement = page.locator('[data-testid="ticket-type-filter"]');
     await expect(selectElement).toBeVisible();
-    
+
     const selectColors = await getComputedColor(page, '[data-testid="ticket-type-filter"]');
     expect(selectColors.color).toBeTruthy();
     expect(selectColors.backgroundColor).toBeTruthy();
@@ -286,7 +286,7 @@ test.describe('Dark Mode Admin Integration', () => {
     // Test button styling
     const searchButton = page.locator('[data-testid="search-button"]');
     await expect(searchButton).toBeVisible();
-    
+
     const buttonColors = await getComputedColor(page, '[data-testid="search-button"]');
     expect(buttonColors.backgroundColor).toBeTruthy();
   });
@@ -307,13 +307,13 @@ test.describe('Dark Mode Admin Integration', () => {
     const portalButton = page.locator('.portal-btn');
     if (await portalButton.count() > 0) {
       await portalButton.click();
-      
+
       await waitForConditions(page, {
         timeout: 10000,
         domReady: true,
         noLoadingSpinners: false
       });
-      
+
       // Check theme persistence
       themeAttribute = await page.getAttribute('html', 'data-theme');
       expect(themeAttribute).toBe('dark');
@@ -323,13 +323,13 @@ test.describe('Dark Mode Admin Integration', () => {
     const analyticsButton = page.locator('.analytics-btn');
     if (await analyticsButton.count() > 0) {
       await analyticsButton.click();
-      
+
       await waitForConditions(page, {
         timeout: 10000,
         domReady: true,
         noLoadingSpinners: false
       });
-      
+
       // Check theme persistence
       themeAttribute = await page.getAttribute('html', 'data-theme');
       expect(themeAttribute).toBe('dark');
@@ -339,7 +339,7 @@ test.describe('Dark Mode Admin Integration', () => {
   test('should maintain light theme for main site pages', async ({ page }) => {
     // Test main site pages to ensure they stay light
     const mainSitePages = ['/', '/about', '/tickets', '/gallery'];
-    
+
     for (const pagePath of mainSitePages) {
       await page.goto(pagePath);
       await waitForPageReady(page, {
@@ -348,10 +348,10 @@ test.describe('Dark Mode Admin Integration', () => {
       });
 
       const themeAttribute = await page.getAttribute('html', 'data-theme');
-      
+
       // Main site should not have dark theme or should be light/auto
       expect(themeAttribute).not.toBe('dark');
-      
+
       // Verify light colors are applied
       const bodyStyles = await page.evaluate(() => {
         const styles = window.getComputedStyle(document.documentElement);
@@ -364,11 +364,11 @@ test.describe('Dark Mode Admin Integration', () => {
       // In light mode, background should be light and text should be dark
       const bgValue = bodyStyles.background.trim();
       const textValue = bodyStyles.textPrimary.trim();
-      
+
       // Should be white or very light background
       expect(bgValue === '#ffffff' || bgValue === 'var(--color-white)' || !bgValue).toBe(true);
-      
-      // Should be black or very dark text  
+
+      // Should be black or very dark text
       expect(textValue === '#000000' || textValue === 'var(--color-black)' || !textValue).toBe(true);
     }
   });
@@ -395,7 +395,7 @@ test.describe('Dark Mode Admin Integration', () => {
       },
       {
         element: '.stat-card',
-        property: 'backgroundColor', 
+        property: 'backgroundColor',
         expectedDark: false // Should be lighter than header
       },
       {
@@ -412,7 +412,7 @@ test.describe('Dark Mode Admin Integration', () => {
 
     for (const colorTest of colorTests) {
       const element = page.locator(colorTest.element).first();
-      
+
       if (await element.count() > 0) {
         const color = await page.evaluate(({ sel, prop }) => {
           const el = document.querySelector(sel);
@@ -422,14 +422,14 @@ test.describe('Dark Mode Admin Integration', () => {
         }, { sel: colorTest.element, prop: colorTest.property });
 
         expect(color).toBeTruthy();
-        
+
         // Basic check that color values make sense for dark mode
         if (color && color.includes('rgb')) {
           const rgbMatch = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
           if (rgbMatch) {
             const [, r, g, b] = rgbMatch.map(Number);
             const brightness = (r + g + b) / 3;
-            
+
             if (colorTest.expectedDark) {
               expect(brightness).toBeLessThan(128); // Should be darker colors
             } else {
@@ -470,7 +470,7 @@ test.describe('Dark Mode Admin Integration', () => {
 
     // Check if table has data or empty state
     const tableContent = await tableContainer.textContent();
-    
+
     if (tableContent.includes('No registrations found')) {
       // Empty state should still be readable
       const emptyStateColors = await getComputedColor(page, '[data-testid="registrations-table"] p');
@@ -481,12 +481,12 @@ test.describe('Dark Mode Admin Integration', () => {
       // If we have actual table data, test readability
       const tableHeaders = page.locator('.data-table th');
       const headerCount = await tableHeaders.count();
-      
+
       if (headerCount > 0) {
         const headerColors = await getComputedColor(page, '.data-table th');
         expect(headerColors.color).toBeTruthy();
         expect(headerColors.backgroundColor).toBeTruthy();
-        
+
         // Test contrast ratio for table headers
         const headerContrast = await checkContrastRatio(page, headerColors.color, headerColors.backgroundColor);
         expect(headerContrast.meetsAA).toBe(true);
@@ -495,15 +495,15 @@ test.describe('Dark Mode Admin Integration', () => {
       // Check table cell readability
       const tableCells = page.locator('.data-table td');
       const cellCount = await tableCells.count();
-      
+
       if (cellCount > 0) {
         const cellColors = await getComputedColor(page, '.data-table td');
         expect(cellColors.color).toBeTruthy();
-        
+
         // Check button visibility in table
         const buttons = page.locator('.data-table button');
         const buttonCount = await buttons.count();
-        
+
         if (buttonCount > 0) {
           const buttonColors = await getComputedColor(page, '.data-table button');
           expect(buttonColors.backgroundColor).toBeTruthy();
@@ -523,7 +523,7 @@ test.describe('Dark Mode Admin Integration', () => {
 
     // Check if theme manager is available
     const hasThemeManager = await page.evaluate(() => {
-      return typeof window.setTheme === 'function' || 
+      return typeof window.setTheme === 'function' ||
              typeof window.toggleTheme === 'function';
     });
 

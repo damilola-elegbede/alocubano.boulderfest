@@ -17,17 +17,17 @@ test.describe('Mobile Registration Experience', () => {
 
   test('should handle mobile ticket purchase flow', async ({ page }) => {
     await page.goto(TICKETS_ROUTE);
-    
+
     // Mobile navigation should be accessible
     const mobileMenu = page.locator('.mobile-menu, .hamburger, .menu-toggle');
     if (await mobileMenu.count() > 0) {
       await expect(mobileMenu.first()).toBeVisible();
     }
-    
+
     // Ticket options should be mobile-optimized
     const ticketOptions = page.locator('.ticket-option, .ticket-card, .weekend, .saturday, .sunday');
     await expect(ticketOptions.first()).toBeVisible();
-    
+
     // Touch targets should be appropriately sized (minimum 44px)
     const buttons = page.locator('button');
     if (await buttons.count() > 0) {
@@ -41,12 +41,12 @@ test.describe('Mobile Registration Experience', () => {
   test('should optimize form inputs for mobile', async ({ page }) => {
     // Navigate to a form (either direct registration or after ticket purchase)
     await page.goto(TICKETS_ROUTE);
-    
+
     // Add ticket to trigger registration flow
     const addButton = page.locator('button:has-text("Weekend"), button:has-text("Add")').first();
     if (await addButton.count() > 0) {
       await addButton.click();
-      
+
       // Proceed to checkout/registration
       const checkoutBtn = page.locator('button:has-text("Checkout"), button:has-text("Continue"), .checkout-btn');
       if (await checkoutBtn.count() > 0) {
@@ -54,7 +54,7 @@ test.describe('Mobile Registration Experience', () => {
         await page.waitForLoadState('domcontentloaded');
       }
     }
-    
+
     // Check for mobile-optimized form inputs
     const emailInput = page.locator('input[type="email"], input[name="email"]');
     if (await emailInput.count() > 0) {
@@ -62,7 +62,7 @@ test.describe('Mobile Registration Experience', () => {
       const inputType = await emailInput.getAttribute('type');
       expect(inputType).toBe('email');
     }
-    
+
     const phoneInput = page.locator('input[type="tel"], input[name="phone"]');
     if (await phoneInput.count() > 0) {
       const inputType = await phoneInput.getAttribute('type');
@@ -78,12 +78,12 @@ test.describe('Mobile Registration Experience', () => {
     if (await addButton.count() > 0) {
       await addButton.click();
 
-      // Header cart button should be accessible on mobile
-      const headerCart = page.locator('.nav-cart-button');
+      // Header cart button should be accessible on mobile using correct selector
+      const headerCart = page.locator('.nav-cart-button, [data-testid="view-cart"]');
       await expect(headerCart).toBeVisible();
 
-      // Header cart badge should update
-      const cartBadge = page.locator('.nav-cart-badge');
+      // Header cart badge should update using correct selector
+      const cartBadge = page.locator('.nav-cart-badge, [data-testid="cart-counter"]');
       if (await cartBadge.count() > 0) {
         await expect(cartBadge).toBeVisible();
       }
@@ -105,16 +105,16 @@ test.describe('Mobile Registration Experience', () => {
 
   test('should provide mobile-friendly navigation', async ({ page }) => {
     await page.goto(HOME_ROUTE);
-    
+
     // Check for mobile navigation
     const navigation = page.locator('nav, .navigation, .header-nav');
     await expect(navigation).toBeVisible();
-    
+
     // Mobile menu should be accessible
     const mobileToggle = page.locator('.menu-toggle, .hamburger, .mobile-menu-btn');
     if (await mobileToggle.count() > 0) {
       await mobileToggle.click();
-      
+
       // Menu should slide in or become visible
       const mobileNav = page.locator('.mobile-nav, .slide-menu, nav[aria-expanded="true"]');
       if (await mobileNav.count() > 0) {
@@ -126,21 +126,21 @@ test.describe('Mobile Registration Experience', () => {
   test('should handle mobile form validation', async ({ page }) => {
     // Try to access a registration form
     await page.goto(TICKETS_ROUTE);
-    
+
     // Simulate form submission with invalid data
     const forms = page.locator('form');
     if (await forms.count() > 0) {
       const form = forms.first();
-      
+
       // Fill form with invalid email
       const emailInput = form.locator('input[type="email"]');
       if (await emailInput.count() > 0) {
         await emailInput.fill('invalid-email');
-        
+
         const submitButton = form.locator('button[type="submit"], input[type="submit"]');
         if (await submitButton.count() > 0) {
           await submitButton.click();
-          
+
           // Should show mobile-friendly validation messages
           const errorMessages = page.locator('.error, .invalid-feedback, .form-error');
           if (await errorMessages.count() > 0) {
@@ -153,20 +153,20 @@ test.describe('Mobile Registration Experience', () => {
 
   test('should optimize mobile scrolling and performance', async ({ page }) => {
     await page.goto(TICKETS_ROUTE);
-    
+
     // Test smooth scrolling behavior
     await page.evaluate(() => {
       window.scrollTo({ top: 300, behavior: 'smooth' });
     });
-    
+
     await page.waitForLoadState('domcontentloaded');
-    
+
     // Page should remain responsive during scroll
     const scrollPosition = await page.evaluate(() => window.scrollY);
     expect(scrollPosition).toBeGreaterThan(100);
-    
+
     // No horizontal scroll should be present
-    const hasHorizontalScroll = await page.evaluate(() => 
+    const hasHorizontalScroll = await page.evaluate(() =>
       document.body.scrollWidth > window.innerWidth
     );
     expect(hasHorizontalScroll).toBeFalsy();
@@ -174,17 +174,17 @@ test.describe('Mobile Registration Experience', () => {
 
   test('should handle mobile payment flow', async ({ page }) => {
     await page.goto(TICKETS_ROUTE);
-    
+
     // Add ticket and proceed to payment
     const addButton = page.locator('button:has-text("Weekend")').first();
     if (await addButton.count() > 0) {
       await addButton.click();
-      
+
       const checkoutBtn = page.locator('button:has-text("Checkout"), .checkout-btn');
       if (await checkoutBtn.count() > 0) {
         await checkoutBtn.click();
         await page.waitForLoadState('domcontentloaded');
-        
+
         // Should either show Stripe checkout or payment form
         const paymentElements = page.locator('.payment-form, iframe[src*="stripe"], #stripe-card-element');
         if (await paymentElements.count() > 0) {
@@ -196,31 +196,31 @@ test.describe('Mobile Registration Experience', () => {
 
   test('should provide mobile accessibility features', async ({ page }) => {
     await page.goto(HOME_ROUTE);
-    
+
     // Check for proper heading structure
     const h1 = page.locator('h1');
     await expect(h1).toBeVisible();
-    
+
     // Check for skip links
     const skipLink = page.locator('a[href="#main"], .skip-link');
     if (await skipLink.count() > 0) {
       await expect(skipLink.first()).toBeVisible();
     }
-    
+
     // Touch targets should be adequately spaced
     const interactiveElements = page.locator('button, a, input');
     if (await interactiveElements.count() >= 2) {
       const first = interactiveElements.first();
       const second = interactiveElements.nth(1);
-      
+
       const firstBox = await first.boundingBox();
       const secondBox = await second.boundingBox();
-      
+
       if (firstBox && secondBox) {
         // Elements shouldn't overlap and should have adequate spacing
         const verticalDistance = Math.abs(firstBox.y - secondBox.y);
         const horizontalDistance = Math.abs(firstBox.x - secondBox.x);
-        
+
         expect(verticalDistance > 8 || horizontalDistance > 8).toBeTruthy();
       }
     }
@@ -228,19 +228,19 @@ test.describe('Mobile Registration Experience', () => {
 
   test('should handle mobile keyboard interactions', async ({ page }) => {
     await page.goto(TICKETS_ROUTE);
-    
+
     // Focus on first interactive element
     const firstButton = page.locator('button').first();
     if (await firstButton.count() > 0) {
       await firstButton.focus();
-      
+
       // Tab navigation should work
       await page.keyboard.press('Tab');
       await page.keyboard.press('Tab');
-      
+
       // Enter should activate elements
       await page.keyboard.press('Enter');
-      
+
       // Should handle keyboard navigation gracefully
       await expect(page.locator('body')).toBeVisible();
     }
@@ -251,12 +251,12 @@ test.describe('Mobile Registration Experience', () => {
 
     await page.goto(TICKETS_ROUTE);
     await page.waitForLoadState('domcontentloaded');
-    
+
     const loadTime = Date.now() - startTime;
-    
+
     // Mobile page should load quickly
     expect(loadTime).toBeLessThan(5000);
-    
+
     // Critical content should be visible
     const mainContent = page.locator('main, .main-content, .ticket-options');
     await expect(mainContent.first()).toBeVisible();
@@ -265,17 +265,17 @@ test.describe('Mobile Registration Experience', () => {
   test('should handle mobile-specific error states', async ({ page }) => {
     // Test offline/network error handling
     await page.route('**/*', route => route.abort());
-    
+
     try {
       await page.goto(TICKETS_ROUTE);
     } catch (error) {
       // Should handle network errors gracefully
     }
-    
+
     // Reset network and test error recovery
     await page.unroute('**/*');
     await page.reload();
-    
+
     // Page should recover and load properly
     await expect(page.locator('body')).toBeVisible();
   });

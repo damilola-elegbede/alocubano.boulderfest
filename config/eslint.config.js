@@ -42,7 +42,7 @@ export default [
       "no-multiple-empty-lines": ["error", { max: 1 }],
       // Security rules - prevent dangerous JavaScript patterns
       "no-eval": "error",
-      "no-implied-eval": "error", 
+      "no-implied-eval": "error",
       "no-new-func": "error",
       "no-script-url": "error",
       // Switch case declarations rule
@@ -89,7 +89,7 @@ export default [
       "no-multiple-empty-lines": ["error", { max: 1 }],
       // Security rules - prevent dangerous JavaScript patterns
       "no-eval": "error",
-      "no-implied-eval": "error", 
+      "no-implied-eval": "error",
       "no-new-func": "error",
       "no-script-url": "error",
       // Switch case declarations rule - prevent variable leaking between cases

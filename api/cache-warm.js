@@ -8,37 +8,37 @@
 
 export default async function handler(request) {
   const { searchParams } = new URL(request.url);
-  const gallery = searchParams.get("gallery");
-  const type = searchParams.get("type") || "gallery";
-  const limit = parseInt(searchParams.get("limit")) || 10;
+  const gallery = searchParams.get('gallery');
+  const type = searchParams.get('type') || 'gallery';
+  const limit = parseInt(searchParams.get('limit')) || 10;
 
   console.log(
-    `[Edge] Cache warm request: gallery=${gallery}, type=${type}, limit=${limit}`,
+    `[Edge] Cache warm request: gallery=${gallery}, type=${type}, limit=${limit}`
   );
 
   try {
     switch (type) {
-      case "gallery":
-        return await warmGalleryCache(gallery, limit);
-      case "featured":
-        return await warmFeaturedCache(limit);
-      case "critical":
-        return await warmCriticalCache();
-      default:
-        return new Response("Invalid cache type", { status: 400 });
+    case 'gallery':
+      return await warmGalleryCache(gallery, limit);
+    case 'featured':
+      return await warmFeaturedCache(limit);
+    case 'critical':
+      return await warmCriticalCache();
+    default:
+      return new Response('Invalid cache type', { status: 400 });
     }
   } catch (error) {
-    console.error("[Edge] Cache warming failed:", error);
+    console.error('[Edge] Cache warming failed:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' }
     });
   }
 }
 
 async function warmGalleryCache(gallery, limit) {
   if (!gallery) {
-    return new Response("Gallery parameter required", { status: 400 });
+    return new Response('Gallery parameter required', { status: 400 });
   }
 
   const warmedItems = [];
@@ -51,8 +51,8 @@ async function warmGalleryCache(gallery, limit) {
     if (metadataResponse.ok) {
       warmedItems.push({
         url: metadataUrl,
-        status: "success",
-        type: "metadata",
+        status: 'success',
+        type: 'metadata'
       });
 
       const galleryData = await metadataResponse.json();
@@ -62,7 +62,7 @@ async function warmGalleryCache(gallery, limit) {
         const thumbnailPromises = galleryData.photos
           .slice(0, limit)
           .map((photo) =>
-            warmImage(photo.thumbnailUrl || photo.url, "thumbnail"),
+            warmImage(photo.thumbnailUrl || photo.url, 'thumbnail')
           );
 
         const thumbnailResults = await Promise.allSettled(thumbnailPromises);
@@ -71,27 +71,27 @@ async function warmGalleryCache(gallery, limit) {
             url:
               galleryData.photos[index].thumbnailUrl ||
               galleryData.photos[index].url,
-            status: result.status === "fulfilled" ? "success" : "failed",
-            type: "thumbnail",
-            error: result.status === "rejected" ? result.reason?.message : null,
-          })),
+            status: result.status === 'fulfilled' ? 'success' : 'failed',
+            type: 'thumbnail',
+            error: result.status === 'rejected' ? result.reason?.message : null
+          }))
         );
       }
     } else {
       warmedItems.push({
         url: metadataUrl,
-        status: "failed",
-        type: "metadata",
-        error: `HTTP ${metadataResponse.status}`,
+        status: 'failed',
+        type: 'metadata',
+        error: `HTTP ${metadataResponse.status}`
       });
     }
   } catch (error) {
-    console.error("[Edge] Gallery cache warming error:", error);
+    console.error('[Edge] Gallery cache warming error:', error);
     warmedItems.push({
       url: `gallery/${gallery}`,
-      status: "failed",
-      type: "gallery",
-      error: error.message,
+      status: 'failed',
+      type: 'gallery',
+      error: error.message
     });
   }
 
@@ -99,18 +99,18 @@ async function warmGalleryCache(gallery, limit) {
     JSON.stringify({
       success: true,
       gallery,
-      itemsWarmed: warmedItems.filter((item) => item.status === "success")
+      itemsWarmed: warmedItems.filter((item) => item.status === 'success')
         .length,
       totalItems: warmedItems.length,
-      details: warmedItems,
+      details: warmedItems
     }),
     {
       status: 200,
       headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "public, max-age=300", // Cache for 5 minutes
-      },
-    },
+        'Content-Type': 'application/json',
+        'Cache-Control': 'public, max-age=300' // Cache for 5 minutes
+      }
+    }
   );
 }
 
@@ -125,8 +125,8 @@ async function warmFeaturedCache(limit) {
     if (featuredResponse.ok) {
       warmedItems.push({
         url: featuredUrl,
-        status: "success",
-        type: "featured-metadata",
+        status: 'success',
+        type: 'featured-metadata'
       });
 
       const featuredData = await featuredResponse.json();
@@ -135,71 +135,71 @@ async function warmFeaturedCache(limit) {
       if (featuredData.items && featuredData.items.length > 0) {
         const imagePromises = featuredData.items
           .slice(0, limit)
-          .map((photo) => warmImage(photo.url, "featured"));
+          .map((photo) => warmImage(photo.url, 'featured'));
 
         const imageResults = await Promise.allSettled(imagePromises);
         warmedItems.push(
           ...imageResults.map((result, index) => ({
             url: featuredData.items[index].url,
-            status: result.status === "fulfilled" ? "success" : "failed",
-            type: "featured-image",
-            error: result.status === "rejected" ? result.reason?.message : null,
-          })),
+            status: result.status === 'fulfilled' ? 'success' : 'failed',
+            type: 'featured-image',
+            error: result.status === 'rejected' ? result.reason?.message : null
+          }))
         );
       }
     } else {
       warmedItems.push({
         url: featuredUrl,
-        status: "failed",
-        type: "featured-metadata",
-        error: `HTTP ${featuredResponse.status}`,
+        status: 'failed',
+        type: 'featured-metadata',
+        error: `HTTP ${featuredResponse.status}`
       });
     }
   } catch (error) {
-    console.error("[Edge] Featured cache warming error:", error);
+    console.error('[Edge] Featured cache warming error:', error);
     warmedItems.push({
-      url: "featured-photos",
-      status: "failed",
-      type: "featured",
-      error: error.message,
+      url: 'featured-photos',
+      status: 'failed',
+      type: 'featured',
+      error: error.message
     });
   }
 
   return new Response(
     JSON.stringify({
       success: true,
-      type: "featured",
-      itemsWarmed: warmedItems.filter((item) => item.status === "success")
+      type: 'featured',
+      itemsWarmed: warmedItems.filter((item) => item.status === 'success')
         .length,
       totalItems: warmedItems.length,
-      details: warmedItems,
+      details: warmedItems
     }),
     {
       status: 200,
       headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "public, max-age=300",
-      },
-    },
+        'Content-Type': 'application/json',
+        'Cache-Control': 'public, max-age=300'
+      }
+    }
   );
 }
 
 async function warmCriticalCache() {
   const criticalResources = [
-    "/css/base.css",
-    "/css/components.css",
-    "/css/typography.css",
-    "/js/main.js",
-    "/js/navigation.js",
-    "/images/logo.png",
-    "/images/logo-dark.png",
-    "/images/hero-default.jpg",
+    '/css/base.css',
+    '/css/components.css',
+    '/css/typography.css',
+    '/js/main.js',
+    '/js/navigation.js',
+    '/images/logo.png',
+    '/images/logo-dark.png',
+    '/images/hero-default.jpg'
   ];
 
   const warmedItems = [];
 
   const warmPromises = criticalResources.map((resource) =>
-    warmResource(resource, "critical"),
+    warmResource(resource, 'critical')
   );
 
   const results = await Promise.allSettled(warmPromises);
@@ -207,77 +207,77 @@ async function warmCriticalCache() {
   results.forEach((result, index) => {
     warmedItems.push({
       url: criticalResources[index],
-      status: result.status === "fulfilled" ? "success" : "failed",
-      type: "critical",
-      error: result.status === "rejected" ? result.reason?.message : null,
+      status: result.status === 'fulfilled' ? 'success' : 'failed',
+      type: 'critical',
+      error: result.status === 'rejected' ? result.reason?.message : null
     });
   });
 
   return new Response(
     JSON.stringify({
       success: true,
-      type: "critical",
-      itemsWarmed: warmedItems.filter((item) => item.status === "success")
+      type: 'critical',
+      itemsWarmed: warmedItems.filter((item) => item.status === 'success')
         .length,
       totalItems: warmedItems.length,
-      details: warmedItems,
+      details: warmedItems
     }),
     {
       status: 200,
       headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "public, max-age=300",
-      },
-    },
+        'Content-Type': 'application/json',
+        'Cache-Control': 'public, max-age=300'
+      }
+    }
   );
 }
 
 async function warmImage(imageUrl, type) {
   if (!imageUrl) {
-    throw new Error("Image URL is required");
+    throw new Error('Image URL is required');
   }
 
   // Handle relative URLs
-  const fullUrl = imageUrl.startsWith("http")
+  const fullUrl = imageUrl.startsWith('http')
     ? imageUrl
     : `${getBaseUrl()}${imageUrl}`;
 
   const response = await fetch(fullUrl, {
-    method: "HEAD", // Use HEAD to avoid downloading full image
+    method: 'HEAD', // Use HEAD to avoid downloading full image
     headers: {
-      "User-Agent": "A-Lo-Cubano-Cache-Warmer/1.0",
-    },
+      'User-Agent': 'A-Lo-Cubano-Cache-Warmer/1.0'
+    }
   });
 
   if (!response.ok) {
     throw new Error(`Failed to warm image: HTTP ${response.status}`);
   }
 
-  return { url: fullUrl, type, status: "success" };
+  return { url: fullUrl, type, status: 'success' };
 }
 
 async function warmResource(resourceUrl, type) {
   if (!resourceUrl) {
-    throw new Error("Resource URL is required");
+    throw new Error('Resource URL is required');
   }
 
   // Handle relative URLs
-  const fullUrl = resourceUrl.startsWith("http")
+  const fullUrl = resourceUrl.startsWith('http')
     ? resourceUrl
     : `${getBaseUrl()}${resourceUrl}`;
 
   const response = await fetch(fullUrl, {
-    method: "HEAD",
+    method: 'HEAD',
     headers: {
-      "User-Agent": "A-Lo-Cubano-Cache-Warmer/1.0",
-    },
+      'User-Agent': 'A-Lo-Cubano-Cache-Warmer/1.0'
+    }
   });
 
   if (!response.ok) {
     throw new Error(`Failed to warm resource: HTTP ${response.status}`);
   }
 
-  return { url: fullUrl, type, status: "success" };
+  return { url: fullUrl, type, status: 'success' };
 }
 
 function getBaseUrl() {
@@ -285,5 +285,5 @@ function getBaseUrl() {
   // For development, we'll use localhost
   return process.env.VERCEL_URL
     ? `https://${process.env.VERCEL_URL}`
-    : "http://localhost:8000";
+    : 'http://localhost:8000';
 }

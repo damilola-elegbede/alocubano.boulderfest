@@ -11,7 +11,7 @@ async function testMobileCheckin() {
       // Get check-in statistics
       console.log("1. Current check-in statistics:");
       const stats = await db.execute(`
-        SELECT 
+        SELECT
           COUNT(*) as total_tickets,
           COUNT(CASE WHEN checked_in_at IS NOT NULL THEN 1 END) as checked_in,
           COUNT(CASE WHEN date(checked_in_at) = date('now') THEN 1 END) as today,

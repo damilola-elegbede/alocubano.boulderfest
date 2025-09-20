@@ -28,22 +28,22 @@ if (!process.env.VERCEL && !process.env.CI) {
 function validateDatabaseSafety() {
   // Use standard Turso environment variables
   const dbUrl = process.env.TURSO_DATABASE_URL;
-  const isE2E = process.env.E2E_TEST_MODE === 'true' || 
+  const isE2E = process.env.E2E_TEST_MODE === 'true' ||
                 process.env.ENVIRONMENT === 'e2e-test' ||
                 process.env.NODE_ENV === 'test';
-  
+
   if (!isE2E) {
     console.error('❌ Safety check failed: Not in E2E test mode');
     console.error('   Set E2E_TEST_MODE=true or ENVIRONMENT=e2e-test');
     process.exit(1);
   }
-  
+
   // In E2E mode, warn if database URL doesn't look like a test database
   if (dbUrl && !dbUrl.includes('test') && !dbUrl.includes('staging')) {
     console.warn('⚠️  Warning: Database URL does not contain "test" or "staging"');
     console.warn('   Please verify you are using the correct E2E test database');
   }
-  
+
   console.log('✅ E2E mode safety checks passed');
 }
 
@@ -52,13 +52,13 @@ function createDatabaseClient() {
   // Use standard Turso environment variables
   const authToken = process.env.TURSO_AUTH_TOKEN;
   const databaseUrl = process.env.TURSO_DATABASE_URL;
-  
+
   if (!authToken || !databaseUrl) {
     console.error('❌ Missing database credentials');
     console.error('   Required: TURSO_AUTH_TOKEN, TURSO_DATABASE_URL');
     process.exit(1);
   }
-  
+
   try {
     const client = createClient({
       url: databaseUrl,
@@ -177,20 +177,20 @@ async function createCoreTables(client) {
       `
     }
   ];
-  
+
   console.log('\n📦 Creating core tables...');
-  
+
   for (const table of tables) {
     try {
       await client.execute(table.sql);
       console.log(`   ✅ Table "${table.name}" created/verified`);
-      
+
       // Add missing columns to existing tables
       if (table.name === 'email_subscribers') {
         // Check if source column exists
         try {
           const hasSourceColumn = await columnExists(client, 'email_subscribers', 'source');
-          
+
           if (!hasSourceColumn) {
             // Add source column to existing table
             await client.execute(`ALTER TABLE email_subscribers ADD COLUMN source TEXT DEFAULT 'website'`);
@@ -199,14 +199,14 @@ async function createCoreTables(client) {
         } catch (alterError) {
           console.log(`   ⚠️  ALTER TABLE warning: ${alterError.message}`);
           // Check if error is due to duplicate column (acceptable)
-          if (alterError.message.includes('duplicate column') || 
+          if (alterError.message.includes('duplicate column') ||
               alterError.message.includes('already exists')) {
             console.log(`   ℹ️  Column "source" already exists, continuing...`);
           } else {
             console.error(`   ❌ Unexpected ALTER TABLE error: ${alterError.message}`);
             return false;
           }
-          
+
           // Verify the column exists after error
           try {
             const columnExistsAfterError = await columnExists(client, 'email_subscribers', 'source');
@@ -224,51 +224,51 @@ async function createCoreTables(client) {
       return false;
     }
   }
-  
+
   return true;
 }
 
 // Validate database schema
 async function validateSchema(client) {
   console.log('\n🔍 Validating database schema...');
-  
+
   try {
     // Check table existence
     const tablesResult = await client.execute(`
-      SELECT name FROM sqlite_master 
-      WHERE type='table' 
+      SELECT name FROM sqlite_master
+      WHERE type='table'
       AND name IN ('migrations', 'registrations', 'email_subscribers', 'email_events', 'email_audit_log')
       ORDER BY name
     `);
-    
+
     const expectedTables = ['email_subscribers', 'email_events', 'email_audit_log', 'migrations', 'registrations'];
     const actualTables = tablesResult.rows.map(row => row.name);
-    
+
     const missingTables = expectedTables.filter(t => !actualTables.includes(t));
     if (missingTables.length > 0) {
       console.error(`   ❌ Missing tables: ${missingTables.join(', ')}`);
       return false;
     }
-    
+
     console.log(`   ✅ All required tables exist: ${actualTables.join(', ')}`);
-    
+
     // Validate registrations table structure
     const columnsResult = await client.execute(`
       PRAGMA table_info(registrations)
     `);
-    
+
     const requiredColumns = ['ticket_id', 'email', 'first_name', 'last_name', 'ticket_type'];
     const actualColumns = columnsResult.rows.map(row => row.name);
     const missingColumns = requiredColumns.filter(c => !actualColumns.includes(c));
-    
+
     if (missingColumns.length > 0) {
       console.error(`   ❌ Missing columns in registrations: ${missingColumns.join(', ')}`);
       return false;
     }
-    
+
     console.log(`   ✅ Registrations table has all required columns`);
     return true;
-    
+
   } catch (error) {
     console.error('   ❌ Schema validation failed:', error.message);
     return false;
@@ -278,16 +278,16 @@ async function validateSchema(client) {
 // Insert test data
 async function insertTestData(client) {
   console.log('\n🔧 Inserting test data...');
-  
+
   try {
     // Clear existing test data
     await client.execute("DELETE FROM registrations WHERE email LIKE '%@e2e-test.%'");
     await client.execute("DELETE FROM email_subscribers WHERE email LIKE '%@e2e-test.%'");
-    
+
     // Insert test registration
     await client.execute(`
       INSERT INTO registrations (
-        ticket_id, email, first_name, last_name, 
+        ticket_id, email, first_name, last_name,
         ticket_type, stripe_session_id, qr_code, status
       ) VALUES (
         'E2E-FAKE-001', 'fake-user@e2e-test.invalid', 'Fake', 'TestUser',
@@ -295,25 +295,25 @@ async function insertTestData(client) {
       )
     `);
     console.log('   ✅ Test registration created');
-    
+
     // Insert test subscriber
     await client.execute(`
       INSERT INTO email_subscribers (
-        email, first_name, last_name, status, consent_source, 
+        email, first_name, last_name, status, consent_source,
         list_ids, attributes, brevo_contact_id
       ) VALUES (
-        'fake-subscriber@e2e-test.invalid', 'Test', 'Subscriber', 'active', 
+        'fake-subscriber@e2e-test.invalid', 'Test', 'Subscriber', 'active',
         'e2e-test', '[]', '{}', NULL
       )
     `);
     console.log('   ✅ Test subscriber created');
-    
+
     // Verify data insertion
     const regCount = await client.execute("SELECT COUNT(*) as count FROM registrations WHERE email LIKE '%@e2e-test.%'");
     const subCount = await client.execute("SELECT COUNT(*) as count FROM email_subscribers WHERE email LIKE '%@e2e-test.%'");
-    
+
     console.log(`   ✅ Test data verified: ${regCount.rows[0].count} registrations, ${subCount.rows[0].count} subscribers`);
-    
+
     return true;
   } catch (error) {
     console.error('   ❌ Failed to insert test data:', error.message);
@@ -324,7 +324,7 @@ async function insertTestData(client) {
 // Clean up database
 async function cleanupDatabase(client, fullReset = false) {
   console.log('\n🧹 Cleaning up database...');
-  
+
   try {
     if (fullReset) {
       // Drop all tables for full reset (order matters due to foreign keys)
@@ -352,23 +352,23 @@ async function cleanupDatabase(client, fullReset = false) {
 // Main setup function
 async function setupE2EDatabase() {
   console.log('🚀 E2E Database Setup Starting...\n');
-  
+
   // Step 1: Validate safety checks
   validateDatabaseSafety();
-  
+
   // Step 2: Create database client
   const client = createDatabaseClient();
-  
+
   // Step 3: Test connection
   const connectionOk = await testConnection(client);
   if (!connectionOk) {
     process.exit(1);
   }
-  
+
   // Step 4: Parse command line arguments
   const args = process.argv.slice(2);
   const command = args[0] || 'setup';
-  
+
   switch (command) {
     case 'setup': {
       // Create tables and insert test data
@@ -376,21 +376,21 @@ async function setupE2EDatabase() {
       if (!tablesCreated) {
         process.exit(1);
       }
-      
+
       const schemaValid = await validateSchema(client);
       if (!schemaValid) {
         process.exit(1);
       }
-      
+
       const dataInserted = await insertTestData(client);
       if (!dataInserted) {
         process.exit(1);
       }
-      
+
       console.log('\n✅ E2E database setup completed successfully!');
       break;
     }
-      
+
     case 'validate': {
       // Just validate existing schema
       const isValid = await validateSchema(client);
@@ -402,7 +402,7 @@ async function setupE2EDatabase() {
       }
       break;
     }
-      
+
     case 'clean': {
       // Clean test data only
       const cleaned = await cleanupDatabase(client, false);
@@ -413,28 +413,28 @@ async function setupE2EDatabase() {
       }
       break;
     }
-      
+
     case 'reset': {
       // Full reset - drop and recreate everything
       const reset = await cleanupDatabase(client, true);
       if (!reset) {
         process.exit(1);
       }
-      
+
       const recreated = await createCoreTables(client);
       if (!recreated) {
         process.exit(1);
       }
-      
+
       const reinserted = await insertTestData(client);
       if (!reinserted) {
         process.exit(1);
       }
-      
+
       console.log('\n✅ Database fully reset successfully!');
       break;
     }
-      
+
     default:
       console.log(`
 Usage: node setup-e2e-database.js [command]
@@ -447,7 +447,7 @@ Commands:
       `);
       break;
   }
-  
+
   // Close connection with error handling
   try {
     client.close();

@@ -1,9 +1,9 @@
 /**
  * Comprehensive Test Flakiness Detection and Reliability System
- * 
+ *
  * Provides statistical analysis, retry logic, performance tracking,
  * and environment consistency validation for E2E tests
- * 
+ *
  * Features:
  * - Statistical flaky test detection (<5% failure rate threshold)
  * - Exponential backoff retry strategies
@@ -52,7 +52,7 @@ class FlakinessDetector {
     this.concurrentExecutions = new Map();
     this.performanceBaselines = new Map();
     this.retryStrategies = new Map();
-    
+
     // Resource monitoring state
     this.resourceMonitoringInterval = null;
     this.isResourceMonitoringActive = false;
@@ -61,7 +61,7 @@ class FlakinessDetector {
       memory: [],
       timestamps: []
     };
-    
+
     this.initializeDataDirectory();
   }
 
@@ -71,7 +71,7 @@ class FlakinessDetector {
   async initializeDataDirectory() {
     try {
       await fs.mkdir(this.dataDir, { recursive: true });
-      
+
       // Initialize data files if they don't exist
       const files = [
         { path: this.historicalDataFile, data: { tests: {}, metadata: { created: Date.now(), version: '1.0' } } },
@@ -97,7 +97,7 @@ class FlakinessDetector {
   async recordTestExecution(testInfo, result) {
     const timestamp = Date.now();
     const testKey = `${testInfo.file}::${testInfo.title}`;
-    
+
     try {
       const execution = {
         timestamp,
@@ -130,7 +130,7 @@ class FlakinessDetector {
 
       // Load historical data
       const history = await this.loadHistoricalData();
-      
+
       if (!history.tests[testKey]) {
         history.tests[testKey] = {
           executions: [],
@@ -147,10 +147,10 @@ class FlakinessDetector {
 
       // Update statistics
       await this.updateTestStatistics(testKey, history.tests[testKey]);
-      
+
       // Save updated history
       await this.saveHistoricalData(history);
-      
+
       // Analyze flakiness and performance
       await this.analyzeTestReliability(testKey, history.tests[testKey]);
 
@@ -186,7 +186,7 @@ class FlakinessDetector {
   async updateTestStatistics(testKey, testData) {
     const { executions, statistics } = testData;
     const recent = executions.slice(0, Math.min(50, executions.length)); // Last 50 executions
-    
+
     // Basic counts
     statistics.totalRuns = recent.length;
     statistics.successCount = recent.filter(e => e.status === 'passed').length;
@@ -198,7 +198,7 @@ class FlakinessDetector {
     const durations = recent.map(e => e.duration).sort((a, b) => a - b);
     statistics.averageDuration = durations.reduce((sum, d) => sum + d, 0) / durations.length;
     statistics.medianDuration = durations[Math.floor(durations.length / 2)] || 0;
-    
+
     // Standard deviation
     const variance = durations.reduce((sum, d) => sum + Math.pow(d - statistics.averageDuration, 2), 0) / durations.length;
     statistics.standardDeviation = Math.sqrt(variance);
@@ -210,7 +210,7 @@ class FlakinessDetector {
 
     // Performance score (based on consistency and regression detection)
     statistics.performanceScore = await this.calculatePerformanceScore(testKey, durations);
-    
+
     statistics.lastUpdated = Date.now();
   }
 
@@ -237,7 +237,7 @@ class FlakinessDetector {
     if (baseline) {
       const currentMedian = durations[Math.floor(durations.length / 2)];
       const regressionRatio = currentMedian / baseline.median;
-      
+
       if (regressionRatio > (1 + CONFIG.PERFORMANCE_REGRESSION_THRESHOLD)) {
         // Performance regression detected
         return Math.max(0.1, 1 - (regressionRatio - 1));
@@ -249,7 +249,7 @@ class FlakinessDetector {
     const variance = durations.reduce((sum, d) => sum + Math.pow(d - mean, 2), 0) / durations.length;
     const standardDeviation = Math.sqrt(variance);
     const coefficientOfVariation = standardDeviation / mean;
-    
+
     // Score decreases as variance increases
     return Math.max(0.1, 1 - Math.min(coefficientOfVariation, 0.9));
   }
@@ -259,7 +259,7 @@ class FlakinessDetector {
    */
   async analyzeTestReliability(testKey, testData) {
     const { statistics, executions } = testData;
-    
+
     if (statistics.totalRuns < CONFIG.STABILITY_SAMPLE_SIZE) {
       return; // Not enough data for reliable analysis
     }
@@ -267,7 +267,7 @@ class FlakinessDetector {
     // Detect flaky tests
     const failureRate = statistics.failureCount / statistics.totalRuns;
     const isFlaky = failureRate > 0 && failureRate <= CONFIG.FLAKINESS_THRESHOLD;
-    
+
     if (isFlaky) {
       await this.flagFlakyTest(testKey, {
         failureRate,
@@ -279,11 +279,11 @@ class FlakinessDetector {
     // Detect performance regression
     const recentDurations = executions.slice(0, 10).map(e => e.duration);
     const olderDurations = executions.slice(10, 20).map(e => e.duration);
-    
+
     if (recentDurations.length >= 5 && olderDurations.length >= 5) {
       const recentMedian = [...recentDurations].sort((a, b) => a - b)[Math.floor(recentDurations.length / 2)];
       const olderMedian = [...olderDurations].sort((a, b) => a - b)[Math.floor(olderDurations.length / 2)];
-      
+
       if (recentMedian > olderMedian * (1 + CONFIG.PERFORMANCE_REGRESSION_THRESHOLD)) {
         await this.flagPerformanceRegression(testKey, {
           recentMedian,
@@ -299,13 +299,13 @@ class FlakinessDetector {
    */
   analyzeFailurePattern(executions) {
     const failures = executions.filter(e => e.status === 'failed');
-    
+
     if (failures.length === 0) return { type: 'none' };
 
     // Check for timing-related failures
     const timingKeywords = ['timeout', 'wait', 'timing', 'race', 'async'];
-    const timingFailures = failures.filter(f => 
-      f.error && timingKeywords.some(keyword => 
+    const timingFailures = failures.filter(f =>
+      f.error && timingKeywords.some(keyword =>
         f.error.message?.toLowerCase().includes(keyword)
       )
     );
@@ -333,7 +333,7 @@ class FlakinessDetector {
       { name: 'dom', count: domFailures.length }
     ];
 
-    const primaryType = types.reduce((max, current) => 
+    const primaryType = types.reduce((max, current) =>
       current.count > max.count ? current : max
     );
 
@@ -354,7 +354,7 @@ class FlakinessDetector {
    */
   extractCommonErrors(failures) {
     const errorCounts = {};
-    
+
     failures.forEach(failure => {
       if (failure.error?.message) {
         // Normalize error message (remove dynamic parts)
@@ -380,7 +380,7 @@ class FlakinessDetector {
   async flagFlakyTest(testKey, analysis) {
     try {
       const metrics = await this.loadMetrics();
-      
+
       if (!metrics.flakiness[testKey]) {
         metrics.flakiness[testKey] = {
           firstDetected: Date.now(),
@@ -399,12 +399,12 @@ class FlakinessDetector {
         .slice(-10);
 
       await this.saveMetrics(metrics);
-      
+
       console.warn(`🔄 Flaky test detected: ${testKey}`);
       console.warn(`   Failure rate: ${(analysis.failureRate * 100).toFixed(2)}%`);
       console.warn(`   Pattern: ${analysis.pattern.type}`);
       console.warn(`   Recommended action: ${this.getRecommendedAction(analysis)}`);
-      
+
     } catch (error) {
       console.error('❌ Failed to flag flaky test:', error);
     }
@@ -416,7 +416,7 @@ class FlakinessDetector {
   async flagPerformanceRegression(testKey, analysis) {
     try {
       const metrics = await this.loadMetrics();
-      
+
       if (!metrics.performance[testKey]) {
         metrics.performance[testKey] = {
           regressions: []
@@ -434,11 +434,11 @@ class FlakinessDetector {
         .slice(-5);
 
       await this.saveMetrics(metrics);
-      
+
       console.warn(`📈 Performance regression detected: ${testKey}`);
       console.warn(`   Increase: ${analysis.regressionPercentage.toFixed(1)}%`);
       console.warn(`   Recent: ${analysis.recentMedian}ms, Previous: ${analysis.olderMedian}ms`);
-      
+
     } catch (error) {
       console.error('❌ Failed to flag performance regression:', error);
     }
@@ -449,11 +449,11 @@ class FlakinessDetector {
    */
   getRecommendedAction(analysis) {
     const { pattern, failureRate } = analysis;
-    
+
     if (failureRate > 0.1) {
       return 'immediate_investigation';
     }
-    
+
     switch (pattern.type) {
       case 'timing':
         return 'increase_timeouts_or_add_waits';
@@ -473,13 +473,13 @@ class FlakinessDetector {
     const maxAttempts = options.maxAttempts || CONFIG.MAX_RETRY_ATTEMPTS;
     const baseDelay = options.baseDelay || CONFIG.RETRY_BASE_DELAY;
     const maxDelay = options.maxDelay || CONFIG.RETRY_MAX_DELAY;
-    
+
     let attempt = 0;
     let lastError;
 
     // Get custom retry strategy for this test if available
     const customStrategy = this.retryStrategies.get(testKey);
-    
+
     while (attempt < maxAttempts) {
       try {
         const startTime = Date.now();
@@ -493,19 +493,19 @@ class FlakinessDetector {
         );
 
         return result;
-        
+
       } catch (error) {
         lastError = error;
         attempt++;
-        
+
         if (attempt >= maxAttempts) {
           // Record failed execution
           await this.recordTestExecution(
             { file: testKey.split('::')[0], title: testKey.split('::')[1] },
-            { 
-              status: 'failed', 
-              duration: 0, 
-              retry: attempt - 1, 
+            {
+              status: 'failed',
+              duration: 0,
+              retry: attempt - 1,
               error: {
                 message: error.message,
                 stack: error.stack
@@ -517,7 +517,7 @@ class FlakinessDetector {
 
         // Calculate delay with exponential backoff
         let delay = Math.min(baseDelay * Math.pow(2, attempt - 1), maxDelay);
-        
+
         // Apply custom strategy if available
         if (customStrategy) {
           delay = customStrategy.calculateDelay(attempt, error, delay);
@@ -553,17 +553,17 @@ class FlakinessDetector {
   async validateEnvironmentConsistency() {
     const snapshot = await this.captureEnvironmentSnapshot();
     const environments = await this.loadEnvironmentSnapshots();
-    
+
     if (environments.baselines.primary) {
       const baseline = environments.baselines.primary;
       const inconsistencies = this.compareEnvironments(baseline, snapshot);
-      
+
       if (inconsistencies.length > 0) {
         console.warn('⚠️  Environment inconsistencies detected:');
         inconsistencies.forEach(issue => {
           console.warn(`   ${issue.category}: ${issue.description}`);
         });
-        
+
         // Store inconsistencies
         environments.snapshots.unshift({
           timestamp: Date.now(),
@@ -571,9 +571,9 @@ class FlakinessDetector {
           inconsistencies,
           type: 'validation'
         });
-        
+
         await this.saveEnvironmentSnapshots(environments);
-        
+
         return {
           consistent: false,
           inconsistencies
@@ -643,12 +643,12 @@ class FlakinessDetector {
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), CONFIG.ENVIRONMENT_CHECK_TIMEOUT);
-      
+
       await fetch('https://httpbin.org/status/200', {
         signal: controller.signal,
         method: 'HEAD'
       });
-      
+
       clearTimeout(timeout);
       return true;
     } catch (error) {
@@ -760,7 +760,7 @@ class FlakinessDetector {
     try {
       const history = await this.loadHistoricalData();
       const metrics = await this.loadMetrics();
-      
+
       const dashboard = {
         timestamp: Date.now(),
         summary: {
@@ -832,21 +832,21 @@ class FlakinessDetector {
 
     for (const [testKey, testData] of Object.entries(tests)) {
       const executions = testData.executions;
-      
+
       // Calculate daily reliability for last 7 days
       const dailyReliability = [];
       for (let i = 6; i >= 0; i--) {
         const dayStart = now - (i * dayMs);
         const dayEnd = dayStart + dayMs;
-        
-        const dayExecutions = executions.filter(e => 
+
+        const dayExecutions = executions.filter(e =>
           e.timestamp >= dayStart && e.timestamp < dayEnd
         );
-        
-        const reliability = dayExecutions.length > 0 
+
+        const reliability = dayExecutions.length > 0
           ? dayExecutions.filter(e => e.status === 'passed').length / dayExecutions.length
           : null;
-        
+
         dailyReliability.push({
           date: new Date(dayStart).toISOString().split('T')[0],
           reliability,
@@ -868,7 +868,7 @@ class FlakinessDetector {
 
     for (const [testKey, testData] of Object.entries(tests)) {
       const executions = testData.executions.slice(0, 30); // Last 30 executions
-      
+
       if (executions.length < 5) {
         trends[testKey] = { insufficient_data: true };
         continue;
@@ -907,7 +907,7 @@ class FlakinessDetector {
 
     for (const [testKey, data] of Object.entries(flakinessData)) {
       const detections = data.detections || [];
-      
+
       trends[testKey] = {
         firstDetected: data.firstDetected,
         recentDetections: detections.length,
@@ -958,7 +958,7 @@ class FlakinessDetector {
     }
 
     // General stability recommendations
-    const unstableTests = Object.entries(tests).filter(([, data]) => 
+    const unstableTests = Object.entries(tests).filter(([, data]) =>
       data.statistics.reliabilityScore < 0.9
     );
 
@@ -993,9 +993,9 @@ class FlakinessDetector {
 
     const reliabilityScore = statistics.reliabilityScore || 0;
     const performanceScore = statistics.performanceScore || 1;
-    
+
     // Stability based on consistency (lower standard deviation = higher stability)
-    const stabilityScore = statistics.averageDuration > 0 
+    const stabilityScore = statistics.averageDuration > 0
       ? Math.max(0, 1 - (statistics.standardDeviation / statistics.averageDuration))
       : 1;
 
@@ -1011,7 +1011,7 @@ class FlakinessDetector {
    */
   async cleanupOldData() {
     const cutoffTime = Date.now() - (CONFIG.DATA_RETENTION_DAYS * 24 * 60 * 60 * 1000);
-    
+
     try {
       const history = await this.loadHistoricalData();
       let cleanedCount = 0;
@@ -1097,11 +1097,11 @@ class FlakinessDetector {
     this.isResourceMonitoringActive = true;
     this.resourceMonitoringInterval = setInterval(() => {
       const timestamp = Date.now();
-      
+
       try {
         const memoryUsage = process.memoryUsage();
         const cpuUsage = process.cpuUsage();
-        
+
         this.resourceData.memory.push({
           timestamp,
           heapUsed: memoryUsage.heapUsed,
@@ -1109,15 +1109,15 @@ class FlakinessDetector {
           external: memoryUsage.external,
           rss: memoryUsage.rss
         });
-        
+
         this.resourceData.cpu.push({
           timestamp,
           user: cpuUsage.user,
           system: cpuUsage.system
         });
-        
+
         this.resourceData.timestamps.push(timestamp);
-        
+
         // Limit memory usage by keeping only recent data (last 100 entries)
         if (this.resourceData.memory.length > 100) {
           this.resourceData.memory = this.resourceData.memory.slice(-100);
@@ -1151,7 +1151,7 @@ class FlakinessDetector {
    */
   getResourceStats() {
     const { memory, cpu } = this.resourceData;
-    
+
     if (memory.length === 0) {
       return { memory: null, cpu: null, monitoring: false };
     }
@@ -1217,15 +1217,15 @@ export async function executeTestWithMonitoring(testFunction, testInfo, options 
   const detector = getFlakinessDetector();
   const testKey = `${testInfo.file}::${testInfo.title}`;
   const executionId = `${testKey}::${Date.now()}::${Math.random().toString(36).substring(2, 11)}`;
-  
+
   // Start resource monitoring if enabled
   if (options.enableResourceMonitoring) {
     detector.startResourceMonitoring();
   }
-  
+
   // Track concurrent execution
   await detector.trackConcurrentExecution(testKey, executionId);
-  
+
   try {
     // Validate environment consistency if requested
     if (options.validateEnvironment) {
@@ -1237,12 +1237,12 @@ export async function executeTestWithMonitoring(testFunction, testInfo, options 
 
     // Execute with retry logic
     const result = await detector.executeWithRetry(testFunction, testKey, options.retry);
-    
+
     // Complete tracking
     await detector.completeConcurrentExecution(executionId, { status: 'passed' });
-    
+
     return result;
-    
+
   } catch (error) {
     await detector.completeConcurrentExecution(executionId, { status: 'failed', error });
     throw error;

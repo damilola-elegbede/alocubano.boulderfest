@@ -473,16 +473,6 @@
 
     // Sequential loading algorithm for category-aware pagination
     function getNextPageItems(allCategories, pageSize = 20) {
-        console.log('🔍 DEBUG - getNextPageItems called:', {
-            pageSize,
-            workshopOffset: state.workshopOffset,
-            workshopTotal: state.workshopTotal,
-            workshopsAvailable: allCategories.workshops
-                ? allCategories.workshops.length
-                : 0,
-            condition: state.workshopOffset < state.workshopTotal
-        });
-
         const items = [];
         let remainingSpace = pageSize;
 
@@ -492,25 +482,12 @@
                 state.workshopOffset,
                 state.workshopOffset + remainingSpace
             );
-            console.log('🔍 DEBUG - Workshop items sliced:', {
-                from: state.workshopOffset,
-                to: state.workshopOffset + remainingSpace,
-                actualItems: workshopItems.length,
-                firstItemName: workshopItems[0] ? workshopItems[0].name : 'none'
-            });
 
             items.push(
                 ...workshopItems.map((item) => ({ ...item, category: 'workshops' }))
             );
             state.workshopOffset += workshopItems.length;
             remainingSpace -= workshopItems.length;
-        } else {
-            console.log('🔍 DEBUG - Skipping workshops:', {
-                workshopOffset: state.workshopOffset,
-                workshopTotal: state.workshopTotal,
-                remainingSpace: remainingSpace,
-                condition: state.workshopOffset < state.workshopTotal
-            });
         }
 
         // Then, fill remaining space with socials
@@ -716,12 +693,6 @@
         const event = getEventFromPage();
         const stateKey = `gallery_${event}_state`;
         const hadStaleData = !!sessionStorage.getItem(stateKey);
-        console.log('🧹 DEBUG - Session storage cleanup:', {
-            event,
-            stateKey,
-            hadStaleData,
-            action: 'clearing to ensure fresh load'
-        });
         sessionStorage.removeItem(stateKey);
 
         // Initialize performance optimization modules
@@ -865,17 +836,6 @@
                 // Try event-specific file first, fallback to year-based
                 const event = getEventFromPage();
                 apiUrl = `/gallery-data/${event}.json?timestamp=${Date.now()}`;
-                console.log('🔥 DEBUG - First page load from static JSON:', {
-                    apiUrl,
-                    event,
-                    year,
-                    offset,
-                    currentState: {
-                        workshopOffset: state.workshopOffset,
-                        socialOffset: state.socialOffset,
-                        loadedPages: state.loadedPages
-                    }
-                });
             } else {
                 // Check if we've already loaded all available items
                 // IMPORTANT: Don't exit early if we haven't loaded anything yet (totalItemsAvailable > 0)
@@ -1022,15 +982,6 @@
                 );
 
                 // Debug: Log the state before getting first page
-                console.log('🔍 DEBUG - Before getNextPageItems:', {
-                    workshopOffset: state.workshopOffset,
-                    workshopTotal: state.workshopTotal,
-                    socialOffset: state.socialOffset,
-                    socialTotal: state.socialTotal,
-                    workshopDataLength: state.allCategories.workshops
-                        ? state.allCategories.workshops.length
-                        : 0
-                });
 
                 // Get first page using sequential algorithm
                 const pageItems = getNextPageItems(
@@ -1039,17 +990,6 @@
                 );
 
                 // Debug: Log what we got from getNextPageItems
-                console.log('🔍 DEBUG - After getNextPageItems:', {
-                    pageItemsLength: pageItems.length,
-                    workshopItems: pageItems.filter(
-                        (item) => item.category === 'workshops'
-                    ).length,
-                    socialItems: pageItems.filter((item) => item.category === 'socials')
-                        .length,
-                    firstFewItems: pageItems
-                        .slice(0, 3)
-                        .map((item) => ({ name: item.name, category: item.category }))
-                });
 
                 // Organize items back into categories for display
                 const paginatedCategories = {
@@ -1071,18 +1011,6 @@
                 // If we have 20 or fewer items total, we've loaded everything
                 state.hasCompleteDataset =
           state.totalItemsAvailable <= CONFIG.PAGINATION_SIZE;
-
-                console.log('📦 DEBUG - Static data loaded successfully:', {
-                    totalItemsAvailable: state.totalItemsAvailable,
-                    itemsDisplayed: state.itemsDisplayed,
-                    hasMorePages: state.hasMorePages,
-                    hasCompleteDataset: state.hasCompleteDataset,
-                    workshopOffsetAfter: state.workshopOffset,
-                    workshopTotal: state.workshopTotal,
-                    socialOffsetAfter: state.socialOffset,
-                    socialTotal: state.socialTotal,
-                    pageItemsReceived: pageItems.length
-                });
 
                 // Display paginated data
                 displayGalleryData(
@@ -1355,15 +1283,15 @@
               <div class="lazy-placeholder">
                 <div class="loading-spinner">📸</div>
               </div>
-              <img data-src="${item.thumbnailUrl}" 
-                   data-thumbnail="${item.thumbnailUrl}" 
+              <img data-src="${item.thumbnailUrl}"
+                   data-thumbnail="${item.thumbnailUrl}"
                    data-dominant-color="#f0f0f0"
-                   data-width="400" 
+                   data-width="400"
                    data-height="300"
                    data-progressive="true"
                    data-image-id="${item.id || globalIndex}"
-                   alt="${title}" 
-                   class="lazy-image gallery-image" 
+                   alt="${title}"
+                   class="lazy-image gallery-image"
                    style="display: none;">
             </div>
           </div>
@@ -1395,19 +1323,6 @@
         loadingEl,
         appendMode = false
     ) {
-        console.log('🎨 DEBUG - displayGalleryData called:', {
-            hasData: !!data,
-            categories: data?.categories ? Object.keys(data.categories) : [],
-            workshopItems: data?.categories?.workshops?.length || 0,
-            socialItems: data?.categories?.socials?.length || 0,
-            totalItems:
-        (data?.categories?.workshops?.length || 0) +
-        (data?.categories?.socials?.length || 0),
-            appendMode: appendMode,
-            contentEl: !!contentEl,
-            staticEl: !!staticEl,
-            loadingEl: !!loadingEl
-        });
 
         // Check if we have any categories with items
         let hasItems = false;

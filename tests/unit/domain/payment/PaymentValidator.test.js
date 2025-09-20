@@ -8,30 +8,30 @@ describe('PaymentValidator Domain Service', () => {
         { name: 'Weekend Pass', price: 125.00, quantity: 1, type: 'ticket' },
         { name: 'Donation', price: 25.00, quantity: 2, type: 'donation' }
       ];
-      
+
       const result = PaymentValidator.validateCartItems(cartItems);
-      
+
       expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
 
     it('rejects missing cart items', () => {
       const result = PaymentValidator.validateCartItems(null);
-      
+
       expect(result.valid).toBe(false);
       expect(result.errors).toContain('Cart items are required');
     });
 
     it('rejects non-array cart items', () => {
       const result = PaymentValidator.validateCartItems('invalid');
-      
+
       expect(result.valid).toBe(false);
       expect(result.errors).toContain('Cart items must be an array');
     });
 
     it('rejects empty cart', () => {
       const result = PaymentValidator.validateCartItems([]);
-      
+
       expect(result.valid).toBe(false);
       expect(result.errors).toContain('Cart cannot be empty');
     });
@@ -43,9 +43,9 @@ describe('PaymentValidator Domain Service', () => {
         quantity: 1,
         type: 'ticket'
       }));
-      
+
       const result = PaymentValidator.validateCartItems(cartItems);
-      
+
       expect(result.valid).toBe(false);
       expect(result.errors).toContain('Too many items in cart (maximum 50)');
     });
@@ -55,9 +55,9 @@ describe('PaymentValidator Domain Service', () => {
         { name: '', price: 125.00, quantity: 1, type: 'ticket' },
         { name: 'Valid', price: -10, quantity: 0, type: 'invalid' }
       ];
-      
+
       const result = PaymentValidator.validateCartItems(cartItems);
-      
+
       expect(result.valid).toBe(false);
       expect(result.errors.length).toBeGreaterThan(3);
     });
@@ -72,7 +72,7 @@ describe('PaymentValidator Domain Service', () => {
         type: 'ticket',
         description: 'Full weekend access'
       };
-      
+
       const errors = PaymentValidator.validateCartItem(item);
       expect(errors).toHaveLength(0);
     });
@@ -206,7 +206,7 @@ describe('PaymentValidator Domain Service', () => {
         lastName: 'Doe',
         phone: '555-123-4567'
       };
-      
+
       const result = PaymentValidator.validateCustomerInfo(customerInfo);
       expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
@@ -225,7 +225,7 @@ describe('PaymentValidator Domain Service', () => {
         lastName: '',
         phone: '123'
       });
-      
+
       expect(result.valid).toBe(false);
       expect(result.errors.length).toBe(3);
     });
@@ -239,7 +239,7 @@ describe('PaymentValidator Domain Service', () => {
         'user+tag@example.org',
         'user123@test-domain.com'
       ];
-      
+
       validEmails.forEach(email => {
         const errors = PaymentValidator.validateEmail(email);
         expect(errors).toHaveLength(0);
@@ -260,7 +260,7 @@ describe('PaymentValidator Domain Service', () => {
         '.test@domain.com',
         'test@domain.com.'
       ];
-      
+
       invalidEmails.forEach(email => {
         const errors = PaymentValidator.validateEmail(email);
         expect(errors.length).toBeGreaterThan(0);
@@ -288,7 +288,7 @@ describe('PaymentValidator Domain Service', () => {
         'José Luis',
         'Van Der Berg'
       ];
-      
+
       validNames.forEach(name => {
         const errors = PaymentValidator.validateName(name);
         expect(errors).toHaveLength(0);
@@ -313,7 +313,7 @@ describe('PaymentValidator Domain Service', () => {
         'Test User!',
         'User<script>'
       ];
-      
+
       invalidNames.forEach(name => {
         const errors = PaymentValidator.validateName(name);
         expect(errors).toContain('Name can only contain letters, spaces, hyphens, and apostrophes');
@@ -396,7 +396,7 @@ describe('PaymentValidator Domain Service', () => {
     it('rejects zero and negative quantities', () => {
       const result1 = PaymentValidator.validateQuantity(0);
       const result2 = PaymentValidator.validateQuantity(-1);
-      
+
       expect(result1.valid).toBe(false);
       expect(result2.valid).toBe(false);
       expect(result1.errors).toContain('Quantity must be greater than zero');
@@ -421,7 +421,7 @@ describe('PaymentValidator Domain Service', () => {
           lastName: 'Doe'
         }
       };
-      
+
       const result = PaymentValidator.validatePaymentRequest(paymentRequest);
       expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
@@ -440,7 +440,7 @@ describe('PaymentValidator Domain Service', () => {
           email: 'invalid-email'
         }
       };
-      
+
       const result = PaymentValidator.validatePaymentRequest(paymentRequest);
       expect(result.valid).toBe(false);
       expect(result.errors.some(error => error.includes('Cart'))).toBe(true);
@@ -453,7 +453,7 @@ describe('PaymentValidator Domain Service', () => {
           { name: 'Weekend Pass', price: 125.00, quantity: 1, type: 'ticket' }
         ]
       };
-      
+
       const result = PaymentValidator.validatePaymentRequest(paymentRequest);
       expect(result.valid).toBe(true);
     });

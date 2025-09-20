@@ -1,6 +1,6 @@
 /**
  * Brevo Cleanup Helpers
- * 
+ *
  * Provides utilities for managing test emails and cleanup in Brevo.
  */
 
@@ -41,8 +41,8 @@ export const clearTrackedEmails = () => {
 
 // Check if email is a test email
 export const isTestEmail = (email) => {
-  return email.includes('test-') || 
-         email.includes('@example.com') || 
+  return email.includes('test-') ||
+         email.includes('@example.com') ||
          email.includes('@e2etest.example.com') ||
          email.includes('@test.com') ||
          email.endsWith('.test');
@@ -57,7 +57,7 @@ export const getBrevoCleanupStats = () => {
 export const getCleanupStats = () => {
   const tracked = Array.from(testEmails.keys());
   const testEmailsCount = tracked.filter(isTestEmail).length;
-  
+
   return {
     totalTracked: tracked.length,
     testEmails: testEmailsCount,
@@ -79,16 +79,16 @@ export const cleanupTestEmails = async (options = {}) => {
 // Cleanup function for Brevo (placeholder for API integration)
 export const performBrevoCleanup = async (options = {}) => {
   const stats = getCleanupStats();
-  
+
   console.log('🧹 Performing Brevo cleanup...');
   console.log(`   Test emails to clean: ${stats.testEmails}`);
   console.log(`   Options:`, options);
-  
+
   // In a real implementation, this would call Brevo API to remove test contacts
   // For now, just simulate cleanup
   let cleaned = 0;
   let errors = [];
-  
+
   if (stats.testEmails > 0) {
     console.log(`   Simulating cleanup of ${stats.testEmails} test emails`);
     // Clear tracked test emails
@@ -102,7 +102,7 @@ export const performBrevoCleanup = async (options = {}) => {
       }
     });
   }
-  
+
   return {
     totalProcessed: stats.testEmails,
     totalCleaned: cleaned,
@@ -125,17 +125,17 @@ export const isTestMode = () => {
 // Initialize Brevo cleanup system
 export const initializeBrevoCleanup = async () => {
   console.log('🚀 Initializing Brevo cleanup system...');
-  
+
   // Clear any existing tracked emails from previous runs
   const existingCount = testEmails.size;
   if (existingCount > 0) {
     console.log(`   🧹 Clearing ${existingCount} existing tracked emails`);
     testEmails.clear();
   }
-  
+
   // Set test mode
   setTestMode(true);
-  
+
   console.log('   ✅ Brevo cleanup system initialized');
   return {
     initialized: true,

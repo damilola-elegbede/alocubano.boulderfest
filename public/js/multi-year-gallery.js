@@ -100,19 +100,19 @@ class MultiYearGalleryManager {
                         <!-- Statistics will be inserted here -->
                     </div>
                 </div>
-                
+
                 <!-- Loading Indicator -->
                 <div class="loading-indicator" aria-hidden="true">
                     <div class="loading-spinner"></div>
                     <span class="loading-text">Loading gallery...</span>
                 </div>
-                
+
                 <!-- Error Display -->
                 <div class="error-display" role="alert" aria-hidden="true">
                     <div class="error-message"></div>
                     <button class="error-retry" type="button">Retry</button>
                 </div>
-                
+
                 <!-- Gallery Container -->
                 <div class="gallery-container" role="tabpanel">
                     <!-- Individual year galleries will be inserted here -->
@@ -196,9 +196,9 @@ class MultiYearGalleryManager {
                 const imageCount = stats ? stats.imageCount : 0;
 
                 return `
-                <button 
-                    type="button" 
-                    class="year-button" 
+                <button
+                    type="button"
+                    class="year-button"
                     data-year="${year}"
                     role="tab"
                     aria-selected="false"
@@ -777,8 +777,8 @@ class MultiYearGalleryManager {
                         return `
                         <div class="gallery-item" data-index="${index}" data-category="${image.category || ''}">
                             <div class="gallery-item-media">
-                                <img 
-                                    src="${image.thumbnailUrl || image.url}" 
+                                <img
+                                    src="${image.thumbnailUrl || image.url}"
                                     alt="${title || `Festival photo ${index + 1}`}"
                                     loading="lazy"
                                     class="gallery-image"

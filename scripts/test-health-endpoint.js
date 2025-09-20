@@ -25,7 +25,7 @@ const execAsync = promisify(exec);
  */
 async function detectServerPort() {
   console.log("🔍 Detecting active server port...");
-  
+
   // 1. Check environment variables first
   const envPorts = [
     process.env.PORT,
@@ -44,7 +44,7 @@ async function detectServerPort() {
         return port;
       }
     }
-    
+
     // If environment port is specified but not active, still prioritize it
     // The server might not be started yet, but this is the intended port
     const primaryEnvPort = envPorts[0];
@@ -55,7 +55,7 @@ async function detectServerPort() {
   // 2. Check common ports used by the application
   const commonPorts = [3000, 8000, 5000, 4000, 8080, 3001, 4173, 5173];
   console.log(`   Scanning common ports: ${commonPorts.join(', ')}`);
-  
+
   for (const port of commonPorts) {
     const isActive = await isPortActive(port);
     if (isActive) {
@@ -81,19 +81,19 @@ async function detectServerPort() {
 async function isPortActive(port) {
   const healthEndpoints = [
     '/api/health/check',
-    '/api/health/simple', 
+    '/api/health/simple',
     '/api/health/ping',
     '/health',
     '/'
   ];
-  
+
   for (const endpoint of healthEndpoints) {
     try {
       const result = await execAsync(
-        `curl -s --connect-timeout 2 -o /dev/null -w "%{http_code}" http://localhost:${port}${endpoint}`, 
+        `curl -s --connect-timeout 2 -o /dev/null -w "%{http_code}" http://localhost:${port}${endpoint}`,
         { timeout: 3000 }
       );
-      
+
       const statusCode = result.stdout.trim();
       // Valid HTTP status codes (2xx, 3xx, 4xx, 5xx) indicate server is active
       if (/^[2-5]\d\d$/.test(statusCode)) {
@@ -104,7 +104,7 @@ async function isPortActive(port) {
       continue;
     }
   }
-  
+
   return false;
 }
 
@@ -124,20 +124,20 @@ async function waitForServerReady(baseUrl, maxAttempts = null) {
 
   console.log("⏳ Waiting for server to be ready...");
   console.log(`   Environment: ${process.env.CI ? 'CI' : 'local'}, max attempts: ${maxAttempts}`);
-  
+
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       const result = await execAsync(
         `curl -s --connect-timeout 3 -o /dev/null -w "%{http_code}" "${baseUrl}/api/health/check"`,
         { timeout: 6000 }
       );
-      
+
       const statusCode = result.stdout.trim();
       if (/^2\d\d$/.test(statusCode)) { // Any 2xx status code is success
         console.log(`   ✅ Server ready after ${attempt} attempt(s) (status: ${statusCode})`);
         return true;
       }
-      
+
       if (attempt < maxAttempts) {
         const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000); // Exponential backoff, max 5s
         console.log(`   ⏳ Attempt ${attempt}/${maxAttempts}: Server not ready (${statusCode}), waiting ${delay}ms...`);
@@ -151,7 +151,7 @@ async function waitForServerReady(baseUrl, maxAttempts = null) {
       }
     }
   }
-  
+
   console.log(`   ❌ Server not ready after ${maxAttempts} attempts`);
   return false;
 }
@@ -299,7 +299,7 @@ async function parseArgs() {
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
-    
+
     if (arg === '--help' || arg === '-h') {
       options.help = true;
     } else if (arg === '--port' && i + 1 < args.length) {
@@ -307,7 +307,7 @@ async function parseArgs() {
       i++; // Skip next argument
     } else if (arg === '--attempts' && i + 1 < args.length) {
       options.maxAttempts = parseInt(args[i + 1]);
-      i++; // Skip next argument  
+      i++; // Skip next argument
     } else if (arg === '--timeout' && i + 1 < args.length) {
       options.timeout = parseInt(args[i + 1]);
       i++; // Skip next argument
@@ -321,7 +321,7 @@ async function parseArgs() {
 
 async function main() {
   const options = await parseArgs();
-  
+
   if (options.help) {
     printHelp();
     process.exit(0);
@@ -332,7 +332,7 @@ async function main() {
   console.log("");
 
   let baseUrl;
-  
+
   // Check if URL was provided as command line argument
   if (options.url) {
     baseUrl = options.url;
@@ -348,7 +348,7 @@ async function main() {
     baseUrl = `http://localhost:${port}`;
     console.log(`🎯 Detected server URL: ${baseUrl}`);
     console.log("");
-    
+
     // Wait for server to be ready before testing
     const serverReady = await waitForServerReady(baseUrl, options.maxAttempts);
     if (!serverReady) {

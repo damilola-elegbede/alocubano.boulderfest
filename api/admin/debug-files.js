@@ -4,11 +4,14 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import authService from "../../lib/auth-service.js";
+import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
+import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   // Only allow in non-production for security
   if (process.env.VERCEL_ENV === 'production') {
     return res.status(404).json({ error: 'Not found' });
@@ -54,7 +57,7 @@ export default async function handler(req, res) {
     const libPath = '/var/task/lib';
     const libContents = await fs.readdir(libPath);
     results.libContents = libContents;
-    
+
     // Check if security directory exists
     try {
       const securityPath = '/var/task/lib/security';
@@ -79,3 +82,14 @@ export default async function handler(req, res) {
 
   res.status(200).json(results);
 }
+
+export default withSecurityHeaders(
+  authService.requireAuth(
+    withAdminAudit(handler, {
+      logBody: false,
+      logMetadata: true,
+      skipMethods: [] // Track debug file system access for security
+    })
+  ),
+  { isAPI: true }
+);

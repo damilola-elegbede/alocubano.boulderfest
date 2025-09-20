@@ -1,37 +1,37 @@
 /**
  * E2E tests for the Secret Validator system
- * 
+ *
  * Tests the comprehensive secret detection and validation functionality
  * for E2E test environment setup.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from '@playwright/test';
-import { 
-  validateSecrets, 
-  generateSecretReport, 
+import {
+  validateSecrets,
+  generateSecretReport,
   validateSecretsOrFail,
   setGracefulDegradationFlags,
-  initializeSecretValidation 
-} from '../helpers/secret-validator.js';
+  initializeSecretValidation
+} from './secret-validator.js';
 
 describe('Secret Validator', () => {
   let originalEnv;
-  
+
   beforeEach(() => {
     // Save original environment
     originalEnv = { ...process.env };
-    
+
     // Clear all test environment variables
     Object.keys(process.env).forEach(key => {
-      if (key.includes('TURSO') || key.includes('ADMIN') || key.includes('BREVO') || 
-          key.includes('STRIPE') || key.includes('GOOGLE') || key.includes('APPLE') || 
+      if (key.includes('TURSO') || key.includes('ADMIN') || key.includes('BREVO') ||
+          key.includes('STRIPE') || key.includes('GOOGLE') || key.includes('APPLE') ||
           key.includes('WALLET') || key.includes('VERCEL') || key.includes('GITHUB') ||
           key.includes('INTERNAL') || key.includes('TEST_ADMIN')) {
         delete process.env[key];
       }
     });
   });
-  
+
   afterEach(() => {
     // Restore original environment
     process.env = originalEnv;
@@ -40,7 +40,7 @@ describe('Secret Validator', () => {
   describe('validateSecrets', () => {
     it('should identify missing required secrets', () => {
       const results = validateSecrets();
-      
+
       expect(results.summary.allRequiredPresent).toBe(false);
       expect(results.summary.requiredMissing).toBeGreaterThan(0);
       expect(results.required.TURSO_DATABASE_URL.exists).toBe(false);
@@ -56,7 +56,7 @@ describe('Secret Validator', () => {
       process.env.TEST_ADMIN_PASSWORD = 'test-admin-password';
 
       const results = validateSecrets();
-      
+
       expect(results.summary.allRequiredPresent).toBe(true);
       expect(results.summary.requiredMissing).toBe(0);
       expect(results.required.TURSO_DATABASE_URL.valid).toBe(true);
@@ -72,7 +72,7 @@ describe('Secret Validator', () => {
       process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID = '1AbCdEfGhIjKlMnOpQrStUvWxYz';
 
       const results = validateSecrets();
-      
+
       expect(results.optional.BREVO_API_KEY.valid).toBe(true);
       expect(results.optional.STRIPE_SECRET_KEY.valid).toBe(true);
       expect(results.optional.GOOGLE_SERVICE_ACCOUNT_EMAIL.valid).toBe(true);
@@ -84,9 +84,9 @@ describe('Secret Validator', () => {
     it('should properly mask secret values', () => {
       process.env.TURSO_DATABASE_URL = 'libsql://test-database.turso.io';
       process.env.ADMIN_SECRET = 'this-is-a-very-long-secret-key';
-      
+
       const results = validateSecrets();
-      
+
       expect(results.required.TURSO_DATABASE_URL.maskedValue).toContain('libsql://t');
       expect(results.required.TURSO_DATABASE_URL.maskedValue).toContain('...');
       expect(results.required.ADMIN_SECRET.maskedValue).toContain('this-i...');
@@ -98,9 +98,9 @@ describe('Secret Validator', () => {
       process.env.TURSO_DATABASE_URL = 'http://invalid-protocol.com';
       process.env.ADMIN_PASSWORD = 'plain-text-password'; // Not bcrypt
       process.env.BREVO_API_KEY = 'invalid-key-format';
-      
+
       const results = validateSecrets();
-      
+
       expect(results.required.TURSO_DATABASE_URL.valid).toBe(false);
       expect(results.required.ADMIN_PASSWORD.valid).toBe(false);
       expect(results.optional.BREVO_API_KEY.valid).toBe(false);
@@ -112,10 +112,10 @@ describe('Secret Validator', () => {
       // Set up mixed environment
       process.env.TURSO_DATABASE_URL = 'libsql://test-db.turso.io';
       process.env.BREVO_API_KEY = 'xkeysib-test-key';
-      
+
       const results = validateSecrets();
       const report = generateSecretReport(results);
-      
+
       expect(report).toContain('🔐 SECRET VALIDATION REPORT');
       expect(report).toContain('📋 REQUIRED SECRETS:');
       expect(report).toContain('🔧 OPTIONAL SECRETS:');
@@ -128,7 +128,7 @@ describe('Secret Validator', () => {
     it('should show graceful degradations in report', () => {
       const results = validateSecrets();
       const report = generateSecretReport(results);
-      
+
       expect(report).toContain('🎭 GRACEFUL DEGRADATIONS:');
       expect(report).toContain('Newsletter tests will be skipped');
       expect(report).toContain('Payment flow tests will be skipped');
@@ -141,17 +141,17 @@ describe('Secret Validator', () => {
       process.env.ADMIN_PASSWORD = '$2b$10$test.bcrypt.hash.with.sufficient.length';
       process.env.ADMIN_SECRET = 'this-is-a-test-secret-with-sufficient-length';
       process.env.TEST_ADMIN_PASSWORD = 'test-admin-password';
-      
+
       const results = validateSecrets();
       const report = generateSecretReport(results);
-      
+
       expect(report).toContain('✅ STATUS: All required secrets present');
     });
 
     it('should show failure status when required secrets missing', () => {
       const results = validateSecrets();
       const report = generateSecretReport(results);
-      
+
       expect(report).toContain('❌ FATAL: Required secrets missing');
     });
   });
@@ -170,7 +170,7 @@ describe('Secret Validator', () => {
       process.env.ADMIN_PASSWORD = '$2b$10$test.bcrypt.hash.with.sufficient.length';
       process.env.ADMIN_SECRET = 'this-is-a-test-secret-with-sufficient-length';
       process.env.TEST_ADMIN_PASSWORD = 'test-admin-password';
-      
+
       expect(() => {
         validateSecretsOrFail();
       }).not.toThrow();
@@ -182,10 +182,10 @@ describe('Secret Validator', () => {
       process.env.BREVO_API_KEY = 'xkeysib-test-key';
       process.env.STRIPE_SECRET_KEY = 'sk_test_123456789';
       process.env.STRIPE_PUBLISHABLE_KEY = 'pk_test_123456789';
-      
+
       const results = validateSecrets();
       const flags = setGracefulDegradationFlags(results);
-      
+
       expect(flags.BREVO_API_AVAILABLE).toBe(true);
       expect(flags.STRIPE_API_AVAILABLE).toBe(true);
       expect(flags.GOOGLE_DRIVE_API_AVAILABLE).toBe(false);
@@ -196,10 +196,10 @@ describe('Secret Validator', () => {
     it('should require both stripe keys for API availability', () => {
       // Only set one stripe key
       process.env.STRIPE_SECRET_KEY = 'sk_test_123456789';
-      
+
       const results = validateSecrets();
       const flags = setGracefulDegradationFlags(results);
-      
+
       expect(flags.STRIPE_API_AVAILABLE).toBe(false);
     });
   });
@@ -207,7 +207,7 @@ describe('Secret Validator', () => {
   describe('initializeSecretValidation', () => {
     it('should return success false when validation fails', () => {
       const result = initializeSecretValidation();
-      
+
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
       expect(result.results).toBeNull();
@@ -220,9 +220,9 @@ describe('Secret Validator', () => {
       process.env.ADMIN_PASSWORD = '$2b$10$test.bcrypt.hash.with.sufficient.length';
       process.env.ADMIN_SECRET = 'this-is-a-test-secret-with-sufficient-length';
       process.env.TEST_ADMIN_PASSWORD = 'test-admin-password';
-      
+
       const result = initializeSecretValidation();
-      
+
       expect(result.success).toBe(true);
       expect(result.results).toBeDefined();
       expect(result.flags).toBeDefined();
@@ -237,11 +237,11 @@ describe('Secret Validator', () => {
         { url: '', valid: false },
         { url: null, valid: false }
       ];
-      
+
       testCases.forEach(({ url, valid }) => {
         if (url) process.env.TURSO_DATABASE_URL = url;
         else delete process.env.TURSO_DATABASE_URL;
-        
+
         const results = validateSecrets();
         expect(results.required.TURSO_DATABASE_URL.valid).toBe(valid);
       });
@@ -254,7 +254,7 @@ describe('Secret Validator', () => {
         { password: 'plain-text-password', valid: false },
         { password: '$invalid$format', valid: false }
       ];
-      
+
       testCases.forEach(({ password, valid }) => {
         process.env.ADMIN_PASSWORD = password;
         const results = validateSecrets();
@@ -268,7 +268,7 @@ describe('Secret Validator', () => {
         { key: 'invalid-api-key', valid: false },
         { key: 'xkeysib-', valid: true }, // Just prefix is enough for validation
       ];
-      
+
       testCases.forEach(({ key, valid }) => {
         process.env.BREVO_API_KEY = key;
         const results = validateSecrets();
@@ -283,7 +283,7 @@ describe('Secret Validator', () => {
         { key: 'sk_invalid_format', valid: false },
         { key: 'pk_test_123', valid: false }
       ];
-      
+
       secretTestCases.forEach(({ key, valid }) => {
         process.env.STRIPE_SECRET_KEY = key;
         const results = validateSecrets();
@@ -296,7 +296,7 @@ describe('Secret Validator', () => {
         { key: 'pk_invalid_format', valid: false },
         { key: 'sk_test_123', valid: false }
       ];
-      
+
       publishableTestCases.forEach(({ key, valid }) => {
         process.env.STRIPE_PUBLISHABLE_KEY = key;
         const results = validateSecrets();

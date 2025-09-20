@@ -41,15 +41,15 @@ for (const scenario of scenarios) {
   // Set environment
   process.env.CI = scenario.env.CI;
   process.env.VERCEL_TOKEN = scenario.env.VERCEL_TOKEN;
-  
+
   // Test detection logic
   const IS_CI = process.env.CI === 'true';
   const HAS_VERCEL_TOKEN = Boolean(process.env.VERCEL_TOKEN && process.env.VERCEL_TOKEN.trim());
   const USE_MOCK_SERVER = IS_CI && !HAS_VERCEL_TOKEN;
-  
-  const passed = USE_MOCK_SERVER === scenario.expected.useMock && 
+
+  const passed = USE_MOCK_SERVER === scenario.expected.useMock &&
                  HAS_VERCEL_TOKEN === scenario.expected.hasToken;
-  
+
   console.log(`${passed ? '✅' : '❌'} ${scenario.name}`);
   console.log(`   Token: "${scenario.env.VERCEL_TOKEN || 'undefined'}"`);
   console.log(`   hasToken: ${HAS_VERCEL_TOKEN}, useMock: ${USE_MOCK_SERVER}`);

@@ -28,16 +28,16 @@ export function createRateLimiter(options = {}) {
   const config = {
     windowMs: options.windowMs || 60000, // 1 minute default
     max: options.max || 100, // 100 requests per minute default
-    message: options.message || "Too many requests, please try again later.",
+    message: options.message || 'Too many requests, please try again later.'
   };
 
   return async function rateLimiter(req, res, next) {
     // Extract client identifier (IP address)
     const clientId =
-      req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
-      req.headers["x-real-ip"] ||
+      req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+      req.headers['x-real-ip'] ||
       req.connection?.remoteAddress ||
-      "unknown";
+      'unknown';
 
     const now = Date.now();
     const windowStart = now - config.windowMs;
@@ -49,7 +49,7 @@ export function createRateLimiter(options = {}) {
       // Create new window for client
       clientData = {
         count: 0,
-        resetTime: now + config.windowMs,
+        resetTime: now + config.windowMs
       };
       requestStore.set(clientId, clientData);
     }
@@ -60,30 +60,30 @@ export function createRateLimiter(options = {}) {
     // Check if rate limit exceeded
     if (clientData.count > config.max) {
       // Set rate limit headers
-      res.setHeader("X-RateLimit-Limit", config.max);
-      res.setHeader("X-RateLimit-Remaining", 0);
+      res.setHeader('X-RateLimit-Limit', config.max);
+      res.setHeader('X-RateLimit-Remaining', 0);
       res.setHeader(
-        "X-RateLimit-Reset",
-        new Date(clientData.resetTime).toISOString(),
+        'X-RateLimit-Reset',
+        new Date(clientData.resetTime).toISOString()
       );
       res.setHeader(
-        "Retry-After",
-        Math.ceil((clientData.resetTime - now) / 1000),
+        'Retry-After',
+        Math.ceil((clientData.resetTime - now) / 1000)
       );
 
       // Return rate limit error
       return res.status(429).json({
         error: config.message,
-        retryAfter: Math.ceil((clientData.resetTime - now) / 1000),
+        retryAfter: Math.ceil((clientData.resetTime - now) / 1000)
       });
     }
 
     // Set rate limit headers
-    res.setHeader("X-RateLimit-Limit", config.max);
-    res.setHeader("X-RateLimit-Remaining", config.max - clientData.count);
+    res.setHeader('X-RateLimit-Limit', config.max);
+    res.setHeader('X-RateLimit-Remaining', config.max - clientData.count);
     res.setHeader(
-      "X-RateLimit-Reset",
-      new Date(clientData.resetTime).toISOString(),
+      'X-RateLimit-Reset',
+      new Date(clientData.resetTime).toISOString()
     );
 
     // Continue to next middleware

@@ -1,6 +1,6 @@
 /**
  * Unit Test Helpers - Utilities specifically for unit testing
- * 
+ *
  * Provides mock factories, test utilities, and common patterns
  * for unit testing individual components and functions.
  */
@@ -44,7 +44,7 @@ export class MockFactory {
 
     return async (url, options = {}) => {
       console.log(`📡 Mock fetch: ${options.method || 'GET'} ${url}`);
-      
+
       if (responseConfig.delay) {
         await new Promise(resolve => setTimeout(resolve, responseConfig.delay));
       }
@@ -376,7 +376,7 @@ export class TestEnvironment {
       localStorage: MockFactory.createMockLocalStorage(config.localStorage),
       sessionStorage: MockFactory.createMockLocalStorage(config.sessionStorage),
       fetch: MockFactory.createMockFetch(config.fetch || {}),
-      
+
       // Environment state
       config,
       cleanupTasks: [],
@@ -466,14 +466,14 @@ export class TestEnvironment {
  */
 export async function waitForCondition(condition, timeout = 5000, interval = 100) {
   const startTime = Date.now();
-  
+
   while (Date.now() - startTime < timeout) {
     if (await condition()) {
       return true;
     }
     await new Promise(resolve => setTimeout(resolve, interval));
   }
-  
+
   return false;
 }
 
@@ -484,22 +484,22 @@ export async function waitForCondition(condition, timeout = 5000, interval = 100
  */
 export function createSpy(originalFn = () => {}) {
   const calls = [];
-  
+
   const spy = function(...args) {
     calls.push({ args, timestamp: Date.now() });
     return originalFn.apply(this, args);
   };
-  
+
   spy.calls = calls;
   spy.callCount = () => calls.length;
   spy.calledWith = (...expectedArgs) => {
-    return calls.some(call => 
+    return calls.some(call =>
       call.args.length === expectedArgs.length &&
       call.args.every((arg, i) => arg === expectedArgs[i])
     );
   };
   spy.reset = () => calls.length = 0;
-  
+
   return spy;
 }
 
@@ -513,22 +513,22 @@ export function generateTestData(type, overrides = {}) {
   switch (type) {
     case 'email':
       return `test.${Date.now()}.${Math.random().toString(36).slice(2)}@example.com`;
-    
+
     case 'phone':
       return '+1' + Math.floor(Math.random() * 9000000000 + 1000000000);
-    
+
     case 'id':
       return `test_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-    
+
     case 'user':
       return TestDataBuilder.user().merge(overrides).build();
-    
+
     case 'ticket':
       return TestDataBuilder.ticket().merge(overrides).build();
-    
+
     case 'registration':
       return TestDataBuilder.registration().merge(overrides).build();
-    
+
     default:
       return TestDataBuilder.create(type).merge(overrides).build();
   }

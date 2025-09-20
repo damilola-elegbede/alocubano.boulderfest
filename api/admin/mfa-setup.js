@@ -2,15 +2,16 @@ import crypto from 'crypto';
 import speakeasy from 'speakeasy';
 import QRCode from 'qrcode';
 import bcrypt from 'bcryptjs';
-import authService from '../../lib/auth-service.js';
-import { getDatabaseClient } from '../../lib/database.js';
-import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
-import { getMfaRateLimitService } from '../../lib/mfa-rate-limit-service.js';
-import { verifyMfaCode } from '../../lib/mfa-middleware.js';
+import authService from "../../lib/auth-service.js";
+import { getDatabaseClient } from "../../lib/database.js";
+import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
+import { getMfaRateLimitService } from "../../lib/mfa-rate-limit-service.js";
+import { verifyMfaCode } from "../../lib/mfa-middleware.js";
 import {
   encryptSecret,
   decryptSecret
-} from '../../lib/encryption-utils.js';
+} from "../../lib/encryption-utils.js";
+import { withHighSecurityAudit } from "../../lib/admin-audit-middleware.js";
 
 /**
  * MFA Setup and Management Endpoint
@@ -59,23 +60,23 @@ async function handleGetMfaStatus(req, res) {
   try {
     // Get MFA configuration
     const mfaConfig = await db.execute({
-      sql: `SELECT is_enabled, enabled_at, last_used_at, device_name, 
+      sql: `SELECT is_enabled, enabled_at, last_used_at, device_name,
                    secret_created_at FROM admin_mfa_config WHERE admin_id = ?`,
       args: [adminId]
     });
 
     // Count unused backup codes
     const backupCodes = await db.execute({
-      sql: `SELECT COUNT(*) as count FROM admin_mfa_backup_codes 
+      sql: `SELECT COUNT(*) as count FROM admin_mfa_backup_codes
             WHERE admin_id = ? AND is_used = FALSE`,
       args: [adminId]
     });
 
     // Get recent MFA attempts (last 24 hours)
     const recentAttempts = await db.execute({
-      sql: `SELECT COUNT(*) as total_attempts, 
+      sql: `SELECT COUNT(*) as total_attempts,
                    SUM(CASE WHEN success = TRUE THEN 1 ELSE 0 END) as successful_attempts
-            FROM admin_mfa_attempts 
+            FROM admin_mfa_attempts
             WHERE admin_id = ? AND created_at > datetime('now', '-1 day')`,
       args: [adminId]
     });
@@ -136,8 +137,8 @@ async function handleGenerateSecret(req, res) {
 
     // Store the secret in database (not enabled yet)
     await db.execute({
-      sql: `INSERT OR REPLACE INTO admin_mfa_config 
-            (admin_id, totp_secret, device_name, is_enabled, secret_created_at) 
+      sql: `INSERT OR REPLACE INTO admin_mfa_config
+            (admin_id, totp_secret, device_name, is_enabled, secret_created_at)
             VALUES (?, ?, ?, FALSE, CURRENT_TIMESTAMP)`,
       args: [adminId, encryptedSecret, deviceName]
     });
@@ -150,6 +151,11 @@ async function handleGenerateSecret(req, res) {
     await logMfaEvent(adminId, 'secret_generated', req, {
       deviceName
     });
+
+    // Set security headers to prevent caching of TOTP secrets
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
 
     res.status(200).json({
       secret: secret.base32, // Return for manual entry
@@ -240,8 +246,8 @@ async function handleVerifySetup(req, res) {
 
     // Enable MFA
     await db.execute({
-      sql: `UPDATE admin_mfa_config 
-            SET is_enabled = TRUE, enabled_at = CURRENT_TIMESTAMP, 
+      sql: `UPDATE admin_mfa_config
+            SET is_enabled = TRUE, enabled_at = CURRENT_TIMESTAMP,
                 last_used_at = CURRENT_TIMESTAMP, device_name = ?
             WHERE admin_id = ?`,
       args: [deviceName || 'Authenticator App', adminId]
@@ -254,6 +260,11 @@ async function handleVerifySetup(req, res) {
     await logMfaEvent(adminId, 'mfa_enabled', req, {
       deviceName: deviceName || 'Authenticator App'
     });
+
+    // Set security headers to prevent caching of backup codes
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
 
     res.status(200).json({
       success: true,
@@ -300,11 +311,8 @@ async function handleGenerateBackupCodes(req, res) {
       codesCount: backupCodes.length
     });
 
-    // Set cache control headers to prevent caching of backup codes
-    res.setHeader(
-      'Cache-Control',
-      'no-store, no-cache, must-revalidate, proxy-revalidate'
-    );
+    // Set security headers to prevent caching of backup codes
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
 
@@ -468,8 +476,8 @@ async function logMfaAttempt(
     const sessionToken = authService.getSessionFromRequest(req);
 
     await db.execute({
-      sql: `INSERT INTO admin_mfa_attempts 
-            (admin_id, attempt_type, success, ip_address, user_agent, error_reason, session_token) 
+      sql: `INSERT INTO admin_mfa_attempts
+            (admin_id, attempt_type, success, ip_address, user_agent, error_reason, session_token)
             VALUES (?, ?, ?, ?, ?, ?, ?)`,
       args: [
         adminId,
@@ -498,8 +506,8 @@ async function logMfaEvent(adminId, eventType, req, details = null) {
     const sessionToken = authService.getSessionFromRequest(req);
 
     await db.execute({
-      sql: `INSERT INTO admin_activity_log 
-            (session_token, action, ip_address, user_agent, request_details, success) 
+      sql: `INSERT INTO admin_activity_log
+            (session_token, action, ip_address, user_agent, request_details, success)
             VALUES (?, ?, ?, ?, ?, ?)`,
       args: [
         sessionToken,
@@ -518,9 +526,13 @@ async function logMfaEvent(adminId, eventType, req, details = null) {
   }
 }
 
-// Apply auth middleware and security headers
+// Apply auth middleware, audit, and security headers
 const protectedHandler = authService.requireAuth
   ? authService.requireAuth(mfaSetupHandler)
   : mfaSetupHandler;
 
-export default withSecurityHeaders(protectedHandler);
+export default withSecurityHeaders(withHighSecurityAudit(protectedHandler, {
+  requireExplicitAction: true,
+  logFullRequest: true,
+  alertOnFailure: true
+}));

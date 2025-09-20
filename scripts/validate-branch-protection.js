@@ -2,19 +2,19 @@
 
 /**
  * Branch Protection Validation Script
- * 
+ *
  * Validates current GitHub branch protection settings against the configuration
  * defined in .github/branch-protection-rules.json
- * 
+ *
  * Usage:
  *   node scripts/validate-branch-protection.js [options]
- * 
+ *
  * Options:
  *   --apply         Apply the branch protection rules to GitHub
  *   --dry-run       Show what would be applied without making changes
  *   --branch=main   Specify branch to validate (default: main)
  *   --verbose       Show detailed validation results
- * 
+ *
  * Environment Variables:
  *   GITHUB_TOKEN    GitHub token with repo admin permissions
  *   GITHUB_REPO     Repository in format owner/repo
@@ -62,7 +62,7 @@ class BranchProtectionValidator {
    */
   async validateBranchProtection(branchName = CONFIG.defaultBranch, options = {}) {
     console.log(`🔍 Validating branch protection for: ${branchName}`);
-    
+
     if (!CONFIG.github.token || !CONFIG.github.repo) {
       console.warn('⚠️ GitHub token and repository required for validation');
       console.log('Set GITHUB_TOKEN and GITHUB_REPO environment variables');
@@ -72,10 +72,10 @@ class BranchProtectionValidator {
     try {
       // Get current branch protection settings
       const current = await this.getCurrentProtection(branchName);
-      
+
       // Get expected settings from config
       const expected = this.config.rules[branchName];
-      
+
       if (!expected) {
         console.warn(`⚠️ No protection rules defined for branch: ${branchName}`);
         return false;
@@ -83,15 +83,15 @@ class BranchProtectionValidator {
 
       // Compare settings
       const validation = this.compareProtectionSettings(current, expected.protection);
-      
+
       // Display results
       this.displayValidationResults(validation, branchName);
-      
+
       // Apply changes if requested
       if (options.apply && !validation.isValid) {
         await this.applyProtectionRules(branchName, expected.protection);
       }
-      
+
       return validation.isValid;
     } catch (error) {
       console.error(`❌ Validation failed: ${error.message}`);
@@ -104,7 +104,7 @@ class BranchProtectionValidator {
    */
   async getCurrentProtection(branchName) {
     const url = `${CONFIG.github.api}/repos/${CONFIG.github.repo}/branches/${branchName}/protection`;
-    
+
     try {
       const response = await fetch(url, {
         headers: {
@@ -138,7 +138,7 @@ class BranchProtectionValidator {
   compareProtectionSettings(current, expected) {
     const issues = [];
     const warnings = [];
-    
+
     // If no current protection exists
     if (!current) {
       issues.push('No branch protection currently configured');
@@ -156,7 +156,7 @@ class BranchProtectionValidator {
     if (expected.required_status_checks) {
       const currentChecks = current.required_status_checks || {};
       const expectedChecks = expected.required_status_checks;
-      
+
       if (currentChecks.strict !== expectedChecks.strict) {
         differences.strict_checks = {
           current: currentChecks.strict,
@@ -164,19 +164,19 @@ class BranchProtectionValidator {
         };
         issues.push(`Strict status checks: expected ${expectedChecks.strict}, got ${currentChecks.strict}`);
       }
-      
+
       // Check required contexts
       const currentContexts = new Set(currentChecks.contexts || []);
       const expectedContexts = new Set(expectedChecks.contexts || []);
-      
+
       const missingContexts = [...expectedContexts].filter(ctx => !currentContexts.has(ctx));
       const extraContexts = [...currentContexts].filter(ctx => !expectedContexts.has(ctx));
-      
+
       if (missingContexts.length > 0) {
         differences.missing_contexts = missingContexts;
         issues.push(`Missing required status checks: ${missingContexts.join(', ')}`);
       }
-      
+
       if (extraContexts.length > 0) {
         differences.extra_contexts = extraContexts;
         warnings.push(`Extra status checks configured: ${extraContexts.join(', ')}`);
@@ -187,7 +187,7 @@ class BranchProtectionValidator {
     if (expected.required_pull_request_reviews) {
       const currentReviews = current.required_pull_request_reviews || {};
       const expectedReviews = expected.required_pull_request_reviews;
-      
+
       if (currentReviews.required_approving_review_count !== expectedReviews.required_approving_review_count) {
         differences.review_count = {
           current: currentReviews.required_approving_review_count,
@@ -195,7 +195,7 @@ class BranchProtectionValidator {
         };
         issues.push(`Required reviews: expected ${expectedReviews.required_approving_review_count}, got ${currentReviews.required_approving_review_count}`);
       }
-      
+
       if (currentReviews.dismiss_stale_reviews !== expectedReviews.dismiss_stale_reviews) {
         differences.dismiss_stale = {
           current: currentReviews.dismiss_stale_reviews,
@@ -218,7 +218,7 @@ class BranchProtectionValidator {
       if (expected.hasOwnProperty(setting)) {
         const currentValue = current[setting]?.enabled ?? false;
         const expectedValue = expected[setting];
-        
+
         if (currentValue !== expectedValue) {
           differences[setting] = {
             current: currentValue,
@@ -243,30 +243,30 @@ class BranchProtectionValidator {
   displayValidationResults(validation, branchName) {
     console.log(`\n📋 Branch Protection Validation Results for: ${branchName}`);
     console.log('═'.repeat(60));
-    
+
     if (validation.isValid) {
       console.log('✅ Branch protection configuration is valid!');
     } else {
       console.log('❌ Branch protection configuration has issues:');
       console.log('');
-      
+
       validation.issues.forEach((issue, index) => {
         console.log(`${index + 1}. ❌ ${issue}`);
       });
     }
-    
+
     if (validation.warnings.length > 0) {
       console.log('\n⚠️ Warnings:');
       validation.warnings.forEach((warning, index) => {
         console.log(`${index + 1}. ⚠️ ${warning}`);
       });
     }
-    
+
     if (this.verbose && Object.keys(validation.differences).length > 0) {
       console.log('\n🔍 Detailed Differences:');
       console.log(JSON.stringify(validation.differences, null, 2));
     }
-    
+
     console.log('═'.repeat(60));
   }
 
@@ -275,9 +275,9 @@ class BranchProtectionValidator {
    */
   async applyProtectionRules(branchName, protection) {
     console.log(`🔧 Applying branch protection rules to: ${branchName}`);
-    
+
     const url = `${CONFIG.github.api}/repos/${CONFIG.github.repo}/branches/${branchName}/protection`;
-    
+
     try {
       const response = await fetch(url, {
         method: 'PUT',
@@ -310,7 +310,7 @@ class BranchProtectionValidator {
     if (!rule) {
       throw new Error(`No protection rule defined for branch: ${branchName}`);
     }
-    
+
     return rule.protection;
   }
 
@@ -320,23 +320,23 @@ class BranchProtectionValidator {
   async showQualityGatesStatus() {
     console.log('\n🚪 Quality Gates Status');
     console.log('═'.repeat(50));
-    
+
     const gates = this.config.quality_gates.gates;
-    
+
     for (const [gateName, gateConfig] of Object.entries(gates)) {
       const status = await this.checkQualityGateStatus(gateName, gateConfig);
       const icon = status ? '✅' : '❌';
       const required = gateConfig.required ? '🔒' : '⚠️';
-      
+
       console.log(`${icon} ${required} ${gateName.replace('_', ' ').toUpperCase()}`);
-      
+
       if (this.verbose) {
         console.log(`   Timeout: ${gateConfig.timeout_minutes}min`);
         console.log(`   Retries: ${gateConfig.retry_count}`);
         console.log(`   Action: ${gateConfig.failure_action}`);
       }
     }
-    
+
     console.log('═'.repeat(50));
   }
 
@@ -355,9 +355,9 @@ class BranchProtectionValidator {
   showFlakyTestConfig() {
     console.log('\n🔄 Flaky Test Detection Configuration');
     console.log('═'.repeat(50));
-    
+
     const config = this.config.flaky_test_detection.settings;
-    
+
     console.log(`Enabled: ${config.enabled ? '✅' : '❌'}`);
     console.log(`Failure Threshold: ${config.failure_threshold} failures`);
     console.log(`Success Rate Threshold: ${(config.success_rate_threshold * 100)}%`);
@@ -365,11 +365,11 @@ class BranchProtectionValidator {
     console.log(`Auto Retry: ${config.auto_retry_enabled ? '✅' : '❌'}`);
     console.log(`Max Retries: ${config.max_retries}`);
     console.log(`Quarantine: ${config.quarantine_enabled ? '✅' : '❌'}`);
-    
+
     if (config.quarantine_enabled) {
       console.log(`Quarantine Duration: ${config.quarantine_duration_hours / 24} days`);
     }
-    
+
     console.log('═'.repeat(50));
   }
 
@@ -379,9 +379,9 @@ class BranchProtectionValidator {
   showPerformanceConfig() {
     console.log('\n📊 Performance Monitoring Configuration');
     console.log('═'.repeat(50));
-    
+
     const config = this.config.performance_monitoring.settings;
-    
+
     if (config.baseline_comparison.enabled) {
       console.log('✅ Baseline Comparison Enabled');
       console.log(`   Comparison Branch: ${config.baseline_comparison.comparison_branch}`);
@@ -393,7 +393,7 @@ class BranchProtectionValidator {
     } else {
       console.log('❌ Baseline Comparison Disabled');
     }
-    
+
     console.log('');
     console.log('Alert Thresholds:');
     Object.entries(config.alerts).forEach(([alertType, alertConfig]) => {
@@ -401,7 +401,7 @@ class BranchProtectionValidator {
         console.log(`✅ ${alertType.replace('_', ' ')}: ${alertConfig.threshold_percent || alertConfig.threshold_kb}${alertConfig.threshold_percent ? '%' : 'KB'}`);
       }
     });
-    
+
     console.log('═'.repeat(50));
   }
 
@@ -411,23 +411,23 @@ class BranchProtectionValidator {
   generateSetupInstructions() {
     console.log('\n📖 Setup Instructions');
     console.log('═'.repeat(50));
-    
+
     const instructions = this.config.setup_instructions;
-    
+
     console.log('GitHub API Method:');
     console.log(`Endpoint: ${instructions.github_api.endpoint}`);
     console.log(`Auth: ${instructions.github_api.authentication}`);
     console.log(`Example: ${instructions.github_api.example_command}`);
-    
+
     console.log('\nGitHub Web Interface:');
     instructions.github_web.steps.forEach(step => {
       console.log(`  ${step}`);
     });
-    
+
     console.log('\nValidation:');
     console.log(`Command: ${instructions.validation.command}`);
     console.log(`Description: ${instructions.validation.description}`);
-    
+
     console.log('═'.repeat(50));
   }
 }
@@ -483,14 +483,14 @@ async function main() {
     console.log('🛡️ Branch Protection Validator');
     console.log(`Repository: ${CONFIG.github.repo || 'Not configured'}`);
     console.log(`GitHub Token: ${CONFIG.github.token ? 'Configured' : 'Missing'}`);
-    
+
     if (options.dryRun) {
       console.log('🧪 Dry-run mode: No changes will be made');
     }
 
     // Validate branch protection
     const isValid = await validator.validateBranchProtection(options.branch, options);
-    
+
     // Show additional configuration info
     if (options.verbose) {
       await validator.showQualityGatesStatus();
