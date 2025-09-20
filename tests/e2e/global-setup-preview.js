@@ -8,10 +8,8 @@
  * - Configures environment for preview testing
  */
 
-import { execSync } from 'child_process';
-import { writeFileSync, existsSync } from 'fs';
+import { writeFileSync } from 'fs';
 import { resolve } from 'path';
-import VercelDeploymentManager from '../../scripts/vercel-deployment-manager.js';
 
 const PROJECT_ROOT = resolve(process.cwd());
 
@@ -26,23 +24,28 @@ async function globalSetupPreview() {
   console.log('✅ No local secret validation needed - Vercel deployments have their own secrets');
 
   try {
-    // Step 1: Get or create preview deployment
-    let previewUrl = process.env.PREVIEW_URL;
+    // Step 1: Get preview URL from environment (CI provides this)
+    let previewUrl = process.env.PREVIEW_URL || process.env.PLAYWRIGHT_BASE_URL;
 
     if (!previewUrl) {
-      console.log('📡 Managing Vercel preview deployment...');
-
-      const deploymentManager = new VercelDeploymentManager();
-      previewUrl = await deploymentManager.getDeploymentUrl();
-
-      if (!previewUrl) {
-        throw new Error('Failed to get preview URL. Ensure Vercel is configured correctly.');
-      }
-
-      // Set for other processes
-      process.env.CI_EXTRACTED_PREVIEW_URL = previewUrl;
-      process.env.PREVIEW_URL = previewUrl;
+      // In CI, this should never happen as GitHub Actions sets it
+      // For local development, user must provide PREVIEW_URL
+      throw new Error(
+        'PREVIEW_URL not set. ' +
+        'In CI, this is set by GitHub Actions. ' +
+        'For local testing, set PREVIEW_URL environment variable to your Vercel preview deployment URL.'
+      );
     }
+
+    // Ensure URL has protocol
+    if (!previewUrl.startsWith('http://') && !previewUrl.startsWith('https://')) {
+      previewUrl = `https://${previewUrl}`;
+    }
+
+    // Set for other processes
+    process.env.CI_EXTRACTED_PREVIEW_URL = previewUrl;
+    process.env.PREVIEW_URL = previewUrl;
+    process.env.PLAYWRIGHT_BASE_URL = previewUrl;
 
     console.log(`✅ Preview URL: ${previewUrl}`);
 
