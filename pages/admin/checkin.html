@@ -143,18 +143,37 @@
       .stats-bar {
         background: var(--color-surface-elevated);
         border-bottom: 1px solid var(--color-border);
-        padding: var(--space-sm);
+        padding: var(--space-xs) var(--space-sm);
         display: flex;
         gap: var(--space-xs);
-        font-size: var(--font-size-sm);
+        font-size: var(--font-size-xs);
+        min-height: 45px;
       }
 
       .stats-bar .admin-stat-card {
-        padding: var(--space-md) !important;
+        padding: var(--space-xs) !important;
         margin: 0 !important;
         min-width: auto !important;
         flex: 1;
         cursor: default;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .stats-bar .stat-number {
+        font-size: var(--font-size-lg);
+        font-weight: 700;
+        line-height: 1;
+        margin-bottom: 2px;
+      }
+
+      .stats-bar .stat-label {
+        font-size: var(--font-size-xs);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        opacity: 0.8;
       }
 
       .stats-bar .admin-stat-card:hover {
@@ -168,11 +187,17 @@
         background: var(--color-black);
         overflow: hidden;
         min-height: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
 
       #reader {
         width: 100%;
         height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
       }
 
       .scanner-overlay {
@@ -188,12 +213,13 @@
       }
 
       .scan-region {
-        width: 250px;
-        height: 250px;
+        width: 280px;
+        height: 280px;
         border: 3px solid var(--color-blue);
         border-radius: var(--radius-xl);
         position: relative;
         animation: scannerPulse 2s infinite;
+        box-shadow: 0 0 40px rgba(102, 126, 234, 0.3);
       }
 
       @keyframes scannerPulse {
@@ -250,10 +276,11 @@
       .controls {
         background: var(--color-surface-elevated);
         border-top: 1px solid var(--color-border);
-        padding: var(--space-xl);
+        padding: var(--space-lg) var(--space-xl);
         display: flex;
-        justify-content: space-around;
+        justify-content: center;
         align-items: center;
+        gap: var(--space-xl);
         box-shadow: var(--shadow-lg);
       }
 
@@ -274,8 +301,6 @@
         transform: scale(0.95);
       }
 
-      .control-btn.torch {
-      }
 
       .control-btn.manual {
         background: var(--color-red) !important;
@@ -404,6 +429,21 @@
       .result-content.error .result-btn:hover {
         background: rgba(255, 255, 255, 0.3) !important;
         color: var(--color-white) !important;
+      }
+
+      .manual-input-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: none;
+        z-index: calc(var(--z-modal) - 1);
+      }
+
+      .manual-input-backdrop.show {
+        display: block;
       }
 
       .manual-input {
@@ -537,8 +577,8 @@
           flex: 0 0 calc(50% - var(--space-xs) / 2);
         }
         .scan-region {
-          width: 200px;
-          height: 200px;
+          width: 240px;
+          height: 240px;
         }
 
         .controls {
@@ -718,17 +758,15 @@
         </div>
 
         <div class="controls">
-          <button class="control-btn torch admin-btn" onclick="toggleTorch()" id="torchBtn">
-            🔦
-          </button>
           <button
             class="control-btn manual admin-btn"
             onclick="showManualInput()"
             data-testid="manual-input-toggle"
+            title="Manual Entry"
           >
             ⌨️
           </button>
-          <button class="control-btn admin-btn" onclick="location.reload()">
+          <button class="control-btn admin-btn" onclick="location.reload()" title="Refresh Scanner">
             🔄
           </button>
         </div>
@@ -754,6 +792,7 @@
       </div>
     </div>
 
+    <div class="manual-input-backdrop" id="manualBackdrop" onclick="hideManualInput()"></div>
     <div class="manual-input" id="manualInput">
       <h3>Manual Ticket Entry</h3>
       <input
@@ -777,13 +816,14 @@
 
     <!-- Theme Manager -->
     <script type="module" src="/js/theme-manager.js"></script>
+    <!-- Event Selector Component -->
+    <script src="/js/admin-event-selector.js"></script>
     <!-- QR Code Scanner -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script>
       let scanner = null;
       let sessionCount = 0;
       let isScanning = false;
-      let torchOn = false;
 
       // Statistics
       const stats = {
@@ -801,11 +841,16 @@
 
           const config = {
             fps: 10,
-            qrbox: { width: 250, height: 250 },
+            qrbox: { width: 280, height: 280 },
             aspectRatio: 1.0,
             experimentalFeatures: {
               useBarCodeDetectorIfSupported: true,
             },
+            videoConstraints: {
+              facingMode: "environment",
+              width: { ideal: 1920 },
+              height: { ideal: 1080 }
+            }
           };
 
           await scanner.start(
@@ -877,7 +922,7 @@
             headers: headers,
             body: JSON.stringify({
               token: token,
-              validatedBy: "mobile-scanner",
+              validatedBy: "admin-scanner",
               location: "entrance",
               wallet_source: isWalletToken ? "jwt" : null,
               qr_access_method: isWalletToken ? "wallet" : "qr_code",
@@ -983,45 +1028,27 @@
         document.getElementById("resultModal").classList.remove("show");
       }
 
-      // Toggle torch/flashlight
-      async function toggleTorch() {
-        if (!scanner) return;
 
-        try {
-          const track = scanner.getRunningTrackCameraCapabilities();
-
-          if (track && track.torchFeature) {
-            torchOn = !torchOn;
-            await track.applyTorch(torchOn);
-
-            const rootStyles = getComputedStyle(document.documentElement);
-            const warningColor = rootStyles
-              .getPropertyValue("--color-warning")
-              .trim();
-            const warningActiveColor = "#fbbf24"; // Brighter warning color for active state
-            document.getElementById("torchBtn").style.background = torchOn
-              ? warningActiveColor
-              : warningColor;
-          } else {
-            alert("Torch not available on this device");
-          }
-        } catch (error) {
-          console.error("Torch error:", error);
-          alert("Torch control not supported");
-        }
-      }
-
-      // Show manual input
+      // Show manual input with backdrop
       function showManualInput() {
+        document.getElementById("manualBackdrop").classList.add("show");
         document.getElementById("manualInput").classList.add("show");
         document.getElementById("manualTicketId").focus();
       }
 
-      // Hide manual input
+      // Hide manual input and backdrop
       function hideManualInput() {
+        document.getElementById("manualBackdrop").classList.remove("show");
         document.getElementById("manualInput").classList.remove("show");
         document.getElementById("manualTicketId").value = "";
       }
+
+      // Handle escape key to close manual input
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && document.getElementById("manualInput").classList.contains("show")) {
+          hideManualInput();
+        }
+      });
 
       // Submit manual ticket
       async function submitManualTicket() {
@@ -1038,8 +1065,8 @@
         try {
           // Get selected event ID from event selector
           const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
-          const eventParam = selectedEventId ? `&eventId=${selectedEventId}` : '';
-          
+          const eventParam = selectedEventId ? `&event_id=${selectedEventId}` : '';
+
           const response = await fetch(
             `/api/tickets?ticket_id=${encodeURIComponent(ticketId)}${eventParam}`,
             {
@@ -1073,16 +1100,23 @@
           // Get selected event ID from event selector
           const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
           const eventParam = selectedEventId ? `?eventId=${selectedEventId}` : '';
-          
+
           const response = await fetch(`/api/admin/dashboard${eventParam}`, {
             credentials: "include"
           });
           const data = await response.json();
 
           if (data.stats) {
-            stats.today = data.stats.today_sales || 0;
+            // Get today's check-ins from the daily_checkins array if available
+            const today = new Date().toISOString().split('T')[0];
+            const todayCheckins = data.stats.daily_checkins?.find(d => d.date === today);
+
+            stats.today = todayCheckins?.count || data.stats.today_checkins || 0;
             stats.total = data.stats.checked_in || 0;
             stats.wallet = data.stats.wallet_checkins || 0;
+
+            // Update session count (preserve existing session count)
+            // Total can be shown as all-time check-ins
             updateStats();
           }
         } catch (error) {
@@ -1259,13 +1293,27 @@
         // Check authentication
         if (!(await checkAuth())) return;
 
+        // Wait for event selector to be available
+        const waitForEventSelector = async () => {
+          let attempts = 0;
+          while (!window.eventSelector && attempts < 20) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+          }
+          return window.eventSelector;
+        };
+
         // Initialize event selector
-        if (window.eventSelector) {
-          await window.eventSelector.init();
-          window.eventSelector.render('event-selector-container');
-          
+        const eventSelector = await waitForEventSelector();
+        if (eventSelector) {
+          await eventSelector.init();
+          eventSelector.render('event-selector-container');
+
           // Set up event change listener to reload stats
-          window.eventSelector.onChange(() => {
+          eventSelector.onChange(() => {
+            // Clear session stats when event changes
+            stats.session = 0;
+            updateStats();
             loadStats();
           });
         }
