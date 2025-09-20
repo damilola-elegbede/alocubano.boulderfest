@@ -5,66 +5,84 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { detectAvailableServices } from '../helpers/service-detection.js';
 
 /**
- * Check Google Drive API configuration via environment endpoint
+ * Check Google Drive API functionality via feature detection (optional debug endpoint check)
  * Returns { hasConfig: boolean, skipGoogleDriveTests: boolean }
  */
 async function checkGoogleDriveConfig(page) {
-  console.log('🔍 INFO: Checking Google Drive API configuration...');
+  console.log('🔍 INFO: Checking Google Drive API functionality via feature detection...');
   console.log('🌐 Current page URL:', page.url());
 
   try {
-    console.log('📡 Making request to /api/debug/environment...');
-    const envResponse = await page.request.get('/api/debug/environment');
-    console.log('📊 Environment debug response status:', envResponse.status());
+    // First, try the debug endpoint but don't fail if it's not available (production deployments)
+    console.log('📡 Attempting to check debug endpoint (optional)...');
+    let debugInfo = null;
 
-    if (!envResponse.ok()) {
-      const errorText = await envResponse.text();
-      console.log('📍 Environment debug endpoint not available:', {
-        status: envResponse.status(),
-        statusText: envResponse.statusText(),
-        responseText: errorText
-      });
-      return { hasConfig: false, skipGoogleDriveTests: true };
+    try {
+      const envResponse = await page.request.get('/api/debug/environment');
+      if (envResponse.ok()) {
+        const envData = await envResponse.json();
+        debugInfo = envData;
+
+        // Check for Google Drive environment variables if debug endpoint is available
+        const hasServiceAccount = !!envData.variables?.details?.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+        const hasPrivateKey = !!envData.variables?.details?.GOOGLE_PRIVATE_KEY;
+        const hasFolderId = !!envData.variables?.details?.GOOGLE_DRIVE_GALLERY_FOLDER_ID;
+
+        console.log('🔍 Google Drive Configuration Status from debug endpoint:', {
+          GOOGLE_SERVICE_ACCOUNT_EMAIL: { exists: hasServiceAccount },
+          GOOGLE_PRIVATE_KEY: { exists: hasPrivateKey },
+          GOOGLE_DRIVE_GALLERY_FOLDER_ID: { exists: hasFolderId },
+          allConfigured: hasServiceAccount && hasPrivateKey && hasFolderId
+        });
+
+        if (hasServiceAccount && hasPrivateKey && hasFolderId) {
+          console.log('✅ Google Drive API variables configured (via debug endpoint)');
+          return { hasConfig: true, skipGoogleDriveTests: false };
+        }
+      }
+    } catch (debugError) {
+      console.log('📍 Debug endpoint not available (expected in production) - using feature detection');
     }
 
-    const envData = await envResponse.json();
-    console.log('📋 Environment debug response available');
+    // Feature detection: Check actual Gallery API functionality
+    console.log('🔍 Using feature detection to check Google Drive functionality...');
+    const galleryResponse = await page.request.get('/api/gallery?eventId=boulder-fest-2025');
 
-    // Check for Google Drive environment variables (correct nested structure)
-    const hasServiceAccount = !!envData.variables?.details?.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-    const hasPrivateKey = !!envData.variables?.details?.GOOGLE_PRIVATE_KEY;
-    const hasFolderId = !!envData.variables?.details?.GOOGLE_DRIVE_GALLERY_FOLDER_ID;
-
-    // Log Google Drive configuration status (sanitized - booleans only)
-    console.log('🔍 Google Drive Configuration Status (sanitized):', {
-      GOOGLE_SERVICE_ACCOUNT_EMAIL: { exists: hasServiceAccount },
-      GOOGLE_PRIVATE_KEY: { exists: hasPrivateKey },
-      GOOGLE_DRIVE_GALLERY_FOLDER_ID: { exists: hasFolderId },
-      allConfigured: hasServiceAccount && hasPrivateKey && hasFolderId
-    });
-
-    const missingVars = [];
-    if (!hasServiceAccount) missingVars.push('GOOGLE_SERVICE_ACCOUNT_EMAIL');
-    if (!hasPrivateKey) missingVars.push('GOOGLE_PRIVATE_KEY');
-    if (!hasFolderId) missingVars.push('GOOGLE_DRIVE_GALLERY_FOLDER_ID');
-
-    if (missingVars.length > 0) {
-      console.log('📍 INFO: Google Drive configuration incomplete (expected in preview deployments):', missingVars);
-      console.log('🔍 Available Google variables:', Object.keys(envData).filter(key => key.includes('GOOGLE')));
-      return { hasConfig: false, skipGoogleDriveTests: true };
+    if (!galleryResponse.ok()) {
+      console.log('📍 Gallery API not available or returned error - tests will use fallback behavior');
+      return { hasConfig: false, skipGoogleDriveTests: false }; // Don't skip - let tests handle gracefully
     }
 
-    console.log('✅ All Google Drive API environment variables are configured');
-    return { hasConfig: true, skipGoogleDriveTests: false };
+    const galleryData = await galleryResponse.json();
+
+    // Check if we got real Google Drive data
+    const hasItems = galleryData.items && galleryData.items.length > 0;
+    const hasGoogleDriveImages = hasItems && galleryData.items.some(item =>
+      item.thumbnailLink?.includes('googleusercontent.com') ||
+      item.webContentLink?.includes('drive.google.com') ||
+      item.webViewLink?.includes('drive.google.com')
+    );
+
+    if (hasGoogleDriveImages) {
+      console.log('✅ Google Drive API working - detected Google Drive images in gallery API');
+      return { hasConfig: true, skipGoogleDriveTests: false };
+    } else if (hasItems) {
+      console.log('📍 Gallery API working but no Google Drive images detected - may use different source');
+      return { hasConfig: false, skipGoogleDriveTests: false }; // Don't skip - test functionality
+    } else {
+      console.log('📍 Gallery API returned empty results - tests will handle gracefully');
+      return { hasConfig: false, skipGoogleDriveTests: false }; // Don't skip - test functionality
+    }
 
   } catch (error) {
-    console.log('📍 INFO: Google Drive configuration check failed (expected in preview deployments):', {
+    console.log('📍 INFO: Google Drive feature detection failed (may be expected):', {
       message: error.message,
       name: error.name
     });
-    return { hasConfig: false, skipGoogleDriveTests: true };
+    return { hasConfig: false, skipGoogleDriveTests: false }; // Don't skip - let tests handle gracefully
   }
 }
 
@@ -166,7 +184,7 @@ test.describe('Gallery Basic Browsing', () => {
       await page.waitForLoadState('domcontentloaded');
       console.log('✅ DOM content loaded');
 
-      await page.waitForLoadState('networkidle', { timeout: 30000 });
+      await page.waitForLoadState('networkidle', { timeout: test.info().timeout * 0.5 });
       console.log('✅ Network idle reached');
 
       console.log('🎉 beforeEach setup completed successfully');
@@ -190,10 +208,17 @@ test.describe('Gallery Basic Browsing', () => {
     }
   });
 
+  // Helper function to check if Google Drive is properly configured
+  function hasGoogleDriveConfig() {
+    return testContext.googleDriveConfig && testContext.googleDriveConfig.hasConfig &&
+           testContext.galleryData && testContext.galleryData.hasRealData;
+  }
+
   test('should load gallery page with Google Drive content', async ({ page }) => {
     console.log('🔍 INFO: Verifying gallery page loads with Google Drive content...');
 
-    await page.waitForTimeout(3000); // Allow content to load
+    // Wait for dynamic content to load
+    await page.waitForLoadState('networkidle', { timeout: test.info().timeout * 0.33 });
 
     // Check for dynamic gallery content from Google Drive
     const dynamicGallery = page.locator('.gallery-detail-grid, .gallery-item');
@@ -245,7 +270,8 @@ test.describe('Gallery Basic Browsing', () => {
   test('should load gallery images from Google Drive', async ({ page }) => {
     console.log('🔍 INFO: Validating gallery image loading...');
 
-    await page.waitForTimeout(5000);
+    // Wait for gallery images to load
+    await page.waitForLoadState('networkidle', { timeout: test.info().timeout * 0.5 });
 
     // Wait for loading to complete
     try {
@@ -260,7 +286,7 @@ test.describe('Gallery Basic Browsing', () => {
 
           return loadingHidden || contentShown;
         },
-        { timeout: 15000 }
+        { timeout: test.info().timeout * 0.17 }
       );
     } catch (error) {
       console.log('📍 INFO: Loading state check timed out (may be expected)');
@@ -301,7 +327,11 @@ test.describe('Gallery Basic Browsing', () => {
   test('should handle image lazy loading', async ({ page }) => {
     // Scroll down to trigger lazy loading
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight / 2));
-    await page.waitForTimeout(1000);
+    // Wait for lazy loading to complete after scrolling
+    await expect.poll(async () => {
+      const images = await page.locator('img[src], .gallery-item img').count();
+      return images;
+    }, { timeout: 5000 }).toBeGreaterThan(0);
 
     // More images should be visible now
     const images = page.locator('img[src], .gallery-item img');
@@ -315,7 +345,7 @@ test.describe('Gallery Basic Browsing', () => {
     console.log('🔍 Starting lightbox test...');
 
     // Wait for gallery to fully load
-    await page.waitForSelector('.gallery-detail-grid', { timeout: 10000 });
+    await page.waitForSelector('.gallery-detail-grid', { timeout: test.info().timeout * 0.17 });
     console.log('✅ Gallery grid loaded');
 
     // Debug: Check what gallery-related elements exist in DOM
@@ -385,8 +415,11 @@ test.describe('Gallery Basic Browsing', () => {
       await firstItem.click();
       console.log('✅ Click executed');
 
-      // Wait a moment for any animations
-      await page.waitForTimeout(1000);
+      // Wait for lightbox animations to complete
+      await page.waitForFunction(() => {
+        const lightbox = document.querySelector('#unified-lightbox, .lightbox');
+        return lightbox && (lightbox.classList.contains('is-open') || lightbox.classList.contains('active'));
+      }, { timeout: 3000 }).catch(() => {});
 
       // Check multiple possible lightbox states
       console.log('🔍 Checking for lightbox activation...');
@@ -449,7 +482,11 @@ test.describe('Gallery Basic Browsing', () => {
 
     if (await year2025.count() > 0) {
       await year2025.click();
-      await page.waitForTimeout(1000);
+      // Wait for year filter to take effect
+      await page.waitForFunction(() => {
+        const grid = document.querySelector('.gallery-detail-grid, .gallery-grid-static');
+        return grid && grid.offsetHeight > 0;
+      }, { timeout: 5000 });
 
       // Gallery content should update
       await expect(page.locator('.gallery-detail-grid, .gallery-grid-static')).toBeVisible();
@@ -471,7 +508,7 @@ test.describe('Gallery Basic Browsing', () => {
     });
 
     await page.reload();
-    await page.waitForTimeout(5000);
+    await page.waitForLoadState('networkidle', { timeout: test.info().timeout * 0.5 });
 
     // Check if gallery API calls were made with eventId
     const galleryApiCalls = apiRequests.filter(req => req.url.includes('/api/gallery'));
@@ -511,7 +548,7 @@ test.describe('Gallery Basic Browsing', () => {
           const contentEl = document.getElementById('gallery-detail-content');
           return contentEl && contentEl.style.display === 'block';
         },
-        { timeout: 10000 }
+        { timeout: test.info().timeout * 0.17 }
       );
       console.log('✅ Dynamic content is fully loaded and visible');
     } catch (error) {
@@ -524,7 +561,7 @@ test.describe('Gallery Basic Browsing', () => {
     await page.reload();
 
     // Wait for content to load and check what's displayed
-    await page.waitForTimeout(3000);
+    await page.waitForLoadState('networkidle', { timeout: test.info().timeout * 0.33 });
 
     // Check for dynamic content loading
     const bodyText = await page.locator('body').textContent();
@@ -559,7 +596,7 @@ test.describe('Gallery Basic Browsing', () => {
     await page.reload();
 
     // Wait for page to fully load
-    await page.waitForTimeout(3000);
+    await page.waitForLoadState('networkidle', { timeout: test.info().timeout * 0.33 });
 
     // Check for dynamic gallery content
     const dynamicContent = await page.locator('.gallery-detail-grid, .gallery-item').count();
@@ -598,7 +635,7 @@ test.describe('Gallery Basic Browsing', () => {
     console.log('🔍 INFO: Verifying gallery displays appropriate content...');
 
     await page.reload();
-    await page.waitForTimeout(3000);
+    await page.waitForLoadState('networkidle', { timeout: test.info().timeout * 0.33 });
 
     // Check what types of content are available
     const dynamicContent = await page.locator('.gallery-detail-grid .gallery-item, .gallery-detail-content img').count();
