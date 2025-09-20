@@ -179,7 +179,8 @@ export function formatGA4Event(eventName, eventData) {
 
     // Add e-commerce data if available
     const items = extractItems(eventData);
-    if (items && items.length > 0) {
+    if (eventData.items || eventData.categories) {
+        // Only add items property if the original data had items or categories
         baseData.items = items.map(item => ({
             item_id: item.id,
             item_name: item.name,
