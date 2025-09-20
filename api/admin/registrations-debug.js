@@ -9,7 +9,9 @@ let withAdminAudit = null;
 
 // Lazy load services only when handler is called to avoid top-level await issues
 async function loadServices() {
-  if (servicesLoaded) return;
+  if (servicesLoaded) {
+    return;
+  }
 
   console.log('🐛 [DEBUG] Loading services on-demand...');
 

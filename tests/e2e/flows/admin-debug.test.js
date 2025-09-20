@@ -25,7 +25,7 @@ test('ADMIN DEBUG: Check credentials and login', async ({ page }) => {
   await page.goto('/admin/login');
   await page.fill('input[name="username"]', adminCredentials.email);
   await page.fill('input[type="password"]', adminCredentials.password);
-  
+
   // Check for error messages before clicking submit
   const submitButton = page.locator('button[type="submit"]');
   await submitButton.click();
@@ -35,7 +35,7 @@ test('ADMIN DEBUG: Check credentials and login', async ({ page }) => {
 
   const currentUrl = page.url();
   const title = await page.title();
-  
+
   // Check for error messages
   const errorElement = page.locator('[data-testid="login-error"]');
   const errorVisible = await errorElement.count() > 0;
@@ -50,7 +50,7 @@ test('ADMIN DEBUG: Check credentials and login', async ({ page }) => {
   console.log('Error visible:', errorVisible);
   console.log('Error text:', errorText);
   console.log('==========================');
-  
+
   // Force success for debugging
   expect(true).toBe(true);
 });

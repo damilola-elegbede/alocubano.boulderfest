@@ -44,7 +44,7 @@ describe('CartPersistence', () => {
       expect(DEFAULT_CART_STATE).toHaveProperty('tickets');
       expect(DEFAULT_CART_STATE).toHaveProperty('donations');
       expect(DEFAULT_CART_STATE).toHaveProperty('metadata');
-      
+
       expect(DEFAULT_CART_STATE.tickets).toEqual({});
       expect(DEFAULT_CART_STATE.donations).toEqual([]);
       expect(DEFAULT_CART_STATE.metadata).toHaveProperty('createdAt');
@@ -56,7 +56,7 @@ describe('CartPersistence', () => {
     it('should generate unique session IDs', () => {
       const id1 = generateSessionId();
       const id2 = generateSessionId();
-      
+
       expect(id1).toMatch(/^session_\d+_\w+$/);
       expect(id2).toMatch(/^session_\d+_\w+$/);
       expect(id1).not.toBe(id2);
@@ -65,14 +65,14 @@ describe('CartPersistence', () => {
     it('should include timestamp in session ID', () => {
       const id = generateSessionId();
       const timestamp = parseInt(id.split('_')[1]);
-      
+
       expect(timestamp).toBe(1234567890);
     });
 
     it('should include random component', () => {
       const id = generateSessionId();
       const randomPart = id.split('_')[2];
-      
+
       expect(randomPart).toMatch(/^\w+$/);
       expect(randomPart.length).toBeGreaterThan(0);
     });
@@ -81,7 +81,7 @@ describe('CartPersistence', () => {
   describe('createInitialCartState', () => {
     it('should create valid initial state', () => {
       const state = createInitialCartState();
-      
+
       expect(state).toMatchObject({
         tickets: {},
         donations: [],
@@ -96,7 +96,7 @@ describe('CartPersistence', () => {
     it('should create unique session IDs', () => {
       const state1 = createInitialCartState();
       const state2 = createInitialCartState();
-      
+
       expect(state1.metadata.sessionId).not.toBe(state2.metadata.sessionId);
     });
   });
@@ -105,9 +105,9 @@ describe('CartPersistence', () => {
     it('should serialize valid cart state', () => {
       const cartState = createInitialCartState();
       const serialized = serializeCartState(cartState);
-      
+
       expect(() => JSON.parse(serialized)).not.toThrow();
-      
+
       const parsed = JSON.parse(serialized);
       expect(parsed).toMatchObject({
         tickets: {},
@@ -121,20 +121,20 @@ describe('CartPersistence', () => {
     it('should update timestamp during serialization', () => {
       const cartState = createInitialCartState();
       cartState.metadata.updatedAt = 1000; // Old timestamp
-      
+
       const serialized = serializeCartState(cartState);
       const parsed = JSON.parse(serialized);
-      
+
       expect(parsed.metadata.updatedAt).toBe(1234567890);
     });
 
     it('should handle null/undefined input', () => {
       const serialized1 = serializeCartState(null);
       const serialized2 = serializeCartState(undefined);
-      
+
       const parsed1 = JSON.parse(serialized1);
       const parsed2 = JSON.parse(serialized2);
-      
+
       expect(isValidCartState(parsed1)).toBe(true);
       expect(isValidCartState(parsed2)).toBe(true);
     });
@@ -142,10 +142,10 @@ describe('CartPersistence', () => {
     it('should handle serialization errors gracefully', () => {
       const circularCart = {};
       circularCart.self = circularCart; // Circular reference
-      
+
       const serialized = serializeCartState(circularCart);
       const parsed = JSON.parse(serialized);
-      
+
       expect(isValidCartState(parsed)).toBe(true);
     });
 
@@ -163,10 +163,10 @@ describe('CartPersistence', () => {
           sessionId: 'test-session'
         }
       };
-      
+
       const serialized = serializeCartState(cartState);
       const parsed = JSON.parse(serialized);
-      
+
       expect(parsed.tickets.general).toMatchObject(cartState.tickets.general);
       expect(parsed.donations[0]).toMatchObject(cartState.donations[0]);
       expect(parsed.metadata.updatedAt).toBe(1234567890); // Updated timestamp
@@ -178,14 +178,14 @@ describe('CartPersistence', () => {
       const originalState = createInitialCartState();
       const serialized = JSON.stringify(originalState);
       const deserialized = deserializeCartState(serialized);
-      
+
       expect(deserialized).toMatchObject(originalState);
     });
 
     it('should handle invalid JSON gracefully', () => {
       const invalid = '{"tickets": invalid json}';
       const result = deserializeCartState(invalid);
-      
+
       expect(isValidCartState(result)).toBe(true);
       expect(result).toMatchObject({
         tickets: {},
@@ -210,10 +210,10 @@ describe('CartPersistence', () => {
         donations: { amount: 50, updatedAt: 1000 }, // Old single donation format
         metadata: { createdAt: 1000, updatedAt: 1000, sessionId: 'test' }
       };
-      
+
       const serialized = JSON.stringify(oldFormat);
       const deserialized = deserializeCartState(serialized);
-      
+
       expect(Array.isArray(deserialized.donations)).toBe(true);
       expect(deserialized.donations).toHaveLength(1);
       expect(deserialized.donations[0]).toMatchObject({
@@ -229,10 +229,10 @@ describe('CartPersistence', () => {
         donations: { amount: 0 },
         metadata: { createdAt: 1000, updatedAt: 1000, sessionId: 'test' }
       };
-      
+
       const serialized = JSON.stringify(oldFormat);
       const deserialized = deserializeCartState(serialized);
-      
+
       expect(deserialized.donations).toEqual([]);
     });
 
@@ -240,7 +240,7 @@ describe('CartPersistence', () => {
       const invalid = { tickets: 'not an object' };
       const serialized = JSON.stringify(invalid);
       const deserialized = deserializeCartState(serialized);
-      
+
       expect(isValidCartState(deserialized)).toBe(true);
       expect(deserialized).toMatchObject({
         tickets: {},
@@ -297,7 +297,7 @@ describe('CartPersistence', () => {
         donations: [],
         metadata: { createdAt: 1000, updatedAt: null }
       };
-      
+
       expect(isValidCartState(invalid1)).toBe(false);
       expect(isValidCartState(invalid2)).toBe(false);
     });
@@ -308,7 +308,7 @@ describe('CartPersistence', () => {
         donations: 'not array',
         metadata: { createdAt: 1000, updatedAt: 1000 }
       };
-      
+
       expect(isValidCartState(invalid)).toBe(false);
     });
   });
@@ -320,9 +320,9 @@ describe('CartPersistence', () => {
         donations: { amount: 100, updatedAt: 5000 },
         metadata: { createdAt: 1000, updatedAt: 2000 }
       };
-      
+
       const migrated = migrateDonationFormat(oldState);
-      
+
       expect(Array.isArray(migrated.donations)).toBe(true);
       expect(migrated.donations).toHaveLength(1);
       expect(migrated.donations[0]).toMatchObject({
@@ -338,7 +338,7 @@ describe('CartPersistence', () => {
         donations: { amount: 0 },
         metadata: { createdAt: 1000, updatedAt: 2000 }
       };
-      
+
       const migrated = migrateDonationFormat(oldState);
       expect(migrated.donations).toEqual([]);
     });
@@ -349,7 +349,7 @@ describe('CartPersistence', () => {
         donations: [{ id: 'test', amount: 50, name: 'Support' }],
         metadata: { createdAt: 1000, updatedAt: 2000 }
       };
-      
+
       const migrated = migrateDonationFormat(newState);
       expect(migrated.donations).toEqual(newState.donations);
     });
@@ -365,7 +365,7 @@ describe('CartPersistence', () => {
         donations: 'not array',
         metadata: { createdAt: 1000, updatedAt: 2000 }
       };
-      
+
       const migrated = migrateDonationFormat(invalidState);
       expect(migrated.donations).toEqual([]);
     });
@@ -383,9 +383,9 @@ describe('CartPersistence', () => {
         donations: [],
         metadata: { createdAt: 1000, updatedAt: 2000 }
       };
-      
+
       const cleaned = cleanCartState(dirtyState);
-      
+
       expect(Object.keys(cleaned.tickets)).toEqual(['valid']);
       expect(cleaned.tickets.valid).toMatchObject(dirtyState.tickets.valid);
     });
@@ -402,9 +402,9 @@ describe('CartPersistence', () => {
         ],
         metadata: { createdAt: 1000, updatedAt: 2000 }
       };
-      
+
       const cleaned = cleanCartState(dirtyState);
-      
+
       expect(cleaned.donations).toHaveLength(1);
       expect(cleaned.donations[0]).toMatchObject(dirtyState.donations[0]);
     });
@@ -412,7 +412,7 @@ describe('CartPersistence', () => {
     it('should update timestamp', () => {
       const state = createInitialCartState();
       state.metadata.updatedAt = 5000;
-      
+
       const cleaned = cleanCartState(state);
       expect(cleaned.metadata.updatedAt).toBe(1234567890);
     });
@@ -420,7 +420,7 @@ describe('CartPersistence', () => {
     it('should handle invalid cart state', () => {
       const invalid = { tickets: 'invalid' };
       const cleaned = cleanCartState(invalid);
-      
+
       expect(isValidCartState(cleaned)).toBe(true);
     });
   });
@@ -433,7 +433,7 @@ describe('CartPersistence', () => {
         name: 'General Admission',
         quantity: 2
       };
-      
+
       expect(isValidTicket(validTicket)).toBe(true);
     });
 
@@ -445,32 +445,32 @@ describe('CartPersistence', () => {
     });
 
     it('should reject tickets with invalid property types', () => {
-      expect(isValidTicket({ 
-        ticketType: 123, price: 50, name: 'Test', quantity: 1 
+      expect(isValidTicket({
+        ticketType: 123, price: 50, name: 'Test', quantity: 1
       })).toBe(false);
-      expect(isValidTicket({ 
-        ticketType: 'test', price: '50', name: 'Test', quantity: 1 
+      expect(isValidTicket({
+        ticketType: 'test', price: '50', name: 'Test', quantity: 1
       })).toBe(false);
-      expect(isValidTicket({ 
-        ticketType: 'test', price: 50, name: 123, quantity: 1 
+      expect(isValidTicket({
+        ticketType: 'test', price: 50, name: 123, quantity: 1
       })).toBe(false);
-      expect(isValidTicket({ 
-        ticketType: 'test', price: 50, name: 'Test', quantity: '1' 
+      expect(isValidTicket({
+        ticketType: 'test', price: 50, name: 'Test', quantity: '1'
       })).toBe(false);
     });
 
     it('should reject tickets with invalid values', () => {
-      expect(isValidTicket({ 
-        ticketType: '', price: 50, name: 'Test', quantity: 1 
+      expect(isValidTicket({
+        ticketType: '', price: 50, name: 'Test', quantity: 1
       })).toBe(false);
-      expect(isValidTicket({ 
-        ticketType: 'test', price: 0, name: 'Test', quantity: 1 
+      expect(isValidTicket({
+        ticketType: 'test', price: 0, name: 'Test', quantity: 1
       })).toBe(false);
-      expect(isValidTicket({ 
-        ticketType: 'test', price: 50, name: '', quantity: 1 
+      expect(isValidTicket({
+        ticketType: 'test', price: 50, name: '', quantity: 1
       })).toBe(false);
-      expect(isValidTicket({ 
-        ticketType: 'test', price: 50, name: 'Test', quantity: 0 
+      expect(isValidTicket({
+        ticketType: 'test', price: 50, name: 'Test', quantity: 0
       })).toBe(false);
     });
 
@@ -487,7 +487,7 @@ describe('CartPersistence', () => {
         amount: 50,
         name: 'Festival Support'
       };
-      
+
       expect(isValidDonation(validDonation)).toBe(true);
     });
 
@@ -519,7 +519,7 @@ describe('CartPersistence', () => {
     it('should calculate size for cart state', () => {
       const state = createInitialCartState();
       const size = calculateCartStateSize(state);
-      
+
       expect(typeof size).toBe('number');
       expect(size).toBeGreaterThan(0);
     });
@@ -527,7 +527,7 @@ describe('CartPersistence', () => {
     it('should handle serialization errors', () => {
       const circularState = {};
       circularState.self = circularState;
-      
+
       const size = calculateCartStateSize(circularState);
       expect(typeof size).toBe('number');
       expect(size).toBeGreaterThan(0); // Circular references are still serializable in our implementation
@@ -544,10 +544,10 @@ describe('CartPersistence', () => {
           { id: 'donation1', amount: 100, name: 'Large Donation' }
         ]
       };
-      
+
       const smallSize = calculateCartStateSize(smallState);
       const largeSize = calculateCartStateSize(largeState);
-      
+
       expect(largeSize).toBeGreaterThan(smallSize);
     });
   });
@@ -561,7 +561,7 @@ describe('CartPersistence', () => {
     it('should use custom size limit', () => {
       const state = createInitialCartState();
       const size = calculateCartStateSize(state);
-      
+
       expect(isWithinStorageLimits(state, size - 1)).toBe(false);
       expect(isWithinStorageLimits(state, size + 1)).toBe(true);
     });
@@ -569,7 +569,7 @@ describe('CartPersistence', () => {
     it('should handle edge case at exact limit', () => {
       const state = createInitialCartState();
       const size = calculateCartStateSize(state);
-      
+
       expect(isWithinStorageLimits(state, size)).toBe(true);
     });
   });
@@ -577,13 +577,13 @@ describe('CartPersistence', () => {
   describe('createCartStateDiff', () => {
     it('should detect added tickets', () => {
       const oldState = { tickets: {}, donations: [] };
-      const newState = { 
-        tickets: { general: { quantity: 2 } }, 
-        donations: [] 
+      const newState = {
+        tickets: { general: { quantity: 2 } },
+        donations: []
       };
-      
+
       const diff = createCartStateDiff(oldState, newState);
-      
+
       expect(diff.tickets.added).toContain('general');
       expect(diff.tickets.updated).toHaveLength(0);
       expect(diff.tickets.removed).toHaveLength(0);
@@ -591,14 +591,14 @@ describe('CartPersistence', () => {
     });
 
     it('should detect removed tickets', () => {
-      const oldState = { 
-        tickets: { general: { quantity: 2 } }, 
-        donations: [] 
+      const oldState = {
+        tickets: { general: { quantity: 2 } },
+        donations: []
       };
       const newState = { tickets: {}, donations: [] };
-      
+
       const diff = createCartStateDiff(oldState, newState);
-      
+
       expect(diff.tickets.removed).toContain('general');
       expect(diff.tickets.added).toHaveLength(0);
       expect(diff.tickets.updated).toHaveLength(0);
@@ -606,17 +606,17 @@ describe('CartPersistence', () => {
     });
 
     it('should detect updated tickets', () => {
-      const oldState = { 
-        tickets: { general: { quantity: 2 } }, 
-        donations: [] 
+      const oldState = {
+        tickets: { general: { quantity: 2 } },
+        donations: []
       };
-      const newState = { 
-        tickets: { general: { quantity: 5 } }, 
-        donations: [] 
+      const newState = {
+        tickets: { general: { quantity: 5 } },
+        donations: []
       };
-      
+
       const diff = createCartStateDiff(oldState, newState);
-      
+
       expect(diff.tickets.updated).toHaveLength(1);
       expect(diff.tickets.updated[0]).toMatchObject({
         type: 'general',
@@ -629,22 +629,22 @@ describe('CartPersistence', () => {
     it('should detect donation changes', () => {
       const oldState = { tickets: {}, donations: [] };
       const newState = { tickets: {}, donations: [{ amount: 50 }] };
-      
+
       const diff = createCartStateDiff(oldState, newState);
-      
+
       expect(diff.donations.added).toHaveLength(1);
       expect(diff.donations.removed).toHaveLength(0);
       expect(diff.totalsChanged).toBe(true);
     });
 
     it('should handle no changes', () => {
-      const state = { 
-        tickets: { general: { quantity: 2 } }, 
-        donations: [{ amount: 50 }] 
+      const state = {
+        tickets: { general: { quantity: 2 } },
+        donations: [{ amount: 50 }]
       };
-      
+
       const diff = createCartStateDiff(state, state);
-      
+
       expect(diff.tickets.added).toHaveLength(0);
       expect(diff.tickets.updated).toHaveLength(0);
       expect(diff.tickets.removed).toHaveLength(0);
@@ -655,7 +655,7 @@ describe('CartPersistence', () => {
 
     it('should handle null/undefined states', () => {
       const diff = createCartStateDiff(null, { tickets: {}, donations: [] });
-      
+
       expect(diff.totalsChanged).toBe(false);
       expect(diff.tickets.added).toHaveLength(0);
     });

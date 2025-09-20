@@ -1,6 +1,6 @@
 /**
  * Comprehensive Test Coverage and Quality Metrics Tracking System
- * 
+ *
  * Features:
  * - User journey coverage tracking with critical path validation
  * - Test effectiveness metrics and defect detection analysis
@@ -28,7 +28,7 @@ export class CoverageTracker {
         testExecutionTime: 300,         // Max 5 minutes
         flakiness: 5                    // Max 5% flaky tests
       },
-      
+
       // Critical user journeys that must have 100% coverage
       criticalJourneys: [
         'ticket-purchase-flow',
@@ -39,14 +39,14 @@ export class CoverageTracker {
         'email-notifications',
         'error-handling'
       ],
-      
+
       // Test categories for analysis
       testCategories: {
         unit: { weight: 0.3, costFactor: 1 },
         integration: { weight: 0.4, costFactor: 2 },
         e2e: { weight: 0.3, costFactor: 5 }
       },
-      
+
       // Business impact metrics
       businessMetrics: {
         criticalBugCost: 10000,         // Cost of critical production bug
@@ -55,10 +55,10 @@ export class CoverageTracker {
         revenuePerTransaction: 75,      // Average ticket price
         userAcquisitionCost: 25         // Cost to acquire new user
       },
-      
+
       ...config
     };
-    
+
     this.metrics = {
       coverage: {},
       effectiveness: {},
@@ -67,7 +67,7 @@ export class CoverageTracker {
       roi: {},
       trends: []
     };
-    
+
     this.reportPath = path.join(process.cwd(), '.tmp', 'coverage-reports');
   }
 
@@ -77,13 +77,13 @@ export class CoverageTracker {
   async initialize() {
     try {
       await fs.mkdir(this.reportPath, { recursive: true });
-      
+
       // Load historical data if exists
       await this.loadHistoricalData();
-      
+
       // Initialize tracking structures
       this.initializeTracking();
-      
+
       console.log('Coverage tracker initialized successfully');
       return true;
     } catch (error) {
@@ -110,19 +110,19 @@ export class CoverageTracker {
 
     // Update coverage metrics
     await this.updateCoverageMetrics(execution);
-    
+
     // Update effectiveness metrics
     await this.updateEffectivenessMetrics(execution);
-    
+
     // Update maintenance metrics
     await this.updateMaintenanceMetrics(execution);
-    
+
     // Check quality gates
     const gateResults = await this.checkQualityGates();
-    
+
     // Store execution data
     await this.storeExecutionData(execution);
-    
+
     return {
       execution,
       coverage: this.metrics.coverage,
@@ -136,19 +136,19 @@ export class CoverageTracker {
    */
   async updateCoverageMetrics(execution) {
     const { suite, results } = execution;
-    
+
     // User journey coverage
     const journeyCoverage = await this.calculateJourneyCoverage(suite, results);
-    
+
     // Code coverage (if available)
     const codeCoverage = await this.extractCodeCoverage(results);
-    
+
     // Feature coverage
     const featureCoverage = await this.calculateFeatureCoverage(suite, results);
-    
+
     // Critical path coverage
     const criticalPathCoverage = await this.calculateCriticalPathCoverage(journeyCoverage);
-    
+
     this.metrics.coverage = {
       ...this.metrics.coverage,
       timestamp: execution.timestamp,
@@ -376,7 +376,7 @@ export class CoverageTracker {
     if (results.tests) {
       for (const test of results.tests) {
         for (const pattern of testPatterns) {
-          if (pattern.test(test.title) || pattern.test(test.fullTitle) || 
+          if (pattern.test(test.title) || pattern.test(test.fullTitle) ||
               (test.tags && test.tags.some(tag => pattern.test(tag)))) {
             return {
               test: test.title,
@@ -395,7 +395,7 @@ export class CoverageTracker {
    */
   async calculateCriticalPathCoverage(journeyCoverage) {
     const criticalPaths = {};
-    
+
     for (const journey of this.config.criticalJourneys) {
       const coverage = journeyCoverage?.[journey];
       if (coverage) {
@@ -416,16 +416,16 @@ export class CoverageTracker {
    */
   async updateEffectivenessMetrics(execution) {
     const { results } = execution;
-    
+
     // Calculate test reliability
     const reliability = this.calculateTestReliability(results);
-    
+
     // Calculate defect detection rate (requires production incident data)
     const defectDetection = await this.calculateDefectDetectionRate();
-    
+
     // Calculate test value metrics
     const valueMetrics = this.calculateTestValue(results);
-    
+
     this.metrics.effectiveness = {
       ...this.metrics.effectiveness,
       timestamp: execution.timestamp,
@@ -443,7 +443,7 @@ export class CoverageTracker {
     const total = (results.passed || 0) + (results.failed || 0);
     const passed = results.passed || 0;
     const flaky = results.flaky || 0;
-    
+
     return {
       passRate: total > 0 ? Math.round((passed / total) * 100) : 0,
       flakiness: total > 0 ? Math.round((flaky / total) * 100) : 0,
@@ -458,13 +458,13 @@ export class CoverageTracker {
   async calculateDefectDetectionRate() {
     // This would typically integrate with production monitoring
     // For now, we'll simulate based on test patterns
-    
+
     const historicalData = await this.getHistoricalDefectData();
     const testCoverage = this.metrics.coverage.overall || 0;
-    
+
     // Estimate defect detection based on coverage and historical data
     const estimatedDetection = Math.min(95, testCoverage * 0.8 + 10);
-    
+
     return {
       estimated: estimatedDetection,
       historical: historicalData,
@@ -481,12 +481,12 @@ export class CoverageTracker {
    */
   async updateMaintenanceMetrics(execution) {
     const { results, duration } = execution;
-    
+
     // Calculate maintenance metrics
     const complexity = await this.calculateTestComplexity();
     const maintainability = await this.calculateMaintainability();
     const efficiency = this.calculateTestEfficiency(results, duration);
-    
+
     this.metrics.maintenance = {
       ...this.metrics.maintenance,
       timestamp: execution.timestamp,
@@ -502,7 +502,7 @@ export class CoverageTracker {
    */
   async calculateTestComplexity() {
     const testFiles = await this.analyzeTestFiles();
-    
+
     return {
       linesOfCode: testFiles.totalLines,
       cyclomaticComplexity: testFiles.complexity,
@@ -519,7 +519,7 @@ export class CoverageTracker {
   async calculateMaintainability() {
     const changeFrequency = await this.calculateTestChangeFrequency();
     const breakageRate = await this.calculateTestBreakageRate();
-    
+
     return {
       changeFrequency,
       breakageRate,
@@ -534,7 +534,7 @@ export class CoverageTracker {
   async checkQualityGates() {
     const gates = {};
     const thresholds = this.config.thresholds;
-    
+
     // Critical path coverage gate
     const criticalCoverage = this.getCriticalPathCoverageAverage();
     gates.criticalPathCoverage = {
@@ -543,7 +543,7 @@ export class CoverageTracker {
       passed: criticalCoverage >= thresholds.criticalPathCoverage,
       severity: 'blocker'
     };
-    
+
     // Overall coverage gate
     const overallCoverage = this.metrics.coverage.overall || 0;
     gates.overallCoverage = {
@@ -552,7 +552,7 @@ export class CoverageTracker {
       passed: overallCoverage >= thresholds.overallCoverage,
       severity: 'major'
     };
-    
+
     // Test reliability gate
     const reliability = this.metrics.effectiveness.reliability?.passRate || 0;
     gates.testReliability = {
@@ -561,7 +561,7 @@ export class CoverageTracker {
       passed: reliability >= thresholds.testReliability,
       severity: 'major'
     };
-    
+
     // Flakiness gate
     const flakiness = this.metrics.effectiveness.reliability?.flakiness || 0;
     gates.flakiness = {
@@ -570,11 +570,11 @@ export class CoverageTracker {
       passed: flakiness <= thresholds.flakiness,
       severity: 'minor'
     };
-    
+
     // Overall gate status
     const allPassed = Object.values(gates).every(gate => gate.passed);
     const blockers = Object.values(gates).filter(gate => gate.severity === 'blocker' && !gate.passed);
-    
+
     return {
       passed: allPassed,
       blockers: blockers.length,
@@ -589,7 +589,7 @@ export class CoverageTracker {
   async calculateROI() {
     const costs = await this.calculateTestingCosts();
     const benefits = await this.calculateTestingBenefits();
-    
+
     const roi = {
       costs,
       benefits,
@@ -598,7 +598,7 @@ export class CoverageTracker {
       paybackPeriod: this.calculatePaybackPeriod(costs, benefits),
       businessImpact: this.calculateBusinessImpact()
     };
-    
+
     this.metrics.roi = roi;
     return roi;
   }
@@ -610,14 +610,14 @@ export class CoverageTracker {
     const devTime = await this.calculateDevelopmentTime();
     const maintenanceTime = await this.calculateMaintenanceTime();
     const infraCosts = this.calculateInfrastructureCosts();
-    
+
     const costs = {
       development: devTime * this.config.businessMetrics.devHourlyRate,
       maintenance: maintenanceTime * this.config.businessMetrics.devHourlyRate,
       infrastructure: infraCosts,
       total: 0
     };
-    
+
     costs.total = costs.development + costs.maintenance + costs.infrastructure;
     return costs;
   }
@@ -630,7 +630,7 @@ export class CoverageTracker {
     const bugsPreventedMinor = await this.estimatePreventedMinorBugs();
     const revenueProtected = await this.calculateRevenueProtection();
     const reputationValue = await this.calculateReputationValue();
-    
+
     const benefits = {
       criticalBugsPrevented: bugsPreventedCritical * this.config.businessMetrics.criticalBugCost,
       minorBugsPrevented: bugsPreventedMinor * this.config.businessMetrics.minorBugCost,
@@ -638,10 +638,10 @@ export class CoverageTracker {
       reputationValue,
       total: 0
     };
-    
-    benefits.total = benefits.criticalBugsPrevented + benefits.minorBugsPrevented + 
+
+    benefits.total = benefits.criticalBugsPrevented + benefits.minorBugsPrevented +
                    benefits.revenueProtected + benefits.reputationValue;
-    
+
     return benefits;
   }
 
@@ -653,7 +653,7 @@ export class CoverageTracker {
     const roi = await this.calculateROI();
     const recommendations = await this.generateRecommendations();
     const trends = this.calculateTrends();
-    
+
     const report = {
       meta: {
         generatedAt: timestamp,
@@ -661,7 +661,7 @@ export class CoverageTracker {
         stakeholderType,
         period: this.getReportingPeriod()
       },
-      
+
       executive: stakeholderType === 'executive' ? {
         summary: this.generateExecutiveSummary(),
         roi: {
@@ -673,7 +673,7 @@ export class CoverageTracker {
         riskMitigation: this.calculateRiskMitigation(),
         businessImpact: roi.businessImpact
       } : null,
-      
+
       technical: {
         coverage: this.metrics.coverage,
         effectiveness: this.metrics.effectiveness,
@@ -681,7 +681,7 @@ export class CoverageTracker {
         qualityGates: await this.checkQualityGates(),
         trends
       },
-      
+
       actionable: {
         recommendations,
         priorities: this.prioritizeRecommendations(recommendations),
@@ -689,10 +689,10 @@ export class CoverageTracker {
         roadmap: this.generateImprovementRoadmap(recommendations)
       }
     };
-    
+
     // Store report
     await this.storeReport(report);
-    
+
     return report;
   }
 
@@ -701,7 +701,7 @@ export class CoverageTracker {
    */
   async generateRecommendations() {
     const recommendations = [];
-    
+
     // Coverage recommendations
     const coverageGaps = this.identifyHighPriorityCoverageGaps();
     if (coverageGaps.length > 0) {
@@ -716,7 +716,7 @@ export class CoverageTracker {
         roi: 'high'
       });
     }
-    
+
     // Maintenance recommendations
     const maintenanceIssues = this.identifyMaintenanceIssues();
     if (maintenanceIssues.length > 0) {
@@ -731,7 +731,7 @@ export class CoverageTracker {
         roi: 'medium'
       });
     }
-    
+
     // Performance recommendations
     if (this.metrics.maintenance?.efficiency?.executionTime > this.config.thresholds.testExecutionTime) {
       recommendations.push({
@@ -749,36 +749,36 @@ export class CoverageTracker {
         roi: 'medium'
       });
     }
-    
+
     return recommendations;
   }
 
   /**
    * Helper methods for calculations
    */
-  
+
   calculateOverallCoverage(journeyCoverage, codeCoverage, featureCoverage) {
     const weights = { journey: 0.4, code: 0.3, feature: 0.3 };
-    
-    const journeyAvg = Object.values(journeyCoverage || {}).reduce((sum, j) => sum + j.percentage, 0) / 
+
+    const journeyAvg = Object.values(journeyCoverage || {}).reduce((sum, j) => sum + j.percentage, 0) /
                       Math.max(Object.keys(journeyCoverage || {}).length, 1);
-    
+
     return Math.round(
       journeyAvg * weights.journey +
       (codeCoverage?.percentage || 0) * weights.code +
       (featureCoverage?.percentage || 0) * weights.feature
     );
   }
-  
+
   getCriticalPathCoverageAverage() {
     const criticalPaths = this.metrics.coverage.criticalPaths || {};
     const values = Object.values(criticalPaths).map(p => p.percentage);
     return values.length > 0 ? Math.round(values.reduce((a, b) => a + b) / values.length) : 0;
   }
-  
+
   identifyCoverageGaps(journeyCoverage, criticalPathCoverage) {
     const gaps = [];
-    
+
     for (const [journey, coverage] of Object.entries(journeyCoverage || {})) {
       if (coverage.gaps && coverage.gaps.length > 0) {
         gaps.push({
@@ -789,7 +789,7 @@ export class CoverageTracker {
         });
       }
     }
-    
+
     return gaps.sort((a, b) => {
       // Sort by critical first, then by lowest coverage
       if (a.critical !== b.critical) return b.critical - a.critical;
@@ -804,21 +804,21 @@ export class CoverageTracker {
     try {
       const dataFile = path.join(this.reportPath, 'execution-history.json');
       let history = [];
-      
+
       try {
         const existing = await fs.readFile(dataFile, 'utf8');
         history = JSON.parse(existing);
       } catch (error) {
         // File doesn't exist yet
       }
-      
+
       history.push(execution);
-      
+
       // Keep only last 100 executions
       if (history.length > 100) {
         history = history.slice(-100);
       }
-      
+
       await fs.writeFile(dataFile, JSON.stringify(history, null, 2));
     } catch (error) {
       console.warn('Failed to store execution data:', error);
@@ -832,13 +832,13 @@ export class CoverageTracker {
     try {
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const reportFile = path.join(this.reportPath, `quality-report-${timestamp}.json`);
-      
+
       await fs.writeFile(reportFile, JSON.stringify(report, null, 2));
-      
+
       // Also store as latest report
       const latestFile = path.join(this.reportPath, 'latest-quality-report.json');
       await fs.writeFile(latestFile, JSON.stringify(report, null, 2));
-      
+
       console.log(`Quality report generated: ${reportFile}`);
     } catch (error) {
       console.error('Failed to store quality report:', error);
@@ -852,11 +852,11 @@ export class CoverageTracker {
     const coverage = this.getCriticalPathCoverageAverage();
     const reliability = this.metrics.effectiveness.reliability?.passRate || 0;
     const roi = this.metrics.roi?.roiPercentage || 0;
-    
+
     let status = 'Good';
     if (coverage < 90 || reliability < 90) status = 'Needs Attention';
     if (coverage < 80 || reliability < 80) status = 'Poor';
-    
+
     return {
       overallStatus: status,
       keyMetrics: {
@@ -871,7 +871,7 @@ export class CoverageTracker {
 
   // Additional helper methods would be implemented here...
   // (Methods for trend analysis, historical data, test file analysis, etc.)
-  
+
   /**
    * Placeholder methods for complex calculations
    */
@@ -898,7 +898,7 @@ export class CoverageTracker {
   async estimatePreventedMinorBugs() { return 8; }
   async calculateRevenueProtection() { return 15000; }
   async calculateReputationValue() { return 5000; }
-  calculateTestValue(results) { 
+  calculateTestValue(results) {
     return {
       coverage: (results?.coverage || 0) * 0.3,
       reliability: (results?.reliability || 0) * 0.25,

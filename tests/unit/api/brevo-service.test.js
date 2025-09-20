@@ -66,11 +66,11 @@ describe("Brevo Service", () => {
     it("should initialize successfully when BREVO_API_KEY is provided", () => {
       // Save original API key
       const originalApiKey = process.env.BREVO_API_KEY;
-      
+
       try {
         // Set valid API key
         process.env.BREVO_API_KEY = "test-api-key-12345";
-        
+
         // Should not throw
         const service = new BrevoService();
         expect(service).toBeDefined();

@@ -43,7 +43,7 @@ describe('Analytics Utils', () => {
     it('should generate unique session IDs', () => {
       const id1 = generateSessionId();
       const id2 = generateSessionId();
-      
+
       expect(id1).toMatch(/^session_\d+_\w+$/);
       expect(id2).toMatch(/^session_\d+_\w+$/);
       expect(id1).not.toBe(id2);
@@ -52,14 +52,14 @@ describe('Analytics Utils', () => {
     it('should include timestamp in session ID', () => {
       const id = generateSessionId();
       const timestamp = parseInt(id.split('_')[1]);
-      
+
       expect(timestamp).toBe(1234567890);
     });
 
     it('should include random component', () => {
       const id = generateSessionId();
       const randomPart = id.split('_')[2];
-      
+
       expect(randomPart).toMatch(/^\w+$/);
       expect(randomPart.length).toBeGreaterThan(0);
     });
@@ -68,7 +68,7 @@ describe('Analytics Utils', () => {
   describe('createEventData', () => {
     it('should create basic event data structure', () => {
       const eventData = createEventData('test_event');
-      
+
       expect(eventData).toMatchObject({
         event: 'test_event',
         timestamp: 1234567890
@@ -79,7 +79,7 @@ describe('Analytics Utils', () => {
     it('should include provided properties', () => {
       const properties = { value: 100, currency: 'USD' };
       const eventData = createEventData('purchase', properties);
-      
+
       expect(eventData.value).toBe(100);
       expect(eventData.currency).toBe('USD');
     });
@@ -91,7 +91,7 @@ describe('Analytics Utils', () => {
         referrer: 'https://google.com'
       };
       const eventData = createEventData('test_event', {}, context);
-      
+
       expect(eventData.sessionId).toBe('custom-session');
       expect(eventData.url).toBe('https://example.com/test');
       expect(eventData.referrer).toBe('https://google.com');
@@ -99,7 +99,7 @@ describe('Analytics Utils', () => {
 
     it('should use defaults when context not provided', () => {
       const eventData = createEventData('test_event');
-      
+
       expect(eventData.url).toBe('');
       expect(eventData.referrer).toBe('');
       expect(eventData.sessionId).toMatch(/^session_/);
@@ -115,7 +115,7 @@ describe('Analytics Utils', () => {
       const properties = { prop1: 'value1', prop2: 'value2' };
       const context = { prop1: 'context-value1', prop3: 'value3' };
       const eventData = createEventData('test', properties, context);
-      
+
       // Properties should override context
       expect(eventData.prop1).toBe('value1');
       expect(eventData.prop2).toBe('value2');
@@ -130,7 +130,7 @@ describe('Analytics Utils', () => {
         timestamp: 1234567890,
         sessionId: 'session_123'
       };
-      
+
       const result = validateEventData(eventData);
       expect(result.isValid).toBe(true);
       expect(result.errors).toHaveLength(0);
@@ -144,7 +144,7 @@ describe('Analytics Utils', () => {
     it('should require event name', () => {
       const eventData = { timestamp: 123, sessionId: 'test' };
       const result = validateEventData(eventData);
-      
+
       expect(result.isValid).toBe(false);
       expect(result.errors).toContain('Event name is required and must be a string');
     });
@@ -152,7 +152,7 @@ describe('Analytics Utils', () => {
     it('should require timestamp', () => {
       const eventData = { event: 'test', sessionId: 'test' };
       const result = validateEventData(eventData);
-      
+
       expect(result.isValid).toBe(false);
       expect(result.errors).toContain('Timestamp must be a number');
     });
@@ -160,7 +160,7 @@ describe('Analytics Utils', () => {
     it('should require session ID', () => {
       const eventData = { event: 'test', timestamp: 123 };
       const result = validateEventData(eventData);
-      
+
       expect(result.isValid).toBe(false);
       expect(result.errors).toContain('Session ID is required and must be a string');
     });
@@ -172,7 +172,7 @@ describe('Analytics Utils', () => {
         sessionId: 456 // Should be string
       };
       const result = validateEventData(eventData);
-      
+
       expect(result.isValid).toBe(false);
       expect(result.errors).toHaveLength(3);
     });
@@ -205,7 +205,7 @@ describe('Analytics Utils', () => {
     it('should include provided details', () => {
       const details = { ticketType: 'general', quantity: 2 };
       const result = formatCartEvent('ticket_added', details);
-      
+
       expect(result).toMatchObject({
         event: 'cart_ticket_added',
         category: 'cart',
@@ -229,7 +229,7 @@ describe('Analytics Utils', () => {
         { ticketType: 'general', name: 'General Admission', quantity: 2, price: 50 }
       ];
       const result = formatEcommerceEvent(items, 100);
-      
+
       expect(result).toMatchObject({
         items: [{
           id: 'general',
@@ -250,7 +250,7 @@ describe('Analytics Utils', () => {
         { id: 'vip', name: 'VIP', price: 100, amount: 100, quantity: 1 }
       ];
       const result = formatEcommerceEvent(items, 200);
-      
+
       expect(result.items).toHaveLength(2);
       expect(result.num_items).toBe(2);
       expect(result.value).toBe(200);
@@ -259,7 +259,7 @@ describe('Analytics Utils', () => {
     it('should use fallback values for missing properties', () => {
       const items = [{ name: 'Test Item' }];
       const result = formatEcommerceEvent(items, 0);
-      
+
       expect(result.items[0]).toMatchObject({
         id: undefined,
         name: 'Test Item',
@@ -271,7 +271,7 @@ describe('Analytics Utils', () => {
 
     it('should handle empty items array', () => {
       const result = formatEcommerceEvent([], 0);
-      
+
       expect(result).toMatchObject({
         items: [],
         value: 0,
@@ -322,7 +322,7 @@ describe('Analytics Utils', () => {
         ]
       };
       const result = formatFacebookPixelEvent('purchase', eventData);
-      
+
       expect(result).toMatchObject({
         event: 'purchase',
         value: 150.50,
@@ -335,7 +335,7 @@ describe('Analytics Utils', () => {
 
     it('should handle missing properties gracefully', () => {
       const result = formatFacebookPixelEvent('test', {});
-      
+
       expect(result).toMatchObject({
         event: 'test',
         value: 0,
@@ -355,7 +355,7 @@ describe('Analytics Utils', () => {
         currency: 'USD'
       };
       const result = formatGA4Event('purchase', eventData);
-      
+
       expect(result).toMatchObject({
         custom_parameter_1: 'test-session',
         value: 100,
@@ -371,7 +371,7 @@ describe('Analytics Utils', () => {
         ]
       };
       const result = formatGA4Event('purchase', eventData);
-      
+
       expect(result.items).toHaveLength(1);
       expect(result.items[0]).toMatchObject({
         item_id: 'ticket1',
@@ -384,7 +384,7 @@ describe('Analytics Utils', () => {
 
     it('should handle missing optional properties', () => {
       const result = formatGA4Event('test', {});
-      
+
       expect(result).toMatchObject({
         custom_parameter_1: undefined,
         value: 0,
@@ -396,7 +396,7 @@ describe('Analytics Utils', () => {
     it('should handle empty items array', () => {
       const eventData = { items: [] };
       const result = formatGA4Event('test', eventData);
-      
+
       expect(result.items).toEqual([]);
     });
   });
@@ -410,14 +410,14 @@ describe('Analytics Utils', () => {
         { event: 'checkout_button_clicked' },
         { event: 'payment_completed' }
       ];
-      
+
       const funnel = createConversionFunnel(events);
-      
+
       expect(funnel).toHaveProperty('payment_integration_initialized');
       expect(funnel).toHaveProperty('cart_ticket_added');
       expect(funnel).toHaveProperty('checkout_button_clicked');
       expect(funnel).toHaveProperty('payment_completed');
-      
+
       expect(funnel.cart_ticket_added.count).toBe(2);
       expect(funnel.checkout_button_clicked.count).toBe(1);
     });
@@ -428,16 +428,16 @@ describe('Analytics Utils', () => {
         { event: 'cart_ticket_added' },
         { event: 'checkout_button_clicked' }
       ];
-      
+
       const funnel = createConversionFunnel(events);
-      
+
       expect(funnel.cart_ticket_added.rate).toBe(100); // 1/1 * 100 (based on payment_integration_initialized)
       expect(funnel.checkout_button_clicked.rate).toBe(0); // 1/0 = 0 (based on cart_panel_opened)
     });
 
     it('should handle empty events array', () => {
       const funnel = createConversionFunnel([]);
-      
+
       Object.values(funnel).forEach(step => {
         expect(step.count).toBe(0);
         expect(step.rate).toBe(0);
@@ -446,7 +446,7 @@ describe('Analytics Utils', () => {
 
     it('should include all funnel steps even if not present', () => {
       const funnel = createConversionFunnel([]);
-      
+
       const expectedSteps = [
         'payment_integration_initialized',
         'cart_ticket_added',
@@ -458,7 +458,7 @@ describe('Analytics Utils', () => {
         'payment_submit_attempted',
         'payment_completed'
       ];
-      
+
       expectedSteps.forEach(step => {
         expect(funnel).toHaveProperty(step);
       });
@@ -471,9 +471,9 @@ describe('Analytics Utils', () => {
         { event: 'cart_ticket_added' }, // 1 out of 2 = 50%
         { event: 'checkout_button_clicked' } // 1 out of 1 = 100%
       ];
-      
+
       const funnel = createConversionFunnel(events);
-      
+
       expect(funnel.cart_ticket_added.rate).toBe(50);
       expect(funnel.checkout_button_clicked.rate).toBe(0); // 1/0 = 0 (based on cart_panel_opened)
     });
@@ -493,23 +493,23 @@ describe('Analytics Utils', () => {
     it('should detect development ports', () => {
       const mockWindow1 = { location: { hostname: 'example.com', port: '3000' } };
       const mockWindow2 = { location: { hostname: 'example.com', port: '8080' } };
-      
+
       expect(isDevelopmentEnvironment(mockWindow1)).toBe(true);
       expect(isDevelopmentEnvironment(mockWindow2)).toBe(true);
     });
 
     it('should detect debug parameter', () => {
-      const mockWindow = { 
-        location: { 
+      const mockWindow = {
+        location: {
           hostname: 'production.com',
-          search: '?debug=true&other=value' 
-        } 
+          search: '?debug=true&other=value'
+        }
       };
       expect(isDevelopmentEnvironment(mockWindow)).toBe(true);
     });
 
     it('should detect dev_mode in localStorage', () => {
-      const mockWindow = { 
+      const mockWindow = {
         location: { hostname: 'production.com' },
         localStorage: { getItem: (key) => key === 'dev_mode' ? 'true' : null }
       };
@@ -517,8 +517,8 @@ describe('Analytics Utils', () => {
     });
 
     it('should return false for production environment', () => {
-      const mockWindow = { 
-        location: { 
+      const mockWindow = {
+        location: {
           hostname: 'production.com',
           port: '443',
           search: ''
@@ -544,9 +544,9 @@ describe('Analytics Utils', () => {
         nullValue: null, // Should be excluded
         undefinedValue: undefined // Should be excluded
       };
-      
+
       const sanitized = sanitizeEventProperties(properties);
-      
+
       expect(sanitized).toHaveProperty('string', 'text');
       expect(sanitized).toHaveProperty('number', 123);
       expect(sanitized).toHaveProperty('boolean', true);
@@ -559,9 +559,9 @@ describe('Analytics Utils', () => {
     it('should truncate long strings', () => {
       const longString = 'a'.repeat(150);
       const properties = { longText: longString };
-      
+
       const sanitized = sanitizeEventProperties(properties);
-      
+
       expect(sanitized.longText).toHaveLength(103); // 100 + '...'
       expect(sanitized.longText.endsWith('...')).toBe(true);
     });
@@ -569,18 +569,18 @@ describe('Analytics Utils', () => {
     it('should handle large arrays', () => {
       const largeArray = new Array(20).fill(1);
       const properties = { bigArray: largeArray };
-      
+
       const sanitized = sanitizeEventProperties(properties);
-      
+
       expect(sanitized.bigArray).toBe('Array(20)');
     });
 
     it('should preserve small arrays', () => {
       const smallArray = [1, 2, 3];
       const properties = { smallArray: smallArray };
-      
+
       const sanitized = sanitizeEventProperties(properties);
-      
+
       expect(sanitized.smallArray).toEqual([1, 2, 3]);
     });
 
@@ -593,7 +593,7 @@ describe('Analytics Utils', () => {
   describe('createPerformanceEvent', () => {
     it('should create valid performance event', () => {
       const event = createPerformanceEvent('page_load', 1500);
-      
+
       expect(event).toMatchObject({
         event: 'performance_metric',
         metric: 'page_load',
@@ -627,7 +627,7 @@ describe('Analytics Utils', () => {
   describe('createErrorEvent', () => {
     it('should create valid error event', () => {
       const event = createErrorEvent('network_error', 'Failed to fetch data');
-      
+
       expect(event).toMatchObject({
         event: 'error_occurred',
         error_type: 'network_error',
@@ -644,7 +644,7 @@ describe('Analytics Utils', () => {
         object: { nested: 'value' } // Should be sanitized out
       };
       const event = createErrorEvent('api_error', 'Not found', context);
-      
+
       expect(event.context).toHaveProperty('url', '/api/test');
       expect(event.context).toHaveProperty('status', 404);
       expect(event.context).not.toHaveProperty('object');
@@ -653,7 +653,7 @@ describe('Analytics Utils', () => {
     it('should truncate long error messages', () => {
       const longMessage = 'error '.repeat(50); // 250+ chars
       const event = createErrorEvent('test', longMessage);
-      
+
       expect(event.error_message.length).toBeLessThanOrEqual(200);
     });
 
@@ -709,16 +709,16 @@ describe('Analytics Utils', () => {
         quantity: 2,
         price: 50
       });
-      
+
       // 2. Validate event data
       const validation = validateEventData(eventData);
       expect(validation.isValid).toBe(true);
-      
+
       // 3. Format for different platforms
       const cartEvent = formatCartEvent('ticket_added', { ticketType: 'general' });
       const fbEvent = formatFacebookPixelEvent('cart_ticket_added', eventData);
       const ga4Event = formatGA4Event('cart_ticket_added', eventData);
-      
+
       expect(cartEvent.event).toBe('cart_ticket_added');
       expect(fbEvent.event).toBe('cart_ticket_added');
       expect(ga4Event.value).toBe(0); // No value in original event data
@@ -730,17 +730,17 @@ describe('Analytics Utils', () => {
         { ticketType: 'vip', name: 'VIP Access', quantity: 1, price: 100 }
       ];
       const totalValue = 200;
-      
+
       // Format for different platforms
       const ecommerceEvent = formatEcommerceEvent(items, totalValue);
       const fbPixelEvent = formatFacebookPixelEvent('purchase', ecommerceEvent);
       const ga4Event = formatGA4Event('purchase', ecommerceEvent);
-      
+
       // All platforms should have consistent data
       expect(ecommerceEvent.value).toBe(200);
       expect(fbPixelEvent.value).toBe(200);
       expect(ga4Event.value).toBe(200);
-      
+
       expect(ecommerceEvent.num_items).toBe(2);
       expect(fbPixelEvent.num_items).toBe(2);
       expect(ga4Event.items).toHaveLength(2);
@@ -756,14 +756,14 @@ describe('Analytics Utils', () => {
         { event: 'payment_submit_attempted' },
         { event: 'payment_completed' }
       ];
-      
+
       const funnel = createConversionFunnel(userEvents);
-      
+
       // Should show complete successful funnel
       expect(funnel.payment_integration_initialized.count).toBe(1);
       expect(funnel.cart_ticket_added.count).toBe(1);
       expect(funnel.payment_completed.count).toBe(1);
-      
+
       // Conversion rates should be 100% for this complete flow
       expect(funnel.cart_ticket_added.rate).toBe(100);
       expect(funnel.payment_completed.rate).toBe(100);

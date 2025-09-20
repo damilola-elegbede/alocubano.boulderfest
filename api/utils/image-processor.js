@@ -1,4 +1,4 @@
-import sharp from "sharp";
+import sharp from 'sharp';
 
 const AVIF_QUALITY = 65;
 const WEBP_QUALITY = 80;
@@ -14,7 +14,7 @@ const JPEG_QUALITY = 85;
  * @returns {Promise<{buffer: Buffer, format: string}>} Processed image buffer and actual format used
  */
 async function processImage(inputBuffer, options = {}) {
-  const { width, format = "jpeg", quality } = options;
+  const { width, format = 'jpeg', quality } = options;
 
   try {
     let pipeline = sharp(inputBuffer);
@@ -23,51 +23,51 @@ async function processImage(inputBuffer, options = {}) {
     if (width) {
       pipeline = pipeline.resize(width, null, {
         withoutEnlargement: true,
-        fit: "inside",
+        fit: 'inside'
       });
     }
 
     // Apply format conversion with appropriate quality
     switch (format) {
-      case "avif": {
-        pipeline = pipeline.avif({
-          quality: quality || AVIF_QUALITY,
-          effort: 4,
-        });
-        break;
-        }
-      case "webp": {
-        pipeline = pipeline.webp({
-          quality: quality || WEBP_QUALITY,
-          effort: 4,
-        });
-        break;
-        }
-      default: {
-        pipeline = pipeline.jpeg({
-          quality: quality || JPEG_QUALITY,
-          progressive: true,
-        });
-        break;
-        }
+    case 'avif': {
+      pipeline = pipeline.avif({
+        quality: quality || AVIF_QUALITY,
+        effort: 4
+      });
+      break;
+    }
+    case 'webp': {
+      pipeline = pipeline.webp({
+        quality: quality || WEBP_QUALITY,
+        effort: 4
+      });
+      break;
+    }
+    default: {
+      pipeline = pipeline.jpeg({
+        quality: quality || JPEG_QUALITY,
+        progressive: true
+      });
+      break;
+    }
     }
 
     const buffer = await pipeline.toBuffer();
     return { buffer, format };
   } catch (error) {
     // If AVIF processing fails, fallback to WebP or JPEG
-    if (format === "avif") {
+    if (format === 'avif') {
       console.warn(
-        "AVIF processing failed, falling back to WebP:",
-        error.message,
+        'AVIF processing failed, falling back to WebP:',
+        error.message
       );
-      return processImage(inputBuffer, { ...options, format: "webp" });
-    } else if (format === "webp") {
+      return processImage(inputBuffer, { ...options, format: 'webp' });
+    } else if (format === 'webp') {
       console.warn(
-        "WebP processing failed, falling back to JPEG:",
-        error.message,
+        'WebP processing failed, falling back to JPEG:',
+        error.message
       );
-      return processImage(inputBuffer, { ...options, format: "jpeg" });
+      return processImage(inputBuffer, { ...options, format: 'jpeg' });
     }
     // Re-throw error for JPEG as it's the final fallback
     throw error;
@@ -80,22 +80,22 @@ async function processImage(inputBuffer, options = {}) {
  * @param {string} userAgent - Browser User-Agent string
  * @returns {string} Optimal format (avif, webp, or jpeg)
  */
-function detectOptimalFormat(acceptHeader, userAgent = "") {
+function detectOptimalFormat(acceptHeader, userAgent = '') {
   // Check for AVIF support
-  if (acceptHeader?.includes("image/avif")) {
+  if (acceptHeader?.includes('image/avif')) {
     // Additional check for known AVIF-supporting browsers
     if (isAVIFSupported(userAgent)) {
-      return "avif";
+      return 'avif';
     }
   }
 
   // Check for WebP support
-  if (acceptHeader?.includes("image/webp")) {
-    return "webp";
+  if (acceptHeader?.includes('image/webp')) {
+    return 'webp';
   }
 
   // Fallback to JPEG
-  return "jpeg";
+  return 'jpeg';
 }
 
 /**
@@ -104,7 +104,9 @@ function detectOptimalFormat(acceptHeader, userAgent = "") {
  * @returns {boolean} True if AVIF is supported
  */
 function isAVIFSupported(userAgent) {
-  if (!userAgent) return false;
+  if (!userAgent) {
+    return false;
+  }
 
   // Chrome 85+ supports AVIF
   const chromeMatch = userAgent.match(/Chrome\/(\d+)/);
@@ -149,11 +151,17 @@ function generateCacheKey(fileId, options = {}) {
   const { width, format, quality } = options;
   const parts = [fileId];
 
-  if (width) parts.push(`w${width}`);
-  if (format) parts.push(format);
-  if (quality) parts.push(`q${quality}`);
+  if (width) {
+    parts.push(`w${width}`);
+  }
+  if (format) {
+    parts.push(format);
+  }
+  if (quality) {
+    parts.push(`q${quality}`);
+  }
 
-  return parts.join("-");
+  return parts.join('-');
 }
 
 export { processImage, detectOptimalFormat, generateCacheKey, isAVIFSupported };

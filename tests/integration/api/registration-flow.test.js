@@ -101,11 +101,11 @@ test('registration validation and performance', async () => {
     email: generateTestEmail()
   });
   const responseTime = Date.now() - startTime;
-  
+
   if (response.status !== 0 && response.status === HTTP_STATUS.BAD_REQUEST) {
     expect(response.data?.error).toMatch(/expired|deadline|not found/i);
   }
-  
+
   const timeLimit = process.env.CI ? 5000 : 1000;
   expect(responseTime).toBeLessThan(timeLimit);
 });

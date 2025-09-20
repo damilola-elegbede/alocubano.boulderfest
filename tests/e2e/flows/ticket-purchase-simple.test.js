@@ -27,35 +27,35 @@ test.describe('Ticket Purchase - Essential Flow', () => {
 
   test('should load tickets page and display purchase options', async ({ page }) => {
     await page.goto(TICKETS_ROUTE);
-    
+
     // Wait for network requests to complete and JavaScript to initialize
     await page.waitForLoadState('domcontentloaded');
-    
+
     // Verify main page title is present
     await expect(page.locator('h1').first()).toBeVisible({ timeout: 10000 });
-    
+
     // Wait for ticket cards to be initialized with their data attributes
     const ticketCards = page.locator('[data-ticket-type]');
     await expect(ticketCards.first()).toBeVisible({ timeout: 10000 });
-    
+
     // Verify we have at least one ticket card available
     const ticketCount = await ticketCards.count();
     expect(ticketCount).toBeGreaterThan(0);
-    
+
     // Check that at least one add to cart button is present
     const addToCartButtons = page.locator('button[data-action="add-to-cart"]');
     await expect(addToCartButtons.first()).toBeVisible({ timeout: 5000 });
-    
+
     console.log(`✅ Ticket purchase page loaded with ${ticketCount} ticket options`);
   });
 
   test('should handle add to cart and display floating cart', async ({ page }) => {
     await page.goto(TICKETS_ROUTE);
     await page.waitForLoadState('domcontentloaded');
-    
+
     // Wait for ticket cards to be fully initialized
     await page.waitForSelector('[data-initialized="true"]', { timeout: 10000 });
-    
+
     // Wait for floating cart initialization (with fallback timeout)
     try {
       await page.waitForSelector('[data-floating-cart-initialized="true"]', { timeout: 5000 });
@@ -63,14 +63,14 @@ test.describe('Ticket Purchase - Essential Flow', () => {
       // Fallback: wait for cart manager to be available
       await page.waitForTimeout(1000);
     }
-    
+
     // Find the first available add to cart button
     const addToCartButton = page.locator('button[data-action="add-to-cart"]').first();
     await expect(addToCartButton).toBeVisible({ timeout: 5000 });
-    
+
     // Click to add ticket to cart
     await addToCartButton.click();
-    
+
     // Wait for cart to be updated with the new item
     await page.waitForFunction(
       () => {
@@ -79,7 +79,7 @@ test.describe('Ticket Purchase - Essential Flow', () => {
       },
       { timeout: 8000 }
     );
-    
+
     // Check that the header cart button appears after adding items
     const headerCartButton = page.locator('.nav-cart-button');
     await expect(headerCartButton).toBeVisible({ timeout: 5000 });
@@ -94,40 +94,40 @@ test.describe('Ticket Purchase - Essential Flow', () => {
     // Cart panel should slide out
     const cartPanel = page.locator('.cart-panel, .cart-sidebar');
     await expect(cartPanel).toHaveClass(/open|active/, { timeout: 5000 });
-    
+
     console.log('✅ Successfully added ticket to cart and opened cart panel');
   });
 
   test('should show functional quantity controls', async ({ page }) => {
     await page.goto(TICKETS_ROUTE);
     await page.waitForLoadState('domcontentloaded');
-    
+
     // Wait for ticket cards to be fully initialized
     await page.waitForSelector('[data-initialized="true"]', { timeout: 10000 });
-    
+
     // Find the first ticket card with quantity controls
     const ticketCard = page.locator('[data-ticket-type]').first();
     await expect(ticketCard).toBeVisible({ timeout: 5000 });
-    
+
     // Find quantity controls within the ticket card
     const plusButton = ticketCard.locator('button[data-action="increase"]');
     const quantityDisplay = ticketCard.locator('.quantity');
-    
+
     await expect(plusButton).toBeVisible();
     await expect(quantityDisplay).toBeVisible();
-    
+
     // Check initial quantity is 0
     await expect(quantityDisplay).toHaveText('0');
-    
+
     // Click plus button to increase quantity
     await plusButton.click();
-    
+
     // Wait for quantity to update
     await page.waitForTimeout(500);
-    
+
     // Verify quantity increased to 1
     await expect(quantityDisplay).toHaveText('1');
-    
+
     console.log('✅ Quantity controls working correctly');
   });
 });

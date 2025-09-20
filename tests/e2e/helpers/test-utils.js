@@ -1,6 +1,6 @@
 /**
  * Test Utilities - General purpose E2E testing utilities
- * 
+ *
  * Provides common utility functions for E2E tests including
  * API waiting, timing, and general test helpers.
  */
@@ -22,13 +22,13 @@ export async function waitForAPI(url, options = {}) {
   } = options;
 
   console.log(`⏳ Waiting for API at ${url} (timeout: ${timeout}ms)`);
-  
+
   const startTime = Date.now();
   let attempts = 0;
 
   while (attempts < maxRetries && (Date.now() - startTime) < timeout) {
     attempts++;
-    
+
     try {
       const response = await fetch(url, {
         method,
@@ -42,7 +42,7 @@ export async function waitForAPI(url, options = {}) {
         console.log(`✅ API available at ${url} (attempt ${attempts})`);
         return true;
       }
-      
+
       console.log(`⚠️  API returned status ${response.status}, expected ${expectedStatus} (attempt ${attempts})`);
     } catch (error) {
       console.log(`⚠️  API check failed: ${error.message} (attempt ${attempts})`);
@@ -76,7 +76,7 @@ export async function waitForCondition(conditionFn, options = {}) {
 
   while ((Date.now() - startTime) < timeout) {
     attempts++;
-    
+
     try {
       const result = await conditionFn();
       if (result) {
@@ -115,7 +115,7 @@ export async function retryWithBackoff(fn, options = {}) {
 
   while (attempt < maxRetries) {
     attempt++;
-    
+
     try {
       const result = await fn();
       if (attempt > 1) {
@@ -127,7 +127,7 @@ export async function retryWithBackoff(fn, options = {}) {
         console.log(`❌ ${name} failed after ${maxRetries} attempts: ${error.message}`);
         throw error;
       }
-      
+
       console.log(`⚠️  ${name} failed on attempt ${attempt}, retrying in ${delay}ms: ${error.message}`);
       await new Promise(resolve => setTimeout(resolve, delay));
       delay = Math.min(delay * backoffMultiplier, maxDelay);
@@ -152,11 +152,11 @@ export async function safeNavigate(page, url, options = {}) {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       console.log(`🚀 Navigating to ${url} (attempt ${attempt})`);
-      const response = await page.goto(url, { 
+      const response = await page.goto(url, {
         timeout,
-        waitUntil 
+        waitUntil
       });
-      
+
       if (response && response.ok()) {
         console.log(`✅ Successfully navigated to ${url}`);
         return response;
@@ -165,16 +165,16 @@ export async function safeNavigate(page, url, options = {}) {
       }
     } catch (error) {
       console.log(`❌ Navigation failed (attempt ${attempt}): ${error.message}`);
-      
+
       if (attempt === maxRetries) {
         throw new Error(`Failed to navigate to ${url} after ${maxRetries} attempts: ${error.message}`);
       }
-      
+
       // Wait before retry
       await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
     }
   }
-  
+
   return null;
 }
 

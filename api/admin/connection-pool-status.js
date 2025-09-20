@@ -5,11 +5,11 @@
  * for monitoring and debugging purposes
  */
 
-import { getConnectionManager, getPoolStatistics, getPoolHealthStatus } from '../../lib/connection-manager.js';
-import { logger } from '../../lib/logger.js';
-import authService from '../../lib/auth-service.js';
-import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
-import { withAdminAudit } from '../../lib/admin-audit-middleware.js';
+import { getConnectionManager, getPoolStatistics, getPoolHealthStatus } from "../../lib/connection-manager.js";
+import { logger } from "../../lib/logger.js";
+import authService from "../../lib/auth-service.js";
+import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
+import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
 
 async function handler(req, res) {
   try {

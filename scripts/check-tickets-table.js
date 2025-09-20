@@ -7,7 +7,7 @@ async function checkTicketsTable() {
 
   // Get tickets table schema
   const result = await db.execute(`
-    SELECT sql FROM sqlite_master 
+    SELECT sql FROM sqlite_master
     WHERE type='table' AND name='tickets'
   `);
 

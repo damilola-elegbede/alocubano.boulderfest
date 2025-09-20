@@ -25,7 +25,7 @@ class VercelConfigValidator {
    */
   async validateVercelJson() {
     this.checks.push('Validating vercel.json');
-    
+
     try {
       const vercelPath = path.join(projectRoot, 'vercel.json');
       const content = await fs.readFile(vercelPath, 'utf-8');
@@ -54,7 +54,7 @@ class VercelConfigValidator {
       // Check critical API routes
       const criticalRoutes = [
         'api/admin/**/*.js',
-        'api/email/**/*.js', 
+        'api/email/**/*.js',
         'api/health/**/*.js',
         'api/registration/**/*.js'
       ];
@@ -78,7 +78,7 @@ class VercelConfigValidator {
    */
   async validateProjectJson() {
     this.checks.push('Validating .vercel/project.json');
-    
+
     try {
       const projectPath = path.join(projectRoot, '.vercel', 'project.json');
       const content = await fs.readFile(projectPath, 'utf-8');
@@ -103,7 +103,7 @@ class VercelConfigValidator {
    */
   async validateEnvironment() {
     this.checks.push('Validating environment variables');
-    
+
     try {
       const envPath = path.join(projectRoot, '.env.local');
       const content = await fs.readFile(envPath, 'utf-8');
@@ -150,7 +150,7 @@ class VercelConfigValidator {
    */
   async validateApiRoutes() {
     this.checks.push('Validating API routes');
-    
+
     try {
       const apiPath = path.join(projectRoot, 'api');
       const criticalRoutes = [
@@ -191,7 +191,7 @@ class VercelConfigValidator {
    */
   async validateDatabase() {
     this.checks.push('Validating database setup');
-    
+
     try {
       // Check migrations directory
       const migrationsPath = path.join(projectRoot, 'migrations');
@@ -238,7 +238,7 @@ class VercelConfigValidator {
 
     console.log('\n📋 Validation Summary:');
     console.log('='.repeat(50));
-    
+
     if (this.errors.length > 0) {
       console.log('\n❌ Errors:');
       this.errors.forEach(error => console.log(`  • ${error}`));

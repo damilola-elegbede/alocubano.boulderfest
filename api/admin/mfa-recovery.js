@@ -1,10 +1,10 @@
-import authService from '../../lib/auth-service.js';
-import { getDatabaseClient } from '../../lib/database.js';
-import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
-import { getMfaRateLimitService } from '../../lib/mfa-rate-limit-service.js';
+import authService from "../../lib/auth-service.js";
+import { getDatabaseClient } from "../../lib/database.js";
+import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
+import { getMfaRateLimitService } from "../../lib/mfa-rate-limit-service.js";
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import { withHighSecurityAudit } from '../../lib/admin-audit-middleware.js';
+import { withHighSecurityAudit } from "../../lib/admin-audit-middleware.js";
 
 /**
  * MFA Recovery Endpoint
@@ -51,7 +51,7 @@ async function handleGetRecoveryInfo(req, res) {
   try {
     // Get MFA status
     const mfaConfig = await db.execute({
-      sql: `SELECT is_enabled, device_name, enabled_at 
+      sql: `SELECT is_enabled, device_name, enabled_at
             FROM admin_mfa_config WHERE admin_id = ?`,
       args: [adminId]
     });
@@ -64,17 +64,17 @@ async function handleGetRecoveryInfo(req, res) {
 
     // Count available backup codes
     const backupCodesResult = await db.execute({
-      sql: `SELECT COUNT(*) as available_codes 
-            FROM admin_mfa_backup_codes 
+      sql: `SELECT COUNT(*) as available_codes
+            FROM admin_mfa_backup_codes
             WHERE admin_id = ? AND is_used = FALSE`,
       args: [adminId]
     });
 
     // Get recent recovery attempts
     const recoveryAttempts = await db.execute({
-      sql: `SELECT COUNT(*) as attempts 
-            FROM admin_mfa_attempts 
-            WHERE admin_id = ? AND attempt_type = 'backup_code' 
+      sql: `SELECT COUNT(*) as attempts
+            FROM admin_mfa_attempts
+            WHERE admin_id = ? AND attempt_type = 'backup_code'
             AND created_at > datetime('now', '-1 day')`,
       args: [adminId]
     });
@@ -151,7 +151,7 @@ async function handleVerifyBackupCode(req, res) {
 
     // Get unused backup codes
     const backupCodes = await db.execute({
-      sql: `SELECT id, code_hash FROM admin_mfa_backup_codes 
+      sql: `SELECT id, code_hash FROM admin_mfa_backup_codes
             WHERE admin_id = ? AND is_used = FALSE`,
       args: [adminId]
     });
@@ -192,7 +192,7 @@ async function handleVerifyBackupCode(req, res) {
 
     // Mark backup code as used
     await db.execute({
-      sql: `UPDATE admin_mfa_backup_codes 
+      sql: `UPDATE admin_mfa_backup_codes
             SET is_used = TRUE, used_at = CURRENT_TIMESTAMP, used_from_ip = ?
             WHERE id = ?`,
       args: [clientIP, codeId]
@@ -293,10 +293,10 @@ async function handleEmergencyDisable(req, res) {
 
     // Update any existing sessions to not require MFA
     await db.execute({
-      sql: `UPDATE admin_sessions 
-            SET mfa_verified = FALSE, requires_mfa_setup = FALSE 
+      sql: `UPDATE admin_sessions
+            SET mfa_verified = FALSE, requires_mfa_setup = FALSE
             WHERE session_token IN (
-              SELECT session_token FROM admin_activity_log 
+              SELECT session_token FROM admin_activity_log
               WHERE action LIKE 'login%' AND ip_address = ?
               ORDER BY created_at DESC LIMIT 10
             )`,
@@ -307,8 +307,8 @@ async function handleEmergencyDisable(req, res) {
     await logRecoveryAttempt(adminId, 'emergency_disable', true, req);
 
     await db.execute({
-      sql: `INSERT INTO admin_activity_log 
-            (session_token, action, ip_address, user_agent, request_details, success) 
+      sql: `INSERT INTO admin_activity_log
+            (session_token, action, ip_address, user_agent, request_details, success)
             VALUES (?, ?, ?, ?, ?, ?)`,
       args: [
         authService.getSessionFromRequest(req),
@@ -552,8 +552,8 @@ async function resetMfaSetupWithRecovery(req, res, adminId) {
   try {
     // Reset MFA configuration to allow new setup
     await db.execute({
-      sql: `UPDATE admin_mfa_config 
-            SET is_enabled = FALSE, totp_secret = NULL, enabled_at = NULL 
+      sql: `UPDATE admin_mfa_config
+            SET is_enabled = FALSE, totp_secret = NULL, enabled_at = NULL
             WHERE admin_id = ?`,
       args: [adminId]
     });
@@ -596,8 +596,8 @@ async function logRecoveryAttempt(
     const sessionToken = authService.getSessionFromRequest(req);
 
     await db.execute({
-      sql: `INSERT INTO admin_mfa_attempts 
-            (admin_id, attempt_type, success, ip_address, user_agent, error_reason, session_token) 
+      sql: `INSERT INTO admin_mfa_attempts
+            (admin_id, attempt_type, success, ip_address, user_agent, error_reason, session_token)
             VALUES (?, ?, ?, ?, ?, ?, ?)`,
       args: [
         adminId,

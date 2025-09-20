@@ -1,6 +1,6 @@
 /**
  * Global Teardown for E2E Tests - CI Environment
- * 
+ *
  * Handles:
  * - Resource cleanup after test execution
  * - Port cleanup to prevent conflicts
@@ -17,16 +17,16 @@ const PROJECT_ROOT = resolve(process.cwd());
 async function globalTeardown() {
   console.log('🧹 Global E2E Teardown - CI Environment');
   console.log('========================================');
-  
+
   // Standardized port configuration: DYNAMIC_PORT takes precedence, fallback to PORT, default to 3000
   const port = parseInt(process.env.DYNAMIC_PORT || process.env.PORT || '3000', 10);
   const databaseFile = process.env.DATABASE_URL || `./data/e2e-ci-test.db`;
   const suite = process.env.PLAYWRIGHT_BROWSER || 'chromium';
-  
+
   console.log(`📡 Port: ${port} (DYNAMIC_PORT=${process.env.DYNAMIC_PORT}, PORT=${process.env.PORT})`);
   console.log(`🗄️ Database: ${databaseFile}`);
   console.log(`🎭 Suite: ${suite}`);
-  
+
   try {
     // Clean up any remaining processes on the port
     console.log('🔌 Cleaning up port resources...');
@@ -39,7 +39,7 @@ async function globalTeardown() {
     } catch (portError) {
       console.log(`ℹ️ No processes found on port ${port} (expected)`);
     }
-    
+
     // Clean up Vercel dev processes
     console.log('🔧 Cleaning up Vercel dev processes...');
     try {
@@ -55,15 +55,15 @@ async function globalTeardown() {
     } catch (processError) {
       console.log('ℹ️ No Vercel dev processes found (expected)');
     }
-    
+
     // Clean up isolated test database if it exists
     const cleanupDatabase = process.env.CLEANUP_TEST_DATABASE !== 'false';
     if (cleanupDatabase && databaseFile.includes('e2e-ci-test')) {
       console.log('🗄️ Cleaning up isolated test database...');
-      const dbPath = databaseFile.startsWith('./') 
+      const dbPath = databaseFile.startsWith('./')
         ? resolve(PROJECT_ROOT, databaseFile.slice(2))
         : databaseFile;
-      
+
       if (existsSync(dbPath)) {
         try {
           unlinkSync(dbPath);
@@ -77,7 +77,7 @@ async function globalTeardown() {
     } else {
       console.log('ℹ️ Skipping database cleanup (disabled or not test database)');
     }
-    
+
     // Clean up any temporary test files
     console.log('📁 Cleaning up temporary test files...');
     try {
@@ -90,7 +90,7 @@ async function globalTeardown() {
     } catch (tempError) {
       console.log('ℹ️ No temporary files found (expected)');
     }
-    
+
     // Display cleanup summary
     console.log('');
     console.log('📊 Teardown Summary:');
@@ -99,15 +99,15 @@ async function globalTeardown() {
     console.log(`   Suite: ${suite}`);
     console.log(`   CI Mode: ${process.env.CI ? 'Yes' : 'No'}`);
     console.log('');
-    
+
     console.log('✅ Global teardown completed successfully');
     console.log('========================================');
-    
+
   } catch (error) {
     console.error('❌ Global teardown encountered an error:', error.message);
     console.error('   This may not prevent test completion, but resources may not be fully cleaned');
     console.error('Stack trace:', error.stack);
-    
+
     // Don't throw error in teardown to avoid masking test failures
     console.log('⚠️ Continuing despite teardown errors...');
   }

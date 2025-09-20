@@ -4,11 +4,11 @@
 
 /**
  * Theme Isolation Tests
- * 
+ *
  * Verifies that theme isolation works correctly between:
- * - Main site (light/auto theme)  
+ * - Main site (light/auto theme)
  * - Admin sections (dark theme)
- * 
+ *
  * Test Coverage:
  * ✅ Dark theme styles apply when data-theme="dark" is present
  * ✅ Light theme styles apply when data-theme is absent or "light"
@@ -16,7 +16,7 @@
  * ✅ System preference handling with :root:not([data-theme="light"])
  * ✅ Theme switching behavior and rapid transitions
  * ✅ CSS specificity and cascade rules work correctly
- * 
+ *
  * Note: This test focuses on CSS selector behavior and theme attribute validation.
  * For complete theme manager functionality, see theme-manager.test.js
  */
@@ -32,7 +32,7 @@ describe('Theme Isolation', () => {
     if (typeof document === 'undefined') {
       throw new Error('Theme isolation tests require jsdom environment');
     }
-    
+
     // Store original html attributes
     originalHtml = {
       attributes: Array.from(document.documentElement.attributes).map(attr => ({
@@ -40,7 +40,7 @@ describe('Theme Isolation', () => {
         value: attr.value
       }))
     };
-    
+
     // Clean up any existing data-theme
     document.documentElement.removeAttribute('data-theme');
 
@@ -51,24 +51,24 @@ describe('Theme Isolation', () => {
       .test-bg { background-color: rgb(255, 255, 255); }
       .test-text { color: rgb(0, 0, 0); }
       .test-border { border-color: rgb(229, 229, 229); }
-      
+
       /* Dark theme overrides */
       [data-theme="dark"] .test-bg { background-color: rgb(17, 17, 17); }
       [data-theme="dark"] .test-text { color: rgb(255, 255, 255); }
       [data-theme="dark"] .test-border { border-color: rgb(55, 55, 55); }
-      
+
       /* Admin-specific styles that should NOT affect main site */
       [data-theme="dark"] .admin-component {
         background-color: rgb(31, 31, 31);
         color: rgb(200, 200, 200);
       }
-      
+
       /* Main site styles that should NOT affect admin */
       .main-component {
         background-color: rgb(248, 248, 248);
         color: rgb(16, 16, 16);
       }
-      
+
       /* System preference fallback (for :root:not([data-theme="light"])) */
       :root:not([data-theme="light"]) .test-system-dark { color: rgb(240, 240, 240); }
     `;
@@ -82,20 +82,20 @@ describe('Theme Isolation', () => {
         document.documentElement.removeAttribute(attr.name);
       }
     });
-    
+
     // Restore original html attributes
     originalHtml.attributes.forEach(attr => {
       document.documentElement.setAttribute(attr.name, attr.value);
     });
-    
+
     // Clean up test attributes
     document.documentElement.removeAttribute('data-theme');
-    
+
     // Remove test stylesheet
     if (testStylesheet && testStylesheet.parentNode) {
       document.head.removeChild(testStylesheet);
     }
-    
+
     // Clean up test elements
     document.querySelectorAll('.test-element').forEach(el => el.remove());
   });
@@ -197,7 +197,7 @@ describe('Theme Isolation', () => {
 
       // Set various non-dark themes
       const themes = [undefined, '', 'light', 'auto', 'invalid'];
-      
+
       themes.forEach(theme => {
         if (theme === undefined) {
           document.documentElement.removeAttribute('data-theme');
@@ -219,9 +219,9 @@ describe('Theme Isolation', () => {
 
       // Even with dark theme, regular elements shouldn't get admin-specific styles
       document.documentElement.setAttribute('data-theme', 'dark');
-      
+
       const styles = getComputedStyle(regularElement);
-      
+
       // Should get dark theme base styles, but not admin-specific styles
       expect(styles.backgroundColor).toBe('rgb(17, 17, 17)'); // Base dark theme
       expect(styles.backgroundColor).not.toBe('rgb(31, 31, 31)'); // Admin-specific
@@ -233,9 +233,9 @@ describe('Theme Isolation', () => {
       document.body.appendChild(adminElement);
 
       document.documentElement.setAttribute('data-theme', 'dark');
-      
+
       const styles = getComputedStyle(adminElement);
-      
+
       // Should get admin-specific styles, not main site styles
       expect(styles.backgroundColor).toBe('rgb(31, 31, 31)'); // Admin-specific
       expect(styles.backgroundColor).not.toBe('rgb(248, 248, 248)'); // Main site
@@ -298,7 +298,7 @@ describe('Theme Isolation', () => {
       document.body.appendChild(testElement);
 
       const themes = ['light', 'dark', '', 'dark', 'light'];
-      
+
       themes.forEach(theme => {
         if (theme === '') {
           document.documentElement.removeAttribute('data-theme');
@@ -307,7 +307,7 @@ describe('Theme Isolation', () => {
         }
 
         const styles = getComputedStyle(testElement);
-        
+
         if (theme === 'dark') {
           expect(styles.color).toBe('rgb(255, 255, 255)');
         } else {
@@ -325,9 +325,9 @@ describe('Theme Isolation', () => {
       document.body.appendChild(testElement);
 
       document.documentElement.setAttribute('data-theme', 'dark');
-      
+
       const styles = getComputedStyle(testElement);
-      
+
       // More specific admin selector should win
       expect(styles.backgroundColor).toBe('rgb(31, 31, 31)'); // admin-component
       expect(styles.backgroundColor).not.toBe('rgb(17, 17, 17)'); // test-bg
@@ -348,7 +348,7 @@ describe('Theme Isolation', () => {
       document.body.appendChild(testElement);
 
       document.documentElement.setAttribute('data-theme', 'dark');
-      
+
       const styles = getComputedStyle(testElement);
       expect(styles.backgroundColor).toBe('rgb(100, 100, 100)'); // Higher specificity wins
 

@@ -3,12 +3,12 @@
  * Provides comprehensive security monitoring data for admin panel
  */
 
-import authService from '../../lib/auth-service.js';
-import { adminSessionMonitor } from '../../lib/admin-session-monitor.js';
-import securityAlertService from '../../lib/security-alert-service.js';
-import auditService from '../../lib/audit-service.js';
-import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
-import { withActivityAudit } from '../../lib/admin-audit-middleware.js';
+import authService from "../../lib/auth-service.js";
+import { adminSessionMonitor } from "../../lib/admin-session-monitor.js";
+import securityAlertService from "../../lib/security-alert-service.js";
+import auditService from "../../lib/audit-service.js";
+import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
+import { withActivityAudit } from "../../lib/admin-audit-middleware.js";
 
 async function securityDashboardHandler(req, res) {
   if (req.method !== 'GET') {
@@ -35,7 +35,6 @@ async function securityDashboardHandler(req, res) {
     if (auditService.ensureInitialized) {
       await auditService.ensureInitialized();
     }
-
 
     // Gather comprehensive security data in parallel
     const [

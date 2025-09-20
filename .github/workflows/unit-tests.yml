@@ -21,9 +21,9 @@ env:
   CI: true
   NODE_OPTIONS: "--max-old-space-size=4096"
   # Consolidated environment variables to reduce duplication
-  NGROK_SKIP_DOWNLOAD: '1'
-  npm_config_build_from_source: 'false'
-  PYTHON: '/usr/bin/python3'
+  NGROK_SKIP_DOWNLOAD: ${{ vars.NGROK_SKIP_DOWNLOAD || '1' }}
+  npm_config_build_from_source: ${{ vars.NPM_BUILD_FROM_SOURCE || 'false' }}
+  PYTHON: ${{ vars.PYTHON_PATH || '/usr/bin/python3' }}
 
 jobs:
   test:
@@ -32,25 +32,26 @@ jobs:
     timeout-minutes: 15
 
     strategy:
+      # FIXED: Proper fail-fast configuration
       fail-fast: false
       matrix:
         node-version: ['20.x', '22.x']
 
     env:
       DATABASE_URL: ":memory:"
-      PHASE3_PERFORMANCE_TARGET_MS: 2000
-      VITEST_TEST_TIMEOUT: 10000
-      VITEST_HOOK_TIMEOUT: 15000
-      VITEST_SETUP_TIMEOUT: 15000
-      VITEST_CLEANUP_TIMEOUT: 10000
+      PHASE3_PERFORMANCE_TARGET_MS: ${{ vars.PHASE3_PERFORMANCE_TARGET_MS || '2000' }}
+      VITEST_TEST_TIMEOUT: ${{ vars.VITEST_TEST_TIMEOUT || '10000' }}
+      VITEST_HOOK_TIMEOUT: ${{ vars.VITEST_HOOK_TIMEOUT || '15000' }}
+      VITEST_SETUP_TIMEOUT: ${{ vars.VITEST_SETUP_TIMEOUT || '15000' }}
+      VITEST_CLEANUP_TIMEOUT: ${{ vars.VITEST_CLEANUP_TIMEOUT || '10000' }}
       # Critical API secrets configuration - required for services to initialize
-      QR_SECRET_KEY: 'test-qr-secret-key-minimum-32-characters-long-for-security-compliance'
-      ADMIN_SECRET: 'test-admin-jwt-secret-minimum-32-characters-for-security'
-      WALLET_AUTH_SECRET: 'test-wallet-auth-secret-key-for-testing-purposes-32-chars'
-      APPLE_PASS_KEY: 'dGVzdC1hcHBsZS1wYXNzLWtleQ=='
+      QR_SECRET_KEY: ${{ secrets.QR_SECRET_KEY || 'test-qr-secret-key-minimum-32-characters-long-for-security-compliance' }}
+      ADMIN_SECRET: ${{ secrets.ADMIN_SECRET || 'test-admin-jwt-secret-minimum-32-characters-for-security' }}
+      WALLET_AUTH_SECRET: ${{ secrets.WALLET_AUTH_SECRET || 'test-wallet-auth-secret-key-for-testing-purposes-32-chars' }}
+      APPLE_PASS_KEY: ${{ secrets.APPLE_PASS_KEY || 'dGVzdC1hcHBsZS1wYXNzLWtleQ==' }}
       INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY || 'test-internal-api-key-32-chars-min' }}
-      TEST_ADMIN_PASSWORD: 'test-admin-password-123'
-      ADMIN_PASSWORD: '$2b$10$test.bcrypt.hash.for.testing.purposes.only'
+      TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD || 'test-admin-password-123' }}
+      ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD || '$2b$10$test.bcrypt.hash.for.testing.purposes.only' }}
 
     steps:
       - name: "📥 Checkout Code"
@@ -116,9 +117,40 @@ jobs:
           end_time=$(date +%s%3N)
           duration=$((end_time - start_time))
 
-          # Extract test counts - Fixed: Calculate total_tests as sum of passing_tests + failing_tests
-          passing_tests=$(grep -oE "Tests[[:space:]]+[0-9]+[[:space:]]+passed" unit-test-output.log | grep -oE "[0-9]+" | head -1 || echo "0")
-          failing_tests=$(grep -oE "Tests[[:space:]]+[0-9]+[[:space:]]+failed" unit-test-output.log | grep -oE "[0-9]+" | head -1 || echo "0")
+          # FIXED: Improved test count parsing logic with multiple fallback patterns
+          echo "🔍 Parsing test results with multiple pattern matching..."
+
+          # Method 1: Standard Vitest output pattern "Tests X passed"
+          passing_tests=$(grep -E "Tests[[:space:]]+[0-9]+[[:space:]]+passed" unit-test-output.log | sed -E "s/.*Tests[[:space:]]+([0-9]+)[[:space:]]+passed.*/\1/" | head -1 || echo "0")
+          failing_tests=$(grep -E "Tests[[:space:]]+[0-9]+[[:space:]]+failed" unit-test-output.log | sed -E "s/.*Tests[[:space:]]+([0-9]+)[[:space:]]+failed.*/\1/" | head -1 || echo "0")
+
+          # Method 2: Alternative pattern "X tests passed" / "X tests failed"
+          if [ "$passing_tests" = "0" ] && [ "$failing_tests" = "0" ]; then
+            echo "🔄 Trying alternative test result patterns..."
+            passing_tests=$(grep -E "[0-9]+[[:space:]]+tests?[[:space:]]+passed" unit-test-output.log | sed -E "s/.*([0-9]+)[[:space:]]+tests?[[:space:]]+passed.*/\1/" | head -1 || echo "0")
+            failing_tests=$(grep -E "[0-9]+[[:space:]]+tests?[[:space:]]+failed" unit-test-output.log | sed -E "s/.*([0-9]+)[[:space:]]+tests?[[:space:]]+failed.*/\1/" | head -1 || echo "0")
+          fi
+
+          # Method 3: Checkmark pattern "✓ X tests completed"
+          if [ "$passing_tests" = "0" ] && [ "$failing_tests" = "0" ]; then
+            echo "🔄 Trying checkmark test result patterns..."
+            passing_tests=$(grep -E "✓[[:space:]]+[0-9]+[[:space:]]+tests?" unit-test-output.log | sed -E "s/.*✓[[:space:]]+([0-9]+)[[:space:]]+tests?.*/\1/" | head -1 || echo "0")
+            failing_tests=$(grep -E "✗[[:space:]]+[0-9]+[[:space:]]+tests?" unit-test-output.log | sed -E "s/.*✗[[:space:]]+([0-9]+)[[:space:]]+tests?.*/\1/" | head -1 || echo "0")
+          fi
+
+          # Method 4: Final summary pattern parsing
+          if [ "$passing_tests" = "0" ] && [ "$failing_tests" = "0" ]; then
+            echo "🔄 Trying final summary patterns..."
+            # Look for summary line like "Test Files  2 passed, 2 total"
+            passing_tests=$(grep -E "Test Files[[:space:]]+[0-9]+" unit-test-output.log | sed -E "s/.*Test Files[[:space:]]+([0-9]+)[[:space:]]+passed.*/\1/" | head -1 || echo "0")
+            # Look for any numeric patterns in test results
+            if [ "$passing_tests" = "0" ]; then
+              passing_tests=$(grep -oE "[0-9]+[[:space:]]*passed" unit-test-output.log | grep -oE "[0-9]+" | head -1 || echo "0")
+            fi
+            failing_tests=$(grep -oE "[0-9]+[[:space:]]*failed" unit-test-output.log | grep -oE "[0-9]+" | head -1 || echo "0")
+          fi
+
+          # FIXED: Calculate total_tests as sum of passing_tests + failing_tests
           total_tests=$((passing_tests + failing_tests))
 
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -129,10 +161,12 @@ jobs:
           echo "📈 Total Tests: $total_tests"
           echo "⏱️  Duration: ${duration}ms"
 
-          if [ "$duration" -lt "$PHASE3_PERFORMANCE_TARGET_MS" ]; then
-            echo "🏆 EXCELLENT: Unit tests completed within 2-second target!"
+          # Performance evaluation with environment variable fallback
+          performance_target=${PHASE3_PERFORMANCE_TARGET_MS:-2000}
+          if [ "$duration" -lt "$performance_target" ]; then
+            echo "🏆 EXCELLENT: Unit tests completed within ${performance_target}ms target!"
           else
-            echo "⚠️  WARNING: Unit tests exceeded 2-second target"
+            echo "⚠️  WARNING: Unit tests exceeded ${performance_target}ms target"
           fi
 
           exit $test_exit_code

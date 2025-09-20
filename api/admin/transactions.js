@@ -1,9 +1,9 @@
-import authService from '../../lib/auth-service.js';
-import csrfService from '../../lib/csrf-service.js';
-import { getDatabaseClient } from '../../lib/database.js';
-import { getValidationService } from '../../lib/validation-service.js';
-import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
-import { withHighSecurityAudit } from '../../lib/admin-audit-middleware.js';
+import authService from "../../lib/auth-service.js";
+import csrfService from "../../lib/csrf-service.js";
+import { getDatabaseClient } from "../../lib/database.js";
+import { getValidationService } from "../../lib/validation-service.js";
+import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
+import { withHighSecurityAudit } from "../../lib/admin-audit-middleware.js";
 
 async function handler(req, res) {
   let db;
@@ -29,7 +29,7 @@ async function handler(req, res) {
 
       // Build query
       let sql = `
-        SELECT 
+        SELECT
           t.*,
           COUNT(DISTINCT ti.id) as item_count,
           GROUP_CONCAT(DISTINCT ti.item_name) as items

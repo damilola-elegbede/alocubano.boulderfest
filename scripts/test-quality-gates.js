@@ -2,13 +2,13 @@
 
 /**
  * Comprehensive Test Script for Quality Gates System
- * 
+ *
  * Tests the QualityGatesEnforcer class and all its integrations after the ES module fix.
  * Validates that the entire quality gates system works correctly in different modes.
- * 
+ *
  * Usage:
  *   node scripts/test-quality-gates.js [--verbose] [--mode=<mode>] [--timeout=<seconds>]
- * 
+ *
  * Tests:
  * - QualityGatesEnforcer class import and instantiation
  * - All monitoring system integrations (flakiness, coverage, performance, incidents)
@@ -17,7 +17,7 @@
  * - Exit code validation
  * - Threshold enforcement
  * - Error handling and fallbacks
- * 
+ *
  * Expected Results:
  * - Flakiness detection: <5% threshold
  * - Coverage tracking: 100% critical paths
@@ -43,7 +43,7 @@ class QualityGatesTestSuite {
     this.outputDir = path.join(__dirname, '../.tmp/quality-gates-test');
     this.testResults = [];
     this.startTime = Date.now();
-    
+
     this.tests = [
       { name: 'ES Module Import', fn: () => this.testEsModuleImport() },
       { name: 'Class Instantiation', fn: () => this.testClassInstantiation() },
@@ -84,55 +84,55 @@ class QualityGatesTestSuite {
     this.log(`Test Mode: ${this.testMode}`);
     this.log(`Timeout: ${this.timeout / 1000}s per test`);
     this.log(`Output Directory: ${this.outputDir}`);
-    
+
     await this.ensureOutputDirectory();
-    
-    const testsToRun = this.testMode === 'all' 
-      ? this.tests 
+
+    const testsToRun = this.testMode === 'all'
+      ? this.tests
       : this.tests.filter(test => test.name.toLowerCase().includes(this.testMode.toLowerCase()));
-    
+
     this.log(`Running ${testsToRun.length} tests...`);
-    
+
     let passed = 0;
     let failed = 0;
-    
+
     for (const test of testsToRun) {
       this.log(`\n🔍 Testing: ${test.name}`);
-      
+
       const startTime = Date.now(); // Declare outside try-catch for proper scoping
       try {
         const result = await Promise.race([
           test.fn(),
-          new Promise((_, reject) => 
+          new Promise((_, reject) =>
             setTimeout(() => reject(new Error(`Test timeout after ${this.timeout / 1000}s`)), this.timeout)
           )
         ]);
-        
+
         const duration = Date.now() - startTime;
-        
+
         this.testResults.push({
           name: test.name,
           status: 'PASSED',
           duration,
           result
         });
-        
+
         passed++;
         this.log(`✅ ${test.name} PASSED (${duration}ms)`);
         if (this.verbose && result) {
           this.log('Result details:', result);
         }
-        
+
       } catch (error) {
         const duration = Date.now() - startTime;
-        
+
         this.testResults.push({
           name: test.name,
           status: 'FAILED',
           duration,
           error: error.message
         });
-        
+
         failed++;
         this.log(`❌ ${test.name} FAILED (${duration}ms): ${error.message}`);
         if (this.verbose) {
@@ -140,30 +140,30 @@ class QualityGatesTestSuite {
         }
       }
     }
-    
+
     await this.generateTestReport(passed, failed);
-    
+
     const totalDuration = Date.now() - this.startTime;
     this.log(`\n📊 Test Suite Complete in ${totalDuration}ms`);
     this.log(`✅ Passed: ${passed}`);
     this.log(`❌ Failed: ${failed}`);
     this.log(`📈 Success Rate: ${((passed / (passed + failed)) * 100).toFixed(1)}%`);
-    
+
     return failed === 0;
   }
 
   async testEsModuleImport() {
     this.log('Testing ES module import...');
-    
+
     // Test that we can import the quality gates module
     const qualityGatesPath = path.join(__dirname, 'quality-gates.js');
-    
+
     // Check file exists
     const exists = await fs.access(qualityGatesPath).then(() => true).catch(() => false);
     if (!exists) {
       throw new Error('Quality gates file does not exist');
     }
-    
+
     // Test import by running a simple command using ES module syntax
     const testScript = `
       import path from 'path';
@@ -171,13 +171,13 @@ class QualityGatesTestSuite {
       const QualityGatesEnforcer = await import('${qualityGatesPath}');
       console.log('Import successful, class available:', typeof QualityGatesEnforcer.default === 'function');
     `;
-    
+
     const tempFile = path.join(this.outputDir, 'import-test.mjs');
     await fs.writeFile(tempFile, testScript);
-    
+
     try {
       const output = execSync(`node "${tempFile}"`, { encoding: 'utf8', timeout: 10000 });
-      
+
       if (output.includes('Import successful, class available: true')) {
         return { importSuccessful: true, output: output.trim() };
       } else {
@@ -189,18 +189,18 @@ class QualityGatesTestSuite {
         import QualityGatesEnforcer from '${qualityGatesPath}';
         console.log('ES module import successful, class available:', typeof QualityGatesEnforcer === 'function');
       `;
-      
+
       const cjsTempFile = path.join(this.outputDir, 'import-test-es.mjs');
       await fs.writeFile(cjsTempFile, cjsTestScript);
-      
+
       try {
         const cjsOutput = execSync(`node "${cjsTempFile}"`, { encoding: 'utf8', timeout: 10000 });
-        
+
         if (cjsOutput.includes('ES module import successful, class available: true')) {
-          return { 
-            importSuccessful: true, 
-            usedESModule: true, 
-            output: cjsOutput.trim() 
+          return {
+            importSuccessful: true,
+            usedESModule: true,
+            output: cjsOutput.trim()
           };
         } else {
           throw new Error(`ES module import test failed: ${error.message}`);
@@ -215,43 +215,43 @@ class QualityGatesTestSuite {
 
   async testClassInstantiation() {
     this.log('Testing class instantiation with different options...');
-    
+
     const testScript = `
       import QualityGatesEnforcer from '${path.join(__dirname, 'quality-gates.js')}';
-      
+
       try {
         // Test default options
         const enforcer1 = new QualityGatesEnforcer();
         console.log('Default instantiation successful');
-        
+
         // Test with custom options
         const enforcer2 = new QualityGatesEnforcer({
           mode: 'ci',
           verbose: true
         });
         console.log('Custom options instantiation successful');
-        
+
         // Test properties
         console.log('Default mode:', enforcer1.mode);
         console.log('Custom mode:', enforcer2.mode);
         console.log('Has thresholds:', typeof enforcer1.thresholds === 'object');
-        
+
         console.log('INSTANTIATION_SUCCESS');
       } catch (error) {
         console.error('Instantiation failed:', error.message);
         process.exit(1);
       }
     `;
-    
+
     const tempFile = path.join(this.outputDir, 'instantiation-test.mjs');
     await fs.writeFile(tempFile, testScript);
-    
+
     try {
       const output = execSync(`node "${tempFile}"`, { encoding: 'utf8', timeout: 10000 });
-      
+
       if (output.includes('INSTANTIATION_SUCCESS')) {
-        return { 
-          instantiated: true, 
+        return {
+          instantiated: true,
           hasDefaultMode: output.includes('Default mode: local'),
           hasCustomMode: output.includes('Custom mode: ci'),
           hasThresholds: output.includes('Has thresholds: true')
@@ -266,14 +266,14 @@ class QualityGatesTestSuite {
 
   async testLocalMode() {
     this.log('Testing local mode execution...');
-    
+
     try {
       const output = execSync(`node "${path.join(__dirname, 'quality-gates.js')}" local`, {
         encoding: 'utf8',
         timeout: 60000,
         cwd: projectRoot
       });
-      
+
       return {
         executed: true,
         hasLocalModeOutput: output.includes('Local Mode') || output.includes('💻'),
@@ -296,14 +296,14 @@ class QualityGatesTestSuite {
 
   async testCiMode() {
     this.log('Testing CI mode execution...');
-    
+
     try {
       const output = execSync(`node "${path.join(__dirname, 'quality-gates.js')}" ci`, {
         encoding: 'utf8',
         timeout: 60000,
         cwd: projectRoot
       });
-      
+
       return {
         executed: true,
         exitCode: 0,
@@ -333,20 +333,20 @@ class QualityGatesTestSuite {
 
   async testReportMode() {
     this.log('Testing report mode execution...');
-    
+
     try {
       const output = execSync(`node "${path.join(__dirname, 'quality-gates.js')}" report`, {
         encoding: 'utf8',
         timeout: 60000,
         cwd: projectRoot
       });
-      
+
       // Check if reports were generated
       const outputDir = path.join(__dirname, '../.tmp/quality-gates');
       const files = await fs.readdir(outputDir).catch(() => []);
       const hasJsonReport = files.some(f => f.includes('quality-report') && f.endsWith('.json'));
       const hasHtmlReport = files.some(f => f.includes('quality-report') && f.endsWith('.html'));
-      
+
       return {
         executed: true,
         exitCode: 0,
@@ -366,19 +366,19 @@ class QualityGatesTestSuite {
 
   async testDashboardMode() {
     this.log('Testing dashboard mode execution...');
-    
+
     try {
       const output = execSync(`node "${path.join(__dirname, 'quality-gates.js')}" dashboard`, {
         encoding: 'utf8',
         timeout: 60000,
         cwd: projectRoot
       });
-      
+
       // Check if dashboard data was generated
       const outputDir = path.join(__dirname, '../.tmp/quality-gates');
       const files = await fs.readdir(outputDir).catch(() => []);
       const hasDashboardData = files.some(f => f.includes('dashboard') && f.endsWith('.json'));
-      
+
       return {
         executed: true,
         exitCode: 0,
@@ -397,7 +397,7 @@ class QualityGatesTestSuite {
 
   async testFlakinessIntegration() {
     this.log('Testing flakiness detection integration...');
-    
+
     // Create a mock flakiness detector script for testing
     const mockScript = `
       console.log(JSON.stringify({
@@ -407,17 +407,17 @@ class QualityGatesTestSuite {
         recommendations: ['Fix timing issues', 'Add wait conditions']
       }));
     `;
-    
+
     const mockPath = path.join(__dirname, 'flakiness-detector.js');
     await fs.writeFile(mockPath, mockScript);
-    
+
     try {
       const output = execSync(`node "${path.join(__dirname, 'quality-gates.js')}" report`, {
         encoding: 'utf8',
         timeout: 30000,
         cwd: projectRoot
       });
-      
+
       return {
         integrationTested: true,
         hasFlakinessCheck: output.includes('flakiness') || output.includes('Flakiness'),
@@ -440,7 +440,7 @@ class QualityGatesTestSuite {
 
   async testCoverageIntegration() {
     this.log('Testing coverage tracking integration...');
-    
+
     // Test coverage integration by running with coverage
     try {
       const output = execSync(`npm run test:coverage`, {
@@ -448,14 +448,14 @@ class QualityGatesTestSuite {
         timeout: 30000,
         cwd: projectRoot
       });
-      
+
       // Now test quality gates with coverage
       const qualityGatesOutput = execSync(`node "${path.join(__dirname, 'quality-gates.js')}" report`, {
         encoding: 'utf8',
         timeout: 30000,
         cwd: projectRoot
       });
-      
+
       return {
         coverageTestRan: true,
         hasCoverageInOutput: qualityGatesOutput.includes('coverage') || qualityGatesOutput.includes('Coverage'),
@@ -474,7 +474,7 @@ class QualityGatesTestSuite {
 
   async testPerformanceIntegration() {
     this.log('Testing performance monitoring integration...');
-    
+
     try {
       // Test basic performance by running tests and timing them
       const start = Date.now();
@@ -484,14 +484,14 @@ class QualityGatesTestSuite {
         cwd: projectRoot
       });
       const duration = Date.now() - start;
-      
+
       // Now test quality gates
       const qualityGatesOutput = execSync(`node "${path.join(__dirname, 'quality-gates.js')}" report`, {
         encoding: 'utf8',
         timeout: 30000,
         cwd: projectRoot
       });
-      
+
       return {
         performanceTestRan: true,
         testDuration: duration,
@@ -510,7 +510,7 @@ class QualityGatesTestSuite {
 
   async testIncidentIntegration() {
     this.log('Testing incident correlation integration...');
-    
+
     // Create a mock incident correlator for testing
     const mockScript = `
       console.log(JSON.stringify({
@@ -520,17 +520,17 @@ class QualityGatesTestSuite {
         riskFactors: ['test-flakiness']
       }));
     `;
-    
+
     const mockPath = path.join(__dirname, 'incident-correlator.js');
     await fs.writeFile(mockPath, mockScript);
-    
+
     try {
       const output = execSync(`node "${path.join(__dirname, 'quality-gates.js')}" report`, {
         encoding: 'utf8',
         timeout: 30000,
         cwd: projectRoot
       });
-      
+
       return {
         integrationTested: true,
         hasIncidentCheck: output.includes('incident') || output.includes('Incident'),
@@ -550,35 +550,35 @@ class QualityGatesTestSuite {
 
   async testReportGeneration() {
     this.log('Testing report generation...');
-    
+
     try {
       const output = execSync(`node "${path.join(__dirname, 'quality-gates.js')}" report`, {
         encoding: 'utf8',
         timeout: 60000,
         cwd: projectRoot
       });
-      
+
       // Check generated files
       const outputDir = path.join(__dirname, '../.tmp/quality-gates');
       await fs.mkdir(outputDir, { recursive: true });
       const files = await fs.readdir(outputDir);
-      
+
       const jsonReports = files.filter(f => f.includes('quality-report') && f.endsWith('.json'));
       const htmlReports = files.filter(f => f.includes('quality-report') && f.endsWith('.html'));
       const dashboardFiles = files.filter(f => f.includes('dashboard'));
-      
+
       let htmlContent = '';
       let jsonContent = {};
-      
+
       if (htmlReports.length > 0) {
         htmlContent = await fs.readFile(path.join(outputDir, htmlReports[0]), 'utf8');
       }
-      
+
       if (jsonReports.length > 0) {
         const jsonText = await fs.readFile(path.join(outputDir, jsonReports[0]), 'utf8');
         jsonContent = JSON.parse(jsonText);
       }
-      
+
       return {
         reportGenerated: true,
         jsonReportsCount: jsonReports.length,
@@ -598,10 +598,10 @@ class QualityGatesTestSuite {
 
   async testExitCodes() {
     this.log('Testing exit code validation...');
-    
+
     const modes = ['local', 'ci', 'report', 'dashboard'];
     const results = {};
-    
+
     for (const mode of modes) {
       try {
         execSync(`node "${path.join(__dirname, 'quality-gates.js')}" ${mode}`, {
@@ -611,14 +611,14 @@ class QualityGatesTestSuite {
         });
         results[mode] = { exitCode: 0, success: true };
       } catch (error) {
-        results[mode] = { 
-          exitCode: error.status || 1, 
-          success: false, 
-          hasOutput: !!error.stdout 
+        results[mode] = {
+          exitCode: error.status || 1,
+          success: false,
+          hasOutput: !!error.stdout
         };
       }
     }
-    
+
     return {
       exitCodesTested: true,
       modeResults: results,
@@ -632,19 +632,19 @@ class QualityGatesTestSuite {
 
   async testThresholdEnforcement() {
     this.log('Testing threshold enforcement...');
-    
+
     const testScript = `
       import QualityGatesEnforcer from '${path.join(__dirname, 'quality-gates.js')}';
-      
+
       const enforcer = new QualityGatesEnforcer();
-      
+
       console.log('Thresholds:');
       console.log('Test Flakiness:', enforcer.thresholds.testFlakiness);
       console.log('Critical Coverage:', enforcer.thresholds.criticalCoverage);
       console.log('Execution Time:', enforcer.thresholds.executionTime);
       console.log('Test Reliability:', enforcer.thresholds.testReliability);
       console.log('Security Vulnerabilities:', enforcer.thresholds.securityVulnerabilities);
-      
+
       // Validate expected threshold values from PRD
       const checks = {
         flakinessUnder5: enforcer.thresholds.testFlakiness === 5.0,
@@ -653,16 +653,16 @@ class QualityGatesTestSuite {
         reliability95: enforcer.thresholds.testReliability === 95.0,
         zeroVulns: enforcer.thresholds.securityVulnerabilities === 0
       };
-      
+
       console.log('Threshold Validation:', JSON.stringify(checks));
     `;
-    
+
     const tempFile = path.join(this.outputDir, 'threshold-test.mjs');
     await fs.writeFile(tempFile, testScript);
-    
+
     try {
       const output = execSync(`node "${tempFile}"`, { encoding: 'utf8', timeout: 10000 });
-      
+
       return {
         thresholdsValidated: true,
         hasCorrectFlakiness: output.includes('flakinessUnder5":true'),
@@ -679,10 +679,10 @@ class QualityGatesTestSuite {
 
   async testErrorHandling() {
     this.log('Testing error handling and graceful failures...');
-    
+
     // Test with invalid arguments
     const results = {};
-    
+
     try {
       execSync(`node "${path.join(__dirname, 'quality-gates.js')}" invalid-mode`, {
         encoding: 'utf8',
@@ -691,13 +691,13 @@ class QualityGatesTestSuite {
       });
       results.invalidMode = { handled: true, exitCode: 0 };
     } catch (error) {
-      results.invalidMode = { 
-        handled: true, 
+      results.invalidMode = {
+        handled: true,
         exitCode: error.status,
         hasErrorMessage: !!error.stderr || !!error.stdout
       };
     }
-    
+
     // Test with missing dependencies (simulate by using a non-existent directory)
     try {
       execSync(`node "${path.join(__dirname, 'quality-gates.js')}" local`, {
@@ -707,13 +707,13 @@ class QualityGatesTestSuite {
       });
       results.missingDeps = { handled: true, exitCode: 0 };
     } catch (error) {
-      results.missingDeps = { 
-        handled: true, 
+      results.missingDeps = {
+        handled: true,
         exitCode: error.status,
         gracefulFailure: error.status === 1 || error.status === 0
       };
     }
-    
+
     return {
       errorHandlingTested: true,
       invalidModeHandled: results.invalidMode?.handled,
@@ -724,10 +724,10 @@ class QualityGatesTestSuite {
 
   async testFallbacks() {
     this.log('Testing fallback mechanisms when integrations fail...');
-    
+
     // Test by temporarily moving/renaming dependency files
     const backupPaths = [];
-    
+
     try {
       // The quality gates should work even when helper scripts don't exist
       const output = execSync(`node "${path.join(__dirname, 'quality-gates.js')}" local --verbose`, {
@@ -735,7 +735,7 @@ class QualityGatesTestSuite {
         timeout: 30000,
         cwd: projectRoot
       });
-      
+
       return {
         fallbacksTested: true,
         executedWithoutHelpers: true,
@@ -771,12 +771,12 @@ class QualityGatesTestSuite {
       },
       results: this.testResults
     };
-    
+
     const reportPath = path.join(this.outputDir, `quality-gates-test-report-${Date.now()}.json`);
     await fs.writeFile(reportPath, JSON.stringify(report, null, 2));
-    
+
     this.log(`\n📋 Test Report Generated: ${reportPath}`);
-    
+
     return report;
   }
 }
@@ -789,12 +789,12 @@ async function main() {
   const mode = modeArg ? modeArg.split('=')[1] : 'all';
   const timeoutArg = args.find(arg => arg.startsWith('--timeout='));
   const timeout = timeoutArg ? parseInt(timeoutArg.split('=')[1]) : 120;
-  
+
   const testSuite = new QualityGatesTestSuite({ verbose, mode, timeout });
-  
+
   try {
     const success = await testSuite.run();
-    
+
     if (success) {
       console.log('\n🎉 All Quality Gates Tests Passed!');
       console.log('✅ The quality gates system is working correctly after the ES module fix.');

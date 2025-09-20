@@ -1,10 +1,10 @@
 /**
  * Test Data Helper
  * Provides easy access to seeded test data for E2E tests
- * 
+ *
  * Usage:
  *   import { getTestAdmin, getTestTicket, getTestSubscriber } from './helpers/test-data-helper.js';
- *   
+ *
  *   const admin = getTestAdmin();
  *   const ticket = getTestTicket('weekend');
  *   const subscriber = getTestSubscriber('active');
@@ -39,13 +39,13 @@ export function getTestTicket(ticketType = 'weekend') {
   if (!seededData?.tickets) {
     throw new Error('Test tickets not found in seeded data. Ensure global setup ran successfully.');
   }
-  
+
   const ticket = seededData.tickets.find(t => t.ticket_type === ticketType);
   if (!ticket) {
     const availableTypes = seededData.tickets.map(t => t.ticket_type).join(', ');
     throw new Error(`Ticket type '${ticketType}' not found. Available: ${availableTypes}`);
   }
-  
+
   return ticket;
 }
 
@@ -57,11 +57,11 @@ export function getTestTickets(ticketType = null) {
   if (!seededData?.tickets) {
     throw new Error('Test tickets not found in seeded data. Ensure global setup ran successfully.');
   }
-  
+
   if (ticketType) {
     return seededData.tickets.filter(t => t.ticket_type === ticketType);
   }
-  
+
   return seededData.tickets;
 }
 
@@ -73,12 +73,12 @@ export function getTestTransaction(index = 0) {
   if (!seededData?.transactions) {
     throw new Error('Test transactions not found in seeded data. Ensure global setup ran successfully.');
   }
-  
+
   const transaction = seededData.transactions[index];
   if (!transaction) {
     throw new Error(`Transaction at index ${index} not found. Available: ${seededData.transactions.length}`);
   }
-  
+
   return transaction;
 }
 
@@ -90,13 +90,13 @@ export function getTestSubscriber(status = 'active') {
   if (!seededData?.subscribers) {
     throw new Error('Test subscribers not found in seeded data. Ensure global setup ran successfully.');
   }
-  
+
   const subscriber = seededData.subscribers.find(s => s.status === status);
   if (!subscriber) {
     const availableStatuses = seededData.subscribers.map(s => s.status).join(', ');
     throw new Error(`Subscriber with status '${status}' not found. Available: ${availableStatuses}`);
   }
-  
+
   return subscriber;
 }
 
@@ -108,12 +108,12 @@ export function getTestRegistration(index = 0) {
   if (!seededData?.registrations) {
     throw new Error('Test registrations not found in seeded data. Ensure global setup ran successfully.');
   }
-  
+
   const registration = seededData.registrations[index];
   if (!registration) {
     throw new Error(`Registration at index ${index} not found. Available: ${seededData.registrations.length}`);
   }
-  
+
   return registration;
 }
 
@@ -125,7 +125,7 @@ export function getTestGalleryData() {
   if (!seededData?.gallery) {
     throw new Error('Test gallery data not found in seeded data. Ensure global setup ran successfully.');
   }
-  
+
   return seededData.gallery;
 }
 
@@ -178,33 +178,33 @@ export function getTestValues() {
  */
 export function validateTestDataAvailable() {
   const errors = [];
-  
+
   if (!global.testDataConstants) {
     errors.push('testDataConstants not found in global scope');
   }
-  
+
   if (!global.seededTestData) {
     errors.push('seededTestData not found in global scope');
   } else {
     const seededData = global.seededTestData;
-    
+
     if (!seededData.adminUser) {
       errors.push('Admin user not found in seeded data');
     }
-    
+
     if (!seededData.tickets || seededData.tickets.length === 0) {
       errors.push('Test tickets not found in seeded data');
     }
-    
+
     if (!seededData.transactions || seededData.transactions.length === 0) {
       errors.push('Test transactions not found in seeded data');
     }
   }
-  
+
   if (errors.length > 0) {
     throw new Error(`Test data validation failed:\n  - ${errors.join('\n  - ')}\n\nEnsure global-setup.js ran successfully and seeded test data.`);
   }
-  
+
   return true;
 }
 
@@ -213,13 +213,13 @@ export function validateTestDataAvailable() {
  */
 export function logAvailableTestData() {
   console.log('📊 Available Test Data:');
-  
+
   if (global.testDataConstants) {
     console.log('  Constants:', global.testDataConstants);
   } else {
     console.log('  ❌ Constants: not available');
   }
-  
+
   if (global.seededTestData) {
     const seededData = global.seededTestData;
     console.log('  Seeded Data Summary:');
@@ -239,7 +239,7 @@ export function logAvailableTestData() {
  */
 export async function waitForTestData(timeoutMs = 5000) {
   const startTime = Date.now();
-  
+
   while (Date.now() - startTime < timeoutMs) {
     try {
       validateTestDataAvailable();
@@ -249,7 +249,7 @@ export async function waitForTestData(timeoutMs = 5000) {
       await new Promise(resolve => setTimeout(resolve, 100));
     }
   }
-  
+
   throw new Error(`Test data not available after ${timeoutMs}ms timeout`);
 }
 

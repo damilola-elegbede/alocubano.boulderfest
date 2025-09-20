@@ -13,7 +13,7 @@ test.describe('Wallet Passes', () => {
     await page.route('**/api/tickets/apple-wallet/*', route => {
       const url = route.request().url();
       const ticketId = url.split('/').pop();
-      
+
       if (ticketId === testTicketId) {
         // Mock successful pass generation
         route.fulfill({
@@ -38,7 +38,7 @@ test.describe('Wallet Passes', () => {
     expect(response.status()).toBe(200);
     expect(response.headers()['content-type']).toBe('application/vnd.apple.pkpass');
     expect(response.headers()['content-disposition']).toContain(`${testTicketId}.pkpass`);
-    
+
     console.log('✅ Apple Wallet pass generated successfully');
   });
 
@@ -47,7 +47,7 @@ test.describe('Wallet Passes', () => {
     await page.route('**/api/tickets/google-wallet/*', route => {
       const url = route.request().url();
       const ticketId = url.split('/').pop();
-      
+
       if (ticketId === testTicketId) {
         // Mock redirect to Google Wallet save URL
         route.fulfill({
@@ -71,7 +71,7 @@ test.describe('Wallet Passes', () => {
     });
     expect(response.status()).toBe(302);
     expect(response.headers()['location']).toContain('pay.google.com');
-    
+
     console.log('✅ Google Wallet pass redirect generated successfully');
   });
 

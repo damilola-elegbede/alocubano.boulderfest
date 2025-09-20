@@ -4,9 +4,9 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import authService from '../../lib/auth-service.js';
-import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
-import { withAdminAudit } from '../../lib/admin-audit-middleware.js';
+import authService from "../../lib/auth-service.js";
+import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
+import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -57,7 +57,7 @@ async function handler(req, res) {
     const libPath = '/var/task/lib';
     const libContents = await fs.readdir(libPath);
     results.libContents = libContents;
-    
+
     // Check if security directory exists
     try {
       const securityPath = '/var/task/lib/security';

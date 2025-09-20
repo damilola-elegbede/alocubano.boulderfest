@@ -1,6 +1,6 @@
-import authService from '../../lib/auth-service.js';
-import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
-import { withAdminAudit } from '../../lib/admin-audit-middleware.js';
+import authService from "../../lib/auth-service.js";
+import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
+import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
 
 // Simple health check endpoint to test if functions are working
 async function handler(req, res) {
@@ -13,7 +13,7 @@ async function handler(req, res) {
       vercelEnv: process.env.VERCEL_ENV,
       timestamp: new Date().toISOString()
     };
-    
+
     res.status(200).json({
       status: 'ok',
       message: 'Admin health check passed',

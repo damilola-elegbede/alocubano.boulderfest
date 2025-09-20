@@ -30,7 +30,7 @@ test.describe('Homepage E2E Tests', () => {
   test('homepage loads correctly', async ({ page }) => {
     // Check page title
     await expect(page).toHaveTitle(/A Lo Cubano Boulder Fest/);
-    
+
     // Check main elements are visible
     await expect(page.locator('header')).toBeVisible();
     await expect(page.locator('main')).toBeVisible();
@@ -62,10 +62,10 @@ test.describe('Homepage E2E Tests', () => {
 
     // Check for festival title
     await expect(page.locator('h1')).toContainText(/A Lo Cubano/i);
-    
+
     // Check for date information
     await expect(page.getByText(/May.*2026/i)).toBeVisible();
-    
+
     // Check for location information
     await expect(page.getByText(/Boulder.*CO/i)).toBeVisible();
   });
@@ -122,14 +122,14 @@ test.describe('Homepage E2E Tests', () => {
 
     await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
-    
+
     // Filter out known acceptable errors
-    const criticalErrors = consoleErrors.filter(error => 
-      !error.includes('favicon') && 
+    const criticalErrors = consoleErrors.filter(error =>
+      !error.includes('favicon') &&
       !error.includes('404') &&
       !error.includes('net::ERR_FAILED')
     );
-    
+
     expect(criticalErrors).toHaveLength(0);
   });
 });

@@ -1,6 +1,6 @@
 /**
  * Basic Validation Tests - Input validation and error handling
- * 
+ *
  * In CI: Tests basic connectivity and response structure only
  * Locally: Tests full business logic validation
  */
@@ -18,7 +18,7 @@ skipInCI('APIs validate required fields and reject malformed requests', async ()
     { method: 'POST', path: '/api/email/subscribe', data: { firstName: 'Test', consentToMarketing: true }, expected: /email.*required/i },
     { method: 'POST', path: '/api/email/subscribe', data: { email: generateTestEmail(), consentToMarketing: false }, expected: /consent.*required/i }
   ];
-  
+
   for (const testCase of testCases) {
     try {
       await testApiValidation(testCase);
@@ -31,18 +31,18 @@ skipInCI('APIs validate required fields and reject malformed requests', async ()
 
 async function testApiValidation({ method, path, data, expected }) {
   const response = await testRequest(method, path, data);
-  
+
   if (response.status === 0) {
     console.warn(`Skipping validation test for ${path} - server not responding`);
     return;
   }
-  
+
   // Validate response structure
   expect(response.status).toBe(HTTP_STATUS.BAD_REQUEST);
   expect(response.data).toHaveProperty('error');
   expect(typeof response.data.error).toBe('string');
   expect(response.data.error.length).toBeGreaterThan(0);
-  
+
   // Validate error message content
   expect(response.data.error).toMatch(expected);
 }
@@ -95,11 +95,11 @@ skipInCI('admin endpoints enforce authentication validation', async () => {
     { data: {}, desc: 'no credentials' },
     { data: { username: 'admin', password: 'wrong-password' }, desc: 'invalid credentials' }
   ];
-  
+
   for (const { data, desc } of testCases) {
     const response = await testRequest('POST', '/api/admin/login', data);
     if (response.status === 0) continue;
-    
+
     expect([HTTP_STATUS.BAD_REQUEST, HTTP_STATUS.UNAUTHORIZED, HTTP_STATUS.TOO_MANY_REQUESTS].includes(response.status)).toBe(true);
     if (response.data?.error && response.status === HTTP_STATUS.UNAUTHORIZED) {
       expect(response.data.error).toMatch(/invalid|unauthorized|authentication/i);
@@ -110,18 +110,18 @@ skipInCI('admin endpoints enforce authentication validation', async () => {
 // SQL injection test - simplified for CI
 test('APIs handle SQL injection attempts safely', async () => {
   const sqlPayloads = ["'; DROP TABLE users; --", "1' OR '1'='1", "admin'--", "' UNION SELECT * FROM users--", "<script>alert('xss')</script>"];
-  
+
   for (const payload of sqlPayloads) {
     const response = await testRequest('POST', '/api/email/subscribe', {
       email: `test+${encodeURIComponent(payload)}@example.com`,
       firstName: payload,
       consentToMarketing: true
     });
-    
+
     if (response.status === 0) continue;
-    
+
     console.log(`Testing payload: ${payload.substring(0, 30)}... -> Status: ${response.status}`);
-    
+
     if (process.env.CI) {
       // In CI with thin mocks: just verify we get a response
       expect(response.status).toBeGreaterThan(0);

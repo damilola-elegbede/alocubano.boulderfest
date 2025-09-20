@@ -20,19 +20,19 @@ export class AccessibilityUtilities {
    */
   async initialize() {
     this.axeBuilder = new AxeBuilder({ page: this.page });
-    
+
     // Configure axe-core with comprehensive rule sets
     this.axeBuilder.withTags([
-      'wcag2a', 
-      'wcag2aa', 
-      'wcag21a', 
-      'wcag21aa', 
+      'wcag2a',
+      'wcag2aa',
+      'wcag21a',
+      'wcag21aa',
       'best-practice'
     ]);
-    
+
     // Include testing for dynamically added content
     this.axeBuilder.include('body');
-    
+
     return this.axeBuilder;
   }
 
@@ -43,22 +43,22 @@ export class AccessibilityUtilities {
    */
   async runFullAccessibilityAudit(options = {}) {
     await this.initialize();
-    
+
     // Allow time for dynamic content to load
     await this.page.waitForLoadState('networkidle');
-    
+
     // Configure specific rules if needed
     if (options.excludeRules) {
       this.axeBuilder.disableRules(options.excludeRules);
     }
-    
+
     if (options.includeRules) {
       this.axeBuilder.withRules(options.includeRules);
     }
-    
+
     // Run the audit
     const results = await this.axeBuilder.analyze();
-    
+
     // Process and return results
     return {
       violations: results.violations,
@@ -75,17 +75,17 @@ export class AccessibilityUtilities {
    */
   async checkKeyboardNavigation() {
     const issues = [];
-    
+
     // Check for focusable elements
     const focusableElements = await this.page.locator(
       'a, button, input, select, textarea, [tabindex]:not([tabindex="-1"])'
     ).all();
-    
+
     // Test tab navigation
     for (const element of focusableElements) {
       try {
         await element.focus();
-        
+
         // Check if element has visible focus indicator
         const hasFocusStyle = await this._checkFocusIndicator(element);
         if (!hasFocusStyle) {
@@ -97,18 +97,18 @@ export class AccessibilityUtilities {
             message: 'Element lacks visible focus indicator'
           });
         }
-        
+
         // Check for keyboard traps
         await this.page.keyboard.press('Tab');
         const newFocused = await this.page.locator(':focus').first();
-        
+
         if (await newFocused.isVisible()) {
           // Verify focus moved appropriately
           const isSameElement = await element.evaluate(
-            (el, newEl) => el === newEl, 
+            (el, newEl) => el === newEl,
             newFocused
           );
-          
+
           if (isSameElement && focusableElements.indexOf(element) < focusableElements.length - 1) {
             issues.push({
               type: 'keyboard-trap',
@@ -117,12 +117,12 @@ export class AccessibilityUtilities {
             });
           }
         }
-        
+
       } catch (error) {
         console.warn('Keyboard navigation check failed for element:', error.message);
       }
     }
-    
+
     return issues;
   }
 
@@ -131,10 +131,10 @@ export class AccessibilityUtilities {
    */
   async checkColorContrast() {
     const contrastIssues = [];
-    
+
     // Get all text elements
     const textElements = await this.page.locator('*:has-text(/\\S/)').all();
-    
+
     for (const element of textElements.slice(0, 50)) { // Limit to prevent timeout
       try {
         const styles = await element.evaluate((el) => {
@@ -146,11 +146,11 @@ export class AccessibilityUtilities {
             fontWeight: computed.fontWeight
           };
         });
-        
+
         const contrast = await this._calculateContrast(styles.color, styles.backgroundColor);
         const isLargeText = this._isLargeText(styles.fontSize, styles.fontWeight);
         const minRatio = isLargeText ? 3.0 : 4.5;
-        
+
         if (contrast < minRatio) {
           const tagName = await element.evaluate(el => el.tagName);
           contrastIssues.push({
@@ -164,13 +164,13 @@ export class AccessibilityUtilities {
             }
           });
         }
-        
+
       } catch (error) {
         // Skip elements that can't be analyzed
         continue;
       }
     }
-    
+
     return contrastIssues;
   }
 
@@ -179,15 +179,15 @@ export class AccessibilityUtilities {
    */
   async checkSemanticStructure() {
     const issues = [];
-    
+
     // Check for proper heading hierarchy
     const headings = await this.page.locator('h1, h2, h3, h4, h5, h6').all();
     let previousLevel = 0;
-    
+
     for (const heading of headings) {
       const tagName = await heading.evaluate(el => el.tagName);
       const currentLevel = parseInt(tagName.charAt(1));
-      
+
       if (currentLevel > previousLevel + 1) {
         issues.push({
           type: 'heading-hierarchy-skip',
@@ -197,13 +197,13 @@ export class AccessibilityUtilities {
       }
       previousLevel = currentLevel;
     }
-    
+
     // Check for missing alt text on images
     const images = await this.page.locator('img').all();
     for (const img of images) {
       const alt = await img.getAttribute('alt');
       const role = await img.getAttribute('role');
-      
+
       if (alt === null && role !== 'presentation') {
         const src = await img.getAttribute('src');
         issues.push({
@@ -214,14 +214,14 @@ export class AccessibilityUtilities {
         });
       }
     }
-    
+
     // Check for form labels
     const inputs = await this.page.locator('input:not([type="hidden"]), select, textarea').all();
     for (const input of inputs) {
       const id = await input.getAttribute('id');
       const ariaLabel = await input.getAttribute('aria-label');
       const ariaLabelledBy = await input.getAttribute('aria-labelledby');
-      
+
       if (id) {
         const label = await this.page.locator(`label[for="${id}"]`).count();
         if (label === 0 && !ariaLabel && !ariaLabelledBy) {
@@ -234,7 +234,7 @@ export class AccessibilityUtilities {
         }
       }
     }
-    
+
     return issues;
   }
 
@@ -243,10 +243,10 @@ export class AccessibilityUtilities {
    */
   async checkMobileAccessibility() {
     const issues = [];
-    
+
     // Check touch target sizes
     const touchTargets = await this.page.locator('a, button, input, select').all();
-    
+
     for (const target of touchTargets) {
       const boundingBox = await target.boundingBox();
       if (boundingBox) {
@@ -263,22 +263,22 @@ export class AccessibilityUtilities {
         }
       }
     }
-    
+
     // Check for horizontal scrolling on mobile viewport
     await this.page.setViewportSize({ width: 375, height: 667 }); // iPhone SE size
     await this.page.waitForTimeout(500);
-    
+
     const hasHorizontalScroll = await this.page.evaluate(() => {
       return document.documentElement.scrollWidth > document.documentElement.clientWidth;
     });
-    
+
     if (hasHorizontalScroll) {
       issues.push({
         type: 'horizontal-scroll',
         message: 'Page requires horizontal scrolling on mobile viewport'
       });
     }
-    
+
     return issues;
   }
 
@@ -288,18 +288,18 @@ export class AccessibilityUtilities {
    */
   async assertWCAGCompliance(options = {}) {
     const results = await this.runFullAccessibilityAudit(options);
-    
+
     // Filter critical violations
-    const criticalViolations = results.violations.filter(violation => 
+    const criticalViolations = results.violations.filter(violation =>
       violation.impact === 'critical' || violation.impact === 'serious'
     );
-    
+
     if (criticalViolations.length > 0) {
       const errorMessage = this._formatViolationsMessage(criticalViolations);
       expect.soft(criticalViolations).toHaveLength(0);
       throw new Error(`WCAG AA compliance failed:\n${errorMessage}`);
     }
-    
+
     return results;
   }
 
@@ -314,46 +314,46 @@ export class AccessibilityUtilities {
       viewport: await this.page.viewportSize(),
       tests: {}
     };
-    
+
     // Run all accessibility tests
     try {
       report.tests.axeAudit = await this.runFullAccessibilityAudit(options);
     } catch (error) {
       report.tests.axeAudit = { error: error.message };
     }
-    
+
     try {
       report.tests.keyboardNavigation = await this.checkKeyboardNavigation();
     } catch (error) {
       report.tests.keyboardNavigation = { error: error.message };
     }
-    
+
     try {
       report.tests.colorContrast = await this.checkColorContrast();
     } catch (error) {
       report.tests.colorContrast = { error: error.message };
     }
-    
+
     try {
       report.tests.semanticStructure = await this.checkSemanticStructure();
     } catch (error) {
       report.tests.semanticStructure = { error: error.message };
     }
-    
+
     try {
       report.tests.mobileAccessibility = await this.checkMobileAccessibility();
     } catch (error) {
       report.tests.mobileAccessibility = { error: error.message };
     }
-    
+
     // Generate summary
     report.summary = this._generateReportSummary(report);
-    
+
     return report;
   }
 
   // Private helper methods
-  
+
   async _checkFocusIndicator(element) {
     return await element.evaluate((el) => {
       // Store original styles before focusing
@@ -362,13 +362,13 @@ export class AccessibilityUtilities {
       const originalOutlineWidth = originalStyles.outlineWidth;
       const originalBoxShadow = originalStyles.boxShadow;
       const originalBorder = originalStyles.border;
-      
+
       // Focus the element
       el.focus();
-      
+
       // Get styles after focus (getComputedStyle doesn't support pseudo-class selectors)
       const focusedStyles = window.getComputedStyle(el);
-      
+
       // Check for visible focus indicators
       return (
         focusedStyles.outline !== 'none' ||
@@ -389,7 +389,7 @@ export class AccessibilityUtilities {
       if (match) {
         return [parseInt(match[1]), parseInt(match[2]), parseInt(match[3])];
       }
-      
+
       // Handle named colors (basic set)
       const namedColors = {
         'black': [0, 0, 0],
@@ -398,10 +398,10 @@ export class AccessibilityUtilities {
         'green': [0, 128, 0],
         'blue': [0, 0, 255]
       };
-      
+
       return namedColors[color.toLowerCase()] || [128, 128, 128]; // Default gray
     };
-    
+
     const getLuminance = (rgb) => {
       const [r, g, b] = rgb.map(c => {
         c = c / 255;
@@ -409,23 +409,23 @@ export class AccessibilityUtilities {
       });
       return 0.2126 * r + 0.7152 * g + 0.0722 * b;
     };
-    
+
     const fgRgb = parseColor(foreground);
     const bgRgb = parseColor(background);
-    
+
     const fgLuminance = getLuminance(fgRgb);
     const bgLuminance = getLuminance(bgRgb);
-    
+
     const lighter = Math.max(fgLuminance, bgLuminance);
     const darker = Math.min(fgLuminance, bgLuminance);
-    
+
     return (lighter + 0.05) / (darker + 0.05);
   }
 
   _isLargeText(fontSize, fontWeight) {
     const size = parseFloat(fontSize);
     const weight = parseInt(fontWeight) || 400;
-    
+
     // Fixed WCAG large text thresholds to 24px regular or 19px bold
     if (weight >= 700) { // Bold text
       return size >= 19; // 19px for bold
@@ -449,7 +449,7 @@ export class AccessibilityUtilities {
   _assessWCAGCompliance(results) {
     const criticalCount = results.violations.filter(v => v.impact === 'critical').length;
     const seriousCount = results.violations.filter(v => v.impact === 'serious').length;
-    
+
     if (criticalCount === 0 && seriousCount === 0) {
       return 'AA'; // Meets WCAG AA
     } else if (criticalCount === 0) {
@@ -461,10 +461,10 @@ export class AccessibilityUtilities {
 
   _formatViolationsMessage(violations) {
     return violations.map(violation => {
-      const nodeInfo = violation.nodes.map(node => 
+      const nodeInfo = violation.nodes.map(node =>
         `  - ${node.html.substring(0, 100)}...`
       ).join('\n');
-      
+
       return `${violation.id} (${violation.impact}):\n${violation.description}\n${nodeInfo}`;
     }).join('\n\n');
   }
@@ -476,7 +476,7 @@ export class AccessibilityUtilities {
       passedTests: 0,
       failedTests: 0
     };
-    
+
     // Count issues across all test types
     Object.values(report.tests).forEach(test => {
       if (test.error) {
@@ -491,12 +491,12 @@ export class AccessibilityUtilities {
         summary.passedTests++;
       }
     });
-    
+
     // Determine overall compliance
     if (report.tests.axeAudit && report.tests.axeAudit.wcagLevel) {
       summary.overallCompliance = report.tests.axeAudit.wcagLevel;
     }
-    
+
     return summary;
   }
 

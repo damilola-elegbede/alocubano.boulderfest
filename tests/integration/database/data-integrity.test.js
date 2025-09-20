@@ -1,6 +1,6 @@
 /**
  * Integration Test: Database Data Integrity - Database constraints and relationships
- * 
+ *
  * Tests database-level integrity including:
  * - Foreign key constraints enforcement
  * - Database transaction behavior
@@ -100,7 +100,7 @@ describe('Integration: Database Data Integrity', () => {
     } catch (error) {
       if (!error.message.includes('no such table')) throw error;
     }
-    
+
     // Reset test IDs
     testTicketId = null;
     testEmailSubscriberId = null;
@@ -402,7 +402,7 @@ describe('Integration: Database Data Integrity', () => {
     const validationResult = await db.execute({
       sql: `
         INSERT INTO qr_validations (
-          ticket_id, validation_token, validation_result, 
+          ticket_id, validation_token, validation_result,
           validation_source, ip_address
         ) VALUES (?, ?, ?, ?, ?)
       `,
@@ -488,7 +488,7 @@ describe('Integration: Database Data Integrity', () => {
       await transaction.execute(
         `
           INSERT INTO tickets (
-            ticket_id, ticket_type, event_id, price_cents, 
+            ticket_id, ticket_type, event_id, price_cents,
             scan_count, validation_code
           ) VALUES (?, ?, ?, ?, ?, ?)
         `,
@@ -671,32 +671,32 @@ describe('Integration: Database Data Integrity', () => {
 
     // TRUE concurrency testing - use separate database clients for real parallel operations
     const { getDatabaseClient } = await import('../../../lib/database.js');
-    
+
     const concurrentUpdates = [1, 2, 3].map(async (attempt) => {
       let separateClient;
       try {
         // Each attempt uses a separate database connection for true concurrency
         separateClient = await getDbClient();
-        
+
         const updateResult = await separateClient.execute({
           sql: `
-            UPDATE "tickets" 
+            UPDATE "tickets"
             SET scan_count = scan_count + 1, last_scanned_at = CURRENT_TIMESTAMP
             WHERE ticket_id = ? AND scan_count < max_scan_count
           `,
           args: [ticketId]
         });
-        
-        return { 
-          success: true, 
-          attempt, 
+
+        return {
+          success: true,
+          attempt,
           rowsAffected: updateResult.rowsAffected,
           timestamp: Date.now()
         };
       } catch (error) {
-        return { 
-          success: false, 
-          attempt, 
+        return {
+          success: false,
+          attempt,
           error: error.message,
           errorCode: error.code,
           timestamp: Date.now()
@@ -715,11 +715,11 @@ describe('Integration: Database Data Integrity', () => {
 
     // Execute all concurrent updates using Promise.all for true parallelism
     const results = await Promise.all(concurrentUpdates);
-    
+
     // Analyze results
     const successfulUpdates = results.filter(r => r.success && r.rowsAffected > 0);
     const failedUpdates = results.filter(r => !r.success);
-    
+
     // At least one update should succeed
     expect(successfulUpdates.length).toBeGreaterThan(0);
     expect(successfulUpdates.length).toBeLessThanOrEqual(3);
@@ -742,16 +742,16 @@ describe('Integration: Database Data Integrity', () => {
       // Common database contention errors are acceptable
       const acceptableErrors = [
         'database is locked',
-        'SQLITE_BUSY', 
+        'SQLITE_BUSY',
         'SQLITE_LOCKED',
         'database lock',
         'constraint'
       ];
-      const hasAcceptableError = acceptableErrors.some(errType => 
-        failure.error.toLowerCase().includes(errType.toLowerCase()) || 
+      const hasAcceptableError = acceptableErrors.some(errType =>
+        failure.error.toLowerCase().includes(errType.toLowerCase()) ||
         (failure.errorCode && failure.errorCode.includes(errType))
       );
-      
+
       // Either acceptable database locking/constraint error OR other database error
       expect(hasAcceptableError || failure.error.length > 0).toBe(true);
     });

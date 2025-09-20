@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
  * Browser Matrix Generator for Unified E2E Testing
- * 
+ *
  * Generates consistent browser matrices across all workflows to eliminate
  * conflicts and resource allocation issues.
- * 
+ *
  * SOLVES:
  * - Multiple workflows with conflicting browser matrices
  * - Resource conflicts between parallel browser executions
@@ -50,7 +50,7 @@ class BrowserMatrixGenerator {
     const matrix = strategy.browsers.map(browser => {
       const memoryProfile = this.getMemoryProfile(strategyName);
       const envOverrides = this.getEnvironmentOverrides(context.environment || 'ci');
-      
+
       return {
         browser: browser.browser,
         'browser-name': browser.name,
@@ -141,7 +141,7 @@ class BrowserMatrixGenerator {
     const envOverrides = this.getEnvironmentOverrides();
     const baseMemory = parseInt(browserMemory) || parseInt(profileMemory) || 3;
     const bufferMB = parseInt(envOverrides.memory_buffer) || 0;
-    
+
     return `${baseMemory + Math.ceil(bufferMB / 1024)}GB`;
   }
 
@@ -249,7 +249,7 @@ class BrowserMatrixGenerator {
     // Check for coverage gaps
     const allBrowsers = new Set();
     const coreBrowsers = this.config.quality_gates.core_browsers;
-    
+
     matrices.forEach(matrix => {
       matrix.matrix.forEach(browser => {
         allBrowsers.add(browser.browser);
@@ -347,10 +347,10 @@ Examples:
       const matrices = workflows.map(wf => generator.generateMatrix(
         generator.determineStrategy(wf, context), context
       ));
-      
+
       const validation = generator.validateMatrix(matrices);
       console.log('🔍 Validation Results:', JSON.stringify(validation, null, 2));
-      
+
       if (!validation.valid) {
         console.error('❌ Browser matrix validation failed');
         process.exit(1);
@@ -373,10 +373,10 @@ Examples:
       console.log(`strategy=${config.strategy.name}`);
       console.log(`parallel-workers=${config.strategy.parallel_workers}`);
       console.log(`memory-profile=${config.resource_management.memory_profile}`);
-      
+
       // Set GitHub output if GITHUB_OUTPUT is available
       if (process.env.GITHUB_OUTPUT) {
-        fs.appendFileSync(process.env.GITHUB_OUTPUT, 
+        fs.appendFileSync(process.env.GITHUB_OUTPUT,
           `matrix=${JSON.stringify(config.strategy.matrix)}\n` +
           `strategy=${config.strategy.name}\n` +
           `parallel-workers=${config.strategy.parallel_workers}\n` +

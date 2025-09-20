@@ -1,7 +1,7 @@
-import { getDatabaseClient } from '../../lib/database.js';
-import { getBrevoClient } from '../../lib/brevo-client.js';
-import rateLimit from '../../lib/rate-limiter.js';
-import auditService from '../../lib/audit-service.js';
+import { getDatabaseClient } from "../../lib/database.js";
+import { getBrevoClient } from "../../lib/brevo-client.js";
+import rateLimit from "../../lib/rate-limiter.js";
+import auditService from "../../lib/audit-service.js";
 
 // Input validation regex patterns
 const NAME_REGEX = /^[a-zA-Z\s\-']{2,50}$/;
@@ -16,7 +16,9 @@ const limiter = rateLimit({
 
 // XSS prevention
 function sanitizeInput(input) {
-  if (!input) return '';
+  if (!input) {
+    return '';
+  }
   return input
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -103,15 +105,16 @@ export default async function handler(req, res) {
   }
 
   if (req.method !== 'POST') {
-    res.setHeader("Allow", "POST, OPTIONS");    return res.status(405).json({ error: 'Method not allowed' });
+    res.setHeader('Allow', 'POST, OPTIONS');
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   const { ticketId, firstName, lastName, email } = req.body;
 
   // Validate required fields
   if (!ticketId || !firstName || !lastName || !email) {
-    return res.status(400).json({ 
-      error: 'All fields are required: ticketId, firstName, lastName, email' 
+    return res.status(400).json({
+      error: 'All fields are required: ticketId, firstName, lastName, email'
     });
   }
 
@@ -122,14 +125,14 @@ export default async function handler(req, res) {
 
   // Validate inputs
   if (!NAME_REGEX.test(cleanFirstName)) {
-    return res.status(400).json({ 
-      error: 'First name must be 2-50 characters, letters, spaces, and hyphens only' 
+    return res.status(400).json({
+      error: 'First name must be 2-50 characters, letters, spaces, and hyphens only'
     });
   }
 
   if (!NAME_REGEX.test(cleanLastName)) {
-    return res.status(400).json({ 
-      error: 'Last name must be 2-50 characters, letters, spaces, and hyphens only' 
+    return res.status(400).json({
+      error: 'Last name must be 2-50 characters, letters, spaces, and hyphens only'
     });
   }
 
@@ -139,11 +142,11 @@ export default async function handler(req, res) {
 
   try {
     const db = await getDatabaseClient();
-    
+
     // Fetch ticket details
     const ticketResult = await db.execute({
       sql: `
-        SELECT 
+        SELECT
           ticket_id,
           ticket_type,
           registration_status,
@@ -192,8 +195,8 @@ export default async function handler(req, res) {
     // Update ticket with attendee information (guard against concurrent completion)
     const updateRes = await db.execute({
       sql: `
-        UPDATE tickets 
-        SET 
+        UPDATE tickets
+        SET
           attendee_first_name = ?,
           attendee_last_name = ?,
           attendee_email = ?,
@@ -203,7 +206,7 @@ export default async function handler(req, res) {
       `,
       args: [cleanFirstName, cleanLastName, cleanEmail, 'completed', ticketId]
     });
-    
+
     // Use portable rows changed check for different database implementations (prevents double registration)
     const rowsChanged = updateRes?.rowsAffected ?? updateRes?.changes ?? 0;
     const concurrentPrevention = rowsChanged === 0;
@@ -213,10 +216,18 @@ export default async function handler(req, res) {
 
     // Determine changed fields for audit
     const changedFields = [];
-    if (beforeState.status !== 'completed') changedFields.push('registration_status');
-    if (beforeState.firstName !== cleanFirstName) changedFields.push('attendee_first_name');
-    if (beforeState.lastName !== cleanLastName) changedFields.push('attendee_last_name');
-    if (beforeState.email !== cleanEmail) changedFields.push('attendee_email');
+    if (beforeState.status !== 'completed') {
+      changedFields.push('registration_status');
+    }
+    if (beforeState.firstName !== cleanFirstName) {
+      changedFields.push('attendee_first_name');
+    }
+    if (beforeState.lastName !== cleanLastName) {
+      changedFields.push('attendee_last_name');
+    }
+    if (beforeState.email !== cleanEmail) {
+      changedFields.push('attendee_email');
+    }
     changedFields.push('registered_at');
 
     // Audit individual registration (non-blocking)
@@ -249,7 +260,7 @@ export default async function handler(req, res) {
     // Cancel remaining reminders
     await db.execute({
       sql: `
-        UPDATE registration_reminders 
+        UPDATE registration_reminders
         SET status = 'cancelled'
         WHERE ticket_id = ? AND status = 'scheduled'
       `,
@@ -260,11 +271,11 @@ export default async function handler(req, res) {
     try {
       const brevo = await getBrevoClient();
       const isPurchaser = cleanEmail.toLowerCase() === ticket.customer_email.toLowerCase();
-      
+
       await brevo.sendTransactionalEmail({
         to: [{ email: cleanEmail, name: `${cleanFirstName} ${cleanLastName}` }],
-        templateId: isPurchaser ? 
-          parseInt(process.env.BREVO_PURCHASER_CONFIRMATION_TEMPLATE_ID) : 
+        templateId: isPurchaser ?
+          parseInt(process.env.BREVO_PURCHASER_CONFIRMATION_TEMPLATE_ID) :
           parseInt(process.env.BREVO_ATTENDEE_CONFIRMATION_TEMPLATE_ID),
         params: {
           firstName: cleanFirstName,
@@ -291,7 +302,7 @@ export default async function handler(req, res) {
     // Check if all tickets in transaction are registered
     const transactionTickets = await db.execute({
       sql: `
-        SELECT COUNT(*) as total, 
+        SELECT COUNT(*) as total,
                SUM(CASE WHEN registration_status = 'completed' THEN 1 ELSE 0 END) as completed
         FROM tickets
         WHERE stripe_payment_intent = ?

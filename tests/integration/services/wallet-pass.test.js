@@ -117,7 +117,7 @@ describe('Wallet Pass Integration Tests', () => {
     it('should validate configuration properly', async () => {
       // Test configuration validation
       const isConfigured = appleWalletService.isConfigured();
-      
+
       // In test environment, configuration may not be complete
       if (process.env.APPLE_PASS_TYPE_ID && process.env.APPLE_TEAM_ID) {
         expect(typeof isConfigured).toBe('boolean');
@@ -129,13 +129,13 @@ describe('Wallet Pass Integration Tests', () => {
     it('should generate Apple Wallet pass for valid ticket', async () => {
       // Mock the configuration check to return true
       vi.spyOn(appleWalletService, 'isConfigured').mockReturnValue(true);
-      
+
       // Mock the PKPass generation to avoid requiring certificates
       vi.spyOn(appleWalletService, 'createPassFile').mockResolvedValue(Buffer.from('mock-pkpass-data'));
 
       try {
         const passBuffer = await appleWalletService.generatePass(testTicketId);
-        
+
         expect(passBuffer).toBeInstanceOf(Buffer);
         expect(passBuffer.length).toBeGreaterThan(0);
 
@@ -191,11 +191,11 @@ describe('Wallet Pass Integration Tests', () => {
     it('should validate configuration properly', async () => {
       const isConfigured = googleWalletService.isConfigured();
       expect(typeof isConfigured).toBe('boolean');
-      
+
       // Check if required environment variables exist
-      const hasRequiredConfig = process.env.GOOGLE_WALLET_ISSUER_ID && 
+      const hasRequiredConfig = process.env.GOOGLE_WALLET_ISSUER_ID &&
                                process.env.GOOGLE_WALLET_SERVICE_ACCOUNT;
-      
+
       if (hasRequiredConfig) {
         expect(isConfigured).toBe(true);
       } else {
@@ -206,15 +206,15 @@ describe('Wallet Pass Integration Tests', () => {
     it('should generate Google Wallet pass for valid ticket', async () => {
       // Mock configuration and client initialization
       vi.spyOn(googleWalletService, 'isConfigured').mockReturnValue(true);
-      
+
       const mockClient = {
         request: vi.fn().mockResolvedValue({ data: {} })
       };
       vi.spyOn(googleWalletService, 'initClient').mockResolvedValue(mockClient);
-      
+
       // Set the client property directly to ensure it's available
       googleWalletService.client = mockClient;
-      
+
       vi.spyOn(googleWalletService, 'createOrUpdateClass').mockResolvedValue();
       vi.spyOn(googleWalletService, 'generateSaveUrl').mockResolvedValue(
         'https://pay.google.com/gp/v/save/mock-token'
@@ -225,7 +225,7 @@ describe('Wallet Pass Integration Tests', () => {
 
       try {
         const result = await googleWalletService.generatePass(testTicketId);
-        
+
         expect(result).toHaveProperty('objectId');
         expect(result).toHaveProperty('saveUrl');
         expect(result.saveUrl).toMatch(/^https:\/\/pay\.google\.com\/gp\/v\/save\//);
@@ -316,7 +316,7 @@ describe('Wallet Pass Integration Tests', () => {
       // Temporarily remove the environment variable
       const original = process.env.APPLE_PASS_KEY;
       delete process.env.APPLE_PASS_KEY;
-      
+
       try {
         // Apple Wallet service should fail immediately in constructor
         expect(() => new AppleWalletService()).toThrow('❌ FATAL: APPLE_PASS_KEY secret not configured');
@@ -331,7 +331,7 @@ describe('Wallet Pass Integration Tests', () => {
     it('should handle database connection errors gracefully', async () => {
       const appleWalletService = new AppleWalletService();
       vi.spyOn(appleWalletService, 'isConfigured').mockReturnValue(true);
-      
+
       // Mock getDatabaseClient to simulate database error using vi.spyOn
       const databaseModule = await import('../../../lib/database.js');
       const getDatabaseClientSpy = vi.spyOn(databaseModule, 'getDatabaseClient')
@@ -340,7 +340,7 @@ describe('Wallet Pass Integration Tests', () => {
       await expect(
         appleWalletService.generatePass(testTicketId)
       ).rejects.toThrow('Database connection failed');
-      
+
       // Restore the original function
       getDatabaseClientSpy.mockRestore();
     });
@@ -351,17 +351,17 @@ describe('Wallet Pass Integration Tests', () => {
       vi.spyOn(appleWalletService, 'createPassFile').mockResolvedValue(Buffer.from('mock-pass'));
 
       // Simulate concurrent requests
-      const promises = Array(3).fill().map(() => 
+      const promises = Array(3).fill().map(() =>
         appleWalletService.generatePass(testTicketId)
       );
 
       try {
         const results = await Promise.allSettled(promises);
-        
+
         // At least one should succeed
         const successful = results.filter(r => r.status === 'fulfilled');
         expect(successful.length).toBeGreaterThan(0);
-        
+
         // All successful results should have the same serial number (passes should be idempotent)
         if (successful.length > 1) {
           const serialNumbers = new Set();

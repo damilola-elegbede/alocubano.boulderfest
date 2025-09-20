@@ -1,10 +1,10 @@
 /**
  * E2E Test Secret Validator
- * 
- * Comprehensive validation of all secrets required for E2E tests. 
- * Provides clear reporting of missing/found secrets and immediately 
+ *
+ * Comprehensive validation of all secrets required for E2E tests.
+ * Provides clear reporting of missing/found secrets and immediately
  * exits if critical secrets are missing.
- * 
+ *
  * Features:
  * - Clear visual reporting with found/missing counts
  * - Categorizes secrets by importance (CRITICAL, REQUIRED, OPTIONAL)
@@ -229,7 +229,7 @@ const SECRET_DEFINITIONS = {
 
 /**
  * Validate secrets for E2E testing with comprehensive reporting
- * 
+ *
  * @param {Object} options - Validation options
  * @param {Array<string>} options.testTypes - Types of tests to run (admin, email, payment, etc.)
  * @param {boolean} options.strict - Whether to fail on missing optional secrets
@@ -267,7 +267,7 @@ export function validateSecrets(options = {}) {
     Object.entries(secrets).forEach(([secretName, config]) => {
       const hasValue = Boolean(config.value);
       const isRequired = determineIfRequired(config, testTypes, ci);
-      
+
       const secretInfo = {
         name: secretName,
         category: categoryName,
@@ -328,7 +328,7 @@ export function validateSecrets(options = {}) {
     missing: results.missing,
     warnings: results.warnings,
     summary: {
-      total: Object.values(SECRET_DEFINITIONS).reduce((total, category) => 
+      total: Object.values(SECRET_DEFINITIONS).reduce((total, category) =>
         total + Object.keys(category).length, 0),
       found: results.found.length,
       missing: results.missing.length,
@@ -406,7 +406,7 @@ function validateSecretValue(secretName, config) {
  */
 function generateValidationReport(results, testTypes) {
   const totalSecrets = results.found.length + results.missing.length + results.warnings.length;
-  
+
   console.log(`Checking ${totalSecrets} secrets...`);
   console.log('');
 
@@ -498,17 +498,17 @@ function generateValidationReport(results, testTypes) {
  */
 function getValueDisplay(secretName, value) {
   if (!value) return 'not set';
-  
+
   const sensitive = ['KEY', 'TOKEN', 'SECRET', 'PASSWORD'];
   const isSensitive = sensitive.some(word => secretName.includes(word));
-  
+
   if (isSensitive) {
     if (typeof value === 'string' && value.length > 8) {
       return value.substring(0, 4) + '***' + value.substring(value.length - 4);
     }
     return '***';
   }
-  
+
   return value;
 }
 
@@ -543,7 +543,7 @@ export function quickValidateBasicSecrets() {
     console.log(`❌ Missing basic secrets: ${missing.join(', ')}`);
     return false;
   }
-  
+
   console.log('✅ Basic secrets validated');
   return true;
 }
@@ -554,7 +554,7 @@ export function quickValidateBasicSecrets() {
 export function validateSecretsForTestFile(testFilePath) {
   // Determine test types based on file name
   const testTypes = ['basic'];
-  
+
   if (testFilePath.includes('admin')) {
     testTypes.push('admin');
   }
@@ -570,7 +570,7 @@ export function validateSecretsForTestFile(testFilePath) {
   if (testFilePath.includes('gallery')) {
     testTypes.push('gallery');
   }
-  
+
   return validateSecrets({ testTypes });
 }
 

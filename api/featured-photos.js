@@ -19,7 +19,7 @@ export default async function handler(req, res) {
 
   // Only allow GET requests
   if (req.method !== 'GET') {
-    res.status(405).json({ 
+    res.status(405).json({
       error: 'Method not allowed',
       message: 'Only GET requests are supported'
     });
@@ -28,10 +28,10 @@ export default async function handler(req, res) {
 
   try {
     console.log('Featured Photos API: Processing request');
-    
+
     const galleryService = getGalleryService();
     const featuredPhotos = await galleryService.getFeaturedPhotos();
-    
+
     const response = {
       ...featuredPhotos,
       api: {
@@ -40,15 +40,15 @@ export default async function handler(req, res) {
         environment: process.env.VERCEL ? 'vercel' : 'local'
       }
     };
-    
+
     // Set caching headers
     res.setHeader('Cache-Control', 'public, max-age=900, stale-while-revalidate=1800'); // 15 minutes
-    
+
     res.status(200).json(response);
-    
+
   } catch (error) {
     console.error('Featured Photos API Error:', error);
-    
+
     res.status(500).json({
       error: 'Internal server error',
       message: 'Failed to load featured photos',

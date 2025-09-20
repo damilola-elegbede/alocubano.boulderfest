@@ -9,13 +9,13 @@
  * - Real-time operational metrics for dashboard visualization
  */
 
-import { getHealthMonitor } from '../../lib/connection-health-monitor.js';
-import { getPoolStatistics } from '../../lib/connection-manager.js';
+import { getHealthMonitor } from "../../lib/connection-health-monitor.js";
+import { getPoolStatistics } from "../../lib/connection-manager.js";
 import { getDatabaseClient } from "../../lib/database.js";
-import { logger } from '../../lib/logger.js';
-import authService from '../../lib/auth-service.js';
-import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
-import { withAdminAudit } from '../../lib/admin-audit-middleware.js';
+import { logger } from "../../lib/logger.js";
+import authService from "../../lib/auth-service.js";
+import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
+import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
 
 async function handler(req, res) {
   const startTime = Date.now();
@@ -40,7 +40,6 @@ async function handler(req, res) {
 
     // Initialize database service before reading metrics
     await getDatabaseClient();
-
 
     // Parse and validate query parameters
     const {
@@ -316,7 +315,7 @@ function buildUtilizationMetrics(timeSeries, granularity) {
 
   const peakUsage = connectionData.reduce((peak, current) =>
     current.active > peak.active ? current : peak,
-    { active: 0, timestamp: 0 }
+  { active: 0, timestamp: 0 }
   );
 
   const averageUsage = calculateAverage(connectionData.map(d => d.active));
@@ -510,24 +509,32 @@ function getCurrentMetrics(poolStats, healthMonitor) {
 // Utility functions
 
 function calculateAverage(values) {
-  if (values.length === 0) return 0;
+  if (values.length === 0) {
+    return 0;
+  }
   return values.reduce((sum, val) => sum + (val || 0), 0) / values.length;
 }
 
 function calculatePercentile(sortedArray, percentile) {
-  if (sortedArray.length === 0) return 0;
+  if (sortedArray.length === 0) {
+    return 0;
+  }
   const index = percentile * (sortedArray.length - 1);
   const lower = Math.floor(index);
   const upper = Math.ceil(index);
 
-  if (lower === upper) return sortedArray[lower] || 0;
+  if (lower === upper) {
+    return sortedArray[lower] || 0;
+  }
 
   const weight = index - lower;
   return (sortedArray[lower] || 0) * (1 - weight) + (sortedArray[upper] || 0) * weight;
 }
 
 function calculateTrendDirection(values) {
-  if (values.length < 2) return 'stable';
+  if (values.length < 2) {
+    return 'stable';
+  }
 
   const firstHalf = values.slice(0, Math.ceil(values.length / 2));
   const secondHalf = values.slice(Math.ceil(values.length / 2));
@@ -538,18 +545,24 @@ function calculateTrendDirection(values) {
   const change = secondAvg - firstAvg;
   const changePercent = Math.abs(change) / Math.max(firstAvg, 0.01) * 100;
 
-  if (changePercent < 5) return 'stable';
+  if (changePercent < 5) {
+    return 'stable';
+  }
   return change > 0 ? 'increasing' : 'decreasing';
 }
 
 function calculatePercentage(booleanValues) {
-  if (booleanValues.length === 0) return 0;
+  if (booleanValues.length === 0) {
+    return 0;
+  }
   const trueCount = booleanValues.filter(Boolean).length;
   return (trueCount / booleanValues.length) * 100;
 }
 
 function getMostCommonValue(values) {
-  if (values.length === 0) return null;
+  if (values.length === 0) {
+    return null;
+  }
   const counts = {};
   values.forEach(val => counts[val] = (counts[val] || 0) + 1);
   return Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
@@ -558,7 +571,9 @@ function getMostCommonValue(values) {
 function groupBy(array, key) {
   return array.reduce((groups, item) => {
     const value = item[key];
-    if (!groups[value]) groups[value] = [];
+    if (!groups[value]) {
+      groups[value] = [];
+    }
     groups[value].push(item);
     return groups;
   }, {});
@@ -569,10 +584,15 @@ function calculateUtilizationDistribution(connectionData) {
 
   connectionData.forEach(data => {
     const util = data.utilization || 0;
-    if (util < 50) buckets.low++;
-    else if (util < 75) buckets.medium++;
-    else if (util < 90) buckets.high++;
-    else buckets.critical++;
+    if (util < 50) {
+      buckets.low++;
+    } else if (util < 75) {
+      buckets.medium++;
+    } else if (util < 90) {
+      buckets.high++;
+    } else {
+      buckets.critical++;
+    }
   });
 
   return buckets;
@@ -585,7 +605,9 @@ function findMostCommonErrorPattern(alerts) {
     patterns[pattern] = (patterns[pattern] || 0) + 1;
   });
 
-  if (Object.keys(patterns).length === 0) return null;
+  if (Object.keys(patterns).length === 0) {
+    return null;
+  }
 
   const mostCommon = Object.keys(patterns).reduce((a, b) =>
     patterns[a] > patterns[b] ? a : b
@@ -639,10 +661,14 @@ function findRecurringIssues(alerts) {
 }
 
 function calculateStabilityMetric(values) {
-  if (values.length < 2) return 100;
+  if (values.length < 2) {
+    return 100;
+  }
 
   const variance = values.reduce((sum, val, i) => {
-    if (i === 0) return 0;
+    if (i === 0) {
+      return 0;
+    }
     return sum + Math.abs(val - values[i - 1]);
   }, 0) / (values.length - 1);
 
@@ -658,7 +684,9 @@ function calculateEscalationRate(alerts) {
 }
 
 function calculateGrowthRate(values) {
-  if (values.length < 2) return 0;
+  if (values.length < 2) {
+    return 0;
+  }
 
   const firstValue = values[0] || 1;
   const lastValue = values[values.length - 1] || 1;
@@ -667,7 +695,9 @@ function calculateGrowthRate(values) {
 }
 
 function calculateProjectedCapacity(utilizationData, days) {
-  if (utilizationData.length < 10) return null;
+  if (utilizationData.length < 10) {
+    return null;
+  }
 
   const trend = calculateTrendDirection(utilizationData);
   const currentUtilization = utilizationData[utilizationData.length - 1] || 0;
@@ -684,9 +714,15 @@ function calculateProjectedCapacity(utilizationData, days) {
 function assessDataQuality(metricsData) {
   const totalSamples = metricsData.timeSeries?.length || 0;
 
-  if (totalSamples === 0) return 'no-data';
-  if (totalSamples < 10) return 'limited';
-  if (totalSamples < 50) return 'sufficient';
+  if (totalSamples === 0) {
+    return 'no-data';
+  }
+  if (totalSamples < 10) {
+    return 'limited';
+  }
+  if (totalSamples < 50) {
+    return 'sufficient';
+  }
   return 'excellent';
 }
 

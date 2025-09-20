@@ -7,9 +7,9 @@
  * Security: This endpoint is intentionally restricted to test environments only.
  */
 
-import authService from '../../lib/auth-service.js';
-import { withSecurityHeaders } from '../../lib/security-headers.js';
-import { logger } from '../../lib/logger.js';
+import authService from "../../lib/auth-service.js";
+import { withSecurityHeaders } from "../../lib/security-headers.js";
+import { logger } from "../../lib/logger.js";
 
 async function handler(req, res) {
   // Check if we're in a test environment
@@ -84,11 +84,11 @@ async function handler(req, res) {
 
     res.setHeader('Set-Cookie',
       `admin_session=${token}; ` +
-      `HttpOnly; ` +
-      `SameSite=Strict; ` +
+      'HttpOnly; ' +
+      'SameSite=Strict; ' +
       (isSecure ? 'Secure; ' : '') +
-      `Path=/; ` +
-      `Max-Age=3600`
+      'Path=/; ' +
+      'Max-Age=3600'
     );
 
     logger.info('[SimpleLogin] Successful test environment login', {

@@ -1,14 +1,14 @@
-import authService from '../../lib/auth-service.js';
-import { getDatabaseClient } from '../../lib/database.js';
-import { getRateLimitService } from '../../lib/rate-limit-service.js';
-import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
+import authService from "../../lib/auth-service.js";
+import { getDatabaseClient } from "../../lib/database.js";
+import { getRateLimitService } from "../../lib/rate-limit-service.js";
+import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
 import {
   verifyMfaCode,
   markSessionMfaVerified
-} from '../../lib/mfa-middleware.js';
-import { withAuthAudit } from '../../lib/admin-audit-middleware.js';
-import { adminSessionMonitor } from '../../lib/admin-session-monitor.js';
-import securityAlertService from '../../lib/security-alert-service.js';
+} from "../../lib/mfa-middleware.js";
+import { withAuthAudit } from "../../lib/admin-audit-middleware.js";
+import { adminSessionMonitor } from "../../lib/admin-session-monitor.js";
+import securityAlertService from "../../lib/security-alert-service.js";
 
 /**
  * Input validation schemas
@@ -523,7 +523,7 @@ async function handlePasswordStep(req, res, username, password, clientIP) {
   // Store temporary session (not MFA verified yet)
   try {
     const updateResult = await db.execute({
-      sql: `UPDATE admin_sessions 
+      sql: `UPDATE admin_sessions
             SET ip_address = ?, user_agent = ?, mfa_verified = FALSE, requires_mfa_setup = FALSE, expires_at = ?, last_accessed_at = CURRENT_TIMESTAMP
             WHERE session_token = ?`,
       args: [
@@ -537,8 +537,8 @@ async function handlePasswordStep(req, res, username, password, clientIP) {
     // Check if UPDATE affected any rows, if not, INSERT the session
     if (updateResult.meta?.changes === 0) {
       await db.execute({
-        sql: `INSERT INTO admin_sessions 
-              (session_token, ip_address, user_agent, mfa_verified, requires_mfa_setup, expires_at) 
+        sql: `INSERT INTO admin_sessions
+              (session_token, ip_address, user_agent, mfa_verified, requires_mfa_setup, expires_at)
               VALUES (?, ?, ?, FALSE, FALSE, ?)`,
         args: [
           tempToken,
@@ -682,8 +682,8 @@ async function completeLogin(
   if (existingToken) {
     // Update existing temporary session to be fully authenticated
     await db.execute({
-      sql: `UPDATE admin_sessions 
-            SET mfa_verified = ?, last_accessed_at = CURRENT_TIMESTAMP 
+      sql: `UPDATE admin_sessions
+            SET mfa_verified = ?, last_accessed_at = CURRENT_TIMESTAMP
             WHERE session_token = ?`,
       args: [mfaUsed, token]
     });
@@ -691,8 +691,8 @@ async function completeLogin(
     // Create new session record (no MFA case)
     try {
       await db.execute({
-        sql: `INSERT INTO admin_sessions 
-              (session_token, ip_address, user_agent, mfa_verified, expires_at) 
+        sql: `INSERT INTO admin_sessions
+              (session_token, ip_address, user_agent, mfa_verified, expires_at)
               VALUES (?, ?, ?, ?, ?)`,
         args: [
           token,

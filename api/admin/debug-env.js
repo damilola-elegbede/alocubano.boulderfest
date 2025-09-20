@@ -2,9 +2,9 @@
  * Diagnostic endpoint to check environment variable availability
  * This helps debug Vercel deployment issues
  */
-import authService from '../../lib/auth-service.js';
-import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
-import { withAdminAudit } from '../../lib/admin-audit-middleware.js';
+import authService from "../../lib/auth-service.js";
+import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
+import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
 
 async function handler(req, res) {
   // Restrict to GET method only

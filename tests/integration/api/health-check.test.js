@@ -8,16 +8,16 @@ import { testRequest, HTTP_STATUS } from '../handler-test-helper.js';
 
 test('general health check endpoint returns valid system status', async () => {
   const response = await testRequest('GET', '/api/health/check');
-  
+
   // Handle connection failures gracefully
   if (response.status === 0) {
     console.warn('⚠️ Health check service unavailable - connection failed');
     return;
   }
-  
+
   // Health check should respond (200 for healthy, 503 for unhealthy, 500 for handler error)
   expect([HTTP_STATUS.OK, 503, HTTP_STATUS.INTERNAL_SERVER_ERROR].includes(response.status)).toBe(true);
-  
+
   // Validate response structure (skip validation for server errors)
   if (response.status !== HTTP_STATUS.INTERNAL_SERVER_ERROR) {
     expect(response.data).toHaveProperty('status');
@@ -29,26 +29,26 @@ test('general health check endpoint returns valid system status', async () => {
     expect(response.data).toBeDefined();
     return; // Skip further validation for server errors
   }
-  
+
   // Timestamp should be valid ISO string
   expect(() => new Date(response.data.timestamp).toISOString()).not.toThrow();
-  
+
   // Status should be one of the expected values
   expect(['healthy', 'degraded', 'unhealthy'].includes(response.data.status)).toBe(true);
-  
+
   // If healthy, should have performance metrics
   if (response.status === HTTP_STATUS.OK && response.data.status === 'healthy') {
     expect(response.data).toHaveProperty('uptime');
     expect(typeof response.data.uptime).toBe('number');
     expect(response.data.uptime).toBeGreaterThanOrEqual(0);
-    
+
     // Should have services status if not in deployment mode
     if (!response.data.deployment_mode) {
       expect(response.data).toHaveProperty('services');
       expect(typeof response.data.services).toBe('object');
     }
   }
-  
+
   // If degraded or unhealthy, should have error information
   if (response.data.status !== 'healthy') {
     expect(response.data).toHaveProperty('error');
@@ -58,12 +58,12 @@ test('general health check endpoint returns valid system status', async () => {
 
 test('database health check validates database connectivity and schema', async () => {
   const response = await testRequest('GET', '/api/health/database');
-  
+
   if (response.status === 0) {
     console.warn('⚠️ Database health check service unavailable - connection failed');
     return;
   }
-  
+
   // Database health should respond with status (including handler errors)
   expect([HTTP_STATUS.OK, 503, HTTP_STATUS.INTERNAL_SERVER_ERROR].includes(response.status)).toBe(true);
 
@@ -75,35 +75,35 @@ test('database health check validates database connectivity and schema', async (
 
   expect(response.data).toHaveProperty('status');
   expect(['healthy', 'degraded', 'unhealthy'].includes(response.data.status)).toBe(true);
-  
+
   // Should have response time measurement
   expect(response.data).toHaveProperty('response_time');
   expect(typeof response.data.response_time).toBe('string');
   expect(response.data.response_time).toMatch(/^\d+ms$/);
-  
+
   // Parse response time and validate it's reasonable (< 5 seconds)
   const responseTimeMs = parseInt(response.data.response_time.replace('ms', ''));
   expect(responseTimeMs).toBeLessThan(5000);
-  
+
   if (response.status === HTTP_STATUS.OK) {
     // Healthy database should have connection details
     expect(response.data).toHaveProperty('details');
     expect(response.data.details).toHaveProperty('connection');
     expect(response.data.details.connection).toBe('active');
-    
+
     expect(response.data.details).toHaveProperty('read_write');
     expect(response.data.details.read_write).toBe('operational');
-    
+
     expect(response.data.details).toHaveProperty('schema_valid');
     expect(typeof response.data.details.schema_valid).toBe('boolean');
-    
+
     // Should have database configuration info
     expect(response.data.details).toHaveProperty('database_url');
     expect(['configured', 'fallback'].includes(response.data.details.database_url)).toBe(true);
-    
+
     expect(response.data.details).toHaveProperty('database_type');
     expect(['local', 'remote'].includes(response.data.details.database_type)).toBe(true);
-    
+
     // Should have migration status
     expect(response.data.details).toHaveProperty('migrations_applied');
     expect(typeof response.data.details.migrations_applied).toBe('number');
@@ -112,7 +112,7 @@ test('database health check validates database connectivity and schema', async (
     // Unhealthy database should have error details
     expect(response.data).toHaveProperty('error');
     expect(typeof response.data.error).toBe('string');
-    
+
     if (response.data.details) {
       expect(response.data.details).toHaveProperty('connection');
       expect(response.data.details.connection).toBe('failed');

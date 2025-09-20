@@ -2,16 +2,16 @@
 
 /**
  * Path Filter Application Script for GitHub Actions
- * 
+ *
  * This script helps optimize CI/CD workflows by:
  * 1. Applying path filters to existing workflows
  * 2. Generating workflow-specific filter configurations
  * 3. Analyzing potential CI time savings
  * 4. Providing recommendations for workflow optimization
- * 
+ *
  * Usage:
  *   node scripts/apply-path-filters.js [command] [options]
- * 
+ *
  * Commands:
  *   apply     - Apply filters to existing workflows
  *   generate  - Generate workflow-specific configurations
@@ -36,32 +36,32 @@ class SimpleYAMLParser {
         const result = {};
         let currentPath = [];
         let currentIndent = 0;
-        
+
         for (const line of lines) {
             const trimmed = line.trim();
             if (!trimmed || trimmed.startsWith('#')) continue;
-            
+
             const indent = line.length - line.trimStart().length;
             const [key, ...valueParts] = trimmed.split(':');
             const value = valueParts.join(':').trim();
-            
+
             if (indent <= currentIndent) {
                 currentPath = currentPath.slice(0, Math.floor(indent / 2));
             }
-            
+
             if (value) {
                 this.setNestedValue(result, [...currentPath, key], value);
             } else {
                 this.setNestedValue(result, [...currentPath, key], {});
                 currentPath.push(key);
             }
-            
+
             currentIndent = indent;
         }
-        
+
         return result;
     }
-    
+
     static setNestedValue(obj, path, value) {
         let current = obj;
         for (let i = 0; i < path.length - 1; i++) {
@@ -72,11 +72,11 @@ class SimpleYAMLParser {
         }
         current[path[path.length - 1]] = value;
     }
-    
+
     static dump(obj, indent = 0) {
         let result = '';
         const spaces = '  '.repeat(indent);
-        
+
         for (const [key, value] of Object.entries(obj)) {
             if (typeof value === 'object' && !Array.isArray(value)) {
                 result += `${spaces}${key}:\n`;
@@ -90,7 +90,7 @@ class SimpleYAMLParser {
                 result += `${spaces}${key}: ${value}\n`;
             }
         }
-        
+
         return result;
     }
 }
@@ -128,7 +128,7 @@ class PathFilterOptimizer {
     async analyzeWorkflows() {
         const workflowsDir = path.join(projectRoot, '.github', 'workflows');
         const workflows = await fs.readdir(workflowsDir);
-        
+
         const analysis = {
             workflows: [],
             totalFiles: workflows.length,
@@ -185,7 +185,7 @@ class PathFilterOptimizer {
 
         // Determine recommended filters based on workflow type
         analysis.recommendedFilters = this.getRecommendedFilters(filename, workflow);
-        
+
         // Calculate optimization potential
         if (analysis.recommendedFilters.length > 0) {
             analysis.optimizable = true;
@@ -347,16 +347,16 @@ class PathFilterOptimizer {
         // Detailed analysis
         console.log('\n🔍 Workflow Analysis:');
         const sortedWorkflows = analysis.workflows.sort((a, b) => b.estimatedSavings - a.estimatedSavings);
-        
+
         for (const workflow of sortedWorkflows) {
             console.log(`\n📄 ${workflow.filename}`);
             console.log(`  Name: ${workflow.name}`);
             console.log(`  Optimizable: ${workflow.optimizable ? '✅ Yes' : '❌ No'}`);
-            
+
             if (workflow.optimizable) {
                 console.log(`  Estimated savings: ${workflow.estimatedSavings}%`);
                 console.log(`  Recommended filters: ${workflow.recommendedFilters.join(', ')}`);
-                
+
                 if (workflow.reasoning.length > 0) {
                     console.log('  Reasoning:');
                     workflow.reasoning.forEach(reason => {
@@ -383,7 +383,7 @@ class PathFilterOptimizer {
             if (items.length > 0) {
                 console.log(`\n  ${group}:`);
                 items.forEach(item => {
-                    const paths = Array.isArray(this.pathFiltersConfig[item]) ? 
+                    const paths = Array.isArray(this.pathFiltersConfig[item]) ?
                                 this.pathFiltersConfig[item].length : 0;
                     console.log(`    ${item} (${paths} path patterns)`);
                 });
@@ -411,7 +411,7 @@ class PathFilterOptimizer {
         console.log('  • Implement "e2e-triggers" for expensive E2E test workflows');
         console.log('  • Consider "docs-only" exclusions for most CI workflows');
         console.log('  • Use composite filters like "fullstack" for comprehensive changes');
-        
+
         console.log('\n🏆 Expected Benefits:');
         console.log(`  • Reduce CI execution time by ~${Math.round(analysis.estimatedSavings / Math.max(analysis.optimizable, 1))}% on average`);
         console.log('  • Lower GitHub Actions usage costs');
@@ -466,7 +466,7 @@ class PathFilterOptimizer {
 async function main() {
     const args = process.argv.slice(2);
     const command = args[0] || 'report';
-    
+
     const optimizer = new PathFilterOptimizer();
 
     try {
@@ -475,19 +475,19 @@ async function main() {
                 console.log('📊 Analyzing workflows for optimization potential...');
                 await optimizer.loadPathFilters();
                 const analysisResult = await optimizer.analyzeWorkflows();
-                
+
                 console.log(`\n✅ Analysis complete:`);
                 console.log(`   Workflows analyzed: ${analysisResult.totalFiles}`);
                 console.log(`   Optimizable: ${analysisResult.optimizable}`);
                 console.log(`   Total estimated savings: ${analysisResult.estimatedSavings}%`);
                 console.log(`   Average per workflow: ${Math.round(analysisResult.estimatedSavings / Math.max(analysisResult.optimizable, 1))}%`);
-                
+
                 // Show top 3 highest-impact workflows
                 const topWorkflows = analysisResult.workflows
                     .filter(w => w.optimizable)
                     .sort((a, b) => b.estimatedSavings - a.estimatedSavings)
                     .slice(0, 3);
-                
+
                 if (topWorkflows.length > 0) {
                     console.log('\n🎯 Top optimization opportunities:');
                     topWorkflows.forEach(w => {
@@ -502,12 +502,12 @@ async function main() {
                     console.log('❌ Specify --workflow=filename.yml');
                     break;
                 }
-                
+
                 const workflowName = workflowArg.split('=')[1];
                 await optimizer.loadPathFilters();
                 const analysis = await optimizer.analyzeWorkflows();
                 const workflow = analysis.workflows.find(w => w.filename === workflowName);
-                
+
                 if (workflow && workflow.optimizable) {
                     optimizer.generateWorkflowExample(workflowName, workflow.recommendedFilters);
                 } else {

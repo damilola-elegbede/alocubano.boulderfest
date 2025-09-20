@@ -6,14 +6,14 @@
 
 export default function handler(req, res) {
   // Only accept POST requests
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   // For now, just return success
   // In production, you'd send this to your analytics service
   return res.status(200).json({
     success: true,
-    message: "Event tracked",
+    message: 'Event tracked'
   });
 }

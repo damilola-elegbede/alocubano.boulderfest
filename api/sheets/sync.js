@@ -1,12 +1,12 @@
 import authService from "../../lib/auth-service.js";
 import googleSheetsService from "../../lib/google-sheets-service.js";
-import csrfService from '../../lib/csrf-service.js';
-import { withSecurityHeaders } from '../../lib/security-headers.js';
+import csrfService from "../../lib/csrf-service.js";
+import { withSecurityHeaders } from "../../lib/security-headers.js";
 
 async function handler(req, res) {
-  if (req.method !== "POST") {
-    res.setHeader("Allow", "POST");
-    return res.status(405).end("Method Not Allowed");
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST');
+    return res.status(405).end('Method Not Allowed');
   }
 
   try {
@@ -23,8 +23,8 @@ async function handler(req, res) {
 
     if (missingVars.length > 0) {
       return res.status(503).json({
-        error: "Google Sheets not configured",
-        message: "Missing required environment variables for Google Sheets integration",
+        error: 'Google Sheets not configured',
+        message: 'Missing required environment variables for Google Sheets integration',
         missingVariables: missingVars,
         configurationStatus: {
           hasSheetId: !!process.env.GOOGLE_SHEET_ID,
@@ -42,34 +42,34 @@ async function handler(req, res) {
 
     res.status(200).json({
       success: true,
-      message: "Google Sheets sync completed",
+      message: 'Google Sheets sync completed',
       timestamp: result.timestamp,
-      sheetUrl: `https://docs.google.com/spreadsheets/d/${process.env.GOOGLE_SHEET_ID}`,
+      sheetUrl: `https://docs.google.com/spreadsheets/d/${process.env.GOOGLE_SHEET_ID}`
     });
   } catch (error) {
-    console.error("Sheets sync error:", error);
-    
+    console.error('Sheets sync error:', error);
+
     // Provide more specific error responses
     let statusCode = 500;
-    let errorResponse = {
-      error: "Sync failed",
-      message: error.message,
+    const errorResponse = {
+      error: 'Sync failed',
+      message: error.message
     };
-    
+
     if (error.message.includes('auth') || error.message.includes('permission')) {
       statusCode = 403;
-      errorResponse.error = "Authentication failed";
-      errorResponse.hint = "Check Google Sheets service account credentials";
+      errorResponse.error = 'Authentication failed';
+      errorResponse.hint = 'Check Google Sheets service account credentials';
     } else if (error.message.includes('not found') || error.message.includes('Sheet')) {
       statusCode = 404;
-      errorResponse.error = "Sheet not found";
-      errorResponse.hint = "Verify GOOGLE_SHEET_ID is correct and accessible";
+      errorResponse.error = 'Sheet not found';
+      errorResponse.hint = 'Verify GOOGLE_SHEET_ID is correct and accessible';
     } else if (error.message.includes('quota') || error.message.includes('limit')) {
       statusCode = 429;
-      errorResponse.error = "Rate limit exceeded";
-      errorResponse.hint = "Try again later";
+      errorResponse.error = 'Rate limit exceeded';
+      errorResponse.hint = 'Try again later';
     }
-    
+
     // Add debugging information in development
     const isDevelopment = process.env.NODE_ENV === 'development' || process.env.VERCEL_ENV === 'preview';
     if (isDevelopment) {
@@ -79,7 +79,7 @@ async function handler(req, res) {
         serviceAccount: process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL ? 'configured' : 'missing'
       };
     }
-    
+
     res.status(statusCode).json(errorResponse);
   }
 }

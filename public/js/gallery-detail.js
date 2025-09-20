@@ -1213,15 +1213,15 @@
               <div class="lazy-placeholder">
                 <div class="loading-spinner">📸</div>
               </div>
-              <img data-src="${item.thumbnailUrl}" 
-                   data-thumbnail="${item.thumbnailUrl}" 
+              <img data-src="${item.thumbnailUrl}"
+                   data-thumbnail="${item.thumbnailUrl}"
                    data-dominant-color="#f0f0f0"
-                   data-width="400" 
+                   data-width="400"
                    data-height="300"
                    data-progressive="true"
                    data-image-id="${item.id || globalIndex}"
-                   alt="${title}" 
-                   class="lazy-image gallery-image" 
+                   alt="${title}"
+                   class="lazy-image gallery-image"
                    style="display: none;">
             </div>
           </div>

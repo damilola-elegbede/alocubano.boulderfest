@@ -8,11 +8,11 @@ import { getEmailSubscriberService } from "../../lib/email-subscriber-service.js
 // HTML escape function to prevent XSS attacks
 function escapeHtml(unsafe) {
   return unsafe
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
 // Rate limiting storage
@@ -33,9 +33,9 @@ setInterval(() => {
  */
 function rateLimit(req, res) {
   const ip =
-    req.headers["x-forwarded-for"] ||
+    req.headers['x-forwarded-for'] ||
     req.connection?.remoteAddress ||
-    "127.0.0.1";
+    '127.0.0.1';
   const limit = parseInt(process.env.RATE_LIMIT_EMAIL_UNSUBSCRIBE) || 10;
   const windowMs = 15 * 60 * 1000; // 15 minutes
 
@@ -55,8 +55,8 @@ function rateLimit(req, res) {
 
   if (rateData.count >= limit) {
     return res.status(429).json({
-      error: "Too many requests. Please try again later.",
-      retryAfter: Math.ceil((rateData.resetTime - now) / 1000),
+      error: 'Too many requests. Please try again later.',
+      retryAfter: Math.ceil((rateData.resetTime - now) / 1000)
     });
   }
 
@@ -77,11 +77,11 @@ function isValidEmail(email) {
  */
 function getClientIp(req) {
   return (
-    req.headers["x-forwarded-for"] ||
+    req.headers['x-forwarded-for'] ||
     req.connection?.remoteAddress ||
     req.socket?.remoteAddress ||
     req.connection?.socket?.remoteAddress ||
-    "127.0.0.1"
+    '127.0.0.1'
   );
 }
 
@@ -90,12 +90,12 @@ function getClientIp(req) {
  */
 export default async function handler(req, res) {
   // Set CORS headers
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   // Handle preflight request
-  if (req.method === "OPTIONS") {
+  if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
@@ -109,41 +109,41 @@ export default async function handler(req, res) {
     let email, token;
 
     // Handle both GET (with query params) and POST requests
-    if (req.method === "GET") {
+    if (req.method === 'GET') {
       email = req.query.email;
       token = req.query.token;
-    } else if (req.method === "POST") {
+    } else if (req.method === 'POST') {
       email = req.body?.email;
       token = req.body?.token;
     } else {
       return res.status(405).json({
-        error: "Method not allowed. Use GET or POST.",
+        error: 'Method not allowed. Use GET or POST.'
       });
     }
 
     // Sanitize token
-    if (token && token !== "undefined") {
+    if (token && token !== 'undefined') {
       token = token.trim();
-    } else if (token === "undefined") {
+    } else if (token === 'undefined') {
       token = undefined;
     }
 
     // Validate required fields
     if (!email) {
       return res.status(400).json({
-        error: "Email address is required",
+        error: 'Email address is required'
       });
     }
 
     if (!isValidEmail(email)) {
       return res.status(400).json({
-        error: "Please enter a valid email address",
+        error: 'Please enter a valid email address'
       });
     }
 
     if (!token) {
       return res.status(400).json({
-        error: "Unsubscribe token is required",
+        error: 'Unsubscribe token is required'
       });
     }
 
@@ -153,7 +153,7 @@ export default async function handler(req, res) {
     // Validate unsubscribe token
     const isValidToken = emailService.validateUnsubscribeToken(email, token);
     if (!isValidToken) {
-      if (req.method === "GET") {
+      if (req.method === 'GET') {
         const html = `
                     <!DOCTYPE html>
                     <html lang="en">
@@ -216,23 +216,23 @@ export default async function handler(req, res) {
                     </html>
                 `;
 
-        res.setHeader("Content-Type", "text/html");
+        res.setHeader('Content-Type', 'text/html');
         return res.status(400).send(html);
       }
 
       return res.status(400).json({
-        error: "Invalid unsubscribe token",
+        error: 'Invalid unsubscribe token'
       });
     }
 
     // Unsubscribe user
     const result = await emailService.unsubscribeSubscriber(
       email,
-      "user_request",
+      'user_request'
     );
 
     // For GET requests, return HTML page
-    if (req.method === "GET") {
+    if (req.method === 'GET') {
       const html = `
                 <!DOCTYPE html>
                 <html lang="en">
@@ -287,7 +287,7 @@ export default async function handler(req, res) {
                         <p>We've successfully removed <strong>${escapeHtml(email)}</strong> from our mailing list.</p>
                         <p>You won't receive any more marketing emails from A Lo Cubano Boulder Fest.</p>
                         <p>We're sorry to see you go, but we understand that inbox priorities change.</p>
-                        
+
                         <div class="contact-info">
                             <p>If you unsubscribed by mistake or have any questions, please contact us at:</p>
                             <p><a href="mailto:alocubanoboulderfest@gmail.com">alocubanoboulderfest@gmail.com</a></p>
@@ -297,32 +297,32 @@ export default async function handler(req, res) {
                 </html>
             `;
 
-      res.setHeader("Content-Type", "text/html");
+      res.setHeader('Content-Type', 'text/html');
       return res.status(200).send(html);
     }
 
     // For POST requests, return JSON
     return res.status(200).json({
       success: true,
-      message: "Successfully unsubscribed from newsletter",
-      email: email,
+      message: 'Successfully unsubscribed from newsletter',
+      email: email
     });
   } catch (error) {
-    console.error("Newsletter unsubscribe error:", {
+    console.error('Newsletter unsubscribe error:', {
       error: error.message,
       email: req.query?.email || req.body?.email,
       ip: getClientIp(req),
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     });
 
     // Handle specific errors
     if (
-      error.message.includes("Failed to initialize email subscriber service")
+      error.message.includes('Failed to initialize email subscriber service')
     ) {
       const message =
-        "Email service is currently initializing. Please try again in a moment.";
+        'Email service is currently initializing. Please try again in a moment.';
 
-      if (req.method === "GET") {
+      if (req.method === 'GET') {
         const html = `
                     <!DOCTYPE html>
                     <html lang="en">
@@ -361,17 +361,17 @@ export default async function handler(req, res) {
                     </html>
                 `;
 
-        res.setHeader("Content-Type", "text/html");
+        res.setHeader('Content-Type', 'text/html');
         return res.status(503).send(html);
       }
 
       return res.status(503).json({ error: message });
     }
 
-    if (error.message.includes("not found")) {
-      const message = "Email address not found or already unsubscribed";
+    if (error.message.includes('not found')) {
+      const message = 'Email address not found or already unsubscribed';
 
-      if (req.method === "GET") {
+      if (req.method === 'GET') {
         const html = `
                     <!DOCTYPE html>
                     <html lang="en">
@@ -410,7 +410,7 @@ export default async function handler(req, res) {
                     </html>
                 `;
 
-        res.setHeader("Content-Type", "text/html");
+        res.setHeader('Content-Type', 'text/html');
         return res.status(200).send(html);
       }
 
@@ -419,9 +419,9 @@ export default async function handler(req, res) {
 
     // Generic error response
     const errorMessage =
-      "An error occurred while processing your unsubscribe request. Please try again.";
+      'An error occurred while processing your unsubscribe request. Please try again.';
 
-    if (req.method === "GET") {
+    if (req.method === 'GET') {
       const html = `
                 <!DOCTYPE html>
                 <html lang="en">
@@ -466,7 +466,7 @@ export default async function handler(req, res) {
                     <div class="container">
                         <h1>Something Went Wrong</h1>
                         <p>${errorMessage}</p>
-                        
+
                         <div class="contact-info">
                             <p>If you continue to have trouble, please contact us at:</p>
                             <p><a href="mailto:alocubanoboulderfest@gmail.com">alocubanoboulderfest@gmail.com</a></p>
@@ -476,7 +476,7 @@ export default async function handler(req, res) {
                 </html>
             `;
 
-      res.setHeader("Content-Type", "text/html");
+      res.setHeader('Content-Type', 'text/html');
       return res.status(500).send(html);
     }
 

@@ -32,10 +32,10 @@ test.describe('Ticket Registration', () => {
 
   test('loads ticket registration page', async ({ page }) => {
     await navigateAndClearStorage(page, `/pages/my-ticket.html?ticketId=${mockTicketId}`);
-    
+
     // Verify page loaded
     await expect(page.locator('body')).toBeVisible();
-    
+
     console.log('✅ Ticket registration page loaded');
   });
 
@@ -57,7 +57,7 @@ test.describe('Ticket Registration', () => {
     });
 
     await navigateAndClearStorage(page, `/pages/my-ticket.html?ticketId=${mockTicketId}`);
-    
+
     // This test validates the page loads correctly and can handle form interactions
     // The exact form behavior depends on the actual HTML structure
     console.log('✅ Registration validation tested');

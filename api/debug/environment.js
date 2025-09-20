@@ -7,11 +7,11 @@
 export default async function handler(req, res) {
   // Only allow in development, test, or preview environments
   const isDevelopment = process.env.NODE_ENV !== 'production';
-  const isTestEnvironment = process.env.NODE_ENV === 'test' || 
-                             process.env.CI === 'true' || 
+  const isTestEnvironment = process.env.NODE_ENV === 'test' ||
+                             process.env.CI === 'true' ||
                              process.env.E2E_TEST_MODE === 'true' ||
                              process.env.VERCEL_ENV === 'preview';
-  
+
   if (!isDevelopment && !isTestEnvironment) {
     return res.status(403).json({ error: 'Environment debug not available in production' });
   }
@@ -28,19 +28,19 @@ export default async function handler(req, res) {
       ADMIN_PASSWORD: !!process.env.ADMIN_PASSWORD,
       TEST_ADMIN_PASSWORD: !!process.env.TEST_ADMIN_PASSWORD,
       ADMIN_SECRET: !!process.env.ADMIN_SECRET,
-      
+
       // Database
       TURSO_DATABASE_URL: !!process.env.TURSO_DATABASE_URL,
       TURSO_AUTH_TOKEN: !!process.env.TURSO_AUTH_TOKEN,
-      
+
       // Email
       BREVO_API_KEY: !!process.env.BREVO_API_KEY,
       BREVO_NEWSLETTER_LIST_ID: !!process.env.BREVO_NEWSLETTER_LIST_ID,
-      
+
       // Payments (optional)
       STRIPE_PUBLISHABLE_KEY: !!process.env.STRIPE_PUBLISHABLE_KEY,
       STRIPE_SECRET_KEY: !!process.env.STRIPE_SECRET_KEY,
-      
+
       // Google Drive Service Account (optional - Vercel secrets are exposed as env vars)
       GOOGLE_SERVICE_ACCOUNT_EMAIL: !!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
       GOOGLE_PRIVATE_KEY: !!process.env.GOOGLE_PRIVATE_KEY,
@@ -54,7 +54,7 @@ export default async function handler(req, res) {
       E2E_TEST_MODE: process.env.E2E_TEST_MODE,
       VERCEL_ENV: process.env.VERCEL_ENV,
       VERCEL_URL: process.env.VERCEL_URL,
-      isE2ETest: process.env.E2E_TEST_MODE === 'true' || 
+      isE2ETest: process.env.E2E_TEST_MODE === 'true' ||
                  process.env.CI === 'true' ||
                  process.env.VERCEL_ENV === 'preview'
     };
@@ -68,7 +68,7 @@ export default async function handler(req, res) {
       .filter(([key, value]) => !value)
       .map(([key]) => key);
 
-    const criticalMissing = missingVars.filter(key => 
+    const criticalMissing = missingVars.filter(key =>
       ['ADMIN_SECRET', 'TURSO_DATABASE_URL', 'TURSO_AUTH_TOKEN'].includes(key)
     );
 
@@ -108,11 +108,11 @@ export default async function handler(req, res) {
     if (missingVars.includes('TEST_ADMIN_PASSWORD') && environmentDetection.isE2ETest) {
       response.status.recommendations.push('Set TEST_ADMIN_PASSWORD for E2E testing');
     }
-    
+
     if (!apiAvailability.google_drive) {
       response.status.recommendations.push('Set Google Drive Service Account credentials for gallery functionality');
     }
-    
+
     if (!apiAvailability.payments) {
       response.status.recommendations.push('Set Stripe keys for payment functionality');
     }
@@ -120,9 +120,9 @@ export default async function handler(req, res) {
     res.status(200).json(response);
   } catch (error) {
     console.error('Environment debug error:', error);
-    res.status(500).json({ 
-      error: 'Environment debug failed', 
-      message: error.message 
+    res.status(500).json({
+      error: 'Environment debug failed',
+      message: error.message
     });
   }
 }

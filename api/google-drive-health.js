@@ -3,7 +3,7 @@
  * Provides health status and metrics for the Google Drive integration
  */
 
-import { getGoogleDriveService, getGoogleDriveMetrics } from '../lib/google-drive-service.js';
+import { getGoogleDriveService, getGoogleDriveMetrics } from "../lib/google-drive-service.js";
 
 export default async function handler(req, res) {
   // Set CORS headers
@@ -19,8 +19,8 @@ export default async function handler(req, res) {
 
   // Only allow GET requests
   if (req.method !== 'GET') {
-    res.setHeader("Allow", "GET, OPTIONS");
-    res.status(405).json({ 
+    res.setHeader('Allow', 'GET, OPTIONS');
+    res.status(405).json({
       error: 'Method not allowed',
       message: 'Only GET requests are supported'
     });
@@ -29,19 +29,19 @@ export default async function handler(req, res) {
 
   try {
     console.log('Google Drive Health API: Processing request');
-    
+
     const googleDriveService = getGoogleDriveService();
-    
+
     // Ensure service is initialized before health check
     await googleDriveService.ensureInitialized?.();
-    
+
     // Get health check and metrics
     const healthCheck = await googleDriveService.healthCheck();
     const metrics = getGoogleDriveMetrics();
-    
+
     // Check configuration status
     const isConfigured = !!(process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && process.env.GOOGLE_PRIVATE_KEY && process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID);
-    
+
     const response = {
       service: 'google-drive',
       configured: isConfigured,
@@ -61,9 +61,9 @@ export default async function handler(req, res) {
 
     // Only expose sensitive config details when explicitly enabled for internal debugging
     if (process.env.EXPOSE_INTERNAL_HEALTH_FIELDS === 'true') {
-      response.configuration.serviceAccountEmailFormat = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL ? 
+      response.configuration.serviceAccountEmailFormat = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL ?
         process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL.split('@')[0] + '@...' : 'Not set';
-      response.configuration.galleryFolderIdFormat = process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID ? 
+      response.configuration.galleryFolderIdFormat = process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID ?
         process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID.substring(0, 8) + '...' : 'Not set';
     }
 
@@ -80,7 +80,7 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('Google Drive Health API Error:', error);
-    
+
     const errorResponse = {
       service: 'google-drive',
       configured: !!(process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && process.env.GOOGLE_PRIVATE_KEY && process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID),

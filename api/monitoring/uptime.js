@@ -1,7 +1,7 @@
 import { getMonitoringService } from "../../lib/monitoring/monitoring-service.js";
 import {
   getHealthChecker,
-  HealthStatus,
+  HealthStatus
 } from "../../lib/monitoring/health-checker.js";
 import { addBreadcrumb } from "../../lib/monitoring/sentry-config.js";
 
@@ -23,7 +23,7 @@ function calculateUptime(healthHistory) {
 
   const totalChecks = healthHistory.length;
   const healthyChecks = healthHistory.filter(
-    (h) => h.status === HealthStatus.HEALTHY,
+    (h) => h.status === HealthStatus.HEALTHY
   ).length;
 
   return (healthyChecks / totalChecks) * 100;
@@ -49,7 +49,7 @@ function getUptimeMetrics() {
       minutes: uptimeMinutes,
       hours: uptimeHours,
       days: uptimeDays,
-      formatted: formatUptime(uptimeMs),
+      formatted: formatUptime(uptimeMs)
     },
     requests: {
       total: requestCount,
@@ -57,8 +57,8 @@ function getUptimeMetrics() {
       successRate:
         requestCount > 0
           ? ((requestCount - errorCount) / requestCount) * 100
-          : 100,
-    },
+          : 100
+    }
   };
 }
 
@@ -86,7 +86,7 @@ function formatUptime(uptimeMs) {
     parts.push(`${seconds % 60}s`);
   }
 
-  return parts.join(" ");
+  return parts.join(' ');
 }
 
 /**
@@ -94,13 +94,13 @@ function formatUptime(uptimeMs) {
  */
 async function getAvailabilityStatus() {
   const zones = {
-    "us-west-1": { status: "operational", latency: null },
-    "us-east-1": { status: "operational", latency: null },
-    "eu-west-1": { status: "operational", latency: null },
+    'us-west-1': { status: 'operational', latency: null },
+    'us-east-1': { status: 'operational', latency: null },
+    'eu-west-1': { status: 'operational', latency: null }
   };
 
   // Check Vercel edge network status
-  const vercelRegion = process.env.VERCEL_REGION || "unknown";
+  const vercelRegion = process.env.VERCEL_REGION || 'unknown';
   if (vercelRegion && zones[vercelRegion]) {
     zones[vercelRegion].primary = true;
   }
@@ -117,44 +117,44 @@ async function getDependenciesStatus() {
 
   try {
     // Check critical dependencies
-    const criticalServices = ["database", "stripe"];
+    const criticalServices = ['database', 'stripe'];
     for (const service of criticalServices) {
       try {
         const health = await healthChecker.checkService(service);
         dependencies[service] = {
           status: health.status,
           responseTime: health.responseTime,
-          lastCheck: new Date().toISOString(),
+          lastCheck: new Date().toISOString()
         };
       } catch (error) {
         dependencies[service] = {
           status: HealthStatus.UNHEALTHY,
           error: error.message,
-          lastCheck: new Date().toISOString(),
+          lastCheck: new Date().toISOString()
         };
       }
     }
 
     // Check non-critical dependencies
-    const nonCriticalServices = ["brevo", "google_sheets"];
+    const nonCriticalServices = ['brevo', 'google_sheets'];
     for (const service of nonCriticalServices) {
       try {
         const health = await healthChecker.checkService(service);
         dependencies[service] = {
           status: health.status,
           responseTime: health.responseTime,
-          lastCheck: new Date().toISOString(),
+          lastCheck: new Date().toISOString()
         };
       } catch (error) {
         dependencies[service] = {
           status: HealthStatus.DEGRADED,
           error: error.message,
-          lastCheck: new Date().toISOString(),
+          lastCheck: new Date().toISOString()
         };
       }
     }
   } catch (error) {
-    console.error("Error checking dependencies:", error);
+    console.error('Error checking dependencies:', error);
   }
 
   return dependencies;
@@ -167,7 +167,7 @@ function calculateSLA(uptimePercent, errorRate) {
   // Define SLA targets
   const slaTargets = {
     uptime: 99.9, // 99.9% uptime
-    errorRate: 1.0, // Less than 1% error rate
+    errorRate: 1.0 // Less than 1% error rate
   };
 
   const uptimeMet = uptimePercent >= slaTargets.uptime;
@@ -178,17 +178,17 @@ function calculateSLA(uptimePercent, errorRate) {
     targets: slaTargets,
     current: {
       uptime: uptimePercent,
-      errorRate,
+      errorRate
     },
     compliance: {
       uptime: uptimeMet,
       errorRate: errorRateMet,
-      overall: slaMet,
+      overall: slaMet
     },
     monthlyDowntimeAllowance: {
       minutes: 43.2, // 99.9% = 43.2 minutes/month
-      seconds: 2592, // 43.2 minutes in seconds
-    },
+      seconds: 2592 // 43.2 minutes in seconds
+    }
   };
 }
 
@@ -203,7 +203,7 @@ function getIncidentHistory() {
     lastIncident: null,
     recentIncidents: [],
     mtbf: null, // Mean Time Between Failures
-    mttr: null, // Mean Time To Recovery
+    mttr: null // Mean Time To Recovery
   };
 }
 
@@ -215,21 +215,21 @@ export default async function handler(req, res) {
   requestCount++;
 
   // Only allow GET requests
-  if (req.method !== "GET") {
+  if (req.method !== 'GET') {
     errorCount++;
-    return res.status(405).json({ error: "Method not allowed" });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
     // Add breadcrumb
     addBreadcrumb({
-      category: "monitoring",
-      message: "Uptime check requested",
-      level: "info",
+      category: 'monitoring',
+      message: 'Uptime check requested',
+      level: 'info',
       data: {
         path: req.url,
-        query: req.query,
-      },
+        query: req.query
+      }
     });
 
     // Get monitoring service
@@ -277,7 +277,7 @@ export default async function handler(req, res) {
       uptime: uptimeMetrics,
       availability: {
         percentage: uptimePercent,
-        zones: availability,
+        zones: availability
       },
       dependencies,
       sla,
@@ -286,49 +286,49 @@ export default async function handler(req, res) {
         avgResponseTime: performanceMetrics.performance?.avgResponseTime || 0,
         p95ResponseTime: performanceMetrics.performance?.percentiles?.p95 || 0,
         requestsPerMinute:
-          performanceMetrics.performance?.requestsPerMinute || 0,
+          performanceMetrics.performance?.requestsPerMinute || 0
       },
       monitoring: {
         lastCheck: lastCheckTime,
         nextCheck: lastCheckTime + 30000, // Next check in 30 seconds
         checksPerHour: 120,
-        retention: "30 days",
-      },
+        retention: '30 days'
+      }
     };
 
     // Update last check time
     lastCheckTime = Date.now();
 
     // Set cache headers for monitoring tools
-    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-    res.setHeader("X-Uptime-Status", healthStatus.status);
-    res.setHeader("X-Uptime-Percentage", uptimePercent.toFixed(2));
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('X-Uptime-Status', healthStatus.status);
+    res.setHeader('X-Uptime-Percentage', uptimePercent.toFixed(2));
     res.setHeader(
-      "X-SLA-Compliance",
-      sla.compliance.overall ? "true" : "false",
+      'X-SLA-Compliance',
+      sla.compliance.overall ? 'true' : 'false'
     );
 
     // Return response
     res.status(200).json(response);
   } catch (error) {
     errorCount++;
-    console.error("Uptime check error:", error);
+    console.error('Uptime check error:', error);
 
     // Add error breadcrumb
     addBreadcrumb({
-      category: "monitoring",
-      message: "Uptime check failed",
-      level: "error",
+      category: 'monitoring',
+      message: 'Uptime check failed',
+      level: 'error',
       data: {
-        error: error.message,
-      },
+        error: error.message
+      }
     });
 
     res.status(503).json({
       status: HealthStatus.UNHEALTHY,
-      error: "Uptime monitoring failure",
+      error: 'Uptime monitoring failure',
       message: error.message,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     });
   }
 }
@@ -342,5 +342,5 @@ export {
   formatUptime,
   calculateSLA,
   getAvailabilityStatus,
-  getDependenciesStatus,
+  getDependenciesStatus
 };

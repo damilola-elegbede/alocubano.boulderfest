@@ -7,16 +7,16 @@ export default async function handler(req, res) {
     const adminVerification = await verifyAdminToken(req);
     if (!adminVerification.authorized) {
       return res.status(403).json({
-        error: "Unauthorized access",
-        message: "Administrative access required",
+        error: 'Unauthorized access',
+        message: 'Administrative access required'
       });
     }
 
     // Validate request method
-    if (req.method !== "GET") {
+    if (req.method !== 'GET') {
       return res.status(405).json({
-        error: "Method not allowed",
-        message: "Only GET requests are supported",
+        error: 'Method not allowed',
+        message: 'Only GET requests are supported'
       });
     }
 
@@ -28,11 +28,11 @@ export default async function handler(req, res) {
     const filters = {
       ...(startDate && { startDate }),
       ...(endDate && { endDate }),
-      ...(eventTypes && { eventTypes: eventTypes.split(",") }),
-      ...(severityLevels && { severityLevels: severityLevels.split(",") }),
+      ...(eventTypes && { eventTypes: eventTypes.split(',') }),
+      ...(severityLevels && { severityLevels: severityLevels.split(',') }),
       ...(success !== undefined && {
-        success: success === "true" || success === "1",
-      }),
+        success: success === 'true' || success === '1'
+      })
     };
 
     // Retrieve logs with applied filters
@@ -41,15 +41,15 @@ export default async function handler(req, res) {
     // Respond with logs
     res.status(200).json({
       total: logs.length,
-      logs,
+      logs
     });
   } catch (error) {
-    console.error("Audit log retrieval error:", error);
+    console.error('Audit log retrieval error:', error);
 
     // Prevent detailed error information leakage
     res.status(500).json({
-      error: "Internal server error",
-      message: "Unable to retrieve audit logs",
+      error: 'Internal server error',
+      message: 'Unable to retrieve audit logs'
     });
   }
 }
@@ -57,6 +57,6 @@ export default async function handler(req, res) {
 // Verify admin access and export for serverless function
 export const config = {
   api: {
-    bodyParser: false, // Disable body parsing
-  },
+    bodyParser: false // Disable body parsing
+  }
 };

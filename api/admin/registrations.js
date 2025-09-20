@@ -1,11 +1,11 @@
-import authService from '../../lib/auth-service.js';
-import { getDatabaseClient } from '../../lib/database.js';
-import ticketService from '../../lib/ticket-service.js';
-import { getValidationService } from '../../lib/validation-service.js';
-import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
-import { columnExists } from '../../lib/db-utils.js';
-import csrfService from '../../lib/csrf-service.js';
-import { withAdminAudit } from '../../lib/admin-audit-middleware.js';
+import authService from "../../lib/auth-service.js";
+import { getDatabaseClient } from "../../lib/database.js";
+import ticketService from "../../lib/ticket-service.js";
+import { getValidationService } from "../../lib/validation-service.js";
+import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
+import { columnExists } from "../../lib/db-utils.js";
+import csrfService from "../../lib/csrf-service.js";
+import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
 
 async function handler(req, res) {
   let db;
@@ -30,11 +30,11 @@ async function handler(req, res) {
 
       const { sanitized } = validation;
 
-    // Check if event_id column exists in tickets table
-    const ticketsHasEventId = await columnExists(db, 'tickets', 'event_id');
+      // Check if event_id column exists in tickets table
+      const ticketsHasEventId = await columnExists(db, 'tickets', 'event_id');
 
-    let sql = `
-      SELECT 
+      let sql = `
+      SELECT
         t.*,
         tr.transaction_id as order_number,
         tr.amount_cents / 100.0 as order_amount,
@@ -46,16 +46,16 @@ async function handler(req, res) {
 
       const args = [];
 
-    // Add event filtering if eventId is provided and column exists
-    if (sanitized.eventId && ticketsHasEventId) {
-      sql += ` AND t.event_id = ?`;
-      args.push(sanitized.eventId);
-    }
+      // Add event filtering if eventId is provided and column exists
+      if (sanitized.eventId && ticketsHasEventId) {
+        sql += ' AND t.event_id = ?';
+        args.push(sanitized.eventId);
+      }
 
-    if (sanitized.searchTerm) {
-      sql += ` AND (
-        t.attendee_email LIKE ? ESCAPE '\\' OR 
-        t.attendee_first_name LIKE ? ESCAPE '\\' OR 
+      if (sanitized.searchTerm) {
+        sql += ` AND (
+        t.attendee_email LIKE ? ESCAPE '\\' OR
+        t.attendee_first_name LIKE ? ESCAPE '\\' OR
         t.attendee_last_name LIKE ? ESCAPE '\\' OR
         t.ticket_id LIKE ? ESCAPE '\\' OR
         tr.customer_email LIKE ? ESCAPE '\\'
@@ -85,25 +85,25 @@ async function handler(req, res) {
         sql += ' AND t.checked_in_at IS NULL';
       }
 
-    // Whitelist allowed columns for ORDER BY to prevent SQL injection
-    const allowedSortColumns = ['created_at', 'updated_at', 'checked_in_at', 'ticket_id', 'status', 'ticket_type'];
-    const allowedSortOrders = ['ASC', 'DESC'];
+      // Whitelist allowed columns for ORDER BY to prevent SQL injection
+      const allowedSortColumns = ['created_at', 'updated_at', 'checked_in_at', 'ticket_id', 'status', 'ticket_type'];
+      const allowedSortOrders = ['ASC', 'DESC'];
 
-    // Validate sortBy column is in whitelist
-    const safeColumn = allowedSortColumns.includes(sanitized.sortBy) ? sanitized.sortBy : 'created_at';
+      // Validate sortBy column is in whitelist
+      const safeColumn = allowedSortColumns.includes(sanitized.sortBy) ? sanitized.sortBy : 'created_at';
 
-    // Validate sortOrder is in whitelist
-    const safeSortOrder = allowedSortOrders.includes(sanitized.sortOrder?.toUpperCase()) ? sanitized.sortOrder.toUpperCase() : 'DESC';
+      // Validate sortOrder is in whitelist
+      const safeSortOrder = allowedSortOrders.includes(sanitized.sortOrder?.toUpperCase()) ? sanitized.sortOrder.toUpperCase() : 'DESC';
 
-    sql += ` ORDER BY t.${safeColumn} ${safeSortOrder}`;
-    sql += ` LIMIT ? OFFSET ?`;
-    args.push(sanitized.limit, sanitized.offset);
+      sql += ` ORDER BY t.${safeColumn} ${safeSortOrder}`;
+      sql += ' LIMIT ? OFFSET ?';
+      args.push(sanitized.limit, sanitized.offset);
 
       const result = await db.execute({ sql, args });
 
       // Get total count for pagination
       let countSql = `
-        SELECT COUNT(*) as total 
+        SELECT COUNT(*) as total
         FROM tickets t
         JOIN transactions tr ON t.transaction_id = tr.id
         WHERE 1=1
@@ -113,27 +113,37 @@ async function handler(req, res) {
 
       // Add event filtering to count query
       if (sanitized.eventId && ticketsHasEventId) {
-        countSql += ` AND t.event_id = ?`;
+        countSql += ' AND t.event_id = ?';
       }
 
       if (sanitized.searchTerm) {
         countSql += ` AND (
-          t.attendee_email LIKE ? ESCAPE '\\' OR 
-          t.attendee_first_name LIKE ? ESCAPE '\\' OR 
+          t.attendee_email LIKE ? ESCAPE '\\' OR
+          t.attendee_first_name LIKE ? ESCAPE '\\' OR
           t.attendee_last_name LIKE ? ESCAPE '\\' OR
           t.ticket_id LIKE ? ESCAPE '\\' OR
           tr.customer_email LIKE ? ESCAPE '\\'
         )`;
       }
 
-      if (sanitized.status) countSql += ` AND t.status = ?`;
-      if (sanitized.ticketType) countSql += ` AND t.ticket_type = ?`;
-      if (sanitized.checkedIn === "true")
-        countSql += ` AND t.checked_in_at IS NOT NULL`;
-      else if (sanitized.checkedIn === "false")
-        countSql += ` AND t.checked_in_at IS NULL`;
+      if (sanitized.status) {
+        countSql += ' AND t.status = ?';
+      }
+      if (sanitized.ticketType) {
+        countSql += ' AND t.ticket_type = ?';
+      }
+      if (sanitized.checkedIn === 'true') {
+        countSql += ' AND t.checked_in_at IS NOT NULL';
+      } else if (sanitized.checkedIn === 'false') {
+        countSql += ' AND t.checked_in_at IS NULL';
+      }
 
       const countResult = await db.execute({ sql: countSql, args: countArgs });
+
+      // Set security headers to prevent caching of customer PII data
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
 
       res.status(200).json({
         registrations: result.rows,
@@ -143,14 +153,14 @@ async function handler(req, res) {
         hasMore: sanitized.offset + sanitized.limit < countResult.rows[0].total,
         eventId: sanitized.eventId || null,
         hasEventFiltering: {
-          tickets: ticketsHasEventId,
+          tickets: ticketsHasEventId
         },
         filters: {
           eventId: sanitized.eventId || null,
           searchTerm: sanitized.searchTerm || null,
           status: sanitized.status || null,
           ticketType: sanitized.ticketType || null,
-          checkedIn: sanitized.checkedIn !== undefined ? sanitized.checkedIn : null,
+          checkedIn: sanitized.checkedIn !== undefined ? sanitized.checkedIn : null
         }
       });
     } else if (req.method === 'PUT') {
@@ -177,7 +187,7 @@ async function handler(req, res) {
       switch (action) {
       case 'checkin': {
         await db.execute({
-          sql: `UPDATE tickets 
+          sql: `UPDATE tickets
                   SET checked_in_at = CURRENT_TIMESTAMP,
                       checked_in_by = ?,
                       updated_at = CURRENT_TIMESTAMP
@@ -193,7 +203,7 @@ async function handler(req, res) {
 
       case 'undo_checkin': {
         await db.execute({
-          sql: `UPDATE tickets 
+          sql: `UPDATE tickets
                   SET checked_in_at = NULL,
                       checked_in_by = NULL,
                       updated_at = CURRENT_TIMESTAMP
@@ -232,11 +242,11 @@ async function handler(req, res) {
     }
   } catch (error) {
     console.error('Registration API error:', error);
-    
+
     // Provide more specific error messages for debugging
     let errorMessage = 'Internal server error';
     let statusCode = 500;
-    
+
     if (error.message.includes('validation')) {
       errorMessage = 'Invalid request parameters';
       statusCode = 400;
@@ -250,10 +260,10 @@ async function handler(req, res) {
       errorMessage = 'Authentication or permission error';
       statusCode = 403;
     }
-    
+
     // In development, provide more detailed error information
     const isDevelopment = process.env.NODE_ENV === 'development' || process.env.VERCEL_ENV === 'preview';
-    
+
     res.status(statusCode).json({
       error: errorMessage,
       ...(isDevelopment && {
@@ -282,19 +292,19 @@ const securedHandler = withSecurityHeaders(
 async function safeHandler(req, res) {
   console.log(`🔍 [${new Date().toISOString()}] Registrations endpoint called`);
   console.log(`📡 Request: ${req.method} ${req.url}`);
-  console.log(`🏷️  Headers:`, Object.keys(req.headers));
+  console.log('🏷️  Headers:', Object.keys(req.headers));
   console.log(`🔧 Environment: NODE_ENV=${process.env.NODE_ENV}, VERCEL_ENV=${process.env.VERCEL_ENV}`);
 
   try {
-    console.log(`🚀 Executing pre-built middleware chain...`);
+    console.log('🚀 Executing pre-built middleware chain...');
 
     const result = await securedHandler(req, res);
 
-    console.log(`✅ Request completed successfully`);
+    console.log('✅ Request completed successfully');
     return result;
 
   } catch (error) {
-    console.error(`💥 FATAL ERROR in registrations endpoint:`, {
+    console.error('💥 FATAL ERROR in registrations endpoint:', {
       message: error.message,
       stack: error.stack,
       name: error.name,
@@ -343,11 +353,11 @@ async function safeHandler(req, res) {
         requestId: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
       };
 
-      console.log(`📤 Returning error response:`, errorResponse);
+      console.log('📤 Returning error response:', errorResponse);
 
       res.status(500).json(errorResponse);
     } else {
-      console.warn(`⚠️  Headers already sent, cannot return JSON error response`);
+      console.warn('⚠️  Headers already sent, cannot return JSON error response');
     }
   }
 }

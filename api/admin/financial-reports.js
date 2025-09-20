@@ -13,14 +13,11 @@
  * - Performance-optimized queries with caching
  */
 
-import { AuthService } from '../../lib/auth-service.js';
-import financialReconciliationService from '../../lib/financial-reconciliation-service.js';
-import financialAuditQueries from '../../lib/financial-audit-queries.js';
-import auditService from '../../lib/audit-service.js';
-import { logger } from '../../lib/logger.js';
-
-// Initialize auth service
-const authService = new AuthService();
+import authService from "../../lib/auth-service.js";
+import financialReconciliationService from "../../lib/financial-reconciliation-service.js";
+import financialAuditQueries from "../../lib/financial-audit-queries.js";
+import auditService from "../../lib/audit-service.js";
+import { logger } from "../../lib/logger.js";
 
 /**
  * Helper function to validate admin authentication
@@ -148,71 +145,71 @@ export default async function handler(req, res) {
 
     try {
       switch (type) {
-        case 'daily-reconciliation':
-          responseData = await handleDailyReconciliation(req, authResult);
-          break;
+      case 'daily-reconciliation':
+        responseData = await handleDailyReconciliation(req, authResult);
+        break;
 
-        case 'revenue-reconciliation':
-          responseData = await handleRevenueReconciliation(req, authResult);
-          break;
+      case 'revenue-reconciliation':
+        responseData = await handleRevenueReconciliation(req, authResult);
+        break;
 
-        case 'payment-methods':
-          responseData = await handlePaymentMethodBreakdown(req, authResult);
-          break;
+      case 'payment-methods':
+        responseData = await handlePaymentMethodBreakdown(req, authResult);
+        break;
 
-        case 'compliance':
-          responseData = await handleComplianceReport(req, authResult);
-          break;
+      case 'compliance':
+        responseData = await handleComplianceReport(req, authResult);
+        break;
 
-        case 'financial-health':
-          responseData = await handleFinancialHealth(req, authResult);
-          break;
+      case 'financial-health':
+        responseData = await handleFinancialHealth(req, authResult);
+        break;
 
-        case 'outstanding-reconciliation':
-          responseData = await handleOutstandingReconciliation(req, authResult);
-          break;
+      case 'outstanding-reconciliation':
+        responseData = await handleOutstandingReconciliation(req, authResult);
+        break;
 
-        case 'discrepancies':
-          responseData = await handleDiscrepancyReport(req, authResult);
-          break;
+      case 'discrepancies':
+        responseData = await handleDiscrepancyReport(req, authResult);
+        break;
 
-        case 'audit-stats':
-          responseData = await handleAuditStats(req, authResult);
-          break;
+      case 'audit-stats':
+        responseData = await handleAuditStats(req, authResult);
+        break;
 
-        case 'generate-report':
-          if (req.method !== 'POST') {
-            responseData = { status: 405, error: 'POST method required for report generation' };
-            break;
-          }
-          responseData = await handleGenerateReport(req, authResult);
+      case 'generate-report':
+        if (req.method !== 'POST') {
+          responseData = { status: 405, error: 'POST method required for report generation' };
           break;
+        }
+        responseData = await handleGenerateReport(req, authResult);
+        break;
 
-        case 'resolve-discrepancy':
-          if (req.method !== 'POST') {
-            responseData = { status: 405, error: 'POST method required for discrepancy resolution' };
-            break;
-          }
-          responseData = await handleResolveDiscrepancy(req, authResult);
+      case 'resolve-discrepancy':
+        if (req.method !== 'POST') {
+          responseData = { status: 405, error: 'POST method required for discrepancy resolution' };
           break;
+        }
+        responseData = await handleResolveDiscrepancy(req, authResult);
+        break;
 
-        default:
-          responseData = {
-            status: 400,
-            error: 'Invalid report type',
-            available_types: [
-              'daily-reconciliation',
-              'revenue-reconciliation',
-              'payment-methods',
-              'compliance',
-              'financial-health',
-              'outstanding-reconciliation',
-              'discrepancies',
-              'audit-stats',
-              'generate-report',
-              'resolve-discrepancy'
-            ]
-          };
+      default:
+        responseData = {
+          status: 400,
+          error: 'Invalid report type',
+          available_types: [
+            'daily-reconciliation',
+            'revenue-reconciliation',
+            'payment-methods',
+            'compliance',
+            'financial-health',
+            'outstanding-reconciliation',
+            'discrepancies',
+            'audit-stats',
+            'generate-report',
+            'resolve-discrepancy'
+          ]
+        };
       }
 
       // Log successful admin access
@@ -220,10 +217,18 @@ export default async function handler(req, res) {
 
       // Handle different response formats
       if (format === 'csv' && responseData.data) {
+        // Set security headers for CSV with financial PII data
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
         res.setHeader('Content-Type', 'text/csv');
         res.setHeader('Content-Disposition', `attachment; filename="${type}-${Date.now()}.csv"`);
         res.status(responseData.status || 200).send(convertToCSV(responseData.data));
       } else {
+        // Set security headers for JSON with financial data
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
         res.status(responseData.status || 200).json(responseData);
       }
 
@@ -447,15 +452,15 @@ async function handleGenerateReport(req, authResult) {
 
   let report;
   switch (reportType) {
-    case 'daily-reconciliation':
-      report = await financialReconciliationService.generateDailyReconciliationReport(date);
-      break;
+  case 'daily-reconciliation':
+    report = await financialReconciliationService.generateDailyReconciliationReport(date);
+    break;
 
-    default:
-      return {
-        status: 400,
-        error: `Unsupported report generation type: ${reportType}`
-      };
+  default:
+    return {
+      status: 400,
+      error: `Unsupported report generation type: ${reportType}`
+    };
   }
 
   return {

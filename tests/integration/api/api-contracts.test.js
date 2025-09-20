@@ -8,21 +8,21 @@ import { testRequest, generateTestEmail, HTTP_STATUS } from '../handler-test-hel
 test('payment API creates valid Stripe checkout session', async () => {
   const validPaymentData = {
     cartItems: [{ name: 'Weekend Pass', price: 125.00, quantity: 1 }],
-    customerInfo: { 
-      email: generateTestEmail(), 
-      firstName: 'Test', 
-      lastName: 'User' 
+    customerInfo: {
+      email: generateTestEmail(),
+      firstName: 'Test',
+      lastName: 'User'
     }
   };
-  
+
   const response = await testRequest('POST', '/api/payments/create-checkout-session', validPaymentData);
-  
+
   // Skip test if server unavailable (graceful degradation)
   if (response.status === 0) {
     console.warn('⚠️ Payment service unavailable - skipping contract validation');
     return;
   }
-  
+
   // Validate successful response structure
   if (response.status === HTTP_STATUS.OK) {
     expect(response.data).toHaveProperty('checkoutUrl');
@@ -50,14 +50,14 @@ test('email subscription API validates and processes requests correctly', async 
     lastName: 'User',
     consentToMarketing: true
   };
-  
+
   const response = await testRequest('POST', '/api/email/subscribe', validSubscriptionData);
-  
+
   if (response.status === 0) {
     console.warn('⚠️ Email service unavailable - skipping contract validation');
     return;
   }
-  
+
   // Validate successful subscription
   if (response.status === HTTP_STATUS.OK || response.status === 201) {
     expect(response.data).toHaveProperty('success');
@@ -81,12 +81,12 @@ test('ticket validation API handles QR codes correctly', async () => {
   const response = await testRequest('POST', '/api/tickets/validate', {
     token: 'invalid-ticket-id-12345'
   });
-  
+
   if (response.status === 0) {
     console.warn('⚠️ Ticket service unavailable - skipping contract validation');
     return;
   }
-  
+
   // Should return 404 for non-existent tickets or 400 for invalid format
   if (response.status === HTTP_STATUS.NOT_FOUND) {
     expect(response.data).toHaveProperty('error');
@@ -146,12 +146,12 @@ test('gallery API returns proper data structure', async () => {
 
 test('admin dashboard enforces authentication', async () => {
   const response = await testRequest('GET', '/api/admin/dashboard');
-  
+
   if (response.status === 0) {
     console.warn('⚠️ Admin service unavailable - skipping contract validation');
     return;
   }
-  
+
   // Should require authentication (allow server errors)
   expect([HTTP_STATUS.UNAUTHORIZED, HTTP_STATUS.NOT_FOUND, HTTP_STATUS.INTERNAL_SERVER_ERROR].includes(response.status)).toBe(true);
   if (response.data && response.data.error) {
@@ -166,7 +166,7 @@ test('registration API contract validation', async () => {
     expect(response.data).toHaveProperty('transactionId');
     expect(response.data).toHaveProperty('tickets');
   }
-  
+
   // Test registration submission
   response = await testRequest('POST', '/api/tickets/register', {
     ticketId: 'TKT-CONTRACT1',
@@ -178,7 +178,7 @@ test('registration API contract validation', async () => {
     expect(response.data).toHaveProperty('success');
     expect(response.data).toHaveProperty('attendee');
   }
-  
+
   // Test health endpoint
   response = await testRequest('GET', '/api/registration/health');
   if (response.status === HTTP_STATUS.OK) {

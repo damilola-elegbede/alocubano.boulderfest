@@ -2,13 +2,13 @@
 
 /**
  * Package Scripts Validation Tool
- * 
+ *
  * Validates that package.json scripts are:
  * - Consistently named and organized
  * - Include appropriate deprecation warnings
  * - Follow modern testing approaches
  * - Have clear command purposes
- * 
+ *
  * Issue #12: Package Scripts Inconsistency
  */
 
@@ -102,9 +102,9 @@ function validatePackageScripts() {
 
   // Check for consistent E2E approach
   const e2eScripts = Object.keys(scripts).filter(key => key.includes('test:e2e'));
-  const modernE2eCount = e2eScripts.filter(script => 
-    !scripts[script].includes('DEPRECATED') && 
-    !script.includes(':ci') && 
+  const modernE2eCount = e2eScripts.filter(script =>
+    !scripts[script].includes('DEPRECATED') &&
+    !script.includes(':ci') &&
     !script.includes(':ngrok')
   ).length;
 
@@ -115,7 +115,7 @@ function validatePackageScripts() {
   // Check script organization (comments for categories)
   const organizationComments = [
     '//dev',
-    '//test', 
+    '//test',
     '//database',
     '//deploy',
     '//deprecated-test',
@@ -131,7 +131,7 @@ function validatePackageScripts() {
   // Validate script descriptions in package.json
   if (packageJson['scripts-guide']) {
     successes.push('✅ Script guide documentation exists');
-    
+
     const guide = packageJson['scripts-guide'];
     if (guide.current && guide.deprecated) {
       successes.push('✅ Migration guide includes current and deprecated sections');
@@ -141,7 +141,7 @@ function validatePackageScripts() {
   }
 
   // Check for memory optimization patterns
-  const memoryOptimizedScripts = Object.keys(scripts).filter(key => 
+  const memoryOptimizedScripts = Object.keys(scripts).filter(key =>
     scripts[key].includes('NODE_OPTIONS') && scripts[key].includes('max-old-space-size')
   );
 
@@ -167,14 +167,14 @@ function validatePackageScripts() {
   console.log(`  Deprecated scripts: ${Object.keys(scripts).filter(k => scripts[k].includes('DEPRECATED')).length}`);
 
   // Current vs Deprecated breakdown
-  const currentScripts = Object.keys(scripts).filter(k => 
-    !scripts[k].includes('DEPRECATED') && 
+  const currentScripts = Object.keys(scripts).filter(k =>
+    !scripts[k].includes('DEPRECATED') &&
     !k.startsWith('//') &&
     !k.startsWith('pre') &&
     !k.startsWith('post')
   );
-  
-  const deprecatedScriptsList = Object.keys(scripts).filter(k => 
+
+  const deprecatedScriptsList = Object.keys(scripts).filter(k =>
     scripts[k].includes('DEPRECATED')
   );
 

@@ -2,14 +2,14 @@
 
 /**
  * CI Performance Optimizer
- * 
+ *
  * Automatically optimizes CI/CD execution speed by:
  * - Detecting optimal worker counts based on available CPUs
  * - Configuring memory optimization for Node.js
  * - Generating optimized test configurations
  * - Implementing resource limit settings
  * - Creating performance monitoring
- * 
+ *
  * Usage:
  *   node scripts/ci-performance-optimizer.js
  *   node scripts/ci-performance-optimizer.js --analyze
@@ -42,7 +42,7 @@ class CIPerformanceOptimizer {
    */
   getOptimalWorkerCount() {
     let availableCPUs;
-    
+
     if (this.isGitHubActions) {
       // GitHub Actions provides 2 CPUs for free tier, 4 for larger runners
       availableCPUs = parseInt(process.env.GITHUB_RUNNER_CPUS || '2', 10);
@@ -60,7 +60,7 @@ class CIPerformanceOptimizer {
     // Use 75% of available CPUs for optimal performance
     // Reserve some CPU for system processes and other tasks
     const optimalWorkers = Math.max(1, Math.floor(availableCPUs * 0.75));
-    
+
     this.optimizations.workers = {
       available: availableCPUs,
       optimal: optimalWorkers,
@@ -75,7 +75,7 @@ class CIPerformanceOptimizer {
    */
   getOptimalMemorySize() {
     let totalMemoryMB;
-    
+
     if (this.isGitHubActions) {
       // GitHub Actions provides 7GB RAM for standard runners
       totalMemoryMB = parseInt(process.env.GITHUB_RUNNER_MEMORY || '7168', 10);
@@ -93,7 +93,7 @@ class CIPerformanceOptimizer {
     // Allocate 60% of available memory to Node.js
     // Leave room for system processes and test artifacts
     const optimalMemoryMB = Math.floor(totalMemoryMB * 0.6);
-    
+
     this.optimizations.memory = {
       total: totalMemoryMB,
       optimal: optimalMemoryMB,
@@ -119,17 +119,17 @@ class CIPerformanceOptimizer {
             minWorkers: Math.max(1, Math.floor(workers * 0.5))
           }
         },
-        
+
         // Performance optimizations
         isolate: false, // Faster but less isolated
         sequence: {
           concurrent: true,
           shuffle: false // Consistent test order for caching
         },
-        
+
         // Reporter optimization for CI
         reporter: this.isCI ? ['basic'] : ['verbose'],
-        
+
         // Coverage optimization
         coverage: {
           provider: 'v8', // Faster than c8
@@ -141,21 +141,21 @@ class CIPerformanceOptimizer {
             'scripts/**'
           ]
         },
-        
+
         // Timeout optimization
         testTimeout: this.isCI ? 30000 : 10000,
         hookTimeout: this.isCI ? 10000 : 5000,
-        
+
         // File watching disabled in CI
         watch: false,
-        
+
         // Environment optimization
         environment: 'node',
         globals: false, // Explicit imports for better tree shaking
-        
+
         // Setup optimization
         setupFiles: ['./tests/setup.js'],
-        
+
         // Bail on first failure in CI for faster feedback
         bail: this.isCI ? 1 : 0
       }
@@ -170,41 +170,41 @@ class CIPerformanceOptimizer {
    */
   generateOptimizedPlaywrightConfig() {
     const workers = this.getOptimalWorkerCount();
-    
+
     const config = {
       // Worker configuration
       workers: workers,
-      
+
       // Retry configuration
       retries: this.isCI ? 2 : 0,
-      
+
       // Timeout configuration
       timeout: this.isCI ? 60000 : 30000,
       expect: {
         timeout: this.isCI ? 10000 : 5000
       },
-      
+
       // Global setup/teardown
       globalSetup: this.isCI ? undefined : './tests/e2e/global-setup.js',
       globalTeardown: this.isCI ? undefined : './tests/e2e/global-teardown.js',
-      
+
       // Output optimization
       outputDir: '.tmp/playwright-results',
-      reporter: this.isCI ? 
+      reporter: this.isCI ?
         [['github'], ['html', { outputFolder: '.tmp/playwright-report', open: 'never' }]] :
         [['list'], ['html', { outputFolder: '.tmp/playwright-report', open: 'on-failure' }]],
-      
+
       // Browser optimization
       use: {
         // Faster navigation
         navigationTimeout: 30000,
         actionTimeout: 15000,
-        
+
         // Screenshot optimization
         screenshot: this.isCI ? 'only-on-failure' : 'off',
         video: this.isCI ? 'retain-on-failure' : 'off',
         trace: this.isCI ? 'retain-on-failure' : 'off',
-        
+
         // Reduce resource usage
         launchOptions: {
           args: [
@@ -220,7 +220,7 @@ class CIPerformanceOptimizer {
           ]
         }
       },
-      
+
       // Project configuration for parallel execution
       projects: [
         {
@@ -286,7 +286,7 @@ class CIPerformanceOptimizer {
     }
 
     config.push('');
-    
+
     const configText = config.join('\n');
     this.optimizations.configs.npmrc = configText;
     return configText;
@@ -312,7 +312,7 @@ class CIPerformanceOptimizer {
           maxMemory: '1GB'
         }
       },
-      
+
       // Metrics collection
       metrics: {
         testExecution: true,
@@ -320,7 +320,7 @@ class CIPerformanceOptimizer {
         cpuUsage: true,
         diskUsage: false // Disable in CI to reduce overhead
       },
-      
+
       // Alerting thresholds
       thresholds: {
         testFailureRate: 5, // Percentage
@@ -328,7 +328,7 @@ class CIPerformanceOptimizer {
         memoryLeakThreshold: 100, // MB increase
         cpuUtilizationMax: 90 // Percentage
       },
-      
+
       // Optimization recommendations
       recommendations: this.generateRecommendations()
     };
@@ -465,7 +465,7 @@ class CIPerformanceOptimizer {
 
     console.log('\n📊 CI Performance Optimization Report');
     console.log('=====================================');
-    
+
     // Worker optimization
     if (this.optimizations.workers) {
       console.log(`\n🔧 Worker Configuration:`);
@@ -521,7 +521,7 @@ class CIPerformanceOptimizer {
     // Detect optimal configurations
     this.getOptimalWorkerCount();
     this.getOptimalMemorySize();
-    
+
     // Generate optimized configurations
     this.generateOptimizedVitestConfig();
     this.generateOptimizedPlaywrightConfig();

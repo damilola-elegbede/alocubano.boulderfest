@@ -43,7 +43,7 @@ test.describe('Basic Navigation', () => {
   async function returnToHomePage(page, timeout) {
     const homeLink = page.getByRole('link', { name: 'Home' }).first();
     const homeLinkCount = await homeLink.count();
-    
+
     if (homeLinkCount > 0) {
       await homeLink.click();
       await expect(page).toHaveURL(/\/home(\/|$)/, { timeout });
@@ -66,7 +66,7 @@ test.describe('Basic Navigation', () => {
       .filter({ hasText: /Events/i });
 
     const eventsButtonCount = await eventsButton.count();
-    
+
     if (eventsButtonCount > 0) {
       await testDropdownInteraction(page, eventsButton);
     } else {
@@ -87,7 +87,7 @@ test.describe('Basic Navigation', () => {
       .filter({ hasText: /2025|2026|Festival/i });
 
     const festivalLinkCount = await festivalLink.count();
-    
+
     if (festivalLinkCount > 0) {
       await festivalLink.first().click();
       // Update expectation to match actual behavior - links go to boulder-fest-YYYY pages
@@ -99,27 +99,27 @@ test.describe('Basic Navigation', () => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
     await page.reload();
-    
+
     // Look for the actual mobile menu toggle button
     const menuToggle = page.locator('.menu-toggle');
     await expect(menuToggle).toBeVisible();
-    
+
     // Click the menu toggle to open the mobile menu
     await menuToggle.click();
-    
+
     // Wait for the navigation list to become visible with the 'is-open' class
     const navList = page.locator('.nav-list.is-open');
     await expect(navList).toBeVisible({ timeout: 5000 });
-    
+
     // CRITICAL FIX: Wait for JavaScript state synchronization (ensureMenuStateSync runs after 100ms)
     await page.waitForTimeout(150);
-    
+
     // Verify the toggle has the active state
     await expect(menuToggle).toHaveClass(/is-active/);
-    
+
     // Verify ARIA expanded state
     await expect(menuToggle).toHaveAttribute('aria-expanded', 'true');
-    
+
     // Test that clicking a navigation link closes the menu
     const homeLink = navList.locator('a[href="/home"]');
     if (await homeLink.count() > 0) {
@@ -138,7 +138,7 @@ test.describe('Basic Navigation', () => {
     // Check for key footer content
     await expect(footer).toContainText(/May 15-17, 2026/i);
     await expect(footer).toContainText(/Boulder, Colorado/i);
-    
+
     // Check for contact email
     const emailLink = footer.locator('a[href*="mailto:alocubanoboulderfest@gmail.com"]');
     await expect(emailLink).toBeVisible();

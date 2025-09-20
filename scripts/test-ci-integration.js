@@ -3,7 +3,7 @@
 /**
  * CI Integration Test for vercel-dev-ci.js
  * Simulates parallel CI execution with dynamic port allocation
- * 
+ *
  * This test demonstrates how the CI server script works in a realistic scenario
  * without actually running the full Vercel dev server (to avoid conflicts)
  */
@@ -32,36 +32,36 @@ class CISimulator {
 
     for (const suite of this.testSuites) {
       console.log(`\n${suite.name.toUpperCase()} Suite (Port ${suite.port}):`);
-      
+
       // Test environment variable priority
       const originalDynamicPort = process.env.DYNAMIC_PORT;
       const originalPort = process.env.PORT;
-      
+
       // Set CI matrix environment
       process.env.DYNAMIC_PORT = suite.port.toString();
       delete process.env.PORT;
-      
+
       // Create server instance (but don't start it)
       const server = new VercelDevCIServer();
-      
+
       console.log(`   ✅ Server configured for port ${server.port}`);
       console.log(`   ✅ Server URL: ${server.serverUrl}`);
-      
+
       // Verify port is in valid range
       const portInRange = server.port >= 3000 && server.port <= 3005;
       console.log(`   ${portInRange ? '✅' : '❌'} Port in valid range: ${portInRange}`);
-      
+
       // Test port availability
       const available = await checkPortAvailable(server.port);
       console.log(`   ${available ? '✅' : '⚠️'} Port available: ${available}`);
-      
+
       // Restore environment
       if (originalDynamicPort !== undefined) {
         process.env.DYNAMIC_PORT = originalDynamicPort;
       } else {
         delete process.env.DYNAMIC_PORT;
       }
-      
+
       if (originalPort !== undefined) {
         process.env.PORT = originalPort;
       } else {
@@ -94,30 +94,30 @@ class CISimulator {
 
     for (const testCase of testCases) {
       console.log(`\nTest: ${testCase.name}`);
-      
+
       // Save original environment
       const original = {
         DYNAMIC_PORT: process.env.DYNAMIC_PORT,
         PORT: process.env.PORT
       };
-      
+
       // Set test environment
       Object.keys(testCase.env).forEach(key => {
         process.env[key] = testCase.env[key];
       });
-      
+
       // Clear variables not in test case
       if (!testCase.env.DYNAMIC_PORT) delete process.env.DYNAMIC_PORT;
       if (!testCase.env.PORT) delete process.env.PORT;
-      
+
       // Test configuration
       const server = new VercelDevCIServer();
       const passed = server.port === testCase.expected;
-      
+
       console.log(`   Expected: ${testCase.expected}`);
       console.log(`   Got: ${server.port}`);
       console.log(`   Result: ${passed ? '✅ PASS' : '❌ FAIL'}`);
-      
+
       // Restore environment
       Object.keys(original).forEach(key => {
         if (original[key] !== undefined) {
@@ -136,9 +136,9 @@ class CISimulator {
     // Test health check on known unused port
     const testPort = 9998;
     console.log(`\nTesting health check on port ${testPort} (should be unhealthy):`);
-    
+
     const result = await healthCheck(testPort);
-    
+
     console.log(`   Port: ${result.port}`);
     console.log(`   URL: ${result.url}`);
     console.log(`   Healthy: ${result.healthy}`);
@@ -151,7 +151,7 @@ class CISimulator {
     console.log('-'.repeat(40));
 
     console.log('\nTesting script execution modes:');
-    
+
     // Test help/health-check mode
     console.log('\n1. Testing health check mode:');
     try {
@@ -211,18 +211,18 @@ class CISimulator {
       await this.testEnvironmentConfiguration();
       await this.testHealthCheckSystem();
       await this.testCIScriptIntegration();
-      
+
       console.log('\n✅ All CI integration tests completed successfully!');
       console.log('═'.repeat(60));
-      
+
       console.log('\n📋 Summary:');
       console.log('   • Port allocation matrix: ✅ Working');
       console.log('   • Environment configuration: ✅ Working');
       console.log('   • Health check system: ✅ Working');
       console.log('   • Script integration: ✅ Working');
-      
+
       console.log('\n🚀 Ready for CI deployment with dynamic port allocation!');
-      
+
     } catch (error) {
       console.error(`\n❌ CI integration test failed: ${error.message}`);
       console.error(error.stack);

@@ -73,10 +73,10 @@ describe('Cache Placeholder Logic', () => {
 
       // Mock the getBuildTimeCache method to return real data
       vi.spyOn(galleryService, 'getBuildTimeCache').mockResolvedValue(mockRealData);
-      
+
       // Should successfully return the cached data
       const result = await galleryService.getGalleryData('real-event');
-      
+
       expect(result).toMatchObject({
         eventId: 'real-event',
         totalCount: 5,
@@ -178,8 +178,8 @@ describe('Cache Placeholder Logic', () => {
       expect(emptyValidData.isPlaceholder).toBeUndefined();
 
       // Content analysis
-      const hasRealContent = (data) => 
-        data.totalCount > 0 || 
+      const hasRealContent = (data) =>
+        data.totalCount > 0 ||
         (data.categories && Object.values(data.categories).some(cat => cat.length > 0));
 
       expect(hasRealContent(placeholderData)).toBe(false);

@@ -3,36 +3,36 @@
  * Provides available gallery years with statistics and metadata
  */
 
-const { google } = require("googleapis");
+const { google } = require('googleapis');
 
 // Google Drive configuration
 const FOLDER_CONFIGS = {
   2025: {
-    folderId: "1YiZs4L-VYoqJXA3dSXjzST0Ft6aVGsJB",
-    name: "2025 Festival Photos",
-    description: "Photos from the 2025 A Lo Cubano Boulder Fest",
+    folderId: '1YiZs4L-VYoqJXA3dSXjzST0Ft6aVGsJB',
+    name: '2025 Festival Photos',
+    description: 'Photos from the 2025 A Lo Cubano Boulder Fest'
   },
   2024: {
     folderId: null, // Not connected to actual folder - use mock data
-    name: "2024 Festival Photos",
-    description: "Photos from the 2024 A Lo Cubano Boulder Fest",
+    name: '2024 Festival Photos',
+    description: 'Photos from the 2024 A Lo Cubano Boulder Fest'
   },
   2023: {
     folderId: null, // Not connected to actual folder - use mock data
-    name: "2023 Festival Photos",
-    description: "Photos from the inaugural 2023 A Lo Cubano Boulder Fest",
-  },
+    name: '2023 Festival Photos',
+    description: 'Photos from the inaugural 2023 A Lo Cubano Boulder Fest'
+  }
 };
 
 // Supported image formats
 const SUPPORTED_FORMATS = new Set([
-  "image/jpeg",
-  "image/jpg",
-  "image/png",
-  "image/gif",
-  "image/webp",
-  "image/bmp",
-  "image/tiff",
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/bmp',
+  'image/tiff'
 ]);
 
 // Cache configuration
@@ -45,21 +45,21 @@ let cacheTimestamp = 0;
  */
 export default async function handler(req, res) {
   // Set CORS headers
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   // Handle preflight requests
-  if (req.method === "OPTIONS") {
+  if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
   }
 
   // Only allow GET requests
-  if (req.method !== "GET") {
+  if (req.method !== 'GET') {
     res.status(405).json({
-      error: "Method not allowed",
-      message: "Only GET requests are supported",
+      error: 'Method not allowed',
+      message: 'Only GET requests are supported'
     });
     return;
   }
@@ -68,8 +68,8 @@ export default async function handler(req, res) {
     // Check cache first
     const now = Date.now();
     if (yearStatsCache && now - cacheTimestamp < CACHE_DURATION) {
-      res.setHeader("X-Cache", "HIT");
-      res.setHeader("Cache-Control", "public, max-age=1800"); // 30 minutes
+      res.setHeader('X-Cache', 'HIT');
+      res.setHeader('Cache-Control', 'public, max-age=1800'); // 30 minutes
       res.status(200).json(yearStatsCache);
       return;
     }
@@ -82,21 +82,21 @@ export default async function handler(req, res) {
     cacheTimestamp = now;
 
     // Set response headers
-    res.setHeader("X-Cache", "MISS");
-    res.setHeader("Cache-Control", "public, max-age=1800"); // 30 minutes
-    res.setHeader("Content-Type", "application/json");
+    res.setHeader('X-Cache', 'MISS');
+    res.setHeader('Cache-Control', 'public, max-age=1800'); // 30 minutes
+    res.setHeader('Content-Type', 'application/json');
 
     res.status(200).json(yearData);
   } catch (error) {
-    console.error("Gallery years API error:", error);
+    console.error('Gallery years API error:', error);
 
     // Return error response
     res.status(500).json({
-      error: "Internal server error",
+      error: 'Internal server error',
       message:
-        process.env.NODE_ENV === "development"
+        process.env.NODE_ENV === 'development'
           ? error.message
-          : "Failed to load gallery years",
+          : 'Failed to load gallery years'
     });
   }
 }
@@ -127,7 +127,7 @@ async function loadYearStatistics() {
 
   try {
     const auth = await createGoogleAuth();
-    const drive = google.drive({ version: "v3", auth });
+    const drive = google.drive({ version: 'v3', auth });
 
     const years = [];
     const statistics = {};
@@ -153,12 +153,12 @@ async function loadYearStatistics() {
             imageCount: stats.imageCount,
             totalSize: stats.totalSize,
             lastModified: stats.lastModified,
-            averageSize: stats.totalSize / stats.imageCount,
+            averageSize: stats.totalSize / stats.imageCount
           };
           metadata[year] = {
             name: config.name,
             description: config.description,
-            folderId: config.folderId,
+            folderId: config.folderId
           };
         }
       } catch (error) {
@@ -176,10 +176,10 @@ async function loadYearStatistics() {
       metadata,
       totalYears: years.length,
       cacheTimestamp: Date.now(),
-      apiVersion: "1.0",
+      apiVersion: '1.0'
     };
   } catch (error) {
-    console.error("Error loading gallery years - no fallback available:", error.message);
+    console.error('Error loading gallery years - no fallback available:', error.message);
     // Re-throw the error - fail fast, no fallback
     throw error;
   }
@@ -193,21 +193,21 @@ async function getYearStatistics(drive, year, config) {
     // List all files in the folder
     const response = await drive.files.list({
       q: `'${config.folderId}' in parents and trashed=false`,
-      fields: "files(id, name, mimeType, size, modifiedTime)",
-      pageSize: 1000, // Adjust if needed
+      fields: 'files(id, name, mimeType, size, modifiedTime)',
+      pageSize: 1000 // Adjust if needed
     });
 
     const files = response.data.files || [];
 
     // Filter image files and calculate statistics
     const imageFiles = files.filter((file) =>
-      SUPPORTED_FORMATS.has(file.mimeType),
+      SUPPORTED_FORMATS.has(file.mimeType)
     );
 
     const statistics = {
       imageCount: imageFiles.length,
       totalSize: 0,
-      lastModified: null,
+      lastModified: null
     };
 
     let latestModified = 0;
@@ -242,7 +242,7 @@ async function createGoogleAuth() {
     // Check for service account credentials in environment variables
     const serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
     const privateKey = process.env.GOOGLE_PRIVATE_KEY;
-    
+
     if (!serviceAccountEmail || serviceAccountEmail.trim() === '') {
       throw new Error('❌ FATAL: GOOGLE_SERVICE_ACCOUNT_EMAIL secret not configured');
     }
@@ -253,20 +253,20 @@ async function createGoogleAuth() {
 
     // Create credentials object for service account
     const credentials = {
-      type: "service_account",
+      type: 'service_account',
       client_email: serviceAccountEmail,
-      private_key: privateKey.replace(/\\n/g, '\n'), // Handle escaped newlines
+      private_key: privateKey.replace(/\\n/g, '\n') // Handle escaped newlines
     };
 
     const auth = new google.auth.GoogleAuth({
       credentials,
-      scopes: ["https://www.googleapis.com/auth/drive.readonly"],
+      scopes: ['https://www.googleapis.com/auth/drive.readonly']
     });
 
     return auth.getClient();
   } catch (error) {
-    console.error("Google auth error:", error);
-    throw new Error("Failed to authenticate with Google Drive");
+    console.error('Google auth error:', error);
+    throw new Error('Failed to authenticate with Google Drive');
   }
 }
 
@@ -288,6 +288,6 @@ export function getCacheStatus() {
     age: yearStatsCache ? Date.now() - cacheTimestamp : 0,
     expired: yearStatsCache
       ? Date.now() - cacheTimestamp > CACHE_DURATION
-      : true,
+      : true
   };
 }

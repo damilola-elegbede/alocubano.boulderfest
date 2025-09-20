@@ -2,13 +2,13 @@
 
 /**
  * Vercel Preview URL Extractor for E2E Testing
- * 
+ *
  * This utility extracts Vercel preview deployment URLs from:
  * 1. GitHub PR comments (Vercel Bot comments)
  * 2. GitHub API deployment status
  * 3. Vercel CLI commands
  * 4. Environment variables
- * 
+ *
  * Used by E2E tests to run against live preview deployments instead of local servers.
  * Provides better reliability and production-like testing environment.
  */
@@ -71,7 +71,7 @@ class VercelPreviewURLExtractor {
     if (!this.vercelToken || !this.vercelOrgId) {
       throw new Error('❌ FATAL: VERCEL_TOKEN and VERCEL_ORG_ID are required for Vercel API access');
     }
-    
+
     if (this.vercelProjectId) {
       const apiUrl = await this.getFromVercelAPI();
       if (apiUrl) {
@@ -194,8 +194,8 @@ class VercelPreviewURLExtractor {
       console.log(`   🚀 Found ${deployments.length} deployments`);
 
       // Find deployments for our commit
-      const relevantDeployments = deployments.filter(d => 
-        d.sha === this.commitSha && 
+      const relevantDeployments = deployments.filter(d =>
+        d.sha === this.commitSha &&
         d.environment === 'Preview'
       );
 
@@ -212,7 +212,7 @@ class VercelPreviewURLExtractor {
         if (statusResponse.ok) {
           const statuses = await statusResponse.json();
           const successStatus = statuses.find(s => s.state === 'success');
-          
+
           if (successStatus && successStatus.target_url) {
             console.log(`   ✅ Found deployment URL: ${successStatus.target_url}`);
             return successStatus.target_url;
@@ -238,11 +238,11 @@ class VercelPreviewURLExtractor {
     if (!this.vercelToken) {
       throw new Error('❌ FATAL: VERCEL_TOKEN secret not configured');
     }
-    
+
     if (!this.vercelOrgId) {
       throw new Error('❌ FATAL: VERCEL_ORG_ID secret not configured');
     }
-    
+
     if (!this.vercelProjectId) {
       console.log('   ⏭️ Skipping: Missing Vercel project ID');
       return null;
@@ -250,7 +250,7 @@ class VercelPreviewURLExtractor {
 
     try {
       let url = `https://api.vercel.com/v6/deployments?projectId=${this.vercelProjectId}&limit=10`;
-      
+
       if (this.commitSha) {
         url += `&gitCommitSha=${this.commitSha}`;
       }
@@ -274,8 +274,8 @@ class VercelPreviewURLExtractor {
       console.log(`   🚀 Found ${deployments.length} deployments`);
 
       // Find the most recent successful preview deployment
-      const previewDeployment = deployments.find(d => 
-        d.state === 'READY' && 
+      const previewDeployment = deployments.find(d =>
+        d.state === 'READY' &&
         d.type === 'LAMBDAS' &&
         (!this.commitSha || d.meta?.githubCommitSha === this.commitSha)
       );
@@ -304,7 +304,7 @@ class VercelPreviewURLExtractor {
     if (!this.vercelToken) {
       throw new Error('❌ FATAL: VERCEL_TOKEN secret not configured');
     }
-    
+
     if (!this.vercelOrgId) {
       throw new Error('❌ FATAL: VERCEL_ORG_ID secret not configured');
     }
@@ -319,9 +319,9 @@ class VercelPreviewURLExtractor {
       for (const command of commands) {
         try {
           console.log(`   📋 Running: ${command.replace(this.vercelToken, '[REDACTED]')}`);
-          
-          const output = execSync(command, { 
-            encoding: 'utf8', 
+
+          const output = execSync(command, {
+            encoding: 'utf8',
             timeout: 15000,
             stdio: 'pipe',
             env: {
@@ -366,7 +366,7 @@ class VercelPreviewURLExtractor {
       'github-actions[bot]'
     ];
 
-    return vercelBotPatterns.some(pattern => 
+    return vercelBotPatterns.some(pattern =>
       user.login?.toLowerCase().includes(pattern.toLowerCase()) ||
       user.type === 'Bot'
     );
@@ -410,7 +410,7 @@ class VercelPreviewURLExtractor {
     try {
       // Wait for deployment to be ready
       const isReady = await this.waitForDeployment(cleanUrl);
-      
+
       if (isReady) {
         console.log('✅ Preview deployment is ready for E2E testing');
         console.log(`🎯 Final URL: ${cleanUrl}`);
@@ -475,7 +475,7 @@ class VercelPreviewURLExtractor {
     const timestamp = Date.now();
     const branch = process.env.GITHUB_HEAD_REF || 'main';
     const safeBranch = branch.replace(/[^a-zA-Z0-9-]/g, '-').toLowerCase();
-    
+
     return `https://${this.repoName}-${safeBranch}-${timestamp.toString(36)}.vercel.app`;
   }
 }
@@ -488,16 +488,16 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     .then(url => {
       console.log(`\n🎉 SUCCESS: Preview URL extracted`);
       console.log(`URL: ${url}`);
-      
+
       // Output for shell scripts
       console.log(`PREVIEW_URL=${url}`);
-      
+
       // Write to environment file if requested
       if (process.argv.includes('--write-env')) {
-        const envFile = process.argv.includes('--env-file') 
-          ? process.argv[process.argv.indexOf('--env-file') + 1] 
+        const envFile = process.argv.includes('--env-file')
+          ? process.argv[process.argv.indexOf('--env-file') + 1]
           : '.env.preview';
-        
+
         try {
           writeFileSync(envFile, `PREVIEW_URL=${url}\n`);
           console.log(`✅ Written to ${envFile}`);
@@ -505,12 +505,12 @@ if (import.meta.url === `file://${process.argv[1]}`) {
           console.error(`❌ Failed to write env file: ${error.message}`);
         }
       }
-      
+
       process.exit(0);
     })
     .catch(error => {
       console.error(`\n❌ FAILED: ${error.message}`);
-      
+
       // Try to provide helpful debugging information
       console.error('\n🔧 Debugging Information:');
       console.error(`   GitHub Repository: ${process.env.GITHUB_REPOSITORY || 'Not set'}`);
@@ -519,7 +519,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       console.error(`   GitHub Token: ${process.env.GITHUB_TOKEN ? 'Available' : 'Missing'}`);
       console.error(`   Vercel Token: ${process.env.VERCEL_TOKEN ? 'Available' : 'Missing'}`);
       console.error(`   Vercel Org ID: ${process.env.VERCEL_ORG_ID ? 'Available' : 'Missing'}`);
-      
+
       process.exit(1);
     });
 }

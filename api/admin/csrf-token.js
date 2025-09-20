@@ -1,7 +1,7 @@
-import authService from '../../lib/auth-service.js';
-import csrfService from '../../lib/csrf-service.js';
-import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
-import { withAdminAudit } from '../../lib/admin-audit-middleware.js';
+import authService from "../../lib/auth-service.js";
+import csrfService from "../../lib/csrf-service.js";
+import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
+import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
 
 async function csrfTokenHandler(req, res) {
   if (req.method !== 'GET') {

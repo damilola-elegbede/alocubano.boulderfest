@@ -1,7 +1,7 @@
 import { getMonitoringService } from "../../lib/monitoring/monitoring-service.js";
 import { getHealthChecker } from "../../lib/monitoring/health-checker.js";
 import { getAlertManager } from "../../lib/monitoring/alert-manager.js";
-import { getUptimeMetrics, calculateSLA } from "./uptime.js";
+import { getUptimeMetrics, calculateSLA } from './uptime.js';
 import { addBreadcrumb } from "../../lib/monitoring/sentry-config.js";
 
 /**
@@ -9,103 +9,103 @@ import { addBreadcrumb } from "../../lib/monitoring/sentry-config.js";
  */
 const DASHBOARD_CONFIGS = {
   grafana: {
-    name: "A Lo Cubano Boulder Fest - Production Monitoring",
-    version: "1.0.0",
+    name: 'A Lo Cubano Boulder Fest - Production Monitoring',
+    version: '1.0.0',
     panels: [
       {
         id: 1,
-        title: "System Health Overview",
-        type: "stat",
-        targets: ["health.status", "uptime.percentage", "sla.compliance"],
+        title: 'System Health Overview',
+        type: 'stat',
+        targets: ['health.status', 'uptime.percentage', 'sla.compliance']
       },
       {
         id: 2,
-        title: "API Response Times",
-        type: "graph",
+        title: 'API Response Times',
+        type: 'graph',
         targets: [
-          "api.response_time.p50",
-          "api.response_time.p95",
-          "api.response_time.p99",
-        ],
+          'api.response_time.p50',
+          'api.response_time.p95',
+          'api.response_time.p99'
+        ]
       },
       {
         id: 3,
-        title: "Payment Processing",
-        type: "stat",
-        targets: ["payments.success_rate", "payments.total", "revenue.total"],
+        title: 'Payment Processing',
+        type: 'stat',
+        targets: ['payments.success_rate', 'payments.total', 'revenue.total']
       },
       {
         id: 4,
-        title: "Active Users",
-        type: "gauge",
-        targets: ["users.active", "users.registered"],
+        title: 'Active Users',
+        type: 'gauge',
+        targets: ['users.active', 'users.registered']
       },
       {
         id: 5,
-        title: "Error Rate",
-        type: "graph",
-        targets: ["errors.rate", "errors.total"],
+        title: 'Error Rate',
+        type: 'graph',
+        targets: ['errors.rate', 'errors.total']
       },
       {
         id: 6,
-        title: "Memory Usage",
-        type: "graph",
-        targets: ["system.memory.heap_used", "system.memory.heap_total"],
+        title: 'Memory Usage',
+        type: 'graph',
+        targets: ['system.memory.heap_used', 'system.memory.heap_total']
       },
       {
         id: 7,
-        title: "Alert Status",
-        type: "table",
-        targets: ["alerts.active", "alerts.escalated"],
+        title: 'Alert Status',
+        type: 'table',
+        targets: ['alerts.active', 'alerts.escalated']
       },
       {
         id: 8,
-        title: "Service Dependencies",
-        type: "heatmap",
+        title: 'Service Dependencies',
+        type: 'heatmap',
         targets: [
-          "dependencies.database",
-          "dependencies.stripe",
-          "dependencies.brevo",
-        ],
-      },
-    ],
+          'dependencies.database',
+          'dependencies.stripe',
+          'dependencies.brevo'
+        ]
+      }
+    ]
   },
   datadog: {
-    name: "alocubano-production",
+    name: 'alocubano-production',
     widgets: [
       {
-        type: "timeseries",
-        title: "API Performance",
+        type: 'timeseries',
+        title: 'API Performance',
         queries: [
-          "avg:alocubano.api.response_time{*}",
-          "p95:alocubano.api.response_time{*}",
-        ],
+          'avg:alocubano.api.response_time{*}',
+          'p95:alocubano.api.response_time{*}'
+        ]
       },
       {
-        type: "query_value",
-        title: "Current Revenue",
-        query: "sum:alocubano.revenue.total{*}",
+        type: 'query_value',
+        title: 'Current Revenue',
+        query: 'sum:alocubano.revenue.total{*}'
       },
       {
-        type: "toplist",
-        title: "Top Errors",
-        query: "top(alocubano.errors{*} by {error_type}, 10)",
-      },
-    ],
+        type: 'toplist',
+        title: 'Top Errors',
+        query: 'top(alocubano.errors{*} by {error_type}, 10)'
+      }
+    ]
   },
   newrelic: {
-    name: "A Lo Cubano Boulder Fest",
+    name: 'A Lo Cubano Boulder Fest',
     dashboards: [
       {
-        name: "Business Metrics",
-        widgets: ["revenue", "tickets", "users"],
+        name: 'Business Metrics',
+        widgets: ['revenue', 'tickets', 'users']
       },
       {
-        name: "Technical Metrics",
-        widgets: ["performance", "errors", "infrastructure"],
-      },
-    ],
-  },
+        name: 'Technical Metrics',
+        widgets: ['performance', 'errors', 'infrastructure']
+      }
+    ]
+  }
 };
 
 /**
@@ -123,7 +123,7 @@ async function getDashboardData() {
   const alerts = alertManager.getStatistics();
 
   // Calculate key metrics
-  const errorRate = metrics.system["gauge.errors.total"] || 0;
+  const errorRate = metrics.system['gauge.errors.total'] || 0;
   const requestCount = uptime.requests.total;
   const errorPercent = requestCount > 0 ? (errorRate / requestCount) * 100 : 0;
 
@@ -136,19 +136,19 @@ async function getDashboardData() {
       status: health.status,
       health_score: health.health_score || 0,
       uptime: uptime.uptime.formatted,
-      sla_compliance: sla.compliance.overall,
+      sla_compliance: sla.compliance.overall
     },
     performance: {
       current: {
         response_time: metrics.performance?.avgResponseTime || 0,
         requests_per_minute: metrics.performance?.requestsPerMinute || 0,
-        error_rate: errorPercent.toFixed(2) + "%",
+        error_rate: errorPercent.toFixed(2) + '%'
       },
       percentiles: metrics.performance?.percentiles || {},
       trends: {
         response_time_trend: calculateTrend(metrics.performance?.history || []),
-        error_trend: calculateTrend(metrics.system?.errorHistory || []),
-      },
+        error_trend: calculateTrend(metrics.system?.errorHistory || [])
+      }
     },
     business: {
       revenue: {
@@ -156,36 +156,36 @@ async function getDashboardData() {
         today: calculateTodayRevenue(metrics.business.payments),
         average_transaction:
           metrics.business.payments.revenue /
-          Math.max(1, metrics.business.payments.successes),
+          Math.max(1, metrics.business.payments.successes)
       },
       users: {
         active: metrics.business.users.activeCount,
         registered: metrics.business.users.registrations,
-        conversion_rate: calculateConversionRate(metrics.business),
+        conversion_rate: calculateConversionRate(metrics.business)
       },
-      tickets: metrics.business.tickets,
+      tickets: metrics.business.tickets
     },
     infrastructure: {
       memory: {
-        used: formatBytes(metrics.system["gauge.system.memory.heap_used"] || 0),
+        used: formatBytes(metrics.system['gauge.system.memory.heap_used'] || 0),
         total: formatBytes(
-          metrics.system["gauge.system.memory.heap_total"] || 0,
+          metrics.system['gauge.system.memory.heap_total'] || 0
         ),
-        percentage: calculateMemoryUsagePercent(metrics.system),
+        percentage: calculateMemoryUsagePercent(metrics.system)
       },
       cpu: {
-        user: metrics.system["gauge.system.cpu.user"] || 0,
-        system: metrics.system["gauge.system.cpu.system"] || 0,
+        user: metrics.system['gauge.system.cpu.user'] || 0,
+        system: metrics.system['gauge.system.cpu.system'] || 0
       },
-      dependencies: health.services || {},
+      dependencies: health.services || {}
     },
     alerts: {
       active_count: alerts.total_active,
       escalated_count: alerts.total_escalated,
       by_severity: alerts.severity_breakdown,
       by_category: alerts.category_breakdown,
-      recent: alerts.recent_alerts,
-    },
+      recent: alerts.recent_alerts
+    }
   };
 }
 
@@ -194,7 +194,7 @@ async function getDashboardData() {
  */
 function calculateTrend(history) {
   if (!history || history.length < 2) {
-    return "stable";
+    return 'stable';
   }
 
   const recent = history.slice(-10);
@@ -206,9 +206,13 @@ function calculateTrend(history) {
 
   const change = firstAvg === 0 ? 0 : ((secondAvg - firstAvg) / firstAvg) * 100;
 
-  if (change > 10) return "increasing";
-  if (change < -10) return "decreasing";
-  return "stable";
+  if (change > 10) {
+    return 'increasing';
+  }
+  if (change < -10) {
+    return 'decreasing';
+  }
+  return 'stable';
 }
 
 /**
@@ -238,8 +242,8 @@ function calculateConversionRate(business) {
  * Calculate memory usage percentage
  */
 function calculateMemoryUsagePercent(system) {
-  const used = system["gauge.system.memory.heap_used"] || 0;
-  const total = system["gauge.system.memory.heap_total"] || 1;
+  const used = system['gauge.system.memory.heap_used'] || 0;
+  const total = system['gauge.system.memory.heap_total'] || 1;
   return ((used / total) * 100).toFixed(2);
 }
 
@@ -247,7 +251,7 @@ function calculateMemoryUsagePercent(system) {
  * Format bytes to human readable
  */
 function formatBytes(bytes) {
-  const units = ["B", "KB", "MB", "GB"];
+  const units = ['B', 'KB', 'MB', 'GB'];
   let size = bytes;
   let unitIndex = 0;
 
@@ -274,14 +278,14 @@ function generateDashboardConfig(platform, data) {
     ...config,
     generated: new Date().toISOString(),
     data_source: {
-      url: `${process.env.VERCEL_URL || "http://localhost:3000"}/api/monitoring/metrics`,
-      refresh_interval: 30000,
+      url: `${process.env.VERCEL_URL || 'http://localhost:3000'}/api/monitoring/metrics`,
+      refresh_interval: 30000
     },
     alerts: {
       webhook_url: process.env.ALERT_WEBHOOK_URL || null,
-      escalation_url: process.env.ESCALATION_WEBHOOK_URL || null,
+      escalation_url: process.env.ESCALATION_WEBHOOK_URL || null
     },
-    current_values: data,
+    current_values: data
   };
 
   return enrichedConfig;
@@ -292,24 +296,24 @@ function generateDashboardConfig(platform, data) {
  */
 export default async function handler(req, res) {
   // Only allow GET requests
-  if (req.method !== "GET") {
-    return res.status(405).json({ error: "Method not allowed" });
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
     // Add breadcrumb
     addBreadcrumb({
-      category: "monitoring",
-      message: "Dashboard data requested",
-      level: "info",
+      category: 'monitoring',
+      message: 'Dashboard data requested',
+      level: 'info',
       data: {
         path: req.url,
-        query: req.query,
-      },
+        query: req.query
+      }
     });
 
     // Get query parameters
-    const { platform, format = "json" } = req.query;
+    const { platform, format = 'json' } = req.query;
 
     // Get dashboard data
     const dashboardData = await getDashboardData();
@@ -321,46 +325,46 @@ export default async function handler(req, res) {
       const config = generateDashboardConfig(platform, dashboardData);
       if (!config) {
         return res.status(400).json({
-          error: "Invalid platform",
-          supported: Object.keys(DASHBOARD_CONFIGS),
+          error: 'Invalid platform',
+          supported: Object.keys(DASHBOARD_CONFIGS)
         });
       }
       response = config;
     }
 
     // Format response
-    if (format === "html") {
+    if (format === 'html') {
       // Return HTML dashboard
       const html = generateHTMLDashboard(dashboardData);
-      res.setHeader("Content-Type", "text/html");
+      res.setHeader('Content-Type', 'text/html');
       return res.status(200).send(html);
     }
 
     // Set response headers
-    res.setHeader("Content-Type", "application/json");
-    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-    res.setHeader("X-Dashboard-Status", dashboardData.overview.status);
-    res.setHeader("X-Dashboard-Health", dashboardData.overview.health_score);
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('X-Dashboard-Status', dashboardData.overview.status);
+    res.setHeader('X-Dashboard-Health', dashboardData.overview.health_score);
 
     // Send JSON response
     res.status(200).json(response);
   } catch (error) {
-    console.error("Dashboard error:", error);
+    console.error('Dashboard error:', error);
 
     // Add error breadcrumb
     addBreadcrumb({
-      category: "monitoring",
-      message: "Dashboard generation failed",
-      level: "error",
+      category: 'monitoring',
+      message: 'Dashboard generation failed',
+      level: 'error',
       data: {
-        error: error.message,
-      },
+        error: error.message
+      }
     });
 
     res.status(500).json({
-      error: "Dashboard generation failure",
+      error: 'Dashboard generation failure',
       message: error.message,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     });
   }
 }
@@ -370,11 +374,11 @@ export default async function handler(req, res) {
  */
 function generateHTMLDashboard(data) {
   const statusColor =
-    data.overview.status === "healthy"
-      ? "#4CAF50"
-      : data.overview.status === "degraded"
-        ? "#FF9800"
-        : "#F44336";
+    data.overview.status === 'healthy'
+      ? '#4CAF50'
+      : data.overview.status === 'degraded'
+        ? '#FF9800'
+        : '#F44336';
 
   return `
 <!DOCTYPE html>
@@ -385,14 +389,14 @@ function generateHTMLDashboard(data) {
   <title>A Lo Cubano - Production Monitoring Dashboard</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { 
+    body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: #0a0a0a;
       color: #e0e0e0;
       padding: 20px;
     }
     .container { max-width: 1400px; margin: 0 auto; }
-    h1 { 
+    h1 {
       color: #fff;
       margin-bottom: 30px;
       font-size: 2em;
@@ -427,7 +431,7 @@ function generateHTMLDashboard(data) {
     }
     .metric:last-child { border-bottom: none; }
     .metric-label { color: #999; }
-    .metric-value { 
+    .metric-value {
       color: #fff;
       font-weight: 500;
       font-family: 'Courier New', monospace;
@@ -484,7 +488,7 @@ function generateHTMLDashboard(data) {
 <body>
   <div class="container">
     <h1>🎉 A Lo Cubano Boulder Fest - Production Monitoring</h1>
-    
+
     <div class="grid">
       <div class="card">
         <h2>System Overview</h2>
@@ -502,10 +506,10 @@ function generateHTMLDashboard(data) {
         </div>
         <div class="metric">
           <span class="metric-label">SLA Compliance</span>
-          <span class="metric-value">${data.overview.sla_compliance ? "✅" : "❌"}</span>
+          <span class="metric-value">${data.overview.sla_compliance ? '✅' : '❌'}</span>
         </div>
       </div>
-      
+
       <div class="card">
         <h2>Performance Metrics</h2>
         <div class="metric">
@@ -525,7 +529,7 @@ function generateHTMLDashboard(data) {
           <span class="metric-value">${data.performance.percentiles.p95 || 0}ms</span>
         </div>
       </div>
-      
+
       <div class="card">
         <h2>Business Metrics</h2>
         <div class="metric">
@@ -545,7 +549,7 @@ function generateHTMLDashboard(data) {
           <span class="metric-value">${data.business.users.conversion_rate.toFixed(1)}%</span>
         </div>
       </div>
-      
+
       <div class="card">
         <h2>Infrastructure</h2>
         <div class="metric">
@@ -563,18 +567,18 @@ function generateHTMLDashboard(data) {
         </div>
         <div class="metric">
           <span class="metric-label">Database</span>
-          <span class="status ${data.infrastructure.dependencies.database?.status || "unknown"}">
-            ${data.infrastructure.dependencies.database?.status || "UNKNOWN"}
+          <span class="status ${data.infrastructure.dependencies.database?.status || 'unknown'}">
+            ${data.infrastructure.dependencies.database?.status || 'UNKNOWN'}
           </span>
         </div>
         <div class="metric">
           <span class="metric-label">Stripe</span>
-          <span class="status ${data.infrastructure.dependencies.stripe?.status || "unknown"}">
-            ${data.infrastructure.dependencies.stripe?.status || "UNKNOWN"}
+          <span class="status ${data.infrastructure.dependencies.stripe?.status || 'unknown'}">
+            ${data.infrastructure.dependencies.stripe?.status || 'UNKNOWN'}
           </span>
         </div>
       </div>
-      
+
       <div class="card">
         <h2>Active Alerts</h2>
         <div class="metric">
@@ -586,34 +590,34 @@ function generateHTMLDashboard(data) {
           <span class="metric-value">${data.alerts.escalated_count}</span>
         </div>
         ${
-          data.alerts.recent && data.alerts.recent.length > 0
-            ? `
+  data.alerts.recent && data.alerts.recent.length > 0
+    ? `
           <div style="margin-top: 15px;">
             ${data.alerts.recent
-              .slice(0, 3)
-              .map(
-                (alert) => `
+    .slice(0, 3)
+    .map(
+      (alert) => `
               <div class="alert">
-                <strong>${alert.title || "Alert"}</strong><br>
+                <strong>${alert.title || 'Alert'}</strong><br>
                 <small>${new Date(alert.timestamp).toLocaleString()}</small>
               </div>
-            `,
-              )
-              .join("")}
+            `
+    )
+    .join('')}
           </div>
         `
-            : '<p style="color: #666; margin-top: 15px;">No recent alerts</p>'
-        }
+    : '<p style="color: #666; margin-top: 15px;">No recent alerts</p>'
+}
       </div>
     </div>
-    
+
     <button class="refresh-btn" onclick="location.reload()">🔄 Refresh Dashboard</button>
-    
+
     <div class="timestamp">
       Last updated: ${new Date(data.timestamp).toLocaleString()}
     </div>
   </div>
-  
+
   <script>
     // Auto-refresh every 30 seconds
     setTimeout(() => location.reload(), 30000);
@@ -630,5 +634,5 @@ export {
   getDashboardData,
   generateDashboardConfig,
   generateHTMLDashboard,
-  DASHBOARD_CONFIGS,
+  DASHBOARD_CONFIGS
 };

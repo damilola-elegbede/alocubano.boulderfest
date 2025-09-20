@@ -8,7 +8,7 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Mobile Navigation - Essential UX', () => {
-  test.use({ 
+  test.use({
     viewport: { width: 375, height: 667 } // iPhone SE size
   });
 
@@ -17,14 +17,14 @@ test.describe('Mobile Navigation - Essential UX', () => {
   test('should navigate mobile menu successfully', async ({ page }) => {
     // Test direct navigation to tickets page
     await page.goto('/tickets');
-    
+
     // Should navigate to tickets page
     await expect(page).toHaveURL(/\/tickets(\/|$)/);
-    
+
     // Check if the page has basic content
     const pageContent = await page.locator('html').count();
     expect(pageContent).toBeGreaterThan(0);
-    
+
     console.log('✅ Mobile navigation working');
   });
 
@@ -49,20 +49,20 @@ test.describe('Mobile Navigation - Essential UX', () => {
 
   test('should handle touch interactions properly', async ({ page }) => {
     await page.goto('/');
-    
+
     // Test touch-friendly button sizes (minimum 44px)
     const buttons = page.locator('button, .btn, a[role="button"]');
     const buttonCount = await buttons.count();
-    
+
     if (buttonCount > 0) {
       const firstButton = buttons.first();
       const buttonBox = await firstButton.boundingBox();
-      
+
       if (buttonBox) {
         expect(Math.min(buttonBox.width, buttonBox.height)).toBeGreaterThanOrEqual(40);
       }
     }
-    
+
     console.log('✅ Touch-friendly interface working');
   });
 });

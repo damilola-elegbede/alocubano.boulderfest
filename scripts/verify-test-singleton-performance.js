@@ -95,9 +95,9 @@ async function runPerformanceTest() {
       const passed = duration < threshold;
       const status = passed ? '✅' : '❌';
       const formattedDuration = duration.toFixed(3);
-      
+
       console.log(`${status} ${operation.padEnd(25)} ${formattedDuration}ms`);
-      
+
       if (!passed) {
         allPassed = false;
       }
@@ -117,7 +117,7 @@ async function runPerformanceTest() {
 
     console.log('\n🎯 Performance Summary:');
     console.log('=======================');
-    
+
     if (allPassed) {
       console.log('✅ ALL OPERATIONS MEET <5ms TARGET');
       console.log('🚀 TestSingletonManager is production-ready!');

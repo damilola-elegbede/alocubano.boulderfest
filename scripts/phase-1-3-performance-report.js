@@ -321,7 +321,7 @@ async function generateReport() {
 
   console.log(`
 ${colors.green}✓ Successfully eliminated TestSingletonManager (518 lines)${colors.reset}
-${colors.green}✓ Maintained 88% infrastructure reduction from Phase 1${colors.reset}  
+${colors.green}✓ Maintained 88% infrastructure reduction from Phase 1${colors.reset}
 ${colors.green}✓ Improved test execution performance by ${performance.improvement}%${colors.reset}
 ${colors.green}✓ Reduced memory footprint and object allocation${colors.reset}
 ${colors.green}✓ Simplified test isolation to basic cleanup functions${colors.reset}

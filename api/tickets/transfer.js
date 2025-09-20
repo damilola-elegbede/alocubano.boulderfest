@@ -6,19 +6,19 @@ import { getDatabaseClient } from "../../lib/database.js";
 export default async function handler(req, res) {
   // Initialize database client
   await getDatabaseClient();
-  if (req.method !== "POST") {
-    res.setHeader("Allow", ["POST"]);
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', ['POST']);
     return res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 
   // Handle CI/test environment - return 404 for unsupported functionality
   if (
-    (process.env.CI || process.env.NODE_ENV === "test") &&
+    (process.env.CI || process.env.NODE_ENV === 'test') &&
     (!process.env.TURSO_DATABASE_URL ||
-      process.env.TURSO_DATABASE_URL.includes("memory"))
+      process.env.TURSO_DATABASE_URL.includes('memory'))
   ) {
     return res.status(404).json({
-      error: "Ticket transfer not available in test environment",
+      error: 'Ticket transfer not available in test environment'
     });
   }
 
@@ -27,13 +27,13 @@ export default async function handler(req, res) {
 
     if (!ticketId || !actionToken || !newAttendee) {
       return res.status(400).json({
-        error: "ticketId, actionToken, and newAttendee are required",
+        error: 'ticketId, actionToken, and newAttendee are required'
       });
     }
 
     if (!newAttendee.email || !newAttendee.firstName) {
       return res.status(400).json({
-        error: "New attendee must have email and firstName",
+        error: 'New attendee must have email and firstName'
       });
     }
 
@@ -41,7 +41,7 @@ export default async function handler(req, res) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(newAttendee.email)) {
       return res.status(400).json({
-        error: "Invalid email format",
+        error: 'Invalid email format'
       });
     }
 
@@ -49,7 +49,7 @@ export default async function handler(req, res) {
     const tokenValidation = await tokenService.validateActionToken(
       actionToken,
       TOKEN_ACTIONS.TRANSFER,
-      ticketId,
+      ticketId
     );
 
     if (!tokenValidation.valid) {
@@ -59,26 +59,26 @@ export default async function handler(req, res) {
     // Sanitize and validate inputs
     const sanitizedAttendee = {
       firstName: newAttendee.firstName.trim().substring(0, 100),
-      lastName: (newAttendee.lastName || "").trim().substring(0, 100),
+      lastName: (newAttendee.lastName || '').trim().substring(0, 100),
       email: newAttendee.email.trim().toLowerCase(),
       phone: newAttendee.phone
         ? newAttendee.phone.trim().substring(0, 20)
-        : null,
+        : null
     };
 
     // Perform transfer
     const transferredTicket = await ticketService.transferTicket(
       ticketId,
-      sanitizedAttendee,
+      sanitizedAttendee
     );
 
     return res.status(200).json({
       success: true,
       ticket: transferredTicket,
-      message: "Ticket successfully transferred",
+      message: 'Ticket successfully transferred'
     });
   } catch (error) {
-    console.error("Ticket transfer error:", error);
-    return res.status(500).json({ error: "Internal server error" });
+    console.error('Ticket transfer error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }

@@ -27,7 +27,7 @@ describe('Admin Authentication Integration', () => {
     };
 
     const response = await testRequest('POST', '/api/admin/login', loginData);
-    
+
     // Skip if service unavailable
     if (response.status === 0) {
       console.warn('⚠️ Admin auth service unavailable - skipping integration test');
@@ -49,14 +49,14 @@ describe('Admin Authentication Integration', () => {
         const token = tokenMatch[1];
         expect(token.length).toBeGreaterThan(50); // JWT tokens are long
       }
-      
+
       // Verify session was created in database
       if (dbClient) {
         try {
           const sessionCheck = await dbClient.execute(
             'SELECT * FROM "admin_sessions" ORDER BY created_at DESC LIMIT 1'
           );
-          
+
           if (sessionCheck.rows.length > 0) {
             const session = sessionCheck.rows[0];
             expect(session.expires_at).toBeTruthy();
@@ -83,7 +83,7 @@ describe('Admin Authentication Integration', () => {
     };
 
     const response = await testRequest('POST', '/api/admin/login', invalidLoginData);
-    
+
     if (response.status === 0) {
       console.warn('⚠️ Admin auth service unavailable - skipping unauthorized test');
       return;
@@ -100,7 +100,7 @@ describe('Admin Authentication Integration', () => {
     // First, get a valid token
     const loginData = { username: 'admin', password: adminPassword };
     const loginResponse = await testRequest('POST', '/api/admin/login', loginData);
-    
+
     if (loginResponse.status === 0) {
       console.warn('⚠️ Admin auth service unavailable - skipping dashboard test');
       return;
@@ -116,14 +116,14 @@ describe('Admin Authentication Integration', () => {
           token = tokenMatch[1];
         }
       }
-      
+
       // Test protected dashboard endpoint with valid token
       const dashboardResponse = await testRequest('GET', '/api/admin/dashboard', null, {
         'Authorization': `Bearer ${token}`
       });
-      
+
       expect([HTTP_STATUS.OK, HTTP_STATUS.UNAUTHORIZED, HTTP_STATUS.INTERNAL_SERVER_ERROR]).toContain(dashboardResponse.status);
-      
+
       if (dashboardResponse.status === HTTP_STATUS.OK) {
         expect(dashboardResponse.data).toHaveProperty('stats');
 
@@ -132,11 +132,11 @@ describe('Admin Authentication Integration', () => {
         expect(dashboardResponse.data.stats).toHaveProperty('total_revenue'); // Dashboard shows revenue
         expect(dashboardResponse.data.stats).toHaveProperty('total_tickets'); // Dashboard shows ticket count
       }
-      
+
       // Test dashboard without token (should fail)
       const unauthorizedResponse = await testRequest('GET', '/api/admin/dashboard');
       expect([HTTP_STATUS.UNAUTHORIZED, HTTP_STATUS.INTERNAL_SERVER_ERROR].includes(unauthorizedResponse.status)).toBe(true);
-      
+
     } else {
       console.warn('⚠️ Could not obtain valid token for dashboard test');
     }
@@ -155,12 +155,12 @@ describe('Admin Authentication Integration', () => {
       return `${header}.${payload}.signature`;
     };
     const expiredToken = mkFakeExpiredJwt();
-    
+
     // Test with potentially expired token
     const response = await testRequest('GET', '/api/admin/dashboard', null, {
       'Authorization': `Bearer ${expiredToken}`
     });
-    
+
     if (response.status === 0) {
       console.warn('⚠️ Admin dashboard service unavailable - skipping expired token test');
       return;
@@ -177,7 +177,7 @@ describe('Admin Authentication Integration', () => {
     // First authenticate
     const loginData = { username: 'admin', password: adminPassword };
     const loginResponse = await testRequest('POST', '/api/admin/login', loginData);
-    
+
     if (loginResponse.status !== HTTP_STATUS.OK) {
       console.warn('⚠️ Could not authenticate for registrations test');
       return;
@@ -192,23 +192,23 @@ describe('Admin Authentication Integration', () => {
         token = tokenMatch[1];
       }
     }
-    
+
     // Test admin registrations endpoint
     const registrationsResponse = await testRequest('GET', '/api/admin/registrations', null, {
       'Authorization': `Bearer ${token}`
     });
-    
+
     if (registrationsResponse.status === 0) {
       console.warn('⚠️ Admin registrations service unavailable - skipping test');
       return;
     }
 
     expect([HTTP_STATUS.OK, HTTP_STATUS.UNAUTHORIZED]).toContain(registrationsResponse.status);
-    
+
     if (registrationsResponse.status === HTTP_STATUS.OK) {
       expect(registrationsResponse.data).toHaveProperty('registrations');
       expect(Array.isArray(registrationsResponse.data.registrations)).toBe(true);
-      
+
       // Verify registration data structure if any exist
       if (registrationsResponse.data.registrations.length > 0) {
         const registration = registrationsResponse.data.registrations[0];
@@ -244,26 +244,26 @@ describe('Admin Authentication Integration', () => {
       );
 
       expect(Number(beforeCleanup.rows[0].count)).toBe(1);
-      
+
       // Trigger session cleanup (this would normally happen automatically)
       // We simulate this by calling the admin endpoint which might trigger cleanup
       const cleanupResponse = await testRequest('GET', '/api/admin/dashboard', null, {
         'Authorization': 'Bearer invalid-token'
       });
-      
+
       // The cleanup might happen in the background, so we wait a bit
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       // Check if expired session was cleaned up
       const afterCleanup = await dbClient.execute(
         "SELECT COUNT(*) as count FROM \"admin_sessions\" WHERE expires_at < datetime('now')"
       );
-      
+
       // We can't guarantee the cleanup ran, but we can check the query works
       const cleanupCount = Number(afterCleanup.rows[0].count);
       expect(Number.isInteger(cleanupCount)).toBe(true);
       expect(cleanupCount).toBeGreaterThanOrEqual(0);
-      
+
     } catch (error) {
       console.warn('⚠️ Session cleanup test error:', error.message);
     }

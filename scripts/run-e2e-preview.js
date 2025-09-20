@@ -2,17 +2,17 @@
 
 /**
  * E2E Preview Test Runner
- * 
+ *
  * Comprehensive script that orchestrates E2E testing against Vercel preview deployments:
  * 1. Extracts preview URL from multiple sources
  * 2. Validates preview environment readiness
  * 3. Runs E2E tests with appropriate configuration
  * 4. Generates comprehensive test reports
  * 5. Handles cleanup and error reporting
- * 
+ *
  * Usage:
  *   node scripts/run-e2e-preview.js [options]
- *   
+ *
  * Options:
  *   --preview-url <url>    Direct preview URL override
  *   --browser <browser>    Specific browser to test (chromium, firefox, webkit)
@@ -198,7 +198,7 @@ Environment Variables:
 
       console.error('\n❌ E2E Preview Testing Failed');
       console.error(`Error: ${error.message}`);
-      
+
       this.generateErrorReport();
       process.exit(1);
     }
@@ -227,7 +227,7 @@ Environment Variables:
     // Extract from GitHub/Vercel
     console.log('   🤖 Extracting preview URL from GitHub/Vercel...');
     const extractor = new VercelPreviewURLExtractor();
-    
+
     try {
       this.previewUrl = await extractor.getPreviewURL();
       console.log(`   ✅ Extracted preview URL: ${this.previewUrl}`);
@@ -390,10 +390,10 @@ TEST_ADMIN_PASSWORD=${process.env.TEST_ADMIN_PASSWORD || 'test-password'}
 
     // Check for results in playwright report
     const reportPath = resolve(process.cwd(), 'playwright-report-preview');
-    
+
     if (existsSync(reportPath)) {
       console.log(`   ✅ Test report generated: ${reportPath}`);
-      
+
       // Try to extract basic metrics from report
       try {
         const fs = require('fs');
@@ -412,7 +412,7 @@ TEST_ADMIN_PASSWORD=${process.env.TEST_ADMIN_PASSWORD || 'test-password'}
         const resultFiles = fs.readdirSync(resultsPath);
         const screenshots = resultFiles.filter(f => f.endsWith('.png')).length;
         const videos = resultFiles.filter(f => f.endsWith('.webm')).length;
-        
+
         console.log(`   📸 Screenshots: ${screenshots}`);
         console.log(`   🎥 Videos: ${videos}`);
       } catch (error) {
@@ -433,13 +433,13 @@ TEST_ADMIN_PASSWORD=${process.env.TEST_ADMIN_PASSWORD || 'test-password'}
     console.log(`🌐 Browser: ${this.options.browser || 'all'}`);
     console.log(`📊 Pattern: ${this.options.testPattern || 'all tests'}`);
     console.log(`✅ Status: SUCCESS`);
-    
+
     console.log('\n🌟 Benefits of Preview Testing:');
     console.log('   • Production-like environment validation');
     console.log('   • No local server conflicts or resource issues');
     console.log('   • Automatic deployment cleanup');
     console.log('   • True CI/CD integration testing');
-    
+
     console.log('\n📁 Artifacts:');
     console.log('   • HTML Report: playwright-report-preview/');
     console.log('   • Test Results: test-results/');
@@ -455,14 +455,14 @@ TEST_ADMIN_PASSWORD=${process.env.TEST_ADMIN_PASSWORD || 'test-password'}
     console.error(`🎯 Preview URL: ${this.previewUrl || 'Not determined'}`);
     console.error(`⏱️ Duration: ${Math.round(this.testResults.duration / 1000)}s`);
     console.error(`❌ Error: ${this.testResults.error}`);
-    
+
     console.error('\n🔧 Debugging Steps:');
     console.error('1. Verify preview URL is accessible in browser');
     console.error('2. Check environment variables are set correctly');
     console.error('3. Run validation only: --validate-only');
     console.error('4. Check Vercel deployment logs');
     console.error('5. Try with specific browser: --browser chromium');
-    
+
     if (this.previewUrl) {
       console.error(`\n🌐 Manual validation commands:`);
       console.error(`   curl ${this.previewUrl}/api/health/check`);

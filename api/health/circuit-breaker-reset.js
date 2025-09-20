@@ -7,11 +7,11 @@ import { getHealthChecker } from "../../lib/monitoring/health-checker.js";
  */
 export default async function handler(req, res) {
   // Only allow POST requests for safety
-  if (req.method !== "POST") {
-    return res.status(405).json({ 
-      error: "Method not allowed",
-      allowed_methods: ["POST"],
-      description: "Use POST to reset circuit breakers"
+  if (req.method !== 'POST') {
+    return res.status(405).json({
+      error: 'Method not allowed',
+      allowed_methods: ['POST'],
+      description: 'Use POST to reset circuit breakers'
     });
   }
 
@@ -30,28 +30,28 @@ export default async function handler(req, res) {
 
     // Count how many were reset
     const resetCount = Object.keys(statesBefore).filter(
-      service => statesBefore[service].state !== "closed"
+      service => statesBefore[service].state !== 'closed'
     ).length;
 
     res.status(200).json({
-      status: "success",
-      message: "Circuit breakers reset successfully",
+      status: 'success',
+      message: 'Circuit breakers reset successfully',
       reset_count: resetCount,
       timestamp: new Date().toISOString(),
       states_before: statesBefore,
       states_after: statesAfter,
       services: Object.keys(statesBefore),
-      note: "All circuit breakers have been reset to closed state"
+      note: 'All circuit breakers have been reset to closed state'
     });
 
   } catch (error) {
-    console.error("Circuit breaker reset failed:", error);
+    console.error('Circuit breaker reset failed:', error);
 
     res.status(500).json({
-      status: "error",
-      error: "Failed to reset circuit breakers",
+      status: 'error',
+      error: 'Failed to reset circuit breakers',
       message: error.message,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     });
   }
 }

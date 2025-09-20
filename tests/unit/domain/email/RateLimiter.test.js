@@ -26,7 +26,7 @@ describe('RateLimiter Domain Service', () => {
   describe('checkRateLimit()', () => {
     it('allows first request within limit', () => {
       const result = rateLimiter.checkRateLimit('user1');
-      
+
       expect(result.allowed).toBe(true);
       expect(result.limit).toBe(20);
       expect(result.remaining).toBe(20);
@@ -42,19 +42,19 @@ describe('RateLimiter Domain Service', () => {
       rateLimiter.incrementCounter('user1');
       rateLimiter.incrementCounter('user1');
       const result = rateLimiter.checkRateLimit('user1');
-      
+
       expect(result.remaining).toBe(18); // 20 - 2
     });
 
     it('blocks requests when limit exceeded', () => {
       const options = { maxRequests: 2 };
-      
+
       // Consume all requests
       rateLimiter.incrementCounter('user1', options);
       rateLimiter.incrementCounter('user1', options);
-      
+
       const result = rateLimiter.checkRateLimit('user1', options);
-      
+
       expect(result.allowed).toBe(false);
       expect(result.remaining).toBe(0);
       expect(result.retryAfter).toBeGreaterThan(0);
@@ -62,13 +62,13 @@ describe('RateLimiter Domain Service', () => {
 
     it('resets window when expired', () => {
       const options = { windowMs: 100, maxRequests: 2 };
-      
+
       // Consume requests
       rateLimiter.incrementCounter('user1', options);
       rateLimiter.incrementCounter('user1', options);
-      
+
       expect(rateLimiter.checkRateLimit('user1', options).allowed).toBe(false);
-      
+
       // Wait for window to expire
       return new Promise(resolve => {
         setTimeout(() => {
@@ -86,9 +86,9 @@ describe('RateLimiter Domain Service', () => {
         maxRequests: 10,
         keyPrefix: 'custom'
       };
-      
+
       const result = rateLimiter.checkRateLimit('user1', options);
-      
+
       expect(result.limit).toBe(10);
       expect(result.windowMs).toBe(60000);
       expect(result.key).toBe('custom_user1');
@@ -111,7 +111,7 @@ describe('RateLimiter Domain Service', () => {
     it('handles concurrent requests for different identifiers', () => {
       const result1 = rateLimiter.checkRateLimit('user1');
       const result2 = rateLimiter.checkRateLimit('user2');
-      
+
       expect(result1.allowed).toBe(true);
       expect(result2.allowed).toBe(true);
       expect(result1.key).not.toBe(result2.key);
@@ -123,7 +123,7 @@ describe('RateLimiter Domain Service', () => {
       const result1 = rateLimiter.incrementCounter('user1');
       expect(result1.allowed).toBe(true);
       expect(result1.remaining).toBe(19);
-      
+
       const result2 = rateLimiter.incrementCounter('user1');
       expect(result2.allowed).toBe(true);
       expect(result2.remaining).toBe(18);
@@ -131,11 +131,11 @@ describe('RateLimiter Domain Service', () => {
 
     it('does not increment when limit exceeded', () => {
       const options = { maxRequests: 1 };
-      
+
       const result1 = rateLimiter.incrementCounter('user1', options);
       expect(result1.allowed).toBe(true);
       expect(result1.remaining).toBe(0);
-      
+
       const result2 = rateLimiter.incrementCounter('user1', options);
       expect(result2.allowed).toBe(false);
       expect(result2.remaining).toBe(0);
@@ -143,7 +143,7 @@ describe('RateLimiter Domain Service', () => {
 
     it('updates storage correctly', () => {
       rateLimiter.incrementCounter('user1');
-      
+
       const storedData = mockStorage.get('ratelimit_user1');
       expect(storedData.count).toBe(1);
       expect(storedData.windowStart).toBeDefined();
@@ -155,7 +155,7 @@ describe('RateLimiter Domain Service', () => {
     it('removes rate limit data for identifier', () => {
       rateLimiter.incrementCounter('user1');
       expect(mockStorage.has('ratelimit_user1')).toBe(true);
-      
+
       rateLimiter.resetRateLimit('user1');
       expect(mockStorage.has('ratelimit_user1')).toBe(false);
     });
@@ -163,7 +163,7 @@ describe('RateLimiter Domain Service', () => {
     it('uses custom key prefix', () => {
       rateLimiter.incrementCounter('user1', { keyPrefix: 'custom' });
       expect(mockStorage.has('custom_user1')).toBe(true);
-      
+
       rateLimiter.resetRateLimit('user1', 'custom');
       expect(mockStorage.has('custom_user1')).toBe(false);
     });
@@ -172,10 +172,10 @@ describe('RateLimiter Domain Service', () => {
   describe('getRateLimitStatus()', () => {
     it('returns current status without modifying counter', () => {
       rateLimiter.incrementCounter('user1');
-      
+
       const status1 = rateLimiter.getRateLimitStatus('user1');
       const status2 = rateLimiter.getRateLimitStatus('user1');
-      
+
       expect(status1.remaining).toBe(status2.remaining);
       expect(status1.remaining).toBe(19);
     });
@@ -184,13 +184,13 @@ describe('RateLimiter Domain Service', () => {
   describe('cleanExpiredEntries()', () => {
     it('removes expired entries', () => {
       const options = { windowMs: 100 };
-      
+
       // Create entries that will expire
       rateLimiter.incrementCounter('user1', options);
       rateLimiter.incrementCounter('user2', options);
-      
+
       expect(mockStorage.size).toBe(2);
-      
+
       return new Promise(resolve => {
         setTimeout(() => {
           const cleanedCount = rateLimiter.cleanExpiredEntries('ratelimit');
@@ -204,7 +204,7 @@ describe('RateLimiter Domain Service', () => {
     it('keeps non-expired entries', () => {
       rateLimiter.incrementCounter('user1');
       rateLimiter.incrementCounter('user2');
-      
+
       const cleanedCount = rateLimiter.cleanExpiredEntries('ratelimit');
       expect(cleanedCount).toBe(0);
       expect(mockStorage.size).toBe(2);
@@ -213,7 +213,7 @@ describe('RateLimiter Domain Service', () => {
     it('filters by key prefix', () => {
       rateLimiter.incrementCounter('user1', { keyPrefix: 'api' });
       rateLimiter.incrementCounter('user2', { keyPrefix: 'email' });
-      
+
       const cleanedCount = rateLimiter.cleanExpiredEntries('api');
       expect(cleanedCount).toBe(0);
       expect(mockStorage.size).toBe(2);
@@ -224,9 +224,9 @@ describe('RateLimiter Domain Service', () => {
     it('returns active rate limits', () => {
       rateLimiter.incrementCounter('user1');
       rateLimiter.incrementCounter('user2');
-      
+
       const active = rateLimiter.getActiveRateLimits('ratelimit');
-      
+
       expect(active).toHaveLength(2);
       expect(active[0].identifier).toBe('user1');
       expect(active[1].identifier).toBe('user2');
@@ -236,9 +236,9 @@ describe('RateLimiter Domain Service', () => {
 
     it('excludes expired entries', () => {
       const options = { windowMs: 100 };
-      
+
       rateLimiter.incrementCounter('user1', options);
-      
+
       return new Promise(resolve => {
         setTimeout(() => {
           const active = rateLimiter.getActiveRateLimits('ratelimit');
@@ -251,10 +251,10 @@ describe('RateLimiter Domain Service', () => {
     it('filters by key prefix', () => {
       rateLimiter.incrementCounter('user1', { keyPrefix: 'api' });
       rateLimiter.incrementCounter('user2', { keyPrefix: 'email' });
-      
+
       const apiActive = rateLimiter.getActiveRateLimits('api');
       const emailActive = rateLimiter.getActiveRateLimits('email');
-      
+
       expect(apiActive).toHaveLength(1);
       expect(emailActive).toHaveLength(1);
       expect(apiActive[0].identifier).toBe('user1');
@@ -265,9 +265,9 @@ describe('RateLimiter Domain Service', () => {
   describe('checkSlidingWindowRateLimit()', () => {
     it('allows requests within sliding window', () => {
       const options = { maxRequests: 3, windowMs: 1000 };
-      
+
       const result = rateLimiter.checkSlidingWindowRateLimit('user1', options);
-      
+
       expect(result.allowed).toBe(true);
       expect(result.remaining).toBe(3);
       expect(result.timestamps).toBe(0);
@@ -275,12 +275,12 @@ describe('RateLimiter Domain Service', () => {
 
     it('blocks when sliding window limit exceeded', () => {
       const options = { maxRequests: 2, windowMs: 10000 };
-      
+
       rateLimiter.incrementSlidingWindow('user1', options);
       rateLimiter.incrementSlidingWindow('user1', options);
-      
+
       const result = rateLimiter.checkSlidingWindowRateLimit('user1', options);
-      
+
       expect(result.allowed).toBe(false);
       expect(result.remaining).toBe(0);
       expect(result.retryAfter).toBeGreaterThan(0);
@@ -288,10 +288,10 @@ describe('RateLimiter Domain Service', () => {
 
     it('allows requests after oldest timestamp expires', () => {
       const options = { maxRequests: 1, windowMs: 100 };
-      
+
       rateLimiter.incrementSlidingWindow('user1', options);
       expect(rateLimiter.checkSlidingWindowRateLimit('user1', options).allowed).toBe(false);
-      
+
       return new Promise(resolve => {
         setTimeout(() => {
           const result = rateLimiter.checkSlidingWindowRateLimit('user1', options);
@@ -303,10 +303,10 @@ describe('RateLimiter Domain Service', () => {
 
     it('calculates retry after correctly', () => {
       const options = { maxRequests: 1, windowMs: 1000 };
-      
+
       rateLimiter.incrementSlidingWindow('user1', options);
       const result = rateLimiter.checkSlidingWindowRateLimit('user1', options);
-      
+
       expect(result.allowed).toBe(false);
       expect(result.retryAfter).toBeGreaterThan(0);
       expect(result.retryAfter).toBeLessThanOrEqual(1);
@@ -316,11 +316,11 @@ describe('RateLimiter Domain Service', () => {
   describe('incrementSlidingWindow()', () => {
     it('adds timestamp when allowed', () => {
       const options = { maxRequests: 2, windowMs: 1000 };
-      
+
       const result1 = rateLimiter.incrementSlidingWindow('user1', options);
       expect(result1.allowed).toBe(true);
       expect(result1.remaining).toBe(1);
-      
+
       const result2 = rateLimiter.incrementSlidingWindow('user1', options);
       expect(result2.allowed).toBe(true);
       expect(result2.remaining).toBe(0);
@@ -328,10 +328,10 @@ describe('RateLimiter Domain Service', () => {
 
     it('does not add timestamp when blocked', () => {
       const options = { maxRequests: 1, windowMs: 1000 };
-      
+
       rateLimiter.incrementSlidingWindow('user1', options);
       const result = rateLimiter.incrementSlidingWindow('user1', options);
-      
+
       expect(result.allowed).toBe(false);
       expect(result.remaining).toBe(0);
     });
@@ -340,9 +340,9 @@ describe('RateLimiter Domain Service', () => {
   describe('checkTokenBucket()', () => {
     it('allows requests when tokens available', () => {
       const options = { capacity: 5, refillRate: 1 };
-      
+
       const result = rateLimiter.checkTokenBucket('user1', options);
-      
+
       expect(result.allowed).toBe(true);
       expect(result.tokens).toBe(4); // 5 - 1 (default tokensRequested)
       expect(result.capacity).toBe(5);
@@ -351,9 +351,9 @@ describe('RateLimiter Domain Service', () => {
 
     it('blocks requests when insufficient tokens', () => {
       const options = { capacity: 1, refillRate: 1, tokensRequested: 2 };
-      
+
       const result = rateLimiter.checkTokenBucket('user1', options);
-      
+
       expect(result.allowed).toBe(false);
       expect(result.tokens).toBe(1);
       expect(result.tokensRequested).toBe(2);
@@ -362,11 +362,11 @@ describe('RateLimiter Domain Service', () => {
 
     it('refills tokens over time', () => {
       const options = { capacity: 5, refillRate: 10 }; // 10 tokens per second
-      
+
       // Consume all tokens
       rateLimiter.checkTokenBucket('user1', { ...options, tokensRequested: 5 });
       expect(rateLimiter.checkTokenBucket('user1', options).tokens).toBe(0);
-      
+
       return new Promise(resolve => {
         setTimeout(() => {
           const result = rateLimiter.checkTokenBucket('user1', options);
@@ -379,7 +379,7 @@ describe('RateLimiter Domain Service', () => {
 
     it('does not exceed bucket capacity', () => {
       const options = { capacity: 3, refillRate: 10 };
-      
+
       return new Promise(resolve => {
         setTimeout(() => {
           const result = rateLimiter.checkTokenBucket('user1', options);
@@ -391,9 +391,9 @@ describe('RateLimiter Domain Service', () => {
 
     it('deducts tokens when request allowed', () => {
       const options = { capacity: 5, refillRate: 1, tokensRequested: 2 };
-      
+
       const result = rateLimiter.checkTokenBucket('user1', options);
-      
+
       expect(result.allowed).toBe(true);
       expect(result.tokens).toBe(3); // 5 - 2
     });
@@ -406,7 +406,7 @@ describe('RateLimiter Domain Service', () => {
           'x-forwarded-for': '192.168.1.1, 10.0.0.1'
         }
       };
-      
+
       const identifier = RateLimiter.extractIdentifier(req);
       expect(identifier).toBe('192.168.1.1');
     });
@@ -417,7 +417,7 @@ describe('RateLimiter Domain Service', () => {
           remoteAddress: '192.168.1.2'
         }
       };
-      
+
       const identifier = RateLimiter.extractIdentifier(req);
       expect(identifier).toBe('192.168.1.2');
     });
@@ -428,7 +428,7 @@ describe('RateLimiter Domain Service', () => {
           remoteAddress: '192.168.1.3'
         }
       };
-      
+
       const identifier = RateLimiter.extractIdentifier(req);
       expect(identifier).toBe('192.168.1.3');
     });
@@ -446,7 +446,7 @@ describe('RateLimiter Domain Service', () => {
           'user-agent': 'Mozilla/5.0 Chrome/120.0.0.0'
         }
       };
-      
+
       const identifier = RateLimiter.extractIdentifier(req, { useUserAgent: true });
       expect(identifier).toMatch(/^192\.168\.1\.1_[A-Za-z0-9+/]+=*$/);
     });
@@ -460,7 +460,7 @@ describe('RateLimiter Domain Service', () => {
           remoteAddress: '10.0.0.1'
         }
       };
-      
+
       const identifier = RateLimiter.extractIdentifier(req);
       expect(identifier).toBe('192.168.1.1');
     });
@@ -474,7 +474,7 @@ describe('RateLimiter Domain Service', () => {
           remoteAddress: '10.0.0.1'
         }
       };
-      
+
       const identifier = RateLimiter.extractIdentifier(req, { useForwardedFor: false });
       expect(identifier).toBe('10.0.0.1');
     });
@@ -500,12 +500,12 @@ describe('RateLimiter Domain Service', () => {
     });
 
     it('blocks request when limit exceeded', async () => {
-      const middleware = RateLimiter.createMiddleware({ 
+      const middleware = RateLimiter.createMiddleware({
         maxRequests: 1,
-        windowMs: 60000 
+        windowMs: 60000
       });
       const req = { headers: { 'x-forwarded-for': '192.168.1.1' } };
-      const res = { 
+      const res = {
         setHeader: vi.fn(),
         status: vi.fn().mockReturnThis(),
         json: vi.fn()
@@ -582,9 +582,9 @@ describe('RateLimiter Domain Service', () => {
     it('returns memory usage statistics', () => {
       rateLimiter.incrementCounter('user1');
       rateLimiter.incrementCounter('user2');
-      
+
       const stats = rateLimiter.getMemoryStats();
-      
+
       expect(stats.totalEntries).toBe(2);
       expect(stats.memoryUsage).toBeGreaterThan(0);
       expect(typeof stats.memoryUsage).toBe('number');
@@ -592,7 +592,7 @@ describe('RateLimiter Domain Service', () => {
 
     it('returns zero stats for empty storage', () => {
       const stats = rateLimiter.getMemoryStats();
-      
+
       expect(stats.totalEntries).toBe(0);
       expect(stats.memoryUsage).toBeGreaterThanOrEqual(0);
     });

@@ -42,34 +42,34 @@ switch (mode) {
     console.log('🚀 Running quick accessibility checks...\n');
     testCommand = 'npm';
     testArgs = [
-      'run', 
-      'test:e2e', 
-      '--', 
+      'run',
+      'test:e2e',
+      '--',
       '--project=chromium',
-      '--grep', 
+      '--grep',
       'Essential WCAG Compliance',
       ACCESSIBILITY_TEST
     ];
     break;
-    
+
   case 'full':
     console.log('🔬 Running comprehensive WCAG 2.1 AA compliance tests...\n');
     testCommand = 'npm';
     testArgs = [
-      'run', 
-      'test:e2e', 
-      '--', 
+      'run',
+      'test:e2e',
+      '--',
       ACCESSIBILITY_TEST
     ];
     break;
-    
+
   case 'mobile':
     console.log('📱 Running mobile accessibility tests...\n');
     testCommand = 'npm';
     testArgs = [
-      'run', 
-      'test:e2e', 
-      '--', 
+      'run',
+      'test:e2e',
+      '--',
       '--project=mobile-chrome',
       '--project=mobile-safari',
       '--grep',
@@ -77,83 +77,83 @@ switch (mode) {
       ACCESSIBILITY_TEST
     ];
     break;
-    
+
   case 'contrast':
     console.log('🎨 Running color contrast compliance tests...\n');
     testCommand = 'npm';
     testArgs = [
-      'run', 
-      'test:e2e', 
-      '--', 
+      'run',
+      'test:e2e',
+      '--',
       '--grep',
       'Color Contrast Compliance',
       ACCESSIBILITY_TEST
     ];
     break;
-    
+
   case 'keyboard':
     console.log('⌨️  Running keyboard navigation tests...\n');
     testCommand = 'npm';
     testArgs = [
-      'run', 
-      'test:e2e', 
-      '--', 
+      'run',
+      'test:e2e',
+      '--',
       '--grep',
       'Keyboard Navigation',
       ACCESSIBILITY_TEST
     ];
     break;
-    
+
   case 'screen-reader':
     console.log('👁️  Running screen reader compatibility tests...\n');
     testCommand = 'npm';
     testArgs = [
-      'run', 
-      'test:e2e', 
-      '--', 
+      'run',
+      'test:e2e',
+      '--',
       '--grep',
       'Screen Reader Compatibility',
       ACCESSIBILITY_TEST
     ];
     break;
-    
+
   case 'legacy':
     console.log('🗄️  Running legacy browser compatibility tests...\n');
     testCommand = 'npm';
     testArgs = [
-      'run', 
-      'test:e2e', 
-      '--', 
+      'run',
+      'test:e2e',
+      '--',
       '--grep',
       'Legacy Browser Compatibility',
       ACCESSIBILITY_TEST
     ];
     break;
-    
+
   case 'debug':
     console.log('🐛 Running accessibility tests in debug mode...\n');
     testCommand = 'npm';
     testArgs = [
-      'run', 
-      'test:e2e:headed', 
-      '--', 
+      'run',
+      'test:e2e:headed',
+      '--',
       '--project=chromium',
       ACCESSIBILITY_TEST
     ];
     break;
-    
+
   case 'report':
     console.log('📊 Running tests with detailed reporting...\n');
     testCommand = 'npm';
     testArgs = [
-      'run', 
-      'test:e2e', 
-      '--', 
+      'run',
+      'test:e2e',
+      '--',
       '--reporter=html',
       ACCESSIBILITY_TEST
     ];
     break;
-    
+
   default:
     console.log('❓ Usage: node scripts/test-accessibility.js [mode]');
     console.log('');
@@ -189,7 +189,7 @@ const testProcess = spawn(testCommand, testArgs, {
 
 testProcess.on('close', (code) => {
   console.log('\n================================================');
-  
+
   if (code === 0) {
     console.log('✅ Accessibility tests completed successfully!');
     console.log('');
@@ -244,7 +244,7 @@ testProcess.on('close', (code) => {
     console.log('  - WCAG 2.1 Guidelines: https://www.w3.org/WAI/WCAG21/quickref/');
     console.log('  - Test documentation: tests/e2e/advanced/README.md');
   }
-  
+
   process.exit(code);
 });
 

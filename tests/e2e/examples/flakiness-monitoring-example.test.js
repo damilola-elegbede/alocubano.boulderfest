@@ -1,13 +1,13 @@
 /**
  * Example E2E Test demonstrating Flakiness Detection Integration
- * 
+ *
  * This file showcases how to integrate the flakiness detection system
  * with actual E2E tests for enhanced reliability monitoring
  */
 
 import { test, expect } from '@playwright/test';
-import { 
-  executeTestWithMonitoring, 
+import {
+  executeTestWithMonitoring,
   registerTestRetryStrategy,
   getFlakinessDetector,
   cleanupFlakinessDetector,
@@ -18,7 +18,7 @@ test.describe('Flakiness Monitoring Integration Examples', () => {
 
   test.beforeAll(async () => {
     // Register custom retry strategies for specific test patterns
-    
+
     // Network-sensitive tests get more aggressive retry with longer delays
     registerTestRetryStrategy('**/network-*', {
       maxAttempts: 4,
@@ -29,7 +29,7 @@ test.describe('Flakiness Monitoring Integration Examples', () => {
         return defaultDelay;
       }
     });
-    
+
     // DOM-related tests get quick retries for race conditions
     registerTestRetryStrategy('**/dom-*', {
       maxAttempts: 3,
@@ -53,20 +53,20 @@ test.describe('Flakiness Monitoring Integration Examples', () => {
       async () => {
         // Navigate to gallery page
         await page.goto('/gallery');
-        
+
         // Wait for gallery container to be visible
         await expect(page.locator('.gallery-container')).toBeVisible({ timeout: 10000 });
-        
+
         // Verify gallery functionality
         const galleryItems = page.locator('.gallery-item, .photo-item, .video-item');
         await expect(galleryItems.first()).toBeVisible({ timeout: 5000 });
-        
+
         // Check that images are loaded
         const firstImage = page.locator('img').first();
         if (await firstImage.count() > 0) {
           await expect(firstImage).toHaveAttribute('src', /.+/);
         }
-        
+
         return { success: true, itemsFound: await galleryItems.count() };
       },
       testInfo,
@@ -93,10 +93,10 @@ test.describe('Flakiness Monitoring Integration Examples', () => {
       async () => {
         // Navigate to page that makes API calls
         await page.goto('/');
-        
+
         // Wait for network requests to complete
         await page.waitForLoadState('domcontentloaded');
-        
+
         // Test API-dependent functionality
         const healthCheckResponse = await page.evaluate(async () => {
           try {
@@ -106,7 +106,7 @@ test.describe('Flakiness Monitoring Integration Examples', () => {
             throw new Error(`Network request failed: ${error.message}`);
           }
         });
-        
+
         expect(healthCheckResponse.success).toBe(true);
         return healthCheckResponse;
       },
@@ -131,37 +131,37 @@ test.describe('Flakiness Monitoring Integration Examples', () => {
     await executeTestWithMonitoring(
       async () => {
         await page.goto('/');
-        
+
         // Test interactive elements that might have timing issues
         const navigationToggle = page.locator('[data-nav-toggle]');
-        
+
         if (await navigationToggle.count() > 0) {
           // Click navigation toggle
           await navigationToggle.click();
-          
+
           // Wait for navigation menu to appear
           const navMenu = page.locator('.navigation-menu, .nav-menu');
           await expect(navMenu).toBeVisible({ timeout: 3000 });
-          
+
           // Click again to close
           await navigationToggle.click();
           await expect(navMenu).not.toBeVisible({ timeout: 3000 });
         }
-        
+
         // Test form interactions if available
         const subscribeForm = page.locator('form[data-newsletter-form], .newsletter-form form');
         if (await subscribeForm.count() > 0) {
           const emailInput = subscribeForm.locator('input[type="email"], input[name="email"]');
           const submitButton = subscribeForm.locator('button[type="submit"], .submit-btn');
-          
+
           if (await emailInput.count() > 0 && await submitButton.count() > 0) {
             await emailInput.fill('test@example.com');
-            
+
             // Don't actually submit in test environment
             await expect(emailInput).toHaveValue('test@example.com');
           }
         }
-        
+
         return { success: true };
       },
       testInfo,
@@ -184,29 +184,29 @@ test.describe('Flakiness Monitoring Integration Examples', () => {
     const result = await executeTestWithMonitoring(
       async () => {
         const startTime = Date.now();
-        
+
         // Navigate and measure load time
         await page.goto('/gallery');
         await page.waitForLoadState('domcontentloaded');
-        
+
         const loadTime = Date.now() - startTime;
-        
+
         // Performance assertion
         expect(loadTime).toBeLessThan(8000); // Should load within 8 seconds
-        
+
         // Check Core Web Vitals if possible
         const vitals = await page.evaluate(() => {
           return new Promise((resolve) => {
             if ('PerformanceObserver' in window) {
               const vitals = {};
-              
+
               // Largest Contentful Paint
               new PerformanceObserver((list) => {
                 const entries = list.getEntries();
                 const lastEntry = entries[entries.length - 1];
                 vitals.lcp = lastEntry.startTime;
               }).observe({ entryTypes: ['largest-contentful-paint'] });
-              
+
               // Cumulative Layout Shift
               new PerformanceObserver((list) => {
                 let cumulativeScore = 0;
@@ -217,16 +217,16 @@ test.describe('Flakiness Monitoring Integration Examples', () => {
                 }
                 vitals.cls = cumulativeScore;
               }).observe({ entryTypes: ['layout-shift'] });
-              
+
               setTimeout(() => resolve(vitals), 3000);
             } else {
               resolve({});
             }
           });
         });
-        
-        return { 
-          loadTime, 
+
+        return {
+          loadTime,
           vitals,
           performance: {
             lcp: vitals.lcp || null,
@@ -243,7 +243,7 @@ test.describe('Flakiness Monitoring Integration Examples', () => {
         }
       }
     );
-    
+
     console.log('Performance metrics:', result.performance);
   });
 
@@ -257,16 +257,16 @@ test.describe('Flakiness Monitoring Integration Examples', () => {
     await executeTestWithMonitoring(
       async () => {
         await page.goto('/');
-        
+
         // Simulate flakiness with random failure
         const shouldFail = Math.random() < 0.2; // 20% chance of failure
-        
+
         if (shouldFail) {
           // Simulate a timing-related failure
           await page.waitForTimeout(100);
           throw new Error('Simulated timing issue - element not found within timeout');
         }
-        
+
         // Normal test flow
         await expect(page.locator('body')).toBeVisible();
         return { success: true, flakiness: 'simulated' };
@@ -293,7 +293,7 @@ test.describe('Flakiness Monitoring Integration Examples', () => {
       async () => {
         // This test validates that environment is consistent
         await page.goto('/api/health/check');
-        
+
         const healthData = await page.evaluate(() => {
           try {
             return JSON.parse(document.body.textContent);
@@ -301,10 +301,10 @@ test.describe('Flakiness Monitoring Integration Examples', () => {
             return null;
           }
         });
-        
+
         expect(healthData).toBeTruthy();
         expect(healthData.status).toBe('healthy');
-        
+
         return { health: healthData };
       },
       testInfo,
@@ -323,24 +323,24 @@ test.describe('Flakiness Monitoring Integration Examples', () => {
     const detector = getFlakinessDetector();
     const testKey = `${__filename}::concurrent-execution-demo`;
     const executionId = `${testKey}::${Date.now()}::${Math.random().toString(36).substring(2, 11)}`;
-    
+
     // Manually track concurrent execution for demonstration
     await detector.trackConcurrentExecution(testKey, executionId);
-    
+
     try {
       await page.goto('/');
       await expect(page.locator('body')).toBeVisible();
-      
+
       // Simulate some work
       await page.waitForTimeout(1000);
-      
+
       const result = { status: 'passed', duration: 1000 };
       await detector.completeConcurrentExecution(executionId, result);
-      
+
     } catch (error) {
-      await detector.completeConcurrentExecution(executionId, { 
-        status: 'failed', 
-        error: error.message 
+      await detector.completeConcurrentExecution(executionId, {
+        status: 'failed',
+        error: error.message
       });
       throw error;
     }
@@ -349,7 +349,7 @@ test.describe('Flakiness Monitoring Integration Examples', () => {
   test.afterEach(async ({ page }, testInfo) => {
     // Log test execution details
     console.log(`Test "${testInfo.title}" completed with status: ${testInfo.status}`);
-    
+
     if (testInfo.status === 'failed') {
       console.log(`Failure reason: ${testInfo.error?.message || 'Unknown'}`);
       console.log(`Retry count: ${testInfo.retry || 0}`);
@@ -361,29 +361,29 @@ test.describe('Flakiness Monitoring Integration Examples', () => {
     try {
       const detector = getFlakinessDetector();
       const metrics = await detector.loadMetrics();
-      
+
       console.log('\n📊 Flakiness Monitoring Summary');
       console.log('─'.repeat(40));
-      
+
       if (metrics.dashboard) {
         console.log(`Total tests monitored: ${metrics.dashboard.summary.totalTests}`);
         console.log(`Overall reliability: ${(metrics.dashboard.summary.overallReliability * 100).toFixed(1)}%`);
-        
+
         if (metrics.dashboard.summary.flakyTests > 0) {
           console.log(`⚠️  Flaky tests detected: ${metrics.dashboard.summary.flakyTests}`);
         }
-        
+
         if (metrics.dashboard.recommendations.length > 0) {
           console.log(`💡 Recommendations available: ${metrics.dashboard.recommendations.length}`);
         }
       }
-      
+
       // Show resource monitoring stats
       const resourceStats = getResourceMonitoringStats();
       if (resourceStats.monitoring) {
         console.log(`📈 Resource monitoring data points: ${resourceStats.dataPoints}`);
       }
-      
+
     } catch (error) {
       console.log('Could not load monitoring metrics:', error.message);
     } finally {
@@ -411,7 +411,7 @@ test.describe('Advanced Flakiness Monitoring Features', () => {
       },
       shouldRetry: (error) => {
         // Only retry on specific error types
-        return error.message.includes('timeout') || 
+        return error.message.includes('timeout') ||
                error.message.includes('network') ||
                error.message.includes('server error');
       }
@@ -436,15 +436,15 @@ test.describe('Advanced Flakiness Monitoring Features', () => {
 
   test('Environment snapshot comparison', async ({ page }) => {
     const detector = getFlakinessDetector();
-    
+
     // Capture current environment
     const snapshot = await detector.captureEnvironmentSnapshot();
-    
+
     console.log('Current environment snapshot:');
     console.log(`- Node version: ${snapshot.node.version}`);
     console.log(`- Platform: ${snapshot.node.platform}`);
     console.log(`- Network: ${snapshot.network.online ? 'Online' : 'Offline'}`);
-    
+
     if (snapshot.git.available !== false) {
       console.log(`- Git branch: ${snapshot.git.branch}`);
       console.log(`- Git dirty: ${snapshot.git.dirty}`);

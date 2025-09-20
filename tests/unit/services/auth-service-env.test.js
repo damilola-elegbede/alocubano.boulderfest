@@ -13,7 +13,7 @@ describe('AuthService Environment Variable Handling', () => {
   beforeEach(() => {
     // Backup original environment
     originalEnv = { ...process.env };
-    
+
     // Create fresh AuthService instance for each test
     authService = new AuthService();
   });
@@ -211,7 +211,7 @@ describe('AuthService Environment Variable Handling', () => {
 
       expect(result).toBe(authService);
       expect(authService.initialized).toBe(true);
-      
+
       // Fast path should be very quick (< 10ms is reasonable for synchronous path)
       expect(endTime - startTime).toBeLessThan(10);
     });

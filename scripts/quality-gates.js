@@ -2,10 +2,10 @@
 
 /**
  * Quality Gates Enforcement System - Unit-Only Mode
- * 
+ *
  * Optimized for unit-only test architecture with 806+ tests.
  * Integration and E2E monitoring disabled for focused unit testing.
- * 
+ *
  * Features:
  * - Unit test quality metrics and performance tracking
  * - Code quality and security scanning
@@ -13,23 +13,23 @@
  * - Generates comprehensive quality reports
  * - Provides actionable feedback for quality improvements
  * - Supports CI/CD integration with proper exit codes
- * 
+ *
  * Quality Gates (Unit-Only Focus):
  * - Test execution time <2 seconds for 806+ tests
  * - Test reliability >95%
  * - Code quality score >80%
  * - Zero high/critical security vulnerabilities
  * - API response time <100ms
- * 
+ *
  * Usage:
  *   node scripts/quality-gates.js [mode] [options]
- *   
+ *
  * Modes:
  *   ci        - CI/CD pipeline mode (strict, fail-fast)
  *   local     - Local development mode (warnings only)
  *   report    - Generate quality report only
  *   dashboard - Start interactive dashboard
- * 
+ *
  * Examples:
  *   npm run quality:gates
  *   npm run quality:gates:ci
@@ -69,7 +69,7 @@ class QualityGatesEnforcer {
     this.verbose = options.verbose || false;
     this.outputDir = path.join(__dirname, '../.tmp/quality-gates');
     this.timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    
+
     // Load quality thresholds from external configuration
     this.thresholds = this.loadQualityThresholds(options.environment);
 
@@ -82,7 +82,7 @@ class QualityGatesEnforcer {
     };
 
     this.logger = this.createLogger();
-    
+
     // Unit-only mode flag
     this.unitOnlyMode = true;
   }
@@ -92,26 +92,26 @@ class QualityGatesEnforcer {
       // Load from external configuration file
       const configPath = path.join(__dirname, '../.github/quality-thresholds.json');
       const configData = JSON.parse(readFileSync(configPath, 'utf8'));
-      
+
       // Use base thresholds with environment-specific overrides
       const baseThresholds = {};
       Object.entries(configData.thresholds).forEach(([key, config]) => {
         baseThresholds[key] = config.value;
       });
-      
+
       // Apply environment-specific overrides if they exist
       const envOverrides = configData.environments?.[environment] || {};
       const finalThresholds = { ...baseThresholds, ...envOverrides };
-      
-      this.logger?.debug?.('Loaded quality thresholds', { 
-        environment, 
-        thresholds: finalThresholds 
+
+      this.logger?.debug?.('Loaded quality thresholds', {
+        environment,
+        thresholds: finalThresholds
       });
-      
+
       return finalThresholds;
     } catch (error) {
       this.logger?.warn?.('Failed to load quality thresholds, using defaults', { error: error.message });
-      
+
       // Unit-only mode defaults
       return {
         executionTime: 2,              // Target: <2 seconds for 806+ unit tests
@@ -130,7 +130,7 @@ class QualityGatesEnforcer {
   createLogger() {
     const levels = { ERROR: 0, WARN: 1, INFO: 2, DEBUG: 3 };
     const currentLevel = this.verbose ? 'DEBUG' : 'INFO';
-    
+
     const logger = {
       log: (level, msg, data) => {
         if (levels[level] <= levels[currentLevel]) {
@@ -145,7 +145,7 @@ class QualityGatesEnforcer {
         }
       }
     };
-    
+
     return {
       error: (msg, data) => logger.log('ERROR', msg, data),
       warn: (msg, data) => logger.log('WARN', msg, data),
@@ -158,10 +158,10 @@ class QualityGatesEnforcer {
   // Security utilities
   sanitizeLogData(data) {
     if (!data || typeof data !== 'object') return data;
-    
+
     const sensitiveKeys = ['password', 'token', 'secret', 'key', 'auth', 'credential'];
     const sanitized = { ...data };
-    
+
     const sanitizeObject = (obj) => {
       for (const [key, value] of Object.entries(obj)) {
         if (sensitiveKeys.some(sensitive => key.toLowerCase().includes(sensitive))) {
@@ -171,7 +171,7 @@ class QualityGatesEnforcer {
         }
       }
     };
-    
+
     sanitizeObject(sanitized);
     return sanitized;
   }
@@ -179,22 +179,22 @@ class QualityGatesEnforcer {
   validateApiEndpoint(url) {
     try {
       const parsedUrl = new URL(url);
-      
+
       // Only allow HTTP/HTTPS protocols
       if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
         throw new Error('Invalid protocol - only HTTP and HTTPS allowed');
       }
-      
+
       // Check against allowed endpoints - use exact matches only to prevent SSRF
       const baseUrl = `${parsedUrl.protocol}//${parsedUrl.host}`;
-      const isAllowed = SECURITY_CONFIG.allowedEndpoints.some(allowed => 
+      const isAllowed = SECURITY_CONFIG.allowedEndpoints.some(allowed =>
         baseUrl === allowed
       ) || baseUrl === (process.env.API_BASE_URL || 'http://localhost:3000');
-      
+
       if (!isAllowed) {
         throw new Error(`Endpoint not in allowlist: ${baseUrl}`);
       }
-      
+
       return true;
     } catch (error) {
       this.logger.error(`Invalid API endpoint: ${url}`, { error: error.message });
@@ -206,7 +206,7 @@ class QualityGatesEnforcer {
     if (typeof command !== 'string') {
       throw new Error('Command must be a string');
     }
-    
+
     // Basic command injection protection
     const dangerousPatterns = [
       /[;&|`$()<>]/,  // Shell metacharacters
@@ -216,27 +216,27 @@ class QualityGatesEnforcer {
       />\s*\/dev/,    // Device access
       /\/etc\/passwd/, // System file access
     ];
-    
+
     for (const pattern of dangerousPatterns) {
       if (pattern.test(command)) {
         throw new Error(`Command contains dangerous pattern: ${command}`);
       }
     }
-    
+
     return command.trim();
   }
 
   validateWorkingDirectory(cwd = process.cwd()) {
     const resolvedCwd = path.resolve(cwd);
-    
-    const isAllowed = SECURITY_CONFIG.allowedWorkingDirs.some(allowed => 
+
+    const isAllowed = SECURITY_CONFIG.allowedWorkingDirs.some(allowed =>
       resolvedCwd === allowed || resolvedCwd.startsWith(allowed + path.sep)
     );
-    
+
     if (!isAllowed) {
       throw new Error(`Working directory not allowed: ${resolvedCwd}`);
     }
-    
+
     return resolvedCwd;
   }
 
@@ -244,11 +244,11 @@ class QualityGatesEnforcer {
     try {
       // Validate and sanitize command
       const sanitizedCommand = this.sanitizeCommand(command);
-      
+
       // Validate working directory
       const cwd = options.cwd || process.cwd();
       const safeCwd = this.validateWorkingDirectory(cwd);
-      
+
       // Set secure execution options
       const safeOptions = {
         encoding: 'utf8',
@@ -262,25 +262,25 @@ class QualityGatesEnforcer {
         gid: undefined,
         env: { ...process.env, ...options.env } // Inherit safe environment
       };
-      
-      this.logger.debug(`Executing command: ${sanitizedCommand}`, { 
-        cwd: safeCwd, 
-        timeout: safeOptions.timeout 
+
+      this.logger.debug(`Executing command: ${sanitizedCommand}`, {
+        cwd: safeCwd,
+        timeout: safeOptions.timeout
       });
-      
+
       return execSync(sanitizedCommand, safeOptions);
     } catch (error) {
       // Sanitize error messages to prevent information disclosure
       const sanitizedError = new Error('Command execution failed');
       sanitizedError.code = error.code;
       sanitizedError.signal = error.signal;
-      
+
       this.logger.warn('Command execution failed', {
         command: command.split(' ')[0], // Only log command name, not args
         code: error.code,
         signal: error.signal
       });
-      
+
       throw sanitizedError;
     }
   }
@@ -290,23 +290,23 @@ class QualityGatesEnforcer {
       this.logger.info('🚦 Starting Quality Gates Enforcement System (Unit-Only Mode)');
       this.logger.info(`Mode: ${this.mode}`);
       this.logger.info('📊 Focus: 806+ unit tests with <2s execution target');
-      
+
       await this.ensureOutputDirectory();
-      
+
       // Run unit-focused quality checks
       const checks = await this.runQualityChecks();
-      
+
       // Analyze results and enforce gates
       const gateResults = await this.enforceQualityGates(checks);
-      
+
       // Generate reports and feedback
       await this.generateReports(gateResults);
-      
+
       // Handle mode-specific actions
       await this.handleModeSpecificActions(gateResults);
-      
+
       return this.determineExitCode(gateResults);
-      
+
     } catch (error) {
       this.logger.error('❌ Quality gates enforcement failed', { error: error.message });
       return this.mode === 'ci' ? 1 : 0;
@@ -316,7 +316,7 @@ class QualityGatesEnforcer {
   async ensureOutputDirectory() {
     try {
       await fs.mkdir(this.outputDir, { recursive: true });
-      
+
       // Clean up stale reports older than 7 days to prevent disk space issues
       await this.cleanupStaleReports();
     } catch (error) {
@@ -329,7 +329,7 @@ class QualityGatesEnforcer {
       const files = await fs.readdir(this.outputDir);
       const now = Date.now();
       const sevenDaysAgo = now - (7 * 24 * 60 * 60 * 1000); // 7 days in milliseconds
-      
+
       let cleanedCount = 0;
       for (const file of files) {
         if (file.startsWith('quality-report-') || file.startsWith('dashboard-')) {
@@ -346,7 +346,7 @@ class QualityGatesEnforcer {
           }
         }
       }
-      
+
       if (cleanedCount > 0) {
         this.logger.info(`🧹 Cleaned up ${cleanedCount} stale quality reports`);
       }
@@ -358,7 +358,7 @@ class QualityGatesEnforcer {
 
   async runQualityChecks() {
     this.logger.info('🔍 Running unit-focused quality checks...');
-    
+
     const checks = [
       { name: 'unitTests', fn: () => this.checkUnitTests() },
       { name: 'performance', fn: () => this.checkPerformance() },
@@ -372,23 +372,23 @@ class QualityGatesEnforcer {
     ];
 
     const results = {};
-    
+
     // Run checks in parallel with error handling and async timeout
     const promises = checks.map(async (check) => {
       const startTime = Date.now();
       try {
         this.logger.debug(`Running ${check.name} check...`);
-        
+
         // Create timeout promise for async execution
-        const timeoutPromise = new Promise((_, reject) => 
+        const timeoutPromise = new Promise((_, reject) =>
           setTimeout(() => reject(new Error(`${check.name} check timeout after 60 seconds`)), 60000)
         );
-        
+
         const result = await Promise.race([
           check.fn(),
           timeoutPromise
         ]);
-        
+
         results[check.name] = { success: true, data: result };
         this.logger.debug(`✅ ${check.name} check completed in ${Date.now() - startTime}ms`);
       } catch (error) {
@@ -399,7 +399,7 @@ class QualityGatesEnforcer {
     });
 
     await Promise.allSettled(promises);
-    
+
     this.logger.info(`📊 Completed ${Object.keys(results).length} quality checks`);
     return results;
   }
@@ -407,20 +407,20 @@ class QualityGatesEnforcer {
   async checkUnitTests() {
     try {
       const start = Date.now();
-      
+
       // Run unit tests and capture output
-      const output = await this.safeExecSync('npm run test:unit -- --reporter=json', { 
+      const output = await this.safeExecSync('npm run test:unit -- --reporter=json', {
         timeout: 30000,
         env: { ...process.env, NODE_OPTIONS: '--max-old-space-size=6144' }
       });
-      
+
       const executionTime = (Date.now() - start) / 1000;
-      
+
       // Parse test results
       let testCount = 806; // Default to expected count
       let passedCount = 806;
       let failedCount = 0;
-      
+
       try {
         const results = JSON.parse(output);
         if (results.testResults) {
@@ -436,7 +436,7 @@ class QualityGatesEnforcer {
         if (failMatch) failedCount = parseInt(failMatch[1]);
         testCount = passedCount + failedCount;
       }
-      
+
       return {
         totalTests: testCount,
         passedTests: passedCount,
@@ -461,15 +461,15 @@ class QualityGatesEnforcer {
   async checkPerformance() {
     try {
       const start = Date.now();
-      
+
       // Run performance test
-      await this.safeExecSync('npm run test:phase2:performance', { 
+      await this.safeExecSync('npm run test:phase2:performance', {
         timeout: 10000,
         env: { ...process.env, NODE_OPTIONS: '--max-old-space-size=8192' }
       });
-      
+
       const executionTime = (Date.now() - start) / 1000;
-      
+
       return {
         executionTime,
         performanceTarget: 2, // 2 seconds target
@@ -494,10 +494,10 @@ class QualityGatesEnforcer {
       // Run tests multiple times to check reliability
       const runs = 3;
       const results = [];
-      
+
       for (let i = 0; i < runs; i++) {
         try {
-          await this.safeExecSync('npm test', { 
+          await this.safeExecSync('npm test', {
             timeout: 30000,
             env: { ...process.env, NODE_OPTIONS: '--max-old-space-size=6144' }
           });
@@ -506,9 +506,9 @@ class QualityGatesEnforcer {
           results.push({ success: false, run: i + 1, error: 'Test execution failed' });
         }
       }
-      
+
       const successRate = (results.filter(r => r.success).length / runs) * 100;
-      
+
       return {
         reliability: successRate,
         runs: results.length,
@@ -523,11 +523,11 @@ class QualityGatesEnforcer {
   async checkTestCoverage() {
     try {
       // Run coverage analysis
-      const output = await this.safeExecSync('npm run test:unit:coverage -- --reporter=json', { 
+      const output = await this.safeExecSync('npm run test:unit:coverage -- --reporter=json', {
         timeout: 45000,
         env: { ...process.env, NODE_OPTIONS: '--max-old-space-size=6144' }
       });
-      
+
       // Parse coverage data
       let coverage = 85; // Default to target
       try {
@@ -542,7 +542,7 @@ class QualityGatesEnforcer {
           coverage = parseFloat(coverageMatch[1]);
         }
       }
-      
+
       return {
         overallCoverage: coverage,
         targetCoverage: 85,
@@ -568,17 +568,17 @@ class QualityGatesEnforcer {
   async checkSecurityVulnerabilities() {
     try {
       // Run security audit
-      const auditOutput = await this.safeExecSync('npm audit --json', { 
-        timeout: 30000 
+      const auditOutput = await this.safeExecSync('npm audit --json', {
+        timeout: 30000
       });
-      
+
       const audit = JSON.parse(auditOutput);
       const vulnerabilities = audit.vulnerabilities || {};
-      
+
       let highCritical = 0;
       let moderate = 0;
       let low = 0;
-      
+
       Object.values(vulnerabilities).forEach(vuln => {
         if (vuln.severity === 'high' || vuln.severity === 'critical') {
           highCritical++;
@@ -588,7 +588,7 @@ class QualityGatesEnforcer {
           low++;
         }
       });
-      
+
       return {
         highCriticalCount: highCritical,
         moderateCount: moderate,
@@ -609,18 +609,18 @@ class QualityGatesEnforcer {
   async checkCodeQuality() {
     try {
       // Run ESLint for code quality
-      const lintOutput = await this.safeExecSync('npm run lint -- --format json', { 
-        timeout: 30000 
+      const lintOutput = await this.safeExecSync('npm run lint -- --format json', {
+        timeout: 30000
       });
-      
+
       const results = JSON.parse(lintOutput);
       const totalIssues = results.reduce((sum, file) => sum + file.errorCount + file.warningCount, 0);
       const totalFiles = results.length;
       const errorCount = results.reduce((sum, file) => sum + file.errorCount, 0);
-      
+
       // Calculate quality score (100 - issues per file ratio)
       const qualityScore = Math.max(0, 100 - (totalIssues / Math.max(totalFiles, 1)) * 10);
-      
+
       return {
         qualityScore,
         totalIssues,
@@ -639,9 +639,9 @@ class QualityGatesEnforcer {
       // Test API endpoints performance
       const healthCheck = await this.measureApiCall('/api/health/check');
       const databaseCheck = await this.measureApiCall('/api/health/database');
-      
+
       const avgResponseTime = (healthCheck.responseTime + databaseCheck.responseTime) / 2;
-      
+
       return {
         averageResponseTime: avgResponseTime,
         healthCheckTime: healthCheck.responseTime,
@@ -661,20 +661,20 @@ class QualityGatesEnforcer {
       if (!endpoint || typeof endpoint !== 'string' || !endpoint.startsWith('/')) {
         throw new Error('Invalid endpoint format');
       }
-      
+
       // Use environment variable or secure default
       const baseUrl = process.env.API_BASE_URL || 'http://localhost:3000';
       const fullUrl = `${baseUrl}${endpoint}`;
-      
+
       // Validate the full URL
       if (!this.validateApiEndpoint(fullUrl)) {
         throw new Error('API endpoint validation failed');
       }
-      
+
       // Make request with timeout and proper error handling
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-      
+
       try {
         const response = await fetch(fullUrl, {
           signal: controller.signal,
@@ -684,11 +684,11 @@ class QualityGatesEnforcer {
           }
         });
         clearTimeout(timeoutId);
-        
+
         const responseTime = Date.now() - start;
-        return { 
-          success: response.ok, 
-          responseTime, 
+        return {
+          success: response.ok,
+          responseTime,
           status: response.status,
           endpoint: endpoint // Only log the endpoint path, not full URL
         };
@@ -698,9 +698,9 @@ class QualityGatesEnforcer {
     } catch (error) {
       // For unit-only mode, simulate successful API calls
       const responseTime = 50 + Math.random() * 50; // 50-100ms simulated
-      return { 
-        success: true, 
-        responseTime, 
+      return {
+        success: true,
+        responseTime,
         error: 'Simulated for unit-only mode',
         endpoint: endpoint
       };
@@ -711,17 +711,17 @@ class QualityGatesEnforcer {
     try {
       // Safe file discovery using fs.readdir instead of shell command
       const jsFiles = await this.findJavaScriptFiles(process.cwd());
-      
+
       let totalLines = 0;
       let duplicatedLines = 0;
       const functionSignatures = new Map();
-      
+
       for (const file of jsFiles.slice(0, 100)) { // Limit to 100 files for performance
         try {
           const content = await fs.readFile(file, 'utf8');
           const lines = content.split('\n').filter(line => line.trim().length > 0);
           totalLines += lines.length;
-          
+
           // Simple function signature matching
           lines.forEach(line => {
             const trimmed = line.trim();
@@ -738,9 +738,9 @@ class QualityGatesEnforcer {
           // Skip file if can't read
         }
       }
-      
+
       const duplicationRatio = totalLines > 0 ? (duplicatedLines / totalLines) * 100 : 0;
-      
+
       return {
         duplicationRatio,
         totalLines,
@@ -760,7 +760,7 @@ class QualityGatesEnforcer {
       const heapUsedMB = Math.round(memUsage.heapUsed / 1024 / 1024);
       const heapTotalMB = Math.round(memUsage.heapTotal / 1024 / 1024);
       const rssMB = Math.round(memUsage.rss / 1024 / 1024);
-      
+
       return {
         heapUsedMB,
         heapTotalMB,
@@ -784,12 +784,12 @@ class QualityGatesEnforcer {
     try {
       // Validate directory is safe
       this.validateWorkingDirectory(dir);
-      
+
       const entries = await fs.readdir(dir, { withFileTypes: true });
-      
+
       for (const entry of entries) {
         const fullPath = path.join(dir, entry.name);
-        
+
         // Skip dangerous or unwanted directories
         if (entry.isDirectory()) {
           const skipDirs = ['node_modules', '.tmp', '.git', 'dist', 'build'];
@@ -800,7 +800,7 @@ class QualityGatesEnforcer {
           files.push(fullPath);
         }
       }
-      
+
       return files;
     } catch (error) {
       this.logger.warn(`Failed to scan directory: ${dir}`, { error: error.message });
@@ -810,7 +810,7 @@ class QualityGatesEnforcer {
 
   async enforceQualityGates(checks) {
     this.logger.info('⚖️ Enforcing quality gates (Unit-Only Mode)...');
-    
+
     const gates = [
       {
         name: 'Unit Test Count',
@@ -907,7 +907,7 @@ class QualityGatesEnforcer {
     const passedGates = gates.filter(gate => gate.passed).length;
     const failedGates = gates.filter(gate => !gate.passed);
     const criticalFailures = failedGates.filter(gate => gate.critical);
-    
+
     const summary = {
       totalGates,
       passedGates,
@@ -1023,25 +1023,25 @@ class QualityGatesEnforcer {
 
     // Generate JSON report
     await this.generateJsonReport(gateResults);
-    
+
     // Generate HTML report
     await this.generateHtmlReport(gateResults);
-    
+
     // Generate CLI summary
     this.generateCliSummary(gateResults);
-    
+
     // Generate dashboard data
     await this.generateDashboardData(gateResults);
   }
 
   async generateJsonReport(gateResults) {
     const reportPath = path.join(this.outputDir, `quality-report-${this.timestamp}.json`);
-    
+
     const [gitCommit, gitBranch] = await Promise.all([
       this.getGitCommit(),
       this.getGitBranch()
     ]);
-    
+
     const report = {
       ...this.results,
       metadata: {
@@ -1061,9 +1061,9 @@ class QualityGatesEnforcer {
 
   async generateHtmlReport(gateResults) {
     const reportPath = path.join(this.outputDir, `quality-report-${this.timestamp}.html`);
-    
+
     const gitBranch = await this.getGitBranch();
-    
+
     const html = `
 <!DOCTYPE html>
 <html lang="en">
@@ -1170,14 +1170,14 @@ class QualityGatesEnforcer {
     console.log('\n' + '='.repeat(80));
     console.log('🚦 QUALITY GATES SUMMARY - UNIT-ONLY MODE');
     console.log('='.repeat(80));
-    
+
     const status = gateResults.summary.overallPassed ? '✅ PASSED' : '❌ FAILED';
     const statusColor = gateResults.summary.overallPassed ? '\x1b[32m' : '\x1b[31m';
-    
+
     console.log(`\nOverall Status: ${statusColor}${status}\x1b[0m`);
     console.log(`Pass Rate: ${gateResults.summary.passRate.toFixed(1)}% (${gateResults.summary.passedGates}/${gateResults.summary.totalGates})`);
     console.log(`Critical Failures: ${gateResults.summary.criticalFailures}`);
-    
+
     // Unit test specific summary
     const unitData = this.results.checks.unitTests?.data;
     if (unitData) {
@@ -1186,13 +1186,13 @@ class QualityGatesEnforcer {
       console.log(`  Execution: ${unitData.executionTime?.toFixed(2)}s (Target: <2s)`);
       console.log(`  Pass Rate: ${unitData.passRate?.toFixed(1)}%`);
     }
-    
+
     console.log('\nGate Results:');
     gateResults.gates.forEach(gate => {
       const icon = gate.passed ? '✅' : '❌';
       const critical = gate.critical ? ' (CRITICAL)' : '';
       const color = gate.passed ? '\x1b[32m' : (gate.critical ? '\x1b[31m' : '\x1b[33m');
-      
+
       console.log(`  ${icon} ${color}${gate.name}${critical}\x1b[0m: ${gate.value}${gate.unit} ${gate.operator} ${gate.threshold}${gate.unit}`);
     });
 
@@ -1203,13 +1203,13 @@ class QualityGatesEnforcer {
         console.log(`     ${rec.details}`);
       });
     }
-    
+
     console.log('\n' + '='.repeat(80));
   }
 
   async generateDashboardData(gateResults) {
     const dashboardPath = path.join(this.outputDir, `dashboard-${this.timestamp}.json`);
-    
+
     const dashboardData = {
       mode: 'unit-only',
       summary: gateResults.summary,
@@ -1236,7 +1236,7 @@ class QualityGatesEnforcer {
 
     await fs.writeFile(dashboardPath, JSON.stringify(dashboardData, null, 2));
     this.logger.info(`📊 Dashboard data saved: ${dashboardPath}`);
-    
+
     this.results.dashboardData = dashboardData;
   }
 
@@ -1259,17 +1259,17 @@ class QualityGatesEnforcer {
 
   async handleCiMode(gateResults) {
     this.logger.info('🤖 CI Mode: Strict enforcement enabled (Unit-Only)');
-    
+
     if (!gateResults.summary.overallPassed) {
       console.log('\n❌ QUALITY GATES FAILED - BLOCKING DEPLOYMENT');
-      
+
       if (gateResults.summary.criticalFailures > 0) {
         console.log(`\n🚨 ${gateResults.summary.criticalFailures} CRITICAL FAILURES DETECTED:`);
         gateResults.gates.filter(gate => !gate.passed && gate.critical).forEach(gate => {
           console.log(`  • ${gate.name}: ${gate.value}${gate.unit} (required: ${gate.operator}${gate.threshold}${gate.unit})`);
         });
       }
-      
+
       // Set GitHub Actions output using modern approach
       if (process.env.GITHUB_ACTIONS) {
         this.setGitHubOutput('quality_gates_passed', 'false');
@@ -1279,7 +1279,7 @@ class QualityGatesEnforcer {
     } else {
       console.log('\n✅ All quality gates passed - Deployment approved');
       console.log('📊 Unit test suite: 806+ tests executed successfully');
-      
+
       if (process.env.GITHUB_ACTIONS) {
         this.setGitHubOutput('quality_gates_passed', 'true');
         this.setGitHubOutput('pass_rate', gateResults.summary.passRate);
@@ -1289,11 +1289,11 @@ class QualityGatesEnforcer {
 
   async handleLocalMode(gateResults) {
     this.logger.info('💻 Local Mode: Development feedback enabled (Unit-Only)');
-    
+
     if (!gateResults.summary.overallPassed) {
       console.log('\n⚠️ Some quality gates failed - Consider fixing before committing');
     }
-    
+
     // Provide quick fix suggestions
     if (gateResults.recommendations.length > 0) {
       console.log('\n🔧 Quick fixes available:');
@@ -1305,10 +1305,10 @@ class QualityGatesEnforcer {
 
   async handleReportMode(gateResults) {
     this.logger.info('📊 Report Mode: Comprehensive analysis generated');
-    
+
     const latestReport = path.join(this.outputDir, 'latest-quality-report.html');
     const sourceReport = path.join(this.outputDir, `quality-report-${this.timestamp}.html`);
-    
+
     try {
       await fs.copyFile(sourceReport, latestReport);
       console.log(`\n📋 Latest report available at: ${latestReport}`);
@@ -1319,7 +1319,7 @@ class QualityGatesEnforcer {
 
   async handleDashboardMode(gateResults) {
     this.logger.info('📊 Dashboard Mode: Starting interactive dashboard');
-    
+
     // This could start a web server for an interactive dashboard
     console.log('\n📊 Dashboard data generated - implement dashboard server as needed');
     console.log(`Dashboard data available at: ${path.join(this.outputDir, `dashboard-${this.timestamp}.json`)}`);
@@ -1379,7 +1379,7 @@ class QualityGatesEnforcer {
 // Input validation utilities
 function validateCliArgs(args) {
   const validModes = ['ci', 'local', 'report', 'dashboard'];
-  
+
   // Handle help request
   if (args.includes('--help') || args.includes('-h')) {
     console.log(`
@@ -1410,36 +1410,36 @@ Examples:
 `);
     process.exit(0);
   }
-  
+
   const mode = args[0] || 'local';
-  
+
   if (!validModes.includes(mode)) {
     throw new Error(`Invalid mode: ${mode}. Valid modes: ${validModes.join(', ')}`);
   }
-  
+
   // Validate arguments don't contain dangerous patterns
   for (const arg of args) {
     if (typeof arg !== 'string') continue;
-    
+
     // Whitelist safe single-character flags
     const safeFlags = ['-v', '-h'];
     if (safeFlags.includes(arg)) {
       continue;
     }
-    
+
     const dangerousPatterns = [
       /[;&|`$()<>]/,  // Shell metacharacters
       /\.\./,         // Directory traversal
       /^-[^-]/,       // Suspicious flags (except whitelisted ones)
     ];
-    
+
     for (const pattern of dangerousPatterns) {
       if (pattern.test(arg) && !arg.startsWith('--') && !safeFlags.includes(arg)) {
         throw new Error(`Potentially dangerous argument: ${arg}`);
       }
     }
   }
-  
+
   return {
     mode,
     verbose: args.includes('--verbose') || args.includes('-v')
@@ -1449,11 +1449,11 @@ Examples:
 // CLI Interface
 async function main() {
   const args = process.argv.slice(2);
-  
+
   try {
     const { mode, verbose } = validateCliArgs(args);
     const enforcer = new QualityGatesEnforcer({ mode, verbose });
-    
+
     const exitCode = await enforcer.run();
     process.exit(exitCode);
   } catch (error) {

@@ -9,10 +9,10 @@ import { getDbClient } from '../../setup-integration.js';
 describe('Database Cleanup Fixes Validation', () => {
   test('should validate table name fixes are syntactically correct', async () => {
     const client = await getDbClient();
-    
+
     // Test that our fixed table names have valid SQL syntax
     const fixedTableNames = [
-      'transactions',   // Fixed from 'payments' 
+      'transactions',   // Fixed from 'payments'
       'registrations',
       'tickets',
       'admin_sessions',
@@ -20,12 +20,12 @@ describe('Database Cleanup Fixes Validation', () => {
       'email_events',
       'payment_events'
     ];
-    
+
     // Test that we can construct valid DELETE queries for each table
     for (const tableName of fixedTableNames) {
       // This tests that the table name is SQL-safe and our syntax is correct
       const deleteQuery = `DELETE FROM ${tableName} WHERE 1=0`;
-      
+
       try {
         // This won't fail due to table name issues if our fixes are correct
         // It may fail due to table not existing, which is expected and acceptable
@@ -34,10 +34,10 @@ describe('Database Cleanup Fixes Validation', () => {
       } catch (error) {
         // Check if the error is due to table not existing (acceptable)
         // vs SQL syntax error (would indicate our table name fix is wrong)
-        const isTableNotExistError = 
-          error.message.includes('no such table') || 
+        const isTableNotExistError =
+          error.message.includes('no such table') ||
           error.message.includes('table') && error.message.includes('does not exist');
-        
+
         if (isTableNotExistError) {
           console.log(`📋 Table ${tableName}: Syntax valid, table doesn't exist (expected in fresh DB)`);
         } else {
@@ -46,7 +46,7 @@ describe('Database Cleanup Fixes Validation', () => {
         }
       }
     }
-    
+
     // If we get here, all table names have valid SQL syntax
     expect(fixedTableNames.length).toBeGreaterThan(0);
     console.log(`✅ All ${fixedTableNames.length} fixed table names have valid SQL syntax`);
@@ -54,7 +54,7 @@ describe('Database Cleanup Fixes Validation', () => {
 
   test('should validate column name references are correct', async () => {
     const client = await getDbClient();
-    
+
     // Test our column name references that were mentioned in the fixes
     const columnTests = [
       {
@@ -63,29 +63,29 @@ describe('Database Cleanup Fixes Validation', () => {
         description: 'registration date column exists'
       },
       {
-        table: 'email_events', 
+        table: 'email_events',
         column: 'occurred_at',
         description: 'email event occurrence timestamp'
       },
       {
         table: 'registrations',
-        column: 'transaction_id', 
+        column: 'transaction_id',
         description: 'transaction reference in registrations'
       }
     ];
-    
+
     for (const test of columnTests) {
       // Test that we can construct valid queries with these column names
       const selectQuery = `SELECT ${test.column} FROM ${test.table} WHERE 1=0`;
-      
+
       try {
         await client.execute(selectQuery);
         console.log(`✅ Valid column reference: ${test.table}.${test.column}`);
       } catch (error) {
-        const isTableNotExistError = 
-          error.message.includes('no such table') || 
+        const isTableNotExistError =
+          error.message.includes('no such table') ||
           error.message.includes('table') && error.message.includes('does not exist');
-        
+
         if (isTableNotExistError) {
           console.log(`📋 Column ${test.table}.${test.column}: Valid syntax, table doesn't exist`);
         } else if (error.message.includes('no such column')) {
@@ -97,14 +97,14 @@ describe('Database Cleanup Fixes Validation', () => {
         }
       }
     }
-    
+
     expect(columnTests.length).toBe(3);
     console.log(`✅ All ${columnTests.length} column references have valid SQL syntax`);
   });
-  
+
   test('should confirm database cleanup error handling works', async () => {
     const client = await getDbClient();
-    
+
     // Test that our improved error handling in cleanup functions works
     const testCleanupQuery = async (tableName) => {
       try {
@@ -114,7 +114,7 @@ describe('Database Cleanup Fixes Validation', () => {
           [tableName]
         );
         const exists = result.rows && result.rows.length > 0;
-        
+
         if (exists) {
           // Table exists, test cleanup
           await client.execute(`DELETE FROM ${tableName} WHERE 1=0`);
@@ -127,14 +127,14 @@ describe('Database Cleanup Fixes Validation', () => {
         return { exists: false, cleanupWorks: false, error: error.message };
       }
     };
-    
+
     const testResults = [];
     const tablesToTest = ['transactions', 'registrations', 'email_subscribers'];
-    
+
     for (const tableName of tablesToTest) {
       const result = await testCleanupQuery(tableName);
       testResults.push({ tableName, ...result });
-      
+
       if (result.exists) {
         console.log(`✅ Table ${tableName}: exists and cleanup syntax works`);
       } else if (result.cleanupWorks) {
@@ -143,11 +143,11 @@ describe('Database Cleanup Fixes Validation', () => {
         console.error(`❌ Table ${tableName}: error handling failed - ${result.error}`);
       }
     }
-    
+
     // All tests should have working cleanup (whether table exists or not)
     const allCleanupWorks = testResults.every(r => r.cleanupWorks);
     expect(allCleanupWorks).toBe(true);
-    
+
     console.log(`✅ Database cleanup error handling works correctly for all ${testResults.length} tables`);
   });
 });

@@ -2,10 +2,10 @@
 
 /**
  * Port Configuration Standardization Validator
- * 
+ *
  * Validates that all files consistently use the standardized port pattern:
  * parseInt(process.env.DYNAMIC_PORT || process.env.PORT || '3000', 10)
- * 
+ *
  * This ensures:
  * 1. DYNAMIC_PORT takes precedence (for CI matrix port allocation)
  * 2. PORT is the fallback (standard environment variable)
@@ -32,16 +32,16 @@ const testCases = [
 function validatePortConfiguration() {
   console.log('🔍 Validating Port Configuration Standardization');
   console.log('================================================');
-  
+
   let allTestsPassed = true;
-  
+
   for (const testCase of testCases) {
     console.log(`\n📋 Test Case: DYNAMIC_PORT=${testCase.DYNAMIC_PORT}, PORT=${testCase.PORT}`);
-    
+
     // Save original environment
     const originalDynamicPort = process.env.DYNAMIC_PORT;
     const originalPort = process.env.PORT;
-    
+
     try {
       // Set test environment
       if (testCase.DYNAMIC_PORT) {
@@ -49,23 +49,23 @@ function validatePortConfiguration() {
       } else {
         delete process.env.DYNAMIC_PORT;
       }
-      
+
       if (testCase.PORT) {
         process.env.PORT = testCase.PORT;
       } else {
         delete process.env.PORT;
       }
-      
+
       // Test the standardized port pattern
       const resolvedPort = parseInt(process.env.DYNAMIC_PORT || process.env.PORT || '3000', 10);
-      
+
       if (resolvedPort === testCase.expected) {
         console.log(`   ✅ PASS: Resolved port ${resolvedPort} matches expected ${testCase.expected}`);
       } else {
         console.log(`   ❌ FAIL: Resolved port ${resolvedPort} does not match expected ${testCase.expected}`);
         allTestsPassed = false;
       }
-      
+
       // Validate it's a number, not a string
       if (typeof resolvedPort === 'number') {
         console.log(`   ✅ PASS: Port is numeric type (${typeof resolvedPort})`);
@@ -73,7 +73,7 @@ function validatePortConfiguration() {
         console.log(`   ❌ FAIL: Port is not numeric type (${typeof resolvedPort})`);
         allTestsPassed = false;
       }
-      
+
     } finally {
       // Restore original environment
       if (originalDynamicPort) {
@@ -81,7 +81,7 @@ function validatePortConfiguration() {
       } else {
         delete process.env.DYNAMIC_PORT;
       }
-      
+
       if (originalPort) {
         process.env.PORT = originalPort;
       } else {
@@ -89,7 +89,7 @@ function validatePortConfiguration() {
       }
     }
   }
-  
+
   return allTestsPassed;
 }
 
@@ -99,33 +99,33 @@ function validatePortConfiguration() {
 function validateConfigurationFiles() {
   console.log('\n🔍 Validating Configuration Files');
   console.log('==================================');
-  
+
   const filesToCheck = [
     'tests/setup.js',
-    'tests/e2e/global-setup-ci.js', 
+    'tests/e2e/global-setup-ci.js',
     'tests/e2e/global-teardown-ci.js',
     'playwright-e2e-vercel-main.config.js',
     'playwright-e2e-ci.config.js',
     'scripts/vercel-dev-ci.js'
   ];
-  
+
   let allFilesValid = true;
-  
+
   for (const filePath of filesToCheck) {
     const fullPath = resolve(projectRoot, filePath);
-    
+
     if (!existsSync(fullPath)) {
       console.log(`   ⚠️  SKIP: File not found - ${filePath}`);
       continue;
     }
-    
+
     try {
       const content = readFileSync(fullPath, 'utf8');
-      
+
       // Check for standardized pattern
       const hasStandardizedPattern = content.includes('process.env.DYNAMIC_PORT || process.env.PORT');
       const hasOldPattern = /process\.env\.PORT\s+\|\|\s+[^|]/.test(content) && !hasStandardizedPattern;
-      
+
       if (hasStandardizedPattern) {
         console.log(`   ✅ PASS: ${filePath} uses standardized DYNAMIC_PORT pattern`);
       } else if (hasOldPattern) {
@@ -134,13 +134,13 @@ function validateConfigurationFiles() {
       } else {
         console.log(`   ℹ️  INFO: ${filePath} has no explicit port configuration`);
       }
-      
+
     } catch (error) {
       console.log(`   ❌ ERROR: Could not read ${filePath}: ${error.message}`);
       allFilesValid = false;
     }
   }
-  
+
   return allFilesValid;
 }
 
@@ -149,15 +149,15 @@ function validateConfigurationFiles() {
  */
 function main() {
   console.log('🚀 Port Configuration Standardization Validation\n');
-  
+
   const configValidation = validatePortConfiguration();
   const fileValidation = validateConfigurationFiles();
-  
+
   console.log('\n📊 Validation Summary');
   console.log('=====================');
   console.log(`   Port Configuration Tests: ${configValidation ? 'PASS ✅' : 'FAIL ❌'}`);
   console.log(`   Configuration Files: ${fileValidation ? 'PASS ✅' : 'FAIL ❌'}`);
-  
+
   if (configValidation && fileValidation) {
     console.log('\n🎉 SUCCESS: All port configuration standardization checks passed!');
     console.log('💡 Benefits:');

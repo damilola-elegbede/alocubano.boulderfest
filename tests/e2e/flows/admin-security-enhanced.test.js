@@ -1,6 +1,6 @@
 /**
  * E2E Test: Enhanced Admin Panel Security Features
- * Tests advanced security features like CSRF protection, rate limiting, 
+ * Tests advanced security features like CSRF protection, rate limiting,
  * session management, audit logging, and XSS prevention
  */
 
@@ -26,7 +26,7 @@ test.describe('Admin Security Enhanced', () => {
       await page.fill('input[name="email"]', 'wrong@email.com');
       await page.fill('input[type="password"]', `wrongpassword${i}`);
       await page.click('button[type="submit"]');
-      
+
       // Wait for response
       await page.waitForTimeout(500);
     }
@@ -53,7 +53,7 @@ test.describe('Admin Security Enhanced', () => {
     const csrfRequest = page.waitForResponse(
       response => response.url().includes('/api/admin/csrf-token')
     );
-    
+
     await page.reload();
     await csrfRequest;
 
@@ -68,11 +68,11 @@ test.describe('Admin Security Enhanced', () => {
       const firstForm = forms.first();
       if (await firstForm.count() > 0) {
         await firstForm.click();
-        
+
         try {
           const request = await requestPromise;
           const headers = request.headers();
-          
+
           // Should have CSRF token in headers or form data
           expect(headers['x-csrf-token'] || headers['csrf-token']).toBeDefined();
         } catch (error) {
@@ -112,7 +112,7 @@ test.describe('Admin Security Enhanced', () => {
 
     await page.click('button[type="submit"]');
     const loginResponse = await loginRequest;
-    
+
     // Verify successful login was logged
     expect(loginResponse.status()).toBe(200);
     await page.waitForURL('**/admin/dashboard');
@@ -121,7 +121,7 @@ test.describe('Admin Security Enhanced', () => {
     const dashboardRequest = page.waitForResponse(
       response => response.url().includes('/api/admin/dashboard')
     );
-    
+
     await page.reload();
     const dashboardResponse = await dashboardRequest;
     expect(dashboardResponse.status()).toBe(200);
@@ -165,7 +165,7 @@ test.describe('Admin Security Enhanced', () => {
 
     // Try to inject XSS in email field during login (test input sanitization)
     await page.goto('/admin/login');
-    
+
     const maliciousScript = '<script>alert("XSS")</script>';
     await page.fill('input[name="email"]', maliciousScript);
     await page.fill('input[type="password"]', 'anypassword');
@@ -173,7 +173,7 @@ test.describe('Admin Security Enhanced', () => {
 
     // Should not execute script - check that page is still functional
     await expect(page).not.toHaveTitle(/XSS/);
-    
+
     // Check that malicious script wasn't executed
     const alerts = [];
     page.on('dialog', dialog => {
@@ -199,7 +199,7 @@ test.describe('Admin Security Enhanced', () => {
     // Get initial session cookie
     const cookies = await page.context().cookies();
     const sessionCookie = cookies.find(c => c.name.includes('session') || c.name.includes('auth'));
-    
+
     expect(sessionCookie).toBeDefined();
     expect(sessionCookie.secure).toBeTruthy(); // Should be secure
     expect(sessionCookie.httpOnly).toBeTruthy(); // Should be HTTP only
@@ -216,7 +216,7 @@ test.describe('Admin Security Enhanced', () => {
   test('should validate input lengths and formats', async ({ page }) => {
     // Test extremely long password input
     const longPassword = 'x'.repeat(300);
-    
+
     await page.fill('input[name="email"]', adminCredentials.email);
     await page.fill('input[type="password"]', longPassword);
     await page.click('button[type="submit"]');

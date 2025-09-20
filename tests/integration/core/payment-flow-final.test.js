@@ -1,6 +1,6 @@
 /**
  * Final Payment Integration Tests - Matches Actual Database Schema
- * 
+ *
  * Comprehensive tests for payment processing using the exact database schema.
  * Tests cover:
  * - Transaction creation and management
@@ -35,12 +35,12 @@ describe('Payment Integration Tests - Final Implementation', () => {
     try {
       if (testTransactionIds.length > 0) {
         const placeholders = testTransactionIds.map(() => '?').join(',');
-        
+
         // Clean child tables first in batch
         await db.execute(`DELETE FROM tickets WHERE transaction_id IN (${placeholders})`, testTransactionIds);
         await db.execute(`DELETE FROM transaction_items WHERE transaction_id IN (${placeholders})`, testTransactionIds);
         await db.execute(`DELETE FROM payment_events WHERE transaction_id IN (${placeholders})`, testTransactionIds);
-        
+
         // Then parent table in batch
         await db.execute(`DELETE FROM transactions WHERE id IN (${placeholders})`, testTransactionIds);
       }
@@ -51,7 +51,7 @@ describe('Payment Integration Tests - Final Implementation', () => {
       }
     } catch (error) {
       console.warn('Batch cleanup warning:', error.message);
-      
+
       // Fallback to individual cleanup if batch fails
       for (const txnId of testTransactionIds) {
         try {
@@ -70,7 +70,7 @@ describe('Payment Integration Tests - Final Implementation', () => {
     test('should create a complete VIP ticket purchase with all components', async () => {
       const sessionId = 'cs_vip_complete_' + Date.now();
       const paymentIntentId = 'pi_vip_complete_' + Date.now();
-      
+
       // 1. Create the main transaction
       const transactionId = await createTransaction({
         stripe_session_id: sessionId,
@@ -114,7 +114,7 @@ describe('Payment Integration Tests - Final Implementation', () => {
           id: sessionId,
           amount_total: 15000,
           payment_status: 'paid',
-          customer_details: { 
+          customer_details: {
             email: 'vip@example.com',
             name: 'VIP Customer'
           }
@@ -375,7 +375,7 @@ describe('Payment Integration Tests - Final Implementation', () => {
           event_id: `evt_${events[i].replace('.', '_')}_${Date.now()}_${i}`,
           event_type: events[i],
           transaction_id: transactionId,
-          event_data: JSON.stringify({ 
+          event_data: JSON.stringify({
             sequence: i + 1,
             type: events[i],
             timestamp: new Date().toISOString()
@@ -507,12 +507,12 @@ describe('Payment Integration Tests - Final Implementation', () => {
         total_amount: 1000 * (index + 1)
       });
 
-      const promises = Array(3).fill().map((_, index) => 
+      const promises = Array(3).fill().map((_, index) =>
         createUniqueTransaction(index)
       );
 
       const transactionIds = await Promise.all(promises);
-      
+
       expect(transactionIds).toHaveLength(3);
       transactionIds.forEach(id => {
         expect(typeof id).toBe('number');
@@ -526,11 +526,11 @@ describe('Payment Integration Tests - Final Implementation', () => {
       );
 
       expect(transactions.rows).toHaveLength(3);
-      
+
       // Check uniqueness constraints
       const uuids = transactions.rows.map(t => t.uuid);
       const emails = transactions.rows.map(t => t.customer_email);
-      
+
       expect(new Set(uuids).size).toBe(3);
       expect(new Set(emails).size).toBe(3);
     });
@@ -650,12 +650,12 @@ describe('Payment Integration Tests - Final Implementation', () => {
 
     const result = await db.execute({
       sql: `INSERT INTO transaction_items (
-        transaction_id, item_type, item_name, item_description, quantity, 
-        unit_price_cents, total_price_cents, ticket_type, event_id, 
+        transaction_id, item_type, item_name, item_description, quantity,
+        unit_price_cents, total_price_cents, ticket_type, event_id,
         donation_category, fulfillment_status
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       args: [
-        data.transaction_id, data.item_type, data.item_name, 
+        data.transaction_id, data.item_type, data.item_name,
         data.item_description || null, data.quantity,
         data.unit_price_cents, data.total_price_cents,
         data.ticket_type || null, data.event_id || null,

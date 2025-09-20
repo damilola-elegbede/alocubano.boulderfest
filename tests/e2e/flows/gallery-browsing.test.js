@@ -13,12 +13,12 @@ import { test, expect } from '@playwright/test';
 async function checkGoogleDriveConfig(page) {
   console.log('🔍 INFO: Checking Google Drive API configuration...');
   console.log('🌐 Current page URL:', page.url());
-  
+
   try {
     console.log('📡 Making request to /api/debug/environment...');
     const envResponse = await page.request.get('/api/debug/environment');
     console.log('📊 Environment debug response status:', envResponse.status());
-    
+
     if (!envResponse.ok()) {
       console.log('📍 Environment debug endpoint not available:', {
         status: envResponse.status(),
@@ -26,15 +26,15 @@ async function checkGoogleDriveConfig(page) {
       });
       return { hasConfig: false, skipGoogleDriveTests: true };
     }
-    
+
     const envData = await envResponse.json();
     console.log('📋 Environment debug response available');
-    
+
     // Check for Google Drive environment variables (correct nested structure)
     const hasServiceAccount = !!envData.variables?.details?.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-    const hasPrivateKey = !!envData.variables?.details?.GOOGLE_PRIVATE_KEY;  
+    const hasPrivateKey = !!envData.variables?.details?.GOOGLE_PRIVATE_KEY;
     const hasFolderId = !!envData.variables?.details?.GOOGLE_DRIVE_GALLERY_FOLDER_ID;
-    
+
     // Log Google Drive configuration status (sanitized - booleans only)
     console.log('🔍 Google Drive Configuration Status (sanitized):', {
       GOOGLE_SERVICE_ACCOUNT_EMAIL: { exists: hasServiceAccount },
@@ -42,21 +42,21 @@ async function checkGoogleDriveConfig(page) {
       GOOGLE_DRIVE_GALLERY_FOLDER_ID: { exists: hasFolderId },
       allConfigured: hasServiceAccount && hasPrivateKey && hasFolderId
     });
-    
+
     const missingVars = [];
     if (!hasServiceAccount) missingVars.push('GOOGLE_SERVICE_ACCOUNT_EMAIL');
     if (!hasPrivateKey) missingVars.push('GOOGLE_PRIVATE_KEY');
     if (!hasFolderId) missingVars.push('GOOGLE_DRIVE_GALLERY_FOLDER_ID');
-    
+
     if (missingVars.length > 0) {
       console.log('📍 INFO: Google Drive configuration incomplete (expected in preview deployments):', missingVars);
       console.log('🔍 Available Google variables:', Object.keys(envData).filter(key => key.includes('GOOGLE')));
       return { hasConfig: false, skipGoogleDriveTests: true };
     }
-    
+
     console.log('✅ All Google Drive API environment variables are configured');
     return { hasConfig: true, skipGoogleDriveTests: false };
-    
+
   } catch (error) {
     console.log('📍 INFO: Google Drive configuration check failed (expected in preview deployments):', {
       message: error.message,
@@ -73,12 +73,12 @@ async function checkGoogleDriveConfig(page) {
 async function checkGalleryApiData(page) {
   console.log('🔍 INFO: Checking Gallery API data availability...');
   console.log('🌐 Current page URL:', page.url());
-  
+
   try {
     console.log('📡 Making request to /api/gallery?eventId=boulder-fest-2025...');
     const galleryResponse = await page.request.get('/api/gallery?eventId=boulder-fest-2025');
     console.log('📊 Gallery API response status:', galleryResponse.status());
-    
+
     if (!galleryResponse.ok()) {
       const errorText = await galleryResponse.text();
       console.log('📍 Gallery API endpoint failed:', {
@@ -88,10 +88,10 @@ async function checkGalleryApiData(page) {
       });
       return { hasRealData: false, isEmpty: true, apiData: null };
     }
-    
+
     const galleryData = await galleryResponse.json();
     console.log('📋 Gallery API response received');
-    
+
     // Enhanced logging for debugging
     console.log('🔍 Gallery Data Analysis:', {
       source: galleryData.source,
@@ -100,23 +100,23 @@ async function checkGalleryApiData(page) {
       hasError: !!galleryData.error,
       error: galleryData.error
     });
-    
+
     const hasItems = galleryData.items && galleryData.items.length > 0;
     const hasError = !!galleryData.error;
-    
+
     if (hasError) {
       console.log('📍 INFO: Gallery API reported error:', galleryData.error);
       return { hasRealData: false, isEmpty: true, apiData: galleryData };
     }
-    
+
     if (hasItems) {
       console.log('✅ Gallery API returned real data with', galleryData.items.length, 'items');
       return { hasRealData: true, isEmpty: false, apiData: galleryData };
     }
-    
+
     console.log('📍 INFO: Gallery API returned empty results');
     return { hasRealData: false, isEmpty: true, apiData: galleryData };
-    
+
   } catch (error) {
     console.log('📍 INFO: Gallery API check failed:', {
       message: error.message,
@@ -131,41 +131,41 @@ test.describe('Gallery Performance & Functionality', () => {
 
   test.beforeEach(async ({ page }) => {
     console.log('🚀 Starting beforeEach setup for Gallery Browsing test...');
-    
+
     try {
       // Step 1: Check Google Drive configuration (informational)
       console.log('📋 Step 1: Checking Google Drive API configuration...');
       const googleDriveConfig = await checkGoogleDriveConfig(page);
       testContext.googleDriveConfig = googleDriveConfig;
-      
+
       if (googleDriveConfig.hasConfig) {
         console.log('✅ Step 1: Google Drive config available');
       } else {
         console.log('📍 Step 1: Google Drive config not available (expected in preview deployments)');
       }
-      
+
       // Step 2: Check Gallery API data (informational)
       console.log('📋 Step 2: Checking Gallery API data...');
       const galleryData = await checkGalleryApiData(page);
       testContext.galleryData = galleryData;
-      
+
       if (galleryData.hasRealData) {
         console.log('✅ Step 2: Real gallery data available');
       } else {
         console.log('📍 Step 2: No gallery data available');
       }
-      
+
       console.log('📋 Step 3: Navigating to gallery page...');
       await page.goto('/2025-gallery');
       console.log('🌐 Navigation completed. Current URL:', page.url());
-      
+
       console.log('📋 Step 4: Waiting for page to load...');
       await page.waitForLoadState('domcontentloaded');
       console.log('✅ DOM content loaded');
-      
+
       await page.waitForLoadState('networkidle', { timeout: 30000 });
       console.log('✅ Network idle reached');
-      
+
       console.log('🎉 beforeEach setup completed successfully');
     } catch (error) {
       console.log('📍 INFO: beforeEach setup encountered issue (may be expected):', {
@@ -174,7 +174,7 @@ test.describe('Gallery Performance & Functionality', () => {
         currentUrl: page.url(),
         timestamp: new Date().toISOString()
       });
-      
+
       // Still navigate to the page even if config checks fail
       try {
         await page.goto('/2025-gallery');
@@ -193,36 +193,36 @@ test.describe('Gallery Performance & Functionality', () => {
 
   test('should handle virtual scrolling for large image sets', async ({ page }) => {
     await page.waitForTimeout(2000);
-    
+
     // Test scrolling performance
     const startTime = Date.now();
-    
+
     await page.evaluate(() => {
       window.scrollTo(0, 500);
     });
-    
+
     await page.waitForTimeout(500);
-    
+
     await page.evaluate(() => {
       window.scrollTo(0, 1000);
     });
-    
+
     const endTime = Date.now();
     const scrollTime = endTime - startTime;
-    
+
     // Should scroll smoothly (within 2 seconds)
     expect(scrollTime).toBeLessThan(2000);
   });
 
   test('should optimize image loading with proper formats', async ({ page }) => {
     await page.waitForTimeout(2000);
-    
+
     const images = page.locator('img');
-    
+
     if (await images.count() > 0) {
       const firstImage = images.first();
       const src = await firstImage.getAttribute('src');
-      
+
       if (src) {
         // Should use optimized formats or responsive images
         expect(
@@ -240,10 +240,10 @@ test.describe('Gallery Performance & Functionality', () => {
 
   test('should REQUIRE Google Drive API integration (NO fallbacks)', async ({ page }) => {
     console.log('🔍 STRICT CHECK: Validating mandatory Google Drive API integration...');
-    
+
     // Monitor network requests for Google Drive API calls
     const apiRequests = [];
-    
+
     page.on('request', request => {
       if (request.url().includes('googleapis.com') || request.url().includes('drive') || request.url().includes('/api/gallery')) {
         apiRequests.push({
@@ -253,48 +253,48 @@ test.describe('Gallery Performance & Functionality', () => {
         });
       }
     });
-    
+
     await page.reload();
     await page.waitForTimeout(5000);
-    
+
     // STRICT: Gallery API calls must be made
     const galleryApiCalls = apiRequests.filter(req => req.url.includes('/api/gallery'));
     if (galleryApiCalls.length === 0) {
       throw new Error('FAILED: No gallery API calls detected. Google Drive integration requires /api/gallery calls.');
     }
-    
+
     console.log('✅ Gallery API calls detected:', galleryApiCalls.length);
-    
+
     // STRICT: Google Drive API calls should be made (or at least attempted)
-    const googleApiCalls = apiRequests.filter(req => 
-      req.url.includes('googleapis.com') || 
+    const googleApiCalls = apiRequests.filter(req =>
+      req.url.includes('googleapis.com') ||
       req.url.includes('drive.google.com') ||
       req.url.includes('googleusercontent.com')
     );
-    
+
     console.log('📊 Google API-related requests:', googleApiCalls.length);
-    
-    // STRICT: NO static content should be visible - only dynamic Google Drive content  
+
+    // STRICT: NO static content should be visible - only dynamic Google Drive content
     const staticContent = await page.locator('.gallery-grid-static, .gallery-static-title, #gallery-detail-static[style*="block"]').count();
     if (staticContent > 0) {
       throw new Error('FAILED: Static content is visible. Google Drive API must work to show real content.');
     }
-    
+
     // STRICT: Dynamic content must be loaded from Google Drive
     const dynamicContent = await page.locator('.gallery-detail-grid, .gallery-item').count();
     if (dynamicContent === 0) {
       throw new Error('FAILED: No dynamic Google Drive content loaded. API integration must populate gallery.');
     }
-    
+
     // STRICT: Images must be from Google Drive
     const googleImages = await page.locator('img[src*="googleusercontent.com"], img[src*="drive.google.com"]').count();
     if (googleImages === 0) {
       throw new Error('FAILED: No Google Drive images found. All gallery images must come from Google Drive API.');
     }
-    
+
     console.log('✅ Google Drive API integration working:', {
       galleryApiCalls: galleryApiCalls.length,
-      googleApiRequests: googleApiCalls.length,  
+      googleApiRequests: googleApiCalls.length,
       dynamicContent: dynamicContent,
       googleImages: googleImages
     });
@@ -302,9 +302,9 @@ test.describe('Gallery Performance & Functionality', () => {
 
   test('should cache Google Drive images for performance (STRICT)', async ({ page }) => {
     console.log('🔍 STRICT CHECK: Validating Google Drive image caching performance...');
-    
+
     await page.waitForTimeout(2000);
-    
+
     // Monitor Google Drive image requests
     const googleImageRequests = [];
     page.on('request', request => {
@@ -315,26 +315,26 @@ test.describe('Gallery Performance & Functionality', () => {
         });
       }
     });
-    
+
     // Navigate away and back to test caching
     await page.goto('/tickets');
     await page.goto('/2025-gallery');
-    
+
     await page.waitForTimeout(3000);
-    
+
     // STRICT: Gallery containers must be visible (no static content)
     const staticContainers = await page.locator('.gallery-grid-static, .gallery-static-title').count();
     if (staticContainers > 0) {
       throw new Error('FAILED: Static containers detected. Google Drive caching test requires real content.');
     }
-    
+
     // STRICT: Dynamic gallery containers must exist
     const dynamicContainers = page.locator('.gallery-detail-grid, .gallery-item');
     const containerCount = await dynamicContainers.count();
     if (containerCount === 0) {
       throw new Error('FAILED: No dynamic gallery containers found. Google Drive API must populate gallery.');
     }
-    
+
     // STRICT: At least one dynamic container must be visible
     let hasVisibleContainer = false;
     for (let i = 0; i < containerCount; i++) {
@@ -347,17 +347,17 @@ test.describe('Gallery Performance & Functionality', () => {
         continue;
       }
     }
-    
+
     if (!hasVisibleContainer) {
       throw new Error('FAILED: No visible dynamic gallery containers. Google Drive content must be displayed.');
     }
-    
+
     // STRICT: Google Drive images must be present
     const googleImages = await page.locator('img[src*="googleusercontent.com"], img[src*="drive.google.com"]').count();
     if (googleImages === 0) {
       throw new Error('FAILED: No Google Drive images found. Caching test requires real Google Drive images.');
     }
-    
+
     console.log('✅ Google Drive caching performance validated:', {
       dynamicContainers: containerCount,
       googleImages: googleImages,
@@ -368,26 +368,26 @@ test.describe('Gallery Performance & Functionality', () => {
 
   test('should handle year-based filtering efficiently', async ({ page }) => {
     await page.waitForTimeout(2000);
-    
+
     // Test year filtering if available (2025 gallery might have workshop/social filtering)
     const yearFilters = page.locator('.year-filter, button:has-text("2025"), .workshop-filter, .social-filter');
-    
+
     if (await yearFilters.count() >= 2) {
       const firstYear = yearFilters.first();
       const secondYear = yearFilters.nth(1);
-      
+
       // Test filter switching
       const startTime = Date.now();
       await firstYear.click();
       await page.waitForTimeout(500);
-      
+
       await secondYear.click();
       const endTime = Date.now();
       const filterTime = endTime - startTime;
-      
+
       // Should filter quickly (under 2 seconds)
       expect(filterTime).toBeLessThan(2000);
-      
+
       // Gallery content should still be present
       const galleryContent = page.locator('.gallery-detail-grid, .gallery-grid-static');
       await expect(galleryContent).toBeVisible();
@@ -400,7 +400,7 @@ test.describe('Gallery Performance & Functionality', () => {
 
   test('should handle Google Drive image errors gracefully WITHOUT fallbacks', async ({ page }) => {
     console.log('🔍 STRICT CHECK: Testing Google Drive error handling without fallbacks...');
-    
+
     // Mock some Google Drive image failures to test error handling
     let interceptedRequests = 0;
     await page.route('**/googleusercontent.com/**', route => {
@@ -411,36 +411,36 @@ test.describe('Gallery Performance & Functionality', () => {
         route.continue();
       }
     });
-    
+
     await page.reload();
     await page.waitForTimeout(5000);
-    
+
     console.log('📊 Intercepted Google Drive requests:', interceptedRequests);
-    
+
     // STRICT: Even with some image failures, NO static content should be shown
     const staticElements = await page.locator('.gallery-grid-static, .gallery-static-title, #gallery-detail-static[style*="block"]').count();
     if (staticElements > 0) {
       throw new Error('FAILED: Static content shown during image failures. Must handle errors without reverting to static content.');
     }
-    
+
     // STRICT: Dynamic gallery structure must still be present
     const dynamicContent = await page.locator('.gallery-detail-grid, .gallery-item').count();
     if (dynamicContent === 0) {
       throw new Error('FAILED: No dynamic gallery content during image failures. Gallery structure must persist.');
     }
-    
+
     // Check for proper error handling (no broken state messages)
     const bodyText = await page.locator('body').textContent();
     expect(bodyText).not.toContain('undefined');
     expect(bodyText).not.toContain('[object Object]');
     expect(bodyText).not.toContain('NetworkError');
-    
+
     // STRICT: Should still have some working Google Drive images
     const googleImages = await page.locator('img[src*="googleusercontent.com"], img[src*="drive.google.com"]').count();
     if (googleImages === 0) {
       throw new Error('FAILED: All Google Drive images failed. Some images must load successfully.');
     }
-    
+
     console.log('✅ Google Drive error handling validated:', {
       interceptedRequests: interceptedRequests,
       dynamicContent: dynamicContent,
@@ -455,22 +455,22 @@ test.describe('Gallery Performance & Functionality', () => {
     await page.setViewportSize({ width: 1200, height: 800 });
     await page.reload();
     await page.waitForTimeout(2000);
-    
+
     const desktopImages = page.locator('img');
     const desktopCount = await desktopImages.count();
-    
+
     // Test mobile layout
     await page.setViewportSize({ width: 375, height: 667 });
     await page.waitForTimeout(1000);
-    
+
     const mobileImages = page.locator('img');
     const mobileCount = await mobileImages.count();
-    
+
     // Images should adapt to viewport (similar count expected)
     if (desktopCount > 0 && mobileCount > 0) {
       expect(Math.abs(desktopCount - mobileCount)).toBeLessThanOrEqual(desktopCount * 0.2);
     }
-    
+
     // Gallery sections should still be present
     const galleryContainers = page.locator('#workshops-section, #socials-section');
     expect(await galleryContainers.count()).toBeGreaterThan(0);
@@ -478,43 +478,43 @@ test.describe('Gallery Performance & Functionality', () => {
 
   test('should preload critical gallery resources', async ({ page }) => {
     const resourceRequests = [];
-    
+
     page.on('request', request => {
       resourceRequests.push({
         url: request.url(),
         resourceType: request.resourceType()
       });
     });
-    
+
     await page.reload();
     await page.waitForTimeout(3000);
-    
+
     // Should load CSS and JS resources
     const cssRequests = resourceRequests.filter(r => r.resourceType === 'stylesheet');
     const jsRequests = resourceRequests.filter(r => r.resourceType === 'script');
-    
+
     expect(cssRequests.length).toBeGreaterThan(0);
     expect(jsRequests.length).toBeGreaterThan(0);
   });
 
   test('should handle gallery search and filtering', async ({ page }) => {
     await page.waitForTimeout(2000);
-    
+
     // Look for search/filter functionality
     const searchInput = page.locator('input[type="search"], .search-input, [placeholder*="search"], [placeholder*="filter"]');
     const filterButtons = page.locator('.filter-button, .category-filter, .tag-filter');
-    
+
     if (await searchInput.count() > 0) {
       await searchInput.first().fill('workshop');
       await page.waitForTimeout(500);
-      
+
       // Gallery should update or remain stable
       const galleryContent = page.locator('.gallery-detail-grid, #workshops-section');
       await expect(galleryContent).toBeVisible();
     } else if (await filterButtons.count() > 0) {
       await filterButtons.first().click();
       await page.waitForTimeout(500);
-      
+
       // Gallery should update
       const galleryContent = page.locator('.gallery-detail-grid, #socials-section');
       await expect(galleryContent).toBeVisible();

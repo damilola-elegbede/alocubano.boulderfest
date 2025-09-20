@@ -9,14 +9,14 @@ export function createCheckoutForm() {
             <form class="checkout-form" id="checkoutForm" data-testid="checkout-form">
                 <div class="form-section">
                     <h3>Customer Information</h3>
-                    
+
                     <div class="form-group">
                         <label for="customerName" class="form-label">Full Name *</label>
-                        <input 
-                            type="text" 
-                            id="customerName" 
-                            name="customerName" 
-                            required 
+                        <input
+                            type="text"
+                            id="customerName"
+                            name="customerName"
+                            required
                             autocomplete="name"
                             data-testid="customer-name"
                             class="form-input"
@@ -26,11 +26,11 @@ export function createCheckoutForm() {
 
                     <div class="form-group">
                         <label for="customerEmail" class="form-label">Email Address *</label>
-                        <input 
-                            type="email" 
-                            id="customerEmail" 
-                            name="customerEmail" 
-                            required 
+                        <input
+                            type="email"
+                            id="customerEmail"
+                            name="customerEmail"
+                            required
                             autocomplete="email"
                             data-testid="customer-email"
                             class="form-input"
@@ -40,10 +40,10 @@ export function createCheckoutForm() {
 
                     <div class="form-group">
                         <label for="customerPhone" class="form-label">Phone Number</label>
-                        <input 
-                            type="tel" 
-                            id="customerPhone" 
-                            name="customerPhone" 
+                        <input
+                            type="tel"
+                            id="customerPhone"
+                            name="customerPhone"
                             autocomplete="tel"
                             data-testid="customer-phone"
                             class="form-input"
@@ -58,15 +58,15 @@ export function createCheckoutForm() {
                 </div>
 
                 <div class="form-actions">
-                    <button 
-                        type="submit" 
+                    <button
+                        type="submit"
                         class="checkout-submit-btn"
                         data-testid="proceed-to-payment"
                     >
                         Proceed to Payment
                     </button>
-                    <button 
-                        type="button" 
+                    <button
+                        type="button"
                         class="checkout-cancel-btn"
                         data-testid="cancel-checkout"
                         onclick="cancelCheckout()"

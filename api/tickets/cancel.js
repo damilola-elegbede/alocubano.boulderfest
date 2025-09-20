@@ -6,8 +6,8 @@ import { getDatabaseClient } from "../../lib/database.js";
 export default async function handler(req, res) {
   // Initialize database client
   await getDatabaseClient();
-  if (req.method !== "POST") {
-    res.setHeader("Allow", ["POST"]);
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', ['POST']);
     return res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 
@@ -16,7 +16,7 @@ export default async function handler(req, res) {
 
     if (!ticketId || !actionToken) {
       return res.status(400).json({
-        error: "ticketId and actionToken are required",
+        error: 'ticketId and actionToken are required'
       });
     }
 
@@ -24,7 +24,7 @@ export default async function handler(req, res) {
     const tokenValidation = await tokenService.validateActionToken(
       actionToken,
       TOKEN_ACTIONS.CANCEL,
-      ticketId,
+      ticketId
     );
 
     if (!tokenValidation.valid) {
@@ -34,16 +34,16 @@ export default async function handler(req, res) {
     // Perform cancellation
     const cancelledTicket = await ticketService.cancelTicket(
       ticketId,
-      reason || "Customer request",
+      reason || 'Customer request'
     );
 
     return res.status(200).json({
       success: true,
       ticket: cancelledTicket,
-      message: "Ticket successfully cancelled",
+      message: 'Ticket successfully cancelled'
     });
   } catch (error) {
-    console.error("Ticket cancellation error:", error);
-    return res.status(500).json({ error: "Internal server error" });
+    console.error('Ticket cancellation error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }

@@ -251,7 +251,7 @@ describe("CSP Report Security Validation", () => {
 
       // Send second chunk that exceeds limit
       req._triggerEvent("data", Buffer.alloc(6 * 1024)); // 6KB (total 11KB)
-      
+
       // Wait for async processing
       await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -426,15 +426,15 @@ describe("CSP Report Security Validation", () => {
       let totalSent = 0;
       const maxAttempts = 15; // Limit attempts to prevent infinite loops
       let attempts = 0;
-      
+
       while (totalSent < 12000 && attempts < maxAttempts) { // 12KB total
         req._triggerEvent("data", Buffer.alloc(1000)); // 1KB chunks
         totalSent += 1000;
         attempts++;
-        
+
         // Add small delay for async processing
         await new Promise(resolve => setTimeout(resolve, 5));
-        
+
         if (req.destroy.mock.calls.length > 0) {
           break; // Request was destroyed due to size limit
         }

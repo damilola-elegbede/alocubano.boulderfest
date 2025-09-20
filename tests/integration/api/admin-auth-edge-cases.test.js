@@ -1,31 +1,31 @@
 /**
  * Admin Authentication Edge Cases and Error Recovery Integration Tests
  * Tests admin authentication system resilience, edge cases, and error recovery scenarios
- * 
+ *
  * This test suite covers critical edge cases and error recovery scenarios for the admin
  * authentication system to ensure robust operation under various failure conditions:
- * 
+ *
  * Test Coverage:
  * 1. Password Configuration Edge Cases:
  *    - Login with only bcrypt ADMIN_PASSWORD (no TEST_ADMIN_PASSWORD)
  *    - Login with only TEST_ADMIN_PASSWORD (no ADMIN_PASSWORD) in test env
  *    - Proper error handling when both passwords are missing
  *    - Password priority verification when both are present
- * 
+ *
  * 2. Database Resilience:
  *    - Session creation continues when database insert fails
  *    - Session cleanup handles database errors during logout
  *    - Database failures don't break the authentication flow
- * 
+ *
  * 3. Service Initialization & Error Handling:
  *    - Auth middleware handles initialization errors gracefully
  *    - Missing ADMIN_SECRET during token operations
  *    - Invalid bcrypt hash format handling
- * 
+ *
  * 4. Concurrency & Race Conditions:
  *    - Multiple rapid login attempts handled without race conditions
  *    - Concurrent requests don't cause system instability
- * 
+ *
  * All tests are designed to gracefully handle service unavailability and skip tests
  * when the API server is not running, making them suitable for both development
  * and CI/CD environments.
@@ -49,7 +49,7 @@ describe('Admin Authentication Edge Cases and Error Recovery', () => {
 
   beforeEach(async () => {
     dbClient = await getDbClient();
-    
+
     // Store original environment variables for restoration
     originalTestPassword = process.env.TEST_ADMIN_PASSWORD;
     originalAdminPassword = process.env.ADMIN_PASSWORD;
@@ -61,7 +61,7 @@ describe('Admin Authentication Edge Cases and Error Recovery', () => {
     // Use a real bcrypt hash for testing (generated for password "testpass123")
     const testPassword = 'testpass123';
     const realBcryptHash = '$2a$10$CwTycUXWue0Thq9StjuM.OW2CgZQNyqv4bF0Tj/qmm8r5F0Yy.fmy';
-    
+
     // Clear TEST_ADMIN_PASSWORD and set only ADMIN_PASSWORD with a real hash
     delete process.env.TEST_ADMIN_PASSWORD;
     process.env.ADMIN_PASSWORD = realBcryptHash;
@@ -75,7 +75,7 @@ describe('Admin Authentication Edge Cases and Error Recovery', () => {
       };
 
       const response = await testRequest('POST', '/api/admin/login', loginData);
-      
+
       // Skip if service unavailable
       if (response.status === 0) {
         console.warn('⚠️ Admin auth service unavailable - skipping bcrypt-only test');
@@ -84,18 +84,18 @@ describe('Admin Authentication Edge Cases and Error Recovery', () => {
 
       // Should succeed with bcrypt hash or return appropriate error status
       expect([HTTP_STATUS.OK, HTTP_STATUS.UNAUTHORIZED, HTTP_STATUS_EXTENDED.METHOD_NOT_ALLOWED].includes(response.status)).toBe(true);
-      
+
       if (response.status === HTTP_STATUS.OK) {
         expect(response.data).toHaveProperty('success', true);
         expect(response.data).toHaveProperty('expiresIn');
-        
+
         // Verify session was created if database is available
         if (dbClient) {
           try {
             const sessionCheck = await dbClient.execute(
               'SELECT * FROM "admin_sessions" ORDER BY created_at DESC LIMIT 1'
             );
-            
+
             if (sessionCheck.rows.length > 0) {
               const session = sessionCheck.rows[0];
               expect(session.expires_at).toBeTruthy();
@@ -123,11 +123,11 @@ describe('Admin Authentication Edge Cases and Error Recovery', () => {
   // Test Case 2: Login works with only TEST_ADMIN_PASSWORD (no ADMIN_PASSWORD) in test env
   test('login works with only TEST_ADMIN_PASSWORD when ADMIN_PASSWORD is missing in test environment', async () => {
     const testPassword = 'plain-text-test-password';
-    
+
     // Clear ADMIN_PASSWORD and set only TEST_ADMIN_PASSWORD
     delete process.env.ADMIN_PASSWORD;
     process.env.TEST_ADMIN_PASSWORD = testPassword;
-    
+
     // Ensure we're in test environment
     process.env.NODE_ENV = 'test';
 
@@ -138,7 +138,7 @@ describe('Admin Authentication Edge Cases and Error Recovery', () => {
       };
 
       const response = await testRequest('POST', '/api/admin/login', loginData);
-      
+
       // Skip if service unavailable
       if (response.status === 0) {
         console.warn('⚠️ Admin auth service unavailable - skipping plain-text test');
@@ -170,7 +170,7 @@ describe('Admin Authentication Edge Cases and Error Recovery', () => {
       };
 
       const response = await testRequest('POST', '/api/admin/login', loginData);
-      
+
       // Skip if service unavailable
       if (response.status === 0) {
         console.warn('⚠️ Admin auth service unavailable - skipping missing passwords test');
@@ -204,7 +204,7 @@ describe('Admin Authentication Edge Cases and Error Recovery', () => {
     // Mock database execute to simulate failure during session creation
     const originalExecute = dbClient.execute;
     let sessionInsertFailed = false;
-    
+
     vi.spyOn(dbClient, 'execute').mockImplementation(async (query) => {
       // Check if this is a session insert query and simulate failure
       if (typeof query === 'object' && query.sql && query.sql.includes('INSERT INTO admin_sessions')) {
@@ -222,7 +222,7 @@ describe('Admin Authentication Edge Cases and Error Recovery', () => {
       };
 
       const response = await testRequest('POST', '/api/admin/login', loginData);
-      
+
       // Skip if service unavailable
       if (response.status === 0) {
         console.warn('⚠️ Admin auth service unavailable - skipping database failure test');
@@ -232,7 +232,7 @@ describe('Admin Authentication Edge Cases and Error Recovery', () => {
       // Login should still succeed despite database session insert failure
       // The system should be resilient and continue without failing the whole login
       expect([HTTP_STATUS.OK, HTTP_STATUS.UNAUTHORIZED]).toContain(response.status);
-      
+
       if (response.status === HTTP_STATUS.OK) {
         expect(response.data).toHaveProperty('success', true);
         expect(response.data).toHaveProperty('expiresIn');
@@ -254,7 +254,7 @@ describe('Admin Authentication Edge Cases and Error Recovery', () => {
     try {
       // Try to access a protected endpoint without proper initialization
       const response = await testRequest('GET', '/api/admin/dashboard');
-      
+
       // Skip if service unavailable
       if (response.status === 0) {
         console.warn('⚠️ Admin service unavailable - skipping initialization error test');
@@ -284,16 +284,16 @@ describe('Admin Authentication Edge Cases and Error Recovery', () => {
 
     // Make multiple concurrent login requests
     const concurrentRequests = 5;
-    const loginPromises = Array(concurrentRequests).fill(null).map(() => 
+    const loginPromises = Array(concurrentRequests).fill(null).map(() =>
       testRequest('POST', '/api/admin/login', loginData)
     );
 
     try {
       const responses = await Promise.all(loginPromises);
-      
+
       // Filter out unavailable service responses
       const validResponses = responses.filter(response => response.status !== 0);
-      
+
       if (validResponses.length === 0) {
         console.warn('⚠️ Admin auth service unavailable - skipping concurrent requests test');
         return;
@@ -308,9 +308,9 @@ describe('Admin Authentication Edge Cases and Error Recovery', () => {
       // At least some requests should succeed if the password is valid
       const successfulRequests = validResponses.filter(response => response.status === HTTP_STATUS.OK);
       const failedRequests = validResponses.filter(response => response.status !== HTTP_STATUS.OK);
-      
+
       console.log(`🔄 Concurrent login test: ${successfulRequests.length} successful, ${failedRequests.length} failed`);
-      
+
       // In a proper test environment, we should have at least one successful login
       // unless rate limiting is very aggressive
       if (validResponses.length > 0) {
@@ -337,7 +337,7 @@ describe('Admin Authentication Edge Cases and Error Recovery', () => {
       };
 
       const response = await testRequest('POST', '/api/admin/login', loginData);
-      
+
       // Skip if service unavailable
       if (response.status === 0) {
         console.warn('⚠️ Admin auth service unavailable - skipping invalid hash test');
@@ -390,7 +390,7 @@ describe('Admin Authentication Edge Cases and Error Recovery', () => {
     try {
       // Attempt logout - should handle database errors gracefully
       const logoutResponse = await testRequest('DELETE', '/api/admin/login');
-      
+
       if (logoutResponse.status === 0) {
         console.warn('⚠️ Admin auth service unavailable - skipping logout cleanup test');
         return;
@@ -410,7 +410,7 @@ describe('Admin Authentication Edge Cases and Error Recovery', () => {
   test('auth service handles missing ADMIN_SECRET during token verification gracefully', async () => {
     // Create a fake token first (using a temporary secret)
     process.env.ADMIN_SECRET = 'temporary-secret-for-token-creation-32chars';
-    
+
     const jwt = await import('jsonwebtoken');
     const fakeToken = jwt.sign(
       { id: 'admin', role: 'admin', loginTime: Date.now() },
@@ -426,7 +426,7 @@ describe('Admin Authentication Edge Cases and Error Recovery', () => {
       const response = await testRequest('GET', '/api/admin/dashboard', null, {
         'Authorization': `Bearer ${fakeToken}`
       });
-      
+
       if (response.status === 0) {
         console.warn('⚠️ Admin service unavailable - skipping missing secret test');
         return;
@@ -446,7 +446,7 @@ describe('Admin Authentication Edge Cases and Error Recovery', () => {
   test('password verification prioritizes TEST_ADMIN_PASSWORD in test environment when both are present', async () => {
     const testPassword = 'plain-test-password';
     const bcryptPassword = 'different-bcrypt-password';
-    
+
     // Set both passwords with different values
     process.env.TEST_ADMIN_PASSWORD = testPassword;
     process.env.ADMIN_PASSWORD = '$2a$10$DifferentHashThatWontMatch123456789'; // Invalid bcrypt hash

@@ -1,14 +1,14 @@
+import jwt from "jsonwebtoken";
 import { getDatabaseClient } from "../../lib/database.js";
 import { getRateLimitService } from "../../lib/rate-limit-service.js";
 import { withSecurityHeaders } from "../../lib/security-headers.js";
 import auditService from "../../lib/audit-service.js";
-import jwt from "jsonwebtoken";
 
 // Enhanced rate limiting configuration
 const TICKET_RATE_LIMIT = {
   window: 60000, // 1 minute
   maxAttempts: 50, // Reduced from 100 for better security
-  lockoutDuration: 300000, // 5 minutes lockout after exceeding limit
+  lockoutDuration: 300000 // 5 minutes lockout after exceeding limit
 };
 
 /**
@@ -19,19 +19,19 @@ const TICKET_RATE_LIMIT = {
 function validateTicketToken(token) {
   // Check if token exists and is a string
   if (!token || typeof token !== 'string') {
-    return { 
-      isValid: false, 
+    return {
+      isValid: false,
       error: 'Token must be a non-empty string',
-      securityRisk: false 
+      securityRisk: false
     };
   }
 
   // Check token length (JWT tokens are typically 100-500+ chars, validation codes are shorter)
   if (token.length < 4 || token.length > 2000) {
-    return { 
-      isValid: false, 
+    return {
+      isValid: false,
       error: 'Token format invalid',
-      securityRisk: false 
+      securityRisk: false
     };
   }
 
@@ -51,26 +51,26 @@ function validateTicketToken(token) {
     /insert\s+into/i,          // SQL injection
     /delete\s+from/i,          // SQL injection
     /drop\s+table/i,           // SQL injection
-    /\bexec\b|\bexecute\b/i,   // Command execution
+    /\bexec\b|\bexecute\b/i   // Command execution
   ];
 
   for (const pattern of suspiciousPatterns) {
     if (pattern.test(token)) {
       console.warn(`Suspicious token pattern detected from IP: ${token.substring(0, 20)}...`);
-      return { 
-        isValid: false, 
+      return {
+        isValid: false,
         error: 'Token contains invalid characters',
-        securityRisk: true 
+        securityRisk: true
       };
     }
   }
 
   // Additional validation for non-printable characters
   if (/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/.test(token)) {
-    return { 
-      isValid: false, 
+    return {
+      isValid: false,
       error: 'Token contains invalid characters',
-      securityRisk: true 
+      securityRisk: true
     };
   }
 
@@ -79,21 +79,21 @@ function validateTicketToken(token) {
 
 /**
  * Enhanced rate limiting using the centralized rate limit service
- * @param {string} clientIP - Client IP address  
+ * @param {string} clientIP - Client IP address
  * @returns {Promise<Object>} Rate limit status
  */
 async function checkEnhancedRateLimit(clientIP) {
   const rateLimitService = getRateLimitService();
-  
+
   const result = await rateLimitService.checkLimit(clientIP, 'ticket_validation', {
     maxAttempts: TICKET_RATE_LIMIT.maxAttempts,
-    windowMs: TICKET_RATE_LIMIT.window,
+    windowMs: TICKET_RATE_LIMIT.window
   });
 
   return {
     isAllowed: result.allowed,
     remaining: result.remaining,
-    retryAfter: result.retryAfter,
+    retryAfter: result.retryAfter
   };
 }
 
@@ -120,7 +120,7 @@ function extractValidationCode(token) {
     const decoded = jwt.verify(token, process.env.QR_SECRET_KEY, {
       algorithms: ['HS256'], // Specify allowed algorithm to prevent algorithm confusion attacks
       maxAge: '7d', // Tokens expire after 7 days max
-      clockTolerance: 60, // Allow 60 second clock skew
+      clockTolerance: 60 // Allow 60 second clock skew
     });
 
     // Validate JWT payload structure
@@ -129,7 +129,7 @@ function extractValidationCode(token) {
     }
 
     const validationCode = decoded.tid || decoded.validation_code;
-    
+
     if (!validationCode || typeof validationCode !== 'string') {
       throw new Error('Invalid validation code in token');
     }
@@ -138,15 +138,15 @@ function extractValidationCode(token) {
       isJWT: true,
       validationCode: validationCode,
       issueTime: decoded.iat,
-      expirationTime: decoded.exp,
+      expirationTime: decoded.exp
     };
 
   } catch (jwtError) {
     // For non-JWT tokens, treat as direct validation code with additional security checks
-    if (jwtError.name === 'JsonWebTokenError' || 
-        jwtError.name === 'TokenExpiredError' || 
+    if (jwtError.name === 'JsonWebTokenError' ||
+        jwtError.name === 'TokenExpiredError' ||
         jwtError.name === 'NotBeforeError') {
-      
+
       // Log JWT-specific errors for monitoring
       console.warn('JWT token validation failed, treating as direct validation code:', {
         error: jwtError.name,
@@ -162,10 +162,10 @@ function extractValidationCode(token) {
         isJWT: false,
         validationCode: token,
         issueTime: null,
-        expirationTime: null,
+        expirationTime: null
       };
     }
-    
+
     // Re-throw configuration errors
     throw jwtError;
   }
@@ -178,38 +178,38 @@ function extractValidationCode(token) {
  */
 function detectSource(req, clientIP) {
   // Sanitize and validate wallet source header
-  const walletSource = req.headers["x-wallet-source"];
+  const walletSource = req.headers['x-wallet-source'];
   if (walletSource) {
     // Only allow specific wallet source values
     const allowedWalletSources = ['apple_wallet', 'google_wallet', 'samsung_wallet'];
     const sanitizedSource = String(walletSource).toLowerCase().trim();
-    
+
     if (allowedWalletSources.includes(sanitizedSource)) {
       return sanitizedSource;
     }
-    
+
     // Log suspicious wallet source attempts
     console.warn('Invalid wallet source header detected:', {
       source: String(walletSource).slice(0, 50),
       ip: clientIP
     });
-    
-    return "web"; // Default to web for invalid sources
+
+    return 'web'; // Default to web for invalid sources
   }
 
   // Safely extract user agent with length limits
-  const userAgent = req.headers["user-agent"];
+  const userAgent = req.headers['user-agent'];
   if (userAgent && typeof userAgent === 'string') {
     const safeUserAgent = userAgent.substring(0, 500); // Limit length to prevent attacks
-    
+
     if (/\bApple\b/i.test(safeUserAgent) || /\biOS\b/i.test(safeUserAgent)) {
-      return "apple_wallet";
+      return 'apple_wallet';
     } else if (/\bGoogle\b/i.test(safeUserAgent) || /\bAndroid\b/i.test(safeUserAgent)) {
-      return "google_wallet";
+      return 'google_wallet';
     }
   }
-  
-  return "web";
+
+  return 'web';
 }
 
 /**
@@ -233,42 +233,42 @@ async function validateTicket(db, validationCode, source) {
         FROM tickets t
         WHERE t.validation_code = ?
       `,
-      args: [validationCode],
+      args: [validationCode]
     });
 
     const ticket = result.rows[0];
 
     if (!ticket) {
-      throw new Error("Ticket not found");
+      throw new Error('Ticket not found');
     }
 
-    if (ticket.status !== "valid") {
+    if (ticket.status !== 'valid') {
       throw new Error(`Ticket is ${ticket.status}`);
     }
 
     if (ticket.scan_count >= ticket.max_scan_count) {
-      throw new Error("Maximum scans exceeded");
+      throw new Error('Maximum scans exceeded');
     }
 
     // Atomic update with condition check (prevents race condition)
     const updateResult = await tx.execute({
       sql: `
-        UPDATE tickets 
+        UPDATE tickets
         SET scan_count = scan_count + 1,
             qr_access_method = ?,
             first_scanned_at = COALESCE(first_scanned_at, CURRENT_TIMESTAMP),
             last_scanned_at = CURRENT_TIMESTAMP
-        WHERE validation_code = ? 
+        WHERE validation_code = ?
           AND scan_count < max_scan_count
           AND status = 'valid'
       `,
-      args: [source, validationCode],
+      args: [source, validationCode]
     });
 
     // Use portable rows changed check for different database implementations
     const rowsChanged = updateResult.rowsAffected ?? updateResult.changes ?? 0;
     if (rowsChanged === 0) {
-      throw new Error("Validation failed - ticket may have reached scan limit");
+      throw new Error('Validation failed - ticket may have reached scan limit');
     }
 
     // Commit transaction
@@ -278,8 +278,8 @@ async function validateTicket(db, validationCode, source) {
       success: true,
       ticket: {
         ...ticket,
-        scan_count: ticket.scan_count + 1,
-      },
+        scan_count: ticket.scan_count + 1
+      }
     };
   } catch (error) {
     await tx.rollback();
@@ -296,18 +296,18 @@ async function logValidation(db, params) {
   try {
     // Ensure database exists and qr_validations table is available
     if (!db) {
-      console.warn("Database client not available for QR validation logging");
+      console.warn('Database client not available for QR validation logging');
       return;
     }
-    
+
     // Check if qr_validations table exists before attempting insert
     try {
-      await db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='qr_validations'");
+      await db.execute('SELECT name FROM sqlite_master WHERE type=\'table\' AND name=\'qr_validations\'');
     } catch (tableCheckError) {
-      console.warn("qr_validations table not available, skipping validation logging");
+      console.warn('qr_validations table not available, skipping validation logging');
       return;
     }
-    
+
     // Legacy QR validation logging (keep for compatibility)
     await db.execute({
       sql: `
@@ -323,12 +323,12 @@ async function logValidation(db, params) {
         params.source,
         params.ip,
         params.deviceInfo || null,
-        params.failureReason || null,
-      ],
+        params.failureReason || null
+      ]
     });
   } catch (error) {
     // Log error but dont throw - validation logging is not critical
-    console.error("Failed to log QR validation:", error.message);
+    console.error('Failed to log QR validation:', error.message);
   }
 }
 
@@ -379,15 +379,15 @@ async function auditValidationAttempt(params) {
  */
 function extractClientIP(req) {
   // Handle multiple IP formats and validate
-  const forwardedFor = req.headers["x-forwarded-for"];
-  const realIP = req.headers["x-real-ip"];
+  const forwardedFor = req.headers['x-forwarded-for'];
+  const realIP = req.headers['x-real-ip'];
   const connectionIP = req.connection?.remoteAddress || req.socket?.remoteAddress;
 
-  let clientIP = "unknown";
+  let clientIP = 'unknown';
 
   if (forwardedFor && typeof forwardedFor === 'string') {
     // Take the first IP from the forwarded chain and validate
-    const firstIP = forwardedFor.split(",")[0]?.trim();
+    const firstIP = forwardedFor.split(',')[0]?.trim();
     if (firstIP && isValidIP(firstIP)) {
       clientIP = firstIP;
     }
@@ -407,15 +407,21 @@ function extractClientIP(req) {
  */
 function isValidIP(ip) {
   // Type checking - ensure input is a non-empty string
-  if (!ip || typeof ip !== 'string') return false;
-  
+  if (!ip || typeof ip !== 'string') {
+    return false;
+  }
+
   // Length validation - prevent potential DoS with extremely long strings
-  if (ip.length > 45) return false; // Max IPv6 length is 39, IPv4 is 15, add buffer
-  
+  if (ip.length > 45) {
+    return false;
+  } // Max IPv6 length is 39, IPv4 is 15, add buffer
+
   // Trim whitespace and validate basic character set
   const trimmedIP = ip.trim();
-  if (!trimmedIP || !/^[0-9a-fA-F:.]+$/.test(trimmedIP)) return false;
-  
+  if (!trimmedIP || !/^[0-9a-fA-F:.]+$/.test(trimmedIP)) {
+    return false;
+  }
+
   return isValidIPv4(trimmedIP) || isValidIPv6(trimmedIP);
 }
 
@@ -427,9 +433,11 @@ function isValidIP(ip) {
 function isValidIPv4(ip) {
   // IPv4 pattern with strict octet validation
   const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
-  
-  if (!ipv4Regex.test(ip)) return false;
-  
+
+  if (!ipv4Regex.test(ip)) {
+    return false;
+  }
+
   // Additional validation: ensure no leading zeros (except for single zero)
   const octets = ip.split('.');
   for (const octet of octets) {
@@ -437,7 +445,7 @@ function isValidIPv4(ip) {
       return false; // Invalid: leading zeros like 01, 001, etc.
     }
   }
-  
+
   return true;
 }
 
@@ -452,46 +460,58 @@ function isValidIPv6(ip) {
     const ipv4Part = ip.substring(7);
     return isValidIPv4(ipv4Part);
   }
-  
+
   // Handle IPv4-compatible IPv6 addresses (::192.168.1.1)
   if (ip.startsWith('::') && ip.includes('.')) {
     const ipv4Part = ip.substring(2);
     return isValidIPv4(ipv4Part);
   }
-  
+
   // Standard IPv6 validation
   // Check for multiple :: (only one allowed)
   const doubleColonCount = (ip.match(/::/g) || []).length;
-  if (doubleColonCount > 1) return false;
-  
+  if (doubleColonCount > 1) {
+    return false;
+  }
+
   // Split by :: to handle compressed notation
   if (doubleColonCount === 1) {
     const parts = ip.split('::');
-    if (parts.length !== 2) return false;
-    
+    if (parts.length !== 2) {
+      return false;
+    }
+
     const leftPart = parts[0];
     const rightPart = parts[1];
-    
+
     // Validate left part
-    if (leftPart && !isValidIPv6Groups(leftPart.split(':'))) return false;
-    
+    if (leftPart && !isValidIPv6Groups(leftPart.split(':'))) {
+      return false;
+    }
+
     // Validate right part
-    if (rightPart && !isValidIPv6Groups(rightPart.split(':'))) return false;
-    
+    if (rightPart && !isValidIPv6Groups(rightPart.split(':'))) {
+      return false;
+    }
+
     // Check total group count doesn't exceed 8
     const leftGroups = leftPart ? leftPart.split(':').length : 0;
     const rightGroups = rightPart ? rightPart.split(':').length : 0;
-    
+
     // :: represents at least one group of zeros
-    if (leftGroups + rightGroups >= 8) return false;
-    
+    if (leftGroups + rightGroups >= 8) {
+      return false;
+    }
+
     return true;
   }
-  
+
   // No compression - must have exactly 8 groups
   const groups = ip.split(':');
-  if (groups.length !== 8) return false;
-  
+  if (groups.length !== 8) {
+    return false;
+  }
+
   return isValidIPv6Groups(groups);
 }
 
@@ -503,12 +523,16 @@ function isValidIPv6(ip) {
 function isValidIPv6Groups(groups) {
   for (const group of groups) {
     // Empty groups are allowed in compressed notation context
-    if (group === '') continue;
-    
+    if (group === '') {
+      continue;
+    }
+
     // Each group must be 1-4 hex digits
-    if (!/^[0-9a-fA-F]{1,4}$/.test(group)) return false;
+    if (!/^[0-9a-fA-F]{1,4}$/.test(group)) {
+      return false;
+    }
   }
-  
+
   return true;
 }
 
@@ -527,30 +551,30 @@ async function handler(req, res) {
   const requestId = auditService.generateRequestId();
 
   // Only accept POST for security (tokens should not be in URL)
-  if (req.method !== "POST") {
-    res.setHeader("Allow", ["POST"]);
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', ['POST']);
     return res.status(405).json({
-      error: "Method not allowed - use POST",
-      allowedMethods: ["POST"]
+      error: 'Method not allowed - use POST',
+      allowedMethods: ['POST']
     });
   }
 
   // Enhanced IP extraction and validation
   const clientIP = extractClientIP(req);
-  const userAgent = req.headers["user-agent"] || '';
-  
-  if (clientIP === "unknown") {
+  const userAgent = req.headers['user-agent'] || '';
+
+  if (clientIP === 'unknown') {
     console.warn('Unable to determine client IP address for rate limiting');
   }
 
   // Enhanced rate limiting check (skip only in test environment)
-  if (process.env.NODE_ENV !== "test") {
+  if (process.env.NODE_ENV !== 'test') {
     try {
       const rateLimitResult = await checkEnhancedRateLimit(clientIP);
-      
+
       if (!rateLimitResult.isAllowed) {
         return res.status(429).json({
-          error: "Rate limit exceeded. Please try again later.",
+          error: 'Rate limit exceeded. Please try again later.',
           retryAfter: rateLimitResult.retryAfter,
           remaining: rateLimitResult.remaining
         });
@@ -572,13 +596,13 @@ async function handler(req, res) {
         ip: clientIP,
         error: tokenValidation.error,
         timestamp: new Date().toISOString(),
-        userAgent: req.headers["user-agent"]?.substring(0, 100)
+        userAgent: req.headers['user-agent']?.substring(0, 100)
       });
     }
-    
+
     return res.status(400).json({
       valid: false,
-      error: "Invalid token format",
+      error: 'Invalid token format',
       details: process.env.NODE_ENV === 'development' ? tokenValidation.error : undefined
     });
   }
@@ -601,16 +625,16 @@ async function handler(req, res) {
           FROM tickets t
           WHERE t.validation_code = ?
         `,
-        args: [validationCode],
+        args: [validationCode]
       });
 
       const ticket = result.rows[0];
 
       if (!ticket) {
-        throw new Error("Ticket not found");
+        throw new Error('Ticket not found');
       }
 
-      if (ticket.status !== "valid") {
+      if (ticket.status !== 'valid') {
         throw new Error(`Ticket is ${ticket.status}`);
       }
 
@@ -625,9 +649,9 @@ async function handler(req, res) {
             `${ticket.attendee_first_name} ${ticket.attendee_last_name}`.trim(),
           scanCount: ticket.scan_count,
           maxScans: ticket.max_scan_count,
-          source: source,
+          source: source
         },
-        message: "Ticket verified",
+        message: 'Ticket verified'
       });
     }
 
@@ -639,11 +663,11 @@ async function handler(req, res) {
     // Log successful validation (legacy format)
     await logValidation(db, {
       ticketId: ticket.ticket_id,
-      token: token.substring(0, 10) + "...", // Don't log full token
-      result: "success",
+      token: token.substring(0, 10) + '...', // Don't log full token
+      result: 'success',
       source: source,
       ip: clientIP,
-      deviceInfo: userAgent,
+      deviceInfo: userAgent
     });
 
     // Enhanced audit logging for successful validation (non-blocking)
@@ -689,68 +713,68 @@ async function handler(req, res) {
           `${ticket.attendee_first_name} ${ticket.attendee_last_name}`.trim(),
         scanCount: ticket.scan_count,
         maxScans: ticket.max_scan_count,
-        source: source,
+        source: source
       },
-      message: `Welcome ${ticket.attendee_first_name}!`,
+      message: `Welcome ${ticket.attendee_first_name}!`
     });
   } catch (error) {
     // Handle initialization errors
-    if (error.message.includes("Failed to initialize database client")) {
+    if (error.message.includes('Failed to initialize database client')) {
       return res.status(503).json({
         valid: false,
-        error: "Service temporarily unavailable. Please try again.",
+        error: 'Service temporarily unavailable. Please try again.'
       });
     }
 
     // Enhanced error handling with security considerations
-    let safeErrorMessage = "Ticket validation failed";
-    let logDetails = {
-      message: error.message || "Unknown validation error",
+    let safeErrorMessage = 'Ticket validation failed';
+    const logDetails = {
+      message: error.message || 'Unknown validation error',
       timestamp: new Date().toISOString(),
       ip: clientIP,
       source: source
     };
 
     // Categorize errors for appropriate responses
-    if (error.message.includes("Token validation service")) {
+    if (error.message.includes('Token validation service')) {
       // Configuration errors - don't expose details to client
-      safeErrorMessage = "Service temporarily unavailable";
-      logDetails.category = "configuration_error";
-      console.error("Token validation service error:", logDetails);
-    } else if (error.message.includes("Invalid token") ||
-               error.message.includes("Token expired") ||
-               error.message.includes("Invalid validation code") ||
-               error.message.includes("malformed") ||
-               error.message.includes("Invalid format") ||
+      safeErrorMessage = 'Service temporarily unavailable';
+      logDetails.category = 'configuration_error';
+      console.error('Token validation service error:', logDetails);
+    } else if (error.message.includes('Invalid token') ||
+               error.message.includes('Token expired') ||
+               error.message.includes('Invalid validation code') ||
+               error.message.includes('malformed') ||
+               error.message.includes('Invalid format') ||
                !token || token.length < 10) {
       // Token-related errors - safe to show generic message
-      safeErrorMessage = "Invalid or expired ticket";
-      logDetails.category = "token_error";
-    } else if (error.message.includes("Ticket not found") ||
-               error.message.includes("Maximum scans exceeded") ||
-               error.message.includes("Ticket is")) {
+      safeErrorMessage = 'Invalid or expired ticket';
+      logDetails.category = 'token_error';
+    } else if (error.message.includes('Ticket not found') ||
+               error.message.includes('Maximum scans exceeded') ||
+               error.message.includes('Ticket is')) {
       // Ticket status errors - safe to show to user
       safeErrorMessage = error.message;
-      logDetails.category = "ticket_status";
+      logDetails.category = 'ticket_status';
     } else {
       // Unknown errors - assume invalid token for security
       // Default to "invalid" message which matches test expectations
-      safeErrorMessage = "Invalid ticket format";
-      logDetails.category = "unknown_error";
-      console.error("Unknown validation error:", logDetails);
+      safeErrorMessage = 'Invalid ticket format';
+      logDetails.category = 'unknown_error';
+      console.error('Unknown validation error:', logDetails);
     }
 
     // Log failed validation (only if db is available)
     try {
       await logValidation(db, {
-        token: token ? token.substring(0, 10) + "..." : "invalid",
-        result: "failed",
+        token: token ? token.substring(0, 10) + '...' : 'invalid',
+        result: 'failed',
         failureReason: safeErrorMessage,
         source: source,
-        ip: clientIP,
+        ip: clientIP
       });
     } catch (logError) {
-      console.error("Failed to log validation error:", logError.message);
+      console.error('Failed to log validation error:', logError.message);
     }
 
     // Enhanced audit logging for failed validation (non-blocking)
@@ -785,9 +809,9 @@ async function handler(req, res) {
       valid: false,
       error: safeErrorMessage,
       // Only include error details in development
-      ...(process.env.NODE_ENV === 'development' && { 
+      ...(process.env.NODE_ENV === 'development' && {
         details: error.message,
-        category: logDetails.category 
+        category: logDetails.category
       })
     });
   }

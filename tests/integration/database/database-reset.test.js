@@ -44,13 +44,13 @@ describe('Database Reset Mechanism', () => {
     // Temporarily change environment
     const originalEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'production';
-    
+
     const prodManager = new DatabaseResetManager();
-    
+
     await expect(prodManager.performSafetyChecks()).rejects.toThrow(
       /Database reset not allowed in environment/
     );
-    
+
     // Restore environment
     process.env.NODE_ENV = originalEnv;
   });
@@ -59,13 +59,13 @@ describe('Database Reset Mechanism', () => {
     // Temporarily set production-like URL
     const originalUrl = process.env.TURSO_DATABASE_URL;
     process.env.TURSO_DATABASE_URL = 'libsql://alocubano-production.turso.io';
-    
+
     const prodManager = new DatabaseResetManager();
-    
+
     await expect(prodManager.performSafetyChecks()).rejects.toThrow(
       /Potential production database detected/
     );
-    
+
     // Restore URL
     process.env.TURSO_DATABASE_URL = originalUrl;
   });
@@ -134,7 +134,7 @@ describe('Database Reset Mechanism', () => {
     // Reset with seed data
     const result = await resetTestDatabase('soft', { seedData: true });
     expect(result.mode).toBe('soft');
-    
+
     // Verify database is accessible after seeding
     const client = await getDbClient();
     const testResult = await client.execute('SELECT 1 as test');
@@ -153,19 +153,19 @@ describe('Database Reset Integration', () => {
   test('database is accessible after reset', async () => {
     // Reset database
     await resetTestDatabase('soft');
-    
+
     // Verify we can perform basic database operations
     const client = await getDbClient();
-    
+
     // Test basic query
     const result = await client.execute('SELECT datetime(CURRENT_TIMESTAMP) as now');
     expect(result.rows).toHaveLength(1);
     expect(result.rows[0].now).toBeTruthy();
-    
+
     // Test that we can query schema
     const tablesResult = await client.execute(`
-      SELECT name FROM sqlite_master 
-      WHERE type = 'table' 
+      SELECT name FROM sqlite_master
+      WHERE type = 'table'
       ORDER BY name
     `);
     expect(Array.isArray(tablesResult.rows)).toBe(true);
@@ -177,16 +177,16 @@ describe('Database Reset Error Handling', () => {
     // Temporarily disable reset
     const originalAllowed = process.env.TEST_DATABASE_RESET_ALLOWED;
     const originalEnv = process.env.NODE_ENV;
-    
+
     delete process.env.TEST_DATABASE_RESET_ALLOWED;
     process.env.NODE_ENV = 'production';
-    
+
     const restrictedManager = new DatabaseResetManager();
-    
+
     await expect(restrictedManager.reset('soft')).rejects.toThrow(
       /Database reset not allowed/
     );
-    
+
     // Restore settings
     process.env.TEST_DATABASE_RESET_ALLOWED = originalAllowed;
     process.env.NODE_ENV = originalEnv;

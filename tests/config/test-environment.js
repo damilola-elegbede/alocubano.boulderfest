@@ -26,7 +26,7 @@ export const getDatabaseConfig = (testType) => {
         skipMigrations: true,  // Skip migrations for unit test performance
         useSharedCache: true   // Share cache across tests for speed
       };
-      
+
     case TEST_ENVIRONMENTS.INTEGRATION:
       // Determine best database URL for integration tests
       const getIntegrationDbUrl = () => {
@@ -56,7 +56,7 @@ export const getDatabaseConfig = (testType) => {
         cleanup: true,
         remoteAllowed: false // Explicitly flag that remote databases are not allowed
       };
-      
+
     case TEST_ENVIRONMENTS.E2E:
       return {
         url: process.env.TURSO_DATABASE_URL,
@@ -65,7 +65,7 @@ export const getDatabaseConfig = (testType) => {
         persistent: true,
         cleanup: false
       };
-      
+
     default:
       throw new Error(`Unknown test environment type: ${testType}`);
   }
@@ -84,7 +84,7 @@ export const getMockConfig = (testType) => {
         payments: true,          // Mock payment processing
         email: true              // Mock email sending
       };
-      
+
     case TEST_ENVIRONMENTS.INTEGRATION:
       return {
         externalServices: false, // Use real services where possible
@@ -93,7 +93,7 @@ export const getMockConfig = (testType) => {
         payments: true,          // Mock payments (test mode)
         email: true              // Mock email (test mode)
       };
-      
+
     case TEST_ENVIRONMENTS.E2E:
       return {
         externalServices: false, // Use real services
@@ -102,7 +102,7 @@ export const getMockConfig = (testType) => {
         payments: false,         // Use real payments (test mode)
         email: false             // Use real email (test mode)
       };
-      
+
     default:
       throw new Error(`Unknown test environment type: ${testType}`);
   }
@@ -113,7 +113,7 @@ export const getMockConfig = (testType) => {
  */
 export const getTimeoutConfig = (testType) => {
   const isCI = process.env.CI === 'true';
-  
+
   switch (testType) {
     case TEST_ENVIRONMENTS.UNIT:
       return {
@@ -122,7 +122,7 @@ export const getTimeoutConfig = (testType) => {
         setup: isCI ? 5000 : 3000,   // Fast setup for unit tests
         cleanup: isCI ? 2000 : 1000  // Minimal cleanup for unit tests
       };
-      
+
     case TEST_ENVIRONMENTS.INTEGRATION:
       return {
         test: isCI ? 120000 : 60000,
@@ -130,7 +130,7 @@ export const getTimeoutConfig = (testType) => {
         setup: isCI ? 30000 : 20000,
         cleanup: isCI ? 20000 : 10000
       };
-      
+
     case TEST_ENVIRONMENTS.E2E:
       return {
         test: isCI ? 300000 : 180000,
@@ -138,7 +138,7 @@ export const getTimeoutConfig = (testType) => {
         setup: isCI ? 60000 : 30000,
         cleanup: isCI ? 30000 : 15000
       };
-      
+
     default:
       throw new Error(`Unknown test environment type: ${testType}`);
   }
@@ -149,26 +149,26 @@ export const getTimeoutConfig = (testType) => {
  */
 export const getPortConfig = (testType) => {
   const basePort = parseInt(process.env.DYNAMIC_PORT || process.env.PORT || '3000', 10);
-  
+
   switch (testType) {
     case TEST_ENVIRONMENTS.UNIT:
       return {
         port: basePort,
         description: 'Unit tests use mocked APIs, port for reference only'
       };
-      
+
     case TEST_ENVIRONMENTS.INTEGRATION:
       return {
         port: basePort + 1, // Offset to avoid conflicts
         description: 'Integration tests require real API server'
       };
-      
+
     case TEST_ENVIRONMENTS.E2E:
       return {
         port: basePort + 2, // Further offset
         description: 'E2E tests use Vercel Preview Deployment or dedicated server'
       };
-      
+
     default:
       throw new Error(`Unknown test environment type: ${testType}`);
   }
@@ -182,11 +182,11 @@ export const configureEnvironment = (testType) => {
   const mockConfig = getMockConfig(testType);
   const timeoutConfig = getTimeoutConfig(testType);
   const portConfig = getPortConfig(testType);
-  
+
   // Set environment variables
   process.env.NODE_ENV = 'test';
   process.env.TEST_TYPE = testType;
-  
+
   // Database configuration
   process.env.DATABASE_URL = dbConfig.url;
   if (dbConfig.authToken) {
@@ -194,7 +194,7 @@ export const configureEnvironment = (testType) => {
   } else {
     delete process.env.TURSO_AUTH_TOKEN;
   }
-  
+
   // Additional safety for integration tests - force delete any Turso variables
   if (testType === TEST_ENVIRONMENTS.INTEGRATION) {
     delete process.env.TURSO_DATABASE_URL;
@@ -207,11 +207,11 @@ export const configureEnvironment = (testType) => {
       process.env.DATABASE_URL = ':memory:'; // Default to in-memory for better isolation
     }
   }
-  
+
   // Port configuration
   process.env.TEST_PORT = portConfig.port.toString();
   process.env.TEST_BASE_URL = `http://localhost:${portConfig.port}`;
-  
+
   // Timeout configuration
   Object.entries(timeoutConfig).forEach(([key, value]) => {
     process.env[`VITEST_${key.toUpperCase()}_TIMEOUT`] = value.toString();
@@ -220,27 +220,27 @@ export const configureEnvironment = (testType) => {
   // Critical API secrets configuration - required for services to initialize
   // QR Token Service (required by ticket validation API)
   process.env.QR_SECRET_KEY = process.env.QR_SECRET_KEY || 'test-qr-secret-key-minimum-32-characters-long-for-security-compliance';
-  
+
   // Admin Authentication (required for JWT signing in admin APIs)
   process.env.ADMIN_SECRET = process.env.ADMIN_SECRET || 'test-admin-jwt-secret-minimum-32-characters-for-security';
-  
+
   // Wallet service configuration (required for ticket services)
   process.env.WALLET_AUTH_SECRET = process.env.WALLET_AUTH_SECRET || 'test-wallet-auth-secret-key-for-testing-purposes-32-chars';
   process.env.APPLE_PASS_KEY = process.env.APPLE_PASS_KEY || 'dGVzdC1hcHBsZS1wYXNzLWtleQ=='; // base64 encoded 'test-apple-pass-key'
-  
+
   // Internal API Security (required for secure internal operations)
   process.env.INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || 'test-internal-api-key-32-chars-min';
-  
+
   // Test admin credentials (required for admin panel integration tests)
   process.env.TEST_ADMIN_PASSWORD = process.env.TEST_ADMIN_PASSWORD || 'test-admin-password-123';
   // Do NOT set ADMIN_PASSWORD in test environments - it interferes with TEST_ADMIN_PASSWORD
   delete process.env.ADMIN_PASSWORD;
-  
+
   console.log(`🧪 Test environment configured for: ${testType.toUpperCase()}`);
   console.log(`📍 Database: ${dbConfig.description}`);
   console.log(`🔧 Port: ${portConfig.port} (${portConfig.description})`);
   console.log(`⚡ Timeouts: Test=${timeoutConfig.test}ms, Hook=${timeoutConfig.hook}ms`);
-  
+
   return {
     testType,
     database: dbConfig,
@@ -255,19 +255,19 @@ export const configureEnvironment = (testType) => {
  */
 export const cleanupEnvironment = async (testType) => {
   const dbConfig = getDatabaseConfig(testType);
-  
+
   if (dbConfig.cleanup && dbConfig.persistent) {
     try {
       const fs = await import('fs/promises');
       const pathModule = await import('path');
-      
+
       let dbPath = dbConfig.url.replace('file:', '');
-      
+
       // Handle relative paths correctly
       if (dbPath.startsWith('./')) {
         dbPath = pathModule.join(process.cwd(), dbPath.substring(2));
       }
-      
+
       if (dbPath !== ':memory:' && dbPath && !dbPath.startsWith('libsql://')) {
         await fs.unlink(dbPath).catch(() => {}); // Ignore if file doesn't exist
         console.log(`🧹 Cleaned up test database: ${dbPath}`);
@@ -276,7 +276,7 @@ export const cleanupEnvironment = async (testType) => {
       console.warn(`⚠️ Could not cleanup test database: ${error.message}`);
     }
   }
-  
+
   console.log(`🧹 Environment cleanup completed for: ${testType.toUpperCase()}`);
 };
 
@@ -285,31 +285,31 @@ export const cleanupEnvironment = async (testType) => {
  */
 export const validateEnvironment = (testType) => {
   const errors = [];
-  
+
   const dbConfig = getDatabaseConfig(testType);
   const mockConfig = getMockConfig(testType);
-  
+
   // Validate database configuration
   if (testType === TEST_ENVIRONMENTS.E2E) {
     if (!dbConfig.url || !dbConfig.authToken) {
       errors.push('E2E tests require TURSO_DATABASE_URL and TURSO_AUTH_TOKEN');
     }
   }
-  
+
   // Validate Node.js environment
   if (!process.env.NODE_ENV) {
     errors.push('NODE_ENV must be set');
   }
-  
+
   // Validate test type
   if (!Object.values(TEST_ENVIRONMENTS).includes(testType)) {
     errors.push(`Invalid test type: ${testType}`);
   }
-  
+
   if (errors.length > 0) {
     throw new Error(`Environment validation failed:\n${errors.join('\n')}`);
   }
-  
+
   console.log(`✅ Environment validation passed for: ${testType.toUpperCase()}`);
   return true;
 };

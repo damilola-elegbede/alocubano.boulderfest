@@ -23,7 +23,7 @@ describe('Registration API Integration', () => {
 
     // First create a test transaction and ticket
     const testSessionId = 'cs_test_reg_' + Math.random().toString(36).slice(2);
-    
+
     try {
       // Create transaction using current schema
       await dbClient.execute(`
@@ -31,29 +31,29 @@ describe('Registration API Integration', () => {
           transaction_id, type, stripe_session_id, customer_email, amount_cents, order_data, status, created_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
       `, ['TXN_' + testSessionId, 'tickets', testSessionId, testEmail, 12500, '{"test": true}', 'completed']);
-      
+
       const transactionResult = await dbClient.execute(
         'SELECT id FROM transactions WHERE stripe_session_id = ?',
         [testSessionId]
       );
-      
+
       const transactionId = transactionResult.rows[0].id;
       const testQrCode = 'QR_' + Math.random().toString(36).slice(2);
-      
+
       // Create ticket using current schema with proper column names
       await dbClient.execute(`
         INSERT INTO "tickets" (
           ticket_id, transaction_id, ticket_type, event_id, price_cents, qr_token, created_at
         ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
       `, ['TICKET_' + testSessionId, transactionId, 'Weekend Pass', 'boulder-fest-2026', 12500, testQrCode]);
-      
+
       const ticketResult = await dbClient.execute(
         'SELECT id FROM "tickets" WHERE qr_token = ?',
         [testQrCode]
       );
-      
+
       const ticketId = ticketResult.rows[0].id;
-      
+
       // Now test the registration API
       const registrationData = {
         ticketId: ticketId,
@@ -64,29 +64,29 @@ describe('Registration API Integration', () => {
         dietary: 'vegetarian',
         emergencyContact: 'Jane Doe - 555-0123'
       };
-      
+
       const response = await testRequest('POST', '/api/tickets/register', registrationData);
-      
+
       // Skip if service unavailable
       if (response.status === 0) {
         console.warn('⚠️ Registration service unavailable - skipping integration test');
         return;
       }
-      
+
       // Validate successful registration
       expect([HTTP_STATUS.OK, HTTP_STATUS.CONFLICT]).toContain(response.status);
-      
+
       if (response.status === HTTP_STATUS.OK) {
         expect(response.data).toHaveProperty('message');
         expect(response.data).toHaveProperty('registrationToken');
       }
-      
+
       // Verify database record was created
       const registrationCheck = await dbClient.execute(
         'SELECT * FROM "registrations" WHERE ticket_id = ?',
         [ticketId]
       );
-      
+
       if (registrationCheck.rows.length > 0) {
         const registration = registrationCheck.rows[0];
         expect(registration.first_name).toBe('Registration');
@@ -98,7 +98,7 @@ describe('Registration API Integration', () => {
         expect(dietaryField).toBe('vegetarian');
         expect(registration.emergency_contact).toBe('Jane Doe - 555-0123');
       }
-      
+
     } catch (error) {
       console.warn('⚠️ Registration test setup error:', error.message);
     }
@@ -112,40 +112,40 @@ describe('Registration API Integration', () => {
 
     // Create test transaction with multiple tickets
     const testSessionId = 'cs_test_batch_' + Math.random().toString(36).slice(2);
-    
+
     try {
       await dbClient.execute(`
         INSERT INTO transactions (
           transaction_id, type, stripe_session_id, customer_email, amount_cents, order_data, status, created_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
       `, ['TXN_' + testSessionId, 'tickets', testSessionId, testEmail, 25000, '{"test": true}', 'completed']);
-      
+
       const transactionResult = await dbClient.execute(
         'SELECT id FROM transactions WHERE stripe_session_id = ?',
         [testSessionId]
       );
-      
+
       const transactionId = transactionResult.rows[0].id;
       const ticketIds = [];
-      
+
       // Create multiple tickets
       for (let i = 0; i < 2; i++) {
         const qrCode = `QR_BATCH_${testSessionId}_${i}`;
-        
+
         await dbClient.execute(`
           INSERT INTO "tickets" (
             ticket_id, transaction_id, ticket_type, event_id, price_cents, qr_token, created_at
           ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
         `, [`TICKET_BATCH_${testSessionId}_${i}`, transactionId, 'Weekend Pass', 'boulder-fest-2026', 12500, qrCode]);
-        
+
         const ticketResult = await dbClient.execute(
           'SELECT id FROM "tickets" WHERE qr_token = ?',
           [qrCode]
         );
-        
+
         ticketIds.push(ticketResult.rows[0].id);
       }
-      
+
       // Test batch registration
       const batchData = {
         registrations: [
@@ -165,34 +165,34 @@ describe('Registration API Integration', () => {
           }
         ]
       };
-      
+
       const response = await testRequest('POST', '/api/registration/batch', batchData);
-      
+
       if (response.status === 0) {
         console.warn('⚠️ Batch registration service unavailable - skipping test');
         return;
       }
-      
+
       // Validate batch registration response
       expect([HTTP_STATUS.OK, HTTP_STATUS.BAD_REQUEST]).toContain(response.status);
-      
+
       if (response.status === HTTP_STATUS.OK) {
         expect(response.data).toHaveProperty('successful');
         expect(response.data).toHaveProperty('failed');
       }
-      
+
       // Verify registrations were created
       for (const ticketId of ticketIds) {
         const registrationCheck = await dbClient.execute(
           'SELECT * FROM "registrations" WHERE ticket_id = ?',
           [ticketId]
         );
-        
+
         if (registrationCheck.rows.length > 0) {
           expect(registrationCheck.rows[0].first_name).toBe('Batch');
         }
       }
-      
+
     } catch (error) {
       console.warn('⚠️ Batch registration test error:', error.message);
     }
@@ -207,56 +207,56 @@ describe('Registration API Integration', () => {
     // Create registered ticket
     const testSessionId = 'cs_test_status_' + Math.random().toString(36).slice(2);
     const registrationToken = 'TOKEN_' + Math.random().toString(36).slice(2);
-    
+
     try {
       await dbClient.execute(`
         INSERT INTO transactions (
           transaction_id, stripe_session_id, customer_email, amount_cents, order_data, status, created_at
         ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
       `, ['TXN-' + testSessionId, testSessionId, testEmail, 12500, '{}', 'completed']);
-      
+
       const transactionResult = await dbClient.execute(
         'SELECT id FROM transactions WHERE stripe_session_id = ?',
         [testSessionId]
       );
-      
+
       const transactionId = transactionResult.rows[0].id;
       const testQrCode = 'QR_STATUS_' + Math.random().toString(36).slice(2);
-      
+
       await dbClient.execute(`
         INSERT INTO "tickets" (
           ticket_id, transaction_id, ticket_type, event_id, price_cents, qr_token, created_at
         ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
       `, ['TICKET-' + testQrCode, transactionId, 'Weekend Pass', 'boulder-fest-2026', 12500, testQrCode]);
-      
+
       const ticketResult = await dbClient.execute(
         'SELECT id FROM "tickets" WHERE qr_token = ?',
         [testQrCode]
       );
-      
+
       const ticketId = ticketResult.rows[0].id;
-      
+
       // Create registration using current schema
       await dbClient.execute(`
         INSERT INTO "registrations" (
           ticket_id, first_name, last_name, email, ticket_type, registration_date
         ) VALUES (?, ?, ?, ?, ?, datetime('now'))
       `, [ticketId, 'Status', 'Test', testEmail, 'Weekend Pass']);
-      
+
       // Test registration status endpoint
       const response = await testRequest('GET', `/api/registration/${registrationToken}`);
-      
+
       if (response.status === 0) {
         console.warn('⚠️ Registration status service unavailable - skipping test');
         return;
       }
-      
+
       expect([HTTP_STATUS.OK, HTTP_STATUS.NOT_FOUND]).toContain(response.status);
-      
+
       if (response.status === HTTP_STATUS.OK) {
         expect(response.data).toHaveProperty('registrations');
         expect(Array.isArray(response.data.registrations)).toBe(true);
-        
+
         if (response.data.registrations.length > 0) {
           const registration = response.data.registrations[0];
           expect(registration).toHaveProperty('firstName', 'Status');
@@ -264,7 +264,7 @@ describe('Registration API Integration', () => {
           expect(registration).toHaveProperty('ticketType');
         }
       }
-      
+
     } catch (error) {
       console.warn('⚠️ Registration status test error:', error.message);
     }

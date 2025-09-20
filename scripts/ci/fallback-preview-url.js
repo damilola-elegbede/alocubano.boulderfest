@@ -2,14 +2,14 @@
 
 /**
  * Fallback Preview URL Extractor with Resilient Chain
- * 
+ *
  * Implements comprehensive fallback mechanisms to ensure 98%+ CI success rate:
  * 1. Primary: Vercel Bot Comments Extraction
  * 2. Secondary: GitHub Deployments API
  * 3. Tertiary: Vercel CLI/API Integration
  * 4. Quaternary: Production URL Fallback
  * 5. Final: Skip E2E with Warning
- * 
+ *
  * Includes health checks, retry logic, and service availability validation.
  */
 
@@ -25,20 +25,20 @@ class ResilientPreviewURLExtractor {
     if (!process.env.VERCEL_ORG_ID) {
       throw new Error('❌ FATAL: VERCEL_ORG_ID secret not configured');
     }
-    
+
     this.githubToken = process.env.GITHUB_TOKEN;
     this.vercelToken = process.env.VERCEL_TOKEN;
     this.vercelOrgId = process.env.VERCEL_ORG_ID;
     this.repoOwner = process.env.GITHUB_REPOSITORY?.split('/')[0] || 'default-owner';
     this.repoName = process.env.GITHUB_REPOSITORY?.split('/')[1] || 'default-repo';
-    this.prNumber = process.env.GITHUB_PR_NUMBER || process.env.PR_NUMBER || 
+    this.prNumber = process.env.GITHUB_PR_NUMBER || process.env.PR_NUMBER ||
                    (process.env.GITHUB_REF?.match(/refs\/pull\/(\d+)\/merge/) || [])[1];
     this.commitSha = process.env.GITHUB_SHA || process.env.COMMIT_SHA;
-    
+
     this.maxRetries = 3;
     this.retryDelayMs = 5000;
     this.healthCheckTimeout = 15000;
-    
+
     this.logInfo('🛡️ Resilient Preview URL Extractor initialized');
     this.logInfo(`   Repository: ${this.repoOwner}/${this.repoName}`);
     this.logInfo(`   PR Number: ${this.prNumber || 'Not available'}`);
@@ -84,10 +84,10 @@ class ResilientPreviewURLExtractor {
 
     for (const fallback of fallbackChain) {
       this.logInfo(`\n🔍 Trying: ${fallback.name}...`);
-      
+
       try {
         url = await this.withRetry(() => this[fallback.method]());
-        
+
         if (url) {
           usedFallback = fallback.name;
           this.logSuccess(`Found URL from ${fallback.name}: ${url}`);
@@ -95,7 +95,7 @@ class ResilientPreviewURLExtractor {
         } else {
           this.logWarning(`${fallback.name} returned no URL`);
         }
-        
+
       } catch (error) {
         this.logError(`${fallback.name} failed: ${error.message}`);
       }
@@ -108,7 +108,7 @@ class ResilientPreviewURLExtractor {
 
     // Validate the URL with health checks
     const validatedUrl = await this.validateUrlWithHealthCheck(url);
-    
+
     if (!validatedUrl) {
       this.logError(`URL validation failed for: ${url}`);
       throw new Error('❌ FATAL: URL validation failed - deployment may not be ready');
@@ -116,7 +116,7 @@ class ResilientPreviewURLExtractor {
 
     // Log success metrics
     this.logSuccessMetrics(validatedUrl, usedFallback);
-    
+
     return {
       success: true,
       url: validatedUrl,
@@ -137,7 +137,7 @@ class ResilientPreviewURLExtractor {
         if (attempt === maxAttempts) {
           throw error;
         }
-        
+
         const delay = this.retryDelayMs * Math.pow(2, attempt - 1);
         this.logWarning(`Attempt ${attempt}/${maxAttempts} failed, retrying in ${delay}ms...`);
         await this.sleep(delay);
@@ -151,7 +151,7 @@ class ResilientPreviewURLExtractor {
   async tryEnvironmentVariables() {
     const envVars = [
       'VERCEL_PREVIEW_URL',
-      'PREVIEW_URL', 
+      'PREVIEW_URL',
       'VERCEL_URL',
       'DEPLOYMENT_URL',
       'E2E_TARGET_URL'
@@ -177,7 +177,7 @@ class ResilientPreviewURLExtractor {
     }
 
     const url = `https://api.github.com/repos/${this.repoOwner}/${this.repoName}/issues/${this.prNumber}/comments`;
-    
+
     const response = await fetch(url, {
       headers: {
         'Authorization': `token ${this.githubToken}`,
@@ -191,12 +191,12 @@ class ResilientPreviewURLExtractor {
     }
 
     const comments = await response.json();
-    
+
     // Enhanced bot detection and URL extraction
     for (const comment of comments.reverse()) {
       if (this.isVercelBot(comment.user)) {
         const urls = this.extractUrlsFromComment(comment.body);
-        
+
         // Prefer preview URLs over production
         const previewUrl = urls.find(url => url.includes('-git-') || url.includes('.vercel.app'));
         if (previewUrl) {
@@ -217,7 +217,7 @@ class ResilientPreviewURLExtractor {
     }
 
     const url = `https://api.github.com/repos/${this.repoOwner}/${this.repoName}/deployments`;
-    
+
     const response = await fetch(url, {
       headers: {
         'Authorization': `token ${this.githubToken}`,
@@ -230,10 +230,10 @@ class ResilientPreviewURLExtractor {
     }
 
     const deployments = await response.json();
-    
+
     // Find recent deployments for our commit or PR
     const relevantDeployments = deployments
-      .filter(d => 
+      .filter(d =>
         (this.commitSha && d.sha === this.commitSha) ||
         (d.environment && d.environment.includes('Preview'))
       )
@@ -241,7 +241,7 @@ class ResilientPreviewURLExtractor {
 
     for (const deployment of relevantDeployments) {
       const statusUrl = `https://api.github.com/repos/${this.repoOwner}/${this.repoName}/deployments/${deployment.id}/statuses`;
-      
+
       try {
         const statusResponse = await fetch(statusUrl, {
           headers: {
@@ -253,7 +253,7 @@ class ResilientPreviewURLExtractor {
         if (statusResponse.ok) {
           const statuses = await statusResponse.json();
           const successStatus = statuses.find(s => s.state === 'success' && s.target_url);
-          
+
           if (successStatus?.target_url) {
             return successStatus.target_url;
           }
@@ -284,8 +284,8 @@ class ResilientPreviewURLExtractor {
 
     for (const command of commands) {
       try {
-        const output = execSync(command, { 
-          encoding: 'utf8', 
+        const output = execSync(command, {
+          encoding: 'utf8',
           timeout: 15000,
           stdio: 'pipe',
           env: {
@@ -295,11 +295,11 @@ class ResilientPreviewURLExtractor {
         });
 
         const urls = this.extractUrlsFromText(output);
-        const previewUrl = urls.find(url => 
-          url.includes('.vercel.app') && 
+        const previewUrl = urls.find(url =>
+          url.includes('.vercel.app') &&
           !url.includes('alocubano-boulderfest.vercel.app') // Not production
         );
-        
+
         if (previewUrl) {
           return previewUrl;
         }
@@ -320,7 +320,7 @@ class ResilientPreviewURLExtractor {
 
     // Get project info first
     let projectId = process.env.VERCEL_PROJECT_ID;
-    
+
     if (!projectId) {
       // Try to get project ID from project name
       const projectsUrl = 'https://api.vercel.com/v9/projects';
@@ -333,11 +333,11 @@ class ResilientPreviewURLExtractor {
 
       if (projectsResponse.ok) {
         const projectsData = await projectsResponse.json();
-        const project = projectsData.projects?.find(p => 
-          p.name === this.repoName || 
+        const project = projectsData.projects?.find(p =>
+          p.name === this.repoName ||
           p.name.includes('alocubano')
         );
-        
+
         if (project) {
           projectId = project.id;
         }
@@ -350,7 +350,7 @@ class ResilientPreviewURLExtractor {
 
     // Get deployments
     const deploymentsUrl = `https://api.vercel.com/v6/deployments?projectId=${projectId}&limit=20`;
-    
+
     const response = await fetch(deploymentsUrl, {
       headers: {
         'Authorization': `Bearer ${this.vercelToken}`,
@@ -366,8 +366,8 @@ class ResilientPreviewURLExtractor {
     const deployments = data.deployments || [];
 
     // Find preview deployment
-    const previewDeployment = deployments.find(d => 
-      d.state === 'READY' && 
+    const previewDeployment = deployments.find(d =>
+      d.state === 'READY' &&
       d.type === 'LAMBDAS' &&
       (!this.commitSha || d.meta?.githubCommitSha === this.commitSha)
     );
@@ -401,10 +401,10 @@ class ResilientPreviewURLExtractor {
 
     for (const endpoint of healthEndpoints) {
       const testUrl = `${url}${endpoint}`;
-      
+
       try {
         this.logInfo(`   Testing: ${testUrl}`);
-        
+
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), this.healthCheckTimeout);
 
@@ -422,7 +422,7 @@ class ResilientPreviewURLExtractor {
           this.logSuccess(`URL validation successful (${response.status})`);
           return url;
         }
-        
+
       } catch (error) {
         this.logWarning(`Health check failed for ${testUrl}: ${error.message}`);
       }
@@ -443,7 +443,7 @@ class ResilientPreviewURLExtractor {
     ];
 
     const urls = [];
-    
+
     for (const pattern of patterns) {
       const matches = text.match(pattern) || [];
       urls.push(...matches);
@@ -484,7 +484,7 @@ class ResilientPreviewURLExtractor {
    */
   isVercelBot(user) {
     if (!user) return false;
-    
+
     const botIndicators = [
       user.login?.toLowerCase().includes('vercel'),
       user.login?.toLowerCase().includes('github-actions'),
@@ -541,7 +541,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
         console.log(`\nPREVIEW_URL=${result.url}`);
         console.log(`FALLBACK_USED=${result.fallbackUsed}`);
         console.log(`SHOULD_RUN_E2E=true`);
-        
+
         // Write to output file if requested
         if (process.argv.includes('--output-file')) {
           const outputFile = process.argv[process.argv.indexOf('--output-file') + 1] || 'preview-url.env';
@@ -551,18 +551,18 @@ if (import.meta.url === `file://${process.argv[1]}`) {
             `SHOULD_RUN_E2E=true`,
             `URL_VALIDATION_STATUS=SUCCESS`
           ].join('\n') + '\n';
-          
+
           writeFileSync(outputFile, content);
           console.log(`✅ Results written to ${outputFile}`);
         }
-        
+
         process.exit(0);
       } else {
         console.log(`\nPREVIEW_URL=`);
         console.log(`FALLBACK_USED=NONE`);
         console.log(`SHOULD_RUN_E2E=false`);
         console.log(`SKIP_REASON=${result.reason || 'All strategies failed'}`);
-        
+
         // Write to output file for CI coordination
         if (process.argv.includes('--output-file')) {
           const outputFile = process.argv[process.argv.indexOf('--output-file') + 1] || 'preview-url.env';
@@ -573,7 +573,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
             `SKIP_REASON=${result.reason || 'All strategies failed'}`,
             `URL_VALIDATION_STATUS=FAILED`
           ].join('\n') + '\n';
-          
+
           writeFileSync(outputFile, content);
           console.log(`⚠️ Failure details written to ${outputFile}`);
         }
@@ -586,7 +586,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     .catch(error => {
       console.error(`\n❌ CRITICAL ERROR: ${error.message}`);
       console.error(error.stack);
-      
+
       // Still write failure info for CI coordination
       if (process.argv.includes('--output-file')) {
         const outputFile = process.argv[process.argv.indexOf('--output-file') + 1] || 'preview-url.env';
@@ -597,10 +597,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
           `SKIP_REASON=Critical error: ${error.message}`,
           `URL_VALIDATION_STATUS=ERROR`
         ].join('\n') + '\n';
-        
+
         writeFileSync(outputFile, content);
       }
-      
+
       process.exit(1);
     });
 }

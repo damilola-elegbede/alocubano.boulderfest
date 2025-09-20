@@ -2,7 +2,7 @@
 
 /**
  * Test CI Server
- * 
+ *
  * Quick validation that the CI server can start and serve basic endpoints
  */
 
@@ -45,7 +45,7 @@ async function waitForServer(maxAttempts = 30) {
 
 async function startServer() {
   console.log('🚀 Starting CI server...');
-  
+
   serverProcess = spawn('node', ['scripts/ci-server.js'], {
     stdio: ['pipe', 'pipe', 'pipe'],
     env: {
@@ -75,10 +75,10 @@ async function startServer() {
 function stopServer() {
   if (serverProcess) {
     console.log('\n🛑 Stopping server...');
-    
+
     return new Promise((resolve) => {
       let exited = false;
-      
+
       const onExit = () => {
         if (!exited) {
           exited = true;
@@ -87,10 +87,10 @@ function stopServer() {
           resolve();
         }
       };
-      
+
       serverProcess.once('exit', onExit);
       serverProcess.kill('SIGTERM');
-      
+
       // Force kill after 5 seconds if still running
       setTimeout(() => {
         if (!exited && serverProcess) {
@@ -106,13 +106,13 @@ function stopServer() {
 
 async function testHealthEndpoint() {
   const response = await fetch(`${BASE_URL}/health`);
-  
+
   if (!response.ok) {
     throw new Error(`Health endpoint returned ${response.status}`);
   }
-  
+
   const data = await response.json();
-  
+
   if (data.status !== 'ok') {
     throw new Error(`Expected status 'ok', got '${data.status}'`);
   }
@@ -120,13 +120,13 @@ async function testHealthEndpoint() {
 
 async function testApiHealthSimple() {
   const response = await fetch(`${BASE_URL}/api/health/simple`);
-  
+
   if (!response.ok) {
     throw new Error(`API health/simple returned ${response.status}`);
   }
-  
+
   const data = await response.json();
-  
+
   if (data.status !== 'healthy') {
     throw new Error(`Expected status 'healthy', got '${data.status}'`);
   }
@@ -134,13 +134,13 @@ async function testApiHealthSimple() {
 
 async function test404Handling() {
   const response = await fetch(`${BASE_URL}/api/nonexistent`);
-  
+
   if (response.status !== 404) {
     throw new Error(`Expected 404 for nonexistent endpoint, got ${response.status}`);
   }
-  
+
   const data = await response.json();
-  
+
   if (!data.error || !data.error.includes('not found')) {
     throw new Error(`Expected error message about endpoint not found`);
   }
@@ -149,11 +149,11 @@ async function test404Handling() {
 async function testStaticFiles() {
   // Test that index.html or at least some HTML response is served
   const response = await fetch(`${BASE_URL}/`);
-  
+
   if (!response.ok) {
     throw new Error(`Root path returned ${response.status}`);
   }
-  
+
   // Should return HTML content or at least not error
   const contentType = response.headers.get('content-type');
   if (!contentType || (!contentType.includes('html') && !contentType.includes('text'))) {
@@ -163,27 +163,27 @@ async function testStaticFiles() {
 
 async function runTests() {
   console.log('🧪 Testing CI Server\n');
-  
+
   try {
     await startServer();
-    
+
     // Run tests
     await runTest('Health endpoint', testHealthEndpoint);
     await runTest('API health/simple endpoint', testApiHealthSimple);
     await runTest('404 handling', test404Handling);
     await runTest('Static files', testStaticFiles);
-    
+
   } catch (error) {
     console.error('Setup error:', error);
   } finally {
     await stopServer();
   }
-  
+
   // Report results
   console.log('\n📊 Test Results');
   console.log('================');
   console.log(`Passed: ${testsPassed}/${testsTotal}`);
-  
+
   if (testsPassed === testsTotal) {
     console.log('✅ All tests passed! CI server is ready.');
     process.exit(0);

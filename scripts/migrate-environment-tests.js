@@ -2,10 +2,10 @@
 
 /**
  * Automated Migration Script: TestEnvironmentManager → Simple Helpers
- * 
+ *
  * This script automatically converts all TestEnvironmentManager usage to simple helpers.
  * It handles different usage patterns and maintains proper error handling.
- * 
+ *
  * Usage: node scripts/migrate-environment-tests.js [--dry-run] [--rollback]
  */
 
@@ -28,7 +28,7 @@ const CONFIG = {
       TestEnvironmentManager: /import\s*{\s*TestEnvironmentManager(?:\s*,\s*testEnvManager)?\s*}\s*from\s*["'][^"']*test-environment-manager\.js["']/g,
       both: /import\s*{\s*TestEnvironmentManager\s*,\s*testEnvManager\s*}\s*from\s*["'][^"']*test-environment-manager\.js["']/g
     },
-    
+
     // Usage pattern matching
     usage: {
       backup: /(?:testEnvManager|envManager)\.backup\(\)/g,
@@ -91,7 +91,7 @@ class TestEnvironmentMigrator {
    */
   async migrate() {
     console.log('🔄 Starting TestEnvironmentManager → Simple Helpers migration...');
-    
+
     if (this.rollback) {
       return this.performRollback();
     }
@@ -132,13 +132,13 @@ class TestEnvironmentMigrator {
    */
   async findTestFiles() {
     const testFiles = [];
-    
+
     async function scanDirectory(dir) {
       const entries = await fs.readdir(dir, { withFileTypes: true });
-      
+
       for (const entry of entries) {
         const fullPath = join(dir, entry.name);
-        
+
         if (entry.isDirectory()) {
           await scanDirectory(fullPath);
         } else if (entry.name.endsWith('.js') && entry.name.includes('test')) {
@@ -164,11 +164,11 @@ class TestEnvironmentMigrator {
    */
   async processFile(filepath) {
     this.logger.logSummary('processed');
-    
+
     try {
       const originalContent = await fs.readFile(filepath, 'utf8');
       let modifiedContent = originalContent;
-      
+
       // Analyze usage patterns
       const usagePattern = this.analyzeUsagePattern(originalContent);
       console.log(`📄 Processing ${filepath} (${usagePattern} pattern)`);
@@ -270,11 +270,11 @@ class TestEnvironmentMigrator {
 
     // Add appropriate simple-helpers import
     const importToAdd = importTransformations[pattern];
-    
+
     // Find a good place to add the import (after existing imports)
     const importRegex = /^import\s+.*from\s+["'][^"']+["'];?\s*$/gm;
     const importMatches = [...result.matchAll(importRegex)];
-    
+
     if (importMatches.length > 0) {
       // Add after the last import
       const lastImport = importMatches[importMatches.length - 1];
@@ -373,7 +373,7 @@ class TestEnvironmentMigrator {
       // Add variable declaration after describe/it declarations
       const testBlockRegex = /(describe|it|test).*\{/g;
       let result = content;
-      
+
       // Look for patterns where backup/restore are used
       if (content.includes('envBackup') && !content.includes('let envBackup')) {
         // Add declaration at the beginning of the file's test blocks
@@ -382,7 +382,7 @@ class TestEnvironmentMigrator {
           '$1  let envBackup;\n\n  $2'
         );
       }
-      
+
       return result;
     }
     return content;
@@ -428,7 +428,7 @@ class TestEnvironmentMigrator {
             // Find backup file
             const backupPath = join(CONFIG.backupDir, filepath.replace(/\//g, '_') + '.backup');
             const backupContent = await fs.readFile(backupPath, 'utf8');
-            
+
             // Restore original content
             await fs.writeFile(filepath, backupContent);
             console.log(`✅ Restored ${filepath}`);
@@ -440,7 +440,7 @@ class TestEnvironmentMigrator {
       }
 
       console.log(`\n🔄 Rollback completed! Restored ${restoredCount} files.`);
-      
+
       // Clean up
       await fs.rm(CONFIG.backupDir, { recursive: true, force: true });
       await fs.unlink(CONFIG.logFile);
@@ -456,7 +456,7 @@ class TestEnvironmentMigrator {
    */
   printSummary() {
     const { summary } = this.logger.log;
-    
+
     console.log('\n📊 Migration Summary:');
     console.log(`   Files processed: ${summary.processed}`);
     console.log(`   Files modified: ${summary.modified}`);

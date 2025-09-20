@@ -1,6 +1,6 @@
 /**
  * Admin Authentication Helper - Comprehensive admin auth testing utilities
- * 
+ *
  * Provides utilities for testing admin authentication, authorization,
  * security scenarios, and JWT token management.
  */
@@ -18,7 +18,7 @@ class SecurityTestHelper {
       sessionTimeout: options.sessionTimeout || 24 * 60 * 60 * 1000, // 24 hours
       ...options
     };
-    
+
     console.log(`🔐 Security Test Helper initialized: ${this.testId}`);
   }
 
@@ -108,7 +108,7 @@ class SecurityTestHelper {
    */
   createSessionSecurityTests() {
     const validToken = this.generateTestJWT({ role: 'admin' });
-    
+
     return {
       validSession: {
         token: validToken,
@@ -174,18 +174,18 @@ class SecurityTestHelper {
 
       // Decode payload using Node.js Buffer
       const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString());
-      
+
       // Tamper with payload (elevate privileges)
       payload.role = 'super-admin';
       payload.permissions = ['*'];
-      
+
       // Re-encode payload using Node.js Buffer
       const tamperedPayload = Buffer.from(JSON.stringify(payload))
         .toString('base64')
         .replace(/\+/g, '-')
         .replace(/\//g, '_')
         .replace(/=/g, '');
-      
+
       return `${parts[0]}.${tamperedPayload}.${parts[2]}`;
     } catch (error) {
       return 'tampered.invalid.token';
@@ -220,7 +220,7 @@ class SecurityTestHelper {
     };
 
     const now = Math.floor(Date.now() / 1000);
-    const exp = expiresIn.startsWith('-') 
+    const exp = expiresIn.startsWith('-')
       ? now - parseInt(expiresIn.slice(1, -1)) * 3600 // Expired token
       : now + parseInt(expiresIn.slice(0, -1)) * 3600; // Valid token
 
@@ -238,7 +238,7 @@ class SecurityTestHelper {
       .replace(/\+/g, '-')
       .replace(/\//g, '_')
       .replace(/=/g, '');
-    
+
     const encodedPayload = Buffer.from(JSON.stringify(tokenPayload))
       .toString('base64')
       .replace(/\+/g, '-')
@@ -277,7 +277,7 @@ class SecurityTestHelper {
 
     for (const [header, errorMessage] of Object.entries(requiredHeaders)) {
       const present = headers[header] || headers[header.toLowerCase()];
-      
+
       if (present) {
         results.passed++;
         results.details.push({
@@ -331,7 +331,7 @@ class JWTTestHelper {
    */
   createToken(payload, expiresIn = 24 * 60 * 60) {
     const now = Math.floor(Date.now() / 1000);
-    
+
     const tokenPayload = {
       iat: now,
       exp: now + expiresIn,
@@ -407,19 +407,19 @@ export default function createAdminAuth(options = {}) {
       switch (scenario) {
         case 'valid':
           return securityHelper.generateAdminCredentials();
-        
+
         case 'invalid':
           return securityHelper.generateInvalidCredentials();
-        
+
         case 'brute-force':
           return securityHelper.generateBruteForceAttempts();
-        
+
         case 'session-security':
           return securityHelper.createSessionSecurityTests();
-        
+
         case 'csrf':
           return securityHelper.generateCSRFTests();
-        
+
         default:
           throw new Error(`Unknown login test scenario: ${scenario}`);
       }
@@ -457,7 +457,7 @@ export default function createAdminAuth(options = {}) {
       }
 
       const decoded = jwtHelper.decodeToken(token);
-      
+
       if (!decoded) {
         return { valid: false, error: 'Invalid token format' };
       }

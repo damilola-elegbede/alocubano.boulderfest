@@ -55,11 +55,11 @@ async function recreateTicketsTable() {
 
   console.log("Creating trigger for updated_at...");
   await db.execute(`
-    CREATE TRIGGER update_tickets_updated_at 
-      AFTER UPDATE ON tickets 
+    CREATE TRIGGER update_tickets_updated_at
+      AFTER UPDATE ON tickets
     BEGIN
-      UPDATE tickets 
-      SET updated_at = CURRENT_TIMESTAMP 
+      UPDATE tickets
+      SET updated_at = CURRENT_TIMESTAMP
       WHERE id = NEW.id;
     END
   `);

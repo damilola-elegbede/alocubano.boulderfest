@@ -25,7 +25,7 @@ const expectedFiles = {
     "pages/core/home.html",
     "pages/core/about.html",
     "pages/core/contact.html",
-    "pages/core/donations.html", 
+    "pages/core/donations.html",
     "pages/core/tickets.html",
     "pages/core/success.html",
     "pages/core/failure.html",
@@ -40,7 +40,7 @@ const expectedFiles = {
   ],
   "Admin Pages (pages/admin/)": [
     "pages/admin/index.html",
-    "pages/admin/login.html", 
+    "pages/admin/login.html",
     "pages/admin/dashboard.html",
     "pages/admin/checkin.html",
     "pages/admin/analytics.html",
@@ -75,7 +75,7 @@ const expectedFiles = {
   "Static Assets": [
     "css/base.css",
     "css/typography.css",
-    "js/main.js", 
+    "js/main.js",
     "js/navigation.js",
     "images/logo.png",
     "images/favicons/favicon-32x32.png",
@@ -86,7 +86,7 @@ let allGood = true;
 let missingFiles = [];
 let extraInfo = [];
 
-// Event structure validation - Updated for organized structure  
+// Event structure validation - Updated for organized structure
 function validateEventStructure() {
   const events = [
     { name: "2025-boulder", path: "pages/events/2025-boulder" },
@@ -119,8 +119,8 @@ function validateEventStructure() {
     });
 
     // Check hero images (using legacy naming for compatibility)
-    const legacyEventName = event.name === "2025-boulder" ? "boulder-fest-2025" : 
-                           event.name === "2026-boulder" ? "boulder-fest-2026" : 
+    const legacyEventName = event.name === "2025-boulder" ? "boulder-fest-2025" :
+                           event.name === "2026-boulder" ? "boulder-fest-2026" :
                            "weekender-2026-09";
     const heroImage = path.join(heroImagePath, `${legacyEventName}-hero.jpg`);
     if (fs.existsSync(heroImage)) {
@@ -151,17 +151,17 @@ function validateEventStructure() {
     });
   });
 
-  // Check gallery data files - OPTIONAL in CI/CD environments  
+  // Check gallery data files - OPTIONAL in CI/CD environments
   console.log(`  📸 Validating gallery data files:`);
   const isCI = process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true";
-  
+
   // Try multiple possible locations for gallery data
   const possibleGalleryPaths = [
     path.join(projectRoot, "public", "gallery-data"),
     path.join(projectRoot, "gallery-data"),
     path.join(projectRoot, "dist", "gallery-data")
   ];
-  
+
   let galleryDataDir = null;
   for (const possiblePath of possibleGalleryPaths) {
     if (fs.existsSync(possiblePath)) {
@@ -169,12 +169,12 @@ function validateEventStructure() {
       break;
     }
   }
-  
+
   if (galleryDataDir) {
     console.log(`    ✅ Gallery data directory exists at ${galleryDataDir}`);
     events.forEach((event) => {
-      const legacyEventName = event.name === "2025-boulder" ? "boulder-fest-2025" : 
-                             event.name === "2026-boulder" ? "boulder-fest-2026" : 
+      const legacyEventName = event.name === "2025-boulder" ? "boulder-fest-2025" :
+                             event.name === "2026-boulder" ? "boulder-fest-2026" :
                              "weekender-2026-09";
       const galleryFile = path.join(galleryDataDir, `${legacyEventName}.json`);
       if (fs.existsSync(galleryFile)) {
@@ -239,7 +239,7 @@ if (fs.existsSync(vercelJsonPath)) {
 
     if (config.rewrites && config.rewrites.length > 0) {
       console.log("  ✅ Has rewrite rules:");
-      
+
       // Check for critical routing rules - Updated for organized structure
       const homeRoute = config.rewrites.find(r =>
         r.source === "/home" && r.destination === "/pages/core/home"
@@ -251,9 +251,9 @@ if (fs.existsSync(vercelJsonPath)) {
         console.log("    ❌ Home route (/home) -> /pages/core/home MISSING");
         allGood = false;
       }
-      
+
       // Check core pages routing
-      const coreRoute = config.rewrites.find(r => 
+      const coreRoute = config.rewrites.find(r =>
         r.source && r.source.includes("(about|tickets|donations|contact|checkout-success|checkout-cancel|my-tickets|success|failure)") &&
         r.destination === "/pages/core/$1"
       );
@@ -262,13 +262,13 @@ if (fs.existsSync(vercelJsonPath)) {
       } else {
         console.log("    ⚠️  Core pages routing pattern not found");
       }
-      
+
       // Check event routes - look for organized structure routing
-      const eventRoutes = config.rewrites.filter(r => 
+      const eventRoutes = config.rewrites.filter(r =>
         r.destination && r.destination.includes("/pages/events/")
       );
       console.log(`    ✅ Found ${eventRoutes.length} event-specific routes`);
-      
+
       console.log("  📝 All rewrite rules:");
       config.rewrites.forEach((rule, index) => {
         console.log(`    ${index + 1}. ${rule.source} -> ${rule.destination}`);
@@ -310,7 +310,7 @@ if (fs.existsSync(pagesDir)) {
       console.log(`    pages/core/${file} (${size} KB)`);
     });
   }
-  
+
   // Check event pages
   const eventsDir = path.join(pagesDir, "events");
   if (fs.existsSync(eventsDir)) {
@@ -331,7 +331,7 @@ if (fs.existsSync(pagesDir)) {
       });
     });
   }
-  
+
   // Check admin pages
   const adminDir = path.join(pagesDir, "admin");
   if (fs.existsSync(adminDir)) {
@@ -344,7 +344,7 @@ if (fs.existsSync(pagesDir)) {
       console.log(`    pages/admin/${file} (${size} KB)`);
     });
   }
-  
+
   // Check root level pages
   const rootPageFiles = fs.readdirSync(pagesDir).filter(file => file.endsWith(".html"));
   if (rootPageFiles.length > 0) {

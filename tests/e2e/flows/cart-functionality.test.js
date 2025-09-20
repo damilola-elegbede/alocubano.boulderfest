@@ -54,14 +54,14 @@ test.describe('Cart Functionality', () => {
   test('should add weekend ticket to cart', async ({ page }) => {
     // Look for weekend ticket add button
     const weekendButton = page.locator('button:has-text("Weekend"), .weekend button, [data-ticket="weekend"] button').first();
-    
+
     if (await weekendButton.count() > 0) {
       await weekendButton.click();
-      
+
       // Cart should show item
       const cartCount = page.locator('.cart-count, .cart-badge, .cart-items-count');
       await expect(cartCount).toHaveText('1');
-      
+
       // Cart total should update
       const cartTotal = page.locator('.cart-total, .total-amount');
       await expect(cartTotal).toBeVisible();
@@ -70,10 +70,10 @@ test.describe('Cart Functionality', () => {
 
   test('should add Saturday ticket to cart', async ({ page }) => {
     const saturdayButton = page.locator('button:has-text("Saturday"), .saturday button, [data-ticket="saturday"] button').first();
-    
+
     if (await saturdayButton.count() > 0) {
       await saturdayButton.click();
-      
+
       // Verify header cart badge updated
       const cartBadge = page.locator('.nav-cart-badge');
       await expect(cartBadge).toBeVisible();
@@ -82,10 +82,10 @@ test.describe('Cart Functionality', () => {
 
   test('should add Sunday ticket to cart', async ({ page }) => {
     const sundayButton = page.locator('button:has-text("Sunday"), .sunday button, [data-ticket="sunday"] button').first();
-    
+
     if (await sundayButton.count() > 0) {
       await sundayButton.click();
-      
+
       // Verify header cart badge updated
       const cartBadge = page.locator('.nav-cart-badge');
       await expect(cartBadge).toBeVisible();
@@ -95,14 +95,14 @@ test.describe('Cart Functionality', () => {
   test('should handle multiple ticket types in cart', async ({ page }) => {
     // E2E FIX: Enhanced cart state persistence testing
     console.log('🎫 Testing multiple ticket types in cart...');
-    
+
     // Add weekend ticket
     const weekendBtn = page.locator('button:has-text("Weekend"), .weekend button, [data-ticket="weekend"] button').first();
     if (await weekendBtn.count() > 0) {
       console.log('✅ Found weekend button, clicking...');
       await weekendBtn.click();
       await page.waitForTimeout(500); // Allow cart state to update
-      
+
       // Check localStorage persistence
       const cartState1 = await page.evaluate(() => {
         const cart = localStorage.getItem('cart');
@@ -110,14 +110,14 @@ test.describe('Cart Functionality', () => {
       });
       console.log('🗄️ Cart state after weekend ticket:', cartState1);
     }
-    
+
     // Add Saturday ticket
     const saturdayBtn = page.locator('button:has-text("Saturday"), .saturday button, [data-ticket="saturday"] button').first();
     if (await saturdayBtn.count() > 0) {
       console.log('✅ Found saturday button, clicking...');
       await saturdayBtn.click();
       await page.waitForTimeout(500); // Allow cart state to update
-      
+
       // Check localStorage persistence
       const cartState2 = await page.evaluate(() => {
         const cart = localStorage.getItem('cart');
@@ -125,7 +125,7 @@ test.describe('Cart Functionality', () => {
       });
       console.log('🗄️ Cart state after saturday ticket:', cartState2);
     }
-    
+
     // Check header cart badge for item count
     const cartBadge = page.locator('.nav-cart-badge');
 
@@ -136,7 +136,7 @@ test.describe('Cart Functionality', () => {
       cartCount = parseInt(badgeText) || 0;
       console.log('🔢 Header badge count:', cartCount);
     }
-    
+
     // Check localStorage as final fallback
     if (cartCount === 0) {
       const cartState = await page.evaluate(() => {
@@ -154,12 +154,12 @@ test.describe('Cart Functionality', () => {
       cartCount = cartState;
       console.log('🔢 localStorage count:', cartCount);
     }
-    
+
     console.log('🎯 Final cart count check:', cartCount);
-    
+
     // E2E FIX: Accept any positive count (cart state persistence working)
     expect(cartCount).toBeGreaterThanOrEqual(0);
-    
+
     // If no items were added, that's also valid (buttons might not exist in preview)
     if (cartCount === 0) {
       console.log('ℹ️ No items in cart - buttons may not be available in preview environment');
@@ -235,12 +235,12 @@ test.describe('Cart Functionality', () => {
     if (await addButton.count() > 0) {
       await addButton.click();
       await page.waitForLoadState('domcontentloaded');
-      
+
       // Look for quantity controls
       const plusButton = page.locator('.quantity-plus, .qty-increase, button[data-action="increase"]');
       if (await plusButton.count() > 0) {
         await plusButton.first().click();
-        
+
         // Quantity should increase
         const quantity = page.locator('.quantity-input, .qty-input, input[name="quantity"]');
         if (await quantity.count() > 0) {
@@ -283,7 +283,7 @@ test.describe('Cart Functionality', () => {
     const weekendButton = page.locator('button:has-text("Weekend")').first();
     if (await weekendButton.count() > 0) {
       await weekendButton.click();
-      
+
       // Check that total is displayed and is a monetary amount
       const total = page.locator('.cart-total, .total-amount, .total-price');
       if (await total.count() > 0) {
@@ -300,13 +300,13 @@ test.describe('Cart Functionality', () => {
       await addButton.click();
       await page.waitForLoadState('domcontentloaded');
     }
-    
+
     // Navigate to another page
     await page.goto('/about');
 
     // Navigate back to tickets
     await page.goto('/tickets');
-    
+
     // Header cart badge should still show items
     const cartBadge = page.locator('.nav-cart-badge');
     if (await cartBadge.count() > 0) {
@@ -321,19 +321,19 @@ test.describe('Cart Functionality', () => {
     if (await addButton.count() > 0) {
       await addButton.click();
       await page.waitForLoadState('domcontentloaded');
-      
+
       // Look for checkout button
       const checkoutButton = page.locator('button:has-text("Checkout"), .checkout-btn, .proceed-to-checkout');
       if (await checkoutButton.count() > 0) {
         await checkoutButton.click();
-        
+
         // Should navigate to checkout or show checkout form
         await page.waitForLoadState('domcontentloaded');
         const currentUrl = page.url();
         const pageContent = await page.locator('body').textContent();
-        
+
         expect(
-          currentUrl.includes('checkout') || 
+          currentUrl.includes('checkout') ||
           pageContent.includes('checkout') ||
           pageContent.includes('payment')
         ).toBeTruthy();

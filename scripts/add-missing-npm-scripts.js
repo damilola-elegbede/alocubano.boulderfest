@@ -34,7 +34,7 @@ if (modified) {
   // Sort scripts alphabetically within categories
   const scripts = packageJson.scripts;
   const sortedScripts = {};
-  
+
   // Group scripts by category
   const categories = {
     build: [],
@@ -48,7 +48,7 @@ if (modified) {
     quality: [],
     other: []
   };
-  
+
   for (const [name, command] of Object.entries(scripts)) {
     const category = name.split(':')[0];
     if (categories[category]) {
@@ -57,7 +57,7 @@ if (modified) {
       categories.other.push([name, command]);
     }
   }
-  
+
   // Sort within categories and rebuild
   for (const [category, items] of Object.entries(categories)) {
     items.sort((a, b) => a[0].localeCompare(b[0]));
@@ -65,9 +65,9 @@ if (modified) {
       sortedScripts[name] = command;
     }
   }
-  
+
   packageJson.scripts = sortedScripts;
-  
+
   // Write back to package.json
   fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n');
   console.log('✅ package.json updated with missing scripts');

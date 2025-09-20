@@ -1,7 +1,7 @@
 /**
  * Admin MFA Bypass Integration Tests
  * Tests MFA bypass logic in various environments and conditions
- * 
+ *
  * Tests:
  * 1. MFA is skipped when SKIP_MFA=true
  * 2. MFA is skipped in test environments (NODE_ENV=test)
@@ -46,11 +46,11 @@ describe('Admin MFA Bypass Integration', () => {
 
   beforeEach(async () => {
     dbClient = await getDbClient();
-    
+
     // Backup current environment variables
     originalEnv = backupEnv([
       'SKIP_MFA',
-      'NODE_ENV', 
+      'NODE_ENV',
       'CI',
       'VERCEL_ENV',
       'E2E_TEST_MODE'
@@ -65,14 +65,14 @@ describe('Admin MFA Bypass Integration', () => {
   test('MFA is bypassed when SKIP_MFA=true', async () => {
     // Set SKIP_MFA=true
     process.env.SKIP_MFA = 'true';
-    
+
     const loginData = {
       username: 'admin',
       password: adminPassword
     };
 
     const response = await testRequest('POST', '/api/admin/login', loginData);
-    
+
     // Skip if service unavailable
     if (response.status === 0) {
       console.warn('⚠️ Admin auth service unavailable - skipping SKIP_MFA test');
@@ -84,7 +84,7 @@ describe('Admin MFA Bypass Integration', () => {
     expect(response.data).toHaveProperty('success', true);
     expect(response.data).not.toHaveProperty('requiresMfa');
     expect(response.data).toHaveProperty('expiresIn');
-    
+
     // Check that MFA was not used
     if (response.data.hasOwnProperty('mfaUsed')) {
       expect(response.data.mfaUsed).toBe(false);
@@ -97,14 +97,14 @@ describe('Admin MFA Bypass Integration', () => {
     delete process.env.SKIP_MFA; // Ensure SKIP_MFA is not set
     delete process.env.CI;
     delete process.env.VERCEL_ENV;
-    
+
     const loginData = {
       username: 'admin',
       password: adminPassword
     };
 
     const response = await testRequest('POST', '/api/admin/login', loginData);
-    
+
     // Skip if service unavailable
     if (response.status === 0) {
       console.warn('⚠️ Admin auth service unavailable - skipping NODE_ENV test');
@@ -115,7 +115,7 @@ describe('Admin MFA Bypass Integration', () => {
     expect(response.status).toBe(HTTP_STATUS.OK);
     expect(response.data).toHaveProperty('success', true);
     expect(response.data).not.toHaveProperty('requiresMfa');
-    
+
     // Check that MFA was not used
     if (response.data.hasOwnProperty('mfaUsed')) {
       expect(response.data.mfaUsed).toBe(false);
@@ -128,14 +128,14 @@ describe('Admin MFA Bypass Integration', () => {
     delete process.env.SKIP_MFA;
     delete process.env.NODE_ENV;
     delete process.env.VERCEL_ENV;
-    
+
     const loginData = {
       username: 'admin',
       password: adminPassword
     };
 
     const response = await testRequest('POST', '/api/admin/login', loginData);
-    
+
     // Skip if service unavailable
     if (response.status === 0) {
       console.warn('⚠️ Admin auth service unavailable - skipping CI test');
@@ -146,7 +146,7 @@ describe('Admin MFA Bypass Integration', () => {
     expect(response.status).toBe(HTTP_STATUS.OK);
     expect(response.data).toHaveProperty('success', true);
     expect(response.data).not.toHaveProperty('requiresMfa');
-    
+
     // Check that MFA was not used
     if (response.data.hasOwnProperty('mfaUsed')) {
       expect(response.data.mfaUsed).toBe(false);
@@ -159,14 +159,14 @@ describe('Admin MFA Bypass Integration', () => {
     delete process.env.SKIP_MFA;
     delete process.env.NODE_ENV;
     delete process.env.CI;
-    
+
     const loginData = {
       username: 'admin',
       password: adminPassword
     };
 
     const response = await testRequest('POST', '/api/admin/login', loginData);
-    
+
     // Skip if service unavailable
     if (response.status === 0) {
       console.warn('⚠️ Admin auth service unavailable - skipping VERCEL_ENV test');
@@ -177,7 +177,7 @@ describe('Admin MFA Bypass Integration', () => {
     expect(response.status).toBe(HTTP_STATUS.OK);
     expect(response.data).toHaveProperty('success', true);
     expect(response.data).not.toHaveProperty('requiresMfa');
-    
+
     // Check that MFA was not used
     if (response.data.hasOwnProperty('mfaUsed')) {
       expect(response.data.mfaUsed).toBe(false);
@@ -191,14 +191,14 @@ describe('Admin MFA Bypass Integration', () => {
     delete process.env.NODE_ENV;
     delete process.env.CI;
     delete process.env.VERCEL_ENV;
-    
+
     const loginData = {
       username: 'admin',
       password: adminPassword
     };
 
     const response = await testRequest('POST', '/api/admin/login', loginData);
-    
+
     // Skip if service unavailable
     if (response.status === 0) {
       console.warn('⚠️ Admin auth service unavailable - skipping E2E_TEST_MODE test');
@@ -209,7 +209,7 @@ describe('Admin MFA Bypass Integration', () => {
     expect(response.status).toBe(HTTP_STATUS.OK);
     expect(response.data).toHaveProperty('success', true);
     expect(response.data).not.toHaveProperty('requiresMfa');
-    
+
     // Check that MFA was not used
     if (response.data.hasOwnProperty('mfaUsed')) {
       expect(response.data.mfaUsed).toBe(false);
@@ -219,14 +219,14 @@ describe('Admin MFA Bypass Integration', () => {
   test('simple-login endpoint works in test environments', async () => {
     // Set test environment (NODE_ENV=test)
     process.env.NODE_ENV = 'test';
-    
+
     const loginData = {
       username: 'admin',
       password: adminPassword
     };
 
     const response = await testRequest('POST', '/api/admin/simple-login', loginData);
-    
+
     // Skip if service unavailable
     if (response.status === 0) {
       console.warn('⚠️ Simple login service unavailable - skipping test environment test');
@@ -239,7 +239,7 @@ describe('Admin MFA Bypass Integration', () => {
     expect(response.data).toHaveProperty('adminId', 'admin');
     expect(response.data).toHaveProperty('message');
     expect(response.data.message).toContain('MFA bypassed');
-    
+
     // Should return session details
     expect(response.data).toHaveProperty('expiresIn');
     expect(typeof response.data.expiresIn).toBe('number');
@@ -251,14 +251,14 @@ describe('Admin MFA Bypass Integration', () => {
     delete process.env.NODE_ENV;
     delete process.env.CI;
     delete process.env.VERCEL_ENV;
-    
+
     const loginData = {
       username: 'admin',
       password: adminPassword
     };
 
     const response = await testRequest('POST', '/api/admin/simple-login', loginData);
-    
+
     // Skip if service unavailable
     if (response.status === 0) {
       console.warn('⚠️ Simple login service unavailable - skipping SKIP_MFA test');
@@ -277,14 +277,14 @@ describe('Admin MFA Bypass Integration', () => {
     delete process.env.NODE_ENV;
     delete process.env.SKIP_MFA;
     delete process.env.VERCEL_ENV;
-    
+
     const loginData = {
       username: 'admin',
       password: adminPassword
     };
 
     const response = await testRequest('POST', '/api/admin/simple-login', loginData);
-    
+
     // Skip if service unavailable
     if (response.status === 0) {
       console.warn('⚠️ Simple login service unavailable - skipping CI environment test');
@@ -303,14 +303,14 @@ describe('Admin MFA Bypass Integration', () => {
     delete process.env.NODE_ENV;
     delete process.env.SKIP_MFA;
     delete process.env.CI;
-    
+
     const loginData = {
       username: 'admin',
       password: adminPassword
     };
 
     const response = await testRequest('POST', '/api/admin/simple-login', loginData);
-    
+
     // Skip if service unavailable
     if (response.status === 0) {
       console.warn('⚠️ Simple login service unavailable - skipping preview environment test');
@@ -330,17 +330,17 @@ describe('Admin MFA Bypass Integration', () => {
     delete process.env.VERCEL_ENV;
     delete process.env.SKIP_MFA;
     delete process.env.E2E_TEST_MODE;
-    
+
     // Or explicitly set production environment
     process.env.NODE_ENV = 'production';
-    
+
     const loginData = {
       username: 'admin',
       password: adminPassword
     };
 
     const response = await testRequest('POST', '/api/admin/simple-login', loginData);
-    
+
     // Skip if service unavailable
     if (response.status === 0) {
       console.warn('⚠️ Simple login service unavailable - skipping production test');
@@ -356,14 +356,14 @@ describe('Admin MFA Bypass Integration', () => {
   test('simple-login rejects invalid credentials even in test environments', async () => {
     // Set test environment
     process.env.NODE_ENV = 'test';
-    
+
     const loginData = {
       username: 'admin',
       password: 'wrongpassword123'
     };
 
     const response = await testRequest('POST', '/api/admin/simple-login', loginData);
-    
+
     // Skip if service unavailable
     if (response.status === 0) {
       console.warn('⚠️ Simple login service unavailable - skipping invalid credentials test');
@@ -379,14 +379,14 @@ describe('Admin MFA Bypass Integration', () => {
   test('simple-login validates username field', async () => {
     // Set test environment
     process.env.NODE_ENV = 'test';
-    
+
     // Test missing username
     const loginDataMissingUsername = {
       password: adminPassword
     };
 
     const responseMissingUsername = await testRequest('POST', '/api/admin/simple-login', loginDataMissingUsername);
-    
+
     if (responseMissingUsername.status !== 0) {
       expect(responseMissingUsername.status).toBe(HTTP_STATUS.BAD_REQUEST);
       expect(responseMissingUsername.data).toHaveProperty('error');
@@ -400,7 +400,7 @@ describe('Admin MFA Bypass Integration', () => {
     };
 
     const responseWrongUsername = await testRequest('POST', '/api/admin/simple-login', loginDataWrongUsername);
-    
+
     if (responseWrongUsername.status !== 0) {
       expect(responseWrongUsername.status).toBe(HTTP_STATUS.UNAUTHORIZED);
       expect(responseWrongUsername.data).toHaveProperty('error');
@@ -411,10 +411,10 @@ describe('Admin MFA Bypass Integration', () => {
   test('simple-login only accepts POST method', async () => {
     // Set test environment
     process.env.NODE_ENV = 'test';
-    
+
     // Test GET method (should be rejected)
     const getResponse = await testRequest('GET', '/api/admin/simple-login');
-    
+
     if (getResponse.status !== 0) {
       expect(getResponse.status).toBe(405); // Method Not Allowed
     }
@@ -424,7 +424,7 @@ describe('Admin MFA Bypass Integration', () => {
       username: 'admin',
       password: adminPassword
     });
-    
+
     if (putResponse.status !== 0) {
       expect(putResponse.status).toBe(405); // Method Not Allowed
     }
@@ -458,7 +458,7 @@ describe('Admin MFA Bypass Integration', () => {
       process.env[key] = value;
 
       const response = await testRequest('POST', '/api/admin/login', loginData);
-      
+
       // Skip if service unavailable
       if (response.status === 0) {
         console.warn(`⚠️ Admin auth service unavailable - skipping ${condition.description} test`);
@@ -469,7 +469,7 @@ describe('Admin MFA Bypass Integration', () => {
       expect(response.status, `Failed for condition: ${condition.description}`).toBe(HTTP_STATUS.OK);
       expect(response.data, `Missing success property for condition: ${condition.description}`).toHaveProperty('success', true);
       expect(response.data, `Unexpected requiresMfa for condition: ${condition.description}`).not.toHaveProperty('requiresMfa');
-      
+
       // Check that MFA was not used
       if (response.data.hasOwnProperty('mfaUsed')) {
         expect(response.data.mfaUsed, `MFA was used for condition: ${condition.description}`).toBe(false);
@@ -485,14 +485,14 @@ describe('Admin MFA Bypass Integration', () => {
 
     // Set SKIP_MFA=true
     process.env.SKIP_MFA = 'true';
-    
+
     const loginData = {
       username: 'admin',
       password: adminPassword
     };
 
     const response = await testRequest('POST', '/api/admin/login', loginData);
-    
+
     // Skip if service unavailable
     if (response.status === 0) {
       console.warn('⚠️ Admin auth service unavailable - skipping session record test');
@@ -508,12 +508,12 @@ describe('Admin MFA Bypass Integration', () => {
       const sessionCheck = await dbClient.execute(
         'SELECT * FROM "admin_sessions" ORDER BY created_at DESC LIMIT 1'
       );
-      
+
       if (sessionCheck.rows.length > 0) {
         const session = sessionCheck.rows[0];
         expect(session.expires_at).toBeTruthy();
         expect(new Date(session.expires_at) > new Date()).toBe(true);
-        
+
         // Check that mfa_verified is false since MFA was bypassed
         if (session.hasOwnProperty('mfa_verified')) {
           expect(session.mfa_verified).toBe(false);

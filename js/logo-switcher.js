@@ -1,7 +1,7 @@
 /**
  * Logo Switcher Module
  * Dynamically switches between light and dark logos based on theme
- * 
+ *
  * Features:
  * - Listens to theme change events from theme-manager.js
  * - Automatically detects and updates all logo images
@@ -49,7 +49,7 @@
      */
     async function checkDarkLogoAvailability() {
         if (!darkLogoAvailable) return false;
-        
+
         try {
             const response = await fetch(DEFAULT_DARK_LOGO, { method: 'HEAD' });
             darkLogoAvailable = response.ok;
@@ -72,14 +72,14 @@
             // Check for custom dark logo
             const customDarkSrc = logo.dataset.darkSrc;
             if (customDarkSrc) return customDarkSrc;
-            
+
             // Use default dark logo
             return DEFAULT_DARK_LOGO;
         } else {
             // Check for custom light logo
             const customLightSrc = logo.dataset.lightSrc;
             if (customLightSrc) return customLightSrc;
-            
+
             // Use default light logo or current src
             return logo.dataset.originalSrc || DEFAULT_LIGHT_LOGO;
         }
@@ -109,18 +109,18 @@
             // Apply transition
             logo.style.transition = `opacity ${TRANSITION_DURATION}ms ease-in-out`;
             logo.style.opacity = '0';
-            
+
             setTimeout(() => {
                 logo.src = newSrc;
                 logo.style.opacity = '1';
-                
+
                 // Clean up transition after completion
                 setTimeout(() => {
                     logo.style.transition = '';
                 }, TRANSITION_DURATION);
             }, TRANSITION_DURATION / 2);
         };
-        
+
         // Start loading
         tempImg.src = newSrc;
     }
@@ -131,13 +131,13 @@
      */
     function updateLogos(theme) {
         const logos = getLogos();
-        
+
         if (logos.length === 0) {
             return;
         }
 
         currentTheme = theme;
-        
+
         logos.forEach(logo => {
             const newSrc = getLogoSource(logo, theme);
             switchLogo(logo, newSrc);
@@ -159,11 +159,11 @@
     async function initialize() {
         // Check dark logo availability once
         await checkDarkLogoAvailability();
-        
+
         // Set initial logos based on current theme
         const initialTheme = getCurrentTheme();
         updateLogos(initialTheme);
-        
+
         // Listen for theme changes
         document.addEventListener('themechange', (event) => {
             const newTheme = event.detail.theme;
@@ -171,11 +171,11 @@
                 updateLogos(newTheme);
             }
         });
-        
+
         // Listen for DOM changes (for dynamically added logos)
         const observer = new MutationObserver((mutations) => {
             let logosAdded = false;
-            
+
             mutations.forEach(mutation => {
                 mutation.addedNodes.forEach(node => {
                     if (node.nodeType === 1) { // Element node
@@ -187,13 +187,13 @@
                     }
                 });
             });
-            
+
             if (logosAdded) {
                 clearLogoCache();
                 updateLogos(currentTheme);
             }
         });
-        
+
         // Start observing
         observer.observe(document.body, {
             childList: true,

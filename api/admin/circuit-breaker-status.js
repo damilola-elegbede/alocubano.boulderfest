@@ -4,9 +4,9 @@
  * CRITICAL: Allows monitoring team to see if audit system is healthy
  */
 
-import auditCircuitBreaker from '../../lib/audit-circuit-breaker.js';
-import { withSecurityHeaders } from '../../lib/security-headers.js';
-import authService from '../../lib/auth-service.js';
+import auditCircuitBreaker from "../../lib/audit-circuit-breaker.js";
+import { withSecurityHeaders } from "../../lib/security-headers.js";
+import authService from "../../lib/auth-service.js";
 
 async function handler(req, res) {
   // Only allow GET method
