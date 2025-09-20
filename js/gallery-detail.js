@@ -473,8 +473,6 @@
 
     // Sequential loading algorithm for category-aware pagination
     function getNextPageItems(allCategories, pageSize = 20) {
-        });
-
         const items = [];
         let remainingSpace = pageSize;
 
@@ -484,23 +482,12 @@
                 state.workshopOffset,
                 state.workshopOffset + remainingSpace
             );
-                from: state.workshopOffset,
-                to: state.workshopOffset + remainingSpace,
-                actualItems: workshopItems.length,
-                firstItemName: workshopItems[0] ? workshopItems[0].name : 'none'
-            });
 
             items.push(
                 ...workshopItems.map((item) => ({ ...item, category: 'workshops' }))
             );
             state.workshopOffset += workshopItems.length;
             remainingSpace -= workshopItems.length;
-        } else {
-                workshopOffset: state.workshopOffset,
-                workshopTotal: state.workshopTotal,
-                remainingSpace: remainingSpace,
-                condition: state.workshopOffset < state.workshopTotal
-            });
         }
 
         // Then, fill remaining space with socials
@@ -706,11 +693,6 @@
         const event = getEventFromPage();
         const stateKey = `gallery_${event}_state`;
         const hadStaleData = !!sessionStorage.getItem(stateKey);
-            event,
-            stateKey,
-            hadStaleData,
-            action: 'clearing to ensure fresh load'
-        });
         sessionStorage.removeItem(stateKey);
 
         // Initialize performance optimization modules
@@ -854,16 +836,6 @@
                 // Try event-specific file first, fallback to year-based
                 const event = getEventFromPage();
                 apiUrl = `/gallery-data/${event}.json?timestamp=${Date.now()}`;
-                    apiUrl,
-                    event,
-                    year,
-                    offset,
-                    currentState: {
-                        workshopOffset: state.workshopOffset,
-                        socialOffset: state.socialOffset,
-                        loadedPages: state.loadedPages
-                    }
-                });
             } else {
                 // Check if we've already loaded all available items
                 // IMPORTANT: Don't exit early if we haven't loaded anything yet (totalItemsAvailable > 0)
@@ -1010,7 +982,6 @@
                 );
 
                 // Debug: Log the state before getting first page
-                });
 
                 // Get first page using sequential algorithm
                 const pageItems = getNextPageItems(
@@ -1019,9 +990,6 @@
                 );
 
                 // Debug: Log what we got from getNextPageItems
-                        .slice(0, 3)
-                        .map((item) => ({ name: item.name, category: item.category }))
-                });
 
                 // Organize items back into categories for display
                 const paginatedCategories = {
@@ -1043,17 +1011,6 @@
                 // If we have 20 or fewer items total, we've loaded everything
                 state.hasCompleteDataset =
           state.totalItemsAvailable <= CONFIG.PAGINATION_SIZE;
-
-                    totalItemsAvailable: state.totalItemsAvailable,
-                    itemsDisplayed: state.itemsDisplayed,
-                    hasMorePages: state.hasMorePages,
-                    hasCompleteDataset: state.hasCompleteDataset,
-                    workshopOffsetAfter: state.workshopOffset,
-                    workshopTotal: state.workshopTotal,
-                    socialOffsetAfter: state.socialOffset,
-                    socialTotal: state.socialTotal,
-                    pageItemsReceived: pageItems.length
-                });
 
                 // Display paginated data
                 displayGalleryData(
@@ -1366,18 +1323,6 @@
         loadingEl,
         appendMode = false
     ) {
-            hasData: !!data,
-            categories: data?.categories ? Object.keys(data.categories) : [],
-            workshopItems: data?.categories?.workshops?.length || 0,
-            socialItems: data?.categories?.socials?.length || 0,
-            totalItems:
-        (data?.categories?.workshops?.length || 0) +
-        (data?.categories?.socials?.length || 0),
-            appendMode: appendMode,
-            contentEl: !!contentEl,
-            staticEl: !!staticEl,
-            loadingEl: !!loadingEl
-        });
 
         // Check if we have any categories with items
         let hasItems = false;
