@@ -6,6 +6,20 @@
  */
 
 /**
+ * Helper function to extract items from either items or categories structure
+ * @param {Object} data - Data object that may contain items or categories
+ * @returns {Array} Array of items
+ */
+export function extractItems(data) {
+    if (data.items) {
+        return data.items;
+    } else if (data.categories) {
+        return Object.values(data.categories).flat();
+    }
+    return [];
+}
+
+/**
  * Generate unique session ID
  * @returns {string} Unique session ID
  */
@@ -144,9 +158,9 @@ export function formatFacebookPixelEvent(eventName, eventData) {
         event: fbEvent,
         value: eventData.value || 0,
         currency: eventData.currency || 'USD',
-        content_ids: eventData.items?.map(item => item.id) || [],
+        content_ids: extractItems(eventData)?.map(item => item.id) || [],
         content_type: 'product',
-        num_items: eventData.items?.length || 0
+        num_items: extractItems(eventData)?.length || 0
     };
 }
 
@@ -164,8 +178,9 @@ export function formatGA4Event(eventName, eventData) {
     };
 
     // Add e-commerce data if available
-    if (eventData.items) {
-        baseData.items = eventData.items.map(item => ({
+    const items = extractItems(eventData);
+    if (items && items.length > 0) {
+        baseData.items = items.map(item => ({
             item_id: item.id,
             item_name: item.name,
             item_category: item.category,

@@ -98,9 +98,9 @@ export class AnalyticsTracker {
                     window.fbq('track', fbEvent, {
                         value: data.value || 0,
                         currency: data.currency || 'USD',
-                        content_ids: data.items?.map((item) => item.id) || [],
+                        content_ids: this._extractItems(data)?.map((item) => item.id) || [],
                         content_type: 'product',
-                        num_items: data.items?.length || 0
+                        num_items: this._extractItems(data)?.length || 0
                     });
                 }
             } catch {
@@ -205,6 +205,16 @@ export class AnalyticsTracker {
         });
 
         return funnel;
+    }
+
+    // Helper method to extract items from either structure
+    _extractItems(data) {
+        if (data.items) {
+            return data.items;
+        } else if (data.categories) {
+            return Object.values(data.categories).flat();
+        }
+        return [];
     }
 
     // Performance tracking

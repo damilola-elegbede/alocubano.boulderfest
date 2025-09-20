@@ -143,14 +143,27 @@ class MultiYearGalleryManager {
             }
 
             const data = await response.json();
-            // Extract available years from gallery data - fallback to current year if no years found
-            this.availableYears = data.availableYears || ['2025'];
-            this.yearStatistics = new Map(
-                Object.entries(data.statistics || {}).map(([year, stats]) => [
-                    year,
-                    stats
-                ])
-            );
+
+            // Extract available years from API response
+            if (data.availableYears) {
+                this.availableYears = data.availableYears;
+            } else {
+                // Fallback: derive years from current data or use current year
+                this.availableYears = data.year ? [data.year.toString()] : [new Date().getFullYear().toString()];
+            }
+
+            // Extract statistics from API response or calculate from categories
+            if (data.statistics) {
+                this.yearStatistics = new Map(
+                    Object.entries(data.statistics).map(([year, stats]) => [year, stats])
+                );
+            } else {
+                // Calculate statistics from categories data
+                const totalImages = data.categories ?
+                    Object.values(data.categories).reduce((sum, items) => sum + items.length, 0) : 0;
+                const currentYear = data.year || new Date().getFullYear().toString();
+                this.yearStatistics = new Map([[currentYear, { imageCount: totalImages, totalSize: 0 }]]);
+            }
 
             if (this.availableYears.length === 0) {
                 throw new Error('No gallery years available');

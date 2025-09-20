@@ -336,11 +336,20 @@ class ImageCacheManager {
             }
             const data = await response.json();
 
-            if (!data.items || data.items.length === 0) {
+            // Handle both items (legacy) and categories (new) structure
+            let items = [];
+            if (data.items) {
+                items = data.items;
+            } else if (data.categories) {
+                // Flatten categories into items array
+                items = Object.values(data.categories).flat();
+            }
+
+            if (!items || items.length === 0) {
                 throw new Error('No images found in featured photos');
             }
 
-            this.sessionAssignments = this.createRandomAssignments(data.items);
+            this.sessionAssignments = this.createRandomAssignments(items);
             sessionStorage.setItem(
                 this.cacheKey,
                 JSON.stringify(this.sessionAssignments)
