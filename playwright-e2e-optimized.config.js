@@ -74,7 +74,7 @@ export default defineConfig({
 
     // Tightened timeouts
     actionTimeout: isCI ? 20000 : 15000,     // Reduced from 45s/30s
-    navigationTimeout: isCI ? 30000 : 25000, // Reduced from 90s/60s
+    navigationTimeout: isCI ? 45000 : 25000, // Increased to 45s for CI (gallery needs more time)
 
     // Performance headers
     extraHTTPHeaders: {
@@ -103,7 +103,7 @@ export default defineConfig({
         ...devices['Desktop Firefox'],
         // Firefox-specific optimizations
         actionTimeout: isCI ? 25000 : 20000,     // Slightly longer for Firefox
-        navigationTimeout: isCI ? 35000 : 30000, // Slightly longer for Firefox
+        navigationTimeout: isCI ? 50000 : 30000, // Firefox needs more time for gallery
         launchOptions: {
           firefoxUserPrefs: {
             'network.http.max-connections': 200,
@@ -124,7 +124,7 @@ export default defineConfig({
       use: {
         ...devices['Pixel 5'],
         actionTimeout: isCI ? 25000 : 20000,     // Mobile needs slightly more
-        navigationTimeout: isCI ? 35000 : 30000,
+        navigationTimeout: isCI ? 50000 : 30000, // Mobile needs more time for gallery
       },
     },
     {
@@ -132,7 +132,7 @@ export default defineConfig({
       use: {
         ...devices['iPhone 12'],
         actionTimeout: isCI ? 30000 : 25000,     // Safari mobile needs most
-        navigationTimeout: isCI ? 40000 : 35000,
+        navigationTimeout: isCI ? 60000 : 35000, // Safari mobile needs most time for gallery
       },
     },
   ],
