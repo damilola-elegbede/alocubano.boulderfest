@@ -32,7 +32,9 @@ export default async function handler(req, res) {
     console.log('Gallery API: Processing request');
 
     // Parse and validate query parameters
-    const { event, year, offset: rawOffset = '0', limit: rawLimit = '20' } = req.query || {};
+    // Support both 'event' and 'eventId' for backward compatibility
+    const { event, eventId, year, offset: rawOffset = '0', limit: rawLimit = '20' } = req.query || {};
+    const effectiveEventId = eventId || event; // Prefer eventId if provided
 
     // Validate and parse numeric parameters
     const parsedOffset = parseQueryParam(rawOffset, 0, { min: 0, max: 10000 });
@@ -46,7 +48,7 @@ export default async function handler(req, res) {
     }
 
     const galleryService = getGalleryService();
-    const galleryData = await galleryService.getGalleryData(year, event);
+    const galleryData = await galleryService.getGalleryData(year, effectiveEventId);
 
     // Apply pagination if requested
     let paginatedData = galleryData;
@@ -72,7 +74,7 @@ export default async function handler(req, res) {
         version: '2.1',
         timestamp: new Date().toISOString(),
         environment: process.env.VERCEL ? 'vercel' : 'local',
-        queryParams: { event, year, offset: parsedOffset, limit: parsedLimit },
+        queryParams: { event: effectiveEventId, eventId: effectiveEventId, year, offset: parsedOffset, limit: parsedLimit },
         etag: dataHash
       }
     };
