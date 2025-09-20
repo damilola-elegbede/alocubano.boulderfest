@@ -13,7 +13,7 @@ describe('EmailValidator Domain Service', () => {
         'email@123.123.123.123', // IP address
         'user-name@example-domain.com'
       ];
-      
+
       validEmails.forEach(email => {
         const result = EmailValidator.validateEmail(email);
         expect(result.valid).toBe(true);
@@ -55,7 +55,7 @@ describe('EmailValidator Domain Service', () => {
         'test@com.',
         ''
       ];
-      
+
       invalidEmails.forEach(email => {
         const result = EmailValidator.validateEmail(email);
         expect(result.valid).toBe(false);
@@ -182,7 +182,7 @@ describe('EmailValidator Domain Service', () => {
         'Van Der Berg',
         'Marie Claire'
       ];
-      
+
       validNames.forEach(name => {
         const result = EmailValidator.validateName(name);
         expect(result.valid).toBe(true);
@@ -234,7 +234,7 @@ describe('EmailValidator Domain Service', () => {
         'User<script>',
         'Name with numbers 42'
       ];
-      
+
       invalidNames.forEach(name => {
         const result = EmailValidator.validateName(name, 'Name');
         expect(result.valid).toBe(false);
@@ -259,7 +259,7 @@ describe('EmailValidator Domain Service', () => {
         '5551234567',
         '+44 20 7946 0958'
       ];
-      
+
       validPhones.forEach(phone => {
         const result = EmailValidator.validatePhone(phone);
         expect(result.valid).toBe(true);
@@ -304,7 +304,7 @@ describe('EmailValidator Domain Service', () => {
         'phone number',
         '123-abc-4567'
       ];
-      
+
       invalidPhones.forEach(phone => {
         const result = EmailValidator.validatePhone(phone);
         expect(result.valid).toBe(false);
@@ -359,7 +359,7 @@ describe('EmailValidator Domain Service', () => {
         age: 25,
         subscribe_newsletter: true
       };
-      
+
       const result = EmailValidator.validateAttributes(attributes);
       expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
@@ -387,7 +387,7 @@ describe('EmailValidator Domain Service', () => {
       for (let i = 0; i < 21; i++) {
         tooManyAttributes[`attr${i}`] = `value${i}`;
       }
-      
+
       const result = EmailValidator.validateAttributes(tooManyAttributes);
       expect(result.valid).toBe(false);
       expect(result.errors).toContain('Too many attributes (maximum 20)');
@@ -398,7 +398,7 @@ describe('EmailValidator Domain Service', () => {
         longString: 'a'.repeat(600),
         normalString: '  test  '
       };
-      
+
       const result = EmailValidator.validateAttributes(attributes);
       expect(result.valid).toBe(true);
       expect(result.sanitized.longString).toHaveLength(500);
@@ -411,7 +411,7 @@ describe('EmailValidator Domain Service', () => {
         [invalidKey]: 'value',
         validKey: { nested: 'object' }
       };
-      
+
       const result = EmailValidator.validateAttributes(attributes);
       expect(result.valid).toBe(false);
       expect(result.errors.some(error => error.includes('Invalid attribute key'))).toBe(true);
@@ -478,7 +478,7 @@ describe('EmailValidator Domain Service', () => {
         },
         lists: [1, 2]
       };
-      
+
       const result = EmailValidator.validateSubscriptionRequest(subscriptionData);
       expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
@@ -491,7 +491,7 @@ describe('EmailValidator Domain Service', () => {
         email: 'test@example.com',
         consentToMarketing: true
       };
-      
+
       const result = EmailValidator.validateSubscriptionRequest(subscriptionData);
       expect(result.valid).toBe(true);
       expect(result.sanitized.source).toBe('website');
@@ -513,7 +513,7 @@ describe('EmailValidator Domain Service', () => {
         phone: '123',
         lists: ['invalid']
       };
-      
+
       const result = EmailValidator.validateSubscriptionRequest(subscriptionData);
       expect(result.valid).toBe(false);
       expect(result.errors.length).toBeGreaterThan(4);
@@ -530,7 +530,7 @@ describe('EmailValidator Domain Service', () => {
           test: '  value  '
         }
       };
-      
+
       const result = EmailValidator.validateSubscriptionRequest(subscriptionData);
       expect(result.valid).toBe(true);
       expect(result.sanitized.email).toBe('test@example.com');
@@ -547,7 +547,7 @@ describe('EmailValidator Domain Service', () => {
         'temp@mailinator.com',
         'test@temp-mail.org'
       ];
-      
+
       disposableEmails.forEach(email => {
         expect(EmailValidator.isDisposableEmail(email)).toBe(true);
       });

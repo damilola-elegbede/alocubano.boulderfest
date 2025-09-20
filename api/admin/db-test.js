@@ -1,19 +1,22 @@
 // Test database initialization
-import { getDatabaseClient } from '../../lib/database.js';
+import { getDatabaseClient } from "../../lib/database.js";
+import authService from "../../lib/auth-service.js";
+import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
+import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   console.log('[DB-Test] Handler started');
-  
+
   try {
     console.log('[DB-Test] Attempting to get database client...');
     const db = await getDatabaseClient();
     console.log('[DB-Test] Database client obtained successfully');
-    
+
     // Try a simple query
     console.log('[DB-Test] Running test query...');
     const result = await db.execute('SELECT 1 as test');
     console.log('[DB-Test] Query successful:', result.rows);
-    
+
     res.status(200).json({
       status: 'ok',
       message: 'Database connection successful',
@@ -28,7 +31,7 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error('[DB-Test] Error:', error.message);
     console.error('[DB-Test] Stack:', error.stack);
-    
+
     res.status(500).json({
       status: 'error',
       message: error.message,
@@ -37,3 +40,14 @@ export default async function handler(req, res) {
     });
   }
 }
+
+export default withSecurityHeaders(
+  authService.requireAuth(
+    withAdminAudit(handler, {
+      logBody: false,
+      logMetadata: true,
+      skipMethods: [] // Track database test access for diagnostics
+    })
+  ),
+  { isAPI: true }
+);

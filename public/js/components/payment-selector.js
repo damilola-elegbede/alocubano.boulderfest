@@ -99,11 +99,11 @@ class PaymentSelector {
                             <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/>
                         </svg>
                     </button>
-                    
+
                     <div class="payment-selector-header">
                         <h2 id="payment-selector-title">Select Payment</h2>
                     </div>
-                    
+
                     <div class="payment-methods">
                         <!-- Credit Cards & Digital Wallets Option -->
                         <!-- Payment logos sourced from: https://github.com/payrexx/payment-logos -->
@@ -115,14 +115,14 @@ class PaymentSelector {
                                 <img src="/images/payment-icons/card_google-pay.svg" alt="Google Pay" class="card-icon google-pay-icon">
                             </div>
                         </button>
-                        
+
                         <!-- PayPal Option -->
                         <!-- Payment logo sourced from: https://github.com/payrexx/payment-logos -->
                         <button class="payment-method-option" data-method="paypal" aria-label="Pay with PayPal">
                             <img src="/images/payment-icons/card_paypal.svg" alt="PayPal" class="paypal-icon">
                         </button>
                     </div>
-                    
+
                     <div class="payment-selector-footer">
                         <div class="security-badges">
                             <svg class="lock-icon" viewBox="0 0 24 24" width="16" height="16">

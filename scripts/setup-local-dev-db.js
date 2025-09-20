@@ -26,7 +26,7 @@ const db = new Database(dbPath);
 
 try {
   console.log('📦 Creating tables...');
-  
+
   // Create migrations table
   db.exec(`
     CREATE TABLE IF NOT EXISTS migrations (
@@ -115,47 +115,47 @@ try {
   console.log('  ✅ email_audit_log table created');
 
   console.log('\n🔍 Verifying schema...');
-  
+
   // Verify email_subscribers schema
   const columns = db.prepare(`PRAGMA table_info(email_subscribers)`).all();
   const columnNames = columns.map(col => col.name);
   const requiredColumns = ['brevo_contact_id', 'list_ids', 'attributes', 'consent_date', 'consent_source'];
-  
+
   const missing = requiredColumns.filter(col => !columnNames.includes(col));
   if (missing.length > 0) {
     console.error(`❌ Missing columns: ${missing.join(', ')}`);
     process.exit(1);
   }
-  
+
   console.log('  ✅ All required columns present');
   console.log(`  ℹ️  email_subscribers columns: ${columnNames.join(', ')}`);
 
   console.log('\n🧪 Adding test data...');
-  
+
   // Insert test data
   const insertSubscriber = db.prepare(`
     INSERT OR REPLACE INTO email_subscribers (
-      email, first_name, last_name, status, consent_source, 
+      email, first_name, last_name, status, consent_source,
       list_ids, attributes, brevo_contact_id
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `);
-  
+
   insertSubscriber.run(
     'test-subscriber@local-dev.invalid',
     'Test',
-    'Subscriber', 
+    'Subscriber',
     'active',
     'dev-setup',
     '[]',
     '{}',
     null
   );
-  
+
   console.log('  ✅ Test subscriber created');
 
   console.log('\n✅ Local development database setup complete!');
   console.log(`📁 Database file: ${dbPath}`);
-  
+
 } catch (error) {
   console.error('❌ Setup failed:', error);
   process.exit(1);

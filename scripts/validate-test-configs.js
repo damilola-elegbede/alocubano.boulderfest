@@ -17,7 +17,7 @@ console.log('🧪 Validating Test Configuration Separation\n');
 // Test configuration files
 const configs = {
   unit: 'vitest.config.js',
-  integration: 'vitest.integration.config.js', 
+  integration: 'vitest.integration.config.js',
   performance: 'vitest.performance.config.js',
   security: 'vitest.security.config.js'
 };
@@ -54,7 +54,7 @@ for (const [type, configFile] of Object.entries(configs)) {
   try {
     // Run vitest with --run and --reporter=json to validate config
     const command = `npx vitest --config ${configFile} --run --reporter=json --no-coverage 2>/dev/null || true`;
-    
+
     const output = execSync(command, {
       cwd: projectRoot,
       encoding: 'utf8',
@@ -70,7 +70,7 @@ for (const [type, configFile] of Object.entries(configs)) {
     if (output.includes('TEST_TYPE')) {
       results.properIsolation[type] = true;
     }
-    
+
   } catch (error) {
     results.dryRunPasses[type] = false;
     console.log(`  ${type}: ❌ Configuration error (${error.message.split('\\n')[0]})`);
@@ -84,9 +84,9 @@ let allPassed = true;
 for (const type of Object.keys(configs)) {
   const exists = results.configExists[type] ? '✅' : '❌';
   const dryRun = results.dryRunPasses[type] ? '✅' : '❌';
-  
+
   console.log(`${type.toUpperCase().padEnd(12)} | Exists: ${exists} | Loads: ${dryRun}`);
-  
+
   if (!results.configExists[type] || !results.dryRunPasses[type]) {
     allPassed = false;
   }

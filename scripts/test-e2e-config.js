@@ -2,7 +2,7 @@
 
 /**
  * Test E2E Configuration Module
- * 
+ *
  * This script demonstrates the centralized environment variable configuration
  * and validates the module can be imported and used correctly.
  */

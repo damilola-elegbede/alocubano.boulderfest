@@ -1,6 +1,6 @@
 /**
  * Auth Service Concurrency Tests
- * 
+ *
  * Tests the Promise-based singleton initialization pattern to ensure:
  * 1. Multiple concurrent calls to ensureInitialized() return the same promise
  * 2. Race conditions are prevented during initialization
@@ -18,10 +18,10 @@ describe('Auth Service Concurrency Tests', () => {
   beforeEach(() => {
     // Backup original environment
     originalEnv = { ...process.env };
-    
+
     // Create fresh auth service instance for each test
     authService = new AuthService();
-    
+
     // Set required environment variables for initialization
     process.env.ADMIN_SECRET = 'a'.repeat(32); // 32 character secret
     process.env.ADMIN_SESSION_DURATION = '3600000'; // 1 hour
@@ -30,7 +30,7 @@ describe('Auth Service Concurrency Tests', () => {
   afterEach(() => {
     // Restore original environment
     process.env = originalEnv;
-    
+
     // Reset service state
     if (authService) {
       authService.initialized = false;
@@ -133,7 +133,7 @@ describe('Auth Service Concurrency Tests', () => {
 
       // Restore environment and verify retry works
       process.env.ADMIN_SECRET = 'b'.repeat(32);
-      
+
       const retryResult = await authService.ensureInitialized();
       expect(retryResult.initialized).toBe(true);
       expect(retryResult.sessionSecret).toBe('b'.repeat(32));
@@ -168,7 +168,7 @@ describe('Auth Service Concurrency Tests', () => {
     it('should return same instance synchronously when already initialized', async () => {
       // Initialize first
       await authService.ensureInitialized();
-      
+
       // Subsequent calls should return the same instance immediately
       const result1 = authService.ensureInitialized();
       const result2 = authService.ensureInitialized();
@@ -180,7 +180,7 @@ describe('Auth Service Concurrency Tests', () => {
       expect(result3).toBeInstanceOf(Promise);
 
       const [resolved1, resolved2, resolved3] = await Promise.all([result1, result2, result3]);
-      
+
       expect(resolved1).toBe(authService);
       expect(resolved2).toBe(authService);
       expect(resolved3).toBe(authService);
@@ -218,7 +218,7 @@ describe('Auth Service Concurrency Tests', () => {
       process.env.TEST_ADMIN_PASSWORD = 'testpass123';
 
       // Make multiple concurrent password verification calls
-      const promises = Array.from({ length: 12 }, () => 
+      const promises = Array.from({ length: 12 }, () =>
         authService.verifyPassword('testpass123')
       );
 
@@ -240,7 +240,7 @@ describe('Auth Service Concurrency Tests', () => {
       const startTime = Date.now();
 
       // Create high-concurrency scenario
-      const promises = Array.from({ length: concurrentCount }, (_, index) => 
+      const promises = Array.from({ length: concurrentCount }, (_, index) =>
         authService.ensureInitialized().then(result => ({ index, result }))
       );
 
@@ -249,7 +249,7 @@ describe('Auth Service Concurrency Tests', () => {
 
       // Verify all completed successfully
       expect(results).toHaveLength(concurrentCount);
-      
+
       results.forEach(({ index, result }) => {
         expect(result).toBe(authService);
         expect(result.initialized).toBe(true);
@@ -279,7 +279,7 @@ describe('Auth Service Concurrency Tests', () => {
 
       // Verify service is properly initialized
       expect(authService.initialized).toBe(true);
-      
+
       // All direct initialization calls should return the auth service instance
       initResults.forEach(result => {
         expect(result).toBe(authService);
@@ -315,9 +315,9 @@ describe('Auth Service Concurrency Tests', () => {
     it('should clear initialization promise on error to allow retry', async () => {
       // First attempt with bad config
       process.env.ADMIN_SECRET = 'bad';
-      
+
       const failingPromises = Array.from({ length: 3 }, () => authService.ensureInitialized());
-      
+
       for (const promise of failingPromises) {
         await expect(promise).rejects.toThrow();
       }
@@ -326,7 +326,7 @@ describe('Auth Service Concurrency Tests', () => {
 
       // Fix config and retry
       process.env.ADMIN_SECRET = 'c'.repeat(32);
-      
+
       const retryPromises = Array.from({ length: 3 }, () => authService.ensureInitialized());
       const retryResults = await Promise.all(retryPromises);
 

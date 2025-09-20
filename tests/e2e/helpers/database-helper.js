@@ -1,6 +1,6 @@
 /**
  * Database Helper - Advanced database operations for E2E testing
- * 
+ *
  * Provides database utilities for complex E2E scenarios including
  * data setup, validation, cleanup, and transaction management.
  */
@@ -16,7 +16,7 @@ export class DatabaseHelper {
     this.connectionConfig = options.connectionConfig || this.getDefaultConfig();
     this.cleanupQueries = new Set();
     this.createdRecords = new Map();
-    
+
     console.log(`🗄️  Database Helper initialized: ${this.testId}`);
   }
 
@@ -28,7 +28,7 @@ export class DatabaseHelper {
     // Use environment-appropriate database configuration
     const isCI = process.env.CI === 'true';
     const isE2E = process.env.NODE_ENV === 'e2e';
-    
+
     if (isE2E && process.env.TURSO_DATABASE_URL) {
       // E2E tests use production database
       return {
@@ -53,7 +53,7 @@ export class DatabaseHelper {
    */
   async executeQuery(query, params = []) {
     console.log(`🔍 Executing query: ${query.substring(0, 100)}...`);
-    
+
     // This is a mock implementation
     // In a real scenario, this would connect to the actual database
     const mockResult = {
@@ -143,7 +143,7 @@ export class DatabaseHelper {
     const params = Object.values(enrichedData);
 
     const result = await this.executeQuery(query, params);
-    
+
     // Track for cleanup
     this.trackRecord(table, recordId, enrichedData);
     this.addCleanupQuery(`DELETE FROM ${table} WHERE id = ?`, [recordId]);
@@ -168,12 +168,12 @@ export class DatabaseHelper {
     const setClause = Object.keys(enrichedUpdates)
       .map(key => `${key} = ?`)
       .join(', ');
-    
+
     const query = `UPDATE ${table} SET ${setClause} WHERE id = ?`;
     const params = [...Object.values(enrichedUpdates), id];
 
     const result = await this.executeQuery(query, params);
-    
+
     console.log(`✅ Updated test data in ${table}: ${id}`);
     return result;
   }
@@ -188,12 +188,12 @@ export class DatabaseHelper {
     const whereClause = Object.keys(conditions).length > 0
       ? 'WHERE ' + Object.keys(conditions).map(key => `${key} = ?`).join(' AND ')
       : '';
-    
+
     const query = `SELECT * FROM ${table} ${whereClause}`;
     const params = Object.values(conditions);
 
     const result = await this.executeQuery(query, params);
-    
+
     console.log(`🔍 Found ${result.rows.length} records in ${table}`);
     return result.rows;
   }
@@ -212,12 +212,12 @@ export class DatabaseHelper {
     const whereClause = Object.keys(conditions)
       .map(key => `${key} = ?`)
       .join(' AND ');
-    
+
     const query = `DELETE FROM ${table} WHERE ${whereClause}`;
     const params = Object.values(conditions);
 
     const result = await this.executeQuery(query, params);
-    
+
     console.log(`🗑️  Deleted ${result.rowsAffected} records from ${table}`);
     return result;
   }
@@ -243,7 +243,7 @@ export class DatabaseHelper {
     };
 
     await this.insertTestData('users', user);
-    
+
     console.log(`👤 Setup test user: ${user.email}`);
     return user;
   }
@@ -266,7 +266,7 @@ export class DatabaseHelper {
     };
 
     await this.insertTestData('tickets', ticket);
-    
+
     console.log(`🎫 Setup test ticket: ${ticket.id}`);
     return ticket;
   }
@@ -298,7 +298,7 @@ export class DatabaseHelper {
     };
 
     await this.insertTestData('registrations', registration);
-    
+
     console.log(`📝 Setup test registration: ${registration.id}`);
     return registration;
   }
@@ -319,7 +319,7 @@ export class DatabaseHelper {
       try {
         const { table, conditions, expected, operation = 'count' } = assertion;
         const records = await this.findTestData(table, conditions);
-        
+
         let actual;
         switch (operation) {
           case 'count':
@@ -415,13 +415,13 @@ export class DatabaseHelper {
    */
   async cleanup() {
     console.log(`🧹 Starting database cleanup for ${this.testId}`);
-    
+
     let cleaned = 0;
     let errors = 0;
 
     // Execute cleanup queries in reverse order (LIFO)
     const queries = Array.from(this.cleanupQueries).reverse();
-    
+
     for (const { query, params } of queries) {
       try {
         await this.executeQuery(query, params);

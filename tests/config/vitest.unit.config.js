@@ -51,22 +51,22 @@ export default defineConfig({
     hookTimeout: Number(process.env.VITEST_HOOK_TIMEOUT || (process.env.CI === 'true' ? 3000 : 2000)),
     setupTimeout: Number(process.env.VITEST_SETUP_TIMEOUT || 5000),
     teardownTimeout: Number(process.env.VITEST_CLEANUP_TIMEOUT || 2000),
-    
+
     // Unit test specific setup (UNIT-ONLY)
     setupFiles: ['./tests/setup-unit.js'],
     globals: true,
-    
+
     // Include ONLY unit tests (Integration and E2E excluded)
     include: ['tests/unit/**/*.test.js'],
     exclude: [
-      'node_modules/**', 
+      'node_modules/**',
       'tests/e2e/**',         // E2E tests excluded (disabled)
       'tests/integration/**', // Integration tests excluded (disabled)
       'tests/helpers/**',     // Test helpers (utilities only)
       'tests/mocks/**',       // Mock data (utilities only)
       'tests/fixtures/**'     // Test fixtures (utilities only)
     ],
-    
+
     // MOST STABLE pooling - single fork for reliability
     pool: 'forks',
     poolOptions: {
@@ -94,7 +94,7 @@ export default defineConfig({
     // Performance tracking optimized
     logHeapUsage: false,  // Disable for speed unless CI
     slowTestThreshold: 500,  // Flag slow unit tests more aggressively
-    
+
     // Coverage configuration for unit tests only
     coverage: {
       provider: 'v8',
@@ -112,7 +112,7 @@ export default defineConfig({
       ],
       reporter: ['text', 'json', 'html'],
       reportsDirectory: './coverage/unit-only',
-      
+
       // Coverage thresholds for unit tests
       thresholds: {
         global: {
@@ -124,7 +124,7 @@ export default defineConfig({
       }
     }
   },
-  
+
   // Unit-only mode configuration metadata
   define: {
     __UNIT_ONLY_MODE__: 'true',

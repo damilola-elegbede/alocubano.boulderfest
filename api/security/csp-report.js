@@ -4,23 +4,23 @@
  * Part of SPEC_04 Task 4.4 security implementation
  */
 
-import { withErrorHandling } from "../../middleware/error-handler.js";
+import { withErrorHandling } from '../../middleware/error-handler.js';
 import { addAPISecurityHeaders } from "../../lib/security-headers.js";
 
 /**
  * CSP violation severity classification
  */
 const VIOLATION_SEVERITY = {
-  "script-src": "high",
-  "object-src": "high",
-  "base-uri": "high",
-  "frame-src": "medium",
-  "img-src": "low",
-  "style-src": "medium",
-  "font-src": "low",
-  "connect-src": "medium",
-  "media-src": "low",
-  "worker-src": "medium",
+  'script-src': 'high',
+  'object-src': 'high',
+  'base-uri': 'high',
+  'frame-src': 'medium',
+  'img-src': 'low',
+  'style-src': 'medium',
+  'font-src': 'low',
+  'connect-src': 'medium',
+  'media-src': 'low',
+  'worker-src': 'medium'
 };
 
 /**
@@ -28,44 +28,44 @@ const VIOLATION_SEVERITY = {
  */
 const FALSE_POSITIVES = [
   // Browser extensions
-  "chrome-extension://",
-  "moz-extension://",
-  "safari-extension://",
-  "ms-browser-extension://",
+  'chrome-extension://',
+  'moz-extension://',
+  'safari-extension://',
+  'ms-browser-extension://',
 
   // Common browser injected scripts
-  "about:blank",
-  "data:text/html,chromewebdata",
-  "webpack-internal://",
+  'about:blank',
+  'data:text/html,chromewebdata',
+  'webpack-internal://',
 
   // Analytics/tracking scripts (if not whitelisted)
-  "googletagmanager.com",
-  "google-analytics.com",
+  'googletagmanager.com',
+  'google-analytics.com',
 
   // Development tools
-  "localhost",
-  "vscode-webview://",
-  "devtools://",
+  'localhost',
+  'vscode-webview://',
+  'devtools://'
 ];
 
 /**
  * Validate and sanitize CSP report
  */
 function validateCSPReport(report) {
-  if (!report || typeof report !== "object") {
+  if (!report || typeof report !== 'object') {
     return null;
   }
 
   const {
-    "document-uri": documentUri,
+    'document-uri': documentUri,
     referrer: referrer,
-    "blocked-uri": blockedUri,
-    "violated-directive": violatedDirective,
-    "effective-directive": effectiveDirective,
-    "original-policy": originalPolicy,
+    'blocked-uri': blockedUri,
+    'violated-directive': violatedDirective,
+    'effective-directive': effectiveDirective,
+    'original-policy': originalPolicy,
     disposition: disposition,
-    "status-code": statusCode,
-    "script-sample": scriptSample,
+    'status-code': statusCode,
+    'script-sample': scriptSample
   } = report;
 
   // Validate required fields
@@ -75,17 +75,17 @@ function validateCSPReport(report) {
 
   return {
     documentUri: String(documentUri).slice(0, 200), // Limit length
-    referrer: referrer ? String(referrer).slice(0, 200) : "",
+    referrer: referrer ? String(referrer).slice(0, 200) : '',
     blockedUri: String(blockedUri).slice(0, 200),
     violatedDirective: String(violatedDirective).slice(0, 100),
     effectiveDirective: effectiveDirective
       ? String(effectiveDirective).slice(0, 100)
-      : "",
-    originalPolicy: originalPolicy ? String(originalPolicy).slice(0, 500) : "",
-    disposition: disposition || "enforce",
+      : '',
+    originalPolicy: originalPolicy ? String(originalPolicy).slice(0, 500) : '',
+    disposition: disposition || 'enforce',
     statusCode: statusCode || 200,
-    scriptSample: scriptSample ? String(scriptSample).slice(0, 100) : "",
-    timestamp: new Date().toISOString(),
+    scriptSample: scriptSample ? String(scriptSample).slice(0, 100) : '',
+    timestamp: new Date().toISOString()
   };
 }
 
@@ -96,7 +96,7 @@ function isFalsePositive(report) {
   const { blockedUri, documentUri } = report;
 
   return FALSE_POSITIVES.some(
-    (pattern) => blockedUri.includes(pattern) || documentUri.includes(pattern),
+    (pattern) => blockedUri.includes(pattern) || documentUri.includes(pattern)
   );
 }
 
@@ -105,9 +105,9 @@ function isFalsePositive(report) {
  */
 function classifyViolation(report) {
   const directive = report.effectiveDirective || report.violatedDirective;
-  const baseDirective = directive.split(" ")[0]; // Get base directive without keywords
+  const baseDirective = directive.split(' ')[0]; // Get base directive without keywords
 
-  return VIOLATION_SEVERITY[baseDirective] || "medium";
+  return VIOLATION_SEVERITY[baseDirective] || 'medium';
 }
 
 /**
@@ -124,13 +124,13 @@ function formatViolationLog(report, metadata) {
       severity,
       userAgent: metadata.userAgent,
       ip: metadata.ip,
-      requestId: metadata.requestId,
+      requestId: metadata.requestId
     },
     tags: {
       security: true,
       csp: true,
-      severity,
-    },
+      severity
+    }
   };
 }
 
@@ -145,18 +145,18 @@ async function storeViolation(report, metadata) {
     userAgent: metadata.userAgent,
     ip: metadata.ip,
     requestId: metadata.requestId,
-    createdAt: new Date().toISOString(),
+    createdAt: new Date().toISOString()
   };
 
   // Log to console (in production, this would go to your logging service)
   const logData = formatViolationLog(report, metadata);
 
-  if (logData.level === "high") {
-    console.error("High-severity CSP violation:", logData);
-  } else if (logData.level === "medium") {
-    console.warn("Medium-severity CSP violation:", logData);
+  if (logData.level === 'high') {
+    console.error('High-severity CSP violation:', logData);
+  } else if (logData.level === 'medium') {
+    console.warn('Medium-severity CSP violation:', logData);
   } else {
-    console.log("Low-severity CSP violation:", logData);
+    console.log('Low-severity CSP violation:', logData);
   }
 
   // In production, you might want to:
@@ -172,12 +172,12 @@ async function storeViolation(report, metadata) {
  */
 async function handleCSPReport(req, res) {
   // Only accept POST requests
-  if (req.method !== "POST") {
+  if (req.method !== 'POST') {
     res.status(405).json({
       error: {
-        type: "MethodNotAllowed",
-        message: "Only POST method allowed",
-      },
+        type: 'MethodNotAllowed',
+        message: 'Only POST method allowed'
+      }
     });
     return;
   }
@@ -185,21 +185,21 @@ async function handleCSPReport(req, res) {
   // Validate content-type header (case-insensitive)
   // Node.js headers are already lowercase, but handle both cases
   const contentType = (
-    req.headers["content-type"] || 
-    req.headers["Content-Type"] || 
-    ""
+    req.headers['content-type'] ||
+    req.headers['Content-Type'] ||
+    ''
   ).toLowerCase();
-  const isValidContentType = 
-    contentType.includes("application/csp-report") || 
-    contentType.includes("application/json");
+  const isValidContentType =
+    contentType.includes('application/csp-report') ||
+    contentType.includes('application/json');
 
   if (!isValidContentType) {
     res.status(415).json({
       error: {
-        type: "UnsupportedMediaType",
-        message: "Content-Type must be application/csp-report or application/json",
-        supportedTypes: ["application/csp-report", "application/json"]
-      },
+        type: 'UnsupportedMediaType',
+        message: 'Content-Type must be application/csp-report or application/json',
+        supportedTypes: ['application/csp-report', 'application/json']
+      }
     });
     return;
   }
@@ -207,51 +207,53 @@ async function handleCSPReport(req, res) {
   // Add security headers
   addAPISecurityHeaders(req, res, {
     maxAge: 0, // No caching for security endpoints
-    corsOrigins: [], // No CORS for security reports
+    corsOrigins: [] // No CORS for security reports
   });
 
   try {
     // Implement 10KB size limit for request body
     const MAX_BODY_SIZE = 10 * 1024; // 10KB
     let bodySize = 0;
-    let body = "";
+    let body = '';
     let requestDestroyed = false;
 
-    req.on("data", (chunk) => {
-      if (requestDestroyed) return;
-      
+    req.on('data', (chunk) => {
+      if (requestDestroyed) {
+        return;
+      }
+
       bodySize += chunk.length;
-      
+
       // Check if body exceeds size limit
       if (bodySize > MAX_BODY_SIZE) {
         requestDestroyed = true;
         req.destroy(); // Destroy the request immediately
         res.status(413).json({
           error: {
-            type: "PayloadTooLarge",
+            type: 'PayloadTooLarge',
             message: `Request body exceeds maximum size of ${MAX_BODY_SIZE} bytes`,
             maxSize: MAX_BODY_SIZE,
             receivedSize: bodySize
-          },
+          }
         });
         return;
       }
-      
+
       body += chunk.toString();
     });
 
     await new Promise((resolve, reject) => {
-      req.on("end", () => {
+      req.on('end', () => {
         if (!requestDestroyed) {
           resolve();
         }
       });
-      req.on("error", (error) => {
+      req.on('error', (error) => {
         if (!requestDestroyed) {
           reject(error);
         }
       });
-      req.on("close", () => {
+      req.on('close', () => {
         if (requestDestroyed) {
           resolve(); // Resolve to prevent hanging
         }
@@ -263,17 +265,17 @@ async function handleCSPReport(req, res) {
       return;
     }
 
-    const reportData = JSON.parse(body || "{}");
-    const cspReport = reportData["csp-report"] || reportData;
+    const reportData = JSON.parse(body || '{}');
+    const cspReport = reportData['csp-report'] || reportData;
 
     // Validate report
     const validatedReport = validateCSPReport(cspReport);
     if (!validatedReport) {
       res.status(400).json({
         error: {
-          type: "ValidationError",
-          message: "Invalid CSP report format",
-        },
+          type: 'ValidationError',
+          message: 'Invalid CSP report format'
+        }
       });
       return;
     }
@@ -287,44 +289,44 @@ async function handleCSPReport(req, res) {
 
     // Extract metadata
     const metadata = {
-      userAgent: req.headers["user-agent"] || "Unknown",
+      userAgent: req.headers['user-agent'] || 'Unknown',
       ip:
-        req.headers["x-forwarded-for"] ||
-        req.headers["x-real-ip"] ||
+        req.headers['x-forwarded-for'] ||
+        req.headers['x-real-ip'] ||
         req.connection?.remoteAddress ||
-        "Unknown",
-      requestId: req.headers["x-request-id"] || `csp_${Date.now()}`,
-      timestamp: new Date().toISOString(),
+        'Unknown',
+      requestId: req.headers['x-request-id'] || `csp_${Date.now()}`,
+      timestamp: new Date().toISOString()
     };
 
     // Store the violation
     const storedViolation = await storeViolation(validatedReport, metadata);
 
     // For high-severity violations, you might want to trigger immediate alerts
-    if (classifyViolation(validatedReport) === "high") {
+    if (classifyViolation(validatedReport) === 'high') {
       console.error(
-        "HIGH SEVERITY CSP VIOLATION - Immediate attention required:",
+        'HIGH SEVERITY CSP VIOLATION - Immediate attention required:',
         {
           violationId: storedViolation.id,
           directive: validatedReport.violatedDirective,
           blockedUri: validatedReport.blockedUri,
           documentUri: validatedReport.documentUri,
-          ip: metadata.ip,
-        },
+          ip: metadata.ip
+        }
       );
     }
 
     // Return 204 No Content (standard for CSP reports)
     res.status(204).end();
   } catch (error) {
-    console.error("Error processing CSP report:", error);
+    console.error('Error processing CSP report:', error);
 
     // Don't reveal internal errors to potential attackers
     res.status(400).json({
       error: {
-        type: "ProcessingError",
-        message: "Failed to process report",
-      },
+        type: 'ProcessingError',
+        message: 'Failed to process report'
+      }
     });
   }
 }
@@ -342,33 +344,33 @@ async function getCSPStats(req, res) {
       severityBreakdown: {
         high: 0,
         medium: 0,
-        low: 0,
+        low: 0
       },
       topViolatedDirectives: [],
-      recentViolations: [],
+      recentViolations: []
     },
-    message: "CSP reporting endpoint is active",
+    message: 'CSP reporting endpoint is active'
   });
 }
 
 /**
  * Main export with routing logic
  */
-export default withErrorHandling(async (req, res) => {
+export default withErrorHandling(async(req, res) => {
   const { method } = req;
 
-  if (method === "POST") {
+  if (method === 'POST') {
     // Handle CSP violation reports
     return handleCSPReport(req, res);
-  } else if (method === "GET") {
+  } else if (method === 'GET') {
     // Return CSP stats (for admin/monitoring)
     return getCSPStats(req, res);
   } else {
     res.status(405).json({
       error: {
-        type: "MethodNotAllowed",
-        message: "Method not allowed",
-      },
+        type: 'MethodNotAllowed',
+        message: 'Method not allowed'
+      }
     });
   }
 });

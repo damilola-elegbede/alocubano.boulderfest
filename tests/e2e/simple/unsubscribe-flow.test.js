@@ -79,7 +79,7 @@ test.describe('Email Unsubscribe Flow - CAN-SPAM Compliance', () => {
     await expect(page.locator('h1')).toContainText('You\'ve Been Unsubscribed');
     await expect(page.locator('body')).toContainText(testEmail);
     await expect(page.locator('body')).toContainText('won\'t receive any more marketing emails');
-    
+
     // CAN-SPAM compliance: immediate effect confirmation
     await expect(page.locator('body')).toContainText('successfully removed');
   });
@@ -91,7 +91,7 @@ test.describe('Email Unsubscribe Flow - CAN-SPAM Compliance', () => {
     // Verify error page
     await expect(page.locator('h1')).toContainText('Invalid Unsubscribe Token');
     await expect(page.locator('body')).toContainText('invalid or has expired');
-    
+
     // Should provide contact information for help
     await expect(page.locator('body')).toContainText('contact us');
   });
@@ -153,7 +153,7 @@ test.describe('Email Unsubscribe Flow - CAN-SPAM Compliance', () => {
     );
 
     const responses = await Promise.all(promises);
-    
+
     // All should succeed (within rate limit for testing)
     responses.forEach(response => {
       expect([200, 429]).toContain(response.status());
@@ -162,27 +162,27 @@ test.describe('Email Unsubscribe Flow - CAN-SPAM Compliance', () => {
 
   test('unsubscribe page accessibility', async ({ page }) => {
     await page.goto(`/api/email/unsubscribe?email=${testEmail}&token=${validToken}`);
-    
+
     // Check basic accessibility requirements
     await expect(page.locator('h1')).toBeVisible();
     await expect(page.locator('body')).toHaveCSS('font-family', /sans-serif/);
-    
+
     // Test responsive design
     await page.setViewportSize({ width: 375, height: 667 });
     await expect(page.locator('h1')).toBeVisible();
-    
+
     await page.setViewportSize({ width: 1200, height: 800 });
     await expect(page.locator('h1')).toBeVisible();
   });
 
   test('CAN-SPAM compliance verification', async ({ page }) => {
     await page.goto(`/api/email/unsubscribe?email=${testEmail}&token=${validToken}`);
-    
+
     // CAN-SPAM requirements verification
     await expect(page.locator('body')).toContainText('successfully removed'); // Immediate effect
     await expect(page.locator('body')).toContainText('A Lo Cubano Boulder Fest'); // Clear sender identification
     await expect(page.locator('body')).toContainText('won\'t receive any more'); // Clear consequence statement
-    
+
     // Contact information should be available
     const bodyText = await page.locator('body').textContent();
     expect(bodyText.toLowerCase()).toMatch(/(contact|email|reach)/);

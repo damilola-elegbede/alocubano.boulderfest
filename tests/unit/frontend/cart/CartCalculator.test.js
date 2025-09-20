@@ -260,7 +260,7 @@ describe('CartCalculator', () => {
 
     it('should handle invalid ticket data', () => {
       const cartState = {
-        tickets: { 
+        tickets: {
           invalid: null,
           zeroQty: { quantity: 0 },
           noQty: { name: 'test' }
@@ -315,11 +315,11 @@ describe('CartCalculator', () => {
     });
 
     it('should validate quantity if provided', () => {
-      const result = validateTicketData({ 
-        ticketType: 'test', 
-        price: 50, 
+      const result = validateTicketData({
+        ticketType: 'test',
+        price: 50,
         name: 'Test',
-        quantity: -1 
+        quantity: -1
       });
       expect(result.isValid).toBe(false);
       expect(result.errors).toContain('Quantity must be a non-negative number');
@@ -365,7 +365,7 @@ describe('CartCalculator', () => {
     it('should generate unique IDs', () => {
       const id1 = generateDonationId();
       const id2 = generateDonationId();
-      
+
       expect(id1).toMatch(/^donation_\d+_\w+$/);
       expect(id2).toMatch(/^donation_\d+_\w+$/);
       expect(id1).not.toBe(id2);
@@ -375,7 +375,7 @@ describe('CartCalculator', () => {
       const before = Date.now();
       const id = generateDonationId();
       const after = Date.now();
-      
+
       const timestamp = parseInt(id.split('_')[1]);
       expect(timestamp).toBeGreaterThanOrEqual(before);
       expect(timestamp).toBeLessThanOrEqual(after);
@@ -384,11 +384,11 @@ describe('CartCalculator', () => {
 
   describe('createDonation', () => {
     let mockDateLocal;
-    
+
     beforeEach(() => {
       mockDateLocal = vi.spyOn(Date, 'now').mockReturnValue(1234567890);
     });
-    
+
     afterEach(() => {
       if (mockDateLocal) {
         mockDateLocal.mockRestore();
@@ -397,7 +397,7 @@ describe('CartCalculator', () => {
 
     it('should create valid donation object', () => {
       const donation = createDonation(25);
-      
+
       expect(donation).toMatchObject({
         amount: 25,
         name: 'Festival Support',
@@ -455,7 +455,7 @@ describe('CartCalculator', () => {
           { amount: 50 }
         ]
       };
-      
+
       expect(calculateItemCount(cartState)).toBe(5); // 2 + 1 + 2
     });
 

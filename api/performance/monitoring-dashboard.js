@@ -8,8 +8,8 @@ import authService from "../../lib/auth-service.js";
 import { withSecurityHeaders } from "../../lib/security-headers.js";
 
 async function handler(req, res) {
-  if (req.method !== "GET") {
-    res.setHeader("Allow", ["GET"]);
+  if (req.method !== 'GET') {
+    res.setHeader('Allow', ['GET']);
     return res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 
@@ -22,13 +22,13 @@ async function handler(req, res) {
     res.status(200).json({
       dashboard: dashboardData,
       generatedAt: new Date().toISOString(),
-      refreshInterval: 30000, // Suggest 30-second refresh
+      refreshInterval: 30000 // Suggest 30-second refresh
     });
   } catch (error) {
-    console.error("Dashboard API error:", error);
+    console.error('Dashboard API error:', error);
     res.status(500).json({
-      error: "Failed to generate dashboard data",
-      timestamp: new Date().toISOString(),
+      error: 'Failed to generate dashboard data',
+      timestamp: new Date().toISOString()
     });
   }
 }
@@ -51,19 +51,19 @@ async function generateDashboardData(performanceService) {
     overallHealth: quickReport.status,
     memoryUsage: healthStatus.memoryUsage,
     alertCount: healthStatus.alertCount,
-    isMonitoring: healthStatus.isMonitoring,
+    isMonitoring: healthStatus.isMonitoring
   };
 
   // Recent alerts analysis
   const recentAlerts = performanceService.performanceAlerts.filter(
-    (alert) => alert.timestamp > oneHourAgo,
+    (alert) => alert.timestamp > oneHourAgo
   );
 
   const alertAnalysis = {
     total: recentAlerts.length,
     byType: getAlertBreakdown(recentAlerts),
     bySeverity: getSeverityBreakdown(recentAlerts),
-    trend: calculateAlertTrend(performanceService.performanceAlerts),
+    trend: calculateAlertTrend(performanceService.performanceAlerts)
   };
 
   // Query performance data
@@ -81,17 +81,17 @@ async function generateDashboardData(performanceService) {
           avgTime: parseFloat(q.avgTime),
           maxTime: parseFloat(q.maxTime),
           executions: q.executions,
-          sql: q.sql.substring(0, 80) + "...",
-        })),
+          sql: q.sql.substring(0, 80) + '...'
+        }))
       },
       categories: Object.entries(categoryBreakdown)
         .map(([name, data]) => ({
           name,
           count: data.count,
           avgTime: Math.round(data.avgTime * 100) / 100,
-          totalExecutions: data.executions,
+          totalExecutions: data.executions
         }))
-        .sort((a, b) => b.avgTime - a.avgTime),
+        .sort((a, b) => b.avgTime - a.avgTime)
     };
   }
 
@@ -103,7 +103,7 @@ async function generateDashboardData(performanceService) {
     indexRecommendations:
       performanceService.latestAnalysis?.indexRecommendations?.length || 0,
     optimizationOpportunities:
-      performanceService.latestAnalysis?.optimizationOpportunities?.length || 0,
+      performanceService.latestAnalysis?.optimizationOpportunities?.length || 0
   };
 
   // System metrics
@@ -111,7 +111,7 @@ async function generateDashboardData(performanceService) {
     uptime: Math.floor(process.uptime()),
     memoryUsage: process.memoryUsage(),
     nodeVersion: process.version,
-    platform: process.platform,
+    platform: process.platform
   };
 
   // Historical trends (simplified)
@@ -128,8 +128,8 @@ async function generateDashboardData(performanceService) {
       performanceMetrics,
       alertAnalysis,
       queryPerformance,
-      optimizationData,
-    }),
+      optimizationData
+    })
   };
 }
 
@@ -164,15 +164,18 @@ function calculateAlertTrend(allAlerts) {
   const twoHoursAgo = new Date(now - 7200000);
 
   const lastHour = allAlerts.filter(
-    (alert) => alert.timestamp > oneHourAgo,
+    (alert) => alert.timestamp > oneHourAgo
   ).length;
   const previousHour = allAlerts.filter(
-    (alert) => alert.timestamp > twoHoursAgo && alert.timestamp <= oneHourAgo,
+    (alert) => alert.timestamp > twoHoursAgo && alert.timestamp <= oneHourAgo
   ).length;
 
-  let trend = "stable";
-  if (lastHour > previousHour * 1.5) trend = "increasing";
-  else if (lastHour < previousHour * 0.5) trend = "decreasing";
+  let trend = 'stable';
+  if (lastHour > previousHour * 1.5) {
+    trend = 'increasing';
+  } else if (lastHour < previousHour * 0.5) {
+    trend = 'decreasing';
+  }
 
   return {
     direction: trend,
@@ -181,7 +184,7 @@ function calculateAlertTrend(allAlerts) {
     changePercent:
       previousHour > 0
         ? Math.round(((lastHour - previousHour) / previousHour) * 100)
-        : 0,
+        : 0
   };
 }
 
@@ -190,16 +193,16 @@ function calculateAlertTrend(allAlerts) {
  */
 function calculatePerformanceTrends(performanceService) {
   const trends = {
-    queryCount: { trend: "stable", value: 0 },
-    avgResponseTime: { trend: "stable", value: 0 },
-    errorRate: { trend: "stable", value: 0 },
-    slowQueryRate: { trend: "stable", value: 0 },
+    queryCount: { trend: 'stable', value: 0 },
+    avgResponseTime: { trend: 'stable', value: 0 },
+    errorRate: { trend: 'stable', value: 0 },
+    slowQueryRate: { trend: 'stable', value: 0 }
   };
 
   // This is simplified - in a full implementation, you'd analyze historical data
   if (performanceService.optimizer) {
     const totalQueries = Array.from(
-      performanceService.optimizer.queryMetrics.values(),
+      performanceService.optimizer.queryMetrics.values()
     ).reduce((sum, metric) => sum + metric.totalExecutions, 0);
 
     trends.queryCount.value = totalQueries;
@@ -207,18 +210,18 @@ function calculatePerformanceTrends(performanceService) {
     const avgTime =
       Array.from(performanceService.optimizer.queryMetrics.values()).reduce(
         (sum, metric) => sum + metric.avgTime,
-        0,
+        0
       ) / (performanceService.optimizer.queryMetrics.size || 1);
 
     trends.avgResponseTime.value = Math.round(avgTime * 100) / 100;
 
     const slowQueries = Array.from(
-      performanceService.optimizer.queryMetrics.values(),
+      performanceService.optimizer.queryMetrics.values()
     ).filter((metric) => metric.avgTime > 50).length;
 
     trends.slowQueryRate.value = Math.round(
       (slowQueries / (performanceService.optimizer.queryMetrics.size || 1)) *
-        100,
+        100
     );
   }
 
@@ -234,11 +237,11 @@ function generateExecutiveSummary(data) {
   let overallScore = 100;
 
   // Analyze performance
-  if (data.performanceMetrics.overallHealth === "CRITICAL") {
-    issues.push("Critical performance issues detected");
+  if (data.performanceMetrics.overallHealth === 'CRITICAL') {
+    issues.push('Critical performance issues detected');
     overallScore -= 30;
-  } else if (data.performanceMetrics.overallHealth === "WARNING") {
-    issues.push("Performance warnings present");
+  } else if (data.performanceMetrics.overallHealth === 'WARNING') {
+    issues.push('Performance warnings present');
     overallScore -= 15;
   }
 
@@ -247,13 +250,13 @@ function generateExecutiveSummary(data) {
     issues.push(`High alert volume (${data.alertAnalysis.total} in last hour)`);
     overallScore -= 20;
   } else if (data.alertAnalysis.total === 0) {
-    achievements.push("No performance alerts in last hour");
+    achievements.push('No performance alerts in last hour');
   }
 
   // Analyze slow queries
   if (data.queryPerformance.slowQueries?.count > 5) {
     issues.push(
-      `${data.queryPerformance.slowQueries.count} slow queries identified`,
+      `${data.queryPerformance.slowQueries.count} slow queries identified`
     );
     overallScore -= 15;
   }
@@ -261,16 +264,16 @@ function generateExecutiveSummary(data) {
   // Analyze optimization opportunities
   if (data.optimization.activeRecommendations > 0) {
     issues.push(
-      `${data.optimization.activeRecommendations} optimization recommendations available`,
+      `${data.optimization.activeRecommendations} optimization recommendations available`
     );
     overallScore -= 10;
   } else {
-    achievements.push("All optimization recommendations addressed");
+    achievements.push('All optimization recommendations addressed');
   }
 
   // Memory usage
   if (data.performanceMetrics.memoryUsage > 100) {
-    issues.push("High memory usage detected");
+    issues.push('High memory usage detected');
     overallScore -= 10;
   }
 
@@ -278,15 +281,15 @@ function generateExecutiveSummary(data) {
     overallScore: Math.max(overallScore, 0),
     status:
       overallScore >= 90
-        ? "EXCELLENT"
+        ? 'EXCELLENT'
         : overallScore >= 75
-          ? "GOOD"
+          ? 'GOOD'
           : overallScore >= 60
-            ? "WARNING"
-            : "CRITICAL",
+            ? 'WARNING'
+            : 'CRITICAL',
     issues: issues.slice(0, 5), // Top 5 issues
     achievements: achievements.slice(0, 3), // Top 3 achievements
-    recommendation: generateTopRecommendation(issues, data),
+    recommendation: generateTopRecommendation(issues, data)
   };
 }
 
@@ -295,12 +298,12 @@ function generateExecutiveSummary(data) {
  */
 function generateTopRecommendation(issues, data) {
   if (issues.length === 0) {
-    return "System performance is optimal. Continue monitoring.";
+    return 'System performance is optimal. Continue monitoring.';
   }
 
   // Prioritize recommendations
-  if (data.performanceMetrics.overallHealth === "CRITICAL") {
-    return "URGENT: Address critical performance issues immediately";
+  if (data.performanceMetrics.overallHealth === 'CRITICAL') {
+    return 'URGENT: Address critical performance issues immediately';
   }
 
   if (data.optimization.indexRecommendations > 0) {
@@ -312,10 +315,10 @@ function generateTopRecommendation(issues, data) {
   }
 
   if (data.alertAnalysis.total > 5) {
-    return "Review and address recent performance alerts";
+    return 'Review and address recent performance alerts';
   }
 
-  return "Review performance metrics and apply available optimizations";
+  return 'Review performance metrics and apply available optimizations';
 }
 
 export default withSecurityHeaders(authService.requireAuth(handler));

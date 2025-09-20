@@ -1,6 +1,6 @@
 /**
  * Google Drive Mock Helper - Comprehensive Google Drive API mocking
- * 
+ *
  * Provides realistic Google Drive API mocking for gallery testing,
  * including image metadata, thumbnails, and error scenarios.
  */
@@ -32,7 +32,7 @@ class GoogleDriveMockGenerator {
     const year = this.getRandomYear();
     const month = Math.floor(Math.random() * 12) + 1;
     const day = Math.floor(Math.random() * 28) + 1;
-    
+
     return {
       id: imageId,
       name: `Cuban_Salsa_Festival_${year}_${String(month).padStart(2, '0')}_${String(day).padStart(2, '0')}_${Math.floor(Math.random() * 100)}.jpg`,
@@ -65,7 +65,7 @@ class GoogleDriveMockGenerator {
     const year = this.getRandomYear();
     const month = Math.floor(Math.random() * 12) + 1;
     const day = Math.floor(Math.random() * 28) + 1;
-    
+
     return {
       id: videoId,
       name: `Cuban_Salsa_Performance_${year}_${String(month).padStart(2, '0')}_${String(day).padStart(2, '0')}.mp4`,
@@ -157,7 +157,7 @@ class GoogleDriveMockGenerator {
    */
   generateMockFolders() {
     const folders = [];
-    
+
     for (const year of this.getYearRange()) {
       folders.push({
         id: generateTestId(`folder_${year}`),
@@ -403,9 +403,9 @@ class GalleryPerformanceMock {
    */
   async simulateResponse(response) {
     // Simulate network delay
-    const delay = this.options.baseDelay + 
+    const delay = this.options.baseDelay +
                  (Math.random() * this.options.varianceMs * 2 - this.options.varianceMs);
-    
+
     await new Promise(resolve => setTimeout(resolve, Math.max(0, delay)));
 
     // Simulate random errors
@@ -425,10 +425,10 @@ class GalleryPerformanceMock {
   async* simulateProgressiveLoading(items, batchSize = 10) {
     for (let i = 0; i < items.length; i += batchSize) {
       const batch = items.slice(i, i + batchSize);
-      
+
       // Simulate loading delay for each batch
       await this.simulateResponse({ batch });
-      
+
       yield {
         items: batch,
         loadedCount: i + batch.length,
@@ -461,9 +461,9 @@ export default function createGalleryMock(options = {}) {
      */
     async mockEndpoint(endpoint, scenario = 'success') {
       console.log(`🎭 Mocking Google Drive API: ${endpoint} (${scenario})`);
-      
+
       let response;
-      
+
       switch (scenario) {
         case 'success':
           response = APIResponseScenarios.success(options);

@@ -1,7 +1,7 @@
 /**
  * Accessibility Compliance Tests for A Lo Cubano Boulder Fest
  * Tests WCAG 2.1 AA compliance across all pages and interactions
- * 
+ *
  * Tests cover:
  * - WCAG 2.1 Level AA compliance
  * - Keyboard navigation
@@ -29,7 +29,7 @@ function setupMatchMediaMock(page) {
       removeEventListener: function() {},
       dispatchEvent: function() { return true; }
     });
-    
+
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
       value: mockMatchMedia
@@ -41,10 +41,10 @@ test.describe('WCAG 2.1 AA Compliance', () => {
   test.beforeEach(async ({ page }) => {
     // Set up accessibility testing environment
     await setupMatchMediaMock(page);
-    
+
     // Configure page for accessibility testing
     await page.setViewportSize({ width: 1200, height: 800 });
-    
+
     // Add basic authentication if needed
     if (process.env.TEST_ADMIN_PASSWORD) {
       await page.route('**/api/admin/**', route => {
@@ -64,7 +64,7 @@ test.describe('WCAG 2.1 AA Compliance', () => {
     await page.waitForLoadState('domcontentloaded');
 
     const accessibility = createAccessibilityTestSuite(page);
-    
+
     // Run comprehensive accessibility audit
     const results = await accessibility.runFullAccessibilityAudit({
       excludeRules: [
@@ -122,7 +122,7 @@ test.describe('WCAG 2.1 AA Compliance', () => {
     // Test mobile accessibility
     await page.setViewportSize({ width: 375, height: 667 });
     await page.waitForTimeout(500);
-    
+
     const mobileIssues = await accessibility.checkMobileAccessibility();
     expect(mobileIssues.filter(issue => issue.type === 'small-touch-target')).toHaveLength(0);
   });
@@ -145,7 +145,7 @@ test.describe('WCAG 2.1 AA Compliance', () => {
     for (let i = 0; i < Math.min(imageCount, 10); i++) {
       const image = images.nth(i);
       await expect(image).toHaveAttribute('alt');
-      
+
       // Check if alt text is meaningful (not just filename)
       const altText = await image.getAttribute('alt');
       expect(altText).not.toMatch(/\.(jpg|jpeg|png|gif|webp)$/i);
@@ -155,7 +155,7 @@ test.describe('WCAG 2.1 AA Compliance', () => {
     // Test gallery navigation with keyboard
     await page.keyboard.press('Tab');
     await page.keyboard.press('Enter');
-    
+
     // Check if modal or lightbox is accessible
     const modal = page.locator('[role="dialog"], .modal, .lightbox');
     if (await modal.count() > 0) {
@@ -189,7 +189,7 @@ test.describe('WCAG 2.1 AA Compliance', () => {
     for (let i = 0; i < inputCount; i++) {
       const input = formInputs.nth(i);
       const inputType = await input.getAttribute('type');
-      
+
       // Skip hidden inputs
       if (inputType === 'hidden') continue;
 
@@ -201,7 +201,7 @@ test.describe('WCAG 2.1 AA Compliance', () => {
       if (id) {
         const associatedLabel = page.locator(`label[for="${id}"]`);
         const hasLabel = await associatedLabel.count() > 0;
-        
+
         expect(hasLabel || ariaLabel || ariaLabelledBy).toBeTruthy();
       }
 
@@ -247,27 +247,27 @@ test.describe('WCAG 2.1 AA Compliance', () => {
     const tables = page.locator('table');
     if (await tables.count() > 0) {
       const table = tables.first();
-      
+
       // Check for proper table headers
       await expect(table.locator('th')).toHaveCount.greaterThan(0);
-      
+
       // Check table caption or summary
       const hasCaption = await table.locator('caption').count() > 0;
       const hasAriaLabel = await table.getAttribute('aria-label');
       const hasAriaLabelledBy = await table.getAttribute('aria-labelledby');
-      
+
       expect(hasCaption || hasAriaLabel || hasAriaLabelledBy).toBeTruthy();
     }
 
     // Test admin action buttons
     const actionButtons = page.locator('button:has-text("Delete"), button:has-text("Remove")');
     const buttonCount = await actionButtons.count();
-    
+
     for (let i = 0; i < buttonCount; i++) {
       const button = actionButtons.nth(i);
       const ariaLabel = await button.getAttribute('aria-label');
       const title = await button.getAttribute('title');
-      
+
       // Destructive actions should have clear labels
       expect(ariaLabel || title).toBeTruthy();
     }
@@ -278,16 +278,16 @@ test.describe('WCAG 2.1 AA Compliance', () => {
   // Color Contrast Testing
   test('All pages meet WCAG color contrast requirements', async ({ page }) => {
     const pagesToTest = ['/', '/tickets', '/gallery', '/about', '/artists', '/schedule'];
-    
+
     for (const pagePath of pagesToTest) {
       await page.goto(pagePath);
       await page.waitForLoadState('domcontentloaded');
-      
+
       const accessibility = createAccessibilityTestSuite(page);
       const contrastIssues = await accessibility.checkColorContrast();
-      
+
       // Filter out non-critical contrast issues (background images, etc.)
-      const criticalContrastIssues = contrastIssues.filter(issue => 
+      const criticalContrastIssues = contrastIssues.filter(issue =>
         parseFloat(issue.contrast) < (issue.minimum === 3.0 ? 3.0 : 4.5)
       );
 
@@ -319,12 +319,12 @@ test.describe('WCAG 2.1 AA Compliance', () => {
         const mobileIssues = await accessibility.checkMobileAccessibility();
 
         // Check for critical mobile accessibility issues
-        const criticalIssues = mobileIssues.filter(issue => 
+        const criticalIssues = mobileIssues.filter(issue =>
           issue.type === 'small-touch-target' || issue.type === 'horizontal-scroll'
         );
 
         if (criticalIssues.length > 0) {
-          console.log(`Mobile accessibility issues on ${pagePath} (${viewport.name}):`, 
+          console.log(`Mobile accessibility issues on ${pagePath} (${viewport.name}):`,
             JSON.stringify(criticalIssues, null, 2));
         }
 
@@ -368,15 +368,15 @@ test.describe('WCAG 2.1 AA Compliance', () => {
     await page.keyboard.press('Tab');
     const firstFocused = page.locator(':focus');
     const firstFocusedText = await firstFocused.textContent();
-    
+
     if (firstFocusedText?.toLowerCase().includes('skip')) {
       await page.keyboard.press('Enter');
       await page.waitForTimeout(500);
-      
+
       // Verify focus moved to main content
       const mainContent = page.locator('main, #main-content, [role="main"]');
       if (await mainContent.count() > 0) {
-        const isFocused = await mainContent.first().evaluate(el => 
+        const isFocused = await mainContent.first().evaluate(el =>
           document.activeElement === el || el.contains(document.activeElement)
         );
         expect(isFocused).toBeTruthy();
@@ -388,27 +388,27 @@ test.describe('WCAG 2.1 AA Compliance', () => {
     if (await modalTriggers.count() > 0) {
       await modalTriggers.first().click();
       await page.waitForTimeout(500);
-      
+
       // Check if focus is trapped in modal
       const modal = page.locator('[role="dialog"], .modal');
       if (await modal.count() > 0) {
         const focusableElements = modal.locator(
           'a, button, input, select, textarea, [tabindex]:not([tabindex="-1"])'
         );
-        
+
         if (await focusableElements.count() > 0) {
           // Test focus trap by tabbing through all elements
           const elementCount = await focusableElements.count();
-          
+
           for (let i = 0; i < elementCount + 1; i++) {
             await page.keyboard.press('Tab');
             await page.waitForTimeout(100);
-            
+
             const currentFocus = page.locator(':focus');
-            const isInModal = await modal.first().evaluate((modal, focused) => 
+            const isInModal = await modal.first().evaluate((modal, focused) =>
               modal.contains(focused), currentFocus.first()
             );
-            
+
             expect(isInModal).toBeTruthy();
           }
         }
@@ -420,13 +420,13 @@ test.describe('WCAG 2.1 AA Compliance', () => {
     if (await navToggle.count() > 0) {
       await navToggle.first().click();
       await page.waitForTimeout(500);
-      
+
       const nav = page.locator('nav, [role="navigation"]');
       const navLinks = nav.locator('a');
-      
+
       if (await navLinks.count() > 0) {
         await navLinks.first().focus();
-        const isFocused = await navLinks.first().evaluate(el => 
+        const isFocused = await navLinks.first().evaluate(el =>
           document.activeElement === el
         );
         expect(isFocused).toBeTruthy();
@@ -450,14 +450,14 @@ test.describe('WCAG 2.1 AA Compliance', () => {
     for (const [landmark, selector] of Object.entries(landmarks)) {
       const element = page.locator(selector);
       const count = await element.count();
-      
+
       if (count > 0) {
         // Check for proper ARIA labels on landmarks
         const firstElement = element.first();
         const role = await firstElement.getAttribute('role');
         const ariaLabel = await firstElement.getAttribute('aria-label');
         const ariaLabelledBy = await firstElement.getAttribute('aria-labelledby');
-        
+
         // Landmarks should have proper identification
         if (count > 1) {
           expect(ariaLabel || ariaLabelledBy).toBeTruthy();
@@ -468,12 +468,12 @@ test.describe('WCAG 2.1 AA Compliance', () => {
     // Test ARIA live regions (if present)
     const liveRegions = page.locator('[aria-live], [role="alert"], [role="status"]');
     const liveCount = await liveRegions.count();
-    
+
     for (let i = 0; i < liveCount; i++) {
       const region = liveRegions.nth(i);
       const ariaLive = await region.getAttribute('aria-live');
       const role = await region.getAttribute('role');
-      
+
       expect(ariaLive || role).toBeOneOf(['polite', 'assertive', 'alert', 'status']);
     }
   });
@@ -505,9 +505,9 @@ test.afterEach(async ({ page }, testInfo) => {
     try {
       const accessibility = createAccessibilityTestSuite(page);
       const report = await accessibility.generateAccessibilityReport();
-      
+
       console.log('🚨 Accessibility test failed. Report:', JSON.stringify(report.summary, null, 2));
-      
+
       // Attach report to test results
       await testInfo.attach('accessibility-report', {
         body: JSON.stringify(report, null, 2),

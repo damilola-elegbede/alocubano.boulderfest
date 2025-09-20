@@ -23,13 +23,13 @@ const INDENT_SIZE = 2;
 function fixLineLengths(content) {
   const lines = content.split('\n');
   const fixedLines = [];
-  
+
   for (let line of lines) {
     if (line.length <= MAX_LINE_LENGTH) {
       fixedLines.push(line);
       continue;
     }
-    
+
     // Handle different types of long lines
     if (line.includes('echo "') && line.includes('"')) {
       // Split long echo statements
@@ -39,7 +39,7 @@ function fixLineLengths(content) {
         const message = echoMatch[1];
         const chunks = [];
         let currentChunk = '';
-        
+
         for (const word of message.split(' ')) {
           if ((currentChunk + ' ' + word).length > 80) {
             chunks.push(currentChunk);
@@ -49,7 +49,7 @@ function fixLineLengths(content) {
           }
         }
         if (currentChunk) chunks.push(currentChunk);
-        
+
         fixedLines.push(`${indent}echo "${chunks[0]}"`);
         for (let i = 1; i < chunks.length; i++) {
           fixedLines.push(`${indent}echo "${chunks[i]}"`);
@@ -57,12 +57,12 @@ function fixLineLengths(content) {
         continue;
       }
     }
-    
+
     // Handle long run commands with pipes
     if (line.includes('|') && !line.trim().startsWith('#')) {
       const indent = line.match(/^(\s*)/)[1];
       const parts = line.split('|').map(p => p.trim());
-      
+
       if (parts.length > 1) {
         fixedLines.push(`${indent}${parts[0]} |`);
         for (let i = 1; i < parts.length; i++) {
@@ -72,7 +72,7 @@ function fixLineLengths(content) {
         continue;
       }
     }
-    
+
     // Handle long descriptions
     if (line.includes('description:') && line.length > MAX_LINE_LENGTH) {
       const indent = line.match(/^(\s*)/)[1];
@@ -83,11 +83,11 @@ function fixLineLengths(content) {
         continue;
       }
     }
-    
+
     // Default: keep the line as is (manual review needed)
     fixedLines.push(line);
   }
-  
+
   return fixedLines.join('\n');
 }
 
@@ -99,19 +99,19 @@ function fixIndentation(content) {
   const fixedLines = [];
   let expectedIndent = 0;
   const indentStack = [0];
-  
+
   for (let line of lines) {
     const trimmed = line.trim();
-    
+
     // Skip empty lines and comments
     if (!trimmed || trimmed.startsWith('#')) {
       fixedLines.push(line);
       continue;
     }
-    
+
     // Calculate current indent
     const currentIndent = line.match(/^(\s*)/)[1].length;
-    
+
     // Detect dedent
     if (trimmed.endsWith(':') && !trimmed.startsWith('-')) {
       // New section
@@ -123,26 +123,26 @@ function fixIndentation(content) {
       }
       expectedIndent = indentStack[indentStack.length - 1];
     }
-    
+
     // Fix tabs to spaces
     let fixedLine = line.replace(/\t/g, '  ');
-    
+
     // Ensure proper indentation (multiples of 2)
     const properIndent = Math.round(currentIndent / INDENT_SIZE) * INDENT_SIZE;
     if (currentIndent !== properIndent) {
       const spaces = ' '.repeat(properIndent);
       fixedLine = spaces + trimmed;
     }
-    
+
     fixedLines.push(fixedLine);
-    
+
     // Update indent stack for next line
     if (trimmed.endsWith(':') && !trimmed.startsWith('-')) {
       indentStack.push(properIndent + INDENT_SIZE);
       expectedIndent = properIndent + INDENT_SIZE;
     }
   }
-  
+
   return fixedLines.join('\n');
 }
 
@@ -157,14 +157,14 @@ function addAnchors(content) {
     'actions/setup-node@v4': '&setup-node actions/setup-node@v4',
     'actions/upload-artifact@v4': '&upload-artifact actions/upload-artifact@v4'
   };
-  
+
   let modifiedContent = content;
-  
+
   // First pass: define anchors
   for (const [value, anchor] of Object.entries(commonValues)) {
     const regex = new RegExp(`(runs-on:|uses:)\\s*${value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'g');
     let firstOccurrence = true;
-    
+
     modifiedContent = modifiedContent.replace(regex, (match, prefix) => {
       if (firstOccurrence) {
         firstOccurrence = false;
@@ -173,19 +173,19 @@ function addAnchors(content) {
       return match;
     });
   }
-  
+
   // Second pass: use references
   for (const [value, anchor] of Object.entries(commonValues)) {
     const anchorName = anchor.split(' ')[0];
     const regex = new RegExp(`(runs-on:|uses:)\\s*${value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'g');
-    
+
     modifiedContent = modifiedContent.replace(regex, (match, prefix) => {
       // Skip if it's already an anchor definition
       if (match.includes('&')) return match;
       return `${prefix} *${anchorName.substring(1)}`;
     });
   }
-  
+
   return modifiedContent;
 }
 
@@ -194,35 +194,35 @@ function addAnchors(content) {
  */
 function processWorkflowFile(filePath) {
   console.log(`\n📝 Processing: ${path.basename(filePath)}`);
-  
+
   let content = fs.readFileSync(filePath, 'utf-8');
   const originalContent = content;
-  
+
   // Apply fixes
   content = fixLineLengths(content);
   content = fixIndentation(content);
   // Note: Anchors might break some workflows, so this is optional
   // content = addAnchors(content);
-  
+
   if (content !== originalContent) {
     // Create backup
     const backupPath = `${filePath}.backup`;
     fs.writeFileSync(backupPath, originalContent);
     console.log(`  📋 Backup created: ${path.basename(backupPath)}`);
-    
+
     // Write fixed content
     fs.writeFileSync(filePath, content);
     console.log(`  ✅ Fixed formatting violations`);
-    
+
     // Count fixes
     const originalLines = originalContent.split('\n');
     const fixedLines = content.split('\n');
     let changedLines = 0;
-    
+
     for (let i = 0; i < Math.max(originalLines.length, fixedLines.length); i++) {
       if (originalLines[i] !== fixedLines[i]) changedLines++;
     }
-    
+
     console.log(`  📊 Changed ${changedLines} lines`);
   } else {
     console.log(`  ✅ No formatting issues found`);
@@ -235,18 +235,18 @@ function processWorkflowFile(filePath) {
 function main() {
   console.log('🔧 YAML Formatting Fix Tool');
   console.log('===========================');
-  
+
   if (!fs.existsSync(workflowsDir)) {
     console.error('❌ Workflows directory not found:', workflowsDir);
     process.exit(1);
   }
-  
+
   const files = fs.readdirSync(workflowsDir)
     .filter(f => f.endsWith('.yml') || f.endsWith('.yaml'))
     .map(f => path.join(workflowsDir, f));
-  
+
   console.log(`Found ${files.length} workflow files to process`);
-  
+
   for (const file of files) {
     try {
       processWorkflowFile(file);
@@ -254,7 +254,7 @@ function main() {
       console.error(`❌ Error processing ${path.basename(file)}:`, error.message);
     }
   }
-  
+
   console.log('\n✅ YAML formatting fixes complete');
   console.log('📋 Review the changes and test workflows before committing');
 }

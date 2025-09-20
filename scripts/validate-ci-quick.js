@@ -2,10 +2,10 @@
 
 /**
  * Quick CI/CD Validation Script
- * 
+ *
  * Performs essential validation checks for CI/CD workflows.
  * Use this for routine validation during development.
- * 
+ *
  * Usage: node scripts/validate-ci-quick.js
  */
 
@@ -20,7 +20,7 @@ const rootDir = path.resolve(__dirname, '..');
 async function quickValidation() {
   console.log('🚀 Quick CI/CD Validation');
   console.log('=' .repeat(40));
-  
+
   let issues = 0;
   let checks = 0;
 
@@ -51,16 +51,16 @@ async function quickValidation() {
   try {
     await fs.access(pathFiltersPath);
     const content = await fs.readFile(pathFiltersPath, 'utf8');
-    
+
     const requiredFilters = ['frontend', 'backend', 'tests', 'critical'];
     let filtersFound = 0;
-    
+
     for (const filter of requiredFilters) {
       if (content.includes(`${filter}:`)) {
         filtersFound++;
       }
     }
-    
+
     if (filtersFound === requiredFilters.length) {
       console.log(`✅ Path filters configured (${filtersFound}/${requiredFilters.length})`);
       checks++;
@@ -90,14 +90,14 @@ async function quickValidation() {
   const orchestratorPath = path.join(rootDir, '.github/workflows/orchestrator.yml');
   try {
     const content = await fs.readFile(orchestratorPath, 'utf8');
-    
+
     const features = [
       ['Change Detection', 'dorny/paths-filter'],
       ['Workflow Routing', 'workflows_to_run'],
       ['Health Monitoring', 'workflow-health-monitor'],
       ['Performance Tracking', 'optimization_score']
     ];
-    
+
     let featuresFound = 0;
     for (const [name, pattern] of features) {
       if (content.includes(pattern)) {
@@ -107,7 +107,7 @@ async function quickValidation() {
         console.log(`❌ ${name} - missing pattern: ${pattern}`);
       }
     }
-    
+
     if (featuresFound >= 3) {
       checks++;
     } else {
@@ -124,7 +124,7 @@ async function quickValidation() {
     const workflowsDir = path.join(rootDir, '.github/workflows');
     const files = await fs.readdir(workflowsDir);
     const yamlFiles = files.filter(f => f.endsWith('.yml') || f.endsWith('.yaml'));
-    
+
     let validFiles = 0;
     for (const file of yamlFiles) {
       const content = await fs.readFile(path.join(workflowsDir, file), 'utf8');
@@ -132,7 +132,7 @@ async function quickValidation() {
         validFiles++;
       }
     }
-    
+
     console.log(`✅ ${validFiles}/${yamlFiles.length} workflows have basic structure`);
     if (validFiles === yamlFiles.length) {
       checks++;
@@ -147,14 +147,14 @@ async function quickValidation() {
   // Summary
   console.log('\n' + '=' .repeat(40));
   const score = (checks / (checks + issues)) * 100;
-  const status = score >= 90 ? '🟢 EXCELLENT' : 
-                 score >= 75 ? '🟡 GOOD' : 
+  const status = score >= 90 ? '🟢 EXCELLENT' :
+                 score >= 75 ? '🟡 GOOD' :
                  score >= 60 ? '🟠 NEEDS WORK' : '🔴 CRITICAL';
-  
+
   console.log(`Status: ${status}`);
   console.log(`Score: ${score.toFixed(1)}%`);
   console.log(`Passed: ${checks}, Issues: ${issues}`);
-  
+
   if (issues === 0) {
     console.log('\n✅ All quick checks passed! CI/CD optimization looks good.');
   } else if (issues <= 2) {

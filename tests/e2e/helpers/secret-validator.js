@@ -1,9 +1,9 @@
 /**
  * Secret Detection and Validation System
- * 
+ *
  * Provides comprehensive secret validation for E2E tests.
  * Checks all required secrets at startup and fails fast if any are missing.
- * 
+ *
  * Features:
  * - Clear visual reporting of found vs missing secrets
  * - Intelligent value masking for security
@@ -29,7 +29,7 @@ const SECRET_CONFIG = {
       validator: (value) => value && value.length > 50,
       maskPattern: (value) => `${value.substring(0, 8)}...(${value.length} chars)`
     },
-    
+
     // Admin authentication
     ADMIN_PASSWORD: {
       description: 'Admin bcrypt hashed password',
@@ -41,7 +41,7 @@ const SECRET_CONFIG = {
       validator: (value) => value && value.length >= 32,
       maskPattern: (value) => `${value.substring(0, 6)}...(${value.length} chars)`
     },
-    
+
     // Test admin credentials
     TEST_ADMIN_PASSWORD: {
       description: 'Plain text admin password for E2E tests',
@@ -49,7 +49,7 @@ const SECRET_CONFIG = {
       maskPattern: (value) => `****(${value.length} chars)`
     }
   },
-  
+
   // Optional secrets - tests can gracefully degrade without these
   optional: {
     // Email service
@@ -71,7 +71,7 @@ const SECRET_CONFIG = {
       maskPattern: (value) => `${value.substring(0, 4)}...(${value.length} chars)`,
       gracefulDegradation: 'Webhook tests will be skipped'
     },
-    
+
     // Payment processing
     STRIPE_SECRET_KEY: {
       description: 'Stripe payment processing secret key',
@@ -91,7 +91,7 @@ const SECRET_CONFIG = {
       maskPattern: (value) => `whsec_...(${value.length - 6} chars)`,
       gracefulDegradation: 'Payment webhook tests will be skipped'
     },
-    
+
     // Google Drive integration
     GOOGLE_SERVICE_ACCOUNT_EMAIL: {
       description: 'Google service account email for Drive API',
@@ -111,7 +111,7 @@ const SECRET_CONFIG = {
       maskPattern: (value) => `${value.substring(0, 6)}...${value.substring(value.length - 6)}`,
       gracefulDegradation: 'Gallery will show placeholder content'
     },
-    
+
     // Wallet passes
     APPLE_PASS_KEY: {
       description: 'Apple Wallet pass signing key (base64)',
@@ -125,7 +125,7 @@ const SECRET_CONFIG = {
       maskPattern: (value) => `${value.substring(0, 6)}...(${value.length} chars)`,
       gracefulDegradation: 'Wallet pass generation tests will be skipped'
     },
-    
+
     // Internal APIs
     INTERNAL_API_KEY: {
       description: 'Internal API authentication key',
@@ -133,7 +133,7 @@ const SECRET_CONFIG = {
       maskPattern: (value) => `${value.substring(0, 4)}...(${value.length} chars)`,
       gracefulDegradation: 'Cache management tests will be skipped'
     },
-    
+
     // CI/CD integration
     VERCEL_TOKEN: {
       description: 'Vercel deployment token',
@@ -161,7 +161,7 @@ const SECRET_CONFIG = {
  */
 function validateSecret(key, config, value) {
   const exists = value !== undefined && value !== null && value !== '';
-  
+
   if (!exists) {
     return {
       key,
@@ -171,10 +171,10 @@ function validateSecret(key, config, value) {
       gracefulDegradation: config.gracefulDegradation
     };
   }
-  
+
   const valid = config.validator ? config.validator(value) : true;
   const maskedValue = config.maskPattern ? config.maskPattern(value) : '****';
-  
+
   return {
     key,
     exists: true,
@@ -202,13 +202,13 @@ export function validateSecrets() {
       gracefulDegradations: []
     }
   };
-  
+
   // Validate required secrets
   Object.entries(SECRET_CONFIG.required).forEach(([key, config]) => {
     const result = validateSecret(key, config, process.env[key]);
     results.required[key] = result;
     results.summary.totalSecrets++;
-    
+
     if (result.exists && result.valid) {
       results.summary.requiredFound++;
     } else {
@@ -216,13 +216,13 @@ export function validateSecrets() {
       results.summary.allRequiredPresent = false;
     }
   });
-  
+
   // Validate optional secrets
   Object.entries(SECRET_CONFIG.optional).forEach(([key, config]) => {
     const result = validateSecret(key, config, process.env[key]);
     results.optional[key] = result;
     results.summary.totalSecrets++;
-    
+
     if (result.exists && result.valid) {
       results.summary.optionalFound++;
     } else {
@@ -235,7 +235,7 @@ export function validateSecrets() {
       }
     }
   });
-  
+
   return results;
 }
 
@@ -244,35 +244,35 @@ export function validateSecrets() {
  */
 export function generateSecretReport(results) {
   const lines = [];
-  
+
   // Header
   lines.push('🔐 SECRET VALIDATION REPORT');
   lines.push('='.repeat(60));
-  
+
   // Required secrets section
   lines.push('📋 REQUIRED SECRETS:');
   Object.values(results.required).forEach(result => {
     const status = (result.exists && result.valid) ? '✅ FOUND' : '❌ MISSING';
-    const details = result.exists && result.valid 
+    const details = result.exists && result.valid
       ? `(${result.maskedValue})`
       : `- ${result.description}`;
     lines.push(`   ${status}: ${result.key} ${details}`);
   });
-  
+
   lines.push(''); // Empty line
-  
+
   // Optional secrets section
   lines.push('🔧 OPTIONAL SECRETS:');
   Object.values(results.optional).forEach(result => {
     const status = (result.exists && result.valid) ? '✅ FOUND' : '⚠️  MISSING';
-    const details = result.exists && result.valid 
+    const details = result.exists && result.valid
       ? `(${result.maskedValue})`
       : `- ${result.description}`;
     lines.push(`   ${status}: ${result.key} ${details}`);
   });
-  
+
   lines.push(''); // Empty line
-  
+
   // Graceful degradation section
   if (results.summary.gracefulDegradations.length > 0) {
     lines.push('🎭 GRACEFUL DEGRADATIONS:');
@@ -281,16 +281,16 @@ export function generateSecretReport(results) {
     });
     lines.push(''); // Empty line
   }
-  
+
   // Summary section
   lines.push('📊 VALIDATION SUMMARY:');
   lines.push(`   Required Secrets: ${results.summary.requiredFound}/${results.summary.requiredFound + results.summary.requiredMissing} found`);
   lines.push(`   Optional Secrets: ${results.summary.optionalFound}/${results.summary.optionalFound + results.summary.optionalMissing} found`);
   lines.push(`   Total Secrets: ${results.summary.requiredFound + results.summary.optionalFound}/${results.summary.totalSecrets} available`);
-  
+
   // Status and next steps
   lines.push('='.repeat(60));
-  
+
   if (results.summary.allRequiredPresent) {
     lines.push('✅ STATUS: All required secrets present - tests can proceed');
     if (results.summary.gracefulDegradations.length > 0) {
@@ -300,7 +300,7 @@ export function generateSecretReport(results) {
     lines.push('❌ FATAL: Required secrets missing - tests cannot proceed');
     lines.push('🚨 ACTION REQUIRED: Configure missing required secrets before running E2E tests');
   }
-  
+
   return lines.join('\n');
 }
 
@@ -311,7 +311,7 @@ export function generateSecretReport(results) {
 export function validateSecretsOrFail() {
   // Check if we're in unit test mode
   const isUnitMode = process.env.UNIT_ONLY_MODE === 'true' || process.env.NODE_ENV === 'test';
-  
+
   if (isUnitMode) {
     console.log('🧪 Unit test mode detected - returning mock validation results');
     return {
@@ -320,26 +320,26 @@ export function validateSecretsOrFail() {
       optional: {}
     };
   }
-  
+
   console.log('🔍 Validating E2E test environment secrets...\n');
-  
+
   const results = validateSecrets();
   const report = generateSecretReport(results);
-  
+
   console.log(report);
-  
+
   if (!results.summary.allRequiredPresent) {
     const missingRequired = Object.entries(results.required)
       .filter(([_, result]) => !result.exists || !result.valid)
       .map(([key, _]) => key);
-    
+
     throw new Error(
       `❌ E2E Test Startup Failed: ${missingRequired.length} required secrets missing: ${missingRequired.join(', ')}\n\n` +
       'Required secrets must be configured before running E2E tests.\n' +
       'See CLAUDE.md for complete secret configuration guide.'
     );
   }
-  
+
   console.log('\n🚀 Secret validation passed - proceeding with E2E tests\n');
   return results;
 }
@@ -349,14 +349,14 @@ export function validateSecretsOrFail() {
  */
 export function setGracefulDegradationFlags(results) {
   const flags = {};
-  
+
   // Set availability flags for optional services
   Object.entries(results.optional).forEach(([key, result]) => {
     const flagKey = `${key}_AVAILABLE`;
     flags[flagKey] = result.exists && result.valid;
     process.env[flagKey] = flags[flagKey].toString();
   });
-  
+
   // Special service group flags
   const serviceGroups = {
     BREVO_API_AVAILABLE: results.optional.BREVO_API_KEY?.valid || false,
@@ -364,18 +364,18 @@ export function setGracefulDegradationFlags(results) {
     GOOGLE_DRIVE_API_AVAILABLE: (results.optional.GOOGLE_SERVICE_ACCOUNT_EMAIL?.valid && results.optional.GOOGLE_PRIVATE_KEY?.valid && results.optional.GOOGLE_DRIVE_GALLERY_FOLDER_ID?.valid) || false,
     WALLET_PASSES_AVAILABLE: (results.optional.APPLE_PASS_KEY?.valid && results.optional.WALLET_AUTH_SECRET?.valid) || false
   };
-  
+
   Object.entries(serviceGroups).forEach(([flag, available]) => {
     flags[flag] = available;
     process.env[flag] = available.toString();
   });
-  
+
   console.log('🎭 Graceful degradation flags set:');
   Object.entries(flags).forEach(([flag, available]) => {
     console.log(`   ${available ? '✅' : '❌'} ${flag}: ${available}`);
   });
   console.log('');
-  
+
   return flags;
 }
 
@@ -389,13 +389,13 @@ export function isRemoteDeployment() {
 
 /**
  * Main entry point for E2E test secret validation
- * 
+ *
  * @param {boolean} skipForRemote - Skip validation if testing against remote deployment (default: true)
  */
 export function initializeSecretValidation(skipForRemote = true) {
   // Check if we're in unit test mode
   const isUnitMode = process.env.UNIT_ONLY_MODE === 'true' || process.env.NODE_ENV === 'test';
-  
+
   if (isUnitMode) {
     console.log('🧪 Unit test mode detected - skipping secret validation');
     return {
@@ -411,7 +411,7 @@ export function initializeSecretValidation(skipForRemote = true) {
       flags: {}
     };
   }
-  
+
   // Skip validation if testing against a remote deployment
   if (skipForRemote && isRemoteDeployment()) {
     const baseUrl = process.env.PLAYWRIGHT_BASE_URL || process.env.CI_EXTRACTED_PREVIEW_URL || process.env.PREVIEW_URL;
@@ -425,11 +425,11 @@ export function initializeSecretValidation(skipForRemote = true) {
       message: 'Secret validation skipped for remote deployment testing'
     };
   }
-  
+
   try {
     const results = validateSecretsOrFail();
     const flags = setGracefulDegradationFlags(results);
-    
+
     return {
       results,
       flags,
@@ -438,7 +438,7 @@ export function initializeSecretValidation(skipForRemote = true) {
   } catch (error) {
     console.error('\n❌ Secret validation failed during E2E test initialization:');
     console.error(error.message);
-    
+
     return {
       results: null,
       flags: {},

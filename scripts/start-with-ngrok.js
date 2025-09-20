@@ -2,27 +2,27 @@
 
 /**
  * DEPRECATED: Start Development Server with ngrok Tunnel
- * 
+ *
  * This script is DEPRECATED for E2E testing but PRESERVED for local development.
- * 
+ *
  * CURRENT STATUS:
  * - ✅ Still used for local development with external access (npm start)
  * - ❌ No longer used for E2E testing (switched to Vercel Preview Deployments)
- * 
+ *
  * LOCAL DEVELOPMENT USE:
  * Still useful for local development when external access is needed,
  * such as testing on mobile devices or sharing development URLs.
- * 
+ *
  * WARNING: This script is for LOCAL DEVELOPMENT ONLY.
  * DO NOT use ngrok in production or CI environments as it exposes
  * your local server to the public internet without proper security controls.
- * 
+ *
  * Security considerations:
  * - ngrok tunnels are publicly accessible
  * - No authentication is enforced by default
  * - Use only for local development and testing
- * 
- * @deprecated For E2E testing - use Vercel Preview Deployments instead  
+ *
+ * @deprecated For E2E testing - use Vercel Preview Deployments instead
  * @preserved For local development with external access
  */
 
@@ -61,7 +61,7 @@ async function findAvailablePort(startPort = BASE_PORT) {
 function startServer(port) {
   return new Promise((resolve, reject) => {
     console.log(`🚀 Starting server on port ${port}...`);
-    
+
     const env = { ...process.env, PORT: port.toString() };
     const serverProcess = spawn('npm', ['run', 'start:local'], {
       env,
@@ -74,10 +74,10 @@ function startServer(port) {
     // Wait for server to be ready
     let attempts = 0;
     const maxAttempts = 30;
-    
+
     const checkServer = setInterval(async () => {
       attempts++;
-      
+
       try {
         const response = await fetch(`http://localhost:${port}/api/health/check`);
         if (response.ok) {
@@ -101,7 +101,7 @@ function startServer(port) {
  */
 async function startNgrok(port) {
   console.log(`🌐 Starting ngrok tunnel to port ${port}...`);
-  
+
   // Check if ngrok is installed
   try {
     await execAsync('which ngrok');
@@ -123,7 +123,7 @@ async function startNgrok(port) {
   const ngrokCommand = authToken && NGROK_DOMAIN !== 'alocubanoboulderfest.ngrok.io'
     ? `ngrok http ${port} --domain=${NGROK_DOMAIN}`
     : `ngrok http ${port}`;
-    
+
   const ngrokProcess = spawn(ngrokCommand, {
     shell: true,
     stdio: 'pipe'
@@ -132,10 +132,10 @@ async function startNgrok(port) {
   // Wait for ngrok to be ready and capture URL
   return new Promise((resolve) => {
     let ngrokUrl = null;
-    
+
     ngrokProcess.stdout.on('data', (data) => {
       const output = data.toString();
-      
+
       // Look for the URL in ngrok output
       const urlMatch = output.match(/https:\/\/[^\s]+\.ngrok[^\s]+/);
       if (urlMatch && !ngrokUrl) {
@@ -171,22 +171,22 @@ async function startNgrok(port) {
 async function main() {
   console.log('🎵 A Lo Cubano Boulder Fest - Development Server with ngrok');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  
+
   let serverProcess = null;
   let ngrokProcess = null;
-  
+
   try {
     // Find available port
     const port = await findAvailablePort();
-    
+
     // Start server
     serverProcess = await startServer(port);
-    
+
     // Start ngrok
     const ngrokResult = await startNgrok(port);
     if (ngrokResult) {
       ngrokProcess = ngrokResult.process;
-      
+
       if (ngrokResult.url) {
         console.log('\n📱 Access your site at:');
         console.log(`   Local:  http://localhost:${port}`);
@@ -194,32 +194,32 @@ async function main() {
         console.log('\n📊 ngrok Inspector: http://localhost:4040');
       }
     }
-    
+
     console.log('\n✨ Server is running! Press Ctrl+C to stop.\n');
-    
+
   } catch (error) {
     console.error('❌ Failed to start:', error.message);
     process.exit(1);
   }
-  
+
   // Handle shutdown
   const shutdown = () => {
     console.log('\n🛑 Shutting down...');
-    
+
     if (ngrokProcess) {
       console.log('   Stopping ngrok...');
       ngrokProcess.kill();
     }
-    
+
     if (serverProcess) {
       console.log('   Stopping server...');
       serverProcess.kill();
     }
-    
+
     console.log('👋 Goodbye!');
     process.exit(0);
   };
-  
+
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
 }

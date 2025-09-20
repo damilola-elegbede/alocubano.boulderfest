@@ -1,6 +1,6 @@
 /**
  * Storage Utilities for E2E Tests
- * 
+ *
  * Provides utilities for managing browser storage (localStorage, sessionStorage)
  * with test isolation to prevent conflicts between parallel test execution.
  */
@@ -440,9 +440,9 @@ class TestStorageUtils {
    */
   async getAllStorageData(page) {
     const localStorage = await this.localStorage.getAllItems(page);
-    const sessionStorage = await this.sessionStorage.getAllItems ? 
+    const sessionStorage = await this.sessionStorage.getAllItems ?
       await this.sessionStorage.getAllItems(page) : {};
-    
+
     return {
       localStorage,
       sessionStorage,
@@ -480,8 +480,8 @@ export const StorageHelpers = {
       await page.waitForFunction(
         () => {
           try {
-            return typeof window !== 'undefined' && 
-                   typeof window.localStorage !== 'undefined' && 
+            return typeof window !== 'undefined' &&
+                   typeof window.localStorage !== 'undefined' &&
                    window.localStorage !== null;
           } catch (e) {
             return false;
@@ -504,8 +504,8 @@ export const StorageHelpers = {
       await page.waitForFunction(
         () => {
           try {
-            return typeof window !== 'undefined' && 
-                   typeof window.sessionStorage !== 'undefined' && 
+            return typeof window !== 'undefined' &&
+                   typeof window.sessionStorage !== 'undefined' &&
                    window.sessionStorage !== null;
           } catch (e) {
             return false;
@@ -558,7 +558,7 @@ export const StorageHelpers = {
             localStorage.setItem = function(key, value) {
               throw new Error('QuotaExceededError: Failed to execute setItem on Storage');
             };
-            
+
             // Restore after 1 second
             setTimeout(() => {
               localStorage.setItem = originalSetItem;

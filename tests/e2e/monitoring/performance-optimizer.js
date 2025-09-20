@@ -1,6 +1,6 @@
 /**
  * E2E Test Suite Performance Optimizer
- * 
+ *
  * Monitors test execution performance, tracks resource usage, and provides
  * intelligent optimization recommendations to maintain sub-5-minute execution
  * while maximizing test value.
@@ -16,7 +16,7 @@ export class PerformanceOptimizer {
         this.historyFile = join(this.metricsDir, 'performance-history.json');
         this.configFile = join(this.metricsDir, 'optimization-config.json');
         this.benchmarksFile = join(this.metricsDir, 'performance-benchmarks.json');
-        
+
         this.config = {
             maxExecutionTime: options.maxExecutionTime || 300000, // 5 minutes
             parallelismFactor: options.parallelismFactor || 4,
@@ -43,12 +43,12 @@ export class PerformanceOptimizer {
         };
 
         this.ensureDirectories();
-        
+
         // Initialize async data loading
         this.historyData = null;
         this.benchmarkData = null;
         this.initializationPromise = this.initializeAsync();
-        
+
         // Track cleanup handlers
         this.cleanupHandlers = new Set();
         this.isCleanedUp = false;
@@ -85,12 +85,12 @@ export class PerformanceOptimizer {
     startSession(sessionConfig = {}) {
         this.currentSession.startTime = performance.now();
         this.currentSession.config = { ...this.config, ...sessionConfig };
-        
+
         console.log('🚀 Performance monitoring started');
-        
+
         // Start resource monitoring
         this.startResourceMonitoring();
-        
+
         return {
             sessionId: this.generateSessionId(),
             startTime: this.currentSession.startTime,
@@ -104,7 +104,7 @@ export class PerformanceOptimizer {
     trackTest(testInfo) {
         const testId = this.generateTestId(testInfo);
         const startTime = performance.now();
-        
+
         return {
             testId,
             start: () => {
@@ -114,11 +114,11 @@ export class PerformanceOptimizer {
                     status: 'running'
                 });
             },
-            
+
             end: (result) => {
                 const endTime = performance.now();
                 const duration = endTime - startTime;
-                
+
                 const testData = this.currentSession.tests.get(testId) || {};
                 this.currentSession.tests.set(testId, {
                     ...testData,
@@ -136,7 +136,7 @@ export class PerformanceOptimizer {
                     metrics: result.metrics
                 });
             },
-            
+
             addMetric: (name, value) => {
                 const testData = this.currentSession.tests.get(testId) || {};
                 if (!testData.metrics) testData.metrics = {};
@@ -160,7 +160,7 @@ export class PerformanceOptimizer {
         };
 
         analysis.recommendations = this.generateOptimizationRecommendations(analysis);
-        
+
         return analysis;
     }
 
@@ -181,7 +181,7 @@ export class PerformanceOptimizer {
 
         // Sort by optimization strategy
         const sortedTests = this.sortTestsByStrategy(testScores, priorityMode);
-        
+
         // Select tests within constraints
         const selectedTests = this.selectTestsWithinConstraints(
             sortedTests,
@@ -203,16 +203,16 @@ export class PerformanceOptimizer {
     optimizeParallelization(tests) {
         const historicalData = this.loadHistory();
         const testDurations = this.analyzeTestDurations(tests, historicalData);
-        
+
         // Group tests by estimated duration and dependencies
         const testGroups = this.groupTestsForParallelization(testDurations);
-        
+
         // Calculate optimal parallel configuration
         const parallelConfig = this.calculateOptimalParallelism(testGroups);
-        
+
         return {
             parallelConfig,
-            estimatedDuration: Math.max(...testGroups.map(group => 
+            estimatedDuration: Math.max(...testGroups.map(group =>
                 group.reduce((sum, test) => sum + test.estimatedDuration, 0)
             )),
             resourceUtilization: this.calculateResourceUtilization(parallelConfig)
@@ -229,9 +229,9 @@ export class PerformanceOptimizer {
             network: this.calculateNetworkCosts(ciMetrics),
             total: 0
         };
-        
+
         costs.total = costs.compute + costs.storage + costs.network;
-        
+
         const optimization = {
             currentCosts: costs,
             budgetUtilization: costs.total / this.config.resourceBudget,
@@ -240,7 +240,7 @@ export class PerformanceOptimizer {
         };
 
         this.updateCostHistory(costs);
-        
+
         return optimization;
     }
 
@@ -270,8 +270,8 @@ export class PerformanceOptimizer {
         return {
             hasRegressions: regressions.length > 0,
             regressions,
-            recommendation: regressions.length > 0 ? 
-                'Performance regression detected. Consider investigating recent changes.' : 
+            recommendation: regressions.length > 0 ?
+                'Performance regression detected. Consider investigating recent changes.' :
                 'No performance regressions detected.'
         };
     }
@@ -282,7 +282,7 @@ export class PerformanceOptimizer {
     generateOptimizationReport() {
         const analysis = this.analyzePerformance();
         const resourceAnalysis = this.trackResourceCosts(this.currentSession.resources);
-        
+
         const report = {
             timestamp: Date.now(),
             session: {
@@ -329,7 +329,7 @@ export class PerformanceOptimizer {
 
         // Use longer interval for better performance (5 seconds instead of 1)
         const monitoringInterval = process.env.CI === 'true' ? 10000 : 5000;
-        
+
         const interval = setInterval(() => {
             if (!this.currentSession.startTime || this.isCleanedUp) {
                 this.stopResourceMonitoring();
@@ -384,7 +384,7 @@ export class PerformanceOptimizer {
      */
     endSession() {
         this.stopResourceMonitoring();
-        
+
         const sessionData = {
             endTime: performance.now(),
             duration: performance.now() - (this.currentSession.startTime || 0),
@@ -417,7 +417,7 @@ export class PerformanceOptimizer {
      */
     getResourceSummary() {
         const { cpu, memory } = this.currentSession.resources;
-        
+
         if (cpu.length === 0 || memory.length === 0) {
             return { cpu: null, memory: null, dataPoints: 0 };
         }
@@ -444,7 +444,7 @@ export class PerformanceOptimizer {
         if (!existsSync(this.historyFile)) {
             return { tests: {}, sessions: [] };
         }
-        
+
         try {
             const data = await fs.readFile(this.historyFile, 'utf8');
             return JSON.parse(data);
@@ -458,7 +458,7 @@ export class PerformanceOptimizer {
         if (!existsSync(this.benchmarksFile)) {
             return {};
         }
-        
+
         try {
             const data = await fs.readFile(this.benchmarksFile, 'utf8');
             return JSON.parse(data);
@@ -500,20 +500,20 @@ export class PerformanceOptimizer {
             // Ensure we have the latest history data
             await this.ensureInitialized();
             const history = this.historyData || { tests: {}, sessions: [] };
-            
+
             for (const [testId, testResult] of this.pendingHistoryUpdates) {
                 if (!history.tests[testId]) {
                     history.tests[testId] = { results: [] };
                 }
-                
+
                 history.tests[testId].results.push(testResult);
-                
+
                 // Keep only last 100 results per test
                 if (history.tests[testId].results.length > 100) {
                     history.tests[testId].results = history.tests[testId].results.slice(-100);
                 }
             }
-            
+
             // Update cached data and save
             this.historyData = history;
             await fs.writeFile(this.historyFile, JSON.stringify(history, null, 2));
@@ -526,7 +526,7 @@ export class PerformanceOptimizer {
     analyzeExecutionPerformance() {
         const tests = Array.from(this.currentSession.tests.values());
         const totalDuration = tests.reduce((sum, test) => sum + (test.duration || 0), 0);
-        
+
         return {
             totalDuration,
             averageTestDuration: totalDuration / tests.length || 0,
@@ -540,7 +540,7 @@ export class PerformanceOptimizer {
 
     analyzeResourceUsage() {
         const { cpu, memory } = this.currentSession.resources;
-        
+
         return {
             cpu: {
                 peak: Math.max(...cpu.map(c => c.usage.user + c.usage.system)),
@@ -556,7 +556,7 @@ export class PerformanceOptimizer {
     calculateTestValue(test) {
         const history = this.loadHistory();
         const testHistory = history.tests[this.generateTestId(test)] || { results: [] };
-        
+
         // Calculate value based on multiple factors
         const factors = {
             coverage: this.getTestCoverage(test) || 0.5,
@@ -565,7 +565,7 @@ export class PerformanceOptimizer {
             businessValue: this.getBusinessValue(test) || 0.7,
             recentFailures: this.getRecentFailureRate(testHistory)
         };
-        
+
         return (
             factors.coverage * 0.25 +
             factors.criticalPath * 0.25 +
@@ -579,18 +579,18 @@ export class PerformanceOptimizer {
         const history = this.loadHistory();
         const testId = this.generateTestId(test);
         const testHistory = history.tests[testId];
-        
+
         if (!testHistory || testHistory.results.length === 0) {
             return this.getDefaultTestDuration(test);
         }
-        
+
         const recentResults = testHistory.results.slice(-10);
         const durations = recentResults.map(r => r.duration).filter(d => d > 0);
-        
+
         if (durations.length === 0) {
             return this.getDefaultTestDuration(test);
         }
-        
+
         // Use median with some buffer for variance
         const sorted = durations.sort((a, b) => a - b);
         const median = sorted[Math.floor(sorted.length / 2)];
@@ -605,25 +605,25 @@ export class PerformanceOptimizer {
             'mobile-registration': 25000,
             'newsletter': 15000
         };
-        
+
         const testType = this.identifyTestType(test);
         return baseDuration[testType] || 20000;
     }
 
     identifyTestType(test) {
         const filename = test.file || test.name || '';
-        
+
         if (filename.includes('gallery')) return 'gallery-browsing';
         if (filename.includes('admin')) return 'admin-dashboard';
         if (filename.includes('mobile')) return 'mobile-registration';
         if (filename.includes('newsletter')) return 'newsletter';
-        
+
         return 'default';
     }
 
     generateOptimizationRecommendations(analysis) {
         const recommendations = [];
-        
+
         // Execution time recommendations
         if (analysis.execution.totalDuration > this.config.maxExecutionTime) {
             recommendations.push({
@@ -638,7 +638,7 @@ export class PerformanceOptimizer {
                 ]
             });
         }
-        
+
         // Resource usage recommendations
         if (analysis.resources.memory.peak > 500 * 1024 * 1024) { // 500MB
             recommendations.push({
@@ -653,7 +653,7 @@ export class PerformanceOptimizer {
                 ]
             });
         }
-        
+
         // Parallelization recommendations
         if (analysis.parallelization.efficiency < 0.7) {
             recommendations.push({
@@ -668,7 +668,7 @@ export class PerformanceOptimizer {
                 ]
             });
         }
-        
+
         return recommendations;
     }
 
@@ -687,7 +687,7 @@ export class PerformanceOptimizer {
                 fs.writeFile(reportFile, reportData),
                 fs.writeFile(latestReportFile, reportData)
             ]);
-            
+
             console.log(`📊 Optimization report saved: ${reportFile}`);
         } catch (error) {
             console.warn('Failed to save optimization report:', error.message);
@@ -706,7 +706,7 @@ export class PerformanceOptimizer {
     identifyBottlenecks() {
         const tests = Array.from(this.currentSession.tests.values());
         const sorted = tests.sort((a, b) => (b.duration || 0) - (a.duration || 0));
-        
+
         return {
             slowestTests: sorted.slice(0, 3),
             resourceBottlenecks: this.identifyResourceBottlenecks(),
@@ -795,23 +795,23 @@ export class PerformanceOptimizer {
         }
 
         this.isCleanedUp = true;
-        
+
         // Stop resource monitoring
         this.stopResourceMonitoring();
-        
+
         // Clear pending operations
         if (this.historyUpdateTimer) {
             clearTimeout(this.historyUpdateTimer);
             this.historyUpdateTimer = null;
         }
-        
+
         // Flush any pending history updates
         if (this.pendingHistoryUpdates && this.pendingHistoryUpdates.size > 0) {
-            this.flushHistoryUpdates().catch(error => 
+            this.flushHistoryUpdates().catch(error =>
                 console.warn('Failed to flush pending history updates during cleanup:', error.message)
             );
         }
-        
+
         // Run all cleanup handlers
         for (const handler of this.cleanupHandlers) {
             try {
@@ -821,14 +821,14 @@ export class PerformanceOptimizer {
             }
         }
         this.cleanupHandlers.clear();
-        
+
         // Clear session data
         this.currentSession.tests.clear();
         this.currentSession.resources.cpu = [];
         this.currentSession.resources.memory = [];
         this.currentSession.resources.network = [];
         this.currentSession.resources.storage = [];
-        
+
         console.log('📋 Performance optimizer cleaned up');
     }
 }
@@ -850,7 +850,7 @@ export class E2EPerformanceMonitor {
         return async (...args) => {
             const tracker = this.optimizer.trackTest(testInfo);
             tracker.start();
-            
+
             try {
                 const result = await testFn(...args);
                 tracker.end({ status: 'passed', metrics: result.metrics || {} });
@@ -867,9 +867,9 @@ export class E2EPerformanceMonitor {
      */
     async profileTestSuite(tests, options = {}) {
         const session = this.optimizer.startSession(options);
-        
+
         console.log(`= Profiling ${tests.length} tests...`);
-        
+
         const results = [];
         for (const test of tests) {
             const monitoredTest = this.monitorTest(test, test.fn);
@@ -880,10 +880,10 @@ export class E2EPerformanceMonitor {
                 results.push({ test, error, status: 'failed' });
             }
         }
-        
+
         const analysis = this.optimizer.analyzePerformance();
         const report = this.optimizer.generateOptimizationReport();
-        
+
         return {
             session,
             results,
@@ -944,15 +944,15 @@ export class SmartTestSelector {
      * Select tests affected by recent changes
      */
     selectAffectedTests(allTests, changedFiles) {
-        return allTests.filter(test => 
+        return allTests.filter(test =>
             this.isTestAffectedByChanges(test, changedFiles)
         );
     }
 
     isTestAffectedByChanges(test, changedFiles) {
         // Implementation would analyze test dependencies and changed files
-        return changedFiles.some(file => 
-            test.dependencies?.includes(file) || 
+        return changedFiles.some(file =>
+            test.dependencies?.includes(file) ||
             test.file?.includes(file.replace(/\.[^.]+$/, ''))
         );
     }

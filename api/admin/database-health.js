@@ -11,12 +11,13 @@
  * - Historical trend analysis
  */
 
-import { performSystemHealthCheck, getHealthMonitor } from '../../lib/connection-health-monitor.js';
-import { getPoolStatistics, getPoolHealthStatus } from '../../lib/connection-manager.js';
-import { getDatabaseClient } from '../../lib/database.js';
-import { logger } from '../../lib/logger.js';
-import authService from '../../lib/auth-service.js';
-import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
+import { performSystemHealthCheck, getHealthMonitor } from "../../lib/connection-health-monitor.js";
+import { getPoolStatistics, getPoolHealthStatus } from "../../lib/connection-manager.js";
+import { getDatabaseClient } from "../../lib/database.js";
+import { logger } from "../../lib/logger.js";
+import authService from "../../lib/auth-service.js";
+import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
+import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
 
 async function handler(req, res) {
   const startTime = Date.now();
@@ -275,7 +276,9 @@ function calculateTrends(healthMonitor, timeRangeMs) {
  * Calculate trend direction from values array
  */
 function calculateTrendDirection(values) {
-  if (values.length < 2) return 'stable';
+  if (values.length < 2) {
+    return 'stable';
+  }
 
   const recentValues = values.slice(-Math.min(5, values.length)); // Last 5 values
   const firstHalf = recentValues.slice(0, Math.ceil(recentValues.length / 2));
@@ -287,7 +290,9 @@ function calculateTrendDirection(values) {
   const change = secondAvg - firstAvg;
   const changePercent = Math.abs(change) / Math.max(firstAvg, 0.01) * 100;
 
-  if (changePercent < 5) return 'stable';
+  if (changePercent < 5) {
+    return 'stable';
+  }
   return change > 0 ? 'increasing' : 'decreasing';
 }
 
@@ -296,16 +301,16 @@ function calculateTrendDirection(values) {
  */
 function getHttpStatusFromHealth(healthStatus) {
   switch (healthStatus) {
-    case 'healthy':
-      return 200;
-    case 'warning':
-      return 200; // Still operational
-    case 'critical':
-      return 503; // Service unavailable
-    case 'unavailable':
-      return 503;
-    default:
-      return 500;
+  case 'healthy':
+    return 200;
+  case 'warning':
+    return 200; // Still operational
+  case 'critical':
+    return 503; // Service unavailable
+  case 'unavailable':
+    return 503;
+  default:
+    return 500;
   }
 }
 
@@ -327,5 +332,9 @@ function validateQueryParams(query) {
   return errors;
 }
 
-// Export with security headers
-export default withSecurityHeaders(handler);
+// Export with security headers and audit
+export default withSecurityHeaders(authService.requireAuth(withAdminAudit(handler, {
+  logBody: false,
+  logMetadata: true,
+  skipMethods: [] // Track database health monitoring access
+})));

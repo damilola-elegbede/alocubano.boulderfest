@@ -2,7 +2,7 @@
 
 /**
  * Path Filter Validation Script
- * 
+ *
  * Validates the path filter configuration for correctness and completeness:
  * - Checks for valid YAML syntax
  * - Validates path patterns
@@ -34,35 +34,35 @@ class PathFilterValidator {
         const result = {};
         let currentPath = [];
         let currentIndent = 0;
-        
+
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
             const trimmed = line.trim();
-            
+
             if (!trimmed || trimmed.startsWith('#')) continue;
-            
+
             const indent = line.length - line.trimStart().length;
-            
+
             // Check for YAML syntax issues
             if (line.includes('\t')) {
                 this.issues.push(`Line ${i + 1}: Uses tabs instead of spaces for indentation`);
             }
-            
+
             if (trimmed.includes(':')) {
                 const [key, ...valueParts] = trimmed.split(':');
                 const value = valueParts.join(':').trim();
-                
+
                 if (indent <= currentIndent) {
                     currentPath = currentPath.slice(0, Math.floor(indent / 2));
                 }
-                
+
                 if (value) {
                     this.setNestedValue(result, [...currentPath, key], value);
                 } else {
                     this.setNestedValue(result, [...currentPath, key], {});
                     currentPath.push(key);
                 }
-                
+
                 currentIndent = indent;
             } else if (trimmed.startsWith('- ')) {
                 // Array item
@@ -77,7 +77,7 @@ class PathFilterValidator {
                 }
             }
         }
-        
+
         return result;
     }
 
@@ -106,17 +106,17 @@ class PathFilterValidator {
      */
     async loadAndValidateConfig() {
         console.log('🔍 Loading path filter configuration...');
-        
+
         try {
             const configPath = path.join(projectRoot, '.github', 'path-filters.yml');
             const configContent = await fs.readFile(configPath, 'utf8');
-            
+
             // Basic YAML validation
             const config = this.parseYAML(configContent);
-            
+
             console.log(`✅ Successfully loaded ${Object.keys(config).length} filter definitions`);
             return config;
-            
+
         } catch (error) {
             this.issues.push(`Failed to load configuration: ${error.message}`);
             return null;
@@ -128,10 +128,10 @@ class PathFilterValidator {
      */
     validatePathPatterns(config) {
         console.log('🔍 Validating path patterns...');
-        
+
         let validPatterns = 0;
         let totalPatterns = 0;
-        
+
         for (const [filterName, patterns] of Object.entries(config)) {
             if (!Array.isArray(patterns)) {
                 // Handle nested objects or string values
@@ -140,19 +140,19 @@ class PathFilterValidator {
                 }
                 continue;
             }
-            
+
             for (const pattern of patterns) {
                 totalPatterns++;
-                
+
                 // Check for common pattern issues
                 if (this.validatePattern(pattern, filterName)) {
                     validPatterns++;
                 }
             }
         }
-        
+
         console.log(`✅ Validated ${validPatterns}/${totalPatterns} path patterns`);
-        
+
         if (this.issues.length === 0) {
             console.log('✅ All path patterns appear valid');
         }
@@ -163,30 +163,30 @@ class PathFilterValidator {
      */
     validatePattern(pattern, filterName) {
         let isValid = true;
-        
+
         // Check for common issues
         if (pattern.includes('\\') && !pattern.includes('\\\\')) {
             this.warnings.push(`Filter '${filterName}': Pattern '${pattern}' may need escaped backslashes`);
         }
-        
+
         if (pattern.startsWith('/')) {
             this.warnings.push(`Filter '${filterName}': Pattern '${pattern}' starts with '/' - may not match correctly`);
         }
-        
+
         if (pattern.includes(' ') && !pattern.includes('"') && !pattern.includes("'")) {
             this.warnings.push(`Filter '${filterName}': Pattern '${pattern}' contains spaces - may need quoting`);
         }
-        
+
         // Check for overly broad patterns
         if (pattern === '**' || pattern === '*') {
             this.warnings.push(`Filter '${filterName}': Very broad pattern '${pattern}' may match too many files`);
         }
-        
+
         // Check for potentially redundant patterns
         if (pattern.endsWith('/**') && patterns.includes(pattern.replace('/**', '/**/*'))) {
             this.warnings.push(`Filter '${filterName}': Potentially redundant patterns`);
         }
-        
+
         return isValid;
     }
 
@@ -195,23 +195,23 @@ class PathFilterValidator {
      */
     validateCoverage(config) {
         console.log('🔍 Checking filter coverage...');
-        
+
         const expectedCategories = {
             core: ['frontend', 'backend', 'tests', 'docs', 'ci'],
             specific: ['dependencies', 'config', 'security'],
             triggers: ['ci-triggers', 'e2e-triggers', 'deploy-triggers'],
             smart: ['critical', 'skip-ci', 'docs-only']
         };
-        
+
         let coverageScore = 0;
         let totalExpected = 0;
-        
+
         for (const [category, filters] of Object.entries(expectedCategories)) {
             console.log(`\n📂 ${category.toUpperCase()} category:`);
-            
+
             for (const filterName of filters) {
                 totalExpected++;
-                
+
                 if (config[filterName]) {
                     console.log(`  ✅ ${filterName}`);
                     coverageScore++;
@@ -221,10 +221,10 @@ class PathFilterValidator {
                 }
             }
         }
-        
+
         const coveragePercent = Math.round((coverageScore / totalExpected) * 100);
         console.log(`\n📊 Coverage Score: ${coverageScore}/${totalExpected} (${coveragePercent}%)`);
-        
+
         if (coveragePercent >= 90) {
             console.log('🎉 Excellent filter coverage!');
         } else if (coveragePercent >= 70) {
@@ -241,7 +241,7 @@ class PathFilterValidator {
      */
     async testFilterLogic(config) {
         console.log('\n🧪 Testing filter logic with sample changes...');
-        
+
         const testCases = [
             {
                 name: 'Frontend-only changes',
@@ -249,7 +249,7 @@ class PathFilterValidator {
                 expectedTriggers: ['frontend', 'frontend-js', 'frontend-css', 'frontend-html', 'ci-triggers']
             },
             {
-                name: 'Backend-only changes', 
+                name: 'Backend-only changes',
                 files: ['api/users.js', 'lib/database.js'],
                 expectedTriggers: ['backend', 'backend-api', 'backend-lib', 'ci-triggers']
             },
@@ -275,18 +275,18 @@ class PathFilterValidator {
         for (const testCase of testCases) {
             console.log(`\n🧪 Testing: ${testCase.name}`);
             console.log(`   Files: ${testCase.files.join(', ')}`);
-            
+
             const triggeredFilters = this.simulateFilterMatching(config, testCase.files);
             console.log(`   Triggered: ${triggeredFilters.join(', ')}`);
-            
+
             // Check if expected filters were triggered
-            const matchedExpected = testCase.expectedTriggers.filter(filter => 
+            const matchedExpected = testCase.expectedTriggers.filter(filter =>
                 triggeredFilters.includes(filter)
             );
-            
+
             const successRate = matchedExpected.length / testCase.expectedTriggers.length;
             console.log(`   Success: ${Math.round(successRate * 100)}% (${matchedExpected.length}/${testCase.expectedTriggers.length})`);
-            
+
             if (successRate >= 0.8) {
                 console.log('   ✅ Test passed');
                 passedTests++;
@@ -297,7 +297,7 @@ class PathFilterValidator {
         }
 
         console.log(`\n📊 Test Results: ${passedTests}/${testCases.length} passed`);
-        
+
         if (passedTests === testCases.length) {
             console.log('🎉 All filter logic tests passed!');
         } else {
@@ -310,10 +310,10 @@ class PathFilterValidator {
      */
     simulateFilterMatching(config, files) {
         const triggered = [];
-        
+
         for (const [filterName, patterns] of Object.entries(config)) {
             if (!Array.isArray(patterns)) continue;
-            
+
             for (const file of files) {
                 for (const pattern of patterns) {
                     if (this.matchesPattern(file, pattern)) {
@@ -324,7 +324,7 @@ class PathFilterValidator {
                 if (triggered.includes(filterName)) break;
             }
         }
-        
+
         return [...new Set(triggered)]; // Remove duplicates
     }
 
@@ -338,13 +338,13 @@ class PathFilterValidator {
             .replace(/\*/g, '[^/]*')     // * matches anything except /
             .replace(/\?/g, '[^/]')      // ? matches single character except /
             .replace(/\./g, '\\.');      // Escape dots
-        
+
         // Handle negation patterns
         if (pattern.startsWith('!')) {
             regex = regex.substring(1);
             return !new RegExp(`^${regex}$`).test(file);
         }
-        
+
         return new RegExp(`^${regex}$`).test(file);
     }
 
@@ -353,7 +353,7 @@ class PathFilterValidator {
      */
     suggestOptimizations(config) {
         console.log('\n💡 Optimization Suggestions:');
-        
+
         // Check for overlapping patterns
         const allPatterns = [];
         for (const [filterName, patterns] of Object.entries(config)) {
@@ -363,7 +363,7 @@ class PathFilterValidator {
                 });
             }
         }
-        
+
         // Look for very similar patterns that could be consolidated
         const patternGroups = {};
         allPatterns.forEach(({ filter, pattern }) => {
@@ -373,9 +373,9 @@ class PathFilterValidator {
             }
             patternGroups[base].push({ filter, pattern });
         });
-        
+
         let optimizationCount = 0;
-        
+
         for (const [base, group] of Object.entries(patternGroups)) {
             if (group.length > 2) {
                 console.log(`\n🔧 Consider consolidating similar patterns in ${base}:`);
@@ -385,20 +385,20 @@ class PathFilterValidator {
                 optimizationCount++;
             }
         }
-        
+
         // Check for missing composite filters
         const coreFilters = ['frontend', 'backend', 'tests'];
-        const hasComposite = Object.keys(config).some(key => 
+        const hasComposite = Object.keys(config).some(key =>
             key.includes('fullstack') || key.includes('complete') || key.includes('all')
         );
-        
+
         if (!hasComposite) {
             console.log('\n🔧 Consider adding composite filters:');
             console.log('   fullstack: Combined frontend + backend triggers');
             console.log('   complete: All core areas for comprehensive changes');
             optimizationCount++;
         }
-        
+
         if (optimizationCount === 0) {
             console.log('✅ Configuration appears well-optimized!');
         } else {
@@ -412,7 +412,7 @@ class PathFilterValidator {
     generateReport() {
         console.log('\n📋 Path Filter Validation Report');
         console.log('='.repeat(50));
-        
+
         if (this.issues.length === 0) {
             console.log('✅ No critical issues found');
         } else {
@@ -421,24 +421,24 @@ class PathFilterValidator {
                 console.log(`  ${i + 1}. ${issue}`);
             });
         }
-        
+
         if (this.warnings.length > 0) {
             console.log(`\n⚠️  ${this.warnings.length} warnings:`);
             this.warnings.forEach((warning, i) => {
                 console.log(`  ${i + 1}. ${warning}`);
             });
         }
-        
+
         if (this.recommendations.length > 0) {
             console.log(`\n💡 ${this.recommendations.length} recommendations:`);
             this.recommendations.forEach((rec, i) => {
                 console.log(`  ${i + 1}. ${rec}`);
             });
         }
-        
+
         const overallScore = this.calculateOverallScore();
         console.log(`\n🎯 Overall Score: ${overallScore}/100`);
-        
+
         if (overallScore >= 90) {
             console.log('🎉 Excellent! Ready for production');
         } else if (overallScore >= 75) {
@@ -448,18 +448,18 @@ class PathFilterValidator {
         } else {
             console.log('❌ Significant issues - not ready for production');
         }
-        
+
         return overallScore >= 75;
     }
 
     calculateOverallScore() {
         let score = 100;
-        
+
         // Deduct for issues and warnings
         score -= this.issues.length * 15;      // Critical issues
         score -= this.warnings.length * 5;     // Warnings
         score -= this.recommendations.length * 2; // Minor improvements
-        
+
         return Math.max(0, score);
     }
 }
@@ -468,9 +468,9 @@ class PathFilterValidator {
 async function main() {
     console.log('🔍 Path Filter Configuration Validator');
     console.log('=====================================');
-    
+
     const validator = new PathFilterValidator();
-    
+
     try {
         // Load and validate configuration
         const config = await validator.loadAndValidateConfig();
@@ -478,18 +478,18 @@ async function main() {
             console.error('❌ Cannot proceed without valid configuration');
             process.exit(1);
         }
-        
+
         // Run all validations
         validator.validatePathPatterns(config);
         validator.validateCoverage(config);
         await validator.testFilterLogic(config);
         validator.suggestOptimizations(config);
-        
+
         // Generate final report
         const isReady = validator.generateReport();
-        
+
         process.exit(isReady ? 0 : 1);
-        
+
     } catch (error) {
         console.error('❌ Validation failed:', error.message);
         if (process.env.DEBUG) {

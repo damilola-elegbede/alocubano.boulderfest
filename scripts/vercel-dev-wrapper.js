@@ -2,17 +2,17 @@
 
 /**
  * DEPRECATED: Vercel Dev Wrapper Script
- * 
+ *
  * This script is DEPRECATED for E2E testing but PRESERVED for local development.
- * 
+ *
  * CURRENT STATUS:
- * - ✅ Still used for local development wrapper functionality  
+ * - ✅ Still used for local development wrapper functionality
  * - ❌ No longer used for E2E testing (switched to Vercel Preview Deployments)
- * 
+ *
  * E2E TESTING MIGRATION:
  * E2E tests now use Vercel Preview Deployments instead of local dev servers.
  * This eliminates the need for complex wrapper scripts around Vercel dev.
- * 
+ *
  * @deprecated For E2E testing - use Vercel Preview Deployments instead
  * @preserved For local development use cases
  */
@@ -39,7 +39,7 @@ class VercelDevWrapper {
     try {
       // Use the enhanced Vercel dev starter
       const starter = new VercelDevStarter();
-      
+
       // Override port if specified
       starter.options.port = this.options.port;
       starter.options.useYesFlag = this.options.useYesFlag;
@@ -47,7 +47,7 @@ class VercelDevWrapper {
       starter.options.timeout = this.options.timeout;
 
       await starter.start();
-      
+
     } catch (error) {
       console.error('❌ Vercel dev wrapper failed:', error.message);
       console.log('\n💡 Try alternative startup methods:');

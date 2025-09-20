@@ -80,13 +80,13 @@ class VirtualGalleryManager {
                     <div class="loading-spinner"></div>
                     <span class="loading-text">Loading gallery...</span>
                 </div>
-                
+
                 <!-- Error Display -->
                 <div class="virtual-error" role="alert" aria-hidden="true">
                     <div class="error-message"></div>
                     <button class="error-retry" type="button">Retry</button>
                 </div>
-                
+
                 <!-- Virtual Scroll Container -->
                 <div class="virtual-scroll-container">
                     <div class="virtual-list" role="grid">
@@ -395,12 +395,12 @@ class VirtualGalleryManager {
                 <div class="lazy-placeholder">
                     <div class="loading-spinner">📸</div>
                 </div>
-                <img 
-                    data-src="${item.thumbnailUrl || item.url}" 
+                <img
+                    data-src="${item.thumbnailUrl || item.url}"
                     data-thumbnail="${item.thumbnailUrl || item.url}"
                     data-full-url="${item.url}"
-                    alt="${title}" 
-                    class="lazy-image gallery-image" 
+                    alt="${title}"
+                    class="lazy-image gallery-image"
                     style="display: none;"
                     loading="lazy"
                 />

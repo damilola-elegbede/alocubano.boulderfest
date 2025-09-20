@@ -2,7 +2,7 @@
 
 /**
  * E2E Test Environment Setup Script
- * 
+ *
  * Sets up environment variables and database for E2E test execution with dynamic port allocation.
  * Each test suite gets its own port (3000-3005) and isolated database to prevent conflicts
  * when running in parallel CI matrix jobs.
@@ -20,7 +20,7 @@ const projectRoot = path.dirname(__dirname);
 // Test suite to port mapping for parallel execution
 const SUITE_PORT_MAP = {
   'standard': 3000,
-  'advanced': 3001, 
+  'advanced': 3001,
   'firefox': 3002,
   'performance': 3003,
   'accessibility': 3004,
@@ -50,21 +50,21 @@ class E2EEnvironmentSetup {
       E2E_TEST_SUITE: this.testSuite,
       NODE_ENV: 'test',
       E2E_TEST_MODE: 'true',
-      
+
       // Database configuration - isolated per suite
       DATABASE_URL: path.join(projectRoot, '.tmp', 'databases', this.databaseName),
       TURSO_DATABASE_URL: process.env.TURSO_DATABASE_URL || '',
       TURSO_AUTH_TOKEN: process.env.TURSO_AUTH_TOKEN || '',
-      
+
       // Test configuration
       TEST_TIMEOUT: '30000',
       PLAYWRIGHT_BROWSERS_PATH: '0',
-      
+
       // Admin credentials for testing
       TEST_ADMIN_PASSWORD: process.env.TEST_ADMIN_PASSWORD || 'test123',
       ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || '',
       ADMIN_SECRET: process.env.ADMIN_SECRET || 'test-secret-key-for-e2e-testing-only',
-      
+
       // API keys (use test values if not set)
       STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY || 'pk_test_dummy',
       STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || 'sk_test_dummy',
@@ -72,7 +72,7 @@ class E2EEnvironmentSetup {
       BREVO_API_KEY: process.env.BREVO_API_KEY || 'xkeysib-dummy',
       BREVO_NEWSLETTER_LIST_ID: process.env.BREVO_NEWSLETTER_LIST_ID || '1',
       BREVO_WEBHOOK_SECRET: process.env.BREVO_WEBHOOK_SECRET || 'dummy_secret',
-      
+
       // Wallet pass configuration - Pass through without fallbacks
       APPLE_PASS_KEY: process.env.APPLE_PASS_KEY,
       WALLET_AUTH_SECRET: process.env.WALLET_AUTH_SECRET
@@ -98,7 +98,7 @@ class E2EEnvironmentSetup {
   async setupDatabase() {
     const dbDir = path.join(projectRoot, '.tmp', 'databases');
     const dbPath = path.join(dbDir, this.databaseName);
-    
+
     if (this.isDryRun) {
       console.log(`[DRY RUN] Would create database directory: ${dbDir}`);
       console.log(`[DRY RUN] Would setup database: ${dbPath}`);
@@ -108,14 +108,14 @@ class E2EEnvironmentSetup {
     try {
       // Ensure database directory exists
       await fs.mkdir(dbDir, { recursive: true });
-      
+
       // Initialize database if it doesn't exist
       const dbExists = await fs.access(dbPath).then(() => true).catch(() => false);
       if (!dbExists) {
         console.log(`📊 Creating database for ${this.testSuite} suite: ${this.databaseName}`);
         await fs.writeFile(dbPath, ''); // Create empty database file
       }
-      
+
       console.log(`✅ Database ready: ${this.databaseName}`);
       return dbPath;
     } catch (error) {
@@ -134,7 +134,7 @@ class E2EEnvironmentSetup {
     }
 
     console.log('🔄 Running database migrations...');
-    
+
     return new Promise((resolve, reject) => {
       const env = this.getEnvironmentVariables();
       const migrationProcess = spawn('npm', ['run', 'migrate:up'], {
@@ -169,7 +169,7 @@ class E2EEnvironmentSetup {
    */
   async cleanup() {
     const dbDir = path.join(projectRoot, '.tmp', 'databases');
-    
+
     if (this.isDryRun) {
       console.log('[DRY RUN] Would cleanup database directory:', dbDir);
       // List all database files that would be cleaned
@@ -182,12 +182,12 @@ class E2EEnvironmentSetup {
 
     try {
       console.log('🧹 Cleaning up E2E test databases...');
-      
+
       // Remove all suite databases
       for (const suite of Object.keys(SUITE_PORT_MAP)) {
         const dbName = `e2e-ci-test-${suite}.db`;
         const dbPath = path.join(dbDir, dbName);
-        
+
         try {
           await fs.unlink(dbPath);
           console.log(`✅ Removed: ${dbName}`);
@@ -197,7 +197,7 @@ class E2EEnvironmentSetup {
           }
         }
       }
-      
+
       // Remove directory if empty
       try {
         const files = await fs.readdir(dbDir);
@@ -208,7 +208,7 @@ class E2EEnvironmentSetup {
       } catch (error) {
         // Directory might not exist or not be empty
       }
-      
+
       console.log('🎉 Cleanup completed');
     } catch (error) {
       console.error('❌ Cleanup failed:', error.message);
@@ -221,7 +221,7 @@ class E2EEnvironmentSetup {
    */
   printEnvironment() {
     const vars = this.getEnvironmentVariables();
-    
+
     if (this.isDryRun || this.isValidatePort) {
       // For validation and dry run, output parseable format
       console.log(`PORT=${vars.PORT}`);
@@ -229,7 +229,7 @@ class E2EEnvironmentSetup {
       console.log(`DATABASE=${this.databaseName}`);
       return;
     }
-    
+
     console.log('\n📋 E2E Environment Configuration:');
     console.log('='.repeat(50));
     console.log(`Test Suite: ${this.testSuite}`);
@@ -237,7 +237,7 @@ class E2EEnvironmentSetup {
     console.log(`Database: ${this.databaseName}`);
     console.log(`Mode: ${this.isDryRun ? 'DRY RUN' : 'LIVE'}`);
     console.log('='.repeat(50));
-    
+
     if (process.env.CI) {
       console.log('\n🏗️  CI Environment Variables:');
       Object.entries(vars).forEach(([key, value]) => {
@@ -256,42 +256,42 @@ class E2EEnvironmentSetup {
   async setup() {
     try {
       console.log(`🚀 Setting up E2E environment for ${this.testSuite} suite...`);
-      
+
       // Handle special modes
       if (this.isValidatePort) {
         this.validatePortAllocation();
         return { success: true };
       }
-      
+
       if (this.isCleanupMode) {
         await this.cleanup();
         return { success: true };
       }
-      
+
       // Setup database
       const dbPath = await this.setupDatabase();
-      
+
       // Run migrations (if not dry run)
       if (!this.isDryRun) {
         await this.runMigrations();
       }
-      
+
       // Print configuration
       this.printEnvironment();
-      
+
       if (!this.isDryRun && !this.isValidatePort) {
         console.log(`\n🎉 E2E environment ready for ${this.testSuite} suite!`);
         console.log(`📍 Server will run on port ${this.port}`);
         console.log(`📊 Database: ${this.databaseName}`);
       }
-      
+
       return {
         success: true,
         port: this.port,
         database: this.databaseName,
         environment: this.getEnvironmentVariables()
       };
-      
+
     } catch (error) {
       console.error(`❌ E2E setup failed for ${this.testSuite}:`, error.message);
       return {
@@ -305,7 +305,7 @@ class E2EEnvironmentSetup {
 // Command line execution
 if (import.meta.url === `file://${process.argv[1]}`) {
   const setup = new E2EEnvironmentSetup();
-  
+
   try {
     const result = await setup.setup();
     process.exit(result.success ? 0 : 1);

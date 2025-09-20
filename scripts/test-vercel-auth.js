@@ -2,10 +2,10 @@
 
 /**
  * Test Vercel Authentication Configuration
- * 
+ *
  * This script validates that Vercel authentication is properly configured
  * for CI environments by testing the token and org ID setup.
- * 
+ *
  * Usage:
  *   node scripts/test-vercel-auth.js
  *   VERCEL_TOKEN=... VERCEL_ORG_ID=... node scripts/test-vercel-auth.js
@@ -21,7 +21,7 @@ class VercelAuthTester {
     this.token = process.env.VERCEL_TOKEN;
     this.orgId = process.env.VERCEL_ORG_ID;
     this.projectId = process.env.VERCEL_PROJECT_ID;
-    
+
     console.log('🔐 Vercel Authentication Test');
     console.log('=' .repeat(50));
     console.log(`Token: ${this.token ? '✅ Configured (length: ' + this.token.length + ')' : '❌ Missing'}`);
@@ -35,11 +35,11 @@ class VercelAuthTester {
    */
   async testVercelAuth() {
     console.log('🧪 Testing Vercel CLI authentication...');
-    
+
     if (!this.token) {
       throw new Error('❌ FATAL: VERCEL_TOKEN secret not configured');
     }
-    
+
     if (!this.orgId) {
       throw new Error('❌ FATAL: VERCEL_ORG_ID secret not configured');
     }
@@ -47,11 +47,11 @@ class VercelAuthTester {
     try {
       // Build the whoami command with authentication
       const args = ['vercel', 'whoami'];
-      
+
       if (this.token) {
         args.push('--token', this.token);
       }
-      
+
       if (this.orgId) {
         args.push('--scope', this.orgId);
       }
@@ -59,7 +59,7 @@ class VercelAuthTester {
       console.log(`   📦 Command: npx ${args.join(' ')}`);
 
       const result = await this.executeCommand('npx', args);
-      
+
       if (result.success) {
         console.log('   ✅ Authentication successful');
         console.log('   👤 User:', result.stdout.trim());
@@ -80,7 +80,7 @@ class VercelAuthTester {
    */
   testVercelDevCommand() {
     console.log('🚀 Testing Vercel dev command construction...');
-    
+
     const args = [
       'vercel',
       'dev',
@@ -88,17 +88,17 @@ class VercelAuthTester {
       '--listen', '3000',
       // Removed --no-clipboard as it's not supported in this Vercel CLI version
     ];
-    
+
     // Both are required at this point - validated above
     args.push('--token', this.token);
     console.log('   ✅ Token flag added');
-    
+
     args.push('--scope', this.orgId);
     console.log('   ✅ Scope flag added');
-    
+
     console.log('   📦 Full command:');
     console.log(`   npx ${args.join(' ')}`);
-    
+
     return args;
   }
 
@@ -107,30 +107,30 @@ class VercelAuthTester {
    */
   testEnvironmentConfig() {
     console.log('🌍 Testing environment configuration...');
-    
+
     const requiredVars = [
       { name: 'VERCEL_TOKEN', value: this.token, required: true },
       { name: 'VERCEL_ORG_ID', value: this.orgId, required: true },
       { name: 'VERCEL_PROJECT_ID', value: this.projectId, required: false }
     ];
-    
+
     let allConfigured = true;
-    
+
     requiredVars.forEach(({ name, value, required }) => {
       const status = value ? '✅ Configured' : (required ? '❌ Missing (required)' : '⚠️  Missing (optional)');
       console.log(`   ${name}: ${status}`);
-      
+
       if (required && !value) {
         allConfigured = false;
       }
     });
-    
+
     if (allConfigured) {
       console.log('   ✅ All required environment variables are configured');
     } else {
       console.log('   ❌ Some required environment variables are missing');
     }
-    
+
     return allConfigured;
   }
 
@@ -163,18 +163,18 @@ class VercelAuthTester {
         stdio: ['ignore', 'pipe', 'pipe'],
         timeout
       });
-      
+
       let stdout = '';
       let stderr = '';
-      
+
       process.stdout?.on('data', (data) => {
         stdout += data.toString();
       });
-      
+
       process.stderr?.on('data', (data) => {
         stderr += data.toString();
       });
-      
+
       process.on('close', (code) => {
         resolve({
           success: code === 0,
@@ -183,7 +183,7 @@ class VercelAuthTester {
           code
         });
       });
-      
+
       process.on('error', (error) => {
         resolve({
           success: false,
@@ -200,29 +200,29 @@ class VercelAuthTester {
    */
   async runAllTests() {
     console.log('🧪 Running Vercel authentication tests...\n');
-    
+
     // Test environment configuration
     const envConfigured = this.testEnvironmentConfig();
     console.log('');
-    
+
     // Test Vercel dev command construction
     this.testVercelDevCommand();
     console.log('');
-    
+
     // Test authentication (only if token is available)
     let authWorking = false;
     if (this.token) {
       authWorking = await this.testVercelAuth();
       console.log('');
     }
-    
+
     // Summary
     console.log('📊 Test Summary:');
     console.log(`   Environment Config: ${envConfigured ? '✅ Pass' : '❌ Fail'}`);
     console.log(`   Command Construction: ✅ Pass`);
     console.log(`   Authentication: ${this.token ? (authWorking ? '✅ Pass' : '❌ Fail') : '⚠️  Skipped (no token)'}`);
     console.log('');
-    
+
     if (!envConfigured || (this.token && !authWorking)) {
       console.log('❌ Some tests failed. See configuration help below:\n');
       this.generateCIExample();

@@ -25,9 +25,9 @@ async function checkDatabase() {
 
   // Get latest transactions
   const latestTransactions = await db.execute(`
-    SELECT uuid as transaction_id, customer_email, total_amount as amount_cents, status, created_at 
-    FROM transactions 
-    ORDER BY created_at DESC 
+    SELECT uuid as transaction_id, customer_email, total_amount as amount_cents, status, created_at
+    FROM transactions
+    ORDER BY created_at DESC
     LIMIT 5
   `);
 
@@ -42,9 +42,9 @@ async function checkDatabase() {
 
   // Get latest tickets
   const latestTickets = await db.execute(`
-    SELECT ticket_id, ticket_type, attendee_email, status, created_at 
-    FROM tickets 
-    ORDER BY created_at DESC 
+    SELECT ticket_id, ticket_type, attendee_email, status, created_at
+    FROM tickets
+    ORDER BY created_at DESC
     LIMIT 5
   `);
 

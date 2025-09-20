@@ -1,14 +1,20 @@
-import { getMobileAuthService } from '../../lib/mobile-auth-service.js';
-import { addSecurityHeaders } from '../../lib/security-headers-serverless.js';
-import { getRateLimitService } from '../../lib/rate-limit-service.js';
+import { getMobileAuthService } from "../../lib/mobile-auth-service.js";
+import { addSecurityHeaders } from "../../lib/security-headers-serverless.js";
+import { getRateLimitService } from "../../lib/rate-limit-service.js";
+import { withAuthAudit } from "../../lib/admin-audit-middleware.js";
 
 /**
  * Mobile check-in login endpoint with extended 72-hour sessions
  * Simplified authentication for event staff
  */
-export default async function handler(req, res) {
+async function handler(req, res) {
   // Apply security headers
   addSecurityHeaders(res);
+
+  // Add no-store headers for sensitive authentication data
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -103,8 +109,8 @@ export default async function handler(req, res) {
       message: 'Login successful',
       role: 'checkin_staff',
       sessionDuration: '72 hours',
-      expiresAt: new Date(Date.now() + sessionDuration).toISOString(),
-      token: sessionToken
+      expiresAt: new Date(Date.now() + sessionDuration).toISOString()
+      // token removed for security - session token is provided via httpOnly cookie only
     });
   } catch (error) {
     console.error('Mobile login error:', error);
@@ -115,3 +121,9 @@ export default async function handler(req, res) {
     });
   }
 }
+
+export default withAuthAudit(handler, {
+  logLoginAttempts: true,
+  logFailedAttempts: true,
+  logSessionEvents: true
+});

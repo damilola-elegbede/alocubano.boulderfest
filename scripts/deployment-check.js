@@ -41,15 +41,15 @@ const DeploymentCheck = {
   // Validate no flaky tests
   validateTestStability: () => {
     console.log("🔍 Validating test stability...");
-    
+
     // Skip flaky test detection in CI - it's too resource intensive
     if (process.env.CI) {
       console.log("⚠️ Skipping flaky test detection in CI environment");
       return true;
     }
-    
+
     try {
-      execSync("node scripts/test-maintenance.js flaky", { 
+      execSync("node scripts/test-maintenance.js flaky", {
         stdio: "pipe",
         timeout: 30000 // 30 second timeout
       });
@@ -64,13 +64,13 @@ const DeploymentCheck = {
   // Validate performance benchmarks
   validatePerformance: () => {
     console.log("⚡ Validating performance benchmarks...");
-    
+
     // Skip performance tests in CI - they've already been validated in earlier jobs
     if (process.env.CI) {
       console.log("⚠️ Performance tests already validated in CI pipeline, skipping redundant check");
       return true;
     }
-    
+
     try {
       // Use unit tests as performance validation - they include basic performance checks
       execSync("npm test", { stdio: "pipe" });

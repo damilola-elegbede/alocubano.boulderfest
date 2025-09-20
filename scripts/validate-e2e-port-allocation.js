@@ -2,7 +2,7 @@
 
 /**
  * E2E Port Allocation Validation Script
- * 
+ *
  * This script validates the dynamic port allocation solution for parallel E2E test execution.
  * It verifies that each test suite gets its own port (3000-3005) and isolated database
  * to prevent conflicts when running in CI matrix jobs.
@@ -77,7 +77,7 @@ class ValidationResults {
     console.log('\n' + '='.repeat(80));
     console.log('E2E PORT ALLOCATION VALIDATION RESULTS');
     console.log('='.repeat(80));
-    
+
     this.results.forEach(result => {
       const status = result.passed ? '✅ PASS' : '❌ FAIL';
       console.log(`${status} ${result.testName}`);
@@ -91,7 +91,7 @@ class ValidationResults {
     console.log(`Passed: ${this.passed}`);
     console.log(`Failed: ${this.failed}`);
     console.log(`Success Rate: ${(this.passed / this.results.length * 100).toFixed(1)}%`);
-    
+
     if (this.failed === 0) {
       console.log('\n🎉 ALL VALIDATIONS PASSED - Solution ready for deployment!');
     } else {
@@ -107,7 +107,7 @@ async function checkPortAvailability(port) {
   return new Promise((resolve) => {
     const net = require('net');
     const server = net.createServer();
-    
+
     server.listen(port, (err) => {
       if (err) {
         resolve(false);
@@ -116,7 +116,7 @@ async function checkPortAvailability(port) {
         server.close();
       }
     });
-    
+
     server.on('error', () => resolve(false));
   });
 }
@@ -150,12 +150,12 @@ async function runCommand(command, args, options = {}) {
 
 async function validatePortAllocationLogic(results) {
   console.log('🔍 Validating port allocation logic...');
-  
+
   try {
     // Read the port allocation script
     const setupScriptPath = path.join(projectRoot, 'scripts', 'setup-e2e-test-env.js');
     const scriptExists = await fs.access(setupScriptPath).then(() => true).catch(() => false);
-    
+
     if (!scriptExists) {
       results.addResult('Port allocation script exists', false, 'setup-e2e-test-env.js not found');
       return;
@@ -167,11 +167,11 @@ async function validatePortAllocationLogic(results) {
     for (const suite of TEST_SUITES) {
       const env = { ...process.env, ...suite.env };
       const result = await runCommand('node', [setupScriptPath, '--validate-port'], { env });
-      
+
       if (result.code === 0 && result.stdout.includes(`PORT=${suite.port}`)) {
         results.addResult(`${suite.name} suite port allocation (${suite.port})`, true);
       } else {
-        results.addResult(`${suite.name} suite port allocation (${suite.port})`, false, 
+        results.addResult(`${suite.name} suite port allocation (${suite.port})`, false,
           `Expected PORT=${suite.port}, got: ${result.stdout.trim()}`);
       }
     }
@@ -182,13 +182,13 @@ async function validatePortAllocationLogic(results) {
 
 async function validatePortConflicts(results) {
   console.log('🔍 Checking for port conflicts...');
-  
+
   const usedPorts = new Set();
   let hasConflicts = false;
 
   for (const suite of TEST_SUITES) {
     if (usedPorts.has(suite.port)) {
-      results.addResult(`Port conflict check - ${suite.name}`, false, 
+      results.addResult(`Port conflict check - ${suite.name}`, false,
         `Port ${suite.port} already assigned to another suite`);
       hasConflicts = true;
     } else {
@@ -200,24 +200,24 @@ async function validatePortConflicts(results) {
   // Verify port range is correct
   const minPort = Math.min(...TEST_SUITES.map(s => s.port));
   const maxPort = Math.max(...TEST_SUITES.map(s => s.port));
-  
+
   if (minPort === 3000 && maxPort === 3005 && usedPorts.size === 6) {
     results.addResult('Port range validation (3000-3005)', true);
   } else {
-    results.addResult('Port range validation (3000-3005)', false, 
+    results.addResult('Port range validation (3000-3005)', false,
       `Expected range 3000-3005, got ${minPort}-${maxPort} with ${usedPorts.size} ports`);
   }
 }
 
 async function validateDatabaseIsolation(results) {
   console.log('🔍 Validating database isolation...');
-  
+
   const usedDatabases = new Set();
   let hasConflicts = false;
 
   for (const suite of TEST_SUITES) {
     if (usedDatabases.has(suite.database)) {
-      results.addResult(`Database isolation - ${suite.name}`, false, 
+      results.addResult(`Database isolation - ${suite.name}`, false,
         `Database ${suite.database} already assigned to another suite`);
       hasConflicts = true;
     } else {
@@ -230,7 +230,7 @@ async function validateDatabaseIsolation(results) {
     if (expectedPattern.test(suite.database)) {
       results.addResult(`Database naming - ${suite.name}`, true);
     } else {
-      results.addResult(`Database naming - ${suite.name}`, false, 
+      results.addResult(`Database naming - ${suite.name}`, false,
         `Database name ${suite.database} doesn't follow e2e-ci-test-*.db pattern`);
     }
   }
@@ -238,15 +238,15 @@ async function validateDatabaseIsolation(results) {
 
 async function validateEnvironmentVariables(results) {
   console.log('🔍 Validating environment variable handling...');
-  
+
   for (const suite of TEST_SUITES) {
     const env = { ...process.env, ...suite.env };
-    
+
     // Test environment variable is set correctly
     if (env.E2E_TEST_SUITE === suite.name) {
       results.addResult(`Environment variable - ${suite.name}`, true);
     } else {
-      results.addResult(`Environment variable - ${suite.name}`, false, 
+      results.addResult(`Environment variable - ${suite.name}`, false,
         `Expected E2E_TEST_SUITE=${suite.name}, got ${env.E2E_TEST_SUITE}`);
     }
   }
@@ -254,7 +254,7 @@ async function validateEnvironmentVariables(results) {
 
 async function simulateCIExecution(results) {
   console.log('🔍 Simulating CI matrix execution...');
-  
+
   // Test that setup script works for each suite
   for (const suite of TEST_SUITES) {
     try {
@@ -263,15 +263,15 @@ async function simulateCIExecution(results) {
         path.join(projectRoot, 'scripts', 'setup-e2e-test-env.js'),
         '--dry-run'
       ], { env, timeout: 10000 });
-      
+
       const output = result.stdout + result.stderr;
       const hasPort = output.includes(`PORT=${suite.port}`);
       const hasDatabase = output.includes(suite.database);
-      
+
       if (result.code === 0 && hasPort && hasDatabase) {
         results.addResult(`CI simulation - ${suite.name}`, true);
       } else {
-        results.addResult(`CI simulation - ${suite.name}`, false, 
+        results.addResult(`CI simulation - ${suite.name}`, false,
           `Setup failed: code=${result.code}, port=${hasPort}, db=${hasDatabase}`);
       }
     } catch (error) {
@@ -282,25 +282,25 @@ async function simulateCIExecution(results) {
 
 async function validateCleanupMechanisms(results) {
   console.log('🔍 Validating cleanup mechanisms...');
-  
+
   try {
     // Test database cleanup
     const cleanupResult = await runCommand('node', [
       path.join(projectRoot, 'scripts', 'setup-e2e-test-env.js'),
       '--cleanup', '--dry-run'
     ]);
-    
+
     if (cleanupResult.code === 0) {
       results.addResult('Database cleanup mechanism', true);
     } else {
-      results.addResult('Database cleanup mechanism', false, 
+      results.addResult('Database cleanup mechanism', false,
         `Cleanup script failed with code ${cleanupResult.code}`);
     }
 
     // Verify cleanup includes all test databases
     const output = cleanupResult.stdout + cleanupResult.stderr;
     let allDatabasesIncluded = true;
-    
+
     for (const suite of TEST_SUITES) {
       if (!output.includes(suite.database)) {
         allDatabasesIncluded = false;
@@ -316,11 +316,11 @@ async function validateCleanupMechanisms(results) {
 
 async function validatePlaywrightConfig(results) {
   console.log('🔍 Validating Playwright configuration...');
-  
+
   try {
     const configPath = path.join(projectRoot, 'playwright-e2e-vercel-main.config.js');
     const configExists = await fs.access(configPath).then(() => true).catch(() => false);
-    
+
     if (!configExists) {
       results.addResult('Playwright config exists', false, 'playwright-e2e-vercel-main.config.js not found');
       return;
@@ -330,18 +330,18 @@ async function validatePlaywrightConfig(results) {
 
     // Read config and check for port handling
     const configContent = await fs.readFile(configPath, 'utf8');
-    
-    const hasDynamicPort = configContent.includes('process.env.PORT') || 
+
+    const hasDynamicPort = configContent.includes('process.env.PORT') ||
                           configContent.includes('testPort') ||
                           configContent.includes('${testPort}') ||
                           configContent.includes('PORT: testPort');
-                          
+
     const hasBaseURL = configContent.includes('baseURL');
-    
+
     if (hasDynamicPort && hasBaseURL) {
       results.addResult('Playwright config handles dynamic ports', true);
     } else {
-      results.addResult('Playwright config handles dynamic ports', false, 
+      results.addResult('Playwright config handles dynamic ports', false,
         `Config missing dynamic port support: port=${hasDynamicPort}, baseURL=${hasBaseURL}`);
     }
   } catch (error) {
@@ -351,11 +351,11 @@ async function validatePlaywrightConfig(results) {
 
 async function validatePackageJsonScripts(results) {
   console.log('🔍 Validating package.json test scripts...');
-  
+
   try {
     const packageJsonPath = path.join(projectRoot, 'package.json');
     const packageJson = JSON.parse(await fs.readFile(packageJsonPath, 'utf8'));
-    
+
     const requiredScripts = [
       'test:e2e',
       'test:e2e:standard',
@@ -365,7 +365,7 @@ async function validatePackageJsonScripts(results) {
       'test:e2e:accessibility',
       'test:e2e:security'
     ];
-    
+
     for (const script of requiredScripts) {
       if (packageJson.scripts && packageJson.scripts[script]) {
         results.addResult(`Package script - ${script}`, true);
@@ -380,9 +380,9 @@ async function validatePackageJsonScripts(results) {
 
 async function main() {
   console.log('🚀 Starting E2E Port Allocation Validation\n');
-  
+
   const results = new ValidationResults();
-  
+
   try {
     await validatePortAllocationLogic(results);
     await validatePortConflicts(results);
@@ -392,7 +392,7 @@ async function main() {
     await validateCleanupMechanisms(results);
     await validatePlaywrightConfig(results);
     await validatePackageJsonScripts(results);
-    
+
     const success = results.printSummary();
     process.exit(success ? 0 : 1);
   } catch (error) {

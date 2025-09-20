@@ -1,6 +1,6 @@
 /**
  * Test Data Manager - Advanced test data lifecycle management
- * 
+ *
  * Provides comprehensive test data management for complex E2E scenarios
  * including concurrent user testing, data cleanup, and state tracking.
  */
@@ -21,7 +21,7 @@ export class TestDataManager {
       trackResources: true,
       ...options
     };
-    
+
     console.log(`🗃️  Test Data Manager initialized: ${this.testId}`);
   }
 
@@ -42,7 +42,7 @@ export class TestDataManager {
 
     // Track the user
     this.trackResource('user', user.id, user);
-    
+
     console.log(`👤 Generated ${userType} user: ${user.email}`);
     return user;
   }
@@ -56,7 +56,7 @@ export class TestDataManager {
    */
   generateMultipleUsers(count, userType = 'attendee', baseOverrides = {}) {
     const users = [];
-    
+
     for (let i = 0; i < count; i++) {
       const user = this.generateUser(userType, {
         ...baseOverrides,
@@ -65,7 +65,7 @@ export class TestDataManager {
       });
       users.push(user);
     }
-    
+
     console.log(`👥 Generated ${count} ${userType} users`);
     return users;
   }
@@ -103,7 +103,7 @@ export class TestDataManager {
     };
 
     this.trackResource('registration', registration.id, registration);
-    
+
     console.log(`📝 Generated registration for ${user.email}: ${registration.id}`);
     return registration;
   }
@@ -136,7 +136,7 @@ export class TestDataManager {
     };
 
     this.trackResource('payment', payment.id, payment);
-    
+
     console.log(`💳 Generated payment for registration ${registration.id}: $${payment.amount / 100}`);
     return payment;
   }
@@ -149,20 +149,20 @@ export class TestDataManager {
    */
   createScenario(scenarioType, options = {}) {
     console.log(`🎬 Creating scenario: ${scenarioType}`);
-    
+
     switch (scenarioType) {
       case 'single-ticket-purchase':
         return this.createSingleTicketScenario(options);
-      
+
       case 'multiple-tickets':
         return this.createMultipleTicketScenario(options);
-      
+
       case 'concurrent-users':
         return this.createConcurrentUsersScenario(options);
-      
+
       case 'newsletter-signup':
         return this.createNewsletterScenario(options);
-      
+
       default:
         throw new Error(`Unknown scenario type: ${scenarioType}`);
     }
@@ -203,12 +203,12 @@ export class TestDataManager {
         sequenceNumber: i + 1,
         buyer: buyer.email
       });
-      
+
       const registration = this.generateRegistration(attendeeUser, {
         ...options.ticketOverrides,
         ticketNumber: i + 1
       });
-      
+
       registrations.push(registration);
     }
 
@@ -239,7 +239,7 @@ export class TestDataManager {
   createConcurrentUsersScenario(options = {}) {
     const { userCount = 5, actionsPerUser = 3 } = options;
     const users = this.generateMultipleUsers(userCount, 'concurrent_test', options.userOverrides);
-    
+
     const scenario = {
       type: 'concurrent-users',
       users,
@@ -270,7 +270,7 @@ export class TestDataManager {
         subscriptionDate: Date.now(),
         managerId: this.testId
       };
-      
+
       subscribers.push(subscriber);
       this.trackResource('subscriber', subscriber.email, subscriber);
     }
@@ -317,7 +317,7 @@ export class TestDataManager {
       description,
       addedAt: Date.now()
     });
-    
+
     console.log(`🧹 Added cleanup task: ${description}`);
   }
 
@@ -380,7 +380,7 @@ export class TestDataManager {
     }
 
     console.log(`🧹 Starting cleanup for manager ${this.testId}`);
-    
+
     let cleaned = 0;
     let errors = 0;
 

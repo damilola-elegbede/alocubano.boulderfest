@@ -42,13 +42,13 @@ class CICleanupManager {
     if (this.initialized) {
       return this.state;
     }
-    
+
     if (this.initializationPromise) {
       return this.initializationPromise;
     }
-    
+
     this.initializationPromise = this._performInitialization();
-    
+
     try {
       const result = await this.initializationPromise;
       this.initialized = true;
@@ -61,17 +61,17 @@ class CICleanupManager {
 
   async _performInitialization() {
     console.log('🧹 Initializing CI Cleanup Manager...');
-    
+
     // Load existing setup state if available
     await this._loadSetupState();
-    
+
     console.log('✅ CI Cleanup Manager initialized');
     return this.state;
   }
 
   async _loadSetupState() {
     const setupReportPath = resolve(projectRoot, '.tmp/ci/setup-report.json');
-    
+
     if (existsSync(setupReportPath)) {
       try {
         const setupReport = JSON.parse(readFileSync(setupReportPath, 'utf-8'));
@@ -89,7 +89,7 @@ class CICleanupManager {
       success,
       terminatedAt: Date.now()
     });
-    
+
     if (success) {
       this.state.metrics.processesKilled++;
     }
@@ -97,7 +97,7 @@ class CICleanupManager {
 
   recordResourceFreed(resource, amount, unit = 'bytes') {
     this.state.resourcesFreed.set(resource, { amount, unit });
-    
+
     if (unit === 'bytes') {
       this.state.metrics.memoryFreed += amount;
     }
@@ -137,7 +137,7 @@ async function terminateProcesses() {
   // Find and terminate known CI processes
   const processPatterns = [
     'node.*ci-server.js',
-    'node.*migrate-e2e.js', 
+    'node.*migrate-e2e.js',
     'node.*setup-e2e-database.js',
     'vercel dev',
     'playwright',
@@ -148,7 +148,7 @@ async function terminateProcesses() {
 
   try {
     const runningProcesses = await findRunningProcesses(processPatterns);
-    
+
     if (runningProcesses.length === 0) {
       console.log('   ℹ️  No CI processes found to terminate');
       return;
@@ -160,7 +160,7 @@ async function terminateProcesses() {
     const terminationPromises = runningProcesses.map(async (processInfo) => {
       try {
         console.log(`   🛑 Terminating PID ${processInfo.pid}: ${processInfo.command}`);
-        
+
         // Check if process still exists before attempting termination
         let processExists = false;
         try {
@@ -178,7 +178,7 @@ async function terminateProcesses() {
         const gracefulShutdown = new Promise((resolve) => {
           try {
             process.kill(processInfo.pid, 'SIGTERM');
-            
+
             // Poll for process termination instead of fixed wait
             const checkInterval = setInterval(() => {
               try {
@@ -189,7 +189,7 @@ async function terminateProcesses() {
                 resolve({ success: true, method: 'graceful' });
               }
             }, 200); // Check every 200ms
-            
+
             // Timeout after 5 seconds
             setTimeout(() => {
               clearInterval(checkInterval);
@@ -201,7 +201,7 @@ async function terminateProcesses() {
         });
 
         const shutdownResult = await gracefulShutdown;
-        
+
         if (shutdownResult.success) {
           console.log(`      ✅ PID ${processInfo.pid} terminated gracefully`);
           ciCleanup.recordProcessTermination(`PID-${processInfo.pid}`, processInfo, true);
@@ -211,7 +211,7 @@ async function terminateProcesses() {
             process.kill(processInfo.pid, 0); // Final check
             process.kill(processInfo.pid, 'SIGKILL');
             console.log(`      ⚡ Force killed PID ${processInfo.pid} after graceful timeout`);
-            
+
             // Wait briefly to ensure process is cleaned up
             await new Promise(resolve => setTimeout(resolve, 500));
             ciCleanup.recordProcessTermination(`PID-${processInfo.pid}`, processInfo, true);
@@ -221,7 +221,7 @@ async function terminateProcesses() {
             ciCleanup.recordProcessTermination(`PID-${processInfo.pid}`, processInfo, true);
           }
         }
-        
+
       } catch (error) {
         console.error(`      ❌ Failed to terminate PID ${processInfo.pid}: ${error.message}`);
         ciCleanup.recordProcessTermination(`PID-${processInfo.pid}`, processInfo, false);
@@ -241,7 +241,7 @@ async function terminateProcesses() {
     ciCleanup.recordResourceFreed('heap_memory', Math.max(0, memoryFreed), 'bytes');
 
     console.log(`   ✅ Process termination completed in ${Date.now() - startTime}ms`);
-    
+
   } catch (error) {
     console.error(`   ❌ Process termination failed: ${error.message}`);
     ciCleanup.recordError(error, 'process_termination');
@@ -259,7 +259,7 @@ async function findRunningProcesses(patterns) {
       resolve([]); // Return empty on timeout rather than hanging
     }, 10000);
 
-    const ps = spawn('ps', ['aux'], { 
+    const ps = spawn('ps', ['aux'], {
       stdio: 'pipe',
       timeout: 8000 // Built-in timeout
     });
@@ -277,7 +277,7 @@ async function findRunningProcesses(patterns) {
 
     ps.on('close', (code) => {
       clearTimeout(timeout);
-      
+
       if (code !== 0) {
         resolve([]); // Return empty on error
         return;
@@ -289,15 +289,15 @@ async function findRunningProcesses(patterns) {
 
         for (const line of lines) {
           if (!line.trim()) continue;
-          
+
           const parts = line.trim().split(/\s+/);
           if (parts.length < 11) continue;
 
           const pid = parseInt(parts[1]);
-          
+
           // Validate PID to prevent injection attacks
           if (!pid || pid <= 0 || pid > 65535) continue;
-          
+
           // Sanitize command string to prevent injection
           const command = parts.slice(10).join(' ').replace(/[^\w\s\-\.\/]/g, '');
 
@@ -337,10 +337,10 @@ async function findRunningProcesses(patterns) {
  */
 async function forceCleanupBrowsers() {
   console.log('   🔧 Force cleaning browser processes...');
-  
+
   const browserCommands = [
     'pkill -f "chromium.*playwright"',
-    'pkill -f "firefox.*playwright"', 
+    'pkill -f "firefox.*playwright"',
     'pkill -f "webkit.*playwright"',
     'pkill -f "msedge.*playwright"'
   ];
@@ -389,7 +389,7 @@ async function aggregateTestResults() {
 
   for (const directory of resultsDirectories) {
     const fullPath = resolve(projectRoot, directory);
-    
+
     if (!existsSync(fullPath)) {
       console.log(`   ℹ️  Directory not found: ${directory}`);
       continue;
@@ -398,9 +398,9 @@ async function aggregateTestResults() {
     try {
       const directoryResults = await processResultsDirectory(fullPath, directory);
       aggregatedResults.testResults[directory] = directoryResults;
-      
+
       console.log(`   ✅ Processed ${directory}: ${directoryResults.fileCount} files`);
-      
+
     } catch (error) {
       console.error(`   ❌ Failed to process ${directory}: ${error.message}`);
       aggregatedResults.errors.push({
@@ -417,9 +417,9 @@ async function aggregateTestResults() {
   // Save aggregated results
   const resultsPath = resolve(projectRoot, '.tmp/ci/aggregated-results.json');
   writeFileSync(resultsPath, JSON.stringify(aggregatedResults, null, 2));
-  
+
   ciCleanup.addReport('test_results', resultsPath, aggregatedResults.summary);
-  
+
   console.log(`   📄 Results saved: ${resultsPath}`);
   console.log(`   ⏱️  Aggregation completed in ${Date.now() - startTime}ms`);
 
@@ -440,11 +440,11 @@ async function processResultsDirectory(directoryPath, directoryName) {
 
   try {
     const items = readdirSync(directoryPath);
-    
+
     for (const item of items) {
       const itemPath = join(directoryPath, item);
       const stats = statSync(itemPath);
-      
+
       if (stats.isFile()) {
         results.fileCount++;
         results.totalSize += stats.size;
@@ -483,7 +483,7 @@ function getFileType(filename) {
     'log': 'log',
     'txt': 'text'
   };
-  
+
   return typeMap[ext] || 'unknown';
 }
 
@@ -601,7 +601,7 @@ async function organizeArtifacts() {
         organizedArtifacts.artifacts[category] = categoryInfo;
         organizedArtifacts.totalSize += categoryInfo.totalSize;
         organizedArtifacts.totalFiles += categoryInfo.fileCount;
-        
+
         console.log(`   ✅ ${category}: ${categoryInfo.fileCount} files (${Math.round(categoryInfo.totalSize / 1024)}KB)`);
       } catch (error) {
         console.error(`   ❌ Failed to process ${category}: ${error.message}`);
@@ -615,7 +615,7 @@ async function organizeArtifacts() {
   // Save artifact manifest
   const manifestPath = resolve(projectRoot, '.tmp/ci/artifact-manifest.json');
   writeFileSync(manifestPath, JSON.stringify(organizedArtifacts, null, 2));
-  
+
   ciCleanup.addReport('artifact_manifest', manifestPath, {
     totalSize: organizedArtifacts.totalSize,
     totalFiles: organizedArtifacts.totalFiles
@@ -641,11 +641,11 @@ async function processArtifactCategory(categoryPath, categoryName) {
   };
 
   const items = readdirSync(categoryPath);
-  
+
   for (const item of items) {
     const itemPath = join(categoryPath, item);
     const stats = statSync(itemPath);
-    
+
     if (stats.isFile()) {
       categoryInfo.fileCount++;
       categoryInfo.totalSize += stats.size;
@@ -732,7 +732,7 @@ async function collectPerformanceMetrics() {
   // Save performance metrics
   const metricsPath = resolve(projectRoot, '.tmp/ci/performance-metrics.json');
   writeFileSync(metricsPath, JSON.stringify(metrics, null, 2));
-  
+
   ciCleanup.addReport('performance_metrics', metricsPath, {
     memoryUsage: metrics.system.memory.heapUsed,
     uptime: metrics.system.uptime
@@ -798,7 +798,7 @@ async function generateResourceUsageReport() {
   console.log(`   📝 Summary saved: ${summaryPath}`);
   console.log(`   🕒 Total cleanup duration: ${report.duration}ms`);
   console.log(`   🛑 Processes terminated: ${report.processTermination.totalProcesses}`);
-  
+
   if (report.errors.count > 0) {
     console.log(`   ⚠️  Errors encountered: ${report.errors.count}`);
   }
@@ -898,15 +898,15 @@ async function cleanupTemporaryFiles() {
 
   for (const tempPath of tempPaths) {
     const fullPath = resolve(projectRoot, tempPath);
-    
+
     if (existsSync(fullPath)) {
       try {
         const sizeBefore = await getDirectorySize(fullPath);
         await rm(fullPath, { recursive: true, force: true });
-        
+
         totalSizeFreed += sizeBefore;
         filesRemoved++;
-        
+
         console.log(`   ✅ Removed: ${tempPath} (${Math.round(sizeBefore / 1024)}KB)`);
       } catch (error) {
         console.error(`   ❌ Failed to remove ${tempPath}: ${error.message}`);
@@ -929,11 +929,11 @@ async function getDirectorySize(dirPath) {
 
   try {
     const items = readdirSync(dirPath);
-    
+
     for (const item of items) {
       const itemPath = join(dirPath, item);
       const stats = statSync(itemPath);
-      
+
       if (stats.isDirectory()) {
         totalSize += await getDirectorySize(itemPath);
       } else {
@@ -954,26 +954,26 @@ async function main() {
   console.log('\n🧹 CI Resource Cleanup and Reporting');
   console.log('═'.repeat(60));
   console.log(`Started at: ${new Date().toISOString()}`);
-  
+
   let finalReport = null;
 
   try {
     // Initialize cleanup manager
     await ciCleanup.ensureInitialized();
-    
+
     // Execute cleanup phases
     await terminateProcesses();
     await aggregateTestResults();
-    await organizeArtifacts(); 
+    await organizeArtifacts();
     await collectPerformanceMetrics();
     await cleanupTemporaryFiles();
-    
+
     // Generate final resource usage report
     finalReport = await generateResourceUsageReport();
-    
+
     console.log('\n✅ CI cleanup completed successfully!');
     console.log('═'.repeat(60));
-    
+
     // Print summary to stdout for CI systems
     if (finalReport) {
       console.log(`\n📊 CLEANUP SUMMARY:`);
@@ -981,26 +981,26 @@ async function main() {
       console.log(`Processes terminated: ${finalReport.processTermination.totalProcesses}`);
       console.log(`Memory freed: ${Math.round(finalReport.resourceCleanup.memoryFreed / 1024 / 1024)}MB`);
       console.log(`Reports generated: ${finalReport.artifacts.reports}`);
-      
+
       if (finalReport.errors.count > 0) {
         console.log(`⚠️  Errors: ${finalReport.errors.count}`);
         process.exit(1); // Exit with error if there were cleanup issues
       }
     }
-    
+
     // Exit with success
     process.exit(0);
-    
+
   } catch (error) {
     console.error('\n❌ CI cleanup failed:', error.message);
-    
+
     // Try to generate partial report
     try {
       finalReport = await generateResourceUsageReport();
     } catch (reportError) {
       console.error('   Failed to generate cleanup report:', reportError.message);
     }
-    
+
     console.log('═'.repeat(60));
     process.exit(1);
   }

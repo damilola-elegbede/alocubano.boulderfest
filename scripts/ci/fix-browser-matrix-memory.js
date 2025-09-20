@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Browser Matrix Memory Optimization Script
- * 
+ *
  * Automatically fixes memory allocation issues by:
  * - Reducing Firefox memory from 4GB to 3GB across all workflows
  * - Standardizing browser memory allocations
@@ -37,7 +37,7 @@ class BrowserMatrixMemoryFixer {
 
   async fixWorkflowFile(filename) {
     const filePath = path.join(this.workflowsDir, filename);
-    
+
     try {
       let content = fs.readFileSync(filePath, 'utf8');
       let originalContent = content;
@@ -132,7 +132,7 @@ class BrowserMatrixMemoryFixer {
 // CLI Interface
 async function main() {
   const args = process.argv.slice(2);
-  
+
   if (args.includes('--help') || args.includes('-h')) {
     console.log(`
 Browser Matrix Memory Optimization Tool
@@ -147,7 +147,7 @@ Options:
 Examples:
   # Apply memory optimizations
   node fix-browser-matrix-memory.js
-  
+
   # Preview changes
   node fix-browser-matrix-memory.js --dry-run
     `);
@@ -155,7 +155,7 @@ Examples:
   }
 
   const dryRun = args.includes('--dry-run');
-  
+
   if (dryRun) {
     console.log('🔍 DRY RUN MODE - No files will be modified\n');
   }

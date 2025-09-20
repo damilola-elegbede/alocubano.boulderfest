@@ -24,42 +24,42 @@ test.describe('Ticket Transfer', () => {
     });
 
     await page.goto('/my-tickets?email=test@e2e-test.com');
-    
+
     // Wait for tickets to load
     await page.waitForSelector('.ticket-card, .ticket-item', { timeout: 10000 });
-    
+
     // Find first transfer button
     const transferButton = page.locator('button:has-text("Transfer"), .transfer-button').first();
     await expect(transferButton).toBeVisible();
     await transferButton.click();
-    
+
     // Check transfer modal opens
     const transferModal = page.locator('#transferModal, .transfer-modal');
     await expect(transferModal).toBeVisible();
-    
+
     console.log('✅ Transfer modal opened');
   });
 
   test('validates transfer email format', async ({ page }) => {
     await page.goto('/my-tickets?email=test@e2e-test.com');
-    
+
     // Open transfer modal
     const transferButton = page.locator('button:has-text("Transfer")').first();
     await transferButton.click();
-    
+
     // Enter invalid email
     await page.fill('#transferEmail', 'invalid-email');
     await page.fill('#transferFirstName', 'New');
     await page.fill('#transferLastName', 'Attendee');
-    
+
     const submitButton = page.locator('#transferForm button[type="submit"], .transfer-submit');
     await submitButton.click();
-    
+
     // Check HTML5 email validation or custom error
     const emailField = page.locator('#transferEmail');
     const isInvalid = await emailField.evaluate(el => !el.checkValidity());
     expect(isInvalid).toBe(true);
-    
+
     console.log('✅ Email validation working');
   });
 
@@ -80,7 +80,7 @@ test.describe('Ticket Transfer', () => {
     await page.route('**/api/tickets/transfer', route => {
       const request = route.request();
       const postData = request.postDataJSON();
-      
+
       // Validate transfer request structure
       expect(postData).toMatchObject({
         ticketId: expect.any(String),
@@ -90,7 +90,7 @@ test.describe('Ticket Transfer', () => {
           firstName: expect.any(String)
         }
       });
-      
+
       route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -108,24 +108,24 @@ test.describe('Ticket Transfer', () => {
     });
 
     await page.goto('/my-tickets?email=test@e2e-test.com');
-    
+
     // Initiate transfer
     const transferButton = page.locator('button:has-text("Transfer")').first();
     await transferButton.click();
-    
+
     // Fill transfer form
     await page.fill('#transferEmail', testTransferEmail);
     await page.fill('#transferFirstName', 'Jane');
     await page.fill('#transferLastName', 'Doe');
     await page.fill('#transferPhone', '+1-555-0123');
-    
+
     // Submit transfer
     const submitButton = page.locator('#transferForm button[type="submit"]');
     await submitButton.click();
-    
+
     // Wait for success message
     await expect(page.locator('.success-message, .alert-success')).toBeVisible({ timeout: 5000 });
-    
+
     console.log('✅ Transfer completed successfully');
   });
 
@@ -135,9 +135,9 @@ test.describe('Ticket Transfer', () => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ 
-          success: true, 
-          messageId: 'mock-email-123' 
+        body: JSON.stringify({
+          success: true,
+          messageId: 'mock-email-123'
         })
       });
     });
@@ -164,21 +164,21 @@ test.describe('Ticket Transfer', () => {
     });
 
     await page.goto('/my-tickets?email=test@e2e-test.com');
-    
+
     // Complete transfer process
     const transferButton = page.locator('button:has-text("Transfer")').first();
     await transferButton.click();
-    
+
     await page.fill('#transferEmail', testTransferEmail);
     await page.fill('#transferFirstName', 'Notify');
-    
+
     const submitButton = page.locator('#transferForm button[type="submit"]');
     await submitButton.click();
-    
+
     // Verify success with notification confirmation
     const successMessage = page.locator('.success-message, .alert-success');
     await expect(successMessage).toBeVisible();
-    
+
     console.log('✅ Transfer notifications mocked successfully');
   });
 });

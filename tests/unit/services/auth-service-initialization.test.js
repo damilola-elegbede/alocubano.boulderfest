@@ -1,6 +1,6 @@
 /**
  * Auth Service Lazy Initialization Unit Tests
- * 
+ *
  * Tests the Promise-based singleton pattern implementation in auth-service.js
  * Ensures proper lazy initialization, promise caching, and error handling
  */
@@ -84,17 +84,17 @@ describe("Auth Service - Lazy Initialization Pattern", () => {
 
       // Start multiple initializations simultaneously to test concurrent behavior
       const promise1 = authService.ensureInitialized();
-      const promise2 = authService.ensureInitialized(); 
+      const promise2 = authService.ensureInitialized();
       const promise3 = authService.ensureInitialized();
-      
+
       // Verify the initializationPromise is cached and all calls use it
       expect(authService.initializationPromise).toBeDefined();
-      
+
       // The key insight: concurrent calls all return the same cached promise
       // (only if called while initialization is in progress)
-      // Since we're calling them immediately, promise2 and promise3 should 
+      // Since we're calling them immediately, promise2 and promise3 should
       // return the cached promise, but promise1 might not depending on timing
-      
+
       // What we can test reliably: all promises resolve to the same instance
       const [result1, result2, result3] = await Promise.all([promise1, promise2, promise3]);
 
@@ -102,7 +102,7 @@ describe("Auth Service - Lazy Initialization Pattern", () => {
       expect(result1).toBe(authService);
       expect(result2).toBe(authService);
       expect(result3).toBe(authService);
-      
+
       // And the initialization should have completed successfully
       expect(authService.initialized).toBe(true);
     });
@@ -111,26 +111,26 @@ describe("Auth Service - Lazy Initialization Pattern", () => {
       process.env.ADMIN_SECRET = "a".repeat(32);
 
       // Test that the initializationPromise is properly cached and used
-      // Start initialization 
+      // Start initialization
       const promise1 = authService.ensureInitialized();
-      
+
       // Verify that initializationPromise is set
       expect(authService.initializationPromise).toBeDefined();
       const cachedPromise = authService.initializationPromise;
-      
+
       // Start concurrent calls
       const promise2 = authService.ensureInitialized();
       const promise3 = authService.ensureInitialized();
 
       // The important test: verify that the initializationPromise is being reused
       // (The exact promise identity behavior may vary, but functionality should be consistent)
-      
+
       // All should resolve to the same service instance
       const [result1, result2, result3] = await Promise.all([promise1, promise2, promise3]);
       expect(result1).toBe(authService);
       expect(result2).toBe(authService);
       expect(result3).toBe(authService);
-      
+
       // Verify initialization completed successfully
       expect(authService.initialized).toBe(true);
       expect(authService.sessionSecret).toBe(process.env.ADMIN_SECRET);
@@ -225,7 +225,7 @@ describe("Auth Service - Lazy Initialization Pattern", () => {
       // (This tests the internal _performInitialization error handling)
       authService.initialized = false;
       authService.initializationPromise = null;
-      
+
       // Second: failed initialization (invalid secret length)
       process.env.ADMIN_SECRET = "short"; // Too short
 

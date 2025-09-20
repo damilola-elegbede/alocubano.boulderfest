@@ -7,9 +7,9 @@ describe('PaymentCalculator Domain Service', () => {
       const cartItems = [
         { name: 'Weekend Pass', price: 125.00, quantity: 1, type: 'ticket' }
       ];
-      
+
       const result = PaymentCalculator.calculateCartTotal(cartItems);
-      
+
       expect(result.total).toBe(125.00);
       expect(result.subtotal).toBe(125.00);
       expect(result.itemCount).toBe(1);
@@ -23,9 +23,9 @@ describe('PaymentCalculator Domain Service', () => {
         { name: 'Single Day', price: 75.00, quantity: 1, type: 'ticket' },
         { name: 'Donation', price: 25.00, quantity: 1, type: 'donation' }
       ];
-      
+
       const result = PaymentCalculator.calculateCartTotal(cartItems);
-      
+
       expect(result.total).toBe(350.00); // (125*2) + 75 + 25 = 250 + 75 + 25
       expect(result.subtotal).toBe(350.00);
       expect(result.itemCount).toBe(4);
@@ -34,7 +34,7 @@ describe('PaymentCalculator Domain Service', () => {
 
     it('handles empty cart', () => {
       const result = PaymentCalculator.calculateCartTotal([]);
-      
+
       expect(result.total).toBe(0);
       expect(result.subtotal).toBe(0);
       expect(result.itemCount).toBe(0);
@@ -52,9 +52,9 @@ describe('PaymentCalculator Domain Service', () => {
         { name: 'Item 1', price: 12.99, quantity: 3, type: 'ticket' },
         { name: 'Item 2', price: 7.50, quantity: 2, type: 'donation' }
       ];
-      
+
       const result = PaymentCalculator.calculateCartTotal(cartItems);
-      
+
       expect(result.total).toBe(53.97); // (12.99*3) + (7.50*2)
       expect(result.itemCount).toBe(5);
     });
@@ -64,9 +64,9 @@ describe('PaymentCalculator Domain Service', () => {
         { name: 'Weekend Pass', price: 125.00, quantity: 2, type: 'ticket' },
         { name: 'Donation', price: 50.00, quantity: 1, type: 'donation' }
       ];
-      
+
       const result = PaymentCalculator.calculateCartTotal(cartItems);
-      
+
       expect(result.breakdown[0]).toEqual({
         name: 'Weekend Pass',
         price: 125.00,
@@ -88,7 +88,7 @@ describe('PaymentCalculator Domain Service', () => {
     it('calculates item total correctly', () => {
       const item = { name: 'Test Item', price: 25.50, quantity: 3, type: 'ticket' };
       const result = PaymentCalculator.calculateItemTotal(item);
-      
+
       expect(result.total).toBe(76.50);
       expect(result.unitPrice).toBe(25.50);
       expect(result.quantity).toBe(3);
@@ -98,7 +98,7 @@ describe('PaymentCalculator Domain Service', () => {
 
     it('handles invalid item data', () => {
       const result = PaymentCalculator.calculateItemTotal(null);
-      
+
       expect(result.total).toBe(0);
       expect(result.valid).toBe(false);
       expect(result.error).toBe('Invalid item data');
@@ -107,7 +107,7 @@ describe('PaymentCalculator Domain Service', () => {
     it('rejects negative prices', () => {
       const item = { name: 'Test', price: -10, quantity: 1, type: 'ticket' };
       const result = PaymentCalculator.calculateItemTotal(item);
-      
+
       expect(result.total).toBe(0);
       expect(result.valid).toBe(false);
       expect(result.error).toBe('Negative price not allowed');
@@ -116,7 +116,7 @@ describe('PaymentCalculator Domain Service', () => {
     it('rejects zero or negative quantities', () => {
       const result1 = PaymentCalculator.calculateItemTotal({ price: 10, quantity: 0 });
       const result2 = PaymentCalculator.calculateItemTotal({ price: 10, quantity: -1 });
-      
+
       expect(result1.valid).toBe(false);
       expect(result2.valid).toBe(false);
     });
@@ -124,7 +124,7 @@ describe('PaymentCalculator Domain Service', () => {
     it('handles zero price items', () => {
       const item = { name: 'Free Item', price: 0, quantity: 1, type: 'ticket' };
       const result = PaymentCalculator.calculateItemTotal(item);
-      
+
       expect(result.total).toBe(0);
       expect(result.valid).toBe(true);
       expect(result.error).toBeNull();
@@ -137,9 +137,9 @@ describe('PaymentCalculator Domain Service', () => {
         { type: 'ticket', name: 'Pass 1', price: 100, quantity: 1 },
         { type: 'ticket', name: 'Pass 2', price: 150, quantity: 1 }
       ];
-      
+
       const result = PaymentCalculator.determineOrderType(cartItems);
-      
+
       expect(result.orderType).toBe('tickets');
       expect(result.hasTickets).toBe(true);
       expect(result.hasDonations).toBe(false);
@@ -152,9 +152,9 @@ describe('PaymentCalculator Domain Service', () => {
         { type: 'donation', name: 'General Fund', price: 25, quantity: 1 },
         { type: 'donation', name: 'Artist Support', price: 50, quantity: 1 }
       ];
-      
+
       const result = PaymentCalculator.determineOrderType(cartItems);
-      
+
       expect(result.orderType).toBe('donation');
       expect(result.hasTickets).toBe(false);
       expect(result.hasDonations).toBe(true);
@@ -166,9 +166,9 @@ describe('PaymentCalculator Domain Service', () => {
       const cartItems = [
         { type: 'merchandise', name: 'T-Shirt', price: 25, quantity: 2 }
       ];
-      
+
       const result = PaymentCalculator.determineOrderType(cartItems);
-      
+
       expect(result.orderType).toBe('merchandise');
       expect(result.hasTickets).toBe(false);
       expect(result.hasDonations).toBe(false);
@@ -182,9 +182,9 @@ describe('PaymentCalculator Domain Service', () => {
         { type: 'donation', name: 'Fund', price: 25, quantity: 1 },
         { type: 'merchandise', name: 'Shirt', price: 20, quantity: 1 }
       ];
-      
+
       const result = PaymentCalculator.determineOrderType(cartItems);
-      
+
       expect(result.orderType).toBe('mixed');
       expect(result.hasTickets).toBe(true);
       expect(result.hasDonations).toBe(true);
@@ -194,7 +194,7 @@ describe('PaymentCalculator Domain Service', () => {
 
     it('handles empty cart', () => {
       const result = PaymentCalculator.determineOrderType([]);
-      
+
       expect(result.orderType).toBe('empty');
       expect(result.hasTickets).toBe(false);
       expect(result.hasDonations).toBe(false);
@@ -206,7 +206,7 @@ describe('PaymentCalculator Domain Service', () => {
   describe('calculateTax()', () => {
     it('applies Colorado tax rate (currently 0%)', () => {
       const result = PaymentCalculator.calculateTax(100, 'CO');
-      
+
       expect(result.taxAmount).toBe(0);
       expect(result.taxRate).toBe(0.0);
       expect(result.taxZone).toBe('CO');
@@ -215,7 +215,7 @@ describe('PaymentCalculator Domain Service', () => {
 
     it('applies default tax rate for unknown zones', () => {
       const result = PaymentCalculator.calculateTax(100, 'UNKNOWN');
-      
+
       expect(result.taxAmount).toBe(0);
       expect(result.taxRate).toBe(0.0);
       expect(result.taxZone).toBe('UNKNOWN');
@@ -223,7 +223,7 @@ describe('PaymentCalculator Domain Service', () => {
 
     it('handles zero subtotal', () => {
       const result = PaymentCalculator.calculateTax(0, 'CO');
-      
+
       expect(result.taxAmount).toBe(0);
       expect(result.taxableAmount).toBe(0);
     });
@@ -232,7 +232,7 @@ describe('PaymentCalculator Domain Service', () => {
   describe('calculateProcessingFees()', () => {
     it('calculates card processing fees (currently 0%)', () => {
       const result = PaymentCalculator.calculateProcessingFees(100, 'card');
-      
+
       expect(result.feeAmount).toBe(0);
       expect(result.feeRate).toBe(0.0);
       expect(result.paymentMethod).toBe('card');
@@ -241,7 +241,7 @@ describe('PaymentCalculator Domain Service', () => {
 
     it('handles Stripe Link payment method', () => {
       const result = PaymentCalculator.calculateProcessingFees(100, 'link');
-      
+
       expect(result.feeAmount).toBe(0);
       expect(result.feeRate).toBe(0.0);
       expect(result.paymentMethod).toBe('link');
@@ -249,7 +249,7 @@ describe('PaymentCalculator Domain Service', () => {
 
     it('falls back to card rate for unknown payment methods', () => {
       const result = PaymentCalculator.calculateProcessingFees(100, 'unknown');
-      
+
       expect(result.feeAmount).toBe(0);
       expect(result.feeRate).toBe(0.0);
       expect(result.paymentMethod).toBe('unknown');
@@ -264,9 +264,9 @@ describe('PaymentCalculator Domain Service', () => {
         value: 10,
         code: 'SAVE10'
       };
-      
+
       const result = PaymentCalculator.applyDiscount(100, discount);
-      
+
       expect(result.discountAmount).toBe(10);
       expect(result.discountPercent).toBe(10);
       expect(result.discountCode).toBe('SAVE10');
@@ -280,9 +280,9 @@ describe('PaymentCalculator Domain Service', () => {
         value: 25,
         code: 'SAVE25'
       };
-      
+
       const result = PaymentCalculator.applyDiscount(100, discount);
-      
+
       expect(result.discountAmount).toBe(25);
       expect(result.discountPercent).toBe(25);
       expect(result.finalAmount).toBe(75);
@@ -295,9 +295,9 @@ describe('PaymentCalculator Domain Service', () => {
         value: 150,
         code: 'BIG_SAVE'
       };
-      
+
       const result = PaymentCalculator.applyDiscount(100, discount);
-      
+
       expect(result.discountAmount).toBe(100);
       expect(result.finalAmount).toBe(0);
     });
@@ -310,9 +310,9 @@ describe('PaymentCalculator Domain Service', () => {
         code: 'MIN_ORDER',
         minimumOrder: 50
       };
-      
+
       const result = PaymentCalculator.applyDiscount(25, discount);
-      
+
       expect(result.discountAmount).toBe(0);
       expect(result.finalAmount).toBe(25);
       expect(result.error).toBe('Minimum order of $50 required');
@@ -325,9 +325,9 @@ describe('PaymentCalculator Domain Service', () => {
         value: 10,
         code: 'INACTIVE'
       };
-      
+
       const result = PaymentCalculator.applyDiscount(100, discount);
-      
+
       expect(result.discountAmount).toBe(0);
       expect(result.finalAmount).toBe(100);
       expect(result.discountCode).toBeNull();
@@ -335,7 +335,7 @@ describe('PaymentCalculator Domain Service', () => {
 
     it('handles missing discount', () => {
       const result = PaymentCalculator.applyDiscount(100, null);
-      
+
       expect(result.discountAmount).toBe(0);
       expect(result.finalAmount).toBe(100);
       expect(result.discountCode).toBeNull();
@@ -395,9 +395,9 @@ describe('PaymentCalculator Domain Service', () => {
         { name: 'Weekend Pass', price: 125.00, quantity: 1, type: 'ticket' },
         { name: 'Donation', price: 25.00, quantity: 1, type: 'donation' }
       ];
-      
+
       const result = PaymentCalculator.validateCartForCheckout(cartItems);
-      
+
       expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
       expect(result.calculation.total).toBe(150.00);
@@ -405,14 +405,14 @@ describe('PaymentCalculator Domain Service', () => {
 
     it('rejects empty cart', () => {
       const result = PaymentCalculator.validateCartForCheckout([]);
-      
+
       expect(result.valid).toBe(false);
       expect(result.errors).toContain('Cart cannot be empty');
     });
 
     it('rejects non-array cart items', () => {
       const result = PaymentCalculator.validateCartForCheckout('invalid');
-      
+
       expect(result.valid).toBe(false);
       expect(result.errors).toContain('Cart items must be an array');
     });
@@ -422,9 +422,9 @@ describe('PaymentCalculator Domain Service', () => {
         { name: '', price: 125.00, quantity: 1, type: 'ticket' },
         { name: 'Valid Item', price: -10, quantity: 1, type: 'ticket' }
       ];
-      
+
       const result = PaymentCalculator.validateCartForCheckout(cartItems);
-      
+
       expect(result.valid).toBe(false);
       expect(result.errors).toContain('Item 1: Name is required');
       expect(result.errors).toContain('Item 2: Negative price not allowed');
@@ -434,9 +434,9 @@ describe('PaymentCalculator Domain Service', () => {
       const cartItems = [
         { name: 'Test', price: 10, quantity: 1, type: 'invalid' }
       ];
-      
+
       const result = PaymentCalculator.validateCartForCheckout(cartItems);
-      
+
       expect(result.valid).toBe(false);
       expect(result.errors).toContain('Item 1: Invalid item type');
     });
@@ -445,9 +445,9 @@ describe('PaymentCalculator Domain Service', () => {
       const cartItems = [
         { name: 'Free Item', price: 0, quantity: 1, type: 'ticket' }
       ];
-      
+
       const result = PaymentCalculator.validateCartForCheckout(cartItems);
-      
+
       expect(result.valid).toBe(false);
       expect(result.errors).toContain('Cart total must be greater than zero');
     });

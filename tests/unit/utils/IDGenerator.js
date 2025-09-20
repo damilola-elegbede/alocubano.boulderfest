@@ -50,18 +50,18 @@ export function generateRandomString(length, charset = CHAR_SETS.ALPHANUMERIC) {
   if (length <= 0) {
     throw new Error('Length must be positive');
   }
-  
+
   if (!charset || charset.length === 0) {
     throw new Error('Character set must not be empty');
   }
-  
+
   const bytes = crypto.randomBytes(length);
   let result = '';
-  
+
   for (let i = 0; i < length; i++) {
     result += charset[bytes[i] % charset.length];
   }
-  
+
   return result;
 }
 
@@ -70,11 +70,11 @@ export function generateRandomString(length, charset = CHAR_SETS.ALPHANUMERIC) {
  */
 export function generateTimestamp(length = 8, base = 36) {
   const timestamp = Date.now().toString(base).toUpperCase();
-  
+
   if (timestamp.length >= length) {
     return timestamp.substring(timestamp.length - length);
   }
-  
+
   // Pad with zeros if needed
   return timestamp.padStart(length, '0');
 }
@@ -85,8 +85,8 @@ export function generateTimestamp(length = 8, base = 36) {
 export function generateSecureId(prefix = '', timestampLength = 8, randomLength = 6) {
   const timestamp = generateTimestamp(timestampLength);
   const random = generateRandomString(randomLength, CHAR_SETS.HEX);
-  
-  return prefix 
+
+  return prefix
     ? `${prefix}-${timestamp}-${random}`
     : `${timestamp}-${random}`;
 }
@@ -97,7 +97,7 @@ export function generateSecureId(prefix = '', timestampLength = 8, randomLength 
 export function generateTicketId(customPrefix = null) {
   const config = ID_FORMATS.TICKET;
   const prefix = customPrefix || process.env.TICKET_PREFIX || config.PREFIX;
-  
+
   return generateSecureId(prefix, config.TIMESTAMP_LENGTH, config.RANDOM_LENGTH);
 }
 
@@ -107,7 +107,7 @@ export function generateTicketId(customPrefix = null) {
 export function generateTransactionId(customPrefix = null) {
   const config = ID_FORMATS.TRANSACTION;
   const prefix = customPrefix || config.PREFIX;
-  
+
   return generateSecureId(prefix, config.TIMESTAMP_LENGTH, config.RANDOM_LENGTH);
 }
 
@@ -134,28 +134,28 @@ export function validateIdFormat(id, expectedFormat) {
   if (!id || typeof id !== 'string') {
     return { valid: false, error: 'ID must be a non-empty string' };
   }
-  
+
   if (!expectedFormat || !ID_FORMATS[expectedFormat.toUpperCase()]) {
     return { valid: false, error: 'Invalid format specification' };
   }
-  
+
   const format = ID_FORMATS[expectedFormat.toUpperCase()];
-  
+
   // Check structure first (hyphen-separated parts)
   const parts = id.split('-');
-  
+
   // If it has the correct structure (3 parts), prioritize detailed validation
   if (parts.length === 3) {
     const [prefix, timestamp, random] = parts;
-    
+
     // Check prefix first
     if (prefix !== format.PREFIX) {
-      return { 
-        valid: false, 
-        error: `Expected prefix ${format.PREFIX}-` 
+      return {
+        valid: false,
+        error: `Expected prefix ${format.PREFIX}-`
       };
     }
-    
+
     // Special case: if prefix is correct but total length is wrong,
     // and this looks like a simple truncation (off by 1 char only),
     // prioritize length error over component errors
@@ -163,50 +163,50 @@ export function validateIdFormat(id, expectedFormat) {
     const timestampLengthCorrect = timestamp.length === format.TIMESTAMP_LENGTH;
     const onlyRandomLengthWrong = random.length !== format.RANDOM_LENGTH;
     const lengthDifference = Math.abs(format.TOTAL_LENGTH - id.length);
-    
+
     if (totalLengthWrong && timestampLengthCorrect && onlyRandomLengthWrong && lengthDifference === 1) {
       // This appears to be a simple 1-character truncation/extension issue
-      return { 
-        valid: false, 
-        error: `Expected length ${format.TOTAL_LENGTH}, got ${id.length}` 
+      return {
+        valid: false,
+        error: `Expected length ${format.TOTAL_LENGTH}, got ${id.length}`
       };
     }
-    
+
     // Validate timestamp part
     if (timestamp.length !== format.TIMESTAMP_LENGTH) {
-      return { 
-        valid: false, 
-        error: `Timestamp part should be ${format.TIMESTAMP_LENGTH} characters` 
+      return {
+        valid: false,
+        error: `Timestamp part should be ${format.TIMESTAMP_LENGTH} characters`
       };
     }
-    
+
     // Validate random part
     if (random.length !== format.RANDOM_LENGTH) {
-      return { 
-        valid: false, 
-        error: `Random part should be ${format.RANDOM_LENGTH} characters` 
+      return {
+        valid: false,
+        error: `Random part should be ${format.RANDOM_LENGTH} characters`
       };
     }
-    
+
     // Check total length for any remaining issues
     if (id.length !== format.TOTAL_LENGTH) {
-      return { 
-        valid: false, 
-        error: `Expected length ${format.TOTAL_LENGTH}, got ${id.length}` 
+      return {
+        valid: false,
+        error: `Expected length ${format.TOTAL_LENGTH}, got ${id.length}`
       };
     }
-    
+
     if (!/^[0-9A-Z]+$/.test(timestamp)) {
       return { valid: false, error: 'Timestamp part contains invalid characters' };
     }
-    
+
     if (!/^[0-9A-F]+$/.test(random)) {
       return { valid: false, error: 'Random part contains invalid characters' };
     }
-    
+
     return { valid: true };
   }
-  
+
   // If it doesn't have 3 parts, check structure first regardless of length
   return { valid: false, error: 'ID must have exactly 3 parts separated by hyphens' };
 }
@@ -219,20 +219,20 @@ export function extractTimestamp(id) {
   if (parts.length !== 3) {
     throw new Error('Invalid ID format');
   }
-  
+
   const timestampPart = parts[1];
-  
+
   // Check if timestamp part is valid before parsing
   if (!timestampPart || !/^[0-9A-Z]+$/.test(timestampPart)) {
     throw new Error('Invalid timestamp in ID');
   }
-  
+
   const timestamp = parseInt(timestampPart, 36);
-  
+
   if (isNaN(timestamp)) {
     throw new Error('Invalid timestamp in ID');
   }
-  
+
   return new Date(timestamp);
 }
 
@@ -243,14 +243,14 @@ export function generateBatchIds(count, type = 'TICKET', customPrefix = null) {
   if (count <= 0 || count > 1000) {
     throw new Error('Count must be between 1 and 1000');
   }
-  
+
   const ids = new Set();
   const maxAttempts = count * 10; // Prevent infinite loop
   let attempts = 0;
-  
+
   while (ids.size < count && attempts < maxAttempts) {
     let id;
-    
+
     switch (type.toUpperCase()) {
       case 'TICKET':
         id = generateTicketId(customPrefix);
@@ -267,15 +267,15 @@ export function generateBatchIds(count, type = 'TICKET', customPrefix = null) {
       default:
         throw new Error(`Unknown ID type: ${type}`);
     }
-    
+
     ids.add(id);
     attempts++;
   }
-  
+
   if (ids.size < count) {
     throw new Error('Failed to generate required number of unique IDs');
   }
-  
+
   return Array.from(ids);
 }
 
@@ -287,13 +287,13 @@ export function calculateCollisionProbability(type, count) {
   if (!format) {
     throw new Error(`Unknown format: ${type}`);
   }
-  
+
   // Calculate total possible combinations for the random part
   const randomPossibilities = Math.pow(16, format.RANDOM_LENGTH); // Hex characters
-  
+
   // Birthday paradox approximation
   const probability = 1 - Math.exp(-(count * (count - 1)) / (2 * randomPossibilities));
-  
+
   return {
     probability,
     percentage: (probability * 100).toFixed(6) + '%',
@@ -307,13 +307,13 @@ export function calculateCollisionProbability(type, count) {
  */
 export function generateUUID() {
   const bytes = crypto.randomBytes(16);
-  
+
   // Set version (4) and variant bits
   bytes[6] = (bytes[6] & 0x0f) | 0x40;
   bytes[8] = (bytes[8] & 0x3f) | 0x80;
-  
+
   const hex = bytes.toString('hex');
-  
+
   return [
     hex.substring(0, 8),
     hex.substring(8, 12),
@@ -344,7 +344,7 @@ export function generateHashId(input, length = 8) {
   if (!input || typeof input !== 'string') {
     throw new Error('Input must be a non-empty string');
   }
-  
+
   const hash = crypto.createHash('sha256').update(input).digest('hex');
   return hash.substring(0, length).toUpperCase();
 }

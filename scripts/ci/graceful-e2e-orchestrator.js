@@ -2,7 +2,7 @@
 
 /**
  * Graceful E2E Test Orchestrator with Fallback Support
- * 
+ *
  * Orchestrates E2E testing with intelligent fallback mechanisms:
  * 1. Attempts preview deployment testing (preferred)
  * 2. Falls back to production URL testing if preview unavailable
@@ -72,7 +72,7 @@ class GracefulE2EOrchestrator {
 
       this.results.url = urlResult.url;
       this.results.testStrategy = urlResult.strategy;
-      this.results.fallbackUsed = urlResult.fallbackUsed !== 'Environment Variables' && 
+      this.results.fallbackUsed = urlResult.fallbackUsed !== 'Environment Variables' &&
                                   urlResult.fallbackUsed !== 'Vercel Bot Comments';
 
       // Step 3: Pre-flight validation
@@ -83,7 +83,7 @@ class GracefulE2EOrchestrator {
 
       // Step 4: Run E2E tests with retries
       const testResult = await this.runE2ETestsWithRetries(urlResult.url);
-      
+
       this.results.success = testResult.success;
       this.results.testsRun = testResult.testsRun;
       this.results.testsPassed = testResult.testsPassed;
@@ -138,7 +138,7 @@ class GracefulE2EOrchestrator {
 
     } catch (error) {
       console.error(`Service health check failed: ${error.message}`);
-      
+
       // Don't fail completely - proceed with warnings
       this.results.warnings.push({
         type: 'HEALTH_CHECK_FAILED',
@@ -181,7 +181,7 @@ class GracefulE2EOrchestrator {
 
     // Final fallback to production
     console.log('\n⚠️ All URL extraction methods failed - using production fallback');
-    
+
     this.results.warnings.push({
       type: 'PRODUCTION_FALLBACK',
       message: 'Using production URL for E2E testing',
@@ -216,14 +216,14 @@ class GracefulE2EOrchestrator {
       try {
         const result = await validation.check();
         results.push({ name: validation.name, success: result.success, details: result.details });
-        
+
         if (!result.success && result.critical) {
           criticalFailures++;
         }
       } catch (error) {
-        results.push({ 
-          name: validation.name, 
-          success: false, 
+        results.push({
+          name: validation.name,
+          success: false,
           error: error.message,
           critical: true
         });
@@ -370,7 +370,7 @@ class GracefulE2EOrchestrator {
 
       try {
         const result = await this.runPlaywrightTests(url);
-        
+
         if (result.success || attempt === this.config.maxRetries) {
           return result;
         } else {
@@ -381,7 +381,7 @@ class GracefulE2EOrchestrator {
       } catch (error) {
         lastError = error;
         console.error(`Test attempt ${attempt} threw error: ${error.message}`);
-        
+
         if (attempt === this.config.maxRetries) {
           return {
             success: false,
@@ -392,7 +392,7 @@ class GracefulE2EOrchestrator {
             error: lastError
           };
         }
-        
+
         await this.sleep(this.config.retryDelayMs);
       }
 
@@ -460,7 +460,7 @@ class GracefulE2EOrchestrator {
         try {
           // Parse Playwright JSON report
           const report = this.parsePlaywrightOutput(stdout, stderr);
-          
+
           resolve({
             success: code === 0,
             exitCode: code,
@@ -521,7 +521,7 @@ class GracefulE2EOrchestrator {
       ];
 
       const output = stdout + stderr;
-      
+
       const passedMatch = output.match(/(\d+) passed/);
       if (passedMatch) stats.testsPassed = parseInt(passedMatch[1]);
 
@@ -545,7 +545,7 @@ class GracefulE2EOrchestrator {
    */
   skipWithServiceFailure(reason) {
     console.log(`\n⏭️ Skipping E2E tests due to service failure: ${reason}`);
-    
+
     this.results.success = false;
     this.results.testsSkipped = 999; // Indicate all tests skipped
     this.results.errors.push({
@@ -562,7 +562,7 @@ class GracefulE2EOrchestrator {
    */
   skipWithURLFailure(reason) {
     console.log(`\n⏭️ Skipping E2E tests due to URL failure: ${reason}`);
-    
+
     this.results.success = false;
     this.results.testsSkipped = 999;
     this.results.errors.push({
@@ -579,7 +579,7 @@ class GracefulE2EOrchestrator {
    */
   skipWithValidationFailure(reason) {
     console.log(`\n⏭️ Skipping E2E tests due to validation failure: ${reason}`);
-    
+
     this.results.success = false;
     this.results.testsSkipped = 999;
     this.results.errors.push({

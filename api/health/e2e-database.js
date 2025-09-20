@@ -3,11 +3,11 @@
  * Provides database status and schema validation for CI integration
  */
 
-import { getDatabaseClient } from '../../lib/database.js';
+import { getDatabaseClient } from "../../lib/database.js";
 
 // Helper to check if we're in E2E mode
 function isE2EMode() {
-  return process.env.E2E_TEST_MODE === 'true' || 
+  return process.env.E2E_TEST_MODE === 'true' ||
          process.env.ENVIRONMENT === 'e2e-test';
 }
 
@@ -15,12 +15,12 @@ function isE2EMode() {
 async function createE2EClient() {
   // Use standard Turso environment variables
   const databaseUrl = process.env.TURSO_DATABASE_URL;
-  
+
   // Safety check - ensure E2E database
   if (!databaseUrl || (!databaseUrl.includes('test') && !databaseUrl.includes('staging'))) {
     throw new Error('Invalid E2E database configuration');
   }
-  
+
   // Use centralized database client
   const client = await getDatabaseClient();
   return client;
@@ -47,10 +47,10 @@ async function validateSchema(client) {
   // Core required tables (must exist)
   const coreRequiredTables = [
     'migrations',
-    'registrations', 
+    'registrations',
     'email_subscribers'
   ];
-  
+
   // Optional tables (nice to have but not required)
   const optionalTables = [
     'tickets',
@@ -59,19 +59,19 @@ async function validateSchema(client) {
     'admin_sessions',
     'wallet_passes'
   ];
-  
+
   try {
     const tablesResult = await client.execute(`
-      SELECT name FROM sqlite_master 
-      WHERE type = 'table' 
+      SELECT name FROM sqlite_master
+      WHERE type = 'table'
       ORDER BY name
     `);
-    
+
     const existingTables = tablesResult.rows.map(row => row.name);
     const missingCoreTables = [];
     const presentCoreTables = [];
     const presentOptionalTables = [];
-    
+
     // Check core tables
     for (const table of coreRequiredTables) {
       if (existingTables.includes(table)) {
@@ -80,24 +80,24 @@ async function validateSchema(client) {
         missingCoreTables.push(table);
       }
     }
-    
+
     // Check optional tables
     for (const table of optionalTables) {
       if (existingTables.includes(table)) {
         presentOptionalTables.push(table);
       }
     }
-    
+
     // Check core table columns
     const columnChecks = {};
-    
+
     // Check registrations table if it exists
     if (presentCoreTables.includes('registrations')) {
       try {
         const regColumns = await client.execute('PRAGMA table_info(registrations)');
         const regColumnNames = regColumns.rows.map(row => row.name);
         const requiredRegColumns = ['ticket_id', 'email', 'first_name', 'last_name', 'ticket_type'];
-        
+
         columnChecks.registrations = {
           hasRequiredColumns: requiredRegColumns.every(col => regColumnNames.includes(col)),
           columns: regColumnNames.length,
@@ -107,7 +107,7 @@ async function validateSchema(client) {
         columnChecks.registrations = { error: error.message };
       }
     }
-    
+
     return {
       valid: missingCoreTables.length === 0, // Only core tables are required
       totalTables: existingTables.length,
@@ -130,21 +130,21 @@ async function validateSchema(client) {
 async function checkMigrations(client) {
   try {
     const migrations = await client.execute(`
-      SELECT 
+      SELECT
         COUNT(*) as total,
         COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed,
         COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed,
         COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending
       FROM migrations
     `);
-    
+
     const lastMigration = await client.execute(`
-      SELECT filename, status, executed_at 
-      FROM migrations 
-      ORDER BY id DESC 
+      SELECT filename, status, executed_at
+      FROM migrations
+      ORDER BY id DESC
       LIMIT 1
     `);
-    
+
     return {
       total: migrations.rows[0].total,
       completed: migrations.rows[0].completed,
@@ -163,17 +163,17 @@ async function checkMigrations(client) {
 async function checkTestData(client) {
   try {
     const registrations = await client.execute(`
-      SELECT COUNT(*) as count 
-      FROM registrations 
+      SELECT COUNT(*) as count
+      FROM registrations
       WHERE email LIKE '%@e2e-test.%'
     `);
-    
+
     const subscribers = await client.execute(`
-      SELECT COUNT(*) as count 
-      FROM email_subscribers 
+      SELECT COUNT(*) as count
+      FROM email_subscribers
       WHERE email LIKE '%@e2e-test.%'
     `);
-    
+
     return {
       testRegistrations: registrations.rows[0].count,
       testSubscribers: subscribers.rows[0].count,
@@ -194,12 +194,12 @@ export default async function handler(req, res) {
       error: 'E2E health check endpoint is not available in this environment'
     });
   }
-  
+
   // Allow only GET requests
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
-  
+
   const startTime = Date.now();
   const health = {
     status: 'checking',
@@ -207,22 +207,22 @@ export default async function handler(req, res) {
     environment: process.env.ENVIRONMENT,
     checks: {}
   };
-  
+
   let client;
-  
+
   try {
     // Create database client
     client = await createE2EClient();
     health.checks.clientCreation = { success: true };
   } catch (error) {
     health.status = 'unhealthy';
-    health.checks.clientCreation = { 
-      success: false, 
-      error: error.message 
+    health.checks.clientCreation = {
+      success: false,
+      error: error.message
     };
     return res.status(503).json(health);
   }
-  
+
   try {
     // Run all health checks
     const [connectivity, schema, migrations, testData] = await Promise.all([
@@ -231,30 +231,30 @@ export default async function handler(req, res) {
       checkMigrations(client),
       checkTestData(client)
     ]);
-    
+
     health.checks.connectivity = connectivity;
     health.checks.schema = schema;
     health.checks.migrations = migrations;
     health.checks.testData = testData;
-    
+
     // Determine overall health status
     // Fix migrationsComplete logic: check for error first before comparing values
-    const migrationsComplete = !migrations.error && 
-                              migrations.total > 0 && 
+    const migrationsComplete = !migrations.error &&
+                              migrations.total > 0 &&
                               migrations.completed === migrations.total;
-    
+
     // More tolerant health check - accept some failed migrations if core schema is valid
     const hasAcceptableFailures = migrations.failed > 0 && migrations.failed <= 3 && schema.valid;
-    
-    const isHealthy = 
+
+    const isHealthy =
       connectivity.connected &&
       schema.valid &&
       !migrations.error &&
       (migrations.failed === 0 || hasAcceptableFailures);
-    
+
     health.status = isHealthy ? 'healthy' : 'unhealthy';
     health.responseTime = Date.now() - startTime;
-    
+
     // Add summary
     health.summary = {
       databaseConnected: connectivity.connected,
@@ -263,18 +263,18 @@ export default async function handler(req, res) {
       testDataPresent: testData.hasTestData,
       overallHealth: isHealthy
     };
-    
+
     // Return appropriate status code
     const statusCode = isHealthy ? 200 : 503;
     return res.status(statusCode).json(health);
-    
+
   } catch (error) {
     health.status = 'unhealthy';
     health.error = error.message;
     health.responseTime = Date.now() - startTime;
-    
+
     return res.status(503).json(health);
-    
+
   } finally {
     // Clean up database connection - Note: centralized client manages its own lifecycle
     // No explicit close needed since we're using the shared service

@@ -5,10 +5,13 @@
  * for monitoring and debugging purposes
  */
 
-import { getConnectionManager, getPoolStatistics, getPoolHealthStatus } from '../../lib/connection-manager.js';
-import { logger } from '../../lib/logger.js';
+import { getConnectionManager, getPoolStatistics, getPoolHealthStatus } from "../../lib/connection-manager.js";
+import { logger } from "../../lib/logger.js";
+import authService from "../../lib/auth-service.js";
+import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
+import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   try {
     // Only allow GET requests
     if (req.method !== 'GET') {
@@ -155,3 +158,14 @@ function generateRecommendations(statistics, health, derivedMetrics) {
 
   return recommendations;
 }
+
+export default withSecurityHeaders(
+  authService.requireAuth(
+    withAdminAudit(handler, {
+      logBody: false,
+      logMetadata: true,
+      skipMethods: [] // Track connection pool monitoring access
+    })
+  ),
+  { isAPI: true }
+);

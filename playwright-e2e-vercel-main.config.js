@@ -1,22 +1,22 @@
 /**
  * DEPRECATED: Playwright E2E Configuration - Vercel Dev Server
- * 
+ *
  * This configuration is DEPRECATED as of the migration to Vercel Preview Deployments.
  * Local Vercel dev servers are no longer used for E2E testing.
- * 
+ *
  * REPLACEMENT: E2E tests now use Vercel Preview Deployments which provide:
  * - Real production environment testing
  * - No local server management complexity
  * - No port allocation or conflicts
  * - Better CI/CD integration
  * - Eliminated server hanging issues
- * 
+ *
  * LEGACY FEATURES:
  * - Dynamic port allocation (3000-3005) for parallel CI execution
  * - Database isolation per test suite using port-specific databases
  * - Local Vercel dev server startup management
  * - Always fresh server startup for test isolation
- * 
+ *
  * @deprecated Use Vercel Preview Deployments for E2E testing instead
  * @see New E2E testing approach in CI/CD workflows
  */
@@ -54,18 +54,18 @@ export default defineConfig({
     ['list'],
     ['html', { outputFolder: 'playwright-report', open: 'never' }]
   ],
-  
+
   timeout: 45000, // 45 seconds for better stability with Vercel dev server
-  
+
   use: {
     baseURL: baseURL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
-    
+
     // Viewport and device emulation
     viewport: { width: 1280, height: 720 },
-    
+
     // Network and timing (increased for stability)
     actionTimeout: 20000, // 20 seconds for actions
     navigationTimeout: 40000, // 40 seconds for navigation
@@ -96,7 +96,7 @@ export default defineConfig({
 
   // DEPRECATED: webServer configuration removed
   // E2E tests now use Vercel Preview Deployments instead of local servers
-  // 
+  //
   // LEGACY webServer config (now commented out):
   // - Local Vercel dev server startup via scripts/vercel-dev-e2e.js
   // - Dynamic port allocation and health checks
@@ -105,7 +105,7 @@ export default defineConfig({
   //
   // REPLACEMENT: Tests run against Vercel Preview Deployment URLs
   // configured via PLAYWRIGHT_BASE_URL environment variable
-  
+
   // webServer: {
   //   command: `node scripts/vercel-dev-e2e.js --port ${testPort}`,
   //   url: `${baseURL}/api/health/check`,
@@ -113,7 +113,7 @@ export default defineConfig({
   //   timeout: 60000,
   //   env: { /* complex local server environment */ }
   // },
-  
+
   // Global setup/teardown standardized across all configs
   globalSetup: './tests/e2e/global-setup-ci.js',
   globalTeardown: './tests/e2e/global-teardown.js',

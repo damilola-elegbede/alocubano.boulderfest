@@ -1,6 +1,6 @@
 /**
  * E2E Test Setup Helper
- * 
+ *
  * Provides utilities for individual test files to validate secrets
  * and setup required environment before test execution.
  */
@@ -80,9 +80,9 @@ export function setupTest(options = {}) {
 /**
  * Skip test if required secrets are missing
  * Usage in test files:
- * 
+ *
  * import { skipTestIfSecretsUnavailable } from './helpers/test-setup.js';
- * 
+ *
  * test.describe('Admin Tests', () => {
  *   skipTestIfSecretsUnavailable(['admin'], 'admin-auth.test.js');
  *   // ... rest of tests
@@ -91,13 +91,13 @@ export function setupTest(options = {}) {
 export function skipTestIfSecretsUnavailable(testTypes, testFile) {
   try {
     const setup = setupTest({ testTypes, requireSecrets: true, testFile });
-    
+
     if (!setup.canRunTests) {
       console.log(`⏭️ Skipping tests in ${testFile} due to missing required secrets`);
       // In Playwright, we can use test.skip() to skip entire describe blocks
       return true; // Should skip
     }
-    
+
     return false; // Don't skip
   } catch (error) {
     console.log(`⏭️ Skipping tests in ${testFile} due to secret validation error: ${error.message}`);
@@ -111,18 +111,18 @@ export function skipTestIfSecretsUnavailable(testTypes, testFile) {
 export function warnIfOptionalSecretsUnavailable(testTypes, testFile) {
   try {
     const setup = setupTest({ testTypes, requireSecrets: false, testFile });
-    
+
     if (setup.secrets && setup.secrets.warnings.length > 0) {
       console.log(`⚠️ ${testFile}: ${setup.secrets.warnings.length} optional secrets missing`);
       console.log('   Some tests may run with reduced functionality or mock data');
-      
+
       return {
         hasWarnings: true,
         warnings: setup.secrets.warnings,
         shouldUseMocks: true
       };
     }
-    
+
     return {
       hasWarnings: false,
       warnings: [],

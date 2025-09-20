@@ -4,12 +4,12 @@
  * with compression and retention management
  */
 
-import fs from "fs/promises";
-import path from "path";
-import zlib from "zlib";
-import crypto from "crypto";
-import { promisify } from "util";
-import { Transform, pipeline } from "stream";
+import fs from 'fs/promises';
+import path from 'path';
+import zlib from 'zlib';
+import crypto from 'crypto';
+import { promisify } from 'util';
+import { Transform, pipeline } from 'stream';
 import { getDatabase } from "../../lib/database.js";
 
 const gzip = promisify(zlib.gzip);
@@ -17,7 +17,7 @@ const gunzip = promisify(zlib.gunzip);
 const streamPipeline = promisify(pipeline);
 
 class BackupManager {
-  constructor(databasePath = null, backupDir = "./backups") {
+  constructor(databasePath = null, backupDir = './backups') {
     this.databasePath = databasePath;
     this.backupDir = backupDir;
     this.database = getDatabase();
@@ -37,15 +37,15 @@ class BackupManager {
   /**
    * Generate backup filename with timestamp
    */
-  generateBackupFilename(description = "") {
+  generateBackupFilename(description = '') {
     const timestamp = new Date()
       .toISOString()
-      .replace(/[:.]/g, "-")
-      .replace("T", "_")
+      .replace(/[:.]/g, '-')
+      .replace('T', '_')
       .slice(0, -5);
     const descPart = description
-      ? `_${description.replace(/[^a-zA-Z0-9]/g, "_")}`
-      : "";
+      ? `_${description.replace(/[^a-zA-Z0-9]/g, '_')}`
+      : '';
     return `backup_${timestamp}${descPart}.db.gz`;
   }
 
@@ -53,13 +53,13 @@ class BackupManager {
    * Calculate checksum for data integrity
    */
   calculateChecksum(data) {
-    return crypto.createHash("sha256").update(data).digest("hex");
+    return crypto.createHash('sha256').update(data).digest('hex');
   }
 
   /**
    * Create a backup of the database
    */
-  async createBackup(description = "") {
+  async createBackup(description = '') {
     await this.ensureBackupDirectory();
 
     const backupFilename = this.generateBackupFilename(description);
@@ -72,17 +72,17 @@ class BackupManager {
 
       // For Turso/LibSQL, we need to export the database
       const result = await this.database.execute(
-        "SELECT sql FROM sqlite_master WHERE type IN ('table', 'index', 'trigger')",
+        'SELECT sql FROM sqlite_master WHERE type IN (\'table\', \'index\', \'trigger\')'
       );
       const schemas = result.rows.map((row) => row.sql).filter((sql) => sql);
 
       // Get all table data using streaming approach to prevent OOM
       const tables = await this.database.execute(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
+        'SELECT name FROM sqlite_master WHERE type=\'table\' AND name NOT LIKE \'sqlite_%\''
       );
       const backupData = {
         schemas,
-        tables: {},
+        tables: {}
       };
 
       // Process tables one by one to manage memory usage
@@ -90,21 +90,21 @@ class BackupManager {
         const tableName = table.name;
         // Get row count first to optimize memory allocation
         const countResult = await this.database.execute(
-          `SELECT COUNT(*) as count FROM ${tableName}`,
+          `SELECT COUNT(*) as count FROM ${tableName}`
         );
         const rowCount = countResult.rows[0].count;
 
         if (rowCount > 10000) {
           // For large tables, use chunked processing
           console.log(
-            `Processing large table ${tableName} with ${rowCount} rows in chunks...`,
+            `Processing large table ${tableName} with ${rowCount} rows in chunks...`
           );
           backupData.tables[tableName] = [];
           const chunkSize = 1000;
 
           for (let offset = 0; offset < rowCount; offset += chunkSize) {
             const chunkData = await this.database.execute(
-              `SELECT * FROM ${tableName} LIMIT ${chunkSize} OFFSET ${offset}`,
+              `SELECT * FROM ${tableName} LIMIT ${chunkSize} OFFSET ${offset}`
             );
             backupData.tables[tableName].push(...chunkData.rows);
 
@@ -116,7 +116,7 @@ class BackupManager {
         } else {
           // For smaller tables, process normally
           const tableData = await this.database.execute(
-            `SELECT * FROM ${tableName}`,
+            `SELECT * FROM ${tableName}`
           );
           backupData.tables[tableName] = tableData.rows;
         }
@@ -125,11 +125,11 @@ class BackupManager {
       // Add size guard for JSON serialization to prevent OOM errors
       const estimatedSize = JSON.stringify(backupData).length;
       const maxSizeBytes = 100 * 1024 * 1024; // 100MB limit
-      
+
       if (estimatedSize > maxSizeBytes) {
         throw new Error(`Backup data too large (${Math.round(estimatedSize / 1024 / 1024)}MB exceeds ${Math.round(maxSizeBytes / 1024 / 1024)}MB limit). Consider chunked backup approach.`);
       }
-      
+
       // Use streaming JSON serialization for large datasets
       const backupJson = JSON.stringify(backupData, null, 2);
       const backupBuffer = Buffer.from(backupJson);
@@ -154,13 +154,13 @@ class BackupManager {
         compressedSize: compressedData.length,
         compressionRatio:
           ((1 - compressedData.length / backupBuffer.length) * 100).toFixed(2) +
-          "%",
+          '%',
         checksums: {
           original: originalChecksum,
-          compressed: compressedChecksum,
+          compressed: compressedChecksum
         },
         tableCount: Object.keys(backupData.tables).length,
-        rowCounts: {},
+        rowCounts: {}
       };
 
       // Add row counts for each table
@@ -193,7 +193,7 @@ class BackupManager {
       const metadataPath = `${backupPath}.json`;
 
       // Read metadata
-      const metadataContent = await fs.readFile(metadataPath, "utf8");
+      const metadataContent = await fs.readFile(metadataPath, 'utf8');
       const metadata = JSON.parse(metadataContent);
 
       // Read and verify compressed backup
@@ -201,7 +201,7 @@ class BackupManager {
       const compressedChecksum = this.calculateChecksum(compressedData);
 
       if (compressedChecksum !== metadata.checksums.compressed) {
-        throw new Error("Compressed backup checksum mismatch");
+        throw new Error('Compressed backup checksum mismatch');
       }
 
       // Decompress and verify original checksum
@@ -209,14 +209,14 @@ class BackupManager {
       const originalChecksum = this.calculateChecksum(decompressedData);
 
       if (originalChecksum !== metadata.checksums.original) {
-        throw new Error("Decompressed backup checksum mismatch");
+        throw new Error('Decompressed backup checksum mismatch');
       }
 
       // Parse and validate backup structure
       const backupData = JSON.parse(decompressedData.toString());
 
       if (!backupData.schemas || !backupData.tables) {
-        throw new Error("Invalid backup structure");
+        throw new Error('Invalid backup structure');
       }
 
       // Verify table integrity
@@ -226,13 +226,13 @@ class BackupManager {
         structureValid: true,
         tableCount: Object.keys(backupData.tables).length,
         totalRows: 0,
-        tables: {},
+        tables: {}
       };
 
       for (const [tableName, rows] of Object.entries(backupData.tables)) {
         integrityResults.tables[tableName] = {
           rowCount: rows.length,
-          valid: Array.isArray(rows),
+          valid: Array.isArray(rows)
         };
         integrityResults.totalRows += rows.length;
 
@@ -263,17 +263,17 @@ class BackupManager {
       const backupData = JSON.parse(decompressedData.toString());
 
       // Begin explicit transaction for atomic restore
-      await this.database.execute("BEGIN TRANSACTION");
-      
+      await this.database.execute('BEGIN TRANSACTION');
+
       try {
         // Disable foreign key checks during restore to prevent constraint violations
-        await this.database.execute("PRAGMA foreign_keys = OFF");
+        await this.database.execute('PRAGMA foreign_keys = OFF');
 
         // Drop existing tables (careful!)
         for (const tableName of Object.keys(backupData.tables)) {
           await this.database.execute({
             sql: `DROP TABLE IF EXISTS ${tableName}`,
-            args: [],
+            args: []
           });
         }
 
@@ -282,7 +282,7 @@ class BackupManager {
           if (schema) {
             await this.database.execute({
               sql: schema,
-              args: [],
+              args: []
             });
           }
         }
@@ -290,48 +290,50 @@ class BackupManager {
         // Restore data in batches to manage memory
         const batchSize = 100;
         for (const [tableName, rows] of Object.entries(backupData.tables)) {
-          if (rows.length === 0) continue;
-          
+          if (rows.length === 0) {
+            continue;
+          }
+
           // Process in batches
           for (let i = 0; i < rows.length; i += batchSize) {
             const batch = rows.slice(i, i + batchSize);
             const batchStatements = [];
-            
+
             for (const row of batch) {
               const columns = Object.keys(row);
               const values = Object.values(row);
-              const placeholders = columns.map(() => "?").join(", ");
+              const placeholders = columns.map(() => '?').join(', ');
 
               batchStatements.push({
-                sql: `INSERT INTO ${tableName} (${columns.join(", ")}) VALUES (${placeholders})`,
-                args: values,
+                sql: `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES (${placeholders})`,
+                args: values
               });
             }
-            
+
             // Execute batch
             await this.database.batch(batchStatements);
           }
         }
 
         // Re-enable foreign key checks after restore
-        await this.database.execute("PRAGMA foreign_keys = ON");
-        
+        await this.database.execute('PRAGMA foreign_keys = ON');
+
         // Commit transaction
-        await this.database.execute("COMMIT");
-        
+        await this.database.execute('COMMIT');
+
       } catch (error) {
         // Rollback on error
-        await this.database.execute("ROLLBACK");
+        await this.database.execute('ROLLBACK');
         throw error;
       }
 
       console.log(
-        `Database restored successfully from: ${path.basename(backupPath)}`,
+        `Database restored successfully from: ${path.basename(backupPath)}`
       );
 
       // Verify restoration
       const verifyResult = await this.database.execute(
-        "SELECT COUNT(*) as table_count FROM sqlite_master WHERE type='table'",
+        'SELECT COUNT(*) as table_count FROM sqlite_master WHERE type=\'table\''
       );
       const tableCount = verifyResult.rows[0].table_count;
 
@@ -341,8 +343,8 @@ class BackupManager {
         verifiedTableCount: tableCount,
         restoredRows: Object.values(backupData.tables).reduce(
           (sum, rows) => sum + rows.length,
-          0,
-        ),
+          0
+        )
       };
     } catch (error) {
       throw new Error(`Database restoration failed: ${error.message}`);
@@ -363,7 +365,7 @@ class BackupManager {
       const deletedBackups = [];
 
       for (const file of files) {
-        if (!file.startsWith("backup_") || !file.endsWith(".db.gz")) {
+        if (!file.startsWith('backup_') || !file.endsWith('.db.gz')) {
           continue;
         }
 
@@ -380,8 +382,8 @@ class BackupManager {
           deletedBackups.push({
             filename: file,
             age: Math.floor(
-              (now - stats.mtime.getTime()) / (24 * 60 * 60 * 1000),
-            ),
+              (now - stats.mtime.getTime()) / (24 * 60 * 60 * 1000)
+            )
           });
         }
       }
@@ -392,7 +394,7 @@ class BackupManager {
 
       return {
         deletedCount: deletedBackups.length,
-        deletedBackups,
+        deletedBackups
       };
     } catch (error) {
       throw new Error(`Backup cleanup failed: ${error.message}`);
@@ -410,7 +412,7 @@ class BackupManager {
       const backups = [];
 
       for (const file of files) {
-        if (!file.startsWith("backup_") || !file.endsWith(".db.gz")) {
+        if (!file.startsWith('backup_') || !file.endsWith('.db.gz')) {
           continue;
         }
 
@@ -423,12 +425,12 @@ class BackupManager {
             filename: file,
             path: filePath,
             size: stats.size,
-            created: stats.mtime.toISOString(),
+            created: stats.mtime.toISOString()
           };
 
           // Try to read metadata file if it exists
           try {
-            const metadataContent = await fs.readFile(metadataPath, "utf8");
+            const metadataContent = await fs.readFile(metadataPath, 'utf8');
             const fullMetadata = JSON.parse(metadataContent);
             metadata = { ...metadata, ...fullMetadata };
           } catch {}
@@ -465,8 +467,8 @@ class BackupManager {
         statistics: {
           tableCount: Object.keys(backupData.tables).length,
           totalRows: 0,
-          tables: {},
-        },
+          tables: {}
+        }
       };
 
       // Validate each table
@@ -474,7 +476,7 @@ class BackupManager {
         validationResults.statistics.tables[tableName] = {
           rowCount: rows.length,
           columns: rows.length > 0 ? Object.keys(rows[0]) : [],
-          issues: [],
+          issues: []
         };
 
         validationResults.statistics.totalRows += rows.length;
@@ -492,26 +494,26 @@ class BackupManager {
             ) {
               validationResults.valid = false;
               validationResults.errors.push(
-                `Inconsistent row structure in table ${tableName} at row ${i}`,
+                `Inconsistent row structure in table ${tableName} at row ${i}`
               );
               validationResults.statistics.tables[tableName].issues.push(
-                `Row ${i} has inconsistent structure`,
+                `Row ${i} has inconsistent structure`
               );
             }
           }
         }
 
         // Check for critical tables
-        const criticalTables = ["tickets", "transactions", "subscribers"];
+        const criticalTables = ['tickets', 'transactions', 'subscribers'];
         if (criticalTables.includes(tableName) && rows.length === 0) {
           validationResults.warnings.push(
-            `Critical table ${tableName} is empty`,
+            `Critical table ${tableName} is empty`
           );
         }
       }
 
       console.log(
-        `Backup data validation completed: ${path.basename(backupPath)}`,
+        `Backup data validation completed: ${path.basename(backupPath)}`
       );
       return validationResults;
     } catch (error) {

@@ -1,11 +1,12 @@
-import authService from '../../lib/auth-service.js';
-import { getDatabaseClient } from '../../lib/database.js';
-import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
-import { columnExists, safeParseInt } from '../../lib/db-utils.js';
+import authService from "../../lib/auth-service.js";
+import { getDatabaseClient } from "../../lib/database.js";
+import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
+import { columnExists, safeParseInt } from "../../lib/db-utils.js";
+import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
 
 async function handler(req, res) {
   let db;
-  
+
   try {
     db = await getDatabaseClient();
 
@@ -15,22 +16,22 @@ async function handler(req, res) {
     }
 
     // Get query parameters with proper NaN handling
-    const eventId = safeParseInt(req.query.eventId);
-    
+    const eventId = safeParseInt(req.query?.eventId);
+
     // Check if event_id columns exist
     const ticketsHasEventId = await columnExists(db, 'tickets', 'event_id');
     const transactionsHasEventId = await columnExists(db, 'transactions', 'event_id');
-    
+
     // Build WHERE clauses based on eventId parameter and column existence
     const ticketWhereClause = eventId && ticketsHasEventId ? 'AND event_id = ?' : '';
     const transactionWhereClause = eventId && transactionsHasEventId ? 'AND event_id = ?' : '';
-    
+
     // Parameters for the stats query
     const statsParams = [];
-    
+
     // Build the stats query dynamically
-    let statsQuery = `
-      SELECT 
+    const statsQuery = `
+      SELECT
         (SELECT COUNT(*) FROM tickets WHERE status = 'valid' ${ticketWhereClause}) as total_tickets,
         (SELECT COUNT(*) FROM tickets WHERE checked_in_at IS NOT NULL ${ticketWhereClause}) as checked_in,
         (SELECT COUNT(DISTINCT transaction_id) FROM tickets WHERE 1=1 ${ticketWhereClause}) as total_orders,
@@ -44,7 +45,7 @@ async function handler(req, res) {
         (SELECT COUNT(*) FROM tickets WHERE qr_access_method = 'google_wallet' ${ticketWhereClause}) as google_wallet_users,
         (SELECT COUNT(*) FROM tickets WHERE qr_access_method = 'web' ${ticketWhereClause}) as web_only_users
     `;
-    
+
     // Add parameters for each subquery that uses event_id filtering
     if (eventId && ticketsHasEventId) {
       // Count the subqueries using tickets table:
@@ -58,7 +59,7 @@ async function handler(req, res) {
       // 1 subquery uses transactions table with event_id filtering
       statsParams.push(eventId);
     }
-    
+
     const statsResult = await db.execute(statsQuery, statsParams);
 
     // Handle empty results gracefully
@@ -78,7 +79,7 @@ async function handler(req, res) {
 
     // Get recent registrations with event filtering
     let recentRegistrationsQuery = `
-      SELECT 
+      SELECT
         t.ticket_id,
         t.attendee_first_name || ' ' || t.attendee_last_name as attendee_name,
         t.attendee_email,
@@ -88,70 +89,70 @@ async function handler(req, res) {
       FROM tickets t
       JOIN transactions tr ON t.transaction_id = tr.id
     `;
-    
+
     const recentRegistrationsParams = [];
-    
+
     // Add WHERE clause for event filtering if applicable
     if (eventId && ticketsHasEventId) {
-      recentRegistrationsQuery += ` WHERE t.event_id = ?`;
+      recentRegistrationsQuery += ' WHERE t.event_id = ?';
       recentRegistrationsParams.push(eventId);
     }
-    
+
     recentRegistrationsQuery += `
       ORDER BY t.created_at DESC
       LIMIT 10
     `;
-    
+
     const recentRegistrations = await db.execute(recentRegistrationsQuery, recentRegistrationsParams);
 
     // Get ticket type breakdown with event filtering
     let ticketBreakdownQuery = `
-      SELECT 
+      SELECT
         ticket_type,
         COUNT(*) as count,
         SUM(price_cents) / 100.0 as revenue
       FROM tickets
       WHERE status = 'valid'
     `;
-    
+
     const ticketBreakdownParams = [];
-    
+
     // Add event filtering if applicable
     if (eventId && ticketsHasEventId) {
-      ticketBreakdownQuery += ` AND event_id = ?`;
+      ticketBreakdownQuery += ' AND event_id = ?';
       ticketBreakdownParams.push(eventId);
     }
-    
+
     ticketBreakdownQuery += `
       GROUP BY ticket_type
       ORDER BY count DESC
     `;
-    
+
     const ticketBreakdown = await db.execute(ticketBreakdownQuery, ticketBreakdownParams);
 
     // Get daily sales for the last 7 days with event filtering
     let dailySalesQuery = `
-      SELECT 
+      SELECT
         date(created_at) as date,
         COUNT(*) as tickets_sold,
         SUM(price_cents) / 100.0 as revenue
       FROM tickets
       WHERE created_at >= date('now', '-7 days')
     `;
-    
+
     const dailySalesParams = [];
-    
+
     // Add event filtering if applicable
     if (eventId && ticketsHasEventId) {
-      dailySalesQuery += ` AND event_id = ?`;
+      dailySalesQuery += ' AND event_id = ?';
       dailySalesParams.push(eventId);
     }
-    
+
     dailySalesQuery += `
       GROUP BY date(created_at)
       ORDER BY date DESC
     `;
-    
+
     const dailySales = await db.execute(dailySalesQuery, dailySalesParams);
 
     // Get event information if filtering by specific event
@@ -159,15 +160,20 @@ async function handler(req, res) {
     if (eventId) {
       try {
         const eventResult = await db.execute(
-          `SELECT id, name, slug, type, status, start_date, end_date 
+          `SELECT id, name, slug, type, status, start_date, end_date
            FROM events WHERE id = ?`,
           [eventId]
         );
         eventInfo = eventResult.rows[0] || null;
       } catch (error) {
-        console.warn("Could not fetch event info:", error);
+        console.warn('Could not fetch event info:', error);
       }
     }
+
+    // Set security headers to prevent caching of admin dashboard data
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
 
     res.status(200).json({
       stats: stats,
@@ -184,29 +190,38 @@ async function handler(req, res) {
     });
   } catch (error) {
     console.error('Dashboard API error:', error);
-    
+
     // More specific error handling
     if (error.code === 'SQLITE_BUSY') {
       return res.status(503).json({ error: 'Database temporarily unavailable' });
     }
-    
+
     if (error.name === 'TimeoutError') {
       return res.status(408).json({ error: 'Request timeout' });
     }
-    
+
     res.status(500).json({ error: 'Failed to fetch dashboard data' });
   }
 }
 
-// Wrap the entire middleware chain in an error-handling function
+// Build the middleware chain once, outside of request handling
+// IMPORTANT: Audit middleware must be outside auth middleware to capture unauthorized access
+const securedHandler = withSecurityHeaders(
+  withAdminAudit(
+    authService.requireAuth(handler),
+    {
+      logBody: false, // Dashboard requests don't need body logging
+      logMetadata: true,
+      skipMethods: [] // Log all methods including GET for dashboard access tracking
+    }
+  )
+);
+
+// Wrap the secured handler in an error-handling function
 // to ensure all errors are returned as JSON
 async function safeHandler(req, res) {
   try {
-    // Build the middleware chain inside the try-catch
-    // This ensures any middleware initialization errors are caught
-    const securedHandler = withSecurityHeaders(authService.requireAuth(handler));
-
-    // Execute the secured handler
+    // Execute the pre-built secured handler
     return await securedHandler(req, res);
   } catch (error) {
     console.error('Fatal error in dashboard endpoint:', error);

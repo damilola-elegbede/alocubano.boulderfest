@@ -9,7 +9,7 @@
  * - Smooth transitions and clear active states
  * - Custom events for other components to listen
  * - Hidden on admin pages (follows existing theme manager patterns)
- * 
+ *
  * Performance Optimizations:
  * - Event delegation for reduced memory usage
  * - Cached DOM queries
@@ -23,7 +23,7 @@ import { THEMES, getCurrentTheme, isAdminPage } from './theme-manager.js';
 // Theme toggle constants
 const THEME_OPTIONS = {
     SYSTEM: 'system',
-    LIGHT: 'light', 
+    LIGHT: 'light',
     DARK: 'dark'
 };
 
@@ -46,7 +46,7 @@ const PERF_MARKS = {
 
 /**
  * SVG icons for each theme state
- * 
+ *
  * Inline SVG icons provide crisp rendering at any size and can be styled
  * with CSS. Icons are semantically appropriate:
  * - System: Monitor/desktop icon representing auto-detection
@@ -78,35 +78,35 @@ const ICONS = {
 
 /**
  * Get current theme preference from localStorage with debouncing
- * 
+ *
  * Reads user preference with validation. Falls back to 'system' if
  * no valid preference is stored. Provides safe access to localStorage.
- * 
+ *
  * @returns {string} Valid theme preference or 'system' as fallback
  */
 function getThemePreference() {
     if (typeof localStorage === 'undefined') {
         return THEME_OPTIONS.SYSTEM;
     }
-    
+
     const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
     return Object.values(THEME_OPTIONS).includes(stored) ? stored : THEME_OPTIONS.SYSTEM;
 }
 
 /**
  * Store theme preference in localStorage with debouncing for performance
- * 
+ *
  * Debounces localStorage writes to prevent excessive I/O operations
  * during rapid theme switching. Improves performance especially on
  * slower devices or during animations.
- * 
+ *
  * @param {string} theme - Valid theme preference to store
  */
 function setThemePreference(theme) {
     if (typeof localStorage === 'undefined') {
         return;
     }
-    
+
     // Debounce localStorage writes to prevent excessive I/O
     clearTimeout(debounceTimeout);
     debounceTimeout = setTimeout(() => {
@@ -116,36 +116,36 @@ function setThemePreference(theme) {
 
 /**
  * Get effective theme based on preference and system settings
- * 
+ *
  * Resolves the actual theme that should be applied based on user preference.
  * If preference is 'system', detects the OS preference using media queries.
- * 
+ *
  * @param {string} preference - User preference (optional, will detect if not provided)
  * @returns {string} Resolved theme ('light' or 'dark')
  */
 function getEffectiveTheme(preference = null) {
     const pref = preference || getThemePreference();
-    
+
     if (pref === THEME_OPTIONS.SYSTEM) {
         // Check system preference
         if (typeof window !== 'undefined' && window.matchMedia) {
-            return window.matchMedia('(prefers-color-scheme: dark)').matches 
-                ? THEMES.DARK 
+            return window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? THEMES.DARK
                 : THEMES.LIGHT;
         }
         return THEMES.LIGHT; // Default fallback
     }
-    
+
     return pref; // 'light' or 'dark'
 }
 
 /**
  * Apply theme to document
- * 
+ *
  * Updates the document element's data-theme attribute based on the
  * resolved theme preference. Skips application on admin pages since
  * they use a fixed dark theme managed by theme-manager.js.
- * 
+ *
  * @param {string} preference - Theme preference to apply
  */
 function applyThemeToggle(preference) {
@@ -160,7 +160,7 @@ function applyThemeToggle(preference) {
 
     const effectiveTheme = getEffectiveTheme(preference);
     const root = document.documentElement;
-    
+
     // Apply theme
     if (effectiveTheme === THEMES.DARK) {
         root.setAttribute('data-theme', THEMES.DARK);
@@ -170,7 +170,7 @@ function applyThemeToggle(preference) {
 
     // Emit custom event for component integration
     const event = new CustomEvent('themechange', {
-        detail: { 
+        detail: {
             theme: effectiveTheme,
             preference: preference,
             source: 'theme-toggle'
@@ -181,11 +181,11 @@ function applyThemeToggle(preference) {
 
 /**
  * Create theme toggle HTML structure
- * 
+ *
  * Generates accessible HTML with proper ARIA attributes and semantic structure.
  * Uses a radiogroup pattern since theme selection is mutually exclusive.
  * Icons are included inline for immediate availability.
- * 
+ *
  * @returns {string} Complete HTML structure for theme toggle
  */
 function createToggleHTML() {
@@ -194,7 +194,7 @@ function createToggleHTML() {
             ${Object.entries(THEME_OPTIONS)
                 .filter(([key, value]) => value !== 'system') // Exclude system option
                 .map(([key, value]) => `
-                <button 
+                <button
                     type="button"
                     class="theme-toggle__option"
                     data-theme="${value}"
@@ -212,7 +212,7 @@ function createToggleHTML() {
 
 /**
  * Add CSS styles for the theme toggle
- * 
+ *
  * Injects comprehensive CSS styles for the theme toggle component.
  * Styles include accessibility features, smooth transitions, and
  * theme-aware colors. Only injects once to avoid duplication.
@@ -223,7 +223,7 @@ function addToggleStyles() {
     }
 
     const styleId = 'theme-toggle-styles';
-    
+
     // Don't add styles twice
     if (document.getElementById(styleId)) {
         return;
@@ -305,34 +305,34 @@ function addToggleStyles() {
             .theme-toggle {
                 border-radius: 6px;
             }
-            
+
             .theme-toggle__option {
                 width: 28px;
                 height: 24px;
             }
         }
     `;
-    
+
     document.head.appendChild(style);
 }
 
 /**
  * Update toggle active state with performance optimization
- * 
+ *
  * Updates the visual state of the toggle to reflect the current preference.
  * Uses cached DOM queries and requestAnimationFrame for smooth performance.
  * Only updates elements that actually changed to minimize DOM operations.
- * 
+ *
  * @param {string} preference - Current theme preference
  */
 function updateToggleState(preference) {
     performance.mark(PERF_MARKS.UPDATE_START);
-    
+
     // Use cached elements to avoid repeated DOM queries
     if (!cachedToggleElement) {
         cachedToggleElement = document.getElementById(TOGGLE_ID);
     }
-    
+
     if (!cachedToggleElement) return;
 
     if (!cachedButtons) {
@@ -343,13 +343,13 @@ function updateToggleState(preference) {
     requestAnimationFrame(() => {
         cachedButtons.forEach(button => {
             const isActive = button.dataset.theme === preference;
-            
+
             // Only update if state actually changed
             if (button.getAttribute('aria-checked') !== String(isActive)) {
                 button.setAttribute('aria-checked', isActive);
             }
         });
-        
+
         performance.mark(PERF_MARKS.UPDATE_END);
         if (performance.measure) {
             try {
@@ -363,26 +363,26 @@ function updateToggleState(preference) {
 
 /**
  * Handle theme option click with performance optimization
- * 
+ *
  * Responds to user clicks on theme options. Implements debouncing to
  * prevent rapid clicking issues and uses RAF for smooth visual updates.
  * Dispatches custom events for component integration.
- * 
+ *
  * @param {Event} event - Click event from theme option button
  */
 function handleThemeClick(event) {
     performance.mark(PERF_MARKS.TOGGLE_START);
-    
+
     const button = event.target.closest('.theme-toggle__option');
     if (!button) return;
 
     const newPreference = button.dataset.theme;
-    
+
     // Prevent rapid clicking
     if (debounceTimeout) {
         clearTimeout(debounceTimeout);
     }
-    
+
     // Update preference and apply theme
     setThemePreference(newPreference);
     applyThemeToggle(newPreference);
@@ -391,14 +391,14 @@ function handleThemeClick(event) {
     // Emit custom event for other components with debouncing
     debounceTimeout = setTimeout(() => {
         const customEvent = new CustomEvent('themepreferencechange', {
-            detail: { 
+            detail: {
                 preference: newPreference,
                 effectiveTheme: getEffectiveTheme(newPreference),
                 timestamp: performance.now()
             }
         });
         document.dispatchEvent(customEvent);
-        
+
         performance.mark(PERF_MARKS.TOGGLE_END);
         if (performance.measure) {
             try {
@@ -412,11 +412,11 @@ function handleThemeClick(event) {
 
 /**
  * Handle keyboard navigation
- * 
+ *
  * Implements full keyboard accessibility for the theme toggle.
  * Supports arrow keys for navigation and Home/End for quick selection.
  * Follows ARIA best practices for radiogroup pattern.
- * 
+ *
  * @param {KeyboardEvent} event - Keyboard event to handle
  */
 function handleKeyDown(event) {
@@ -425,7 +425,7 @@ function handleKeyDown(event) {
     }
 
     event.preventDefault();
-    
+
     const toggle = event.target.closest('.theme-toggle');
     const buttons = Array.from(toggle.querySelectorAll('.theme-toggle__option'));
     const currentIndex = buttons.findIndex(btn => btn === event.target);
@@ -452,7 +452,7 @@ function handleKeyDown(event) {
 
 /**
  * Listen for system theme changes
- * 
+ *
  * Monitors the user's system-level dark/light mode preference and
  * automatically updates the theme when the user has 'system' selected.
  * Uses modern addEventListener with fallback for older browsers.
@@ -463,10 +463,10 @@ function setupSystemThemeListener() {
     }
 
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    
+
     const handleSystemThemeChange = () => {
         const currentPreference = getThemePreference();
-        
+
         // Only update if user has system preference selected
         if (currentPreference === THEME_OPTIONS.SYSTEM) {
             applyThemeToggle(currentPreference);
@@ -483,11 +483,11 @@ function setupSystemThemeListener() {
 
 /**
  * Initialize theme toggle component
- * 
+ *
  * Main initialization function that sets up the complete theme toggle.
  * Handles DOM creation, event binding, and initial state setup.
  * Returns null on admin pages where theme toggle should be hidden.
- * 
+ *
  * @param {string|Element} container - Container selector or element
  * @returns {Object|null} Component instance with element and state info
  */
@@ -503,12 +503,12 @@ function initializeThemeToggle(container) {
 
     // Add styles
     // Style injection removed - styles now handled by theme-toggle.css
-    
+
     // Create container if not provided
     let toggleContainer;
     if (container) {
-        toggleContainer = typeof container === 'string' 
-            ? document.querySelector(container) 
+        toggleContainer = typeof container === 'string'
+            ? document.querySelector(container)
             : container;
     } else {
         toggleContainer = document.createElement('div');
@@ -545,9 +545,9 @@ function initializeThemeToggle(container) {
 
 /**
  * Get current theme preference
- * 
+ *
  * Public API method to retrieve the current user preference.
- * 
+ *
  * @returns {string} Current theme preference
  */
 function getCurrentPreference() {
@@ -556,10 +556,10 @@ function getCurrentPreference() {
 
 /**
  * Set theme preference programmatically
- * 
+ *
  * Public API method to change theme preference from JavaScript.
  * Validates input and updates both storage and visual state.
- * 
+ *
  * @param {string} preference - Theme preference to set
  */
 function setPreference(preference) {
@@ -575,7 +575,7 @@ function setPreference(preference) {
 
 /**
  * Destroy theme toggle (cleanup)
- * 
+ *
  * Removes the theme toggle from DOM and cleans up associated styles.
  * Useful for single-page applications or dynamic content management.
  */

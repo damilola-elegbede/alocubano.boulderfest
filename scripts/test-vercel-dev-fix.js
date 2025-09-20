@@ -2,7 +2,7 @@
 
 /**
  * Test Vercel Dev Fix
- * 
+ *
  * Validates that our Vercel dev hanging fix works properly
  * Tests all startup scenarios and provides diagnostics
  */
@@ -29,7 +29,7 @@ class VercelDevTester {
       await this.testDatabaseInitialization();
       await this.testVercelStartup();
       await this.testHealthEndpoints();
-      
+
       this.reportResults();
     } catch (error) {
       console.error('❌ Test suite failed:', error.message);
@@ -44,12 +44,12 @@ class VercelDevTester {
     console.log('\n🔧 Testing environment setup...');
 
     // Test 1: Check if enhanced scripts exist
-    this.recordTest('Enhanced startup script exists', 
+    this.recordTest('Enhanced startup script exists',
       existsSync(resolve(process.cwd(), 'scripts/vercel-dev-start.js'))
     );
 
     // Test 2: Check migration system
-    this.recordTest('Migration system available', 
+    this.recordTest('Migration system available',
       existsSync(resolve(process.cwd(), 'scripts/migrate.js'))
     );
 
@@ -61,7 +61,7 @@ class VercelDevTester {
       );
       const hasMigrateUp = packageJson.scripts['migrate:up']?.includes('migrate.js');
       const prestart = packageJson.scripts['prestart']?.includes('migrate:up');
-      this.recordTest('Package.json uses migration system', 
+      this.recordTest('Package.json uses migration system',
         hasMigrateUp && prestart,
         `migrate:up script exists: ${hasMigrateUp}, prestart uses migrate:up: ${prestart}`
       );
@@ -73,7 +73,7 @@ class VercelDevTester {
     process.env.SKIP_DATABASE_INIT = 'true';
     process.env.VERCEL_DEV_STARTUP = 'true';
     process.env.VERCEL_NON_INTERACTIVE = '1';
-    this.recordTest('Environment variables set', 
+    this.recordTest('Environment variables set',
       process.env.SKIP_DATABASE_INIT === 'true'
     );
   }
@@ -87,14 +87,14 @@ class VercelDevTester {
     try {
       // Test database migration system
       const startTime = Date.now();
-      
+
       const { MigrationSystem } = await import('./migrate.js');
       const migrationSystem = new MigrationSystem();
       await migrationSystem.runMigrations();
-      
+
       const duration = Date.now() - startTime;
-      
-      this.recordTest('Migration system completes quickly', duration < 5000, 
+
+      this.recordTest('Migration system completes quickly', duration < 5000,
         `Took ${duration}ms (should be <5000ms)`
       );
 
@@ -137,7 +137,7 @@ class VercelDevTester {
 
     // Test 3: Command construction
     const expectedArgs = ['vercel', 'dev', '--listen', '0.0.0.0:3000', '--yes'];
-    this.recordTest('Command includes --yes flag', 
+    this.recordTest('Command includes --yes flag',
       expectedArgs.includes('--yes'),
       'Non-interactive mode enabled'
     );
@@ -145,12 +145,12 @@ class VercelDevTester {
     // Test 4: Environment variable setup
     const requiredEnvVars = [
       'SKIP_DATABASE_INIT',
-      'VERCEL_DEV_STARTUP', 
+      'VERCEL_DEV_STARTUP',
       'VERCEL_NON_INTERACTIVE'
     ];
 
     const missingVars = requiredEnvVars.filter(v => !process.env[v]);
-    this.recordTest('Required environment variables', 
+    this.recordTest('Required environment variables',
       missingVars.length === 0,
       missingVars.length > 0 ? `Missing: ${missingVars.join(', ')}` : 'All set'
     );
@@ -172,20 +172,20 @@ class VercelDevTester {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 3000);
 
-        const response = await fetch(url, { 
+        const response = await fetch(url, {
           signal: controller.signal,
           headers: { 'User-Agent': 'VercelDevTester/1.0' }
         });
-        
+
         clearTimeout(timeout);
 
-        this.recordTest(`Health endpoint: ${url}`, 
-          response.ok, 
+        this.recordTest(`Health endpoint: ${url}`,
+          response.ok,
           `Status: ${response.status}`
         );
       } catch (error) {
         // Expected if server is not running
-        this.recordTest(`Health endpoint: ${url}`, 
+        this.recordTest(`Health endpoint: ${url}`,
           null,
           'Server not running (expected for test)'
         );
@@ -203,9 +203,9 @@ class VercelDevTester {
       details,
       timestamp: Date.now()
     };
-    
+
     this.results.push(result);
-    
+
     const status = passed === null ? '⚠️ ' : (passed ? '✅' : '❌');
     const detailStr = details ? ` (${details})` : '';
     console.log(`   ${status} ${name}${detailStr}`);
@@ -242,7 +242,7 @@ class VercelDevTester {
     if (failedTests === 0) {
       console.log('✅ All tests passed! Try starting Vercel dev:');
       console.log('   npm run start:local');
-      console.log('   npm run start:safe');  
+      console.log('   npm run start:safe');
       console.log('   npm run start:clean');
     } else {
       console.log('🔧 Fix failing tests, then try:');

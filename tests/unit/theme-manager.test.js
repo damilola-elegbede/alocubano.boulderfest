@@ -40,7 +40,7 @@ describe('ThemeManager', () => {
       document.documentElement.removeAttribute('data-theme');
     }
     document.body.innerHTML = '';
-    
+
     // Mock localStorage
     mockLocalStorage = {
       data: {},
@@ -99,7 +99,7 @@ describe('ThemeManager', () => {
         configurable: true
       });
     }
-    
+
     if (originalMatchMedia !== undefined) {
       Object.defineProperty(window, 'matchMedia', {
         value: originalMatchMedia,
@@ -107,21 +107,21 @@ describe('ThemeManager', () => {
         configurable: true
       });
     }
-    
+
     // Restore original location
     window.location = originalLocation;
-    
+
     // Ensure documentElement is restored if it was changed in tests
     if (!document.documentElement) {
       // Create a new documentElement if it was removed
       document.documentElement = document.createElement('html');
     }
-    
+
     // Clean up data-theme attribute
     if (document.documentElement) {
       document.documentElement.removeAttribute('data-theme');
     }
-    
+
     // Clear all mocks and cache
     vi.clearAllMocks();
     clearPerformanceData(); // Clear theme manager internal cache
@@ -190,8 +190,8 @@ describe('ThemeManager', () => {
 
       // Clear cache to test different path
       clearPerformanceData();
-      
-      window.location.pathname = '/user-admin'; // Contains 'admin' but not '/admin' substring 
+
+      window.location.pathname = '/user-admin'; // Contains 'admin' but not '/admin' substring
       expect(isAdminPage()).toBe(false); // Returns false because it doesn't contain '/admin' pattern
 
       clearPerformanceData();
@@ -201,20 +201,20 @@ describe('ThemeManager', () => {
       clearPerformanceData();
       window.location.pathname = '/';
       expect(isAdminPage()).toBe(false);
-      
+
       clearPerformanceData();
       window.location.pathname = '/something-else';
       expect(isAdminPage()).toBe(false);
-      
+
       // Additional edge cases
       clearPerformanceData();
       window.location.pathname = '/admin-tools'; // Contains '/admin' substring
       expect(isAdminPage()).toBe(true);
-      
+
       clearPerformanceData();
       window.location.pathname = '/my/admin/page'; // Contains '/admin'
       expect(isAdminPage()).toBe(true);
-      
+
       clearPerformanceData();
       window.location.pathname = '/something-admin-related'; // Contains 'admin' but not '/admin'
       expect(isAdminPage()).toBe(false);
@@ -256,15 +256,15 @@ describe('ThemeManager', () => {
     it('should determine theme correctly for admin vs main site', () => {
       // Clear cache to ensure clean state
       clearPerformanceData();
-      
+
       // Admin page always gets dark theme
       window.location.pathname = '/admin';
       expect(getTheme()).toBe(THEMES.DARK);
       expect(getCurrentTheme()).toBe(THEMES.DARK);
-      
+
       // Clear cache when changing paths
       clearPerformanceData();
-      
+
       // Main site page defaults to system preference (light in mock)
       window.location.pathname = '/tickets';
       expect(getTheme()).toBe(THEMES.LIGHT);
@@ -302,16 +302,16 @@ describe('ThemeManager', () => {
 
       expect(() => initializeTheme()).not.toThrow();
       expect(() => getCurrentTheme()).not.toThrow();
-      
+
       // Should still work based on page type, defaults to light when matchMedia unavailable
       // Clear cache before setting admin path
       clearPerformanceData();
       window.location.pathname = '/admin';
       expect(getCurrentTheme()).toBe(THEMES.DARK);
-      
+
       // Clear cache when changing paths
       clearPerformanceData();
-      
+
       window.location.pathname = '/tickets';
       expect(getCurrentTheme()).toBe(THEMES.LIGHT); // Fallback to light
     });
@@ -496,7 +496,7 @@ describe('ThemeManager', () => {
 
       // Clear cache and reset for main site test
       clearPerformanceData();
-      
+
       // Test main site page (light theme with attribute)
       window.location.pathname = '/tickets';
       initializeTheme();
@@ -513,7 +513,7 @@ describe('ThemeManager', () => {
   describe('edge cases and error handling', () => {
     it('should work correctly with different admin paths', () => {
       const adminPaths = ['/admin', '/admin/', '/admin/dashboard', '/pages/admin', '/ADMIN/users'];
-      
+
       adminPaths.forEach(path => {
         window.location.pathname = path;
         expect(getTheme()).toBe(THEMES.DARK);
@@ -523,7 +523,7 @@ describe('ThemeManager', () => {
 
     it('should work correctly with main site paths', () => {
       const mainPaths = ['/', '/tickets', '/gallery', '/about', '/home'];
-      
+
       mainPaths.forEach(path => {
         window.location.pathname = path;
         expect(getTheme()).toBe(THEMES.LIGHT);
@@ -538,13 +538,13 @@ describe('ThemeManager', () => {
         writable: true,
         configurable: true
       });
-      
+
       // Clear cache since we changed localStorage
       clearPerformanceData();
-      
+
       expect(() => getTheme()).not.toThrow();
       expect(() => initializeTheme()).not.toThrow();
-      
+
       // Should still work based on page type
       // Clear cache before setting admin path
       clearPerformanceData();
@@ -555,7 +555,7 @@ describe('ThemeManager', () => {
     it('should handle document without documentElement correctly', () => {
       // Mock document.documentElement as null (edge case that doesn't occur in real browsers)
       const originalDocumentElement = document.documentElement;
-      
+
       Object.defineProperty(document, 'documentElement', {
         value: null,
         writable: true,
@@ -565,7 +565,7 @@ describe('ThemeManager', () => {
       // The implementation doesn't handle null documentElement gracefully, which is expected
       // This is an edge case that doesn't occur in real browsers
       expect(() => initializeTheme()).toThrow();
-      
+
       // getCurrentTheme doesn't try to access documentElement, so it should work
       expect(() => getCurrentTheme()).not.toThrow();
 
@@ -606,7 +606,7 @@ describe('ThemeManager', () => {
 
     it('should handle theme events correctly', async () => {
       const themeEvents = [];
-      
+
       document.addEventListener('themechange', (event) => {
         themeEvents.push({
           theme: event.detail.theme
@@ -625,13 +625,13 @@ describe('ThemeManager', () => {
     it('should be consistent across multiple initializations', () => {
       // Multiple initializations on same page type should be consistent
       window.location.pathname = '/admin';
-      
+
       initializeTheme();
       expect(getCurrentTheme()).toBe(THEMES.DARK);
-      
+
       initializeTheme();
       expect(getCurrentTheme()).toBe(THEMES.DARK);
-      
+
       initializeTheme();
       expect(getCurrentTheme()).toBe(THEMES.DARK);
     });
@@ -641,10 +641,10 @@ describe('ThemeManager', () => {
       initializeTheme();
       await waitForThemeApplication();
       expect(document.documentElement.getAttribute('data-theme')).toBe(THEMES.DARK);
-      
+
       // Simulate external script changing theme attribute
       document.documentElement.setAttribute('data-theme', THEMES.LIGHT);
-      
+
       // getCurrentTheme should still return theme based on page type, not DOM attribute
       expect(getCurrentTheme()).toBe(THEMES.DARK); // Based on page type, not DOM
     });

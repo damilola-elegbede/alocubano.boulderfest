@@ -65,7 +65,7 @@ describe('Theme System Comprehensive Tests', () => {
     if (document.documentElement) {
       document.documentElement.removeAttribute('data-theme');
     }
-    
+
     // Ensure we have proper DOM structure
     if (!document.body) {
       document.body = document.createElement('body');
@@ -73,10 +73,10 @@ describe('Theme System Comprehensive Tests', () => {
     if (!document.head) {
       document.head = document.createElement('head');
     }
-    
+
     document.body.innerHTML = '';
     document.head.innerHTML = '<meta charset="UTF-8">';
-    
+
     // Mock localStorage
     mockLocalStorage = {
       data: {},
@@ -109,7 +109,7 @@ describe('Theme System Comprehensive Tests', () => {
         removeListener: vi.fn(),
         dispatchEvent: vi.fn(),
       };
-      
+
       // Make addEventListener functional for testing
       let listeners = [];
       mediaQuery.addEventListener = vi.fn((event, callback) => {
@@ -118,13 +118,13 @@ describe('Theme System Comprehensive Tests', () => {
       mediaQuery.removeEventListener = vi.fn((event, callback) => {
         listeners = listeners.filter(l => l.event !== event || l.callback !== callback);
       });
-      
+
       // Simulate media query change
       mediaQuery._triggerChange = (matches) => {
         mediaQuery.matches = matches;
         listeners.forEach(({ callback }) => callback(mediaQuery));
       };
-      
+
       return mediaQuery;
     });
     Object.defineProperty(window, 'matchMedia', {
@@ -149,7 +149,7 @@ describe('Theme System Comprehensive Tests', () => {
 
     // Clean up any existing theme toggle
     destroyThemeToggle();
-    
+
     // Clear theme manager internal cache - this is critical!
     clearPerformanceData();
   });
@@ -166,7 +166,7 @@ describe('Theme System Comprehensive Tests', () => {
         configurable: true
       });
     }
-    
+
     if (originalMatchMedia !== undefined) {
       Object.defineProperty(window, 'matchMedia', {
         value: originalMatchMedia,
@@ -174,23 +174,23 @@ describe('Theme System Comprehensive Tests', () => {
         configurable: true
       });
     }
-    
+
     // Restore original location
     window.location = originalLocation;
-    
+
     // Clean up DOM
     if (document.documentElement) {
       document.documentElement.removeAttribute('data-theme');
     }
-    
+
     if (document.body) {
       document.body.innerHTML = '';
     }
-    
+
     if (document.head) {
       document.head.innerHTML = '<meta charset="UTF-8">';
     }
-    
+
     // Clear all mocks
     vi.clearAllMocks();
   });
@@ -201,7 +201,7 @@ describe('Theme System Comprehensive Tests', () => {
         expect(THEMES.LIGHT).toBe('light');
         expect(THEMES.DARK).toBe('dark');
         expect(THEMES.SYSTEM).toBe('system');
-        
+
         expect(THEME_OPTIONS.LIGHT).toBe(THEMES.LIGHT);
         expect(THEME_OPTIONS.DARK).toBe(THEMES.DARK);
         expect(THEME_OPTIONS.SYSTEM).toBe(THEMES.SYSTEM);
@@ -209,8 +209,8 @@ describe('Theme System Comprehensive Tests', () => {
 
       it('should detect admin pages correctly', () => {
         const adminPaths = [
-          '/admin', '/admin/', '/admin/dashboard', 
-          '/pages/admin', '/pages/admin/users', 
+          '/admin', '/admin/', '/admin/dashboard',
+          '/pages/admin', '/pages/admin/users',
           '/ADMIN', '/Admin/Dashboard'
         ];
 
@@ -292,9 +292,9 @@ describe('Theme System Comprehensive Tests', () => {
         clearPerformanceData();
 
         const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-        
+
         setTheme(THEMES.LIGHT); // Should be ignored
-        
+
         expect(consoleSpy).toHaveBeenCalledWith('Theme changes are not allowed on admin pages');
         expect(mockLocalStorage.setItem).not.toHaveBeenCalled();
         expect(getStoredPreference()).toBeNull();
@@ -313,11 +313,11 @@ describe('Theme System Comprehensive Tests', () => {
 
       it('should validate theme values before setting', () => {
         window.location.pathname = '/tickets';
-        
+
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-        
+
         setTheme('invalid-theme');
-        
+
         expect(consoleSpy).toHaveBeenCalledWith('Invalid theme:', 'invalid-theme');
         expect(mockLocalStorage.setItem).not.toHaveBeenCalled();
 
@@ -424,11 +424,11 @@ describe('Theme System Comprehensive Tests', () => {
       it('should dispatch events when theme is set on main site', async () => {
         // Reset the mock to ensure clean state
         document.dispatchEvent.mockClear();
-        
+
         window.location.pathname = '/tickets';
         clearPerformanceData(); // Clear cache to ensure fresh page detection
         setTheme(THEMES.DARK);
-        
+
         // Wait for async event dispatch (with longer wait for slow systems)
         await waitForThemeApplication();
         await new Promise(resolve => setTimeout(resolve, 100)); // Extra wait for async operations
@@ -443,16 +443,16 @@ describe('Theme System Comprehensive Tests', () => {
     describe('System Preference Change Listeners', () => {
       it('should set up listeners on main site', () => {
         window.location.pathname = '/tickets';
-        
+
         // Let's verify the mock is set up correctly
         const mockMediaQuery = {
           matches: false,
           addEventListener: vi.fn(),
           addListener: vi.fn()
         };
-        
+
         mockMatchMedia.mockReturnValue(mockMediaQuery);
-        
+
         initializeTheme();
 
         // Should set up listener for system preference changes
@@ -463,7 +463,7 @@ describe('Theme System Comprehensive Tests', () => {
       it('should not set up listeners on admin pages', () => {
         window.location.pathname = '/admin';
         const mockMediaQuery = mockMatchMedia('(prefers-color-scheme: dark)');
-        
+
         initializeTheme();
 
         expect(mockMediaQuery.addEventListener).not.toHaveBeenCalled();
@@ -472,14 +472,14 @@ describe('Theme System Comprehensive Tests', () => {
       it('should handle legacy addListener for older browsers', () => {
         window.location.pathname = '/tickets';
         mockLocalStorage.data['theme-preference'] = THEMES.SYSTEM;
-        
+
         const mockMediaQuery = {
           matches: false,
           addListener: vi.fn(),
           addEventListener: undefined // Not supported
         };
         mockMatchMedia.mockReturnValue(mockMediaQuery);
-        
+
         initializeTheme();
 
         expect(mockMediaQuery.addListener).toHaveBeenCalledWith(expect.any(Function));
@@ -491,24 +491,24 @@ describe('Theme System Comprehensive Tests', () => {
     describe('Component Initialization', () => {
       it('should initialize toggle component on main site', () => {
         window.location.pathname = '/tickets';
-        
+
         const result = initializeThemeToggle();
 
         expect(result).toBeTruthy();
         expect(result.element).toBeTruthy();
         expect(result.preference).toBe(THEMES.SYSTEM);
-        
+
         // The element should be created but not automatically added to DOM
         expect(result.element.id).toBe('theme-toggle');
         expect(result.element.querySelector('.theme-toggle')).toBeTruthy();
-        
+
         // Should have two buttons (system option removed)
         const buttons = result.element.querySelectorAll('.theme-toggle__option');
         expect(buttons).toHaveLength(2);
-        
+
         // If we want to test it in DOM, we need to add it manually
         document.body.appendChild(result.element);
-        
+
         const domToggle = document.getElementById('theme-toggle');
         expect(domToggle).toBeTruthy();
       });
@@ -516,7 +516,7 @@ describe('Theme System Comprehensive Tests', () => {
       it('should not initialize toggle on admin pages', () => {
         window.location.pathname = '/admin';
         clearPerformanceData(); // Clear cache to ensure fresh admin page detection
-        
+
         const result = initializeThemeToggle();
 
         expect(result).toBeNull();
@@ -527,7 +527,7 @@ describe('Theme System Comprehensive Tests', () => {
       it.skip('should add CSS styles to document head', () => {
         // Skipped: Style injection removed in favor of external CSS
         window.location.pathname = '/tickets';
-        
+
         initializeThemeToggle();
 
         const styleElement = document.getElementById('theme-toggle-styles');
@@ -538,14 +538,14 @@ describe('Theme System Comprehensive Tests', () => {
       it.skip('should not add styles twice', () => {
         // Skipped: Style injection removed in favor of external CSS
         window.location.pathname = '/tickets';
-        
+
         initializeThemeToggle();
         const firstStyleElement = document.getElementById('theme-toggle-styles');
-        
+
         // Clean up and initialize again
         destroyThemeToggle();
         initializeThemeToggle();
-        
+
         const secondCheck = document.querySelectorAll('#theme-toggle-styles');
         expect(secondCheck).toHaveLength(1);
       });
@@ -572,21 +572,21 @@ describe('Theme System Comprehensive Tests', () => {
       it('should initialize with correct structure and default states', () => {
         const result = initializeThemeToggle();
         document.body.appendChild(result.element);
-        
+
         const container = result.element;
         // System button removed - only light and dark buttons exist
         const lightButton = container.querySelector('[data-theme="light"]');
         const darkButton = container.querySelector('[data-theme="dark"]');
-        
+
         // Verify buttons exist with correct initial structure
         expect(lightButton).toBeTruthy();
         expect(darkButton).toBeTruthy();
-        
+
         // All buttons start with aria-checked="false" due to current implementation limitation
         // where updateToggleState doesn't work during initialization (element not in DOM yet)
         expect(lightButton.getAttribute('aria-checked')).toBe('false');
         expect(darkButton.getAttribute('aria-checked')).toBe('false');
-        
+
         // The result object reports the current preference (defaults to system/light)
         expect(result.preference).toBe(THEMES.SYSTEM);
       });
@@ -594,16 +594,16 @@ describe('Theme System Comprehensive Tests', () => {
       it('should handle click events and update state', async () => {
         const result = initializeThemeToggle();
         document.body.appendChild(result.element); // Add to DOM for proper functionality
-        
+
         const container = result.element;
-        
+
         const darkButton = container.querySelector('[data-theme="dark"]');
-        
+
         darkButton.click();
-        
+
         // Wait for debounced operations
         await new Promise(resolve => setTimeout(resolve, 100));
-        
+
         expect(getCurrentPreference()).toBe(THEMES.DARK);
         expect(darkButton.getAttribute('aria-checked')).toBe('true');
         expect(mockLocalStorage.setItem).toHaveBeenCalledWith('theme-preference', THEMES.DARK);
@@ -616,7 +616,7 @@ describe('Theme System Comprehensive Tests', () => {
         const result = initializeThemeToggle();
         const container = result.element;
         const lightButton = container.querySelector('[data-theme="light"]');
-        
+
         lightButton.click();
 
         // Wait for debounced event dispatch
@@ -640,7 +640,7 @@ describe('Theme System Comprehensive Tests', () => {
       it('should have proper ARIA attributes', () => {
         const result = initializeThemeToggle();
         const container = result.element;
-        
+
         const toggle = container.querySelector('.theme-toggle');
         expect(toggle.getAttribute('role')).toBe('radiogroup');
         expect(toggle.getAttribute('aria-label')).toBe('Theme selection');
@@ -657,7 +657,7 @@ describe('Theme System Comprehensive Tests', () => {
       it('should have proper button titles', () => {
         const result = initializeThemeToggle();
         const container = result.element;
-        
+
         // System button removed - only light and dark buttons
         const lightButton = container.querySelector('[data-theme="light"]');
         const darkButton = container.querySelector('[data-theme="dark"]');
@@ -670,10 +670,10 @@ describe('Theme System Comprehensive Tests', () => {
     describe('Component Lifecycle', () => {
       it('should clean up correctly when destroyed', () => {
         window.location.pathname = '/tickets';
-        
+
         const result = initializeThemeToggle();
         document.body.appendChild(result.element); // Add to DOM
-        
+
         // Should have toggle (styles now in external CSS, not injected)
         expect(document.getElementById('theme-toggle')).toBeTruthy();
 
@@ -713,7 +713,7 @@ describe('Theme System Comprehensive Tests', () => {
     it('should handle complete theme system workflow', async () => {
       window.location.pathname = '/tickets';
       clearPerformanceData(); // Clear cache to ensure fresh page detection
-      
+
       initializeTheme();
       await waitForThemeApplication();
       const toggleResult = initializeThemeToggle();
@@ -743,10 +743,10 @@ describe('Theme System Comprehensive Tests', () => {
         writable: true,
         configurable: true
       });
-      
+
       expect(() => getTheme()).not.toThrow();
       expect(() => initializeTheme()).not.toThrow();
-      
+
       // Should still work based on page type
       window.location.pathname = '/admin';
       clearPerformanceData(); // Clear cache to ensure fresh admin page detection
@@ -758,7 +758,7 @@ describe('Theme System Comprehensive Tests', () => {
     it('should initialize theme immediately to prevent FOUC', async () => {
       window.location.pathname = '/admin';
       clearPerformanceData(); // Clear cache to ensure fresh admin page detection
-      
+
       // Theme should be applied before any delays
       initializeTheme();
       await waitForThemeApplication(); // Wait for async theme application
@@ -768,7 +768,7 @@ describe('Theme System Comprehensive Tests', () => {
     it('should handle rapid theme changes efficiently', () => {
       window.location.pathname = '/tickets';
       clearPerformanceData(); // Clear cache to ensure fresh page detection
-      
+
       // Rapid theme changes should not cause issues
       setTheme(THEMES.LIGHT);
       setTheme(THEMES.DARK);

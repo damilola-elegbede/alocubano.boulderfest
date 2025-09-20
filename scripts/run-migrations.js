@@ -33,19 +33,19 @@ async function runMigrations() {
     const statements = [];
     let currentStatement = "";
     let inTrigger = false;
-    
+
     const lines = cleanedSql.split("\n");
     for (const line of lines) {
       const upperLine = line.toUpperCase().trim();
-      
+
       // Detect trigger start
       if (upperLine.startsWith("CREATE TRIGGER")) {
         inTrigger = true;
       }
-      
+
       // Add line to current statement
       currentStatement += line + "\n";
-      
+
       // Check if statement is complete
       if (inTrigger) {
         // For triggers, wait for END; statement
@@ -62,7 +62,7 @@ async function runMigrations() {
         }
       }
     }
-    
+
     // Add any remaining statement
     if (currentStatement.trim()) {
       statements.push(currentStatement.trim());
@@ -101,8 +101,8 @@ async function runMigrations() {
   console.log("=== Checking Final State ===\n");
 
   const tables = await db.execute(`
-    SELECT name FROM sqlite_master 
-    WHERE type='table' 
+    SELECT name FROM sqlite_master
+    WHERE type='table'
     ORDER BY name
   `);
 

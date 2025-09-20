@@ -2,13 +2,13 @@
 
 /**
  * Service Health Check with Fallback Strategy
- * 
+ *
  * Validates availability of critical services before running CI steps:
  * - Turso Database connectivity
- * - Vercel API accessibility  
+ * - Vercel API accessibility
  * - GitHub API accessibility
  * - Preview deployment readiness
- * 
+ *
  * Provides graceful degradation strategies when services are unavailable.
  */
 
@@ -49,7 +49,7 @@ class ServiceHealthChecker {
 
     this.timeout = 10000; // 10 second timeout per service
     this.retryCount = 2;
-    
+
     console.log('🏥 Service Health Checker initialized');
   }
 
@@ -66,7 +66,7 @@ class ServiceHealthChecker {
 
     for (const [serviceKey, service] of Object.entries(this.services)) {
       console.log(`\n🔍 Checking: ${service.name}`);
-      
+
       const result = await this.checkService(service);
       results[serviceKey] = result;
 
@@ -85,7 +85,7 @@ class ServiceHealthChecker {
 
     // Generate health report
     const report = this.generateHealthReport(results, criticalFailures, nonCriticalFailures);
-    
+
     console.log('\n📊 Health Check Summary:');
     console.log(`   Critical Services: ${4 - criticalFailures}/4 healthy`);
     console.log(`   Optional Services: ${Object.keys(this.services).length - 4 - nonCriticalFailures}/${Object.keys(this.services).length - 4} healthy`);
@@ -116,13 +116,13 @@ class ServiceHealthChecker {
       } else {
         result.healthy = await this.checkHttpService(service);
       }
-      
+
       result.responseTime = Date.now() - startTime;
-      
+
     } catch (error) {
       result.error = error.message;
       result.responseTime = Date.now() - startTime;
-      
+
       // For non-critical services, check if fallback is viable
       if (!service.required && service.fallback) {
         result.canContinue = true;
@@ -151,7 +151,7 @@ class ServiceHealthChecker {
 
       execSync(command, { stdio: 'ignore' });
       return true;
-      
+
     } catch (error) {
       console.log(`   ⚠️ Turso connection failed - fallback to SQLite: ${error.message}`);
       return false;
@@ -166,15 +166,15 @@ class ServiceHealthChecker {
       const response = await fetch('https://registry.npmjs.org/-/ping', {
         signal: AbortSignal.timeout(this.timeout)
       });
-      
+
       return response.ok;
-      
+
     } catch (error) {
       // Try npm ping command as fallback
       try {
-        execSync('npm ping', { 
+        execSync('npm ping', {
           stdio: 'ignore',
-          timeout: this.timeout 
+          timeout: this.timeout
         });
         return true;
       } catch {
@@ -296,7 +296,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     .then(report => {
       // Generate CI environment variables
       const ciEnv = checker.generateCIEnvironment(report);
-      
+
       console.log('\n🔧 CI Environment Variables:');
       ciEnv.forEach(env => console.log(`   ${env}`));
 

@@ -1,6 +1,6 @@
 /**
  * Integration Test: Database Data Integrity - Database constraints and relationships
- * 
+ *
  * Tests database-level integrity including:
  * - Foreign key constraints enforcement
  * - Database transaction behavior
@@ -22,124 +22,24 @@ describe('Integration: Database Data Integrity', () => {
     // Use the integration test database client
     // Don't reset or manage lifecycle - let setup-integration.js handle it
     db = await getDbClient();
-    
+
     // Verify database connection
     const testResult = await db.execute('SELECT 1 as test');
     expect(testResult.rows).toBeDefined();
     expect(testResult.rows.length).toBe(1);
-    
-    // Ensure FK constraints are enforced for this connection
+
+    // CRITICAL FIX 4: Ensure FK constraints are enforced for this connection
     await db.execute('PRAGMA foreign_keys = ON');
-    // Create necessary tables for integration tests
-    await db.execute(`
-      CREATE TABLE IF NOT EXISTS tickets (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        ticket_id TEXT UNIQUE NOT NULL,
-        transaction_id INTEGER,
-        ticket_type TEXT NOT NULL,
-        event_id TEXT NOT NULL,
-        event_date DATE,
-        price_cents INTEGER NOT NULL,
-        attendee_first_name TEXT,
-        attendee_last_name TEXT,
-        attendee_email TEXT,
-        attendee_phone TEXT,
-        status TEXT DEFAULT 'valid' CHECK (
-          status IN ('valid', 'used', 'cancelled', 'refunded', 'transferred')
-        ),
-        validation_code TEXT UNIQUE,
-        cancellation_reason TEXT,
-        qr_token TEXT,
-        qr_code_generated_at TIMESTAMP,
-        scan_count INTEGER DEFAULT 0 CHECK (scan_count >= 0),
-        max_scan_count INTEGER DEFAULT 10 CHECK (max_scan_count >= 0),
-        first_scanned_at TIMESTAMP,
-        last_scanned_at TIMESTAMP,
-        qr_access_method TEXT,
-        wallet_source TEXT CHECK (wallet_source IN ('apple_wallet', 'google_wallet') OR wallet_source IS NULL),
-        registration_status TEXT NOT NULL DEFAULT 'pending' CHECK (registration_status IN ('pending', 'completed', 'expired')),
-        registered_at DATETIME,
-        registration_deadline DATETIME,
-        validation_signature TEXT,
-        qr_code_data TEXT,
-        apple_pass_serial TEXT,
-        google_pass_id TEXT,
-        wallet_pass_generated_at TIMESTAMP,
-        wallet_pass_updated_at TIMESTAMP,
-        wallet_pass_revoked_at TIMESTAMP,
-        wallet_pass_revoked_reason TEXT,
-        checked_in_at TIMESTAMP,
-        checked_in_by TEXT,
-        check_in_location TEXT,
-        ticket_metadata TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
+
+    // Verify that required tables exist (should be created by migrations)
+    const tableCheck = await db.execute(`
+      SELECT name FROM sqlite_master
+      WHERE type='table' AND name IN ('tickets', 'qr_validations', 'wallet_pass_events', 'email_subscribers', 'email_events')
+      ORDER BY name
     `);
-    
-    await db.execute(`
-      CREATE TABLE IF NOT EXISTS qr_validations (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        ticket_id INTEGER REFERENCES tickets(id) ON DELETE CASCADE,
-        validation_token TEXT NOT NULL,
-        validation_result TEXT NOT NULL CHECK (validation_result IN ('success', 'failed')),
-        failure_reason TEXT,
-        validation_source TEXT DEFAULT 'web' CHECK (validation_source IN ('web', 'apple_wallet', 'google_wallet', 'email')),
-        ip_address TEXT,
-        device_info TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-    
-    await db.execute(`
-      CREATE TABLE IF NOT EXISTS wallet_pass_events (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        ticket_id INTEGER REFERENCES tickets(id) ON DELETE CASCADE,
-        pass_type TEXT CHECK (pass_type IN ('apple', 'google')),
-        event_type TEXT CHECK (event_type IN ('created', 'updated', 'downloaded', 'installed', 'removed', 'revoked')),
-        event_data TEXT,
-        device_info TEXT,
-        ip_address TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-    
-    await db.execute(`
-      CREATE TABLE IF NOT EXISTS email_subscribers (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        email TEXT UNIQUE NOT NULL,
-        first_name TEXT,
-        last_name TEXT,
-        phone TEXT,
-        status TEXT DEFAULT 'pending' CHECK (
-          status IN ('pending', 'active', 'unsubscribed', 'bounced')
-        ),
-        brevo_contact_id TEXT,
-        list_ids TEXT DEFAULT '[]',
-        attributes TEXT DEFAULT '{}',
-        consent_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        consent_source TEXT DEFAULT 'website',
-        consent_ip TEXT,
-        verification_token TEXT,
-        verified_at TIMESTAMP,
-        unsubscribed_at TIMESTAMP,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-    
-    await db.execute(`
-      CREATE TABLE IF NOT EXISTS email_events (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        subscriber_id INTEGER NOT NULL,
-        event_type TEXT NOT NULL,
-        event_data TEXT DEFAULT '{}',
-        brevo_event_id TEXT,
-        occurred_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (subscriber_id) REFERENCES email_subscribers(id) ON DELETE CASCADE
-      )
-    `);
+
+    expect(tableCheck.rows.length).toBeGreaterThanOrEqual(5);
+    console.log('✅ Required tables verified:', tableCheck.rows.map(row => row.name));
   });
 
   afterAll(async () => {
@@ -151,28 +51,56 @@ describe('Integration: Database Data Integrity', () => {
     // Get fresh client for each test to avoid stale connections
     db = await getDbClient();
 
+    // CRITICAL FIX 4: Ensure foreign keys are enabled before each test
+    await db.execute('PRAGMA foreign_keys = ON');
+
+    // CRITICAL FIX 6: Clean up test data with proper error handling for missing tables
     // Clean up test data before each test
-    await db.execute({
-      sql: 'DELETE FROM qr_validations WHERE ticket_id IN (SELECT id FROM tickets WHERE ticket_id LIKE ?)',
-      args: ['TKT-INTEGRITY-%']
-    });
-    await db.execute({
-      sql: 'DELETE FROM wallet_pass_events WHERE ticket_id IN (SELECT id FROM tickets WHERE ticket_id LIKE ?)',
-      args: ['TKT-INTEGRITY-%']
-    });
-    await db.execute({
-      sql: 'DELETE FROM tickets WHERE ticket_id LIKE ?',
-      args: ['TKT-INTEGRITY-%']
-    });
-    await db.execute({
-      sql: 'DELETE FROM email_events WHERE subscriber_id IN (SELECT id FROM email_subscribers WHERE email LIKE ?)',
-      args: ['%integrity-test%']
-    });
-    await db.execute({
-      sql: 'DELETE FROM email_subscribers WHERE email LIKE ?',
-      args: ['%integrity-test%']
-    });
-    
+    try {
+      await db.execute({
+        sql: 'DELETE FROM qr_validations WHERE ticket_id IN (SELECT id FROM tickets WHERE ticket_id LIKE ?)',
+        args: ['TKT-INTEGRITY-%']
+      });
+    } catch (error) {
+      if (!error.message.includes('no such table')) throw error;
+    }
+
+    try {
+      await db.execute({
+        sql: 'DELETE FROM wallet_pass_events WHERE ticket_id IN (SELECT id FROM tickets WHERE ticket_id LIKE ?)',
+        args: ['TKT-INTEGRITY-%']
+      });
+    } catch (error) {
+      if (!error.message.includes('no such table')) throw error;
+    }
+
+    try {
+      await db.execute({
+        sql: 'DELETE FROM tickets WHERE ticket_id LIKE ?',
+        args: ['TKT-INTEGRITY-%']
+      });
+    } catch (error) {
+      if (!error.message.includes('no such table')) throw error;
+    }
+
+    try {
+      await db.execute({
+        sql: 'DELETE FROM email_events WHERE subscriber_id IN (SELECT id FROM email_subscribers WHERE email LIKE ?)',
+        args: ['%integrity-test%']
+      });
+    } catch (error) {
+      if (!error.message.includes('no such table')) throw error;
+    }
+
+    try {
+      await db.execute({
+        sql: 'DELETE FROM email_subscribers WHERE email LIKE ?',
+        args: ['%integrity-test%']
+      });
+    } catch (error) {
+      if (!error.message.includes('no such table')) throw error;
+    }
+
     // Reset test IDs
     testTicketId = null;
     testEmailSubscriberId = null;
@@ -181,18 +109,47 @@ describe('Integration: Database Data Integrity', () => {
   it('should enforce unique constraints and handle violations gracefully', async () => {
     const ticketId = `TKT-INTEGRITY-UNIQUE-${Date.now()}`;
     const validationCode = `VAL-UNIQUE-${Date.now()}`;
+    const transactionId = `TXN-INTEGRITY-UNIQUE-${Date.now()}`;
 
-    // Create first ticket
+    // CRITICAL FIX 6: Use correct schema - customer_name not customer_first_name/customer_last_name
+    // Create transaction first
+    await db.execute({
+      sql: `
+        INSERT INTO transactions (
+          transaction_id, type, status, amount_cents,
+          customer_email, customer_name, order_data
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      `,
+      args: [
+        transactionId,
+        'tickets',
+        'completed',
+        12500,
+        'first@integrity-test.com',
+        'First Ticket',
+        '{"test": true}'
+      ]
+    });
+
+    // Get the transaction internal ID for foreign key reference
+    const transactionResult = await db.execute({
+      sql: 'SELECT id FROM transactions WHERE transaction_id = ?',
+      args: [transactionId]
+    });
+    const transactionInternalId = transactionResult.rows[0].id;
+
+    // Create first ticket with correct foreign key reference
     const insertResult1 = await db.execute({
       sql: `
         INSERT INTO tickets (
-          ticket_id, ticket_type, event_id, price_cents, 
+          ticket_id, transaction_id, ticket_type, event_id, price_cents,
           attendee_first_name, attendee_last_name, attendee_email,
           validation_code, status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       args: [
         ticketId,
+        transactionInternalId,
         'Weekend Pass',
         'boulder-fest-2026',
         12500,
@@ -213,12 +170,13 @@ describe('Integration: Database Data Integrity', () => {
       await db.execute({
         sql: `
           INSERT INTO tickets (
-            ticket_id, ticket_type, event_id, price_cents, 
+            ticket_id, transaction_id, ticket_type, event_id, price_cents,
             attendee_first_name, attendee_last_name, validation_code
-          ) VALUES (?, ?, ?, ?, ?, ?, ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `,
         args: [
           ticketId, // Same ticket_id
+          transactionInternalId,
           'Day Pass',
           'boulder-fest-2026',
           5000,
@@ -240,12 +198,13 @@ describe('Integration: Database Data Integrity', () => {
       await db.execute({
         sql: `
           INSERT INTO tickets (
-            ticket_id, ticket_type, event_id, price_cents, 
+            ticket_id, transaction_id, ticket_type, event_id, price_cents,
             attendee_first_name, attendee_last_name, validation_code
-          ) VALUES (?, ?, ?, ?, ?, ?, ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `,
         args: [
           `TKT-INTEGRITY-DIFFERENT-${Date.now()}`,
+          transactionInternalId,
           'Day Pass',
           'boulder-fest-2026',
           5000,
@@ -271,6 +230,33 @@ describe('Integration: Database Data Integrity', () => {
 
   it('should enforce CHECK constraints for valid data ranges', async () => {
     const ticketId = `TKT-INTEGRITY-CHECK-${Date.now()}`;
+    const transactionId = `TXN-INTEGRITY-CHECK-${Date.now()}`;
+
+    // Create transaction first
+    await db.execute({
+      sql: `
+        INSERT INTO transactions (
+          transaction_id, type, status, amount_cents,
+          customer_email, customer_name, order_data
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      `,
+      args: [
+        transactionId,
+        'tickets',
+        'completed',
+        12500,
+        'check@integrity-test.com',
+        'Check Test',
+        '{"test": true}'
+      ]
+    });
+
+    // Get the transaction internal ID for foreign key reference
+    const transactionResult = await db.execute({
+      sql: 'SELECT id FROM transactions WHERE transaction_id = ?',
+      args: [transactionId]
+    });
+    const transactionInternalId = transactionResult.rows[0].id;
 
     // Test invalid status - should fail
     let invalidStatusError = null;
@@ -278,12 +264,13 @@ describe('Integration: Database Data Integrity', () => {
       await db.execute({
         sql: `
           INSERT INTO tickets (
-            ticket_id, ticket_type, event_id, price_cents, 
+            ticket_id, transaction_id, ticket_type, event_id, price_cents,
             status, validation_code
-          ) VALUES (?, ?, ?, ?, ?, ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?)
         `,
         args: [
           ticketId,
+          transactionInternalId,
           'Weekend Pass',
           'boulder-fest-2026',
           12500,
@@ -304,12 +291,13 @@ describe('Integration: Database Data Integrity', () => {
       await db.execute({
         sql: `
           INSERT INTO tickets (
-            ticket_id, ticket_type, event_id, price_cents, 
+            ticket_id, transaction_id, ticket_type, event_id, price_cents,
             scan_count, validation_code
-          ) VALUES (?, ?, ?, ?, ?, ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?)
         `,
         args: [
           ticketId,
+          transactionInternalId,
           'Weekend Pass',
           'boulder-fest-2026',
           12500,
@@ -328,12 +316,13 @@ describe('Integration: Database Data Integrity', () => {
     const validResult = await db.execute({
       sql: `
         INSERT INTO tickets (
-          ticket_id, ticket_type, event_id, price_cents, 
+          ticket_id, transaction_id, ticket_type, event_id, price_cents,
           status, scan_count, max_scan_count, validation_code
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       args: [
         ticketId,
+        transactionInternalId,
         'Weekend Pass',
         'boulder-fest-2026',
         12500,
@@ -349,17 +338,47 @@ describe('Integration: Database Data Integrity', () => {
   });
 
   it('should handle foreign key relationships and cascade operations correctly', async () => {
-    // Create a ticket first
+    // CRITICAL FIX 4: Create transaction and ticket in proper FK order
     const ticketId = `TKT-INTEGRITY-FK-${Date.now()}`;
-    const ticketResult = await db.execute({
+    const transactionId = `TXN-INTEGRITY-FK-${Date.now()}`;
+
+    // MUST create transaction first to respect foreign key constraints
+    await db.execute({
       sql: `
-        INSERT INTO tickets (
-          ticket_id, ticket_type, event_id, price_cents, 
-          attendee_first_name, attendee_last_name, validation_code
+        INSERT INTO transactions (
+          transaction_id, type, status, amount_cents,
+          customer_email, customer_name, order_data
         ) VALUES (?, ?, ?, ?, ?, ?, ?)
       `,
       args: [
+        transactionId,
+        'tickets',
+        'completed',
+        12500,
+        'fk@integrity-test.com',
+        'FK Test',
+        '{"test": true}'
+      ]
+    });
+
+    // Get the transaction internal ID for foreign key reference
+    const transactionResult = await db.execute({
+      sql: 'SELECT id FROM transactions WHERE transaction_id = ?',
+      args: [transactionId]
+    });
+    const transactionInternalId = transactionResult.rows[0].id;
+
+    // Create a ticket
+    const ticketResult = await db.execute({
+      sql: `
+        INSERT INTO tickets (
+          ticket_id, transaction_id, ticket_type, event_id, price_cents,
+          attendee_first_name, attendee_last_name, validation_code
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+      args: [
         ticketId,
+        transactionInternalId,
         'Weekend Pass',
         'boulder-fest-2026',
         12500,
@@ -383,7 +402,7 @@ describe('Integration: Database Data Integrity', () => {
     const validationResult = await db.execute({
       sql: `
         INSERT INTO qr_validations (
-          ticket_id, validation_token, validation_result, 
+          ticket_id, validation_token, validation_result,
           validation_source, ip_address
         ) VALUES (?, ?, ?, ?, ?)
       `,
@@ -469,7 +488,7 @@ describe('Integration: Database Data Integrity', () => {
       await transaction.execute(
         `
           INSERT INTO tickets (
-            ticket_id, ticket_type, event_id, price_cents, 
+            ticket_id, ticket_type, event_id, price_cents,
             scan_count, validation_code
           ) VALUES (?, ?, ?, ?, ?, ?)
         `,
@@ -601,15 +620,44 @@ describe('Integration: Database Data Integrity', () => {
   it('should handle concurrent updates with proper isolation', async () => {
     // Create a ticket for concurrent update test
     const ticketId = `TKT-INTEGRITY-CONCURRENT-${Date.now()}`;
+    const transactionId = `TXN-INTEGRITY-CONCURRENT-${Date.now()}`;
+
+    // Create transaction first
     await db.execute({
       sql: `
-        INSERT INTO "tickets" (
-          ticket_id, ticket_type, event_id, price_cents, 
-          scan_count, max_scan_count, validation_code
+        INSERT INTO transactions (
+          transaction_id, type, status, amount_cents,
+          customer_email, customer_name, order_data
         ) VALUES (?, ?, ?, ?, ?, ?, ?)
       `,
       args: [
+        transactionId,
+        'tickets',
+        'completed',
+        12500,
+        'concurrent@integrity-test.com',
+        'Concurrent Test',
+        '{"test": true}'
+      ]
+    });
+
+    // Get the transaction internal ID
+    const transactionResult = await db.execute({
+      sql: 'SELECT id FROM transactions WHERE transaction_id = ?',
+      args: [transactionId]
+    });
+    const transactionInternalId = transactionResult.rows[0].id;
+
+    await db.execute({
+      sql: `
+        INSERT INTO "tickets" (
+          ticket_id, transaction_id, ticket_type, event_id, price_cents,
+          scan_count, max_scan_count, validation_code
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+      args: [
         ticketId,
+        transactionInternalId,
         'Weekend Pass',
         'boulder-fest-2026',
         12500,
@@ -623,32 +671,32 @@ describe('Integration: Database Data Integrity', () => {
 
     // TRUE concurrency testing - use separate database clients for real parallel operations
     const { getDatabaseClient } = await import('../../../lib/database.js');
-    
+
     const concurrentUpdates = [1, 2, 3].map(async (attempt) => {
       let separateClient;
       try {
         // Each attempt uses a separate database connection for true concurrency
         separateClient = await getDbClient();
-        
+
         const updateResult = await separateClient.execute({
           sql: `
-            UPDATE "tickets" 
+            UPDATE "tickets"
             SET scan_count = scan_count + 1, last_scanned_at = CURRENT_TIMESTAMP
             WHERE ticket_id = ? AND scan_count < max_scan_count
           `,
           args: [ticketId]
         });
-        
-        return { 
-          success: true, 
-          attempt, 
+
+        return {
+          success: true,
+          attempt,
           rowsAffected: updateResult.rowsAffected,
           timestamp: Date.now()
         };
       } catch (error) {
-        return { 
-          success: false, 
-          attempt, 
+        return {
+          success: false,
+          attempt,
           error: error.message,
           errorCode: error.code,
           timestamp: Date.now()
@@ -667,11 +715,11 @@ describe('Integration: Database Data Integrity', () => {
 
     // Execute all concurrent updates using Promise.all for true parallelism
     const results = await Promise.all(concurrentUpdates);
-    
+
     // Analyze results
     const successfulUpdates = results.filter(r => r.success && r.rowsAffected > 0);
     const failedUpdates = results.filter(r => !r.success);
-    
+
     // At least one update should succeed
     expect(successfulUpdates.length).toBeGreaterThan(0);
     expect(successfulUpdates.length).toBeLessThanOrEqual(3);
@@ -694,16 +742,16 @@ describe('Integration: Database Data Integrity', () => {
       // Common database contention errors are acceptable
       const acceptableErrors = [
         'database is locked',
-        'SQLITE_BUSY', 
+        'SQLITE_BUSY',
         'SQLITE_LOCKED',
         'database lock',
         'constraint'
       ];
-      const hasAcceptableError = acceptableErrors.some(errType => 
-        failure.error.toLowerCase().includes(errType.toLowerCase()) || 
+      const hasAcceptableError = acceptableErrors.some(errType =>
+        failure.error.toLowerCase().includes(errType.toLowerCase()) ||
         (failure.errorCode && failure.errorCode.includes(errType))
       );
-      
+
       // Either acceptable database locking/constraint error OR other database error
       expect(hasAcceptableError || failure.error.length > 0).toBe(true);
     });

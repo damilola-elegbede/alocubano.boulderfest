@@ -27,7 +27,7 @@ function checkRateLimit(adminId) {
   const key = `stats_${adminId}`;
   const window = rateLimitMap.get(key) || {
     count: 0,
-    resetTime: now + RATE_LIMIT_WINDOW,
+    resetTime: now + RATE_LIMIT_WINDOW
   };
 
   if (now > window.resetTime) {
@@ -42,7 +42,7 @@ function checkRateLimit(adminId) {
   return {
     allowed: window.count <= MAX_STATS_REQUESTS,
     remaining: Math.max(0, MAX_STATS_REQUESTS - window.count),
-    resetTime: window.resetTime,
+    resetTime: window.resetTime
   };
 }
 
@@ -53,10 +53,10 @@ function calculateEffectivenessScore(stats) {
   const { overall } = stats;
 
   let score = 0;
-  let maxScore = 100;
+  const maxScore = 100;
 
   // Hit ratio scoring (40 points max)
-  const hitRatio = parseFloat(overall.overallHitRatio?.replace("%", "") || "0");
+  const hitRatio = parseFloat(overall.overallHitRatio?.replace('%', '') || '0');
   score += Math.min(40, (hitRatio / 100) * 40);
 
   // Memory vs Redis distribution (20 points max)
@@ -92,26 +92,26 @@ function calculateEffectivenessScore(stats) {
     maxScore,
     grade:
       score >= 90
-        ? "A"
+        ? 'A'
         : score >= 80
-          ? "B"
+          ? 'B'
           : score >= 70
-            ? "C"
+            ? 'C'
             : score >= 60
-              ? "D"
-              : "F",
+              ? 'D'
+              : 'F',
     factors: {
       hitRatio: hitRatio,
       memoryDistribution:
         totalHits > 0
-          ? ((overall.l1Hits / totalHits) * 100).toFixed(1) + "%"
-          : "N/A",
+          ? ((overall.l1Hits / totalHits) * 100).toFixed(1) + '%'
+          : 'N/A',
       promotionRate:
         overall.l2Hits > 0
-          ? ((overall.promotions / overall.l2Hits) * 100).toFixed(1) + "%"
-          : "N/A",
-      fallbackRate: (fallbackRatio * 100).toFixed(2) + "%",
-    },
+          ? ((overall.promotions / overall.l2Hits) * 100).toFixed(1) + '%'
+          : 'N/A',
+      fallbackRate: (fallbackRatio * 100).toFixed(2) + '%'
+    }
   };
 }
 
@@ -120,9 +120,9 @@ function calculateEffectivenessScore(stats) {
  */
 function analyzeTtlPatterns(stats) {
   const analysis = {
-    avgTtl: "N/A",
-    expirationPrediction: "N/A",
-    recommendations: [],
+    avgTtl: 'N/A',
+    expirationPrediction: 'N/A',
+    recommendations: []
   };
 
   // TTL analysis would require more detailed cache inspection
@@ -131,19 +131,19 @@ function analyzeTtlPatterns(stats) {
 
   if (overall.misses > overall.l1Hits + overall.l2Hits) {
     analysis.recommendations.push(
-      "High miss rate - consider increasing TTL values",
+      'High miss rate - consider increasing TTL values'
     );
   }
 
   if (overall.l1Hits < overall.l2Hits) {
     analysis.recommendations.push(
-      "Low L1 cache utilization - consider adjusting promotion thresholds",
+      'Low L1 cache utilization - consider adjusting promotion thresholds'
     );
   }
 
   if (overall.fallbacks > overall.totalRequests * 0.05) {
     analysis.recommendations.push(
-      "High Redis fallback rate - check Redis connectivity",
+      'High Redis fallback rate - check Redis connectivity'
     );
   }
 
@@ -155,49 +155,49 @@ function analyzeTtlPatterns(stats) {
  */
 function generateInsights(stats, effectiveness) {
   const insights = {
-    performance: "good",
+    performance: 'good',
     alerts: [],
     recommendations: [],
-    trends: [],
+    trends: []
   };
 
   const { overall } = stats;
 
   // Performance assessment
   if (effectiveness.score < 60) {
-    insights.performance = "poor";
-    insights.alerts.push("Cache effectiveness below acceptable threshold");
+    insights.performance = 'poor';
+    insights.alerts.push('Cache effectiveness below acceptable threshold');
   } else if (effectiveness.score < 80) {
-    insights.performance = "fair";
+    insights.performance = 'fair';
   } else if (effectiveness.score >= 90) {
-    insights.performance = "excellent";
+    insights.performance = 'excellent';
   }
 
   // Generate specific recommendations
-  if (parseFloat(overall.overallHitRatio?.replace("%", "") || "0") < 70) {
+  if (parseFloat(overall.overallHitRatio?.replace('%', '') || '0') < 70) {
     insights.recommendations.push({
-      priority: "high",
-      category: "hit_ratio",
-      description: "Low hit ratio detected",
-      action: "Review cache key patterns and TTL settings",
+      priority: 'high',
+      category: 'hit_ratio',
+      description: 'Low hit ratio detected',
+      action: 'Review cache key patterns and TTL settings'
     });
   }
 
   if (overall.fallbacks > overall.totalRequests * 0.02) {
     insights.recommendations.push({
-      priority: "medium",
-      category: "reliability",
-      description: "High Redis fallback rate",
-      action: "Check Redis connection stability",
+      priority: 'medium',
+      category: 'reliability',
+      description: 'High Redis fallback rate',
+      action: 'Check Redis connection stability'
     });
   }
 
   if (overall.promotions === 0 && overall.l2Hits > 0) {
     insights.recommendations.push({
-      priority: "low",
-      category: "optimization",
-      description: "No L2 to L1 promotions occurring",
-      action: "Review promotion threshold settings",
+      priority: 'low',
+      category: 'optimization',
+      description: 'No L2 to L1 promotions occurring',
+      action: 'Review promotion threshold settings'
     });
   }
 
@@ -206,12 +206,12 @@ function generateInsights(stats, effectiveness) {
     stats.memory?.memoryUsageMB &&
     parseFloat(stats.memory.memoryUsageMB) > stats.memory.maxMemoryMB * 0.9
   ) {
-    insights.alerts.push("Memory cache near capacity limit");
+    insights.alerts.push('Memory cache near capacity limit');
     insights.recommendations.push({
-      priority: "high",
-      category: "capacity",
-      description: "Memory cache approaching limit",
-      action: "Consider increasing memory limit or reducing TTL",
+      priority: 'high',
+      category: 'capacity',
+      description: 'Memory cache approaching limit',
+      action: 'Consider increasing memory limit or reducing TTL'
     });
   }
 
@@ -219,21 +219,21 @@ function generateInsights(stats, effectiveness) {
 }
 
 async function handler(req, res) {
-  if (req.method !== "GET") {
-    res.setHeader("Allow", "GET");
-    return res.status(405).json({ error: "Method not allowed" });
+  if (req.method !== 'GET') {
+    res.setHeader('Allow', 'GET');
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
     // Authentication check
     const sessionToken = authService.getSessionFromRequest(req);
     if (!sessionToken) {
-      return res.status(401).json({ error: "Authentication required" });
+      return res.status(401).json({ error: 'Authentication required' });
     }
 
     const verification = await authService.verifySessionToken(sessionToken);
     if (!verification.valid) {
-      return res.status(401).json({ error: "Invalid session" });
+      return res.status(401).json({ error: 'Invalid session' });
     }
 
     const adminId = verification.admin.id;
@@ -242,27 +242,27 @@ async function handler(req, res) {
     const rateLimit = checkRateLimit(adminId);
     if (!rateLimit.allowed) {
       res.setHeader(
-        "Retry-After",
-        Math.ceil((rateLimit.resetTime - Date.now()) / 1000),
+        'Retry-After',
+        Math.ceil((rateLimit.resetTime - Date.now()) / 1000)
       );
-      res.setHeader("X-RateLimit-Limit", MAX_STATS_REQUESTS);
-      res.setHeader("X-RateLimit-Remaining", rateLimit.remaining);
+      res.setHeader('X-RateLimit-Limit', MAX_STATS_REQUESTS);
+      res.setHeader('X-RateLimit-Remaining', rateLimit.remaining);
       res.setHeader(
-        "X-RateLimit-Reset",
-        new Date(rateLimit.resetTime).toISOString(),
+        'X-RateLimit-Reset',
+        new Date(rateLimit.resetTime).toISOString()
       );
       return res.status(429).json({
-        error: "Rate limit exceeded",
+        error: 'Rate limit exceeded',
         remaining: rateLimit.remaining,
-        resetTime: new Date(rateLimit.resetTime).toISOString(),
+        resetTime: new Date(rateLimit.resetTime).toISOString()
       });
     }
 
     // Parse query parameters
     const {
-      detailed = "false", // Include detailed breakdown by namespace
-      historical = "false", // Include historical trends (if available)
-      format = "json", // Response format: 'json' or 'summary'
+      detailed = 'false', // Include detailed breakdown by namespace
+      historical = 'false', // Include historical trends (if available)
+      format = 'json' // Response format: 'json' or 'summary'
     } = req.query;
 
     console.log(`[CACHE-STATS] Admin ${adminId} requesting cache statistics`);
@@ -274,7 +274,7 @@ async function handler(req, res) {
     let baseStats = {};
 
     // Get base statistics from cache
-    if (typeof cache.getStats === "function") {
+    if (typeof cache.getStats === 'function') {
       baseStats = await cache.getStats();
     } else {
       // Fallback for caches without getStats
@@ -285,20 +285,20 @@ async function handler(req, res) {
           misses: 0,
           totalHits: 0,
           totalRequests: 0,
-          overallHitRatio: "0%",
+          overallHitRatio: '0%',
           promotions: 0,
           fallbacks: 0,
           uptime: Date.now() - (Date.now() - 3600000), // Assume 1 hour uptime
-          redisAvailable: false,
+          redisAvailable: false
         },
         memory: {
           size: 0,
           maxSize: 500,
           memoryUsageMB: 0,
           maxMemoryMB: 50,
-          hitRatio: "0%",
+          hitRatio: '0%'
         },
-        redis: null,
+        redis: null
       };
     }
 
@@ -317,82 +317,82 @@ async function handler(req, res) {
       adminId,
       summary: {
         status: baseStats.overall?.redisAvailable
-          ? "multi-tier"
-          : "memory-only",
-        hitRatio: baseStats.overall?.overallHitRatio || "0%",
+          ? 'multi-tier'
+          : 'memory-only',
+        hitRatio: baseStats.overall?.overallHitRatio || '0%',
         totalRequests: baseStats.overall?.totalRequests || 0,
         uptime: formatUptime(baseStats.overall?.uptime || 0),
-        effectiveness: effectiveness,
+        effectiveness: effectiveness
       },
       performance: {
         l1Cache: {
           hits: baseStats.overall?.l1Hits || 0,
-          hitRatio: baseStats.memory?.hitRatio || "0%",
+          hitRatio: baseStats.memory?.hitRatio || '0%',
           memoryUsage: `${baseStats.memory?.memoryUsageMB || 0}MB / ${baseStats.memory?.maxMemoryMB || 50}MB`,
           utilization: baseStats.memory?.maxMemoryMB
             ? `${((parseFloat(baseStats.memory.memoryUsageMB || 0) / baseStats.memory.maxMemoryMB) * 100).toFixed(1)}%`
-            : "0%",
+            : '0%'
         },
         l2Cache: baseStats.redis
           ? {
-              hits: baseStats.overall?.l2Hits || 0,
-              available: baseStats.overall?.redisAvailable || false,
-              promotions: baseStats.overall?.promotions || 0,
-              fallbacks: baseStats.overall?.fallbacks || 0,
-            }
-          : null,
+            hits: baseStats.overall?.l2Hits || 0,
+            available: baseStats.overall?.redisAvailable || false,
+            promotions: baseStats.overall?.promotions || 0,
+            fallbacks: baseStats.overall?.fallbacks || 0
+          }
+          : null
       },
       analysis: {
         ttl: ttlAnalysis,
         insights,
-        recommendations: insights.recommendations,
-      },
+        recommendations: insights.recommendations
+      }
     };
 
     // Add detailed breakdown if requested
-    if (detailed === "true") {
+    if (detailed === 'true') {
       response.detailed = {
         rawStats: baseStats,
-        namespaceBreakdown: "Not implemented yet",
-        keyPatterns: "Not implemented yet",
+        namespaceBreakdown: 'Not implemented yet',
+        keyPatterns: 'Not implemented yet'
       };
     }
 
     // Add historical data if requested and available
-    if (historical === "true") {
+    if (historical === 'true') {
       response.historical = {
-        note: "Historical data collection not implemented",
-        trends: [],
+        note: 'Historical data collection not implemented',
+        trends: []
       };
     }
 
     // Format response based on requested format
-    if (format === "summary") {
+    if (format === 'summary') {
       response = {
         status: response.summary.status,
         hitRatio: response.summary.hitRatio,
         effectiveness: effectiveness.grade,
         alerts: insights.alerts,
-        timestamp: response.timestamp,
+        timestamp: response.timestamp
       };
     }
 
     // Add rate limit headers
-    res.setHeader("X-RateLimit-Remaining", rateLimit.remaining);
+    res.setHeader('X-RateLimit-Remaining', rateLimit.remaining);
     res.setHeader(
-      "X-RateLimit-Reset",
-      new Date(rateLimit.resetTime).toISOString(),
+      'X-RateLimit-Reset',
+      new Date(rateLimit.resetTime).toISOString()
     );
 
     // Cache the stats response briefly to avoid overwhelming cache system
-    res.setHeader("Cache-Control", "private, max-age=30");
+    res.setHeader('Cache-Control', 'private, max-age=30');
 
     return res.status(200).json(response);
   } catch (error) {
-    console.error("[CACHE-STATS] Error:", error);
+    console.error('[CACHE-STATS] Error:', error);
     return res.status(500).json({
-      error: "Internal server error",
-      message: "Cache statistics retrieval failed",
+      error: 'Internal server error',
+      message: 'Cache statistics retrieval failed'
     });
   }
 }
@@ -401,16 +401,24 @@ async function handler(req, res) {
  * Format uptime milliseconds into human-readable string
  */
 function formatUptime(uptimeMs) {
-  if (!uptimeMs || uptimeMs <= 0) return "0s";
+  if (!uptimeMs || uptimeMs <= 0) {
+    return '0s';
+  }
 
   const seconds = Math.floor(uptimeMs / 1000);
   const minutes = Math.floor(seconds / 60);
   const hours = Math.floor(minutes / 60);
   const days = Math.floor(hours / 24);
 
-  if (days > 0) return `${days}d ${hours % 24}h`;
-  if (hours > 0) return `${hours}h ${minutes % 60}m`;
-  if (minutes > 0) return `${minutes}m ${seconds % 60}s`;
+  if (days > 0) {
+    return `${days}d ${hours % 24}h`;
+  }
+  if (hours > 0) {
+    return `${hours}h ${minutes % 60}m`;
+  }
+  if (minutes > 0) {
+    return `${minutes}m ${seconds % 60}s`;
+  }
   return `${seconds}s`;
 }
 
@@ -422,5 +430,5 @@ export {
   analyzeTtlPatterns,
   generateInsights,
   formatUptime,
-  checkRateLimit,
+  checkRateLimit
 };

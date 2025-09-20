@@ -18,14 +18,14 @@ test.describe('Network Failures and Recovery', () => {
     });
 
     await page.goto('/gallery');
-    
+
     // Should show error message
     await expect(page.locator('[data-testid="gallery-error"]')).toBeVisible();
   });
 
   test('recovers from network interruption', async ({ page }) => {
     let requestCount = 0;
-    
+
     await page.route('/api/gallery', async route => {
       requestCount++;
       if (requestCount === 1) {
@@ -51,7 +51,7 @@ test.describe('Network Failures and Recovery', () => {
     });
 
     await page.goto('/gallery');
-    
+
     // Should eventually show gallery content after retry
     await expect(page.locator('[data-testid="gallery-container"]')).toBeVisible();
   });
@@ -67,13 +67,13 @@ test.describe('Network Failures and Recovery', () => {
     });
 
     await page.goto('/gallery');
-    
+
     // Should show loading states
     await expect(page.locator('[data-testid="loading-spinner"]').first()).toBeVisible();
-    
+
     // Wait for images to load
     await page.waitForTimeout(2000);
-    
+
     const finalImageCount = await page.locator('img[src*="thumb"]').count();
     expect(finalImageCount).toBeGreaterThan(0);
   });
@@ -81,7 +81,7 @@ test.describe('Network Failures and Recovery', () => {
   test('payment flow resilience under network stress', async ({ page }) => {
     // Simulate intermittent network issues during payment
     let paymentAttempts = 0;
-    
+
     await page.route('/api/payments/create-checkout-session', async route => {
       paymentAttempts++;
       if (paymentAttempts < 3) {
@@ -101,37 +101,37 @@ test.describe('Network Failures and Recovery', () => {
     });
 
     await page.goto('/tickets');
-    
+
     // Add ticket to cart
     await page.click('[data-testid="add-weekend-pass"]');
-    
+
     // Attempt checkout
     await page.click('[data-testid="checkout-button"]');
-    
+
     // Should eventually succeed after retries
     await expect(page.locator('[data-testid="payment-processing"]')).toBeVisible();
   });
 
   test('offline behavior and recovery', async ({ page }) => {
     await page.goto('/tickets');
-    
+
     // Go offline
     await page.context().setOffline(true);
-    
+
     // Try to interact with the site
     try {
       await page.click('[data-testid="add-weekend-pass"]');
     } catch (_) {
       // expected under strict offline; continue to assert offline handling
     }
-    
+
     // Should show offline message
     await expect(page.locator('[data-testid="offline-message"]')).toBeVisible();
-    
+
     // Go back online
     await page.context().setOffline(false);
     await page.waitForTimeout(1000);
-    
+
     // Should recover and work normally
     await page.click('[data-testid="add-weekend-pass"]');
     await expect(page.locator('[data-testid="cart-count"]')).toHaveText('1');
@@ -140,13 +140,13 @@ test.describe('Network Failures and Recovery', () => {
   test('handles various network conditions', async ({ page }) => {
     const networkConditions = [
       'slow-3g',
-      'fast-3g', 
+      'fast-3g',
       '4g'
     ];
 
     for (const condition of networkConditions) {
       await page.goto('/');
-      
+
       // Emulate network condition
       const client = await page.context().newCDPSession(page);
       await client.send('Network.emulateNetworkConditions', {
@@ -158,10 +158,10 @@ test.describe('Network Failures and Recovery', () => {
 
       // Navigate to gallery
       await page.goto('/gallery');
-      
+
       // Should load eventually regardless of network speed
       await expect(page.locator('h1')).toBeVisible({ timeout: 10000 });
-      
+
       // Verify gallery functionality
       const galleryImages = await page.locator('img').count();
       expect(galleryImages).toBeGreaterThan(0);
@@ -170,35 +170,35 @@ test.describe('Network Failures and Recovery', () => {
 
   test('cart persistence during network failures', async ({ page }) => {
     await page.goto('/tickets');
-    
+
     // Add items to cart
     await page.click('[data-testid="add-weekend-pass"]');
     await page.click('[data-testid="add-friday-only"]');
-    
+
     // Verify cart has items
     await expect(page.locator('[data-testid="cart-count"]')).toHaveText('2');
-    
+
     // Simulate network failure
     await page.context().setOffline(true);
     await page.waitForTimeout(1000);
-    
+
     // Cart should still show items (localStorage)
     await expect(page.locator('[data-testid="cart-count"]')).toHaveText('2');
-    
+
     // Navigate to another page
     try {
       await page.goto('/about');
     } catch (_) {
       // expected under strict offline; continue to assert offline handling
     }
-    
+
     // Cart should persist
     await expect(page.locator('[data-testid="cart-count"]')).toHaveText('2');
-    
+
     // Go back online
     await page.context().setOffline(false);
     await page.waitForTimeout(1000);
-    
+
     // Cart should still be intact
     await expect(page.locator('[data-testid="cart-count"]')).toHaveText('2');
   });
@@ -206,7 +206,7 @@ test.describe('Network Failures and Recovery', () => {
   test('registration form submission with network issues', async ({ page }) => {
     // Mock registration endpoint with intermittent failures
     let submissionAttempts = 0;
-    
+
     await page.route('/api/registration/batch', async route => {
       submissionAttempts++;
       if (submissionAttempts < 2) {
@@ -227,21 +227,21 @@ test.describe('Network Failures and Recovery', () => {
 
     // Navigate to registration with a mock token
     await page.goto('/registration/test-token');
-    
+
     // Fill out registration form
     await page.fill('[data-testid="attendee-name-0"]', 'Test User');
     await page.fill('[data-testid="attendee-email-0"]', 'test@example.com');
-    
+
     // Submit form
     await page.click('[data-testid="submit-registration"]');
-    
+
     // Should show success after retry
     await expect(page.locator('[data-testid="registration-success"]')).toBeVisible({ timeout: 10000 });
   });
 
   test('newsletter signup with network failures', async ({ page }) => {
     let newsletterAttempts = 0;
-    
+
     await page.route('/api/email/subscribe', async route => {
       newsletterAttempts++;
       if (newsletterAttempts === 1) {
@@ -261,13 +261,13 @@ test.describe('Network Failures and Recovery', () => {
     });
 
     await page.goto('/');
-    
+
     // Fill newsletter form
     await page.fill('[data-testid="newsletter-email"]', 'test@example.com');
-    
+
     // Submit
     await page.click('[data-testid="newsletter-submit"]');
-    
+
     // Should eventually show success
     await expect(page.locator('[data-testid="newsletter-success"]')).toBeVisible({ timeout: 8000 });
   });
@@ -278,8 +278,8 @@ test.describe('Network Failures and Recovery', () => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ 
-          success: true, 
+        body: JSON.stringify({
+          success: true,
           token: 'test-jwt-token',
           redirectUrl: '/admin/dashboard'
         })
@@ -311,11 +311,11 @@ test.describe('Network Failures and Recovery', () => {
     });
 
     await page.goto('/admin');
-    
+
     // Login
     await page.fill('[data-testid="admin-password"]', 'test-password');
     await page.click('[data-testid="admin-login"]');
-    
+
     // Should eventually show dashboard
     await expect(page.locator('[data-testid="dashboard-stats"]')).toBeVisible({ timeout: 15000 });
   });
@@ -323,7 +323,7 @@ test.describe('Network Failures and Recovery', () => {
   test('concurrent user simulation with network stress', async ({ page, context }) => {
     // Create multiple tabs to simulate concurrent users
     const pages = [page];
-    
+
     for (let i = 0; i < 3; i++) {
       const newPage = await context.newPage();
       pages.push(newPage);
@@ -338,10 +338,10 @@ test.describe('Network Failures and Recovery', () => {
     }
 
     // Navigate all pages concurrently
-    const navigationPromises = pages.map((p, index) => 
+    const navigationPromises = pages.map((p, index) =>
       p.goto(index % 2 === 0 ? '/tickets' : '/gallery')
     );
-    
+
     await Promise.all(navigationPromises);
 
     // Add items to cart concurrently

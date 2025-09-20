@@ -11,7 +11,7 @@ async function verifySchemaFixes() {
     await db.execute(
       `
       INSERT INTO transactions (
-        transaction_id, uuid, stripe_session_id, customer_email, 
+        transaction_id, uuid, stripe_session_id, customer_email,
         amount_cents, total_amount, status, order_data, metadata
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,

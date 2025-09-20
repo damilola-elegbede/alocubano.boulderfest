@@ -178,7 +178,7 @@ describe('QRTokenService', () => {
       // This would require mocking time or using very short expiry
       const payload = { transactionId: 'txn123' };
       const token = generateRegistrationToken(payload, TEST_SECRET, '0s');
-      
+
       // Wait a moment then verify
       setTimeout(() => {
         const result = verifyJWTToken(token, TEST_SECRET);
@@ -190,12 +190,12 @@ describe('QRTokenService', () => {
     it('validates token format', () => {
       const payload = { email: 'test@example.com' }; // Missing transactionId
       const token = generateRegistrationToken({ transactionId: 'temp' }, TEST_SECRET);
-      
+
       // Manually create a token without transactionId
       const invalidPayload = Buffer.from(JSON.stringify(payload)).toString('base64');
       const header = Buffer.from(JSON.stringify({typ: 'JWT', alg: 'HS256'})).toString('base64');
       const invalidToken = `${header}.${invalidPayload}.signature`;
-      
+
       const result = verifyJWTToken(invalidToken, TEST_SECRET);
       expect(result.valid).toBe(false);
     });
@@ -295,7 +295,7 @@ describe('QRTokenService', () => {
 
   describe('validateQRCode', () => {
     let validQRData;
-    
+
     beforeEach(() => {
       const token = generateValidationToken(
         'TKT-123', 'EVENT-456', 'test@example.com', TEST_VALIDATION_SECRET
@@ -353,7 +353,7 @@ describe('QRTokenService', () => {
       const token = 'test-token';
       const hash = hashToken(token);
       const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
-      
+
       const result = validateActionToken(token, TOKEN_ACTIONS.TRANSFER, 'target123', hash, expiresAt);
       expect(result.valid).toBe(true);
     });
@@ -363,7 +363,7 @@ describe('QRTokenService', () => {
       const hash = hashToken(token);
       const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
       const usedAt = new Date();
-      
+
       const result = validateActionToken(token, TOKEN_ACTIONS.TRANSFER, 'target123', hash, expiresAt, usedAt);
       expect(result.valid).toBe(false);
       expect(result.error).toBe('Token has already been used');
@@ -373,7 +373,7 @@ describe('QRTokenService', () => {
       const token = 'test-token';
       const hash = hashToken(token);
       const expiresAt = new Date(Date.now() - 1000); // Expired
-      
+
       const result = validateActionToken(token, TOKEN_ACTIONS.TRANSFER, 'target123', hash, expiresAt);
       expect(result.valid).toBe(false);
       expect(result.error).toBe('Token has expired');
@@ -383,7 +383,7 @@ describe('QRTokenService', () => {
       const token = 'test-token';
       const wrongHash = hashToken('wrong-token');
       const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
-      
+
       const result = validateActionToken(token, TOKEN_ACTIONS.TRANSFER, 'target123', wrongHash, expiresAt);
       expect(result.valid).toBe(false);
       expect(result.error).toBe('Invalid token');

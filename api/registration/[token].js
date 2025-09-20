@@ -1,10 +1,10 @@
 import jwt from 'jsonwebtoken';
-import { getDatabaseClient } from '../../lib/database.js';
+import { getDatabaseClient } from "../../lib/database.js";
 
 export default async function handler(req, res) {
   // Only allow GET requests
   if (req.method !== 'GET') {
-    res.setHeader("Allow", "GET, OPTIONS");    return res.status(405).json({ error: 'Method not allowed' });
+    res.setHeader('Allow', 'GET, OPTIONS');    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   const { token } = req.query;
@@ -21,17 +21,17 @@ export default async function handler(req, res) {
       return res.status(503).json({ error: 'Service misconfigured' });
     }
     const decoded = jwt.verify(token, secret, { algorithms: ['HS256'] });
-    
+
     if (!decoded.transactionId) {
       return res.status(400).json({ error: 'Invalid token format' });
     }
 
     const db = await getDatabaseClient();
-    
+
     // Fetch all tickets for the transaction
     const tickets = await db.execute({
       sql: `
-        SELECT 
+        SELECT
           ticket_id,
           ticket_type,
           attendee_first_name,
@@ -40,7 +40,7 @@ export default async function handler(req, res) {
           registration_status,
           registered_at,
           registration_deadline,
-          CASE 
+          CASE
             WHEN registration_status = 'completed' THEN 'completed'
             WHEN datetime('now') > registration_deadline THEN 'expired'
             ELSE registration_status
@@ -57,15 +57,15 @@ export default async function handler(req, res) {
     }
 
     // Update expired tickets if needed
-    const expiredTickets = tickets.rows.filter(t => 
+    const expiredTickets = tickets.rows.filter(t =>
       t.current_status === 'expired' && t.registration_status !== 'expired'
     );
-    
+
     if (expiredTickets.length > 0) {
       await db.execute({
         sql: `
-          UPDATE tickets 
-          SET registration_status = 'expired' 
+          UPDATE tickets
+          SET registration_status = 'expired'
           WHERE ticket_id IN (${expiredTickets.map(() => '?').join(',')})
         `,
         args: expiredTickets.map(t => t.ticket_id)
@@ -96,7 +96,7 @@ export default async function handler(req, res) {
     if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
       return res.status(401).json({ error: 'Invalid or expired token' });
     }
-    
+
     console.error('Registration status error:', error);
     res.status(500).json({ error: 'Failed to fetch registration status' });
   }

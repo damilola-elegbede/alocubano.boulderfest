@@ -32,7 +32,7 @@ async function isPortActive(port) {
  */
 async function detectServerPort() {
   console.log("🔍 Detecting active server port...");
-  
+
   // 1. Check environment variables first
   const envPorts = [
     process.env.PORT,
@@ -56,7 +56,7 @@ async function detectServerPort() {
   // 2. Check common ports used by the application
   const commonPorts = [3000, 8000, 5000, 4000, 8080, 3001, 4173, 5173];
   console.log(`   Scanning common ports: ${commonPorts.join(', ')}`);
-  
+
   for (const port of commonPorts) {
     const isActive = await isPortActive(port);
     if (isActive) {
@@ -67,7 +67,7 @@ async function detectServerPort() {
 
   // 3. Fallback to environment or default port
   const fallbackPort = parseInt(process.env.DYNAMIC_PORT || process.env.PORT || process.env.CI_PORT || '3000', 10);
-  
+
   if (process.env.CI || process.env.GITHUB_ACTIONS) {
     console.log(`   ℹ️ Running in CI environment - will use port ${fallbackPort}`);
     return fallbackPort;
@@ -167,11 +167,11 @@ async function testDatabaseHealth(baseUrl) {
 async function main() {
   // Dynamic port detection: command line arg > environment variables > auto-detect
   let baseUrl = process.argv[2];
-  
+
   if (!baseUrl) {
     // First check environment variables
     const envPort = process.env.DYNAMIC_PORT || process.env.PORT || process.env.CI_PORT;
-    
+
     if (envPort) {
       baseUrl = `http://localhost:${envPort}`;
       console.log(`🔧 Using environment port: ${envPort}`);

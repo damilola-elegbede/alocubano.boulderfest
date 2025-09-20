@@ -20,15 +20,15 @@ function updateCachePlaceholderFlags() {
   console.log(`🔄 Updating gallery cache placeholder flags...`);
 
   const galleryDataDir = path.join(projectRoot, "public", "gallery-data");
-  
+
   if (!fs.existsSync(galleryDataDir)) {
     console.log("❌ Gallery data directory does not exist");
     return;
   }
 
   // Check if Google Drive secrets are available
-  const hasGoogleDriveSecrets = 
-    process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && 
+  const hasGoogleDriveSecrets =
+    process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL &&
     process.env.GOOGLE_PRIVATE_KEY &&
     process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID;
 
@@ -39,14 +39,14 @@ function updateCachePlaceholderFlags() {
 
   for (const filename of files) {
     const filePath = path.join(galleryDataDir, filename);
-    
+
     try {
       const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
       let needsUpdate = false;
       let originalIsPlaceholder = data.isPlaceholder;
 
       // Determine if this should be a placeholder based on content
-      const hasRealData = data.totalCount > 0 || 
+      const hasRealData = data.totalCount > 0 ||
                           (data.categories && Object.values(data.categories).some(cat => cat.length > 0));
 
       if (hasRealData) {
@@ -80,7 +80,7 @@ function updateCachePlaceholderFlags() {
       if (needsUpdate) {
         // Update timestamp when making changes
         data.cacheTimestamp = new Date().toISOString();
-        
+
         fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
         updatedCount++;
         console.log(`  ✅ Updated ${filename} (was placeholder: ${originalIsPlaceholder}, now placeholder: ${data.isPlaceholder || false})`);
@@ -109,11 +109,11 @@ function validateCacheFiles() {
 
   for (const filename of files) {
     const filePath = path.join(galleryDataDir, filename);
-    
+
     try {
       const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-      
-      const hasRealData = data.totalCount > 0 || 
+
+      const hasRealData = data.totalCount > 0 ||
                           (data.categories && Object.values(data.categories).some(cat => cat.length > 0));
 
       if (hasRealData && data.isPlaceholder === true) {
@@ -149,13 +149,13 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   }
 
   const command = process.argv[2];
-  
+
   if (command === 'validate') {
     const isValid = validateCacheFiles();
     process.exit(isValid ? 0 : 1);
   } else {
     updateCachePlaceholderFlags();
-    
+
     // Validate after update
     const isValid = validateCacheFiles();
     if (!isValid) {

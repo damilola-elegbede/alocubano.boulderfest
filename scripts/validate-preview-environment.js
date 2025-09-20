@@ -2,14 +2,14 @@
 
 /**
  * Preview Environment Validation Script
- * 
+ *
  * Validates that the Vercel preview deployment environment is ready for E2E testing:
  * - Checks if preview URL is accessible
  * - Validates critical API endpoints
  * - Verifies database connectivity
  * - Tests authentication endpoints
  * - Checks performance baseline
- * 
+ *
  * Used by CI/CD and local development to ensure preview deployments are test-ready.
  */
 
@@ -72,20 +72,20 @@ class PreviewEnvironmentValidator {
    */
   async validateBasicConnectivity() {
     console.log('\n🌐 Validating Basic Connectivity...');
-    
+
     try {
-      const response = await this.makeRequest('/', { 
+      const response = await this.makeRequest('/', {
         headers: { 'User-Agent': 'Preview-Environment-Validator' }
       });
-      
+
       if (response.ok) {
         this.addHealthCheck('Basic Connectivity', 'success', `HTTP ${response.status}`);
         console.log(`   ✅ Preview URL is accessible (${response.status})`);
-        
+
         // Check response headers for Vercel deployment info
         const vercelRegion = response.headers.get('x-vercel-cache');
         const deploymentId = response.headers.get('x-vercel-id');
-        
+
         if (deploymentId) {
           console.log(`   📋 Deployment ID: ${deploymentId}`);
         }
@@ -107,17 +107,17 @@ class PreviewEnvironmentValidator {
    */
   async validateHealthEndpoint() {
     console.log('\n🏥 Validating Health Endpoint...');
-    
+
     try {
       const response = await this.makeRequest('/api/health/check');
-      
+
       if (response.ok) {
         const healthData = await response.json();
         this.addHealthCheck('Health Endpoint', 'success', JSON.stringify(healthData));
-        
+
         console.log(`   ✅ Health check passed (${response.status})`);
         console.log(`   📊 Health data: ${JSON.stringify(healthData, null, 2).replace(/\n/g, '\n      ')}`);
-        
+
         // Validate expected health data structure
         if (!healthData.status) {
           this.warnings.push('Health endpoint missing status field');
@@ -139,17 +139,17 @@ class PreviewEnvironmentValidator {
    */
   async validateDatabaseConnectivity() {
     console.log('\n🗄️ Validating Database Connectivity...');
-    
+
     try {
       const response = await this.makeRequest('/api/health/database');
-      
+
       if (response.ok) {
         const dbData = await response.json();
         this.addHealthCheck('Database Connectivity', 'success', JSON.stringify(dbData));
-        
+
         console.log(`   ✅ Database connection healthy (${response.status})`);
         console.log(`   📊 Database info: ${JSON.stringify(dbData, null, 2).replace(/\n/g, '\n      ')}`);
-        
+
         // Check database type
         if (dbData.type) {
           console.log(`   🗄️ Database type: ${dbData.type}`);
@@ -172,23 +172,23 @@ class PreviewEnvironmentValidator {
    */
   async validateAPIEndpoints() {
     console.log('\n🚀 Validating API Endpoints...');
-    
+
     const endpoints = [
       { path: '/api/gallery', name: 'Gallery API', critical: true },
       { path: '/api/featured-photos', name: 'Featured Photos API', critical: true },
       { path: '/api/registration/health', name: 'Registration Health', critical: false }
     ];
-    
+
     for (const endpoint of endpoints) {
       try {
         console.log(`   🔍 Checking ${endpoint.name}: ${endpoint.path}`);
-        
+
         const response = await this.makeRequest(endpoint.path);
-        
+
         if (response.ok) {
           this.addHealthCheck(endpoint.name, 'success', `HTTP ${response.status}`);
           console.log(`   ✅ ${endpoint.name}: OK (${response.status})`);
-          
+
           // Try to parse response if it's JSON
           try {
             const data = await response.json();
@@ -202,7 +202,7 @@ class PreviewEnvironmentValidator {
           }
         } else {
           const message = `HTTP ${response.status}: ${response.statusText}`;
-          
+
           if (endpoint.critical) {
             this.addHealthCheck(endpoint.name, 'error', message);
             this.errors.push(`Critical API endpoint failed: ${endpoint.name} - ${message}`);
@@ -215,7 +215,7 @@ class PreviewEnvironmentValidator {
         }
       } catch (error) {
         const message = error.message;
-        
+
         if (endpoint.critical) {
           this.addHealthCheck(endpoint.name, 'error', message);
           this.errors.push(`Critical API endpoint error: ${endpoint.name} - ${message}`);
@@ -234,24 +234,24 @@ class PreviewEnvironmentValidator {
    */
   async validateStaticAssets() {
     console.log('\n📁 Validating Static Assets...');
-    
+
     const assets = [
       { path: '/css/styles.css', name: 'Main Stylesheet' },
       { path: '/js/main.js', name: 'Main JavaScript' },
       { path: '/pages/tickets.html', name: 'Tickets Page' },
       { path: '/pages/about.html', name: 'About Page' }
     ];
-    
+
     for (const asset of assets) {
       try {
         console.log(`   🔍 Checking ${asset.name}: ${asset.path}`);
-        
+
         const response = await this.makeRequest(asset.path);
-        
+
         if (response.ok) {
           this.addHealthCheck(`Asset: ${asset.name}`, 'success', `HTTP ${response.status}`);
           console.log(`   ✅ ${asset.name}: OK (${response.status})`);
-          
+
           // Check content length
           const contentLength = response.headers.get('content-length');
           if (contentLength) {
@@ -275,22 +275,22 @@ class PreviewEnvironmentValidator {
    */
   async validateAuthenticationEndpoints() {
     console.log('\n🔐 Validating Authentication Endpoints...');
-    
+
     const authEndpoints = [
       { path: '/api/admin/login', name: 'Admin Login', method: 'POST' }
     ];
-    
+
     for (const endpoint of authEndpoints) {
       try {
         console.log(`   🔍 Checking ${endpoint.name}: ${endpoint.path}`);
-        
+
         // For auth endpoints, we just check they respond (not authenticate)
         const response = await this.makeRequest(endpoint.path, {
           method: endpoint.method || 'GET',
           headers: { 'Content-Type': 'application/json' },
           body: endpoint.method === 'POST' ? JSON.stringify({}) : undefined
         });
-        
+
         // Auth endpoints might return 400/401 which is expected
         if (response.status === 400 || response.status === 401 || response.status === 422) {
           this.addHealthCheck(`Auth: ${endpoint.name}`, 'success', `Expected ${response.status}`);
@@ -316,14 +316,14 @@ class PreviewEnvironmentValidator {
    */
   async validatePerformanceBaseline() {
     console.log('\n⚡ Validating Performance Baseline...');
-    
+
     try {
       const startTime = Date.now();
       const response = await this.makeRequest('/api/health/check');
       const responseTime = Date.now() - startTime;
-      
+
       console.log(`   ⏱️ Health check response time: ${responseTime}ms`);
-      
+
       if (responseTime < 2000) {
         this.addHealthCheck('Performance Baseline', 'success', `${responseTime}ms`);
         console.log(`   ✅ Response time within acceptable range (${responseTime}ms < 2000ms)`);
@@ -390,31 +390,31 @@ class PreviewEnvironmentValidator {
   generateValidationReport() {
     console.log('\n📊 Validation Report');
     console.log('='.repeat(60));
-    
+
     const successCount = this.healthChecks.filter(check => check.status === 'success').length;
     const warningCount = this.healthChecks.filter(check => check.status === 'warning').length;
     const errorCount = this.healthChecks.filter(check => check.status === 'error').length;
-    
+
     console.log(`📈 Health Checks Summary:`);
     console.log(`   ✅ Success: ${successCount}`);
     console.log(`   ⚠️ Warnings: ${warningCount}`);
     console.log(`   ❌ Errors: ${errorCount}`);
     console.log(`   📊 Total: ${this.healthChecks.length}`);
-    
+
     if (this.warnings.length > 0) {
       console.log(`\n⚠️ Warnings (${this.warnings.length}):`);
       this.warnings.forEach((warning, index) => {
         console.log(`   ${index + 1}. ${warning}`);
       });
     }
-    
+
     if (this.errors.length > 0) {
       console.log(`\n❌ Critical Errors (${this.errors.length}):`);
       this.errors.forEach((error, index) => {
         console.log(`   ${index + 1}. ${error}`);
       });
     }
-    
+
     console.log(`\n🎯 Preview URL: ${this.previewUrl}`);
     console.log(`📅 Validation completed: ${new Date().toISOString()}`);
   }
@@ -443,7 +443,7 @@ class PreviewEnvironmentValidator {
 // Main execution when called directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   const validator = new PreviewEnvironmentValidator();
-  
+
   validator.validate()
     .then(() => {
       console.log('\n🎉 Preview environment validation successful');

@@ -7,7 +7,7 @@ test.describe('Multi-Ticket Registration Flow', () => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           id: 'cs_test_123',
           url: 'https://checkout.stripe.com/test/cs_test_123'
         })
@@ -19,7 +19,7 @@ test.describe('Multi-Ticket Registration Flow', () => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           success: true,
           tickets: ['ticket1', 'ticket2', 'ticket3']
         })
@@ -40,7 +40,7 @@ test.describe('Multi-Ticket Registration Flow', () => {
 
     // Purchase tickets
     await page.click('.floating-cart .btn-primary');
-    
+
     // Mock successful payment redirect
     await page.goto('/api/payments/checkout-success?session_id=cs_test_123');
 
@@ -49,7 +49,7 @@ test.describe('Multi-Ticket Registration Flow', () => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           success: true,
           registered: 3,
           tickets: [
@@ -81,7 +81,7 @@ test.describe('Multi-Ticket Registration Flow', () => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           success: true,
           registered: 2,
           failed: 1,
@@ -117,7 +117,7 @@ test.describe('Multi-Ticket Registration Flow', () => {
       await route.fulfill({
         status: 400,
         contentType: 'application/json',
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           error: 'Registration deadline has passed',
           deadline: '2026-05-10T23:59:59Z'
         })

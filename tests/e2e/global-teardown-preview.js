@@ -1,6 +1,6 @@
 /**
  * Global Teardown for E2E Preview Testing
- * 
+ *
  * Handles cleanup after testing against live Vercel preview deployments:
  * - Cleanup test data from preview environment
  * - Generate test summary reports
@@ -16,40 +16,40 @@ const PROJECT_ROOT = resolve(process.cwd());
 async function globalTeardownPreview() {
   console.log('🧹 Global E2E Teardown - Preview Deployment Mode');
   console.log('='.repeat(60));
-  
+
   try {
     const previewUrl = process.env.PREVIEW_URL || process.env.CI_EXTRACTED_PREVIEW_URL;
-    
+
     if (previewUrl) {
       console.log(`🎯 Preview URL: ${previewUrl}`);
-      
+
       // Step 1: Cleanup test data
       console.log('\n🗄️ Cleaning up test data...');
       await cleanupTestData(previewUrl);
-      
+
       // Step 2: Validate cleanup
       console.log('\n✅ Validating cleanup...');
       await validateCleanup(previewUrl);
-      
+
       // Step 3: Generate test summary
       console.log('\n📊 Generating test summary...');
       await generateTestSummary(previewUrl);
     } else {
       console.log('⚠️ No preview URL found - limited cleanup available');
     }
-    
+
     // Step 4: Clean up local environment files
     console.log('\n📁 Cleaning up local environment files...');
     await cleanupLocalFiles();
-    
+
     // Step 5: Generate final report
     console.log('\n📋 Final cleanup summary...');
     const summary = generateCleanupSummary();
     console.log(summary);
-    
+
     console.log('\n✅ Global preview teardown completed successfully');
     console.log('='.repeat(60));
-    
+
   } catch (error) {
     console.error('❌ Global preview teardown failed:', error.message);
     // Don't throw - teardown should be best-effort
@@ -62,7 +62,7 @@ async function globalTeardownPreview() {
  */
 async function cleanupTestData(previewUrl) {
   let sessionId = process.env.E2E_SESSION_ID;
-  
+
   // Try to recover session ID from persisted file if not in env
   if (!sessionId) {
     try {
@@ -82,19 +82,19 @@ async function cleanupTestData(previewUrl) {
       return;
     }
   }
-  
+
   console.log(`   🆔 Session ID: ${sessionId}`);
-  
+
   try {
     // For preview deployments, we typically can't directly modify the database,
     // but we can validate that our test session didn't leave persistent artifacts
-    
+
     const cleanupEndpoints = [
       // These would be custom cleanup endpoints if available
       // `/api/test/cleanup?session=${sessionId}`,
       // `/api/test/verify-cleanup?session=${sessionId}`
     ];
-    
+
     for (const endpoint of cleanupEndpoints) {
       try {
         const response = await fetch(`${previewUrl}${endpoint}`, {
@@ -105,7 +105,7 @@ async function cleanupTestData(previewUrl) {
           },
           body: JSON.stringify({ sessionId })
         });
-        
+
         if (response.ok) {
           console.log(`   ✅ Cleanup endpoint: ${endpoint}`);
         } else {
@@ -115,11 +115,11 @@ async function cleanupTestData(previewUrl) {
         console.log(`   ⚠️ Cleanup error: ${endpoint} - ${error.message}`);
       }
     }
-    
+
     // For preview deployments, test data typically doesn't persist between deployments,
     // so this is more about validation than actual cleanup
     console.log('   ✅ Test data cleanup completed (preview mode)');
-    
+
   } catch (error) {
     console.log(`   ⚠️ Test data cleanup warning: ${error.message}`);
   }
@@ -132,16 +132,16 @@ async function validateCleanup(previewUrl) {
   try {
     // Validate that test artifacts are not persisting
     const sessionId = process.env.E2E_SESSION_ID;
-    
+
     if (sessionId) {
       console.log(`   🔍 Validating cleanup for session: ${sessionId}`);
-      
+
       // Check that our test session data is no longer accessible
       const validationEndpoints = [
         '/api/health/check',
         '/api/health/database'
       ];
-      
+
       for (const endpoint of validationEndpoints) {
         try {
           const response = await fetch(`${previewUrl}${endpoint}`, {
@@ -150,7 +150,7 @@ async function validateCleanup(previewUrl) {
               'X-Test-Session': sessionId
             }
           });
-          
+
           if (response.ok) {
             console.log(`   ✅ Validation: ${endpoint} - Clean`);
           }
@@ -159,9 +159,9 @@ async function validateCleanup(previewUrl) {
         }
       }
     }
-    
+
     console.log('   ✅ Cleanup validation completed');
-    
+
   } catch (error) {
     console.log(`   ⚠️ Cleanup validation warning: ${error.message}`);
   }
@@ -184,7 +184,7 @@ async function generateTestSummary(previewUrl) {
         commitSha: process.env.GITHUB_SHA || 'not-available'
       }
     };
-    
+
     console.log('   📊 Test Summary:');
     console.log(`      URL: ${summary.previewUrl}`);
     console.log(`      Session: ${summary.sessionId || 'not-set'}`);
@@ -192,7 +192,7 @@ async function generateTestSummary(previewUrl) {
     console.log(`      Timestamp: ${summary.timestamp}`);
     console.log(`      CI: ${summary.environment.ci}`);
     console.log(`      PR: ${summary.environment.prNumber}`);
-    
+
     // Write summary to file for debugging
     try {
       const summaryPath = resolve(PROJECT_ROOT, '.tmp', 'e2e-preview-summary.json');
@@ -203,7 +203,7 @@ async function generateTestSummary(previewUrl) {
     } catch (fileError) {
       console.log(`   ⚠️ Could not write summary file: ${fileError.message}`);
     }
-    
+
   } catch (error) {
     console.log(`   ⚠️ Test summary generation warning: ${error.message}`);
   }
@@ -218,10 +218,10 @@ async function cleanupLocalFiles() {
     '.tmp/preview-config.json',
     '.tmp/e2e-session.json'
   ];
-  
+
   for (const file of filesToCleanup) {
     const fullPath = resolve(PROJECT_ROOT, file);
-    
+
     if (existsSync(fullPath)) {
       try {
         const fs = await import('fs/promises');
@@ -232,7 +232,7 @@ async function cleanupLocalFiles() {
       }
     }
   }
-  
+
   console.log('   ✅ Local file cleanup completed');
 }
 
@@ -242,11 +242,11 @@ async function cleanupLocalFiles() {
 function generateCleanupSummary() {
   const cleanupItems = [
     'Test data cleanup',
-    'Session isolation validation', 
+    'Session isolation validation',
     'Local environment file cleanup',
     'Test summary generation'
   ];
-  
+
   const summary = `
 📋 Preview E2E Cleanup Summary:
    ${cleanupItems.map(item => `✅ ${item}`).join('\n   ')}

@@ -1,6 +1,6 @@
 /**
  * Brevo Cleanup Integration Test
- * 
+ *
  * This test verifies that the Brevo cleanup system works correctly
  * in the E2E testing environment. It demonstrates proper usage and
  * validates cleanup functionality without affecting production data.
@@ -17,7 +17,7 @@ import {
 import { generateTestEmail } from '../helpers/test-isolation.js';
 
 test.describe('Brevo Cleanup Integration', () => {
-  
+
   test.beforeAll(async () => {
     // Initialize cleanup system
     await initializeBrevoCleanup();
@@ -30,7 +30,7 @@ test.describe('Brevo Cleanup Integration', () => {
       { email: 'test_user@example.com', expected: true },
       { email: 'playwright_automation@test.com', expected: true },
       { email: 'dummy_user@e2etest.example.com', expected: true },
-      
+
       // These should NOT be identified as test emails
       { email: 'real.user@gmail.com', expected: false },
       { email: 'customer@company.org', expected: false },
@@ -68,7 +68,7 @@ test.describe('Brevo Cleanup Integration', () => {
     // Verify tracking
     const newStats = getBrevoCleanupStats();
     expect(newStats.trackedEmails).toBe(initialTrackedCount + testEmails.length);
-    
+
     console.log(`✅ Tracked ${testEmails.length} test emails for cleanup`);
     console.log(`📊 Total tracked emails: ${newStats.trackedEmails}`);
   });
@@ -76,10 +76,10 @@ test.describe('Brevo Cleanup Integration', () => {
   test('should perform cleanup of tracked emails', async () => {
     // Get current stats before cleanup
     const preCleanupStats = getBrevoCleanupStats();
-    
+
     if (preCleanupStats.trackedEmails > 0) {
       console.log(`🧹 Starting cleanup of ${preCleanupStats.trackedEmails} tracked emails...`);
-      
+
       // Perform cleanup
       const cleanupResults = await cleanupTestEmails({
         removeFromLists: true,
@@ -113,16 +113,16 @@ test.describe('Brevo Cleanup Integration', () => {
 
   test('should handle test mode correctly', async () => {
     const stats = getBrevoCleanupStats();
-    
+
     // In E2E tests, we should typically be in test mode
     // unless specifically configured to use real Brevo API
-    const expectedTestMode = process.env.E2E_TEST_MODE === 'true' || 
-                            process.env.NODE_ENV === 'test' || 
+    const expectedTestMode = process.env.E2E_TEST_MODE === 'true' ||
+                            process.env.NODE_ENV === 'test' ||
                             !process.env.BREVO_API_KEY;
 
     console.log(`🧪 Test mode expected: ${expectedTestMode}`);
     console.log(`🧪 Test mode actual: ${stats.isTestMode}`);
-    
+
     if (expectedTestMode) {
       expect(stats.isTestMode).toBe(true);
       console.log('✅ Running in test mode - operations are simulated');
@@ -169,7 +169,7 @@ test.describe('Brevo Cleanup Integration', () => {
 
   test('should provide comprehensive cleanup statistics', async () => {
     const stats = getBrevoCleanupStats();
-    
+
     // Verify stats structure
     expect(stats).toBeDefined();
     expect(typeof stats.trackedEmails).toBe('number');
@@ -190,7 +190,7 @@ test.describe('Brevo Cleanup Integration', () => {
   // Clean up after tests
   test.afterAll(async () => {
     console.log('🧹 Performing final cleanup after integration tests...');
-    
+
     try {
       const finalCleanup = await cleanupTestEmails();
       console.log(`✅ Final cleanup completed: ${finalCleanup.totalCleaned} emails processed`);

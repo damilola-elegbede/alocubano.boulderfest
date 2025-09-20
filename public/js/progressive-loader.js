@@ -120,9 +120,9 @@ class ProgressiveImageLoader {
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, 
-                ${metadata.dominantColor} 25%, 
-                rgba(255,255,255,0.5) 50%, 
+            background: linear-gradient(90deg,
+                ${metadata.dominantColor} 25%,
+                rgba(255,255,255,0.5) 50%,
                 ${metadata.dominantColor} 75%);
             background-size: 200% 100%;
             animation: shimmer 1.5s infinite;
@@ -277,7 +277,7 @@ class ProgressiveImageLoader {
         const errorSvg = `
             <svg width="${metadata.width}" height="${metadata.height}" xmlns="http://www.w3.org/2000/svg">
                 <rect width="100%" height="100%" fill="#f8f9fa"/>
-                <text x="50%" y="50%" text-anchor="middle" dy="0.3em" 
+                <text x="50%" y="50%" text-anchor="middle" dy="0.3em"
                       fill="#6c757d" font-family="Arial, sans-serif" font-size="14">
                     Image unavailable
                 </text>
@@ -371,24 +371,24 @@ if (!document.querySelector('#progressive-loader-styles')) {
             0% { background-position: -200% 0; }
             100% { background-position: 200% 0; }
         }
-        
+
         .gallery-image-container {
             position: relative;
             overflow: hidden;
         }
-        
+
         .image-skeleton {
             pointer-events: none;
         }
-        
+
         .blur-overlay {
             pointer-events: none;
         }
-        
+
         .progressive-loaded {
             transition: opacity 0.3s ease-in-out;
         }
-        
+
         .progressive-error {
             opacity: 0.7;
         }

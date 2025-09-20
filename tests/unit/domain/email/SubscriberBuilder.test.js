@@ -15,7 +15,7 @@ describe('SubscriberBuilder Domain Service', () => {
           campaign: 'summer2026'
         }
       };
-      
+
       const options = {
         requireVerification: false,
         defaultListId: 1,
@@ -23,9 +23,9 @@ describe('SubscriberBuilder Domain Service', () => {
         consentIp: '192.168.1.1',
         userAgent: 'Mozilla/5.0 Chrome/120.0.0.0'
       };
-      
+
       const result = SubscriberBuilder.buildSubscriberData(requestData, options);
-      
+
       expect(result.email).toBe('test@example.com');
       expect(result.firstName).toBe('John');
       expect(result.lastName).toBe('Doe');
@@ -44,9 +44,9 @@ describe('SubscriberBuilder Domain Service', () => {
       const requestData = {
         email: 'test@example.com'
       };
-      
+
       const result = SubscriberBuilder.buildSubscriberData(requestData);
-      
+
       expect(result.email).toBe('test@example.com');
       expect(result.firstName).toBeNull();
       expect(result.lastName).toBeNull();
@@ -60,9 +60,9 @@ describe('SubscriberBuilder Domain Service', () => {
     it('sets pending status when verification required', () => {
       const requestData = { email: 'test@example.com' };
       const options = { requireVerification: true };
-      
+
       const result = SubscriberBuilder.buildSubscriberData(requestData, options);
-      
+
       expect(result.status).toBe('pending');
       expect(result.verificationToken).toBeDefined();
       expect(result.verificationToken).toHaveLength(64);
@@ -95,14 +95,14 @@ describe('SubscriberBuilder Domain Service', () => {
           customField: 'customValue'
         }
       };
-      
+
       const options = {
         consentIp: '192.168.1.1',
         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0'
       };
-      
+
       const result = SubscriberBuilder.buildSubscriberData(requestData, options);
-      
+
       expect(result.attributes.SIGNUP_PAGE).toBe('social_media');
       expect(result.attributes.CONSENT_IP).toBe('192.168.1.1');
       expect(result.attributes.USER_AGENT).toBe('Chrome');
@@ -226,7 +226,7 @@ describe('SubscriberBuilder Domain Service', () => {
   describe('buildAttributes()', () => {
     it('builds basic attributes', () => {
       const result = SubscriberBuilder.buildAttributes({});
-      
+
       expect(result.SIGNUP_DATE).toBeDefined();
       expect(result.CONSENT_DATE).toBeDefined();
       expect(result.SIGNUP_PAGE).toBe('website');
@@ -239,9 +239,9 @@ describe('SubscriberBuilder Domain Service', () => {
         userAgent: 'Mozilla/5.0 Chrome/120.0.0.0',
         signupMethod: 'api'
       };
-      
+
       const result = SubscriberBuilder.buildAttributes({}, options);
-      
+
       expect(result.CONSENT_IP).toBe('192.168.1.1');
       expect(result.USER_AGENT).toBe('Chrome');
       expect(result.SIGNUP_METHOD).toBe('api');
@@ -258,9 +258,9 @@ describe('SubscriberBuilder Domain Service', () => {
           customField3: true
         }
       };
-      
+
       const result = SubscriberBuilder.buildAttributes(requestData);
-      
+
       expect(result.PREFERRED_LANGUAGE).toBe('es');
       expect(result.TIMEZONE).toBe('America/New_York');
       expect(result.INTERESTS).toBe('dance, music, festivals');
@@ -415,9 +415,9 @@ describe('SubscriberBuilder Domain Service', () => {
         customField3: 123,
         customField4: true
       };
-      
+
       const result = SubscriberBuilder.normalizeCustomAttributes(attributes);
-      
+
       expect(result.CUSTOM_CUSTOMFIELD1).toBe('value1');
       expect(result.CUSTOM_CUSTOM_FIELD_2).toBe('value2');
       expect(result.CUSTOM_CUSTOMFIELD3).toBe('123');
@@ -431,9 +431,9 @@ describe('SubscriberBuilder Domain Service', () => {
         validKey: { nested: 'object' },
         anotherValidKey: 'valid value'
       };
-      
+
       const result = SubscriberBuilder.normalizeCustomAttributes(attributes);
-      
+
       expect(result.CUSTOM_ANOTHERVALIDKEY).toBe('valid value');
       expect(Object.keys(result)).toHaveLength(1);
     });
@@ -442,7 +442,7 @@ describe('SubscriberBuilder Domain Service', () => {
       const attributes = {
         longValue: 'a'.repeat(600)
       };
-      
+
       const result = SubscriberBuilder.normalizeCustomAttributes(attributes);
       expect(result.CUSTOM_LONGVALUE).toHaveLength(500);
     });
@@ -466,9 +466,9 @@ describe('SubscriberBuilder Domain Service', () => {
           CUSTOM_FIELD: 'custom_value'
         }
       };
-      
+
       const result = SubscriberBuilder.buildBrevoContactData(subscriberData);
-      
+
       expect(result.email).toBe('test@example.com');
       expect(result.listIds).toEqual([1, 2]);
       expect(result.attributes.FIRSTNAME).toBe('John');
@@ -482,9 +482,9 @@ describe('SubscriberBuilder Domain Service', () => {
       const subscriberData = {
         email: 'test@example.com'
       };
-      
+
       const result = SubscriberBuilder.buildBrevoContactData(subscriberData);
-      
+
       expect(result.email).toBe('test@example.com');
       expect(result.listIds).toEqual([1]);
       expect(result.attributes).toEqual({});
@@ -525,14 +525,14 @@ describe('SubscriberBuilder Domain Service', () => {
 
     it('builds public subscriber response', () => {
       const result = SubscriberBuilder.buildSubscriberResponse(mockSubscriberData, false);
-      
+
       expect(result.email).toBe('test@example.com');
       expect(result.firstName).toBe('John');
       expect(result.lastName).toBe('Doe');
       expect(result.status).toBe('active');
       expect(result.subscribedAt).toBe('2023-01-01T00:00:00Z');
       expect(result.updatedAt).toBe('2023-01-01T00:00:00Z');
-      
+
       // Private fields should not be included
       expect(result.id).toBeUndefined();
       expect(result.phone).toBeUndefined();
@@ -541,7 +541,7 @@ describe('SubscriberBuilder Domain Service', () => {
 
     it('builds private subscriber response', () => {
       const result = SubscriberBuilder.buildSubscriberResponse(mockSubscriberData, true);
-      
+
       expect(result.email).toBe('test@example.com');
       expect(result.id).toBe(1);
       expect(result.phone).toBe('555-123-4567');
@@ -565,7 +565,7 @@ describe('SubscriberBuilder Domain Service', () => {
         listIds: [1],
         consentDate: '2023-01-01'
       };
-      
+
       const result = SubscriberBuilder.validateBuiltSubscriber(subscriberData);
       expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
@@ -591,7 +591,7 @@ describe('SubscriberBuilder Domain Service', () => {
         listIds: [1],
         consentDate: '2023-01-01'
       };
-      
+
       const result = SubscriberBuilder.validateBuiltSubscriber(subscriberData);
       expect(result.valid).toBe(false);
       expect(result.errors).toContain('Valid status is required');
@@ -604,7 +604,7 @@ describe('SubscriberBuilder Domain Service', () => {
         listIds: [],
         consentDate: '2023-01-01'
       };
-      
+
       const result = SubscriberBuilder.validateBuiltSubscriber(subscriberData);
       expect(result.valid).toBe(false);
       expect(result.errors).toContain('At least one list ID is required');

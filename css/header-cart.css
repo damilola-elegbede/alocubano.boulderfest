@@ -14,7 +14,7 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  padding: 0 0 0 var(--space-sm);
+  padding: var(--space-sm);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -22,6 +22,8 @@
   transition: transform var(--transition-fast);
   vertical-align: baseline;
   line-height: 1;
+  min-width: 44px;
+  min-height: 44px;
 }
 
 .nav-cart-button:hover {
@@ -95,7 +97,9 @@
   }
   
   .nav-cart-button {
-    padding: var(--space-xs) 0 var(--space-xs) var(--space-xs);
+    padding: var(--space-sm);
+    min-width: 44px;
+    min-height: 44px;
   }
   
   .nav-cart-icon {

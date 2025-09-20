@@ -48,7 +48,7 @@ const colors = {
   'gray-100': [245, 245, 245],   // #f5f5f5
   'white': [255, 255, 255],      // #ffffff
   'black': [0, 0, 0],            // #000000
-  
+
   // Brand colors
   'blue': [91, 107, 181],        // #5b6bb5
   'red': [204, 41, 54],          // #cc2936
@@ -69,7 +69,7 @@ const darkModeColors = {
 
 describe("Dark Mode Verification Tests", () => {
   let baseCss, formsCss, navigationCss;
-  
+
   beforeEach(() => {
     // Read CSS files
     baseCss = readFileSync(join(process.cwd(), "css/base.css"), "utf8");
@@ -86,7 +86,7 @@ describe("Dark Mode Verification Tests", () => {
     it("should meet WCAG AA contrast ratio for muted text on dark backgrounds", () => {
       const mutedText = colors['gray-400']; // #999999
       const darkBackground = colors['gray-900']; // #111111
-      
+
       const ratio = contrastRatio(mutedText, darkBackground);
       expect(ratio).toBeGreaterThanOrEqual(4.5); // WCAG AA for normal text
     });
@@ -96,7 +96,7 @@ describe("Dark Mode Verification Tests", () => {
       const mutedColor = colors['gray-400'];
       const bgColor = colors['gray-900'];
       const ratio = contrastRatio(mutedColor, bgColor);
-      
+
       // Should meet WCAG AA standards (4.5:1 for normal text)
       expect(ratio).toBeGreaterThanOrEqual(4.5);
       expect(ratio).toBeCloseTo(6.63, 1); // Actual ratio for #999999 on #111111
@@ -112,7 +112,7 @@ describe("Dark Mode Verification Tests", () => {
     it("should meet WCAG AA contrast ratio for form borders", () => {
       const borderColor = colors['gray-600']; // #666666
       const darkBackground = colors['gray-900']; // #111111
-      
+
       const ratio = contrastRatio(borderColor, darkBackground);
       expect(ratio).toBeGreaterThanOrEqual(3.0); // WCAG AA for UI components
     });
@@ -122,7 +122,7 @@ describe("Dark Mode Verification Tests", () => {
       const borderColor = colors['gray-600'];
       const bgColor = colors['gray-900'];
       const ratio = contrastRatio(borderColor, bgColor);
-      
+
       // UI components need 3:1 minimum
       expect(ratio).toBeGreaterThanOrEqual(3.0);
       expect(ratio).toBeCloseTo(3.29, 1); // Actual ratio for #666666 on #111111
@@ -138,7 +138,7 @@ describe("Dark Mode Verification Tests", () => {
     it("should have proper contrast for hamburger menu lines", () => {
       const menuColor = colors['gray-200']; // Used in dark mode
       const darkBackground = colors['gray-900'];
-      
+
       const ratio = contrastRatio(menuColor, darkBackground);
       expect(ratio).toBeGreaterThanOrEqual(3.0); // UI components
     });
@@ -168,7 +168,7 @@ describe("Dark Mode Verification Tests", () => {
       // Disabled text should still be readable
       const disabledText = colors['gray-400']; // text-muted
       const disabledBg = colors['gray-800']; // background-secondary
-      
+
       const ratio = contrastRatio(disabledText, disabledBg);
       expect(ratio).toBeGreaterThanOrEqual(3.0); // Relaxed for disabled elements
     });
@@ -189,7 +189,7 @@ describe("Dark Mode Verification Tests", () => {
       // Placeholder uses text-secondary which is gray-300 in dark mode
       const placeholderColor = colors['gray-300'];
       const inputBg = colors['gray-800']; // background-secondary
-      
+
       const ratio = contrastRatio(placeholderColor, inputBg);
       expect(ratio).toBeGreaterThanOrEqual(4.5); // WCAG AA for normal text
     });
@@ -197,7 +197,7 @@ describe("Dark Mode Verification Tests", () => {
 
   describe("6. Mobile Login Screen Colors", () => {
     let loginHtml;
-    
+
     beforeEach(() => {
       loginHtml = readFileSync(join(process.cwd(), "pages/admin/login.html"), "utf8");
     });
@@ -208,7 +208,7 @@ describe("Dark Mode Verification Tests", () => {
       expect(loginHtml).toContain("var(--color-text-primary)");
       expect(loginHtml).toContain("var(--color-text-secondary)");
       expect(loginHtml).toContain("var(--color-background-secondary)");
-      
+
       // Should not have hardcoded colors for text and backgrounds
       expect(loginHtml).not.toMatch(/#[0-9a-f]{6}/gi); // No hardcoded hex colors in styles
     });
@@ -221,7 +221,7 @@ describe("Dark Mode Verification Tests", () => {
 
   describe("7. Chart.js Theme Integration", () => {
     let analyticsHtml;
-    
+
     beforeEach(() => {
       analyticsHtml = readFileSync(join(process.cwd(), "pages/admin/analytics.html"), "utf8");
     });
@@ -264,7 +264,7 @@ describe("Dark Mode Verification Tests", () => {
 
   describe("9. Admin Page Specific Tests", () => {
     let dashboardHtml, checkinHtml;
-    
+
     beforeEach(() => {
       dashboardHtml = readFileSync(join(process.cwd(), "pages/admin/dashboard.html"), "utf8");
       checkinHtml = readFileSync(join(process.cwd(), "pages/admin/checkin.html"), "utf8");
@@ -286,7 +286,7 @@ describe("Dark Mode Verification Tests", () => {
         "/css/forms.css",
         "/css/admin-overrides.css"
       ];
-      
+
       expectedCSS.forEach(css => {
         expect(dashboardHtml).toContain(css);
         expect(checkinHtml).toContain(css);
@@ -343,7 +343,7 @@ describe("Dark Mode Verification Tests", () => {
 
       testCases.forEach(({ name, foreground, background, expected, minRequired }) => {
         const ratio = contrastRatio(foreground, background);
-        
+
         expect(ratio, `${name} should meet minimum contrast`).toBeGreaterThanOrEqual(minRequired);
         expect(ratio, `${name} should have expected contrast ratio`).toBeCloseTo(expected, 1);
       });
@@ -370,7 +370,7 @@ describe("Dark Mode Verification Tests", () => {
 
 describe("Form Validation - Disabled State Tests", () => {
   let formsCss;
-  
+
   beforeEach(() => {
     formsCss = readFileSync(join(process.cwd(), "css/forms.css"), "utf8");
   });
@@ -378,7 +378,7 @@ describe("Form Validation - Disabled State Tests", () => {
   it("should have comprehensive disabled form element coverage", () => {
     const disabledElements = [
       "input[type=\"text\"]:disabled",
-      "input[type=\"email\"]:disabled", 
+      "input[type=\"email\"]:disabled",
       "input[type=\"password\"]:disabled",
       "input[type=\"number\"]:disabled",
       "input[type=\"tel\"]:disabled",
@@ -410,7 +410,7 @@ describe("Form Validation - Disabled State Tests", () => {
 
 describe("CSS Variable Consistency Tests", () => {
   let baseCss;
-  
+
   beforeEach(() => {
     baseCss = readFileSync(join(process.cwd(), "css/base.css"), "utf8");
   });
@@ -418,7 +418,7 @@ describe("CSS Variable Consistency Tests", () => {
   it("should have all required gray scale variables", () => {
     const grayVars = [
       "--color-gray-900: #111111",
-      "--color-gray-800: #333333", 
+      "--color-gray-800: #333333",
       "--color-gray-700: #555555",
       "--color-gray-600: #666666",
       "--color-gray-500: #888888",
@@ -436,7 +436,7 @@ describe("CSS Variable Consistency Tests", () => {
   it("should have proper semantic color mappings", () => {
     const semanticVars = [
       "--color-text-muted: var(--color-gray-400)",
-      "--color-border: var(--color-gray-600)", 
+      "--color-border: var(--color-gray-600)",
       "--color-border-light: var(--color-gray-700)",
       "--color-text-secondary: var(--color-gray-300)",
       "--color-text-tertiary: var(--color-gray-400)"

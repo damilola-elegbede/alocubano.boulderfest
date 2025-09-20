@@ -27,7 +27,7 @@ function checkRateLimit(adminId) {
   const key = `warm_${adminId}`;
   const window = rateLimitMap.get(key) || {
     count: 0,
-    resetTime: now + RATE_LIMIT_WINDOW,
+    resetTime: now + RATE_LIMIT_WINDOW
   };
 
   if (now > window.resetTime) {
@@ -42,7 +42,7 @@ function checkRateLimit(adminId) {
   return {
     allowed: window.count <= MAX_WARM_OPERATIONS,
     remaining: Math.max(0, MAX_WARM_OPERATIONS - window.count),
-    resetTime: window.resetTime,
+    resetTime: window.resetTime
   };
 }
 
@@ -52,74 +52,74 @@ function checkRateLimit(adminId) {
 async function getEventWarmingData() {
   return {
     // Core event information - highest priority
-    "event:boulder-fest-2026": {
-      name: "A Lo Cubano Boulder Fest 2026",
-      dates: "May 15-17, 2026",
-      location: "Avalon Ballroom, Boulder, CO",
-      status: "upcoming",
-      timezone: "America/Denver",
+    'event:boulder-fest-2026': {
+      name: 'A Lo Cubano Boulder Fest 2026',
+      dates: 'May 15-17, 2026',
+      location: 'Avalon Ballroom, Boulder, CO',
+      status: 'upcoming',
+      timezone: 'America/Denver',
       capacity: 500,
-      lastUpdated: new Date().toISOString(),
+      lastUpdated: new Date().toISOString()
     },
 
     // Ticket configuration - critical for sales
-    "tickets:config": {
+    'tickets:config': {
       earlyBird: {
         price: 125,
         available: true,
         limit: 100,
-        description: "Early Bird Special",
+        description: 'Early Bird Special'
       },
       regular: {
         price: 150,
         available: true,
         limit: 300,
-        description: "Regular Admission",
+        description: 'Regular Admission'
       },
       vip: {
         price: 250,
         available: true,
         limit: 50,
-        description: "VIP Experience",
+        description: 'VIP Experience'
       },
       workshop: {
         price: 75,
         available: true,
         limit: 100,
-        description: "Workshop Access",
-      },
+        description: 'Workshop Access'
+      }
     },
 
     // Featured artists - frequently accessed
-    "artists:featured": [
-      "Maykel Fonts",
-      "Dayme y El High",
-      "Chacal",
-      "El Micha",
-      "Gente de Zona",
-      "Jacob Forever",
+    'artists:featured': [
+      'Maykel Fonts',
+      'Dayme y El High',
+      'Chacal',
+      'El Micha',
+      'Gente de Zona',
+      'Jacob Forever'
     ],
 
     // Schedule highlights
-    "schedule:highlights": {
+    'schedule:highlights': {
       friday: {
-        "19:00": "Opening Ceremony",
-        "20:00": "Maykel Fonts Performance",
-        "22:00": "Social Dancing",
+        '19:00': 'Opening Ceremony',
+        '20:00': 'Maykel Fonts Performance',
+        '22:00': 'Social Dancing'
       },
       saturday: {
-        "10:00": "Workshop Sessions",
-        "14:00": "Lunch Break",
-        "16:00": "Artist Panels",
-        "20:00": "Main Show",
-        "23:00": "Late Night Social",
+        '10:00': 'Workshop Sessions',
+        '14:00': 'Lunch Break',
+        '16:00': 'Artist Panels',
+        '20:00': 'Main Show',
+        '23:00': 'Late Night Social'
       },
       sunday: {
-        "10:00": "Final Workshops",
-        "14:00": "Closing Ceremony",
-        "16:00": "Farewell Social",
-      },
-    },
+        '10:00': 'Final Workshops',
+        '14:00': 'Closing Ceremony',
+        '16:00': 'Farewell Social'
+      }
+    }
   };
 }
 
@@ -130,34 +130,34 @@ async function getTicketWarmingData() {
   // This would normally fetch from database
   // For warming purposes, we create realistic test data
   return {
-    "tickets:availability:earlybird": {
+    'tickets:availability:earlybird': {
       total: 100,
       sold: 45,
       remaining: 55,
       price: 125,
-      status: "available",
+      status: 'available'
     },
-    "tickets:availability:regular": {
+    'tickets:availability:regular': {
       total: 300,
       sold: 125,
       remaining: 175,
       price: 150,
-      status: "available",
+      status: 'available'
     },
-    "tickets:availability:vip": {
+    'tickets:availability:vip': {
       total: 50,
       sold: 32,
       remaining: 18,
       price: 250,
-      status: "low_stock",
+      status: 'low_stock'
     },
-    "tickets:availability:workshop": {
+    'tickets:availability:workshop': {
       total: 100,
       sold: 67,
       remaining: 33,
       price: 75,
-      status: "available",
-    },
+      status: 'available'
+    }
   };
 }
 
@@ -166,31 +166,31 @@ async function getTicketWarmingData() {
  */
 async function getGalleryWarmingData() {
   return {
-    "gallery:years": ["2023", "2024", "2025", "2026"],
+    'gallery:years': ['2023', '2024', '2025', '2026'],
 
-    "gallery:featured:2025": [
+    'gallery:featured:2025': [
       {
-        id: "photo_001",
-        title: "Opening Night Magic",
-        year: "2025",
+        id: 'photo_001',
+        title: 'Opening Night Magic',
+        year: '2025',
         featured: true,
-        thumbnail: "https://drive.google.com/thumbnail?id=example1",
+        thumbnail: 'https://drive.google.com/thumbnail?id=example1'
       },
       {
-        id: "photo_002",
-        title: "Dance Floor Energy",
-        year: "2025",
+        id: 'photo_002',
+        title: 'Dance Floor Energy',
+        year: '2025',
         featured: true,
-        thumbnail: "https://drive.google.com/thumbnail?id=example2",
-      },
+        thumbnail: 'https://drive.google.com/thumbnail?id=example2'
+      }
     ],
 
-    "gallery:stats:2025": {
+    'gallery:stats:2025': {
       totalPhotos: 247,
       totalVideos: 18,
-      categories: ["performances", "workshops", "social", "backstage"],
-      lastUpdated: new Date().toISOString(),
-    },
+      categories: ['performances', 'workshops', 'social', 'backstage'],
+      lastUpdated: new Date().toISOString()
+    }
   };
 }
 
@@ -202,46 +202,46 @@ async function getAnalyticsWarmingData() {
   const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
   return {
-    "analytics:config": {
+    'analytics:config': {
       trackingEnabled: true,
       sampleRate: 0.1,
-      endpoints: ["tickets", "gallery", "subscribe", "artists"],
-      retentionDays: 90,
+      endpoints: ['tickets', 'gallery', 'subscribe', 'artists'],
+      retentionDays: 90
     },
 
-    [`analytics:daily:${yesterday.toISOString().split("T")[0]}`]: {
+    [`analytics:daily:${yesterday.toISOString().split('T')[0]}`]: {
       pageViews: 1247,
       uniqueVisitors: 892,
       ticketSales: 23,
       bounceRate: 0.35,
-      avgSessionDuration: 180,
+      avgSessionDuration: 180
     },
 
-    "analytics:popular_pages": [
-      { path: "/tickets", views: 2341, conversions: 89 },
-      { path: "/artists", views: 1876, conversions: 12 },
-      { path: "/gallery", views: 1654, conversions: 5 },
-      { path: "/schedule", views: 987, conversions: 3 },
-    ],
+    'analytics:popular_pages': [
+      { path: '/tickets', views: 2341, conversions: 89 },
+      { path: '/artists', views: 1876, conversions: 12 },
+      { path: '/gallery', views: 1654, conversions: 5 },
+      { path: '/schedule', views: 987, conversions: 3 }
+    ]
   };
 }
 
 async function handler(req, res) {
-  if (req.method !== "POST") {
-    res.setHeader("Allow", "POST");
-    return res.status(405).json({ error: "Method not allowed" });
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST');
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
     // Authentication check
     const sessionToken = authService.getSessionFromRequest(req);
     if (!sessionToken) {
-      return res.status(401).json({ error: "Authentication required" });
+      return res.status(401).json({ error: 'Authentication required' });
     }
 
     const verification = await authService.verifySessionToken(sessionToken);
     if (!verification.valid) {
-      return res.status(401).json({ error: "Invalid session" });
+      return res.status(401).json({ error: 'Invalid session' });
     }
 
     const adminId = verification.admin.id;
@@ -250,26 +250,26 @@ async function handler(req, res) {
     const rateLimit = checkRateLimit(adminId);
     if (!rateLimit.allowed) {
       return res.status(429).json({
-        error: "Rate limit exceeded",
+        error: 'Rate limit exceeded',
         remaining: rateLimit.remaining,
-        resetTime: new Date(rateLimit.resetTime).toISOString(),
+        resetTime: new Date(rateLimit.resetTime).toISOString()
       });
     }
 
     // Parse request body
     const body = req.body || {};
     let {
-      sections = ["all"], // Which sections to warm: 'all', 'event', 'tickets', 'gallery', 'analytics'
-      priority = "normal", // 'low', 'normal', 'high' - affects TTL
+      sections = ['all'], // Which sections to warm: 'all', 'event', 'tickets', 'gallery', 'analytics'
+      priority = 'normal', // 'low', 'normal', 'high' - affects TTL
       dryRun = false, // Preview what would be warmed
-      force = false, // Force warming even if data exists
+      force = false // Force warming even if data exists
     } = body;
 
     // Normalize input types for robustness
-    if (typeof sections === "string") {
+    if (typeof sections === 'string') {
       sections = [sections];
     } else if (!Array.isArray(sections)) {
-      sections = ["all"];
+      sections = ['all'];
     }
 
     // Coerce boolean values
@@ -278,14 +278,14 @@ async function handler(req, res) {
 
     console.log(
       `[CACHE-WARM] Admin ${adminId} initiated warming for sections:`,
-      sections,
+      sections
     );
 
     // Get cache service
     const cacheService = getCacheService();
     const cache = await cacheService.ensureInitialized();
 
-    let result = {
+    const result = {
       success: false,
       sections,
       priority,
@@ -298,21 +298,21 @@ async function handler(req, res) {
       progress: {
         total: 0,
         completed: 0,
-        failed: 0,
-      },
+        failed: 0
+      }
     };
 
     // Set TTL based on priority
     const ttlMap = {
       low: 1800, // 30 minutes
       normal: 3600, // 1 hour
-      high: 7200, // 2 hours
+      high: 7200 // 2 hours
     };
     const warmTtl = ttlMap[priority] || ttlMap.normal;
 
     // Determine which sections to process
-    const sectionsToProcess = sections.includes("all")
-      ? ["event", "tickets", "gallery", "analytics"]
+    const sectionsToProcess = sections.includes('all')
+      ? ['event', 'tickets', 'gallery', 'analytics']
       : sections;
 
     let totalOperations = 0;
@@ -325,38 +325,38 @@ async function handler(req, res) {
         let cacheType = CACHE_TYPES.STATIC;
 
         switch (section) {
-          case "event":
-            warmingData = await getEventWarmingData();
-            namespace = "event";
-            cacheType = CACHE_TYPES.STATIC;
-            break;
+        case 'event':
+          warmingData = await getEventWarmingData();
+          namespace = 'event';
+          cacheType = CACHE_TYPES.STATIC;
+          break;
 
-          case "tickets":
-            warmingData = await getTicketWarmingData();
-            namespace = "tickets";
-            cacheType = CACHE_TYPES.DYNAMIC;
-            break;
+        case 'tickets':
+          warmingData = await getTicketWarmingData();
+          namespace = 'tickets';
+          cacheType = CACHE_TYPES.DYNAMIC;
+          break;
 
-          case "gallery":
-            warmingData = await getGalleryWarmingData();
-            namespace = "gallery";
-            cacheType = CACHE_TYPES.GALLERY;
-            break;
+        case 'gallery':
+          warmingData = await getGalleryWarmingData();
+          namespace = 'gallery';
+          cacheType = CACHE_TYPES.GALLERY;
+          break;
 
-          case "analytics":
-            warmingData = await getAnalyticsWarmingData();
-            namespace = "analytics";
-            cacheType = CACHE_TYPES.ANALYTICS;
-            break;
+        case 'analytics':
+          warmingData = await getAnalyticsWarmingData();
+          namespace = 'analytics';
+          cacheType = CACHE_TYPES.ANALYTICS;
+          break;
 
-          default:
-            result.operations.push({
-              section,
-              status: "error",
-              error: `Unknown section: ${section}`,
-            });
-            result.progress.failed++;
-            continue;
+        default:
+          result.operations.push({
+            section,
+            status: 'error',
+            error: `Unknown section: ${section}`
+          });
+          result.progress.failed++;
+          continue;
         }
 
         const keys = Object.keys(warmingData);
@@ -366,11 +366,11 @@ async function handler(req, res) {
         if (dryRun) {
           result.operations.push({
             section,
-            status: "preview",
+            status: 'preview',
             keysToWarm: keys.length,
             keys: keys.slice(0, 5), // Show first 5 keys as preview
             ttl: warmTtl,
-            cacheType,
+            cacheType
           });
           completedOperations += keys.length;
         } else {
@@ -388,7 +388,7 @@ async function handler(req, res) {
                 namespace,
                 ttl: warmTtl,
                 type: cacheType,
-                forceMemory: priority === "high", // High priority items go to memory
+                forceMemory: priority === 'high' // High priority items go to memory
               });
 
               if (success) {
@@ -404,12 +404,12 @@ async function handler(req, res) {
 
           result.operations.push({
             section,
-            status: "completed",
+            status: 'completed',
             warmedKeys: sectionWarmedCount,
             totalKeys: keys.length,
             ttl: warmTtl,
             cacheType,
-            namespace,
+            namespace
           });
 
           result.warmedCount += sectionWarmedCount;
@@ -417,12 +417,12 @@ async function handler(req, res) {
       } catch (sectionError) {
         console.error(
           `[CACHE-WARM] Error warming section ${section}:`,
-          sectionError,
+          sectionError
         );
         result.operations.push({
           section,
-          status: "error",
-          error: sectionError.message,
+          status: 'error',
+          error: sectionError.message
         });
         result.progress.failed++;
       }
@@ -438,22 +438,22 @@ async function handler(req, res) {
       sections: sectionsToProcess,
       warmedCount: result.warmedCount,
       priority,
-      dryRun,
+      dryRun
     });
 
     // Add rate limit headers
-    res.setHeader("X-RateLimit-Remaining", rateLimit.remaining);
+    res.setHeader('X-RateLimit-Remaining', rateLimit.remaining);
     res.setHeader(
-      "X-RateLimit-Reset",
-      new Date(rateLimit.resetTime).toISOString(),
+      'X-RateLimit-Reset',
+      new Date(rateLimit.resetTime).toISOString()
     );
 
     return res.status(200).json(result);
   } catch (error) {
-    console.error("[CACHE-WARM] Error:", error);
+    console.error('[CACHE-WARM] Error:', error);
     return res.status(500).json({
-      error: "Internal server error",
-      message: "Cache warming operation failed",
+      error: 'Internal server error',
+      message: 'Cache warming operation failed'
     });
   }
 }
@@ -466,5 +466,5 @@ export {
   getTicketWarmingData,
   getGalleryWarmingData,
   getAnalyticsWarmingData,
-  checkRateLimit,
+  checkRateLimit
 };

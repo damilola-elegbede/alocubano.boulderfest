@@ -48,30 +48,30 @@ class IncidentCorrelator {
    */
   async correlateIncidents(testResults, productionIncidents) {
     console.log('🔍 Starting incident correlation analysis...');
-    
+
     try {
       // 1. Store and normalize data
       const normalizedTests = await this.normalizeTestData(testResults);
       const normalizedIncidents = await this.normalizeIncidentData(productionIncidents);
-      
+
       // 2. Perform correlation analysis
       const correlations = await this.analyzeCorrelations(normalizedTests, normalizedIncidents);
-      
+
       // 3. Detect risk patterns
       const riskPatterns = await this.patternAnalyzer.detectRiskPatterns(correlations);
-      
+
       // 4. Generate alerts for high-risk patterns
       await this.processAlerts(riskPatterns);
-      
+
       // 5. Generate new test scenarios from incidents
       const newTestScenarios = await this.generateTestScenarios(normalizedIncidents);
-      
+
       // 6. Update ML models with new data
       await this.mlPredictor.updateModels(correlations, riskPatterns);
-      
+
       // 7. Generate recommendations
       const recommendations = await this.generateRecommendations(correlations, newTestScenarios);
-      
+
       const results = {
         correlations,
         riskPatterns,
@@ -79,10 +79,10 @@ class IncidentCorrelator {
         recommendations,
         summary: this.generateSummary(correlations, riskPatterns)
       };
-      
+
       await this.dataStore.storeAnalysisResults(results);
       return results;
-      
+
     } catch (error) {
       console.error('❌ Correlation analysis failed:', error);
       throw error;
@@ -136,7 +136,7 @@ class IncidentCorrelator {
       userFlow: this.extractIncidentUserFlow(incident),
       errorSignatures: this.extractErrorSignatures(incident),
       environment: incident.environment,
-      duration: incident.resolvedAt ? 
+      duration: incident.resolvedAt ?
         new Date(incident.resolvedAt) - new Date(incident.timestamp) : null,
       tags: incident.tags || [],
       postMortem: incident.postMortem,
@@ -156,14 +156,14 @@ class IncidentCorrelator {
   async analyzeCorrelations(tests, incidents) {
     const correlations = [];
     const timeWindow = this.config.alertThresholds.timeWindow;
-    
+
     for (const incident of incidents) {
       // Find tests that failed before this incident
       const relevantTests = tests.filter(test => {
         const timeDiff = incident.timestamp - test.timestamp;
         return timeDiff > 0 && timeDiff <= timeWindow;
       });
-      
+
       for (const test of relevantTests) {
         const correlation = await this.calculateCorrelation(test, incident);
         if (correlation.strength > 0.3) { // Minimum correlation threshold
@@ -171,7 +171,7 @@ class IncidentCorrelator {
         }
       }
     }
-    
+
     return this.rankCorrelations(correlations);
   }
 
@@ -181,32 +181,32 @@ class IncidentCorrelator {
   async calculateCorrelation(test, incident) {
     let strength = 0;
     const factors = [];
-    
+
     // Business function alignment
     if (test.businessFunction === incident.userFlow) {
       strength += 0.4;
       factors.push('business_function_match');
     }
-    
+
     // Error type similarity
     const errorSimilarity = this.calculateErrorSimilarity(
-      test.errorType, 
+      test.errorType,
       incident.errorSignatures
     );
     strength += errorSimilarity * 0.3;
     if (errorSimilarity > 0.5) factors.push('error_similarity');
-    
+
     // Environment match
     if (test.environment === incident.environment) {
       strength += 0.2;
       factors.push('environment_match');
     }
-    
+
     // Temporal proximity (closer in time = higher correlation)
     const timeDiff = incident.timestamp - test.timestamp;
     const temporalWeight = Math.max(0, 1 - (timeDiff / this.config.alertThresholds.timeWindow));
     strength += temporalWeight * 0.1;
-    
+
     return {
       id: `${test.id}-${incident.id}`,
       testId: test.id,
@@ -249,7 +249,7 @@ class IncidentCorrelator {
    */
   async generateTestScenarios(incidents) {
     const scenarios = [];
-    
+
     for (const incident of incidents) {
       if (incident.preventable && !this.hasExistingTestCoverage(incident)) {
         const scenario = await this.testGenerator.generateFromIncident(incident);
@@ -258,7 +258,7 @@ class IncidentCorrelator {
         }
       }
     }
-    
+
     return this.prioritizeScenarios(scenarios);
   }
 
@@ -267,7 +267,7 @@ class IncidentCorrelator {
    */
   async generateRecommendations(correlations, newScenarios) {
     const recommendations = [];
-    
+
     // Test coverage gaps
     const coverageGaps = this.identifyTestCoverageGaps(correlations);
     recommendations.push(...coverageGaps.map(gap => ({
@@ -278,11 +278,11 @@ class IncidentCorrelator {
       effort: this.estimateEffort(gap),
       impact: gap.businessImpact
     })));
-    
+
     // Test improvement opportunities
     const improvements = this.identifyTestImprovements(correlations);
     recommendations.push(...improvements);
-    
+
     // New test scenarios
     recommendations.push(...newScenarios.map(scenario => ({
       type: 'new_scenario',
@@ -292,7 +292,7 @@ class IncidentCorrelator {
       effort: scenario.estimatedEffort,
       impact: scenario.expectedImpact
     })));
-    
+
     return this.prioritizeRecommendations(recommendations);
   }
 
@@ -302,7 +302,7 @@ class IncidentCorrelator {
   generateSummary(correlations, riskPatterns) {
     const highRiskPatterns = riskPatterns.filter(p => p.riskLevel >= 0.8);
     const preventableIncidents = correlations.filter(c => c.metadata.preventable);
-    
+
     return {
       totalCorrelations: correlations.length,
       highRiskPatterns: highRiskPatterns.length,
@@ -317,7 +317,7 @@ class IncidentCorrelator {
   // Utility methods
   classifyErrorType(error) {
     if (!error) return 'unknown';
-    
+
     const errorPatterns = {
       network: /network|timeout|connection|fetch/i,
       authentication: /auth|login|permission|unauthorized/i,
@@ -326,13 +326,13 @@ class IncidentCorrelator {
       performance: /performance|slow|memory|cpu/i,
       validation: /validation|required|invalid/i
     };
-    
+
     for (const [type, pattern] of Object.entries(errorPatterns)) {
       if (pattern.test(error.toString())) {
         return type;
       }
     }
-    
+
     return 'application';
   }
 
@@ -346,14 +346,14 @@ class IncidentCorrelator {
       admin: /admin|dashboard|management/i,
       newsletter: /newsletter|subscribe|email/i
     };
-    
+
     const testPath = testResult.testName || testResult.testSuite || '';
     for (const [flow, pattern] of Object.entries(flowPatterns)) {
       if (pattern.test(testPath)) {
         return flow;
       }
     }
-    
+
     return 'general';
   }
 
@@ -365,14 +365,14 @@ class IncidentCorrelator {
       'administration': ['admin', 'dashboard', 'management'],
       'core_functionality': ['authentication', 'validation', 'api']
     };
-    
+
     const flow = this.extractUserFlow(testResult);
     for (const [business, flows] of Object.entries(businessFunctions)) {
       if (flows.includes(flow)) {
         return business;
       }
     }
-    
+
     return 'core_functionality';
   }
 
@@ -388,12 +388,12 @@ class IncidentCorrelator {
       revenueImpact: incident.metadata?.revenueImpact || 0,
       duration: incident.duration ? Math.min(incident.duration / (60 * 60 * 1000), 24) / 24 : 0.5
     };
-    
+
     const severityScore = impactFactors.severity[incident.severity] || 0.5;
     const customerScore = Math.min(impactFactors.customerImpact / 1000, 1); // Normalize to 0-1
     const revenueScore = Math.min(impactFactors.revenueImpact / 10000, 1); // Normalize to 0-1
     const durationScore = impactFactors.duration;
-    
+
     return (severityScore * 0.4) + (customerScore * 0.3) + (revenueScore * 0.2) + (durationScore * 0.1);
   }
 
@@ -406,21 +406,21 @@ class IncidentCorrelator {
       admin: /admin|dashboard|management/i,
       newsletter: /newsletter|subscribe|email|marketing/i
     };
-    
+
     const text = `${incident.title} ${incident.description}`.toLowerCase();
     for (const [flow, pattern] of Object.entries(flowPatterns)) {
       if (pattern.test(text)) {
         return flow;
       }
     }
-    
+
     return 'general';
   }
 
   extractErrorSignatures(incident) {
     const signatures = [];
     const text = `${incident.title} ${incident.description} ${incident.rootCause || ''}`;
-    
+
     // Common error patterns
     const patterns = {
       timeout: /timeout|timed out|connection timeout/i,
@@ -431,19 +431,19 @@ class IncidentCorrelator {
       authentication: /authentication|unauthorized|403|401/i,
       validation: /validation|invalid|malformed/i
     };
-    
+
     for (const [type, pattern] of Object.entries(patterns)) {
       if (pattern.test(text)) {
         signatures.push(type);
       }
     }
-    
+
     return signatures;
   }
 
   calculateErrorSimilarity(testError, incidentSignatures) {
     if (!testError || !incidentSignatures.length) return 0;
-    
+
     // Check if test error type matches any incident signatures
     return incidentSignatures.includes(testError) ? 1 : 0;
   }
@@ -458,15 +458,15 @@ class IncidentCorrelator {
   calculatePredictivePower(test, incident) {
     // How well this test failure predicts this type of incident
     let power = 0.5; // Base prediction power
-    
+
     if (test.businessFunction === this.mapIncidentToBusinessFunction(incident)) {
       power += 0.3;
     }
-    
+
     if (test.errorType && incident.errorSignatures.includes(test.errorType)) {
       power += 0.2;
     }
-    
+
     return Math.min(power, 1);
   }
 
@@ -478,14 +478,14 @@ class IncidentCorrelator {
       'administration': ['admin', 'dashboard', 'management'],
       'core_functionality': ['authentication', 'validation', 'api']
     };
-    
+
     const flow = this.extractIncidentUserFlow(incident);
     for (const [business, flows] of Object.entries(businessFunctions)) {
       if (flows.includes(flow)) {
         return business;
       }
     }
-    
+
     return 'core_functionality';
   }
 
@@ -522,7 +522,7 @@ class IncidentCorrelator {
   identifyTestCoverageGaps(correlations) {
     const gaps = [];
     const coverageByFlow = {};
-    
+
     // Analyze correlations to find coverage gaps
     for (const correlation of correlations) {
       const flow = correlation.metadata.incidentUserFlow;
@@ -531,7 +531,7 @@ class IncidentCorrelator {
       }
       coverageByFlow[flow].incidents++;
     }
-    
+
     // Identify flows with high incident rates but low test coverage
     for (const [flow, stats] of Object.entries(coverageByFlow)) {
       if (stats.incidents > 2 && stats.tests < stats.incidents * 0.5) {
@@ -544,7 +544,7 @@ class IncidentCorrelator {
         });
       }
     }
-    
+
     return gaps;
   }
 
@@ -557,21 +557,21 @@ class IncidentCorrelator {
       admin: 0.6,
       newsletter: 0.3
     };
-    
+
     const baseImpact = flowImpact[flow] || 0.5;
     const volumeMultiplier = Math.min(stats.incidents / 10, 2); // Scale by incident volume
-    
+
     return Math.min(baseImpact * volumeMultiplier, 1);
   }
 
   identifyTestImprovements(correlations) {
     const improvements = [];
-    
+
     // Find flaky tests with high correlation to incidents
-    const flakyHighCorrelation = correlations.filter(c => 
+    const flakyHighCorrelation = correlations.filter(c =>
       c.metadata.testFlakyScore > 0.5 && c.strength > 0.6
     );
-    
+
     for (const correlation of flakyHighCorrelation) {
       improvements.push({
         type: 'flaky_test_fix',
@@ -582,7 +582,7 @@ class IncidentCorrelator {
         impact: correlation.businessImpact
       });
     }
-    
+
     return improvements;
   }
 
@@ -605,7 +605,7 @@ class IncidentCorrelator {
       admin: 'medium',
       newsletter: 'low'
     };
-    
+
     return effortMap[gap.userFlow] || 'medium';
   }
 
@@ -614,39 +614,39 @@ class IncidentCorrelator {
     const preventableCorrelations = correlations.filter(c => c.metadata.preventable);
     const totalBusinessImpact = correlations.reduce((sum, c) => sum + c.businessImpact, 0);
     const preventableImpact = preventableCorrelations.reduce((sum, c) => sum + c.businessImpact, 0);
-    
+
     return totalBusinessImpact > 0 ? (preventableImpact / totalBusinessImpact) * 0.8 : 0; // 80% prevention rate
   }
 
   getTopRecommendedActions(correlations) {
     // Generate top 3 recommended actions based on correlations
     const actions = [];
-    
+
     if (correlations.length > 0) {
       const highImpactCorrelations = correlations.filter(c => c.businessImpact > 0.7);
       if (highImpactCorrelations.length > 0) {
         actions.push('Implement high-impact test scenarios for revenue-critical flows');
       }
-      
+
       const recurringErrors = this.findRecurringErrorTypes(correlations);
       if (recurringErrors.length > 0) {
         actions.push(`Address recurring ${recurringErrors[0]} errors with targeted tests`);
       }
-      
+
       actions.push('Expand E2E test coverage for identified blind spots');
     }
-    
+
     return actions.slice(0, 3);
   }
 
   findRecurringErrorTypes(correlations) {
     const errorCounts = {};
-    
+
     correlations.forEach(c => {
       const errorType = c.metadata.testErrorType || 'unknown';
       errorCounts[errorType] = (errorCounts[errorType] || 0) + 1;
     });
-    
+
     return Object.entries(errorCounts)
       .sort(([,a], [,b]) => b - a)
       .map(([type]) => type);
@@ -654,17 +654,17 @@ class IncidentCorrelator {
 
   calculateOverallConfidence(correlations, riskPatterns) {
     if (correlations.length === 0) return 0;
-    
+
     const avgCorrelationConfidence = correlations.reduce((sum, c) => sum + c.confidence, 0) / correlations.length;
-    const patternConfidence = riskPatterns.length > 0 ? 
+    const patternConfidence = riskPatterns.length > 0 ?
       riskPatterns.reduce((sum, p) => sum + p.riskLevel, 0) / riskPatterns.length : 0.5;
-    
+
     return (avgCorrelationConfidence * 0.7) + (patternConfidence * 0.3);
   }
 
   calculateTestSeverity(testResult) {
     if (testResult.status !== 'failed') return 'low';
-    
+
     // Map business function to severity
     const severityMap = {
       'revenue_generation': 'high',
@@ -673,7 +673,7 @@ class IncidentCorrelator {
       'user_engagement': 'low',
       'administration': 'medium'
     };
-    
+
     return severityMap[testResult.businessFunction] || 'medium';
   }
 
@@ -692,23 +692,23 @@ class PatternAnalyzer {
 
   async detectRiskPatterns(correlations) {
     const patterns = [];
-    
+
     // Failure cascade patterns
     const cascadePatterns = this.detectFailureCascades(correlations);
     patterns.push(...cascadePatterns);
-    
+
     // Recurring failure patterns
     const recurringPatterns = this.detectRecurringFailures(correlations);
     patterns.push(...recurringPatterns);
-    
+
     // Silent failure patterns
     const silentPatterns = this.detectSilentFailures(correlations);
     patterns.push(...silentPatterns);
-    
+
     // Performance degradation patterns
     const performancePatterns = this.detectPerformanceDegradation(correlations);
     patterns.push(...performancePatterns);
-    
+
     return this.rankPatterns(patterns);
   }
 
@@ -716,7 +716,7 @@ class PatternAnalyzer {
     // Group correlations by time windows and detect cascading failures
     const timeWindows = this.groupByTimeWindows(correlations, 3600000); // 1 hour windows
     const cascades = [];
-    
+
     for (const window of timeWindows) {
       if (window.correlations.length >= 3) { // Multiple failures in short time
         const cascade = {
@@ -734,7 +734,7 @@ class PatternAnalyzer {
         cascades.push(cascade);
       }
     }
-    
+
     return cascades;
   }
 
@@ -742,7 +742,7 @@ class PatternAnalyzer {
     // Group by error signatures and detect recurring patterns
     const errorGroups = this.groupByErrorSignature(correlations);
     const recurring = [];
-    
+
     for (const [signature, group] of Object.entries(errorGroups)) {
       if (group.length >= 3) { // Recurring failure threshold
         recurring.push({
@@ -759,14 +759,14 @@ class PatternAnalyzer {
         });
       }
     }
-    
+
     return recurring;
   }
 
   detectSilentFailures(correlations) {
     // Detect incidents with no corresponding test failures (blind spots)
     const silent = correlations.filter(c => c.strength < 0.2);
-    
+
     if (silent.length > correlations.length * 0.3) { // >30% silent failures
       return [{
         type: 'silent_failures',
@@ -780,18 +780,18 @@ class PatternAnalyzer {
         ]
       }];
     }
-    
+
     return [];
   }
 
   detectPerformanceDegradation(correlations) {
     // Detect patterns indicating performance issues
-    const performanceCorrelations = correlations.filter(c => 
-      c.factors.includes('performance') || 
-      (c.metadata.testPerformanceMetrics && 
+    const performanceCorrelations = correlations.filter(c =>
+      c.factors.includes('performance') ||
+      (c.metadata.testPerformanceMetrics &&
        c.metadata.testPerformanceMetrics.duration > 30000) // >30s tests
     );
-    
+
     if (performanceCorrelations.length > 2) {
       return [{
         type: 'performance_degradation',
@@ -805,27 +805,27 @@ class PatternAnalyzer {
         ]
       }];
     }
-    
+
     return [];
   }
 
   groupByTimeWindows(correlations, windowSize) {
     const windows = [];
     const sorted = correlations.sort((a, b) => a.timestamp - b.timestamp);
-    
+
     let currentWindow = null;
-    
+
     for (const correlation of sorted) {
-      if (!currentWindow || 
+      if (!currentWindow ||
           correlation.timestamp - currentWindow.startTime > windowSize) {
         if (currentWindow) windows.push(currentWindow);
         currentWindow = {
           startTime: correlation.timestamp,
           endTime: correlation.timestamp,
           correlations: [correlation],
-          timeRange: { 
-            start: correlation.timestamp, 
-            end: correlation.timestamp 
+          timeRange: {
+            start: correlation.timestamp,
+            end: correlation.timestamp
           }
         };
       } else {
@@ -834,14 +834,14 @@ class PatternAnalyzer {
         currentWindow.timeRange.end = correlation.timestamp;
       }
     }
-    
+
     if (currentWindow) windows.push(currentWindow);
     return windows;
   }
 
   groupByErrorSignature(correlations) {
     const groups = {};
-    
+
     for (const correlation of correlations) {
       const signature = correlation.metadata.testErrorType || 'unknown';
       if (!groups[signature]) {
@@ -849,21 +849,21 @@ class PatternAnalyzer {
       }
       groups[signature].push(correlation);
     }
-    
+
     return groups;
   }
 
   extractAffectedServices(correlations) {
     const services = new Set();
-    
+
     for (const correlation of correlations) {
       if (correlation.metadata.affectedServices) {
-        correlation.metadata.affectedServices.forEach(service => 
+        correlation.metadata.affectedServices.forEach(service =>
           services.add(service)
         );
       }
     }
-    
+
     return Array.from(services);
   }
 
@@ -884,10 +884,10 @@ class AlertManager {
 
   async sendAlert(alert) {
     console.log(`🚨 ALERT [${alert.severity}]: ${alert.message}`);
-    
+
     // Store alert for tracking
     await this.storeAlert(alert);
-    
+
     // Send to configured channels based on severity
     if (alert.severity === 'critical') {
       await this.sendCriticalAlert(alert);
@@ -942,7 +942,7 @@ class AlertManager {
       acknowledged: false,
       createdAt: new Date()
     };
-    
+
     // In production, this would integrate with your monitoring system
     console.log('💾 Alert stored for tracking:', alertData.id);
   }
@@ -973,7 +973,7 @@ class TestScenarioGenerator {
       sourceIncident: incident.id,
       createdAt: new Date()
     };
-    
+
     return scenario;
   }
 
@@ -992,7 +992,7 @@ class TestScenarioGenerator {
         description: 'Navigate to affected page/feature'
       }
     ];
-    
+
     // Add steps based on user flow
     if (incident.userFlow === 'registration') {
       steps.push(
@@ -1015,14 +1015,14 @@ class TestScenarioGenerator {
         { action: 'navigate', target: 'dashboard', description: 'Access dashboard' }
       );
     }
-    
+
     // Add error condition simulation
     steps.push({
       action: 'simulate_error',
       target: incident.rootCause || 'system',
       description: `Simulate condition that caused: ${incident.title}`
     });
-    
+
     return steps;
   }
 
@@ -1036,27 +1036,27 @@ class TestScenarioGenerator {
       'Error messages should be user-friendly',
       'System should degrade gracefully'
     ];
-    
+
     if (incident.userFlow === 'payment') {
       assertions.push('Payment should not be charged on error');
       assertions.push('Transaction state should be consistent');
     }
-    
+
     if (incident.userFlow === 'registration') {
       assertions.push('User data should not be lost');
       assertions.push('Registration should be retryable');
     }
-    
+
     if (incident.userFlow === 'gallery') {
       assertions.push('Images should load with fallback');
       assertions.push('Performance should remain acceptable');
     }
-    
+
     if (incident.userFlow === 'admin') {
       assertions.push('Admin session should remain secure');
       assertions.push('Data integrity should be maintained');
     }
-    
+
     return assertions;
   }
 
@@ -1074,7 +1074,7 @@ class TestScenarioGenerator {
       admin: '/admin',
       newsletter: '/newsletter'
     };
-    
+
     return urlPatterns[incident.userFlow] || '/';
   }
 
@@ -1085,7 +1085,7 @@ class TestScenarioGenerator {
       medium: 'medium',
       low: 'low'
     };
-    
+
     return priorityMap[incident.severity] || 'medium';
   }
 
@@ -1098,7 +1098,7 @@ class TestScenarioGenerator {
       admin: 'high',
       newsletter: 'low'
     };
-    
+
     return effortMap[incident.userFlow] || 'medium';
   }
 
@@ -1120,10 +1120,10 @@ class MLPredictiveAnalyzer {
     // Prepare features for ML training
     const features = this.extractFeatures(correlations, patterns);
     this.features.push(...features);
-    
+
     // In production, this would train/update ML models
     console.log(`🤖 ML models updated with ${features.length} new features`);
-    
+
     // Store features for external ML training
     await this.storeFeatures(features);
   }
@@ -1134,39 +1134,39 @@ class MLPredictiveAnalyzer {
       timeToIncident: correlation.timeDifference,
       dayOfWeek: new Date(correlation.timestamp).getDay(),
       hourOfDay: new Date(correlation.timestamp).getHours(),
-      
+
       // Test features
       testSeverity: this.encodeSeverity(correlation.metadata.testSeverity),
       testRetryCount: correlation.metadata.retryCount || 0,
       testFlakyScore: correlation.metadata.flakyScore || 0,
       testDuration: correlation.metadata.testDuration || 0,
-      
+
       // Incident features
       incidentSeverity: this.encodeSeverity(correlation.metadata.incidentSeverity),
       businessImpact: correlation.businessImpact,
       preventable: correlation.metadata.preventable ? 1 : 0,
       customerImpact: correlation.metadata.customerImpact || 0,
       revenueImpact: correlation.metadata.revenueImpact || 0,
-      
+
       // Correlation features
       correlationStrength: correlation.strength,
       confidence: correlation.confidence,
       predictivePower: correlation.predictivePower,
       factorCount: correlation.factors.length,
-      
+
       // Pattern features
       cascadeRisk: this.calculateCascadeRisk(patterns, correlation),
       recurringRisk: this.calculateRecurringRisk(patterns, correlation),
       silentFailureRisk: this.calculateSilentFailureRisk(patterns, correlation),
-      
+
       // Environment features
       environment: this.encodeEnvironment(correlation.metadata.environment),
       userFlow: this.encodeUserFlow(correlation.metadata.userFlow),
       errorType: this.encodeErrorType(correlation.metadata.testErrorType),
-      
+
       // Target variable (what we want to predict)
       willCauseIncident: correlation.strength > 0.7 ? 1 : 0,
-      
+
       // Metadata
       timestamp: correlation.timestamp,
       correlationId: correlation.id
@@ -1181,14 +1181,14 @@ class MLPredictiveAnalyzer {
       version: '1.0',
       schema: this.getFeatureSchema()
     };
-    
+
     try {
       const dataDir = path.join(__dirname, '..', 'data', 'ml');
       await fs.mkdir(dataDir, { recursive: true });
-      
+
       const filename = `features_${new Date().toISOString().split('T')[0]}.json`;
       const filepath = path.join(dataDir, filename);
-      
+
       await fs.writeFile(filepath, JSON.stringify(featureData, null, 2));
       console.log(`>📊 ML features stored: ${filepath}`);
     } catch (error) {
@@ -1219,30 +1219,30 @@ class MLPredictiveAnalyzer {
   }
 
   encodeUserFlow(userFlow) {
-    const flowMap = { 
-      payment: 6, admin: 5, authentication: 4, 
-      registration: 3, gallery: 2, newsletter: 1, general: 0 
+    const flowMap = {
+      payment: 6, admin: 5, authentication: 4,
+      registration: 3, gallery: 2, newsletter: 1, general: 0
     };
     return flowMap[userFlow] || 0;
   }
 
   encodeErrorType(errorType) {
-    const errorMap = { 
-      database: 6, network: 5, authentication: 4, 
-      performance: 3, validation: 2, ui: 1, unknown: 0 
+    const errorMap = {
+      database: 6, network: 5, authentication: 4,
+      performance: 3, validation: 2, ui: 1, unknown: 0
     };
     return errorMap[errorType] || 0;
   }
 
   calculateCascadeRisk(patterns, correlation) {
     const cascadePatterns = patterns.filter(p => p.type === 'failure_cascade');
-    return cascadePatterns.length > 0 ? 
+    return cascadePatterns.length > 0 ?
       cascadePatterns.reduce((sum, p) => sum + p.riskLevel, 0) / cascadePatterns.length : 0;
   }
 
   calculateRecurringRisk(patterns, correlation) {
     const recurringPatterns = patterns.filter(p => p.type === 'recurring_failure');
-    return recurringPatterns.length > 0 ? 
+    return recurringPatterns.length > 0 ?
       recurringPatterns.reduce((sum, p) => sum + p.riskLevel, 0) / recurringPatterns.length : 0;
   }
 
@@ -1272,7 +1272,7 @@ class IncidentDataStore {
   async storeAnalysisResults(results) {
     const filename = `analysis_${new Date().toISOString().split('T')[0]}.json`;
     const filepath = path.join(this.dataDir, filename);
-    
+
     try {
       await fs.writeFile(filepath, JSON.stringify(results, null, 2));
       console.log(`💾 Analysis results stored: ${filepath}`);
@@ -1288,13 +1288,13 @@ class IncidentDataStore {
         .filter(f => f.startsWith('analysis_') && f.endsWith('.json'))
         .sort()
         .slice(-days);
-      
+
       const data = [];
       for (const file of recentFiles) {
         const content = await fs.readFile(path.join(this.dataDir, file), 'utf8');
         data.push(JSON.parse(content));
       }
-      
+
       return data;
     } catch (error) {
       console.warn('Could not load historical data:', error.message);
@@ -1305,7 +1305,7 @@ class IncidentDataStore {
   async storeIncidentData(incidents) {
     const filename = `incidents_${new Date().toISOString().split('T')[0]}.json`;
     const filepath = path.join(this.dataDir, filename);
-    
+
     try {
       await fs.writeFile(filepath, JSON.stringify(incidents, null, 2));
       console.log(`💾 Incident data stored: ${filepath}`);
@@ -1317,7 +1317,7 @@ class IncidentDataStore {
   async storeTestResults(testResults) {
     const filename = `test_results_${new Date().toISOString().split('T')[0]}.json`;
     const filepath = path.join(this.dataDir, filename);
-    
+
     try {
       await fs.writeFile(filepath, JSON.stringify(testResults, null, 2));
       console.log(`📋 Test results stored: ${filepath}`);
@@ -1361,7 +1361,7 @@ export const CorrelatorHelpers = {
       },
       ...config
     });
-    
+
     return correlator;
   },
 
@@ -1370,7 +1370,7 @@ export const CorrelatorHelpers = {
    */
   async integrateWithPlaywright(testResults) {
     const correlator = await this.setupForProduction();
-    
+
     // Transform Playwright results to our format
     const normalizedResults = testResults.map(result => ({
       id: `playwright_${result.testId}`,
@@ -1388,7 +1388,7 @@ export const CorrelatorHelpers = {
         performanceMetrics: result.timing || {}
       }
     }));
-    
+
     return normalizedResults;
   },
 
@@ -1513,13 +1513,13 @@ export const CorrelatorHelpers = {
    */
   async runSampleAnalysis() {
     console.log('🔍 Running sample incident correlation analysis...\n');
-    
+
     const correlator = await this.setupForProduction();
     const incidents = this.generateSampleIncidents();
     const testResults = this.generateSampleTestResults();
-    
+
     const results = await correlator.correlateIncidents(testResults, incidents);
-    
+
     console.log('\n📈 Analysis Results:');
     console.log('====================');
     console.log(`Total Correlations: ${results.correlations.length}`);
@@ -1527,28 +1527,28 @@ export const CorrelatorHelpers = {
     console.log(`New Test Scenarios: ${results.newTestScenarios.length}`);
     console.log(`Recommendations: ${results.recommendations.length}`);
     console.log(`Potential Impact Reduction: ${(results.summary.potentialImpactReduction * 100).toFixed(1)}%`);
-    
+
     if (results.correlations.length > 0) {
       console.log('\n= Top Correlations:');
       results.correlations.slice(0, 3).forEach((correlation, index) => {
         console.log(`${index + 1}. Strength: ${(correlation.strength * 100).toFixed(1)}% - ${correlation.factors.join(', ')}`);
       });
     }
-    
+
     if (results.riskPatterns.length > 0) {
       console.log('\n�  Risk Patterns:');
       results.riskPatterns.forEach((pattern, index) => {
         console.log(`${index + 1}. ${pattern.type}: ${pattern.description} (Risk: ${(pattern.riskLevel * 100).toFixed(1)}%)`);
       });
     }
-    
+
     if (results.recommendations.length > 0) {
       console.log('\n💡 Top Recommendations:');
       results.recommendations.slice(0, 3).forEach((rec, index) => {
         console.log(`${index + 1}. [${rec.priority.toUpperCase()}] ${rec.description}`);
       });
     }
-    
+
     return results;
   }
 };

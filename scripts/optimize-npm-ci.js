@@ -2,14 +2,14 @@
 
 /**
  * NPM CI Optimization Script
- * 
+ *
  * Addresses E2E test timeout issues by optimizing dependency installation:
  * - Implements dependency caching strategy
  * - Optimizes package-lock.json structure
  * - Configures NPM timeouts and retries
  * - Removes deprecated/unused dependencies
  * - Adds NPM configuration optimizations for CI environment
- * 
+ *
  * Target: Reduce dependency installation time from 2-3 minutes to under 30 seconds
  */
 
@@ -48,13 +48,13 @@ class NPMCIOptimizer {
     if (this.initialized) {
       return this.state;
     }
-    
+
     if (this.initializationPromise) {
       return this.initializationPromise;
     }
-    
+
     this.initializationPromise = this._performInitialization();
-    
+
     try {
       const result = await this.initializationPromise;
       this.initialized = true;
@@ -67,10 +67,10 @@ class NPMCIOptimizer {
 
   async _performInitialization() {
     console.log('🚀 Initializing NPM CI Optimizer...');
-    
+
     await this._initializeDirectories();
     await this._loadPackageInfo();
-    
+
     console.log('✅ NPM CI Optimizer initialized');
     return this.state;
   }
@@ -102,7 +102,7 @@ class NPMCIOptimizer {
     }
 
     this.state.packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
-    
+
     if (existsSync(packageLockPath)) {
       this.state.packageLock = JSON.parse(readFileSync(packageLockPath, 'utf8'));
       this.state.diagnostics.set('packageLockExists', true);
@@ -113,7 +113,7 @@ class NPMCIOptimizer {
 
   async optimize() {
     console.log('\n📦 Starting NPM CI Optimization...');
-    
+
     await this.ensureInitialized();
     const startTime = Date.now();
 
@@ -123,12 +123,12 @@ class NPMCIOptimizer {
       await this._checkUnusedDependencies();
       await this._optimizePackageLock();
       await this._optimizeCache();
-      
+
       const report = await this._generateReport(startTime);
 
       console.log('\n✅ NPM CI Optimization completed successfully!');
       console.log(`⏱️ Total time: ${Date.now() - startTime}ms`);
-      
+
       return report;
 
     } catch (error) {
@@ -147,7 +147,7 @@ class NPMCIOptimizer {
     };
 
     const heavyPackages = [
-      '@playwright/test', 'playwright', 'lighthouse', 'sharp', 
+      '@playwright/test', 'playwright', 'lighthouse', 'sharp',
       'sqlite3', 'googleapis', '@babel/core', 'vercel'
     ];
 
@@ -200,7 +200,7 @@ class NPMCIOptimizer {
         await execAsync(`npm config set fetch-retries ${this.state.config.npm.fetchRetries}`);
         await execAsync(`npm config set fetch-timeout ${this.state.config.npm.fetchTimeout}`);
         await execAsync('npm config set prefer-offline true');
-        
+
         this.state.optimizations.push('Applied CI-optimized NPM configuration globally');
         console.log('  ✅ Applied CI-optimized NPM global configuration');
       } catch (error) {
@@ -221,7 +221,7 @@ class NPMCIOptimizer {
       });
 
       const analysis = JSON.parse(depcheckResult.stdout);
-      
+
       if (analysis.dependencies?.length > 0) {
         console.log('  ⚠️ Unused dependencies found:');
         analysis.dependencies.forEach(dep => {
@@ -264,12 +264,12 @@ class NPMCIOptimizer {
         cwd: projectRoot,
         timeout: 30000
       });
-      
+
       await execAsync('npm cache verify', {
         cwd: projectRoot,
         timeout: 30000
       });
-      
+
       console.log('  ✅ NPM cache optimized');
       this.state.optimizations.push('Cleaned and verified NPM cache');
 
@@ -325,7 +325,7 @@ async function main() {
         console.log('\n🎉 NPM CI optimization completed successfully!');
         console.log('\n📋 Summary:');
         report.optimizations.forEach(opt => console.log(`  ✅ ${opt}`));
-        
+
         if (report.recommendations.length > 0) {
           console.log('\n💡 Recommendations:');
           report.recommendations.forEach(rec => console.log(`  💡 ${rec}`));

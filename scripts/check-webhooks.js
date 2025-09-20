@@ -15,7 +15,7 @@ async function checkWebhooks() {
   try {
     // Get recent events
     const events = await db.execute(`
-      SELECT 
+      SELECT
         event_type,
         source,
         COUNT(*) as count,
@@ -30,7 +30,7 @@ async function checkWebhooks() {
 
     // Get recent transactions
     const transactions = await db.execute(`
-      SELECT 
+      SELECT
         status,
         COUNT(*) as count,
         SUM(total_amount) / 100.0 as total_amount,
@@ -44,7 +44,7 @@ async function checkWebhooks() {
 
     // Get transaction type breakdown
     const transactionTypes = await db.execute(`
-      SELECT 
+      SELECT
         order_type,
         COUNT(*) as count,
         SUM(total_amount) / 100.0 as total_amount
@@ -73,7 +73,7 @@ async function checkWebhooks() {
 
     // Get recent successful transactions
     const recentTransactions = await db.execute(`
-      SELECT 
+      SELECT
         uuid,
         customer_email,
         total_amount / 100.0 as amount,
@@ -91,7 +91,7 @@ async function checkWebhooks() {
 
     // Check for duplicate transactions
     const duplicates = await db.execute(`
-      SELECT 
+      SELECT
         stripe_checkout_session_id,
         COUNT(*) as count
       FROM transactions

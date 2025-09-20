@@ -50,7 +50,7 @@ describe('IDGenerator', () => {
     it('uses correct character set', () => {
       const numeric = generateRandomString(20, CHAR_SETS.NUMERIC);
       expect(numeric).toMatch(/^[0-9]+$/);
-      
+
       const hex = generateRandomString(20, CHAR_SETS.HEX);
       expect(hex).toMatch(/^[0-9A-F]+$/);
     });
@@ -77,7 +77,7 @@ describe('IDGenerator', () => {
     it('handles different character sets correctly', () => {
       const alphaUpper = generateRandomString(10, CHAR_SETS.ALPHA_UPPER);
       expect(alphaUpper).toMatch(/^[A-Z]+$/);
-      
+
       const alphaLower = generateRandomString(10, CHAR_SETS.ALPHA_LOWER);
       expect(alphaLower).toMatch(/^[a-z]+$/);
     });
@@ -120,7 +120,7 @@ describe('IDGenerator', () => {
     it('uses correct base', () => {
       const ts36 = generateTimestamp(8, 36);
       expect(ts36).toMatch(/^[0-9A-Z]+$/);
-      
+
       const ts16 = generateTimestamp(8, 16);
       expect(ts16).toMatch(/^[0-9A-F]+$/);
     });
@@ -304,7 +304,7 @@ describe('IDGenerator', () => {
       const id = generateTicketId();
       const timestamp = extractTimestamp(id);
       expect(timestamp).toBeInstanceOf(Date);
-      
+
       // Should be very close to mocked time
       const timeDiff = Math.abs(timestamp.getTime() - Date.now());
       expect(timeDiff).toBeLessThan(1000);
@@ -318,10 +318,10 @@ describe('IDGenerator', () => {
     it('handles different ID types', () => {
       const ticketId = generateTicketId();
       const transactionId = generateTransactionId();
-      
+
       const ticketTime = extractTimestamp(ticketId);
       const transactionTime = extractTimestamp(transactionId);
-      
+
       expect(ticketTime).toBeInstanceOf(Date);
       expect(transactionTime).toBeInstanceOf(Date);
     });
@@ -331,7 +331,7 @@ describe('IDGenerator', () => {
     it('generates correct number of unique IDs', () => {
       const ids = generateBatchIds(10, 'TICKET');
       expect(ids).toHaveLength(10);
-      
+
       const unique = new Set(ids);
       expect(unique.size).toBe(10);
     });
@@ -344,7 +344,7 @@ describe('IDGenerator', () => {
     it('generates different ID types', () => {
       const ticketIds = generateBatchIds(5, 'TICKET');
       const transactionIds = generateBatchIds(5, 'TRANSACTION');
-      
+
       ticketIds.forEach(id => expect(id).toMatch(/^TKT-/));
       transactionIds.forEach(id => expect(id).toMatch(/^TXN-/));
     });
@@ -362,7 +362,7 @@ describe('IDGenerator', () => {
       const start = Date.now();
       const ids = generateBatchIds(100, 'TICKET');
       const duration = Date.now() - start;
-      
+
       expect(ids).toHaveLength(100);
       expect(duration).toBeLessThan(1000); // Should complete within 1 second
     });
@@ -386,7 +386,7 @@ describe('IDGenerator', () => {
     it('calculates for different ID types', () => {
       const ticket = calculateCollisionProbability('TICKET', 1000);
       const transaction = calculateCollisionProbability('TRANSACTION', 1000);
-      
+
       // Transaction IDs have longer random parts, so lower collision probability
       expect(transaction.probability).toBeLessThan(ticket.probability);
     });
@@ -421,10 +421,10 @@ describe('IDGenerator', () => {
     it('has correct version and variant bits', () => {
       const uuid = generateUUID();
       const parts = uuid.split('-');
-      
+
       // Version 4 check
       expect(parts[2].charAt(0)).toBe('4');
-      
+
       // Variant check (should start with 8, 9, a, or b)
       expect(['8', '9', 'a', 'b']).toContain(parts[3].charAt(0));
     });
@@ -515,7 +515,7 @@ describe('IDGenerator', () => {
       const longInput = 'a'.repeat(1000);
       const hash = generateHashId(longInput, 12);
       expect(hash).toHaveLength(12);
-      
+
       // Should be reproducible
       const hash2 = generateHashId(longInput, 12);
       expect(hash).toBe(hash2);

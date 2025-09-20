@@ -1,19 +1,19 @@
 /**
  * Unified Playwright Configuration - Environment Aware
- * 
+ *
  * This configuration consolidates multiple previously conflicting configurations
  * into a single, environment-aware setup. It automatically adapts based on:
  * - Environment variables (CI vs local development)
  * - Test mode (preview deployments vs local servers)
  * - Advanced scenarios (accessibility, performance, security)
- * 
+ *
  * MIGRATION NOTE: This replaces the previous 5 separate configuration files:
  * - playwright-e2e-vercel-main.config.js (main CI config)
  * - playwright-e2e-preview.config.js (preview deployments)
  * - playwright-e2e-ci.config.js (CI with dynamic ports)
  * - playwright-e2e-vercel.config.js (basic Vercel dev)
  * - The deprecated legacy config files
- * 
+ *
  * Environment Variables:
  * - PREVIEW_URL: Use Vercel preview deployment (takes precedence)
  * - CI_EXTRACTED_PREVIEW_URL: CI-extracted preview URL
@@ -22,7 +22,7 @@
  * - CI: Enable CI optimizations
  * - ADVANCED_SCENARIOS: Enable advanced test scenarios
  * - ALL_BROWSERS: Enable all browser testing (default: true)
- * 
+ *
  * Test Environment Detection:
  * 1. Preview Mode: Uses Vercel preview deployments (no local server)
  * 2. CI Mode: Uses local Vercel dev server with dynamic ports
@@ -157,7 +157,7 @@ const getBrowserProjects = () => {
   const baseProjects = [
     {
       name: 'chromium',
-      use: { 
+      use: {
         ...devices['Desktop Chrome'],
         // CI optimizations for Chromium
         ...(isCI && {
@@ -188,7 +188,7 @@ const getBrowserProjects = () => {
     },
     {
       name: 'firefox',
-      use: { 
+      use: {
         ...devices['Desktop Firefox'],
         // CI optimizations for Firefox
         ...(isCI && {
@@ -217,7 +217,7 @@ const getBrowserProjects = () => {
     baseProjects.push(
       {
         name: 'webkit',
-        use: { 
+        use: {
           ...devices['Desktop Safari'],
           ...(advancedScenarios && {
             contextOptions: {
@@ -228,7 +228,7 @@ const getBrowserProjects = () => {
       },
       {
         name: 'mobile-chrome',
-        use: { 
+        use: {
           ...devices['Pixel 5'],
           ...(advancedScenarios && {
             contextOptions: {
@@ -239,7 +239,7 @@ const getBrowserProjects = () => {
       },
       {
         name: 'mobile-safari',
-        use: { 
+        use: {
           ...devices['iPhone 12'],
           ...(advancedScenarios && {
             contextOptions: {
@@ -260,7 +260,7 @@ const getWebServerConfig = () => {
 
   const buildVercelCommand = () => {
     const args = ['vercel', 'dev', '--yes', '--listen', envConfig.port.toString()];
-    
+
     // Require authentication - fail immediately if missing
     if (!process.env.VERCEL_TOKEN) {
       throw new Error('❌ FATAL: VERCEL_TOKEN secret not configured');
@@ -268,10 +268,10 @@ const getWebServerConfig = () => {
     if (!process.env.VERCEL_ORG_ID) {
       throw new Error('❌ FATAL: VERCEL_ORG_ID secret not configured');
     }
-    
+
     args.push('--token', process.env.VERCEL_TOKEN);
     args.push('--scope', process.env.VERCEL_ORG_ID);
-    
+
     return args.join(' ');
   };
 
@@ -324,47 +324,47 @@ if (useWebServer) {
 
 export default defineConfig({
   testDir: './tests/e2e/flows',
-  
+
   // Execution configuration
   fullyParallel: isPreviewMode, // Preview can run parallel, local/CI run sequentially for database safety
   forbidOnly: isCI,
   retries: isCI ? 3 : (isPreviewMode ? 1 : 1), // More retries for remote deployments
   workers: isCI ? (isCIMode ? 1 : 2) : 1, // Conservative parallelism
-  
+
   // Reporting configuration
-  reporter: isCI 
+  reporter: isCI
     ? [
-        ['list'], 
-        ['html', { outputFolder: `playwright-report-${envConfig.mode}`, open: 'never' }], 
+        ['list'],
+        ['html', { outputFolder: `playwright-report-${envConfig.mode}`, open: 'never' }],
         ['junit', { outputFile: 'test-results/junit.xml' }],
         ['json', { outputFile: 'test-results/test-results.json' }]
       ]
     : [
-        ['list'], 
+        ['list'],
         ['html', { outputFolder: `playwright-report-${envConfig.mode}`, open: 'on-failure' }]
       ],
-  
+
   // Global setup/teardown
   globalSetup: isPreviewMode ? './tests/e2e/global-setup-preview.js' : './tests/e2e/global-setup-ci.js',
   globalTeardown: isPreviewMode ? './tests/e2e/global-teardown-preview.js' : './tests/e2e/global-teardown.js',
-  
+
   // Test timeout
   timeout: timeouts.test,
-  
+
   // Use configuration
   use: {
     baseURL: envConfig.baseURL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
-    
+
     // Viewport
     viewport: { width: 1280, height: 720 },
-    
+
     // Timeouts
     actionTimeout: timeouts.action,
     navigationTimeout: timeouts.navigation,
-    
+
     // Additional headers for remote testing
     ...(isPreviewMode && {
       extraHTTPHeaders: {
@@ -378,7 +378,7 @@ export default defineConfig({
 
   // Web server configuration
   webServer: getWebServerConfig(),
-  
+
   // Expect configuration
   expect: {
     timeout: timeouts.expect,

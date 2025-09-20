@@ -24,7 +24,7 @@ export class NetworkSimulator {
       try {
         this.cdpSession = await this.context.newCDPSession(this.page);
         await this.cdpSession.send('Network.enable');
-        
+
         // Store original network state for cleanup
         this.originalNetworkState = {
           offline: false,
@@ -50,9 +50,9 @@ export class NetworkSimulator {
     }
 
     const cdpSession = await this._initializeCDPSession();
-    
+
     let networkParams;
-    
+
     if (typeof condition === 'string') {
       networkParams = this._getPresetNetworkCondition(condition);
     } else {
@@ -66,7 +66,7 @@ export class NetworkSimulator {
     try {
       // Apply network conditions via CDP
       await cdpSession.send('Network.emulateNetworkConditions', networkParams);
-      
+
       // Also set offline state at context level for broader compatibility
       if (networkParams.offline !== undefined) {
         await this.context.setOffline(networkParams.offline);
@@ -150,7 +150,7 @@ export class NetworkSimulator {
         try {
           isOnline = !isOnline;
           toggleCount++;
-          
+
           await cdpSession.send('Network.emulateNetworkConditions', {
             offline: !isOnline,
             downloadThroughput: isOnline ? -1 : 0,
@@ -201,7 +201,7 @@ export class NetworkSimulator {
 
     const routeHandler = async (route) => {
       requestCount++;
-      
+
       // Apply delay if specified
       if (delayMs > 0) {
         await this.page.waitForTimeout(delayMs);
@@ -254,7 +254,7 @@ export class NetworkSimulator {
 
     const routeHandler = async (route) => {
       requestCount++;
-      
+
       if (requestCount <= maxRetries) {
         // Simulate timeout by not responding
         setTimeout(() => {
@@ -292,7 +292,7 @@ export class NetworkSimulator {
 
     const routeHandler = async (route) => {
       await this.page.waitForTimeout(delayMs);
-      
+
       // For images, provide a minimal valid response
       if (route.request().resourceType() === 'image') {
         await route.fulfill({
@@ -332,7 +332,7 @@ export class NetworkSimulator {
       if (this.cdpSession && this.originalNetworkState) {
         await this.cdpSession.send('Network.emulateNetworkConditions', this.originalNetworkState);
       }
-      
+
       // Restore context offline state
       await this.context.setOffline(false);
     } catch (error) {
@@ -350,7 +350,7 @@ export class NetworkSimulator {
     }
 
     const isOffline = await this.page.evaluate(() => !navigator.onLine);
-    
+
     return {
       offline: isOffline,
       activeRoutes: this.activeRoutes.size,
@@ -444,20 +444,20 @@ export async function testNetworkResilience(page, options = {}) {
   } = options;
 
   const simulator = createNetworkSimulator(page);
-  
+
   try {
     // Apply network condition
     await simulator.simulateNetworkCondition(condition);
-    
+
     // Execute test function
     const result = await testFunction();
-    
+
     // Verify expectations
     if (expectations.maxLoadTime) {
       const startTime = Date.now();
       await page.waitForLoadState('networkidle', { timeout: expectations.maxLoadTime });
       const loadTime = Date.now() - startTime;
-      
+
       if (loadTime > expectations.maxLoadTime) {
         throw new Error(`Load time ${loadTime}ms exceeded maximum ${expectations.maxLoadTime}ms`);
       }

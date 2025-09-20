@@ -3,10 +3,10 @@
  * Database Cleanup Script
  * Standalone script for cleaning up test data from the database
  * Can be run manually or as part of CI/CD pipeline
- * 
+ *
  * Usage:
  *   node scripts/database-cleanup.js [options]
- * 
+ *
  * Options:
  *   --mode=test|full        Cleanup mode (default: test)
  *   --tables=table1,table2  Specific tables (default: all)
@@ -14,7 +14,7 @@
  *   --stats                Show cleanup statistics only
  *   --no-transaction       Disable transaction wrapping
  *   --help                 Show this help message
- * 
+ *
  * Examples:
  *   npm run db:cleanup:test           # Clean test data (safe)
  *   npm run db:cleanup:stats          # Show cleanup statistics
@@ -50,19 +50,19 @@ Examples:
   # Safe cleanup of test data only
   node scripts/database-cleanup.js
   node scripts/database-cleanup.js --mode=test
-  
+
   # Preview what would be cleaned
   node scripts/database-cleanup.js --dry-run
-  
+
   # Show database statistics
   node scripts/database-cleanup.js --stats
-  
+
   # Clean specific tables only
   node scripts/database-cleanup.js --tables=email_subscribers,transactions
-  
+
   # Full cleanup (DANGER: removes ALL data)
   node scripts/database-cleanup.js --mode=full --dry-run
-  
+
 NPM Scripts:
   npm run db:cleanup:test      # Clean test data
   npm run db:cleanup:stats     # Show statistics
@@ -71,7 +71,7 @@ NPM Scripts:
 
 Database Tables:
   - email_subscribers    Newsletter subscriptions
-  - email_events        Email interaction events  
+  - email_events        Email interaction events
   - email_audit_log     Email system audit trail
   - transactions        Payment transactions
   - registrations       Ticket registrations
@@ -95,7 +95,7 @@ function parseArgs() {
     useTransaction: true,
     help: false
   };
-  
+
   for (const arg of args) {
     if (arg === '--help' || arg === '-h') {
       options.help = true;
@@ -113,55 +113,55 @@ function parseArgs() {
       console.warn(`⚠️  Unknown option: ${arg}`);
     }
   }
-  
+
   // Validate mode
   if (!['test', 'full'].includes(options.mode)) {
     console.error(`❌ Invalid mode: ${options.mode}. Must be 'test' or 'full'`);
     process.exit(1);
   }
-  
+
   return options;
 }
 
 async function main() {
   console.log('🗄️  Database Cleanup Script\n');
-  
+
   const options = parseArgs();
-  
+
   if (options.help) {
     showHelp();
     return;
   }
-  
+
   console.log(`📋 Mode: ${options.mode}`);
   console.log(`📊 Tables: ${options.tables.join(', ')}`);
   console.log(`🔍 Dry run: ${options.dryRun ? 'enabled' : 'disabled'}`);
   console.log(`💾 Transaction: ${options.useTransaction ? 'enabled' : 'disabled'}`);
-  
+
   // Show warning for full cleanup
   if (options.mode === 'full' && !options.dryRun) {
     console.log('\n⚠️  WARNING: Full cleanup mode will delete ALL data from specified tables!');
     console.log('⚠️  This action cannot be undone!');
     console.log('⚠️  Consider running with --dry-run first.\n');
-    
+
     // Add a delay to let the user see the warning
     await new Promise(resolve => setTimeout(resolve, 2000));
   }
-  
+
   try {
     let result;
-    
+
     if (options.statsOnly) {
       // Just show statistics
       result = await getCleanupStats({ testDataOnly: options.mode === 'test' });
-      
+
       if (!result.success) {
         console.error('❌ Failed to get cleanup statistics:', result.error);
         process.exit(1);
       }
-      
+
       console.log('📊 Database cleanup statistics retrieved successfully');
-      
+
     } else if (options.mode === 'test') {
       // Clean test data only
       result = await cleanTestData({
@@ -169,7 +169,7 @@ async function main() {
         useTransaction: options.useTransaction,
         dryRun: options.dryRun
       });
-      
+
     } else if (options.mode === 'full') {
       // Full cleanup
       result = await cleanAllData({
@@ -178,23 +178,23 @@ async function main() {
         dryRun: options.dryRun
       });
     }
-    
+
     if (result && !result.success) {
       console.error('❌ Cleanup failed:', result.error);
       process.exit(1);
     }
-    
+
     if (result && !options.statsOnly) {
       console.log(`🎉 Cleanup completed successfully! Records processed: ${result.recordsCleaned}`);
     }
-    
+
   } catch (error) {
     console.error('❌ Cleanup script failed:', error.message);
-    
+
     if (process.env.NODE_ENV === 'development') {
       console.error('📍 Stack trace:', error.stack);
     }
-    
+
     process.exit(1);
   }
 }

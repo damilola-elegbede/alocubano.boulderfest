@@ -3,9 +3,10 @@ import { defineConfig } from 'vitest/config';
 /**
  * Integration Test Configuration - Real Database & Services
  * Target: ~30-50 tests with real database connections
- * 
+ *
  * Key Features:
- * - SQLite database with real file storage
+ * - In-memory SQLite databases for perfect test isolation
+ * - Parallel test execution enabled (no more lock contention!)
  * - Limited external service integration
  * - Proper test isolation with cleanup
  * - Comprehensive API testing
@@ -13,48 +14,50 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     environment: 'node',
-    
-    // Optimized timeouts after performance improvements
-    testTimeout: Number(process.env.VITEST_TEST_TIMEOUT || (process.env.CI === 'true' ? 60000 : 30000)),
-    hookTimeout: Number(process.env.VITEST_HOOK_TIMEOUT || (process.env.CI === 'true' ? 15000 : 10000)),
-    
+
+    // Optimized timeouts for in-memory databases (faster than file-based)
+    testTimeout: Number(process.env.VITEST_TEST_TIMEOUT || (process.env.CI === 'true' ? 30000 : 15000)),
+    hookTimeout: Number(process.env.VITEST_HOOK_TIMEOUT || (process.env.CI === 'true' ? 10000 : 5000)),
+
     // Integration test specific setup
     setupFiles: ['./tests/setup-integration.js'],
     globals: true,
-    
+
     // Include only integration tests
     include: ['tests/integration/**/*.test.js'],
     exclude: [
-      'node_modules/**', 
-      'tests/e2e/**', 
+      'node_modules/**',
+      'tests/e2e/**',
       'tests/unit/**',
       'tests/helpers/**'
     ],
-    
-    // Single-process execution to avoid SQLite database locking issues
-    pool: 'forks',
+
+    // PARALLEL EXECUTION ENABLED!
+    // In-memory SQLite allows safe parallel test execution
+    pool: 'threads',
     poolOptions: {
-      forks: {
-        singleFork: true,     // Use single process to avoid database locks
-        isolate: true         // Maintain test isolation
+      threads: {
+        minThreads: 2,
+        maxThreads: process.env.CI === 'true' ? 4 : 2, // More workers in CI
+        isolate: true // Maintain test isolation
       }
     },
 
-    // Sequential execution for database safety
-    maxConcurrency: 1,
-    minWorkers: 1,
-    maxWorkers: 1,
-    
-    // More retry attempts for integration tests (network/database issues)
-    retry: process.env.CI === 'true' ? 2 : 1,
-    
+    // Enable concurrent test execution (no more database locks!)
+    maxConcurrency: 4,
+    minWorkers: 2,
+    maxWorkers: process.env.CI === 'true' ? 4 : 2,
+
+    // Fewer retries needed with in-memory databases
+    retry: process.env.CI === 'true' ? 1 : 0,
+
     // Detailed reporting for integration tests
     reporter: process.env.CI === 'true' ? ['verbose', 'junit'] : 'verbose',
     outputFile: process.env.CI === 'true' ? './integration-test-results.xml' : undefined,
-    
+
     // Resource monitoring for integration tests
     logHeapUsage: true,
-    
+
     // Coverage configuration for integration tests
     coverage: {
       provider: 'v8',

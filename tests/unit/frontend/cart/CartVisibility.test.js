@@ -19,7 +19,7 @@ describe('CartVisibility', () => {
       expect(PAGE_VISIBILITY_CONFIG).toHaveProperty('alwaysShow');
       expect(PAGE_VISIBILITY_CONFIG).toHaveProperty('neverShow');
       expect(PAGE_VISIBILITY_CONFIG).toHaveProperty('showWithItems');
-      
+
       expect(Array.isArray(PAGE_VISIBILITY_CONFIG.alwaysShow)).toBe(true);
       expect(Array.isArray(PAGE_VISIBILITY_CONFIG.neverShow)).toBe(true);
       expect(Array.isArray(PAGE_VISIBILITY_CONFIG.showWithItems)).toBe(true);
@@ -194,7 +194,7 @@ describe('CartVisibility', () => {
   describe('getCartVisibilityState', () => {
     it('should return complete visibility state', () => {
       const state = getCartVisibilityState('/tickets', true);
-      
+
       expect(state).toMatchObject({
         currentPath: '/tickets',
         hasItems: true,
@@ -207,7 +207,7 @@ describe('CartVisibility', () => {
 
     it('should handle root path normalization', () => {
       const state = getCartVisibilityState('/', false);
-      
+
       expect(state.currentPath).toBe('/');
       expect(state.rule).toBe('withItems');
       expect(state.shouldShow).toBe(false);
@@ -215,7 +215,7 @@ describe('CartVisibility', () => {
 
     it('should handle trailing slash normalization', () => {
       const state = getCartVisibilityState('/about/', true);
-      
+
       expect(state.currentPath).toBe('/about');
       expect(state.rule).toBe('withItems');
       expect(state.shouldShow).toBe(true);
@@ -224,7 +224,7 @@ describe('CartVisibility', () => {
     it('should handle boolean coercion for hasItems', () => {
       const state1 = getCartVisibilityState('/about', 0);
       const state2 = getCartVisibilityState('/about', 1);
-      
+
       expect(state1.hasItems).toBe(false);
       expect(state2.hasItems).toBe(true);
     });
@@ -293,7 +293,7 @@ describe('CartVisibility', () => {
     it('should return copies, not references', () => {
       const pages = getPagesByRule('always');
       pages.push('/test');
-      
+
       // Original config should be unchanged
       expect(PAGE_VISIBILITY_CONFIG.alwaysShow).not.toContain('/test');
     });
@@ -303,13 +303,13 @@ describe('CartVisibility', () => {
     it('should handle complete shopping flow visibility', () => {
       // Start on home page (no items)
       expect(determineCartVisibility('/', false)).toBe(false);
-      
+
       // Go to tickets page (always show)
       expect(determineCartVisibility('/tickets', false)).toBe(true);
-      
+
       // Add items and go to about page (show with items)
       expect(determineCartVisibility('/about', true)).toBe(true);
-      
+
       // Error page (never show, even with items)
       expect(determineCartVisibility('/404', true)).toBe(false);
     });
@@ -317,7 +317,7 @@ describe('CartVisibility', () => {
     it('should maintain consistency across similar paths', () => {
       const paths = ['/tickets', '/tickets/', '/tickets/special'];
       const hasItems = [true, false];
-      
+
       paths.forEach(path => {
         hasItems.forEach(items => {
           expect(determineCartVisibility(path, items)).toBe(true);

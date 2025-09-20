@@ -2,10 +2,10 @@
 
 /**
  * CI/CD Environment Variable Validation Script
- * 
+ *
  * Validates that all required environment variables are properly configured
  * across different CI/CD environments and workflows.
- * 
+ *
  * Usage:
  *   node scripts/ci/validate-environment.js [--fix] [--env=ci|local|production]
  */
@@ -43,7 +43,7 @@ const ENVIRONMENT_VARIABLES = {
       required: false, // Not required for local validation
       aliases: ['PLAYWRIGHT_BASE_URL'] // Legacy names to replace
     },
-    
+
     // Database configuration
     DATABASE_URL: {
       description: 'Database connection URL (environment-specific)',
@@ -73,5 +73,5 @@ function validateEnvironment(context = 'local', options = {}) {
   const errors = [];
   const warnings = [];
   const info = [];
-  
+
   console.log(`= Validating environment variables for: ${context}`);

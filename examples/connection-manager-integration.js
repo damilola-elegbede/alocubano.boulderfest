@@ -141,7 +141,7 @@ export class RegistrationService {
     try {
       // Fix: Combine into one query instead of concurrent queries on same connection
       const result = await lease.execute(`
-        SELECT 
+        SELECT
           COUNT(*) as total,
           SUM(CASE WHEN date(created_at) = date("now") THEN 1 ELSE 0 END) as today
         FROM registrations

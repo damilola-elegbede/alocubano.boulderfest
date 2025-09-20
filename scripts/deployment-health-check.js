@@ -267,7 +267,7 @@ export class DeploymentHealthCheck {
 
     try {
       const client = await getDatabaseClient();
-      const result = await client.execute('SELECT 1 as test, datetime("now") as timestamp');
+      const result = await client.execute("SELECT 1 as test, datetime('now') as timestamp");
 
       if (result.rows && result.rows.length > 0) {
         connectivityCheck.setSuccess('Database connectivity verified', {

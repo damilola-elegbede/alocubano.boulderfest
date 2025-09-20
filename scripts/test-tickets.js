@@ -8,9 +8,9 @@ async function testTickets() {
 
   // Get a recent transaction
   const result = await db.execute(`
-    SELECT * FROM transactions 
-    WHERE status IN ('completed', 'paid') 
-    ORDER BY created_at DESC 
+    SELECT * FROM transactions
+    WHERE status IN ('completed', 'paid')
+    ORDER BY created_at DESC
     LIMIT 1
   `);
 

@@ -14,29 +14,29 @@ async function analyzeTestInfrastructure() {
 
   // Analyze test utilities
   const paths = ['./tests/utils', './tests/config', './tests/mocks'];
-  
+
   for (const dirPath of paths) {
     const files = await readdir(dirPath).catch((err) => {
       console.warn(`⚠️ Could not read directory ${dirPath}: ${err.message}`);
       return [];
     });
-    
+
     for (const file of files) {
       if (!file.endsWith('.js')) continue;
-      
+
       const filePath = join(dirPath, file);
       const content = await readFile(filePath, 'utf8');
       const lines = content.split('\n').length;
       const deps = extractDependencies(content);
-      
+
       results.totalLines += lines;
       results.fileCount++;
-      
+
       // Aggregate top-level dependency frequencies
       for (const dep of deps) {
         results.dependencies[dep] = (results.dependencies[dep] || 0) + 1;
       }
-      
+
       // Detect manager classes (elimination targets)
       if (content.match(/class\s+\w*(?:Manager|Orchestrator|Coordinator|Registry|Mock)\b/)) {
         results.managerClasses.push({
@@ -47,7 +47,7 @@ async function analyzeTestInfrastructure() {
           dependencies: deps  // Use cached dependencies
         });
       }
-      
+
       // Track all utilities
       results.utilities.push({
         file: filePath,
@@ -57,7 +57,7 @@ async function analyzeTestInfrastructure() {
       });
     }
   }
-  
+
   // Generate comprehensive report
   const report = generateReport(results);
   await mkdir('./docs', { recursive: true });
@@ -68,7 +68,7 @@ async function analyzeTestInfrastructure() {
     dependencies: results.dependencies || {}
   };
   await writeFile('./docs/infrastructure-metrics.json', JSON.stringify(jsonResults, null, 2));
-  
+
   return results;
 }
 
@@ -95,7 +95,7 @@ function categorizeUtility(filename, content) {
 
 function generateReport(results) {
   return `# Test Infrastructure Inventory
-  
+
 Generated: ${results.timestamp}
 
 ## Executive Summary

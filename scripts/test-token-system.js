@@ -12,8 +12,8 @@ async function testTokenSystem() {
     console.log("1. Checking token system tables...");
 
     const tables = await db.execute(`
-      SELECT name FROM sqlite_master 
-      WHERE type='table' AND name IN ('access_tokens', 'action_tokens') 
+      SELECT name FROM sqlite_master
+      WHERE type='table' AND name IN ('access_tokens', 'action_tokens')
       ORDER BY name
     `);
 
@@ -39,7 +39,7 @@ async function testTokenSystem() {
     // Create a test transaction record
     const testTransaction = await db.execute({
       sql: `INSERT INTO transactions (
-        uuid, order_type, order_details, customer_name, customer_email, 
+        uuid, order_type, order_details, customer_name, customer_email,
         total_amount, payment_method, status, created_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       args: [

@@ -2,23 +2,23 @@
 
 /**
  * DEPRECATED: Vercel Dev Server Startup Script
- * 
+ *
  * This script is DEPRECATED for E2E testing but PRESERVED for local development.
- * 
+ *
  * CURRENT STATUS:
  * - ✅ Still used for local development (npm start, npm run start:local)
  * - ❌ No longer used for E2E testing (switched to Vercel Preview Deployments)
  * - ⚠️  May be used for debugging or manual testing
- * 
+ *
  * E2E TESTING MIGRATION:
  * E2E tests now use Vercel Preview Deployments instead of local dev servers.
  * This eliminates server hanging, port conflicts, and startup complexity.
- * 
+ *
  * PRESERVED FOR:
  * - Local development workflows
  * - Manual testing scenarios
  * - Debugging purposes
- * 
+ *
  * @deprecated For E2E testing - use Vercel Preview Deployments instead
  * @preserved For local development use cases
  */
@@ -50,55 +50,55 @@ class VercelDevStarter {
    */
   async validateVercelAuth() {
     console.log('🔐 Validating Vercel authentication...');
-    
+
     // Check if we have authentication configured
     const hasToken = !!process.env.VERCEL_TOKEN;
     const hasOrgId = !!process.env.VERCEL_ORG_ID;
-    
+
     if (!hasToken) {
       console.log('   ⚠️  No VERCEL_TOKEN found');
-      
+
       // In CI, this might be critical
       if (process.env.CI === 'true') {
         console.log('   ❌ VERCEL_TOKEN is required in CI environment');
         console.log('   💡 Please set VERCEL_TOKEN in GitHub secrets');
         throw new Error('Missing VERCEL_TOKEN in CI environment');
       }
-      
+
       console.log('   ℹ️  Running in local mode without authentication');
       console.log('   💡 Set VERCEL_TOKEN for authenticated development');
     } else {
       console.log('   ✅ VERCEL_TOKEN configured');
-      
+
       // Validate token format (basic check)
       if (process.env.VERCEL_TOKEN.length < 20) {
         console.log('   ⚠️  VERCEL_TOKEN appears to be invalid (too short)');
       }
     }
-    
+
     if (!hasOrgId && hasToken) {
       console.log('   ⚠️  VERCEL_ORG_ID not set - may cause scope issues');
     } else if (hasOrgId) {
       console.log('   ✅ VERCEL_ORG_ID configured');
     }
-    
+
     // Try to validate with Vercel CLI
     if (hasToken) {
       try {
-        const { stdout } = await execAsync('npx vercel whoami --token=' + process.env.VERCEL_TOKEN, { 
-          timeout: 10000 
+        const { stdout } = await execAsync('npx vercel whoami --token=' + process.env.VERCEL_TOKEN, {
+          timeout: 10000
         });
         console.log(`   ✅ Authenticated as: ${stdout.trim()}`);
       } catch (error) {
         console.log('   ⚠️  Could not validate Vercel token');
         console.log(`   ❌ Error: ${error.message}`);
-        
+
         if (process.env.CI === 'true') {
           throw new Error('Invalid VERCEL_TOKEN in CI environment');
         }
       }
     }
-    
+
     console.log('   ✅ Authentication validation complete');
   }
 
@@ -107,7 +107,7 @@ class VercelDevStarter {
    */
   buildVercelCommand() {
     const args = [
-      'vercel', 
+      'vercel',
       'dev',
       '--listen', `0.0.0.0:${this.options.port}`,
       // Removed --no-clipboard as it's not supported in this Vercel CLI version
@@ -125,7 +125,7 @@ class VercelDevStarter {
     } else if (process.env.CI === 'true') {
       console.log('   ⚠️  No VERCEL_TOKEN in CI - may fail to start');
     }
-    
+
     // Add scope if org ID is available
     if (process.env.VERCEL_ORG_ID) {
       args.push('--scope', process.env.VERCEL_ORG_ID);
@@ -141,7 +141,7 @@ class VercelDevStarter {
   async start() {
     console.log('🚀 Enhanced Vercel Dev Starter');
     console.log('=' .repeat(50));
-    
+
     try {
       await this.validateVercelAuth();
       await this.validateEnvironment();
@@ -150,7 +150,7 @@ class VercelDevStarter {
       await this.preventDatabaseHanging();
       await this.optimizeVercelConfig();
       await this.startVercelWithProtection();
-      
+
     } catch (error) {
       console.error('❌ Failed to start Vercel dev:', error.message);
       await this.suggestAlternatives();
@@ -163,7 +163,7 @@ class VercelDevStarter {
    */
   async validateEnvironment() {
     console.log('🔍 Validating environment...');
-    
+
     // Check Node.js version
     const nodeVersion = process.version;
     const majorVersion = parseInt(nodeVersion.slice(1).split('.')[0]);
@@ -214,7 +214,7 @@ class VercelDevStarter {
    */
   async killConflictingProcesses() {
     console.log('🧹 Cleaning up conflicting processes...');
-    
+
     try {
       const { stdout } = await execAsync(`lsof -ti:${this.options.port}`, { timeout: 5000 });
       if (stdout.trim()) {
@@ -226,7 +226,7 @@ class VercelDevStarter {
     } catch {
       // No processes to kill - this is good
     }
-    
+
     // Also kill any lingering vercel processes
     try {
       const { stdout } = await execAsync('pkill -f "vercel.*dev" || true', { timeout: 5000 });
@@ -236,7 +236,7 @@ class VercelDevStarter {
     } catch {
       // No processes to kill
     }
-    
+
     console.log('   ✅ Process cleanup completed');
   }
 
@@ -245,7 +245,7 @@ class VercelDevStarter {
    */
   async prepareEnvironmentFiles() {
     console.log('📁 Preparing environment files...');
-    
+
     // Create minimal .env.local if it doesn't exist
     const envLocalPath = resolve(projectRoot, '.env.local');
     if (!existsSync(envLocalPath)) {
@@ -287,12 +287,12 @@ TEST_ADMIN_PASSWORD=test-password
    */
   async preventDatabaseHanging() {
     console.log('🗃️  Preventing database initialization hangs...');
-    
+
     // Set environment variables to skip database operations
     process.env.SKIP_DATABASE_INIT = 'true';
     process.env.VERCEL_DEV_STARTUP = 'true';
     process.env.DISABLE_DATABASE_WARMUP = 'true';
-    
+
     console.log('   ✅ Database initialization safeguards activated');
   }
 
@@ -301,11 +301,11 @@ TEST_ADMIN_PASSWORD=test-password
    */
   async optimizeVercelConfig() {
     console.log('⚙️  Optimizing Vercel configuration...');
-    
+
     // DO NOT create or modify .vercel/project.json
     // That file is for Vercel project linking only and should be managed by Vercel CLI
     // The previous implementation incorrectly put config data there, causing "invalid project settings" error
-    
+
     // If .vercel directory exists but project.json has wrong format, remove it
     const projectJsonPath = resolve(projectRoot, '.vercel/project.json');
     if (existsSync(projectJsonPath)) {
@@ -324,7 +324,7 @@ TEST_ADMIN_PASSWORD=test-password
         console.log(`   ⚠️  Could not check project.json: ${error.message}`);
       }
     }
-    
+
     console.log('   ✅ Configuration check complete');
   }
 
@@ -333,7 +333,7 @@ TEST_ADMIN_PASSWORD=test-password
    */
   async startVercelWithProtection() {
     console.log(`🚀 Starting Vercel dev on port ${this.options.port}...`);
-    
+
     const args = this.buildVercelCommand();
 
     const env = {
@@ -353,7 +353,7 @@ TEST_ADMIN_PASSWORD=test-password
     return new Promise((resolve, reject) => {
       console.log(`   📦 Command: npx ${args.join(' ')}`);
       console.log(`   🔐 Authentication: ${process.env.VERCEL_TOKEN ? 'enabled' : 'disabled'}`);
-      
+
       const vercelProcess = spawn('npx', args, {
         cwd: projectRoot,
         env,
@@ -377,7 +377,7 @@ TEST_ADMIN_PASSWORD=test-password
       vercelProcess.stdout.on('data', (data) => {
         const message = data.toString();
         output += message;
-        
+
         // Look for various startup success indicators
         const startupIndicators = [
           'running at',
@@ -386,8 +386,8 @@ TEST_ADMIN_PASSWORD=test-password
           'started server on',
           `localhost:${this.options.port}`
         ];
-        
-        if (startupIndicators.some(indicator => 
+
+        if (startupIndicators.some(indicator =>
           message.toLowerCase().includes(indicator.toLowerCase())
         )) {
           if (!hasStarted) {
@@ -395,13 +395,13 @@ TEST_ADMIN_PASSWORD=test-password
             clearTimeout(timeout);
             console.log('✅ Vercel dev started successfully!');
             console.log(`🌐 Server available at: http://localhost:${this.options.port}`);
-            
+
             // Set environment variable for health checks and other tools
             process.env.PORT = this.options.port.toString();
             resolve(vercelProcess);
           }
         }
-        
+
         // Forward output with prefixing
         process.stdout.write(`   ${message}`);
       });
@@ -409,9 +409,9 @@ TEST_ADMIN_PASSWORD=test-password
       // Monitor stderr for errors
       vercelProcess.stderr.on('data', (data) => {
         const message = data.toString();
-        
+
         // Filter out common warnings that aren't actual errors
-        if (!message.includes('Warning') && 
+        if (!message.includes('Warning') &&
             !message.includes('ExperimentalWarning') &&
             !message.includes('Listening on')) {
           process.stderr.write(`   ${message}`);
@@ -427,7 +427,7 @@ TEST_ADMIN_PASSWORD=test-password
       // Handle unexpected exit
       vercelProcess.on('exit', (code, signal) => {
         clearTimeout(timeout);
-        
+
         if (code !== 0 && code !== null && !hasStarted) {
           reject(new Error(`Vercel dev exited with code ${code}`));
         } else if (signal && !hasStarted) {
@@ -439,10 +439,10 @@ TEST_ADMIN_PASSWORD=test-password
       const handleShutdown = (signal) => {
         console.log(`\n🛑 Received ${signal}, shutting down...`);
         clearTimeout(timeout);
-        
+
         if (!vercelProcess.killed) {
           vercelProcess.kill('SIGTERM');
-          
+
           // Force kill after 5 seconds
           setTimeout(() => {
             if (!vercelProcess.killed) {
@@ -450,7 +450,7 @@ TEST_ADMIN_PASSWORD=test-password
             }
           }, 5000);
         }
-        
+
         process.exit(0);
       };
 

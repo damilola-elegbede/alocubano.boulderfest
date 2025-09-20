@@ -13,9 +13,9 @@ const rateLimitMap = new Map();
  */
 function rateLimit(req, res) {
   const ip =
-    req.headers["x-forwarded-for"] ||
+    req.headers['x-forwarded-for'] ||
     req.connection?.remoteAddress ||
-    "127.0.0.1";
+    '127.0.0.1';
   const limit = parseInt(process.env.RATE_LIMIT_EMAIL_SUBSCRIPTION) || 20;
   const windowMs = 15 * 60 * 1000; // 15 minutes
 
@@ -35,8 +35,8 @@ function rateLimit(req, res) {
 
   if (rateData.count >= limit) {
     return res.status(429).json({
-      error: "Too many requests. Please try again later.",
-      retryAfter: Math.ceil((rateData.resetTime - now) / 1000),
+      error: 'Too many requests. Please try again later.',
+      retryAfter: Math.ceil((rateData.resetTime - now) / 1000)
     });
   }
 
@@ -78,10 +78,10 @@ function sanitizeInput(data) {
     sanitized.source = data.source.trim().slice(0, 100);
   }
 
-  if (data.attributes && typeof data.attributes === "object") {
+  if (data.attributes && typeof data.attributes === 'object') {
     sanitized.attributes = {};
     Object.keys(data.attributes).forEach((key) => {
-      if (typeof data.attributes[key] === "string") {
+      if (typeof data.attributes[key] === 'string') {
         sanitized.attributes[key] = data.attributes[key].trim().slice(0, 500);
       }
     });
@@ -95,11 +95,11 @@ function sanitizeInput(data) {
  */
 function getClientIp(req) {
   return (
-    req.headers["x-forwarded-for"] ||
+    req.headers['x-forwarded-for'] ||
     req.connection?.remoteAddress ||
     req.socket?.remoteAddress ||
     req.connection?.socket?.remoteAddress ||
-    "127.0.0.1"
+    '127.0.0.1'
   );
 }
 
@@ -108,20 +108,20 @@ function getClientIp(req) {
  */
 export default async function handler(req, res) {
   // Set CORS headers
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   // Handle preflight request
-  if (req.method === "OPTIONS") {
+  if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
   // Only allow POST requests
-  if (req.method !== "POST") {
-    res.setHeader("Allow", "POST, OPTIONS");
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST, OPTIONS');
     return res.status(405).json({
-      error: "Method not allowed. Use POST.",
+      error: 'Method not allowed. Use POST.'
     });
   }
 
@@ -133,9 +133,9 @@ export default async function handler(req, res) {
     }
 
     // Validate request body
-    if (!req.body || typeof req.body !== "object") {
+    if (!req.body || typeof req.body !== 'object') {
       return res.status(400).json({
-        error: "Invalid request body",
+        error: 'Invalid request body'
       });
     }
 
@@ -145,25 +145,40 @@ export default async function handler(req, res) {
     // Validate required fields
     if (!sanitized.email) {
       return res.status(400).json({
-        error: "Email address is required",
+        error: 'Email address is required'
       });
     }
 
     if (!isValidEmail(sanitized.email)) {
       return res.status(400).json({
-        error: "Please enter a valid email address",
+        error: 'Please enter a valid email address'
       });
     }
 
     // Check consent
     if (!req.body.consentToMarketing) {
       return res.status(400).json({
-        error: "Marketing consent is required",
+        error: 'Marketing consent is required'
       });
     }
 
     // Ensure services are initialized
     const emailService = await getEmailSubscriberService().ensureInitialized();
+
+    // Check if we're in test mode
+    const isTestMode = process.env.NODE_ENV === 'test' || process.env.INTEGRATION_TEST_MODE === 'true';
+
+    // Get newsletter list ID with test mode fallback
+    let newsletterListId;
+    if (isTestMode && !process.env.BREVO_NEWSLETTER_LIST_ID) {
+      // Use test default list ID
+      newsletterListId = 1;
+      console.log('📧 Using test mode newsletter list ID: 1');
+    } else if (!process.env.BREVO_NEWSLETTER_LIST_ID) {
+      throw new Error('❌ FATAL: BREVO_NEWSLETTER_LIST_ID secret not configured');
+    } else {
+      newsletterListId = parseInt(process.env.BREVO_NEWSLETTER_LIST_ID);
+    }
 
     // Prepare subscriber data
     const subscriberData = {
@@ -172,24 +187,22 @@ export default async function handler(req, res) {
       lastName: sanitized.lastName,
       phone: sanitized.phone,
       status:
-        process.env.REQUIRE_EMAIL_VERIFICATION === "true"
-          ? "pending"
-          : "active",
-      listIds: req.body.lists || [parseInt(process.env.BREVO_NEWSLETTER_LIST_ID) || (() => {
-        throw new Error("❌ FATAL: BREVO_NEWSLETTER_LIST_ID secret not configured");
-      })()], // Require newsletter list ID
+        process.env.REQUIRE_EMAIL_VERIFICATION === 'true'
+          ? 'pending'
+          : 'active',
+      listIds: req.body.lists || [newsletterListId], // Require newsletter list ID
       attributes: {
-        SIGNUP_PAGE: req.body.source || "unknown",
+        SIGNUP_PAGE: req.body.source || 'unknown',
         SIGNUP_DATE: new Date().toISOString(),
         CONSENT_DATE: new Date().toISOString(),
-        ...sanitized.attributes,
+        ...sanitized.attributes
       },
-      consentSource: sanitized.source || "website",
+      consentSource: sanitized.source || 'website',
       consentIp: getClientIp(req),
       verificationToken:
-        process.env.REQUIRE_EMAIL_VERIFICATION === "true"
+        process.env.REQUIRE_EMAIL_VERIFICATION === 'true'
           ? emailService.generateVerificationToken()
-          : null,
+          : null
     };
 
     // Create subscriber
@@ -197,13 +210,13 @@ export default async function handler(req, res) {
 
     // Send verification email if required
     if (
-      process.env.REQUIRE_EMAIL_VERIFICATION === "true" &&
+      process.env.REQUIRE_EMAIL_VERIFICATION === 'true' &&
       subscriberData.verificationToken
     ) {
       await emailService.brevoService.sendVerificationEmail(
         subscriber.email,
         subscriberData.verificationToken,
-        subscriber.first_name,
+        subscriber.first_name
       );
     }
 
@@ -211,57 +224,57 @@ export default async function handler(req, res) {
     const response = {
       success: true,
       message:
-        process.env.REQUIRE_EMAIL_VERIFICATION === "true"
-          ? "Please check your email to verify your subscription"
-          : "Successfully subscribed to newsletter",
+        process.env.REQUIRE_EMAIL_VERIFICATION === 'true'
+          ? 'Please check your email to verify your subscription'
+          : 'Successfully subscribed to newsletter',
       subscriber: {
         email: subscriber.email,
         status: subscriber.status,
-        requiresVerification: process.env.REQUIRE_EMAIL_VERIFICATION === "true",
-      },
+        requiresVerification: process.env.REQUIRE_EMAIL_VERIFICATION === 'true'
+      }
     };
 
     return res.status(201).json(response);
   } catch (error) {
-    console.error("Newsletter subscription error:", {
+    console.error('Newsletter subscription error:', {
       error: error.message,
       email: req.body?.email,
       ip: getClientIp(req),
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     });
 
     // Handle specific errors
     if (
-      error.message.includes("Failed to initialize email subscriber service")
+      error.message.includes('Failed to initialize email subscriber service')
     ) {
       return res.status(503).json({
         error:
-          "Email service is currently initializing. Please try again in a moment.",
+          'Email service is currently initializing. Please try again in a moment.'
       });
     }
 
-    if (error.message.includes("already subscribed")) {
+    if (error.message.includes('already subscribed')) {
       return res.status(409).json({
-        error: "This email address is already subscribed to our newsletter",
+        error: 'This email address is already subscribed to our newsletter'
       });
     }
 
-    if (error.message.includes("invalid email")) {
+    if (error.message.includes('invalid email')) {
       return res.status(400).json({
-        error: "Please enter a valid email address",
+        error: 'Please enter a valid email address'
       });
     }
 
-    if (error.message.includes("Brevo API error")) {
+    if (error.message.includes('Brevo API error')) {
       return res.status(503).json({
-        error: "Email service temporarily unavailable. Please try again later.",
+        error: 'Email service temporarily unavailable. Please try again later.'
       });
     }
 
     // Generic error response
     return res.status(500).json({
       error:
-        "An error occurred while processing your subscription. Please try again.",
+        'An error occurred while processing your subscription. Please try again.'
     });
   }
 }

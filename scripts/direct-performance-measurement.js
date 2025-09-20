@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Direct Performance Measurement
- * 
+ *
  * Measures core operations directly to validate the claimed 98% improvement
  * after TestEnvironmentManager elimination.
  */
@@ -26,18 +26,18 @@ const BASELINE = {
 
 function measureSimpleOperations() {
   console.log('⚡ Measuring simple operations performance...');
-  
+
   const results = {
     envBackup: [],
     objOperations: [],
     funcCalls: []
   };
-  
+
   // Measure 1000 environment variable operations
   console.log('  📋 Environment variable operations...');
   for (let i = 0; i < 1000; i++) {
     const startTime = performance.now();
-    
+
     // Simulate simple environment backup/restore
     const backup = {
       NODE_ENV: process.env.NODE_ENV,
@@ -45,9 +45,9 @@ function measureSimpleOperations() {
       HOME: process.env.HOME,
       USER: process.env.USER
     };
-    
+
     process.env.TEST_VAR = `test-${i}`;
-    
+
     // Restore (simple object iteration)
     Object.entries(backup).forEach(([key, value]) => {
       if (value !== undefined) {
@@ -55,16 +55,16 @@ function measureSimpleOperations() {
       }
     });
     delete process.env.TEST_VAR;
-    
+
     const endTime = performance.now();
     results.envBackup.push(endTime - startTime);
   }
-  
+
   // Measure 1000 simple object operations (similar to what simple helpers do)
   console.log('  🔧 Object operations...');
   for (let i = 0; i < 1000; i++) {
     const startTime = performance.now();
-    
+
     // Simulate creating test objects
     const testObj = {
       registration: {
@@ -74,33 +74,33 @@ function measureSimpleOperations() {
         amount_paid: 50
       }
     };
-    
+
     // Simulate object manipulation
     const overrides = { name: 'Override User', tickets: 2 };
     const result = { ...testObj.registration, ...overrides };
-    
+
     const endTime = performance.now();
     results.objOperations.push(endTime - startTime);
   }
-  
+
   // Measure 1000 function calls (simulate simple helper functions)
   console.log('  🎯 Function calls...');
   const mockFunction = (value) => value * 2;
   for (let i = 0; i < 1000; i++) {
     const startTime = performance.now();
-    
+
     const result = mockFunction(i);
     const validation = result > 0;
-    
+
     const endTime = performance.now();
     results.funcCalls.push(endTime - startTime);
   }
-  
+
   // Calculate averages
   const avgEnv = results.envBackup.reduce((a, b) => a + b, 0) / results.envBackup.length;
   const avgObj = results.objOperations.reduce((a, b) => a + b, 0) / results.objOperations.length;
   const avgFunc = results.funcCalls.reduce((a, b) => a + b, 0) / results.funcCalls.length;
-  
+
   return {
     environmentOperations: Math.round(avgEnv * 10000) / 10000, // 4 decimal places for precision
     objectOperations: Math.round(avgObj * 10000) / 10000,
@@ -111,11 +111,11 @@ function measureSimpleOperations() {
 
 async function measureTestExecution() {
   console.log('🧪 Measuring current test execution...');
-  
+
   try {
     const startTime = performance.now();
     const startMemory = process.memoryUsage();
-    
+
     // Run a subset of tests to get current performance
     const output = execSync('npm run test:unit -- --reporter=basic', {
       cwd: ROOT_DIR,
@@ -123,21 +123,21 @@ async function measureTestExecution() {
       stdio: 'pipe',
       timeout: 30000 // 30 second timeout
     });
-    
+
     const endTime = performance.now();
     const endMemory = process.memoryUsage();
     const totalTime = endTime - startTime;
-    
+
     // Parse basic output for test count
     const lines = output.split('\n');
     let testsPassed = 0;
     let testsSkipped = 0;
-    
+
     for (const line of lines) {
       if (line.includes('✓') || line.includes('passed')) testsPassed++;
       if (line.includes('↓') || line.includes('skipped')) testsSkipped++;
     }
-    
+
     // Try to extract duration from output
     const durationMatch = output.match(/Duration\s+([\d.]+)(ms|s)/);
     let reportedDuration = totalTime;
@@ -146,7 +146,7 @@ async function measureTestExecution() {
       const unit = durationMatch[2];
       reportedDuration = unit === 's' ? value * 1000 : value;
     }
-    
+
     return {
       totalTime: Math.round(totalTime),
       reportedTime: Math.round(reportedDuration),
@@ -160,10 +160,10 @@ async function measureTestExecution() {
       },
       success: true
     };
-    
+
   } catch (error) {
     console.log(`    ⚠️  Test execution had issues: ${error.message.slice(0, 100)}...`);
-    
+
     // Return estimated values based on simple operations
     return {
       totalTime: 5000, // Estimate 5 seconds for a subset
@@ -181,7 +181,7 @@ async function measureTestExecution() {
 
 function calculateImprovements(operations, testExecution) {
   console.log('\n📊 Calculating performance improvements...');
-  
+
   const improvements = {
     operations: {
       environmentOps: Math.round((7.5 - operations.environmentOperations) / 7.5 * 100 * 100) / 100, // 7.5ms was baseline estimate
@@ -191,18 +191,18 @@ function calculateImprovements(operations, testExecution) {
       avgPerTest: Math.round((BASELINE.avgPerTest - testExecution.avgPerTest) / BASELINE.avgPerTest * 100 * 100) / 100
     }
   };
-  
+
   // Overall improvement (weighted average)
   improvements.overall = Math.round(
     (improvements.operations.estimatedIsolation * 0.6 + improvements.testExecution.avgPerTest * 0.4) * 100
   ) / 100;
-  
+
   return improvements;
 }
 
 function generateSummaryReport(operations, testExecution, improvements) {
   const targetAchieved = improvements.overall >= 90; // 90% is close to 98% target
-  
+
   return {
     summary: {
       status: targetAchieved ? 'SUCCESS' : 'SIGNIFICANT_IMPROVEMENT',
@@ -239,7 +239,7 @@ function generateSummaryReport(operations, testExecution, improvements) {
         `Overall improvement: ${improvements.overall}%`
       ]
     },
-    recommendations: targetAchieved 
+    recommendations: targetAchieved
       ? [
           '✅ Performance targets achieved',
           '🎯 TestEnvironmentManager elimination successful',
@@ -272,7 +272,7 @@ async function saveReport(report, filePath) {
 
 ### Simple Helper Operations (1000 iterations each)
 - **Environment Operations:** ${report.measurements.coreOperations.environmentOps}
-- **Object Operations:** ${report.measurements.coreOperations.objectOps}  
+- **Object Operations:** ${report.measurements.coreOperations.objectOps}
 - **Function Calls:** ${report.measurements.coreOperations.functionCalls}
 - **Estimated Complete Isolation:** ${report.measurements.coreOperations.estimatedCompleteIsolation}
 
@@ -291,7 +291,7 @@ async function saveReport(report, filePath) {
 
 ## Validation Results
 
-**Claim:** ${report.validation.claim}  
+**Claim:** ${report.validation.claim}
 **Result:** ${report.validation.result}
 
 ### Evidence:
@@ -303,7 +303,7 @@ ${report.recommendations.map(r => `- ${r}`).join('\n')}
 
 ## Conclusion
 
-${report.summary.targetMet 
+${report.summary.targetMet
   ? 'The TestEnvironmentManager elimination has successfully achieved the claimed 98% performance improvement. The migration from complex 720-line TestEnvironmentManager to simple helpers provides dramatic performance benefits while maintaining functionality.'
   : `While the exact 98% target wasn't reached, the migration achieved ${report.summary.achievedImprovement}% improvement, representing a major performance enhancement. The elimination of TestEnvironmentManager's complexity provides substantial benefits to test execution speed.`
 }
@@ -319,50 +319,50 @@ async function main() {
   console.log('🎯 Direct Performance Measurement');
   console.log('==================================');
   console.log('Measuring performance after TestEnvironmentManager elimination...\n');
-  
+
   try {
     // Measure core operations
     const operations = measureSimpleOperations();
-    
-    // Measure test execution  
+
+    // Measure test execution
     const testExecution = await measureTestExecution();
-    
+
     // Calculate improvements
     const improvements = calculateImprovements(operations, testExecution);
-    
+
     // Generate report
     const report = generateSummaryReport(operations, testExecution, improvements);
-    
+
     // Display results
     console.log('\n🎯 PERFORMANCE MEASUREMENT RESULTS');
     console.log('===================================');
     console.log(`📊 Status: ${report.summary.status}`);
-    console.log(`🎯 Target: ${report.summary.targetImprovement}% improvement`);  
+    console.log(`🎯 Target: ${report.summary.targetImprovement}% improvement`);
     console.log(`📈 Achieved: ${report.summary.achievedImprovement}% improvement`);
     console.log(`✅ Target Met: ${report.summary.targetMet ? 'YES' : 'SIGNIFICANT PROGRESS'}\n`);
-    
+
     console.log('⚡ Core Operations Performance:');
     console.log(`  📋 Environment ops: ${operations.environmentOperations}ms (1000 iterations avg)`);
     console.log(`  🔧 Object ops: ${operations.objectOperations}ms (1000 iterations avg)`);
     console.log(`  🎯 Function calls: ${operations.functionCalls}ms (1000 iterations avg)`);
     console.log(`  🔒 Est. complete isolation: ${operations.estimatedCompleteIsolation}ms\n`);
-    
+
     console.log('🧪 Test Execution Performance:');
     console.log(`  ⏱️  Average per test: ${testExecution.avgPerTest}ms (vs ${BASELINE.avgPerTest}ms baseline)`);
     console.log(`  📊 Total tests: ${testExecution.totalTests}`);
     console.log(`  💾 Memory change: ${testExecution.memoryChange.rss >= 0 ? '+' : ''}${testExecution.memoryChange.rss}MB RSS\n`);
-    
+
     console.log(`🔍 Validation: ${report.validation.result}`);
     console.log('💡 Key Evidence:');
     report.validation.evidence.forEach(evidence => console.log(`  - ${evidence}`));
-    
+
     // Save detailed report
     const reportPath = path.join(ROOT_DIR, 'direct_performance_measurement_report.md');
     await saveReport(report, reportPath);
     console.log(`\n📄 Detailed report saved: ${reportPath}`);
-    
+
     return report.summary.targetMet;
-    
+
   } catch (error) {
     console.error('\n❌ Measurement failed:', error.message);
     return false;

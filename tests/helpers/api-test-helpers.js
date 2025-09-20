@@ -1,6 +1,6 @@
 /**
  * API Test Helpers - Utilities for testing API endpoints
- * 
+ *
  * Provides comprehensive utilities for testing REST APIs,
  * including request builders, response validators, and
  * common testing patterns.
@@ -261,7 +261,7 @@ export class ResponseValidator {
    */
   hasError(expectedError = null) {
     const error = this.response.data.error || this.response.data.message;
-    
+
     if (!error) {
       throw new Error('Response does not contain error');
     }
@@ -388,11 +388,11 @@ export class APITestSuite {
           const response = await APIRequestBuilder.post(createEndpoint)
             .json(testData.create)
             .send();
-          
+
           ResponseValidator.validate(response)
             .hasStatus(HTTP_STATUS.OK)
             .hasProperty(idField);
-          
+
           return response.data;
         }
       });
@@ -405,7 +405,7 @@ export class APITestSuite {
         async run(createdResource) {
           const endpoint = readEndpoint.replace(`:${idField}`, createdResource[idField]);
           const response = await APIRequestBuilder.get(endpoint).send();
-          
+
           ResponseValidator.validate(response)
             .hasStatus(HTTP_STATUS.OK)
             .hasProperty(idField);
@@ -422,7 +422,7 @@ export class APITestSuite {
           const response = await APIRequestBuilder.put(endpoint)
             .json(testData.update)
             .send();
-          
+
           ResponseValidator.validate(response).hasStatus(HTTP_STATUS.OK);
         }
       });
@@ -435,7 +435,7 @@ export class APITestSuite {
         async run(createdResource) {
           const endpoint = deleteEndpoint.replace(`:${idField}`, createdResource[idField]);
           const response = await APIRequestBuilder.delete(endpoint).send();
-          
+
           ResponseValidator.validate(response).hasStatus(HTTP_STATUS.OK);
         }
       });
@@ -458,10 +458,10 @@ export class APITestSuite {
           const response = await APIRequestBuilder.post(endpoint)
             .json(testCase.data)
             .send();
-          
+
           ResponseValidator.validate(response)
             .hasStatus(testCase.expectedStatus || HTTP_STATUS.BAD_REQUEST);
-          
+
           if (testCase.expectedError) {
             ResponseValidator.validate(response).hasError(testCase.expectedError);
           }
@@ -493,7 +493,7 @@ export class APITestSuite {
           const response = await APIRequestBuilder.post(endpoint)
             .json({ test: 'data' })
             .send();
-          
+
           ResponseValidator.validate(response).hasStatus(HTTP_STATUS.UNAUTHORIZED);
         }
       });
@@ -505,12 +505,12 @@ export class APITestSuite {
         name: 'Security: Rate Limiting',
         async run() {
           // Make multiple rapid requests
-          const requests = Array(10).fill().map(() => 
+          const requests = Array(10).fill().map(() =>
             APIRequestBuilder.post(endpoint).json({ test: 'data' }).send()
           );
 
           const responses = await Promise.all(requests);
-          
+
           // At least one should be rate limited
           const rateLimited = responses.some(r => r.status === HTTP_STATUS.TOO_MANY_REQUESTS);
           if (!rateLimited) {
@@ -541,7 +541,7 @@ export class APITestSuite {
       try {
         console.log(`🧪 Running: ${test.name}`);
         const result = await test.run(sharedContext);
-        
+
         // Pass result to next test if it returns something
         if (result) {
           sharedContext = result;
@@ -553,7 +553,7 @@ export class APITestSuite {
           status: 'passed',
           duration: 0 // Could add timing
         });
-        
+
         console.log(`✅ ${test.name} passed`);
       } catch (error) {
         results.failed++;
@@ -563,7 +563,7 @@ export class APITestSuite {
           error: error.message,
           duration: 0
         });
-        
+
         console.log(`❌ ${test.name} failed: ${error.message}`);
       }
     }

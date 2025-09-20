@@ -241,8 +241,8 @@ function createGalleryDataPlaceholder(eventId) {
   }
 
   // Check if Google Drive secrets are available to determine if this should be a placeholder
-  const hasGoogleDriveSecrets = 
-    process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && 
+  const hasGoogleDriveSecrets =
+    process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL &&
     process.env.GOOGLE_PRIVATE_KEY &&
     process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID;
 

@@ -4,6 +4,8 @@ on:
   pull_request:
     branches: [main, develop]
     types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: [main, develop]
   workflow_dispatch:
 
 concurrency:
@@ -17,29 +19,39 @@ permissions:
 env:
   NODE_ENV: test
   CI: true
-  DATABASE_URL: ":memory:"
-  PHASE3_PERFORMANCE_TARGET_MS: 2000
-  # Unit test timeout configurations - reasonable for CI environment
-  VITEST_TEST_TIMEOUT: 15000      # 15 seconds for individual unit tests
-  VITEST_HOOK_TIMEOUT: 20000      # 20 seconds for hooks
-  VITEST_SETUP_TIMEOUT: 15000     # 15 seconds for setup
-  VITEST_CLEANUP_TIMEOUT: 10000   # 10 seconds for cleanup
+  NODE_OPTIONS: "--max-old-space-size=4096"
+  # Consolidated environment variables to reduce duplication
+  NGROK_SKIP_DOWNLOAD: ${{ vars.NGROK_SKIP_DOWNLOAD || '1' }}
+  npm_config_build_from_source: ${{ vars.NPM_BUILD_FROM_SOURCE || 'false' }}
+  PYTHON: ${{ vars.PYTHON_PATH || '/usr/bin/python3' }}
 
 jobs:
-  unit-tests:
-    name: "🧪 Unit Test Suite"
+  test:
+    name: "🧪 Unit Tests (Node ${{ matrix.node-version }})"
     runs-on: ubuntu-latest
-    timeout-minutes: 15  # Increased from 10 to 15 minutes for CI stability
-    outputs:
-      total_tests: ${{ steps.test.outputs.total_tests }}
-      passing_tests: ${{ steps.test.outputs.passing_tests }}
-      failing_tests: ${{ steps.test.outputs.failing_tests }}
-      duration: ${{ steps.test.outputs.duration }}
-      node_version: ${{ steps.test.outputs.node_version }}
+    timeout-minutes: 15
 
     strategy:
+      # FIXED: Proper fail-fast configuration
+      fail-fast: false
       matrix:
         node-version: ['20.x', '22.x']
+
+    env:
+      DATABASE_URL: ":memory:"
+      PHASE3_PERFORMANCE_TARGET_MS: ${{ vars.PHASE3_PERFORMANCE_TARGET_MS || '2000' }}
+      VITEST_TEST_TIMEOUT: ${{ vars.VITEST_TEST_TIMEOUT || '10000' }}
+      VITEST_HOOK_TIMEOUT: ${{ vars.VITEST_HOOK_TIMEOUT || '15000' }}
+      VITEST_SETUP_TIMEOUT: ${{ vars.VITEST_SETUP_TIMEOUT || '15000' }}
+      VITEST_CLEANUP_TIMEOUT: ${{ vars.VITEST_CLEANUP_TIMEOUT || '10000' }}
+      # Critical API secrets configuration - required for services to initialize
+      QR_SECRET_KEY: ${{ secrets.QR_SECRET_KEY || 'test-qr-secret-key-minimum-32-characters-long-for-security-compliance' }}
+      ADMIN_SECRET: ${{ secrets.ADMIN_SECRET || 'test-admin-jwt-secret-minimum-32-characters-for-security' }}
+      WALLET_AUTH_SECRET: ${{ secrets.WALLET_AUTH_SECRET || 'test-wallet-auth-secret-key-for-testing-purposes-32-chars' }}
+      APPLE_PASS_KEY: ${{ secrets.APPLE_PASS_KEY || 'dGVzdC1hcHBsZS1wYXNzLWtleQ==' }}
+      INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY || 'test-internal-api-key-32-chars-min' }}
+      TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD || 'test-admin-password-123' }}
+      ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD || '$2b$10$test.bcrypt.hash.for.testing.purposes.only' }}
 
     steps:
       - name: "📥 Checkout Code"
@@ -53,281 +65,146 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
-      - name: "🏗️ Install System Dependencies"
-        run: |
-          echo "🔧 Installing system dependencies for native modules..."
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            python3-dev \
-            libsqlite3-dev \
-            libc6-dev \
-            libvips-dev \
-            pkg-config
-          echo "✅ System dependencies installed"
-
       - name: "📦 Install Dependencies"
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+          PUPPETEER_SKIP_DOWNLOAD: '1'
+          SKIP_HEAVYWEIGHT_DOWNLOADS: '1'
         run: |
-          echo "📦 Installing npm dependencies..."
+          echo "📦 Installing minimal dependencies for unit tests..."
 
-          # Install dependencies with npm ci for reproducibility
-          npm ci --prefer-offline --no-audit
+          # Install with npm ci, skipping optional deps
+          npm ci --prefer-offline --no-audit --no-fund
 
-          # Workaround for npm optional dependencies bug #4828
-          # Force install Linux-specific binaries that npm ci might skip
+          # Only install the specific LibSQL binary we need
           if [ "$RUNNER_OS" = "Linux" ]; then
-            echo "🔧 Checking for platform-specific binaries..."
-
-            # Install Rollup Linux binary if missing
-            if [ ! -d "node_modules/@rollup/rollup-linux-x64-gnu" ]; then
-              echo "⚠️  Rollup Linux binary missing (npm bug #4828)"
-              echo "🔧 Installing @rollup/rollup-linux-x64-gnu..."
-              npm install @rollup/rollup-linux-x64-gnu@4.50.0 --no-save --no-audit
-            fi
-
-            # Install LibSQL Linux binary if missing
             if [ ! -d "node_modules/@libsql/linux-x64-gnu" ]; then
-              echo "⚠️  LibSQL Linux binary missing (npm bug #4828)"
-              echo "🔧 Installing @libsql/linux-x64-gnu..."
-              npm install @libsql/linux-x64-gnu --no-save --no-audit || true
+              echo "🔧 Installing LibSQL Linux binary..."
+              npm install @libsql/linux-x64-gnu@0.5.22 --no-save --no-audit
             fi
-
-            # Rebuild native modules for current platform
-            echo "🔄 Rebuilding native modules..."
-            npm rebuild
           fi
 
-          echo "✅ Dependencies installed and verified"
-        env:
-          NGROK_SKIP_DOWNLOAD: true
-          npm_config_build_from_source: true
-          # Force npm to rebuild native binaries for current platform
-          npm_config_build_from_source: true
-          # Ensure proper Python for node-gyp
-          PYTHON: python3
+          echo "✅ Minimal dependencies installed"
 
-      - name: "🔍 Verify Native Dependencies"
+      - name: "🧹 Optimize for Unit Tests"
         run: |
-          echo "🔍 Verifying native module installations..."
+          echo "🧹 Removing unnecessary heavyweight dependencies..."
+          # Remove packages not needed for unit tests (saves ~77MB)
+          rm -rf node_modules/playwright* 2>/dev/null || true
+          rm -rf node_modules/lighthouse* 2>/dev/null || true
+          rm -rf node_modules/ngrok* 2>/dev/null || true
+          rm -rf node_modules/vercel 2>/dev/null || true
+          rm -rf node_modules/@axe-core 2>/dev/null || true
+          rm -rf node_modules/puppeteer* 2>/dev/null || true
+          echo "🎯 Optimized for unit tests"
 
-          # Check better-sqlite3
-          node -e "try { require('better-sqlite3'); console.log('✅ better-sqlite3: OK'); } catch(e) { console.log('❌ better-sqlite3:', e.message); process.exit(1); }"
-
-          # Check sharp
-          # Check sharp with platform-specific binary verification
-          node -e "
-            try {
-              const sharp = require('sharp');
-              console.log('✅ sharp: OK');
-              console.log('📋 sharp platform info:', process.platform, process.arch);
-              // Test actual functionality to verify native binary
-              sharp.concurrency(1);
-              console.log('✅ sharp native binary: functional');
-            } catch(e) {
-              console.log('❌ sharp:', e.message);
-              console.log('🔍 Platform:', process.platform, process.arch);
-              console.log('🔍 Node version:', process.version);
-              if (e.message.includes('linux-x64')) {
-                console.log('💡 Sharp linux-x64 binary missing - this may be a package-lock.json platform issue');
-                console.log('💡 Run: npm rebuild sharp --platform=linux --arch=x64');
-              }
-              process.exit(1);
-            }
-          "
-
-          # Check bcryptjs (pure JS, should always work)
-          node -e "try { require('bcryptjs'); console.log('✅ bcryptjs: OK'); } catch(e) { console.log('❌ bcryptjs:', e.message); process.exit(1); }"
-
-          # Check Rollup platform-specific binary (critical for Vitest)
-          echo "🔍 Verifying Rollup platform-specific binary..."
-          node -e "
-            const fs = require('fs');
-            const path = require('path');
-            const platform = process.platform;
-            const arch = process.arch;
-
-            // Expected platform-specific package for Linux x64
-            const expectedPackage = '@rollup/rollup-linux-x64-gnu';
-            const packagePath = path.join('node_modules', expectedPackage);
-
-            console.log('Platform:', platform, 'Arch:', arch);
-            console.log('Expected package:', expectedPackage);
-            console.log('Package path:', packagePath);
-
-            if (fs.existsSync(packagePath)) {
-              console.log('✅ Rollup platform binary: OK');
-            } else {
-              console.log('❌ Rollup platform binary missing:', expectedPackage);
-              console.log('Available @rollup packages:');
-              try {
-                const rollupDir = path.join('node_modules', '@rollup');
-                if (fs.existsSync(rollupDir)) {
-                  fs.readdirSync(rollupDir).forEach(pkg => console.log('  -', pkg));
-                } else {
-                  console.log('  @rollup directory not found');
-                }
-              } catch(e) {
-                console.log('  Error listing @rollup packages:', e.message);
-              }
-              process.exit(1);
-            }
-          "
-
-          # Verify Rollup can be required (end-to-end test)
-          node -e "try { require('rollup'); console.log('✅ rollup: OK'); } catch(e) { console.log('❌ rollup:', e.message); process.exit(1); }"
-
-          echo "✅ All native dependencies verified"
-
-      - name: "🧪 Run Unit Tests (806+ tests)"
+      - name: "🧪 Run Unit Tests"
         id: test
         run: |
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "🚀 Running Unit Test Suite"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "📊 Expected: 806+ unit tests"
+          echo "📊 Expected: 800+ unit tests"
           echo "🎯 Performance Target: <2 seconds"
-          echo "📁 Categories: Security (248), Business Logic (300), Frontend (258)"
-          echo "⏱️  Timeout Configuration: 15 minutes total, 15 seconds per test"
-          echo "🔧 Node Version: ${{ matrix.node-version }}"
+          echo "💾 Database: In-memory SQLite"
+          echo "⏱️  Timeout: 15 minutes (CI buffer)"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-          # Run unit tests with precise timing
           start_time=$(date +%s%3N)
-
-          # Run tests and capture exit code
-          npm test 2>&1 | tee test-output.log
+          # Run tests with colors disabled for CI parsing
+          CI=true npm test -- --reporter=verbose --no-color 2>&1 | tee unit-test-output.log
           test_exit_code=${PIPESTATUS[0]}
-
           end_time=$(date +%s%3N)
           duration=$((end_time - start_time))
 
-          # Extract test counts from output - using simple sed approach instead of variable-length lookbehind
-          total_tests=$(grep -E "Tests.*passed" test-output.log | sed -E "s/.*Tests[[:space:]]+([0-9]+)[[:space:]]+passed.*/\1/" | head -1 || echo "0")
-          passing_tests=$total_tests
-          failing_tests=$(grep -E "Tests.*failed" test-output.log | sed -E "s/.*Tests[[:space:]]+([0-9]+)[[:space:]]+failed.*/\1/" | head -1 || echo "0")
+          # FIXED: Improved test count parsing logic with multiple fallback patterns
+          echo "🔍 Parsing test results with multiple pattern matching..."
+
+          # Method 1: Standard Vitest output pattern "Tests X passed"
+          passing_tests=$(grep -E "Tests[[:space:]]+[0-9]+[[:space:]]+passed" unit-test-output.log | sed -E "s/.*Tests[[:space:]]+([0-9]+)[[:space:]]+passed.*/\1/" | head -1 || echo "0")
+          failing_tests=$(grep -E "Tests[[:space:]]+[0-9]+[[:space:]]+failed" unit-test-output.log | sed -E "s/.*Tests[[:space:]]+([0-9]+)[[:space:]]+failed.*/\1/" | head -1 || echo "0")
+
+          # Method 2: Alternative pattern "X tests passed" / "X tests failed"
+          if [ "$passing_tests" = "0" ] && [ "$failing_tests" = "0" ]; then
+            echo "🔄 Trying alternative test result patterns..."
+            passing_tests=$(grep -E "[0-9]+[[:space:]]+tests?[[:space:]]+passed" unit-test-output.log | sed -E "s/.*([0-9]+)[[:space:]]+tests?[[:space:]]+passed.*/\1/" | head -1 || echo "0")
+            failing_tests=$(grep -E "[0-9]+[[:space:]]+tests?[[:space:]]+failed" unit-test-output.log | sed -E "s/.*([0-9]+)[[:space:]]+tests?[[:space:]]+failed.*/\1/" | head -1 || echo "0")
+          fi
+
+          # Method 3: Checkmark pattern "✓ X tests completed"
+          if [ "$passing_tests" = "0" ] && [ "$failing_tests" = "0" ]; then
+            echo "🔄 Trying checkmark test result patterns..."
+            passing_tests=$(grep -E "✓[[:space:]]+[0-9]+[[:space:]]+tests?" unit-test-output.log | sed -E "s/.*✓[[:space:]]+([0-9]+)[[:space:]]+tests?.*/\1/" | head -1 || echo "0")
+            failing_tests=$(grep -E "✗[[:space:]]+[0-9]+[[:space:]]+tests?" unit-test-output.log | sed -E "s/.*✗[[:space:]]+([0-9]+)[[:space:]]+tests?.*/\1/" | head -1 || echo "0")
+          fi
+
+          # Method 4: Final summary pattern parsing
+          if [ "$passing_tests" = "0" ] && [ "$failing_tests" = "0" ]; then
+            echo "🔄 Trying final summary patterns..."
+            # Look for summary line like "Test Files  2 passed, 2 total"
+            passing_tests=$(grep -E "Test Files[[:space:]]+[0-9]+" unit-test-output.log | sed -E "s/.*Test Files[[:space:]]+([0-9]+)[[:space:]]+passed.*/\1/" | head -1 || echo "0")
+            # Look for any numeric patterns in test results
+            if [ "$passing_tests" = "0" ]; then
+              passing_tests=$(grep -oE "[0-9]+[[:space:]]*passed" unit-test-output.log | grep -oE "[0-9]+" | head -1 || echo "0")
+            fi
+            failing_tests=$(grep -oE "[0-9]+[[:space:]]*failed" unit-test-output.log | grep -oE "[0-9]+" | head -1 || echo "0")
+          fi
+
+          # FIXED: Calculate total_tests as sum of passing_tests + failing_tests
+          total_tests=$((passing_tests + failing_tests))
 
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "📊 Test Results Summary"
+          echo "📊 Unit Test Results"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "✅ Tests Passed: $passing_tests"
           echo "❌ Tests Failed: $failing_tests"
           echo "📈 Total Tests: $total_tests"
-          echo "⏱️  Execution Time: ${duration}ms"
+          echo "⏱️  Duration: ${duration}ms"
 
-          # Performance evaluation
-          if [ "$duration" -lt "$PHASE3_PERFORMANCE_TARGET_MS" ]; then
-            echo "🏆 EXCELLENT: Execution under 2-second target!"
+          # Performance evaluation with environment variable fallback
+          performance_target=${PHASE3_PERFORMANCE_TARGET_MS:-2000}
+          if [ "$duration" -lt "$performance_target" ]; then
+            echo "🏆 EXCELLENT: Unit tests completed within ${performance_target}ms target!"
           else
-            echo "⚠️  WARNING: Execution time (${duration}ms) exceeds target"
+            echo "⚠️  WARNING: Unit tests exceeded ${performance_target}ms target"
           fi
 
-          # Set outputs for PR comment
-          echo "total_tests=$total_tests" >> $GITHUB_OUTPUT
-          echo "passing_tests=$passing_tests" >> $GITHUB_OUTPUT
-          echo "failing_tests=$failing_tests" >> $GITHUB_OUTPUT
-          echo "duration=${duration}ms" >> $GITHUB_OUTPUT
-          echo "node_version=${{ matrix.node-version }}" >> $GITHUB_OUTPUT
-
-          # Exit with success if no test failures were detected, even if Vitest had stderr output
-          if [ "$failing_tests" -eq 0 ] && [ "$total_tests" -gt 0 ]; then
-            echo "🎉 All tests passed - exiting with success"
-            exit 0
-          else
-            echo "❌ Test failures detected - exiting with original code: $test_exit_code"
-            exit $test_exit_code
-          fi
-        env:
-          NODE_ENV: test
-          CI: true
-          DATABASE_URL: ":memory:"
-          # Unit test environment variables - MATCHING vitest.unit.config.js EXACTLY
-          UNIT_ONLY_MODE: 'true'
-          CI_ENVIRONMENT: 'unit-only'
-          SKIP_DATABASE_MIGRATIONS: 'true'
-          UNIT_TEST_PERFORMANCE_MODE: 'true'
-          # Critical API secrets for unit tests - must match vitest.unit.config.js
-          QR_SECRET_KEY: 'test-qr-secret-key-minimum-32-characters-long-for-security-compliance'
-          ADMIN_SECRET: 'test-admin-jwt-secret-minimum-32-characters-for-security'
-          WALLET_AUTH_SECRET: 'test-wallet-auth-secret-key-for-testing-purposes-32-chars'
-          APPLE_PASS_KEY: 'dGVzdC1hcHBsZS1wYXNzLWtleQ=='
-          INTERNAL_API_KEY: 'test-internal-api-key-32-chars-min'
-          TEST_ADMIN_PASSWORD: 'test-admin-password-123'
-          ADMIN_PASSWORD: '$2b$10$test.bcrypt.hash.for.testing.purposes.only'
-          # Pass timeout configurations to Vitest
-          VITEST_TEST_TIMEOUT: ${{ env.VITEST_TEST_TIMEOUT }}
-          VITEST_HOOK_TIMEOUT: ${{ env.VITEST_HOOK_TIMEOUT }}
-          VITEST_SETUP_TIMEOUT: ${{ env.VITEST_SETUP_TIMEOUT }}
-          VITEST_CLEANUP_TIMEOUT: ${{ env.VITEST_CLEANUP_TIMEOUT }}
-
-      - name: "📊 Generate Test Report"
-        if: always()
-        run: |
-          cat > test-report.json << EOF
-          {
-            "node_version": "${{ matrix.node-version }}",
-            "total_tests": "${{ steps.test.outputs.total_tests }}",
-            "passing_tests": "${{ steps.test.outputs.passing_tests }}",
-            "failing_tests": "${{ steps.test.outputs.failing_tests }}",
-            "duration": "${{ steps.test.outputs.duration }}",
-            "status": "${{ steps.test.outcome }}"
-          }
-          EOF
+          exit $test_exit_code
 
       - name: "📤 Upload Test Results"
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: unit-test-results-node-${{ matrix.node-version }}
-          path: |
-            test-output.log
-            test-report.json
+          path: unit-test-output.log
           retention-days: 7
 
-      - name: "💬 Comment Test Results on PR"
+      - name: "📊 Report to PR"
         if: github.event_name == 'pull_request' && always()
+        continue-on-error: true
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
-            const testReport = JSON.parse(fs.readFileSync('test-report.json', 'utf8'));
+            const output = fs.readFileSync('unit-test-output.log', 'utf8');
+            const nodeVersion = '${{ matrix.node-version }}';
+            const status = '${{ job.status }}';
 
-            const status = testReport.status === 'success' ? '✅' : '❌';
-            const statusText = testReport.status === 'success' ? 'PASSED' : 'FAILED';
+            const statusIcon = status === 'success' ? '✅' : '❌';
+            const statusText = status === 'success' ? 'PASSED' : 'FAILED';
 
-            const comment = `## ${status} Unit Tests ${statusText} - Node ${{ matrix.node-version }}
-
-            ### 📊 Test Summary
-            | Metric | Value |
-            |--------|-------|
-            | **Total Tests** | ${testReport.total_tests} |
-            | **Passed** | ✅ ${testReport.passing_tests} |
-            | **Failed** | ❌ ${testReport.failing_tests} |
-            | **Duration** | ⏱️ ${testReport.duration} |
-            | **Node Version** | 🔧 ${{ matrix.node-version }} |
-
-            ### ⚙️ Timeout Configuration
-            - **Job Timeout**: 15 minutes (increased for CI stability)
-            - **Individual Test Timeout**: 15 seconds per test
-            - **Hook Timeout**: 20 seconds for setup/teardown
-            - **Performance Target**: <2 seconds total execution time
-
-            ### 🏗️ Native Dependencies
-            - **System packages**: build-essential, python3-dev, libsqlite3-dev, libvips-dev
-            - **Native rebuilds**: All platform-specific binaries rebuilt for Ubuntu
-            - **Verification**: Dependencies verified before test execution
-
-            ${testReport.status === 'success' ?
-              '### 🏆 All tests passed successfully!' :
-              '### ⚠️ Some tests failed. Please review the test output.'}
+            const comment = `## ${statusIcon} Unit Tests ${statusText} (Node ${nodeVersion})
 
             <details>
-            <summary>View detailed test output</summary>
+            <summary>View Test Output</summary>
 
             \`\`\`
-            Check the artifacts for full test output
+            ${output.slice(-3000)}
             \`\`\`
-            </details>`;
+
+            </details>
+            `;
 
             // Find existing comment
             const { data: comments } = await github.rest.issues.listComments({
@@ -339,7 +216,7 @@ jobs:
             const botComment = comments.find(comment =>
               comment.user.type === 'Bot' &&
               comment.body.includes(`Unit Tests`) &&
-              comment.body.includes(`Node ${{ matrix.node-version }}`)
+              comment.body.includes(`Node ${nodeVersion}`)
             );
 
             if (botComment) {

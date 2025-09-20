@@ -14,33 +14,33 @@ export const HTTP_STATUS = {
 // Simple HTTP request wrapper for API testing
 export async function testRequest(method, path, data = null, headers = {}) {
   const url = getApiUrl(path);
-  
-  const options = { 
-    method, 
-    headers: { 
+
+  const options = {
+    method,
+    headers: {
       'Content-Type': 'application/json',
       ...headers
     }
   };
-  
-  if (data && method !== 'GET') { 
-    options.body = JSON.stringify(data); 
+
+  if (data && method !== 'GET') {
+    options.body = JSON.stringify(data);
   }
-  
+
   // Request timeout handling
   const timeoutPromise = new Promise((_, reject) => {
     setTimeout(() => reject(new Error('Request timeout')), Number(process.env.VITEST_REQUEST_TIMEOUT || 30000));
   });
-  
+
   try {
     const response = await Promise.race([fetch(url, options), timeoutPromise]);
     const responseData = await response.json().catch(() => ({}));
     return { status: response.status, data: responseData };
   } catch (error) {
     // Tests expect status: 0 for connection failures
-    return { 
-      status: 0, 
-      data: { error: error.message === 'Request timeout' ? 'Request timeout' : 'Connection failed' } 
+    return {
+      status: 0,
+      data: { error: error.message === 'Request timeout' ? 'Request timeout' : 'Connection failed' }
     };
   }
 }
@@ -60,7 +60,7 @@ export async function createTestHelper(page) {
   return {
     // Page utilities
     page,
-    
+
     // Navigation helpers
     async navigateTo(url) {
       console.log(`🚀 Navigating to: ${url}`);
@@ -100,13 +100,13 @@ export async function createTestHelper(page) {
     generateTestData(type = 'user') {
       const timestamp = Date.now();
       const randomId = Math.random().toString(36).slice(2);
-      
+
       switch (type) {
         case 'user':
           return {
             id: generateTestId('user'),
             firstName: 'Test',
-            lastName: 'User', 
+            lastName: 'User',
             email: `test.${randomId}.${timestamp}@example.com`,
             phone: '+1234567890'
           };

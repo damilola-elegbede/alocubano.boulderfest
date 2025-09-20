@@ -11,10 +11,10 @@ import { join } from 'path';
 class ImportPathFixer {
   async fixAllImportPaths() {
     console.log('🔧 Fixing import paths...');
-    
+
     const testFiles = await this.findTestFiles();
     let fixedCount = 0;
-    
+
     for (const filepath of testFiles) {
       const wasFixed = await this.fixFileImportPaths(filepath);
       if (wasFixed) {
@@ -22,20 +22,20 @@ class ImportPathFixer {
         console.log(`✅ Fixed import paths in ${filepath}`);
       }
     }
-    
+
     console.log(`\n🎉 Import path fixing completed! Fixed ${fixedCount} files.`);
   }
-  
+
   async findTestFiles() {
     const testFiles = [];
-    
+
     async function scanDirectory(dir) {
       try {
         const entries = await fs.readdir(dir, { withFileTypes: true });
-        
+
         for (const entry of entries) {
           const fullPath = join(dir, entry.name);
-          
+
           if (entry.isDirectory()) {
             await scanDirectory(fullPath);
           } else if (entry.name.endsWith('.js')) {
@@ -46,19 +46,19 @@ class ImportPathFixer {
         // Skip directories that don't exist or can't be read
       }
     }
-    
+
     await scanDirectory('tests');
     return testFiles;
   }
-  
+
   async fixFileImportPaths(filepath) {
     try {
       let content = await fs.readFile(filepath, 'utf8');
       const originalContent = content;
-      
+
       // Determine correct import path based on file location
       const correctPath = this.getCorrectImportPath(filepath);
-      
+
       // Fix the import path if it's wrong
       const wrongPaths = [
         '"../helpers/simple-helpers.js"',
@@ -68,30 +68,30 @@ class ImportPathFixer {
         '"/helpers/simple-helpers.js"',
         '"/tests/helpers/simple-helpers.js"'
       ];
-      
+
       for (const wrongPath of wrongPaths) {
         if (content.includes(wrongPath)) {
           content = content.replace(new RegExp(wrongPath, 'g'), `"${correctPath}"`);
         }
       }
-      
+
       // Only write if content changed
       if (content !== originalContent) {
         await fs.writeFile(filepath, content);
         return true;
       }
-      
+
       return false;
     } catch (error) {
       console.error(`❌ Failed to fix import paths in ${filepath}:`, error.message);
       return false;
     }
   }
-  
+
   getCorrectImportPath(filepath) {
     // Convert to normalized path with forward slashes
     const normalizedPath = filepath.replace(/\\/g, '/');
-    
+
     if (normalizedPath.includes('/tests/unit/')) {
       return '../helpers/simple-helpers.js';
     } else if (normalizedPath.includes('/tests/config/')) {

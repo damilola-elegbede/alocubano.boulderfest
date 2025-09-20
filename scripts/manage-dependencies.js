@@ -2,7 +2,7 @@
 
 /**
  * Dependency Management Script
- * 
+ *
  * Comprehensive dependency management tool that:
  * - Implements dependency resolution and conflict detection
  * - Automates dependency updates safely
@@ -13,7 +13,7 @@
  * - Improves security posture
  * - Automates safe updates
  * - Generates actionable reports
- * 
+ *
  * Usage:
  *   npm run manage-deps                    # Full analysis and optimization
  *   node scripts/manage-dependencies.js    # Same as above
@@ -73,13 +73,13 @@ class DependencyManager {
     if (this.initialized && this.state.packageJson) {
       return this.state;
     }
-    
+
     if (this.initializationPromise) {
       return this.initializationPromise;
     }
-    
+
     this.initializationPromise = this._performInitialization();
-    
+
     try {
       const result = await this.initializationPromise;
       this.initialized = true;
@@ -92,10 +92,10 @@ class DependencyManager {
 
   async _performInitialization() {
     console.log('🚀 Initializing Dependency Manager...');
-    
+
     await this._initializeDirectories();
     await this._loadPackageFiles();
-    
+
     console.log('✅ Dependency Manager initialized');
     return this.state;
   }
@@ -128,7 +128,7 @@ class DependencyManager {
     }
 
     this.state.packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
-    
+
     if (existsSync(packageLockPath)) {
       this.state.packageLock = JSON.parse(readFileSync(packageLockPath, 'utf8'));
     } else {
@@ -138,7 +138,7 @@ class DependencyManager {
 
   async analyzeDependencies() {
     console.log('\n🔍 Analyzing dependency structure...');
-    
+
     await this.ensureInitialized();
     const startTime = Date.now();
 
@@ -155,7 +155,7 @@ class DependencyManager {
 
       const analysisTime = Date.now() - startTime;
       console.log(`✅ Dependency analysis completed in ${analysisTime}ms`);
-      
+
       return this.state.analysis;
 
     } catch (error) {
@@ -223,14 +223,14 @@ class DependencyManager {
     }
 
     const packageVersions = new Map();
-    
+
     // Recursively analyze package-lock structure
     const analyzePackages = (packages, path = '') => {
       if (!packages) return;
-      
+
       Object.entries(packages).forEach(([name, info]) => {
         if (name === '' || name.startsWith('.')) return; // Skip root and relative paths
-        
+
         const version = info.version;
         if (!version) return;
 
@@ -274,7 +274,7 @@ class DependencyManager {
       });
 
       const depcheckResult = JSON.parse(stdout);
-      
+
       if (depcheckResult.dependencies && depcheckResult.dependencies.length > 0) {
         this.state.analysis.unused = depcheckResult.dependencies;
         console.log(`    ⚠️ Found ${depcheckResult.dependencies.length} unused dependencies`);
@@ -301,7 +301,7 @@ class DependencyManager {
 
       if (stdout.trim()) {
         const outdatedData = JSON.parse(stdout);
-        
+
         Object.entries(outdatedData).forEach(([name, info]) => {
           this.state.analysis.outdated.set(name, {
             current: info.current,
@@ -341,10 +341,10 @@ class DependencyManager {
 
   _getUpdateType(current, latest) {
     if (!current || !latest) return 'unknown';
-    
+
     const currentParts = current.replace(/[^0-9.]/g, '').split('.');
     const latestParts = latest.replace(/[^0-9.]/g, '').split('.');
-    
+
     if (currentParts[0] !== latestParts[0]) return 'major';
     if (currentParts[1] !== latestParts[1]) return 'minor';
     return 'patch';
@@ -360,10 +360,10 @@ class DependencyManager {
       });
 
       const lsResult = JSON.parse(stdout);
-      
+
       const findDeprecated = (dependencies, path = '') => {
         if (!dependencies) return;
-        
+
         Object.entries(dependencies).forEach(([name, info]) => {
           if (info.deprecated) {
             this.state.analysis.deprecated.push({
@@ -373,7 +373,7 @@ class DependencyManager {
               path: path ? `${path} > ${name}` : name
             });
           }
-          
+
           if (info.dependencies) {
             findDeprecated(info.dependencies, path ? `${path} > ${name}` : name);
           }
@@ -397,7 +397,7 @@ class DependencyManager {
     console.log('  📦 Analyzing package sizes...');
 
     const knownHeavyPackages = [
-      'playwright', '@playwright/test', 'lighthouse', 'sharp', 
+      'playwright', '@playwright/test', 'lighthouse', 'sharp',
       'sqlite3', 'googleapis', '@babel/core', 'vercel',
       'puppeteer', 'chromium', 'firefox'
     ];
@@ -449,8 +449,8 @@ class DependencyManager {
 
     // Check for multiple Redis clients
     const redisClients = ['ioredis', 'redis'];
-    const installedRedisClients = redisClients.filter(client => 
-      this.state.analysis.dependencies.has(client) || 
+    const installedRedisClients = redisClients.filter(client =>
+      this.state.analysis.dependencies.has(client) ||
       this.state.analysis.devDependencies.has(client)
     );
 
@@ -465,8 +465,8 @@ class DependencyManager {
 
     // Check for SQLite conflicts
     const sqlitePackages = ['sqlite', 'sqlite3'];
-    const installedSqlitePackages = sqlitePackages.filter(pkg => 
-      this.state.analysis.dependencies.has(pkg) || 
+    const installedSqlitePackages = sqlitePackages.filter(pkg =>
+      this.state.analysis.dependencies.has(pkg) ||
       this.state.analysis.devDependencies.has(pkg)
     );
 
@@ -490,7 +490,7 @@ class DependencyManager {
 
   async optimizeDependencies() {
     console.log('\n🔧 Optimizing dependencies...');
-    
+
     await this.ensureInitialized();
     const startTime = Date.now();
 
@@ -515,16 +515,16 @@ class DependencyManager {
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const backupDir = resolve(projectRoot, '.tmp/dependency-backups', timestamp);
-    
+
     try {
       await mkdir(backupDir, { recursive: true });
-      
+
       const filesToBackup = ['package.json', 'package-lock.json'];
-      
+
       for (const file of filesToBackup) {
         const sourcePath = resolve(projectRoot, file);
         const backupPath = resolve(backupDir, file);
-        
+
         if (existsSync(sourcePath)) {
           const content = readFileSync(sourcePath, 'utf8');
           writeFileSync(backupPath, content);
@@ -544,14 +544,14 @@ class DependencyManager {
     if (!this.state.backupDir) return;
 
     console.log('  🔄 Restoring from backup...');
-    
+
     try {
       const filesToRestore = ['package.json', 'package-lock.json'];
-      
+
       for (const file of filesToRestore) {
         const backupPath = resolve(this.state.backupDir, file);
         const targetPath = resolve(projectRoot, file);
-        
+
         if (existsSync(backupPath)) {
           const content = readFileSync(backupPath, 'utf8');
           writeFileSync(targetPath, content);
@@ -588,12 +588,12 @@ class DependencyManager {
         cwd: projectRoot,
         timeout: 60000
       });
-      
+
       await execAsync('npm cache verify', {
         cwd: projectRoot,
         timeout: 60000
       });
-      
+
       console.log('    ✅ Cache cleaned and verified');
 
     } catch (error) {
@@ -616,7 +616,7 @@ class DependencyManager {
         cwd: projectRoot,
         timeout: 300000
       });
-      
+
       console.log('    ✅ Lock file regenerated');
 
     } catch (error) {
@@ -627,7 +627,7 @@ class DependencyManager {
 
   async performSecurityAudit() {
     console.log('\n🔒 Performing security audit...');
-    
+
     await this.ensureInitialized();
     const startTime = Date.now();
 
@@ -661,11 +661,11 @@ class DependencyManager {
       });
 
       const auditResult = JSON.parse(stdout);
-      
+
       if (auditResult.vulnerabilities) {
         const vulnCount = Object.keys(auditResult.vulnerabilities).length;
         console.log(`    🔍 Found ${vulnCount} vulnerabilities`);
-        
+
         // Categorize vulnerabilities by severity
         const severityCounts = {};
         Object.values(auditResult.vulnerabilities).forEach(vuln => {
@@ -750,7 +750,7 @@ class DependencyManager {
 
   async performSafeUpdates() {
     console.log('\n📈 Performing safe updates...');
-    
+
     await this.ensureInitialized();
     const startTime = Date.now();
 
@@ -902,9 +902,9 @@ class DependencyManager {
 
   async generateReport() {
     console.log('\n📊 Generating dependency report...');
-    
+
     await this.ensureInitialized();
-    
+
     if (!this.state.analysis.dependencies.size) {
       await this.analyzeDependencies();
     }
@@ -948,9 +948,9 @@ class DependencyManager {
 
   _createDependencyBreakdown() {
     const breakdown = {};
-    
+
     const allDeps = new Map([...this.state.analysis.dependencies, ...this.state.analysis.devDependencies]);
-    
+
     allDeps.forEach((info, name) => {
       const category = info.category;
       if (!breakdown[category]) {
@@ -1034,7 +1034,7 @@ class DependencyManager {
     if (this.state.analysis.outdated.size > 0) {
       const safeUpdates = Array.from(this.state.analysis.outdated.values())
         .filter(info => ['patch', 'minor'].includes(info.updateType)).length;
-      
+
       if (safeUpdates > 0) {
         recommendations.push({
           priority: 'medium',
@@ -1091,7 +1091,7 @@ Potential Conflicts: ${report.summary.conflicts}
 
 RECOMMENDATIONS
 ===============
-${report.details.recommendations.map((rec, i) => 
+${report.details.recommendations.map((rec, i) =>
   `${i + 1}. [${rec.priority.toUpperCase()}] ${rec.title}
      ${rec.description}
      Action: ${rec.action}`
@@ -1130,12 +1130,12 @@ async function main() {
         await manager.analyzeDependencies();
         await manager.performSecurityAudit();
         const report = await manager.generateReport();
-        
+
         console.log('\n📋 SUMMARY:');
         console.log(`  Dependencies: ${report.summary.totalDependencies} prod + ${report.summary.totalDevDependencies} dev`);
         console.log(`  Issues: ${report.summary.vulnerabilities} vulnerabilities, ${report.summary.unused} unused, ${report.summary.outdated} outdated`);
         console.log(`  Optimization: ${report.summary.duplicates} duplicates, ${report.summary.heavyPackages} heavy packages`);
-        
+
         if (report.details.recommendations.length > 0) {
           console.log('\n💡 TOP RECOMMENDATIONS:');
           report.details.recommendations.slice(0, 3).forEach((rec, i) => {
@@ -1183,7 +1183,7 @@ Usage:
 Commands:
   full        (default) Complete analysis, security audit, and reporting
   analyze     Analyze dependency structure only
-  security    Perform security audit only  
+  security    Perform security audit only
   update      Perform safe updates only
   optimize    Optimize dependency tree (dedupe, cache clean)
   report      Generate detailed report only
@@ -1200,7 +1200,7 @@ Reports are saved to:
 
 This script helps:
   ✅ Reduce dependency bloat
-  ✅ Improve security posture  
+  ✅ Improve security posture
   ✅ Automate safe updates
   ✅ Generate actionable reports
   ✅ Detect conflicts and duplicates

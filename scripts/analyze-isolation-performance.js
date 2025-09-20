@@ -2,7 +2,7 @@
 
 /**
  * Performance Analysis Script for Bulletproof Test Isolation Architecture
- * 
+ *
  * Analyzes the performance overhead of each isolation component individually
  * and provides optimization recommendations.
  */
@@ -41,7 +41,7 @@ class PerformanceAnalyzer {
 
     const endTime = performance.now();
     const endMemory = process.memoryUsage();
-    
+
     const result = {
       duration: endTime - measurement.start,
       memoryDelta: {
@@ -59,7 +59,7 @@ class PerformanceAnalyzer {
 
   analyzeComponent(componentName, performanceFn, iterations = 100) {
     const results = [];
-    
+
     // Warmup
     for (let i = 0; i < 5; i++) {
       try {
@@ -72,11 +72,11 @@ class PerformanceAnalyzer {
     // Actual measurements
     for (let i = 0; i < iterations; i++) {
       this.startTimer(`${componentName}-${i}`);
-      
+
       try {
         const operationResult = performanceFn();
         const measurement = this.endTimer(`${componentName}-${i}`);
-        
+
         results.push({
           iteration: i,
           ...measurement,
@@ -85,7 +85,7 @@ class PerformanceAnalyzer {
         });
       } catch (error) {
         const measurement = this.endTimer(`${componentName}-${i}`);
-        
+
         results.push({
           iteration: i,
           ...measurement,
@@ -118,7 +118,7 @@ class PerformanceAnalyzer {
       iterations: results.length,
       successfulIterations: successfulResults.length,
       successRate: (successfulResults.length / results.length) * 100,
-      
+
       // Timing statistics
       timing: {
         mean: durations.reduce((a, b) => a + b, 0) / durations.length,
@@ -128,7 +128,7 @@ class PerformanceAnalyzer {
         p95: this.calculatePercentile(durations, 95),
         p99: this.calculatePercentile(durations, 99)
       },
-      
+
       // Memory statistics
       memory: {
         meanHeapUsed: memoryUsages.reduce((a, b) => a + b, 0) / memoryUsages.length,
@@ -137,14 +137,14 @@ class PerformanceAnalyzer {
         maxHeapUsed: Math.max(...memoryUsages),
         p95HeapUsed: this.calculatePercentile(memoryUsages, 95)
       },
-      
+
       // Performance categorization
       performance: {
         category: this.categorizePerformance(durations),
         overhead: this.calculateOverhead(durations),
         memoryEfficient: this.isMemoryEfficient(memoryUsages)
       },
-      
+
       errors: results.filter(r => !r.success).map(r => r.error),
       rawResults: results
     };
@@ -167,7 +167,7 @@ class PerformanceAnalyzer {
 
   categorizePerformance(durations) {
     const mean = durations.reduce((a, b) => a + b, 0) / durations.length;
-    
+
     if (mean < 0.5) return 'excellent';
     if (mean < 1.0) return 'good';
     if (mean < 5.0) return 'acceptable';
@@ -177,7 +177,7 @@ class PerformanceAnalyzer {
 
   calculateOverhead(durations) {
     const mean = durations.reduce((a, b) => a + b, 0) / durations.length;
-    
+
     // Baseline overhead categories in milliseconds
     if (mean < 1) return 'minimal';
     if (mean < 5) return 'low';
@@ -189,14 +189,14 @@ class PerformanceAnalyzer {
   isMemoryEfficient(memoryUsages) {
     const mean = memoryUsages.reduce((a, b) => a + b, 0) / memoryUsages.length;
     const max = Math.max(...memoryUsages);
-    
+
     // Memory efficiency thresholds (bytes)
     return mean < 1024 * 1024 && max < 5 * 1024 * 1024; // 1MB average, 5MB max
   }
 
   generateReport() {
     const components = Object.values(this.componentResults);
-    const totalOverhead = components.reduce((sum, comp) => 
+    const totalOverhead = components.reduce((sum, comp) =>
       sum + (comp.timing ? comp.timing.mean : 0), 0
     );
 
@@ -216,7 +216,7 @@ class PerformanceAnalyzer {
 
   generateRecommendations(components) {
     const recommendations = [];
-    
+
     for (const component of components) {
       if (!component.success) {
         recommendations.push({
@@ -261,9 +261,9 @@ class PerformanceAnalyzer {
 
   suggestOptimizations(components) {
     const optimizations = [];
-    
+
     // Performance-based optimizations
-    const slowComponents = components.filter(c => 
+    const slowComponents = components.filter(c =>
       c.success && c.timing.mean > 5
     );
 
@@ -278,7 +278,7 @@ class PerformanceAnalyzer {
     }
 
     // Memory optimizations
-    const memoryHeavyComponents = components.filter(c => 
+    const memoryHeavyComponents = components.filter(c =>
       c.success && !c.performance.memoryEfficient
     );
 
@@ -293,7 +293,7 @@ class PerformanceAnalyzer {
     }
 
     // Reliability optimizations
-    const unreliableComponents = components.filter(c => 
+    const unreliableComponents = components.filter(c =>
       c.successRate < 98
     );
 
@@ -325,7 +325,7 @@ async function createMockComponents() {
         JSON.stringify({ mock: 'data', iteration: i });
       }
     },
-    
+
     resetSingleton: (instance) => {
       // Simulate individual singleton reset
       if (instance) {
@@ -343,7 +343,7 @@ async function createMockComponents() {
       const mocks = Array.from({ length: mockCount }, (_, i) => ({ id: i }));
       mocks.forEach(mock => JSON.stringify(mock));
     },
-    
+
     beforeEach: () => {
       // Simulate setup operations
       const setupTasks = ['registry', 'factories', 'history', 'validation'];
@@ -351,7 +351,7 @@ async function createMockComponents() {
         JSON.stringify({ task, timestamp: Date.now() });
       });
     },
-    
+
     afterEach: () => {
       // Simulate cleanup operations
       const cleanupTasks = ['reset', 'validate', 'clear'];
@@ -368,13 +368,13 @@ async function createMockComponents() {
       const env = { ...process.env };
       JSON.stringify(env);
     },
-    
+
     restore: () => {
       // Simulate environment restore
       const env = { restored: true };
       JSON.stringify(env);
     },
-    
+
     clearDatabaseEnv: () => {
       // Simulate database environment clearing
       const dbVars = ['TURSO_DATABASE_URL', 'TURSO_AUTH_TOKEN', 'DATABASE_TEST_MODE'];
@@ -391,31 +391,31 @@ async function createMockComponents() {
       const isolationLevel = ['minimal', 'singleton', 'environment', 'complete'][
         Math.floor(Math.random() * 4)
       ];
-      
+
       const operations = {
         minimal: 1,
         singleton: 3,
         environment: 5,
         complete: 8
       };
-      
+
       const opCount = operations[isolationLevel];
       for (let i = 0; i < opCount; i++) {
         JSON.stringify({ level: isolationLevel, operation: i, testContext });
         // Simulate async work
         await new Promise(resolve => setTimeout(resolve, Math.random() * 2));
       }
-      
+
       return { isolationLevel, operations: opCount };
     },
-    
+
     applyAfterEachCleanup: async (testContext) => {
       // Simulate cleanup operations
       const cleanupOperations = Math.floor(Math.random() * 5) + 1;
       for (let i = 0; i < cleanupOperations; i++) {
         JSON.stringify({ cleanup: true, operation: i, testContext });
       }
-      
+
       return { cleanupOperations };
     }
   };
@@ -433,10 +433,10 @@ async function createMockComponents() {
  */
 async function main() {
   console.log('🔍 Starting Bulletproof Test Isolation Performance Analysis...\n');
-  
+
   const analyzer = new PerformanceAnalyzer();
   const mocks = await createMockComponents();
-  
+
   // Analyze TestSingletonManager performance
   console.log('📊 Analyzing TestSingletonManager...');
   const singletonStats = analyzer.analyzeComponent(
@@ -447,7 +447,7 @@ async function main() {
     },
     50
   );
-  
+
   // Analyze TestMockManager performance
   console.log('📊 Analyzing TestMockManager...');
   const mockStats = analyzer.analyzeComponent(
@@ -459,7 +459,7 @@ async function main() {
     },
     50
   );
-  
+
   // Analyze TestEnvironmentManager performance
   console.log('📊 Analyzing TestEnvironmentManager...');
   const envStats = analyzer.analyzeComponent(
@@ -471,7 +471,7 @@ async function main() {
     },
     50
   );
-  
+
   // Analyze AutomaticIsolationEngine performance
   console.log('📊 Analyzing AutomaticIsolationEngine...');
   const engineStats = analyzer.analyzeComponent(
@@ -483,19 +483,19 @@ async function main() {
     },
     25  // Fewer iterations for async operations
   );
-  
+
   // Generate comprehensive report
   console.log('\n📋 Generating Performance Report...\n');
   const report = analyzer.generateReport();
-  
+
   // Save report to file
   const reportPath = join(projectRoot, 'reports', 'isolation-performance-analysis.json');
   await fs.mkdir(join(projectRoot, 'reports'), { recursive: true });
   await fs.writeFile(reportPath, JSON.stringify(report, null, 2));
-  
+
   // Display results
   displayResults(report);
-  
+
   console.log(`\n💾 Detailed report saved to: ${reportPath}`);
 }
 
@@ -503,7 +503,7 @@ function displayResults(report) {
   console.log('=' .repeat(80));
   console.log('🎯 BULLETPROOF TEST ISOLATION PERFORMANCE ANALYSIS');
   console.log('=' .repeat(80));
-  
+
   // Summary
   console.log('\n📈 SUMMARY');
   console.log('-'.repeat(40));
@@ -512,53 +512,53 @@ function displayResults(report) {
   console.log(`Average Component Overhead: ${report.summary.averageOverhead.toFixed(2)}ms`);
   console.log(`Overall Performance: ${report.summary.overallCategory.toUpperCase()}`);
   console.log(`Memory Efficient: ${report.summary.memoryEfficient ? '✅ YES' : '❌ NO'}`);
-  
+
   // Component Results
   console.log('\n🔧 COMPONENT ANALYSIS');
   console.log('-'.repeat(40));
-  
+
   for (const [name, stats] of Object.entries(report.components)) {
     if (!stats.success) {
       console.log(`❌ ${name}: FAILED (${stats.error})`);
       continue;
     }
-    
+
     const timing = stats.timing;
     const performance = stats.performance;
-    
+
     console.log(`\n📦 ${name}:`);
     console.log(`   Performance: ${performance.category.toUpperCase()} (${performance.overhead} overhead)`);
     console.log(`   Average Time: ${timing.mean.toFixed(2)}ms`);
     console.log(`   95th Percentile: ${timing.p95.toFixed(2)}ms`);
     console.log(`   Success Rate: ${stats.successRate.toFixed(1)}%`);
     console.log(`   Memory Efficient: ${performance.memoryEfficient ? '✅' : '❌'}`);
-    
+
     if (timing.max > 20) {
       console.log(`   ⚠️  Peak execution time: ${timing.max.toFixed(2)}ms`);
     }
   }
-  
+
   // Recommendations
   console.log('\n💡 RECOMMENDATIONS');
   console.log('-'.repeat(40));
-  
+
   if (report.recommendations.length === 0) {
     console.log('✅ No critical issues found - performance is within acceptable ranges');
   } else {
     report.recommendations.forEach((rec, index) => {
-      const priority = rec.priority === 'critical' ? '🚨' : 
+      const priority = rec.priority === 'critical' ? '🚨' :
                       rec.priority === 'high' ? '⚠️' : '💡';
-      
+
       console.log(`\n${priority} ${rec.component} (${rec.priority.toUpperCase()}):`);
       console.log(`   Issue: ${rec.issue}`);
       console.log(`   Recommendation: ${rec.recommendation}`);
     });
   }
-  
+
   // Optimizations
   console.log('\n🚀 OPTIMIZATION OPPORTUNITIES');
   console.log('-'.repeat(40));
-  
+
   if (report.optimizations.length === 0) {
     console.log('✅ System is well optimized - no major optimization opportunities identified');
   } else {
@@ -570,24 +570,24 @@ function displayResults(report) {
       console.log(`   Affected Components: ${opt.affectedComponents.join(', ')}`);
     });
   }
-  
+
   // Performance Target Assessment
   console.log('\n🎯 PERFORMANCE TARGET ASSESSMENT');
   console.log('-'.repeat(40));
-  
+
   const targetOverhead = 5; // 5% target overhead
   const actualOverhead = (report.summary.totalOverhead / 100) * 100; // Convert to percentage
-  
+
   console.log(`Target: ≤5% performance overhead`);
   console.log(`Actual: ${actualOverhead.toFixed(1)}% overhead`);
-  
+
   if (actualOverhead <= targetOverhead) {
     console.log('✅ PERFORMANCE TARGET MET');
   } else {
     const overage = actualOverhead - targetOverhead;
     console.log(`❌ PERFORMANCE TARGET EXCEEDED by ${overage.toFixed(1)}%`);
   }
-  
+
   console.log('\n' + '='.repeat(80));
 }
 

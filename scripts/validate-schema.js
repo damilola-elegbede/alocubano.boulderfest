@@ -382,23 +382,23 @@ class SchemaValidator {
     const performanceTests = [
       {
         name: "wallet_analytics_query",
-        query: `SELECT wallet_source, COUNT(*) as count 
-                FROM tickets 
-                WHERE wallet_source IS NOT NULL 
+        query: `SELECT wallet_source, COUNT(*) as count
+                FROM tickets
+                WHERE wallet_source IS NOT NULL
                 GROUP BY wallet_source`,
         maxTime: 50,
       },
       {
         name: "qr_access_method_query",
-        query: `SELECT qr_access_method, COUNT(*) as count 
-                FROM tickets 
+        query: `SELECT qr_access_method, COUNT(*) as count
+                FROM tickets
                 GROUP BY qr_access_method`,
         maxTime: 50,
       },
       {
         name: "ticket_validation_query",
-        query: `SELECT id, status, scan_count, max_scan_count 
-                FROM tickets 
+        query: `SELECT id, status, scan_count, max_scan_count
+                FROM tickets
                 WHERE ticket_id = 'test' AND status = 'valid'`,
         maxTime: 10,
       },

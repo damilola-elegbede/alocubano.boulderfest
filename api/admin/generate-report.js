@@ -1,7 +1,8 @@
-import analyticsService from '../../lib/analytics-service.js';
-import authService from '../../lib/auth-service.js';
-import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
-import { getDatabaseClient } from '../../lib/database.js';
+import analyticsService from "../../lib/analytics-service.js";
+import authService from "../../lib/auth-service.js";
+import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
+import { getDatabaseClient } from "../../lib/database.js";
+import { withHighSecurityAudit } from "../../lib/admin-audit-middleware.js";
 
 /**
  * Safely quote and sanitize CSV values to prevent formula injection
@@ -10,19 +11,19 @@ function q(value) {
   if (value === null || value === undefined) {
     return '""';
   }
-  
+
   // Convert to string
   const str = String(value);
-  
+
   // Escape double quotes by doubling them
   let escaped = str.replace(/"/g, '""');
-  
+
   // Check for potentially dangerous leading characters that could be interpreted as formulas
   if (escaped.match(/^[=+\-@]/)) {
     // Prefix with single quote to prevent formula execution
-    escaped = "'" + escaped;
+    escaped = '\'' + escaped;
   }
-  
+
   // Always wrap in double quotes for safety
   return '"' + escaped + '"';
 }
@@ -95,7 +96,7 @@ function convertToCSV(data, type) {
 async function handler(req, res) {
   // Initialize database client
   await getDatabaseClient();
-  
+
   if (req.method !== 'GET') {
     res.setHeader('Allow', ['GET']);
     return res.status(405).end(`Method ${req.method} Not Allowed`);
@@ -204,6 +205,10 @@ async function handler(req, res) {
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const filename = `alocubano-${primaryType}-report-${timestamp}.csv`;
 
+      // Set security headers for PII reports
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader(
         'Content-Disposition',
@@ -211,6 +216,11 @@ async function handler(req, res) {
       );
       return res.status(200).send(csvData);
     } else {
+      // Set security headers for PII data
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+
       // JSON response
       res.status(200).json(report);
     }
@@ -223,4 +233,8 @@ async function handler(req, res) {
   }
 }
 
-export default withSecurityHeaders(authService.requireAuth(handler));
+export default withSecurityHeaders(authService.requireAuth(withHighSecurityAudit(handler, {
+  requireExplicitAction: true,
+  logFullRequest: true,
+  alertOnFailure: false // Reports are less critical than transactions
+})));

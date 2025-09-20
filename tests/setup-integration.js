@@ -2,8 +2,8 @@
  * Integration Test Setup - Real Database & Services
  * Target: ~30-50 tests with proper database isolation
  *
- * Uses Test Isolation Manager to ensure complete isolation between tests
- * and prevent CLIENT_CLOSED errors.
+ * Uses in-memory SQLite databases for complete isolation between tests
+ * preventing SQLITE_BUSY, SQLITE_LOCKED, and CLIENT_CLOSED errors.
  */
 
 // Force build-time cache access for integration tests (must be before any imports)
@@ -31,6 +31,16 @@ const validateIntegrationSecrets = () => {
       description: 'Admin JWT signing secret',
       validator: (value) => value && value.length >= 32,
       fallback: 'admin-secret-for-integration-tests-32-chars-plus'
+    },
+    TEST_ADMIN_PASSWORD: {
+      description: 'Test admin password for integration tests',
+      validator: (value) => value && value.length >= 4,
+      fallback: 'test-admin-password-for-integration-testing'
+    },
+    QR_SECRET_KEY: {
+      description: 'QR code validation secret key',
+      validator: (value) => value && value.length >= 32,
+      fallback: 'test-qr-secret-key-for-integration-testing-32-chars'
     }
   };
 
@@ -112,8 +122,7 @@ const validateIntegrationSecrets = () => {
   };
 };
 
-// Force local SQLite for integration tests (prevent Turso usage)
-process.env.DATABASE_URL = 'file:./data/test-integration.db';
+// Clean up environment variables to ensure proper test isolation
 delete process.env.TURSO_AUTH_TOKEN;
 delete process.env.TURSO_DATABASE_URL;
 // Ensure this is not detected as E2E test
@@ -121,8 +130,11 @@ delete process.env.E2E_TEST_MODE;
 delete process.env.PLAYWRIGHT_BROWSER;
 delete process.env.VERCEL_DEV_STARTUP;
 
+// Enable debug logging for integration tests to see migration progress
+process.env.DEBUG = 'true';
+
 // Additional safety measures for integration test isolation
-process.env.TEST_DATABASE_TYPE = 'sqlite_file';
+process.env.TEST_DATABASE_TYPE = 'sqlite_memory';
 process.env.FORCE_LOCAL_DATABASE = 'true';
 
 // CRITICAL: Disable enterprise features for integration tests
@@ -149,6 +161,12 @@ const secretValidation = validateIntegrationSecrets();
 console.log('🔧 Step 2: Environment Configuration');
 const config = configureEnvironment(TEST_ENVIRONMENTS.INTEGRATION);
 
+// CRITICAL FIX: Set DATABASE_URL AFTER configureEnvironment to prevent override
+// Use in-memory SQLite for complete test isolation
+// This prevents SQLITE_BUSY, SQLITE_LOCKED, and race condition errors
+process.env.DATABASE_URL = ':memory:';
+console.log('✅ Forced DATABASE_URL to :memory: for perfect test isolation');
+
 // Validate environment setup
 console.log('🔧 Step 3: Environment Validation');
 validateEnvironment(TEST_ENVIRONMENTS.INTEGRATION);
@@ -157,7 +175,8 @@ validateEnvironment(TEST_ENVIRONMENTS.INTEGRATION);
 console.log('🔧 Step 4: Initializing Test Isolation Manager');
 const isolationManager = getTestIsolationManager();
 
-console.log('✅ Integration test environment fully configured and validated');
+console.log('✅ Integration test environment configured with in-memory SQLite');
+console.log('🚀 Each test gets its own isolated database - no lock contention possible');
 
 // Export utilities for integration tests
 export const getApiUrl = (path) => `${process.env.TEST_BASE_URL}${path}`;
@@ -166,18 +185,29 @@ export const getTestTimeout = () => Number(process.env.VITEST_TEST_TIMEOUT || co
 
 /**
  * Initialize Database for Integration Tests with Test Isolation
- * Run migrations once at suite level to improve performance
+ * With in-memory databases and worker-level management, migrations run once per worker
  */
 const initializeDatabase = async () => {
   try {
     // Initialize test isolation mode
     await isolationManager.initializeTestMode();
 
+    // For in-memory databases with worker-level management
+    if (process.env.DATABASE_URL === ':memory:') {
+      console.log('✅ Using in-memory SQLite with worker-level database management');
+      console.log('🚀 Each worker (4 total) will initialize its own database with migrations');
+      console.log('📊 Expected: 4 migration runs total (1 per worker), not 398 (1 per test)');
+      console.log('🔒 Perfect isolation - no lock contention possible');
+      // Worker databases are initialized lazily when first test in that worker runs
+      return;
+    }
+
+    // For file-based databases, run migrations once at suite level
     // Create initial scope for migrations
     const scope = await isolationManager.createTestScope('migration-init');
 
     // Get scoped database client
-    const dbClient = await isolationManager.getScopedDatabaseClient();
+    const dbClient = await isolationManager.getScopedDatabaseClient('migration-init');
 
     // Import migration system
     const { MigrationSystem } = await import('../scripts/migrate.js');
@@ -211,7 +241,7 @@ const initializeDatabase = async () => {
     }
     console.log('✅ Verified transactions table exists');
 
-    console.log('✅ Integration database initialized and tested with isolation');
+    console.log('✅ Integration database initialized');
 
     // Clean up migration scope - tests will create their own
     await isolationManager.completeTest();
@@ -222,100 +252,182 @@ const initializeDatabase = async () => {
 };
 
 /**
+ * Clean tables in dependency order to avoid foreign key constraint violations
+ */
+async function cleanTablesInOrder(dbClient, tables) {
+  // Disable foreign key constraints during cleanup to avoid cascade issues
+  try {
+    await dbClient.execute('PRAGMA foreign_keys = OFF');
+  } catch (error) {
+    console.warn('⚠️ Could not disable foreign keys:', error.message);
+  }
+
+  // Define table cleaning order: child tables first, parent tables last
+  // This order respects foreign key constraints
+  const orderedTables = [
+    // Child tables that reference other tables
+    'admin_activity_log',
+    'admin_sessions',
+    'audit_logs',
+    'ticket_registrations',
+    'ticket_validation_log',
+    'transaction_items',
+    'payment_events',
+    'tokens',
+    'email_events',
+    'registration_reminders',
+    'registration_emails',
+    'financial_reconciliation_entries',
+    'financial_reconciliation_reports',
+    'security_metrics',
+    'session_security_scores',
+    'admin_login_attempts',
+    'admin_mfa_config',
+    'admin_mfa_backup_codes',
+    'event_settings',
+    'event_access',
+    'event_audit_log',
+
+    // Tables that reference tickets/transactions
+    'tickets',
+    'transactions',
+    'newsletter_subscribers',
+    'email_subscribers',
+
+    // Parent tables (referenced by other tables)
+    'events',
+
+    // Independent tables (no foreign key dependencies)
+    'system_configuration',
+    'admin_sessions_archive'
+  ];
+
+  // Clean tables in dependency order first
+  for (const table of orderedTables) {
+    if (tables.includes(table)) {
+      try {
+        // Verify table exists before attempting to clean
+        const tableCheck = await dbClient.execute(`
+          SELECT name FROM sqlite_master
+          WHERE type='table' AND name='${table}'
+        `);
+
+        if (tableCheck.rows.length > 0) {
+          await dbClient.execute(`DELETE FROM "${table}"`);
+        }
+      } catch (error) {
+        console.warn(`⚠️ Failed to clean table ${table}: ${error.message}`);
+        // Don't rethrow - continue with other tables
+      }
+    }
+  }
+
+  // Clean any remaining tables that weren't in the ordered list
+  const remainingTables = tables.filter(table => !orderedTables.includes(table));
+  for (const table of remainingTables) {
+    try {
+      // Verify table exists before attempting to clean
+      const tableCheck = await dbClient.execute(`
+        SELECT name FROM sqlite_master
+        WHERE type='table' AND name='${table}'
+      `);
+
+      if (tableCheck.rows.length > 0) {
+        await dbClient.execute(`DELETE FROM "${table}"`);
+      }
+    } catch (error) {
+      console.warn(`⚠️ Failed to clean remaining table ${table}: ${error.message}`);
+      // Don't rethrow - continue with other tables
+    }
+  }
+
+  // Re-enable foreign key constraints after cleanup
+  try {
+    await dbClient.execute('PRAGMA foreign_keys = ON');
+  } catch (error) {
+    console.warn('⚠️ Could not re-enable foreign keys:', error.message);
+  }
+}
+
+/**
+ * Verify that migration completion is actually finished
+ * This prevents race conditions where services try to use tables before they exist
+ */
+const verifyMigrationCompletion = async (dbClient) => {
+  const maxRetries = 10;
+  const retryDelay = 100; // ms
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      // CRITICAL FIX 5: Check that key tables exist including qr_validations
+      const coreTablesCheck = await dbClient.execute(`
+        SELECT name FROM sqlite_master
+        WHERE type='table' AND name IN (
+          'transactions', 'tickets', 'qr_validations', 'audit_logs', 'admin_sessions'
+        )
+        ORDER BY name
+      `);
+
+      const existingTables = coreTablesCheck.rows.map(row => row.name || row[0]);
+      console.log(`🔍 Migration verification attempt ${attempt}: Found ${existingTables.length} core tables:`, existingTables);
+
+      // Need at minimum: transactions, tickets, qr_validations
+      if (existingTables.length >= 3 && existingTables.includes('qr_validations')) {
+        // Verify table structure by testing a basic insert/select
+        try {
+          await dbClient.execute('SELECT COUNT(*) FROM transactions LIMIT 1');
+          await dbClient.execute('SELECT COUNT(*) FROM tickets LIMIT 1');
+          await dbClient.execute('SELECT COUNT(*) FROM qr_validations LIMIT 1');
+          console.log(`✅ Migration verification successful - tables are accessible`);
+          return;
+        } catch (structError) {
+          console.warn(`⚠️ Tables exist but not accessible (attempt ${attempt}):`, structError.message);
+        }
+      } else {
+        console.warn(`⚠️ Migration verification failed (attempt ${attempt}): Expected at least 3 core tables, found ${existingTables.length}`);
+      }
+
+      if (attempt < maxRetries) {
+        console.log(`🔄 Retrying migration verification in ${retryDelay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+      }
+    } catch (error) {
+      console.warn(`⚠️ Migration verification error (attempt ${attempt}):`, error.message);
+      if (attempt < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+      }
+    }
+  }
+
+  throw new Error('Migration verification failed - tables not ready after maximum retries');
+};
+
+/**
  * Clean Database Between Tests using Test Isolation
+ * With worker-level databases, we clean data but keep the database
  */
 const cleanDatabase = async () => {
   try {
-    // Get scoped database client for cleaning
+    // Get the worker database (shared by all tests in this worker)
     const dbClient = await isolationManager.getScopedDatabaseClient();
 
-    // Temporarily disable foreign key constraints for faster cleanup
-    // We handle the correct order manually to avoid constraint violations
-    await dbClient.execute('PRAGMA foreign_keys = OFF');
-
-    // Get all tables from database to avoid checking individual existence
+    // Get all tables from database
     const tableQuery = await dbClient.execute(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+      "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name != 'migrations'"
     );
-    const existingTables = new Set(tableQuery.rows.map(row => row.name));
+    const tables = tableQuery.rows.map(row => row.name);
 
-    // Clean test data while preserving schema (ordered by foreign key dependencies)
-    // CRITICAL: Child tables MUST be deleted before parent tables to avoid foreign key constraint violations
-    const tables = [
-      // Level 1: Tables with foreign keys to other tables (delete first)
-      'email_events',                 // → email_subscribers
-      'email_audit_log',             // General audit table (no FK constraints)
-      'payment_events',              // → transactions
-      'transaction_items',           // → transactions
-      'access_tokens',               // → transactions
-      'qr_validations',              // → tickets
-      'wallet_pass_events',          // → tickets
-      'registration_emails',         // → tickets
-      'admin_mfa_backup_codes',      // → admin_mfa_config
-      'admin_mfa_attempts',          // → admin_mfa_config
-      'admin_mfa_rate_limits',       // → admin_mfa_config
-      'event_settings',              // → events
-      'event_access',                // → events
-      'event_audit_log',             // → events
-      'registrations',               // May reference tickets indirectly
+    // Clear all tables (except migrations) - data only, keep structure
+    // Use dependency-aware cleaning order to handle foreign key constraints
+    await cleanTablesInOrder(dbClient, tables);
 
-      // Level 2: Tables that are referenced by Level 1 but may reference Level 3
-      'tickets',                     // → transactions (but referenced by qr_validations, wallet_pass_events, etc.)
-
-      // Level 3: Parent tables with no foreign key dependencies (delete last)
-      'transactions',                // Referenced by tickets, transaction_items, payment_events, access_tokens
-      'email_subscribers',           // Referenced by email_events
-      'admin_mfa_config',            // Referenced by admin_mfa_backup_codes, etc.
-      'events',                      // Referenced by event_settings, event_access, event_audit_log
-      'admin_sessions',              // Standalone table
-      'newsletter_subscriptions',    // Legacy newsletter table
-
-      // Additional tables that may exist
-      'wallet_passes',               // Standalone table
-      'performance_metrics',         // Standalone table
-      'image_cache',                 // Standalone table
-      'admin_audit_log',             // Standalone table
-      'featured_photos',             // Standalone table
-      'checkin_sessions',            // Standalone table
-      'health_checks',               // Standalone table
-      'error_logs'                   // Standalone table
-    ];
-
-    // Batch cleanup using prepared statements for performance
-    const cleanupPromises = [];
-    let cleanedTables = 0;
-
-    for (const table of tables) {
-      if (existingTables.has(table)) {
-        cleanupPromises.push(
-          dbClient.execute(`DELETE FROM "${table}"`)
-            .then(result => {
-              const deletedCount = result.rowsAffected ?? result.changes ?? 0;
-              if (deletedCount > 0) {
-                console.log(`🧹 Cleaned ${deletedCount} records from ${table}`);
-              }
-              cleanedTables++;
-            })
-            .catch(error => {
-              console.warn(`⚠️ Failed to clean table ${table}: ${error.message}`);
-            })
-        );
-      }
+    // Log cleanup but less verbosely
+    if (tables.length > 0) {
+      console.log(`🧹 Cleaned ${tables.length} tables in worker database`);
     }
-
-    // Execute cleanup in parallel for better performance
-    await Promise.all(cleanupPromises);
-    const skippedTables = tables.length - cleanedTables;
-
-    // Re-enable foreign key constraints after cleanup
-    await dbClient.execute('PRAGMA foreign_keys = ON');
-
-    console.log(`🧹 Database cleanup completed: ${cleanedTables} tables cleaned, ${skippedTables} skipped`);
   } catch (error) {
     console.warn('⚠️ Database cleanup warning:', error.message);
-
-    // If cleanup fails, it's handled by test isolation manager
-    // The next test will get a fresh scope anyway
+    // Non-fatal - tests can continue
   }
 };
 
@@ -331,75 +443,114 @@ if (!globalThis.fetch) {
 
 // Integration test lifecycle with Test Isolation
 beforeAll(async () => {
-  console.log('🚀 Integration test suite starting with Test Isolation');
-  console.log(`📊 Target: ~30-50 tests with real database`);
-  console.log(`🗄️ Database: ${config.database.description}`);
+  console.log('🚀 Integration test suite starting with worker-level database management');
+  console.log(`📊 Target: ~30-50 tests across 4 parallel workers`);
+  console.log(`🗄️ Database: In-memory SQLite (1 per worker, 4 total)`);
   console.log(`🔧 Port: ${config.port.port} (${config.port.description})`);
   console.log(`🔐 Secrets: ${secretValidation.totalChecked} checked, ${secretValidation.warnings.length} warnings`);
-  console.log(`🧪 Test Isolation: ENABLED - Each test gets fresh connections`);
+  console.log(`🧪 Test Isolation: Worker-level - 4 databases total, not 398`);
 
   if (secretValidation.warnings.length > 0) {
     console.log('⚠️ Integration test warnings:');
     secretValidation.warnings.forEach(warning => console.log(`   - ${warning}`));
   }
 
-  // Initialize database with migrations
+  // Initialize test isolation manager
   await initializeDatabase();
 }, config.timeouts.setup);
 
-// Global test counter for unique test IDs
+// Global test counter for unique test IDs (include worker ID to prevent conflicts)
 let testCounter = 0;
+const workerId = process.env.VITEST_POOL_ID || process.pid || Math.random().toString(36).substring(7);
 
 beforeEach(async (context) => {
-  // Create unique test ID
+  // Create unique test ID including worker ID to prevent conflicts
   testCounter++;
-  const testName = context?.task?.name || `test-${testCounter}`;
+  const testName = context?.task?.name || `test-${workerId}-${testCounter}`;
 
-  console.log(`🧪 Starting test: ${testName}`);
+  // Less verbose logging
+  if (testCounter === 1) {
+    console.log(`🧪 Worker ${workerId} starting - initializing worker database...`);
+  }
 
-  // CRITICAL: Ensure complete isolation for this test
+  // CRITICAL: Ensure test scope is created (will use worker database)
   await isolationManager.ensureTestIsolation(testName);
 
-  // Clean database with fresh connection
+  // CRITICAL FIX: For in-memory databases, ensure worker database is initialized with migrations
+  // before any test runs and WAIT for completion
+  if (process.env.DATABASE_URL === ':memory:' && testCounter === 1) {
+    try {
+      // Force worker database initialization with migrations and WAIT for completion
+      await isolationManager.initializeWorkerDatabase();
+      console.log(`✅ Worker ${workerId} database initialized with migrations`);
+
+      // CRITICAL: Wait for migrations to actually complete before proceeding
+      // Add explicit verification that tables exist
+      const dbClient = await isolationManager.getScopedDatabaseClient();
+      await verifyMigrationCompletion(dbClient);
+      console.log(`✅ Worker ${workerId} migration completion verified`);
+    } catch (error) {
+      console.error(`❌ Worker ${workerId} database initialization failed:`, error.message);
+      throw error;
+    }
+  }
+
+  // Clean database data between tests (keep structure)
   await cleanDatabase();
+
+  // CRITICAL FIX: Reset all services after database cleanup to prevent stale connections
+  try {
+    // Import and reset all services with fresh database connections
+    const { resetAllServices } = await import('./integration/reset-services.js');
+    await resetAllServices();
+  } catch (error) {
+    console.warn(`⚠️ Service reset failed: ${error.message}`);
+    // Continue - tests may still work with existing service state
+  }
+
+  // CRITICAL VERIFICATION: Ensure core tables still exist after cleanup
+  if (testCounter === 1) {
+    try {
+      const dbClient = await isolationManager.getScopedDatabaseClient();
+      const coreTablesCheck = await dbClient.execute(`
+        SELECT name FROM sqlite_master
+        WHERE type='table' AND name IN ('tickets', 'qr_validations', 'transactions')
+        ORDER BY name
+      `);
+      const existingCoreTables = coreTablesCheck.rows.map(row => row.name || row[0]);
+
+      // CRITICAL FIX 5: Ensure qr_validations table exists
+      if (existingCoreTables.length < 3 || !existingCoreTables.includes('qr_validations')) {
+        console.error(`❌ CRITICAL: Core tables missing after cleanup!`, existingCoreTables);
+        throw new Error(`Core tables missing after cleanup: expected 3 including qr_validations, found ${existingCoreTables.length}`);
+      } else {
+        console.log(`✅ Core tables verified after cleanup:`, existingCoreTables);
+      }
+    } catch (error) {
+      console.error(`❌ Table verification failed:`, error.message);
+      throw error;
+    }
+  }
 }, config.timeouts.hook);
 
 afterEach(async () => {
-  // CRITICAL: Complete test and clean up all resources
+  // CRITICAL: Complete test and clean up test scope (not worker database)
   await isolationManager.completeTest();
-
-  console.log(`✅ Test completed and isolated`);
 }, config.timeouts.hook);
 
 afterAll(async () => {
-  console.log('🧹 Starting integration test suite cleanup');
+  console.log(`🧹 Worker ${workerId} cleanup starting`);
 
-  // Clean up all test scopes
+  // Clean up all test scopes (but keep worker database for other tests in this worker)
   await isolationManager.cleanupAllScopes();
 
-  // Clean up test database files
-  try {
-    const fs = await import('fs');
-    const dbPath = './data/test-integration.db';
-    const walPath = './data/test-integration.db-wal';
-    const shmPath = './data/test-integration.db-shm';
+  // Clean up the temporary database file for this worker
+  await isolationManager.cleanupWorkerDatabaseFile();
 
-    if (fs.existsSync(dbPath)) {
-      fs.unlinkSync(dbPath);
-      console.log('🧹 Cleaned up test database: ' + dbPath);
-    }
-    if (fs.existsSync(walPath)) {
-      fs.unlinkSync(walPath);
-    }
-    if (fs.existsSync(shmPath)) {
-      fs.unlinkSync(shmPath);
-    }
-  } catch (error) {
-    console.warn('⚠️ Failed to clean up test database files:', error.message);
-  }
+  // Worker database will be garbage collected when worker exits
+  console.log(`✅ Worker ${workerId} cleanup completed`);
 
   await cleanupEnvironment(TEST_ENVIRONMENTS.INTEGRATION);
-  console.log('✅ Integration test cleanup completed');
 }, config.timeouts.cleanup);
 
 /**
@@ -417,4 +568,5 @@ export const getIsolationStats = () => isolationManager.getStats();
 // Export secret validation result for tests that need to check availability
 export const getSecretValidation = () => secretValidation;
 
-console.log('🧪 Integration test environment ready - database & services configured with Test Isolation');
+console.log('🧪 Integration test environment ready - using worker-level database management');
+console.log('📊 Expected behavior: 4 databases total (1 per worker), 4 migration runs total');

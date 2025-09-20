@@ -7,9 +7,9 @@ export default function handler(req, res) {
   // Set appropriate content type
   res.setHeader('Content-Type', 'application/xml');
   res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
-  
+
   const baseUrl = req.headers.host ? `https://${req.headers.host}` : 'https://alocubanoboulderfest.com';
-  
+
   // Generate sitemap XML content
   const sitemapContent = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">

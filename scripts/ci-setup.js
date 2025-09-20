@@ -41,13 +41,13 @@ class CISetupManager {
     if (this.initialized) {
       return this.state;
     }
-    
+
     if (this.initializationPromise) {
       return this.initializationPromise;
     }
-    
+
     this.initializationPromise = this._performInitialization();
-    
+
     try {
       const result = await this.initializationPromise;
       this.initialized = true;
@@ -60,16 +60,16 @@ class CISetupManager {
 
   async _performInitialization() {
     console.log('🚀 Initializing CI Setup Manager for Vercel E2E...');
-    
+
     // Load environment configuration
     this._loadEnvironment();
-    
+
     // Validate CI environment
     this._validateCIEnvironment();
-    
+
     // Initialize directories
     await this._initializeDirectories();
-    
+
     console.log('✅ CI Setup Manager initialized');
     return this.state;
   }
@@ -83,13 +83,13 @@ class CISetupManager {
         console.log('📄 Loaded local environment configuration');
       }
     }
-    
+
     // Set CI-specific defaults
     process.env.NODE_ENV = process.env.NODE_ENV || 'test';
     process.env.CI = 'true';
     process.env.E2E_TEST_MODE = 'true';
     process.env.ENVIRONMENT = 'ci-test';
-    
+
     // Ensure port configuration
     process.env.PORT = process.env.DYNAMIC_PORT || process.env.PORT || process.env.CI_PORT || '3000';
   }
@@ -97,7 +97,7 @@ class CISetupManager {
   _validateCIEnvironment() {
     const requiredVars = ['NODE_ENV'];
     const missingVars = requiredVars.filter(v => !process.env[v]);
-    
+
     if (missingVars.length > 0) {
       throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
     }
@@ -118,7 +118,7 @@ class CISetupManager {
   async _initializeDirectories() {
     const directories = [
       'test-results',
-      'playwright-report', 
+      'playwright-report',
       'coverage',
       '.tmp/ci',
       '.tmp/metrics',
@@ -169,22 +169,22 @@ const ciSetup = new CISetupManager();
 async function validateEnvironmentVariables() {
   console.log('\n🔧 Validating environment variables...');
   const startTime = Date.now();
-  
+
   const validations = [
     { name: 'NODE_ENV', required: true, value: process.env.NODE_ENV },
     { name: 'CI', required: true, value: process.env.CI },
     { name: 'E2E_TEST_MODE', required: true, value: process.env.E2E_TEST_MODE },
     { name: 'PORT', required: true, value: process.env.PORT },
-    
+
     // Database credentials (optional for CI)
     { name: 'TURSO_DATABASE_URL', required: false, value: process.env.TURSO_DATABASE_URL },
     { name: 'TURSO_AUTH_TOKEN', required: false, value: process.env.TURSO_AUTH_TOKEN },
-    
+
     // API credentials (optional for CI)
     { name: 'STRIPE_SECRET_KEY', required: false, value: process.env.STRIPE_SECRET_KEY ? '***' : undefined },
     { name: 'BREVO_API_KEY', required: false, value: process.env.BREVO_API_KEY ? '***' : undefined },
     { name: 'ADMIN_PASSWORD', required: false, value: process.env.ADMIN_PASSWORD ? '***' : undefined },
-    
+
     // Vercel configuration (optional)
     { name: 'VERCEL_ORG_ID', required: false, value: process.env.VERCEL_ORG_ID ? '***' : undefined },
     { name: 'VERCEL_PROJECT_ID', required: false, value: process.env.VERCEL_PROJECT_ID ? '***' : undefined },
@@ -198,12 +198,12 @@ async function validateEnvironmentVariables() {
       hasErrors = true;
     } else if (validation.value) {
       // Always mask sensitive values and never log actual credentials
-      const isCredential = validation.name.toLowerCase().includes('token') || 
-                          validation.name.toLowerCase().includes('key') || 
+      const isCredential = validation.name.toLowerCase().includes('token') ||
+                          validation.name.toLowerCase().includes('key') ||
                           validation.name.toLowerCase().includes('password') ||
                           validation.name.toLowerCase().includes('secret') ||
                           validation.name.toLowerCase().includes('id');
-      
+
       const displayValue = isCredential ? '***' : (validation.value === '***' ? '***' : validation.value);
       console.log(`   ✅ ${validation.name}: ${displayValue}`);
     } else {
@@ -233,11 +233,11 @@ async function validateVercelCLI() {
     const vercelVersion = await new Promise((resolve, reject) => {
       const vercel = spawn('vercel', ['--version'], { stdio: 'pipe' });
       let version = '';
-      
+
       vercel.stdout.on('data', (data) => {
         version += data.toString().trim();
       });
-      
+
       vercel.on('close', (code) => {
         if (code === 0) {
           resolve(version);
@@ -245,24 +245,24 @@ async function validateVercelCLI() {
           reject(new Error(`Vercel CLI check failed with code ${code}`));
         }
       });
-      
+
       setTimeout(() => {
         vercel.kill();
         reject(new Error('Vercel CLI check timeout'));
       }, 10000);
     });
-    
+
     console.log(`   ✅ Vercel CLI version: ${vercelVersion}`);
-    
+
     const duration = Date.now() - startTime;
     ciSetup.recordValidation('vercel_cli', true, duration);
     console.log(`   ⏱️  Vercel CLI validation completed in ${duration}ms`);
-    
+
   } catch (error) {
     const duration = Date.now() - startTime;
     ciSetup.recordValidation('vercel_cli', false, duration);
     console.error(`   ❌ Vercel CLI validation failed: ${error.message}`);
-    
+
     // For CI, Vercel CLI is required for E2E tests
     throw new Error('Vercel CLI is required for E2E testing with Vercel dev server');
   }
@@ -314,39 +314,39 @@ async function validateDatabaseConnection() {
     });
 
     const result = await connectionTest;
-    
+
     if (result.rows[0].test === 1) {
       console.log('   ✅ Database connection successful');
-      
+
       // Validate required tables exist using parameterized query
       const requiredTables = ['migrations', 'registrations', 'email_subscribers'];
       const placeholders = requiredTables.map(() => '?').join(',');
-      
+
       const tables = await client.execute({
         sql: `SELECT name FROM sqlite_master WHERE type='table' AND name IN (${placeholders}) ORDER BY name`,
         args: requiredTables
       });
-      
+
       const tableNames = tables.rows.map(row => row.name);
       console.log(`   ✅ Found tables: ${tableNames.join(', ')}`);
     }
-    
+
     // Ensure proper cleanup
     try {
       client.close();
     } catch (closeError) {
       console.warn(`   ⚠️  Warning: Failed to close database connection: ${closeError.message}`);
     }
-    
+
     const duration = Date.now() - startTime;
     ciSetup.recordValidation('database_connection', true, duration);
     console.log(`   ⏱️  Completed in ${duration}ms`);
-    
+
   } catch (error) {
     const duration = Date.now() - startTime;
     ciSetup.recordValidation('database_connection', false, duration);
     console.error(`   ❌ Database validation failed: ${error.message}`);
-    
+
     // For CI, database connection failures are warnings, not hard failures
     if (process.env.STRICT_DB_VALIDATION === 'true') {
       throw error;
@@ -365,16 +365,16 @@ async function validatePlaywrightSetup() {
 
   try {
     const playwrightVersion = await new Promise((resolve, reject) => {
-      const playwright = spawn('npx', ['playwright', '--version'], { 
+      const playwright = spawn('npx', ['playwright', '--version'], {
         stdio: 'pipe',
-        cwd: projectRoot 
+        cwd: projectRoot
       });
       let version = '';
-      
+
       playwright.stdout.on('data', (data) => {
         version += data.toString().trim();
       });
-      
+
       playwright.on('close', (code) => {
         if (code === 0) {
           resolve(version);
@@ -382,24 +382,24 @@ async function validatePlaywrightSetup() {
           reject(new Error(`Playwright check failed with code ${code}`));
         }
       });
-      
+
       setTimeout(() => {
         playwright.kill();
         reject(new Error('Playwright version check timeout'));
       }, 10000);
     });
-    
+
     console.log(`   ✅ ${playwrightVersion}`);
-    
+
     const duration = Date.now() - startTime;
     ciSetup.recordValidation('playwright_setup', true, duration);
     console.log(`   ⏱️  Playwright validation completed in ${duration}ms`);
-    
+
   } catch (error) {
     const duration = Date.now() - startTime;
     ciSetup.recordValidation('playwright_setup', false, duration);
     console.error(`   ❌ Playwright validation failed: ${error.message}`);
-    
+
     // Playwright is required for E2E tests
     throw new Error('Playwright is required for E2E testing');
   }
@@ -451,7 +451,7 @@ async function validateVercelDevServer() {
       testProcess.stdout.on('data', (data) => {
         output += data.toString();
         const message = data.toString();
-        
+
         if (message.includes('ready') || message.includes('Ready') || message.includes('running')) {
           clearTimeout(timeout);
           testProcess.kill();
@@ -486,11 +486,11 @@ async function validateVercelDevServer() {
     });
 
     await serverReady;
-    
+
     const duration = Date.now() - startTime;
     ciSetup.recordValidation('vercel_dev_server', true, duration);
     console.log(`   ⏱️  Vercel dev server validation completed in ${duration}ms`);
-    
+
   } catch (error) {
     const duration = Date.now() - startTime;
     ciSetup.recordValidation('vercel_dev_server', false, duration);
@@ -507,7 +507,7 @@ async function executeDatabaseMigrations() {
   const startTime = Date.now();
 
   const migrationScript = resolve(projectRoot, 'scripts/migrate-e2e.js');
-  
+
   if (!existsSync(migrationScript)) {
     console.log('   ℹ️  E2E migration script not found, skipping migrations');
     ciSetup.recordValidation('database_migrations', true, Date.now() - startTime);
@@ -544,7 +544,7 @@ async function executeDatabaseMigrations() {
 
     migration.on('close', (code) => {
       const duration = Date.now() - startTime;
-      
+
       if (code === 0 && !hasError) {
         console.log('   ✅ Database migrations completed successfully');
         ciSetup.recordValidation('database_migrations', true, duration);
@@ -553,7 +553,7 @@ async function executeDatabaseMigrations() {
       } else {
         console.error(`   ❌ Migration failed with code ${code}`);
         ciSetup.recordValidation('database_migrations', false, duration);
-        
+
         // Save migration output as artifact
         try {
           const artifactPath = resolve(projectRoot, '.tmp/ci/migration-output.log');
@@ -562,7 +562,7 @@ async function executeDatabaseMigrations() {
         } catch (writeError) {
           console.error(`   ⚠️  Failed to save migration log: ${writeError.message}`);
         }
-        
+
         if (process.env.STRICT_MIGRATION_VALIDATION === 'true') {
           reject(new Error('Database migration validation failed'));
         } else {
@@ -595,22 +595,22 @@ async function executeWarmupProcedures() {
     // Essential endpoints to warmup
     const endpoints = [
       '/api/health/check',
-      '/api/health/database', 
+      '/api/health/database',
       '/api/gallery',
       '/api/featured-photos'
     ];
 
     console.log(`   🌐 Warming up ${endpoints.length} endpoints on ${serverUrl}...`);
-    
+
     const warmupPromises = endpoints.map(async (endpoint) => {
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
-        
+
         const response = await fetch(`${serverUrl}${endpoint}`, {
           signal: controller.signal
         });
-        
+
         clearTimeout(timeoutId);
         return { endpoint, status: response.status, ok: response.ok };
       } catch (error) {
@@ -619,7 +619,7 @@ async function executeWarmupProcedures() {
     });
 
     const results = await Promise.all(warmupPromises);
-    
+
     let successCount = 0;
     results.forEach(result => {
       if (result.ok) {
@@ -640,7 +640,7 @@ async function executeWarmupProcedures() {
     const duration = Date.now() - startTime;
     ciSetup.recordValidation('warmup_procedures', false, duration);
     console.error(`   ❌ Warmup failed: ${error.message}`);
-    
+
     if (process.env.STRICT_WARMUP === 'true') {
       throw error;
     } else {
@@ -654,10 +654,10 @@ async function executeWarmupProcedures() {
  */
 async function generateSetupReport() {
   console.log('\n📊 Generating setup report...');
-  
+
   const state = await ciSetup.ensureInitialized();
   const endTime = Date.now();
-  
+
   state.metrics.totalDuration = endTime - state.startTime;
 
   const report = {
@@ -684,7 +684,7 @@ async function generateSetupReport() {
   try {
     const reportPath = resolve(projectRoot, '.tmp/ci/setup-report.json');
     writeFileSync(reportPath, JSON.stringify(report, null, 2));
-    
+
     console.log(`   📄 Setup report saved: ${reportPath}`);
     console.log(`   ⏱️  Total duration: ${report.duration.totalDuration}ms`);
     console.log(`   ✅ Validations passed: ${report.summary.passedValidations}/${report.summary.totalValidations}`);
@@ -706,11 +706,11 @@ async function main() {
   console.log('\n🎯 CI Environment Setup and Validation - Vercel E2E Mode');
   console.log('═'.repeat(70));
   console.log(`Started at: ${new Date().toISOString()}`);
-  
+
   try {
     // Initialize CI setup manager
     await ciSetup.ensureInitialized();
-    
+
     // Execute setup phases
     await validateEnvironmentVariables();
     await validateVercelCLI();
@@ -719,27 +719,27 @@ async function main() {
     await executeDatabaseMigrations();
     await validateVercelDevServer();
     await executeWarmupProcedures();
-    
+
     // Generate final report
     const report = await generateSetupReport();
-    
+
     console.log('\n✅ CI setup completed successfully!');
     console.log('🚀 Ready for Vercel E2E testing with dev server');
     console.log('═'.repeat(70));
-    
+
     // Exit with success
     process.exit(0);
-    
+
   } catch (error) {
     console.error('\n❌ CI setup failed:', error.message);
-    
+
     // Try to generate partial report
     try {
       await generateSetupReport();
     } catch (reportError) {
       console.error('   Failed to generate error report:', reportError.message);
     }
-    
+
     console.log('═'.repeat(70));
     process.exit(1);
   }
@@ -748,10 +748,10 @@ async function main() {
 // Handle process signals for cleanup
 process.on('SIGINT', async () => {
   console.log('\n⚠️  Received SIGINT, cleaning up...');
-  
+
   try {
     const state = await ciSetup.ensureInitialized();
-    
+
     // Kill any spawned processes
     for (const [name, process] of state.processes) {
       if (!process.killed) {
@@ -762,16 +762,16 @@ process.on('SIGINT', async () => {
   } catch (error) {
     console.error('   ⚠️  Cleanup error:', error.message);
   }
-  
+
   process.exit(130);
 });
 
 process.on('SIGTERM', async () => {
   console.log('\n⚠️  Received SIGTERM, cleaning up...');
-  
+
   try {
     const state = await ciSetup.ensureInitialized();
-    
+
     // Graceful shutdown
     for (const [name, process] of state.processes) {
       if (!process.killed) {
@@ -782,7 +782,7 @@ process.on('SIGTERM', async () => {
   } catch (error) {
     console.error('   ⚠️  Cleanup error:', error.message);
   }
-  
+
   setTimeout(() => process.exit(143), 5000);
 });
 

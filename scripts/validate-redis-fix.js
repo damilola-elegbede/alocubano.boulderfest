@@ -2,7 +2,7 @@
 
 /**
  * Validation script for Redis CI fixes
- * 
+ *
  * This script validates that:
  * 1. Rate limiting falls back to memory when Redis is unavailable
  * 2. Integration tests can run without Redis
@@ -22,25 +22,25 @@ try {
   delete process.env.REDIS_URL;
   delete process.env.RATE_LIMIT_REDIS_URL;
   delete process.env.REDIS_HOST;
-  
+
   const rateLimiter = new AdvancedRateLimiter({
     name: 'test-limiter',
     limits: { requests: 10, windowMs: 60000 }
   });
-  
+
   // Test a mock request
   const mockReq = {
     headers: { 'x-forwarded-for': '192.168.1.1' },
     connection: { remoteAddress: '192.168.1.1' }
   };
-  
+
   const result = rateLimiter.check(mockReq);
   console.log('✅ Rate limiter created successfully without Redis');
   console.log(`   Result: allowed=${result.allowed}, remaining=${result.remaining}`);
-  
+
   // Restore environment
   if (originalRedisUrl) process.env.REDIS_URL = originalRedisUrl;
-  
+
 } catch (error) {
   console.log('❌ Rate limiter fallback failed:', error.message);
 }
@@ -49,13 +49,13 @@ try {
 console.log('\nTest 2: Test environment configurations');
 try {
   const envs = ['COMPLETE_TEST', 'INTEGRATION', 'MINIMAL'];
-  
+
   for (const envName of envs) {
     const env = TestEnvironments[envName];
     const hasRedis = env && (env.REDIS_URL || env.RATE_LIMIT_REDIS_URL);
     console.log(`✅ ${envName}: ${hasRedis ? 'has Redis config' : 'Redis-free ✓'}`);
   }
-  
+
 } catch (error) {
   console.log('❌ Test environment validation failed:', error.message);
 }
@@ -68,16 +68,16 @@ try {
     'CI': process.env.CI || 'false',
     'TEST_ISOLATION_MODE': process.env.TEST_ISOLATION_MODE || 'true'
   };
-  
+
   console.log('✅ CI environment variables:');
   Object.entries(ciEnvVars).forEach(([key, value]) => {
     console.log(`   ${key}=${value}`);
   });
-  
+
   // Check that Redis is not required
   const redisRequired = !!(process.env.REDIS_URL || process.env.RATE_LIMIT_REDIS_URL);
   console.log(`✅ Redis required: ${redisRequired ? 'YES ⚠️' : 'NO ✓'}`);
-  
+
 } catch (error) {
   console.log('❌ CI environment validation failed:', error.message);
 }
