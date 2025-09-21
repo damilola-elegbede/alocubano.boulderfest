@@ -1,6 +1,7 @@
 export default [
   {
     files: ["js/**/*.js"],
+    ignores: ["js/vendor/**/*.js"],
     languageOptions: {
       ecmaVersion: 2021,
       sourceType: "module",

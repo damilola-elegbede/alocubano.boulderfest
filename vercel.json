@@ -34,10 +34,6 @@
       "destination": "/images/favicon.ico"
     },
     {
-      "source": "/manifest.json",
-      "destination": "/public/manifest.json"
-    },
-    {
       "source": "/gallery-data/:path*",
       "destination": "/gallery-data/:path*"
     },
