@@ -3,10 +3,19 @@
   "framework": null,
   "cleanUrls": true,
   "trailingSlash": false,
-  "buildCommand": "npm run migrate:vercel && npm run build",
+  "buildCommand": "npm run migrate:vercel && npm run bootstrap:vercel && npm run build",
   "functions": {
     "api/docs.js": {
       "maxDuration": 10
+    },
+    "api/admin/*.js": {
+      "maxDuration": 15
+    },
+    "api/payments/*.js": {
+      "maxDuration": 30
+    },
+    "api/tickets/*.js": {
+      "maxDuration": 20
     }
   },
   "crons": [
@@ -21,6 +30,14 @@
       {
         "protocol": "https",
         "hostname": "*.vercel.app"
+      },
+      {
+        "protocol": "https",
+        "hostname": "drive.google.com"
+      },
+      {
+        "protocol": "https",
+        "hostname": "*.googleusercontent.com"
       }
     ]
   },

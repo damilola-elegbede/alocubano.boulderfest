@@ -1,0 +1,693 @@
+{
+  "version": "1.0",
+  "environment": "production",
+  "metadata": {
+    "created": "2025-01-18T00:00:00Z",
+    "description": "Production bootstrap data for A Lo Cubano Boulder Fest"
+  },
+
+  "events": [
+    {
+      "slug": "weekender-2025-11",
+      "name": "November Salsa Weekender 2025",
+      "type": "weekender",
+      "status": "upcoming",
+      "description": "An intimate weekend of Cuban salsa workshops and social dancing in the heart of Boulder. Join us for two days of intensive learning with world-class instructors and dancing the night away.",
+
+      "venue": {
+        "name": "Boulder Theater",
+        "address": "2032 14th Street",
+        "city": "Boulder",
+        "state": "CO",
+        "zip": "80302"
+      },
+
+      "dates": {
+        "start": "2025-11-08",
+        "end": "2025-11-09",
+        "early_bird_end": "2025-09-15",
+        "regular_price_start": "2025-10-01"
+      },
+
+      "capacity": 200,
+      "display_order": 1,
+      "is_featured": true,
+      "is_visible": true,
+
+      "settings": {
+        "payment": {
+          "stripe_enabled": true,
+          "processing_fee_percentage": 2.9,
+          "processing_fee_fixed": 0.30,
+          "tax_enabled": false,
+          "tax_rate": 0,
+          "currency": "usd",
+          "payment_methods": ["card", "link"]
+        },
+
+        "registration": {
+          "deadline_days": 7,
+          "reminder_days": [14, 7, 3, 1],
+          "allow_transfer": true,
+          "allow_name_change": true,
+          "require_phone": true,
+          "require_emergency_contact": false,
+          "required_fields": ["first_name", "last_name", "email", "phone"],
+          "optional_fields": ["dietary_restrictions", "dance_level"],
+          "confirmation_required": false,
+          "waitlist_enabled": true
+        },
+
+        "email": {
+          "confirmation_enabled": true,
+          "reminder_enabled": true,
+          "from_name": "A Lo Cubano Boulder Fest",
+          "reply_to": "alocubanoboulderfest@gmail.com",
+          "support_email": "alocubanoboulderfest@gmail.com",
+          "template_style": "default",
+          "include_calendar_attachment": true,
+          "include_qr_code": true
+        },
+
+        "wallet": {
+          "passes_enabled": true,
+          "apple_enabled": true,
+          "google_enabled": true,
+          "update_enabled": true,
+          "location_trigger": true,
+          "location_radius_miles": 1,
+          "auto_update": true,
+          "pass_type": "eventTicket",
+          "barcode_format": "QR"
+        },
+
+        "checkin": {
+          "qr_enabled": true,
+          "manual_enabled": true,
+          "multiple_allowed": true,
+          "scan_limit": 5,
+          "time_window_hours": 2,
+          "early_checkin_hours": 1,
+          "late_checkin_allowed": true,
+          "require_id": false,
+          "collect_signature": false,
+          "print_badge": false
+        },
+
+        "discounts": {
+          "early_bird_percentage": 15,
+          "group_minimum": 5,
+          "group_percentage": 10,
+          "student_discount": 10,
+          "member_discount": 5,
+          "promo_codes_enabled": true
+        },
+
+        "features": {
+          "workshops": true,
+          "performances": false,
+          "social_dancing": true,
+          "live_music": false,
+          "competitions": false,
+          "vendor_booths": false,
+          "photo_gallery": true,
+          "live_streaming": false
+        }
+      },
+
+      "ticket_types": [
+        {
+          "code": "weekend-pass",
+          "name": "Weekend Pass",
+          "description": "Full access to all workshops and social dancing for the entire weekend",
+          "category": "pass",
+          "includes": ["workshops", "socials"],
+          "valid_days": ["saturday", "sunday"],
+
+          "pricing": {
+            "early_bird": 80,
+            "regular": 95,
+            "door": 110
+          },
+
+          "availability": {
+            "max_quantity": 150,
+            "min_purchase": 1,
+            "max_purchase": 4,
+            "sales_start": "2025-07-01",
+            "sales_end": "2025-11-08"
+          },
+
+          "restrictions": {
+            "age_minimum": null,
+            "requires_audition": false,
+            "requires_partner": false,
+            "level_requirement": null
+          },
+
+          "display": {
+            "order": 1,
+            "color": "#FF6B6B",
+            "icon": "ticket",
+            "featured": true,
+            "visible": true
+          }
+        },
+        {
+          "code": "saturday-pass",
+          "name": "Saturday Pass",
+          "description": "Saturday workshops and social dancing",
+          "category": "pass",
+          "includes": ["workshops", "socials"],
+          "valid_days": ["saturday"],
+
+          "pricing": {
+            "regular": 55,
+            "door": 65
+          },
+
+          "availability": {
+            "max_quantity": 80,
+            "min_purchase": 1,
+            "max_purchase": 4,
+            "sales_start": "2025-07-01",
+            "sales_end": "2025-11-08"
+          },
+
+          "restrictions": {
+            "age_minimum": null,
+            "requires_audition": false,
+            "requires_partner": false,
+            "level_requirement": null
+          },
+
+          "display": {
+            "order": 2,
+            "color": "#4ECDC4",
+            "icon": "calendar",
+            "featured": false,
+            "visible": true
+          }
+        },
+        {
+          "code": "sunday-pass",
+          "name": "Sunday Pass",
+          "description": "Sunday workshops and social dancing",
+          "category": "pass",
+          "includes": ["workshops", "socials"],
+          "valid_days": ["sunday"],
+
+          "pricing": {
+            "regular": 55,
+            "door": 65
+          },
+
+          "availability": {
+            "max_quantity": 80,
+            "min_purchase": 1,
+            "max_purchase": 4,
+            "sales_start": "2025-07-01",
+            "sales_end": "2025-11-09"
+          },
+
+          "restrictions": {
+            "age_minimum": null,
+            "requires_audition": false,
+            "requires_partner": false,
+            "level_requirement": null
+          },
+
+          "display": {
+            "order": 3,
+            "color": "#45B7D1",
+            "icon": "calendar",
+            "featured": false,
+            "visible": true
+          }
+        },
+        {
+          "code": "saturday-social",
+          "name": "Saturday Social Only",
+          "description": "Saturday evening social dancing only (no workshops)",
+          "category": "social",
+          "includes": ["socials"],
+          "valid_days": ["saturday"],
+
+          "pricing": {
+            "regular": 20,
+            "door": 25
+          },
+
+          "availability": {
+            "max_quantity": 50,
+            "min_purchase": 1,
+            "max_purchase": 2,
+            "sales_start": "2025-07-01",
+            "sales_end": "2025-11-08"
+          },
+
+          "restrictions": {
+            "age_minimum": null,
+            "requires_audition": false,
+            "requires_partner": false,
+            "level_requirement": null
+          },
+
+          "display": {
+            "order": 4,
+            "color": "#F7DC6F",
+            "icon": "music",
+            "featured": false,
+            "visible": true
+          }
+        },
+        {
+          "code": "sunday-social",
+          "name": "Sunday Social Only",
+          "description": "Sunday evening social dancing only (no workshops)",
+          "category": "social",
+          "includes": ["socials"],
+          "valid_days": ["sunday"],
+
+          "pricing": {
+            "regular": 20,
+            "door": 25
+          },
+
+          "availability": {
+            "max_quantity": 50,
+            "min_purchase": 1,
+            "max_purchase": 2,
+            "sales_start": "2025-07-01",
+            "sales_end": "2025-11-09"
+          },
+
+          "restrictions": {
+            "age_minimum": null,
+            "requires_audition": false,
+            "requires_partner": false,
+            "level_requirement": null
+          },
+
+          "display": {
+            "order": 5,
+            "color": "#BB8FCE",
+            "icon": "music",
+            "featured": false,
+            "visible": true
+          }
+        }
+      ]
+    },
+
+    {
+      "slug": "boulderfest-2026",
+      "name": "A Lo Cubano Boulder Fest 2026",
+      "type": "festival",
+      "status": "upcoming",
+      "description": "The premier Cuban salsa festival in Boulder, featuring world-class instructors, live music, and three nights of social dancing. Experience the passion and energy of authentic Cuban salsa in the beautiful Rocky Mountains.",
+
+      "venue": {
+        "name": "Avalon Ballroom",
+        "address": "6185 Arapahoe Road",
+        "city": "Boulder",
+        "state": "CO",
+        "zip": "80303"
+      },
+
+      "dates": {
+        "start": "2026-05-15",
+        "end": "2026-05-17",
+        "early_bird_end": "2026-03-01",
+        "regular_price_start": "2026-04-01"
+      },
+
+      "capacity": 500,
+      "display_order": 2,
+      "is_featured": true,
+      "is_visible": true,
+
+      "settings": {
+        "payment": {
+          "stripe_enabled": true,
+          "processing_fee_percentage": 2.9,
+          "processing_fee_fixed": 0.30,
+          "tax_enabled": false,
+          "tax_rate": 0,
+          "currency": "usd",
+          "payment_methods": ["card", "link"]
+        },
+
+        "registration": {
+          "deadline_days": 3,
+          "reminder_days": [30, 14, 7, 3, 1],
+          "allow_transfer": true,
+          "allow_name_change": true,
+          "require_phone": true,
+          "require_emergency_contact": true,
+          "required_fields": ["first_name", "last_name", "email", "phone", "emergency_contact"],
+          "optional_fields": ["dietary_restrictions", "dance_level", "accommodation_needs"],
+          "confirmation_required": false,
+          "waitlist_enabled": true
+        },
+
+        "email": {
+          "confirmation_enabled": true,
+          "reminder_enabled": true,
+          "from_name": "A Lo Cubano Boulder Fest",
+          "reply_to": "alocubanoboulderfest@gmail.com",
+          "support_email": "alocubanoboulderfest@gmail.com",
+          "template_style": "default",
+          "include_calendar_attachment": true,
+          "include_qr_code": true
+        },
+
+        "wallet": {
+          "passes_enabled": true,
+          "apple_enabled": true,
+          "google_enabled": true,
+          "update_enabled": true,
+          "location_trigger": true,
+          "location_radius_miles": 1,
+          "auto_update": true,
+          "pass_type": "eventTicket",
+          "barcode_format": "QR"
+        },
+
+        "checkin": {
+          "qr_enabled": true,
+          "manual_enabled": true,
+          "multiple_allowed": true,
+          "scan_limit": 10,
+          "time_window_hours": 4,
+          "early_checkin_hours": 2,
+          "late_checkin_allowed": true,
+          "require_id": false,
+          "collect_signature": false,
+          "print_badge": false
+        },
+
+        "discounts": {
+          "early_bird_percentage": 20,
+          "group_minimum": 5,
+          "group_percentage": 10,
+          "student_discount": 15,
+          "member_discount": 10,
+          "promo_codes_enabled": true
+        },
+
+        "features": {
+          "workshops": true,
+          "performances": true,
+          "social_dancing": true,
+          "live_music": true,
+          "competitions": false,
+          "vendor_booths": true,
+          "photo_gallery": true,
+          "live_streaming": false
+        }
+      },
+
+      "ticket_types": [
+        {
+          "code": "early-bird-full",
+          "name": "Early Bird Full Pass",
+          "description": "All workshops, performances, and social dancing - Save $25! Limited time offer.",
+          "category": "pass",
+          "includes": ["workshops", "performances", "socials"],
+          "valid_days": ["friday", "saturday", "sunday"],
+
+          "pricing": {
+            "early_bird": 100
+          },
+
+          "availability": {
+            "max_quantity": 200,
+            "min_purchase": 1,
+            "max_purchase": 6,
+            "sales_start": "2025-12-01",
+            "sales_end": "2026-03-01"
+          },
+
+          "restrictions": {
+            "age_minimum": null,
+            "requires_audition": false,
+            "requires_partner": false,
+            "level_requirement": null
+          },
+
+          "display": {
+            "order": 1,
+            "color": "#E74C3C",
+            "icon": "star",
+            "featured": true,
+            "visible": true
+          }
+        },
+        {
+          "code": "regular-full",
+          "name": "Regular Full Pass",
+          "description": "All workshops, performances, and social dancing for the entire festival",
+          "category": "pass",
+          "includes": ["workshops", "performances", "socials"],
+          "valid_days": ["friday", "saturday", "sunday"],
+
+          "pricing": {
+            "regular": 125,
+            "door": 140
+          },
+
+          "availability": {
+            "max_quantity": 250,
+            "min_purchase": 1,
+            "max_purchase": 6,
+            "sales_start": "2026-03-01",
+            "sales_end": "2026-05-15"
+          },
+
+          "restrictions": {
+            "age_minimum": null,
+            "requires_audition": false,
+            "requires_partner": false,
+            "level_requirement": null
+          },
+
+          "display": {
+            "order": 2,
+            "color": "#3498DB",
+            "icon": "ticket",
+            "featured": true,
+            "visible": true
+          }
+        },
+        {
+          "code": "friday-pass",
+          "name": "Friday Pass",
+          "description": "Friday workshops and opening social dancing",
+          "category": "pass",
+          "includes": ["workshops", "socials"],
+          "valid_days": ["friday"],
+
+          "pricing": {
+            "regular": 50,
+            "door": 60
+          },
+
+          "availability": {
+            "max_quantity": 150,
+            "min_purchase": 1,
+            "max_purchase": 4,
+            "sales_start": "2025-12-01",
+            "sales_end": "2026-05-15"
+          },
+
+          "restrictions": {
+            "age_minimum": null,
+            "requires_audition": false,
+            "requires_partner": false,
+            "level_requirement": null
+          },
+
+          "display": {
+            "order": 3,
+            "color": "#2ECC71",
+            "icon": "calendar",
+            "featured": false,
+            "visible": true
+          }
+        },
+        {
+          "code": "saturday-pass",
+          "name": "Saturday Pass",
+          "description": "Saturday workshops, live performances, and social dancing",
+          "category": "pass",
+          "includes": ["workshops", "performances", "socials"],
+          "valid_days": ["saturday"],
+
+          "pricing": {
+            "regular": 85,
+            "door": 95
+          },
+
+          "availability": {
+            "max_quantity": 200,
+            "min_purchase": 1,
+            "max_purchase": 4,
+            "sales_start": "2025-12-01",
+            "sales_end": "2026-05-16"
+          },
+
+          "restrictions": {
+            "age_minimum": null,
+            "requires_audition": false,
+            "requires_partner": false,
+            "level_requirement": null
+          },
+
+          "display": {
+            "order": 4,
+            "color": "#F39C12",
+            "icon": "calendar",
+            "featured": false,
+            "visible": true
+          }
+        },
+        {
+          "code": "sunday-pass",
+          "name": "Sunday Pass",
+          "description": "Sunday workshops and farewell social dancing",
+          "category": "pass",
+          "includes": ["workshops", "socials"],
+          "valid_days": ["sunday"],
+
+          "pricing": {
+            "regular": 50,
+            "door": 60
+          },
+
+          "availability": {
+            "max_quantity": 150,
+            "min_purchase": 1,
+            "max_purchase": 4,
+            "sales_start": "2025-12-01",
+            "sales_end": "2026-05-17"
+          },
+
+          "restrictions": {
+            "age_minimum": null,
+            "requires_audition": false,
+            "requires_partner": false,
+            "level_requirement": null
+          },
+
+          "display": {
+            "order": 5,
+            "color": "#9B59B6",
+            "icon": "calendar",
+            "featured": false,
+            "visible": true
+          }
+        },
+        {
+          "code": "friday-social",
+          "name": "Friday Social Only",
+          "description": "Friday evening social dancing only (no workshops)",
+          "category": "social",
+          "includes": ["socials"],
+          "valid_days": ["friday"],
+
+          "pricing": {
+            "regular": 20,
+            "door": 25
+          },
+
+          "availability": {
+            "max_quantity": 100,
+            "min_purchase": 1,
+            "max_purchase": 2,
+            "sales_start": "2025-12-01",
+            "sales_end": "2026-05-15"
+          },
+
+          "restrictions": {
+            "age_minimum": null,
+            "requires_audition": false,
+            "requires_partner": false,
+            "level_requirement": null
+          },
+
+          "display": {
+            "order": 6,
+            "color": "#1ABC9C",
+            "icon": "music",
+            "featured": false,
+            "visible": true
+          }
+        },
+        {
+          "code": "saturday-social",
+          "name": "Saturday Social Only",
+          "description": "Saturday evening social dancing with live band performance",
+          "category": "social",
+          "includes": ["socials", "performances"],
+          "valid_days": ["saturday"],
+
+          "pricing": {
+            "regular": 25,
+            "door": 30
+          },
+
+          "availability": {
+            "max_quantity": 120,
+            "min_purchase": 1,
+            "max_purchase": 2,
+            "sales_start": "2025-12-01",
+            "sales_end": "2026-05-16"
+          },
+
+          "restrictions": {
+            "age_minimum": null,
+            "requires_audition": false,
+            "requires_partner": false,
+            "level_requirement": null
+          },
+
+          "display": {
+            "order": 7,
+            "color": "#E67E22",
+            "icon": "music",
+            "featured": false,
+            "visible": true
+          }
+        }
+      ]
+    }
+  ],
+
+  "admin_access": {
+    "email": "${ADMIN_EMAIL}",
+    "role": "admin",
+    "events": ["*"],
+    "granted_by": "bootstrap"
+  },
+
+  "defaults": {
+    "settings": {
+      "payment": {
+        "stripe_enabled": true,
+        "processing_fee_percentage": 2.9,
+        "processing_fee_fixed": 0.30,
+        "currency": "usd"
+      },
+      "email": {
+        "from_name": "A Lo Cubano Boulder Fest",
+        "reply_to": "alocubanoboulderfest@gmail.com",
+        "template_style": "default"
+      },
+      "wallet": {
+        "passes_enabled": true,
+        "barcode_format": "QR"
+      }
+    }
+  }
+}

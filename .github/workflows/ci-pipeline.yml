@@ -141,6 +141,9 @@ jobs:
       INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY || 'test-internal-api-key-32-chars-min' }}
       TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD || 'test-admin-password-123' }}
       ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD || '$2b$10$test.bcrypt.hash.for.testing.purposes.only' }}
+      # Database configuration for integration testing
+      TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL || '' }}
+      TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN || '' }}
 
     outputs:
       test-results-${{ matrix.node-version }}: ${{ steps.test.outputs.test-results }}
@@ -280,6 +283,9 @@ jobs:
       INTERNAL_API_KEY: ${{ secrets.TEST_INTERNAL_API_KEY || 'test-internal-api-key-32-chars-min' }}
       WALLET_AUTH_SECRET: ${{ secrets.TEST_WALLET_AUTH_SECRET || 'test_wallet_auth_secret_minimum_32_chars' }}
       APPLE_PASS_KEY: ${{ secrets.TEST_APPLE_PASS_KEY || 'dGVzdF9hcHBsZV9wYXNzX2tleQ==' }}
+      # Database configuration for integration testing
+      TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL || '' }}
+      TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN || '' }}
 
     outputs:
       test-results-${{ matrix.node-version }}: ${{ steps.test.outputs.test-results }}
