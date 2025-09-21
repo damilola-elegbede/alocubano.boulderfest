@@ -137,13 +137,14 @@ describe('Bootstrap System - Helper Functions', () => {
     beforeEach(() => {
       // Create unique test config directory to avoid conflicts
       testConfigDir = path.join(process.cwd(), '.tmp', 'test-configs', `test-${Date.now()}`);
-      if (!fs.existsSync(testConfigDir)) {
-        fs.mkdirSync(testConfigDir, { recursive: true });
+      const bootstrapDir = path.join(testConfigDir, 'bootstrap');
+      if (!fs.existsSync(bootstrapDir)) {
+        fs.mkdirSync(bootstrapDir, { recursive: true });
       }
 
-      // Write valid test config
+      // Write valid test config in bootstrap directory where loadConfig expects it
       fs.writeFileSync(
-        path.join(testConfigDir, 'test.json'),
+        path.join(bootstrapDir, 'test.json'),
         JSON.stringify(validConfig, null, 2)
       );
     });
@@ -156,18 +157,11 @@ describe('Bootstrap System - Helper Functions', () => {
     });
 
     it('should load valid configuration file', async () => {
-      // Create parent directory to match expected structure
-      const parentDir = path.join(testConfigDir, 'parent');
-      const bootstrapDir = path.join(parentDir, 'bootstrap');
-      fs.mkdirSync(bootstrapDir, { recursive: true });
-
-      // Move config file to expected location
-      fs.copyFileSync(
-        path.join(testConfigDir, 'test.json'),
-        path.join(bootstrapDir, 'test.json')
-      );
-
-      const config = await loadConfig('test', parentDir);
+      // loadConfig expects baseDir/../bootstrap/[env].json
+      // We have testConfigDir/bootstrap/test.json
+      // So we pass testConfigDir/dummy as baseDir
+      const dummyDir = path.join(testConfigDir, 'dummy');
+      const config = await loadConfig('test', dummyDir);
 
       expect(config).toEqual(validConfig);
       expect(config.version).toBe('1.0');
@@ -176,40 +170,49 @@ describe('Bootstrap System - Helper Functions', () => {
     });
 
     it('should throw error for missing configuration file', async () => {
-      await expect(loadConfig('nonexistent', testConfigDir))
+      const nonExistentDir = path.join(testConfigDir, 'nonexistent');
+      await expect(loadConfig('nonexistent', nonExistentDir))
         .rejects
         .toThrow(/Configuration file not found/);
     });
 
     it('should throw error for invalid JSON', async () => {
-      const invalidJsonPath = path.join(testConfigDir, 'invalid.json');
-      fs.writeFileSync(invalidJsonPath, '{ invalid json }');
+      const bootstrapDir = path.join(testConfigDir, 'bootstrap');
+      fs.writeFileSync(
+        path.join(bootstrapDir, 'invalid.json'),
+        '{ invalid json }'
+      );
 
-      await expect(loadConfig('invalid', testConfigDir))
+      const dummyDir = path.join(testConfigDir, 'dummy');
+      await expect(loadConfig('invalid', dummyDir))
         .rejects
         .toThrow(/Invalid JSON in configuration file/);
     });
 
     it('should validate required configuration fields', async () => {
+      const bootstrapDir = path.join(testConfigDir, 'bootstrap');
       const invalidConfig = { version: '1.0' }; // Missing environment
       fs.writeFileSync(
-        path.join(testConfigDir, 'no-env.json'),
+        path.join(bootstrapDir, 'no-env.json'),
         JSON.stringify(invalidConfig)
       );
 
-      await expect(loadConfig('no-env', testConfigDir))
+      const dummyDir = path.join(testConfigDir, 'dummy');
+      await expect(loadConfig('no-env', dummyDir))
         .rejects
         .toThrow(/Configuration missing environment field/);
     });
 
     it('should validate environment mismatch', async () => {
-      const mismatchConfig = { version: '1.0', environment: 'wrong' };
+      const bootstrapDir = path.join(testConfigDir, 'bootstrap');
+      const mismatchConfig = { version: '1.0', environment: 'wrong', events: [] };
       fs.writeFileSync(
-        path.join(testConfigDir, 'mismatch.json'),
+        path.join(bootstrapDir, 'test.json'),
         JSON.stringify(mismatchConfig)
       );
 
-      await expect(loadConfig('test', testConfigDir))
+      const dummyDir = path.join(testConfigDir, 'dummy');
+      await expect(loadConfig('test', dummyDir))
         .rejects
         .toThrow(/Configuration environment mismatch/);
     });
@@ -867,8 +870,16 @@ describe('Bootstrap System - Database Operations', () => {
   describe('Safe Transaction', () => {
     beforeEach(async () => {
       // Ensure tables exist for transaction tests
-      await testDatabase.execute('DROP TABLE IF EXISTS events');
-      await testDatabase.execute(`
+      // Use dbHelpers.db to ensure we're using the same connection
+      const db = dbHelpers.db || testDatabase;
+
+      try {
+        await db.execute('DROP TABLE IF EXISTS events');
+      } catch (e) {
+        // Table might not exist, ignore
+      }
+
+      await db.execute(`
         CREATE TABLE events (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           slug TEXT UNIQUE NOT NULL,
@@ -910,8 +921,9 @@ describe('Bootstrap System - Database Operations', () => {
         );
       });
 
-      // Verify both records were committed
-      const count = await testDatabase.execute('SELECT COUNT(*) as count FROM events');
+      // Verify both records were committed using the same database connection
+      const db = dbHelpers.db || testDatabase;
+      const count = await db.execute('SELECT COUNT(*) as count FROM events');
       expect(count.rows[0].count).toBe(2);
     });
 
@@ -929,8 +941,9 @@ describe('Bootstrap System - Database Operations', () => {
         expect(error.message).toBe('Intentional transaction error');
       }
 
-      // Verify no records were committed
-      const count = await testDatabase.execute('SELECT COUNT(*) as count FROM events');
+      // Verify no records were committed using the same database connection
+      const db = dbHelpers.db || testDatabase;
+      const count = await db.execute('SELECT COUNT(*) as count FROM events');
       expect(count.rows[0].count).toBe(0);
     });
 
@@ -1154,11 +1167,19 @@ describe('Bootstrap System - Database Operations', () => {
     });
 
     it('should detect foreign key violations', async () => {
-      // Insert invalid foreign key reference
-      await testDatabase.execute({
-        sql: 'INSERT INTO event_settings (event_id, key, value) VALUES (?, ?, ?)',
-        args: [999999, 'invalid_fk', 'test'] // Non-existent event_id
-      });
+      // First disable foreign key constraints to insert invalid data
+      await testDatabase.execute('PRAGMA foreign_keys = OFF');
+
+      try {
+        // Insert invalid foreign key reference
+        await testDatabase.execute({
+          sql: 'INSERT INTO event_settings (event_id, key, value) VALUES (?, ?, ?)',
+          args: [999999, 'invalid_fk', 'test'] // Non-existent event_id
+        });
+      } finally {
+        // Re-enable foreign key constraints
+        await testDatabase.execute('PRAGMA foreign_keys = ON');
+      }
 
       const result = await dbHelpers.verifyIntegrity({
         foreignKeys: [
@@ -1312,10 +1333,8 @@ describe('Bootstrap System - Integration Tests', () => {
       // Create fresh test database
       testDatabase = createClient({ url: ':memory:' });
 
-      // Mock the database client getter
-      vi.doMock('../../lib/database.js', () => ({
-        getDatabaseClient: vi.fn().mockResolvedValue(testDatabase)
-      }));
+      // Update the existing mock to return our test database
+      getDatabaseClient.mockResolvedValue(testDatabase);
 
       // Create test configuration directory with proper structure
       const testId = `test-${Date.now()}`;
@@ -1608,19 +1627,21 @@ describe('Bootstrap System - Integration Tests', () => {
     it('should handle withDatabaseHelpers utility', async () => {
       const testDb = createClient({ url: ':memory:' });
 
-      vi.doMock('../../lib/database.js', () => ({
-        getDatabaseClient: vi.fn().mockResolvedValue(testDb)
-      }));
+      // Update the existing mock to use our test database
+      getDatabaseClient.mockResolvedValue(testDb);
 
+      // Create non-temporary table so it's visible to all connections
       await testDb.execute(`
-        CREATE TEMPORARY TABLE test_table (
-          id INTEGER PRIMARY KEY,
+        CREATE TABLE test_table (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
           name TEXT NOT NULL
         )
       `);
 
       const result = await withDatabaseHelpers(async (helpers) => {
-        await helpers.init();
+        // Ensure the helpers use our test database
+        helpers.db = testDb;
+        helpers.operationStats.startTime = Date.now();
 
         const insertResult = await helpers.safeUpsert(
           'test_table',
