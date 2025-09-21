@@ -547,24 +547,23 @@ describe('Bootstrap System - Database Operations', () => {
     // Create test database
     testDatabase = createClient({ url: ':memory:' });
 
-    // Configure the mock to return our test database
-    getDatabaseClient.mockResolvedValue(testDatabase);
+    // Configure the mock to ALWAYS return the same test database
+    getDatabaseClient.mockImplementation(() => Promise.resolve(testDatabase));
   });
 
   beforeEach(async () => {
     // Create fresh database helpers for each test
     dbHelpers = createDatabaseHelpers();
 
-    // Manually set the database connection before init
+    // Set the test database directly before init
     dbHelpers.db = testDatabase;
-    dbHelpers.operationStats.startTime = Date.now();
 
-    // Initialize (this should now work with our mock)
+    // Initialize - this will use our testDatabase since we set it
     await dbHelpers.init();
 
-    // Ensure the database is still connected after init
-    if (!dbHelpers.db) {
-      dbHelpers.db = testDatabase;
+    // Verify we're using the test database
+    if (dbHelpers.db !== testDatabase) {
+      throw new Error('Database helpers not using test database');
     }
 
     // Create test tables with production schema including CHECK constraints and generated columns
@@ -636,12 +635,12 @@ describe('Bootstrap System - Database Operations', () => {
       await dbHelpers.cleanup();
     }
 
-    // Clear all tables if they exist
+    // Clear all table data if they exist
     try {
-      await testDatabase.execute('DELETE FROM tickets');
-      await testDatabase.execute('DELETE FROM event_access');
-      await testDatabase.execute('DELETE FROM event_settings');
-      await testDatabase.execute('DELETE FROM events');
+      await testDatabase.execute('DELETE FROM tickets WHERE 1=1');
+      await testDatabase.execute('DELETE FROM event_access WHERE 1=1');
+      await testDatabase.execute('DELETE FROM event_settings WHERE 1=1');
+      await testDatabase.execute('DELETE FROM events WHERE 1=1');
     } catch (e) {
       // Tables might not exist in some test suites, ignore errors
     }
@@ -868,48 +867,56 @@ describe('Bootstrap System - Database Operations', () => {
   });
 
   describe('Safe Transaction', () => {
+    // Ensure tables exist for transaction tests when run in isolation
     beforeEach(async () => {
-      // Ensure tables exist for transaction tests
-      // Use dbHelpers.db to ensure we're using the same connection
-      const db = dbHelpers.db || testDatabase;
 
+      // Check if tables exist, create if not (for isolated test runs)
       try {
-        await db.execute('DROP TABLE IF EXISTS events');
+        await testDatabase.execute('SELECT 1 FROM events LIMIT 1');
       } catch (e) {
-        // Table might not exist, ignore
+        // Table doesn't exist, create it
+        await testDatabase.execute(`
+          CREATE TABLE IF NOT EXISTS events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            slug TEXT UNIQUE NOT NULL,
+            name TEXT NOT NULL,
+            type TEXT NOT NULL CHECK(type IN ('festival', 'weekender', 'workshop', 'special')),
+            status TEXT NOT NULL DEFAULT 'draft' CHECK(status IN ('draft', 'upcoming', 'active', 'completed', 'cancelled')),
+            description TEXT,
+            venue_name TEXT,
+            venue_address TEXT,
+            venue_city TEXT DEFAULT 'Boulder',
+            venue_state TEXT DEFAULT 'CO',
+            venue_zip TEXT,
+            start_date DATE NOT NULL,
+            end_date DATE NOT NULL,
+            year INTEGER GENERATED ALWAYS AS (CAST(strftime('%Y', start_date) AS INTEGER)) STORED,
+            max_capacity INTEGER,
+            early_bird_end_date DATE,
+            regular_price_start_date DATE,
+            display_order INTEGER DEFAULT 0,
+            is_featured BOOLEAN DEFAULT FALSE,
+            is_visible BOOLEAN DEFAULT TRUE,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            created_by TEXT,
+            config TEXT
+          )
+        `);
       }
 
-      await db.execute(`
-        CREATE TABLE events (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          slug TEXT UNIQUE NOT NULL,
-          name TEXT NOT NULL,
-          type TEXT NOT NULL CHECK(type IN ('festival', 'weekender', 'workshop', 'special')),
-          status TEXT NOT NULL DEFAULT 'draft' CHECK(status IN ('draft', 'upcoming', 'active', 'completed', 'cancelled')),
-          description TEXT,
-          venue_name TEXT,
-          venue_address TEXT,
-          venue_city TEXT DEFAULT 'Boulder',
-          venue_state TEXT DEFAULT 'CO',
-          venue_zip TEXT,
-          start_date DATE NOT NULL,
-          end_date DATE NOT NULL,
-          year INTEGER GENERATED ALWAYS AS (CAST(strftime('%Y', start_date) AS INTEGER)) STORED,
-          max_capacity INTEGER,
-          early_bird_end_date DATE,
-          regular_price_start_date DATE,
-          display_order INTEGER DEFAULT 0,
-          is_featured BOOLEAN DEFAULT FALSE,
-          is_visible BOOLEAN DEFAULT TRUE,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          created_by TEXT,
-          config TEXT
-        )
-      `);
+      // Clear any existing data
+      await testDatabase.execute('DELETE FROM events WHERE 1=1');
     });
 
     it('should execute transaction successfully', async () => {
+      // Debug: verify dbHelpers is using testDatabase
+      expect(dbHelpers.db).toBe(testDatabase);
+
+      // Verify table exists in testDatabase before transaction
+      const preCheck = await testDatabase.execute('SELECT COUNT(*) as count FROM events');
+      expect(preCheck.rows[0].count).toBe(0);
+
       await dbHelpers.safeTransaction(async (transaction) => {
         await transaction.execute(
           'INSERT INTO events (slug, name, type, status, start_date, end_date) VALUES (?, ?, ?, ?, ?, ?)',
@@ -921,10 +928,20 @@ describe('Bootstrap System - Database Operations', () => {
         );
       });
 
-      // Verify both records were committed using the same database connection
-      const db = dbHelpers.db || testDatabase;
-      const count = await db.execute('SELECT COUNT(*) as count FROM events');
-      expect(count.rows[0].count).toBe(2);
+      // Debug: Check if table still exists after transaction
+      try {
+        const count = await testDatabase.execute('SELECT COUNT(*) as count FROM events');
+        expect(count.rows[0].count).toBe(2);
+      } catch (error) {
+        // Table doesn't exist after transaction?
+        console.log('Error after transaction:', error.message);
+        // Try to check if dbHelpers.db has the data
+        if (dbHelpers.db !== testDatabase) {
+          const dbCount = await dbHelpers.db.execute('SELECT COUNT(*) as count FROM events');
+          console.log('Records in dbHelpers.db:', dbCount.rows[0].count);
+        }
+        throw error;
+      }
     });
 
     it('should rollback transaction on error', async () => {
@@ -941,9 +958,8 @@ describe('Bootstrap System - Database Operations', () => {
         expect(error.message).toBe('Intentional transaction error');
       }
 
-      // Verify no records were committed using the same database connection
-      const db = dbHelpers.db || testDatabase;
-      const count = await db.execute('SELECT COUNT(*) as count FROM events');
+      // Verify no records were committed
+      const count = await testDatabase.execute('SELECT COUNT(*) as count FROM events');
       expect(count.rows[0].count).toBe(0);
     });
 
@@ -1080,7 +1096,7 @@ describe('Bootstrap System - Database Operations', () => {
       `);
 
       await testDatabase.execute(`
-        CREATE TABLE tickets (
+        CREATE TABLE IF NOT EXISTS tickets (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
           ticket_code TEXT UNIQUE NOT NULL,
@@ -1326,15 +1342,18 @@ describe('Bootstrap System - Integration Tests', () => {
 
   describe('Full Bootstrap System Integration', () => {
     let bootstrap;
-    let testDatabase;
+    let integrationTestDatabase;
     let integrationConfigDir;
 
     beforeEach(async () => {
-      // Create fresh test database
-      testDatabase = createClient({ url: ':memory:' });
+      // Create fresh test database for integration tests
+      integrationTestDatabase = createClient({ url: ':memory:' });
 
-      // Update the existing mock to return our test database
-      getDatabaseClient.mockResolvedValue(testDatabase);
+      // Clear mock and set it to return our integration test database
+      getDatabaseClient.mockClear();
+      getDatabaseClient.mockImplementation(() => {
+        return Promise.resolve(integrationTestDatabase);
+      });
 
       // Create test configuration directory with proper structure
       const testId = `test-${Date.now()}`;
@@ -1418,6 +1437,23 @@ describe('Bootstrap System - Integration Tests', () => {
       // Create bootstrap instance
       bootstrap = new BootstrapSystem();
 
+      // Inject our test database directly into bootstrap
+      // This ensures it uses our test database instead of creating a new one
+      bootstrap.db = integrationTestDatabase;
+
+      // Override the connect method to use our test database
+      bootstrap.connect = async function() {
+        this.logger.info('\n🔌 Connecting to database...');
+        this.db = integrationTestDatabase; // Use our test database
+
+        // Initialize database helpers with our test database
+        const { BootstrapDatabaseHelpers } = await import('../../lib/bootstrap-database-helpers.js');
+        this.dbHelpers = new BootstrapDatabaseHelpers();
+        this.dbHelpers.db = integrationTestDatabase; // Set db before init
+        await this.dbHelpers.init();
+        this.logger.success('   ✅ Database connection established');
+      };
+
       // Override config loading to use our test directory
       const originalLoadConfig = bootstrap.loadConfig;
       bootstrap.loadConfig = async function() {
@@ -1440,14 +1476,14 @@ describe('Bootstrap System - Integration Tests', () => {
         }
       };
 
-      // Create minimal database schema
-      await testDatabase.execute(`
-        CREATE TABLE events (
+      // Create complete database schema with all constraints
+      await integrationTestDatabase.execute(`
+        CREATE TABLE IF NOT EXISTS events (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
-          slug TEXT NOT NULL UNIQUE,
+          slug TEXT UNIQUE NOT NULL,
           name TEXT NOT NULL,
-          type TEXT NOT NULL,
-          status TEXT NOT NULL DEFAULT 'draft',
+          type TEXT NOT NULL CHECK(type IN ('festival', 'weekender', 'workshop', 'special')),
+          status TEXT NOT NULL DEFAULT 'draft' CHECK(status IN ('draft', 'upcoming', 'active', 'completed', 'cancelled')),
           description TEXT,
           venue_name TEXT,
           venue_address TEXT,
@@ -1456,6 +1492,7 @@ describe('Bootstrap System - Integration Tests', () => {
           venue_zip TEXT,
           start_date DATE NOT NULL,
           end_date DATE NOT NULL,
+          year INTEGER GENERATED ALWAYS AS (CAST(strftime('%Y', start_date) AS INTEGER)) STORED,
           max_capacity INTEGER,
           early_bird_end_date DATE,
           regular_price_start_date DATE,
@@ -1469,7 +1506,7 @@ describe('Bootstrap System - Integration Tests', () => {
         )
       `);
 
-      await testDatabase.execute(`
+      await integrationTestDatabase.execute(`
         CREATE TABLE event_settings (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
@@ -1481,7 +1518,7 @@ describe('Bootstrap System - Integration Tests', () => {
         )
       `);
 
-      await testDatabase.execute(`
+      await integrationTestDatabase.execute(`
         CREATE TABLE event_access (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
@@ -1493,8 +1530,8 @@ describe('Bootstrap System - Integration Tests', () => {
         )
       `);
 
-      await testDatabase.execute(`
-        CREATE TABLE tickets (
+      await integrationTestDatabase.execute(`
+        CREATE TABLE IF NOT EXISTS tickets (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
           ticket_code TEXT UNIQUE NOT NULL,
@@ -1517,15 +1554,23 @@ describe('Bootstrap System - Integration Tests', () => {
     });
 
     it('should run complete bootstrap process successfully', async () => {
+      // Verify the mock is working
+      const testDb = await getDatabaseClient();
+      expect(testDb).toBe(integrationTestDatabase);
+
+      // Verify tables exist before running bootstrap
+      const tableCheck = await integrationTestDatabase.execute('SELECT COUNT(*) FROM events WHERE 1=0');
+      expect(tableCheck).toBeDefined();
+
       const exitCode = await bootstrap.run();
 
       expect(exitCode).toBe(0);
 
       // Verify events were created
-      const eventCount = await testDatabase.execute('SELECT COUNT(*) as count FROM events');
+      const eventCount = await integrationTestDatabase.execute('SELECT COUNT(*) as count FROM events');
       expect(eventCount.rows[0].count).toBe(1);
 
-      const event = await testDatabase.execute('SELECT * FROM events WHERE slug = ?', ['integration-test-event']);
+      const event = await integrationTestDatabase.execute('SELECT * FROM events WHERE slug = ?', ['integration-test-event']);
       expect(event.rows).toHaveLength(1);
       expect(event.rows[0].name).toBe('Integration Test Event');
       expect(event.rows[0].type).toBe('festival');
@@ -1533,21 +1578,21 @@ describe('Bootstrap System - Integration Tests', () => {
       expect(event.rows[0].venue_name).toBe('Test Venue');
 
       // Verify settings were created
-      const settingsCount = await testDatabase.execute('SELECT COUNT(*) as count FROM event_settings');
+      const settingsCount = await integrationTestDatabase.execute('SELECT COUNT(*) as count FROM event_settings');
       expect(settingsCount.rows[0].count).toBeGreaterThan(0);
 
       // Check specific settings
-      const stripeSettings = await testDatabase.execute({
+      const stripeSettings = await integrationTestDatabase.execute({
         sql: 'SELECT value FROM event_settings WHERE key = ?',
         args: ['payment.stripe_enabled']
       });
       expect(stripeSettings.rows[0].value).toBe('true');
 
       // Verify admin access was granted
-      const accessCount = await testDatabase.execute('SELECT COUNT(*) as count FROM event_access');
+      const accessCount = await integrationTestDatabase.execute('SELECT COUNT(*) as count FROM event_access');
       expect(accessCount.rows[0].count).toBe(1);
 
-      const access = await testDatabase.execute('SELECT * FROM event_access');
+      const access = await integrationTestDatabase.execute('SELECT * FROM event_access');
       expect(access.rows[0].user_email).toBe('admin@example.com');
       expect(access.rows[0].role).toBe('admin');
 
@@ -1564,12 +1609,24 @@ describe('Bootstrap System - Integration Tests', () => {
       expect(exitCode).toBe(0);
 
       // Get counts after first run
-      const firstEventCount = await testDatabase.execute('SELECT COUNT(*) as count FROM events');
-      const firstSettingsCount = await testDatabase.execute('SELECT COUNT(*) as count FROM event_settings');
-      const firstAccessCount = await testDatabase.execute('SELECT COUNT(*) as count FROM event_access');
+      const firstEventCount = await integrationTestDatabase.execute('SELECT COUNT(*) as count FROM events');
+      const firstSettingsCount = await integrationTestDatabase.execute('SELECT COUNT(*) as count FROM event_settings');
+      const firstAccessCount = await integrationTestDatabase.execute('SELECT COUNT(*) as count FROM event_access');
 
       // Create new bootstrap instance for second run
       const bootstrap2 = new BootstrapSystem();
+
+      // Inject our test database into second bootstrap instance as well
+      bootstrap2.db = integrationTestDatabase;
+      bootstrap2.connect = async function() {
+        this.logger.info('\n🔌 Connecting to database...');
+        this.db = integrationTestDatabase;
+        const { BootstrapDatabaseHelpers } = await import('../../lib/bootstrap-database-helpers.js');
+        this.dbHelpers = new BootstrapDatabaseHelpers();
+        this.dbHelpers.db = integrationTestDatabase; // Set db before init
+        await this.dbHelpers.init();
+        this.logger.success('   ✅ Database connection established');
+      };
 
       // Override config loading for second bootstrap
       bootstrap2.loadConfig = bootstrap.loadConfig;
@@ -1579,9 +1636,9 @@ describe('Bootstrap System - Integration Tests', () => {
       expect(exitCode).toBe(0);
 
       // Get counts after second run
-      const secondEventCount = await testDatabase.execute('SELECT COUNT(*) as count FROM events');
-      const secondSettingsCount = await testDatabase.execute('SELECT COUNT(*) as count FROM event_settings');
-      const secondAccessCount = await testDatabase.execute('SELECT COUNT(*) as count FROM event_access');
+      const secondEventCount = await integrationTestDatabase.execute('SELECT COUNT(*) as count FROM events');
+      const secondSettingsCount = await integrationTestDatabase.execute('SELECT COUNT(*) as count FROM event_settings');
+      const secondAccessCount = await integrationTestDatabase.execute('SELECT COUNT(*) as count FROM event_access');
 
       // Counts should be the same (idempotent)
       expect(secondEventCount.rows[0].count).toBe(firstEventCount.rows[0].count);
@@ -1601,7 +1658,8 @@ describe('Bootstrap System - Integration Tests', () => {
 
     it('should handle configuration errors gracefully', async () => {
       // Remove config file to cause error
-      const configPath = path.join(testConfigDir, 'development.json');
+      const bootstrapDir = path.join(process.cwd(), '.tmp', 'integration-configs', 'bootstrap');
+      const configPath = path.join(bootstrapDir, 'development.json');
       const originalContent = fs.readFileSync(configPath, 'utf8');
       fs.unlinkSync(configPath);
 
@@ -1616,7 +1674,7 @@ describe('Bootstrap System - Integration Tests', () => {
 
     it('should handle database errors gracefully', async () => {
       // Break the database by dropping a required table
-      await testDatabase.execute('DROP TABLE events');
+      await integrationTestDatabase.execute('DROP TABLE events');
 
       const exitCode = await bootstrap.run();
       expect(exitCode).toBe(1); // Should fail gracefully
