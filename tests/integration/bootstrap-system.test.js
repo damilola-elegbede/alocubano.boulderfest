@@ -438,6 +438,17 @@ describe('Bootstrap System Integration Tests', () => {
           }
         };
 
+        // Override connect to use test database
+        bootstrap.connect = async function() {
+          this.logger.info('\n🔌 Connecting to database...');
+          this.db = testDatabase;
+          const { BootstrapDatabaseHelpers } = await import('../../lib/bootstrap-database-helpers.js');
+          this.dbHelpers = new BootstrapDatabaseHelpers();
+          this.dbHelpers.db = testDatabase;
+          await this.dbHelpers.init();
+          this.logger.success('   ✅ Database connection established');
+        };
+
         const exitCode = await bootstrap.run();
         expect(exitCode).toBe(0);
 
@@ -589,13 +600,11 @@ describe('Bootstrap System Integration Tests', () => {
         const bootstrap = new BootstrapSystem();
         bootstrap.environment = 'invalid';
         bootstrap.loadConfig = async function() {
-          // Create invalid config that matches the environment
-          this.config = {
-            version: '1.0',
-            environment: 'invalid',
-            events: [],
-            metadata: { created: '2025-01-01T00:00:00Z' }
-          };
+          // Load the actual invalid config to test error handling
+          this.config = invalidConfig;
+          if (this.config.admin_access?.email === '${ADMIN_EMAIL}') {
+            this.config.admin_access.email = process.env.ADMIN_EMAIL || null;
+          }
         };
 
         const exitCode = await bootstrap.run();
