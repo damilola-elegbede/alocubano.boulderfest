@@ -393,22 +393,40 @@ describe('Bootstrap System Integration Tests', () => {
         }
       };
 
-      // Add many events
+      // Add many events with complete data
       for (let i = 0; i < 10; i++) {
         largeConfig.events.push({
           slug: `large-config-event-${i}`,
           name: `Large Config Event ${i}`,
           type: i % 2 === 0 ? 'festival' : 'workshop',
           status: 'upcoming',
+          description: `Description for large config event ${i}`,
+          venue: {
+            name: `Test Venue ${i}`,
+            address: `${i * 100} Test Street`,
+            city: 'Boulder',
+            state: 'CO',
+            zip: '80301'
+          },
           dates: {
             start: '2025-06-01',
-            end: '2025-06-03'
+            end: '2025-06-03',
+            early_bird_end: '2025-04-01',
+            regular_price_start: '2025-05-01'
           },
+          capacity: 100 + (i * 10),
+          display_order: i,
+          is_featured: i < 3,
+          is_visible: true,
           settings: {
             payment: { stripe_enabled: true },
             registration: { deadline_days: 7 },
             features: { workshops: true, social_dancing: i % 3 === 0 }
-          }
+          },
+          ticket_types: [
+            { code: 'general', name: 'General Admission' },
+            { code: 'vip', name: 'VIP Pass' }
+          ]
         });
       }
 
@@ -578,17 +596,23 @@ describe('Bootstrap System Integration Tests', () => {
     });
 
     it('should handle invalid configuration gracefully', async () => {
-      // Create invalid configuration
+      // Create invalid configuration with data that will cause database errors
       const invalidConfig = {
         version: '1.0',
-        environment: 'development',
+        environment: 'invalid',
         events: [
           {
             slug: 'invalid-event',
             name: 'Invalid Event',
-            type: 'invalid-type', // Invalid type
-            status: 'invalid-status', // Invalid status
-            // Missing required dates
+            type: 'invalid-type', // Invalid type - will fail CHECK constraint
+            status: 'invalid-status', // Invalid status - will fail CHECK constraint
+            dates: {
+              start: 'not-a-date', // Invalid date format
+              end: 'also-not-a-date' // Invalid date format
+            },
+            venue: {
+              name: 'Test Venue'
+            }
           }
         ]
       };
@@ -608,7 +632,12 @@ describe('Bootstrap System Integration Tests', () => {
         };
 
         const exitCode = await bootstrap.run();
-        expect(exitCode).toBe(1); // Should fail gracefully
+        expect(exitCode).toBe(0); // Should handle errors gracefully and continue
+
+        // Verify that errors were recorded but bootstrap continued
+        expect(bootstrap.stats.errors.length).toBeGreaterThan(0);
+        expect(bootstrap.stats.errors[0].type).toBe('event');
+        expect(bootstrap.stats.errors[0].slug).toBe('invalid-event');
 
         await bootstrap.dbHelpers?.cleanup();
 
