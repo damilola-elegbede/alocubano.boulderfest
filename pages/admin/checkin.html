@@ -665,6 +665,388 @@
         }
       }
 
+      /* Permission Request Modal */
+      .permission-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.95);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: calc(var(--z-modal) + 10);
+        animation: fadeIn 0.3s ease-out;
+      }
+
+      .permission-modal.show {
+        display: flex;
+      }
+
+      .permission-content {
+        background: var(--color-surface);
+        border-radius: var(--radius-xl);
+        padding: var(--space-3xl);
+        max-width: 90%;
+        width: 420px;
+        text-align: center;
+        animation: slideUp 0.3s ease-out;
+        box-shadow: var(--shadow-2xl);
+        border: 1px solid var(--color-border);
+      }
+
+      .permission-icon {
+        font-size: 64px;
+        margin-bottom: var(--space-xl);
+        display: block;
+      }
+
+      .permission-title {
+        font-family: var(--font-display);
+        font-size: var(--font-size-xl);
+        font-weight: 700;
+        margin-bottom: var(--space-lg);
+        color: var(--color-text-primary);
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+      }
+
+      .permission-description {
+        font-family: var(--font-sans);
+        font-size: var(--font-size-base);
+        color: var(--color-text-secondary);
+        margin-bottom: var(--space-xl);
+        line-height: var(--line-height-relaxed);
+      }
+
+      .device-instructions {
+        background: var(--color-surface-elevated);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-lg);
+        margin: var(--space-lg) 0;
+        text-align: left;
+        font-size: var(--font-size-sm);
+        color: var(--color-text-primary);
+      }
+
+      .device-instructions h4 {
+        font-family: var(--font-display);
+        font-size: var(--font-size-base);
+        font-weight: 600;
+        margin-bottom: var(--space-sm);
+        color: var(--color-blue);
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+      }
+
+      .device-instructions ol {
+        margin: 0;
+        padding-left: var(--space-lg);
+      }
+
+      .device-instructions li {
+        margin-bottom: var(--space-xs);
+        line-height: var(--line-height-relaxed);
+      }
+
+      .permission-buttons {
+        display: flex;
+        gap: var(--space-md);
+        margin-top: var(--space-xl);
+      }
+
+      .permission-btn {
+        flex: 1;
+        padding: var(--space-md) var(--space-lg);
+        border-radius: var(--radius-lg);
+        font-family: var(--font-display);
+        font-size: var(--font-size-base);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+        min-height: 48px;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        border: 2px solid transparent;
+      }
+
+      .permission-btn.primary {
+        background: var(--color-blue) !important;
+        color: var(--color-white) !important;
+        border-color: var(--color-blue) !important;
+      }
+
+      .permission-btn.primary:hover {
+        background: var(--color-primary-hover) !important;
+        border-color: var(--color-primary-hover) !important;
+        transform: translateY(-1px);
+      }
+
+      .permission-btn.secondary {
+        background: var(--color-surface-elevated) !important;
+        color: var(--color-text-primary) !important;
+        border-color: var(--color-border) !important;
+      }
+
+      .permission-btn.secondary:hover {
+        background: var(--color-surface) !important;
+        border-color: var(--color-text-secondary) !important;
+      }
+
+      /* Loading States */
+      .scanner-loading {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: var(--color-black);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        z-index: 50;
+      }
+
+      .scanner-loading.show {
+        display: flex;
+      }
+
+      .loading-spinner {
+        width: 60px;
+        height: 60px;
+        border: 4px solid rgba(102, 126, 234, 0.2);
+        border-left: 4px solid var(--color-blue);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: var(--space-lg);
+      }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      .loading-text {
+        color: var(--color-white);
+        font-family: var(--font-display);
+        font-size: var(--font-size-lg);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+        margin-bottom: var(--space-sm);
+      }
+
+      .loading-subtext {
+        color: rgba(255, 255, 255, 0.7);
+        font-family: var(--font-sans);
+        font-size: var(--font-size-sm);
+        text-align: center;
+        max-width: 280px;
+        line-height: var(--line-height-relaxed);
+      }
+
+      /* Error States */
+      .scanner-error {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: var(--color-black);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        z-index: 50;
+        padding: var(--space-xl);
+      }
+
+      .scanner-error.show {
+        display: flex;
+      }
+
+      .error-icon {
+        font-size: 72px;
+        margin-bottom: var(--space-xl);
+        color: var(--color-red);
+      }
+
+      .error-title {
+        color: var(--color-white);
+        font-family: var(--font-display);
+        font-size: var(--font-size-xl);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+        margin-bottom: var(--space-lg);
+        text-align: center;
+      }
+
+      .error-message {
+        color: rgba(255, 255, 255, 0.8);
+        font-family: var(--font-sans);
+        font-size: var(--font-size-base);
+        text-align: center;
+        max-width: 350px;
+        line-height: var(--line-height-relaxed);
+        margin-bottom: var(--space-xl);
+      }
+
+      .error-actions {
+        display: flex;
+        gap: var(--space-md);
+        flex-wrap: wrap;
+        justify-content: center;
+        max-width: 100%;
+      }
+
+      .error-btn {
+        padding: var(--space-md) var(--space-lg);
+        border-radius: var(--radius-lg);
+        font-family: var(--font-display);
+        font-size: var(--font-size-base);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+        min-height: 48px;
+        min-width: 120px;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        border: 2px solid transparent;
+      }
+
+      .error-btn.retry {
+        background: var(--color-blue) !important;
+        color: var(--color-white) !important;
+        border-color: var(--color-blue) !important;
+      }
+
+      .error-btn.retry:hover {
+        background: var(--color-primary-hover) !important;
+        border-color: var(--color-primary-hover) !important;
+        transform: translateY(-1px);
+      }
+
+      .error-btn.manual {
+        background: var(--color-red) !important;
+        color: var(--color-white) !important;
+        border-color: var(--color-red) !important;
+      }
+
+      .error-btn.manual:hover {
+        background: var(--color-secondary-hover) !important;
+        border-color: var(--color-secondary-hover) !important;
+        transform: translateY(-1px);
+      }
+
+      .error-btn.settings {
+        background: rgba(255, 255, 255, 0.1) !important;
+        color: var(--color-white) !important;
+        border-color: rgba(255, 255, 255, 0.3) !important;
+      }
+
+      .error-btn.settings:hover {
+        background: rgba(255, 255, 255, 0.2) !important;
+        border-color: rgba(255, 255, 255, 0.5) !important;
+      }
+
+      /* Success Indicator */
+      .scanner-success {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(76, 175, 80, 0.95);
+        color: var(--color-white);
+        border-radius: var(--radius-xl);
+        padding: var(--space-lg) var(--space-xl);
+        display: none;
+        align-items: center;
+        gap: var(--space-md);
+        z-index: 60;
+        font-family: var(--font-display);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+        animation: slideUp 0.3s ease-out;
+        box-shadow: var(--shadow-2xl);
+      }
+
+      .scanner-success.show {
+        display: flex;
+      }
+
+      .success-icon {
+        font-size: var(--font-size-xl);
+      }
+
+      /* Mobile Optimizations */
+      @media (max-width: 480px) {
+        .permission-content {
+          width: 95%;
+          padding: var(--space-xl);
+        }
+
+        .permission-buttons {
+          flex-direction: column;
+        }
+
+        .permission-btn {
+          width: 100%;
+        }
+
+        .device-instructions {
+          padding: var(--space-md);
+        }
+
+        .error-actions {
+          flex-direction: column;
+          align-items: center;
+        }
+
+        .error-btn {
+          width: 200px;
+        }
+
+        .loading-text {
+          font-size: var(--font-size-base);
+        }
+
+        .error-title {
+          font-size: var(--font-size-lg);
+        }
+      }
+
+      /* Accessibility Enhancements */
+      .permission-modal:focus-within .permission-content,
+      .scanner-error:focus-within,
+      .scanner-loading:focus-within {
+        outline: 3px solid var(--color-blue);
+        outline-offset: 2px;
+      }
+
+      .permission-btn:focus,
+      .error-btn:focus {
+        outline: 3px solid var(--color-blue);
+        outline-offset: 2px;
+      }
+
+      /* High contrast mode support */
+      @media (prefers-contrast: high) {
+        .permission-content,
+        .scanner-error,
+        .scanner-loading {
+          border: 2px solid var(--color-text-primary);
+        }
+
+        .loading-spinner {
+          border-left-color: var(--color-text-primary);
+        }
+      }
+
       /* Reduced motion support */
       @media (prefers-reduced-motion: reduce) {
         .scan-region {
@@ -672,13 +1054,22 @@
         }
 
         .result-modal,
-        .result-content {
+        .result-content,
+        .permission-content,
+        .scanner-success {
           animation: none;
         }
 
         .control-btn:active,
-        .menu-btn:active {
+        .menu-btn:active,
+        .permission-btn:hover,
+        .error-btn:hover {
           transform: none;
+        }
+
+        .loading-spinner {
+          animation: none;
+          border: 4px solid var(--color-blue);
         }
       }
     </style>
@@ -747,6 +1138,38 @@
 
         <div class="scanner-viewport">
           <div id="reader" data-testid="camera-scanner"></div>
+
+          <!-- Loading State -->
+          <div class="scanner-loading" id="scannerLoading" role="status" aria-live="polite" aria-labelledby="loadingText" aria-describedby="loadingSubtext">
+            <div class="loading-spinner" aria-hidden="true"></div>
+            <div class="loading-text" id="loadingText">Initializing Camera</div>
+            <div class="loading-subtext" id="loadingSubtext">Please wait while we access your camera...</div>
+          </div>
+
+          <!-- Error State -->
+          <div class="scanner-error" id="scannerError" role="alert" aria-labelledby="errorTitle" aria-describedby="errorMessage">
+            <div class="error-icon" id="errorIcon" aria-hidden="true">📷</div>
+            <div class="error-title" id="errorTitle">Camera Not Available</div>
+            <div class="error-message" id="errorMessage">We couldn't access your camera. Please check your permissions and try again.</div>
+            <div class="error-actions" role="group" aria-label="Error resolution options">
+              <button class="error-btn retry" id="retryCamera" onclick="retryScanner()" aria-describedby="errorMessage">
+                🔄 Retry Camera
+              </button>
+              <button class="error-btn manual" id="useManual" onclick="showManualInput()" aria-label="Switch to manual ticket entry mode">
+                ⌨️ Manual Entry
+              </button>
+              <button class="error-btn settings" id="openSettings" onclick="openCameraSettings()" style="display: none;" aria-label="Open camera settings instructions">
+                ⚙️ Settings
+              </button>
+            </div>
+          </div>
+
+          <!-- Success Indicator -->
+          <div class="scanner-success" id="scannerSuccess" role="status" aria-live="polite">
+            <div class="success-icon" aria-hidden="true">✅</div>
+            <div>Camera Ready</div>
+          </div>
+
           <div class="scanner-overlay">
             <div class="scan-region">
               <div class="scan-corners tl"></div>
@@ -792,6 +1215,33 @@
       </div>
     </div>
 
+    <!-- Permission Request Modal -->
+    <div class="permission-modal" id="permissionModal" role="dialog" aria-labelledby="permissionTitle" aria-describedby="permissionDescription">
+      <div class="permission-content">
+        <div class="permission-icon" id="permissionIcon" aria-hidden="true">📷</div>
+        <h3 class="permission-title" id="permissionTitle">Camera Access Required</h3>
+        <p class="permission-description" id="permissionDescription">
+          To scan QR codes, we need access to your device's camera. This allows you to quickly check in attendees by scanning their tickets.
+        </p>
+        <div class="device-instructions" id="deviceInstructions">
+          <h4 id="deviceType">Camera Instructions</h4>
+          <ol id="instructionsList">
+            <li>Allow camera access when prompted</li>
+            <li>Position QR codes within the scanning area</li>
+            <li>Use manual entry if camera doesn't work</li>
+          </ol>
+        </div>
+        <div class="permission-buttons">
+          <button class="permission-btn primary" id="enableCamera" onclick="handlePermissionRequest()">
+            📷 Enable Camera
+          </button>
+          <button class="permission-btn secondary" id="useManualOnly" onclick="useManualMode()">
+            ⌨️ Manual Only
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div class="manual-input-backdrop" id="manualBackdrop" onclick="hideManualInput()"></div>
     <div class="manual-input" id="manualInput">
       <h3>Manual Ticket Entry</h3>
@@ -834,58 +1284,1613 @@
         total: 0,
       };
 
-      // Initialize scanner
-      async function initScanner() {
-        try {
-          scanner = new Html5Qrcode("reader");
+      // Performance monitoring and resource management
+      const performanceMonitor = {
+        scanTimes: [],
+        errorCounts: {
+          network: 0,
+          validation: 0,
+          camera: 0,
+          memory: 0
+        },
+        memoryUsage: [],
+        batteryInfo: null,
+        fps: 0,
+        frameCount: 0,
+        lastFrameTime: 0,
+        isLowPowerMode: false,
+        sessionStartTime: Date.now(),
+        scanCount: 0,
+        cacheHits: 0,
+        cacheMisses: 0,
 
-          const config = {
-            fps: 10,
-            qrbox: { width: 280, height: 280 },
-            aspectRatio: 1.0,
-            experimentalFeatures: {
-              useBarCodeDetectorIfSupported: true,
-            },
-            videoConstraints: {
-              facingMode: "environment",
-              width: { ideal: 1920 },
-              height: { ideal: 1080 }
-            }
+        // Device capability scoring (0-100)
+        deviceScore: 0,
+        adaptiveSettings: {
+          fps: 10,
+          resolution: 'medium',
+          scanInterval: 100,
+          memoryThreshold: 0.8,
+          batteryThreshold: 0.2
+        }
+      };
+
+      // Memory and resource management
+      const resourceManager = {
+        videoElement: null,
+        mediaStream: null,
+        cleanupTimers: [],
+        memoryCheckInterval: null,
+        performanceCheckInterval: null,
+        lastCleanup: Date.now(),
+        gcCallCount: 0,
+
+        // Resource pooling for frequent allocations
+        objectPool: {
+          scanResults: [],
+          tempArrays: [],
+          imageData: []
+        },
+
+        // Lazy loading registry
+        lazyComponents: new Map(),
+        criticalResourcesLoaded: false
+      };
+
+      // Network optimization and caching
+      const networkCache = {
+        validationResults: new Map(),
+        ticketData: new Map(),
+        maxCacheSize: 100,
+        cacheExpiry: 5 * 60 * 1000, // 5 minutes
+        requestQueue: [],
+        batchSize: 10,
+        processingBatch: false
+      };
+
+      // Enhanced device and environment detection
+      const deviceInfo = {
+        isIOS: /iPad|iPhone|iPod/.test(navigator.userAgent),
+        isAndroid: /Android/.test(navigator.userAgent),
+        isSafari: /^((?!chrome|android).)*safari/i.test(navigator.userAgent),
+        isChrome: /Chrome/.test(navigator.userAgent) && !/Edge|OPR/.test(navigator.userAgent),
+        isPWA: window.matchMedia('(display-mode: standalone)').matches ||
+               window.navigator.standalone === true,
+        isIOSSafari: false,
+        isAndroidChrome: false,
+        version: null,
+        androidVersion: null,
+        chromeVersion: null
+      };
+
+      // Detect iOS Safari specifically
+      deviceInfo.isIOSSafari = deviceInfo.isIOS && deviceInfo.isSafari;
+
+      // Detect Android Chrome specifically
+      deviceInfo.isAndroidChrome = deviceInfo.isAndroid && deviceInfo.isChrome;
+
+      // Get iOS version if available
+      if (deviceInfo.isIOS) {
+        const match = navigator.userAgent.match(/OS (\d+)_(\d+)_?(\d+)?/);
+        if (match) {
+          deviceInfo.version = {
+            major: parseInt(match[1]),
+            minor: parseInt(match[2]),
+            patch: parseInt(match[3] || 0)
           };
-
-          await scanner.start(
-            { facingMode: "environment" },
-            config,
-            onScanSuccess,
-            onScanError,
-          );
-
-          isScanning = true;
-        } catch (error) {
-          console.error("Failed to start scanner:", error);
-          alert("Camera access denied or not available");
         }
       }
 
-      // Handle successful scan
+      // Get Android version if available
+      if (deviceInfo.isAndroid) {
+        const androidMatch = navigator.userAgent.match(/Android (\d+)\.?(\d+)?\.?(\d+)?/);
+        if (androidMatch) {
+          deviceInfo.androidVersion = {
+            major: parseInt(androidMatch[1]),
+            minor: parseInt(androidMatch[2] || 0),
+            patch: parseInt(androidMatch[3] || 0)
+          };
+        }
+
+        // Get Chrome version for Android Chrome
+        if (deviceInfo.isChrome) {
+          const chromeMatch = navigator.userAgent.match(/Chrome\/(\d+)\.?(\d+)?\.?(\d+)?/);
+          if (chromeMatch) {
+            deviceInfo.chromeVersion = {
+              major: parseInt(chromeMatch[1]),
+              minor: parseInt(chromeMatch[2] || 0),
+              patch: parseInt(chromeMatch[3] || 0)
+            };
+          }
+        }
+      }
+
+      // Permission state tracking with Android-specific persistence
+      let permissionState = {
+        granted: false,
+        checked: false,
+        persistent: false,
+        androidPersistent: false // Android Chrome typically persists permissions
+      };
+
+      // Enhanced camera permission checker for both iOS and Android
+      async function checkCameraPermissions() {
+        try {
+          // Android Chrome: Try navigator.permissions API first (well supported)
+          if ('permissions' in navigator && 'camera' in navigator.permissions) {
+            try {
+              const result = await navigator.permissions.query({ name: 'camera' });
+              permissionState.granted = result.state === 'granted';
+              permissionState.persistent = result.state !== 'prompt';
+              permissionState.checked = true;
+
+              // Android Chrome has better permission persistence
+              if (deviceInfo.isAndroidChrome) {
+                permissionState.androidPersistent = result.state === 'granted';
+                console.log(`Android Chrome permission via API: ${result.state} (persistent: ${permissionState.androidPersistent})`);
+
+                // Set up permission change listener for Android
+                result.addEventListener('change', () => {
+                  permissionState.granted = result.state === 'granted';
+                  permissionState.androidPersistent = result.state === 'granted';
+                  console.log(`Android permission changed: ${result.state}`);
+                });
+              } else {
+                console.log(`Camera permission via API: ${result.state}`);
+              }
+
+              return result.state;
+            } catch (e) {
+              console.log('Permissions API not supported, using fallback');
+            }
+          }
+
+          // iOS Safari fallback: attempt getUserMedia to check permissions
+          if (deviceInfo.isIOSSafari) {
+            try {
+              const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'environment' }
+              });
+
+              // If we get here, permission is granted
+              stream.getTracks().forEach(track => track.stop());
+              permissionState.granted = true;
+              permissionState.checked = true;
+              permissionState.persistent = false; // iOS Safari asks every session
+
+              console.log('iOS Safari: Camera permission granted via getUserMedia test');
+              return 'granted';
+            } catch (error) {
+              permissionState.granted = false;
+              permissionState.checked = true;
+
+              if (error.name === 'NotAllowedError') {
+                console.log('iOS Safari: Camera permission denied');
+                return 'denied';
+              } else if (error.name === 'NotFoundError') {
+                console.log('iOS Safari: No camera found');
+                return 'unavailable';
+              } else {
+                console.log('iOS Safari: Camera permission unknown:', error.name);
+                return 'prompt';
+              }
+            }
+          }
+
+          // Android Chrome fallback: attempt getUserMedia to check permissions
+          if (deviceInfo.isAndroidChrome) {
+            try {
+              const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'environment' }
+              });
+
+              // If we get here, permission is granted
+              stream.getTracks().forEach(track => track.stop());
+              permissionState.granted = true;
+              permissionState.checked = true;
+              permissionState.androidPersistent = true; // Android Chrome typically persists
+
+              console.log('Android Chrome: Camera permission granted via getUserMedia test');
+              return 'granted';
+            } catch (error) {
+              permissionState.granted = false;
+              permissionState.checked = true;
+
+              if (error.name === 'NotAllowedError') {
+                console.log('Android Chrome: Camera permission denied');
+                return 'denied';
+              } else if (error.name === 'NotFoundError') {
+                console.log('Android Chrome: No camera found');
+                return 'unavailable';
+              } else {
+                console.log('Android Chrome: Camera permission unknown:', error.name);
+                return 'prompt';
+              }
+            }
+          }
+
+          return 'unknown';
+        } catch (error) {
+          console.error('Permission check failed:', error);
+          return 'error';
+        }
+      }
+
+      // Show iOS-specific permission guidance
+      function showIOSPermissionGuidance() {
+        const message = deviceInfo.isPWA
+          ? 'Camera access in PWA mode may be limited. For best results:\n\n' +
+            '1. Open this page in Safari directly\n' +
+            '2. Allow camera access when prompted\n' +
+            '3. Use manual entry if camera fails'
+          : 'Camera access required for QR scanning:\n\n' +
+            '1. Tap "Allow" when Safari asks for camera permission\n' +
+            '2. If you previously denied access, go to Settings > Safari > Camera\n' +
+            '3. You may need to allow permission each time you open the app';
+
+        if (confirm(message + '\n\nTry manual entry instead?')) {
+          showManualInput();
+        }
+      }
+
+      // Show Android-specific permission guidance
+      function showAndroidPermissionGuidance() {
+        const message = deviceInfo.isPWA
+          ? 'Camera access required for QR scanning. PWA detected:\n\n' +
+            '1. Tap "Allow" when Chrome asks for camera permission\n' +
+            '2. If denied, tap the camera icon in the address bar\n' +
+            '3. Or go to Chrome Settings > Site Settings > Camera\n' +
+            '4. Once granted, permission should persist across sessions'
+          : 'Camera access required for QR scanning:\n\n' +
+            '1. Tap "Allow" when Chrome asks for camera permission\n' +
+            '2. If you previously denied access:\n' +
+            '   - Tap the camera icon in the address bar, or\n' +
+            '   - Go to Chrome Settings > Site Settings > Camera\n' +
+            '3. Chrome typically remembers your choice for future visits';
+
+        if (confirm(message + '\n\nTry manual entry instead?')) {
+          showManualInput();
+        }
+      }
+
+      // Show device-appropriate permission guidance
+      function showPermissionGuidance() {
+        if (deviceInfo.isIOSSafari) {
+          showIOSPermissionGuidance();
+        } else if (deviceInfo.isAndroidChrome) {
+          showAndroidPermissionGuidance();
+        } else {
+          // Generic guidance for other browsers
+          const message = 'Camera access required for QR scanning:\n\n' +
+            '1. Allow camera access when prompted\n' +
+            '2. Check browser settings if camera access was denied\n' +
+            '3. Refresh the page and try again';
+
+          if (confirm(message + '\n\nTry manual entry instead?')) {
+            showManualInput();
+          }
+        }
+      }
+
+      // Get device-optimized scanner configuration
+      function getOptimizedScannerConfig() {
+        const baseConfig = {
+          qrbox: { width: 280, height: 280 },
+          aspectRatio: 1.0
+        };
+
+        // Apply adaptive performance settings if available
+        if (performanceMonitor.adaptiveSettings) {
+          baseConfig.fps = performanceMonitor.adaptiveSettings.fps;
+
+          // Adjust resolution based on adaptive settings
+          const resolutionMap = {
+            'low': { width: 720, height: 480 },
+            'medium': { width: 1280, height: 720 },
+            'high': { width: 1920, height: 1080 }
+          };
+
+          const resolution = resolutionMap[performanceMonitor.adaptiveSettings.resolution] || resolutionMap.medium;
+
+          baseConfig.videoConstraints = {
+            facingMode: "environment",
+            width: { ideal: resolution.width },
+            height: { ideal: resolution.height }
+          };
+        }
+
+        // iOS-specific optimizations
+        if (deviceInfo.isIOS) {
+          if (!performanceMonitor.adaptiveSettings) {
+            baseConfig.fps = 8; // Fallback FPS for iOS performance
+          }
+          baseConfig.experimentalFeatures = {
+            useBarCodeDetectorIfSupported: false // Disable on iOS for stability
+          };
+
+          baseConfig.videoConstraints = {
+            facingMode: "environment",
+            width: { ideal: 1280, max: 1920 }, // Lower resolution for iOS
+            height: { ideal: 720, max: 1080 },
+            frameRate: { ideal: 15, max: 30 }
+          };
+
+          // Add iOS-specific format support (simplified for compatibility)
+          if (typeof Html5QrcodeSupportedFormats !== 'undefined') {
+            baseConfig.formatsToSupport = [
+              Html5QrcodeSupportedFormats.QR_CODE,
+              Html5QrcodeSupportedFormats.CODE_128,
+              Html5QrcodeSupportedFormats.CODE_39
+            ];
+          }
+        }
+        // Android-specific optimizations
+        else if (deviceInfo.isAndroid) {
+          if (!performanceMonitor.adaptiveSettings) {
+            baseConfig.fps = deviceInfo.isAndroidChrome ? 15 : 10; // Fallback FPS for Android Chrome
+          }
+          baseConfig.experimentalFeatures = {
+            useBarCodeDetectorIfSupported: true // Enable on Android for better performance
+          };
+
+          // Android Chrome can handle higher resolutions and frame rates
+          if (deviceInfo.isAndroidChrome) {
+            baseConfig.videoConstraints = {
+              facingMode: "environment",
+              width: { ideal: 1920, max: 2560 }, // Higher resolution for Android
+              height: { ideal: 1080, max: 1440 },
+              frameRate: { ideal: 30, max: 60 },
+              // Android-specific optimizations
+              focusMode: { ideal: "continuous" },
+              exposureMode: { ideal: "continuous" },
+              whiteBalanceMode: { ideal: "continuous" }
+            };
+
+            // Enable more format support on Android
+            if (typeof Html5QrcodeSupportedFormats !== 'undefined') {
+              baseConfig.formatsToSupport = [
+                Html5QrcodeSupportedFormats.QR_CODE,
+                Html5QrcodeSupportedFormats.CODE_128,
+                Html5QrcodeSupportedFormats.CODE_39,
+                Html5QrcodeSupportedFormats.CODE_93,
+                Html5QrcodeSupportedFormats.EAN_13,
+                Html5QrcodeSupportedFormats.EAN_8
+              ];
+            }
+          } else {
+            // Generic Android browser fallback
+            baseConfig.videoConstraints = {
+              facingMode: "environment",
+              width: { ideal: 1280, max: 1920 },
+              height: { ideal: 720, max: 1080 },
+              frameRate: { ideal: 20, max: 30 }
+            };
+          }
+        }
+        // Generic configuration for other platforms
+        else {
+          baseConfig.fps = 10;
+          baseConfig.experimentalFeatures = {
+            useBarCodeDetectorIfSupported: true
+          };
+
+          baseConfig.videoConstraints = {
+            facingMode: "environment",
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
+          };
+        }
+
+        return baseConfig;
+      }
+
+      // Performance monitoring and optimization functions
+      function initializePerformanceMonitoring() {
+        // Calculate device capability score
+        performanceMonitor.deviceScore = calculateDeviceScore();
+
+        // Set adaptive settings based on device score
+        adaptivelyConfigureSettings();
+
+        // Initialize battery monitoring if available
+        initializeBatteryMonitoring();
+
+        // Start memory monitoring
+        startMemoryMonitoring();
+
+        // Start performance metrics collection
+        startPerformanceTracking();
+      }
+
+      function calculateDeviceScore() {
+        let score = 50; // Base score
+
+        // Memory assessment
+        const memoryGB = navigator.deviceMemory || 4;
+        score += Math.min(memoryGB * 5, 25); // Max 25 points for memory
+
+        // CPU assessment (rough estimate based on user agent)
+        const userAgent = navigator.userAgent.toLowerCase();
+        if (userAgent.includes('iphone 14') || userAgent.includes('iphone 15')) score += 20;
+        else if (userAgent.includes('iphone 13') || userAgent.includes('iphone 12')) score += 15;
+        else if (userAgent.includes('iphone 11') || userAgent.includes('iphone x')) score += 10;
+        else if (userAgent.includes('iphone')) score += 5;
+
+        // Android flagship detection
+        if (userAgent.includes('pixel 7') || userAgent.includes('pixel 8')) score += 20;
+        else if (userAgent.includes('galaxy s23') || userAgent.includes('galaxy s24')) score += 20;
+        else if (userAgent.includes('galaxy s22') || userAgent.includes('galaxy s21')) score += 15;
+        else if (userAgent.includes('android')) score += 5;
+
+        // Browser optimizations
+        if (deviceInfo.isAndroidChrome) score += 10;
+        if (deviceInfo.isIOSSafari) score += 5;
+
+        // Connection quality
+        const connection = navigator.connection;
+        if (connection) {
+          if (connection.effectiveType === '4g') score += 10;
+          else if (connection.effectiveType === '3g') score += 5;
+          if (connection.saveData) score -= 10; // User wants to save data
+        }
+
+        return Math.min(Math.max(score, 0), 100);
+      }
+
+      function adaptivelyConfigureSettings() {
+        const score = performanceMonitor.deviceScore;
+
+        if (score >= 80) {
+          // High-end device
+          performanceMonitor.adaptiveSettings.fps = deviceInfo.isIOS ? 12 : 20;
+          performanceMonitor.adaptiveSettings.resolution = 'high';
+          performanceMonitor.adaptiveSettings.scanInterval = 50;
+        } else if (score >= 60) {
+          // Mid-range device
+          performanceMonitor.adaptiveSettings.fps = deviceInfo.isIOS ? 10 : 15;
+          performanceMonitor.adaptiveSettings.resolution = 'medium';
+          performanceMonitor.adaptiveSettings.scanInterval = 100;
+        } else {
+          // Low-end device
+          performanceMonitor.adaptiveSettings.fps = deviceInfo.isIOS ? 6 : 8;
+          performanceMonitor.adaptiveSettings.resolution = 'low';
+          performanceMonitor.adaptiveSettings.scanInterval = 200;
+          performanceMonitor.isLowPowerMode = true;
+        }
+
+        console.log(`Device score: ${score}, Adaptive settings:`, performanceMonitor.adaptiveSettings);
+      }
+
+      async function initializeBatteryMonitoring() {
+        try {
+          if ('getBattery' in navigator) {
+            const battery = await navigator.getBattery();
+            performanceMonitor.batteryInfo = {
+              level: battery.level,
+              charging: battery.charging,
+              dischargingTime: battery.dischargingTime,
+              chargingTime: battery.chargingTime
+            };
+
+            // Enable low power mode if battery is low
+            if (battery.level < performanceMonitor.adaptiveSettings.batteryThreshold) {
+              enableLowPowerMode();
+            }
+
+            // Listen for battery changes
+            battery.addEventListener('levelchange', () => {
+              performanceMonitor.batteryInfo.level = battery.level;
+              if (battery.level < performanceMonitor.adaptiveSettings.batteryThreshold) {
+                enableLowPowerMode();
+              } else if (battery.level > 0.5 && performanceMonitor.isLowPowerMode) {
+                disableLowPowerMode();
+              }
+            });
+
+            battery.addEventListener('chargingchange', () => {
+              performanceMonitor.batteryInfo.charging = battery.charging;
+              if (battery.charging && performanceMonitor.isLowPowerMode) {
+                disableLowPowerMode();
+              }
+            });
+          }
+        } catch (error) {
+          console.log('Battery API not available:', error);
+        }
+      }
+
+      function enableLowPowerMode() {
+        if (performanceMonitor.isLowPowerMode) return;
+
+        performanceMonitor.isLowPowerMode = true;
+
+        // Reduce performance settings
+        performanceMonitor.adaptiveSettings.fps = Math.max(4, performanceMonitor.adaptiveSettings.fps * 0.6);
+        performanceMonitor.adaptiveSettings.scanInterval *= 2;
+
+        // Restart scanner with low power settings if running
+        if (isScanning) {
+          console.log('Enabling low power mode, restarting scanner');
+          restartScannerWithNewSettings();
+        }
+
+        console.log('Low power mode enabled');
+      }
+
+      function disableLowPowerMode() {
+        if (!performanceMonitor.isLowPowerMode) return;
+
+        performanceMonitor.isLowPowerMode = false;
+
+        // Restore performance settings
+        adaptivelyConfigureSettings();
+
+        // Restart scanner with normal settings if running
+        if (isScanning) {
+          console.log('Disabling low power mode, restarting scanner');
+          restartScannerWithNewSettings();
+        }
+
+        console.log('Low power mode disabled');
+      }
+
+      function startMemoryMonitoring() {
+        const checkMemory = () => {
+          try {
+            if ('memory' in performance) {
+              const memInfo = performance.memory;
+              const usageRatio = memInfo.usedJSHeapSize / memInfo.totalJSHeapSize;
+
+              performanceMonitor.memoryUsage.push({
+                timestamp: Date.now(),
+                used: memInfo.usedJSHeapSize,
+                total: memInfo.totalJSHeapSize,
+                ratio: usageRatio
+              });
+
+              // Keep only last 50 readings
+              if (performanceMonitor.memoryUsage.length > 50) {
+                performanceMonitor.memoryUsage.shift();
+              }
+
+              // Trigger cleanup if memory usage is high
+              if (usageRatio > performanceMonitor.adaptiveSettings.memoryThreshold) {
+                performMemoryCleanup();
+              }
+            }
+          } catch (error) {
+            console.log('Memory monitoring error:', error);
+          }
+        };
+
+        resourceManager.memoryCheckInterval = setInterval(checkMemory, 10000); // Check every 10 seconds
+        checkMemory(); // Initial check
+      }
+
+      function performMemoryCleanup() {
+        const now = Date.now();
+
+        // Avoid frequent cleanups
+        if (now - resourceManager.lastCleanup < 30000) return;
+
+        resourceManager.lastCleanup = now;
+        resourceManager.gcCallCount++;
+
+        try {
+          // Clear old cache entries
+          cleanupNetworkCache();
+
+          // Clear performance monitoring arrays
+          if (performanceMonitor.scanTimes.length > 20) {
+            performanceMonitor.scanTimes = performanceMonitor.scanTimes.slice(-10);
+          }
+
+          if (performanceMonitor.memoryUsage.length > 20) {
+            performanceMonitor.memoryUsage = performanceMonitor.memoryUsage.slice(-10);
+          }
+
+          // Return objects to pool
+          while (resourceManager.objectPool.scanResults.length > 10) {
+            resourceManager.objectPool.scanResults.pop();
+          }
+
+          // Force garbage collection if available
+          if (window.gc) {
+            window.gc();
+          }
+
+          console.log(`Memory cleanup performed (${resourceManager.gcCallCount} times)`);
+          performanceMonitor.errorCounts.memory++;
+
+        } catch (error) {
+          console.error('Memory cleanup error:', error);
+        }
+      }
+
+      function cleanupNetworkCache() {
+        const now = Date.now();
+
+        // Remove expired validation results
+        for (const [key, value] of networkCache.validationResults.entries()) {
+          if (now - value.timestamp > networkCache.cacheExpiry) {
+            networkCache.validationResults.delete(key);
+          }
+        }
+
+        // Remove expired ticket data
+        for (const [key, value] of networkCache.ticketData.entries()) {
+          if (now - value.timestamp > networkCache.cacheExpiry) {
+            networkCache.ticketData.delete(key);
+          }
+        }
+
+        // Limit cache size
+        if (networkCache.validationResults.size > networkCache.maxCacheSize) {
+          const entries = [...networkCache.validationResults.entries()];
+          entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+          const toDelete = entries.slice(0, entries.length - networkCache.maxCacheSize + 10);
+          toDelete.forEach(([key]) => networkCache.validationResults.delete(key));
+        }
+      }
+
+      function startPerformanceTracking() {
+        const trackPerformance = () => {
+          try {
+            // Calculate FPS
+            const now = performance.now();
+            if (performanceMonitor.lastFrameTime > 0) {
+              const deltaTime = now - performanceMonitor.lastFrameTime;
+              performanceMonitor.fps = 1000 / deltaTime;
+            }
+            performanceMonitor.lastFrameTime = now;
+            performanceMonitor.frameCount++;
+
+            // Collect performance entry data
+            const entries = performance.getEntriesByType('measure');
+            if (entries.length > 0) {
+              const latestEntry = entries[entries.length - 1];
+              console.log(`Performance: ${latestEntry.name} took ${latestEntry.duration.toFixed(2)}ms`);
+            }
+
+          } catch (error) {
+            console.log('Performance tracking error:', error);
+          }
+        };
+
+        resourceManager.performanceCheckInterval = setInterval(trackPerformance, 1000);
+      }
+
+      function measureScanPerformance(operation, startTime) {
+        try {
+          const endTime = performance.now();
+          const duration = endTime - startTime;
+
+          performanceMonitor.scanTimes.push({
+            operation,
+            duration,
+            timestamp: Date.now()
+          });
+
+          // Keep only last 50 measurements
+          if (performanceMonitor.scanTimes.length > 50) {
+            performanceMonitor.scanTimes.shift();
+          }
+
+          // Log slow operations
+          if (duration > 1000) {
+            console.warn(`Slow ${operation}: ${duration.toFixed(2)}ms`);
+          }
+
+          return duration;
+        } catch (error) {
+          console.error('Performance measurement error:', error);
+          return 0;
+        }
+      }
+
+      function getPerformanceMetrics() {
+        const metrics = {
+          deviceScore: performanceMonitor.deviceScore,
+          sessionDuration: Date.now() - performanceMonitor.sessionStartTime,
+          scanCount: performanceMonitor.scanCount,
+          averageScanTime: 0,
+          errorRate: 0,
+          memoryUsage: performanceMonitor.memoryUsage.slice(-1)[0],
+          batteryInfo: performanceMonitor.batteryInfo,
+          cacheHitRate: 0,
+          isLowPowerMode: performanceMonitor.isLowPowerMode,
+          adaptiveSettings: performanceMonitor.adaptiveSettings
+        };
+
+        // Calculate averages
+        if (performanceMonitor.scanTimes.length > 0) {
+          metrics.averageScanTime = performanceMonitor.scanTimes
+            .reduce((sum, scan) => sum + scan.duration, 0) / performanceMonitor.scanTimes.length;
+        }
+
+        const totalErrors = Object.values(performanceMonitor.errorCounts)
+          .reduce((sum, count) => sum + count, 0);
+        metrics.errorRate = totalErrors / (performanceMonitor.scanCount + totalErrors);
+
+        const totalCacheRequests = performanceMonitor.cacheHits + performanceMonitor.cacheMisses;
+        if (totalCacheRequests > 0) {
+          metrics.cacheHitRate = performanceMonitor.cacheHits / totalCacheRequests;
+        }
+
+        return metrics;
+      }
+
+      async function restartScannerWithNewSettings() {
+        if (!scanner || !isScanning) return;
+
+        try {
+          await stopScanner();
+          setTimeout(() => {
+            initScanner();
+          }, 500);
+        } catch (error) {
+          console.error('Error restarting scanner:', error);
+        }
+      }
+
+      // Resource cleanup functions
+      function cleanupResources() {
+        try {
+          // Clear all timers
+          resourceManager.cleanupTimers.forEach(timer => clearTimeout(timer));
+          resourceManager.cleanupTimers = [];
+
+          if (resourceManager.memoryCheckInterval) {
+            clearInterval(resourceManager.memoryCheckInterval);
+            resourceManager.memoryCheckInterval = null;
+          }
+
+          if (resourceManager.performanceCheckInterval) {
+            clearInterval(resourceManager.performanceCheckInterval);
+            resourceManager.performanceCheckInterval = null;
+          }
+
+          // Clean up video element
+          if (resourceManager.videoElement) {
+            resourceManager.videoElement.srcObject = null;
+            resourceManager.videoElement = null;
+          }
+
+          // Clean up media stream
+          if (resourceManager.mediaStream) {
+            resourceManager.mediaStream.getTracks().forEach(track => {
+              track.stop();
+            });
+            resourceManager.mediaStream = null;
+          }
+
+          // Clear caches
+          networkCache.validationResults.clear();
+          networkCache.ticketData.clear();
+
+          console.log('Resources cleaned up');
+        } catch (error) {
+          console.error('Error during resource cleanup:', error);
+        }
+      }
+
+      // Lazy loading implementation
+      function lazyLoadComponent(componentName, loader) {
+        if (resourceManager.lazyComponents.has(componentName)) {
+          return resourceManager.lazyComponents.get(componentName);
+        }
+
+        const promise = loader();
+        resourceManager.lazyComponents.set(componentName, promise);
+        return promise;
+      }
+
+      // Network caching for validation results
+      function getCachedValidationResult(qrToken) {
+        const cached = networkCache.validationResults.get(qrToken);
+        if (cached && (Date.now() - cached.timestamp) < networkCache.cacheExpiry) {
+          performanceMonitor.cacheHits++;
+          return cached.data;
+        }
+        performanceMonitor.cacheMisses++;
+        return null;
+      }
+
+      function setCachedValidationResult(qrToken, data) {
+        networkCache.validationResults.set(qrToken, {
+          data,
+          timestamp: Date.now()
+        });
+      }
+
+      // Batch network requests
+      function addToRequestQueue(request) {
+        networkCache.requestQueue.push(request);
+
+        if (!networkCache.processingBatch) {
+          scheduleRequestBatch();
+        }
+      }
+
+      function scheduleRequestBatch() {
+        networkCache.processingBatch = true;
+
+        setTimeout(async () => {
+          if (networkCache.requestQueue.length === 0) {
+            networkCache.processingBatch = false;
+            return;
+          }
+
+          const batch = networkCache.requestQueue.splice(0, networkCache.batchSize);
+
+          try {
+            // Process batch requests
+            await Promise.allSettled(batch.map(request => request()));
+          } catch (error) {
+            console.error('Batch request error:', error);
+          }
+
+          networkCache.processingBatch = false;
+
+          // Schedule next batch if more requests pending
+          if (networkCache.requestQueue.length > 0) {
+            scheduleRequestBatch();
+          }
+        }, 100);
+      }
+
+      // UI State Management
+      const uiState = {
+        isPermissionModalShown: false,
+        isLoading: false,
+        isError: false,
+        loadingTimeout: null
+      };
+
+      // Show permission request modal with device-specific instructions
+      function showPermissionModal() {
+        if (uiState.isPermissionModalShown) return;
+
+        const modal = document.getElementById('permissionModal');
+        const icon = document.getElementById('permissionIcon');
+        const title = document.getElementById('permissionTitle');
+        const description = document.getElementById('permissionDescription');
+        const deviceType = document.getElementById('deviceType');
+        const instructionsList = document.getElementById('instructionsList');
+
+        // Device-specific customization
+        if (deviceInfo.isIOSSafari) {
+          icon.textContent = '📱';
+          title.textContent = 'iOS Camera Access';
+          description.textContent = 'Safari needs permission to access your camera for QR code scanning. This helps you quickly check in attendees.';
+          deviceType.textContent = 'iOS Safari Instructions';
+
+          const instructions = deviceInfo.isPWA ? [
+            'Tap "Allow" when Safari asks for camera permission',
+            'If you previously denied access, go to Settings > Safari > Camera',
+            'PWA mode may have limitations - use Safari directly if needed',
+            'You may need to grant permission each time you open the app'
+          ] : [
+            'Tap "Allow" when Safari asks for camera permission',
+            'If you previously denied access, go to Settings > Safari > Camera',
+            'Grant permission each time if using private browsing',
+            'Position QR codes clearly within the scanning area'
+          ];
+
+          instructionsList.innerHTML = instructions.map(inst => `<li>${inst}</li>`).join('');
+        } else if (deviceInfo.isAndroidChrome) {
+          icon.textContent = '🤖';
+          title.textContent = 'Android Camera Access';
+          description.textContent = 'Chrome needs permission to access your camera for QR code scanning. This permission will be remembered for future visits.';
+          deviceType.textContent = 'Android Chrome Instructions';
+
+          const instructions = deviceInfo.isPWA ? [
+            'Tap "Allow" when Chrome asks for camera permission',
+            'Permission will be saved for future use in PWA mode',
+            'If denied, tap the camera icon in the address bar',
+            'Or go to Chrome Settings > Site Settings > Camera'
+          ] : [
+            'Tap "Allow" when Chrome asks for camera permission',
+            'Chrome will remember your choice for future visits',
+            'If previously denied, tap the camera icon in address bar',
+            'Ensure good lighting for better QR code detection'
+          ];
+
+          instructionsList.innerHTML = instructions.map(inst => `<li>${inst}</li>`).join('');
+        } else {
+          icon.textContent = '📷';
+          title.textContent = 'Camera Access Required';
+          description.textContent = 'Your browser needs permission to access the camera for QR code scanning. This enables quick attendee check-ins.';
+          deviceType.textContent = 'Browser Instructions';
+
+          const instructions = [
+            'Allow camera access when your browser prompts',
+            'Check browser settings if camera access was denied',
+            'Refresh the page and try again if needed',
+            'Use manual entry if camera issues persist'
+          ];
+
+          instructionsList.innerHTML = instructions.map(inst => `<li>${inst}</li>`).join('');
+        }
+
+        modal.classList.add('show');
+        uiState.isPermissionModalShown = true;
+
+        // Announce to screen readers
+        announceToScreenReader(`${title.textContent}. ${description.textContent} Press Enter to enable camera or Escape to use manual entry.`);
+
+        // Focus the primary button for accessibility
+        setTimeout(() => {
+          document.getElementById('enableCamera').focus();
+        }, 300);
+      }
+
+      // Hide permission modal
+      function hidePermissionModal() {
+        const modal = document.getElementById('permissionModal');
+        modal.classList.remove('show');
+        uiState.isPermissionModalShown = false;
+      }
+
+      // Handle permission request from modal
+      async function handlePermissionRequest() {
+        hidePermissionModal();
+        showLoadingState('Requesting camera access...', 'Please allow camera permissions when prompted');
+
+        try {
+          await actuallyInitScanner();
+        } catch (error) {
+          console.error('Permission request failed:', error);
+          showErrorState('Permission Denied', 'Camera access was not granted. You can retry or use manual entry.', 'permission');
+        }
+      }
+
+      // Use manual mode only (bypass camera entirely)
+      function useManualMode() {
+        hidePermissionModal();
+        showManualInput();
+      }
+
+      // Show loading state
+      function showLoadingState(text = 'Initializing Camera', subtext = 'Please wait while we access your camera...') {
+        if (uiState.isLoading) return;
+
+        const loadingEl = document.getElementById('scannerLoading');
+        const loadingText = document.getElementById('loadingText');
+        const loadingSubtext = document.getElementById('loadingSubtext');
+
+        loadingText.textContent = text;
+        loadingSubtext.textContent = subtext;
+        loadingEl.classList.add('show');
+        uiState.isLoading = true;
+
+        // Announce to screen readers
+        announceToScreenReader(`${text}. ${subtext}`);
+
+        // Auto-hide loading after 30 seconds as fallback
+        uiState.loadingTimeout = setTimeout(() => {
+          if (uiState.isLoading) {
+            hideLoadingState();
+            showErrorState('Timeout', 'Camera initialization took too long. Please try again.', 'timeout');
+          }
+        }, 30000);
+      }
+
+      // Hide loading state
+      function hideLoadingState() {
+        const loadingEl = document.getElementById('scannerLoading');
+        loadingEl.classList.remove('show');
+        uiState.isLoading = false;
+
+        if (uiState.loadingTimeout) {
+          clearTimeout(uiState.loadingTimeout);
+          uiState.loadingTimeout = null;
+        }
+      }
+
+      // Show error state
+      function showErrorState(title, message, errorType = 'generic') {
+        hideLoadingState();
+
+        const errorEl = document.getElementById('scannerError');
+        const errorIcon = document.getElementById('errorIcon');
+        const errorTitle = document.getElementById('errorTitle');
+        const errorMessage = document.getElementById('errorMessage');
+        const retryBtn = document.getElementById('retryCamera');
+        const settingsBtn = document.getElementById('openSettings');
+
+        errorTitle.textContent = title;
+        errorMessage.textContent = message;
+
+        // Customize based on error type
+        switch (errorType) {
+          case 'permission':
+            errorIcon.textContent = '🚫';
+            retryBtn.textContent = '🔄 Try Again';
+            settingsBtn.style.display = 'inline-block';
+            break;
+          case 'not_found':
+            errorIcon.textContent = '📷';
+            retryBtn.textContent = '🔄 Retry';
+            settingsBtn.style.display = 'none';
+            break;
+          case 'in_use':
+            errorIcon.textContent = '⚠️';
+            retryBtn.textContent = '🔄 Retry';
+            settingsBtn.style.display = 'none';
+            break;
+          case 'timeout':
+            errorIcon.textContent = '⏰';
+            retryBtn.textContent = '🔄 Retry';
+            settingsBtn.style.display = 'none';
+            break;
+          default:
+            errorIcon.textContent = '❌';
+            retryBtn.textContent = '🔄 Retry';
+            settingsBtn.style.display = 'none';
+        }
+
+        errorEl.classList.add('show');
+        uiState.isError = true;
+
+        // Announce to screen readers
+        const actions = settingsBtn.style.display !== 'none'
+          ? 'Available options: Retry Camera, Manual Entry, or Settings'
+          : 'Available options: Retry Camera or Manual Entry';
+        announceToScreenReader(`${title}. ${message}. ${actions}. Press Escape to close.`);
+
+        // Focus retry button for accessibility
+        setTimeout(() => {
+          retryBtn.focus();
+        }, 300);
+      }
+
+      // Hide error state
+      function hideErrorState() {
+        const errorEl = document.getElementById('scannerError');
+        errorEl.classList.remove('show');
+        uiState.isError = false;
+      }
+
+      // Show success indicator
+      function showSuccessIndicator(duration = 2000) {
+        const successEl = document.getElementById('scannerSuccess');
+        successEl.classList.add('show');
+
+        // Announce to screen readers
+        announceToScreenReader('Camera ready. Scanner is now active and ready to scan QR codes.');
+
+        setTimeout(() => {
+          successEl.classList.remove('show');
+        }, duration);
+      }
+
+      // Retry scanner initialization
+      function retryScanner() {
+        hideErrorState();
+        initScanner();
+      }
+
+      // Open camera settings (platform-specific)
+      function openCameraSettings() {
+        let message = 'To enable camera access:\n\n';
+
+        if (deviceInfo.isIOSSafari) {
+          message += 'iOS Safari:\n1. Go to Settings > Safari > Camera\n2. Select "Allow" for this website\n3. Refresh this page';
+        } else if (deviceInfo.isAndroidChrome) {
+          message += 'Android Chrome:\n1. Tap the camera icon in the address bar\n2. Select "Allow"\n3. Or go to Chrome Settings > Site Settings > Camera';
+        } else {
+          message += 'Browser Settings:\n1. Look for camera/permissions in browser settings\n2. Allow camera access for this website\n3. Refresh this page';
+        }
+
+        alert(message);
+      }
+
+      // Enhanced scanner initialization with iOS and Android support
+      async function initScanner() {
+        try {
+          console.log('Initializing scanner...', deviceInfo);
+
+          // Pre-check permissions based on device type
+          const permissionResult = await checkCameraPermissions();
+
+          if (permissionResult === 'denied') {
+            showPermissionModal();
+            return;
+          } else if (permissionResult === 'unavailable') {
+            showErrorState('No Camera Found', 'No camera was detected on this device. Please use manual entry.', 'not_found');
+            return;
+          } else if (permissionResult === 'prompt') {
+            showPermissionModal();
+            return;
+          }
+
+          await actuallyInitScanner();
+
+        } catch (error) {
+          console.error("Scanner initialization failed:", error);
+          showErrorState('Initialization Failed', 'Failed to initialize camera scanner. Please try again or use manual entry.', 'generic');
+        }
+      }
+
+      // Actual scanner initialization (separated for reuse)
+      async function actuallyInitScanner() {
+        const initStartTime = performance.now();
+        showLoadingState('Starting camera...', 'Initializing QR code scanner');
+
+        try {
+          // Initialize performance monitoring if not already done
+          if (performanceMonitor.deviceScore === 0) {
+            initializePerformanceMonitoring();
+          }
+
+          // Initialize Html5QrCode instance
+          scanner = new Html5Qrcode("reader");
+
+          // Get device-optimized configuration
+          const config = getOptimizedScannerConfig();
+          console.log('Scanner config for', deviceInfo.isIOS ? 'iOS' : deviceInfo.isAndroid ? 'Android' : 'generic', ':', config);
+
+          // Device-agnostic camera constraints
+          const cameraConstraints = {
+            facingMode: "environment"
+          };
+
+          // Attempt to start scanner with error handling
+          await scanner.start(
+            cameraConstraints,
+            config,
+            onScanSuccess,
+            onScanError
+          );
+
+          isScanning = true;
+          console.log('Scanner started successfully');
+
+          // Measure initialization performance
+          measureScanPerformance('scanner_initialization', initStartTime);
+
+          hideLoadingState();
+          showSuccessIndicator();
+
+          // Apply device-specific video attributes and memory optimization
+          setTimeout(() => {
+            const videoElement = document.querySelector('#reader video');
+            if (videoElement) {
+              // Store reference for resource management
+              resourceManager.videoElement = videoElement;
+
+              // Get media stream for proper cleanup
+              if (videoElement.srcObject) {
+                resourceManager.mediaStream = videoElement.srcObject;
+              }
+
+              if (deviceInfo.isIOS) {
+                // iOS-specific attributes
+                videoElement.setAttribute('playsinline', '');
+                videoElement.setAttribute('webkit-playsinline', '');
+                videoElement.muted = true;
+
+                // iOS memory optimization
+                videoElement.style.objectFit = 'cover';
+                videoElement.style.transformOrigin = 'center center';
+
+                console.log('iOS video attributes and optimizations applied');
+              } else if (deviceInfo.isAndroid) {
+                // Android-specific attributes
+                videoElement.setAttribute('playsinline', '');
+                videoElement.muted = true;
+
+                // Android Chrome specific optimizations
+                if (deviceInfo.isAndroidChrome) {
+                  videoElement.style.objectFit = 'cover';
+                  videoElement.style.willChange = 'auto'; // Avoid unnecessary GPU layers
+                  console.log('Android Chrome video attributes applied');
+                }
+              }
+
+              // Universal performance optimizations
+              videoElement.style.imageRendering = 'optimizeSpeed';
+              videoElement.style.backfaceVisibility = 'hidden';
+
+              // Add performance monitoring for video frames
+              if (performanceMonitor.isLowPowerMode) {
+                videoElement.style.transform = 'scale(0.8)'; // Reduce processing load
+              }
+            }
+          }, 1000);
+
+        } catch (startError) {
+          console.error('Scanner start error:', startError);
+          handleScannerStartError(startError);
+        }
+      }
+
+      // Handle scanner start errors with device-specific messaging
+      function handleScannerStartError(error) {
+        console.error('Scanner start error details:', {
+          name: error.name,
+          message: error.message,
+          code: error.code,
+          device: deviceInfo.isIOS ? 'iOS' : deviceInfo.isAndroid ? 'Android' : 'unknown'
+        });
+
+        let title, message, errorType;
+
+        // iOS-specific error handling
+        if (deviceInfo.isIOSSafari) {
+          if (error.name === 'NotAllowedError') {
+            title = 'Camera Permission Denied';
+            message = deviceInfo.isPWA
+              ? 'Camera access was denied. For PWA mode, you may need to open this page in Safari directly and grant permission.'
+              : 'Camera access was denied. Please go to Settings > Safari > Camera to enable access for this website.';
+            errorType = 'permission';
+          } else if (error.name === 'OverconstrainedError') {
+            // iOS-specific: camera constraints too restrictive
+            console.log('iOS: Retrying with relaxed constraints');
+            retryWithRelaxedConstraints();
+            return;
+          } else if (error.name === 'NotFoundError') {
+            title = 'No Camera Found';
+            message = 'This iOS device does not have a camera available for use.';
+            errorType = 'not_found';
+          } else {
+            title = 'iOS Camera Error';
+            message = `Camera initialization failed on iOS: ${error.message}`;
+            errorType = 'generic';
+          }
+        }
+        // Android-specific error handling
+        else if (deviceInfo.isAndroidChrome) {
+          if (error.name === 'NotAllowedError') {
+            title = 'Camera Permission Denied';
+            message = deviceInfo.isPWA
+              ? 'Camera access was denied. Tap the camera icon in the address bar or go to Chrome Settings > Site Settings > Camera to enable access.'
+              : 'Camera access was denied. Chrome will remember your choice. Tap the camera icon in the address bar to change permissions.';
+            errorType = 'permission';
+          } else if (error.name === 'OverconstrainedError') {
+            // Android: try with fallback constraints
+            console.log('Android: Retrying with relaxed constraints');
+            retryWithRelaxedConstraints();
+            return;
+          } else if (error.name === 'NotFoundError') {
+            title = 'No Camera Found';
+            message = 'No camera was detected on this Android device.';
+            errorType = 'not_found';
+          } else if (error.name === 'AbortError') {
+            title = 'Camera In Use';
+            message = 'Camera is currently being used by another app. Please close other camera apps and try again.';
+            errorType = 'in_use';
+          } else if (error.name === 'NotReadableError') {
+            title = 'Camera Unavailable';
+            message = 'Camera is not accessible. It may be in use by another application or browser tab.';
+            errorType = 'in_use';
+          } else {
+            title = 'Android Camera Error';
+            message = `Camera initialization failed: ${error.message}`;
+            errorType = 'generic';
+          }
+        }
+        // Generic Android handling for non-Chrome browsers
+        else if (deviceInfo.isAndroid && !deviceInfo.isChrome) {
+          if (error.name === 'NotAllowedError') {
+            title = 'Camera Permission Denied';
+            message = 'Camera access was denied. For better camera support, consider using Chrome browser. Check your browser settings to enable camera access.';
+            errorType = 'permission';
+          } else {
+            title = 'Camera Error';
+            message = `Camera not available on this Android browser: ${error.message}. Consider using Chrome for better compatibility.`;
+            errorType = 'generic';
+          }
+        }
+        // General error handling for other platforms
+        else {
+          switch (error.name) {
+            case 'NotAllowedError':
+              title = 'Camera Permission Denied';
+              message = 'Camera access was denied. Please check your browser settings and allow camera access for this website.';
+              errorType = 'permission';
+              break;
+            case 'NotFoundError':
+              title = 'No Camera Found';
+              message = 'No camera was detected on this device.';
+              errorType = 'not_found';
+              break;
+            case 'NotReadableError':
+              title = 'Camera Unavailable';
+              message = 'Camera is already in use by another application. Please close other camera apps and try again.';
+              errorType = 'in_use';
+              break;
+            case 'OverconstrainedError':
+              console.log('Generic: Retrying with relaxed constraints');
+              retryWithRelaxedConstraints();
+              return;
+            case 'SecurityError':
+              title = 'Security Error';
+              message = 'Camera access blocked for security reasons. Please check your browser settings.';
+              errorType = 'permission';
+              break;
+            default:
+              title = 'Camera Error';
+              message = `Camera initialization failed: ${error.message}`;
+              errorType = 'generic';
+          }
+        }
+
+        showErrorState(title, message, errorType);
+      }
+
+      // Handle scanner initialization errors
+      function handleScannerInitError(error) {
+        console.error('Scanner init error:', error);
+        showErrorState('Initialization Failed', 'Failed to initialize camera scanner. Please use manual entry mode.', 'generic');
+      }
+
+      // Retry scanner with relaxed constraints (device-agnostic fallback)
+      async function retryWithRelaxedConstraints() {
+        try {
+          console.log('Retrying scanner with relaxed constraints for',
+            deviceInfo.isIOS ? 'iOS' : deviceInfo.isAndroid ? 'Android' : 'generic device');
+
+          showLoadingState('Retrying with relaxed settings...', 'Attempting camera initialization with compatibility mode');
+
+          if (scanner) {
+            try {
+              await scanner.stop();
+            } catch (e) {
+              console.log('Error stopping scanner during retry:', e);
+            }
+          }
+
+          scanner = new Html5Qrcode("reader");
+
+          // Device-specific relaxed configurations
+          let relaxedConfig;
+
+          if (deviceInfo.isIOS) {
+            relaxedConfig = {
+              fps: 5,
+              qrbox: { width: 250, height: 250 },
+              aspectRatio: 1.0,
+              videoConstraints: {
+                facingMode: "environment"
+                // Remove resolution constraints for iOS compatibility
+              }
+            };
+          } else if (deviceInfo.isAndroid) {
+            relaxedConfig = {
+              fps: deviceInfo.isAndroidChrome ? 10 : 8,
+              qrbox: { width: 250, height: 250 },
+              aspectRatio: 1.0,
+              experimentalFeatures: {
+                useBarCodeDetectorIfSupported: false // Disable for stability during retry
+              },
+              videoConstraints: {
+                facingMode: "environment",
+                // Minimal constraints for Android compatibility
+                width: { ideal: 640 },
+                height: { ideal: 480 }
+              }
+            };
+          } else {
+            // Generic fallback
+            relaxedConfig = {
+              fps: 8,
+              qrbox: { width: 250, height: 250 },
+              aspectRatio: 1.0,
+              videoConstraints: {
+                facingMode: "environment"
+              }
+            };
+          }
+
+          await scanner.start(
+            { facingMode: { ideal: "environment" } },
+            relaxedConfig,
+            onScanSuccess,
+            onScanError
+          );
+
+          isScanning = true;
+          console.log('Scanner started with relaxed constraints');
+
+          hideLoadingState();
+          showSuccessIndicator();
+
+        } catch (retryError) {
+          console.error('Retry failed:', retryError);
+
+          // Device-specific retry failure messages
+          let title = 'Retry Failed';
+          let message = 'Camera scanner could not be initialized even with relaxed settings. Please use manual entry.';
+
+          if (deviceInfo.isAndroidChrome && retryError.name === 'OverconstrainedError') {
+            title = 'Android Compatibility Issue';
+            message = 'This Android device\'s camera doesn\'t support the required settings for QR scanning.';
+          } else if (deviceInfo.isIOS && retryError.name === 'OverconstrainedError') {
+            title = 'iOS Compatibility Issue';
+            message = 'iOS camera constraints not supported on this device. Manual entry is recommended.';
+          } else if (retryError.name === 'NotAllowedError') {
+            title = 'Permission Still Denied';
+            message = 'Camera access is still denied. Please check your browser settings or use manual entry.';
+          }
+
+          showErrorState(title, message, 'generic');
+        }
+      }
+
+      // Stop scanner safely with enhanced resource cleanup
+      async function stopScanner() {
+        if (scanner && isScanning) {
+          const stopStartTime = performance.now();
+
+          try {
+            await scanner.stop();
+            isScanning = false;
+
+            // Enhanced resource cleanup
+            if (resourceManager.mediaStream) {
+              resourceManager.mediaStream.getTracks().forEach(track => {
+                track.stop();
+                console.log(`Stopped ${track.kind} track`);
+              });
+              resourceManager.mediaStream = null;
+            }
+
+            // Clean up video element reference
+            if (resourceManager.videoElement) {
+              resourceManager.videoElement.srcObject = null;
+              resourceManager.videoElement = null;
+            }
+
+            // Measure stop performance
+            measureScanPerformance('scanner_stop', stopStartTime);
+
+            console.log('Scanner stopped with resource cleanup');
+          } catch (error) {
+            console.error('Error stopping scanner:', error);
+            performanceMonitor.errorCounts.camera++;
+            isScanning = false;
+
+            // Force cleanup even if stop failed
+            try {
+              if (resourceManager.mediaStream) {
+                resourceManager.mediaStream.getTracks().forEach(track => track.stop());
+                resourceManager.mediaStream = null;
+              }
+            } catch (cleanupError) {
+              console.error('Force cleanup error:', cleanupError);
+            }
+          }
+        }
+      }
+
+      // Add visibility change handler for mobile browser background behavior
+      document.addEventListener('visibilitychange', function() {
+        if (scanner) {
+          if (document.hidden) {
+            // Page hidden, stop scanner to free camera resources
+            console.log('Page hidden, stopping scanner for', deviceInfo.isIOS ? 'iOS' : deviceInfo.isAndroid ? 'Android' : 'unknown device');
+            stopScanner();
+          } else {
+            // Page visible again, restart scanner if needed
+            const restartDelay = deviceInfo.isIOS ? 500 : deviceInfo.isAndroid ? 300 : 400;
+
+            setTimeout(() => {
+              if (!isScanning) {
+                console.log('Page visible, restarting scanner for', deviceInfo.isIOS ? 'iOS' : deviceInfo.isAndroid ? 'Android' : 'unknown device');
+                initScanner();
+              }
+            }, restartDelay);
+          }
+        }
+      });
+
+      // Android-specific: Handle page focus/blur for better camera resource management
+      if (deviceInfo.isAndroid) {
+        window.addEventListener('blur', function() {
+          if (scanner && isScanning) {
+            console.log('Android: Window lost focus, pausing scanner');
+            // Android Chrome might need explicit camera release when switching apps
+            setTimeout(() => {
+              if (document.hidden && isScanning) {
+                stopScanner();
+              }
+            }, 1000);
+          }
+        });
+
+        window.addEventListener('focus', function() {
+          if (scanner && !isScanning && !document.hidden) {
+            console.log('Android: Window gained focus, checking scanner state');
+            setTimeout(() => {
+              if (!isScanning && !document.hidden) {
+                initScanner();
+              }
+            }, 500);
+          }
+        });
+      }
+
+      // PWA-specific handling for both iOS and Android
+      if (deviceInfo.isPWA) {
+        // Handle PWA lifecycle events
+        window.addEventListener('beforeinstallprompt', function(e) {
+          console.log('PWA install prompt available');
+        });
+
+        // Handle PWA app state changes
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'PWA_STATE_CHANGE') {
+              console.log('PWA state changed:', event.data.state);
+              // Restart scanner if needed after PWA state change
+              if (event.data.state === 'active' && !isScanning) {
+                setTimeout(() => initScanner(), 1000);
+              }
+            }
+          });
+        }
+      }
+
+      // Enhanced cleanup when page unloads
+      window.addEventListener('beforeunload', function() {
+        try {
+          // Stop scanner
+          if (scanner) {
+            scanner.stop();
+          }
+
+          // Comprehensive resource cleanup
+          cleanupResources();
+
+          // Send performance metrics if available
+          if (navigator.sendBeacon && performanceMonitor.scanCount > 0) {
+            const metrics = getPerformanceMetrics();
+            navigator.sendBeacon('/api/performance-metrics', JSON.stringify({
+              session: metrics,
+              timestamp: Date.now(),
+              userAgent: navigator.userAgent,
+              deviceScore: performanceMonitor.deviceScore
+            }));
+          }
+
+        } catch (error) {
+          console.log('Enhanced cleanup error:', error);
+        }
+      });
+
+      // Handle successful scan with performance tracking
       async function onScanSuccess(decodedText) {
         if (!isScanning) return;
 
+        const scanStartTime = performance.now();
+
         // Prevent multiple scans
         isScanning = false;
+
+        // Update scan count for performance monitoring
+        performanceMonitor.scanCount++;
 
         // Haptic feedback
         if (navigator.vibrate) {
           navigator.vibrate(200);
         }
 
-        // Validate QR code
-        await validateTicket(decodedText);
+        // Validate QR code with performance tracking
+        try {
+          await validateTicket(decodedText);
+          measureScanPerformance('scan_success', scanStartTime);
+        } catch (error) {
+          performanceMonitor.errorCounts.validation++;
+          console.error('Validation error:', error);
+        }
 
-        // Resume scanning after delay
+        // Resume scanning after adaptive delay
+        const resumeDelay = performanceMonitor.isLowPowerMode ? 3000 : 2000;
         setTimeout(() => {
           isScanning = true;
-        }, 2000);
+        }, resumeDelay);
       }
 
       // Handle scan errors (ignore)
@@ -893,9 +2898,20 @@
         // Ignore scan errors
       }
 
-      // Validate ticket (QR code or JWT wallet token)
+      // Validate ticket (QR code or JWT wallet token) with caching
       async function validateTicket(token) {
+        const validationStartTime = performance.now();
+
         try {
+          // Check cache first for performance
+          const cachedResult = getCachedValidationResult(token);
+          if (cachedResult) {
+            console.log('Using cached validation result');
+            showResult(cachedResult.status, cachedResult.title, cachedResult.message);
+            measureScanPerformance('validation_cached', validationStartTime);
+            return;
+          }
+
           // Detect wallet tokens (JWT format)
           const isWalletToken = token.includes(".") && token.length > 100;
 
@@ -974,17 +2990,28 @@
               data.error || "This ticket cannot be validated",
             );
           }
+          // Measure successful validation performance
+          measureScanPerformance('validation_network', validationStartTime);
+
         } catch (error) {
           console.error("Validation error:", error);
+          performanceMonitor.errorCounts.network++;
 
           // Queue for offline sync
           stats.queued++;
           updateStats();
-          showResult(
-            "queued",
-            "Queued for Sync",
-            "No connection - check-in saved",
-          );
+          const result = {
+            status: "queued",
+            title: "Queued for Sync",
+            message: "No connection - check-in saved"
+          };
+          showResult(result.status, result.title, result.message);
+
+          // Cache the offline result briefly to prevent immediate retries
+          setCachedValidationResult(token, result);
+
+          // Measure error performance
+          measureScanPerformance('validation_error', validationStartTime);
         }
       }
 
@@ -1043,12 +3070,70 @@
         document.getElementById("manualTicketId").value = "";
       }
 
-      // Handle escape key to close manual input
+      // Enhanced keyboard navigation and accessibility
       document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && document.getElementById("manualInput").classList.contains("show")) {
-          hideManualInput();
+        // Escape key handling
+        if (e.key === 'Escape') {
+          if (document.getElementById("permissionModal").classList.contains("show")) {
+            e.preventDefault();
+            useManualMode(); // Escape from permission modal goes to manual mode
+          } else if (document.getElementById("manualInput").classList.contains("show")) {
+            e.preventDefault();
+            hideManualInput();
+          } else if (uiState.isError) {
+            e.preventDefault();
+            hideErrorState();
+          }
+        }
+
+        // Enter key handling for permission modal
+        if (e.key === 'Enter' && document.getElementById("permissionModal").classList.contains("show")) {
+          e.preventDefault();
+          handlePermissionRequest();
+        }
+
+        // Tab navigation for error state
+        if (e.key === 'Tab' && uiState.isError) {
+          const errorEl = document.getElementById('scannerError');
+          const focusableElements = errorEl.querySelectorAll('button:not([style*="display: none"])');
+          const firstElement = focusableElements[0];
+          const lastElement = focusableElements[focusableElements.length - 1];
+
+          if (e.shiftKey && document.activeElement === firstElement) {
+            e.preventDefault();
+            lastElement.focus();
+          } else if (!e.shiftKey && document.activeElement === lastElement) {
+            e.preventDefault();
+            firstElement.focus();
+          }
+        }
+
+        // Spacebar for retry (accessibility)
+        if (e.key === ' ' && uiState.isError && document.activeElement.id === 'retryCamera') {
+          e.preventDefault();
+          retryScanner();
         }
       });
+
+      // Add ARIA live region for screen readers
+      const ariaLiveRegion = document.createElement('div');
+      ariaLiveRegion.setAttribute('aria-live', 'polite');
+      ariaLiveRegion.setAttribute('aria-atomic', 'true');
+      ariaLiveRegion.style.position = 'absolute';
+      ariaLiveRegion.style.left = '-10000px';
+      ariaLiveRegion.style.width = '1px';
+      ariaLiveRegion.style.height = '1px';
+      ariaLiveRegion.style.overflow = 'hidden';
+      document.body.appendChild(ariaLiveRegion);
+
+      // Announce state changes to screen readers
+      function announceToScreenReader(message) {
+        ariaLiveRegion.textContent = message;
+        // Clear after a delay to allow for re-announcement of the same message
+        setTimeout(() => {
+          ariaLiveRegion.textContent = '';
+        }, 1000);
+      }
 
       // Submit manual ticket
       async function submitManualTicket() {
@@ -1381,6 +3466,67 @@
           window.location.href = '/admin/login';
         }
       }
+
+      // Performance debugging interface (available in console)
+      window.scannerPerformance = {
+        getMetrics: getPerformanceMetrics,
+        getDeviceScore: () => performanceMonitor.deviceScore,
+        getAdaptiveSettings: () => performanceMonitor.adaptiveSettings,
+        getCacheStats: () => ({
+          validationCache: networkCache.validationResults.size,
+          ticketCache: networkCache.ticketData.size,
+          cacheHitRate: performanceMonitor.cacheHits / (performanceMonitor.cacheHits + performanceMonitor.cacheMisses),
+          requestQueueLength: networkCache.requestQueue.length
+        }),
+        getMemoryStats: () => performanceMonitor.memoryUsage.slice(-5),
+        getErrorCounts: () => performanceMonitor.errorCounts,
+        getScanTimes: () => performanceMonitor.scanTimes.slice(-10),
+        isLowPowerMode: () => performanceMonitor.isLowPowerMode,
+        getBatteryInfo: () => performanceMonitor.batteryInfo,
+        clearCache: () => {
+          networkCache.validationResults.clear();
+          networkCache.ticketData.clear();
+          console.log('Caches cleared');
+        },
+        forceMemoryCleanup: () => {
+          performMemoryCleanup();
+          console.log('Memory cleanup forced');
+        },
+        enableLowPowerMode: () => {
+          enableLowPowerMode();
+          console.log('Low power mode enabled');
+        },
+        disableLowPowerMode: () => {
+          disableLowPowerMode();
+          console.log('Low power mode disabled');
+        },
+        restartScanner: () => {
+          restartScannerWithNewSettings();
+          console.log('Scanner restarted with new settings');
+        },
+        exportMetrics: () => {
+          const metrics = {
+            session: getPerformanceMetrics(),
+            deviceInfo: deviceInfo,
+            userAgent: navigator.userAgent,
+            timestamp: new Date().toISOString()
+          };
+          console.log('Performance metrics:', JSON.stringify(metrics, null, 2));
+          return metrics;
+        }
+      };
+
+      // Initialize performance monitoring on load
+      document.addEventListener('DOMContentLoaded', function() {
+        if (performanceMonitor.deviceScore === 0) {
+          initializePerformanceMonitoring();
+        }
+      });
+
+      // Log initial performance setup
+      console.log('Scanner Performance Optimization Loaded');
+      console.log('Available debugging: window.scannerPerformance');
+      console.log('Device detection:', deviceInfo);
 
       // Start app
       init();
