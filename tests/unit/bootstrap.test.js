@@ -22,6 +22,11 @@ import { createClient } from '@libsql/client';
 import fs from 'fs';
 import path from 'path';
 
+// Mock database client at the top level (before imports that use it)
+vi.mock('../../lib/database.js', () => ({
+  getDatabaseClient: vi.fn()
+}));
+
 // Import bootstrap system components
 import { BootstrapSystem } from '../../scripts/bootstrap-vercel.js';
 import {
@@ -44,6 +49,7 @@ import {
   withDatabaseHelpers,
   BOOTSTRAP_INTEGRITY_EXPECTATIONS
 } from '../../lib/bootstrap-database-helpers.js';
+import { getDatabaseClient } from '../../lib/database.js';
 
 // Test database setup
 let testDb;
@@ -538,25 +544,34 @@ describe('Bootstrap System - Database Operations', () => {
     // Create test database
     testDatabase = createClient({ url: ':memory:' });
 
-    // Mock the database client getter to return our test database
-    vi.doMock('../../lib/database.js', () => ({
-      getDatabaseClient: vi.fn().mockResolvedValue(testDatabase)
-    }));
+    // Configure the mock to return our test database
+    getDatabaseClient.mockResolvedValue(testDatabase);
   });
 
   beforeEach(async () => {
     // Create fresh database helpers for each test
     dbHelpers = createDatabaseHelpers();
+
+    // Manually set the database connection before init
+    dbHelpers.db = testDatabase;
+    dbHelpers.operationStats.startTime = Date.now();
+
+    // Initialize (this should now work with our mock)
     await dbHelpers.init();
 
-    // Create test tables
+    // Ensure the database is still connected after init
+    if (!dbHelpers.db) {
+      dbHelpers.db = testDatabase;
+    }
+
+    // Create test tables with production schema including CHECK constraints and generated columns
     await testDatabase.execute(`
       CREATE TABLE IF NOT EXISTS events (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         slug TEXT UNIQUE NOT NULL,
         name TEXT NOT NULL,
-        type TEXT NOT NULL,
-        status TEXT NOT NULL DEFAULT 'draft',
+        type TEXT NOT NULL CHECK(type IN ('festival', 'weekender', 'workshop', 'special')),
+        status TEXT NOT NULL DEFAULT 'draft' CHECK(status IN ('draft', 'upcoming', 'active', 'completed', 'cancelled')),
         description TEXT,
         venue_name TEXT,
         venue_address TEXT,
@@ -565,6 +580,7 @@ describe('Bootstrap System - Database Operations', () => {
         venue_zip TEXT,
         start_date DATE NOT NULL,
         end_date DATE NOT NULL,
+        year INTEGER GENERATED ALWAYS AS (CAST(strftime('%Y', start_date) AS INTEGER)) STORED,
         max_capacity INTEGER,
         early_bird_end_date DATE,
         regular_price_start_date DATE,
@@ -595,7 +611,7 @@ describe('Bootstrap System - Database Operations', () => {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
         user_email TEXT NOT NULL,
-        role TEXT DEFAULT 'viewer',
+        role TEXT DEFAULT 'viewer' CHECK(role IN ('viewer', 'manager', 'admin')),
         granted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         granted_by TEXT,
         UNIQUE(event_id, user_email)
@@ -617,11 +633,15 @@ describe('Bootstrap System - Database Operations', () => {
       await dbHelpers.cleanup();
     }
 
-    // Clear all tables
-    await testDatabase.execute('DELETE FROM tickets');
-    await testDatabase.execute('DELETE FROM event_access');
-    await testDatabase.execute('DELETE FROM event_settings');
-    await testDatabase.execute('DELETE FROM events');
+    // Clear all tables if they exist
+    try {
+      await testDatabase.execute('DELETE FROM tickets');
+      await testDatabase.execute('DELETE FROM event_access');
+      await testDatabase.execute('DELETE FROM event_settings');
+      await testDatabase.execute('DELETE FROM events');
+    } catch (e) {
+      // Tables might not exist in some test suites, ignore errors
+    }
   });
 
   afterAll(async () => {
@@ -845,6 +865,39 @@ describe('Bootstrap System - Database Operations', () => {
   });
 
   describe('Safe Transaction', () => {
+    beforeEach(async () => {
+      // Ensure tables exist for transaction tests
+      await testDatabase.execute('DROP TABLE IF EXISTS events');
+      await testDatabase.execute(`
+        CREATE TABLE events (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          slug TEXT UNIQUE NOT NULL,
+          name TEXT NOT NULL,
+          type TEXT NOT NULL CHECK(type IN ('festival', 'weekender', 'workshop', 'special')),
+          status TEXT NOT NULL DEFAULT 'draft' CHECK(status IN ('draft', 'upcoming', 'active', 'completed', 'cancelled')),
+          description TEXT,
+          venue_name TEXT,
+          venue_address TEXT,
+          venue_city TEXT DEFAULT 'Boulder',
+          venue_state TEXT DEFAULT 'CO',
+          venue_zip TEXT,
+          start_date DATE NOT NULL,
+          end_date DATE NOT NULL,
+          year INTEGER GENERATED ALWAYS AS (CAST(strftime('%Y', start_date) AS INTEGER)) STORED,
+          max_capacity INTEGER,
+          early_bird_end_date DATE,
+          regular_price_start_date DATE,
+          display_order INTEGER DEFAULT 0,
+          is_featured BOOLEAN DEFAULT FALSE,
+          is_visible BOOLEAN DEFAULT TRUE,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          created_by TEXT,
+          config TEXT
+        )
+      `);
+    });
+
     it('should execute transaction successfully', async () => {
       await dbHelpers.safeTransaction(async (transaction) => {
         await transaction.execute(
@@ -954,6 +1007,74 @@ describe('Bootstrap System - Database Operations', () => {
 
   describe('Integrity Verification', () => {
     beforeEach(async () => {
+      // Ensure tables exist for integrity verification tests
+      await testDatabase.execute('DROP TABLE IF EXISTS tickets');
+      await testDatabase.execute('DROP TABLE IF EXISTS event_access');
+      await testDatabase.execute('DROP TABLE IF EXISTS event_settings');
+      await testDatabase.execute('DROP TABLE IF EXISTS events');
+
+      await testDatabase.execute(`
+        CREATE TABLE events (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          slug TEXT UNIQUE NOT NULL,
+          name TEXT NOT NULL,
+          type TEXT NOT NULL CHECK(type IN ('festival', 'weekender', 'workshop', 'special')),
+          status TEXT NOT NULL DEFAULT 'draft' CHECK(status IN ('draft', 'upcoming', 'active', 'completed', 'cancelled')),
+          description TEXT,
+          venue_name TEXT,
+          venue_address TEXT,
+          venue_city TEXT DEFAULT 'Boulder',
+          venue_state TEXT DEFAULT 'CO',
+          venue_zip TEXT,
+          start_date DATE NOT NULL,
+          end_date DATE NOT NULL,
+          year INTEGER GENERATED ALWAYS AS (CAST(strftime('%Y', start_date) AS INTEGER)) STORED,
+          max_capacity INTEGER,
+          early_bird_end_date DATE,
+          regular_price_start_date DATE,
+          display_order INTEGER DEFAULT 0,
+          is_featured BOOLEAN DEFAULT FALSE,
+          is_visible BOOLEAN DEFAULT TRUE,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          created_by TEXT,
+          config TEXT
+        )
+      `);
+
+      await testDatabase.execute(`
+        CREATE TABLE event_settings (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+          key TEXT NOT NULL,
+          value TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(event_id, key)
+        )
+      `);
+
+      await testDatabase.execute(`
+        CREATE TABLE event_access (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+          user_email TEXT NOT NULL,
+          role TEXT DEFAULT 'viewer' CHECK(role IN ('viewer', 'manager', 'admin')),
+          granted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          granted_by TEXT,
+          UNIQUE(event_id, user_email)
+        )
+      `);
+
+      await testDatabase.execute(`
+        CREATE TABLE tickets (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+          ticket_code TEXT UNIQUE NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
       // Insert test data for integrity checks
       await testDatabase.execute({
         sql: 'INSERT INTO events (slug, name, type, status, start_date, end_date) VALUES (?, ?, ?, ?, ?, ?)',

@@ -1,0 +1,52 @@
+{
+  "version": "1.0",
+  "environment": "production",
+  "metadata": {
+    "created": "2025-01-20T00:00:00Z",
+    "description": "Production environment test data"
+  },
+  "events": [
+    {
+      "slug": "production-test-event",
+      "name": "Production Test Event",
+      "type": "festival",
+      "status": "upcoming",
+      "description": "Production test event",
+      "venue": {
+        "name": "Production Venue",
+        "address": "789 Production Blvd",
+        "city": "Boulder",
+        "state": "CO",
+        "zip": "80303"
+      },
+      "dates": {
+        "start": "2025-07-01",
+        "end": "2025-07-03",
+        "early_bird_end": "2025-05-01",
+        "regular_price_start": "2025-06-01"
+      },
+      "capacity": 200,
+      "display_order": 1,
+      "is_featured": true,
+      "is_visible": true,
+      "settings": {
+        "payment": {
+          "stripe_enabled": true,
+          "processing_fee_percentage": 2.9,
+          "processing_fee_fixed": 0.30
+        },
+        "registration": {
+          "deadline_days": 7,
+          "reminder_days": [30, 14, 7, 3, 1],
+          "allow_transfer": true
+        }
+      }
+    }
+  ],
+  "admin_access": {
+    "email": "${ADMIN_EMAIL}",
+    "role": "admin",
+    "events": ["*"],
+    "granted_by": "bootstrap"
+  }
+}
