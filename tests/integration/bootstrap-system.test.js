@@ -65,6 +65,11 @@ describe('Bootstrap System Integration Tests', () => {
     if (fs.existsSync(testConfigDir)) {
       fs.rmSync(testConfigDir, { recursive: true });
     }
+    // Also clean up bootstrap directory
+    const bootstrapDir = path.join(path.dirname(testConfigDir), 'bootstrap');
+    if (fs.existsSync(bootstrapDir)) {
+      fs.rmSync(bootstrapDir, { recursive: true });
+    }
 
     // Reset database instance
     await resetDatabaseInstance();
@@ -373,7 +378,7 @@ describe('Bootstrap System Integration Tests', () => {
       // Create large configuration
       const largeConfig = {
         version: '1.0',
-        environment: 'development',
+        environment: 'large-test',
         events: [],
         defaults: {
           settings: {
@@ -407,8 +412,12 @@ describe('Bootstrap System Integration Tests', () => {
         });
       }
 
-      // Write large config
-      const largeConfigPath = path.join(testConfigDir, 'large-test.json');
+      // Write large config to bootstrap directory (where loadConfig expects it)
+      const bootstrapDir = path.join(path.dirname(testConfigDir), 'bootstrap');
+      if (!fs.existsSync(bootstrapDir)) {
+        fs.mkdirSync(bootstrapDir, { recursive: true });
+      }
+      const largeConfigPath = path.join(bootstrapDir, 'large-test.json');
       fs.writeFileSync(largeConfigPath, JSON.stringify(largeConfig, null, 2));
 
       // Test performance
@@ -454,7 +463,7 @@ describe('Bootstrap System Integration Tests', () => {
     });
 
     it('should maintain performance with repeated idempotent runs', async () => {
-      const bootstrap = new BootstrapSystem();
+      let bootstrap = new BootstrapSystem();
 
       // Override config loading
       bootstrap.loadConfig = async function() {
@@ -580,7 +589,13 @@ describe('Bootstrap System Integration Tests', () => {
         const bootstrap = new BootstrapSystem();
         bootstrap.environment = 'invalid';
         bootstrap.loadConfig = async function() {
-          this.config = await loadConfig('invalid', testConfigDir);
+          // Create invalid config that matches the environment
+          this.config = {
+            version: '1.0',
+            environment: 'invalid',
+            events: [],
+            metadata: { created: '2025-01-01T00:00:00Z' }
+          };
         };
 
         const exitCode = await bootstrap.run();

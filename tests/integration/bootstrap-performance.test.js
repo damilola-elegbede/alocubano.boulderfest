@@ -85,6 +85,11 @@ describe('Bootstrap System Performance Tests', () => {
     if (fs.existsSync(testConfigDir)) {
       fs.rmSync(testConfigDir, { recursive: true });
     }
+    // Also clean up bootstrap directory
+    const bootstrapDir = path.join(path.dirname(testConfigDir), 'bootstrap');
+    if (fs.existsSync(bootstrapDir)) {
+      fs.rmSync(bootstrapDir, { recursive: true });
+    }
 
     await resetDatabaseInstance();
   });
@@ -647,6 +652,12 @@ describe('Bootstrap System Performance Tests', () => {
   }
 
   async function createPerformanceConfigurations() {
+    // Create bootstrap directory for configs (loadConfig expects ../bootstrap/[env].json)
+    const bootstrapDir = path.join(path.dirname(testConfigDir), 'bootstrap');
+    if (!fs.existsSync(bootstrapDir)) {
+      fs.mkdirSync(bootstrapDir, { recursive: true });
+    }
+
     // Small configuration (5 events)
     const smallConfig = createBaseConfig('small', 5);
 
@@ -656,10 +667,10 @@ describe('Bootstrap System Performance Tests', () => {
     // Large configuration (200 events)
     const largeConfig = createBaseConfig('large', 200);
 
-    // Write configurations
-    fs.writeFileSync(path.join(testConfigDir, 'small.json'), JSON.stringify(smallConfig, null, 2));
-    fs.writeFileSync(path.join(testConfigDir, 'medium.json'), JSON.stringify(mediumConfig, null, 2));
-    fs.writeFileSync(path.join(testConfigDir, 'large.json'), JSON.stringify(largeConfig, null, 2));
+    // Write configurations to bootstrap directory
+    fs.writeFileSync(path.join(bootstrapDir, 'small.json'), JSON.stringify(smallConfig, null, 2));
+    fs.writeFileSync(path.join(bootstrapDir, 'medium.json'), JSON.stringify(mediumConfig, null, 2));
+    fs.writeFileSync(path.join(bootstrapDir, 'large.json'), JSON.stringify(largeConfig, null, 2));
   }
 
   function createBaseConfig(environment, eventCount) {
