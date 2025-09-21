@@ -16,12 +16,11 @@
  * - Database connections: Properly managed and cleaned up
  */
 
-import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll, vi } from 'vitest';
-import { createClient } from '@libsql/client';
+import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll } from 'vitest';
 import { BootstrapSystem } from '../../scripts/bootstrap-vercel.js';
 import { createDatabaseHelpers, withDatabaseHelpers } from '../../lib/bootstrap-database-helpers.js';
 import { getDatabaseClient, resetDatabaseInstance } from '../../lib/database.js';
-import { loadConfig, flattenSettings } from '../../lib/bootstrap-helpers.js';
+import { flattenSettings } from '../../lib/bootstrap-helpers.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -126,7 +125,12 @@ describe('Bootstrap System Performance Tests', () => {
 
       const bootstrap = new BootstrapSystem();
       bootstrap.loadConfig = async function() {
-        this.config = await loadConfig('small', testConfigDir);
+        // Load config directly from fixture files
+        const bootstrapDir = path.join(path.dirname(testConfigDir), 'bootstrap');
+        const configPath = path.join(bootstrapDir, 'small.json');
+        const configContent = fs.readFileSync(configPath, 'utf8');
+        this.config = JSON.parse(configContent);
+
         if (this.config.admin_access?.email === '${ADMIN_EMAIL}') {
           this.config.admin_access.email = process.env.ADMIN_EMAIL;
         }
@@ -159,7 +163,12 @@ describe('Bootstrap System Performance Tests', () => {
 
         const bootstrap = new BootstrapSystem();
         bootstrap.loadConfig = async function() {
-          this.config = await loadConfig('small', testConfigDir);
+          // Load config directly from fixture files
+          const bootstrapDir = path.join(path.dirname(testConfigDir), 'bootstrap');
+          const configPath = path.join(bootstrapDir, 'small.json');
+          const configContent = fs.readFileSync(configPath, 'utf8');
+          this.config = JSON.parse(configContent);
+
           if (this.config.admin_access?.email === '${ADMIN_EMAIL}') {
             this.config.admin_access.email = process.env.ADMIN_EMAIL;
           }
@@ -192,7 +201,12 @@ describe('Bootstrap System Performance Tests', () => {
 
       const bootstrap = new BootstrapSystem();
       bootstrap.loadConfig = async function() {
-        this.config = await loadConfig('medium', testConfigDir);
+        // Load config directly from fixture files
+        const bootstrapDir = path.join(path.dirname(testConfigDir), 'bootstrap');
+        const configPath = path.join(bootstrapDir, 'medium.json');
+        const configContent = fs.readFileSync(configPath, 'utf8');
+        this.config = JSON.parse(configContent);
+
         if (this.config.admin_access?.email === '${ADMIN_EMAIL}') {
           this.config.admin_access.email = process.env.ADMIN_EMAIL;
         }
@@ -272,7 +286,12 @@ describe('Bootstrap System Performance Tests', () => {
 
       const bootstrap = new BootstrapSystem();
       bootstrap.loadConfig = async function() {
-        this.config = await loadConfig('large', testConfigDir);
+        // Load config directly from fixture files
+        const bootstrapDir = path.join(path.dirname(testConfigDir), 'bootstrap');
+        const configPath = path.join(bootstrapDir, 'large.json');
+        const configContent = fs.readFileSync(configPath, 'utf8');
+        this.config = JSON.parse(configContent);
+
         if (this.config.admin_access?.email === '${ADMIN_EMAIL}') {
           this.config.admin_access.email = process.env.ADMIN_EMAIL;
         }
@@ -388,12 +407,12 @@ describe('Bootstrap System Performance Tests', () => {
         global.gc();
       }
 
-      // Memory should be released after operation
-      setTimeout(() => {
-        const finalMemory = process.memoryUsage();
-        const finalIncrease = finalMemory.heapUsed - initialMemory.heapUsed;
-        expect(finalIncrease).toBeLessThan(MEMORY_LIMITS.operation / 2);
-      }, 1000);
+      // Wait for garbage collection to complete and check memory release
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const finalMemory = process.memoryUsage();
+      const finalIncrease = finalMemory.heapUsed - initialMemory.heapUsed;
+      expect(finalIncrease).toBeLessThan(MEMORY_LIMITS.operation / 2);
     }, PERFORMANCE_TIMEOUTS.large);
 
     it('should handle settings flattening performance', () => {

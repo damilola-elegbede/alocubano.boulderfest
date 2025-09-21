@@ -101,9 +101,8 @@ class BootstrapTestSuite {
     const helpers = createDatabaseHelpers();
     await helpers.init();
 
-    // Create a test table
-    const db = await getDatabaseClient();
-    await db.execute(`
+    // Create a test table using helpers.db to ensure same connection
+    await helpers.db.execute(`
       CREATE TEMPORARY TABLE test_batch (
         id INTEGER PRIMARY KEY,
         name TEXT NOT NULL,
@@ -143,9 +142,8 @@ class BootstrapTestSuite {
     const helpers = createDatabaseHelpers();
     await helpers.init();
 
-    // Create a test table
-    const db = await getDatabaseClient();
-    await db.execute(`
+    // Create a test table using helpers.db to ensure same connection
+    await helpers.db.execute(`
       CREATE TEMPORARY TABLE test_transaction (
         id INTEGER PRIMARY KEY,
         name TEXT NOT NULL
@@ -157,8 +155,8 @@ class BootstrapTestSuite {
       await transaction.execute('INSERT INTO test_transaction (name) VALUES (?)', ['Success']);
     });
 
-    // Verify data was committed
-    const result = await db.execute('SELECT COUNT(*) as count FROM test_transaction');
+    // Verify data was committed using helpers.db
+    const result = await helpers.db.execute('SELECT COUNT(*) as count FROM test_transaction');
     if (result.rows[0].count !== 1) {
       throw new Error('Transaction was not committed properly');
     }
@@ -173,9 +171,8 @@ class BootstrapTestSuite {
     const helpers = createDatabaseHelpers();
     await helpers.init();
 
-    // Create a test table
-    const db = await getDatabaseClient();
-    await db.execute(`
+    // Create a test table using helpers.db to ensure same connection
+    await helpers.db.execute(`
       CREATE TEMPORARY TABLE test_upsert (
         id INTEGER PRIMARY KEY,
         slug TEXT UNIQUE NOT NULL,
@@ -217,9 +214,8 @@ class BootstrapTestSuite {
     const helpers = createDatabaseHelpers();
     await helpers.init();
 
-    // Create test tables that match our expectations
-    const db = await getDatabaseClient();
-    await db.execute(`
+    // Create test tables that match our expectations using helpers.db
+    await helpers.db.execute(`
       CREATE TEMPORARY TABLE events (
         id INTEGER PRIMARY KEY,
         slug TEXT UNIQUE NOT NULL,
@@ -227,7 +223,7 @@ class BootstrapTestSuite {
       )
     `);
 
-    await db.execute(`
+    await helpers.db.execute(`
       CREATE TEMPORARY TABLE event_settings (
         id INTEGER PRIMARY KEY,
         event_id INTEGER REFERENCES events(id),
@@ -236,13 +232,13 @@ class BootstrapTestSuite {
       )
     `);
 
-    // Insert test data
-    await db.execute('INSERT INTO events (slug, name) VALUES (?, ?)', ['test-event', 'Test Event']);
-    const eventResult = await db.execute('SELECT id FROM events WHERE slug = ?', ['test-event']);
+    // Insert test data using helpers.db
+    await helpers.db.execute('INSERT INTO events (slug, name) VALUES (?, ?)', ['test-event', 'Test Event']);
+    const eventResult = await helpers.db.execute('SELECT id FROM events WHERE slug = ?', ['test-event']);
     const eventId = eventResult.rows[0].id;
 
     for (let i = 0; i < 5; i++) {
-      await db.execute('INSERT INTO event_settings (event_id, key, value) VALUES (?, ?, ?)',
+      await helpers.db.execute('INSERT INTO event_settings (event_id, key, value) VALUES (?, ?, ?)',
         [eventId, `setting_${i}`, `value_${i}`]);
     }
 
@@ -402,9 +398,8 @@ class BootstrapTestSuite {
     const helpers = createDatabaseHelpers();
     await helpers.init();
 
-    // Create a table that will cause constraint violations
-    const db = await getDatabaseClient();
-    await db.execute(`
+    // Create a table that will cause constraint violations using helpers.db
+    await helpers.db.execute(`
       CREATE TEMPORARY TABLE test_recovery (
         id INTEGER PRIMARY KEY,
         slug TEXT UNIQUE NOT NULL,
@@ -412,8 +407,8 @@ class BootstrapTestSuite {
       )
     `);
 
-    // Insert initial data
-    await db.execute('INSERT INTO test_recovery (slug, name) VALUES (?, ?)', ['existing', 'Existing Item']);
+    // Insert initial data using helpers.db
+    await helpers.db.execute('INSERT INTO test_recovery (slug, name) VALUES (?, ?)', ['existing', 'Existing Item']);
 
     // Test batch insert with conflicts (should recover gracefully)
     const testData = [

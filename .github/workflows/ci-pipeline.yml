@@ -2,7 +2,7 @@
 name: 🚀 CI/CD Pipeline
 
 # Comprehensive CI/CD pipeline that orchestrates all quality checks and tests
-# with proper matrix configuration, robust test parsing, and output aggregation
+# with proper matrix configuration, robust test parsing, and artifact-based output aggregation
 
 on:
   pull_request:
@@ -145,13 +145,6 @@ jobs:
       TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL || '' }}
       TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN || '' }}
 
-    outputs:
-      test-results-${{ matrix.node-version }}: ${{ steps.test.outputs.test-results }}
-      performance-ms-${{ matrix.node-version }}: ${{ steps.test.outputs.performance-ms }}
-      total-tests-${{ matrix.node-version }}: ${{ steps.test.outputs.total-tests }}
-      passing-tests-${{ matrix.node-version }}: ${{ steps.test.outputs.passing-tests }}
-      failing-tests-${{ matrix.node-version }}: ${{ steps.test.outputs.failing-tests }}
-
     steps:
       - name: 📥 Checkout Code
         uses: actions/checkout@v4
@@ -205,6 +198,15 @@ jobs:
           end_time=$(date +%s%3N)
           duration=$((end_time - start_time))
 
+          # Create machine-readable results file for artifact parsing
+          cat > unit-test-results.json << JSON_EOF
+          {
+            "test_exit_code": $test_exit_code,
+            "duration_ms": $duration,
+            "node_version": "${{ matrix.node-version }}"
+          }
+          JSON_EOF
+
           # FIXED: Improved test count parsing logic with multiple fallbacks
           # Method 1: Look for "Tests X passed" pattern
           passing_tests=$(grep -E "Tests[[:space:]]+[0-9]+[[:space:]]+passed" unit-test-output.log | sed -E "s/.*Tests[[:space:]]+([0-9]+)[[:space:]]+passed.*/\1/" | head -1 || echo "0")
@@ -224,12 +226,17 @@ jobs:
           # FIXED: Calculate total_tests as sum of passing_tests + failing_tests
           total_tests=$((passing_tests + failing_tests))
 
-          # Set outputs for downstream jobs
-          echo "test-results=$test_exit_code" >> $GITHUB_OUTPUT
-          echo "performance-ms=$duration" >> $GITHUB_OUTPUT
-          echo "total-tests=$total_tests" >> $GITHUB_OUTPUT
-          echo "passing-tests=$passing_tests" >> $GITHUB_OUTPUT
-          echo "failing-tests=$failing_tests" >> $GITHUB_OUTPUT
+          # Update machine-readable results
+          cat > unit-test-results.json << JSON_EOF
+          {
+            "test_exit_code": $test_exit_code,
+            "duration_ms": $duration,
+            "node_version": "${{ matrix.node-version }}",
+            "total_tests": $total_tests,
+            "passing_tests": $passing_tests,
+            "failing_tests": $failing_tests
+          }
+          JSON_EOF
 
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "📊 Unit Test Results (Node ${{ matrix.node-version }})"
@@ -252,7 +259,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: unit-test-results-node-${{ matrix.node-version }}
-          path: unit-test-output.log
+          path: |
+            unit-test-output.log
+            unit-test-results.json
           retention-days: 7
 
   integration-tests:
@@ -286,12 +295,6 @@ jobs:
       # Database configuration for integration testing
       TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL || '' }}
       TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN || '' }}
-
-    outputs:
-      test-results-${{ matrix.node-version }}: ${{ steps.test.outputs.test-results }}
-      total-tests-${{ matrix.node-version }}: ${{ steps.test.outputs.total-tests }}
-      passing-tests-${{ matrix.node-version }}: ${{ steps.test.outputs.passing-tests }}
-      failing-tests-${{ matrix.node-version }}: ${{ steps.test.outputs.failing-tests }}
 
     steps:
       - name: 📥 Checkout Code
@@ -342,10 +345,17 @@ jobs:
 
           total_tests=$((passing_tests + failing_tests))
 
-          echo "test-results=$test_exit_code" >> $GITHUB_OUTPUT
-          echo "total-tests=$total_tests" >> $GITHUB_OUTPUT
-          echo "passing-tests=$passing_tests" >> $GITHUB_OUTPUT
-          echo "failing-tests=$failing_tests" >> $GITHUB_OUTPUT
+          # Create machine-readable results file for artifact parsing
+          cat > integration-test-results.json << JSON_EOF
+          {
+            "test_exit_code": $test_exit_code,
+            "duration_ms": $duration,
+            "node_version": "${{ matrix.node-version }}",
+            "total_tests": $total_tests,
+            "passing_tests": $passing_tests,
+            "failing_tests": $failing_tests
+          }
+          JSON_EOF
 
           echo "📊 Integration Test Results: $passing_tests passed, $failing_tests failed, $total_tests total"
 
@@ -356,7 +366,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: integration-test-results-node-${{ matrix.node-version }}
-          path: integration-test-output.log
+          path: |
+            integration-test-output.log
+            integration-test-results.json
           retention-days: 7
 
   # ==============================================================================
@@ -377,14 +389,20 @@ jobs:
       performance-summary: ${{ steps.aggregate.outputs.performance-summary }}
 
     steps:
-      - name: 📊 Aggregate Results
+      - name: 📥 Download All Test Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "*-test-results-node-*"
+          merge-multiple: true
+
+      - name: 📊 Aggregate Results from Artifacts
         id: aggregate
         run: |
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "📊 Aggregating Test Results Across Matrix"
+          echo "📊 Aggregating Test Results from Artifacts"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-          # FIXED: Proper output aggregation for matrix jobs
+          # FIXED: Use artifact-based aggregation instead of matrix output access
           MATRIX='${{ needs.setup.outputs.node-matrix }}'
           echo "🎯 Processing Node.js matrix: $MATRIX"
 
@@ -399,49 +417,128 @@ jobs:
           integration_failures=0
           performance_issues=0
 
+          # List available artifacts for debugging
+          echo "📁 Available artifacts:"
+          ls -la *-test-results.json 2>/dev/null || echo "No JSON result files found"
+
           # Process each Node.js version in the matrix
           echo "$MATRIX" | jq -r '.[]' | while read -r version; do
-            version_clean=$(echo "$version" | tr -d '.')
-
             echo "📋 Processing Node.js $version results..."
 
-            # Unit test results
-            unit_result="${{ needs.unit-tests.outputs[format('test-results-{0}', version)] }}"
-            unit_total="${{ needs.unit-tests.outputs[format('total-tests-{0}', version)] }}"
-            unit_passed="${{ needs.unit-tests.outputs[format('passing-tests-{0}', version)] }}"
-            unit_failed="${{ needs.unit-tests.outputs[format('failing-tests-{0}', version)] }}"
-            unit_perf="${{ needs.unit-tests.outputs[format('performance-ms-{0}', version)] }}"
+            # FIXED: Parse unit test results from artifact files
+            unit_results_file="unit-test-results.json"
+            integration_results_file="integration-test-results.json"
 
-            # Integration test results
-            int_result="${{ needs.integration-tests.outputs[format('test-results-{0}', version)] }}"
-            int_total="${{ needs.integration-tests.outputs[format('total-tests-{0}', version)] }}"
-            int_passed="${{ needs.integration-tests.outputs[format('passing-tests-{0}', version)] }}"
-            int_failed="${{ needs.integration-tests.outputs[format('failing-tests-{0}', version)] }}"
+            # Process unit test results if file exists
+            if [ -f "$unit_results_file" ]; then
+              # Extract results from JSON (with fallbacks for missing files per version)
+              unit_result=$(jq -r --arg v "$version" 'select(.node_version == $v) | .test_exit_code // 1' "$unit_results_file" 2>/dev/null || echo "1")
+              unit_total=$(jq -r --arg v "$version" 'select(.node_version == $v) | .total_tests // 0' "$unit_results_file" 2>/dev/null || echo "0")
+              unit_passed=$(jq -r --arg v "$version" 'select(.node_version == $v) | .passing_tests // 0' "$unit_results_file" 2>/dev/null || echo "0")
+              unit_failed=$(jq -r --arg v "$version" 'select(.node_version == $v) | .failing_tests // 0' "$unit_results_file" 2>/dev/null || echo "0")
+              unit_perf=$(jq -r --arg v "$version" 'select(.node_version == $v) | .duration_ms // 0' "$unit_results_file" 2>/dev/null || echo "0")
+            else
+              echo "⚠️  Unit test results file not found for version $version"
+              unit_result=1
+              unit_total=0
+              unit_passed=0
+              unit_failed=0
+              unit_perf=0
+            fi
+
+            # Process integration test results if file exists
+            if [ -f "$integration_results_file" ]; then
+              int_result=$(jq -r --arg v "$version" 'select(.node_version == $v) | .test_exit_code // 1' "$integration_results_file" 2>/dev/null || echo "1")
+              int_total=$(jq -r --arg v "$version" 'select(.node_version == $v) | .total_tests // 0' "$integration_results_file" 2>/dev/null || echo "0")
+              int_passed=$(jq -r --arg v "$version" 'select(.node_version == $v) | .passing_tests // 0' "$integration_results_file" 2>/dev/null || echo "0")
+              int_failed=$(jq -r --arg v "$version" 'select(.node_version == $v) | .failing_tests // 0' "$integration_results_file" 2>/dev/null || echo "0")
+            else
+              echo "⚠️  Integration test results file not found for version $version"
+              int_result=1
+              int_total=0
+              int_passed=0
+              int_failed=0
+            fi
 
             echo "  📊 Unit: $unit_passed/$unit_total passed (exit: $unit_result, ${unit_perf}ms)"
             echo "  📊 Integration: $int_passed/$int_total passed (exit: $int_result)"
 
             # Accumulate totals
-            total_unit_tests=$((total_unit_tests + ${unit_total:-0}))
-            total_integration_tests=$((total_integration_tests + ${int_total:-0}))
-            total_unit_passed=$((total_unit_passed + ${unit_passed:-0}))
-            total_integration_passed=$((total_integration_passed + ${int_passed:-0}))
-            total_unit_failed=$((total_unit_failed + ${unit_failed:-0}))
-            total_integration_failed=$((total_integration_failed + ${int_failed:-0}))
+            total_unit_tests=$((total_unit_tests + unit_total))
+            total_integration_tests=$((total_integration_tests + int_total))
+            total_unit_passed=$((total_unit_passed + unit_passed))
+            total_integration_passed=$((total_integration_passed + int_passed))
+            total_unit_failed=$((total_unit_failed + unit_failed))
+            total_integration_failed=$((total_integration_failed + int_failed))
 
             # Count failures
-            if [ "${unit_result:-1}" != "0" ]; then
+            if [ "$unit_result" != "0" ]; then
               unit_failures=$((unit_failures + 1))
             fi
-            if [ "${int_result:-1}" != "0" ]; then
+            if [ "$int_result" != "0" ]; then
               integration_failures=$((integration_failures + 1))
             fi
 
             # Check performance
-            if [ "${unit_perf:-0}" -gt "${PHASE3_PERFORMANCE_TARGET_MS:-2000}" ]; then
+            if [ "$unit_perf" -gt "${PHASE3_PERFORMANCE_TARGET_MS:-2000}" ]; then
               performance_issues=$((performance_issues + 1))
             fi
           done
+
+          # Handle artifact-based aggregation using temporary files to overcome subshell limitations
+          temp_dir=$(mktemp -d)
+          
+          # Process all available result files
+          for results_file in *-test-results.json; do
+            if [ -f "$results_file" ]; then
+              node_version=$(jq -r '.node_version // "unknown"' "$results_file" 2>/dev/null || echo "unknown")
+              
+              if [[ "$results_file" == unit-* ]]; then
+                # Unit test results
+                unit_result=$(jq -r '.test_exit_code // 1' "$results_file" 2>/dev/null || echo "1")
+                unit_total=$(jq -r '.total_tests // 0' "$results_file" 2>/dev/null || echo "0")
+                unit_passed=$(jq -r '.passing_tests // 0' "$results_file" 2>/dev/null || echo "0")
+                unit_failed=$(jq -r '.failing_tests // 0' "$results_file" 2>/dev/null || echo "0")
+                unit_perf=$(jq -r '.duration_ms // 0' "$results_file" 2>/dev/null || echo "0")
+                
+                echo "$unit_total" >> "$temp_dir/unit_total"
+                echo "$unit_passed" >> "$temp_dir/unit_passed"
+                echo "$unit_failed" >> "$temp_dir/unit_failed"
+                [ "$unit_result" != "0" ] && echo "1" >> "$temp_dir/unit_failures"
+                [ "$unit_perf" -gt "${PHASE3_PERFORMANCE_TARGET_MS:-2000}" ] && echo "1" >> "$temp_dir/perf_issues"
+                
+              elif [[ "$results_file" == integration-* ]]; then
+                # Integration test results
+                int_result=$(jq -r '.test_exit_code // 1' "$results_file" 2>/dev/null || echo "1")
+                int_total=$(jq -r '.total_tests // 0' "$results_file" 2>/dev/null || echo "0")
+                int_passed=$(jq -r '.passing_tests // 0' "$results_file" 2>/dev/null || echo "0")
+                int_failed=$(jq -r '.failing_tests // 0' "$results_file" 2>/dev/null || echo "0")
+                
+                echo "$int_total" >> "$temp_dir/int_total"
+                echo "$int_passed" >> "$temp_dir/int_passed"
+                echo "$int_failed" >> "$temp_dir/int_failed"
+                [ "$int_result" != "0" ] && echo "1" >> "$temp_dir/int_failures"
+              fi
+              
+              echo "  📊 Processed $results_file for Node.js $node_version"
+            fi
+          done
+
+          # Calculate final totals
+          total_unit_tests=$(cat "$temp_dir/unit_total" 2>/dev/null | awk '{sum += $1} END {print sum+0}')
+          total_unit_passed=$(cat "$temp_dir/unit_passed" 2>/dev/null | awk '{sum += $1} END {print sum+0}')
+          total_unit_failed=$(cat "$temp_dir/unit_failed" 2>/dev/null | awk '{sum += $1} END {print sum+0}')
+          unit_failures=$(cat "$temp_dir/unit_failures" 2>/dev/null | wc -l | tr -d ' ')
+          
+          total_integration_tests=$(cat "$temp_dir/int_total" 2>/dev/null | awk '{sum += $1} END {print sum+0}')
+          total_integration_passed=$(cat "$temp_dir/int_passed" 2>/dev/null | awk '{sum += $1} END {print sum+0}')
+          total_integration_failed=$(cat "$temp_dir/int_failed" 2>/dev/null | awk '{sum += $1} END {print sum+0}')
+          integration_failures=$(cat "$temp_dir/int_failures" 2>/dev/null | wc -l | tr -d ' ')
+          
+          performance_issues=$(cat "$temp_dir/perf_issues" 2>/dev/null | wc -l | tr -d ' ')
+
+          # Clean up temporary files
+          rm -rf "$temp_dir"
 
           # Determine overall status
           if [ "$unit_failures" -eq 0 ] && [ "$integration_failures" -eq 0 ]; then
@@ -456,9 +553,9 @@ jobs:
           echo "📈 Final Aggregated Results"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "$status_icon Overall Status: $overall_status"
-          echo "🧪 Unit Tests: $total_unit_passed/$total_unit_tests passed ($unit_failures failures)"
-          echo "🔗 Integration Tests: $total_integration_passed/$total_integration_tests passed ($integration_failures failures)"
-          echo "⚡ Performance Issues: $performance_issues"
+          echo "🧪 Unit Tests: $total_unit_passed/$total_unit_tests passed ($unit_failures node version failures)"
+          echo "🔗 Integration Tests: $total_integration_passed/$total_integration_tests passed ($integration_failures node version failures)"
+          echo "⚡ Performance Issues: $performance_issues node versions exceeded targets"
 
           # Set outputs
           echo "overall-status=$overall_status" >> $GITHUB_OUTPUT
@@ -522,7 +619,7 @@ jobs:
             - **✅ Fixed Matrix Configuration**: Proper \`fail-fast: false\` across all workflows
             - **✅ Robust Test Parsing**: Multiple fallback patterns for test result extraction
             - **✅ Environment Variable Fallbacks**: Comprehensive default values for all configurations
-            - **✅ Output Aggregation**: Proper matrix job result consolidation for downstream reporting
+            - **✅ Artifact-Based Aggregation**: Fixed matrix job result consolidation using artifacts
             - **✅ Performance Monitoring**: Built-in performance target validation
             - **✅ Comprehensive Error Handling**: Graceful failure handling with detailed reporting
 

@@ -62,7 +62,7 @@ class BootstrapSystem {
     try {
       this.db = await getDatabaseClient();
       this.dbHelpers = createDatabaseHelpers();
-      await this.dbHelpers.init();
+      await this.dbHelpers.init(this.db);
 
       // Test connection
       const testResult = await this.db.execute("SELECT 1 as test");
