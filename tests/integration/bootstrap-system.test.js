@@ -41,8 +41,9 @@ describe('Bootstrap System Integration Tests', () => {
       TURSO_AUTH_TOKEN: process.env.TURSO_AUTH_TOKEN
     };
 
-    // Create test configuration directory
-    testConfigDir = path.join(__dirname, '../fixtures/bootstrap-configs');
+    // Create test configuration directory with the expected structure
+    const fixturesDir = path.join(__dirname, '../fixtures');
+    testConfigDir = path.join(fixturesDir, 'bootstrap');
     if (!fs.existsSync(testConfigDir)) {
       fs.mkdirSync(testConfigDir, { recursive: true });
     }
@@ -113,7 +114,11 @@ describe('Bootstrap System Integration Tests', () => {
         this.logger.info(`   Environment: ${this.environment}`);
 
         try {
-          this.config = await loadConfig(this.environment, testConfigDir);
+          // loadConfig expects baseDir/../bootstrap/[env].json
+          // We have fixtures/bootstrap/[env].json
+          // So we need to pass fixtures/dummy as baseDir
+          const dummyDir = path.join(__dirname, '../fixtures', 'dummy');
+          this.config = await loadConfig(this.environment, dummyDir);
 
           // Substitute environment variables
           if (this.config.admin_access?.email === '${ADMIN_EMAIL}') {

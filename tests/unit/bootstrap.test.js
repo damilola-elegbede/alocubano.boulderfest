@@ -1196,10 +1196,12 @@ describe('Bootstrap System - Integration Tests', () => {
         getDatabaseClient: vi.fn().mockResolvedValue(testDatabase)
       }));
 
-      // Create test configuration directory
-      integrationConfigDir = path.join(process.cwd(), '.tmp', 'integration-configs', `test-${Date.now()}`);
-      if (!fs.existsSync(integrationConfigDir)) {
-        fs.mkdirSync(integrationConfigDir, { recursive: true });
+      // Create test configuration directory with proper structure
+      const testId = `test-${Date.now()}`;
+      integrationConfigDir = path.join(process.cwd(), '.tmp', 'integration-configs', testId);
+      const bootstrapDir = path.join(process.cwd(), '.tmp', 'integration-configs', 'bootstrap');
+      if (!fs.existsSync(bootstrapDir)) {
+        fs.mkdirSync(bootstrapDir, { recursive: true });
       }
 
       // Create test configuration
@@ -1267,8 +1269,9 @@ describe('Bootstrap System - Integration Tests', () => {
         }
       };
 
+      // Save config to the bootstrap directory where loadConfig expects it
       fs.writeFileSync(
-        path.join(integrationConfigDir, 'development.json'),
+        path.join(bootstrapDir, 'development.json'),
         JSON.stringify(testConfig, null, 2)
       );
 
