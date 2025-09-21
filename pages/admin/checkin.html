@@ -6,7 +6,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, user-scalable=no"
     />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta
       name="apple-mobile-web-app-status-bar-style"
       content="black-translucent"
@@ -15,6 +15,9 @@
     <title>Check-in Scanner - A Lo Cubano</title>
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/images/icons/icon-192x192.png" />
+
+    <!-- Theme Manager - loaded early to prevent FOUC -->
+    <script type="module" src="/js/theme-manager.js"></script>
 
     <!-- CSS System -->
     <link rel="stylesheet" href="/css/base.css" />
@@ -1264,12 +1267,10 @@
       </div>
     </div>
 
-    <!-- Theme Manager -->
-    <script type="module" src="/js/theme-manager.js"></script>
     <!-- Event Selector Component -->
     <script src="/js/admin-event-selector.js"></script>
     <!-- QR Code Scanner -->
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="/js/vendor/html5-qrcode.min.js" integrity="sha384-c9d8RFSL+u3exBOJ4Yp3HUJXS4znl9f+z66d1y54ig+ea249SpqR+w1wyvXz/lk+"></script>
     <script>
       let scanner = null;
       let sessionCount = 0;
@@ -3184,7 +3185,7 @@
         try {
           // Get selected event ID from event selector
           const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
-          const eventParam = selectedEventId ? `?eventId=${selectedEventId}` : '';
+          const eventParam = selectedEventId ? `?event_id=${selectedEventId}` : '';
 
           const response = await fetch(`/api/admin/dashboard${eventParam}`, {
             credentials: "include"
