@@ -16,10 +16,17 @@
   --theme-toggle-shadow: var(--shadow-md);
   --theme-toggle-shadow-active: var(--shadow-lg);
   --theme-toggle-transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  
+
   /* Icon sizing */
   --theme-toggle-icon-size: 20px;
   --theme-toggle-button-size: 44px;
+
+  /* Icon filter values as CSS variables for maintainability */
+  --theme-toggle-filter-light-default: brightness(0.4);
+  --theme-toggle-filter-light-hover: brightness(0.6);
+  --theme-toggle-filter-dark-invert: invert(1);
+  --theme-toggle-filter-dark-brightness: brightness(0.8);
+  --theme-toggle-filter-dark-hover: brightness(1);
   
   /* Colors and opacity for elegance */
   --theme-toggle-bg: rgba(255, 255, 255, 0.85);
@@ -148,13 +155,30 @@
    ACTIVE STATE STYLING
    ================================================================= */
 
-/* Active state removed - no visual distinction for selected option */
+/* Visible selected state for accessibility and user feedback */
 .theme-option.active {
-  /* No special styling */
+  /* Add visual distinction for selected option */
+  background-color: var(--color-primary-light);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 0 0 2px var(--color-primary);
+  transform: scale(1.05);
+}
+
+.theme-option.active::before {
+  /* Make active icon more prominent */
+  filter: var(--theme-toggle-filter-light-default) !important;
+  opacity: 1;
 }
 
 [data-theme="dark"] .theme-option.active {
-  /* No special styling */
+  /* Dark mode active state */
+  background-color: rgba(91, 107, 181, 0.2);
+  box-shadow: 0 0 0 2px var(--color-blue);
+}
+
+[data-theme="dark"] .theme-option.active::before {
+  /* Dark mode active icon */
+  filter: var(--theme-toggle-filter-dark-invert) var(--theme-toggle-filter-dark-hover) !important;
 }
 
 /* =================================================================
@@ -218,19 +242,19 @@
 /* Light icon - sun with black stroke for light mode visibility */
 .theme-option[data-theme="light"]::before {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23000000' stroke-width='1.5'%3E%3Ccircle cx='12' cy='12' r='5'/%3E%3Cline x1='12' y1='1' x2='12' y2='3'/%3E%3Cline x1='12' y1='21' x2='12' y2='23'/%3E%3Cline x1='4.22' y1='4.22' x2='5.64' y2='5.64'/%3E%3Cline x1='18.36' y1='18.36' x2='19.78' y2='19.78'/%3E%3Cline x1='1' y1='12' x2='3' y2='12'/%3E%3Cline x1='21' y1='12' x2='23' y2='12'/%3E%3Cline x1='4.22' y1='19.78' x2='5.64' y2='18.36'/%3E%3Cline x1='18.36' y1='5.64' x2='19.78' y2='4.22'/%3E%3C/svg%3E");
-  filter: brightness(0.4);
+  filter: var(--theme-toggle-filter-light-default);
 }
 
 /* Dark icon - moon with black stroke for light mode visibility */
 .theme-option[data-theme="dark"]::before {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23000000' stroke-width='1.5'%3E%3Cpath d='M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z'/%3E%3C/svg%3E");
-  filter: brightness(0.4);
+  filter: var(--theme-toggle-filter-light-default);
 }
 
 /* Dark theme icon adjustments - invert black to white */
 [data-theme="dark"] .theme-option[data-theme="light"]::before,
 [data-theme="dark"] .theme-option[data-theme="dark"]::before {
-  filter: invert(1) brightness(0.8);
+  filter: var(--theme-toggle-filter-dark-invert) var(--theme-toggle-filter-dark-brightness);
 }
 
 /* Active state icon colors */
@@ -239,12 +263,12 @@
 /* Hover state icon brightness */
 .theme-option:hover::before {
   /* Increase brightness on hover in light mode */
-  filter: brightness(0.6);
+  filter: var(--theme-toggle-filter-light-hover);
 }
 
 [data-theme="dark"] .theme-option:hover::before {
   /* Maintain invert and increase brightness in dark mode */
-  filter: invert(1) brightness(1);
+  filter: var(--theme-toggle-filter-dark-invert) var(--theme-toggle-filter-dark-hover);
 }
 
 /* SVG elements are handled via pseudo-elements */
@@ -563,18 +587,18 @@
 
 .footer-theme-toggle .theme-option[data-theme="light"]::before {
   /* Sun icon using same style as main toggle */
-  filter: brightness(0.6);
+  filter: var(--theme-toggle-filter-light-hover);
 }
 
 .footer-theme-toggle .theme-option[data-theme="dark"]::before {
   /* Moon icon using same style as main toggle */
-  filter: brightness(0.6);
+  filter: var(--theme-toggle-filter-light-hover);
 }
 
 /* Dark theme footer icon adjustments */
 [data-theme="dark"] .footer-theme-toggle .theme-option[data-theme="light"]::before,
 [data-theme="dark"] .footer-theme-toggle .theme-option[data-theme="dark"]::before {
-  filter: invert(1) brightness(0.7);
+  filter: var(--theme-toggle-filter-dark-invert) brightness(0.7);
 }
 
 /* Hover state for footer icons */

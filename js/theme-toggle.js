@@ -348,6 +348,15 @@ function updateToggleState(preference) {
             if (button.getAttribute('aria-checked') !== String(isActive)) {
                 button.setAttribute('aria-checked', isActive);
             }
+
+            // Add visual active state for accessibility
+            if (isActive) {
+                button.classList.add('active');
+                button.setAttribute('aria-pressed', 'true');
+            } else {
+                button.classList.remove('active');
+                button.setAttribute('aria-pressed', 'false');
+            }
         });
 
         performance.mark(PERF_MARKS.UPDATE_END);
