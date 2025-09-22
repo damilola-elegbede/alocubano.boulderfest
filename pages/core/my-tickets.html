@@ -402,7 +402,9 @@
       </div>
     </div>
 
-    <script>
+    <script type="module">
+      import { setSafeTextContent, displayMessage, createElementWithContent, escapeHtml } from '/js/lib/dom-security.js';
+
       // Check for token or email in URL parameters
       const urlParams = new URLSearchParams(window.location.search);
       const token = urlParams.get("token");
@@ -430,9 +432,12 @@
         const messageContainer = document.getElementById("messageContainer");
         const ticketContainer = document.getElementById("ticketContainer");
 
-        // Show loading
-        ticketContainer.innerHTML =
-          '<div class="loading">Loading your tickets...</div>';
+        // Show loading with secure DOM manipulation
+        ticketContainer.innerHTML = '';
+        const loadingElement = createElementWithContent('div', 'Loading your tickets...', {
+          className: 'loading'
+        });
+        ticketContainer.appendChild(loadingElement);
         messageContainer.innerHTML = "";
 
         try {
@@ -446,11 +451,7 @@
           }
 
           if (data.tickets.length === 0) {
-            messageContainer.innerHTML = `
-                        <div class="message info">
-                            No tickets found. Please contact support if you believe this is an error.
-                        </div>
-                    `;
+            displayMessage(messageContainer, 'No tickets found. Please contact support if you believe this is an error.', 'info');
             ticketContainer.innerHTML = "";
             return;
           }

@@ -1,4 +1,5 @@
 /**
+import { setSecureCorsHeaders } from '../lib/cors-config.js';
  * Google Drive Service Health Check API
  * Provides health status and metrics for the Google Drive integration
  */
@@ -7,7 +8,7 @@ import { getGoogleDriveService, getGoogleDriveMetrics } from "../lib/google-driv
 
 export default async function handler(req, res) {
   // Set CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  setSecureCorsHeaders(req, res);
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 

@@ -557,7 +557,7 @@ describe('Theme System Comprehensive Tests', () => {
         const result = initializeThemeToggle('#non-existent-container');
 
         expect(result).toBeNull();
-        expect(consoleSpy).toHaveBeenCalledWith('Theme toggle: Container not found');
+        expect(consoleSpy).toHaveBeenCalledWith('[ThemeToggle]', 'Theme toggle: Container not found');
 
         consoleSpy.mockRestore();
       });

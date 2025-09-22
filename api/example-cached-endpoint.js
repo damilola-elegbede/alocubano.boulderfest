@@ -1,4 +1,5 @@
 /**
+import { setSecureCorsHeaders } from '../lib/cors-config.js';
  * Example Cached API Endpoint
  * Demonstrates integration of the multi-layer cache system with Vercel serverless functions
  */
@@ -10,7 +11,7 @@ const cacheService = getCacheService();
 
 export default async function handler(req, res) {
   // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  setSecureCorsHeaders(req, res);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 

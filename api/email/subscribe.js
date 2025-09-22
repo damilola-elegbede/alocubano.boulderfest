@@ -4,6 +4,7 @@
  */
 
 import { getEmailSubscriberService } from "../../lib/email-subscriber-service.js";
+import { setSecureCorsHeaders } from '../../lib/cors-config.js';
 
 // Rate limiting storage (in production, use Redis or similar)
 const rateLimitMap = new Map();
@@ -107,10 +108,11 @@ function getClientIp(req) {
  * Main handler function
  */
 export default async function handler(req, res) {
-  // Set CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  // Set secure CORS headers
+  setSecureCorsHeaders(req, res, {
+    allowedMethods: ['POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'X-Requested-With']
+  });
 
   // Handle preflight request
   if (req.method === 'OPTIONS') {

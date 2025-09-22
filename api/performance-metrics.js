@@ -1,4 +1,5 @@
 /**
+import { setSecureCorsHeaders } from '../lib/cors-config.js';
  * Performance Metrics API Endpoint
  * Collects, processes, and stores performance metrics from client applications
  *
@@ -235,7 +236,7 @@ async function storeMetrics(processedData) {
  */
 export default async function handler(req, res) {
   // Set CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  setSecureCorsHeaders(req, res);
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 

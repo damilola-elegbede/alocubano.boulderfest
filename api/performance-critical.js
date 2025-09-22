@@ -1,4 +1,5 @@
 /**
+import { setSecureCorsHeaders } from '../lib/cors-config.js';
  * Critical Performance Metrics API
  * Handles high-priority performance alerts and critical threshold breaches
  */
@@ -20,7 +21,7 @@ export default async function handler(req, res) {
       res.setHeader('Access-Control-Allow-Origin', origin);
     }
   } else {
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    setSecureCorsHeaders(req, res);
   }
 
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
