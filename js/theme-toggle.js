@@ -192,11 +192,11 @@ function createToggleHTML() {
     return `
         <div class="theme-toggle" role="radiogroup" aria-label="Theme selection">
             ${Object.entries(THEME_OPTIONS)
-                .filter(([key, value]) => value !== 'system') // Exclude system option
+                .filter(([key, value]) => value !== 'system') // Exclude system option - only show light/dark
                 .map(([key, value]) => `
                 <button
                     type="button"
-                    class="theme-toggle__option"
+                    class="theme-toggle__option theme-option"
                     data-theme="${value}"
                     role="radio"
                     aria-checked="false"
@@ -336,7 +336,7 @@ function updateToggleState(preference) {
     if (!cachedToggleElement) return;
 
     if (!cachedButtons) {
-        cachedButtons = cachedToggleElement.querySelectorAll('.theme-toggle__option');
+        cachedButtons = cachedToggleElement.querySelectorAll('.theme-toggle__option, .theme-option');
     }
 
     // Batch DOM updates using RAF for smooth performance
@@ -373,7 +373,7 @@ function updateToggleState(preference) {
 function handleThemeClick(event) {
     performance.mark(PERF_MARKS.TOGGLE_START);
 
-    const button = event.target.closest('.theme-toggle__option');
+    const button = event.target.closest('.theme-toggle__option, .theme-option');
     if (!button) return;
 
     const newPreference = button.dataset.theme;
@@ -427,7 +427,7 @@ function handleKeyDown(event) {
     event.preventDefault();
 
     const toggle = event.target.closest('.theme-toggle');
-    const buttons = Array.from(toggle.querySelectorAll('.theme-toggle__option'));
+    const buttons = Array.from(toggle.querySelectorAll('.theme-toggle__option, .theme-option'));
     const currentIndex = buttons.findIndex(btn => btn === event.target);
 
     let newIndex;
