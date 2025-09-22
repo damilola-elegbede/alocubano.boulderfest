@@ -555,10 +555,10 @@
   outline-offset: 0;
 }
 
-/* Enhanced icon visibility for footer context - just show sun and moon icons */
+/* Enhanced icon visibility for footer context - show all three icons */
 .footer-theme-toggle .theme-option[data-theme="system"] {
-  /* Hide system icon in footer */
-  display: none;
+  /* Show system icon in footer for consistency */
+  display: flex;
 }
 
 .footer-theme-toggle .theme-option[data-theme="light"]::before {

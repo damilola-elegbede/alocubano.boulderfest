@@ -502,9 +502,9 @@ describe('Theme System Comprehensive Tests', () => {
         expect(result.element.id).toBe('theme-toggle');
         expect(result.element.querySelector('.theme-toggle')).toBeTruthy();
 
-        // Should have two buttons (system option removed)
+        // Should have three buttons (system, light, dark)
         const buttons = result.element.querySelectorAll('.theme-toggle__option');
-        expect(buttons).toHaveLength(2);
+        expect(buttons).toHaveLength(3);
 
         // If we want to test it in DOM, we need to add it manually
         document.body.appendChild(result.element);
