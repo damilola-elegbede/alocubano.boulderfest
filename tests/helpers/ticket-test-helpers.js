@@ -40,8 +40,8 @@ export async function createTestTicket(ticketData) {
     const insertResult = await client.execute(`
       INSERT INTO transactions (
         transaction_id, type, status, amount_cents, currency,
-        customer_email, customer_name, is_test
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        customer_email, customer_name, order_data, is_test
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       transactionId,
       'purchase',
@@ -50,6 +50,7 @@ export async function createTestTicket(ticketData) {
       'USD',
       attendeeEmail,
       attendeeFirstName && attendeeLastName ? `${attendeeFirstName} ${attendeeLastName}` : null,
+      JSON.stringify({ test: true, ticketType, eventId }), // order_data
       1 // is_test
     ]);
 
