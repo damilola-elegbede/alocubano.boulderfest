@@ -33,7 +33,8 @@ const TOGGLE_ID = 'theme-toggle';
 // Performance optimization: Cache DOM queries and debounce operations
 let cachedToggleElement = null;
 let cachedButtons = null;
-let debounceTimeout = null;
+let storageTimeout = null;
+let eventTimeout = null;
 const DEBOUNCE_DELAY = 50; // ms
 
 // Performance monitoring
@@ -108,8 +109,8 @@ function setThemePreference(theme) {
     }
 
     // Debounce localStorage writes to prevent excessive I/O
-    clearTimeout(debounceTimeout);
-    debounceTimeout = setTimeout(() => {
+    clearTimeout(storageTimeout);
+    storageTimeout = setTimeout(() => {
         localStorage.setItem(LOCAL_STORAGE_KEY, theme);
     }, DEBOUNCE_DELAY);
 }
@@ -192,7 +193,6 @@ function createToggleHTML() {
     return `
         <div class="theme-toggle" role="radiogroup" aria-label="Theme selection">
             ${Object.entries(THEME_OPTIONS)
-                .filter(([key, value]) => value !== 'system') // Exclude system option - only show light/dark
                 .map(([key, value]) => `
                 <button
                     type="button"
@@ -379,8 +379,8 @@ function handleThemeClick(event) {
     const newPreference = button.dataset.theme;
 
     // Prevent rapid clicking
-    if (debounceTimeout) {
-        clearTimeout(debounceTimeout);
+    if (eventTimeout) {
+        clearTimeout(eventTimeout);
     }
 
     // Update preference and apply theme
@@ -389,7 +389,7 @@ function handleThemeClick(event) {
     updateToggleState(newPreference);
 
     // Emit custom event for other components with debouncing
-    debounceTimeout = setTimeout(() => {
+    eventTimeout = setTimeout(() => {
         const customEvent = new CustomEvent('themepreferencechange', {
             detail: {
                 preference: newPreference,
