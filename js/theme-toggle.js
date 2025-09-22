@@ -33,7 +33,8 @@ const TOGGLE_ID = 'theme-toggle';
 // Performance optimization: Cache DOM queries and debounce operations
 let cachedToggleElement = null;
 let cachedButtons = null;
-let debounceTimeout = null;
+let storageTimeout = null;
+let eventTimeout = null;
 const DEBOUNCE_DELAY = 50; // ms
 
 // Performance monitoring
@@ -108,8 +109,8 @@ function setThemePreference(theme) {
     }
 
     // Debounce localStorage writes to prevent excessive I/O
-    clearTimeout(debounceTimeout);
-    debounceTimeout = setTimeout(() => {
+    clearTimeout(storageTimeout);
+    storageTimeout = setTimeout(() => {
         localStorage.setItem(LOCAL_STORAGE_KEY, theme);
     }, DEBOUNCE_DELAY);
 }
@@ -192,11 +193,10 @@ function createToggleHTML() {
     return `
         <div class="theme-toggle" role="radiogroup" aria-label="Theme selection">
             ${Object.entries(THEME_OPTIONS)
-                .filter(([key, value]) => value !== 'system') // Exclude system option
                 .map(([key, value]) => `
                 <button
                     type="button"
-                    class="theme-toggle__option"
+                    class="theme-toggle__option theme-option"
                     data-theme="${value}"
                     role="radio"
                     aria-checked="false"
@@ -336,7 +336,7 @@ function updateToggleState(preference) {
     if (!cachedToggleElement) return;
 
     if (!cachedButtons) {
-        cachedButtons = cachedToggleElement.querySelectorAll('.theme-toggle__option');
+        cachedButtons = cachedToggleElement.querySelectorAll('.theme-toggle__option, .theme-option');
     }
 
     // Batch DOM updates using RAF for smooth performance
@@ -347,6 +347,15 @@ function updateToggleState(preference) {
             // Only update if state actually changed
             if (button.getAttribute('aria-checked') !== String(isActive)) {
                 button.setAttribute('aria-checked', isActive);
+            }
+
+            // Add visual active state for accessibility
+            if (isActive) {
+                button.classList.add('active');
+                button.setAttribute('aria-pressed', 'true');
+            } else {
+                button.classList.remove('active');
+                button.setAttribute('aria-pressed', 'false');
             }
         });
 
@@ -373,14 +382,14 @@ function updateToggleState(preference) {
 function handleThemeClick(event) {
     performance.mark(PERF_MARKS.TOGGLE_START);
 
-    const button = event.target.closest('.theme-toggle__option');
+    const button = event.target.closest('.theme-toggle__option, .theme-option');
     if (!button) return;
 
     const newPreference = button.dataset.theme;
 
     // Prevent rapid clicking
-    if (debounceTimeout) {
-        clearTimeout(debounceTimeout);
+    if (eventTimeout) {
+        clearTimeout(eventTimeout);
     }
 
     // Update preference and apply theme
@@ -389,7 +398,7 @@ function handleThemeClick(event) {
     updateToggleState(newPreference);
 
     // Emit custom event for other components with debouncing
-    debounceTimeout = setTimeout(() => {
+    eventTimeout = setTimeout(() => {
         const customEvent = new CustomEvent('themepreferencechange', {
             detail: {
                 preference: newPreference,
@@ -427,7 +436,9 @@ function handleKeyDown(event) {
     event.preventDefault();
 
     const toggle = event.target.closest('.theme-toggle');
-    const buttons = Array.from(toggle.querySelectorAll('.theme-toggle__option'));
+    if (!toggle) return; // Add null guard for safety
+
+    const buttons = Array.from(toggle.querySelectorAll('.theme-toggle__option, .theme-option'));
     const currentIndex = buttons.findIndex(btn => btn === event.target);
 
     let newIndex;
@@ -576,7 +587,7 @@ function setPreference(preference) {
 /**
  * Destroy theme toggle (cleanup)
  *
- * Removes the theme toggle from DOM and cleans up associated styles.
+ * Removes the theme toggle from DOM.
  * Useful for single-page applications or dynamic content management.
  */
 function destroyThemeToggle() {
@@ -584,11 +595,7 @@ function destroyThemeToggle() {
     if (toggle) {
         toggle.remove();
     }
-
-    const styles = document.getElementById('theme-toggle-styles');
-    if (styles) {
-        styles.remove();
-    }
+    // Note: Styles are now managed via external CSS file, no cleanup needed
 }
 
 // Export API

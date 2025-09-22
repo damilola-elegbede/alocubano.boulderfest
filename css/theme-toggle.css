@@ -16,10 +16,17 @@
   --theme-toggle-shadow: var(--shadow-md);
   --theme-toggle-shadow-active: var(--shadow-lg);
   --theme-toggle-transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  
+
   /* Icon sizing */
   --theme-toggle-icon-size: 20px;
-  --theme-toggle-button-size: 38px;
+  --theme-toggle-button-size: 44px;
+
+  /* Icon filter values as CSS variables for maintainability */
+  --theme-toggle-filter-light-default: brightness(0.4);
+  --theme-toggle-filter-light-hover: brightness(0.6);
+  --theme-toggle-filter-dark-invert: invert(1);
+  --theme-toggle-filter-dark-brightness: brightness(0.8);
+  --theme-toggle-filter-dark-hover: brightness(1);
   
   /* Colors and opacity for elegance */
   --theme-toggle-bg: rgba(255, 255, 255, 0.85);
@@ -67,38 +74,24 @@
   top: var(--theme-toggle-top);
   right: var(--theme-toggle-right);
   z-index: var(--theme-toggle-z-index);
-  
-  /* Elegant segmented control */
+
+  /* Minimal container - just for positioning */
   display: inline-flex;
-  width: var(--theme-toggle-width);
-  height: var(--theme-toggle-height);
-  padding: var(--theme-toggle-padding);
-  
-  /* Beautiful background with Cuban warmth and subtle gradient */
-  background: linear-gradient(135deg,
-    var(--theme-toggle-bg) 0%,
-    var(--theme-toggle-bg) 100%);
-  border: 1px solid var(--theme-toggle-border);
-  border-radius: var(--theme-toggle-border-radius);
-  
-  /* Glass morphism effect */
-  backdrop-filter: blur(var(--theme-toggle-backdrop-blur));
-  -webkit-backdrop-filter: blur(var(--theme-toggle-backdrop-blur));
-  
-  /* Elegant shadow with subtle Cuban warmth */
-  box-shadow: var(--theme-toggle-shadow), var(--theme-toggle-glow);
+  gap: var(--space-md);
+
+  /* Remove all container styling */
+  background: transparent;
+  border: none;
+  padding: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 
   /* Smooth transitions */
   transition: var(--theme-toggle-transition);
 
   /* Accessibility */
-  overflow: hidden;
   user-select: none;
-}
-
-.theme-toggle:hover {
-  box-shadow: var(--theme-toggle-shadow-active), var(--theme-toggle-glow-active);
-  transform: translateY(-1px);
 }
 
 /* =================================================================
@@ -106,63 +99,86 @@
    ================================================================= */
 
 .theme-option {
-  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  
-  /* Sizing for perfect touch targets */
+
+  /* Sizing for touch targets */
   min-width: var(--theme-toggle-button-size);
   height: var(--theme-toggle-button-size);
-  
-  /* Clean button reset */
+
+  /* No background or border - just the icon */
   background: transparent;
   border: none;
-  border-radius: calc(var(--theme-toggle-border-radius) - 2px);
-  
+  padding: 0;
+
   /* Typography */
   color: var(--theme-toggle-text);
   font-family: var(--font-sans);
-  
+
   /* Smooth interactions */
   cursor: pointer;
   transition: var(--theme-toggle-transition);
-  
+
   /* Touch optimization */
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
-  
+
   /* Icon container properties */
   position: relative;
-  overflow: hidden;
 }
 
 .theme-option:focus {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: none;
+  /* Add subtle opacity change for accessibility */
+  opacity: 0.8;
+}
+
+.theme-option:focus-visible {
+  /* Show very subtle outline only for keyboard navigation */
+  outline: none;
+  /* Use opacity change instead of outline for cleaner look */
+  opacity: 0.7;
 }
 
 .theme-option:hover {
-  /* Very subtle hover effect */
-  opacity: 0.8;
+  /* Scale up icon slightly on hover */
+  transform: scale(1.1);
 }
 
 [data-theme="dark"] .theme-option:hover {
-  /* Very subtle hover effect */
-  opacity: 0.8;
+  /* Scale up icon slightly on hover */
+  transform: scale(1.1);
 }
 
 /* =================================================================
    ACTIVE STATE STYLING
    ================================================================= */
 
-/* Active state removed - no visual distinction for selected option */
+/* Visible selected state for accessibility and user feedback */
 .theme-option.active {
-  /* No special styling */
+  /* Add visual distinction for selected option */
+  background-color: var(--color-primary-light);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 0 0 2px var(--color-primary);
+  transform: scale(1.05);
+}
+
+.theme-option.active::before {
+  /* Make active icon more prominent */
+  filter: var(--theme-toggle-filter-light-default) !important;
+  opacity: 1;
 }
 
 [data-theme="dark"] .theme-option.active {
-  /* No special styling */
+  /* Dark mode active state */
+  background-color: rgba(91, 107, 181, 0.2);
+  box-shadow: 0 0 0 2px var(--color-blue);
+}
+
+[data-theme="dark"] .theme-option.active::before {
+  /* Dark mode active icon */
+  filter: var(--theme-toggle-filter-dark-invert) var(--theme-toggle-filter-dark-hover) !important;
 }
 
 /* =================================================================
@@ -223,14 +239,22 @@
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23666666' stroke-width='1.5'%3E%3Crect x='2' y='3' width='20' height='14' rx='2' ry='2'/%3E%3Cline x1='8' y1='21' x2='16' y2='21'/%3E%3Cline x1='12' y1='17' x2='12' y2='21'/%3E%3C/svg%3E");
 }
 
-/* Light icon - sun */
+/* Light icon - sun with black stroke for light mode visibility */
 .theme-option[data-theme="light"]::before {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23666666' stroke-width='1.5'%3E%3Ccircle cx='12' cy='12' r='5'/%3E%3Cline x1='12' y1='1' x2='12' y2='3'/%3E%3Cline x1='12' y1='21' x2='12' y2='23'/%3E%3Cline x1='4.22' y1='4.22' x2='5.64' y2='5.64'/%3E%3Cline x1='18.36' y1='18.36' x2='19.78' y2='19.78'/%3E%3Cline x1='1' y1='12' x2='3' y2='12'/%3E%3Cline x1='21' y1='12' x2='23' y2='12'/%3E%3Cline x1='4.22' y1='19.78' x2='5.64' y2='18.36'/%3E%3Cline x1='18.36' y1='5.64' x2='19.78' y2='4.22'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23000000' stroke-width='1.5'%3E%3Ccircle cx='12' cy='12' r='5'/%3E%3Cline x1='12' y1='1' x2='12' y2='3'/%3E%3Cline x1='12' y1='21' x2='12' y2='23'/%3E%3Cline x1='4.22' y1='4.22' x2='5.64' y2='5.64'/%3E%3Cline x1='18.36' y1='18.36' x2='19.78' y2='19.78'/%3E%3Cline x1='1' y1='12' x2='3' y2='12'/%3E%3Cline x1='21' y1='12' x2='23' y2='12'/%3E%3Cline x1='4.22' y1='19.78' x2='5.64' y2='18.36'/%3E%3Cline x1='18.36' y1='5.64' x2='19.78' y2='4.22'/%3E%3C/svg%3E");
+  filter: var(--theme-toggle-filter-light-default);
 }
 
-/* Dark icon - moon */
+/* Dark icon - moon with black stroke for light mode visibility */
 .theme-option[data-theme="dark"]::before {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23666666' stroke-width='1.5'%3E%3Cpath d='M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23000000' stroke-width='1.5'%3E%3Cpath d='M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z'/%3E%3C/svg%3E");
+  filter: var(--theme-toggle-filter-light-default);
+}
+
+/* Dark theme icon adjustments - invert black to white */
+[data-theme="dark"] .theme-option[data-theme="light"]::before,
+[data-theme="dark"] .theme-option[data-theme="dark"]::before {
+  filter: var(--theme-toggle-filter-dark-invert) var(--theme-toggle-filter-dark-brightness);
 }
 
 /* Active state icon colors */
@@ -238,13 +262,21 @@
 
 /* Hover state icon brightness */
 .theme-option:hover::before {
-  /* Subtle brightness on hover */
-  filter: brightness(1.1);
+  /* Increase brightness on hover in light mode */
+  filter: var(--theme-toggle-filter-light-hover);
 }
 
-/* Hide any child SVG elements since we're using pseudo-elements */
+[data-theme="dark"] .theme-option:hover::before {
+  /* Maintain invert and increase brightness in dark mode */
+  filter: var(--theme-toggle-filter-dark-invert) var(--theme-toggle-filter-dark-hover);
+}
+
+/* SVG elements are handled via pseudo-elements */
 .theme-option svg {
-  display: none;
+  /* Keep SVG in DOM for accessibility but visually hide via size */
+  width: 0;
+  height: 0;
+  overflow: hidden;
 }
 
 /* =================================================================
@@ -295,20 +327,20 @@
 
 @media (prefers-contrast: high) {
   .theme-toggle {
-    background: var(--color-surface);
-    border: 2px solid var(--color-text-primary);
+    background: transparent;
+    border: none;
     box-shadow: none;
   }
-  
+
   .theme-option {
     color: var(--color-text-primary);
-    border: 1px solid transparent;
+    border: none;
   }
-  
+
   /* Active state removed for high contrast mode */
-  
+
   .theme-option:focus {
-    border: 2px solid var(--color-primary);
+    border: none;
     outline: none;
   }
 }
@@ -453,9 +485,9 @@
 
 /* Focus visible improvements */
 .theme-option:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-  box-shadow: 0 0 0 4px rgba(91, 107, 181, 0.3);
+  outline: none;
+  outline-offset: 0;
+  box-shadow: none;
 }
 
 /* =================================================================
@@ -543,24 +575,30 @@
 
 /* Focus states for accessibility in footer */
 .footer-theme-toggle .theme-option:focus {
-  outline: 2px solid currentColor;
-  outline-offset: 2px;
+  outline: none;
+  outline-offset: 0;
 }
 
-/* Enhanced icon visibility for footer context - just show sun and moon icons */
+/* Enhanced icon visibility for footer context - show all three icons */
 .footer-theme-toggle .theme-option[data-theme="system"] {
-  /* Hide system icon in footer */
-  display: none;
+  /* Show system icon in footer for consistency */
+  display: flex;
 }
 
 .footer-theme-toggle .theme-option[data-theme="light"]::before {
-  /* Sun icon with good visibility */
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23cccccc' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='5'/%3E%3Cline x1='12' y1='1' x2='12' y2='3'/%3E%3Cline x1='12' y1='21' x2='12' y2='23'/%3E%3Cline x1='4.22' y1='4.22' x2='5.64' y2='5.64'/%3E%3Cline x1='18.36' y1='18.36' x2='19.78' y2='19.78'/%3E%3Cline x1='1' y1='12' x2='3' y2='12'/%3E%3Cline x1='21' y1='12' x2='23' y2='12'/%3E%3Cline x1='4.22' y1='19.78' x2='5.64' y2='18.36'/%3E%3Cline x1='18.36' y1='5.64' x2='19.78' y2='4.22'/%3E%3C/svg%3E");
+  /* Sun icon using same style as main toggle */
+  filter: var(--theme-toggle-filter-light-hover);
 }
 
 .footer-theme-toggle .theme-option[data-theme="dark"]::before {
-  /* Moon icon with good visibility */
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23cccccc' stroke-width='2'%3E%3Cpath d='M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z'/%3E%3C/svg%3E");
+  /* Moon icon using same style as main toggle */
+  filter: var(--theme-toggle-filter-light-hover);
+}
+
+/* Dark theme footer icon adjustments */
+[data-theme="dark"] .footer-theme-toggle .theme-option[data-theme="light"]::before,
+[data-theme="dark"] .footer-theme-toggle .theme-option[data-theme="dark"]::before {
+  filter: var(--theme-toggle-filter-dark-invert) brightness(0.7);
 }
 
 /* Hover state for footer icons */
