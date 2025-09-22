@@ -40,10 +40,11 @@ permissions:
 env:
   NODE_ENV: test
   CI: true
+  NODE_VERSION: "20.19.5"
   NODE_OPTIONS: "--max-old-space-size=4096"
+  npm_config_build_from_source: "false"
   # Environment variable fallbacks for robust CI execution
   NGROK_SKIP_DOWNLOAD: ${{ vars.NGROK_SKIP_DOWNLOAD || '1' }}
-  npm_config_build_from_source: ${{ vars.NPM_BUILD_FROM_SOURCE || 'false' }}
   PYTHON: ${{ vars.PYTHON_PATH || '/usr/bin/python3' }}
   # Test timeout configuration with fallbacks
   VITEST_TEST_TIMEOUT: ${{ vars.VITEST_TEST_TIMEOUT || '30000' }}
@@ -76,13 +77,13 @@ jobs:
         run: |
           case "${{ inputs.test_matrix || 'standard' }}" in
             "extended")
-              MATRIX='["18.x", "20.x", "22.x"]'
+              MATRIX='["20.19.5"]'
               ;;
             "latest-only")
-              MATRIX='["22.x"]'
+              MATRIX='["20.19.5"]'
               ;;
             *)
-              MATRIX='["20.x", "22.x"]'
+              MATRIX='["20.19.5"]'
               ;;
           esac
           echo "node-matrix=$MATRIX" >> $GITHUB_OUTPUT

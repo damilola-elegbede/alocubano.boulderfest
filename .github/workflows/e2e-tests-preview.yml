@@ -51,10 +51,11 @@ permissions:
   deployments: read
 
 env:
-  NODE_VERSION: "20"
+  NODE_VERSION: "20.19.5"
   NODE_ENV: test
   CI: true
-  NODE_OPTIONS: '--max-old-space-size=4096'
+  NODE_OPTIONS: "--max-old-space-size=4096"
+  npm_config_build_from_source: "false"
   PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.playwright-browsers
 
 jobs:

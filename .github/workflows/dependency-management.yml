@@ -22,7 +22,9 @@ permissions:
   issues: write
 
 env:
-  NODE_VERSION: "20"
+  NODE_VERSION: "20.19.5"
+  NODE_OPTIONS: "--max-old-space-size=4096"
+  npm_config_build_from_source: "false"
   CI: true
 
 jobs:
