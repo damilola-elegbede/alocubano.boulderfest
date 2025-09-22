@@ -221,7 +221,8 @@ function isImageRequest(url) {
     return (
         url.pathname.includes('/api/image-proxy/') ||
     url.hostname.includes('drive.google.com') ||
-    url.hostname.includes('googleapis.com') ||
+    url.hostname.includes('googleusercontent.com') ||
+    (url.hostname.includes('googleapis.com') && !url.hostname.includes('fonts.googleapis.com')) ||
     /\.(jpg|jpeg|png|webp|gif|svg)(\?|$)/i.test(url.pathname)
     );
 }
