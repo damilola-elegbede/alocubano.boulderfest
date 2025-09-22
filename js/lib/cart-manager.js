@@ -33,6 +33,20 @@ const devLog = {
             // eslint-disable-next-line no-console
             console.log(message, ...args);
         }
+    },
+    warn: (message, ...args) => {
+        if (
+            typeof window !== 'undefined' &&
+      (window.location.hostname === 'localhost' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.port === '3000' ||
+        window.location.port === '8080' ||
+        window.location.search.includes('debug=true') ||
+        localStorage.getItem('dev_mode') === 'true')
+        ) {
+            // eslint-disable-next-line no-console
+            console.warn(message, ...args);
+        }
     }
 };
 
@@ -82,15 +96,55 @@ export class CartManager extends EventTarget {
             metadata: {
                 createdAt: Date.now(),
                 updatedAt: Date.now(),
-                sessionId: this.generateSessionId()
+                sessionId: this.generateSessionId(),
+                testMode: false
             }
         };
         this.storageKey = 'alocubano_cart';
+        this.testStorageKey = 'alocubano_cart_test';
         this.initialized = false;
         this.operationQueue = [];
         this.isExecutingQueue = false;
         this.analytics = getAnalyticsTracker();
         this.storageCoordinator = new CartStorageCoordinator();
+        this.testMode = this.detectTestMode();
+    }
+
+    // Test mode detection
+    detectTestMode() {
+        // Check for test mode in URL parameters
+        if (typeof window !== 'undefined') {
+            try {
+                if (typeof URLSearchParams !== 'undefined') {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    if (urlParams.get('test_mode') === 'true') {
+                        return true;
+                    }
+                }
+            } catch (error) {
+                // URLSearchParams not available or failed, continue with other checks
+                devLog.warn('URLSearchParams not available for test mode detection:', error.message);
+            }
+
+            // Check for test mode in localStorage
+            try {
+                if (typeof localStorage !== 'undefined') {
+                    if (localStorage.getItem('cart_test_mode') === 'true') {
+                        return true;
+                    }
+
+                    // Check for admin test mode header/flag
+                    if (localStorage.getItem('admin_test_session') === 'true') {
+                        return true;
+                    }
+                }
+            } catch (error) {
+                // localStorage not available or failed, continue
+                devLog.warn('localStorage not available for test mode detection:', error.message);
+            }
+        }
+
+        return false;
     }
 
     // Core initialization
@@ -98,6 +152,10 @@ export class CartManager extends EventTarget {
         if (this.initialized) {
             return;
         }
+
+        // Update test mode state
+        this.testMode = this.detectTestMode();
+        this.state.metadata.testMode = this.testMode;
 
         // Load from localStorage
         this.loadFromStorage();
@@ -109,7 +167,9 @@ export class CartManager extends EventTarget {
         await this.validateCart();
 
         this.initialized = true;
-        this.analytics.track('payment_integration_initialized');
+        this.analytics.track('payment_integration_initialized', {
+            testMode: this.testMode
+        });
         this.emit('cart:initialized', this.getState());
     }
 
@@ -155,7 +215,7 @@ export class CartManager extends EventTarget {
 
     // Ticket operations
     async addTicket(ticketData) {
-        const { ticketType, price, name, eventId, quantity = 1 } = ticketData;
+        const { ticketType, price, name, eventId, quantity = 1, isTestItem = false } = ticketData;
 
         if (!ticketType || !price || !name) {
             throw new Error('Invalid ticket data');
@@ -163,37 +223,55 @@ export class CartManager extends EventTarget {
 
         // CRITICAL FIX: Use operation queue instead of blocking lock
         return this.queueOperation('addTicket', async() => {
+            // Determine if this is a test item
+            const isTest = isTestItem || this.testMode;
+
+            // Create ticket key with test prefix if needed
+            const ticketKey = isTest ? `TEST-${ticketType}` : ticketType;
+
             // Update state
-            if (!this.state.tickets[ticketType]) {
-                this.state.tickets[ticketType] = {
-                    ticketType,
+            if (!this.state.tickets[ticketKey]) {
+                this.state.tickets[ticketKey] = {
+                    ticketType: ticketKey,
+                    originalTicketType: ticketType,
                     price,
-                    name,
+                    name: isTest ? `TEST - ${name}` : name,
                     eventId,
                     quantity: 0,
-                    addedAt: Date.now()
+                    addedAt: Date.now(),
+                    isTestItem: isTest
                 };
             }
 
-            this.state.tickets[ticketType].quantity += quantity;
-            this.state.tickets[ticketType].updatedAt = Date.now();
+            this.state.tickets[ticketKey].quantity += quantity;
+            this.state.tickets[ticketKey].updatedAt = Date.now();
+
+            // Update test mode state if this is a test item
+            if (isTest) {
+                this.state.metadata.testMode = true;
+            }
 
             // Use coordinated storage write
             await this.saveToStorage();
 
-            // Track analytics
+            // Track analytics with test mode info
             this.analytics.trackCartEvent('ticket_added', {
-                ticketType,
+                ticketType: ticketKey,
+                originalTicketType: ticketType,
                 quantity,
                 price,
-                total: this.state.tickets[ticketType].quantity * price
+                total: this.state.tickets[ticketKey].quantity * price,
+                isTestItem: isTest,
+                testMode: this.testMode
             });
 
             // Emit events immediately
             this.emit('cart:ticket:added', {
-                ticketType,
+                ticketType: ticketKey,
+                originalTicketType: ticketType,
                 quantity,
-                total: this.state.tickets[ticketType].quantity
+                total: this.state.tickets[ticketKey].quantity,
+                isTestItem: isTest
             });
             this.emit('cart:updated', this.getState());
 
@@ -235,68 +313,100 @@ export class CartManager extends EventTarget {
 
     // Upsert operation that combines add and update logic
     async upsertTicket(ticketData) {
-        const { ticketType, price, name, eventId, quantity } = ticketData;
+        const { ticketType, price, name, eventId, quantity, isTestItem = false } = ticketData;
 
         if (!ticketType || !price || !name || quantity <= 0) {
             throw new Error('Invalid ticket data for upsert');
         }
 
         return this.queueOperation('upsertTicket', async() => {
+            // Determine if this is a test item
+            const isTest = isTestItem || this.testMode;
+            const ticketKey = isTest ? `TEST-${ticketType}` : ticketType;
+
             // Update state - handles both new and existing tickets
-            if (!this.state.tickets[ticketType]) {
+            if (!this.state.tickets[ticketKey]) {
                 // Add new ticket
-                this.state.tickets[ticketType] = {
-                    ticketType,
+                this.state.tickets[ticketKey] = {
+                    ticketType: ticketKey,
+                    originalTicketType: ticketType,
                     price,
-                    name,
+                    name: isTest ? `TEST - ${name}` : name,
                     eventId,
                     quantity: 0,
-                    addedAt: Date.now()
+                    addedAt: Date.now(),
+                    isTestItem: isTest
                 };
             }
 
             // Set the exact quantity (replaces current quantity)
-            this.state.tickets[ticketType].quantity = quantity;
-            this.state.tickets[ticketType].updatedAt = Date.now();
+            this.state.tickets[ticketKey].quantity = quantity;
+            this.state.tickets[ticketKey].updatedAt = Date.now();
+
+            // Update test mode state if this is a test item
+            if (isTest) {
+                this.state.metadata.testMode = true;
+            }
 
             // Use coordinated storage write
             await this.saveToStorage();
 
             // Emit events using dual dispatch pattern
-            this.emit('cart:ticket:updated', { ticketType, quantity });
+            this.emit('cart:ticket:updated', {
+                ticketType: ticketKey,
+                originalTicketType: ticketType,
+                quantity,
+                isTestItem: isTest
+            });
             this.emit('cart:updated', this.getState());
 
-            return this.state.tickets[ticketType];
+            return this.state.tickets[ticketKey];
         });
     }
 
     // Donation operations
-    async addDonation(amount) {
+    async addDonation(amount, isTestItem = false) {
         if (amount <= 0) {
             throw new Error('Invalid donation amount');
         }
 
+        // Determine if this is a test item
+        const isTest = isTestItem || this.testMode;
+
         // Create new donation item
-        const donationId = `donation_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+        const donationId = isTest
+            ? `test_donation_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
+            : `donation_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+
         const donation = {
             id: donationId,
             amount: amount,
-            name: 'Festival Support',
-            addedAt: Date.now()
+            name: isTest ? 'TEST - Festival Support' : 'Festival Support',
+            addedAt: Date.now(),
+            isTestItem: isTest
         };
 
         this.state.donations.push(donation);
+
+        // Update test mode state if this is a test item
+        if (isTest) {
+            this.state.metadata.testMode = true;
+        }
+
         await this.saveToStorage();
 
         // Track analytics
         this.analytics.trackCartEvent('donation_added', {
             donationAmount: amount,
-            donationId: donationId
+            donationId: donationId,
+            isTestItem: isTest,
+            testMode: this.testMode
         });
 
         this.emit('cart:donation:added', {
             donation,
-            totalDonations: this.state.donations.length
+            totalDonations: this.state.donations.length,
+            isTestItem: isTest
         });
         this.emit('cart:updated', this.getState());
     }
@@ -365,12 +475,22 @@ export class CartManager extends EventTarget {
     // Persistence
     async saveToStorage() {
         this.state.metadata.updatedAt = Date.now();
-        await this.storageCoordinator.write(this.storageKey, this.state);
+
+        // Use appropriate storage key based on test mode
+        const storageKey = this.testMode || this.state.metadata.testMode
+            ? this.testStorageKey
+            : this.storageKey;
+
+        await this.storageCoordinator.write(storageKey, this.state);
     }
 
     loadFromStorage() {
         try {
-            const stored = localStorage.getItem(this.storageKey);
+            // Check test mode and load from appropriate storage
+            const testMode = this.detectTestMode();
+            const storageKey = testMode ? this.testStorageKey : this.storageKey;
+
+            const stored = localStorage.getItem(storageKey);
             if (stored) {
                 const parsed = JSON.parse(stored);
 
@@ -384,7 +504,8 @@ export class CartManager extends EventTarget {
                                 id: `donation_${Date.now()}_migrated`,
                                 amount: parsed.donations.amount,
                                 name: 'Festival Support',
-                                addedAt: parsed.donations.updatedAt || Date.now()
+                                addedAt: parsed.donations.updatedAt || Date.now(),
+                                isTestItem: false
                             }
                         ];
                     } else {
@@ -393,9 +514,15 @@ export class CartManager extends EventTarget {
                     }
                 }
 
+                // Ensure metadata has testMode property
+                if (parsed.metadata && typeof parsed.metadata.testMode === 'undefined') {
+                    parsed.metadata.testMode = testMode;
+                }
+
                 // Validate and set stored data
                 if (this.isValidStoredCart(parsed)) {
                     this.state = parsed;
+                    this.testMode = this.state.metadata.testMode || testMode;
                 }
             }
         } catch (error) {
@@ -493,6 +620,73 @@ export class CartManager extends EventTarget {
         this.emit('cart:updated', this.getState());
     }
 
+    // Test mode management
+    async enableTestMode() {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('cart_test_mode', 'true');
+        }
+        this.testMode = true;
+        this.state.metadata.testMode = true;
+        await this.saveToStorage();
+        this.emit('cart:test-mode:enabled');
+        this.emit('cart:updated', this.getState());
+    }
+
+    async disableTestMode() {
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem('cart_test_mode');
+        }
+        this.testMode = false;
+        this.state.metadata.testMode = false;
+        await this.saveToStorage();
+        this.emit('cart:test-mode:disabled');
+        this.emit('cart:updated', this.getState());
+    }
+
+    isTestMode() {
+        return this.testMode || this.state.metadata.testMode;
+    }
+
+    hasTestItems() {
+        // Check if any tickets are test items
+        const hasTestTickets = Object.values(this.state.tickets).some(
+            ticket => ticket.isTestItem || ticket.ticketType.startsWith('TEST-')
+        );
+
+        // Check if any donations are test items
+        const hasTestDonations = this.state.donations.some(
+            donation => donation.isTestItem || donation.id.startsWith('test_')
+        );
+
+        return hasTestTickets || hasTestDonations;
+    }
+
+    async clearTestItems() {
+        // Remove test tickets
+        const testTicketKeys = Object.keys(this.state.tickets).filter(
+            key => this.state.tickets[key].isTestItem || key.startsWith('TEST-')
+        );
+
+        testTicketKeys.forEach(key => {
+            delete this.state.tickets[key];
+        });
+
+        // Remove test donations
+        this.state.donations = this.state.donations.filter(
+            donation => !donation.isTestItem && !donation.id.startsWith('test_')
+        );
+
+        // Update test mode if no test items remain
+        if (!this.hasTestItems()) {
+            this.state.metadata.testMode = false;
+            this.testMode = false;
+        }
+
+        await this.saveToStorage();
+        this.emit('cart:test-items:cleared');
+        this.emit('cart:updated', this.getState());
+    }
+
     // Debug methods
     getDebugInfo() {
         return {
@@ -501,7 +695,10 @@ export class CartManager extends EventTarget {
             queueLength: this.operationQueue.length,
             isExecutingQueue: this.isExecutingQueue,
             sessionId: this.state.metadata.sessionId,
-            lastUpdated: new Date(this.state.metadata.updatedAt).toISOString()
+            lastUpdated: new Date(this.state.metadata.updatedAt).toISOString(),
+            testMode: this.testMode,
+            hasTestItems: this.hasTestItems(),
+            storageKey: this.testMode ? this.testStorageKey : this.storageKey
         };
     }
 }

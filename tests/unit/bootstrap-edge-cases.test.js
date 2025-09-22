@@ -16,9 +16,9 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { createClient } from '@libsql/client';
 import fs from 'fs';
 import path from 'path';
+import { getTestDatabase } from '../helpers/test-database-manager.js';
 
 // Mock database client first (must be at top level)
 vi.mock('../../lib/database.js', () => ({
@@ -49,8 +49,11 @@ describe('Bootstrap System - Edge Cases and Error Handling', () => {
   let dbHelpers;
 
   beforeEach(async () => {
-    // Create a fresh database for each test
-    testDb = createClient({ url: ':memory:' });
+    // Create a fresh database for each test using the test database manager
+    testDb = await getTestDatabase({
+      requiresMigrations: false, // Use minimal schema for performance
+      testName: `bootstrap-edge-${Date.now()}`
+    });
 
     // Set up the mock to return our test database
     vi.mocked(getDatabaseClient).mockResolvedValue(testDb);
@@ -60,13 +63,7 @@ describe('Bootstrap System - Edge Cases and Error Handling', () => {
     dbHelpers.db = testDb; // Directly set the database instance
     dbHelpers.operationStats.startTime = Date.now();
 
-    // Create test schema
-    try {
-      await createTestSchema(testDb);
-    } catch (error) {
-      console.warn('Schema creation warning:', error.message);
-      // Continue anyway, some tests may not need all tables
-    }
+    // Schema is already created by test database manager
   });
 
   afterEach(async () => {
@@ -694,11 +691,7 @@ describe('Bootstrap System - Edge Cases and Error Handling', () => {
     });
 
     it('should handle corrupted transaction state', async () => {
-      // Check if events table exists, if not create it
-      const tableCheck = await testDb.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='events'");
-      if (tableCheck.rows.length === 0) {
-        await createTestSchema(testDb);
-      }
+      // Events table should already exist from test database manager
 
       // Simulate transaction state corruption
       try {

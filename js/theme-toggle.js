@@ -18,7 +18,10 @@
  * - Efficient icon rendering
  */
 
-import { THEMES, getCurrentTheme, isAdminPage } from './theme-manager.js';
+import { THEMES, isAdminPage } from './theme-manager.js';
+import { createLogger } from './lib/logger.js';
+
+const logger = createLogger('ThemeToggle');
 
 // Theme toggle constants
 const THEME_OPTIONS = {
@@ -193,7 +196,7 @@ function createToggleHTML() {
     return `
         <div class="theme-toggle" role="radiogroup" aria-label="Theme selection">
             ${Object.entries(THEME_OPTIONS)
-                .map(([key, value]) => `
+        .map(([key, value]) => `
                 <button
                     type="button"
                     class="theme-toggle__option theme-option"
@@ -208,112 +211,6 @@ function createToggleHTML() {
             `).join('')}
         </div>
     `;
-}
-
-/**
- * Add CSS styles for the theme toggle
- *
- * Injects comprehensive CSS styles for the theme toggle component.
- * Styles include accessibility features, smooth transitions, and
- * theme-aware colors. Only injects once to avoid duplication.
- */
-function addToggleStyles() {
-    if (typeof document === 'undefined') {
-        return;
-    }
-
-    const styleId = 'theme-toggle-styles';
-
-    // Don't add styles twice
-    if (document.getElementById(styleId)) {
-        return;
-    }
-
-    const style = document.createElement('style');
-    style.id = styleId;
-    style.textContent = `
-        .theme-toggle {
-            display: inline-flex;
-            background: var(--color-surface-secondary, #f8f9fa);
-            border: 1px solid var(--color-border, #e2e8f0);
-            border-radius: 8px;
-            padding: 2px;
-            transition: all 0.2s ease;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .theme-toggle__option {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 32px;
-            height: 28px;
-            border: none;
-            background: transparent;
-            border-radius: 6px;
-            cursor: pointer;
-            color: var(--color-text-secondary, #64748b);
-            transition: all 0.15s ease;
-            position: relative;
-        }
-
-        .theme-toggle__option:hover {
-            background: var(--color-surface-hover, rgba(0, 0, 0, 0.04));
-            color: var(--color-text-primary, #1e293b);
-        }
-
-        .theme-toggle__option:focus {
-            outline: 2px solid var(--color-primary, #3b82f6);
-            outline-offset: 2px;
-            z-index: 1;
-        }
-
-        .theme-toggle__option[aria-checked="true"] {
-            background: var(--color-primary, #3b82f6);
-            color: white;
-            box-shadow: 0 1px 2px rgba(59, 130, 246, 0.3);
-        }
-
-        .theme-toggle__option[aria-checked="true"]:hover {
-            background: var(--color-primary-hover, #2563eb);
-            color: white;
-        }
-
-
-        /* Dark theme styles */
-        [data-theme="dark"] .theme-toggle {
-            background: var(--color-surface-secondary-dark, #1f2937);
-            border-color: var(--color-border-dark, #374151);
-        }
-
-        [data-theme="dark"] .theme-toggle__option {
-            color: var(--color-text-secondary-dark, #9ca3af);
-        }
-
-        [data-theme="dark"] .theme-toggle__option:hover {
-            background: var(--color-surface-hover-dark, rgba(255, 255, 255, 0.1));
-            color: var(--color-text-primary-dark, #f9fafb);
-        }
-
-        [data-theme="dark"] .theme-toggle__option[aria-checked="true"] {
-            background: var(--color-primary-dark, #3b82f6);
-            color: white;
-        }
-
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-            .theme-toggle {
-                border-radius: 6px;
-            }
-
-            .theme-toggle__option {
-                width: 28px;
-                height: 24px;
-            }
-        }
-    `;
-
-    document.head.appendChild(style);
 }
 
 /**
@@ -333,7 +230,9 @@ function updateToggleState(preference) {
         cachedToggleElement = document.getElementById(TOGGLE_ID);
     }
 
-    if (!cachedToggleElement) return;
+    if (!cachedToggleElement) {
+        return;
+    }
 
     if (!cachedButtons) {
         cachedButtons = cachedToggleElement.querySelectorAll('.theme-toggle__option, .theme-option');
@@ -363,7 +262,7 @@ function updateToggleState(preference) {
         if (performance.measure) {
             try {
                 performance.measure('toggle-update', PERF_MARKS.UPDATE_START, PERF_MARKS.UPDATE_END);
-            } catch (e) {
+            } catch {
                 // Start mark doesn't exist, skip measurement
             }
         }
@@ -383,7 +282,9 @@ function handleThemeClick(event) {
     performance.mark(PERF_MARKS.TOGGLE_START);
 
     const button = event.target.closest('.theme-toggle__option, .theme-option');
-    if (!button) return;
+    if (!button) {
+        return;
+    }
 
     const newPreference = button.dataset.theme;
 
@@ -412,7 +313,7 @@ function handleThemeClick(event) {
         if (performance.measure) {
             try {
                 performance.measure('theme-toggle', PERF_MARKS.TOGGLE_START, PERF_MARKS.TOGGLE_END);
-            } catch (e) {
+            } catch {
                 // Start mark doesn't exist, skip measurement
             }
         }
@@ -436,25 +337,27 @@ function handleKeyDown(event) {
     event.preventDefault();
 
     const toggle = event.target.closest('.theme-toggle');
-    if (!toggle) return; // Add null guard for safety
+    if (!toggle) {
+        return;
+    } // Add null guard for safety
 
     const buttons = Array.from(toggle.querySelectorAll('.theme-toggle__option, .theme-option'));
     const currentIndex = buttons.findIndex(btn => btn === event.target);
 
     let newIndex;
     switch (event.key) {
-        case 'ArrowLeft':
-            newIndex = currentIndex > 0 ? currentIndex - 1 : buttons.length - 1;
-            break;
-        case 'ArrowRight':
-            newIndex = currentIndex < buttons.length - 1 ? currentIndex + 1 : 0;
-            break;
-        case 'Home':
-            newIndex = 0;
-            break;
-        case 'End':
-            newIndex = buttons.length - 1;
-            break;
+    case 'ArrowLeft':
+        newIndex = currentIndex > 0 ? currentIndex - 1 : buttons.length - 1;
+        break;
+    case 'ArrowRight':
+        newIndex = currentIndex < buttons.length - 1 ? currentIndex + 1 : 0;
+        break;
+    case 'Home':
+        newIndex = 0;
+        break;
+    case 'End':
+        newIndex = buttons.length - 1;
+        break;
     }
 
     buttons[newIndex].focus();
@@ -527,7 +430,7 @@ function initializeThemeToggle(container) {
     }
 
     if (!toggleContainer) {
-        console.warn('Theme toggle: Container not found');
+        logger.warn('Theme toggle: Container not found');
         return null;
     }
 
@@ -575,7 +478,7 @@ function getCurrentPreference() {
  */
 function setPreference(preference) {
     if (!Object.values(THEME_OPTIONS).includes(preference)) {
-        console.warn(`Invalid theme preference: ${preference}`);
+        logger.warn(`Invalid theme preference: ${preference}`);
         return;
     }
 

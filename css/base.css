@@ -607,3 +607,168 @@ button {
 .skip-link:focus {
   top: 0;                                   /* Bring skip link into view when focused */
 }
+
+/* Modal System
+ * Accessible modal dialogs with smooth animations and proper focus management
+ * Used by modal-utils.js to replace alert() and confirm() calls */
+
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9998;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.modal-backdrop.show {
+  opacity: 1;
+}
+
+.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.9);
+  background: var(--color-background-primary);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  max-width: 400px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  z-index: 9999;
+  opacity: 0;
+  transition: all 0.3s ease;
+  padding: 24px;
+  border: 2px solid var(--color-border-primary);
+}
+
+.modal.show {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.modal-icon {
+  font-size: 24px;
+  margin-right: 12px;
+  line-height: 1;
+}
+
+.modal h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.modal p {
+  margin-bottom: 24px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.modal button {
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border: 2px solid;
+  min-width: 70px;
+}
+
+.modal-cancel {
+  border-color: var(--color-border-primary);
+  background: transparent;
+  color: var(--color-text-primary);
+}
+
+.modal-cancel:hover {
+  background: var(--color-background-secondary);
+  border-color: var(--color-text-secondary);
+}
+
+.modal-confirm {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-white);
+  font-weight: 600;
+}
+
+.modal-confirm:hover {
+  background: var(--color-primary-dark, var(--color-primary));
+  border-color: var(--color-primary-dark, var(--color-primary));
+  transform: translateY(-1px);
+}
+
+.modal-confirm:focus,
+.modal-cancel:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Modal type variations */
+.modal-info .modal-icon {
+  color: var(--color-blue);
+}
+
+.modal-warning .modal-icon {
+  color: #f59e0b;
+}
+
+.modal-error .modal-icon {
+  color: var(--color-red);
+}
+
+.modal-success .modal-icon {
+  color: #10b981;
+}
+
+.modal-confirm .modal-icon {
+  color: var(--color-blue);
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .modal {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="dark"] .modal-backdrop {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+/* Mobile optimizations */
+@media (max-width: 480px) {
+  .modal {
+    max-width: 95%;
+    padding: 20px;
+  }
+
+  .modal-actions {
+    flex-direction: column;
+  }
+
+  .modal button {
+    width: 100%;
+    justify-content: center;
+  }
+}

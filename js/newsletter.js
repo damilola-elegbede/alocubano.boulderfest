@@ -3,6 +3,10 @@
  * Manages email list subscription form with Brevo integration
  */
 
+import { createLogger } from './lib/logger.js';
+
+const logger = createLogger('Newsletter');
+
 class NewsletterSignup {
     constructor() {
         this.form = document.getElementById('newsletter-form');
@@ -137,7 +141,7 @@ class NewsletterSignup {
                 );
             }
         } catch (error) {
-            console.error('Newsletter signup error:', error);
+            logger.error('Newsletter signup error:', error);
 
             // Enhanced error handling for preview environments
             const isPreviewEnvironment = window.location.hostname.includes('vercel.app') ||
@@ -199,7 +203,7 @@ class NewsletterSignup {
         }
     }
 
-    handleSuccess(data) {
+    handleSuccess() {
     // Clear form
         this.form.reset();
 

@@ -10,9 +10,15 @@
     <link rel="stylesheet" href="/css/navigation.css" />
     <link rel="stylesheet" href="/css/forms.css" />
     <link rel="stylesheet" href="/css/admin-overrides.css" />
+    <link rel="stylesheet" href="/css/admin-test-mode.css" />
     <script type="module" src="/js/theme-manager.js"></script>
   </head>
   <body class="admin-container">
+    <!-- Skip Links for Accessibility -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <a href="#testModeSection" class="skip-link">Skip to test mode section</a>
+    <a href="#registrations" class="skip-link">Skip to registrations</a>
+
     <!-- Unified Admin Header -->
     <header class="admin-header">
       <div class="admin-header-content">
@@ -72,10 +78,170 @@
       <div id="event-selector-container"></div>
     </nav>
 
-    <!-- Statistics Grid -->
-    <div class="admin-grid auto-fit" id="statsGrid" data-testid="dashboard-stats">
-      <div class="admin-loading">Loading statistics...</div>
-    </div>
+    <!-- Test Mode Section -->
+    <section class="admin-card admin-mb-xl" id="testModeSection" data-testid="test-mode-section" role="region" aria-labelledby="test-mode-heading">
+      <div class="admin-card-header">
+        <h2 class="admin-card-title" id="test-mode-heading">Test Mode Cart</h2>
+        <div class="admin-card-actions">
+          <div class="test-mode-indicator" id="testModeIndicator" role="status" aria-live="polite" aria-label="Test environment status">
+            <span class="test-badge" aria-label="Test mode active">TEST</span>
+            <span class="test-status-text" id="test-status-description">Test Environment Active</span>
+          </div>
+        </div>
+      </div>
+      <div class="admin-card-body">
+        <div class="test-mode-grid">
+          <!-- Quick Add Test Items -->
+          <div class="test-section" role="group" aria-labelledby="quick-add-heading">
+            <h3 class="test-section-title" id="quick-add-heading">Quick Add Test Items</h3>
+            <p class="visually-hidden">Add test items to your cart for testing checkout functionality</p>
+            <div class="test-buttons-grid" role="group" aria-label="Test item buttons">
+              <button class="admin-btn admin-btn-outline test-add-btn"
+                      data-item="vip-pass"
+                      data-testid="add-vip-test"
+                      aria-describedby="vip-pass-description"
+                      aria-label="Add VIP Pass for $150 to test cart">
+                <span>Add VIP Pass</span>
+                <small>$150</small>
+                <span class="visually-hidden" id="vip-pass-description">Full festival access with VIP perks</span>
+              </button>
+              <button class="admin-btn admin-btn-outline test-add-btn"
+                      data-item="weekend-pass"
+                      data-testid="add-weekend-test"
+                      aria-describedby="weekend-pass-description"
+                      aria-label="Add Weekend Pass for $75 to test cart">
+                <span>Add Weekend Pass</span>
+                <small>$75</small>
+                <span class="visually-hidden" id="weekend-pass-description">Access to all weekend events</span>
+              </button>
+              <button class="admin-btn admin-btn-outline test-add-btn"
+                      data-item="donation"
+                      data-testid="add-donation-test"
+                      aria-describedby="donation-description"
+                      aria-label="Add $25 donation to test cart">
+                <span>Add Donation</span>
+                <small>$25</small>
+                <span class="visually-hidden" id="donation-description">Support the festival</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Cart Actions -->
+          <div class="test-section" role="group" aria-labelledby="cart-actions-heading">
+            <h3 class="test-section-title" id="cart-actions-heading">Cart Actions</h3>
+            <p class="visually-hidden">Actions to manage your test cart</p>
+            <div class="test-buttons-grid" role="group" aria-label="Cart action buttons">
+              <button class="admin-btn admin-btn-primary"
+                      onclick="viewCartOnMainSite()"
+                      data-testid="view-cart-main"
+                      aria-label="Open main site with test cart items in new tab"
+                      aria-describedby="view-cart-description">
+                <span>View Cart on Main Site</span>
+                <span class="visually-hidden" id="view-cart-description">Opens tickets page in new tab with test items added to cart</span>
+              </button>
+              <button class="admin-btn admin-btn-secondary"
+                      onclick="clearTestCart()"
+                      data-testid="clear-test-cart"
+                      aria-label="Clear all items from test cart"
+                      aria-describedby="clear-cart-description">
+                <span>Clear Test Cart</span>
+                <span class="visually-hidden" id="clear-cart-description">Removes all test items from cart, requires confirmation</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Test Data Management -->
+          <div class="test-section" role="group" aria-labelledby="test-data-heading">
+            <h3 class="test-section-title" id="test-data-heading">Test Data Management</h3>
+            <p class="visually-hidden">View test cart statistics and manage test data</p>
+            <div class="test-stats" id="testStats" role="region" aria-label="Test cart statistics" aria-live="polite">
+              <div class="test-stat-item">
+                <span class="test-stat-label" id="cart-count-label">Test Items in Cart:</span>
+                <span class="test-stat-value" id="testCartCount" aria-labelledby="cart-count-label">0</span>
+              </div>
+              <div class="test-stat-item">
+                <span class="test-stat-label" id="cart-value-label">Test Cart Value:</span>
+                <span class="test-stat-value" id="testCartValue" aria-labelledby="cart-value-label">$0.00</span>
+              </div>
+            </div>
+            <div class="test-buttons-grid" role="group" aria-label="Test data management buttons">
+              <button class="admin-btn admin-btn-danger"
+                      onclick="cleanupTestData()"
+                      data-testid="cleanup-test-data"
+                      aria-label="Remove all test data including cart items and session data"
+                      aria-describedby="cleanup-description">
+                <span>Cleanup All Test Data</span>
+                <span class="visually-hidden" id="cleanup-description">Permanently removes all test cart items, session data, and preferences. Requires confirmation.</span>
+              </button>
+              <button class="admin-btn admin-btn-ghost"
+                      onclick="generateTestData()"
+                      data-testid="generate-test-data"
+                      aria-label="Generate sample test data for testing purposes"
+                      aria-describedby="generate-description">
+                <span>Generate Test Data</span>
+                <span class="visually-hidden" id="generate-description">Creates random test items in cart for development testing. Requires confirmation.</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Keyboard Shortcuts Help -->
+          <div class="test-section" role="group" aria-labelledby="shortcuts-heading">
+            <h3 class="test-section-title" id="shortcuts-heading">Keyboard Shortcuts</h3>
+            <p class="visually-hidden">Available keyboard shortcuts for test mode functionality</p>
+            <div class="keyboard-shortcuts-info">
+              <div class="shortcut-grid">
+                <div class="shortcut-item">
+                  <kbd>Alt + T</kbd>
+                  <span>Toggle test/production mode</span>
+                </div>
+                <div class="shortcut-item">
+                  <kbd>Alt + V</kbd>
+                  <span>Add VIP Pass</span>
+                </div>
+                <div class="shortcut-item">
+                  <kbd>Alt + W</kbd>
+                  <span>Add Weekend Pass</span>
+                </div>
+                <div class="shortcut-item">
+                  <kbd>Alt + D</kbd>
+                  <span>Add Donation</span>
+                </div>
+                <div class="shortcut-item">
+                  <kbd>Alt + C</kbd>
+                  <span>Clear test cart</span>
+                </div>
+                <div class="shortcut-item">
+                  <kbd>Alt + H</kbd>
+                  <span>Show help dialog</span>
+                </div>
+                <div class="shortcut-item">
+                  <kbd>Esc</kbd>
+                  <span>Cancel operations</span>
+                </div>
+                <div class="shortcut-item">
+                  <kbd>Tab</kbd>
+                  <span>Navigate elements</span>
+                </div>
+              </div>
+              <button class="admin-btn admin-btn-outline admin-btn-sm"
+                      onclick="window.testMode && window.testMode.showKeyboardShortcutsHelp && window.testMode.showKeyboardShortcutsHelp()"
+                      aria-label="Show detailed keyboard shortcuts help">
+                <span>Show Help Dialog</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Content -->
+    <main id="main-content">
+      <!-- Statistics Grid -->
+      <section class="admin-grid auto-fit" id="statsGrid" data-testid="dashboard-stats" role="region" aria-labelledby="stats-heading">
+        <h2 id="stats-heading" class="visually-hidden">Dashboard Statistics</h2>
+        <div class="admin-loading">Loading statistics...</div>
+      </section>
+    </main>
 
     <!-- Registrations Section -->
     <div class="admin-card admin-mb-xl" id="registrations">
@@ -240,6 +406,11 @@
             url.searchParams.set('eventId', eventId);
           }
 
+          // Add test mode parameter if in test mode view
+          if (window.testModeView) {
+            url.searchParams.set('testMode', 'true');
+          }
+
           const response = await fetch(url.toString(), {
             credentials: "include" // CRITICAL: Include cookies for production
           });
@@ -276,49 +447,171 @@
           ? Math.round((stats.checked_in / stats.total_tickets) * 100)
           : 0;
 
+        // Check if we're in test mode view
+        const isTestMode = window.testModeView || false;
+        const dataTypeLabel = isTestMode ? "Test" : "Production";
+        const dataTypeClass = isTestMode ? "test-data" : "production-data";
+        const modeIcon = isTestMode ? "🧪" : "🎯";
+
+        // Add global test mode indicator to page
+        updateGlobalTestModeIndicator(isTestMode);
+
         statsGrid.innerHTML = `
-                <div class="admin-stat-card">
-                    <h3 class="stat-label">Total Tickets</h3>
-                    <div class="stat-number">${stats.total_tickets || 0}</div>
+                <!-- Data Mode Toggle -->
+                <div class="admin-stat-card data-mode-toggle" role="group" aria-labelledby="data-mode-heading">
+                    <h3 class="stat-label" id="data-mode-heading">Data View Mode</h3>
+                    <div class="data-mode-switcher" role="radiogroup" aria-labelledby="data-mode-heading" aria-describedby="data-mode-description">
+                        <button class="mode-btn ${!isTestMode ? 'active' : ''}"
+                                onclick="switchDataMode(false)"
+                                data-testid="production-mode-btn"
+                                role="radio"
+                                aria-checked="${!isTestMode}"
+                                aria-label="Production data view"
+                                aria-describedby="production-mode-description">
+                            <span>🎯 Production</span>
+                            <span class="visually-hidden" id="production-mode-description">View live production data including real orders and tickets</span>
+                        </button>
+                        <button class="mode-btn test-mode-btn ${isTestMode ? 'active' : ''}"
+                                onclick="switchDataMode(true)"
+                                data-testid="test-mode-btn"
+                                role="radio"
+                                aria-checked="${isTestMode}"
+                                aria-label="Test data view"
+                                aria-describedby="test-mode-description">
+                            <span>🧪 Test</span>
+                            <span class="visually-hidden" id="test-mode-description">View test data including test orders and sample tickets</span>
+                        </button>
+                    </div>
+                    <p class="visually-hidden" id="data-mode-description">Choose between viewing production data or test data. Production data shows real festival information while test data shows sample information for testing.</p>
+                    ${isTestMode ? '<div class="test-mode-indicator" role="status" aria-live="polite"><span class="test-badge">TEST</span><span class="test-status-text">Test Data View Active</span></div>' : ''}
                 </div>
-                <div class="admin-stat-card">
-                    <h3 class="stat-label">Checked In</h3>
+                <div class="admin-stat-card ${dataTypeClass}">
+                    <h3 class="stat-label">${modeIcon} ${dataTypeLabel} Total Tickets</h3>
+                    <div class="stat-number">${stats.total_tickets || 0}</div>
+                    ${isTestMode ? '<div class="test-badge">TEST</div>' : ''}
+                </div>
+                <div class="admin-stat-card ${dataTypeClass}">
+                    <h3 class="stat-label">${modeIcon} ${dataTypeLabel} Checked In</h3>
                     <div class="stat-number">${stats.checked_in || 0}</div>
                     <div class="stat-label admin-mt-sm">${checkinPercentage}%</div>
+                    ${isTestMode ? '<div class="test-badge">TEST</div>' : ''}
                 </div>
-                <div class="admin-stat-card">
-                    <h3 class="stat-label">Total Revenue</h3>
+                <div class="admin-stat-card ${dataTypeClass}">
+                    <h3 class="stat-label">${modeIcon} ${dataTypeLabel} Revenue</h3>
                     <div class="stat-number">$${(stats.total_revenue || 0).toFixed(2)}</div>
+                    ${isTestMode ? '<div class="test-badge">TEST</div>' : ''}
                 </div>
-                <div class="admin-stat-card">
-                    <h3 class="stat-label">Total Orders</h3>
+                <div class="admin-stat-card ${dataTypeClass}">
+                    <h3 class="stat-label">${modeIcon} ${dataTypeLabel} Orders</h3>
                     <div class="stat-number">${stats.total_orders || 0}</div>
+                    ${isTestMode ? '<div class="test-badge">TEST</div>' : ''}
                 </div>
-                <div class="admin-stat-card">
-                    <h3 class="stat-label">Workshop Tickets</h3>
+                <div class="admin-stat-card ${dataTypeClass}">
+                    <h3 class="stat-label">${modeIcon} ${dataTypeLabel} Workshop Tickets</h3>
                     <div class="stat-number">${stats.workshop_tickets || 0}</div>
+                    ${isTestMode ? '<div class="test-badge">TEST</div>' : ''}
                 </div>
-                <div class="admin-stat-card">
-                    <h3 class="stat-label">VIP Tickets</h3>
+                <div class="admin-stat-card ${dataTypeClass}">
+                    <h3 class="stat-label">${modeIcon} ${dataTypeLabel} VIP Tickets</h3>
                     <div class="stat-number">${stats.vip_tickets || 0}</div>
+                    ${isTestMode ? '<div class="test-badge">TEST</div>' : ''}
                 </div>
                 <!-- Wallet Statistics -->
-                <div class="admin-stat-card">
-                    <h3 class="stat-label">Apple Wallet</h3>
+                <div class="admin-stat-card ${dataTypeClass}">
+                    <h3 class="stat-label">${modeIcon} ${dataTypeLabel} Apple Wallet</h3>
                     <div class="stat-number">${stats.apple_wallet_users || 0}</div>
                     <div class="stat-label admin-mt-sm">${stats.total_tickets ? Math.round((stats.apple_wallet_users / stats.total_tickets) * 100) : 0}% adoption</div>
+                    ${isTestMode ? '<div class="test-badge">TEST</div>' : ''}
                 </div>
-                <div class="admin-stat-card">
-                    <h3 class="stat-label">Google Wallet</h3>
+                <div class="admin-stat-card ${dataTypeClass}">
+                    <h3 class="stat-label">${modeIcon} ${dataTypeLabel} Google Wallet</h3>
                     <div class="stat-number">${stats.google_wallet_users || 0}</div>
                     <div class="stat-label admin-mt-sm">${stats.total_tickets ? Math.round((stats.google_wallet_users / stats.total_tickets) * 100) : 0}% adoption</div>
+                    ${isTestMode ? '<div class="test-badge">TEST</div>' : ''}
                 </div>
-                <div class="admin-stat-card">
-                    <h3 class="stat-label">QR Generated</h3>
+                <div class="admin-stat-card ${dataTypeClass}">
+                    <h3 class="stat-label">${modeIcon} ${dataTypeLabel} QR Generated</h3>
                     <div class="stat-number">${stats.qr_generated || 0}</div>
                     <div class="stat-label admin-mt-sm">${stats.total_tickets ? Math.round((stats.qr_generated / stats.total_tickets) * 100) : 0}% ready</div>
+                    ${isTestMode ? '<div class="test-badge">TEST</div>' : ''}
                 </div>
             `;
+      }
+
+      // Switch between test and production data view
+      function switchDataMode(isTestMode) {
+        window.testModeView = isTestMode;
+
+        // Update ARIA states for radio buttons
+        const buttons = document.querySelectorAll('.mode-btn[role="radio"]');
+        buttons.forEach(btn => {
+          const isActive = (isTestMode && btn.classList.contains('test-mode-btn')) ||
+                          (!isTestMode && !btn.classList.contains('test-mode-btn'));
+          btn.setAttribute('aria-checked', isActive.toString());
+
+          // Add loading state
+          btn.classList.add('test-mode-loading');
+          btn.setAttribute('aria-busy', 'true');
+        });
+
+        // Announce mode switch to screen readers
+        const modeType = isTestMode ? 'test data' : 'production data';
+        const announcer = document.getElementById('test-mode-announcer') || createScreenReaderAnnouncer();
+        setTimeout(() => {
+          announcer.textContent = `Switched to ${modeType} view. Loading dashboard statistics...`;
+        }, 100);
+
+        const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
+        loadDashboardData(selectedEventId);
+      }
+
+      // Helper function to create screen reader announcer
+      function createScreenReaderAnnouncer() {
+        const announcer = document.createElement('div');
+        announcer.id = 'test-mode-announcer';
+        announcer.setAttribute('aria-live', 'polite');
+        announcer.setAttribute('aria-atomic', 'true');
+        announcer.className = 'visually-hidden';
+        document.body.appendChild(announcer);
+        return announcer;
+      }
+
+      // Update global test mode indicator
+      function updateGlobalTestModeIndicator(isTestMode) {
+        const headerTitle = document.querySelector('.admin-header-title');
+        const headerSubtitle = document.querySelector('.admin-header-subtitle');
+
+        if (isTestMode) {
+          // Add test mode indicator to header
+          if (!headerTitle.querySelector('.global-test-indicator')) {
+            const testIndicator = document.createElement('span');
+            testIndicator.className = 'global-test-indicator';
+            testIndicator.innerHTML = '<span class="test-badge">TEST MODE</span>';
+            headerTitle.appendChild(testIndicator);
+          }
+
+          // Update subtitle to show test mode
+          if (headerSubtitle) {
+            headerSubtitle.innerHTML = 'A Lo Cubano Boulder Fest - <span style="color: var(--color-warning); font-weight: 700;">TEST DATA VIEW</span>';
+          }
+
+          // Add test mode class to body
+          document.body.classList.add('admin-test-mode-active');
+        } else {
+          // Remove test mode indicator
+          const testIndicator = headerTitle.querySelector('.global-test-indicator');
+          if (testIndicator) {
+            testIndicator.remove();
+          }
+
+          // Reset subtitle
+          if (headerSubtitle) {
+            headerSubtitle.textContent = 'A Lo Cubano Boulder Fest - Festival Management & Analytics';
+          }
+
+          // Remove test mode class from body
+          document.body.classList.remove('admin-test-mode-active');
+        }
       }
 
       // Load registrations
@@ -340,6 +633,7 @@
           ...(status && { status }),
           ...(checkedIn && { checkedIn }),
           ...(selectedEventId && { eventId: selectedEventId }),
+          ...(window.testModeView && { testMode: 'true' }),
         });
 
         try {
@@ -396,6 +690,8 @@
           return;
         }
 
+        const isTestModeView = window.testModeView || false;
+
         const tableHTML = `
                 <table class="admin-table">
                     <thead>
@@ -412,12 +708,23 @@
                     <tbody>
                         ${registrations
                           .map(
-                            (reg) => `
-                            <tr>
-                                <td><code class="admin-p-xs" style="background: var(--color-background-secondary); border-radius: var(--radius-sm);">${escapeHtml(reg.ticket_id)}</code></td>
+                            (reg) => {
+                              const isTestTicket = reg.is_test === 1 || reg.ticket_id?.startsWith('TEST-');
+                              const rowClass = isTestTicket ? 'test-ticket-row' : '';
+                              const testBadge = isTestTicket ? '<span class="test-badge">TEST</span>' : '';
+
+                              return `
+                            <tr class="${rowClass}">
+                                <td>
+                                    <code class="admin-p-xs" style="background: var(--color-background-secondary); border-radius: var(--radius-sm);">${escapeHtml(reg.ticket_id)}</code>
+                                    ${testBadge}
+                                </td>
                                 <td>${escapeHtml(reg.attendee_first_name)} ${escapeHtml(reg.attendee_last_name)}</td>
                                 <td>${escapeHtml(reg.attendee_email)}</td>
-                                <td>${escapeHtml(formatTicketType(reg.ticket_type))}</td>
+                                <td>
+                                    ${escapeHtml(formatTicketType(reg.ticket_type))}
+                                    ${isTestTicket ? '<small class="test-indicator">🧪 Test</small>' : ''}
+                                </td>
                                 <td>
                                     <span class="status-badge ${reg.checked_in_at ? "success" : reg.status === "valid" ? "info" : "warning"}">
                                         ${reg.checked_in_at ? "Checked In" : escapeHtml(reg.status)}
@@ -432,7 +739,8 @@
                                     }
                                 </td>
                             </tr>
-                        `,
+                        `;
+                            }
                           )
                           .join("")}
                     </tbody>
@@ -554,6 +862,7 @@
           ...(status && { status }),
           ...(checkedIn && { checkedIn }),
           ...(selectedEventId && { eventId: selectedEventId }),
+          ...(window.testModeView && { testMode: 'true' }),
         });
 
         try {
@@ -567,12 +876,14 @@
           // Convert to CSV
           const csv = convertToCSV(data.registrations);
 
-          // Download
+          // Download with test mode prefix
           const blob = new Blob([csv], { type: "text/csv" });
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement("a");
           a.href = url;
-          a.download = `registrations-${new Date().toISOString().split("T")[0]}.csv`;
+          const modePrefix = window.testModeView ? 'test-data-' : 'production-data-';
+          const timestamp = new Date().toISOString().split("T")[0];
+          a.download = `${modePrefix}registrations-${timestamp}.csv`;
           a.click();
         } catch (error) {
           alert(`Export failed: ${escapeHtml(error.message)}`);
@@ -740,7 +1051,8 @@
         loadDashboardData(selectedEventId);
       }, 30000);
     </script>
-    
+
     <script src="/js/admin-event-selector.js"></script>
+    <script src="/js/admin-test-mode.js"></script>
   </body>
 </html>

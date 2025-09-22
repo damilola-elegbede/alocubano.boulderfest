@@ -76,6 +76,11 @@ async function processUniversalRegistration(fullSession, transaction) {
   const tokenService = new RegistrationTokenService();
   const ticketEmailService = getTicketEmailService();
 
+  // Check if this is a test transaction
+  const isTestTransaction = fullSession.metadata?.testMode === 'true' ||
+                           fullSession.metadata?.testTransaction === 'true' ||
+                           fullSession.id?.includes('test');
+
   let committed = false;
   const ticketsToSchedule = []; // Track tickets for post-commit reminder scheduling
 
@@ -123,21 +128,22 @@ async function processUniversalRegistration(fullSession, transaction) {
             event_date, price_cents,
             attendee_first_name, attendee_last_name,
             registration_status, registration_deadline,
-            status, created_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            status, created_at, is_test
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           args: [
             ticketId,
             transaction.id,
-            ticketType,
+            isTestTransaction ? `TEST-${ticketType}` : ticketType,
             eventId,
             eventDate,
             priceForThisTicket, // Preserves total cents across all tickets
-            firstName, // Default first name from purchaser
-            lastName,  // Default last name from purchaser
+            isTestTransaction ? `TEST-${firstName}` : firstName, // Mark test first name
+            isTestTransaction ? `TEST-${lastName}` : lastName,  // Mark test last name
             'pending', // All tickets start pending
             registrationDeadline.toISOString(),
             'valid',
-            now.toISOString()
+            now.toISOString(),
+            isTestTransaction ? 1 : 0 // Mark as test ticket
           ]
         });
 
@@ -193,8 +199,8 @@ async function processUniversalRegistration(fullSession, transaction) {
       await scheduleRegistrationReminders(ticketId, registrationDeadline);
     }
 
-    console.log(`Universal registration initiated for transaction ${transaction.uuid}`);
-    console.log(`${tickets.length} tickets created with pending status`);
+    console.log(`${isTestTransaction ? 'TEST ' : ''}Universal registration initiated for transaction ${transaction.uuid}`);
+    console.log(`${tickets.length} ${isTestTransaction ? 'TEST ' : ''}tickets created with pending status`);
     console.log(`Registration deadline: ${registrationDeadline.toISOString()}`);
 
     return { success: true, tickets };
@@ -272,7 +278,11 @@ export default async function handler(req, res) {
     switch (event.type) {
     case 'checkout.session.completed': {
       const session = event.data.object;
-      console.log(`Processing checkout.session.completed for ${session.id}`);
+      const isTestTransaction = session.metadata?.testMode === 'true' ||
+                               session.metadata?.testTransaction === 'true' ||
+                               session.id?.includes('test');
+
+      console.log(`Processing ${isTestTransaction ? 'TEST ' : ''}checkout.session.completed for ${session.id}`);
 
       try {
         // Expand the session to get line items
@@ -306,7 +316,7 @@ export default async function handler(req, res) {
         // Log financial audit for successful payment
         await logFinancialAudit({
           requestId: `stripe_${event.id}`,
-          action: 'PAYMENT_SUCCESSFUL',
+          action: isTestTransaction ? 'TEST_PAYMENT_SUCCESSFUL' : 'PAYMENT_SUCCESSFUL',
           amountCents: fullSession.amount_total,
           currency: fullSession.currency?.toUpperCase() || 'USD',
           transactionReference: transaction.uuid,
@@ -322,9 +332,11 @@ export default async function handler(req, res) {
             payment_method_types: fullSession.payment_method_types,
             mode: fullSession.mode,
             line_items_count: fullSession.line_items?.data?.length || 0,
-            checkout_url: fullSession.url
+            checkout_url: fullSession.url,
+            test_mode: isTestTransaction,
+            test_transaction: isTestTransaction
           },
-          severity: 'info'
+          severity: isTestTransaction ? 'debug' : 'info'
         });
 
         // Universal registration flow for all tickets
@@ -346,7 +358,11 @@ export default async function handler(req, res) {
 
     case 'checkout.session.async_payment_succeeded': {
       const session = event.data.object;
-      console.log('Async payment succeeded for session:', session.id);
+      const isTestTransaction = session.metadata?.testMode === 'true' ||
+                               session.metadata?.testTransaction === 'true' ||
+                               session.id?.includes('test');
+
+      console.log(`${isTestTransaction ? 'TEST ' : ''}Async payment succeeded for session:`, session.id);
 
       // Process similar to checkout.session.completed
       try {
@@ -369,7 +385,7 @@ export default async function handler(req, res) {
           // Log financial audit for async payment success
           await logFinancialAudit({
             requestId: `stripe_${event.id}`,
-            action: 'ASYNC_PAYMENT_SUCCESSFUL',
+            action: isTestTransaction ? 'TEST_ASYNC_PAYMENT_SUCCESSFUL' : 'ASYNC_PAYMENT_SUCCESSFUL',
             amountCents: fullSession.amount_total,
             currency: fullSession.currency?.toUpperCase() || 'USD',
             transactionReference: transaction.uuid,
@@ -384,9 +400,11 @@ export default async function handler(req, res) {
               customer_name: fullSession.customer_details?.name,
               payment_method_types: fullSession.payment_method_types,
               mode: fullSession.mode,
-              async_payment: true
+              async_payment: true,
+              test_mode: isTestTransaction,
+              test_transaction: isTestTransaction
             },
-            severity: 'info'
+            severity: isTestTransaction ? 'debug' : 'info'
           });
 
           // Universal registration flow for async payments
