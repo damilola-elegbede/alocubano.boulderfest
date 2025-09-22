@@ -67,38 +67,24 @@
   top: var(--theme-toggle-top);
   right: var(--theme-toggle-right);
   z-index: var(--theme-toggle-z-index);
-  
-  /* Elegant segmented control */
+
+  /* Minimal container - just for positioning */
   display: inline-flex;
-  width: var(--theme-toggle-width);
-  height: var(--theme-toggle-height);
-  padding: var(--theme-toggle-padding);
-  
-  /* Beautiful background with Cuban warmth and subtle gradient */
-  background: linear-gradient(135deg,
-    var(--theme-toggle-bg) 0%,
-    var(--theme-toggle-bg) 100%);
-  border: 1px solid var(--theme-toggle-border);
-  border-radius: var(--theme-toggle-border-radius);
-  
-  /* Glass morphism effect */
-  backdrop-filter: blur(var(--theme-toggle-backdrop-blur));
-  -webkit-backdrop-filter: blur(var(--theme-toggle-backdrop-blur));
-  
-  /* Elegant shadow with subtle Cuban warmth */
-  box-shadow: var(--theme-toggle-shadow), var(--theme-toggle-glow);
+  gap: var(--space-md);
+
+  /* Remove all container styling */
+  background: transparent;
+  border: none;
+  padding: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 
   /* Smooth transitions */
   transition: var(--theme-toggle-transition);
 
   /* Accessibility */
-  overflow: hidden;
   user-select: none;
-}
-
-.theme-toggle:hover {
-  box-shadow: var(--theme-toggle-shadow-active), var(--theme-toggle-glow-active);
-  transform: translateY(-1px);
 }
 
 /* =================================================================
@@ -106,35 +92,33 @@
    ================================================================= */
 
 .theme-option {
-  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  
-  /* Sizing for perfect touch targets */
+
+  /* Sizing for touch targets */
   min-width: var(--theme-toggle-button-size);
   height: var(--theme-toggle-button-size);
-  
-  /* Clean button reset */
+
+  /* No background or border - just the icon */
   background: transparent;
   border: none;
-  border-radius: calc(var(--theme-toggle-border-radius) - 2px);
-  
+  padding: 0;
+
   /* Typography */
   color: var(--theme-toggle-text);
   font-family: var(--font-sans);
-  
+
   /* Smooth interactions */
   cursor: pointer;
   transition: var(--theme-toggle-transition);
-  
+
   /* Touch optimization */
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
-  
+
   /* Icon container properties */
   position: relative;
-  overflow: hidden;
 }
 
 .theme-option:focus {
@@ -143,13 +127,13 @@
 }
 
 .theme-option:hover {
-  /* Very subtle hover effect */
-  opacity: 0.8;
+  /* Scale up icon slightly on hover */
+  transform: scale(1.1);
 }
 
 [data-theme="dark"] .theme-option:hover {
-  /* Very subtle hover effect */
-  opacity: 0.8;
+  /* Scale up icon slightly on hover */
+  transform: scale(1.1);
 }
 
 /* =================================================================
@@ -246,12 +230,13 @@
 
 /* Hover state icon brightness */
 .theme-option:hover::before {
-  /* Subtle brightness on hover */
-  filter: brightness(1.2) !important;
+  /* Increase brightness on hover in light mode */
+  filter: brightness(0.6);
 }
 
 [data-theme="dark"] .theme-option:hover::before {
-  filter: invert(1) brightness(1.1) !important;
+  /* Maintain invert and increase brightness in dark mode */
+  filter: invert(1) brightness(1);
 }
 
 /* Hide any child SVG elements since we're using pseudo-elements */

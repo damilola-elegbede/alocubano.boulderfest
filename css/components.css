@@ -414,8 +414,8 @@
 }
 
 .btn-primary {
-  background-color: var(--color-text-primary);
-  color: var(--color-text-inverse);
+  background-color: var(--color-text-primary) !important;
+  color: var(--color-white) !important;
   border-color: var(--color-text-primary);
 }
 
