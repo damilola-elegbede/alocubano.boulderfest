@@ -414,14 +414,27 @@
 }
 
 .btn-primary {
-  background-color: var(--color-text-primary) !important;
+  background-color: var(--color-black) !important;
   color: var(--color-white) !important;
-  border-color: var(--color-text-primary);
+  border-color: var(--color-black);
+}
+
+[data-theme="dark"] .btn-primary {
+  background-color: var(--color-blue) !important;
+  color: var(--color-white) !important;
+  border-color: var(--color-blue);
 }
 
 .btn-primary:hover {
-  background-color: transparent;
-  color: var(--color-text-primary);
+  background-color: var(--color-blue) !important;
+  color: var(--color-white) !important;
+  border-color: var(--color-blue);
+}
+
+[data-theme="dark"] .btn-primary:hover {
+  background-color: var(--color-red) !important;
+  color: var(--color-white) !important;
+  border-color: var(--color-red);
 }
 
 .btn-secondary {

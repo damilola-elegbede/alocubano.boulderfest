@@ -122,8 +122,16 @@
 }
 
 .theme-option:focus {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: none;
+  /* Add subtle opacity change for accessibility */
+  opacity: 0.8;
+}
+
+.theme-option:focus-visible {
+  /* Show very subtle outline only for keyboard navigation */
+  outline: none;
+  /* Use opacity change instead of outline for cleaner look */
+  opacity: 0.7;
 }
 
 .theme-option:hover {

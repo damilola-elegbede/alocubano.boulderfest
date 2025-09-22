@@ -183,9 +183,9 @@
 .form-button-type {
   position: relative;
   overflow: hidden;
-  background: var(--color-text-primary);
-  color: var(--color-text-inverse);
-  border: 2px solid var(--color-text-primary);
+  background: var(--color-black) !important;
+  color: var(--color-white) !important;
+  border: 2px solid var(--color-black);
   padding: var(--space-md) var(--space-xl);
   font-family: var(--font-code);
   font-size: var(--font-size-sm);
@@ -195,6 +195,13 @@
   cursor: pointer;
   text-decoration: none;
   display: inline-block;
+}
+
+/* Dark mode specific styling for form button */
+[data-theme="dark"] .form-button-type {
+  background: var(--color-blue) !important;
+  color: var(--color-white) !important;
+  border-color: var(--color-blue);
 }
 
 .form-button-type::before {
@@ -210,8 +217,14 @@
 }
 
 .form-button-type:hover {
-  color: var(--color-white);
+  color: var(--color-white) !important;
   transform: translateY(-2px);
+  background: var(--color-blue) !important;
+}
+
+[data-theme="dark"] .form-button-type:hover {
+  background: var(--color-red) !important;
+  color: var(--color-white) !important;
 }
 
 .form-button-type:hover::before {
