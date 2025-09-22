@@ -427,6 +427,8 @@ function handleKeyDown(event) {
     event.preventDefault();
 
     const toggle = event.target.closest('.theme-toggle');
+    if (!toggle) return; // Add null guard for safety
+
     const buttons = Array.from(toggle.querySelectorAll('.theme-toggle__option, .theme-option'));
     const currentIndex = buttons.findIndex(btn => btn === event.target);
 
@@ -576,7 +578,7 @@ function setPreference(preference) {
 /**
  * Destroy theme toggle (cleanup)
  *
- * Removes the theme toggle from DOM and cleans up associated styles.
+ * Removes the theme toggle from DOM.
  * Useful for single-page applications or dynamic content management.
  */
 function destroyThemeToggle() {
@@ -584,11 +586,7 @@ function destroyThemeToggle() {
     if (toggle) {
         toggle.remove();
     }
-
-    const styles = document.getElementById('theme-toggle-styles');
-    if (styles) {
-        styles.remove();
-    }
+    // Note: Styles are now managed via external CSS file, no cleanup needed
 }
 
 // Export API

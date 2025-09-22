@@ -239,9 +239,12 @@
   filter: invert(1) brightness(1);
 }
 
-/* Hide any child SVG elements since we're using pseudo-elements */
+/* SVG elements are handled via pseudo-elements */
 .theme-option svg {
-  display: none;
+  /* Keep SVG in DOM for accessibility but visually hide via size */
+  width: 0;
+  height: 0;
+  overflow: hidden;
 }
 
 /* =================================================================
