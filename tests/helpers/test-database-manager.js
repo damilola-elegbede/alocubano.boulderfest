@@ -237,6 +237,7 @@ class TestDatabaseManager {
           currency TEXT NOT NULL DEFAULT 'USD',
           customer_email TEXT,
           customer_name TEXT,
+          order_data TEXT NOT NULL,
           stripe_session_id TEXT,
           event_id INTEGER,
           is_test INTEGER NOT NULL DEFAULT 0 CHECK (is_test IN (0, 1)),
@@ -397,10 +398,13 @@ class TestDatabaseManager {
    * Get database instance for performance-optimized unit tests
    */
   async getDatabaseWithoutMigrations(testId = 'unit-test') {
+    // Force isolation for edge case tests to prevent data spillover
+    const needsIsolation = testId.includes('bootstrap-edge') || testId.includes('concurrent') || testId.includes('deadlock');
+
     return this.getDatabaseInstance({
       withMigrations: false,
       testId,
-      isolated: false  // Reuse for performance
+      isolated: needsIsolation  // Isolate problematic tests
     });
   }
 }

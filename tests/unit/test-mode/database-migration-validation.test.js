@@ -12,7 +12,7 @@ describe('Database Migration Validation for Test Mode', () => {
     // This avoids the complexity of running full migrations for unit tests
     client = await getTestDatabase({
       requiresMigrations: false,
-      testName: 'migration-validation'
+      testName: `migration-validation-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     });
 
     // Manually add test mode columns and features that should exist after migrations
@@ -48,8 +48,8 @@ describe('Database Migration Validation for Test Mode', () => {
       // Check transactions table constraint
       try {
         await client.execute(`
-          INSERT INTO transactions (transaction_id, type, status, amount_cents, currency, customer_email, is_test)
-          VALUES ('test-invalid', 'purchase', 'pending', 1000, 'USD', 'test@example.com', 2)
+          INSERT INTO transactions (transaction_id, type, status, amount_cents, currency, customer_email, order_data, is_test)
+          VALUES ('test-invalid', 'purchase', 'pending', 1000, 'USD', 'test@example.com', '{}', 2)
         `);
         expect.fail('Should have failed due to constraint violation');
       } catch (error) {
@@ -58,13 +58,13 @@ describe('Database Migration Validation for Test Mode', () => {
 
       // Valid values should work
       await client.execute(`
-        INSERT INTO transactions (transaction_id, type, status, amount_cents, currency, customer_email, is_test)
-        VALUES ('test-valid-0', 'purchase', 'pending', 1000, 'USD', 'test@example.com', 0)
+        INSERT INTO transactions (transaction_id, type, status, amount_cents, currency, customer_email, order_data, is_test)
+        VALUES ('test-valid-0', 'purchase', 'pending', 1000, 'USD', 'test@example.com', '{}', 0)
       `);
 
       await client.execute(`
-        INSERT INTO transactions (transaction_id, type, status, amount_cents, currency, customer_email, is_test)
-        VALUES ('test-valid-1', 'purchase', 'pending', 1000, 'USD', 'test@example.com', 1)
+        INSERT INTO transactions (transaction_id, type, status, amount_cents, currency, customer_email, order_data, is_test)
+        VALUES ('test-valid-1', 'purchase', 'pending', 1000, 'USD', 'test@example.com', '{}', 1)
       `);
 
       const result = await client.execute('SELECT COUNT(*) as count FROM transactions WHERE transaction_id LIKE ?', ['test-valid-%']);
@@ -161,13 +161,13 @@ describe('Database Migration Validation for Test Mode', () => {
     it('should return proper statistics from view', async () => {
       // Insert test data
       await client.execute(`
-        INSERT INTO transactions (transaction_id, type, status, amount_cents, currency, customer_email, is_test)
-        VALUES ('stats-test-1', 'purchase', 'completed', 5000, 'USD', 'test@example.com', 0)
+        INSERT INTO transactions (transaction_id, type, status, amount_cents, currency, customer_email, order_data, is_test)
+        VALUES ('stats-test-1', 'purchase', 'completed', 5000, 'USD', 'test@example.com', '{}', 0)
       `);
 
       await client.execute(`
-        INSERT INTO transactions (transaction_id, type, status, amount_cents, currency, customer_email, is_test)
-        VALUES ('stats-test-2', 'purchase', 'completed', 3000, 'USD', 'test@example.com', 1)
+        INSERT INTO transactions (transaction_id, type, status, amount_cents, currency, customer_email, order_data, is_test)
+        VALUES ('stats-test-2', 'purchase', 'completed', 3000, 'USD', 'test@example.com', '{}', 1)
       `);
 
       const result = await client.execute(`
@@ -221,8 +221,8 @@ describe('Database Migration Validation for Test Mode', () => {
     it('should enforce test mode consistency between transactions and tickets', async () => {
       // Insert a production transaction
       await client.execute(`
-        INSERT INTO transactions (id, transaction_id, type, status, amount_cents, currency, customer_email, is_test)
-        VALUES (999, 'consistency-test-prod', 'purchase', 'completed', 5000, 'USD', 'test@example.com', 0)
+        INSERT INTO transactions (id, transaction_id, type, status, amount_cents, currency, customer_email, order_data, is_test)
+        VALUES (999, 'consistency-test-prod', 'purchase', 'completed', 5000, 'USD', 'test@example.com', '{}', 0)
       `);
 
       try {
@@ -257,8 +257,8 @@ describe('Database Migration Validation for Test Mode', () => {
     it('should enforce test mode consistency between transactions and transaction_items', async () => {
       // Insert a test transaction
       await client.execute(`
-        INSERT INTO transactions (id, transaction_id, type, status, amount_cents, currency, customer_email, is_test)
-        VALUES (998, 'consistency-test-items', 'purchase', 'completed', 5000, 'USD', 'test@example.com', 1)
+        INSERT INTO transactions (id, transaction_id, type, status, amount_cents, currency, customer_email, order_data, is_test)
+        VALUES (998, 'consistency-test-items', 'purchase', 'completed', 5000, 'USD', 'test@example.com', '{}', 1)
       `);
 
       try {
@@ -313,8 +313,8 @@ describe('Database Migration Validation for Test Mode', () => {
 
       // Insert transaction first
       await client.execute(`
-        INSERT INTO transactions (transaction_id, type, status, amount_cents, currency, customer_email, is_test)
-        VALUES (?, 'purchase', 'completed', 5000, 'USD', 'audit@example.com', 1)
+        INSERT INTO transactions (transaction_id, type, status, amount_cents, currency, customer_email, order_data, is_test)
+        VALUES (?, 'purchase', 'completed', 5000, 'USD', 'audit@example.com', '{}', 1)
       `, [transactionId]);
 
       // Get transaction ID
@@ -356,13 +356,13 @@ describe('Database Migration Validation for Test Mode', () => {
       const prodTransactionId = `perf-prod-${Date.now()}`;
 
       await client.execute(`
-        INSERT INTO transactions (transaction_id, type, status, amount_cents, currency, customer_email, is_test)
-        VALUES (?, 'purchase', 'completed', 5000, 'USD', 'test@example.com', 1)
+        INSERT INTO transactions (transaction_id, type, status, amount_cents, currency, customer_email, order_data, is_test)
+        VALUES (?, 'purchase', 'completed', 5000, 'USD', 'test@example.com', '{}', 1)
       `, [testTransactionId]);
 
       await client.execute(`
-        INSERT INTO transactions (transaction_id, type, status, amount_cents, currency, customer_email, is_test)
-        VALUES (?, 'purchase', 'completed', 5000, 'USD', 'prod@example.com', 0)
+        INSERT INTO transactions (transaction_id, type, status, amount_cents, currency, customer_email, order_data, is_test)
+        VALUES (?, 'purchase', 'completed', 5000, 'USD', 'prod@example.com', '{}', 0)
       `, [prodTransactionId]);
 
       // Query should use index efficiently

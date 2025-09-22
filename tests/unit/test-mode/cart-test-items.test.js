@@ -339,7 +339,7 @@ describe('Cart Test Items Management', () => {
 
       // Check that storage was called with test mode data
       expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
-        cartManager.storageKey,
+        'alocubano_cart_test',
         expect.stringContaining('"testMode":true')
       );
     });

@@ -113,6 +113,22 @@ describe('Ticket Validation Test Mode', () => {
         priceInCents: 10000
       });
 
+      // Should create transaction record first
+      expect(mockDatabase.execute).toHaveBeenCalledWith(
+        expect.stringContaining("INSERT INTO transactions"),
+        expect.arrayContaining([
+          expect.stringMatching(/^TEST-/), // transaction_id
+          "tickets", // type
+          "completed", // status
+          10000, // amount_cents
+          "USD", // currency
+          "vip@example.com", // customer_email
+          null, // customer_name
+          expect.stringContaining("\"test\":true"), // order_data
+          1 // is_test
+        ])
+      );
+
       expect(mockDatabase.execute).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO tickets'),
         expect.arrayContaining([
@@ -124,7 +140,7 @@ describe('Ticket Validation Test Mode', () => {
           'vip@example.com', // attendee_email
           null, // attendee_first_name
           null, // attendee_last_name
-          'active', // status
+          'valid', // status
           'pending', // registration_status
           1 // is_test
         ])
@@ -156,7 +172,7 @@ describe('Ticket Validation Test Mode', () => {
         rows: [{
           id: 1,
           ticket_id: 'TEST-TICKET-12345',
-          status: 'active',
+          status: 'valid',
           is_test: 1,
           attendee_email: 'test@example.com',
           event_id: 1
@@ -268,7 +284,7 @@ describe('Ticket Validation Test Mode', () => {
           rows: [{
             id: 1,
             ticket_id: 'TEST-TICKET-12345',
-            status: 'active',
+            status: 'valid',
             is_test: 1,
             attendee_email: 'test@example.com'
           }]
@@ -277,7 +293,7 @@ describe('Ticket Validation Test Mode', () => {
           rows: [{
             id: 2,
             ticket_id: 'PROD-TICKET-67890',
-            status: 'active',
+            status: 'valid',
             is_test: 0,
             attendee_email: 'prod@example.com'
           }]
@@ -358,6 +374,9 @@ describe('Ticket Validation Test Mode', () => {
         ticketId: 'TEST-TICKET-12345',
         eventId: 1,
         isTest: true,
+        metadata: {
+          testMode: true
+        },
         iat: expect.any(Number)
       });
     });
@@ -427,7 +446,7 @@ describe('Ticket Validation Test Mode', () => {
           rows: [{
             id: 1,
             ticket_id: 'TEST-TICKET-12345',
-            status: 'active',
+            status: 'valid',
             is_test: 1,
             registration_status: 'pending'
           }]
@@ -450,6 +469,14 @@ describe('Ticket Validation Test Mode', () => {
       });
 
       expect(registrationResult.success).toBe(true);
+
+      // Should verify test ticket first
+      expect(mockDatabase.execute).toHaveBeenCalledWith(
+        expect.stringContaining("SELECT id FROM tickets WHERE ticket_id = ? AND is_test = 1"),
+        ['TEST-TICKET-12345']
+      );
+
+      // Should update ticket with registration information
       expect(mockDatabase.execute).toHaveBeenCalledWith(
         expect.stringContaining('UPDATE tickets'),
         expect.arrayContaining([
@@ -473,7 +500,7 @@ describe('Ticket Validation Test Mode', () => {
           rows: [{
             id: 1,
             ticket_id: 'TEST-TICKET-12345',
-            status: 'active',
+            status: 'valid',
             is_test: 1,
             registration_status: 'registered'
           }]
@@ -492,6 +519,14 @@ describe('Ticket Validation Test Mode', () => {
       const checkInResult = await checkInTestTicket('TEST-TICKET-12345');
 
       expect(checkInResult.success).toBe(true);
+
+      // Should verify test ticket and registration status first
+      expect(mockDatabase.execute).toHaveBeenCalledWith(
+        expect.stringContaining("SELECT id, registration_status FROM tickets"),
+        ['TEST-TICKET-12345']
+      );
+
+      // Should update ticket to checked in status
       expect(mockDatabase.execute).toHaveBeenCalledWith(
         expect.stringContaining('UPDATE tickets'),
         expect.arrayContaining([
@@ -529,6 +564,7 @@ describe('Ticket Validation Test Mode', () => {
         }
       });
 
+      // Should track the validation attempt
       expect(mockDatabase.execute).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO qr_validations'),
         expect.arrayContaining([
@@ -569,9 +605,9 @@ describe('Ticket Validation Test Mode', () => {
 
       const tickets = await getTestTickets();
 
+      // Should query for test tickets only
       expect(mockDatabase.execute).toHaveBeenCalledWith(
-        expect.stringContaining('WHERE is_test = 1'),
-        []
+        expect.stringContaining('SELECT * FROM tickets WHERE is_test = 1 ORDER BY created_at DESC')
       );
 
       expect(tickets).toHaveLength(1);
@@ -603,9 +639,9 @@ describe('Ticket Validation Test Mode', () => {
 
       const tickets = await getProductionTickets();
 
+      // Should query for production tickets only
       expect(mockDatabase.execute).toHaveBeenCalledWith(
-        expect.stringContaining('WHERE is_test = 0'),
-        []
+        expect.stringContaining('SELECT * FROM tickets WHERE is_test = 0 ORDER BY created_at DESC')
       );
 
       expect(tickets).toHaveLength(1);

@@ -50,6 +50,13 @@ export default [
       "no-case-declarations": "error",
     },
   },
+  // Logger utility specific configuration - allow console statements in logger
+  {
+    files: ["js/lib/logger.js"],
+    rules: {
+      "no-console": "off", // Logger utility legitimately uses console
+    },
+  },
   {
     files: ["api/**/*.js"],
     languageOptions: {

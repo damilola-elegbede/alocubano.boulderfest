@@ -52,7 +52,7 @@ describe('Bootstrap System - Edge Cases and Error Handling', () => {
     // Create a fresh database for each test using the test database manager
     testDb = await getTestDatabase({
       requiresMigrations: false, // Use minimal schema for performance
-      testName: `bootstrap-edge-${Date.now()}`
+      testName: `bootstrap-edge-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     });
 
     // Set up the mock to return our test database
@@ -486,6 +486,9 @@ describe('Bootstrap System - Edge Cases and Error Handling', () => {
       const tableCheck = await testDb.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='events'");
       expect(tableCheck.rows.length).toBe(1);
 
+      // Clear any existing data to ensure clean state
+      await testDb.execute('DELETE FROM events');
+
       // Use direct database inserts instead of transactions for this test
       // since the test is really about handling concurrent access, not transaction features
       await testDb.execute('INSERT INTO events (slug, name, type, status, start_date, end_date) VALUES (?, ?, ?, ?, ?, ?)',
@@ -650,6 +653,9 @@ describe('Bootstrap System - Edge Cases and Error Handling', () => {
 
   describe('Recovery from Partial Failures', () => {
     it('should recover from interrupted batch operations', async () => {
+      // Clear any existing data to ensure clean state
+      await testDb.execute('DELETE FROM events');
+
       const largeDataset = [];
       for (let i = 0; i < 100; i++) {
         largeDataset.push([
@@ -691,7 +697,8 @@ describe('Bootstrap System - Edge Cases and Error Handling', () => {
     });
 
     it('should handle corrupted transaction state', async () => {
-      // Events table should already exist from test database manager
+      // Clear any existing data to ensure clean state
+      await testDb.execute('DELETE FROM events');
 
       // Simulate transaction state corruption
       try {

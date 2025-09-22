@@ -25,15 +25,15 @@ export async function createTestTicket(ticketData) {
     priceInCents = 5000,
     attendeeFirstName = null,
     attendeeLastName = null,
-    status = 'active',
+    status = 'valid',
     registrationStatus = 'pending'
   } = ticketData;
 
   const client = await getDatabaseClient();
   const ticketId = generateTestTicketId();
 
-  // Create a test transaction first
-  const transactionId = `TEST-TRANS-${Date.now()}`;
+  // Create a test transaction first with better uniqueness
+  const transactionId = `TEST-TRANS-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 
   let dbTransactionId;
   try {
@@ -44,7 +44,7 @@ export async function createTestTicket(ticketData) {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       transactionId,
-      'purchase',
+      'tickets',
       'completed',
       priceInCents,
       'USD',
@@ -138,8 +138,6 @@ export async function createTestTicket(ticketData) {
 export async function generateTestQRCode(payload) {
   const { ticketId, eventId, isTest = true, metadata = {} } = payload;
 
-  // In a real implementation, this would use the QR token service
-  // For testing, we return a mock token
   const tokenPayload = {
     ticketId,
     eventId,
@@ -151,7 +149,15 @@ export async function generateTestQRCode(payload) {
     iat: Math.floor(Date.now() / 1000)
   };
 
-  return `TEST-QR-${ticketId}-${Date.now()}`;
+  try {
+    // Try to use the QR token service (may be mocked in tests)
+    const { QRTokenService } = await import('../../lib/qr-token-service.js');
+    const qrService = new QRTokenService();
+    return await qrService.generateToken(tokenPayload);
+  } catch (error) {
+    // Fall back to mock token if service fails or is unavailable
+    return `TEST-QR-${ticketId}-${Date.now()}`;
+  }
 }
 
 /**
