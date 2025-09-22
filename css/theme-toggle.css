@@ -303,20 +303,20 @@
 
 @media (prefers-contrast: high) {
   .theme-toggle {
-    background: var(--color-surface);
-    border: 2px solid var(--color-text-primary);
+    background: transparent;
+    border: none;
     box-shadow: none;
   }
-  
+
   .theme-option {
     color: var(--color-text-primary);
-    border: 1px solid transparent;
+    border: none;
   }
-  
+
   /* Active state removed for high contrast mode */
-  
+
   .theme-option:focus {
-    border: 2px solid var(--color-primary);
+    border: none;
     outline: none;
   }
 }
@@ -461,9 +461,9 @@
 
 /* Focus visible improvements */
 .theme-option:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-  box-shadow: 0 0 0 4px rgba(91, 107, 181, 0.3);
+  outline: none;
+  outline-offset: 0;
+  box-shadow: none;
 }
 
 /* =================================================================
@@ -551,8 +551,8 @@
 
 /* Focus states for accessibility in footer */
 .footer-theme-toggle .theme-option:focus {
-  outline: 2px solid currentColor;
-  outline-offset: 2px;
+  outline: none;
+  outline-offset: 0;
 }
 
 /* Enhanced icon visibility for footer context - just show sun and moon icons */
