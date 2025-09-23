@@ -144,7 +144,6 @@ class NewsletterSignup {
                 body: JSON.stringify({
                     email,
                     source: 'contact_page',
-                    lists: ['newsletter'],
                     consentToMarketing: this.consentCheckbox?.checked || false,
                     attributes: {
                         SIGNUP_PAGE: 'contact',
@@ -327,16 +326,36 @@ class NewsletterSignup {
         // Create popup element
         const popup = document.createElement('div');
         popup.className = `newsletter-popup newsletter-popup--${type}`;
-        popup.setAttribute('role', 'alert');
-        popup.setAttribute('aria-live', 'polite');
 
-        // Create popup content
-        const icon = type === 'success' ? '✓' : '⚠';
-        popup.innerHTML = `
-            <div class="newsletter-popup__icon">${icon}</div>
-            <div class="newsletter-popup__message">${message}</div>
-            <button class="newsletter-popup__close" aria-label="Close notification">×</button>
-        `;
+        // Set ARIA attributes based on type for better accessibility
+        if (type === 'error') {
+            popup.setAttribute('role', 'alert');
+            popup.setAttribute('aria-live', 'assertive');
+        } else {
+            popup.setAttribute('role', 'status');
+            popup.setAttribute('aria-live', 'polite');
+        }
+
+        // Create icon div safely
+        const iconDiv = document.createElement('div');
+        iconDiv.className = 'newsletter-popup__icon';
+        iconDiv.textContent = type === 'success' ? '✓' : '⚠';
+
+        // Create message div safely - use textContent to prevent XSS
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'newsletter-popup__message';
+        messageDiv.textContent = message;
+
+        // Create close button safely
+        const closeButton = document.createElement('button');
+        closeButton.className = 'newsletter-popup__close';
+        closeButton.setAttribute('aria-label', 'Close notification');
+        closeButton.textContent = '×';
+
+        // Append elements to popup
+        popup.appendChild(iconDiv);
+        popup.appendChild(messageDiv);
+        popup.appendChild(closeButton);
 
         // Add to page
         document.body.appendChild(popup);
@@ -346,20 +365,31 @@ class NewsletterSignup {
             popup.classList.add('newsletter-popup--visible');
         });
 
+        // Store timeout ID for proper cleanup
+        let autoCloseTimeout;
+
         // Handle close button
-        const closeBtn = popup.querySelector('.newsletter-popup__close');
-        closeBtn?.addEventListener('click', () => {
+        closeButton.addEventListener('click', () => {
+            if (autoCloseTimeout) {
+                clearTimeout(autoCloseTimeout);
+                autoCloseTimeout = null;
+            }
             this.closePopup(popup);
         });
 
         // Auto-close after 8 seconds
-        setTimeout(() => {
+        autoCloseTimeout = setTimeout(() => {
             this.closePopup(popup);
+            autoCloseTimeout = null;
         }, 8000);
 
         // Close on click outside
         popup.addEventListener('click', (e) => {
             if (e.target === popup) {
+                if (autoCloseTimeout) {
+                    clearTimeout(autoCloseTimeout);
+                    autoCloseTimeout = null;
+                }
                 this.closePopup(popup);
             }
         });

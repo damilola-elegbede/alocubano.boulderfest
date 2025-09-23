@@ -70,7 +70,7 @@
 .newsletter-submit:disabled {
   background: var(--color-border-medium);
   border-left-color: var(--color-border-medium);
-  color: var(--color-black);  /* Black text for contrast on grey */
+  color: var(--color-text-disabled, var(--color-black));  /* Semantic disabled text color with fallback */
   cursor: not-allowed;
   opacity: 1;  /* Full opacity for better readability */
 }
@@ -91,7 +91,7 @@
   background: var(--color-border-medium) !important;
   transform: none !important;
   border-left-color: var(--color-border-medium) !important;
-  color: var(--color-black) !important;  /* Maintain black text on hover */
+  color: var(--color-text-disabled, var(--color-black)) !important;  /* Maintain semantic disabled text color on hover */
 }
 
 .newsletter-submit:hover::before {
@@ -273,20 +273,20 @@
 
 .newsletter-popup {
   position: fixed;
-  bottom: 20px;
-  right: 20px;
+  bottom: var(--space-lg, 20px);
+  right: var(--space-lg, 20px);
   max-width: 400px;
   padding: var(--space-md) var(--space-lg);
   background: var(--color-white);
   border: 2px solid var(--color-black);
   box-shadow: 4px 4px 0 0 var(--color-black);
-  z-index: 10000;
+  z-index: var(--z-index-toast, 10000);
   display: flex;
   align-items: flex-start;
   gap: var(--space-md);
   opacity: 0;
-  transform: translateY(20px);
-  transition: all var(--transition-base);
+  transform: translateY(var(--space-lg, 20px));
+  transition: opacity var(--transition-base), transform var(--transition-base);
   font-family: var(--font-sans);
 }
 
@@ -347,6 +347,12 @@
   opacity: 1;
 }
 
+.newsletter-popup__close:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  opacity: 1;
+}
+
 /* Dark mode popup styles */
 [data-theme="dark"] .newsletter-popup {
   background: var(--color-surface);
@@ -365,10 +371,21 @@
 /* Mobile responsive popup */
 @media (max-width: 768px) {
   .newsletter-popup {
-    bottom: 10px;
-    left: 10px;
-    right: 10px;
+    bottom: var(--space-sm, 10px);
+    left: var(--space-sm, 10px);
+    right: var(--space-sm, 10px);
     max-width: none;
+  }
+}
+
+/* Reduced motion support for popup animations */
+@media (prefers-reduced-motion: reduce) {
+  .newsletter-popup {
+    transition: none;
+  }
+
+  .newsletter-popup--visible {
+    transform: none;
   }
 }
 
@@ -410,13 +427,13 @@
 [data-theme="dark"] .newsletter-submit:disabled {
   background: var(--color-border-medium);
   border-left-color: var(--color-border-medium);
-  color: var(--color-white);  /* White text for contrast on grey in dark mode */
+  color: var(--color-text-disabled-inverse, var(--color-white));  /* Semantic disabled text color for dark mode with fallback */
 }
 
 [data-theme="dark"] .newsletter-submit:disabled:hover {
   background: var(--color-border-medium) !important;
   border-left-color: var(--color-border-medium) !important;
-  color: var(--color-white) !important;  /* Maintain white text on hover in dark mode */
+  color: var(--color-text-disabled-inverse, var(--color-white)) !important;  /* Maintain semantic disabled text color on hover in dark mode */
 }
 
 /* Enhanced error state visibility in dark mode */
