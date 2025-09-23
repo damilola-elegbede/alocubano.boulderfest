@@ -1,5 +1,5 @@
 import authService from "../../lib/auth-service.js";
-import { setSecureCorsHeaders } from '../lib/cors-config.js';
+import { setSecureCorsHeaders } from '../../lib/cors-config.js';
 import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
 import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
 

@@ -1,5 +1,5 @@
 import { google } from 'googleapis';
-import { setSecureCorsHeaders } from '../lib/cors-config.js';
+import { setSecureCorsHeaders } from '../../../lib/cors-config.js';
 import {
   processImage,
   detectOptimalFormat,

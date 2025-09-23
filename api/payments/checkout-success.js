@@ -1,5 +1,5 @@
 /**
-import { setSecureCorsHeaders } from '../lib/cors-config.js';
+import { setSecureCorsHeaders } from '../../../lib/cors-config.js';
  * Checkout Success API Endpoint
  * Handles successful Stripe Checkout returns
  */
