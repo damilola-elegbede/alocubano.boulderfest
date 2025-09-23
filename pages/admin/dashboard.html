@@ -58,6 +58,11 @@
           </a>
         </li>
         <li class="admin-nav-item">
+          <a href="/admin/test-mode" class="admin-nav-link">
+            <span>Test Mode</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
           <a href="/admin/analytics" class="admin-nav-link">
             <span>Analytics</span>
           </a>
@@ -77,162 +82,6 @@
       <!-- Event Selector -->
       <div id="event-selector-container"></div>
     </nav>
-
-    <!-- Test Mode Section -->
-    <section class="admin-card admin-mb-xl" id="testModeSection" data-testid="test-mode-section" role="region" aria-labelledby="test-mode-heading">
-      <div class="admin-card-header">
-        <h2 class="admin-card-title" id="test-mode-heading">Test Mode Cart</h2>
-        <div class="admin-card-actions">
-          <div class="test-mode-indicator" id="testModeIndicator" role="status" aria-live="polite" aria-label="Test environment status">
-            <span class="test-badge" aria-label="Test mode active">TEST</span>
-            <span class="test-status-text" id="test-status-description">Test Environment Active</span>
-          </div>
-        </div>
-      </div>
-      <div class="admin-card-body">
-        <div class="test-mode-grid">
-          <!-- Quick Add Test Items -->
-          <div class="test-section" role="group" aria-labelledby="quick-add-heading">
-            <h3 class="test-section-title" id="quick-add-heading">Quick Add Test Items</h3>
-            <p class="visually-hidden">Add test items to your cart for testing checkout functionality</p>
-            <div class="test-buttons-grid" role="group" aria-label="Test item buttons">
-              <button class="admin-btn admin-btn-outline test-add-btn"
-                      data-item="vip-pass"
-                      data-testid="add-vip-test"
-                      aria-describedby="vip-pass-description"
-                      aria-label="Add VIP Pass for $150 to test cart">
-                <span>Add VIP Pass</span>
-                <small>$150</small>
-                <span class="visually-hidden" id="vip-pass-description">Full festival access with VIP perks</span>
-              </button>
-              <button class="admin-btn admin-btn-outline test-add-btn"
-                      data-item="weekend-pass"
-                      data-testid="add-weekend-test"
-                      aria-describedby="weekend-pass-description"
-                      aria-label="Add Weekend Pass for $75 to test cart">
-                <span>Add Weekend Pass</span>
-                <small>$75</small>
-                <span class="visually-hidden" id="weekend-pass-description">Access to all weekend events</span>
-              </button>
-              <button class="admin-btn admin-btn-outline test-add-btn"
-                      data-item="donation"
-                      data-testid="add-donation-test"
-                      aria-describedby="donation-description"
-                      aria-label="Add $25 donation to test cart">
-                <span>Add Donation</span>
-                <small>$25</small>
-                <span class="visually-hidden" id="donation-description">Support the festival</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Cart Actions -->
-          <div class="test-section" role="group" aria-labelledby="cart-actions-heading">
-            <h3 class="test-section-title" id="cart-actions-heading">Cart Actions</h3>
-            <p class="visually-hidden">Actions to manage your test cart</p>
-            <div class="test-buttons-grid" role="group" aria-label="Cart action buttons">
-              <button class="admin-btn admin-btn-primary"
-                      onclick="viewCartOnMainSite()"
-                      data-testid="view-cart-main"
-                      aria-label="Open main site with test cart items in new tab"
-                      aria-describedby="view-cart-description">
-                <span>View Cart on Main Site</span>
-                <span class="visually-hidden" id="view-cart-description">Opens tickets page in new tab with test items added to cart</span>
-              </button>
-              <button class="admin-btn admin-btn-secondary"
-                      onclick="clearTestCart()"
-                      data-testid="clear-test-cart"
-                      aria-label="Clear all items from test cart"
-                      aria-describedby="clear-cart-description">
-                <span>Clear Test Cart</span>
-                <span class="visually-hidden" id="clear-cart-description">Removes all test items from cart, requires confirmation</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Test Data Management -->
-          <div class="test-section" role="group" aria-labelledby="test-data-heading">
-            <h3 class="test-section-title" id="test-data-heading">Test Data Management</h3>
-            <p class="visually-hidden">View test cart statistics and manage test data</p>
-            <div class="test-stats" id="testStats" role="region" aria-label="Test cart statistics" aria-live="polite">
-              <div class="test-stat-item">
-                <span class="test-stat-label" id="cart-count-label">Test Items in Cart:</span>
-                <span class="test-stat-value" id="testCartCount" aria-labelledby="cart-count-label">0</span>
-              </div>
-              <div class="test-stat-item">
-                <span class="test-stat-label" id="cart-value-label">Test Cart Value:</span>
-                <span class="test-stat-value" id="testCartValue" aria-labelledby="cart-value-label">$0.00</span>
-              </div>
-            </div>
-            <div class="test-buttons-grid" role="group" aria-label="Test data management buttons">
-              <button class="admin-btn admin-btn-danger"
-                      onclick="cleanupTestData()"
-                      data-testid="cleanup-test-data"
-                      aria-label="Remove all test data including cart items and session data"
-                      aria-describedby="cleanup-description">
-                <span>Cleanup All Test Data</span>
-                <span class="visually-hidden" id="cleanup-description">Permanently removes all test cart items, session data, and preferences. Requires confirmation.</span>
-              </button>
-              <button class="admin-btn admin-btn-ghost"
-                      onclick="generateTestData()"
-                      data-testid="generate-test-data"
-                      aria-label="Generate sample test data for testing purposes"
-                      aria-describedby="generate-description">
-                <span>Generate Test Data</span>
-                <span class="visually-hidden" id="generate-description">Creates random test items in cart for development testing. Requires confirmation.</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Keyboard Shortcuts Help -->
-          <div class="test-section" role="group" aria-labelledby="shortcuts-heading">
-            <h3 class="test-section-title" id="shortcuts-heading">Keyboard Shortcuts</h3>
-            <p class="visually-hidden">Available keyboard shortcuts for test mode functionality</p>
-            <div class="keyboard-shortcuts-info">
-              <div class="shortcut-grid">
-                <div class="shortcut-item">
-                  <kbd>Alt + T</kbd>
-                  <span>Toggle test/production mode</span>
-                </div>
-                <div class="shortcut-item">
-                  <kbd>Alt + V</kbd>
-                  <span>Add VIP Pass</span>
-                </div>
-                <div class="shortcut-item">
-                  <kbd>Alt + W</kbd>
-                  <span>Add Weekend Pass</span>
-                </div>
-                <div class="shortcut-item">
-                  <kbd>Alt + D</kbd>
-                  <span>Add Donation</span>
-                </div>
-                <div class="shortcut-item">
-                  <kbd>Alt + C</kbd>
-                  <span>Clear test cart</span>
-                </div>
-                <div class="shortcut-item">
-                  <kbd>Alt + H</kbd>
-                  <span>Show help dialog</span>
-                </div>
-                <div class="shortcut-item">
-                  <kbd>Esc</kbd>
-                  <span>Cancel operations</span>
-                </div>
-                <div class="shortcut-item">
-                  <kbd>Tab</kbd>
-                  <span>Navigate elements</span>
-                </div>
-              </div>
-              <button class="admin-btn admin-btn-outline admin-btn-sm"
-                      onclick="window.testMode && window.testMode.showKeyboardShortcutsHelp && window.testMode.showKeyboardShortcutsHelp()"
-                      aria-label="Show detailed keyboard shortcuts help">
-                <span>Show Help Dialog</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
 
     <!-- Main Content -->
     <main id="main-content">
@@ -645,7 +494,7 @@
           ...(checkedIn && { checkedIn }),
           ...(paymentMethod && { paymentMethod }),
           ...(selectedEventId && { eventId: selectedEventId }),
-          ....(window.testModeView && { includeTestData: 'true' }),
+          ...(window.testModeView && { includeTestData: 'true' }),
         });
 
         try {
@@ -892,7 +741,7 @@
           ...(checkedIn && { checkedIn }),
           ...(paymentMethod && { paymentMethod }),
           ...(selectedEventId && { eventId: selectedEventId }),
-          ....(window.testModeView && { includeTestData: 'true' }),
+          ...(window.testModeView && { includeTestData: 'true' }),
         });
 
         try {
