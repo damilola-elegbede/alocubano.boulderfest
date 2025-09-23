@@ -47,15 +47,22 @@ class NewsletterSignup {
             );
         }
 
-        // Initialize button state
+        // Initialize button state - ensure it starts disabled
         this.updateButtonState();
+
+        // Force disabled state on initialization as a safety check
+        if (this.submitButton && !this.isEmailValid() && !this.consentCheckbox?.checked) {
+            this.submitButton.disabled = true;
+            this.submitButton.setAttribute('aria-disabled', 'true');
+        }
 
         // Debug log for button state
         if (this.submitButton) {
             console.log('Newsletter button initialized:', {
                 disabled: this.submitButton.disabled,
                 emailValid: this.isEmailValid(),
-                consentChecked: this.consentCheckbox?.checked
+                consentChecked: this.consentCheckbox?.checked,
+                buttonElement: this.submitButton
             });
         }
 
