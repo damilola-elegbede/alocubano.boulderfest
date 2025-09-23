@@ -8,9 +8,6 @@ on:
     # Run daily at 2 AM UTC to catch any degradation
     - cron: '0 2 * * *'
   workflow_dispatch:
-  workflow_call:
-    # Allow this workflow to be called by other workflows
-    secrets: inherit
 
 concurrency:
   group: quality-${{ github.workflow }}-${{ github.ref }}
