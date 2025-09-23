@@ -70,9 +70,9 @@
 .newsletter-submit:disabled {
   background: var(--color-border-medium);
   border-left-color: var(--color-border-medium);
-  color: var(--color-text-tertiary);
+  color: var(--color-black);  /* Black text for contrast on grey */
   cursor: not-allowed;
-  opacity: 0.6;
+  opacity: 1;  /* Full opacity for better readability */
 }
 
 .newsletter-submit .button-icon {
@@ -91,7 +91,7 @@
   background: var(--color-border-medium) !important;
   transform: none !important;
   border-left-color: var(--color-border-medium) !important;
-  color: var(--color-text-tertiary) !important;
+  color: var(--color-black) !important;  /* Maintain black text on hover */
 }
 
 .newsletter-submit:hover::before {
@@ -410,7 +410,13 @@
 [data-theme="dark"] .newsletter-submit:disabled {
   background: var(--color-border-medium);
   border-left-color: var(--color-border-medium);
-  color: var(--color-text-tertiary);
+  color: var(--color-white);  /* White text for contrast on grey in dark mode */
+}
+
+[data-theme="dark"] .newsletter-submit:disabled:hover {
+  background: var(--color-border-medium) !important;
+  border-left-color: var(--color-border-medium) !important;
+  color: var(--color-white) !important;  /* Maintain white text on hover in dark mode */
 }
 
 /* Enhanced error state visibility in dark mode */

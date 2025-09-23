@@ -3,9 +3,12 @@
  * Manages email list subscription form with Brevo integration
  */
 
-import { createLogger } from './lib/logger.js';
-
-const logger = createLogger('Newsletter');
+// Simple logger fallback when not using modules
+const logger = {
+    error: (...args) => console.error('[Newsletter]', ...args),
+    info: (...args) => console.info('[Newsletter]', ...args),
+    warn: (...args) => console.warn('[Newsletter]', ...args)
+};
 
 class NewsletterSignup {
     constructor() {
