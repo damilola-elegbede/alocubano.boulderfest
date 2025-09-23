@@ -583,16 +583,16 @@ jobs:
           # Determine the correct Playwright project name for the browser
           PROJECT_NAME="${{ matrix.browser }}"
 
-          # Build test command using the CI-specific script to avoid argument parsing issues
-          # Use npx playwright directly to have full control over arguments
-          TEST_COMMAND="npm run test:e2e:ci -- --project=$PROJECT_NAME"
+          # Build test command by calling Playwright directly for full control
+          # This avoids npm script argument passing issues
+          TEST_COMMAND="NODE_OPTIONS='--max-old-space-size=2048' npx playwright test --config playwright-e2e-optimized.config.js --project=$PROJECT_NAME"
 
           # Add test pattern filter if specified
           TEST_PATTERN="${{ needs.build-test-matrix.outputs.test-pattern }}"
           if [ -n "$TEST_PATTERN" ] && [ "$TEST_PATTERN" != "" ]; then
             echo "🎯 Applying test pattern filter: $TEST_PATTERN"
-            # Build grep pattern correctly
-            TEST_COMMAND="$TEST_COMMAND --grep=\"$TEST_PATTERN\""
+            # Add grep pattern directly (no quotes needed in the command itself)
+            TEST_COMMAND="$TEST_COMMAND --grep $TEST_PATTERN"
             echo "📁 Test pattern: $TEST_PATTERN"
           else
             echo "🎯 Running all E2E tests (no pattern filter)"
@@ -603,8 +603,8 @@ jobs:
           echo "🦊 Browser Project: $PROJECT_NAME"
 
           # Run tests and capture output for analysis
-          # Execute directly with eval to handle the grep pattern correctly
-          eval "$TEST_COMMAND" 2>&1 | tee test_output.log
+          # Execute directly without eval to avoid shell interpretation issues
+          $TEST_COMMAND 2>&1 | tee test_output.log
           TEST_EXIT_CODE=${PIPESTATUS[0]}
           
           # Check if tests actually failed
