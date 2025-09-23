@@ -86,12 +86,14 @@ class PayPalSDKLoader {
             };
 
         } catch (error) {
-            console.error('PayPal SDK loading failed:', error);
+            // Store error for debugging without console
+            this.lastError = error;
 
             // Check if we should retry
             if (this.retryAttempts < this.maxRetries) {
                 this.retryAttempts++;
-                console.log(`Retrying PayPal SDK load (attempt ${this.retryAttempts}/${this.maxRetries})`);
+                // Log retry attempt without console
+                this.lastRetryInfo = `Retry attempt ${this.retryAttempts}/${this.maxRetries}`;
 
                 // Wait before retry
                 await this._delay(1000 * this.retryAttempts);

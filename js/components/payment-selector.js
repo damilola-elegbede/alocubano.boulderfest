@@ -271,9 +271,6 @@ class PaymentSelector {
             return;
         }
 
-        const statusDiv = paypalOption.querySelector('.payment-method-status');
-        const statusText = statusDiv?.querySelector('.status-text');
-
         // Check if PayPal configuration is available
         if (!window.PAYPAL_CONFIG) {
             this.updatePayPalStatus(paypalOption, 'unavailable', 'PayPal not configured');
@@ -293,7 +290,8 @@ class PaymentSelector {
             } else {
                 this.updatePayPalStatus(paypalOption, 'error', result.error || 'PayPal unavailable');
             }
-        } catch (error) {
+        } catch {
+            // Error handled by status update
             this.updatePayPalStatus(paypalOption, 'error', 'PayPal service error');
         }
     }
@@ -492,7 +490,7 @@ class PaymentSelector {
             if (!sdkResult.success) {
                 // Handle fallback to Stripe if PayPal fails
                 if (sdkResult.fallbackToStripe) {
-                    console.warn('PayPal SDK loading failed, falling back to Stripe:', sdkResult.error);
+                    // PayPal SDK loading failed, fall back to Stripe silently
                     this.announceToScreenReader('PayPal unavailable, switching to credit card payment...');
                     return this.processStripePayment();
                 }
@@ -789,10 +787,11 @@ class PaymentSelector {
     handleMobilePayPalRedirect(approvalUrl) {
         // Mobile-specific: Check if PayPal app is available
         const isMobile = this.isMobileDevice();
-        const isInApp = window.navigator.standalone ||
-                       window.matchMedia('(display-mode: standalone)').matches ||
-                       document.referrer.includes('android-app://') ||
-                       /iPhone|iPad|iPod/i.test(navigator.userAgent) && window.navigator.standalone;
+        // Remove unused variable - app detection not needed for redirect
+        // const isInApp = window.navigator.standalone ||
+        //                window.matchMedia('(display-mode: standalone)').matches ||
+        //                document.referrer.includes('android-app://') ||
+        //                /iPhone|iPad|iPod/i.test(navigator.userAgent) && window.navigator.standalone;
 
         // Add mobile-friendly parameters
         const url = new URL(approvalUrl);

@@ -353,8 +353,9 @@ export class MobilePayPalOptimizer {
                 // Basic check for integrated/older GPUs
                 return /intel|adreno 3|mali-4/i.test(renderer);
             }
-        } catch (e) {
-            return true; // Error suggests limited capabilities
+        } catch {
+            // Error suggests limited capabilities
+            return true;
         }
         return false;
     }
