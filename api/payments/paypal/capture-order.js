@@ -3,7 +3,7 @@
  * Handles PayPal order capture after user approval
  */
 
-import { setCorsHeaders, isOriginAllowed } from '../../utils/cors.js';
+import { setCorsHeaders } from '../../utils/cors.js';
 import { withRateLimit } from '../../utils/rate-limiter.js';
 
 // PayPal API base URL configuration
@@ -184,7 +184,6 @@ async function captureOrderHandler(req, res) {
       captureId: capture.id,
       amount: capture.amount.value,
       currency: capture.amount.currency_code,
-      payerEmail: captureResult.payer?.email_address
     });
 
     return res.status(200).json(response);

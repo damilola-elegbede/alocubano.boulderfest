@@ -173,8 +173,11 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_transactions_unique_reference_id
 -- ================================================================================
 
 -- Update timestamp trigger for paypal_webhook_events
+-- FIXED: Added WHEN guard to prevent recursive updates
 CREATE TRIGGER IF NOT EXISTS update_paypal_webhook_events_timestamp
 AFTER UPDATE ON paypal_webhook_events
+FOR EACH ROW
+WHEN NEW.updated_at = OLD.updated_at
 BEGIN
     UPDATE paypal_webhook_events
     SET updated_at = CURRENT_TIMESTAMP
@@ -202,14 +205,17 @@ BEGIN
 END;
 
 -- Auto-set reference_id for PayPal transactions based on paypal_order_id
+-- FIXED: Changed to AFTER INSERT and use SELECT to set the value properly
 CREATE TRIGGER IF NOT EXISTS trg_transactions_paypal_reference_id
-BEFORE INSERT ON transactions
+AFTER INSERT ON transactions
 FOR EACH ROW
 WHEN NEW.payment_processor = 'paypal'
   AND NEW.reference_id IS NULL
   AND NEW.paypal_order_id IS NOT NULL
 BEGIN
-    UPDATE transactions SET reference_id = NEW.paypal_order_id WHERE id = NEW.id;
+    UPDATE transactions 
+    SET reference_id = NEW.paypal_order_id 
+    WHERE id = NEW.id;
 END;
 
 -- Prevent duplicate PayPal order processing
@@ -241,10 +247,11 @@ BEGIN
 END;
 
 -- Ensure test mode consistency across related records
+-- FIXED: Changed to AFTER INSERT and use SELECT to set the value properly
 CREATE TRIGGER IF NOT EXISTS trg_paypal_webhook_test_mode_sync
-BEFORE INSERT ON paypal_webhook_events
+AFTER INSERT ON paypal_webhook_events
 FOR EACH ROW
-WHEN NEW.transaction_id IS NOT NULL
+WHEN NEW.transaction_id IS NOT NULL AND NEW.is_test = 0
 BEGIN
     UPDATE paypal_webhook_events
     SET is_test = (
@@ -440,7 +447,7 @@ WHERE verification_status IN ('failed', 'invalid_signature')
 -- 1. ✅ Dual processor support (Stripe + PayPal) in transactions table
 -- 2. ✅ Dedicated PayPal webhook event tracking with test mode support
 -- 3. ✅ Comprehensive indexing for optimal performance
--- 4. ✅ Data integrity triggers and validation constraints
+-- 4. ✅ Data integrity triggers and validation constraints (FIXED)
 -- 5. ✅ Automated transaction linking and reference ID management
 -- 6. ✅ Enhanced security with audit logging
 -- 7. ✅ Health monitoring and reconciliation views
@@ -454,6 +461,12 @@ WHERE verification_status IN ('failed', 'invalid_signature')
 -- - Advanced health monitoring and alerting capabilities
 -- - Improved reconciliation views for financial operations
 -- - Optimized indexes for production workloads
+-- - FIXED: Trigger recursion issues and improper BEFORE INSERT patterns
+--
+-- FIXES APPLIED:
+-- 1. Added WHEN guard to update_paypal_webhook_events_timestamp to prevent recursion
+-- 2. Changed trg_transactions_paypal_reference_id from BEFORE INSERT to AFTER INSERT
+-- 3. Changed trg_paypal_webhook_test_mode_sync from BEFORE INSERT to AFTER INSERT with proper conditions
 --
 -- Rollback strategy: All new columns are nullable with defaults, allowing
 -- safe rollback by ignoring PayPal-specific columns and dropping new tables.

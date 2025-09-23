@@ -9,6 +9,7 @@ export class MobilePayPalOptimizer {
         this.isLowEndDevice = this.detectLowEndDevice();
         this.isMobile = this.isMobileDevice();
         this.preloadTimeout = null;
+        this.networkChangeHandler = null; // Store reference for cleanup
     }
 
     /**
@@ -275,10 +276,12 @@ export class MobilePayPalOptimizer {
      */
     setupNetworkListener() {
         if ('connection' in navigator) {
-            navigator.connection.addEventListener('change', () => {
+            // Store the handler for proper cleanup
+            this.networkChangeHandler = () => {
                 this.connectionType = this.getConnectionType();
                 this.updateOptimizations();
-            });
+            };
+            navigator.connection.addEventListener('change', this.networkChangeHandler);
         }
     }
 
@@ -405,8 +408,9 @@ export class MobilePayPalOptimizer {
         }
 
         // Remove event listeners if possible
-        if ('connection' in navigator) {
-            navigator.connection.removeEventListener('change', this.updateOptimizations);
+        if ('connection' in navigator && this.networkChangeHandler) {
+            navigator.connection.removeEventListener('change', this.networkChangeHandler);
+            this.networkChangeHandler = null;
         }
     }
 }

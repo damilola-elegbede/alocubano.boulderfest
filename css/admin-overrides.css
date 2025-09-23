@@ -1974,9 +1974,9 @@
 }
 
 .paypal-badge {
-  background: #0070ba;
+  background: var(--color-paypal);
   color: var(--color-text-inverse);
-  border-color: #0070ba;
+  border-color: var(--color-paypal);
 }
 
 .transaction-ref {
