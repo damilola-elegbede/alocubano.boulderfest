@@ -50,6 +50,15 @@ class NewsletterSignup {
         // Initialize button state
         this.updateButtonState();
 
+        // Debug log for button state
+        if (this.submitButton) {
+            console.log('Newsletter button initialized:', {
+                disabled: this.submitButton.disabled,
+                emailValid: this.isEmailValid(),
+                consentChecked: this.consentCheckbox?.checked
+            });
+        }
+
         // Mobile optimizations
         this.setupMobileOptimizations();
     }
