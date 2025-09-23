@@ -3,9 +3,12 @@
  * Manages email list subscription form with Brevo integration
  */
 
-import { createLogger } from './lib/logger.js';
-
-const logger = createLogger('Newsletter');
+// Simple logger fallback when not using modules
+const logger = {
+    error: (...args) => console.error('[Newsletter]', ...args),
+    info: (...args) => console.info('[Newsletter]', ...args),
+    warn: (...args) => console.warn('[Newsletter]', ...args)
+};
 
 class NewsletterSignup {
     constructor() {
@@ -44,8 +47,24 @@ class NewsletterSignup {
             );
         }
 
-        // Initialize button state
+        // Initialize button state - ensure it starts disabled
         this.updateButtonState();
+
+        // Force disabled state on initialization as a safety check
+        if (this.submitButton && !this.isEmailValid() && !this.consentCheckbox?.checked) {
+            this.submitButton.disabled = true;
+            this.submitButton.setAttribute('aria-disabled', 'true');
+        }
+
+        // Debug log for button state
+        if (this.submitButton) {
+            console.log('Newsletter button initialized:', {
+                disabled: this.submitButton.disabled,
+                emailValid: this.isEmailValid(),
+                consentChecked: this.consentCheckbox?.checked,
+                buttonElement: this.submitButton
+            });
+        }
 
         // Mobile optimizations
         this.setupMobileOptimizations();
@@ -132,7 +151,6 @@ class NewsletterSignup {
                 body: JSON.stringify({
                     email,
                     source: 'contact_page',
-                    lists: ['newsletter'],
                     consentToMarketing: this.consentCheckbox?.checked || false,
                     attributes: {
                         SIGNUP_PAGE: 'contact',
@@ -144,7 +162,12 @@ class NewsletterSignup {
             const data = await response.json();
 
             if (response.ok) {
-                this.handleSuccess();
+                // Check if it's a preview mode response
+                if (data.subscriber?.status === 'preview') {
+                    this.handleSuccess('🎉 Preview Mode: Subscription simulated successfully!');
+                } else {
+                    this.handleSuccess();
+                }
             } else {
                 this.handleError(
                     data.error || 'Subscription failed. Please try again.'
@@ -226,13 +249,20 @@ class NewsletterSignup {
         }
     }
 
-    handleSuccess() {
+    handleSuccess(customMessage = null) {
     // Clear form
         if (this.form) {
             this.form.reset();
         }
 
-        // Show success message
+        // Reset button state after form reset
+        this.updateButtonState();
+
+        // Show popup notification
+        const message = customMessage || '🎉 Welcome to the A Lo Cubano family! Check your email to confirm your subscription.';
+        this.showPopup('success', message);
+
+        // Show inline success message as well
         if (this.successElement) {
             this.successElement.setAttribute('aria-hidden', 'false');
             this.successElement.style.display = 'flex';
@@ -254,6 +284,9 @@ class NewsletterSignup {
 
     handleError(message) {
         this.showError(message);
+
+        // Show popup notification for error
+        this.showPopup('error', message);
 
         // Set invalid state
         if (this.emailInput) {
@@ -287,6 +320,94 @@ class NewsletterSignup {
         if (this.successElement) {
             this.successElement.setAttribute('aria-hidden', 'true');
             this.successElement.style.display = 'none';
+        }
+    }
+
+    showPopup(type, message) {
+        // Remove any existing popup
+        const existingPopup = document.querySelector('.newsletter-popup');
+        if (existingPopup) {
+            existingPopup.remove();
+        }
+
+        // Create popup element
+        const popup = document.createElement('div');
+        popup.className = `newsletter-popup newsletter-popup--${type}`;
+
+        // Set ARIA attributes based on type for better accessibility
+        if (type === 'error') {
+            popup.setAttribute('role', 'alert');
+            popup.setAttribute('aria-live', 'assertive');
+        } else {
+            popup.setAttribute('role', 'status');
+            popup.setAttribute('aria-live', 'polite');
+        }
+
+        // Create icon div safely
+        const iconDiv = document.createElement('div');
+        iconDiv.className = 'newsletter-popup__icon';
+        iconDiv.textContent = type === 'success' ? '✓' : '⚠';
+
+        // Create message div safely - use textContent to prevent XSS
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'newsletter-popup__message';
+        messageDiv.textContent = message;
+
+        // Create close button safely
+        const closeButton = document.createElement('button');
+        closeButton.className = 'newsletter-popup__close';
+        closeButton.setAttribute('aria-label', 'Close notification');
+        closeButton.textContent = '×';
+
+        // Append elements to popup
+        popup.appendChild(iconDiv);
+        popup.appendChild(messageDiv);
+        popup.appendChild(closeButton);
+
+        // Add to page
+        document.body.appendChild(popup);
+
+        // Trigger animation
+        requestAnimationFrame(() => {
+            popup.classList.add('newsletter-popup--visible');
+        });
+
+        // Store timeout ID for proper cleanup
+        let autoCloseTimeout;
+
+        // Handle close button
+        closeButton.addEventListener('click', () => {
+            if (autoCloseTimeout) {
+                clearTimeout(autoCloseTimeout);
+                autoCloseTimeout = null;
+            }
+            this.closePopup(popup);
+        });
+
+        // Auto-close after 8 seconds
+        autoCloseTimeout = setTimeout(() => {
+            this.closePopup(popup);
+            autoCloseTimeout = null;
+        }, 8000);
+
+        // Close on click outside
+        popup.addEventListener('click', (e) => {
+            if (e.target === popup) {
+                if (autoCloseTimeout) {
+                    clearTimeout(autoCloseTimeout);
+                    autoCloseTimeout = null;
+                }
+                this.closePopup(popup);
+            }
+        });
+    }
+
+    closePopup(popup) {
+        if (popup) {
+            popup.classList.remove('newsletter-popup--visible');
+            setTimeout(() => {
+                popup.remove();
+            }, 300);
         }
     }
 }

@@ -67,12 +67,13 @@
   transition: all var(--transition-base);
 }
 
-.newsletter-submit:disabled {
-  background: var(--color-border-medium);
-  border-left-color: var(--color-border-medium);
-  color: var(--color-text-tertiary);
-  cursor: not-allowed;
-  opacity: 0.6;
+.newsletter-submit:disabled,
+.form-button-type.newsletter-submit:disabled {
+  background: var(--color-border-medium) !important;
+  border-left-color: var(--color-border-medium) !important;
+  color: var(--color-text-disabled, var(--color-black)) !important;  /* Semantic disabled text color with fallback */
+  cursor: not-allowed !important;
+  opacity: 1 !important;  /* Full opacity for better readability */
 }
 
 .newsletter-submit .button-icon {
@@ -87,11 +88,12 @@
   color: var(--color-white) !important;
 }
 
-.newsletter-submit:disabled:hover {
+.newsletter-submit:disabled:hover,
+.form-button-type.newsletter-submit:disabled:hover {
   background: var(--color-border-medium) !important;
   transform: none !important;
   border-left-color: var(--color-border-medium) !important;
-  color: var(--color-text-tertiary) !important;
+  color: var(--color-text-disabled, var(--color-black)) !important;  /* Maintain semantic disabled text color on hover */
 }
 
 .newsletter-submit:hover::before {
@@ -268,6 +270,128 @@
 }
 
 /* ==========================================================================
+   POPUP NOTIFICATION STYLES
+   ========================================================================== */
+
+.newsletter-popup {
+  position: fixed;
+  bottom: var(--space-lg, 20px);
+  right: var(--space-lg, 20px);
+  max-width: 400px;
+  padding: var(--space-md) var(--space-lg);
+  background: var(--color-white);
+  border: 2px solid var(--color-black);
+  box-shadow: 4px 4px 0 0 var(--color-black);
+  z-index: var(--z-index-toast, 10000);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  opacity: 0;
+  transform: translateY(var(--space-lg, 20px));
+  transition: opacity var(--transition-base), transform var(--transition-base);
+  font-family: var(--font-sans);
+}
+
+.newsletter-popup--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.newsletter-popup__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+  font-weight: bold;
+  font-size: var(--font-size-sm);
+}
+
+.newsletter-popup--success .newsletter-popup__icon {
+  background: var(--color-success);
+  color: var(--color-white);
+}
+
+.newsletter-popup--error .newsletter-popup__icon {
+  background: var(--color-error);
+  color: var(--color-white);
+}
+
+.newsletter-popup__message {
+  flex: 1;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+}
+
+.newsletter-popup__close {
+  position: absolute;
+  top: var(--space-sm);
+  right: var(--space-sm);
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  font-size: var(--font-size-xl);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 0;
+  opacity: 0.7;
+  transition: opacity var(--transition-base);
+}
+
+.newsletter-popup__close:hover {
+  opacity: 1;
+}
+
+.newsletter-popup__close:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  opacity: 1;
+}
+
+/* Dark mode popup styles */
+[data-theme="dark"] .newsletter-popup {
+  background: var(--color-surface);
+  border-color: var(--color-border-medium);
+  box-shadow: 4px 4px 0 0 var(--color-border-medium);
+}
+
+[data-theme="dark"] .newsletter-popup__message {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .newsletter-popup__close {
+  color: var(--color-text-secondary);
+}
+
+/* Mobile responsive popup */
+@media (max-width: 768px) {
+  .newsletter-popup {
+    bottom: var(--space-sm, 10px);
+    left: var(--space-sm, 10px);
+    right: var(--space-sm, 10px);
+    max-width: none;
+  }
+}
+
+/* Reduced motion support for popup animations */
+@media (prefers-reduced-motion: reduce) {
+  .newsletter-popup {
+    transition: none;
+  }
+
+  .newsletter-popup--visible {
+    transform: none;
+  }
+}
+
+/* ==========================================================================
    DARK MODE ENHANCEMENTS
    ========================================================================== */
 
@@ -302,10 +426,18 @@
   color: var(--color-text-inverse);
 }
 
-[data-theme="dark"] .newsletter-submit:disabled {
-  background: var(--color-border-medium);
-  border-left-color: var(--color-border-medium);
-  color: var(--color-text-tertiary);
+[data-theme="dark"] .newsletter-submit:disabled,
+[data-theme="dark"] .form-button-type.newsletter-submit:disabled {
+  background: var(--color-border-medium) !important;
+  border-left-color: var(--color-border-medium) !important;
+  color: var(--color-text-disabled-inverse, var(--color-white)) !important;  /* Semantic disabled text color for dark mode with fallback */
+}
+
+[data-theme="dark"] .newsletter-submit:disabled:hover,
+[data-theme="dark"] .form-button-type.newsletter-submit:disabled:hover {
+  background: var(--color-border-medium) !important;
+  border-left-color: var(--color-border-medium) !important;
+  color: var(--color-text-disabled-inverse, var(--color-white)) !important;  /* Maintain semantic disabled text color on hover in dark mode */
 }
 
 /* Enhanced error state visibility in dark mode */

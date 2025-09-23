@@ -164,11 +164,54 @@ export default async function handler(req, res) {
       });
     }
 
-    // Ensure services are initialized
-    const emailService = await getEmailSubscriberService().ensureInitialized();
+    // Check if we're in a preview deployment
+    const isPreviewDeployment = req.headers.host?.includes('vercel.app') ||
+                                req.headers['x-vercel-deployment-url']?.includes('vercel.app');
 
     // Check if we're in test mode
-    const isTestMode = process.env.NODE_ENV === 'test' || process.env.INTEGRATION_TEST_MODE === 'true';
+    const isTestMode = process.env.NODE_ENV === 'test' ||
+                      process.env.INTEGRATION_TEST_MODE === 'true' ||
+                      isPreviewDeployment;
+
+    // For preview deployments without Brevo configured, return mock success
+    if (isPreviewDeployment && !process.env.BREVO_API_KEY) {
+      console.log('📧 Preview deployment detected without Brevo API key - returning mock success');
+      return res.status(201).json({
+        success: true,
+        message: 'Preview mode: Subscription simulated successfully! In production, you would receive a confirmation email.',
+        subscriber: {
+          email: sanitized.email,
+          status: 'preview',
+          requiresVerification: false
+        }
+      });
+    }
+
+    // Ensure services are initialized (with better error handling)
+    let emailService;
+    try {
+      emailService = await getEmailSubscriberService().ensureInitialized();
+    } catch (initError) {
+      console.error('Failed to initialize email service:', initError);
+
+      // For preview deployments, return a simulated success
+      if (isPreviewDeployment) {
+        return res.status(201).json({
+          success: true,
+          message: 'Preview mode: Subscription simulated! (Email service not available)',
+          subscriber: {
+            email: sanitized.email,
+            status: 'preview',
+            requiresVerification: false
+          }
+        });
+      }
+
+      // For production, return service unavailable
+      return res.status(503).json({
+        error: 'Email service is temporarily unavailable. Please try again later.'
+      });
+    }
 
     // Get newsletter list ID with test mode fallback
     let newsletterListId;
