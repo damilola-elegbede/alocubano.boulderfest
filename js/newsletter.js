@@ -28,17 +28,21 @@ class NewsletterSignup {
         // Form submission
         this.form.addEventListener('submit', (e) => this.handleSubmit(e));
 
-        // Real-time validation
-        this.emailInput.addEventListener('blur', () => this.validateEmail());
-        this.emailInput.addEventListener('input', () => {
-            this.clearError();
-            this.updateButtonState(); // Update button state as user types
-        });
+        // Real-time validation - Add null checks for DOM safety
+        if (this.emailInput) {
+            this.emailInput.addEventListener('blur', () => this.validateEmail());
+            this.emailInput.addEventListener('input', () => {
+                this.clearError();
+                this.updateButtonState(); // Update button state as user types
+            });
+        }
 
-        // Checkbox gating for subscribe button
-        this.consentCheckbox.addEventListener('change', () =>
-            this.updateButtonState()
-        );
+        // Checkbox gating for subscribe button - Add null checks for DOM safety
+        if (this.consentCheckbox) {
+            this.consentCheckbox.addEventListener('change', () =>
+                this.updateButtonState()
+            );
+        }
 
         // Initialize button state
         this.updateButtonState();
@@ -49,32 +53,38 @@ class NewsletterSignup {
 
     updateButtonState() {
     // Enable/disable subscribe button based on both email validity and checkbox state
+    // Add DOM safety guards for all elements
         const isEmailValid = this.isEmailValid();
-        const isConsentGiven = this.consentCheckbox.checked;
+        const isConsentGiven = this.consentCheckbox?.checked;
 
-        if (isEmailValid && isConsentGiven) {
-            this.submitButton.disabled = false;
-            this.submitButton.setAttribute('aria-disabled', 'false');
-        } else {
-            this.submitButton.disabled = true;
-            this.submitButton.setAttribute('aria-disabled', 'true');
+        if (this.submitButton) {
+            if (isEmailValid && isConsentGiven) {
+                this.submitButton.disabled = false;
+                this.submitButton.setAttribute('aria-disabled', 'false');
+            } else {
+                this.submitButton.disabled = true;
+                this.submitButton.setAttribute('aria-disabled', 'true');
+            }
         }
     }
 
     isEmailValid() {
+        if (!this.emailInput) return false;
         const email = this.emailInput.value.trim();
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return email && emailRegex.test(email);
     }
 
     setupMobileOptimizations() {
-    // Prevent zoom on iOS
-        this.emailInput.setAttribute('inputmode', 'email');
-        this.emailInput.setAttribute('autocorrect', 'off');
-        this.emailInput.setAttribute('autocapitalize', 'off');
+    // Prevent zoom on iOS - Add DOM safety guard
+        if (this.emailInput) {
+            this.emailInput.setAttribute('inputmode', 'email');
+            this.emailInput.setAttribute('autocorrect', 'off');
+            this.emailInput.setAttribute('autocapitalize', 'off');
+        }
 
-        // Handle virtual keyboard
-        if ('visualViewport' in window) {
+        // Handle virtual keyboard - Add DOM safety guard
+        if ('visualViewport' in window && this.form) {
             window.visualViewport.addEventListener('resize', () => {
                 this.handleKeyboardResize();
             });
@@ -82,8 +92,8 @@ class NewsletterSignup {
     }
 
     handleKeyboardResize() {
-    // Scroll form into view when keyboard opens
-        if (window.visualViewport.height < window.innerHeight * 0.75) {
+    // Scroll form into view when keyboard opens - Add DOM safety guard
+        if (this.form && window.visualViewport.height < window.innerHeight * 0.75) {
             this.form.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
     }
@@ -108,7 +118,7 @@ class NewsletterSignup {
         }
 
         // Get form data
-        const email = this.emailInput.value.trim();
+        const email = this.emailInput?.value.trim() || '';
 
         // Set loading state
         this.setLoadingState(true);
@@ -123,7 +133,7 @@ class NewsletterSignup {
                     email,
                     source: 'contact_page',
                     lists: ['newsletter'],
-                    consentToMarketing: this.consentCheckbox.checked,
+                    consentToMarketing: this.consentCheckbox?.checked || false,
                     attributes: {
                         SIGNUP_PAGE: 'contact',
                         SIGNUP_DATE: new Date().toISOString()
@@ -162,6 +172,7 @@ class NewsletterSignup {
     }
 
     validateEmail() {
+        if (!this.emailInput) return false;
         const email = this.emailInput.value.trim();
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -179,7 +190,7 @@ class NewsletterSignup {
     }
 
     validateConsent() {
-        if (!this.consentCheckbox.checked) {
+        if (!this.consentCheckbox?.checked) {
             this.showError('Please agree to receive marketing emails');
             return false;
         }
@@ -190,14 +201,26 @@ class NewsletterSignup {
         this.isSubmitting = isLoading;
 
         if (isLoading) {
-            this.submitButton.setAttribute('aria-busy', 'true');
-            this.submitButton.disabled = true;
-            this.emailInput.readOnly = true;
-            this.consentCheckbox.disabled = true;
+            if (this.submitButton) {
+                this.submitButton.setAttribute('aria-busy', 'true');
+                this.submitButton.disabled = true;
+            }
+            if (this.emailInput) {
+                this.emailInput.readOnly = true;
+            }
+            if (this.consentCheckbox) {
+                this.consentCheckbox.disabled = true;
+            }
         } else {
-            this.submitButton.setAttribute('aria-busy', 'false');
-            this.emailInput.readOnly = false;
-            this.consentCheckbox.disabled = false;
+            if (this.submitButton) {
+                this.submitButton.setAttribute('aria-busy', 'false');
+            }
+            if (this.emailInput) {
+                this.emailInput.readOnly = false;
+            }
+            if (this.consentCheckbox) {
+                this.consentCheckbox.disabled = false;
+            }
             // Update button state based on checkbox instead of always enabling
             this.updateButtonState();
         }
@@ -205,11 +228,15 @@ class NewsletterSignup {
 
     handleSuccess() {
     // Clear form
-        this.form.reset();
+        if (this.form) {
+            this.form.reset();
+        }
 
         // Show success message
-        this.successElement.setAttribute('aria-hidden', 'false');
-        this.successElement.style.display = 'flex';
+        if (this.successElement) {
+            this.successElement.setAttribute('aria-hidden', 'false');
+            this.successElement.style.display = 'flex';
+        }
 
         // Track event
         if (typeof gtag !== 'undefined') {
@@ -229,28 +256,38 @@ class NewsletterSignup {
         this.showError(message);
 
         // Set invalid state
-        this.emailInput.setAttribute('aria-invalid', 'true');
-        this.emailInput.parentElement.classList.add('error');
+        if (this.emailInput) {
+            this.emailInput.setAttribute('aria-invalid', 'true');
+            this.emailInput.parentElement?.classList.add('error');
+        }
     }
 
     showError(message) {
-        this.errorElement.textContent = message;
-        this.errorElement.style.display = 'block';
+        if (this.errorElement) {
+            this.errorElement.textContent = message;
+            this.errorElement.style.display = 'block';
 
-        // Announce to screen readers
-        this.errorElement.setAttribute('aria-live', 'assertive');
+            // Announce to screen readers
+            this.errorElement.setAttribute('aria-live', 'assertive');
+        }
     }
 
     clearError() {
-        this.errorElement.textContent = '';
-        this.errorElement.style.display = 'none';
-        this.emailInput.setAttribute('aria-invalid', 'false');
-        this.emailInput.parentElement.classList.remove('error');
+        if (this.errorElement) {
+            this.errorElement.textContent = '';
+            this.errorElement.style.display = 'none';
+        }
+        if (this.emailInput) {
+            this.emailInput.setAttribute('aria-invalid', 'false');
+            this.emailInput.parentElement?.classList.remove('error');
+        }
     }
 
     hideSuccess() {
-        this.successElement.setAttribute('aria-hidden', 'true');
-        this.successElement.style.display = 'none';
+        if (this.successElement) {
+            this.successElement.setAttribute('aria-hidden', 'true');
+            this.successElement.style.display = 'none';
+        }
     }
 }
 

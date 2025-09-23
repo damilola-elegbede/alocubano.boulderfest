@@ -32,7 +32,7 @@ function createModalBackdrop() {
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.5);
-    z-index: 9998;
+    z-index: var(--z-modal-backdrop, 1040);
     opacity: 0;
     transition: opacity 0.3s ease;
   `;
@@ -51,7 +51,7 @@ function createModalDialog(type, title, message, options = {}) {
     } = options;
 
     const modal = document.createElement('div');
-    modal.className = `modal modal-${type} ${className}`;
+    modal.className = `modal modal--${type} ${className}`;
     modal.setAttribute('role', 'dialog');
     modal.setAttribute('aria-modal', 'true');
     modal.setAttribute('aria-labelledby', 'modal-title');
@@ -61,18 +61,18 @@ function createModalDialog(type, title, message, options = {}) {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%) scale(0.9);
-    background: var(--color-background-primary, #ffffff);
+    background: var(--color-surface-elevated, #ffffff);
     border-radius: 8px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     max-width: 400px;
     width: 90%;
     max-height: 80vh;
     overflow-y: auto;
-    z-index: 9999;
+    z-index: var(--z-modal, 1050);
     opacity: 0;
     transition: all 0.3s ease;
     padding: 24px;
-    border: 2px solid var(--color-border-primary, #e0e0e0);
+    border: 2px solid var(--color-border, #e0e0e0);
   `;
 
     // Icon for modal type
@@ -95,9 +95,9 @@ function createModalDialog(type, title, message, options = {}) {
       ${escapeHtml(message).replace(/\n/g, '<br>')}
     </div>
     <div class="modal-actions" style="display: flex; gap: 12px; justify-content: flex-end;">
-      ${showCancel ? `<button type="button" class="modal-cancel" style="
+      ${showCancel ? `<button type="button" class="modal__cancel" style="
         padding: 8px 16px;
-        border: 2px solid var(--color-border-primary, #e0e0e0);
+        border: 2px solid var(--color-border, #e0e0e0);
         background: transparent;
         color: var(--color-text-primary, #000000);
         border-radius: 4px;
@@ -105,11 +105,11 @@ function createModalDialog(type, title, message, options = {}) {
         font-size: 14px;
         transition: all 0.2s ease;
       ">${escapeHtml(cancelText)}</button>` : ''}
-      <button type="button" class="modal-confirm" style="
+      <button type="button" class="modal__confirm" style="
         padding: 8px 16px;
-        border: 2px solid var(--color-accent, #d4af37);
-        background: var(--color-accent, #d4af37);
-        color: var(--color-background-primary, #ffffff);
+        border: 2px solid var(--color-primary, #d4af37);
+        background: var(--color-primary, #d4af37);
+        color: var(--color-white, #ffffff);
         border-radius: 4px;
         cursor: pointer;
         font-size: 14px;
@@ -155,8 +155,8 @@ function showModal(type, title, message, options = {}) {
 
         // Focus management
         const previousFocus = document.activeElement;
-        const confirmButton = modal.querySelector('.modal-confirm');
-        const cancelButton = modal.querySelector('.modal-cancel');
+        const confirmButton = modal.querySelector('.modal__confirm');
+        const cancelButton = modal.querySelector('.modal__cancel');
 
         // Animate in
         requestAnimationFrame(() => {

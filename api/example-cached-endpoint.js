@@ -5,7 +5,7 @@ import { setSecureCorsHeaders } from '../lib/cors-config.js';
  */
 
 import { getCacheService } from "../lib/cache-service.js";
-import { CACHE_TYPES } from "../../lib/cache/index.js";
+import { CACHE_TYPES } from "../lib/cache/index.js";
 
 const cacheService = getCacheService();
 

@@ -545,7 +545,7 @@ export class CartManager extends EventTarget {
     setupEventListeners() {
     // Listen for storage changes from other tabs
         window.addEventListener('storage', (event) => {
-            if (event.key === this.storageKey) {
+            if (event.key === this.storageKey || event.key === this.testStorageKey) {
                 this.loadFromStorage();
                 this.emit('cart:synced', this.getState());
             }

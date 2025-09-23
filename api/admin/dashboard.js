@@ -18,7 +18,15 @@ async function handler(req, res) {
 
     // Get query parameters with proper NaN handling
     const eventId = safeParseInt(req.query?.eventId);
-    const includeTestData = req.query?.includeTestData === 'true';
+        // Fix includeTestData parsing logic
+    const rawIncludeTestData = req.query?.includeTestData;
+    const includeTestData = rawIncludeTestData === undefined 
+      ? null 
+      : rawIncludeTestData === 'true' 
+        ? true 
+        : rawIncludeTestData === 'false' 
+          ? false 
+          : null;
 
     // Check if event_id and is_test columns exist
     const ticketsHasEventId = await columnExists(db, 'tickets', 'event_id');
@@ -28,7 +36,7 @@ async function handler(req, res) {
 
     // Determine if we should filter test data
     // If includeTestData is explicitly set, use that; otherwise auto-detect based on test mode
-    const shouldFilterTestData = includeTestData !== null ? !includeTestData : !isTestMode(req);
+    const shouldFilterTestData = includeTestData === null ? !isTestMode(req) : !includeTestData;
 
     // Build WHERE clauses based on eventId parameter and column existence
     const ticketWhereClause = eventId && ticketsHasEventId ? 'AND event_id = ?' : '';
@@ -72,10 +80,23 @@ async function handler(req, res) {
       for (let i = 0; i < 10; i++) {
         statsParams.push(eventId);
       }
+
+      // Add parameters for test mode subqueries if they exist and use event_id
+      if (ticketsHasTestMode && transactionsHasTestMode) {
+        // test_tickets subquery uses tickets table
+        statsParams.push(eventId);
+      }
     }
     if (eventId && transactionsHasEventId) {
-      // 1 subquery uses transactions table with event_id filtering
+      // 1 subquery uses transactions table with event_id filtering (total_revenue)
       statsParams.push(eventId);
+
+      // Add parameters for test mode subqueries if they exist and use event_id
+      if (ticketsHasTestMode && transactionsHasTestMode) {
+        // test_transactions and test_revenue subqueries use transactions table
+        statsParams.push(eventId);
+        statsParams.push(eventId);
+      }
     }
 
     const statsResult = await db.execute(statsQuery, statsParams);

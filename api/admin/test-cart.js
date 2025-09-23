@@ -31,12 +31,6 @@ function sanitizeAdminUserInfo(userInfo) {
   return userInfo.substring(0, 2) + '*'.repeat(userInfo.length - 2);
 }
 
-const ADMIN_SECRET = process.env.ADMIN_SECRET;
-
-if (!ADMIN_SECRET) {
-  throw new Error('❌ FATAL: ADMIN_SECRET environment variable not configured');
-}
-
 // Test ticket configurations
 const TEST_TICKET_TYPES = {
   'weekend-pass': {
@@ -64,6 +58,12 @@ const TEST_TICKET_TYPES = {
 
 // Admin authentication middleware
 function verifyAdminAuth(req) {
+  // Move ADMIN_SECRET validation inside function to avoid module load errors
+  const ADMIN_SECRET = process.env.ADMIN_SECRET;
+  if (!ADMIN_SECRET) {
+    throw new Error('Authentication service unavailable - ADMIN_SECRET not configured');
+  }
+
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     throw new Error('Missing or invalid authorization header');
@@ -71,7 +71,11 @@ function verifyAdminAuth(req) {
 
   const token = authHeader.substring(7);
   try {
-    const decoded = jwt.verify(token, ADMIN_SECRET);
+    // Harden JWT verification with algorithms restriction and clock tolerance
+    const decoded = jwt.verify(token, ADMIN_SECRET, {
+      algorithms: ['HS256'],
+      clockTolerance: 5
+    });
     if (!decoded.isAdmin) {
       throw new Error('Not an admin user');
     }
@@ -98,18 +102,27 @@ function validateTestCartRequest(body) {
       throw new Error(`Invalid ticket type. Available: ${Object.keys(TEST_TICKET_TYPES).join(', ')}`);
     }
 
-    if (!quantity || quantity < 1 || quantity > 10) {
-      throw new Error('Quantity must be between 1 and 10');
+    // Validate quantity as integer between 1 and 10
+    const parsedQuantity = Number(quantity);
+    if (!Number.isInteger(parsedQuantity) || parsedQuantity < 1 || parsedQuantity > 10) {
+      throw new Error('Quantity must be an integer between 1 and 10');
     }
   }
 
   if (action === 'add_donation') {
-    if (!donationAmount || donationAmount < 5 || donationAmount > 1000) {
-      throw new Error('Donation amount must be between $5 and $1000');
+    // Validate donation amount as finite number between 5 and 1000
+    const parsedDonationAmount = Number(donationAmount);
+    if (!Number.isFinite(parsedDonationAmount) || parsedDonationAmount < 5 || parsedDonationAmount > 1000) {
+      throw new Error('Donation amount must be a valid number between $5 and $1000');
     }
   }
 
-  return { action, ticketType, quantity, donationAmount };
+  return { 
+    action, 
+    ticketType, 
+    quantity: action === 'add_ticket' ? Number(quantity) : quantity,
+    donationAmount: action === 'add_donation' ? Number(donationAmount) : donationAmount
+  };
 }
 
 export default async function handler(req, res) {

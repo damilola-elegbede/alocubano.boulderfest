@@ -641,6 +641,7 @@
             credentials: "include" // Include cookies for production
           });
 
+          const data = await response.json();
 
           // Response handled locally for security
 
@@ -979,7 +980,7 @@
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "X-CSRF-Token": window.csrfToken,
+              "X-CSRF-Token": csrfToken,
             },
           });
 

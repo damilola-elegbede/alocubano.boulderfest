@@ -4,21 +4,26 @@
  */
 
 // Detect if we're in development mode
-const isDevelopment = () => {
+const detectDevelopment = () => {
+    // Guard against server-side environments where window is undefined
+    if (typeof window === 'undefined') {
+        return false;
+    }
+
     // Check for common development indicators
     return (
         window.location.hostname === 'localhost' ||
-    window.location.hostname === '127.0.0.1' ||
-    window.location.hostname.includes('vercel.app') ||
-    window.location.hostname.includes('ngrok') ||
-    window.location.port !== '' ||
-    window.location.search.includes('debug=true') ||
-    localStorage.getItem('debug') === 'true'
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname.includes('vercel.app') ||
+        window.location.hostname.includes('ngrok') ||
+        window.location.port !== '' ||
+        window.location.search.includes('debug=true') ||
+        localStorage.getItem('debug') === 'true'
     );
 };
 
 // Cache the development status
-const DEV_MODE = isDevelopment();
+const DEV_MODE = detectDevelopment();
 
 /**
  * Logger class with environment-aware methods
