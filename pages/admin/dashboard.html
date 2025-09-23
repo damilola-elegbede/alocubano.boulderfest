@@ -408,7 +408,7 @@
 
           // Add test mode parameter if in test mode view
           if (window.testModeView) {
-            url.searchParams.set('testMode', 'true');
+            url.searchParams.set('includeTestData', 'true');
           }
 
           const response = await fetch(url.toString(), {
@@ -633,7 +633,7 @@
           ...(status && { status }),
           ...(checkedIn && { checkedIn }),
           ...(selectedEventId && { eventId: selectedEventId }),
-          ...(window.testModeView && { testMode: 'true' }),
+          ....(window.testModeView && { includeTestData: 'true' }),
         });
 
         try {
@@ -863,7 +863,7 @@
           ...(status && { status }),
           ...(checkedIn && { checkedIn }),
           ...(selectedEventId && { eventId: selectedEventId }),
-          ...(window.testModeView && { testMode: 'true' }),
+          ....(window.testModeView && { includeTestData: 'true' }),
         });
 
         try {

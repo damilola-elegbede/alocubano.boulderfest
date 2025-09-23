@@ -144,7 +144,7 @@ class NewsletterSignup {
             const data = await response.json();
 
             if (response.ok) {
-                this.handleSuccess(data);
+                this.handleSuccess();
             } else {
                 this.handleError(
                     data.error || 'Subscription failed. Please try again.'

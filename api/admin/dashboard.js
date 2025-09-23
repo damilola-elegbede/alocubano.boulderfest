@@ -18,15 +18,22 @@ async function handler(req, res) {
 
     // Get query parameters with proper NaN handling
     const eventId = safeParseInt(req.query?.eventId);
-        // Fix includeTestData parsing logic
+    
+    // Support both testMode and includeTestData parameters for backward compatibility
     const rawIncludeTestData = req.query?.includeTestData;
-    const includeTestData = rawIncludeTestData === undefined 
-      ? null 
-      : rawIncludeTestData === 'true' 
-        ? true 
-        : rawIncludeTestData === 'false' 
-          ? false 
-          : null;
+    const rawTestMode = req.query?.testMode;
+    
+    // Normalize parameters - prefer includeTestData if both exist
+    let includeTestData;
+    if (rawIncludeTestData !== undefined) {
+      includeTestData = rawIncludeTestData === 'true' ? true : 
+                       rawIncludeTestData === 'false' ? false : null;
+    } else if (rawTestMode !== undefined) {
+      includeTestData = rawTestMode === 'true' ? true : 
+                       rawTestMode === 'false' ? false : null;
+    } else {
+      includeTestData = null;
+    }
 
     // Check if event_id and is_test columns exist
     const ticketsHasEventId = await columnExists(db, 'tickets', 'event_id');
