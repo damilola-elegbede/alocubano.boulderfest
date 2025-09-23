@@ -67,12 +67,13 @@
   transition: all var(--transition-base);
 }
 
-.newsletter-submit:disabled {
-  background: var(--color-border-medium);
-  border-left-color: var(--color-border-medium);
-  color: var(--color-text-disabled, var(--color-black));  /* Semantic disabled text color with fallback */
-  cursor: not-allowed;
-  opacity: 1;  /* Full opacity for better readability */
+.newsletter-submit:disabled,
+.form-button-type.newsletter-submit:disabled {
+  background: var(--color-border-medium) !important;
+  border-left-color: var(--color-border-medium) !important;
+  color: var(--color-text-disabled, var(--color-black)) !important;  /* Semantic disabled text color with fallback */
+  cursor: not-allowed !important;
+  opacity: 1 !important;  /* Full opacity for better readability */
 }
 
 .newsletter-submit .button-icon {
@@ -87,7 +88,8 @@
   color: var(--color-white) !important;
 }
 
-.newsletter-submit:disabled:hover {
+.newsletter-submit:disabled:hover,
+.form-button-type.newsletter-submit:disabled:hover {
   background: var(--color-border-medium) !important;
   transform: none !important;
   border-left-color: var(--color-border-medium) !important;
@@ -424,13 +426,15 @@
   color: var(--color-text-inverse);
 }
 
-[data-theme="dark"] .newsletter-submit:disabled {
-  background: var(--color-border-medium);
-  border-left-color: var(--color-border-medium);
-  color: var(--color-text-disabled-inverse, var(--color-white));  /* Semantic disabled text color for dark mode with fallback */
+[data-theme="dark"] .newsletter-submit:disabled,
+[data-theme="dark"] .form-button-type.newsletter-submit:disabled {
+  background: var(--color-border-medium) !important;
+  border-left-color: var(--color-border-medium) !important;
+  color: var(--color-text-disabled-inverse, var(--color-white)) !important;  /* Semantic disabled text color for dark mode with fallback */
 }
 
-[data-theme="dark"] .newsletter-submit:disabled:hover {
+[data-theme="dark"] .newsletter-submit:disabled:hover,
+[data-theme="dark"] .form-button-type.newsletter-submit:disabled:hover {
   background: var(--color-border-medium) !important;
   border-left-color: var(--color-border-medium) !important;
   color: var(--color-text-disabled-inverse, var(--color-white)) !important;  /* Maintain semantic disabled text color on hover in dark mode */
