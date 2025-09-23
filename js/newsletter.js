@@ -147,7 +147,12 @@ class NewsletterSignup {
             const data = await response.json();
 
             if (response.ok) {
-                this.handleSuccess();
+                // Check if it's a preview mode response
+                if (data.subscriber?.status === 'preview') {
+                    this.handleSuccess('🎉 Preview Mode: Subscription simulated successfully!');
+                } else {
+                    this.handleSuccess();
+                }
             } else {
                 this.handleError(
                     data.error || 'Subscription failed. Please try again.'
@@ -229,7 +234,7 @@ class NewsletterSignup {
         }
     }
 
-    handleSuccess() {
+    handleSuccess(customMessage = null) {
     // Clear form
         if (this.form) {
             this.form.reset();
@@ -239,7 +244,8 @@ class NewsletterSignup {
         this.updateButtonState();
 
         // Show popup notification
-        this.showPopup('success', '🎉 Welcome to the A Lo Cubano family! Check your email to confirm your subscription.');
+        const message = customMessage || '🎉 Welcome to the A Lo Cubano family! Check your email to confirm your subscription.';
+        this.showPopup('success', message);
 
         // Show inline success message as well
         if (this.successElement) {
