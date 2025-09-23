@@ -617,6 +617,26 @@
       })();
     </script>
 
+    <!-- PayPal SDK (conditionally loaded) -->
+    <script>
+      // Conditionally load PayPal SDK configuration for payment selector
+      (async function () {
+        try {
+          const response = await fetch("/api/config/paypal-public");
+          if (response.ok) {
+            const data = await response.json();
+            window.PAYPAL_CONFIG = data;
+            console.log('PayPal configuration loaded:', data.environment);
+          } else {
+            console.warn("PayPal configuration not available - will fallback to Stripe only");
+          }
+        } catch (error) {
+          console.warn("PayPal configuration load failed:", error.message);
+          // PayPal integration will gracefully fallback to Stripe
+        }
+      })();
+    </script>
+
     <script src="/js/navigation.js"></script>
     <script src="/js/components/lightbox.js"></script>
     <script src="/js/components/lazy-loading.js"></script>

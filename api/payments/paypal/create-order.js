@@ -1,14 +1,20 @@
 /**
  * PayPal Create Order API Endpoint
- * Creates a PayPal order for processing payments
+ * Creates a PayPal order with database storage and test mode support
  */
 
 import { withRateLimit } from '../../utils/rate-limiter.js';
-import { setCorsHeaders, isOriginAllowed } from '../../utils/cors.js';
-
-// PayPal API base URL configuration
-const PAYPAL_API_URL =
-  process.env.PAYPAL_API_URL || 'https://api-m.sandbox.paypal.com';
+import { setSecureCorsHeaders } from '../../../lib/cors-config.js';
+import { getDatabaseClient } from '../../../lib/database.js';
+import { createPayPalOrder } from '../../../lib/paypal-service.js';
+import {
+  isTestMode,
+  getTestModeFlag,
+  generateTestAwareTransactionId,
+  createTestModeMetadata,
+  logTestModeOperation
+} from '../../../lib/test-mode-utils.js';
+import { v4 as uuidv4 } from 'uuid';
 
 // Maximum request body size (100KB)
 const MAX_BODY_SIZE = 100 * 1024;
@@ -17,15 +23,18 @@ const MAX_BODY_SIZE = 100 * 1024;
 const RATE_LIMIT_CONFIG = {
   windowMs: 60000, // 1 minute
   max: 10, // 10 requests per minute per IP
-  message:
-    'Too many payment attempts. Please wait a moment before trying again.'
+  message: 'Too many payment attempts. Please wait a moment before trying again.'
 };
 
 async function createOrderHandler(req, res) {
-  // Set CORS headers with origin validation
-  setCorsHeaders(req, res, {
-    methods: 'POST, OPTIONS',
-    headers: 'Content-Type, Authorization'
+  console.log('=== PayPal Create Order Handler Started ===');
+  console.log('Request method:', req.method);
+  console.log('Test mode:', isTestMode(req));
+
+  // Set secure CORS headers
+  setSecureCorsHeaders(req, res, {
+    allowedMethods: ['POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'X-Requested-With', 'X-Test-Mode']
   });
 
   // Handle preflight requests
@@ -34,6 +43,7 @@ async function createOrderHandler(req, res) {
   }
 
   if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST, OPTIONS');
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
@@ -43,8 +53,22 @@ async function createOrderHandler(req, res) {
     return res.status(413).json({ error: 'Request body too large' });
   }
 
+  let dbClient;
+  let transactionId;
+
   try {
-    const { cartItems, customerInfo } = req.body;
+    const { cartItems, customerInfo, testMode = false } = req.body;
+
+    // Detect test mode from various sources
+    const isRequestTestMode = testMode ||
+      isTestMode(req) ||
+      req.headers['x-test-mode'] === 'true' ||
+      cartItems?.some(item => item.isTestItem || item.name?.startsWith('TEST'));
+
+    logTestModeOperation('PayPal: Order creation started', {
+      cartItems: cartItems?.length,
+      isRequestTestMode
+    }, req);
 
     // Validate required fields
     if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
@@ -53,22 +77,30 @@ async function createOrderHandler(req, res) {
 
     // Validate cart items limit (prevent abuse)
     if (cartItems.length > 50) {
-      return res
-        .status(400)
-        .json({ error: 'Too many items in cart (maximum 50)' });
+      return res.status(400).json({
+        error: 'Too many items in cart (maximum 50)'
+      });
     }
 
     // Calculate total and validate items
     let totalAmount = 0;
     const orderItems = [];
+    let orderType = 'tickets'; // Default to tickets
+
+    // Track what types of items we have
+    const hasTickets = cartItems.some((item) => item.type === 'ticket');
+    const hasDonations = cartItems.some((item) => item.type === 'donation');
+
+    // Set order type based on cart contents
+    if (hasDonations && !hasTickets) {
+      orderType = 'donation';
+    } else if (hasTickets) {
+      orderType = 'tickets';
+    }
 
     for (const item of cartItems) {
       // Comprehensive validation
-      if (
-        !item.name ||
-        typeof item.name !== 'string' ||
-        item.name.length > 200
-      ) {
+      if (!item.name || typeof item.name !== 'string' || item.name.length > 200) {
         return res.status(400).json({
           error: `Invalid item name: ${item.name || 'Unknown'}`
         });
@@ -80,11 +112,7 @@ async function createOrderHandler(req, res) {
         });
       }
 
-      if (
-        !Number.isInteger(item.quantity) ||
-        item.quantity <= 0 ||
-        item.quantity > 100
-      ) {
+      if (!Number.isInteger(item.quantity) || item.quantity <= 0 || item.quantity > 100) {
         return res.status(400).json({
           error: `Invalid quantity for item: ${item.name}`
         });
@@ -96,10 +124,13 @@ async function createOrderHandler(req, res) {
       // Prepare sanitized item for PayPal
       orderItems.push({
         name: item.name.substring(0, 127), // PayPal name limit
-        price: item.price,
-        quantity: item.quantity,
-        description:
-          item.description || `A Lo Cubano Boulder Fest - ${item.name}`
+        unit_amount: {
+          currency_code: 'USD',
+          value: item.price.toFixed(2)
+        },
+        quantity: item.quantity.toString(),
+        description: item.description || `A Lo Cubano Boulder Fest - ${item.name}`,
+        category: item.type === 'ticket' ? 'DIGITAL_GOODS' : 'DONATION'
       });
     }
 
@@ -110,133 +141,157 @@ async function createOrderHandler(req, res) {
       });
     }
 
-    // Check if PayPal credentials are configured
-    if (!process.env.PAYPAL_CLIENT_ID || !process.env.PAYPAL_CLIENT_SECRET) {
-      console.error('PayPal credentials not configured');
-      // Return a user-friendly error
-      return res.status(503).json({
-        error: 'PayPal payment processing is temporarily unavailable',
-        message: 'Please try using a credit card instead, or contact support.',
-        fallbackUrl: '/api/payments/create-checkout-session' // Suggest Stripe as fallback
-      });
-    }
-
-    // Get PayPal access token
-    const auth = Buffer.from(
-      `${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`
-    ).toString('base64');
-
-    const tokenResponse = await fetch(`${PAYPAL_API_URL}/v1/oauth2/token`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Basic ${auth}`,
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: 'grant_type=client_credentials'
-    });
-
-    if (!tokenResponse.ok) {
-      throw new Error('Failed to authenticate with PayPal');
-    }
-
-    const { access_token } = await tokenResponse.json();
-
     // Validate and determine return URLs
     const origin = req.headers.origin;
     let baseUrl = 'https://alocubano.boulderfest.com';
 
-    if (origin && isOriginAllowed(origin)) {
+    if (origin && (origin.includes('localhost') || origin.includes('vercel.app') || origin.includes('alocubano.boulderfest.com'))) {
       baseUrl = origin;
     }
 
-    // Store customer info for order tracking (if provided)
-    const orderMetadata = {};
-    if (customerInfo && typeof customerInfo === 'object') {
-      // Sanitize and store customer info
-      if (customerInfo.email && typeof customerInfo.email === 'string') {
-        orderMetadata.email = customerInfo.email.substring(0, 254);
-      }
-      if (
-        customerInfo.firstName &&
-        typeof customerInfo.firstName === 'string'
-      ) {
-        orderMetadata.firstName = customerInfo.firstName.substring(0, 50);
-      }
-      if (customerInfo.lastName && typeof customerInfo.lastName === 'string') {
-        orderMetadata.lastName = customerInfo.lastName.substring(0, 50);
-      }
-      if (customerInfo.phone && typeof customerInfo.phone === 'string') {
-        orderMetadata.phone = customerInfo.phone.substring(0, 20);
-      }
-    }
+    // Generate transaction ID and reference ID
+    const transactionUuid = uuidv4();
+    transactionId = generateTestAwareTransactionId(`paypal_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`, req);
+    const referenceId = `ALCBF-${Date.now()}`;
 
-    // Create PayPal order
-    const orderResponse = await fetch(`${PAYPAL_API_URL}/v2/checkout/orders`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${access_token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        intent: 'CAPTURE',
-        purchase_units: [
-          {
-            amount: {
-              currency_code: 'USD',
-              value: totalAmount.toFixed(2),
-              breakdown: {
-                item_total: {
-                  currency_code: 'USD',
-                  value: totalAmount.toFixed(2)
-                }
-              }
-            },
-            items: orderItems.map((item) => ({
-              name: item.name,
-              unit_amount: {
+    // Initialize database connection
+    dbClient = await getDatabaseClient();
+
+    // Prepare customer info with validation
+    const customerEmail = customerInfo?.email || 'pending@paypal.user';
+    const customerName = customerInfo?.firstName && customerInfo?.lastName
+      ? `${customerInfo.firstName} ${customerInfo.lastName}`
+      : 'Pending PayPal User';
+
+    // Create PayPal order data
+    const paypalOrderData = {
+      intent: 'CAPTURE',
+      purchase_units: [
+        {
+          reference_id: referenceId,
+          amount: {
+            currency_code: 'USD',
+            value: totalAmount.toFixed(2),
+            breakdown: {
+              item_total: {
                 currency_code: 'USD',
-                value: item.price.toFixed(2)
-              },
-              quantity: item.quantity.toString(),
-              description: item.description
-            })),
-            description: 'A Lo Cubano Boulder Fest Purchase',
-            custom_id: orderMetadata.email || undefined, // Store email for reference
-            invoice_id: `ALCBF-${Date.now()}` // Unique invoice ID
-          }
-        ],
-        application_context: {
-          brand_name: 'A Lo Cubano Boulder Fest',
-          landing_page: 'BILLING',
-          user_action: 'PAY_NOW',
-          return_url: `${baseUrl}/success`,
-          cancel_url: `${baseUrl}/failure`,
-          shipping_preference: 'NO_SHIPPING' // Digital tickets, no shipping needed
+                value: totalAmount.toFixed(2)
+              }
+            }
+          },
+          items: orderItems,
+          description: 'A Lo Cubano Boulder Fest Purchase',
+          custom_id: customerEmail,
+          invoice_id: referenceId
         }
-      })
+      ],
+      application_context: {
+        brand_name: 'A Lo Cubano Boulder Fest',
+        landing_page: 'BILLING',
+        user_action: 'PAY_NOW',
+        return_url: `${baseUrl}/success?reference_id=${referenceId}&paypal=true${isRequestTestMode ? '&test_mode=true' : ''}`,
+        cancel_url: `${baseUrl}/failure?reference_id=${referenceId}&paypal=true${isRequestTestMode ? '&test_mode=true' : ''}`,
+        shipping_preference: 'NO_SHIPPING'
+      }
+    };
+
+    // Create PayPal order using service
+    const paypalOrder = await createPayPalOrder(paypalOrderData, req);
+
+    // Store transaction in database BEFORE redirect
+    const insertResult = await dbClient.execute({
+      sql: `INSERT INTO transactions (
+        transaction_id, uuid, type, status, amount_cents, total_amount, currency,
+        paypal_order_id, payment_processor, reference_id, cart_data,
+        customer_email, customer_name, order_data, metadata,
+        event_id, source, is_test, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+      args: [
+        transactionId,
+        transactionUuid,
+        orderType,
+        'pending',
+        Math.round(totalAmount * 100), // Convert to cents
+        Math.round(totalAmount * 100),
+        'USD',
+        paypalOrder.id,
+        'paypal',
+        referenceId,
+        JSON.stringify(cartItems),
+        customerEmail,
+        customerName,
+        JSON.stringify(paypalOrderData),
+        JSON.stringify(createTestModeMetadata(req, {
+          paypal_order_id: paypalOrder.id,
+          reference_id: referenceId,
+          total_amount: totalAmount,
+          item_count: cartItems.length
+        })),
+        'boulderfest_2026',
+        'website',
+        getTestModeFlag(req)
+      ]
     });
 
-    if (!orderResponse.ok) {
-      const errorData = await orderResponse.json();
-      console.error('PayPal order creation failed:', errorData);
-      throw new Error('Failed to create PayPal order');
+    console.log(`${isRequestTestMode ? 'TEST ' : ''}PayPal order created and stored:`, {
+      transactionId,
+      paypalOrderId: paypalOrder.id,
+      referenceId,
+      totalAmount,
+      testMode: isRequestTestMode
+    });
+
+    // Extract approval URL
+    const approvalUrl = paypalOrder.links?.find(link => link.rel === 'approve')?.href;
+
+    if (!approvalUrl) {
+      throw new Error('PayPal approval URL not found in order response');
     }
 
-    const order = await orderResponse.json();
-
-    // Return order ID for client-side approval
+    // Return order details
     res.status(200).json({
-      orderId: order.id,
-      approvalUrl: order.links.find((link) => link.rel === 'approve')?.href
+      orderId: paypalOrder.id,
+      approvalUrl: approvalUrl,
+      transactionId: transactionId,
+      referenceId: referenceId,
+      totalAmount: totalAmount,
+      testMode: isRequestTestMode
     });
+
   } catch (error) {
     console.error('PayPal order creation error:', error);
 
-    // Return user-friendly error with Stripe fallback suggestion
+    // Log error with transaction context
+    if (transactionId) {
+      logTestModeOperation('PayPal: Order creation failed', {
+        transactionId,
+        error: error.message
+      }, req);
+    }
+
+    // Handle specific error types
+    if (error.message?.includes('PAYPAL_ORDER_CREATION_FAILED')) {
+      return res.status(400).json({
+        error: 'PayPal order creation failed',
+        message: 'Invalid order data. Please check your cart and try again.',
+        fallbackUrl: '/api/payments/create-checkout-session'
+      });
+    }
+
+    if (error.message?.includes('PayPal credentials not configured')) {
+      return res.status(503).json({
+        error: 'PayPal payment processing is temporarily unavailable',
+        message: 'Please try using a credit card instead, or contact support.',
+        fallbackUrl: '/api/payments/create-checkout-session'
+      });
+    }
+
+    // Generic error response
     res.status(500).json({
       error: 'PayPal payment initialization failed',
       message: 'Please try using a credit card instead, or try again later.',
-      fallbackUrl: '/api/payments/create-checkout-session'
+      fallbackUrl: '/api/payments/create-checkout-session',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 }

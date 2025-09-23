@@ -174,7 +174,9 @@ async function processUniversalRegistration(fullSession, transaction) {
       ticketCount: tickets.length,
       registrationToken,
       registrationDeadline,
-      tickets
+      tickets,
+      paymentProcessor: 'stripe',
+      processorTransactionId: fullSession.id
     });
 
     // 3) Log email sent (best-effort)

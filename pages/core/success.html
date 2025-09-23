@@ -533,9 +533,12 @@
     </footer>
 
     <script>
-      // Get session ID from URL parameters
+      // Get URL parameters for both Stripe and PayPal
       const urlParams = new URLSearchParams(window.location.search);
-      const sessionId = urlParams.get("session_id");
+      const sessionId = urlParams.get("session_id"); // Stripe
+      const token = urlParams.get("token"); // PayPal
+      const payerId = urlParams.get("PayerID"); // PayPal
+      const testMode = urlParams.get("test_mode") === "true";
 
       // Elements
       const loadingState = document.querySelector(".loading-state");
@@ -552,6 +555,30 @@
       // Countdown timer variables
       let countdownInterval;
       let remainingSeconds = 20;
+
+      // Detect payment method
+      function detectPaymentMethod() {
+        if (sessionId && sessionId.startsWith('cs_')) {
+          return 'stripe';
+        } else if (token && payerId) {
+          return 'paypal';
+        }
+        return null;
+      }
+
+      // Update loading message based on payment method
+      function updateLoadingMessage(paymentMethod) {
+        const loadingText = document.querySelector('.checkout-loading-text');
+        const loadingSubtext = document.querySelector('.checkout-loading-subtext');
+
+        if (paymentMethod === 'paypal') {
+          if (loadingText) loadingText.textContent = 'Processing PayPal Payment';
+          if (loadingSubtext) loadingSubtext.textContent = 'Please wait while we capture your PayPal transaction...';
+        } else if (paymentMethod === 'stripe') {
+          if (loadingText) loadingText.textContent = 'Verifying Payment';
+          if (loadingSubtext) loadingSubtext.textContent = 'Please wait while we confirm your transaction...';
+        }
+      }
 
       // Start countdown timer
       function startCountdown() {
@@ -570,13 +597,8 @@
         }, 1000);
       }
 
-      // Verify payment and update UI
-      async function verifyPayment() {
-        if (!sessionId) {
-          showError();
-          return;
-        }
-
+      // Verify Stripe payment
+      async function verifyStripePayment() {
         try {
           const response = await fetch(
             `/api/payments/checkout-success?session_id=${sessionId}`,
@@ -584,33 +606,110 @@
           const data = await response.json();
 
           if (response.ok && data.success) {
-            showSuccess(data);
+            // Transform Stripe data to unified format
+            const unifiedData = {
+              success: true,
+              paymentMethod: 'stripe',
+              session: data.session,
+              order: {
+                id: data.session.id,
+                totalAmount: data.session.amount,
+                customerEmail: data.session.customer_email
+              },
+              instructions: {
+                clearCart: true,
+                nextSteps: [
+                  'Check your email for order confirmation',
+                  'Complete your festival registration (link in email)',
+                  'Save your confirmation number for check-in',
+                  'Join our WhatsApp group for updates'
+                ]
+              },
+              message: 'Payment successful! Thank you for your purchase.',
+              testMode: testMode
+            };
 
-            // Clear the cart as instructed by the API
-            if (data.instructions?.clearCart) {
-              localStorage.removeItem("alocubano_cart");
-              // Dispatch storage event for cross-tab sync
-              window.dispatchEvent(
-                new StorageEvent("storage", {
-                  key: "alocubano_cart",
-                  oldValue: localStorage.getItem("alocubano_cart"),
-                  newValue: null,
-                  url: window.location.href,
-                  storageArea: localStorage,
-                }),
-              );
-              // Dispatch custom event
-              window.dispatchEvent(new Event("cartCleared"));
-            }
-
-            // Start the countdown timer
-            startCountdown();
+            showSuccess(unifiedData);
+            return true;
           } else {
-            showError();
+            return false;
           }
         } catch (error) {
-          console.error("Error verifying payment:", error);
-          showError();
+          console.error("Error verifying Stripe payment:", error);
+          return false;
+        }
+      }
+
+      // Capture and verify PayPal payment
+      async function capturePayPalPayment() {
+        try {
+          // First capture the PayPal order
+          const captureResponse = await fetch('/api/payments/paypal/capture-order', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              orderId: token
+            })
+          });
+
+          const captureData = await captureResponse.json();
+
+          if (captureResponse.ok && captureData.success) {
+            // Transform PayPal data to unified format
+            const unifiedData = {
+              success: true,
+              paymentMethod: 'paypal',
+              order: {
+                id: captureData.orderId,
+                totalAmount: captureData.amount,
+                customerEmail: captureData.payer?.email
+              },
+              paypal: {
+                orderId: captureData.orderId,
+                captureId: captureData.captureId,
+                payer: captureData.payer
+              },
+              instructions: captureData.instructions,
+              message: captureData.message,
+              testMode: captureData.testMode || testMode
+            };
+
+            showSuccess(unifiedData);
+            return true;
+          } else {
+            console.error('PayPal capture failed:', captureData);
+            return false;
+          }
+        } catch (error) {
+          console.error("Error capturing PayPal payment:", error);
+          return false;
+        }
+      }
+
+      // Main payment verification function
+      async function verifyPayment() {
+        const paymentMethod = detectPaymentMethod();
+
+        if (!paymentMethod) {
+          showError({ error: 'No payment method detected' });
+          return;
+        }
+
+        // Update loading message based on payment method
+        updateLoadingMessage(paymentMethod);
+
+        let success = false;
+
+        if (paymentMethod === 'stripe') {
+          success = await verifyStripePayment();
+        } else if (paymentMethod === 'paypal') {
+          success = await capturePayPalPayment();
+        }
+
+        if (!success) {
+          showError({ paymentMethod });
         }
       }
 
@@ -618,35 +717,64 @@
         loadingState.style.display = "none";
         successContainer.style.display = "flex";
 
-        // Update main message
-        if (data.message) {
-          mainMessage.textContent = data.message;
+        // Update main message with payment method context
+        let successMessage = data.message || 'Payment successful! Thank you for your purchase.';
+        if (data.paymentMethod === 'paypal') {
+          successMessage = `PayPal payment successful! Thank you for your purchase. Your transaction has been completed securely through PayPal.`;
+        } else if (data.paymentMethod === 'stripe') {
+          successMessage = `Credit card payment successful! Thank you for your purchase. Your transaction has been processed securely.`;
         }
+
+        if (mainMessage) {
+          mainMessage.textContent = successMessage;
+        }
+
+        // Announce success to screen readers
+        announceToScreenReader(`Payment completed successfully. ${successMessage}`);
 
         // Show order details if available
         if (data.order || data.session) {
           orderDetails.style.display = "block";
 
+          // Update order ID with payment method indicator
+          let displayId = '';
           if (data.order?.id) {
-            orderId.textContent = data.order.id;
+            displayId = data.order.id;
           } else if (data.session?.id) {
-            orderId.textContent = data.session.id;
+            displayId = data.session.id;
           }
 
+          // Add payment method prefix for clarity
+          if (data.paymentMethod === 'paypal') {
+            displayId = `PayPal: ${displayId}`;
+            // Also show capture ID if available
+            if (data.paypal?.captureId) {
+              displayId += ` (Capture: ${data.paypal.captureId})`;
+            }
+          } else if (data.paymentMethod === 'stripe') {
+            displayId = `Stripe: ${displayId}`;
+          }
+
+          if (orderId) {
+            orderId.textContent = displayId;
+          }
+
+          // Update amount
           if (data.order?.totalAmount !== undefined) {
             orderAmount.textContent = data.order.totalAmount.toFixed(2);
-          } else if (data.session?.amountTotal !== undefined) {
-            orderAmount.textContent = data.session.amountTotal.toFixed(2);
+          } else if (data.session?.amount !== undefined) {
+            orderAmount.textContent = data.session.amount.toFixed(2);
           }
 
+          // Update email
           if (data.order?.customerEmail) {
             orderEmail.textContent = data.order.customerEmail;
-          } else if (data.session?.customerEmail) {
-            orderEmail.textContent = data.session.customerEmail;
+          } else if (data.session?.customer_email) {
+            orderEmail.textContent = data.session.customer_email;
           }
         }
 
-        // Update next steps based on order type
+        // Update next steps based on payment and order type
         if (data.instructions?.nextSteps) {
           // Clear existing content safely
           stepsContent.textContent = "";
@@ -674,6 +802,48 @@
             stepsContent.appendChild(p);
           });
         }
+
+        // Show test mode indicator if applicable
+        if (data.testMode) {
+          const testModeIndicator = document.createElement("div");
+          testModeIndicator.className = "test-mode-indicator";
+          testModeIndicator.style.cssText = `
+            background: #ff6b6b;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            margin: 16px 0;
+            font-weight: bold;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 14px;
+          `;
+          testModeIndicator.textContent = "🧪 TEST MODE - This was a test transaction";
+
+          // Insert after main message
+          mainMessage.parentNode.insertBefore(testModeIndicator, mainMessage.nextSibling);
+        }
+
+        // Clear the cart as instructed by the API
+        if (data.instructions?.clearCart) {
+          localStorage.removeItem("alocubano_cart");
+          // Dispatch storage event for cross-tab sync
+          window.dispatchEvent(
+            new StorageEvent("storage", {
+              key: "alocubano_cart",
+              oldValue: localStorage.getItem("alocubano_cart"),
+              newValue: null,
+              url: window.location.href,
+              storageArea: localStorage,
+            }),
+          );
+          // Dispatch custom event
+          window.dispatchEvent(new Event("cartCleared"));
+        }
+
+        // Start the countdown timer
+        startCountdown();
       }
 
       function hasTickets(items) {
@@ -686,10 +856,65 @@
         );
       }
 
-      function showError() {
+      function showError(errorData = null) {
         loadingState.style.display = "none";
         successContainer.style.display = "none";
         errorState.style.display = "block";
+
+        // Update error message based on payment method or error data
+        const errorTitle = document.querySelector('.error-title');
+        const errorState = document.querySelector('.error-state');
+
+        let errorMessage = 'Unable to verify payment';
+        if (errorData && errorData.paymentMethod) {
+          if (errorData.paymentMethod === 'paypal') {
+            errorMessage = 'PayPal Payment Issue';
+            if (errorTitle) {
+              errorTitle.textContent = errorMessage;
+            }
+            // Add PayPal-specific error message
+            const paypalErrorMsg = document.createElement('p');
+            paypalErrorMsg.textContent = 'There was an issue processing your PayPal payment. Please check your PayPal account or contact us for assistance.';
+            paypalErrorMsg.setAttribute('role', 'alert');
+            paypalErrorMsg.setAttribute('aria-live', 'assertive');
+            errorState.insertBefore(paypalErrorMsg, errorState.querySelector('.success-actions'));
+          } else if (errorData.paymentMethod === 'stripe') {
+            errorMessage = 'Payment Verification Issue';
+            if (errorTitle) {
+              errorTitle.textContent = errorMessage;
+            }
+          }
+        }
+
+        // Announce error to screen readers
+        announceToScreenReader(`Error: ${errorMessage}. Please contact support if you need assistance.`);
+
+        // Focus the error section for screen readers
+        if (errorTitle) {
+          errorTitle.setAttribute('tabindex', '-1');
+          setTimeout(() => errorTitle.focus(), 100);
+        }
+      }
+
+      // Utility function to announce messages to screen readers
+      function announceToScreenReader(message) {
+        // Create or update ARIA live region for announcements
+        let announcer = document.getElementById('sr-announcer');
+        if (!announcer) {
+          announcer = document.createElement('div');
+          announcer.id = 'sr-announcer';
+          announcer.setAttribute('aria-live', 'polite');
+          announcer.setAttribute('aria-atomic', 'true');
+          announcer.style.position = 'absolute';
+          announcer.style.left = '-10000px';
+          announcer.style.width = '1px';
+          announcer.style.height = '1px';
+          announcer.style.overflow = 'hidden';
+          document.body.appendChild(announcer);
+        }
+
+        // Update the message
+        announcer.textContent = message;
       }
 
       // Start verification when page loads
@@ -702,11 +927,36 @@
 
     <!-- Cart system not needed on success page - cart is cleared after payment -->
     
+    <!-- PayPal SDK (conditionally loaded) -->
+    <script id="paypal-sdk-script">
+      // Conditionally load PayPal SDK if PayPal payment is detected
+      (function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const isPayPalPayment = urlParams.get("token") && urlParams.get("PayerID");
+
+        if (isPayPalPayment) {
+          // Determine environment
+          const isTestMode = urlParams.get("test_mode") === "true" ||
+                           window.location.hostname === "localhost" ||
+                           window.location.hostname.includes("vercel.app");
+
+          // Get client ID based on environment
+          const clientId = isTestMode ?
+            'demo' : // This should be replaced with actual sandbox client ID for testing
+            'production-client-id'; // This should be replaced with actual production client ID
+
+          // Only load SDK if needed for enhanced PayPal integration features
+          // For basic capture, we don't need the SDK as we're using server-side capture
+          console.log('PayPal payment detected, test mode:', isTestMode);
+        }
+      })();
+    </script>
+
     <!-- Theme Management -->
     <script type="module">
       import { initializeThemeToggle } from '/js/theme-toggle.js';
       import themeManager from '/js/theme-manager.js';
-      
+
       // Initialize theme system
       document.addEventListener('DOMContentLoaded', () => {
         themeManager.initializeTheme();

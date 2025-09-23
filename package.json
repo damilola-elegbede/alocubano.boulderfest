@@ -5,7 +5,7 @@
   "type": "module",
   "private": true,
   "engines": {
-    "node": "20.19.5"
+    "node": "22.x"
   },
   "scripts": {
     "build": "NODE_OPTIONS='--max-old-space-size=4096' node -e \"import('child_process').then(({execSync}) => { const isVercel = process.env.VERCEL === '1'; const env = process.env.VERCEL_ENV || 'local'; console.log(''); console.log('🔨 Build Process'); console.log('================'); console.log('Environment: ' + env); console.log('Platform: ' + (isVercel ? 'Vercel' : 'Local')); console.log(''); console.log('📚 Embedding documentation...'); const startTime = Date.now(); execSync('node scripts/embed-docs.cjs', {stdio:'inherit'}); const embedTime = Date.now() - startTime; console.log('📚 Documentation embedded (' + embedTime + 'ms)'); if(isVercel) { console.log(''); console.log('🏗️  Vercel processing build outputs...'); console.log('⏳ This may take 2-3 minutes for Vercel optimization'); console.log('📦 Progress: Bundling serverless functions and static assets'); console.log('🔧 Progress: Applying Vercel-specific optimizations'); console.log('🚀 Progress: Preparing deployment package'); } else { console.log(''); console.log('📋 Running structure verification...'); execSync('npm run verify-structure', {stdio:'inherit'}); } console.log(''); console.log('✅ Build process completed!'); console.log(''); }).catch(console.error);\"",
@@ -70,7 +70,9 @@
     "sqlite": "^5.1.1",
     "stripe": "^18.5.0",
     "thirty-two": "^1.0.2",
-    "uuid": "^11.1.0"
+    "uuid": "^11.1.0",
+    "@paypal/paypal-server-sdk": "^1.1.0",
+    "@paypal/paypal-js": "^8.1.3"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.10.2",
