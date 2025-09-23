@@ -26,6 +26,7 @@
     <link rel="stylesheet" href="/css/forms.css" />
     <link rel="stylesheet" href="/css/mobile-overrides.css" />
     <link rel="stylesheet" href="/css/admin-overrides.css" />
+    <link rel="stylesheet" href="/css/admin-test-mode.css" />
     <!-- Scanner-specific styles -->
     <style>
       /* QR Scanner specific overrides */
@@ -1110,7 +1111,19 @@
       </div>
 
       <div class="scanner-container" data-testid="scanner-container">
-        <div class="stats-bar">
+        <!-- Test Mode Indicator for Scanner -->
+        <div class="scanner-test-mode-indicator"
+             id="scannerTestModeIndicator"
+             style="display: none;"
+             role="status"
+             aria-live="polite"
+             aria-label="Scanner test mode status">
+          <span aria-hidden="true">🧪</span>
+          <span>TEST MODE ACTIVE</span>
+          <span class="visually-hidden">Scanner is currently in test mode. Test tickets will be processed differently than production tickets.</span>
+        </div>
+
+        <div class="stats-bar" id="statsBar">
           <div class="admin-stat-card">
             <div class="stat-number" id="todayCount">0</div>
             <div class="stat-label">Today</div>
@@ -2966,6 +2979,14 @@
             if (data.ticket && data.ticket.wallet_source) stats.wallet++;
             updateStats();
 
+            // Detect if this is a test ticket
+            const isTestTicket = data.ticket && (
+              data.ticket.is_test === true ||
+              data.ticket.ticket_id?.startsWith('TEST-') ||
+              data.ticket.attendeeName?.includes('Test') ||
+              data.ticket.type?.includes('test')
+            );
+
             // Show wallet badge if from wallet
             const walletBadge =
               data.ticket && data.ticket.wallet_source ? "📱 " : "🎫 ";
@@ -2975,13 +2996,18 @@
                 : "";
 
             if (data.ticket) {
+              const resultTitle = isTestTicket ?
+                `🧪 ${walletBadge}Valid Test Ticket!` :
+                `${walletBadge}Valid Ticket!`;
+
               showResult(
                 "success",
-                `${walletBadge}Valid Ticket!`,
+                resultTitle,
                 `${data.ticket.attendeeName}\n${data.ticket.type}${accessMethod}\nScan ${data.ticket.scanCount}/${data.ticket.maxScans}`,
+                isTestTicket
               );
             } else {
-              showResult("success", "Valid Ticket!", "Check-in successful");
+              showResult("success", "Valid Ticket!", "Check-in successful", false);
             }
           } else {
             // Error
@@ -3017,29 +3043,33 @@
       }
 
       // Show result modal
-      function showResult(type, title, details) {
+      function showResult(type, title, details, isTestTicket = false) {
         const modal = document.getElementById("resultModal");
         const content = document.getElementById("resultContent");
         const icon = document.getElementById("resultIcon");
         const titleEl = document.getElementById("resultTitle");
         const detailsEl = document.getElementById("resultDetails");
 
-        // Set content
+        // Detect if this is a test ticket from details or title
+        const isTestScan = isTestTicket || title.includes('TEST') || details.includes('TEST-') || details.includes('🧪');
+
+        // Set content with test mode awareness
         if (type === "success") {
-          content.className = "result-content success";
-          icon.textContent = "✅";
+          content.className = `result-content success ${isTestScan ? 'test-scan-result' : ''}`;
+          icon.textContent = isTestScan ? "🧪" : "✅";
           content.setAttribute("data-testid", "checkin-success");
         } else if (type === "error") {
-          content.className = "result-content error";
-          icon.textContent = "❌";
+          content.className = `result-content error ${isTestScan ? 'test-scan-result' : ''}`;
+          icon.textContent = isTestScan ? "🧪❌" : "❌";
           content.setAttribute("data-testid", "validation-error");
         } else if (type === "queued") {
-          content.className = "result-content";
-          icon.textContent = "📥";
+          content.className = `result-content ${isTestScan ? 'test-scan-result' : ''}`;
+          icon.textContent = isTestScan ? "🧪📥" : "📥";
           content.setAttribute("data-testid", "network-error");
         }
 
-        titleEl.textContent = title;
+        // Update title and details with test mode indicators
+        titleEl.textContent = isTestScan && !title.includes('🧪') ? `🧪 ${title}` : title;
         detailsEl.textContent = details;
 
         // Show modal
@@ -3201,12 +3231,35 @@
             stats.total = data.stats.checked_in || 0;
             stats.wallet = data.stats.wallet_checkins || 0;
 
+            // Check if we're dealing with test data
+            const hasTestData = data.testModeInfo && data.testModeInfo.hasTestModeSupport &&
+                               (data.stats.test_tickets > 0 || data.stats.test_transactions > 0);
+
+            // Update test mode indicators
+            updateScannerTestModeIndicators(hasTestData);
+
             // Update session count (preserve existing session count)
             // Total can be shown as all-time check-ins
             updateStats();
           }
         } catch (error) {
           console.error("Failed to load stats:", error);
+        }
+      }
+
+      // Update scanner test mode indicators
+      function updateScannerTestModeIndicators(hasTestData) {
+        const testModeIndicator = document.getElementById('scannerTestModeIndicator');
+        const statsBar = document.getElementById('statsBar');
+
+        if (hasTestData) {
+          // Show test mode indicator
+          testModeIndicator.style.display = 'block';
+          statsBar.classList.add('scanner-test-stats');
+        } else {
+          // Hide test mode indicator
+          testModeIndicator.style.display = 'none';
+          statsBar.classList.remove('scanner-test-stats');
         }
       }
 

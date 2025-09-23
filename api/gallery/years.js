@@ -1,4 +1,5 @@
 /**
+import { setSecureCorsHeaders } from '../lib/cors-config.js';
  * Gallery Years API Endpoint
  * Provides available gallery years with statistics and metadata
  */
@@ -45,7 +46,7 @@ let cacheTimestamp = 0;
  */
 export default async function handler(req, res) {
   // Set CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  setSecureCorsHeaders(req, res);
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 

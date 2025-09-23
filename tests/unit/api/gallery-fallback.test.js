@@ -5,6 +5,36 @@
 import { test, expect, describe, vi, beforeEach, afterEach } from 'vitest';
 import { HTTP_STATUS } from '../../test-constants.js';
 
+// Polyfill URLSearchParams for Node.js test environment
+if (typeof URLSearchParams === 'undefined') {
+  global.URLSearchParams = class URLSearchParams {
+    constructor(init) {
+      this.params = new Map();
+      if (typeof init === 'string') {
+        // Parse query string
+        if (init.startsWith('?')) init = init.slice(1);
+        init.split('&').forEach(pair => {
+          const [key, value] = pair.split('=');
+          if (key) this.params.set(decodeURIComponent(key), decodeURIComponent(value || ''));
+        });
+      } else if (init && typeof init === 'object') {
+        // Parse object
+        Object.entries(init).forEach(([key, value]) => {
+          this.params.set(key, String(value));
+        });
+      }
+    }
+
+    toString() {
+      const pairs = [];
+      for (const [key, value] of this.params) {
+        pairs.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`);
+      }
+      return pairs.join('&');
+    }
+  };
+}
+
 // Mock gallery data for testing fallback scenarios
 const mockGalleryData = {
   success: true,

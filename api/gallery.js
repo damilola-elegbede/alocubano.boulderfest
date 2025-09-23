@@ -4,13 +4,15 @@
  */
 
 import { getGalleryService } from "../lib/gallery-service.js";
+import { setSecureCorsHeaders } from '../lib/cors-config.js';
 import crypto from 'crypto';
 
 export default async function handler(req, res) {
-  // Set CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, If-None-Match');
+  // Set secure CORS headers
+  setSecureCorsHeaders(req, res, {
+    allowedMethods: ['GET', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'If-None-Match']
+  });
 
   // Handle preflight requests
   if (req.method === 'OPTIONS') {

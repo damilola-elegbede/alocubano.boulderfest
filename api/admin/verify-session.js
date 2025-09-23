@@ -1,4 +1,5 @@
 import authService from "../../lib/auth-service.js";
+import { setSecureCorsHeaders } from '../lib/cors-config.js';
 import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
 import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
 
@@ -19,7 +20,7 @@ async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Vary', 'Origin');
   } else {
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    setSecureCorsHeaders(req, res);
   }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');

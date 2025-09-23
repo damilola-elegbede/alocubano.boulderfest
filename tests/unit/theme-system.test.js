@@ -523,32 +523,7 @@ describe('Theme System Comprehensive Tests', () => {
         expect(document.getElementById('theme-toggle')).toBeNull();
       });
 
-      // Style injection has been removed - styles now handled by theme-toggle.css
-      it.skip('should add CSS styles to document head', () => {
-        // Skipped: Style injection removed in favor of external CSS
-        window.location.pathname = '/tickets';
-
-        initializeThemeToggle();
-
-        const styleElement = document.getElementById('theme-toggle-styles');
-        expect(styleElement).toBeTruthy();
-        expect(styleElement.textContent).toContain('.theme-toggle');
-      });
-
-      it.skip('should not add styles twice', () => {
-        // Skipped: Style injection removed in favor of external CSS
-        window.location.pathname = '/tickets';
-
-        initializeThemeToggle();
-        const firstStyleElement = document.getElementById('theme-toggle-styles');
-
-        // Clean up and initialize again
-        destroyThemeToggle();
-        initializeThemeToggle();
-
-        const secondCheck = document.querySelectorAll('#theme-toggle-styles');
-        expect(secondCheck).toHaveLength(1);
-      });
+      // Note: Style injection tests removed - styles now handled by external theme-toggle.css
 
       it('should handle missing container gracefully', () => {
         window.location.pathname = '/tickets';
@@ -557,7 +532,7 @@ describe('Theme System Comprehensive Tests', () => {
         const result = initializeThemeToggle('#non-existent-container');
 
         expect(result).toBeNull();
-        expect(consoleSpy).toHaveBeenCalledWith('Theme toggle: Container not found');
+        expect(consoleSpy).toHaveBeenCalledWith('[ThemeToggle]', 'Theme toggle: Container not found');
 
         consoleSpy.mockRestore();
       });

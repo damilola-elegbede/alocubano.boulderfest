@@ -1,4 +1,5 @@
 /**
+import { setSecureCorsHeaders } from '../lib/cors-config.js';
  * Featured Photos API endpoint - Environment-aware service
  * Serves featured photos from cache or dynamically selects from gallery
  */
@@ -7,7 +8,7 @@ import { getGalleryService } from "../lib/gallery-service.js";
 
 export default async function handler(req, res) {
   // Set CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  setSecureCorsHeaders(req, res);
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 

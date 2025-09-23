@@ -1,4 +1,5 @@
 import { google } from 'googleapis';
+import { setSecureCorsHeaders } from '../lib/cors-config.js';
 import {
   processImage,
   detectOptimalFormat,
@@ -19,7 +20,7 @@ import {
  */
 export default async function handler(req, res) {
   // Set CORS headers for cross-origin requests
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  setSecureCorsHeaders(req, res);
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
@@ -349,7 +350,7 @@ function servePlaceholderImage(res, fileId) {
   // Set appropriate headers
   res.setHeader('Content-Type', 'image/svg+xml');
   res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  setSecureCorsHeaders(req, res);
 
   // Send the SVG
   res.status(200).send(svgContent);

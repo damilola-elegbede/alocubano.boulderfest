@@ -51,10 +51,11 @@ permissions:
   deployments: read
 
 env:
-  NODE_VERSION: "20"
+  NODE_VERSION: "20.19.5"
   NODE_ENV: test
   CI: true
-  NODE_OPTIONS: '--max-old-space-size=4096'
+  NODE_OPTIONS: "--max-old-space-size=4096"
+  npm_config_build_from_source: "false"
   PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.playwright-browsers
 
 jobs:
@@ -582,28 +583,25 @@ jobs:
           # Determine the correct Playwright project name for the browser
           PROJECT_NAME="${{ matrix.browser }}"
 
-          # Build test command using the CI-specific script to avoid argument parsing issues
-          # Use npx playwright directly to have full control over arguments
-          TEST_COMMAND="npm run test:e2e:ci -- --project=$PROJECT_NAME"
+          # Export NODE_OPTIONS for the Playwright process
+          export NODE_OPTIONS="--max-old-space-size=2048"
 
+          # Build the Playwright test command directly
           # Add test pattern filter if specified
           TEST_PATTERN="${{ needs.build-test-matrix.outputs.test-pattern }}"
           if [ -n "$TEST_PATTERN" ] && [ "$TEST_PATTERN" != "" ]; then
             echo "🎯 Applying test pattern filter: $TEST_PATTERN"
-            # Build grep pattern correctly
-            TEST_COMMAND="$TEST_COMMAND --grep=\"$TEST_PATTERN\""
             echo "📁 Test pattern: $TEST_PATTERN"
+            # Run with grep pattern
+            npx playwright test --config playwright-e2e-optimized.config.js --project="$PROJECT_NAME" --grep "$TEST_PATTERN" 2>&1 | tee test_output.log
           else
             echo "🎯 Running all E2E tests (no pattern filter)"
+            # Run without grep pattern
+            npx playwright test --config playwright-e2e-optimized.config.js --project="$PROJECT_NAME" 2>&1 | tee test_output.log
           fi
 
-          echo "🚀 Executing: $TEST_COMMAND"
           echo "🌐 Target URL: ${{ env.PREVIEW_URL }}"
           echo "🦊 Browser Project: $PROJECT_NAME"
-
-          # Run tests and capture output for analysis
-          # Execute directly with eval to handle the grep pattern correctly
-          eval "$TEST_COMMAND" 2>&1 | tee test_output.log
           TEST_EXIT_CODE=${PIPESTATUS[0]}
           
           # Check if tests actually failed

@@ -231,6 +231,15 @@ export const configureEnvironment = (testType) => {
   // Internal API Security (required for secure internal operations)
   process.env.INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || 'test-internal-api-key-32-chars-min';
 
+  // Brevo Email Service Configuration (required for email services)
+  if (!process.env.BREVO_API_KEY && testType !== TEST_ENVIRONMENTS.E2E) {
+    process.env.BREVO_API_KEY = testType === TEST_ENVIRONMENTS.UNIT ?
+      'test-brevo-api-key-for-unit-tests' :
+      'test-brevo-api-key-for-integration-tests';
+  }
+  process.env.BREVO_NEWSLETTER_LIST_ID = process.env.BREVO_NEWSLETTER_LIST_ID || '1';
+  process.env.BREVO_WEBHOOK_SECRET = process.env.BREVO_WEBHOOK_SECRET || 'test-brevo-webhook-secret';
+
   // Test admin credentials (required for admin panel integration tests)
   process.env.TEST_ADMIN_PASSWORD = process.env.TEST_ADMIN_PASSWORD || 'test-admin-password-123';
   // Do NOT set ADMIN_PASSWORD in test environments - it interferes with TEST_ADMIN_PASSWORD

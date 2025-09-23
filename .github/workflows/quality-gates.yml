@@ -20,8 +20,11 @@ permissions:
 
 env:
   # Consolidated environment variables to reduce duplication
+  NODE_VERSION: "20.19.5"
+  NODE_OPTIONS: "--max-old-space-size=4096"
+  npm_config_build_from_source: "false"
+  CI: true
   NGROK_SKIP_DOWNLOAD: '1'
-  npm_config_build_from_source: 'false'
   PYTHON: '/usr/bin/python3'
 
 jobs:
@@ -47,7 +50,7 @@ jobs:
       - name: "🔧 Setup Node.js"
         uses: actions/setup-node@v4
         with:
-          node-version: '20.x'
+          node-version: '20.19.5'
           cache: 'npm'
 
       - name: "📦 Install Dependencies"
@@ -191,7 +194,7 @@ jobs:
       - name: "🔧 Setup Node.js"
         uses: actions/setup-node@v4
         with:
-          node-version: '20.x'
+          node-version: '20.19.5'
           cache: 'npm'
 
       - name: "📦 Install Dependencies"

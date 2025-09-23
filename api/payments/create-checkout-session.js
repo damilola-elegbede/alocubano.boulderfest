@@ -4,6 +4,7 @@
  */
 
 import Stripe from 'stripe';
+import { setSecureCorsHeaders } from '../../lib/cors-config.js';
 
 // Check if we're in test mode
 const isTestMode = process.env.NODE_ENV === 'test' || process.env.INTEGRATION_TEST_MODE === 'true';
@@ -46,10 +47,11 @@ export default async function handler(req, res) {
   console.log('Request method:', req.method);
   console.log('Request URL:', req.url);
 
-  // Set CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  // Set secure CORS headers
+  setSecureCorsHeaders(req, res, {
+    allowedMethods: ['POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'X-Requested-With']
+  });
 
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
@@ -64,7 +66,13 @@ export default async function handler(req, res) {
   // Stripe initialization check is no longer needed since we fail immediately at module level
 
   try {
-    const { cartItems, customerInfo } = req.body;
+    const { cartItems, customerInfo, testMode = false } = req.body;
+
+    // Detect test mode from various sources
+    const isRequestTestMode = testMode ||
+      req.headers['x-test-mode'] === 'true' ||
+      req.headers['x-admin-test'] === 'true' ||
+      cartItems?.some(item => item.isTestItem || item.name?.startsWith('TEST'));
 
     // Log incoming request in development
     if (process.env.NODE_ENV !== 'production') {
@@ -73,7 +81,8 @@ export default async function handler(req, res) {
         customerInfo: customerInfo,
         hasCartItems: !!cartItems,
         isArray: Array.isArray(cartItems),
-        itemCount: cartItems?.length
+        itemCount: cartItems?.length,
+        testMode: isRequestTestMode
       });
     }
 
@@ -150,9 +159,10 @@ export default async function handler(req, res) {
     }
 
     // Generate order ID for tracking (no database storage)
-    const orderId = `order_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+    const orderIdPrefix = isRequestTestMode ? 'test_order' : 'order';
+    const orderId = `${orderIdPrefix}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
-    console.log('Creating checkout session for order:', orderId);
+    console.log(`Creating ${isRequestTestMode ? 'TEST' : ''} checkout session for order:`, orderId);
 
     // Determine origin from request headers
     const origin =
@@ -166,8 +176,8 @@ export default async function handler(req, res) {
       payment_method_types: ['card', 'link'],
       line_items: lineItems,
       mode: 'payment',
-      success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/failure?session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}`,
+      success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}${isRequestTestMode ? '&test_mode=true' : ''}`,
+      cancel_url: `${origin}/failure?session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}${isRequestTestMode ? '&test_mode=true' : ''}`,
       // Only include customer_email if provided
       ...(customerInfo?.email && { customer_email: customerInfo.email }),
       metadata: {
@@ -177,19 +187,22 @@ export default async function handler(req, res) {
           customerInfo?.firstName && customerInfo?.lastName
             ? `${customerInfo.firstName} ${customerInfo.lastName}`
             : 'Pending',
-        environment: process.env.NODE_ENV || 'development'
+        environment: process.env.NODE_ENV || 'development',
+        testMode: isRequestTestMode.toString(),
+        testTransaction: isRequestTestMode ? 'true' : 'false'
       },
       // Collect billing address for tax compliance
       billing_address_collection: 'required',
-      // Set session expiration (24 hours)
-      expires_at: Math.floor(Date.now() / 1000) + 24 * 60 * 60
+      // Set session expiration (24 hours for production, 2 hours for test)
+      expires_at: Math.floor(Date.now() / 1000) + (isRequestTestMode ? 2 * 60 * 60 : 24 * 60 * 60)
     });
 
     // Log session creation for debugging
-    console.log('Stripe checkout session created:', {
+    console.log(`${isRequestTestMode ? 'TEST ' : ''}Stripe checkout session created:`, {
       sessionId: session.id,
       orderId: orderId,
-      totalAmount: totalAmount
+      totalAmount: totalAmount,
+      testMode: isRequestTestMode
     });
 
     // Return checkout URL for redirect
@@ -197,7 +210,8 @@ export default async function handler(req, res) {
       checkoutUrl: session.url,
       sessionId: session.id,
       orderId: orderId,
-      totalAmount: totalAmount
+      totalAmount: totalAmount,
+      testMode: isRequestTestMode
     });
   } catch (error) {
     // Checkout session creation failed

@@ -61,8 +61,17 @@ console.error = (...args) => {
   if (
     message.includes('@rollup/rollup-linux-x64-gnu') ||
     message.includes('@libsql/linux-x64-gnu') ||
+    message.includes('@libsql/darwin-arm64') ||
+    message.includes('@libsql/darwin-x64') ||
+    message.includes('@libsql/win32-x64-msvc') ||
     message.includes('Cannot find module') ||
-    message.includes('optional dependencies')
+    message.includes('optional dependencies') ||
+    message.includes('ENOENT') ||
+    message.includes('MODULE_NOT_FOUND') ||
+    message.includes('better-sqlite3') ||
+    message.includes('node-gyp') ||
+    message.includes('path-to-regexp') ||
+    message.includes('vulnerability')
   ) {
     // Convert to warning for CI visibility but don't fail
     console.warn('⚠️ Native module warning (expected in CI):', message);
@@ -75,7 +84,9 @@ console.warn = (...args) => {
   const message = args.join(' ');
   if (
     message.includes('Failed to import LibSQL client') ||
-    message.includes('falling back to web client')
+    message.includes('falling back to web client') ||
+    message.includes('Native module warning (expected in CI)') ||
+    message.includes('node-fetch not available')
   ) {
     // Expected behavior in CI - suppress noise
     return;

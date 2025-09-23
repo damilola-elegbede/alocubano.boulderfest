@@ -3,6 +3,7 @@ import { getDatabaseClient } from "../../lib/database.js";
 import { getRateLimitService } from "../../lib/rate-limit-service.js";
 import { withSecurityHeaders } from "../../lib/security-headers.js";
 import auditService from "../../lib/audit-service.js";
+import { isTestMode, getTestModeFlag } from "../../lib/test-mode-utils.js";
 
 // Enhanced rate limiting configuration
 const TICKET_RATE_LIMIT = {
@@ -10,6 +11,33 @@ const TICKET_RATE_LIMIT = {
   maxAttempts: 50, // Reduced from 100 for better security
   lockoutDuration: 300000 // 5 minutes lockout after exceeding limit
 };
+
+/**
+ * Detect if a ticket is a test ticket
+ * @param {Object} ticket - Ticket record from database
+ * @returns {boolean} - True if this is a test ticket
+ */
+function isTestTicket(ticket) {
+  if (!ticket) return false;
+
+  // Primary check: is_test field
+  if (typeof ticket.is_test === 'number') {
+    return ticket.is_test === 1;
+  }
+
+  // Fallback: check patterns in ticket ID
+  const ticketId = ticket.ticket_id || ticket.id || '';
+  return /test[_-]?ticket|^TEST[_-]|[_-]TEST$/i.test(ticketId);
+}
+
+/**
+ * Get test mode validation indicator
+ * @param {boolean} isTest - Whether this is test mode
+ * @returns {string} - Test mode indicator text
+ */
+function getTestModeValidationIndicator(isTest) {
+  return isTest ? '🧪 TEST TICKET' : '';
+}
 
 /**
  * Enhanced input validation for ticket tokens
@@ -638,6 +666,10 @@ async function handler(req, res) {
         throw new Error(`Ticket is ${ticket.status}`);
       }
 
+      // Detect test mode for response
+      const ticketIsTest = isTestTicket(ticket);
+      const testModeIndicator = getTestModeValidationIndicator(ticketIsTest);
+
       return res.status(200).json({
         valid: true,
         ticket: {
@@ -649,9 +681,11 @@ async function handler(req, res) {
             `${ticket.attendee_first_name} ${ticket.attendee_last_name}`.trim(),
           scanCount: ticket.scan_count,
           maxScans: ticket.max_scan_count,
-          source: source
+          source: source,
+          isTest: ticketIsTest,
+          testModeIndicator: testModeIndicator
         },
-        message: 'Ticket verified'
+        message: ticketIsTest ? `${testModeIndicator} - Test ticket verified` : 'Ticket verified'
       });
     }
 
@@ -702,6 +736,10 @@ async function handler(req, res) {
       }
     });
 
+    // Detect test mode for response
+    const ticketIsTest = isTestTicket(ticket);
+    const testModeIndicator = getTestModeValidationIndicator(ticketIsTest);
+
     res.status(200).json({
       valid: true,
       ticket: {
@@ -713,9 +751,13 @@ async function handler(req, res) {
           `${ticket.attendee_first_name} ${ticket.attendee_last_name}`.trim(),
         scanCount: ticket.scan_count,
         maxScans: ticket.max_scan_count,
-        source: source
+        source: source,
+        isTest: ticketIsTest,
+        testModeIndicator: testModeIndicator
       },
-      message: `Welcome ${ticket.attendee_first_name}!`
+      message: ticketIsTest ?
+        `${testModeIndicator} - Welcome ${ticket.attendee_first_name}! (Test Mode)` :
+        `Welcome ${ticket.attendee_first_name}!`
     });
   } catch (error) {
     // Handle initialization errors
