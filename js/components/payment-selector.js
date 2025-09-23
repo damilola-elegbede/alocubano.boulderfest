@@ -5,6 +5,7 @@
  */
 
 import { getStripePaymentHandler } from '../lib/stripe-integration.js';
+import { getPayPalSDKLoader } from '../lib/paypal-sdk-loader.js';
 
 class PaymentSelector {
     constructor() {
@@ -91,46 +92,64 @@ class PaymentSelector {
         }
 
         const modalHTML = `
-            <div class="payment-selector-modal" role="dialog" aria-modal="true" aria-labelledby="payment-selector-title">
+            <div class="payment-selector-modal" role="dialog" aria-modal="true" aria-labelledby="payment-selector-title" aria-describedby="payment-selector-description">
                 <div class="payment-selector-backdrop"></div>
                 <div class="payment-selector-content">
-                    <button class="payment-selector-close" aria-label="Close payment selector">
-                        <svg viewBox="0 0 24 24" width="20" height="20">
+                    <!-- ARIA Live Region for Screen Reader Announcements -->
+                    <div aria-live="polite" aria-atomic="true" class="sr-only" id="payment-status-announcer">
+                        Payment method selector ready
+                    </div>
+
+                    <button class="payment-selector-close" aria-label="Close payment selector and return to checkout">
+                        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
                             <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/>
                         </svg>
                     </button>
 
                     <div class="payment-selector-header">
-                        <h2 id="payment-selector-title">Select Payment</h2>
+                        <h2 id="payment-selector-title">Select Payment Method</h2>
+                        <p id="payment-selector-description" class="sr-only">Choose your preferred payment method to complete your purchase securely.</p>
                     </div>
 
-                    <div class="payment-methods">
+                    <div class="payment-methods" role="group" aria-labelledby="payment-selector-title">
                         <!-- Credit Cards & Digital Wallets Option -->
                         <!-- Payment logos sourced from: https://github.com/payrexx/payment-logos -->
-                        <button class="payment-method-option" data-method="stripe" aria-label="Pay with credit card, Apple Pay, or Google Pay">
+                        <button class="payment-method-option"
+                                data-method="stripe"
+                                aria-label="Pay with credit card, Apple Pay, or Google Pay - opens Stripe secure checkout"
+                                aria-describedby="stripe-description">
                             <div class="payment-card-icons">
                                 <img src="/images/payment-icons/card_visa.svg" alt="Visa" class="card-icon visa-icon">
                                 <img src="/images/payment-icons/card_mastercard.svg" alt="Mastercard" class="card-icon mastercard-icon">
                                 <img src="/images/payment-icons/apple-pay.svg" alt="Apple Pay" class="card-icon apple-pay-icon">
                                 <img src="/images/payment-icons/card_google-pay.svg" alt="Google Pay" class="card-icon google-pay-icon">
                             </div>
+                            <span id="stripe-description" class="sr-only">Secure payment processing with Stripe. Supports all major credit cards, Apple Pay, and Google Pay.</span>
                         </button>
 
                         <!-- PayPal Option -->
                         <!-- Payment logo sourced from: https://github.com/payrexx/payment-logos -->
-                        <button class="payment-method-option" data-method="paypal" aria-label="Pay with PayPal">
+                        <button class="payment-method-option"
+                                data-method="paypal"
+                                aria-label="Pay with PayPal - redirects to PayPal secure website"
+                                aria-describedby="paypal-description"
+                                id="paypal-payment-option">
                             <img src="/images/payment-icons/card_paypal.svg" alt="PayPal" class="paypal-icon">
+                            <div class="payment-method-status" data-status="loading" style="display: none;" aria-live="polite">
+                                <span class="status-text">Checking PayPal availability...</span>
+                            </div>
+                            <span id="paypal-description" class="sr-only">Pay securely using your PayPal account or PayPal guest checkout. You will be redirected to PayPal to complete payment.</span>
                         </button>
                     </div>
 
                     <div class="payment-selector-footer">
-                        <div class="security-badges">
-                            <svg class="lock-icon" viewBox="0 0 24 24" width="16" height="16">
+                        <div class="security-badges" role="img" aria-label="Security information">
+                            <svg class="lock-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
                                 <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm9 14H6V10h12v10zm-6-3c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/>
                             </svg>
                             <span>Secure Payment Processing</span>
                         </div>
-                        <p class="payment-note">All transactions are encrypted and secure</p>
+                        <p class="payment-note">All transactions are encrypted and secure. Your payment information is protected.</p>
                     </div>
                 </div>
             </div>
@@ -142,6 +161,9 @@ class PaymentSelector {
 
         // Set up event listeners
         this.setupModalEventListeners();
+
+        // Check PayPal availability
+        this.checkPayPalAvailability();
     }
 
     /**
@@ -238,6 +260,79 @@ class PaymentSelector {
             }
         });
         this.eventListeners.clear();
+    }
+
+    /**
+   * Check PayPal availability and update UI accordingly
+   */
+    async checkPayPalAvailability() {
+        const paypalOption = this.modal?.querySelector('#paypal-payment-option');
+        if (!paypalOption) {
+            return;
+        }
+
+        const statusDiv = paypalOption.querySelector('.payment-method-status');
+        const statusText = statusDiv?.querySelector('.status-text');
+
+        // Check if PayPal configuration is available
+        if (!window.PAYPAL_CONFIG) {
+            this.updatePayPalStatus(paypalOption, 'unavailable', 'PayPal not configured');
+            return;
+        }
+
+        // Show loading state
+        this.updatePayPalStatus(paypalOption, 'loading', 'Checking availability...');
+
+        try {
+            // Test PayPal configuration by attempting to load SDK
+            const sdkLoader = getPayPalSDKLoader();
+            const result = await sdkLoader.loadSDK();
+
+            if (result.success) {
+                this.updatePayPalStatus(paypalOption, 'available', '');
+            } else {
+                this.updatePayPalStatus(paypalOption, 'error', result.error || 'PayPal unavailable');
+            }
+        } catch (error) {
+            this.updatePayPalStatus(paypalOption, 'error', 'PayPal service error');
+        }
+    }
+
+    /**
+   * Update PayPal option status in UI
+   * @param {HTMLElement} paypalOption - PayPal option element
+   * @param {string} status - Status ('loading', 'available', 'error', 'unavailable')
+   * @param {string} message - Status message
+   */
+    updatePayPalStatus(paypalOption, status, message) {
+        if (!paypalOption) {
+            return;
+        }
+
+        const statusDiv = paypalOption.querySelector('.payment-method-status');
+        const statusText = statusDiv?.querySelector('.status-text');
+
+        paypalOption.setAttribute('data-paypal-status', status);
+
+        if (status === 'available') {
+            paypalOption.disabled = false;
+            paypalOption.setAttribute('aria-disabled', 'false');
+            if (statusDiv) {
+                statusDiv.style.display = 'none';
+            }
+        } else {
+            if (statusDiv && statusText) {
+                statusDiv.style.display = 'block';
+                statusText.textContent = message;
+                statusDiv.setAttribute('data-status', status);
+            }
+
+            if (status === 'unavailable' || status === 'error') {
+                paypalOption.disabled = true;
+                paypalOption.setAttribute('aria-disabled', 'true');
+                paypalOption.classList.add('disabled');
+            }
+        }
     }
 
     /**
@@ -377,7 +472,7 @@ class PaymentSelector {
     }
 
     /**
-   * Process PayPal payment
+   * Process PayPal payment with mobile optimizations and accessibility
    */
     async processPayPalPayment() {
         const cartState = this.cartManager.getState();
@@ -386,31 +481,70 @@ class PaymentSelector {
             throw new Error('Cart is empty');
         }
 
-        // Prepare cart items
-        const cartItems = this.prepareCartItems(cartState);
-
         try {
+            // Announce PayPal processing start
+            this.announceToScreenReader('Starting PayPal payment process...');
+
+            // Load PayPal SDK if not already loaded
+            const sdkLoader = getPayPalSDKLoader();
+            const sdkResult = await sdkLoader.loadSDK();
+
+            if (!sdkResult.success) {
+                // Handle fallback to Stripe if PayPal fails
+                if (sdkResult.fallbackToStripe) {
+                    console.warn('PayPal SDK loading failed, falling back to Stripe:', sdkResult.error);
+                    this.announceToScreenReader('PayPal unavailable, switching to credit card payment...');
+                    return this.processStripePayment();
+                }
+                throw new Error(sdkResult.error || 'PayPal SDK loading failed');
+            }
+
+            // Update processing message for PayPal
+            this.updateProcessingMessage('Connecting to PayPal...');
+
+            // Prepare cart items
+            const cartItems = this.prepareCartItems(cartState);
+
             // Get customer info from form if available
             const customerInfo = this.getCustomerInfo();
 
-            // Create PayPal order
+            // Mobile-specific: Add device info for PayPal optimization
+            const deviceInfo = this.getDeviceInfo();
+
+            // Create PayPal order with mobile context
             const response = await fetch('/api/payments/paypal/create-order', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'User-Agent': navigator.userAgent
                 },
-                body: JSON.stringify({ cartItems, customerInfo })
+                body: JSON.stringify({
+                    cartItems,
+                    customerInfo,
+                    deviceInfo
+                })
             });
 
             const data = await response.json();
 
             if (!response.ok) {
+                // Mobile-friendly error handling
+                if (data.fallbackUrl && this.isMobileDevice()) {
+                    this.showMobileFallbackOptions(data);
+                    return;
+                }
                 throw new Error(data.error || 'Failed to create PayPal order');
             }
 
-            // Redirect to PayPal approval URL
+            // Update processing message for redirect
+            this.updateProcessingMessage('Redirecting to PayPal...');
+
+            // Announce redirect to users
+            this.announceToScreenReader('Redirecting to PayPal website for secure payment...');
+
+            // Mobile-optimized redirect handling
             if (data.approvalUrl) {
-                window.location.href = data.approvalUrl;
+                this.handleMobilePayPalRedirect(data.approvalUrl);
             } else {
                 throw new Error('No PayPal approval URL received');
             }
@@ -485,14 +619,17 @@ class PaymentSelector {
         if (content) {
             content.classList.add('processing');
 
-            // Add loading overlay
+            // Add loading overlay with accessibility features
             const loadingHTML = `
-                <div class="payment-processing-overlay">
-                    <div class="payment-processing-spinner"></div>
-                    <p>Preparing secure checkout...</p>
+                <div class="payment-processing-overlay" role="status" aria-live="assertive">
+                    <div class="payment-processing-spinner" aria-hidden="true"></div>
+                    <p aria-describedby="payment-status-announcer">Preparing secure checkout...</p>
                 </div>
             `;
             content.insertAdjacentHTML('beforeend', loadingHTML);
+
+            // Announce to screen readers
+            this.announceToScreenReader('Preparing secure checkout, please wait...');
         }
     }
 
@@ -525,8 +662,8 @@ class PaymentSelector {
         }
 
         const errorHTML = `
-            <div class="payment-selector-error">
-                <svg viewBox="0 0 24 24" width="20" height="20">
+            <div class="payment-selector-error" role="alert" aria-live="assertive" tabindex="0">
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
                     <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
                 </svg>
                 <span>${this.escapeHtml(message)}</span>
@@ -542,14 +679,23 @@ class PaymentSelector {
 
         content?.insertAdjacentHTML('afterbegin', errorHTML);
 
-        // Auto-remove error after 5 seconds
+        // Focus the error for screen readers
+        const errorElement = this.modal.querySelector('.payment-selector-error');
+        if (errorElement) {
+            setTimeout(() => errorElement.focus(), 100);
+        }
+
+        // Announce error to screen readers
+        this.announceToScreenReader(`Error: ${message}`);
+
+        // Auto-remove error after 8 seconds (increased for accessibility)
         setTimeout(() => {
             const error = this.modal?.querySelector('.payment-selector-error');
             if (error) {
                 error.classList.add('fade-out');
                 setTimeout(() => error.remove(), 300);
             }
-        }, 5000);
+        }, 8000);
     }
 
     /**
@@ -572,8 +718,15 @@ class PaymentSelector {
    * @returns {boolean}
    */
     isMethodAvailable(method) {
-    // In the future, this could check configuration or feature flags
-        return ['stripe', 'paypal'].includes(method);
+        if (method === 'stripe') {
+            return !!window.STRIPE_PUBLISHABLE_KEY;
+        }
+
+        if (method === 'paypal') {
+            return !!window.PAYPAL_CONFIG && !!window.PAYPAL_CONFIG.clientId;
+        }
+
+        return false;
     }
 
     /**
@@ -587,6 +740,141 @@ class PaymentSelector {
             paypal: 'PayPal'
         };
         return names[method] || method;
+    }
+
+    /**
+   * Get device information for PayPal mobile optimization
+   * @returns {Object} Device info
+   */
+    getDeviceInfo() {
+        return {
+            isMobile: this.isMobileDevice(),
+            screenWidth: window.screen.width,
+            screenHeight: window.screen.height,
+            viewportWidth: window.innerWidth,
+            viewportHeight: window.innerHeight,
+            devicePixelRatio: window.devicePixelRatio || 1,
+            platform: navigator.platform,
+            userAgent: navigator.userAgent.substring(0, 200), // Truncate for safety
+            connectionType: this.getConnectionType(),
+            touchSupport: 'ontouchstart' in window || navigator.maxTouchPoints > 0
+        };
+    }
+
+    /**
+   * Detect if user is on mobile device
+   * @returns {boolean}
+   */
+    isMobileDevice() {
+        return window.innerWidth <= 768 ||
+               /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    }
+
+    /**
+   * Get connection type for performance optimization
+   * @returns {string}
+   */
+    getConnectionType() {
+        const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        if (connection) {
+            return connection.effectiveType || connection.type || 'unknown';
+        }
+        return 'unknown';
+    }
+
+    /**
+   * Handle mobile-optimized PayPal redirect
+   * @param {string} approvalUrl - PayPal approval URL
+   */
+    handleMobilePayPalRedirect(approvalUrl) {
+        // Mobile-specific: Check if PayPal app is available
+        const isMobile = this.isMobileDevice();
+        const isInApp = window.navigator.standalone ||
+                       window.matchMedia('(display-mode: standalone)').matches ||
+                       document.referrer.includes('android-app://') ||
+                       /iPhone|iPad|iPod/i.test(navigator.userAgent) && window.navigator.standalone;
+
+        // Add mobile-friendly parameters
+        const url = new URL(approvalUrl);
+
+        if (isMobile) {
+            // Optimize for mobile experience
+            url.searchParams.set('useraction', 'commit');
+            url.searchParams.set('flowtype', 'mobile');
+
+            // Try to detect and prefer PayPal app
+            if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                // iOS: Try to open PayPal app if available
+                const paypalAppUrl = approvalUrl.replace('https://www.paypal.com', 'paypal://');
+
+                // Create a fallback mechanism
+                const fallbackTimer = setTimeout(() => {
+                    // If app doesn't open, redirect to mobile web version
+                    window.location.href = url.toString();
+                }, 2500);
+
+                // Attempt to open PayPal app
+                window.location.href = paypalAppUrl;
+
+                // Clean up timer if page unloads (app opened successfully)
+                window.addEventListener('beforeunload', () => {
+                    clearTimeout(fallbackTimer);
+                });
+
+                return;
+            }
+        }
+
+        // Default redirect for all other cases
+        window.location.href = url.toString();
+    }
+
+    /**
+   * Show mobile-friendly fallback options
+   * @param {Object} data - Error response data
+   */
+    showMobileFallbackOptions(data) {
+        const errorMessage = `
+            <div class="mobile-payment-fallback">
+                <h3>Payment Method Temporarily Unavailable</h3>
+                <p>${data.message || 'PayPal is temporarily unavailable on mobile.'}</p>
+                <div class="fallback-actions">
+                    <button onclick="this.closest('.payment-selector-modal').querySelector('[data-method=\\"stripe\\"]').click()"
+                            class="fallback-btn primary">
+                        Try Credit Card Instead
+                    </button>
+                    <button onclick="window.location.reload()"
+                            class="fallback-btn secondary">
+                        Retry PayPal
+                    </button>
+                </div>
+            </div>
+        `;
+
+        this.showError(errorMessage);
+    }
+
+    /**
+   * Announce message to screen reader users
+   * @param {string} message - Message to announce
+   */
+    announceToScreenReader(message) {
+        const announcer = this.modal?.querySelector('#payment-status-announcer');
+        if (announcer) {
+            announcer.textContent = message;
+        }
+    }
+
+    /**
+   * Update processing message during payment flow
+   * @param {string} message - Processing message
+   */
+    updateProcessingMessage(message) {
+        const overlay = this.modal?.querySelector('.payment-processing-overlay p');
+        if (overlay) {
+            overlay.textContent = message;
+        }
+        this.announceToScreenReader(message);
     }
 
     /**

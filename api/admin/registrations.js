@@ -38,7 +38,11 @@ async function handler(req, res) {
         t.*,
         tr.transaction_id as order_number,
         tr.amount_cents / 100.0 as order_amount,
-        tr.customer_email as purchaser_email
+        tr.customer_email as purchaser_email,
+        tr.payment_processor,
+        tr.stripe_session_id,
+        tr.paypal_order_id,
+        tr.paypal_capture_id
       FROM tickets t
       JOIN transactions tr ON t.transaction_id = tr.id
       WHERE 1=1
@@ -77,6 +81,11 @@ async function handler(req, res) {
       if (sanitized.ticketType) {
         sql += ' AND t.ticket_type = ?';
         args.push(sanitized.ticketType);
+      }
+
+      if (sanitized.paymentMethod) {
+        sql += ' AND tr.payment_processor = ?';
+        args.push(sanitized.paymentMethod);
       }
 
       if (sanitized.checkedIn === 'true') {
@@ -132,6 +141,9 @@ async function handler(req, res) {
       if (sanitized.ticketType) {
         countSql += ' AND t.ticket_type = ?';
       }
+      if (sanitized.paymentMethod) {
+        countSql += ' AND tr.payment_processor = ?';
+      }
       if (sanitized.checkedIn === 'true') {
         countSql += ' AND t.checked_in_at IS NOT NULL';
       } else if (sanitized.checkedIn === 'false') {
@@ -160,6 +172,7 @@ async function handler(req, res) {
           searchTerm: sanitized.searchTerm || null,
           status: sanitized.status || null,
           ticketType: sanitized.ticketType || null,
+          paymentMethod: sanitized.paymentMethod || null,
           checkedIn: sanitized.checkedIn !== undefined ? sanitized.checkedIn : null
         }
       });

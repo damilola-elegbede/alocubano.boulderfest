@@ -279,6 +279,16 @@
             <option value="cancelled">Cancelled</option>
             <option value="transferred">Transferred</option>
           </select>
+          <select
+            id="paymentMethodFilter"
+            class="admin-form-select"
+            onchange="searchRegistrations()"
+            style="min-width: 150px"
+          >
+            <option value="">All Payment Methods</option>
+            <option value="stripe">Stripe</option>
+            <option value="paypal">PayPal</option>
+          </select>
           <select 
             id="checkinFilter" 
             class="admin-form-select" 
@@ -622,16 +632,18 @@
         const search = document.getElementById("searchInput").value;
         const status = document.getElementById("statusFilter").value;
         const checkedIn = document.getElementById("checkinFilter").value;
+        const paymentMethod = document.getElementById("paymentMethodFilter").value;
 
         // Get selected event ID from event selector
         const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
-        
+
         const params = new URLSearchParams({
           limit: pageSize,
           offset: offset,
           ...(search && { search }),
           ...(status && { status }),
           ...(checkedIn && { checkedIn }),
+          ...(paymentMethod && { paymentMethod }),
           ...(selectedEventId && { eventId: selectedEventId }),
           ....(window.testModeView && { includeTestData: 'true' }),
         });
@@ -703,6 +715,7 @@
                             <th>Type</th>
                             <th>Status</th>
                             <th>Order</th>
+                            <th>Payment</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -713,6 +726,12 @@
                               const isTestTicket = reg.is_test === 1 || reg.ticket_id?.startsWith('TEST-');
                               const rowClass = isTestTicket ? 'test-ticket-row' : '';
                               const testBadge = isTestTicket ? '<span class="test-badge">TEST</span>' : '';
+
+                              // Format payment processor information
+                              const paymentProcessor = reg.payment_processor || 'stripe';
+                              const processorIcon = paymentProcessor === 'paypal' ? '💳' : '💰';
+                              const processorBadge = paymentProcessor === 'paypal' ? 'paypal-badge' : 'stripe-badge';
+                              const transactionId = reg.paypal_order_id || reg.stripe_session_id || reg.transaction_id;
 
                               return `
                             <tr class="${rowClass}">
@@ -731,7 +750,15 @@
                                         ${reg.checked_in_at ? "Checked In" : escapeHtml(reg.status)}
                                     </span>
                                 </td>
-                                <td>${escapeHtml(reg.order_number)}</td>
+                                <td>${escapeHtml(reg.transaction_id)}</td>
+                                <td>
+                                    <div class="payment-info">
+                                        <span class="processor-badge ${processorBadge}" title="${paymentProcessor.toUpperCase()}">
+                                            ${processorIcon} ${paymentProcessor.toUpperCase()}
+                                        </span>
+                                        <small class="transaction-ref" title="Transaction ID">${escapeHtml(transactionId)}</small>
+                                    </div>
+                                </td>
                                 <td>
                                     ${
                                       reg.checked_in_at
@@ -852,16 +879,18 @@
         const search = document.getElementById("searchInput").value;
         const status = document.getElementById("statusFilter").value;
         const checkedIn = document.getElementById("checkinFilter").value;
+        const paymentMethod = document.getElementById("paymentMethodFilter").value;
 
         // Get selected event ID from event selector
         const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
-        
+
         const params = new URLSearchParams({
           limit: 10000, // Export all
           offset: 0,
           ...(search && { search }),
           ...(status && { status }),
           ...(checkedIn && { checkedIn }),
+          ...(paymentMethod && { paymentMethod }),
           ...(selectedEventId && { eventId: selectedEventId }),
           ....(window.testModeView && { includeTestData: 'true' }),
         });
@@ -904,6 +933,8 @@
           "Status",
           "Checked In",
           "Order Number",
+          "Payment Method",
+          "Transaction ID",
         ];
 
         // Note: No HTML escaping needed for CSV export data
@@ -916,7 +947,9 @@
           row.ticket_type,
           row.status,
           row.checked_in_at ? "Yes" : "No",
-          row.order_number,
+          row.transaction_id,
+          row.payment_processor || 'stripe',
+          row.paypal_order_id || row.stripe_session_id || row.transaction_id,
         ]);
 
         return [

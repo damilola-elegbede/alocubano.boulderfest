@@ -136,6 +136,10 @@ async function handler(req, res) {
         t.ticket_type,
         t.created_at,
         tr.transaction_id,
+        tr.payment_processor,
+        tr.stripe_session_id,
+        tr.paypal_order_id,
+        tr.paypal_capture_id,
         ${ticketsHasTestMode ? 't.is_test,' : '0 as is_test,'}
         ${transactionsHasTestMode ? 'tr.is_test as transaction_is_test' : '0 as transaction_is_test'}
       FROM tickets t
