@@ -268,6 +268,111 @@
 }
 
 /* ==========================================================================
+   POPUP NOTIFICATION STYLES
+   ========================================================================== */
+
+.newsletter-popup {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  max-width: 400px;
+  padding: var(--space-md) var(--space-lg);
+  background: var(--color-white);
+  border: 2px solid var(--color-black);
+  box-shadow: 4px 4px 0 0 var(--color-black);
+  z-index: 10000;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all var(--transition-base);
+  font-family: var(--font-sans);
+}
+
+.newsletter-popup--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.newsletter-popup__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+  font-weight: bold;
+  font-size: var(--font-size-sm);
+}
+
+.newsletter-popup--success .newsletter-popup__icon {
+  background: var(--color-success);
+  color: var(--color-white);
+}
+
+.newsletter-popup--error .newsletter-popup__icon {
+  background: var(--color-error);
+  color: var(--color-white);
+}
+
+.newsletter-popup__message {
+  flex: 1;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+}
+
+.newsletter-popup__close {
+  position: absolute;
+  top: var(--space-sm);
+  right: var(--space-sm);
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  font-size: var(--font-size-xl);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 0;
+  opacity: 0.7;
+  transition: opacity var(--transition-base);
+}
+
+.newsletter-popup__close:hover {
+  opacity: 1;
+}
+
+/* Dark mode popup styles */
+[data-theme="dark"] .newsletter-popup {
+  background: var(--color-surface);
+  border-color: var(--color-border-medium);
+  box-shadow: 4px 4px 0 0 var(--color-border-medium);
+}
+
+[data-theme="dark"] .newsletter-popup__message {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .newsletter-popup__close {
+  color: var(--color-text-secondary);
+}
+
+/* Mobile responsive popup */
+@media (max-width: 768px) {
+  .newsletter-popup {
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
+    max-width: none;
+  }
+}
+
+/* ==========================================================================
    DARK MODE ENHANCEMENTS
    ========================================================================== */
 

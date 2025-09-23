@@ -232,7 +232,13 @@ class NewsletterSignup {
             this.form.reset();
         }
 
-        // Show success message
+        // Reset button state after form reset
+        this.updateButtonState();
+
+        // Show popup notification
+        this.showPopup('success', '🎉 Welcome to the A Lo Cubano family! Check your email to confirm your subscription.');
+
+        // Show inline success message as well
         if (this.successElement) {
             this.successElement.setAttribute('aria-hidden', 'false');
             this.successElement.style.display = 'flex';
@@ -254,6 +260,9 @@ class NewsletterSignup {
 
     handleError(message) {
         this.showError(message);
+
+        // Show popup notification for error
+        this.showPopup('error', message);
 
         // Set invalid state
         if (this.emailInput) {
@@ -287,6 +296,63 @@ class NewsletterSignup {
         if (this.successElement) {
             this.successElement.setAttribute('aria-hidden', 'true');
             this.successElement.style.display = 'none';
+        }
+    }
+
+    showPopup(type, message) {
+        // Remove any existing popup
+        const existingPopup = document.querySelector('.newsletter-popup');
+        if (existingPopup) {
+            existingPopup.remove();
+        }
+
+        // Create popup element
+        const popup = document.createElement('div');
+        popup.className = `newsletter-popup newsletter-popup--${type}`;
+        popup.setAttribute('role', 'alert');
+        popup.setAttribute('aria-live', 'polite');
+
+        // Create popup content
+        const icon = type === 'success' ? '✓' : '⚠';
+        popup.innerHTML = `
+            <div class="newsletter-popup__icon">${icon}</div>
+            <div class="newsletter-popup__message">${message}</div>
+            <button class="newsletter-popup__close" aria-label="Close notification">×</button>
+        `;
+
+        // Add to page
+        document.body.appendChild(popup);
+
+        // Trigger animation
+        requestAnimationFrame(() => {
+            popup.classList.add('newsletter-popup--visible');
+        });
+
+        // Handle close button
+        const closeBtn = popup.querySelector('.newsletter-popup__close');
+        closeBtn?.addEventListener('click', () => {
+            this.closePopup(popup);
+        });
+
+        // Auto-close after 8 seconds
+        setTimeout(() => {
+            this.closePopup(popup);
+        }, 8000);
+
+        // Close on click outside
+        popup.addEventListener('click', (e) => {
+            if (e.target === popup) {
+                this.closePopup(popup);
+            }
+        });
+    }
+
+    closePopup(popup) {
+        if (popup) {
+            popup.classList.remove('newsletter-popup--visible');
+            setTimeout(() => {
+                popup.remove();
+            }, 300);
         }
     }
 }
