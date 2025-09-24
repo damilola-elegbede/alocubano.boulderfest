@@ -1,5 +1,5 @@
 /**
-import { setSecureCorsHeaders } from '../../../lib/cors-config.js';
+import { setSecureCorsHeaders } from '../../lib/cors-config.js';
  * Gallery Years API Endpoint
  * Provides available gallery years with statistics and metadata
  */

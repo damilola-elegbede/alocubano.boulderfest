@@ -1,5 +1,5 @@
 /**
-import { setSecureCorsHeaders } from '../../../lib/cors-config.js';
+import { setSecureCorsHeaders } from '../../lib/cors-config.js';
  * Create Payment Intent API Endpoint
  * Legacy endpoint for direct payment intent creation
  * (Kept for backward compatibility - new flow uses checkout sessions)

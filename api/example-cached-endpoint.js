@@ -1,5 +1,5 @@
 /**
-import { setSecureCorsHeaders } from '../../lib/cors-config.js';
+import { setSecureCorsHeaders } from '../lib/cors-config.js';
  * Example Cached API Endpoint
  * Demonstrates integration of the multi-layer cache system with Vercel serverless functions
  */

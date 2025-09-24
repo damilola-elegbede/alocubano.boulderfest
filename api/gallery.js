@@ -4,7 +4,7 @@
  */
 
 import { getGalleryService } from "../lib/gallery-service.js";
-import { setSecureCorsHeaders } from '../../lib/cors-config.js';
+import { setSecureCorsHeaders } from '../lib/cors-config.js';
 import crypto from 'crypto';
 
 export default async function handler(req, res) {

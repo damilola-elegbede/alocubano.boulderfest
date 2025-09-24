@@ -1,5 +1,5 @@
 /**
-import { setSecureCorsHeaders } from '../../lib/cors-config.js';
+import { setSecureCorsHeaders } from '../lib/cors-config.js';
  * Featured Photos API endpoint - Environment-aware service
  * Serves featured photos from cache or dynamically selects from gallery
  */

@@ -1,5 +1,5 @@
 /**
-import { setSecureCorsHeaders } from '../../lib/cors-config.js';
+import { setSecureCorsHeaders } from '../lib/cors-config.js';
  * Performance Final Report API endpoint
  * Handles final performance metrics reporting when page is unloading
  */
