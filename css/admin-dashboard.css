@@ -262,39 +262,31 @@
 .compact-mode-toggle {
   display: inline-flex;
   align-items: center;
+  gap: var(--space-md);
+  transition: all var(--transition-base);
+}
+
+.compact-mode-toggle.header-variant {
   gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-md);
-  background: var(--color-surface);
-  border: 2px solid var(--color-border);
+}
+
+.compact-mode-toggle.floating-variant {
+  position: fixed;
+  top: var(--space-lg);
+  right: var(--space-lg);
+  z-index: var(--z-sticky);
+  background: rgba(30, 30, 30, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: var(--space-md);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  transition: all var(--transition-base);
-  position: relative;
-  overflow: hidden;
-  min-height: 44px;
+  box-shadow: var(--shadow-xl);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.compact-mode-toggle::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--color-success), var(--color-warning));
-  transition: all var(--transition-base);
-}
-
-.compact-mode-toggle:hover {
-  border-color: var(--color-blue);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
-}
-
-.compact-mode-toggle:focus-within {
-  outline: 3px solid rgba(91, 107, 181, 0.3);
-  outline-offset: 2px;
-  border-color: var(--color-blue);
+.compact-mode-toggle.loading {
+  pointer-events: none;
+  opacity: 0.7;
 }
 
 .mode-toggle-label {
@@ -305,112 +297,173 @@
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-wide);
   white-space: nowrap;
-  position: relative;
-  z-index: 2;
+  margin-right: var(--space-xs);
 }
 
+/* Modern iOS-style toggle switch */
 .mode-switch {
-  display: flex;
   position: relative;
-  width: 180px;
-  height: 36px;
-  background: var(--color-background-secondary);
+  width: 51px;
+  height: 31px;
+  background: rgba(120, 120, 128, 0.16);
   border-radius: var(--radius-full);
-  border: 2px solid var(--color-border-medium);
-  overflow: hidden;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 2px;
+  cursor: pointer;
+  transition: background-color 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  outline: none;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
 }
 
+/* Active state - Using Cuban theme blue */
+.mode-switch.test-mode {
+  background: var(--color-blue);
+}
+
+/* The sliding knob */
 .mode-switch::before {
   content: "";
   position: absolute;
   top: 2px;
   left: 2px;
-  width: calc(50% - 2px);
-  height: calc(100% - 4px);
-  background: linear-gradient(135deg, var(--color-success), var(--color-success-light, #4ade80));
-  border-radius: var(--radius-full);
-  transition: all var(--transition-base);
+  width: 27px;
+  height: 27px;
+  background: var(--color-white);
+  border-radius: 50%;
+  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 3px 8px 0 rgba(0, 0, 0, 0.15), 0 3px 1px 0 rgba(0, 0, 0, 0.06);
   z-index: 1;
-  box-shadow: var(--shadow-sm);
 }
 
 .mode-switch.test-mode::before {
-  transform: translateX(100%);
-  background: linear-gradient(135deg, var(--color-warning), var(--color-warning-light, #fbbf24));
+  transform: translateX(20px);
 }
 
+/* Invisible buttons for click areas */
 .mode-option {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-xs);
-  padding: var(--space-xs);
+  position: absolute;
+  width: 50%;
+  height: 100%;
   background: transparent;
   border: none;
-  font-family: var(--font-display);
-  font-size: var(--font-size-xs);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: var(--letter-spacing-wide);
-  color: var(--color-text-secondary);
+  padding: 0;
   cursor: pointer;
-  transition: all var(--transition-base);
-  position: relative;
   z-index: 2;
-  min-height: 32px;
-}
-
-.mode-option:focus {
+  opacity: 0;
   outline: none;
 }
 
-.mode-option.active {
-  color: var(--color-text-inverse);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+.mode-option:first-of-type {
+  left: 0;
 }
 
-.mode-option:hover:not(.active) {
-  color: var(--color-text-primary);
+.mode-option:last-of-type {
+  right: 0;
 }
 
+/* Icons positioned inside the switch */
 .mode-icon {
-  font-size: var(--font-size-sm);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  position: absolute;
+  font-size: 11px;
+  pointer-events: none;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 0;
+  transition: opacity 200ms ease;
+}
+
+/* Production icon (left side) */
+.mode-option:first-of-type .mode-icon {
+  left: 6px;
+  color: var(--color-text-secondary);
+  opacity: 0.6;
+}
+
+.mode-switch.test-mode .mode-option:first-of-type .mode-icon {
+  opacity: 0;
+}
+
+/* Test icon (right side) */
+.mode-option:last-of-type .mode-icon {
+  right: 6px;
+  color: var(--color-text-secondary);
+  opacity: 0;
+}
+
+.mode-switch.test-mode .mode-option:last-of-type .mode-icon {
+  opacity: 1;
+  color: var(--color-white);
+}
+
+/* Hide text labels */
+.mode-option span:not(.mode-icon) {
+  display: none;
+}
+
+/* Focus styles for accessibility */
+.mode-switch:focus-within {
+  box-shadow: 0 0 0 3px rgba(91, 107, 181, 0.4);
+}
+
+/* Status dot - minimal and subtle */
+.mode-status-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(76, 217, 100, 0.8);
+  transition: all var(--transition-base);
+  margin-left: var(--space-xs);
+  display: none; /* Hidden by default for cleaner look */
+}
+
+.compact-mode-toggle.show-status .mode-status-dot {
+  display: block;
+}
+
+.mode-switch.test-mode ~ .mode-status-dot {
+  background: var(--color-blue);
+}
+
+/* Loading state */
+.compact-mode-toggle.loading .mode-switch {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.compact-mode-toggle.loading .mode-switch::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
   width: 16px;
   height: 16px;
-  transition: all var(--transition-base);
-}
-
-.mode-option.active .mode-icon {
-  transform: scale(1.1);
-}
-
-.mode-status-dot {
-  width: 8px;
-  height: 8px;
+  margin: -8px 0 0 -8px;
+  border: 2px solid transparent;
+  border-top-color: var(--color-white);
   border-radius: 50%;
-  background: var(--color-success);
-  box-shadow: 0 0 0 2px var(--color-surface);
-  transition: all var(--transition-base);
-  animation: pulse-gentle 2s infinite;
+  animation: spin 0.6s linear infinite;
+  z-index: 3;
 }
 
-.mode-switch.test-mode .mode-status-dot {
-  background: var(--color-warning);
-}
-
-@keyframes pulse-gentle {
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1);
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
-  50% {
-    opacity: 0.7;
-    transform: scale(1.2);
+}
+
+/* Hover effects */
+.mode-switch:hover {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .compact-mode-toggle.floating-variant {
+    top: var(--space-sm);
+    right: var(--space-sm);
+    left: var(--space-sm);
+    display: flex;
+    justify-content: center;
   }
 }
 
