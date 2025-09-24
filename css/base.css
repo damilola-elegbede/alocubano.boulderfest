@@ -73,6 +73,12 @@
   --color-border-medium: var(--color-gray-300);    /* Medium emphasis borders */
   --color-border-strong: var(--color-gray-400);    /* Strong emphasis borders */
 
+  /* Form Input Colors - Optimized for accessibility across themes */
+  --color-input-bg: var(--color-surface);          /* Input background */
+  --color-input-text: var(--color-text-primary);   /* Input text color */
+  --color-input-border: var(--color-border);       /* Input border color */
+  --color-input-placeholder: var(--color-text-secondary); /* Input placeholder text */
+
   /* Interactive Colors - Brand-aligned actions and states */
   --color-primary: var(--color-blue);              /* Primary actions (CTA buttons) */
   --color-primary-hover: #4a5ca3;                  /* Primary hover state */
@@ -258,6 +264,13 @@
   --color-border-light: var(--color-gray-700);         /* Subtle borders */
   --color-border-medium: var(--color-gray-600);        /* Medium borders */
   --color-border-strong: var(--color-gray-500);        /* Strong borders */
+
+  /* Form Input Colors - Dark mode optimized
+   * Enhanced contrast for better visibility on dark surfaces */
+  --color-input-bg: var(--color-gray-800);             /* Input background (darker) */
+  --color-input-text: var(--color-white);              /* Input text (white) */
+  --color-input-border: var(--color-gray-600);         /* Input border (visible) */
+  --color-input-placeholder: var(--color-gray-400);    /* Input placeholder (muted) */
 
   /* Interactive Colors - Optimized for performance
    * Slightly brighter variants for better visibility on dark backgrounds */
