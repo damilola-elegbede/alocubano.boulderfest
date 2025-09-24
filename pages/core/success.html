@@ -967,7 +967,7 @@
 
         // Update error message based on payment method or error data
         const errorTitle = document.querySelector('.error-title');
-        const errorState = document.querySelector('.error-state');
+        const errorStateDiv = document.querySelector('.error-state');
 
         let errorMessage = 'Unable to verify payment';
         if (errorData && errorData.paymentMethod) {
@@ -981,7 +981,7 @@
             paypalErrorMsg.textContent = 'There was an issue processing your PayPal payment. Please check your PayPal account or contact us for assistance.';
             paypalErrorMsg.setAttribute('role', 'alert');
             paypalErrorMsg.setAttribute('aria-live', 'assertive');
-            errorState.insertBefore(paypalErrorMsg, errorState.querySelector('.success-actions'));
+            errorStateDiv.insertBefore(paypalErrorMsg, errorStateDiv.querySelector('.success-actions'));
           } else if (errorData.paymentMethod === 'stripe') {
             errorMessage = 'Payment Verification Issue';
             if (errorTitle) {

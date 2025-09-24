@@ -209,6 +209,7 @@ export default async function handler(req, res) {
         // Generate registration token if missing
         try {
           const tokenService = new RegistrationTokenService();
+          await tokenService.ensureInitialized();
           registrationToken = await tokenService.createToken(existingTransaction.id);
           console.log(`Generated registration token for existing transaction ${existingTransaction.uuid}`);
         } catch (tokenError) {
@@ -244,6 +245,7 @@ export default async function handler(req, res) {
         // Generate registration token (post-commit)
         try {
           const tokenService = new RegistrationTokenService();
+          await tokenService.ensureInitialized();
           registrationToken = await tokenService.createToken(transaction.id);
           console.log(`Generated registration token for new transaction ${transaction.uuid}`);
         } catch (tokenError) {
