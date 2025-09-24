@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Test Mode - Admin Dashboard</title>
+  <title>Test Dashboard - Admin Dashboard</title>
   <link rel="stylesheet" href="/css/base.css">
   <link rel="stylesheet" href="/css/admin.css">
   <link rel="stylesheet" href="/css/admin-dashboard.css">
-  <meta name="description" content="Admin test mode for cart and checkout functionality">
+  <meta name="description" content="Admin test dashboard for cart and checkout functionality">
   <meta name="robots" content="noindex, nofollow">
 
   <!-- Security headers -->
@@ -25,7 +25,7 @@
     <header class="admin-header">
       <div class="admin-header-content">
         <div>
-          <h1 class="admin-header-title">Test Mode</h1>
+          <h1 class="admin-header-title">Test Dashboard</h1>
           <p class="admin-header-subtitle">A Lo Cubano Boulder Fest - Test Cart Management</p>
         </div>
         <div class="admin-header-actions">
@@ -55,8 +55,8 @@
           </a>
         </li>
         <li class="admin-nav-item">
-          <a href="/admin/test-mode" class="admin-nav-link active">
-            <span>Test Mode</span>
+          <a href="/admin/test-dashboard" class="admin-nav-link active">
+            <span>Test Dashboard</span>
           </a>
         </li>
         <li class="admin-nav-item">
@@ -77,12 +77,12 @@
       </ul>
     </nav>
 
-    <!-- Test Mode Section -->
-    <section class="admin-section" id="testModeSection">
-      <!-- Test Mode Header with Status -->
+    <!-- Test Dashboard Section -->
+    <section class="admin-section" id="testDashboardSection">
+      <!-- Test Dashboard Header with Status -->
       <div class="admin-section-header">
-        <h2>Test Mode Cart Management</h2>
-        <div class="test-mode-indicator">
+        <h2>Test Dashboard Cart Management</h2>
+        <div class="test-dashboard-indicator">
           <span class="test-badge">🧪 TEST</span>
           <span>Test Environment Active</span>
         </div>
@@ -95,10 +95,10 @@
           <span>Total: <strong id="testCartValue">$0.00</strong></span>
         </div>
         <div class="cart-actions">
-          <button class="admin-btn admin-btn-primary" onclick="window.testMode && window.testMode.viewCart()">
+          <button class="admin-btn admin-btn-primary" onclick="window.testDashboard && window.testDashboard.viewCart()">
             View Cart on Main Site →
           </button>
-          <button class="admin-btn admin-btn-outline" onclick="window.testMode && window.testMode.clearCart()">
+          <button class="admin-btn admin-btn-outline" onclick="window.testDashboard && window.testDashboard.clearCart()">
             Clear Cart
           </button>
         </div>
@@ -114,7 +114,7 @@
             <h4>VIP Pass</h4>
             <div class="ticket-price">$150</div>
             <p class="ticket-description">Full festival access with VIP perks including exclusive areas and early entry</p>
-            <button class="test-add-btn admin-btn admin-btn-success" data-item="vip-pass">
+            <button class="test-add-btn admin-btn admin-btn-success" data-item="2026-early-bird-full">
               + Add to Cart
             </button>
           </div>
@@ -125,7 +125,7 @@
             <h4>Weekend Pass</h4>
             <div class="ticket-price">$75</div>
             <p class="ticket-description">Access to all weekend events Friday through Sunday</p>
-            <button class="test-add-btn admin-btn admin-btn-success" data-item="weekend-pass">
+            <button class="test-add-btn admin-btn admin-btn-success" data-item="2026-full-pass">
               + Add to Cart
             </button>
           </div>
@@ -176,10 +176,10 @@
       <div class="test-management-section">
         <h3>Test Data Management</h3>
         <div class="management-actions">
-          <button class="admin-btn admin-btn-outline" onclick="window.testMode && window.testMode.generate()">
+          <button class="admin-btn admin-btn-outline" onclick="window.testDashboard && window.testDashboard.generate()">
             🎲 Generate Random Cart
           </button>
-          <button class="admin-btn admin-btn-danger" onclick="window.testMode && window.testMode.cleanup()">
+          <button class="admin-btn admin-btn-danger" onclick="window.testDashboard && window.testDashboard.cleanup()">
             🗑️ Clear All Test Data
           </button>
         </div>
@@ -203,7 +203,7 @@
         border-bottom: 2px solid var(--color-border);
       }
 
-      .test-mode-indicator {
+      .test-dashboard-indicator {
         display: flex;
         align-items: center;
         gap: var(--space-sm);
@@ -376,7 +376,7 @@
   </div>
 
   <!-- Scripts -->
-  <script type="module" src="/js/admin-test-mode.js"></script>
+  <script type="module" src="/js/admin-test-dashboard.js"></script>
   <script>
     // Logout function
     function logout() {

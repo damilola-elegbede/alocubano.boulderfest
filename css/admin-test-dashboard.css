@@ -1,11 +1,11 @@
-/* A Lo Cubano Boulder Fest - Admin Test Mode Styling */
-/* Test Mode UI Components for Admin Dashboard */
+/* A Lo Cubano Boulder Fest - Admin Test Dashboard Styling */
+/* Test Dashboard UI Components for Admin Dashboard */
 
 /* ==========================================================================
-   TEST MODE INDICATORS
+   TEST DASHBOARD INDICATORS
    ========================================================================== */
 
-/* Test Mode Badge */
+/* Test Badge */
 .test-badge {
   display: inline-flex;
   align-items: center;
@@ -66,8 +66,8 @@
   }
 }
 
-/* Test Mode Indicator */
-.test-mode-indicator {
+/* Test Dashboard Indicator */
+.test-dashboard-indicator {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
@@ -120,10 +120,10 @@
 }
 
 /* ==========================================================================
-   TEST MODE GRID LAYOUT
+   TEST DASHBOARD GRID LAYOUT
    ========================================================================== */
 
-.test-mode-grid {
+.test-dashboard-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: var(--space-xl);
@@ -601,13 +601,13 @@
    LOADING STATES
    ========================================================================== */
 
-.test-mode-loading {
+.test-dashboard-loading {
   position: relative;
   opacity: 0.7;
   pointer-events: none;
 }
 
-.test-mode-loading::after {
+.test-dashboard-loading::after {
   content: "";
   position: absolute;
   top: 50%;
@@ -773,7 +773,7 @@
   }
 
   /* Legacy mobile support */
-  .test-mode-grid {
+  .test-dashboard-grid {
     grid-template-columns: 1fr;
     gap: var(--space-lg);
     margin: var(--space-md) 0;
@@ -822,7 +822,7 @@
 
 /* Tablet Adjustments */
 @media (min-width: 769px) and (max-width: 1024px) {
-  .test-mode-grid {
+  .test-dashboard-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 
@@ -941,8 +941,8 @@
 }
 
 /* Enhanced Status Indicators */
-.test-mode-indicator::after {
-  content: " - Screen readers will announce test mode status changes";
+.test-dashboard-indicator::after {
+  content: " - Screen readers will announce test dashboard status changes";
   position: absolute;
   left: -9999px;
   width: 1px;
@@ -1014,7 +1014,7 @@
 /* Reduced Motion Support */
 @media (prefers-reduced-motion: reduce) {
   .test-badge,
-  .test-mode-indicator::before,
+  .test-dashboard-indicator::before,
   .test-add-btn:hover,
   .test-section:hover,
   .mode-btn::before {
@@ -1331,7 +1331,7 @@
    ========================================================================== */
 
 @media print {
-  .test-mode-indicator,
+  .test-dashboard-indicator,
   .test-badge {
     -webkit-print-color-adjust: exact;
     color-adjust: exact;
