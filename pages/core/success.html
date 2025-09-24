@@ -843,32 +843,23 @@
 
         // Handle registration information if available
         const registrationSection = document.getElementById("registration-section");
-        const registrationBtn = document.getElementById("registration-btn");
-        const registrationContent = document.getElementById("registration-content");
 
-        if (data.registrationUrl || data.registrationToken) {
-          // Show registration section with prominent button
+        // Always show registration form for ticket purchases
+        if (data.registrationToken || data.registrationUrl || data.hasTickets) {
+          // Show registration section with inline form
           registrationSection.style.display = "block";
 
-          // Set up the registration button
-          if (data.registrationUrl) {
-            registrationBtn.href = data.registrationUrl;
-          } else if (data.registrationToken) {
-            // Default registration path if not provided in registrationUrl
-            registrationBtn.href = `/pages/core/register-tickets.html?token=${data.registrationToken}`;
-          }
+          // Store registration token for later use
+          window.registrationToken = data.registrationToken;
 
-          // Update the registration message
-          registrationContent.innerHTML = `
-            <p><strong>Important:</strong> Complete your festival registration to secure your spot and receive your tickets.</p>
-            <p>This step is required to finalize your purchase and receive event updates.</p>
-          `;
+          // Populate the registration form with ticket fields
+          populateRegistrationForm(data.session || {}, data);
 
           // Update next steps to emphasize registration
           stepsContent.textContent = "";
           const steps = [
-            "• Complete your registration using the button above",
-            "• Check your email for order confirmation",
+            "• Complete your registration in the form below",
+            "• Your confirmation email will be sent after registration",
             "• Save your confirmation number for check-in",
             "• Join our WhatsApp group for updates",
           ];
@@ -1041,18 +1032,24 @@
         const ticketsContainer = document.getElementById("tickets-container");
         ticketsContainer.innerHTML = "";
 
-        // Get customer details from session
-        const customerEmail = sessionData.customer_email || responseData.session?.customer_email || "";
+        // Get customer details from session - check multiple possible locations
+        const customerEmail = sessionData.customer_email ||
+                             sessionData.customer_details?.email ||
+                             responseData.session?.customer_email ||
+                             responseData.order?.customerEmail || "";
 
-        // Parse name into first and last
-        const nameParts = (sessionData.customer_name || sessionData.metadata?.customerName || "Guest").split(" ");
+        // Parse name into first and last - Stripe provides it as customer_details.name
+        const customerName = sessionData.customer_details?.name ||
+                            sessionData.metadata?.customerName ||
+                            responseData.session?.metadata?.customerName ||
+                            "Guest";
+        const nameParts = customerName.split(" ");
         const firstName = nameParts[0] || "";
         const lastName = nameParts.slice(1).join(" ") || "";
 
-        // Determine number of tickets (from metadata or assume based on amount)
-        // This is a simple approximation - you may want to get actual ticket count from the backend
+        // Determine number of tickets - check multiple sources
         const amount = parseFloat(sessionData.amount || responseData.session?.amount || 0);
-        const ticketCount = Math.max(1, Math.floor(amount / 100)); // Assume ~$100 per ticket
+        const ticketCount = Math.max(1, Math.round(amount / 125)); // Tickets are $125 each
 
         // Create form fields for each ticket
         for (let i = 0; i < ticketCount; i++) {

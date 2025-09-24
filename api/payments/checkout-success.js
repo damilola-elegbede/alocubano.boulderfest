@@ -125,15 +125,30 @@ async function sendRegistrationEmailAsync(fullSession, transaction, tickets, reg
   try {
     const ticketEmailService = getTicketEmailService();
 
+    // Ensure transaction has customer email for the email service
+    if (!transaction.customer_email) {
+      transaction.customer_email = fullSession.customer_details?.email || fullSession.customer_email;
+    }
+
+    console.log('Attempting to send ticket confirmation email:', {
+      transactionId: transaction.uuid,
+      email: transaction.customer_email,
+      ticketCount: tickets.length,
+      hasEmail: !!transaction.customer_email
+    });
+
     // Send ticket confirmation email instead of registration invitation
     // Using the existing template that works (ID: 10)
     await ticketEmailService.sendTicketConfirmation(transaction, tickets);
 
-    if (process.env.NODE_ENV !== 'production') {
-      console.log(`Registration email sent successfully to ${fullSession.customer_details?.email}`);
-    }
+    console.log(`Ticket confirmation email sent successfully to ${transaction.customer_email}`);
   } catch (error) {
-    console.error('Failed to send registration email (non-blocking):', error);
+    console.error('Failed to send ticket confirmation email:', {
+      error: error.message,
+      stack: error.stack,
+      transactionId: transaction.uuid,
+      email: transaction.customer_email
+    });
     // Don't throw - this is async and shouldn't block the response
   }
 }
@@ -270,6 +285,7 @@ export default async function handler(req, res) {
         amount: fullSession.amount_total / 100,
         currency: fullSession.currency,
         customer_email: fullSession.customer_email || fullSession.customer_details?.email,
+        customer_details: fullSession.customer_details, // Include full customer details for form
         metadata: fullSession.metadata
       },
       hasTickets
