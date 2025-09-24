@@ -16,37 +16,37 @@ const logger = {
 // Test dashboard configuration - with TEST prefixes for test items
 const TEST_DASHBOARD_CONFIG = {
     testItems: {
-        'TEST-2026-early-bird-full': {
+        'vip-pass': {
             name: '[TEST] VIP Pass',
             price: 150.00,
             type: 'vip-pass',
             description: 'Full festival access with VIP perks'
         },
-        'TEST-2026-full-pass': {
+        'weekend-pass': {
             name: '[TEST] Weekend Pass',
             price: 75.00,
             type: 'weekend-pass',
             description: 'Access to all weekend events'
         },
-        'TEST-friday-pass': {
+        'friday-pass': {
             name: '[TEST] Friday Pass',
             price: 35.00,
             type: 'friday-pass',
             description: 'Friday night access'
         },
-        'TEST-saturday-pass': {
+        'saturday-pass': {
             name: '[TEST] Saturday Pass',
             price: 35.00,
             type: 'saturday-pass',
             description: 'Saturday access'
         },
-        'TEST-sunday-pass': {
+        'sunday-pass': {
             name: '[TEST] Sunday Pass',
             price: 35.00,
             type: 'sunday-pass',
             description: 'Sunday access'
         },
-        'TEST-donation': {
+        'donation': {
             name: '[TEST] Festival Donation',
             price: 25.00,
             type: 'donation',
@@ -59,8 +59,7 @@ const TEST_DASHBOARD_CONFIG = {
 // Test dashboard state - simplified for cart manager integration
 const testDashboardState = {
     initialized: false,
-    totalValue: 0,
-    itemCount: 0
+    cartManager: null
 };
 
 // HTML escaping function for security
@@ -87,12 +86,10 @@ async function initializeTestDashboard() {
     logger.log('🧪 Initializing Admin Test Dashboard');
 
     try {
-        // Initialize cart manager
+        // Initialize cart manager with error handling
         const cartManager = getCartManager();
         await cartManager.initialize();
-
-        // Load existing test cart data
-        loadTestCartData();
+        testDashboardState.cartManager = cartManager;
 
         // Attach event listeners to test buttons
         attachTestDashboardEventListeners();
@@ -111,50 +108,62 @@ async function initializeTestDashboard() {
         logger.log('✅ Admin Test Dashboard initialized successfully');
     } catch (error) {
         logger.error('Failed to initialize test dashboard:', error);
-        showTestDashboardMessage('Failed to initialize test dashboard', 'error');
+        showTestDashboardMessage('Failed to initialize test dashboard. Cart functionality may be unavailable.', 'error');
+
+        // Provide fallback behavior
+        testDashboardState.cartManager = null;
+        attachTestDashboardEventListeners();
     }
 }
 
 /**
- * Load test cart data from cart manager
+ * Get current cart state from cart manager (always fresh)
  */
-function loadTestCartData() {
+function getCurrentCartState() {
+    if (!testDashboardState.cartManager) {
+        return { tickets: {} };
+    }
+
     try {
-        const cartManager = getCartManager();
-        const cartState = cartManager.getState();
-
-        // Filter for TEST- prefixed tickets only for display
-        const testTickets = {};
-        Object.entries(cartState.tickets).forEach(([ticketType, ticket]) => {
-            if (ticketType.startsWith('TEST-')) {
-                testTickets[ticketType] = ticket;
-            }
-        });
-
-        // Calculate totals for test tickets only
-        calculateCartTotals(testTickets);
-
-        logger.log('Loaded test cart data:', testTickets);
+        return testDashboardState.cartManager.getState();
     } catch (error) {
-        logger.error('Failed to load test cart data:', error);
-        calculateCartTotals({});
+        logger.error('Failed to get cart state:', error);
+        return { tickets: {} };
     }
 }
 
+/**
+ * Get test tickets from current cart state
+ */
+function getTestTickets() {
+    const cartState = getCurrentCartState();
+    const testTickets = {};
+
+    Object.entries(cartState.tickets).forEach(([ticketType, ticket]) => {
+        if (ticketType.startsWith('TEST-')) {
+            testTickets[ticketType] = ticket;
+        }
+    });
+
+    return testTickets;
+}
 
 /**
- * Calculate cart totals for test tickets
+ * Calculate cart totals for test tickets from current cart state
  */
-function calculateCartTotals(testTickets = {}) {
-    testDashboardState.itemCount = 0;
-    testDashboardState.totalValue = 0;
+function calculateCartTotals() {
+    const testTickets = getTestTickets();
+    let itemCount = 0;
+    let totalValue = 0;
 
     Object.values(testTickets).forEach(ticket => {
         const quantity = ticket.quantity || 1;
         const price = ticket.price || 0;
-        testDashboardState.itemCount += quantity;
-        testDashboardState.totalValue += (price * quantity);
+        itemCount += quantity;
+        totalValue += (price * quantity);
     });
+
+    return { itemCount, totalValue };
 }
 
 /**
@@ -192,7 +201,9 @@ function attachTestDashboardEventListeners() {
  */
 function handleTestItemAdd(event) {
     const button = event.target.closest('.test-add-btn');
-    if (!button) return;
+    if (!button) {
+        return;
+    }
 
     const itemType = button.dataset.item;
 
@@ -224,20 +235,24 @@ function handleTestItemAdd(event) {
  * Add test item to cart using cart manager
  */
 async function addTestItemToCart(itemType) {
-    // If itemType doesn't have TEST- prefix, add it
-    const testItemType = itemType.startsWith('TEST-') ? itemType : `TEST-${itemType}`;
-    const itemConfig = TEST_DASHBOARD_CONFIG.testItems[testItemType];
+    if (!testDashboardState.cartManager) {
+        showTestDashboardMessage('Cart manager not available', 'error');
+        return;
+    }
 
+    // Get config using simple key (without TEST- prefix)
+    const itemConfig = TEST_DASHBOARD_CONFIG.testItems[itemType];
     if (!itemConfig) {
         showTestDashboardMessage('Test item not found', 'error');
         return;
     }
 
-    try {
-        const cartManager = getCartManager();
+    // Add TEST- prefix for cart storage
+    const testItemType = `TEST-${itemType}`;
 
+    try {
         // Add ticket using cart manager with TEST- prefix
-        await cartManager.addTicket({
+        await testDashboardState.cartManager.addTicket({
             ticketType: testItemType,
             price: itemConfig.price,
             name: itemConfig.name,
@@ -245,15 +260,20 @@ async function addTestItemToCart(itemType) {
             quantity: 1
         });
 
-        // Reload test cart data and update display
-        loadTestCartData();
+        // Update display with fresh data and visual feedback
         updateTestStatistics();
 
-        // Show success message and announce to screen readers
-        showTestDashboardMessage(`Added ${escapeHtml(itemConfig.name)} to test cart`, 'success');
-        announceToScreenReader(`Successfully added ${itemConfig.name} to test cart. Cart now has ${testDashboardState.itemCount} items totaling $${testDashboardState.totalValue.toFixed(2)}`);
+        // Get current totals for announcement
+        const { itemCount, totalValue } = calculateCartTotals();
 
-        logger.debug('🧪 Test item added:', testItemType);
+        // Add visual feedback with cart count animation
+        addCartCountAnimation();
+
+        // Show success message with persistent indicator
+        showTestDashboardMessage(`Added ${escapeHtml(itemConfig.name)} to test cart`, 'success');
+        showPersistentSuccessIndicator('Item added successfully');
+        announceToScreenReader(`Successfully added ${itemConfig.name} to test cart. Cart now has ${itemCount} items totaling $${totalValue.toFixed(2)}`);
+
     } catch (error) {
         logger.error('Failed to add test item to cart:', error);
         showTestDashboardMessage('Failed to add test item to cart', 'error');
@@ -264,24 +284,82 @@ async function addTestItemToCart(itemType) {
  * Update test statistics display
  */
 function updateTestStatistics() {
+    // Always get fresh data from cart manager
+    const { itemCount, totalValue } = calculateCartTotals();
+
     const cartCountElement = document.getElementById('testCartCount');
     const cartValueElement = document.getElementById('testCartValue');
 
     if (cartCountElement) {
-        cartCountElement.textContent = testDashboardState.itemCount.toString();
-        cartCountElement.setAttribute('aria-label', `${testDashboardState.itemCount} test items in cart`);
+        // Add pulse animation when count changes
+        const currentCount = parseInt(cartCountElement.textContent) || 0;
+        if (currentCount !== itemCount) {
+            cartCountElement.classList.add('count-updated');
+            setTimeout(() => cartCountElement.classList.remove('count-updated'), 600);
+        }
+
+        cartCountElement.textContent = itemCount.toString();
+        cartCountElement.setAttribute('aria-label', `${itemCount} test items in cart`);
     }
 
     if (cartValueElement) {
-        cartValueElement.textContent = `$${testDashboardState.totalValue.toFixed(2)}`;
-        cartValueElement.setAttribute('aria-label', `Test cart value is $${testDashboardState.totalValue.toFixed(2)}`);
+        // Add highlight animation when value changes
+        const currentValue = cartValueElement.textContent;
+        const newValue = `$${totalValue.toFixed(2)}`;
+        if (currentValue !== newValue) {
+            cartValueElement.classList.add('value-updated');
+            setTimeout(() => cartValueElement.classList.remove('value-updated'), 600);
+        }
+
+        cartValueElement.textContent = newValue;
+        cartValueElement.setAttribute('aria-label', `Test cart value is $${totalValue.toFixed(2)}`);
     }
 
     // Update the live region for screen readers
     const testStatsRegion = document.getElementById('testStats');
     if (testStatsRegion) {
-        testStatsRegion.setAttribute('aria-label', `Test cart statistics: ${testDashboardState.itemCount} items, total value $${testDashboardState.totalValue.toFixed(2)}`);
+        testStatsRegion.setAttribute('aria-label', `Test cart statistics: ${itemCount} items, total value $${totalValue.toFixed(2)}`);
     }
+}
+
+/**
+ * Add cart count animation for visual feedback
+ */
+function addCartCountAnimation() {
+    const cartCountElement = document.getElementById('testCartCount');
+    if (cartCountElement) {
+        cartCountElement.classList.add('cart-bounce');
+        setTimeout(() => cartCountElement.classList.remove('cart-bounce'), 500);
+    }
+}
+
+/**
+ * Show persistent success indicator
+ */
+function showPersistentSuccessIndicator(message) {
+    // Create or update the success indicator
+    let indicator = document.getElementById('cart-success-indicator');
+    if (!indicator) {
+        indicator = document.createElement('div');
+        indicator.id = 'cart-success-indicator';
+        indicator.className = 'cart-success-indicator';
+
+        // Insert after the cart statistics
+        const testStats = document.getElementById('testStats');
+        if (testStats && testStats.parentNode) {
+            testStats.parentNode.insertBefore(indicator, testStats.nextSibling);
+        }
+    }
+
+    // Update the indicator content
+    indicator.innerHTML = `<span class="success-checkmark">✓</span> ${escapeHtml(message)}`;
+    indicator.classList.add('show');
+
+    // Auto-hide after 5 seconds
+    clearTimeout(indicator.hideTimer);
+    indicator.hideTimer = setTimeout(() => {
+        indicator.classList.remove('show');
+    }, 5000);
 }
 
 /**
@@ -323,7 +401,6 @@ function viewCartOnMainSite() {
         showTestDashboardMessage('Opening tickets page with test items...', 'info');
         announceToScreenReader('Opening tickets page in new tab with test items');
 
-        logger.log('🌍 Viewing cart on main site with test items');
     } catch (error) {
         logger.error('Failed to open tickets page:', error);
         showTestDashboardMessage('Failed to open tickets page', 'error');
@@ -334,14 +411,14 @@ function viewCartOnMainSite() {
  * Clear test cart using cart manager
  */
 async function clearTestCart() {
-    try {
-        const cartManager = getCartManager();
-        const cartState = cartManager.getState();
+    if (!testDashboardState.cartManager) {
+        showTestDashboardMessage('Cart manager not available', 'error');
+        return;
+    }
 
-        // Find all TEST- prefixed tickets
-        const testTickets = Object.keys(cartState.tickets).filter(ticketType =>
-            ticketType.startsWith('TEST-')
-        );
+    try {
+        // Find all TEST- prefixed tickets from current state
+        const testTickets = Object.keys(getTestTickets());
 
         if (testTickets.length === 0) {
             showTestDashboardMessage('Test cart is already empty', 'info');
@@ -360,18 +437,16 @@ async function clearTestCart() {
 
         // Remove each test ticket using cart manager
         for (const ticketType of testTickets) {
-            await cartManager.removeTicket(ticketType);
+            await testDashboardState.cartManager.removeTicket(ticketType);
         }
 
-        // Update display
-        loadTestCartData();
+        // Update display with fresh data
         updateTestStatistics();
 
         // Show success message and announce
         showTestDashboardMessage('Test cart cleared successfully', 'success');
         announceToScreenReader('Test cart cleared successfully. Test items removed.');
 
-        logger.debug('🧪 Test cart cleared');
     } catch (error) {
         logger.error('Failed to clear test cart:', error);
         showTestDashboardMessage('Failed to clear test cart', 'error');
@@ -396,36 +471,32 @@ This action cannot be undone. Continue?`;
     }
 
     try {
-        const cartManager = getCartManager();
-        const cartState = cartManager.getState();
+        // Remove all TEST- prefixed tickets if cart manager is available
+        if (testDashboardState.cartManager) {
+            const testTickets = Object.keys(getTestTickets());
 
-        // Remove all TEST- prefixed tickets
-        const testTickets = Object.keys(cartState.tickets).filter(ticketType =>
-            ticketType.startsWith('TEST-')
-        );
-
-        for (const ticketType of testTickets) {
-            await cartManager.removeTicket(ticketType);
+            for (const ticketType of testTickets) {
+                await testDashboardState.cartManager.removeTicket(ticketType);
+            }
         }
 
-        // Remove all test-related localStorage items (excluding the main cart)
+        // Remove specific test-related localStorage items (more targeted)
         const keysToRemove = [];
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
-            if (key && key !== 'alocubano_cart' && (key.includes('test') || key.includes('admin_test'))) {
+            // Only remove keys that specifically start with admin_test_ or are exactly admin_test_session
+            if (key && (key.startsWith('admin_test_') || key === 'admin_test_session')) {
                 keysToRemove.push(key);
             }
         }
 
         keysToRemove.forEach(key => localStorage.removeItem(key));
 
-        // Update display
-        loadTestCartData();
+        // Update display with fresh data
         updateTestStatistics();
 
         showTestDashboardMessage('All test data cleaned up successfully', 'success');
 
-        logger.debug('🧪 Test data cleanup completed');
     } catch (error) {
         logger.error('Failed to cleanup test data:', error);
         showTestDashboardMessage('Failed to cleanup test data', 'error');
@@ -436,6 +507,11 @@ This action cannot be undone. Continue?`;
  * Generate test data using cart manager
  */
 async function generateTestData() {
+    if (!testDashboardState.cartManager) {
+        showTestDashboardMessage('Cart manager not available', 'error');
+        return;
+    }
+
     const confirmed = window.confirm(
         'This will generate sample test data. Continue?'
     );
@@ -445,43 +521,32 @@ async function generateTestData() {
     }
 
     try {
-        const cartManager = getCartManager();
-
         // Clear existing test tickets first
         await clearTestCart();
 
-        // Generate random test items
+        // Generate random test items using simple keys (without TEST- prefix)
         const itemTypes = Object.keys(TEST_DASHBOARD_CONFIG.testItems);
         const numberOfItems = Math.floor(Math.random() * 3) + 2; // 2-4 items
         let totalItems = 0;
 
         for (let i = 0; i < numberOfItems; i++) {
             const randomItemType = itemTypes[Math.floor(Math.random() * itemTypes.length)];
-            const itemConfig = TEST_DASHBOARD_CONFIG.testItems[randomItemType];
 
             // Generate random quantity
             const quantity = Math.floor(Math.random() * 3) + 1; // 1-3 quantity
 
-            // Add tickets using cart manager
+            // Add tickets using addTestItemToCart which handles TEST- prefix
             for (let j = 0; j < quantity; j++) {
-                await cartManager.addTicket({
-                    ticketType: randomItemType,
-                    price: itemConfig.price,
-                    name: itemConfig.name,
-                    eventId: 'test-event',
-                    quantity: 1
-                });
+                await addTestItemToCart(randomItemType); // Uses simple key, function adds TEST- prefix
                 totalItems++;
             }
         }
 
-        // Update display
-        loadTestCartData();
+        // Update display with fresh data
         updateTestStatistics();
 
         showTestDashboardMessage(`Generated ${totalItems} test items`, 'success');
 
-        logger.debug('🧪 Test data generated');
     } catch (error) {
         logger.error('Failed to generate test data:', error);
         showTestDashboardMessage('Failed to generate test data', 'error');
@@ -521,11 +586,12 @@ function showTestDashboardMessage(message, type = 'info') {
  * Get test dashboard status
  */
 function getTestDashboardStatus() {
+    const { itemCount, totalValue } = calculateCartTotals();
     return {
         initialized: testDashboardState.initialized,
-        itemCount: testDashboardState.itemCount,
-        totalValue: testDashboardState.totalValue,
-        cartData: testDashboardState.cartData
+        itemCount,
+        totalValue,
+        cartManagerAvailable: !!testDashboardState.cartManager
     };
 }
 
@@ -533,12 +599,15 @@ function getTestDashboardStatus() {
  * Export test cart data (for debugging/development)
  */
 function exportTestCartData() {
+    const { itemCount, totalValue } = calculateCartTotals();
+    const testTickets = getTestTickets();
+
     const data = {
         timestamp: new Date().toISOString(),
-        cartData: testDashboardState.cartData,
+        cartData: testTickets,
         totals: {
-            itemCount: testDashboardState.itemCount,
-            totalValue: testDashboardState.totalValue
+            itemCount,
+            totalValue
         }
     };
 
@@ -566,80 +635,6 @@ window.testDashboard = {
     announceToScreenReader: announceToScreenReader
 };
 
-/**
- * Handle keyboard shortcuts for test dashboard
- */
-function handleTestDashboardKeyboardShortcuts(event) {
-    // Check if Alt key is pressed (for accessibility)
-    if (!event.altKey) {
-        return;
-    }
-
-    switch (event.key.toLowerCase()) {
-        case 't':
-            // Alt+T: Toggle between test and production mode
-            event.preventDefault();
-            const currentMode = window.testModeView || false;
-            window.switchDataMode && window.switchDataMode(!currentMode);
-            break;
-
-        case 'v':
-            // Alt+V: Add VIP pass
-            event.preventDefault();
-            addTestItemToCart('TEST-2026-early-bird-full');
-            break;
-
-        case 'w':
-            // Alt+W: Add Weekend pass
-            event.preventDefault();
-            addTestItemToCart('TEST-2026-full-pass');
-            break;
-
-        case 'd':
-            // Alt+D: Add Donation
-            event.preventDefault();
-            addTestItemToCart('TEST-donation');
-            break;
-
-        case 'c':
-            // Alt+C: Clear test cart
-            event.preventDefault();
-            clearTestCart();
-            break;
-
-        case 'g':
-            // Alt+G: Generate test data
-            event.preventDefault();
-            generateTestData();
-            break;
-
-        case 'h':
-            // Alt+H: Show keyboard shortcuts help
-            event.preventDefault();
-            showKeyboardShortcutsHelp();
-            break;
-    }
-}
-
-/**
- * Show keyboard shortcuts help
- */
-async function showKeyboardShortcutsHelp() {
-    const helpMessage = `Test Dashboard Keyboard Shortcuts:
-• Alt+T: Toggle test/production mode
-• Alt+V: Add VIP Pass to cart
-• Alt+W: Add Weekend Pass to cart
-• Alt+D: Add Donation to cart
-• Alt+C: Clear test cart
-• Alt+G: Generate test data
-• Alt+H: Show this help
-• Tab: Navigate between elements
-• Enter/Space: Activate buttons
-• Escape: Cancel operations`;
-
-    window.alert(helpMessage);
-    announceToScreenReader('Keyboard shortcuts help displayed');
-}
 
 // Auto-initialize when DOM is ready
 if (document.readyState === 'loading') {
@@ -648,24 +643,5 @@ if (document.readyState === 'loading') {
     initializeTestDashboard();
 }
 
-// Add keyboard shortcut support
-document.addEventListener('keydown', handleTestDashboardKeyboardShortcuts);
-
-// Add escape key handler for canceling operations
-document.addEventListener('keydown', function(event) {
-    if (event.key === 'Escape') {
-        // Cancel any loading operations
-        const loadingButtons = document.querySelectorAll('.test-dashboard-loading');
-        loadingButtons.forEach(button => {
-            button.classList.remove('test-dashboard-loading');
-            button.disabled = false;
-            button.removeAttribute('aria-busy');
-        });
-
-        // Announce escape action
-        announceToScreenReader('Operation cancelled');
-    }
-});
-
-// Debug logging
-logger.debug('🧪 Admin Test Dashboard script loaded with correct cart structure');
+// Enhanced loading for admin test dashboard with visual feedback
+logger.debug('🧪 Admin Test Dashboard script loaded with visual feedback enhancements');
