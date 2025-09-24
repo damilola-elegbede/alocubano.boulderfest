@@ -178,11 +178,21 @@ export default async function handler(req, res) {
       mode: 'payment',
       success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}${isRequestTestMode ? '&test_mode=true' : ''}`,
       cancel_url: `${origin}/failure?session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}${isRequestTestMode ? '&test_mode=true' : ''}`,
-      // Include both customer_email and receipt_email for Stripe to send receipts
+      // Use only customer_email - receipt_email is not valid for checkout sessions
       ...(customerInfo?.email && {
-        customer_email: customerInfo.email,
-        receipt_email: customerInfo.email
+        customer_email: customerInfo.email
       }),
+      // Enable invoice creation for automatic receipts
+      invoice_creation: {
+        enabled: true,
+        invoice_data: {
+          description: 'A Lo Cubano Boulder Fest Tickets',
+          metadata: {
+            orderId: orderId,
+            orderType: orderType
+          }
+        }
+      },
       metadata: {
         orderId: orderId,
         orderType: orderType,

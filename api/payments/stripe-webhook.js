@@ -166,18 +166,8 @@ async function processUniversalRegistration(fullSession, transaction) {
     // 1) Generate registration token (uses its own DB client)
     const registrationToken = await tokenService.createToken(transaction.id);
 
-    // 2) Send registration invitation email
-    await ticketEmailService.sendRegistrationInvitation({
-      transactionId: transaction.uuid,
-      customerEmail: fullSession.customer_details?.email,
-      customerName: fullSession.customer_details?.name || 'Guest',
-      ticketCount: tickets.length,
-      registrationToken,
-      registrationDeadline,
-      tickets,
-      paymentProcessor: 'stripe',
-      processorTransactionId: fullSession.id
-    });
+    // 2) Send ticket confirmation email (using existing template that works)
+    await ticketEmailService.sendTicketConfirmation(transaction, tickets);
 
     // 3) Log email sent (best-effort)
     if (tickets.length && fullSession.customer_details?.email) {

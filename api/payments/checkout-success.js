@@ -125,17 +125,9 @@ async function sendRegistrationEmailAsync(fullSession, transaction, tickets, reg
   try {
     const ticketEmailService = getTicketEmailService();
 
-    await ticketEmailService.sendRegistrationInvitation({
-      transactionId: transaction.uuid,
-      customerEmail: fullSession.customer_details?.email,
-      customerName: fullSession.customer_details?.name || 'Guest',
-      ticketCount: tickets.length,
-      registrationToken,
-      registrationDeadline,
-      tickets,
-      paymentProcessor: 'stripe',
-      processorTransactionId: fullSession.id
-    });
+    // Send ticket confirmation email instead of registration invitation
+    // Using the existing template that works (ID: 10)
+    await ticketEmailService.sendTicketConfirmation(transaction, tickets);
 
     if (process.env.NODE_ENV !== 'production') {
       console.log(`Registration email sent successfully to ${fullSession.customer_details?.email}`);

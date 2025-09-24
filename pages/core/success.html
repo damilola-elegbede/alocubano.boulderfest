@@ -116,24 +116,6 @@
         color: var(--color-text-secondary);
       }
 
-      /* Countdown timer */
-      .countdown-timer {
-        font-family: var(--font-code);
-        font-size: var(--font-size-sm);
-        color: var(--color-text-secondary);
-        text-transform: uppercase;
-        letter-spacing: var(--letter-spacing-wider);
-        margin-bottom: var(--space-2xl);
-        padding: var(--space-md) var(--space-lg);
-        background: var(--color-surface);
-        border: 1px solid var(--color-border);
-        display: inline-block;
-      }
-
-      .countdown-seconds {
-        font-weight: bold;
-        color: var(--color-red);
-      }
 
       .success-details {
         background: var(--color-surface);
@@ -219,6 +201,51 @@
       }
 
       /* Registration section styling */
+      .ticket-field-group {
+        background: var(--color-background, #fff);
+        border: 1px solid var(--color-border, #e0e0e0);
+        border-radius: 8px;
+        padding: var(--space-lg);
+        margin-bottom: var(--space-lg);
+      }
+
+      .ticket-field-group h4 {
+        color: var(--color-primary, #5b6bb5);
+        margin-bottom: var(--space-md);
+        font-size: var(--font-size-lg);
+      }
+
+      .form-group {
+        margin-bottom: var(--space-md);
+      }
+
+      .form-group label {
+        display: block;
+        color: var(--color-text-primary);
+        font-weight: 600;
+        margin-bottom: var(--space-xs);
+      }
+
+      .form-group input {
+        width: 100%;
+        padding: var(--space-sm) var(--space-md);
+        border: 1px solid var(--color-border, #ccc);
+        border-radius: 4px;
+        font-size: var(--font-size-base);
+        background: var(--color-background);
+        color: var(--color-text-primary);
+      }
+
+      .form-group input:focus {
+        outline: none;
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px rgba(91, 107, 181, 0.1);
+      }
+
+      .form-group input[readonly] {
+        background: var(--color-gray-light, #f5f5f5);
+        color: var(--color-text-secondary);
+      }
       #registration-section {
         background: var(--color-warning-light, #fef3c7);
         border: 2px solid var(--color-warning, #f59e0b);
@@ -291,10 +318,6 @@
           font-size: var(--font-size-base);
         }
 
-        .countdown-timer {
-          font-size: var(--font-size-xs);
-          padding: var(--space-sm) var(--space-md);
-        }
 
         .success-actions {
           flex-direction: column;
@@ -466,11 +489,6 @@
             Boulder Fest.
           </p>
 
-          <div class="countdown-timer" id="countdown-timer">
-            This page will redirect in
-            <span class="countdown-seconds" id="countdown-seconds">60</span>
-            seconds...
-          </div>
 
           <div class="success-details" id="order-details" style="display: none">
             <h3>Order Details</h3>
@@ -488,15 +506,28 @@
             </div>
           </div>
 
-          <!-- Registration Section (shown when registration URL is available) -->
+          <!-- Registration Form Section -->
           <div class="success-details" id="registration-section" style="display: none">
             <h3>Complete Your Registration</h3>
-            <div id="registration-content">
-              <p>Complete your festival registration to secure your spot and receive your tickets:</p>
-            </div>
-            <div class="registration-actions" style="margin-top: var(--space-lg);">
-              <a href="#" id="registration-btn" class="success-btn accent" target="_blank" rel="noopener">Complete Registration</a>
-            </div>
+            <p style="margin-bottom: var(--space-lg);">Please provide attendee information for your tickets:</p>
+
+            <form id="registration-form" style="margin-top: var(--space-lg);">
+              <div id="tickets-container">
+                <!-- Ticket registration fields will be dynamically added here -->
+              </div>
+
+              <div class="registration-actions" style="margin-top: var(--space-xl); text-align: center;">
+                <button type="submit" class="success-btn accent" id="submit-registration">
+                  Complete Registration
+                </button>
+              </div>
+
+              <div id="registration-error" class="error-message" style="display: none; margin-top: var(--space-md); padding: var(--space-md); background: var(--color-danger-light, #fee); border: 1px solid var(--color-danger, #f00); border-radius: 4px; color: var(--color-danger-dark, #c00);"></div>
+
+              <div id="registration-success" class="success-message" style="display: none; margin-top: var(--space-md); padding: var(--space-md); background: var(--color-success-light, #efe); border: 1px solid var(--color-success, #0a0); border-radius: 4px; color: var(--color-success-dark, #060);">
+                <strong>Registration Complete!</strong> Your ticket information has been saved.
+              </div>
+            </form>
           </div>
 
           <div class="success-actions">
@@ -607,9 +638,6 @@
       const nextSteps = document.getElementById("next-steps");
       const stepsContent = document.getElementById("steps-content");
 
-      // Countdown timer variables
-      let countdownInterval;
-      let remainingSeconds = 60;
 
       // Detect payment method
       function detectPaymentMethod() {
@@ -635,22 +663,6 @@
         }
       }
 
-      // Start countdown timer
-      function startCountdown() {
-        const countdownElement = document.getElementById("countdown-seconds");
-
-        countdownInterval = setInterval(() => {
-          remainingSeconds--;
-          if (countdownElement) {
-            countdownElement.textContent = remainingSeconds;
-          }
-
-          if (remainingSeconds <= 0) {
-            clearInterval(countdownInterval);
-            window.location.href = "/home";
-          }
-        }, 1000);
-      }
 
       // Verify Stripe payment
       async function verifyStripePayment() {
@@ -948,8 +960,6 @@
           window.dispatchEvent(new Event("cartCleared"));
         }
 
-        // Start the countdown timer
-        startCountdown();
       }
 
       function hasTickets(items) {
@@ -1025,6 +1035,143 @@
 
       // Start verification when page loads
       verifyPayment();
+
+      // Function to populate registration form
+      function populateRegistrationForm(sessionData, responseData) {
+        const ticketsContainer = document.getElementById("tickets-container");
+        ticketsContainer.innerHTML = "";
+
+        // Get customer details from session
+        const customerEmail = sessionData.customer_email || responseData.session?.customer_email || "";
+
+        // Parse name into first and last
+        const nameParts = (sessionData.customer_name || sessionData.metadata?.customerName || "Guest").split(" ");
+        const firstName = nameParts[0] || "";
+        const lastName = nameParts.slice(1).join(" ") || "";
+
+        // Determine number of tickets (from metadata or assume based on amount)
+        // This is a simple approximation - you may want to get actual ticket count from the backend
+        const amount = parseFloat(sessionData.amount || responseData.session?.amount || 0);
+        const ticketCount = Math.max(1, Math.floor(amount / 100)); // Assume ~$100 per ticket
+
+        // Create form fields for each ticket
+        for (let i = 0; i < ticketCount; i++) {
+          const ticketDiv = document.createElement("div");
+          ticketDiv.className = "ticket-field-group";
+          ticketDiv.innerHTML = `
+            <h4>Ticket ${i + 1}${i === 0 ? " (Purchaser)" : ""}</h4>
+
+            <div class="form-group">
+              <label for="firstName-${i}">First Name *</label>
+              <input type="text" id="firstName-${i}" name="firstName-${i}"
+                     value="${i === 0 ? firstName : ""}"
+                     ${i === 0 ? "readonly" : ""}
+                     required>
+            </div>
+
+            <div class="form-group">
+              <label for="lastName-${i}">Last Name *</label>
+              <input type="text" id="lastName-${i}" name="lastName-${i}"
+                     value="${i === 0 ? lastName : ""}"
+                     ${i === 0 ? "readonly" : ""}
+                     required>
+            </div>
+
+            <div class="form-group">
+              <label for="email-${i}">Email *</label>
+              <input type="email" id="email-${i}" name="email-${i}"
+                     value="${i === 0 ? customerEmail : ""}"
+                     ${i === 0 ? "readonly" : ""}
+                     required>
+            </div>
+          `;
+          ticketsContainer.appendChild(ticketDiv);
+        }
+      }
+
+      // Handle registration form submission
+      document.addEventListener("DOMContentLoaded", function() {
+        const form = document.getElementById("registration-form");
+        if (form) {
+          form.addEventListener("submit", async function(e) {
+            e.preventDefault();
+
+            const submitBtn = document.getElementById("submit-registration");
+            const errorDiv = document.getElementById("registration-error");
+            const successDiv = document.getElementById("registration-success");
+
+            // Hide messages
+            errorDiv.style.display = "none";
+            successDiv.style.display = "none";
+
+            // Disable submit button
+            submitBtn.disabled = true;
+            submitBtn.textContent = "Processing...";
+
+            try {
+              // Collect all ticket data
+              const tickets = [];
+              const ticketGroups = document.querySelectorAll(".ticket-field-group");
+
+              ticketGroups.forEach((group, index) => {
+                tickets.push({
+                  firstName: document.getElementById(`firstName-${index}`).value,
+                  lastName: document.getElementById(`lastName-${index}`).value,
+                  email: document.getElementById(`email-${index}`).value
+                });
+              });
+
+              // Call batch registration API
+              const response = await fetch("/api/registration/batch", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                  registrationToken: window.registrationToken,
+                  registrations: tickets
+                })
+              });
+
+              const result = await response.json();
+
+              if (response.ok) {
+                // Show success message
+                successDiv.style.display = "block";
+
+                // Hide form after success
+                document.getElementById("tickets-container").style.display = "none";
+                submitBtn.style.display = "none";
+
+                // Update next steps
+                const stepsContent = document.getElementById("steps-content");
+                stepsContent.textContent = "";
+                const steps = [
+                  "✓ Registration complete!",
+                  "• Check your email for tickets",
+                  "• Save tickets to your mobile wallet",
+                  "• See you at the festival!"
+                ];
+                steps.forEach(step => {
+                  const p = document.createElement("p");
+                  p.textContent = step;
+                  stepsContent.appendChild(p);
+                });
+              } else {
+                throw new Error(result.error || "Registration failed");
+              }
+            } catch (error) {
+              console.error("Registration error:", error);
+              errorDiv.textContent = error.message || "Failed to complete registration. Please try again.";
+              errorDiv.style.display = "block";
+
+              // Re-enable submit button
+              submitBtn.disabled = false;
+              submitBtn.textContent = "Complete Registration";
+            }
+          });
+        }
+      });
     </script>
 
     <script src="/js/navigation.js"></script>
