@@ -130,7 +130,7 @@
             <p class="visually-hidden">Actions to manage your test cart</p>
             <div class="test-buttons-grid" role="group" aria-label="Cart action buttons">
               <button class="admin-btn admin-btn-primary"
-                      onclick="viewCartOnMainSite()"
+                      onclick="window.testMode && window.testMode.viewCart ? window.testMode.viewCart() : window.viewCartOnMainSite && window.viewCartOnMainSite()"
                       data-testid="view-cart-main"
                       aria-label="Open main site with test cart items in new tab"
                       aria-describedby="view-cart-description">
@@ -138,7 +138,7 @@
                 <span class="visually-hidden" id="view-cart-description">Opens tickets page in new tab with test items added to cart</span>
               </button>
               <button class="admin-btn admin-btn-secondary"
-                      onclick="clearTestCart()"
+                      onclick="window.testMode && window.testMode.clearCart ? window.testMode.clearCart() : window.clearTestCart && window.clearTestCart()"
                       data-testid="clear-test-cart"
                       aria-label="Clear all items from test cart"
                       aria-describedby="clear-cart-description">
@@ -164,7 +164,7 @@
             </div>
             <div class="test-buttons-grid" role="group" aria-label="Test data management buttons">
               <button class="admin-btn admin-btn-danger"
-                      onclick="cleanupTestData()"
+                      onclick="window.testMode && window.testMode.cleanup ? window.testMode.cleanup() : window.cleanupTestData && window.cleanupTestData()"
                       data-testid="cleanup-test-data"
                       aria-label="Remove all test data including cart items and session data"
                       aria-describedby="cleanup-description">
@@ -172,7 +172,7 @@
                 <span class="visually-hidden" id="cleanup-description">Permanently removes all test cart items, session data, and preferences. Requires confirmation.</span>
               </button>
               <button class="admin-btn admin-btn-ghost"
-                      onclick="generateTestData()"
+                      onclick="window.testMode && window.testMode.generate ? window.testMode.generate() : window.generateTestData && window.generateTestData()"
                       data-testid="generate-test-data"
                       aria-label="Generate sample test data for testing purposes"
                       aria-describedby="generate-description">
@@ -235,253 +235,13 @@
 
   <!-- Scripts -->
   <script src="/js/admin-auth.js"></script>
+  <script type="module" src="/js/admin-test-mode.js"></script>
   <script>
     // Logout function
     function logout() {
       localStorage.removeItem('adminToken');
-      window.location.href = '/pages/admin/login.html';
+      window.location.href = '/admin/login';
     }
-
-    // Test Mode Cart Functions (non-module pattern to avoid import errors)
-    const TEST_ITEMS = {
-      'vip-pass': {
-        id: 'test-vip-' + Date.now(),
-        name: 'VIP Pass (Test)',
-        price: 150,
-        quantity: 1,
-        type: 'ticket'
-      },
-      'weekend-pass': {
-        id: 'test-weekend-' + Date.now(),
-        name: 'Weekend Pass (Test)',
-        price: 75,
-        quantity: 1,
-        type: 'ticket'
-      },
-      'donation': {
-        id: 'test-donation-' + Date.now(),
-        name: 'Festival Donation (Test)',
-        price: 25,
-        quantity: 1,
-        type: 'donation'
-      }
-    };
-
-    // Initialize Test Mode on page load
-    document.addEventListener('DOMContentLoaded', function() {
-      console.log('[Test Mode] Page initialized');
-
-      // Update cart stats
-      updateTestCartStats();
-
-      // Add event listeners to test item buttons
-      document.querySelectorAll('.test-add-btn').forEach(button => {
-        button.addEventListener('click', function() {
-          const itemType = this.dataset.item;
-          addTestItemToCart(itemType);
-        });
-      });
-
-      // Set up keyboard shortcuts
-      setupKeyboardShortcuts();
-    });
-
-    function addTestItemToCart(itemType) {
-      const item = TEST_ITEMS[itemType];
-      if (!item) {
-        console.error('[Test Mode] Unknown item type:', itemType);
-        return;
-      }
-
-      // Get current cart from localStorage
-      let cart = [];
-      try {
-        cart = JSON.parse(localStorage.getItem('cart') || '[]');
-      } catch (e) {
-        console.error('[Test Mode] Error parsing cart:', e);
-        cart = [];
-      }
-
-      // Create a new test item with unique ID
-      const testItem = {
-        ...item,
-        id: itemType + '-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
-        isTestItem: true
-      };
-
-      // Add to cart
-      cart.push(testItem);
-      localStorage.setItem('cart', JSON.stringify(cart));
-
-      console.log('[Test Mode] Added item to cart:', testItem);
-
-      // Update stats
-      updateTestCartStats();
-
-      // Show success message
-      showNotification(`Added ${item.name} to cart`, 'success');
-    }
-
-    function viewCartOnMainSite() {
-      // Open tickets page in new tab
-      const ticketsUrl = '/pages/tickets.html';
-      window.open(ticketsUrl, '_blank');
-      console.log('[Test Mode] Opening main site with test cart');
-    }
-
-    function clearTestCart() {
-      if (confirm('Are you sure you want to clear all test items from the cart?')) {
-        let cart = [];
-        try {
-          cart = JSON.parse(localStorage.getItem('cart') || '[]');
-          // Remove only test items
-          cart = cart.filter(item => !item.isTestItem);
-          localStorage.setItem('cart', JSON.stringify(cart));
-        } catch (e) {
-          console.error('[Test Mode] Error clearing cart:', e);
-        }
-
-        updateTestCartStats();
-        showNotification('Test cart cleared', 'success');
-      }
-    }
-
-    function cleanupTestData() {
-      if (confirm('This will remove ALL test data including cart items and preferences. Continue?')) {
-        // Clear test items from cart
-        let cart = [];
-        try {
-          cart = JSON.parse(localStorage.getItem('cart') || '[]');
-          cart = cart.filter(item => !item.isTestItem);
-          localStorage.setItem('cart', JSON.stringify(cart));
-        } catch (e) {
-          console.error('[Test Mode] Error cleaning up:', e);
-        }
-
-        // Clear other test data
-        const keysToRemove = [];
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key && (key.startsWith('test-') || key.includes('-test-'))) {
-            keysToRemove.push(key);
-          }
-        }
-        keysToRemove.forEach(key => localStorage.removeItem(key));
-
-        updateTestCartStats();
-        showNotification('All test data cleaned up', 'success');
-      }
-    }
-
-    function generateTestData() {
-      if (confirm('Generate random test items in cart?')) {
-        const itemTypes = Object.keys(TEST_ITEMS);
-        const numItems = Math.floor(Math.random() * 3) + 1;
-
-        for (let i = 0; i < numItems; i++) {
-          const randomType = itemTypes[Math.floor(Math.random() * itemTypes.length)];
-          addTestItemToCart(randomType);
-        }
-
-        showNotification(`Generated ${numItems} test items`, 'success');
-      }
-    }
-
-    function updateTestCartStats() {
-      let cart = [];
-      try {
-        cart = JSON.parse(localStorage.getItem('cart') || '[]');
-      } catch (e) {
-        console.error('[Test Mode] Error reading cart:', e);
-        cart = [];
-      }
-
-      // Filter for test items only
-      const testItems = cart.filter(item => item.isTestItem);
-      const itemCount = testItems.length;
-      const totalValue = testItems.reduce((sum, item) => sum + (item.price || 0), 0);
-
-      // Update UI
-      const countElement = document.getElementById('testCartCount');
-      const valueElement = document.getElementById('testCartValue');
-
-      if (countElement) countElement.textContent = itemCount;
-      if (valueElement) valueElement.textContent = `$${totalValue.toFixed(2)}`;
-    }
-
-    function setupKeyboardShortcuts() {
-      document.addEventListener('keydown', function(e) {
-        if (e.altKey) {
-          switch(e.key.toLowerCase()) {
-            case 'v':
-              e.preventDefault();
-              addTestItemToCart('vip-pass');
-              break;
-            case 'w':
-              e.preventDefault();
-              addTestItemToCart('weekend-pass');
-              break;
-            case 'd':
-              e.preventDefault();
-              addTestItemToCart('donation');
-              break;
-            case 'c':
-              e.preventDefault();
-              clearTestCart();
-              break;
-            case 'h':
-              e.preventDefault();
-              alert('Keyboard Shortcuts:\n\n' +
-                    'Alt+V - Add VIP Pass\n' +
-                    'Alt+W - Add Weekend Pass\n' +
-                    'Alt+D - Add Donation\n' +
-                    'Alt+C - Clear Test Cart\n' +
-                    'Alt+H - Show this help');
-              break;
-          }
-        }
-      });
-    }
-
-    function showNotification(message, type = 'info') {
-      // Simple notification (could be enhanced with better UI)
-      const notification = document.createElement('div');
-      notification.className = `admin-notification admin-notification-${type}`;
-      notification.textContent = message;
-      notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 12px 20px;
-        background: ${type === 'success' ? '#10b981' : '#3b82f6'};
-        color: white;
-        border-radius: 6px;
-        z-index: 10000;
-        animation: slideIn 0.3s ease;
-      `;
-
-      document.body.appendChild(notification);
-
-      setTimeout(() => {
-        notification.remove();
-      }, 3000);
-    }
-
-    // Add slide-in animation
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes slideIn {
-        from {
-          transform: translateX(100%);
-          opacity: 0;
-        }
-        to {
-          transform: translateX(0);
-          opacity: 1;
-        }
-      }
-    `;
-    document.head.appendChild(style);
   </script>
 </body>
 </html>
