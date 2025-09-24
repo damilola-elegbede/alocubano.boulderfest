@@ -476,7 +476,7 @@ async function setupTestDataIsolation(previewUrl) {
     // with production data. This may involve setting up test-specific database
     // records or ensuring proper cleanup mechanisms.
 
-    const testSessionId = `e2e-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const testSessionId = `e2e-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
     process.env.E2E_SESSION_ID = testSessionId;
 
     console.log(`   🆔 Test Session ID: ${testSessionId}`);

@@ -244,7 +244,7 @@ async function handleDeleteTestData(db, req, res) {
     } = req.query;
 
     // Generate unique cleanup ID
-    const cleanupId = `cleanup_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const cleanupId = `cleanup_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 
     // Prepare cleanup criteria
     const cleanupCriteria = {
@@ -364,7 +364,7 @@ async function handleResetTestData(db, req, res) {
     }
 
     // Generate unique operation ID
-    const operationId = `reset_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const operationId = `reset_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 
     const operationCriteria = {
       operation_type,

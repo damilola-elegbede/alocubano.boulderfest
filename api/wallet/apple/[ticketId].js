@@ -1,5 +1,5 @@
-import appleWalletService from "../../lib/apple-wallet-service.js";
-import { getCorsConfig, isOriginAllowed } from "../../lib/cors-config.js";
+import appleWalletService from "../../../lib/apple-wallet-service.js";
+import { getCorsConfig, isOriginAllowed } from "../../../lib/cors-config.js";
 
 export default async function handler(req, res) {
   // Handle CORS

@@ -137,7 +137,9 @@ async function sendRegistrationEmailAsync(fullSession, transaction, tickets, reg
       processorTransactionId: fullSession.id
     });
 
-    console.log(`Registration email sent successfully to ${fullSession.customer_details?.email}`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`Registration email sent successfully to ${fullSession.customer_details?.email}`);
+    }
   } catch (error) {
     console.error('Failed to send registration email (non-blocking):', error);
     // Don't throw - this is async and shouldn't block the response
@@ -183,12 +185,14 @@ export default async function handler(req, res) {
       });
     }
 
-    console.log('Checkout session verified as successful:', {
-      sessionId: fullSession.id,
-      customerEmail: fullSession.customer_email || fullSession.customer_details?.email,
-      amount: fullSession.amount_total / 100,
-      orderId: fullSession.metadata?.orderId
-    });
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Checkout session verified as successful:', {
+        sessionId: fullSession.id,
+        customerEmail: fullSession.customer_email || fullSession.customer_details?.email,
+        amount: fullSession.amount_total / 100,
+        orderId: fullSession.metadata?.orderId
+      });
+    }
 
     // Check if tickets already exist for this session (idempotency check)
     let existingTransaction = await transactionService.getByStripeSessionId(session_id);
