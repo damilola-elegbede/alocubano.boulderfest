@@ -113,20 +113,20 @@
         font-size: var(--font-size-lg);
         line-height: 1.6;
         margin-bottom: var(--space-xl);
-        color: var(--color-gray-700);
+        color: var(--color-text-secondary);
       }
 
       /* Countdown timer */
       .countdown-timer {
         font-family: var(--font-code);
         font-size: var(--font-size-sm);
-        color: var(--color-gray-600);
+        color: var(--color-text-secondary);
         text-transform: uppercase;
         letter-spacing: var(--letter-spacing-wider);
         margin-bottom: var(--space-2xl);
         padding: var(--space-md) var(--space-lg);
-        background: var(--color-gray-100);
-        border: 1px solid var(--color-gray-200);
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
         display: inline-block;
       }
 
@@ -136,8 +136,8 @@
       }
 
       .success-details {
-        background: var(--color-gray-100);
-        border: 2px solid var(--color-black);
+        background: var(--color-surface);
+        border: 2px solid var(--color-border);
         padding: var(--space-xl);
         margin: var(--space-2xl) 0;
         text-align: left;
@@ -149,6 +149,7 @@
         text-transform: uppercase;
         letter-spacing: 0.05em;
         margin-bottom: var(--space-lg);
+        color: var(--color-text-primary);
       }
 
       .success-details p {
@@ -156,6 +157,7 @@
         font-size: var(--font-size-base);
         line-height: 1.6;
         margin-bottom: var(--space-md);
+        color: var(--color-text-primary);
       }
 
       .success-details p:last-child {
@@ -218,19 +220,19 @@
 
       /* Registration section styling */
       #registration-section {
-        background: #fef3c7; /* Light yellow background */
-        border: 2px solid #f59e0b; /* Amber border */
+        background: var(--color-warning-light, #fef3c7);
+        border: 2px solid var(--color-warning, #f59e0b);
         border-radius: 8px;
         position: relative;
       }
 
       #registration-section h3 {
-        color: #92400e; /* Dark amber text */
+        color: var(--color-text-primary);
         margin-bottom: var(--space-md);
       }
 
       #registration-section p {
-        color: #78350f; /* Darker amber text */
+        color: var(--color-text-primary);
       }
 
       #registration-section .registration-actions {
