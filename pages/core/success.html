@@ -914,8 +914,8 @@
           const testModeIndicator = document.createElement("div");
           testModeIndicator.className = "test-mode-indicator";
           testModeIndicator.style.cssText = `
-            background: #ff6b6b;
-            color: white;
+            background: var(--color-danger, #ff6b6b);
+            color: var(--color-text-on-danger, white);
             padding: 8px 16px;
             border-radius: 4px;
             margin: 16px 0;
