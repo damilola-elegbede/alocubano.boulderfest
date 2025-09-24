@@ -239,71 +239,231 @@ export default async function handler(req, res) {
         }
       }
     } else {
-      // Create new transaction and tickets
+      // Create new transaction and tickets using Turso batch operations
       const db = await getDatabaseClient();
-      let transactionStarted = false;
-      let committed = false;
       let transaction = null;
       let tickets = [];
       let registrationDeadline = null;
       let isTestTransaction = false;
 
       try {
-        console.log('Starting database transaction for new purchase...');
+        console.log('Preparing atomic database operations for new purchase...');
 
-        // Start transaction with proper error handling
+        // First, prepare all transaction creation operations
+        console.log('Preparing transaction record from Stripe session...');
+
+        // Generate transaction data
+        const baseUuid = transactionService.generateTransactionUUID();
+        const uuid = baseUuid; // Use base UUID directly
+
+        // Determine transaction type from session data
+        const transactionType = transactionService.determineTransactionType(fullSession);
+
+        // Check if this is a test transaction
+        isTestTransaction = fullSession.metadata?.testMode === 'true' ||
+                           fullSession.metadata?.testTransaction === 'true' ||
+                           fullSession.id?.includes('test');
+
+        // Safely prepare order data
+        let orderData;
         try {
-          await db.execute('BEGIN IMMEDIATE');
-          transactionStarted = true;
-          console.log('Database transaction started successfully');
-        } catch (beginError) {
-          console.error('Failed to start database transaction:', beginError);
-          throw new Error(`Transaction start failed: ${beginError.message}`);
+          const baseOrderData = {
+            line_items: fullSession.line_items?.data || [],
+            metadata: fullSession.metadata || {},
+            mode: fullSession.mode,
+            payment_status: fullSession.payment_status,
+          };
+          orderData = JSON.stringify(baseOrderData);
+        } catch (e) {
+          console.warn("Failed to stringify order data, using minimal data");
+          orderData = JSON.stringify({
+            error: "Could not serialize order data",
+            test_mode: isTestTransaction
+          });
         }
 
-        // Create transaction record with detailed logging
-        console.log('Creating transaction record from Stripe session...');
+        // Safely prepare billing address
+        let billingAddress;
         try {
-          // Pass inTransaction=true since we're already in a database transaction
-          transaction = await transactionService.createFromStripeSession(fullSession, null, true);
-          console.log(`Transaction record created: ${transaction.uuid}`);
-        } catch (transError) {
-          console.error('Failed to create transaction record:', transError);
-          throw new Error(`Transaction creation failed: ${transError.message}`);
+          billingAddress = JSON.stringify(
+            fullSession.customer_details?.address || {},
+          );
+        } catch (e) {
+          billingAddress = "{}";
         }
 
-        // Create tickets with detailed logging
-        console.log(`Creating tickets for transaction ${transaction.uuid}...`);
-        try {
-          const ticketResult = await createTicketsForTransaction(fullSession, transaction);
-          tickets = ticketResult.tickets;
-          registrationDeadline = ticketResult.registrationDeadline;
-          isTestTransaction = ticketResult.isTestTransaction;
-          console.log(`Created ${tickets.length} tickets successfully`);
-        } catch (ticketError) {
-          console.error('Failed to create tickets:', ticketError);
-          throw new Error(`Ticket creation failed: ${ticketError.message}`);
-        }
+        // Null-safe amount access (Stripe amounts are in cents)
+        const amountCents = fullSession.amount_total ?? 0;
+        const currency = (fullSession.currency || "usd").toUpperCase();
 
-        // Commit the database transaction with proper state checking
-        if (transactionStarted && !committed) {
-          console.log('Committing database transaction...');
-          try {
-            await db.execute('COMMIT');
-            committed = true;
-            console.log('Database transaction committed successfully');
-          } catch (commitError) {
-            console.error('Failed to commit transaction:', commitError);
-            throw new Error(`Transaction commit failed: ${commitError.message}`);
+        // Parse customer name for ticket defaults
+        const { firstName, lastName } = parseCustomerName(
+          fullSession.customer_details?.name || 'Guest'
+        );
+
+        // Calculate registration deadline (72 hours from now)
+        const now = new Date();
+        registrationDeadline = new Date(now.getTime() + (72 * 60 * 60 * 1000));
+
+        // Prepare batch operations array
+        const batchOperations = [];
+
+        // 1. Insert transaction record
+        batchOperations.push({
+          sql: `INSERT INTO transactions (
+            transaction_id, uuid, type, order_data, amount_cents, currency,
+            stripe_session_id, stripe_payment_intent_id, payment_method_type,
+            customer_email, customer_name, billing_address,
+            status, completed_at, is_test
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          args: [
+            uuid, // Use UUID as transaction_id for backward compatibility
+            uuid,
+            transactionType,
+            orderData,
+            amountCents, // Keep in cents as stored in DB
+            currency,
+            fullSession.id,
+            fullSession.payment_intent || null,
+            fullSession.payment_method_types?.[0] || "card",
+            fullSession.customer_details?.email || fullSession.customer_email || null,
+            fullSession.customer_details?.name || null,
+            billingAddress,
+            "completed",
+            now.toISOString(),
+            isTestTransaction ? 1 : 0, // Add test mode flag
+          ]
+        });
+
+        // 2. Prepare ticket creation operations
+        const lineItems = fullSession.line_items?.data || [];
+        const ticketOperations = [];
+        const ticketMetadata = [];
+
+        for (const item of lineItems) {
+          const quantity = item.quantity || 1;
+          const ticketType = item.price?.lookup_key || item.price?.nickname || 'general';
+          const priceInCents = item.amount_total || 0;
+
+          // Extract event metadata from product or use defaults
+          const product = item.price?.product;
+          const meta = product?.metadata || {};
+          const eventId = meta.event_id || process.env.DEFAULT_EVENT_ID || 'boulder-fest-2026';
+          const eventDate = meta.event_date || process.env.DEFAULT_EVENT_DATE || '2026-05-15';
+
+          // Calculate cent-accurate price distribution
+          const perTicketBase = Math.floor(priceInCents / quantity);
+          const remainder = priceInCents % quantity;
+
+          for (let i = 0; i < quantity; i++) {
+            // Distribute remainder cents across first tickets
+            const priceForThisTicket = perTicketBase + (i < remainder ? 1 : 0);
+            const ticketId = await generateTicketId();
+
+            // Add ticket creation operation
+            ticketOperations.push({
+              sql: `INSERT INTO tickets (
+                ticket_id, transaction_id, ticket_type, event_id,
+                event_date, price_cents,
+                attendee_first_name, attendee_last_name,
+                registration_status, registration_deadline,
+                status, created_at, is_test
+              ) VALUES (?, (SELECT id FROM transactions WHERE uuid = ?), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              args: [
+                ticketId,
+                uuid, // Reference the transaction UUID
+                isTestTransaction ? `TEST-${ticketType}` : ticketType,
+                eventId,
+                eventDate,
+                priceForThisTicket, // Preserves total cents across all tickets
+                isTestTransaction ? `TEST-${firstName}` : firstName, // Mark test first name
+                isTestTransaction ? `TEST-${lastName}` : lastName,  // Mark test last name
+                'pending', // All tickets start pending
+                registrationDeadline.toISOString(),
+                'valid',
+                now.toISOString(),
+                isTestTransaction ? 1 : 0 // Mark as test ticket
+              ]
+            });
+
+            ticketMetadata.push({
+              id: ticketId,
+              type: ticketType,
+              ticket_id: ticketId
+            });
           }
         }
+
+        // 3. Add transaction items operations
+        for (const item of lineItems) {
+          const itemType = transactionService.determineItemType(item);
+          const quantity = item.quantity || 1;
+
+          // Stripe amounts are in cents - keep them as cents in DB
+          const unitPriceCents = item.price?.unit_amount || item.amount_total || 0;
+          const totalPriceCents = item.amount_total || 0;
+
+          // Safely stringify metadata
+          let metadata;
+          try {
+            const baseMetadata = item.price?.product?.metadata || {};
+            metadata = JSON.stringify(baseMetadata);
+          } catch (e) {
+            metadata = JSON.stringify({ test_mode: isTestTransaction });
+          }
+
+          batchOperations.push({
+            sql: `INSERT INTO transaction_items (
+              transaction_id, item_type, item_name, item_description,
+              quantity, unit_price_cents, total_price_cents,
+              ticket_type, event_id, product_metadata, is_test
+            ) VALUES ((SELECT id FROM transactions WHERE uuid = ?), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            args: [
+              uuid, // Reference the transaction UUID
+              itemType,
+              item.description || "Unknown Item",
+              item.price?.product?.description || null,
+              quantity,
+              unitPriceCents, // Keep in cents
+              totalPriceCents, // Keep in cents
+              transactionService.extractTicketType(item), // ticket_type
+              fullSession.metadata?.event_id || "boulder-fest-2026", // event_id
+              metadata, // product_metadata
+              isTestTransaction ? 1 : 0, // Add test mode flag
+            ]
+          });
+        }
+
+        // Add ticket operations to batch
+        batchOperations.push(...ticketOperations);
+
+        console.log(`Executing ${batchOperations.length} atomic database operations...`);
+
+        // Execute all operations atomically using Turso batch
+        const results = await db.batch(batchOperations);
+
+        console.log(`Batch operations completed successfully. Transaction UUID: ${uuid}`);
+
+        // Retrieve the created transaction
+        const transactionResult = await db.execute({
+          sql: "SELECT * FROM transactions WHERE uuid = ?",
+          args: [uuid]
+        });
+
+        transaction = transactionResult.rows[0];
+        if (!transaction) {
+          throw new Error(`Failed to retrieve created transaction with UUID: ${uuid}`);
+        }
+
+        // Set tickets metadata for response
+        tickets = ticketMetadata;
 
         console.log(`${isTestTransaction ? 'TEST ' : ''}Transaction complete: ${tickets.length} tickets created with pending status`);
         console.log(`Registration deadline: ${registrationDeadline.toISOString()}`);
 
         hasTickets = true;
 
-        // Generate registration token (post-commit) with detailed logging
+        // Generate registration token (post-batch) with detailed logging
         console.log('Generating registration token...');
         try {
           const tokenService = new RegistrationTokenService();
@@ -334,30 +494,16 @@ export default async function handler(req, res) {
 
         existingTransaction = transaction;
       } catch (error) {
-        console.error('Transaction failed, attempting rollback...', {
+        console.error('Batch operation failed:', {
           error: error.message,
-          transactionStarted,
-          committed
+          stack: error.stack
         });
 
-        // Only attempt rollback if transaction was started and not committed
-        if (transactionStarted && !committed) {
-          try {
-            await db.execute('ROLLBACK');
-            console.log('Database transaction rolled back successfully');
-          } catch (rollbackError) {
-            console.error('Rollback failed (transaction may have auto-rolled back):', rollbackError.message);
-            // Don't throw here - the original error is more important
-          }
-        }
-
         // Log the complete error context
-        console.error('Complete transaction failure:', {
+        console.error('Complete batch operation failure:', {
           originalError: error.message,
           stack: error.stack,
           sessionId: session_id,
-          transactionStarted,
-          committed,
           transactionCreated: !!transaction,
           ticketsCreated: tickets.length
         });

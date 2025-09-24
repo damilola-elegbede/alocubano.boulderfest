@@ -81,13 +81,9 @@ async function processUniversalRegistration(fullSession, transaction) {
                            fullSession.metadata?.testTransaction === 'true' ||
                            fullSession.id?.includes('test');
 
-  let committed = false;
-  const ticketsToSchedule = []; // Track tickets for post-commit reminder scheduling
+  const ticketsToSchedule = []; // Track tickets for post-batch reminder scheduling
 
   try {
-    // Start transaction
-    await db.execute('BEGIN IMMEDIATE');
-
     // Parse customer name for default values
     const { firstName, lastName } = parseCustomerName(
       fullSession.customer_details?.name || 'Guest'
@@ -97,7 +93,8 @@ async function processUniversalRegistration(fullSession, transaction) {
     const now = new Date();
     const registrationDeadline = new Date(now.getTime() + (72 * 60 * 60 * 1000));
 
-    // Create tickets with pending registration status
+    // Prepare batch operations for atomic ticket creation
+    const batchOperations = [];
     const tickets = [];
     const lineItems = fullSession.line_items?.data || [];
 
@@ -121,8 +118,8 @@ async function processUniversalRegistration(fullSession, transaction) {
         const priceForThisTicket = perTicketBase + (i < remainder ? 1 : 0);
         const ticketId = await generateTicketId();
 
-        // Create ticket with pending registration
-        await db.execute({
+        // Add ticket creation operation to batch
+        batchOperations.push({
           sql: `INSERT INTO tickets (
             ticket_id, transaction_id, ticket_type, event_id,
             event_date, price_cents,
@@ -147,7 +144,7 @@ async function processUniversalRegistration(fullSession, transaction) {
           ]
         });
 
-        // Defer scheduling reminders until after COMMIT
+        // Defer scheduling reminders until after batch completion
         ticketsToSchedule.push({ ticketId, registrationDeadline });
 
         tickets.push({
@@ -158,11 +155,12 @@ async function processUniversalRegistration(fullSession, transaction) {
       }
     }
 
-    // Commit DB work before external side effects
-    await db.execute('COMMIT');
-    committed = true;
+    // Execute all ticket creation operations atomically using Turso batch
+    console.log(`Executing ${batchOperations.length} atomic ticket creation operations...`);
+    const results = await db.batch(batchOperations);
+    console.log(`Batch operations completed successfully for transaction ${transaction.uuid}`);
 
-    // Post-commit side effects (best-effort, non-transactional)
+    // Post-batch side effects (best-effort, non-transactional)
     // 1) Generate registration token (uses its own DB client)
     const registrationToken = await tokenService.createToken(transaction.id);
 
@@ -197,9 +195,7 @@ async function processUniversalRegistration(fullSession, transaction) {
 
     return { success: true, tickets };
   } catch (ticketError) {
-    if (!committed) {
-      await db.execute('ROLLBACK');
-    }
+    console.error('Batch operations failed for universal registration:', ticketError);
     throw ticketError;
   }
 }
