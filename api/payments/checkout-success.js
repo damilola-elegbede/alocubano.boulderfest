@@ -228,52 +228,129 @@ export default async function handler(req, res) {
     } else {
       // Create new transaction and tickets
       const db = await getDatabaseClient();
+      let transactionStarted = false;
       let committed = false;
+      let transaction = null;
+      let tickets = [];
+      let registrationDeadline = null;
+      let isTestTransaction = false;
 
       try {
-        // Start transaction
-        await db.execute('BEGIN IMMEDIATE');
+        console.log('Starting database transaction for new purchase...');
 
-        // Create transaction record
-        const transaction = await transactionService.createFromStripeSession(fullSession);
-        console.log(`Created transaction: ${transaction.uuid}`);
+        // Start transaction with proper error handling
+        try {
+          await db.execute('BEGIN IMMEDIATE');
+          transactionStarted = true;
+          console.log('Database transaction started successfully');
+        } catch (beginError) {
+          console.error('Failed to start database transaction:', beginError);
+          throw new Error(`Transaction start failed: ${beginError.message}`);
+        }
 
-        // Create tickets
-        const { tickets, registrationDeadline, isTestTransaction } = await createTicketsForTransaction(fullSession, transaction);
+        // Create transaction record with detailed logging
+        console.log('Creating transaction record from Stripe session...');
+        try {
+          // Pass inTransaction=true since we're already in a database transaction
+          transaction = await transactionService.createFromStripeSession(fullSession, null, true);
+          console.log(`Transaction record created: ${transaction.uuid}`);
+        } catch (transError) {
+          console.error('Failed to create transaction record:', transError);
+          throw new Error(`Transaction creation failed: ${transError.message}`);
+        }
 
-        // Commit the database transaction
-        await db.execute('COMMIT');
-        committed = true;
+        // Create tickets with detailed logging
+        console.log(`Creating tickets for transaction ${transaction.uuid}...`);
+        try {
+          const ticketResult = await createTicketsForTransaction(fullSession, transaction);
+          tickets = ticketResult.tickets;
+          registrationDeadline = ticketResult.registrationDeadline;
+          isTestTransaction = ticketResult.isTestTransaction;
+          console.log(`Created ${tickets.length} tickets successfully`);
+        } catch (ticketError) {
+          console.error('Failed to create tickets:', ticketError);
+          throw new Error(`Ticket creation failed: ${ticketError.message}`);
+        }
 
-        console.log(`${isTestTransaction ? 'TEST ' : ''}${tickets.length} tickets created with pending status`);
+        // Commit the database transaction with proper state checking
+        if (transactionStarted && !committed) {
+          console.log('Committing database transaction...');
+          try {
+            await db.execute('COMMIT');
+            committed = true;
+            console.log('Database transaction committed successfully');
+          } catch (commitError) {
+            console.error('Failed to commit transaction:', commitError);
+            throw new Error(`Transaction commit failed: ${commitError.message}`);
+          }
+        }
+
+        console.log(`${isTestTransaction ? 'TEST ' : ''}Transaction complete: ${tickets.length} tickets created with pending status`);
         console.log(`Registration deadline: ${registrationDeadline.toISOString()}`);
 
         hasTickets = true;
 
-        // Generate registration token (post-commit)
+        // Generate registration token (post-commit) with detailed logging
+        console.log('Generating registration token...');
         try {
           const tokenService = new RegistrationTokenService();
           await tokenService.ensureInitialized();
           registrationToken = await tokenService.createToken(transaction.id);
-          console.log(`Generated registration token for new transaction ${transaction.uuid}`);
+          console.log(`Registration token generated: ${registrationToken}`);
         } catch (tokenError) {
-          console.error('Failed to generate registration token:', tokenError);
+          console.error('Failed to generate registration token:', {
+            error: tokenError.message,
+            stack: tokenError.stack,
+            transactionId: transaction.id
+          });
           // Continue without token - user can still access tickets via other means
         }
 
-        // Send registration email asynchronously (don't await)
+        // Send registration email asynchronously with detailed logging
+        console.log('Initiating async email send...');
         sendRegistrationEmailAsync(fullSession, transaction, tickets, registrationToken, registrationDeadline)
+          .then(() => {
+            console.log('Async email send initiated successfully');
+          })
           .catch(emailError => {
-            console.error('Async email send failed:', emailError);
+            console.error('Async email send failed:', {
+              error: emailError.message,
+              stack: emailError.stack
+            });
           });
 
         existingTransaction = transaction;
-      } catch (ticketError) {
-        if (!committed) {
-          await db.execute('ROLLBACK');
+      } catch (error) {
+        console.error('Transaction failed, attempting rollback...', {
+          error: error.message,
+          transactionStarted,
+          committed
+        });
+
+        // Only attempt rollback if transaction was started and not committed
+        if (transactionStarted && !committed) {
+          try {
+            await db.execute('ROLLBACK');
+            console.log('Database transaction rolled back successfully');
+          } catch (rollbackError) {
+            console.error('Rollback failed (transaction may have auto-rolled back):', rollbackError.message);
+            // Don't throw here - the original error is more important
+          }
         }
-        console.error('Failed to create tickets:', ticketError);
-        throw ticketError;
+
+        // Log the complete error context
+        console.error('Complete transaction failure:', {
+          originalError: error.message,
+          stack: error.stack,
+          sessionId: session_id,
+          transactionStarted,
+          committed,
+          transactionCreated: !!transaction,
+          ticketsCreated: tickets.length
+        });
+
+        // Re-throw with context
+        throw error;
       }
     }
 
