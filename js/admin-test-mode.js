@@ -3,10 +3,12 @@
  * Manages test mode functionality for the A Lo Cubano Boulder Fest admin dashboard
  */
 
-import { createLogger } from './lib/logger.js';
-import { showAlert, showConfirm } from './lib/modal-utils.js';
-
-const logger = createLogger('AdminTestMode');
+// Simple logger implementation
+const logger = {
+    log: (...args) => console.log('[AdminTestMode]', ...args),
+    error: (...args) => console.error('[AdminTestMode]', ...args),
+    debug: (...args) => console.debug('[AdminTestMode]', ...args)
+};
 
 // Test mode configuration
 const TEST_MODE_CONFIG = {
@@ -23,14 +25,32 @@ const TEST_MODE_CONFIG = {
             type: 'weekend-pass',
             description: 'Access to all weekend events'
         },
+        'friday-pass': {
+            name: 'Friday Pass',
+            price: 35.00,
+            type: 'friday-pass',
+            description: 'Friday night access'
+        },
+        'saturday-pass': {
+            name: 'Saturday Pass',
+            price: 35.00,
+            type: 'saturday-pass',
+            description: 'Saturday access'
+        },
+        'sunday-pass': {
+            name: 'Sunday Pass',
+            price: 35.00,
+            type: 'sunday-pass',
+            description: 'Sunday access'
+        },
         'donation': {
-            name: 'Festival Support Donation',
+            name: 'Festival Donation',
             price: 25.00,
             type: 'donation',
             description: 'Support the festival'
         }
     },
-    cartStorageKey: 'admin_test_cart',
+    cartStorageKey: 'cart', // Use the same key as the main site
     mainSiteUrl: window.location.origin
 };
 
@@ -132,13 +152,26 @@ function calculateCartTotals() {
  * Attach event listeners to test mode elements
  */
 function attachTestModeEventListeners() {
-    // Test item add buttons
-    const testAddButtons = document.querySelectorAll('.test-add-btn');
-    testAddButtons.forEach(button => {
-        button.addEventListener('click', handleTestItemAdd);
-    });
+    // Test item add buttons - delegate to container for dynamic content
+    const container = document.querySelector('.test-ticket-grid');
+    if (container) {
+        container.addEventListener('click', (e) => {
+            if (e.target.closest('.test-add-btn')) {
+                handleTestItemAdd(e);
+            }
+        });
+    }
 
     // Make functions globally available for inline onclick handlers
+    window.testMode = {
+        viewCart: viewCartOnMainSite,
+        clearCart: clearTestCart,
+        cleanup: cleanupTestData,
+        generate: generateTestData,
+        addItem: (itemType) => addTestItemToCart(itemType)
+    };
+
+    // Also keep the old global functions for backwards compatibility
     window.viewCartOnMainSite = viewCartOnMainSite;
     window.clearTestCart = clearTestCart;
     window.cleanupTestData = cleanupTestData;
@@ -149,7 +182,9 @@ function attachTestModeEventListeners() {
  * Handle adding test items to cart
  */
 function handleTestItemAdd(event) {
-    const button = event.currentTarget;
+    const button = event.target.closest('.test-add-btn');
+    if (!button) return;
+
     const itemType = button.dataset.item;
 
     if (!itemType || !TEST_MODE_CONFIG.testItems[itemType]) {
@@ -158,22 +193,22 @@ function handleTestItemAdd(event) {
         return;
     }
 
-    // Show loading state with ARIA attributes
-    button.classList.add('test-mode-loading');
+    // Show loading state with animation
+    button.classList.add('adding');
     button.disabled = true;
-    button.setAttribute('aria-busy', 'true');
-    button.setAttribute('aria-label', `Adding ${TEST_MODE_CONFIG.testItems[itemType].name}...`);
 
     // Add item to test cart
     addTestItemToCart(itemType);
 
-    // Remove loading state
+    // Remove loading state with a nice animation
     setTimeout(() => {
-        button.classList.remove('test-mode-loading');
-        button.disabled = false;
-        button.removeAttribute('aria-busy');
-        button.setAttribute('aria-label', `Add ${TEST_MODE_CONFIG.testItems[itemType].name} for $${TEST_MODE_CONFIG.testItems[itemType].price} to test cart`);
-    }, 500);
+        button.classList.remove('adding');
+        button.classList.add('added');
+        setTimeout(() => {
+            button.classList.remove('added');
+            button.disabled = false;
+        }, 1000);
+    }, 300);
 }
 
 /**

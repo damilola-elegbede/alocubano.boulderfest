@@ -78,164 +78,304 @@
     </nav>
 
     <!-- Test Mode Section -->
-    <section class="admin-card admin-mb-xl" id="testModeSection" data-testid="test-mode-section" role="region" aria-labelledby="test-mode-heading">
-      <div class="admin-card-header">
-        <h2 class="admin-card-title" id="test-mode-heading">Test Mode Cart</h2>
-        <div class="admin-card-actions">
-          <div class="test-mode-indicator" id="testModeIndicator" role="status" aria-live="polite" aria-label="Test environment status">
-            <span class="test-badge" aria-label="Test mode active">TEST</span>
-            <span class="test-status-text" id="test-status-description">Test Environment Active</span>
+    <section class="admin-section" id="testModeSection">
+      <!-- Test Mode Header with Status -->
+      <div class="admin-section-header">
+        <h2>Test Mode Cart Management</h2>
+        <div class="test-mode-indicator">
+          <span class="test-badge">🧪 TEST</span>
+          <span>Test Environment Active</span>
+        </div>
+      </div>
+
+      <!-- Cart Status Bar -->
+      <div class="test-cart-status">
+        <div class="cart-info">
+          <span>Cart Items: <strong id="testCartCount">0</strong></span>
+          <span>Total: <strong id="testCartValue">$0.00</strong></span>
+        </div>
+        <div class="cart-actions">
+          <button class="admin-btn admin-btn-primary" onclick="window.testMode && window.testMode.viewCart()">
+            View Cart on Main Site →
+          </button>
+          <button class="admin-btn admin-btn-outline" onclick="window.testMode && window.testMode.clearCart()">
+            Clear Cart
+          </button>
+        </div>
+      </div>
+
+      <!-- Test Tickets Grid -->
+      <div class="test-ticket-section">
+        <h3>Add Test Tickets</h3>
+        <div class="test-ticket-grid">
+          <!-- VIP Pass -->
+          <div class="test-ticket-card">
+            <div class="ticket-badge">VIP</div>
+            <h4>VIP Pass</h4>
+            <div class="ticket-price">$150</div>
+            <p class="ticket-description">Full festival access with VIP perks including exclusive areas and early entry</p>
+            <button class="test-add-btn admin-btn admin-btn-success" data-item="vip-pass">
+              + Add to Cart
+            </button>
+          </div>
+
+          <!-- Weekend Pass -->
+          <div class="test-ticket-card">
+            <div class="ticket-badge popular">POPULAR</div>
+            <h4>Weekend Pass</h4>
+            <div class="ticket-price">$75</div>
+            <p class="ticket-description">Access to all weekend events Friday through Sunday</p>
+            <button class="test-add-btn admin-btn admin-btn-success" data-item="weekend-pass">
+              + Add to Cart
+            </button>
+          </div>
+
+          <!-- Friday Pass -->
+          <div class="test-ticket-card">
+            <h4>Friday Pass</h4>
+            <div class="ticket-price">$35</div>
+            <p class="ticket-description">Friday night social and performances</p>
+            <button class="test-add-btn admin-btn admin-btn-success" data-item="friday-pass">
+              + Add to Cart
+            </button>
+          </div>
+
+          <!-- Saturday Pass -->
+          <div class="test-ticket-card">
+            <h4>Saturday Pass</h4>
+            <div class="ticket-price">$35</div>
+            <p class="ticket-description">Saturday workshops and evening social</p>
+            <button class="test-add-btn admin-btn admin-btn-success" data-item="saturday-pass">
+              + Add to Cart
+            </button>
+          </div>
+
+          <!-- Sunday Pass -->
+          <div class="test-ticket-card">
+            <h4>Sunday Pass</h4>
+            <div class="ticket-price">$35</div>
+            <p class="ticket-description">Sunday workshops and closing performance</p>
+            <button class="test-add-btn admin-btn admin-btn-success" data-item="sunday-pass">
+              + Add to Cart
+            </button>
+          </div>
+
+          <!-- Donation -->
+          <div class="test-ticket-card donation-card">
+            <h4>Support the Festival</h4>
+            <div class="ticket-price">$25</div>
+            <p class="ticket-description">Your donation helps us bring amazing artists to Boulder</p>
+            <button class="test-add-btn admin-btn admin-btn-primary" data-item="donation">
+              + Add Donation
+            </button>
           </div>
         </div>
       </div>
-      <div class="admin-card-body">
-        <div class="test-mode-grid">
-          <!-- Quick Add Test Items -->
-          <div class="test-section" role="group" aria-labelledby="quick-add-heading">
-            <h3 class="test-section-title" id="quick-add-heading">Quick Add Test Items</h3>
-            <p class="visually-hidden">Add test items to your cart for testing checkout functionality</p>
-            <div class="test-buttons-grid" role="group" aria-label="Test item buttons">
-              <button class="admin-btn admin-btn-outline test-add-btn"
-                      data-item="vip-pass"
-                      data-testid="add-vip-test"
-                      aria-describedby="vip-pass-description"
-                      aria-label="Add VIP Pass for $150 to test cart">
-                <span>Add VIP Pass</span>
-                <small>$150</small>
-                <span class="visually-hidden" id="vip-pass-description">Full festival access with VIP perks</span>
-              </button>
-              <button class="admin-btn admin-btn-outline test-add-btn"
-                      data-item="weekend-pass"
-                      data-testid="add-weekend-test"
-                      aria-describedby="weekend-pass-description"
-                      aria-label="Add Weekend Pass for $75 to test cart">
-                <span>Add Weekend Pass</span>
-                <small>$75</small>
-                <span class="visually-hidden" id="weekend-pass-description">Access to all weekend events</span>
-              </button>
-              <button class="admin-btn admin-btn-outline test-add-btn"
-                      data-item="donation"
-                      data-testid="add-donation-test"
-                      aria-describedby="donation-description"
-                      aria-label="Add $25 donation to test cart">
-                <span>Add Donation</span>
-                <small>$25</small>
-                <span class="visually-hidden" id="donation-description">Support the festival</span>
-              </button>
-            </div>
-          </div>
 
-          <!-- Cart Actions -->
-          <div class="test-section" role="group" aria-labelledby="cart-actions-heading">
-            <h3 class="test-section-title" id="cart-actions-heading">Cart Actions</h3>
-            <p class="visually-hidden">Actions to manage your test cart</p>
-            <div class="test-buttons-grid" role="group" aria-label="Cart action buttons">
-              <button class="admin-btn admin-btn-primary"
-                      onclick="window.testMode && window.testMode.viewCart ? window.testMode.viewCart() : window.viewCartOnMainSite && window.viewCartOnMainSite()"
-                      data-testid="view-cart-main"
-                      aria-label="Open main site with test cart items in new tab"
-                      aria-describedby="view-cart-description">
-                <span>View Cart on Main Site</span>
-                <span class="visually-hidden" id="view-cart-description">Opens tickets page in new tab with test items added to cart</span>
-              </button>
-              <button class="admin-btn admin-btn-secondary"
-                      onclick="window.testMode && window.testMode.clearCart ? window.testMode.clearCart() : window.clearTestCart && window.clearTestCart()"
-                      data-testid="clear-test-cart"
-                      aria-label="Clear all items from test cart"
-                      aria-describedby="clear-cart-description">
-                <span>Clear Test Cart</span>
-                <span class="visually-hidden" id="clear-cart-description">Removes all test items from cart, requires confirmation</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Test Data Management -->
-          <div class="test-section" role="group" aria-labelledby="test-data-heading">
-            <h3 class="test-section-title" id="test-data-heading">Test Data Management</h3>
-            <p class="visually-hidden">View test cart statistics and manage test data</p>
-            <div class="test-stats" id="testStats" role="region" aria-label="Test cart statistics" aria-live="polite">
-              <div class="test-stat-item">
-                <span class="test-stat-label" id="cart-count-label">Test Items in Cart:</span>
-                <span class="test-stat-value" id="testCartCount" aria-labelledby="cart-count-label">0</span>
-              </div>
-              <div class="test-stat-item">
-                <span class="test-stat-label" id="cart-value-label">Test Cart Value:</span>
-                <span class="test-stat-value" id="testCartValue" aria-labelledby="cart-value-label">$0.00</span>
-              </div>
-            </div>
-            <div class="test-buttons-grid" role="group" aria-label="Test data management buttons">
-              <button class="admin-btn admin-btn-danger"
-                      onclick="window.testMode && window.testMode.cleanup ? window.testMode.cleanup() : window.cleanupTestData && window.cleanupTestData()"
-                      data-testid="cleanup-test-data"
-                      aria-label="Remove all test data including cart items and session data"
-                      aria-describedby="cleanup-description">
-                <span>Cleanup All Test Data</span>
-                <span class="visually-hidden" id="cleanup-description">Permanently removes all test cart items, session data, and preferences. Requires confirmation.</span>
-              </button>
-              <button class="admin-btn admin-btn-ghost"
-                      onclick="window.testMode && window.testMode.generate ? window.testMode.generate() : window.generateTestData && window.generateTestData()"
-                      data-testid="generate-test-data"
-                      aria-label="Generate sample test data for testing purposes"
-                      aria-describedby="generate-description">
-                <span>Generate Test Data</span>
-                <span class="visually-hidden" id="generate-description">Creates random test items in cart for development testing. Requires confirmation.</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Keyboard Shortcuts Help -->
-          <div class="test-section" role="group" aria-labelledby="shortcuts-heading">
-            <h3 class="test-section-title" id="shortcuts-heading">Keyboard Shortcuts</h3>
-            <p class="visually-hidden">Available keyboard shortcuts for test mode functionality</p>
-            <div class="keyboard-shortcuts-info">
-              <div class="shortcut-grid">
-                <div class="shortcut-item">
-                  <kbd>Alt + T</kbd>
-                  <span>Toggle test/production mode</span>
-                </div>
-                <div class="shortcut-item">
-                  <kbd>Alt + V</kbd>
-                  <span>Add VIP Pass</span>
-                </div>
-                <div class="shortcut-item">
-                  <kbd>Alt + W</kbd>
-                  <span>Add Weekend Pass</span>
-                </div>
-                <div class="shortcut-item">
-                  <kbd>Alt + D</kbd>
-                  <span>Add Donation</span>
-                </div>
-                <div class="shortcut-item">
-                  <kbd>Alt + C</kbd>
-                  <span>Clear test cart</span>
-                </div>
-                <div class="shortcut-item">
-                  <kbd>Alt + H</kbd>
-                  <span>Show help dialog</span>
-                </div>
-                <div class="shortcut-item">
-                  <kbd>Esc</kbd>
-                  <span>Cancel operations</span>
-                </div>
-                <div class="shortcut-item">
-                  <kbd>Tab</kbd>
-                  <span>Navigate elements</span>
-                </div>
-              </div>
-              <button class="admin-btn admin-btn-outline admin-btn-sm"
-                      onclick="window.testMode && window.testMode.showKeyboardShortcutsHelp && window.testMode.showKeyboardShortcutsHelp()"
-                      aria-label="Show detailed keyboard shortcuts help">
-                <span>Show Help Dialog</span>
-              </button>
-            </div>
-          </div>
+      <!-- Test Data Management -->
+      <div class="test-management-section">
+        <h3>Test Data Management</h3>
+        <div class="management-actions">
+          <button class="admin-btn admin-btn-outline" onclick="window.testMode && window.testMode.generate()">
+            🎲 Generate Random Cart
+          </button>
+          <button class="admin-btn admin-btn-danger" onclick="window.testMode && window.testMode.cleanup()">
+            🗑️ Clear All Test Data
+          </button>
         </div>
       </div>
     </section>
+
+    <!-- Add styles for the new UI -->
+    <style>
+      .admin-section {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: var(--space-xl);
+      }
+
+      .admin-section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--space-xl);
+        padding-bottom: var(--space-lg);
+        border-bottom: 2px solid var(--color-border);
+      }
+
+      .test-mode-indicator {
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+        padding: var(--space-sm) var(--space-lg);
+        background: rgba(251, 191, 36, 0.1);
+        border: 2px dashed var(--color-warning);
+        border-radius: var(--radius-lg);
+      }
+
+      .test-badge {
+        font-weight: bold;
+        color: var(--color-warning);
+      }
+
+      .test-cart-status {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--space-lg);
+        background: var(--color-surface);
+        border-radius: var(--radius-lg);
+        margin-bottom: var(--space-xl);
+        border: 1px solid var(--color-border);
+      }
+
+      .cart-info {
+        display: flex;
+        gap: var(--space-xl);
+        font-size: var(--font-size-lg);
+      }
+
+      .cart-actions {
+        display: flex;
+        gap: var(--space-md);
+      }
+
+      .test-ticket-section {
+        margin-bottom: var(--space-xl);
+      }
+
+      .test-ticket-section h3 {
+        margin-bottom: var(--space-lg);
+        font-size: var(--font-size-xl);
+      }
+
+      .test-ticket-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: var(--space-lg);
+        margin-bottom: var(--space-xl);
+      }
+
+      .test-ticket-card {
+        background: var(--color-surface);
+        border: 2px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-lg);
+        position: relative;
+        transition: all var(--transition-base);
+      }
+
+      .test-ticket-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-lg);
+        border-color: var(--color-blue);
+      }
+
+      .ticket-badge {
+        position: absolute;
+        top: var(--space-sm);
+        right: var(--space-sm);
+        padding: var(--space-xs) var(--space-sm);
+        background: var(--color-blue);
+        color: var(--color-white);
+        border-radius: var(--radius-sm);
+        font-size: var(--font-size-xs);
+        font-weight: bold;
+      }
+
+      .ticket-badge.popular {
+        background: var(--color-success);
+      }
+
+      .test-ticket-card h4 {
+        margin: 0 0 var(--space-sm);
+        font-size: var(--font-size-lg);
+        color: var(--color-text-primary);
+      }
+
+      .ticket-price {
+        font-size: var(--font-size-2xl);
+        font-weight: bold;
+        color: var(--color-blue);
+        margin-bottom: var(--space-sm);
+      }
+
+      .ticket-description {
+        color: var(--color-text-secondary);
+        margin-bottom: var(--space-lg);
+        line-height: var(--line-height-relaxed);
+      }
+
+      .test-add-btn {
+        width: 100%;
+        padding: var(--space-md);
+        font-weight: 600;
+        transition: all var(--transition-base);
+      }
+
+      .test-add-btn.adding {
+        animation: pulse 0.3s ease;
+      }
+
+      .test-add-btn.added {
+        background: var(--color-success) !important;
+        color: var(--color-white);
+      }
+
+      .test-add-btn.added::before {
+        content: '✓ ';
+      }
+
+      .donation-card {
+        background: linear-gradient(135deg, rgba(91, 107, 181, 0.1), rgba(239, 68, 68, 0.1));
+      }
+
+      .test-management-section {
+        padding: var(--space-xl);
+        background: var(--color-surface);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--color-border);
+      }
+
+      .test-management-section h3 {
+        margin-bottom: var(--space-lg);
+      }
+
+      .management-actions {
+        display: flex;
+        gap: var(--space-md);
+        flex-wrap: wrap;
+      }
+
+      @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(0.95); }
+        100% { transform: scale(1); }
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        .test-cart-status {
+          flex-direction: column;
+          gap: var(--space-lg);
+        }
+
+        .cart-actions {
+          width: 100%;
+        }
+
+        .cart-actions button {
+          flex: 1;
+        }
+
+        .test-ticket-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
   </div>
 
   <!-- Scripts -->
-  <script src="/js/admin-auth.js"></script>
   <script type="module" src="/js/admin-test-mode.js"></script>
   <script>
     // Logout function
