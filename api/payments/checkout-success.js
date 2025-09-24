@@ -160,9 +160,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Ensure services are initialized
-    await transactionService.ensureInitialized();
-
     const { session_id } = req.query;
 
     // Validate session_id parameter

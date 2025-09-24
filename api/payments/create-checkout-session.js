@@ -178,8 +178,11 @@ export default async function handler(req, res) {
       mode: 'payment',
       success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}${isRequestTestMode ? '&test_mode=true' : ''}`,
       cancel_url: `${origin}/failure?session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}${isRequestTestMode ? '&test_mode=true' : ''}`,
-      // Only include customer_email if provided
-      ...(customerInfo?.email && { customer_email: customerInfo.email }),
+      // Include both customer_email and receipt_email for Stripe to send receipts
+      ...(customerInfo?.email && {
+        customer_email: customerInfo.email,
+        receipt_email: customerInfo.email
+      }),
       metadata: {
         orderId: orderId,
         orderType: orderType,
