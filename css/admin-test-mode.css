@@ -309,43 +309,106 @@
 }
 
 /* ==========================================================================
-   DATA MODE TOGGLE
+   COMPACT DATA MODE TOGGLE COMPONENT
    ========================================================================== */
 
-.data-mode-toggle {
-  background: var(--color-background-secondary) !important;
-  border-color: var(--color-border-medium) !important;
+/* Compact Mode Toggle Container */
+.compact-mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-base);
   position: relative;
   overflow: hidden;
+  min-height: 44px; /* Touch-friendly */
 }
 
-.data-mode-toggle::before {
+.compact-mode-toggle::before {
   content: "";
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  height: 4px;
+  height: 3px;
   background: linear-gradient(90deg, var(--color-success), var(--color-warning));
+  transition: all var(--transition-base);
 }
 
-.data-mode-switcher {
+.compact-mode-toggle:hover {
+  border-color: var(--color-blue);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.compact-mode-toggle:focus-within {
+  outline: 3px solid rgba(91, 107, 181, 0.3);
+  outline-offset: 2px;
+  border-color: var(--color-blue);
+}
+
+/* Mode Toggle Label */
+.mode-toggle-label {
+  font-family: var(--font-display);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  white-space: nowrap;
+  position: relative;
+  z-index: 2;
+}
+
+/* Toggle Switch Container */
+.mode-switch {
   display: flex;
-  gap: var(--space-xs);
-  background: var(--color-surface);
-  border-radius: var(--radius-md);
-  padding: var(--space-xs);
+  position: relative;
+  width: 180px;
+  height: 36px;
+  background: var(--color-background-secondary);
+  border-radius: var(--radius-full);
+  border: 2px solid var(--color-border-medium);
+  overflow: hidden;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.mode-btn {
+/* Switch Background Slider */
+.mode-switch::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: calc(50% - 2px);
+  height: calc(100% - 4px);
+  background: linear-gradient(135deg, var(--color-success), var(--color-success-light, #4ade80));
+  border-radius: var(--radius-full);
+  transition: all var(--transition-base);
+  z-index: 1;
+  box-shadow: var(--shadow-sm);
+}
+
+.mode-switch.test-mode::before {
+  transform: translateX(100%);
+  background: linear-gradient(135deg, var(--color-warning), var(--color-warning-light, #fbbf24));
+}
+
+/* Switch Options */
+.mode-option {
   flex: 1;
-  padding: var(--space-sm) var(--space-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs);
   background: transparent;
-  border: 2px solid transparent;
-  border-radius: var(--radius-sm);
+  border: none;
   font-family: var(--font-display);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-wide);
@@ -353,53 +416,141 @@
   cursor: pointer;
   transition: all var(--transition-base);
   position: relative;
-  overflow: hidden;
+  z-index: 2;
+  min-height: 32px;
 }
 
-.mode-btn::before {
+.mode-option:focus {
+  outline: none;
+}
+
+.mode-option.active {
+  color: var(--color-text-inverse);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.mode-option:hover:not(.active) {
+  color: var(--color-text-primary);
+}
+
+/* Mode Icons */
+.mode-icon {
+  font-size: var(--font-size-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  transition: all var(--transition-base);
+}
+
+.mode-option.active .mode-icon {
+  transform: scale(1.1);
+}
+
+/* Status Indicator Dot */
+.mode-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-success);
+  box-shadow: 0 0 0 2px var(--color-surface);
+  transition: all var(--transition-base);
+  animation: pulse-gentle 2s infinite;
+}
+
+.mode-switch.test-mode .mode-status-dot {
+  background: var(--color-warning);
+}
+
+@keyframes pulse-gentle {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.2);
+  }
+}
+
+/* Header Placement Variant */
+.admin-header-actions .compact-mode-toggle {
+  padding: var(--space-xs) var(--space-sm);
+  min-height: 36px;
+  order: 1; /* Position before other actions */
+}
+
+.admin-header-actions .mode-toggle-label {
+  font-size: var(--font-size-xs);
+  display: none; /* Hide label in header to save space */
+}
+
+.admin-header-actions .mode-switch {
+  width: 160px;
+  height: 32px;
+}
+
+/* Floating Variant */
+.floating-mode-toggle {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-sm);
+  backdrop-filter: blur(10px);
+  background: rgba(var(--color-surface-rgb), 0.95);
+}
+
+.floating-mode-toggle::before {
+  background: linear-gradient(90deg, var(--color-success) 0%, var(--color-warning) 100%);
+}
+
+.floating-mode-toggle:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-xl);
+}
+
+/* Loading State */
+.compact-mode-toggle.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.compact-mode-toggle.loading::after {
   content: "";
   position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: var(--color-success);
-  transition: left var(--transition-base);
-  z-index: 0;
+  top: 50%;
+  right: var(--space-sm);
+  width: 14px;
+  height: 14px;
+  margin-top: -7px;
+  border: 2px solid var(--color-border-medium);
+  border-top: 2px solid var(--color-blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
 }
 
-.mode-btn.test-mode-btn::before {
-  background: var(--color-warning);
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
-.mode-btn span {
-  position: relative;
-  z-index: 1;
+/* Legacy Support - Hide old toggle when compact is present */
+.data-mode-toggle {
+  display: none !important;
 }
 
-.mode-btn.active {
-  background: var(--color-success);
-  color: var(--color-text-inverse);
-  border-color: var(--color-success);
-  box-shadow: var(--shadow-sm);
+.data-mode-switcher {
+  display: none !important;
 }
 
-.mode-btn.test-mode-btn.active {
-  background: var(--color-warning);
-  border-color: var(--color-warning);
-}
-
-.mode-btn:hover:not(.active) {
-  color: var(--color-text-inverse);
-  border-color: var(--color-success);
-}
-
-.mode-btn.test-mode-btn:hover:not(.active) {
-  border-color: var(--color-warning);
-}
-
-.mode-btn:hover::before {
-  left: 0;
+.mode-btn {
+  display: none !important;
 }
 
 /* ==========================================================================
@@ -540,7 +691,88 @@
    MOBILE RESPONSIVE DESIGN
    ========================================================================== */
 
+/* ==========================================================================
+   MOBILE RESPONSIVE DESIGN - COMPACT TOGGLE
+   ========================================================================== */
+
 @media (max-width: 768px) {
+  /* Compact Mode Toggle Mobile */
+  .compact-mode-toggle {
+    min-width: 100%;
+    justify-content: center;
+    padding: var(--space-sm);
+    margin: var(--space-sm) 0;
+  }
+
+  .mode-toggle-label {
+    display: block !important;
+    text-align: center;
+    margin-bottom: var(--space-xs);
+    font-size: var(--font-size-xs);
+  }
+
+  .mode-switch {
+    width: 200px;
+    height: 40px;
+    margin: 0 auto;
+  }
+
+  .mode-option {
+    font-size: var(--font-size-xs);
+    padding: var(--space-sm);
+    min-height: 36px;
+  }
+
+  .mode-icon {
+    font-size: var(--font-size-base);
+    width: 18px;
+    height: 18px;
+  }
+
+  /* Header placement on mobile */
+  .admin-header-actions .compact-mode-toggle {
+    order: -1;
+    width: 100%;
+    margin: var(--space-md) 0;
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+
+  .admin-header-actions .mode-toggle-label {
+    display: block !important;
+    text-align: center;
+  }
+
+  .admin-header-actions .mode-switch {
+    width: 180px;
+    height: 36px;
+  }
+
+  /* Floating toggle on mobile */
+  .floating-mode-toggle {
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: calc(100% - 20px);
+    max-width: 300px;
+    padding: var(--space-sm);
+  }
+
+  .floating-mode-toggle .mode-toggle-label {
+    display: block !important;
+    text-align: center;
+    margin-bottom: var(--space-xs);
+  }
+
+  .floating-mode-toggle .mode-switch {
+    width: 100%;
+    max-width: 240px;
+    margin: 0 auto;
+  }
+
+  /* Legacy mobile support */
   .test-mode-grid {
     grid-template-columns: 1fr;
     gap: var(--space-lg);
@@ -574,16 +806,6 @@
 
   .test-stat-value {
     font-size: var(--font-size-xl);
-  }
-
-  .data-mode-switcher {
-    flex-direction: column;
-    gap: var(--space-xs);
-  }
-
-  .mode-btn {
-    width: 100%;
-    text-align: center;
   }
 
   .test-mode-indicator {
@@ -662,7 +884,8 @@
 /* Enhanced focus for keyboard users */
 .test-add-btn:focus-visible,
 .mode-btn:focus-visible,
-.admin-btn:focus-visible {
+.admin-btn:focus-visible,
+.mode-option:focus-visible {
   outline: 3px solid var(--color-warning);
   outline-offset: 3px;
   box-shadow:
@@ -675,9 +898,40 @@
 /* Remove focus outline for mouse users */
 .test-add-btn:focus:not(:focus-visible),
 .mode-btn:focus:not(:focus-visible),
-.admin-btn:focus:not(:focus-visible) {
+.admin-btn:focus:not(:focus-visible),
+.mode-option:focus:not(:focus-visible) {
   outline: none;
   box-shadow: none;
+}
+
+/* Compact Toggle Accessibility */
+.compact-mode-toggle:focus-within .mode-switch {
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.1),
+    0 0 0 3px rgba(91, 107, 181, 0.3);
+}
+
+.mode-option:focus {
+  outline: none;
+}
+
+.mode-option:focus-visible {
+  outline: 2px solid var(--color-blue);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Keyboard navigation indicators */
+.mode-switch:focus-within::after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  right: -3px;
+  bottom: -3px;
+  border: 2px solid var(--color-blue);
+  border-radius: var(--radius-full);
+  pointer-events: none;
 }
 
 /* Keyboard Navigation Indicators */
@@ -726,6 +980,35 @@
   .test-section::before {
     width: 6px;
   }
+
+  /* Compact Toggle High Contrast */
+  .compact-mode-toggle {
+    border-width: 3px;
+    outline: 2px solid var(--color-text-primary);
+    outline-offset: 1px;
+  }
+
+  .mode-switch {
+    border-width: 3px;
+    outline: 1px solid var(--color-text-primary);
+    outline-offset: 1px;
+  }
+
+  .mode-option {
+    font-weight: 900;
+    border: 1px solid transparent;
+  }
+
+  .mode-option.active {
+    border-color: var(--color-text-primary);
+    outline: 1px solid var(--color-text-inverse);
+  }
+
+  .mode-status-dot {
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--color-text-primary);
+  }
 }
 
 /* Reduced Motion Support */
@@ -742,6 +1025,30 @@
 
   .test-success-indicator,
   .test-error-indicator {
+    animation: none;
+  }
+
+  /* Compact Toggle Reduced Motion */
+  .compact-mode-toggle,
+  .compact-mode-toggle:hover,
+  .mode-switch::before,
+  .mode-option,
+  .mode-option.active .mode-icon,
+  .floating-mode-toggle:hover {
+    animation: none;
+    transition: none;
+    transform: none;
+  }
+
+  .mode-status-dot {
+    animation: none;
+  }
+
+  .pulse-gentle {
+    animation: none;
+  }
+
+  .spin {
     animation: none;
   }
 }

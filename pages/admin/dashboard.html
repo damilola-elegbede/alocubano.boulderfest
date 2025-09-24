@@ -29,6 +29,34 @@
         <div class="admin-header-actions">
           <!-- Event Selector in Header -->
           <div id="header-event-selector-container"></div>
+
+          <!-- Compact Data Mode Toggle -->
+          <div class="compact-mode-toggle" role="group" aria-labelledby="header-data-mode-heading">
+            <span class="mode-toggle-label" id="header-data-mode-heading">Data Mode</span>
+            <div class="mode-switch" role="radiogroup" aria-labelledby="header-data-mode-heading">
+              <button class="mode-option production-mode active"
+                      onclick="switchDataMode(false)"
+                      data-testid="header-production-mode-btn"
+                      role="radio"
+                      aria-checked="true"
+                      aria-label="Production data view">
+                <span class="mode-icon">🎯</span>
+                <span>Production</span>
+                <div class="mode-status-dot"></div>
+              </button>
+              <button class="mode-option test-mode"
+                      onclick="switchDataMode(true)"
+                      data-testid="header-test-mode-btn"
+                      role="radio"
+                      aria-checked="false"
+                      aria-label="Test data view">
+                <span class="mode-icon">🧪</span>
+                <span>Test</span>
+                <div class="mode-status-dot"></div>
+              </button>
+            </div>
+          </div>
+
           <button class="admin-btn admin-btn-success" onclick="syncToSheets()">
             <span>Sync to Sheets</span>
           </button>
@@ -285,6 +313,14 @@
           await fetchCSRFToken();
 
           displayStats(data.stats);
+
+          // Remove loading states from mode toggle buttons
+          const buttons = document.querySelectorAll('.mode-btn[role="radio"], .mode-option[role="radio"]');
+          buttons.forEach(btn => {
+            btn.classList.remove('test-mode-loading');
+            btn.removeAttribute('aria-busy');
+          });
+
           await loadRegistrations();
         } catch (error) {
           console.error("Failed to load dashboard:", error);
@@ -316,80 +352,52 @@
         updateGlobalTestModeIndicator(isTestMode);
 
         statsGrid.innerHTML = `
-                <!-- Data Mode Toggle -->
-                <div class="admin-stat-card data-mode-toggle" role="group" aria-labelledby="data-mode-heading">
-                    <h3 class="stat-label" id="data-mode-heading">Data View Mode</h3>
-                    <div class="data-mode-switcher" role="radiogroup" aria-labelledby="data-mode-heading" aria-describedby="data-mode-description">
-                        <button class="mode-btn ${!isTestMode ? 'active' : ''}"
-                                onclick="switchDataMode(false)"
-                                data-testid="production-mode-btn"
-                                role="radio"
-                                aria-checked="${!isTestMode}"
-                                aria-label="Production data view"
-                                aria-describedby="production-mode-description">
-                            <span>🎯 Production</span>
-                            <span class="visually-hidden" id="production-mode-description">View live production data including real orders and tickets</span>
-                        </button>
-                        <button class="mode-btn test-mode-btn ${isTestMode ? 'active' : ''}"
-                                onclick="switchDataMode(true)"
-                                data-testid="test-mode-btn"
-                                role="radio"
-                                aria-checked="${isTestMode}"
-                                aria-label="Test data view"
-                                aria-describedby="test-mode-description">
-                            <span>🧪 Test</span>
-                            <span class="visually-hidden" id="test-mode-description">View test data including test orders and sample tickets</span>
-                        </button>
-                    </div>
-                    <p class="visually-hidden" id="data-mode-description">Choose between viewing production data or test data. Production data shows real festival information while test data shows sample information for testing.</p>
-                    ${isTestMode ? '<div class="test-mode-indicator" role="status" aria-live="polite"><span class="test-badge">TEST</span><span class="test-status-text">Test Data View Active</span></div>' : ''}
-                </div>
                 <div class="admin-stat-card ${dataTypeClass}">
-                    <h3 class="stat-label">${modeIcon} ${dataTypeLabel} Total Tickets</h3>
+                    <h3 class="stat-label">${modeIcon} Total Tickets</h3>
                     <div class="stat-number">${stats.total_tickets || 0}</div>
                     ${isTestMode ? '<div class="test-badge">TEST</div>' : ''}
                 </div>
                 <div class="admin-stat-card ${dataTypeClass}">
-                    <h3 class="stat-label">${modeIcon} ${dataTypeLabel} Checked In</h3>
+                    <h3 class="stat-label">${modeIcon} Checked In</h3>
                     <div class="stat-number">${stats.checked_in || 0}</div>
                     <div class="stat-label admin-mt-sm">${checkinPercentage}%</div>
                     ${isTestMode ? '<div class="test-badge">TEST</div>' : ''}
                 </div>
                 <div class="admin-stat-card ${dataTypeClass}">
-                    <h3 class="stat-label">${modeIcon} ${dataTypeLabel} Revenue</h3>
+                    <h3 class="stat-label">${modeIcon} Revenue</h3>
                     <div class="stat-number">$${(stats.total_revenue || 0).toFixed(2)}</div>
                     ${isTestMode ? '<div class="test-badge">TEST</div>' : ''}
                 </div>
                 <div class="admin-stat-card ${dataTypeClass}">
-                    <h3 class="stat-label">${modeIcon} ${dataTypeLabel} Orders</h3>
+                    <h3 class="stat-label">${modeIcon} Orders</h3>
                     <div class="stat-number">${stats.total_orders || 0}</div>
                     ${isTestMode ? '<div class="test-badge">TEST</div>' : ''}
                 </div>
                 <div class="admin-stat-card ${dataTypeClass}">
-                    <h3 class="stat-label">${modeIcon} ${dataTypeLabel} Workshop Tickets</h3>
+                    <h3 class="stat-label">${modeIcon} Workshop Tickets</h3>
                     <div class="stat-number">${stats.workshop_tickets || 0}</div>
                     ${isTestMode ? '<div class="test-badge">TEST</div>' : ''}
                 </div>
                 <div class="admin-stat-card ${dataTypeClass}">
-                    <h3 class="stat-label">${modeIcon} ${dataTypeLabel} VIP Tickets</h3>
+                    <h3 class="stat-label">${modeIcon} VIP Tickets</h3>
                     <div class="stat-number">${stats.vip_tickets || 0}</div>
                     ${isTestMode ? '<div class="test-badge">TEST</div>' : ''}
                 </div>
                 <!-- Wallet Statistics -->
                 <div class="admin-stat-card ${dataTypeClass}">
-                    <h3 class="stat-label">${modeIcon} ${dataTypeLabel} Apple Wallet</h3>
+                    <h3 class="stat-label">${modeIcon} Apple Wallet</h3>
                     <div class="stat-number">${stats.apple_wallet_users || 0}</div>
                     <div class="stat-label admin-mt-sm">${stats.total_tickets ? Math.round((stats.apple_wallet_users / stats.total_tickets) * 100) : 0}% adoption</div>
                     ${isTestMode ? '<div class="test-badge">TEST</div>' : ''}
                 </div>
                 <div class="admin-stat-card ${dataTypeClass}">
-                    <h3 class="stat-label">${modeIcon} ${dataTypeLabel} Google Wallet</h3>
+                    <h3 class="stat-label">${modeIcon} Google Wallet</h3>
                     <div class="stat-number">${stats.google_wallet_users || 0}</div>
                     <div class="stat-label admin-mt-sm">${stats.total_tickets ? Math.round((stats.google_wallet_users / stats.total_tickets) * 100) : 0}% adoption</div>
                     ${isTestMode ? '<div class="test-badge">TEST</div>' : ''}
                 </div>
                 <div class="admin-stat-card ${dataTypeClass}">
-                    <h3 class="stat-label">${modeIcon} ${dataTypeLabel} QR Generated</h3>
+                    <h3 class="stat-label">${modeIcon} QR Generated</h3>
                     <div class="stat-number">${stats.qr_generated || 0}</div>
                     <div class="stat-label admin-mt-sm">${stats.total_tickets ? Math.round((stats.qr_generated / stats.total_tickets) * 100) : 0}% ready</div>
                     ${isTestMode ? '<div class="test-badge">TEST</div>' : ''}
@@ -401,16 +409,28 @@
       function switchDataMode(isTestMode) {
         window.testModeView = isTestMode;
 
-        // Update ARIA states for radio buttons
-        const buttons = document.querySelectorAll('.mode-btn[role="radio"]');
+        // Update ARIA states for radio buttons (both old and new toggles)
+        const buttons = document.querySelectorAll('.mode-btn[role="radio"], .mode-option[role="radio"]');
         buttons.forEach(btn => {
-          const isActive = (isTestMode && btn.classList.contains('test-mode-btn')) ||
-                          (!isTestMode && !btn.classList.contains('test-mode-btn'));
+          const isTestButton = btn.classList.contains('test-mode-btn') || btn.classList.contains('test-mode');
+          const isActive = (isTestMode && isTestButton) || (!isTestMode && !isTestButton);
+
           btn.setAttribute('aria-checked', isActive.toString());
+
+          // Update active class for new compact toggle
+          if (btn.classList.contains('mode-option')) {
+            btn.classList.toggle('active', isActive);
+          }
 
           // Add loading state
           btn.classList.add('test-mode-loading');
           btn.setAttribute('aria-busy', 'true');
+        });
+
+        // Update mode switch visual state
+        const modeSwitches = document.querySelectorAll('.mode-switch');
+        modeSwitches.forEach(switchEl => {
+          switchEl.classList.toggle('test-mode', isTestMode);
         });
 
         // Announce mode switch to screen readers
@@ -907,11 +927,33 @@
           }
         });
 
+      // Initialize header toggle state
+      function initializeHeaderToggleState() {
+        const isTestMode = window.testModeView || false;
+        const headerButtons = document.querySelectorAll('.admin-header-actions .mode-option[role="radio"]');
+
+        headerButtons.forEach(btn => {
+          const isTestButton = btn.classList.contains('test-mode');
+          const isActive = (isTestMode && isTestButton) || (!isTestMode && !isTestButton);
+
+          btn.setAttribute('aria-checked', isActive.toString());
+          btn.classList.toggle('active', isActive);
+        });
+
+        // Update mode switch visual state
+        const headerModeSwitch = document.querySelector('.admin-header-actions .mode-switch');
+        if (headerModeSwitch) {
+          headerModeSwitch.classList.toggle('test-mode', isTestMode);
+        }
+      }
+
       // Initialize dashboard immediately
       document.body.setAttribute('data-auth-status', 'checking');
-      
+
       // Initialize event selector and load dashboard data
       document.addEventListener('DOMContentLoaded', async () => {
+        // Initialize header toggle state
+        initializeHeaderToggleState();
         if (window.eventSelector) {
           await window.eventSelector.init();
           
