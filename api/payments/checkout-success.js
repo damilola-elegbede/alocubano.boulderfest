@@ -1,4 +1,5 @@
 import { setSecureCorsHeaders } from '../../lib/cors-config.js';
+import { warmDatabaseInBackground } from '../../lib/database-warmer.js';
 
 /**
  * Checkout Success API Endpoint
@@ -132,16 +133,18 @@ async function sendRegistrationEmailAsync(fullSession, transaction, tickets, reg
 
     console.log('Attempting to send ticket confirmation email:', {
       transactionId: transaction.uuid,
+      transactionDbId: transaction.id,
       email: transaction.customer_email,
       ticketCount: tickets.length,
-      hasEmail: !!transaction.customer_email
+      hasEmail: !!transaction.customer_email,
+      templateId: 10
     });
 
     // Send ticket confirmation email instead of registration invitation
     // Using the existing template that works (ID: 10)
     await ticketEmailService.sendTicketConfirmation(transaction, tickets);
 
-    console.log(`Ticket confirmation email sent successfully to ${transaction.customer_email}`);
+    console.log(`✅ Ticket confirmation email sent successfully to ${transaction.customer_email}`);
   } catch (error) {
     console.error('Failed to send ticket confirmation email:', {
       error: error.message,
@@ -154,6 +157,9 @@ async function sendRegistrationEmailAsync(fullSession, transaction, tickets, reg
 }
 
 export default async function handler(req, res) {
+  // Warm database connection in background to reduce latency
+  warmDatabaseInBackground();
+
   // Set CORS headers
   setSecureCorsHeaders(req, res);
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -213,15 +219,22 @@ export default async function handler(req, res) {
       // Check if we already have a registration token
       if (existingTransaction.registration_token) {
         registrationToken = existingTransaction.registration_token;
+        console.log(`Using existing registration token for transaction ${existingTransaction.uuid}`);
       } else {
         // Generate registration token if missing
         try {
+          console.log(`Generating registration token for transaction ${existingTransaction.uuid}, ID: ${existingTransaction.id}`);
           const tokenService = new RegistrationTokenService();
           await tokenService.ensureInitialized();
           registrationToken = await tokenService.createToken(existingTransaction.id);
-          console.log(`Generated registration token for existing transaction ${existingTransaction.uuid}`);
+          console.log(`Successfully generated registration token for existing transaction ${existingTransaction.uuid}`);
         } catch (tokenError) {
-          console.error('Failed to generate registration token for existing transaction:', tokenError);
+          console.error('Failed to generate registration token for existing transaction:', {
+            error: tokenError.message,
+            stack: tokenError.stack,
+            transactionId: existingTransaction.id,
+            transactionUuid: existingTransaction.uuid
+          });
           // Continue without token - user can still access tickets via other means
         }
       }

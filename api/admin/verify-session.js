@@ -2,6 +2,7 @@ import authService from "../../lib/auth-service.js";
 import { setSecureCorsHeaders } from '../../lib/cors-config.js';
 import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
 import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
+import { warmDatabaseInBackground } from "../../lib/database-warmer.js";
 
 /**
  * Verify admin session endpoint
@@ -10,6 +11,9 @@ import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
  * Checks if the current session is valid without requiring full authentication
  */
 async function handler(req, res) {
+  // Warm database connection in background to reduce latency
+  warmDatabaseInBackground();
+
   // Set Cache-Control headers to prevent caching of sensitive auth data
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
 
