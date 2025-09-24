@@ -216,6 +216,48 @@
         color: var(--color-red);
       }
 
+      /* Registration section styling */
+      #registration-section {
+        background: #fef3c7; /* Light yellow background */
+        border: 2px solid #f59e0b; /* Amber border */
+        border-radius: 8px;
+        position: relative;
+      }
+
+      #registration-section h3 {
+        color: #92400e; /* Dark amber text */
+        margin-bottom: var(--space-md);
+      }
+
+      #registration-section p {
+        color: #78350f; /* Darker amber text */
+      }
+
+      #registration-section .registration-actions {
+        text-align: center;
+      }
+
+      /* Add emphasis to registration button */
+      #registration-btn {
+        font-size: var(--font-size-lg);
+        padding: var(--space-lg) var(--space-2xl);
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0%, 100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
+        }
+      }
+
+      /* Remove pulse animation on hover */
+      #registration-btn:hover {
+        animation: none;
+      }
+
       .loading-state {
         display: none;
       }
@@ -441,6 +483,17 @@
               <p>• Check your email for order confirmation</p>
               <p>• Save your order confirmation number</p>
               <p>• Contact us if you have any questions</p>
+            </div>
+          </div>
+
+          <!-- Registration Section (shown when registration URL is available) -->
+          <div class="success-details" id="registration-section" style="display: none">
+            <h3>Complete Your Registration</h3>
+            <div id="registration-content">
+              <p>Complete your festival registration to secure your spot and receive your tickets:</p>
+            </div>
+            <div class="registration-actions" style="margin-top: var(--space-lg);">
+              <a href="#" id="registration-btn" class="success-btn accent" target="_blank" rel="noopener">Complete Registration</a>
             </div>
           </div>
 
@@ -774,25 +827,34 @@
           }
         }
 
-        // Update next steps based on payment and order type
-        if (data.instructions?.nextSteps) {
-          // Clear existing content safely
-          stepsContent.textContent = "";
-          // Add each step as a text node
-          data.instructions.nextSteps.forEach((step) => {
-            const p = document.createElement("p");
-            p.textContent = `• ${step}`;
-            stepsContent.appendChild(p);
-          });
-        } else if (
-          data.order?.orderType === "tickets" ||
-          hasTickets(data.order?.items)
-        ) {
-          // If the order contains tickets, show registration reminder
+        // Handle registration information if available
+        const registrationSection = document.getElementById("registration-section");
+        const registrationBtn = document.getElementById("registration-btn");
+        const registrationContent = document.getElementById("registration-content");
+
+        if (data.registrationUrl || data.registrationToken) {
+          // Show registration section with prominent button
+          registrationSection.style.display = "block";
+
+          // Set up the registration button
+          if (data.registrationUrl) {
+            registrationBtn.href = data.registrationUrl;
+          } else if (data.registrationToken) {
+            // Default registration path if not provided in registrationUrl
+            registrationBtn.href = `/pages/core/register-tickets.html?token=${data.registrationToken}`;
+          }
+
+          // Update the registration message
+          registrationContent.innerHTML = `
+            <p><strong>Important:</strong> Complete your festival registration to secure your spot and receive your tickets.</p>
+            <p>This step is required to finalize your purchase and receive event updates.</p>
+          `;
+
+          // Update next steps to emphasize registration
           stepsContent.textContent = "";
           const steps = [
+            "• Complete your registration using the button above",
             "• Check your email for order confirmation",
-            "• Complete your festival registration (link in email)",
             "• Save your confirmation number for check-in",
             "• Join our WhatsApp group for updates",
           ];
@@ -801,6 +863,48 @@
             p.textContent = step;
             stepsContent.appendChild(p);
           });
+        } else {
+          // Handle normal next steps without immediate registration
+          if (data.instructions?.nextSteps) {
+            // Clear existing content safely
+            stepsContent.textContent = "";
+            // Add each step as a text node
+            data.instructions.nextSteps.forEach((step) => {
+              const p = document.createElement("p");
+              p.textContent = `• ${step}`;
+              stepsContent.appendChild(p);
+            });
+          } else if (
+            data.order?.orderType === "tickets" ||
+            hasTickets(data.order?.items)
+          ) {
+            // If the order contains tickets, show registration reminder via email
+            stepsContent.textContent = "";
+            const steps = [
+              "• Check your email for order confirmation and registration link",
+              "• Complete your festival registration (link in email)",
+              "• Save your confirmation number for check-in",
+              "• Join our WhatsApp group for updates",
+            ];
+            steps.forEach((step) => {
+              const p = document.createElement("p");
+              p.textContent = step;
+              stepsContent.appendChild(p);
+            });
+          } else {
+            // Default steps for all other purchases
+            stepsContent.textContent = "";
+            const steps = [
+              "• Check your email for order confirmation",
+              "• Save your confirmation number for your records",
+              "• Contact us if you have any questions",
+            ];
+            steps.forEach((step) => {
+              const p = document.createElement("p");
+              p.textContent = step;
+              stepsContent.appendChild(p);
+            });
+          }
         }
 
         // Show test mode indicator if applicable

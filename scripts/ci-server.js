@@ -1450,7 +1450,7 @@ app.use((req, res, next) => {
     '/success': '/success.html',
     '/failure': '/failure.html',
     '/my-tickets': '/my-tickets.html',
-    '/checkout-success': '/checkout-success.html',
+    '/checkout-success': '/success.html',
     '/checkout-cancel': '/checkout-cancel.html',
     '/admin/checkin': '/admin/checkin.html',
     '/about-festival': '/about.html'

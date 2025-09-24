@@ -15,9 +15,9 @@ export default async function handler(req, res) {
 
   try {
     // Verify JWT token strictly with the registration secret
-    const secret = process.env.REGISTRATION_JWT_SECRET;
+    const secret = process.env.REGISTRATION_SECRET;
     if (!secret) {
-      console.error('Missing REGISTRATION_JWT_SECRET');
+      console.error('Missing REGISTRATION_SECRET');
       return res.status(503).json({ error: 'Service misconfigured' });
     }
     const decoded = jwt.verify(token, secret, { algorithms: ['HS256'] });

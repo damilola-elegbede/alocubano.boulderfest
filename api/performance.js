@@ -1,5 +1,6 @@
-/**
 import { setSecureCorsHeaders } from '../lib/cors-config.js';
+
+/**
  * Performance Analytics API
  * Handles general performance metrics and analytics data
  */

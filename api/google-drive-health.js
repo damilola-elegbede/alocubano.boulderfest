@@ -1,5 +1,6 @@
-/**
 import { setSecureCorsHeaders } from '../lib/cors-config.js';
+
+/**
  * Google Drive Service Health Check API
  * Provides health status and metrics for the Google Drive integration
  */

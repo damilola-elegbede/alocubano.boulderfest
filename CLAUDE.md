@@ -222,6 +222,9 @@ TURSO_AUTH_TOKEN=        # Production only (required for E2E tests)
 ADMIN_PASSWORD=          # bcrypt hash
 ADMIN_SECRET=            # min 32 chars
 
+# Registration System
+REGISTRATION_SECRET=     # min 32 chars - JWT signing for ticket registration tokens
+
 # Wallet Passes
 APPLE_PASS_KEY=          # base64 encoded
 WALLET_AUTH_SECRET=      # JWT signing
@@ -414,7 +417,6 @@ console.log("Theme performance:", getPerformanceMetrics());
 │   ├── payments/       # Payment processing
 │   ├── tickets/        # Ticket management
 │   ├── registration/   # Registration endpoints
-│   ├── gallery/        # Gallery endpoints
 │   └── health/         # Health check endpoints
 ├── lib/                # Shared services (async singletons)
 ├── pages/              # HTML pages
@@ -497,3 +499,9 @@ npm run migrate:status          # Check migration status
 - [Changelog](CHANGELOG.md)
 - [Theme System Guide](docs/THEME_SYSTEM.md)
 - [API Documentation](/docs/api/README.md)
+
+## Important Instruction Reminders
+Do what has been asked; nothing more, nothing less.
+NEVER create files unless they're absolutely necessary for achieving your goal.
+ALWAYS prefer editing an existing file to creating a new one.
+NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.

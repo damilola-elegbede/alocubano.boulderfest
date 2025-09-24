@@ -75,6 +75,10 @@
       "destination": "/pages/core/tickets"
     },
     {
+      "source": "/register-tickets",
+      "destination": "/pages/core/register-tickets"
+    },
+    {
       "source": "/boulder-fest-2025",
       "destination": "/pages/events/2025-boulder/index"
     },

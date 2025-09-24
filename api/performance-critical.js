@@ -1,5 +1,6 @@
-/**
 import { setSecureCorsHeaders } from '../lib/cors-config.js';
+
+/**
  * Critical Performance Metrics API
  * Handles high-priority performance alerts and critical threshold breaches
  */
