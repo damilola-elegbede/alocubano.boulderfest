@@ -804,17 +804,36 @@
           orderDetails.style.display = "block";
 
           // Use the proper order number if available, otherwise fall back to session ID
+          console.log('Order data received:', {
+            orderNumber: data.orderNumber,
+            transaction: data.transaction,
+            order: data.order,
+            session: data.session
+          });
+
           let displayId = '';
           if (data.orderNumber) {
             // Use the clean order number (ALCBF-YYYY-XXXXX or TEST-YYYY-XXXXX)
             displayId = data.orderNumber;
+            console.log('Using orderNumber:', displayId);
           } else if (data.transaction?.orderNumber) {
             displayId = data.transaction.orderNumber;
+            console.log('Using transaction.orderNumber:', displayId);
           } else if (data.order?.id) {
             displayId = data.order.id;
+            console.log('Using order.id:', displayId);
           } else if (data.session?.id) {
-            // Fallback to session ID only if no order number exists
-            displayId = data.session.id;
+            // Fallback: Generate a temporary order number from session ID
+            const sessionId = data.session.id;
+            console.log('No order number, generating from session ID:', sessionId);
+
+            // If it's a test session, use TEST prefix, otherwise ALCBF
+            const isTest = sessionId.includes('test');
+            const year = new Date().getFullYear();
+            const shortId = sessionId.slice(-8).toUpperCase(); // Last 8 chars
+
+            displayId = `${isTest ? 'TEST' : 'ALCBF'}-${year}-${shortId}`;
+            console.log('Generated display ID:', displayId);
           }
 
           if (orderId) {

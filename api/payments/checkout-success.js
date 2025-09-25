@@ -219,6 +219,20 @@ export default async function handler(req, res) {
       hasTickets = true;
       transaction = existingTransaction;  // Use existing transaction
 
+      // Generate order number if missing (for transactions created before order_number was added)
+      if (!transaction.order_number) {
+        const isTestTransaction = fullSession.mode === 'test' || fullSession.livemode === false;
+        transaction.order_number = await generateOrderId(isTestTransaction);
+        console.log(`Generated order number for existing transaction: ${transaction.order_number}`);
+
+        // Update the database with the new order number
+        const db = await getDatabaseClient();
+        await db.execute({
+          sql: 'UPDATE transactions SET order_number = ? WHERE id = ?',
+          args: [transaction.order_number, transaction.id]
+        });
+      }
+
       // Check if we already have a registration token
       if (existingTransaction.registration_token) {
         registrationToken = existingTransaction.registration_token;
