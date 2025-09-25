@@ -490,6 +490,11 @@
             Redirecting to registration in <span class="countdown-seconds" id="countdown-seconds">20</span> seconds...
           </div>
 
+          <!-- Register Now button moved here for better visibility -->
+          <div style="margin-bottom: var(--space-xl); display: none;" id="register-now-container">
+            <a href="#" id="register-now-btn" class="success-btn accent">Register Now</a>
+          </div>
+
 
           <div class="success-details" id="order-details" style="display: none">
             <h3>Order Details</h3>
@@ -510,7 +515,6 @@
           <!-- Registration will be handled on separate page -->
 
           <div class="success-actions">
-            <a href="#" id="register-now-btn" class="success-btn accent" style="display: none;">Register Now</a>
             <a href="/home" class="success-btn">Return to Home</a>
             <a href="/tickets" class="success-btn secondary"
               >Purchase More Tickets</a
@@ -620,6 +624,7 @@
       const countdownTimer = document.getElementById("countdown-timer");
       const countdownSeconds = document.getElementById("countdown-seconds");
       const registerNowBtn = document.getElementById("register-now-btn");
+      const registerNowContainer = document.getElementById("register-now-container");
 
       // Countdown timer variables
       let countdownInterval;
@@ -916,19 +921,22 @@
         // Handle registration for ticket purchases
         if (isTicketPurchase) {
           // Set registration URL - use provided URL or fallback to registration page
-          registrationUrl = data.registrationUrl || '/registration';
-
-          // If we have a registration token, append it to the URL
-          if (data.registrationToken && !data.registrationUrl) {
-            registrationUrl = `/registration/${data.registrationToken}`;
+          if (data.registrationUrl) {
+            registrationUrl = data.registrationUrl;
+          } else if (data.registrationToken) {
+            // Use the expected query parameter format
+            registrationUrl = `/register-tickets?token=${data.registrationToken}`;
+          } else {
+            // Fallback to basic registration page
+            registrationUrl = '/register-tickets';
           }
 
           console.log('Using registration URL:', registrationUrl);
 
-          // Show register now button
-          if (registerNowBtn) {
+          // Show register now button with its container
+          if (registerNowBtn && registerNowContainer) {
             registerNowBtn.href = registrationUrl;
-            registerNowBtn.style.display = 'inline-block';
+            registerNowContainer.style.display = 'block';
             registerNowBtn.addEventListener('click', handleRegisterNow);
           }
 

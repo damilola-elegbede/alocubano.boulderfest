@@ -122,8 +122,10 @@ async function createTicketsForTransaction(fullSession, transaction) {
   return { tickets, registrationDeadline, isTestTransaction };
 }
 
-// Helper to send registration email asynchronously (non-blocking)
+// Helper to send registration email - now properly awaited with result
 async function sendRegistrationEmailAsync(fullSession, transaction, tickets, registrationToken, registrationDeadline) {
+  const startTime = Date.now();
+
   try {
     const ticketEmailService = getTicketEmailService();
 
@@ -132,28 +134,43 @@ async function sendRegistrationEmailAsync(fullSession, transaction, tickets, reg
       transaction.customer_email = fullSession.customer_details?.email || fullSession.customer_email;
     }
 
-    console.log('Attempting to send ticket confirmation email:', {
+    console.log('📧 Starting Brevo email send:', {
       transactionId: transaction.uuid,
       transactionDbId: Number(transaction.id), // Convert BigInt to number for logging
       email: transaction.customer_email,
       ticketCount: tickets.length,
       hasEmail: !!transaction.customer_email,
-      templateId: 10
+      templateId: 10,
+      timestamp: new Date().toISOString()
     });
 
-    // Send ticket confirmation email instead of registration invitation
-    // Using the existing template that works (ID: 10)
-    await ticketEmailService.sendTicketConfirmation(transaction, tickets);
+    // Send ticket confirmation email and await the result
+    const result = await ticketEmailService.sendTicketConfirmation(transaction, tickets);
 
-    console.log(`✅ Ticket confirmation email sent successfully to ${transaction.customer_email}`);
+    const duration = Date.now() - startTime;
+    console.log(`✅ Brevo email send completed in ${duration}ms:`, {
+      email: transaction.customer_email,
+      success: result?.success || true,
+      messageId: result?.messageId,
+      duration: `${duration}ms`
+    });
+
+    return { success: true, duration, result };
   } catch (error) {
-    console.error('Failed to send ticket confirmation email:', {
+    const duration = Date.now() - startTime;
+
+    console.error('❌ Brevo email send failed:', {
       error: error.message,
       stack: error.stack,
       transactionId: transaction.uuid,
-      email: transaction.customer_email
+      email: transaction.customer_email,
+      duration: `${duration}ms`,
+      errorType: error.name,
+      errorCode: error.code
     });
-    // Don't throw - this is async and shouldn't block the response
+
+    // Re-throw to be caught by Promise.race
+    throw error;
   }
 }
 
@@ -535,18 +552,58 @@ export default async function handler(req, res) {
           // Continue without token - user can still access tickets via other means
         }
 
-        // Send registration email asynchronously with detailed logging
-        console.log('Initiating async email send...');
-        sendRegistrationEmailAsync(fullSession, transaction, tickets, registrationToken, registrationDeadline)
-          .then(() => {
-            console.log('Async email send initiated successfully');
-          })
-          .catch(emailError => {
-            console.error('Async email send failed:', {
-              error: emailError.message,
-              stack: emailError.stack
-            });
+        // Send registration email with timeout (wait for response but don't block on failure)
+        console.log('Initiating email send with timeout...');
+        try {
+          // Create a timeout promise that rejects after 5 seconds
+          const emailTimeout = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Email send timeout after 5 seconds')), 5000)
+          );
+
+          // Race between email send and timeout
+          const emailResult = await Promise.race([
+            sendRegistrationEmailAsync(fullSession, transaction, tickets, registrationToken, registrationDeadline),
+            emailTimeout
+          ]);
+
+          console.log('Email send completed within timeout:', emailResult);
+        } catch (emailError) {
+          // Log the error but don't fail the transaction
+          console.error('Email send failed or timed out (non-blocking):', {
+            error: emailError.message,
+            transactionId: transaction.uuid,
+            email: transaction.customer_email
           });
+
+          // Store for retry later
+          try {
+            const retryTime = new Date(Date.now() + 5 * 60 * 1000); // Retry in 5 minutes
+            await client.execute({
+              sql: `INSERT INTO email_retry_queue (
+                transaction_id, email_address, email_type,
+                attempt_count, last_error, metadata,
+                next_retry_at, is_test
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+              args: [
+                transaction.uuid,
+                transaction.customer_email,
+                'ticket_confirmation',
+                1,
+                emailError.message,
+                JSON.stringify({
+                  ticketCount: tickets.length,
+                  registrationToken,
+                  registrationDeadline: registrationDeadline.toISOString()
+                }),
+                retryTime.toISOString(),
+                isTestTransaction ? 1 : 0
+              ]
+            });
+            console.log('Email queued for retry at:', retryTime.toISOString());
+          } catch (queueError) {
+            console.error('Failed to queue email for retry:', queueError);
+          }
+        }
 
         existingTransaction = transaction;
       } catch (error) {
