@@ -212,10 +212,12 @@ export default async function handler(req, res) {
     let existingTransaction = await transactionService.getByStripeSessionId(session_id);
     let registrationToken = null;
     let hasTickets = false;
+    let transaction = null;  // Declare transaction at outer scope
 
     if (existingTransaction) {
       console.log(`Transaction already exists for session ${session_id}`);
       hasTickets = true;
+      transaction = existingTransaction;  // Use existing transaction
 
       // Check if we already have a registration token
       if (existingTransaction.registration_token) {
@@ -242,7 +244,7 @@ export default async function handler(req, res) {
     } else {
       // Create new transaction and tickets using Turso batch operations
       const db = await getDatabaseClient();
-      let transaction = null;
+      // Don't redeclare transaction - use the outer scope variable
       let tickets = [];
       let registrationDeadline = null;
       let isTestTransaction = false;
