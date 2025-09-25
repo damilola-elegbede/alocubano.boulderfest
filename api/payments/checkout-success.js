@@ -13,6 +13,7 @@ import { getDatabaseClient } from '../../lib/database.js';
 import { RegistrationTokenService } from '../../lib/registration-token-service.js';
 import { getTicketEmailService } from '../../lib/ticket-email-service-brevo.js';
 import { generateTicketId } from '../../lib/ticket-id-generator.js';
+import { generateOrderId } from '../../lib/order-id-generator.js';
 import transactionService from '../../lib/transaction-service.js';
 
 // Initialize Stripe with strict error handling
@@ -305,17 +306,21 @@ export default async function handler(req, res) {
         const now = new Date();
         registrationDeadline = new Date(now.getTime() + (72 * 60 * 60 * 1000));
 
+        // Generate order number (ALCBF-YYYY-XXXXX or TEST-YYYY-XXXXX)
+        const orderNumber = await generateOrderId(isTestTransaction);
+        console.log(`Generated order number: ${orderNumber} for transaction ${uuid}`);
+
         // Prepare batch operations array
         const batchOperations = [];
 
-        // 1. Insert transaction record
+        // 1. Insert transaction record with order number
         batchOperations.push({
           sql: `INSERT INTO transactions (
             transaction_id, uuid, type, order_data, amount_cents, currency,
             stripe_session_id, stripe_payment_intent_id, payment_method_type,
             customer_email, customer_name, billing_address,
-            status, completed_at, is_test
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            status, completed_at, is_test, order_number
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           args: [
             uuid, // Use UUID as transaction_id for backward compatibility
             uuid,
@@ -332,6 +337,7 @@ export default async function handler(req, res) {
             "completed",
             now.toISOString(),
             isTestTransaction ? 1 : 0, // Add test mode flag
+            orderNumber, // Add order number
           ]
         });
 
