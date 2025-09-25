@@ -72,49 +72,28 @@ VALUES ('TEST-2026', 89999);
 -- 5. UPDATE TRIGGERS FOR AUTOMATIC TIMESTAMP UPDATES
 -- ================================================================================
 
--- Trigger to update the updated_at timestamp when sequence is incremented
-CREATE TRIGGER IF NOT EXISTS update_order_sequences_timestamp
-AFTER UPDATE ON order_sequences
-FOR EACH ROW
-WHEN NEW.last_number != OLD.last_number
-BEGIN
-    UPDATE order_sequences
-    SET updated_at = CURRENT_TIMESTAMP
-    WHERE sequence_key = NEW.sequence_key;
-END;
+-- Note: Simplified trigger removed to avoid potential Turso compatibility issues
+-- Timestamps can be managed at application level
 
 -- ================================================================================
--- 6. CREATE VIEW FOR ORDER ANALYTICS
+-- 6. CREATE VIEW FOR ORDER ANALYTICS (OPTIONAL)
 -- ================================================================================
 
--- Create a view for easy order number analytics
-CREATE VIEW IF NOT EXISTS order_number_analytics AS
-SELECT
-    t.order_number,
-    t.uuid,
-    t.status,
-    t.amount_cents,
-    t.customer_email,
-    t.payment_processor,
-    t.is_test,
-    t.created_at,
-    CASE
-        WHEN t.order_number LIKE 'ALCBF-%' THEN 'production'
-        WHEN t.order_number LIKE 'TEST-%' THEN 'test'
-        ELSE 'legacy'
-    END as order_type,
-    CASE
-        WHEN t.order_number LIKE 'ALCBF-____-%' THEN SUBSTR(t.order_number, 7, 4)
-        WHEN t.order_number LIKE 'TEST-____-%' THEN SUBSTR(t.order_number, 6, 4)
-        ELSE NULL
-    END as order_year,
-    CASE
-        WHEN t.order_number LIKE 'ALCBF-____-%' THEN CAST(SUBSTR(t.order_number, 12) AS INTEGER)
-        WHEN t.order_number LIKE 'TEST-____-%' THEN CAST(SUBSTR(t.order_number, 11) AS INTEGER)
-        ELSE NULL
-    END as order_sequence
-FROM transactions t
-WHERE t.order_number IS NOT NULL;
+-- Note: View creation commented out to avoid potential Turso compatibility issues
+-- Can be added later if needed
+
+-- CREATE VIEW IF NOT EXISTS order_number_analytics AS
+-- SELECT
+--     t.order_number,
+--     t.uuid,
+--     t.status,
+--     t.amount_cents,
+--     t.customer_email,
+--     t.payment_processor,
+--     t.is_test,
+--     t.created_at
+-- FROM transactions t
+-- WHERE t.order_number IS NOT NULL;
 
 -- ================================================================================
 -- 7. DATA INTEGRITY CONSTRAINTS
