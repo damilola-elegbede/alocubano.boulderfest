@@ -676,8 +676,12 @@
           console.log('Response from checkout-success:', {
             orderNumber: data.orderNumber,
             transactionOrderNumber: data.transaction?.orderNumber,
-            sessionId: data.session?.id
+            sessionId: data.session?.id,
+            hasTickets: data.hasTickets,
+            registrationToken: data.registrationToken,
+            registrationUrl: data.registrationUrl
           });
+          console.log('Full response data:', data);
 
           if (response.ok && data.success) {
             // Transform Stripe data to unified format
@@ -687,6 +691,9 @@
               orderNumber: data.orderNumber,  // Pass through the clean order number
               transaction: data.transaction,    // Pass through transaction data
               session: data.session,
+              hasTickets: data.hasTickets,  // CRITICAL: Pass through for registration
+              registrationToken: data.registrationToken,  // CRITICAL: Pass through for registration
+              registrationUrl: data.registrationUrl,  // CRITICAL: Pass through for registration
               order: {
                 id: data.orderNumber || data.session.id,  // Use orderNumber if available
                 totalAmount: data.session.amount,
