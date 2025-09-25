@@ -133,7 +133,7 @@ async function sendRegistrationEmailAsync(fullSession, transaction, tickets, reg
 
     console.log('Attempting to send ticket confirmation email:', {
       transactionId: transaction.uuid,
-      transactionDbId: transaction.id,
+      transactionDbId: Number(transaction.id), // Convert BigInt to number for logging
       email: transaction.customer_email,
       ticketCount: tickets.length,
       hasEmail: !!transaction.customer_email,
