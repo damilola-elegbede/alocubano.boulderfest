@@ -8,9 +8,6 @@
     "api/docs.js": {
       "maxDuration": 10
     },
-    "api/config/*.js": {
-      "maxDuration": 5
-    },
     "api/admin/*.js": {
       "maxDuration": 15
     },
