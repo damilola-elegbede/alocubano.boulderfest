@@ -120,15 +120,18 @@ WHERE t.order_number IS NOT NULL;
 -- 7. DATA INTEGRITY CONSTRAINTS
 -- ================================================================================
 
--- Ensure order_number is set for all new transactions going forward
--- This will be enforced at the application level, but we add a check for safety
-CREATE TRIGGER IF NOT EXISTS require_order_number_on_insert
-BEFORE INSERT ON transactions
-FOR EACH ROW
-WHEN NEW.order_number IS NULL OR NEW.order_number = ''
-BEGIN
-    SELECT RAISE(ABORT, 'Order number is required for all new transactions');
-END;
+-- Note: Order number requirement is enforced at application level
+-- We don't enforce it via trigger to allow gradual migration
+-- Once all systems are updated, this trigger can be enabled
+
+-- Optional future trigger (commented out for now):
+-- CREATE TRIGGER IF NOT EXISTS require_order_number_on_insert
+-- BEFORE INSERT ON transactions
+-- FOR EACH ROW
+-- WHEN NEW.order_number IS NULL OR NEW.order_number = ''
+-- BEGIN
+--     SELECT RAISE(ABORT, 'Order number is required for all new transactions');
+-- END;
 
 -- ================================================================================
 -- Migration Complete
