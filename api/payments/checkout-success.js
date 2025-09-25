@@ -513,9 +513,10 @@ export default async function handler(req, res) {
       }
     }
 
-    // Return success response with registration information
+    // Return success response with registration information and order details
     const response = {
       success: true,
+      orderNumber: transaction ? transaction.order_number : null,  // Add order number for user reference
       session: {
         id: fullSession.id,
         amount: fullSession.amount_total / 100,
@@ -524,7 +525,15 @@ export default async function handler(req, res) {
         customer_details: fullSession.customer_details, // Include full customer details for form
         metadata: fullSession.metadata
       },
-      hasTickets
+      hasTickets,
+      // Include transaction details for better frontend integration (without exposing internal IDs)
+      transaction: transaction ? {
+        orderNumber: transaction.order_number,
+        status: transaction.status,
+        totalAmount: transaction.total_amount || transaction.amount_cents,
+        customerEmail: transaction.customer_email,
+        customerName: transaction.customer_name
+      } : null
     };
 
     // Add registration information if token exists

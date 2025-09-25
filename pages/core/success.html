@@ -800,26 +800,21 @@
         announceToScreenReader(`Payment completed successfully. ${successMessage}`);
 
         // Show order details if available
-        if (data.order || data.session) {
+        if (data.order || data.session || data.transaction) {
           orderDetails.style.display = "block";
 
-          // Update order ID with payment method indicator
+          // Use the proper order number if available, otherwise fall back to session ID
           let displayId = '';
-          if (data.order?.id) {
+          if (data.orderNumber) {
+            // Use the clean order number (ALCBF-YYYY-XXXXX or TEST-YYYY-XXXXX)
+            displayId = data.orderNumber;
+          } else if (data.transaction?.orderNumber) {
+            displayId = data.transaction.orderNumber;
+          } else if (data.order?.id) {
             displayId = data.order.id;
           } else if (data.session?.id) {
+            // Fallback to session ID only if no order number exists
             displayId = data.session.id;
-          }
-
-          // Add payment method prefix for clarity
-          if (data.paymentMethod === 'paypal') {
-            displayId = `PayPal: ${displayId}`;
-            // Also show capture ID if available
-            if (data.paypal?.captureId) {
-              displayId += ` (Capture: ${data.paypal.captureId})`;
-            }
-          } else if (data.paymentMethod === 'stripe') {
-            displayId = `Stripe: ${displayId}`;
           }
 
           if (orderId) {
@@ -827,14 +822,22 @@
           }
 
           // Update amount
-          if (data.order?.totalAmount !== undefined) {
+          if (data.transaction?.totalAmount !== undefined) {
+            // Convert cents to dollars if needed
+            const amount = data.transaction.totalAmount > 1000
+              ? data.transaction.totalAmount / 100
+              : data.transaction.totalAmount;
+            orderAmount.textContent = amount.toFixed(2);
+          } else if (data.order?.totalAmount !== undefined) {
             orderAmount.textContent = data.order.totalAmount.toFixed(2);
           } else if (data.session?.amount !== undefined) {
             orderAmount.textContent = data.session.amount.toFixed(2);
           }
 
           // Update email
-          if (data.order?.customerEmail) {
+          if (data.transaction?.customerEmail) {
+            orderEmail.textContent = data.transaction.customerEmail;
+          } else if (data.order?.customerEmail) {
             orderEmail.textContent = data.order.customerEmail;
           } else if (data.session?.customer_email) {
             orderEmail.textContent = data.session.customer_email;
