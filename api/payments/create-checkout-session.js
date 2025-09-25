@@ -193,9 +193,9 @@ export default async function handler(req, res) {
         metadata: {
           orderId: orderId,
           orderType: orderType
-        },
-        // Ensure receipts are sent for successful payments
-        setup_future_usage: null // One-time payment with receipt
+        }
+        // Note: Removed setup_future_usage as null values cause Stripe errors
+        // One-time payments don't need this parameter
       },
 
       // Enable invoice creation as backup (for invoice-style receipts)
