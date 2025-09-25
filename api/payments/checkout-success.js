@@ -12,6 +12,7 @@ import { getDatabaseClient } from '../../lib/database.js';
 import { RegistrationTokenService } from '../../lib/registration-token-service.js';
 import { generateOrderId } from '../../lib/order-id-generator.js';
 import transactionService from '../../lib/transaction-service.js';
+import { createOrRetrieveTickets } from '../../lib/ticket-creation-service.js';
 
 // Initialize Stripe with strict error handling
 if (!process.env.STRIPE_SECRET_KEY) {
@@ -74,24 +75,30 @@ export default async function handler(req, res) {
       });
     }
 
-    // Check if tickets already exist for this session (idempotency check)
-    let existingTransaction = await transactionService.getByStripeSessionId(session_id);
+    // Use the centralized ticket creation service for idempotent operations
+    console.log(`Processing checkout success for session ${session_id}`);
+
+    let result;
     let registrationToken = null;
+    let transaction = null;
     let hasTickets = false;
-    let transaction = null;  // Declare transaction at outer scope
 
-    if (existingTransaction) {
-      console.log(`Transaction already exists for session ${session_id}`);
-      hasTickets = true;
-      transaction = existingTransaction;  // Use existing transaction
+    try {
+      // This will create or retrieve transaction and tickets atomically
+      result = await createOrRetrieveTickets(fullSession);
 
-      // Generate order number if missing (for transactions created before order_number was added)
+      transaction = result.transaction;
+      hasTickets = result.tickets && result.tickets.length > 0;
+
+      console.log(`Transaction ${result.created ? 'created' : 'retrieved'}: ${transaction.uuid}`);
+      console.log(`${result.tickets.length} tickets ${result.created ? 'created' : 'found'}`);
+
+      // Ensure order number exists
       if (!transaction.order_number) {
         const isTestTransaction = fullSession.mode === 'test' || fullSession.livemode === false;
         transaction.order_number = await generateOrderId(isTestTransaction);
-        console.log(`Generated order number for existing transaction: ${transaction.order_number}`);
+        console.log(`Generated order number: ${transaction.order_number}`);
 
-        // Update the database with the new order number
         const db = await getDatabaseClient();
         await db.execute({
           sql: 'UPDATE transactions SET order_number = ? WHERE id = ?',
@@ -99,130 +106,38 @@ export default async function handler(req, res) {
         });
       }
 
-      // Check if we already have a registration token
-      if (existingTransaction.registration_token) {
-        registrationToken = existingTransaction.registration_token;
-        console.log(`Using existing registration token for transaction ${existingTransaction.uuid}`);
+      // Get or generate registration token
+      if (transaction.registration_token) {
+        registrationToken = transaction.registration_token;
+        console.log(`Using existing registration token`);
       } else {
-        // Generate registration token if missing
         try {
-          console.log(`Generating registration token for transaction ${existingTransaction.uuid}, ID: ${existingTransaction.id}`);
           const tokenService = new RegistrationTokenService();
           await tokenService.ensureInitialized();
-          registrationToken = await tokenService.createToken(existingTransaction.id);
-          console.log(`Successfully generated registration token for existing transaction ${existingTransaction.uuid}`);
+          registrationToken = await tokenService.createToken(transaction.id);
+          console.log(`Generated registration token for transaction ${transaction.uuid}`);
+
+          // Update transaction with token
+          const db = await getDatabaseClient();
+          await db.execute({
+            sql: 'UPDATE transactions SET registration_token = ? WHERE id = ?',
+            args: [registrationToken, transaction.id]
+          });
         } catch (tokenError) {
-          console.error('Failed to generate registration token for existing transaction:', {
-            error: tokenError.message,
-            stack: tokenError.stack,
-            transactionId: existingTransaction.id,
-            transactionUuid: existingTransaction.uuid
-          });
-          // Continue without token - user can still access tickets via other means
+          console.error('Failed to generate registration token:', tokenError.message);
+          // Continue without token - not critical for success response
         }
       }
-    } else {
-      // Transaction doesn't exist yet - webhook hasn't processed it
-      // Wait for webhook to create transaction (with retry logic)
-      console.log(`Transaction not found for session ${session_id}, waiting for webhook...`);
 
-      // Check if this is a test transaction
-      const isTestMode = fullSession.mode === 'test' ||
-                        fullSession.livemode === false ||
-                        session_id.includes('test');
+    } catch (error) {
+      console.error('Failed to create or retrieve tickets:', error);
 
-      // Adjust retry strategy based on mode
-      let retryCount = 0;
-      const maxRetries = isTestMode ? 5 : 10; // Fewer retries for test mode
-      const initialDelay = isTestMode ? 500 : 1000; // Faster retries for test mode
-      const maxDelay = isTestMode ? 5000 : 30000; // Lower max delay for test mode
-
-      while (retryCount < maxRetries && !existingTransaction) {
-        // Exponential backoff with mode-specific limits
-        const delay = Math.min(initialDelay * Math.pow(2, retryCount), maxDelay);
-        console.log(`Retry ${retryCount + 1}/${maxRetries}: Waiting ${delay}ms for webhook to process...`);
-
-        await new Promise(resolve => setTimeout(resolve, delay));
-
-        // Check again for transaction
-        existingTransaction = await transactionService.getByStripeSessionId(session_id);
-
-        if (existingTransaction) {
-          console.log(`Transaction found after ${retryCount + 1} retries`);
-          hasTickets = true;
-          transaction = existingTransaction;
-
-          // Generate order number if missing
-          if (!transaction.order_number) {
-            const isTestTransaction = fullSession.mode === 'test' || fullSession.livemode === false;
-            transaction.order_number = await generateOrderId(isTestTransaction);
-
-            const db = await getDatabaseClient();
-            await db.execute({
-              sql: 'UPDATE transactions SET order_number = ? WHERE id = ?',
-              args: [transaction.order_number, transaction.id]
-            });
-          }
-
-          // Get or generate registration token
-          if (existingTransaction.registration_token) {
-            registrationToken = existingTransaction.registration_token;
-          } else {
-            try {
-              const tokenService = new RegistrationTokenService();
-              await tokenService.ensureInitialized();
-              registrationToken = await tokenService.createToken(existingTransaction.id);
-              console.log(`Generated registration token for transaction ${existingTransaction.uuid}`);
-            } catch (tokenError) {
-              console.error('Failed to generate registration token:', tokenError.message);
-            }
-          }
-
-          break; // Exit retry loop
-        }
-
-        retryCount++;
-      }
-
-      // If still no transaction after retries, return pending status
-      if (!existingTransaction) {
-        console.warn(`Transaction still not found after ${maxRetries} retries for session ${session_id}`);
-
-        // For test mode, return success anyway with basic info
-        if (isTestMode) {
-          console.log('Test mode detected - returning success without full transaction');
-          return res.status(200).json({
-            success: true,
-            testMode: true,
-            message: 'Test payment successful. In production, full order details would be available.',
-            orderNumber: 'TEST-PENDING',
-            session: {
-              id: fullSession.id,
-              amount: fullSession.amount_total / 100,
-              currency: fullSession.currency,
-              customer_email: fullSession.customer_email || fullSession.customer_details?.email,
-              customer_details: fullSession.customer_details,
-              metadata: fullSession.metadata
-            },
-            hasTickets: false,
-            registrationUrl: '/register-tickets' // Fallback registration URL
-          });
-        }
-
-        // Return a pending response for production - webhook may still be processing
-        return res.status(202).json({
-          success: false,
-          pending: true,
-          message: 'Payment confirmed but order processing in progress. Please refresh in a few moments.',
-          session: {
-            id: fullSession.id,
-            amount: fullSession.amount_total / 100,
-            currency: fullSession.currency,
-            customer_email: fullSession.customer_email || fullSession.customer_details?.email
-          },
-          retryAfter: 5 // Suggest client retry after 5 seconds
-        });
-      }
+      // For critical errors, return error response
+      return res.status(500).json({
+        error: 'Failed to process order',
+        message: 'Please contact support with your session ID',
+        sessionId: session_id
+      });
     }
 
     // Return success response with registration information and order details
