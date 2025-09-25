@@ -84,7 +84,7 @@ export default async function handler(req, res) {
         ticketType: ticket.ticket_type,
         status: ticket.current_status,
         registeredAt: ticket.registered_at,
-        hoursRemaining: Math.max(0, ticket.hours_remaining || 0),
+        hoursRemaining: Math.max(0, Number(ticket.hours_remaining || 0)),
         attendee: ticket.attendee_first_name ? {
           firstName: ticket.attendee_first_name,
           lastName: ticket.attendee_last_name,
