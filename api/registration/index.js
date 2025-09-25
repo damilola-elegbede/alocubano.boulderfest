@@ -22,8 +22,10 @@ export default async function handler(req, res) {
     }
     const decoded = jwt.verify(token, secret, { algorithms: ['HS256'] });
 
-    if (!decoded.transactionId) {
-      return res.status(400).json({ error: 'Invalid token format' });
+    // Handle both old format (transactionId) and new format (txn)
+    const transactionId = decoded.transactionId || decoded.txn;
+    if (!transactionId) {
+      return res.status(400).json({ error: 'Invalid token format - missing transaction ID' });
     }
 
     const db = await getDatabaseClient();
@@ -47,9 +49,9 @@ export default async function handler(req, res) {
           END as current_status,
           CAST((julianday(registration_deadline) - julianday('now')) * 24 AS INTEGER) as hours_remaining
         FROM tickets
-        WHERE stripe_payment_intent = ?
+        WHERE transaction_id = ?
       `,
-      args: [decoded.transactionId]
+      args: [transactionId]
     });
 
     if (!tickets.rows || tickets.rows.length === 0) {
@@ -74,7 +76,7 @@ export default async function handler(req, res) {
 
     // Format response
     const response = {
-      transactionId: decoded.transactionId,
+      transactionId: transactionId,
       purchaserEmail: decoded.purchaserEmail,
       deadline: tickets.rows[0].registration_deadline,
       tickets: tickets.rows.map(ticket => ({

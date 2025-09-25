@@ -577,8 +577,9 @@ export default async function handler(req, res) {
 
           // Store for retry later
           try {
+            const db = await getDatabaseClient();
             const retryTime = new Date(Date.now() + 5 * 60 * 1000); // Retry in 5 minutes
-            await client.execute({
+            await db.execute({
               sql: `INSERT INTO email_retry_queue (
                 transaction_id, email_address, email_type,
                 attempt_count, last_error, metadata,

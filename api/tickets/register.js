@@ -151,8 +151,8 @@ export default async function handler(req, res) {
           ticket_type,
           registration_status,
           registration_deadline,
-          stripe_payment_intent,
-          customer_email
+          transaction_id,
+          attendee_email
         FROM tickets
         WHERE ticket_id = ?
       `,
@@ -232,7 +232,7 @@ export default async function handler(req, res) {
 
     // Audit individual registration (non-blocking)
     const processingTime = Date.now() - startTime;
-    const isPurchaser = cleanEmail.toLowerCase() === ticket.customer_email.toLowerCase();
+    const isPurchaser = cleanEmail.toLowerCase() === ticket.attendee_email?.toLowerCase();
 
     auditTicketRegistration({
       requestId: requestId,
@@ -270,7 +270,7 @@ export default async function handler(req, res) {
     // Send confirmation email
     try {
       const brevo = await getBrevoClient();
-      const isPurchaser = cleanEmail.toLowerCase() === ticket.customer_email.toLowerCase();
+      const isPurchaser = cleanEmail.toLowerCase() === ticket.attendee_email?.toLowerCase();
 
       await brevo.sendTransactionalEmail({
         to: [{ email: cleanEmail, name: `${cleanFirstName} ${cleanLastName}` }],
@@ -305,9 +305,9 @@ export default async function handler(req, res) {
         SELECT COUNT(*) as total,
                SUM(CASE WHEN registration_status = 'completed' THEN 1 ELSE 0 END) as completed
         FROM tickets
-        WHERE stripe_payment_intent = ?
+        WHERE transaction_id = ?
       `,
-      args: [ticket.stripe_payment_intent]
+      args: [ticket.transaction_id]
     });
 
     const allRegistered = transactionTickets.rows[0].total === transactionTickets.rows[0].completed;

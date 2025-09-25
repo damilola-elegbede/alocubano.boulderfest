@@ -592,7 +592,7 @@
         }
 
         async loadRegistrationData() {
-          const response = await fetch(`/api/registration/${this.token}`);
+          const response = await fetch(`/api/registration?token=${this.token}`);
 
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
