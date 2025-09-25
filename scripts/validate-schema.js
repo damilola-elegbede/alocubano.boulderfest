@@ -8,11 +8,11 @@
 import fs from "fs/promises";
 import path from "path";
 import { glob } from "glob";
-import { getDatabase } from "../lib/database.js";
+import { getDatabaseClient } from "../lib/database.js";
 
 class SchemaValidator {
   constructor() {
-    this.database = getDatabase();
+    this.database = null; // Will be initialized lazily
     this.codebaseRoot = process.cwd();
     this.requiredColumns = {
       tickets: [
@@ -76,7 +76,17 @@ class SchemaValidator {
         "created_at",
         "updated_at",
       ],
-    };
+    }
+
+  /**
+   * Ensure database client is initialized
+   */
+  async ensureDatabase() {
+    if (!this.database) {
+      this.database = await getDatabaseClient();
+    }
+    return this.database;
+  };
 
     this.requiredIndexes = {
       tickets: [

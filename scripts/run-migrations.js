@@ -1,4 +1,4 @@
-import { getDatabase } from "../lib/database.js";
+import { getDatabaseClient } from "../lib/database.js";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 async function runMigrations() {
-  const db = getDatabase();
+  const db = await getDatabaseClient();
 
   console.log("=== Running Database Migrations ===\n");
 

@@ -1,9 +1,9 @@
-import { getDatabase } from "../lib/database.js";
+import { getDatabaseClient } from "../lib/database.js";
 import tokenService from "../lib/token-service.js";
 import ticketService from "../lib/ticket-service.js";
 
 async function testTokenSystem() {
-  const db = getDatabase();
+  const db = await getDatabaseClient();
 
   console.log("=== Testing Three-Tier Token System ===\n");
 

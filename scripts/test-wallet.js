@@ -1,4 +1,4 @@
-import { getDatabase } from "../lib/database.js";
+import { getDatabaseClient } from "../lib/database.js";
 import appleWalletService from "../lib/apple-wallet-service.js";
 import googleWalletService from "../lib/google-wallet-service.js";
 import { fileURLToPath } from "url";
@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename);
 async function testWalletGeneration() {
   console.log("🎫 Testing Wallet Pass Generation...\n");
 
-  const db = getDatabase();
+  const db = await getDatabaseClient();
 
   // Get a test ticket
   const result = await db.execute(`

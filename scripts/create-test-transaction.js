@@ -1,9 +1,9 @@
-import { getDatabase } from "../lib/database.js";
+import { getDatabaseClient } from "../lib/database.js";
 import ticketService from "../lib/ticket-service.js";
 import ticketEmailService from "../lib/ticket-email-service.js";
 
 async function createTestTransaction() {
-  const db = getDatabase();
+  const db = await getDatabaseClient();
 
   console.log("=== Creating Test Transaction with Tickets ===\n");
 

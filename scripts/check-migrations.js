@@ -1,7 +1,7 @@
-import { getDatabase } from "../lib/database.js";
+import { getDatabaseClient } from "../lib/database.js";
 
 async function checkMigrations() {
-  const db = getDatabase();
+  const db = await getDatabaseClient();
 
   try {
     // Check migrations table

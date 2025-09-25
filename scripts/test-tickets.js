@@ -1,8 +1,8 @@
-import { getDatabase } from "../lib/database.js";
+import { getDatabaseClient } from "../lib/database.js";
 import ticketService from "../lib/ticket-service.js";
 
 async function testTickets() {
-  const db = getDatabase();
+  const db = await getDatabaseClient();
 
   console.log("=== Testing Ticket Generation System ===\n");
 

@@ -1,4 +1,4 @@
-import { getDatabase } from "../lib/database.js";
+import { getDatabaseClient } from "../lib/database.js";
 import { readFileSync, readdirSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
@@ -12,7 +12,7 @@ const __dirname = dirname(__filename);
 dotenv.config({ path: join(dirname(__dirname), ".env.local") });
 
 async function runMigrations() {
-  const db = getDatabase();
+  const db = await getDatabaseClient();
 
   try {
     // Create migrations table if it doesn't exist

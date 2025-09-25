@@ -10,7 +10,7 @@ import zlib from 'zlib';
 import crypto from 'crypto';
 import { promisify } from 'util';
 import { Transform, pipeline } from 'stream';
-import { getDatabase } from "../../lib/database.js";
+import { getDatabaseClient } from "../../lib/database.js";
 
 const gzip = promisify(zlib.gzip);
 const gunzip = promisify(zlib.gunzip);
@@ -20,7 +20,17 @@ class BackupManager {
   constructor(databasePath = null, backupDir = './backups') {
     this.databasePath = databasePath;
     this.backupDir = backupDir;
-    this.database = getDatabase();
+    this.database = null;
+  }
+
+  /**
+   * Ensure database client is initialized
+   */
+  async ensureDatabase() {
+    if (!this.database) {
+      this.database = await getDatabaseClient();
+    }
+    return this.database;
   }
 
   /**
@@ -67,17 +77,18 @@ class BackupManager {
     const metadataPath = `${backupPath}.json`;
 
     try {
+      const db = await this.ensureDatabase();
       // Execute VACUUM INTO to create a clean backup
       const tempBackupPath = path.join(this.backupDir, `temp_${Date.now()}.db`);
 
       // For Turso/LibSQL, we need to export the database
-      const result = await this.database.execute(
+      const result = await db.execute(
         'SELECT sql FROM sqlite_master WHERE type IN (\'table\', \'index\', \'trigger\')'
       );
       const schemas = result.rows.map((row) => row.sql).filter((sql) => sql);
 
       // Get all table data using streaming approach to prevent OOM
-      const tables = await this.database.execute(
+      const tables = await db.execute(
         'SELECT name FROM sqlite_master WHERE type=\'table\' AND name NOT LIKE \'sqlite_%\''
       );
       const backupData = {
@@ -89,7 +100,7 @@ class BackupManager {
       for (const table of tables.rows) {
         const tableName = table.name;
         // Get row count first to optimize memory allocation
-        const countResult = await this.database.execute(
+        const countResult = await db.execute(
           `SELECT COUNT(*) as count FROM ${tableName}`
         );
         const rowCount = countResult.rows[0].count;
@@ -103,7 +114,7 @@ class BackupManager {
           const chunkSize = 1000;
 
           for (let offset = 0; offset < rowCount; offset += chunkSize) {
-            const chunkData = await this.database.execute(
+            const chunkData = await db.execute(
               `SELECT * FROM ${tableName} LIMIT ${chunkSize} OFFSET ${offset}`
             );
             backupData.tables[tableName].push(...chunkData.rows);
@@ -115,7 +126,7 @@ class BackupManager {
           }
         } else {
           // For smaller tables, process normally
-          const tableData = await this.database.execute(
+          const tableData = await db.execute(
             `SELECT * FROM ${tableName}`
           );
           backupData.tables[tableName] = tableData.rows;
@@ -262,16 +273,17 @@ class BackupManager {
       const decompressedData = await gunzip(compressedData);
       const backupData = JSON.parse(decompressedData.toString());
 
+      const db = await this.ensureDatabase();
       // Begin explicit transaction for atomic restore
-      await this.database.execute('BEGIN TRANSACTION');
+      await db.execute('BEGIN TRANSACTION');
 
       try {
         // Disable foreign key checks during restore to prevent constraint violations
-        await this.database.execute('PRAGMA foreign_keys = OFF');
+        await db.execute('PRAGMA foreign_keys = OFF');
 
         // Drop existing tables (careful!)
         for (const tableName of Object.keys(backupData.tables)) {
-          await this.database.execute({
+          await db.execute({
             sql: `DROP TABLE IF EXISTS ${tableName}`,
             args: []
           });
@@ -280,7 +292,7 @@ class BackupManager {
         // Recreate schemas
         for (const schema of backupData.schemas) {
           if (schema) {
-            await this.database.execute({
+            await db.execute({
               sql: schema,
               args: []
             });
@@ -311,19 +323,19 @@ class BackupManager {
             }
 
             // Execute batch
-            await this.database.batch(batchStatements);
+            await db.batch(batchStatements);
           }
         }
 
         // Re-enable foreign key checks after restore
-        await this.database.execute('PRAGMA foreign_keys = ON');
+        await db.execute('PRAGMA foreign_keys = ON');
 
         // Commit transaction
-        await this.database.execute('COMMIT');
+        await db.execute('COMMIT');
 
       } catch (error) {
         // Rollback on error
-        await this.database.execute('ROLLBACK');
+        await db.execute('ROLLBACK');
         throw error;
       }
 
@@ -332,7 +344,7 @@ class BackupManager {
       );
 
       // Verify restoration
-      const verifyResult = await this.database.execute(
+      const verifyResult = await db.execute(
         'SELECT COUNT(*) as table_count FROM sqlite_master WHERE type=\'table\''
       );
       const tableCount = verifyResult.rows[0].table_count;
