@@ -116,6 +116,26 @@
         color: var(--color-text-secondary);
       }
 
+      /* Countdown timer */
+      .countdown-timer {
+        font-family: var(--font-code);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wider);
+        margin-bottom: var(--space-2xl);
+        padding: var(--space-md) var(--space-lg);
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        display: inline-block;
+        border-radius: 4px;
+      }
+
+      .countdown-seconds {
+        font-weight: bold;
+        color: var(--color-red);
+      }
+
 
       .success-details {
         background: var(--color-surface);
@@ -246,32 +266,7 @@
         background: var(--color-gray-light, #f5f5f5);
         color: var(--color-text-secondary);
       }
-      #registration-section {
-        background: var(--color-warning-light, #fef3c7);
-        border: 2px solid var(--color-warning, #f59e0b);
-        border-radius: 8px;
-        position: relative;
-      }
-
-      #registration-section h3 {
-        color: var(--color-text-primary);
-        margin-bottom: var(--space-md);
-      }
-
-      #registration-section p {
-        color: var(--color-text-primary);
-      }
-
-      #registration-section .registration-actions {
-        text-align: center;
-      }
-
-      /* Add emphasis to registration button */
-      #registration-btn {
-        font-size: var(--font-size-lg);
-        padding: var(--space-lg) var(--space-2xl);
-        animation: pulse 2s infinite;
-      }
+      /* Registration-related styles removed - handled on separate page */
 
       @keyframes pulse {
         0%, 100% {
@@ -282,10 +277,7 @@
         }
       }
 
-      /* Remove pulse animation on hover */
-      #registration-btn:hover {
-        animation: none;
-      }
+      /* Registration button styles removed */
 
       .loading-state {
         display: none;
@@ -316,6 +308,11 @@
 
         .success-message {
           font-size: var(--font-size-base);
+        }
+
+        .countdown-timer {
+          font-size: var(--font-size-xs);
+          padding: var(--space-sm) var(--space-md);
         }
 
 
@@ -489,6 +486,10 @@
             Boulder Fest.
           </p>
 
+          <div class="countdown-timer" id="countdown-timer" style="display: none;">
+            Redirecting to registration in <span class="countdown-seconds" id="countdown-seconds">20</span> seconds...
+          </div>
+
 
           <div class="success-details" id="order-details" style="display: none">
             <h3>Order Details</h3>
@@ -506,33 +507,12 @@
             </div>
           </div>
 
-          <!-- Registration Form Section -->
-          <div class="success-details" id="registration-section" style="display: none">
-            <h3>Complete Your Registration</h3>
-            <p style="margin-bottom: var(--space-lg);">Please provide attendee information for your tickets:</p>
-
-            <form id="registration-form" style="margin-top: var(--space-lg);">
-              <div id="tickets-container">
-                <!-- Ticket registration fields will be dynamically added here -->
-              </div>
-
-              <div class="registration-actions" style="margin-top: var(--space-xl); text-align: center;">
-                <button type="submit" class="success-btn accent" id="submit-registration">
-                  Complete Registration
-                </button>
-              </div>
-
-              <div id="registration-error" class="error-message" style="display: none; margin-top: var(--space-md); padding: var(--space-md); background: var(--color-danger-light, #fee); border: 1px solid var(--color-danger, #f00); border-radius: 4px; color: var(--color-danger-dark, #c00);"></div>
-
-              <div id="registration-success" class="success-message" style="display: none; margin-top: var(--space-md); padding: var(--space-md); background: var(--color-success-light, #efe); border: 1px solid var(--color-success, #0a0); border-radius: 4px; color: var(--color-success-dark, #060);">
-                <strong>Registration Complete!</strong> Your ticket information has been saved.
-              </div>
-            </form>
-          </div>
+          <!-- Registration will be handled on separate page -->
 
           <div class="success-actions">
+            <a href="#" id="register-now-btn" class="success-btn accent" style="display: none;">Register Now</a>
             <a href="/home" class="success-btn">Return to Home</a>
-            <a href="/tickets" class="success-btn accent"
+            <a href="/tickets" class="success-btn secondary"
               >Purchase More Tickets</a
             >
           </div>
@@ -637,7 +617,55 @@
       const orderEmail = document.getElementById("order-email");
       const nextSteps = document.getElementById("next-steps");
       const stepsContent = document.getElementById("steps-content");
+      const countdownTimer = document.getElementById("countdown-timer");
+      const countdownSeconds = document.getElementById("countdown-seconds");
+      const registerNowBtn = document.getElementById("register-now-btn");
 
+      // Countdown timer variables
+      let countdownInterval;
+      let remainingSeconds = 20;
+      let registrationUrl = null;
+
+      // Start countdown timer
+      function startCountdown() {
+        // Show countdown timer
+        if (countdownTimer) {
+          countdownTimer.style.display = 'inline-block';
+        }
+
+        countdownInterval = setInterval(() => {
+          remainingSeconds--;
+          if (countdownSeconds) {
+            countdownSeconds.textContent = remainingSeconds;
+          }
+
+          if (remainingSeconds <= 0) {
+            clearInterval(countdownInterval);
+            // Use registrationUrl if available, otherwise fallback to home
+            const redirectUrl = registrationUrl || '/home';
+            window.location.href = redirectUrl;
+          }
+        }, 1000);
+      }
+
+      // Stop countdown timer
+      function stopCountdown() {
+        if (countdownInterval) {
+          clearInterval(countdownInterval);
+        }
+        if (countdownTimer) {
+          countdownTimer.style.display = 'none';
+        }
+      }
+
+      // Handle register now button click
+      function handleRegisterNow(event) {
+        event.preventDefault(); // Prevent default link behavior
+        if (registrationUrl) {
+          stopCountdown();
+          window.location.href = registrationUrl;
+        }
+      }
 
       // Detect payment method
       function detectPaymentMethod() {
@@ -868,25 +896,47 @@
           }
         }
 
-        // Handle registration information if available
-        const registrationSection = document.getElementById("registration-section");
+        // Check if this is a ticket purchase (multiple ways to detect)
+        const isTicketPurchase = data.hasTickets ||
+                                data.order?.orderType === "tickets" ||
+                                hasTickets(data.order?.items) ||
+                                data.registrationUrl ||
+                                data.registrationToken;
 
-        // Always show registration form for ticket purchases
-        if (data.registrationToken || data.registrationUrl || data.hasTickets) {
-          // Show registration section with inline form
-          registrationSection.style.display = "block";
+        // Debug logging for ticket purchase detection
+        console.log('Ticket purchase detection:', {
+          isTicketPurchase,
+          hasTickets: data.hasTickets,
+          orderType: data.order?.orderType,
+          hasTicketsInItems: hasTickets(data.order?.items),
+          hasRegistrationUrl: !!data.registrationUrl,
+          hasRegistrationToken: !!data.registrationToken
+        });
 
-          // Store registration token for later use
-          window.registrationToken = data.registrationToken;
+        // Handle registration for ticket purchases
+        if (isTicketPurchase) {
+          // Set registration URL - use provided URL or fallback to registration page
+          registrationUrl = data.registrationUrl || '/registration';
 
-          // Populate the registration form with ticket fields
-          populateRegistrationForm(data.session || {}, data);
+          // If we have a registration token, append it to the URL
+          if (data.registrationToken && !data.registrationUrl) {
+            registrationUrl = `/registration/${data.registrationToken}`;
+          }
 
-          // Update next steps to emphasize registration
+          console.log('Using registration URL:', registrationUrl);
+
+          // Show register now button
+          if (registerNowBtn) {
+            registerNowBtn.href = registrationUrl;
+            registerNowBtn.style.display = 'inline-block';
+            registerNowBtn.addEventListener('click', handleRegisterNow);
+          }
+
+          // Update next steps for ticket purchases
           stepsContent.textContent = "";
           const steps = [
-            "• Complete your registration in the form below",
-            "• Your confirmation email will be sent after registration",
+            "• Complete your festival registration using the link below",
+            "• Check your email for order confirmation",
             "• Save your confirmation number for check-in",
             "• Join our WhatsApp group for updates",
           ];
@@ -895,48 +945,30 @@
             p.textContent = step;
             stepsContent.appendChild(p);
           });
-        } else {
+
+          // Start countdown timer - now always starts for ticket purchases
+          startCountdown();
+        } else if (data.instructions?.nextSteps) {
           // Handle normal next steps without immediate registration
-          if (data.instructions?.nextSteps) {
-            // Clear existing content safely
-            stepsContent.textContent = "";
-            // Add each step as a text node
-            data.instructions.nextSteps.forEach((step) => {
-              const p = document.createElement("p");
-              p.textContent = `• ${step}`;
-              stepsContent.appendChild(p);
-            });
-          } else if (
-            data.order?.orderType === "tickets" ||
-            hasTickets(data.order?.items)
-          ) {
-            // If the order contains tickets, show registration reminder via email
-            stepsContent.textContent = "";
-            const steps = [
-              "• Check your email for order confirmation and registration link",
-              "• Complete your festival registration (link in email)",
-              "• Save your confirmation number for check-in",
-              "• Join our WhatsApp group for updates",
-            ];
-            steps.forEach((step) => {
-              const p = document.createElement("p");
-              p.textContent = step;
-              stepsContent.appendChild(p);
-            });
-          } else {
-            // Default steps for all other purchases
-            stepsContent.textContent = "";
-            const steps = [
-              "• Check your email for order confirmation",
-              "• Save your confirmation number for your records",
-              "• Contact us if you have any questions",
-            ];
-            steps.forEach((step) => {
-              const p = document.createElement("p");
-              p.textContent = step;
-              stepsContent.appendChild(p);
-            });
-          }
+          stepsContent.textContent = "";
+          data.instructions.nextSteps.forEach((step) => {
+            const p = document.createElement("p");
+            p.textContent = `• ${step}`;
+            stepsContent.appendChild(p);
+          });
+        } else {
+          // Default steps for all other purchases
+          stepsContent.textContent = "";
+          const steps = [
+            "• Check your email for order confirmation",
+            "• Save your confirmation number for your records",
+            "• Contact us if you have any questions",
+          ];
+          steps.forEach((step) => {
+            const p = document.createElement("p");
+            p.textContent = step;
+            stepsContent.appendChild(p);
+          });
         }
 
         // Show test mode indicator if applicable
@@ -1054,148 +1086,9 @@
       // Start verification when page loads
       verifyPayment();
 
-      // Function to populate registration form
-      function populateRegistrationForm(sessionData, responseData) {
-        const ticketsContainer = document.getElementById("tickets-container");
-        ticketsContainer.innerHTML = "";
+      // populateRegistrationForm function removed - registration handled on separate page
 
-        // Get customer details from session - check multiple possible locations
-        const customerEmail = sessionData.customer_email ||
-                             sessionData.customer_details?.email ||
-                             responseData.session?.customer_email ||
-                             responseData.order?.customerEmail || "";
-
-        // Parse name into first and last - Stripe provides it as customer_details.name
-        const customerName = sessionData.customer_details?.name ||
-                            sessionData.metadata?.customerName ||
-                            responseData.session?.metadata?.customerName ||
-                            "Guest";
-        const nameParts = customerName.split(" ");
-        const firstName = nameParts[0] || "";
-        const lastName = nameParts.slice(1).join(" ") || "";
-
-        // Determine number of tickets - check multiple sources
-        const amount = parseFloat(sessionData.amount || responseData.session?.amount || 0);
-        const ticketCount = Math.max(1, Math.round(amount / 125)); // Tickets are $125 each
-
-        // Create form fields for each ticket
-        for (let i = 0; i < ticketCount; i++) {
-          const ticketDiv = document.createElement("div");
-          ticketDiv.className = "ticket-field-group";
-          ticketDiv.innerHTML = `
-            <h4>Ticket ${i + 1}${i === 0 ? " (Purchaser)" : ""}</h4>
-
-            <div class="form-group">
-              <label for="firstName-${i}">First Name *</label>
-              <input type="text" id="firstName-${i}" name="firstName-${i}"
-                     value="${i === 0 ? firstName : ""}"
-                     ${i === 0 ? "readonly" : ""}
-                     required>
-            </div>
-
-            <div class="form-group">
-              <label for="lastName-${i}">Last Name *</label>
-              <input type="text" id="lastName-${i}" name="lastName-${i}"
-                     value="${i === 0 ? lastName : ""}"
-                     ${i === 0 ? "readonly" : ""}
-                     required>
-            </div>
-
-            <div class="form-group">
-              <label for="email-${i}">Email *</label>
-              <input type="email" id="email-${i}" name="email-${i}"
-                     value="${i === 0 ? customerEmail : ""}"
-                     ${i === 0 ? "readonly" : ""}
-                     required>
-            </div>
-          `;
-          ticketsContainer.appendChild(ticketDiv);
-        }
-      }
-
-      // Handle registration form submission
-      document.addEventListener("DOMContentLoaded", function() {
-        const form = document.getElementById("registration-form");
-        if (form) {
-          form.addEventListener("submit", async function(e) {
-            e.preventDefault();
-
-            const submitBtn = document.getElementById("submit-registration");
-            const errorDiv = document.getElementById("registration-error");
-            const successDiv = document.getElementById("registration-success");
-
-            // Hide messages
-            errorDiv.style.display = "none";
-            successDiv.style.display = "none";
-
-            // Disable submit button
-            submitBtn.disabled = true;
-            submitBtn.textContent = "Processing...";
-
-            try {
-              // Collect all ticket data
-              const tickets = [];
-              const ticketGroups = document.querySelectorAll(".ticket-field-group");
-
-              ticketGroups.forEach((group, index) => {
-                tickets.push({
-                  firstName: document.getElementById(`firstName-${index}`).value,
-                  lastName: document.getElementById(`lastName-${index}`).value,
-                  email: document.getElementById(`email-${index}`).value
-                });
-              });
-
-              // Call batch registration API
-              const response = await fetch("/api/registration/batch", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                  registrationToken: window.registrationToken,
-                  registrations: tickets
-                })
-              });
-
-              const result = await response.json();
-
-              if (response.ok) {
-                // Show success message
-                successDiv.style.display = "block";
-
-                // Hide form after success
-                document.getElementById("tickets-container").style.display = "none";
-                submitBtn.style.display = "none";
-
-                // Update next steps
-                const stepsContent = document.getElementById("steps-content");
-                stepsContent.textContent = "";
-                const steps = [
-                  "✓ Registration complete!",
-                  "• Check your email for tickets",
-                  "• Save tickets to your mobile wallet",
-                  "• See you at the festival!"
-                ];
-                steps.forEach(step => {
-                  const p = document.createElement("p");
-                  p.textContent = step;
-                  stepsContent.appendChild(p);
-                });
-              } else {
-                throw new Error(result.error || "Registration failed");
-              }
-            } catch (error) {
-              console.error("Registration error:", error);
-              errorDiv.textContent = error.message || "Failed to complete registration. Please try again.";
-              errorDiv.style.display = "block";
-
-              // Re-enable submit button
-              submitBtn.disabled = false;
-              submitBtn.textContent = "Complete Registration";
-            }
-          });
-        }
-      });
+      // Registration form submission handling removed - handled on separate page
     </script>
 
     <script src="/js/navigation.js"></script>
