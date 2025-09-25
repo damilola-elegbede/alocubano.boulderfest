@@ -538,7 +538,7 @@ export default async function handler(req, res) {
       transaction: transaction ? {
         orderNumber: transaction.order_number,
         status: transaction.status,
-        totalAmount: transaction.total_amount || transaction.amount_cents,
+        totalAmount: Number(transaction.total_amount || transaction.amount_cents), // Convert BigInt to Number
         customerEmail: transaction.customer_email,
         customerName: transaction.customer_name
       } : null
