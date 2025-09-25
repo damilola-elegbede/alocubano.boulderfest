@@ -166,19 +166,23 @@ export default async function handler(req, res) {
   try {
     const db = await getDatabaseClient();
 
-    // Fetch all tickets
+    // Fetch all tickets with transaction info
     const ticketIds = sanitizedRegistrations.map(r => r.ticketId);
     const ticketsResult = await db.execute({
       sql: `
         SELECT
-          ticket_id,
-          ticket_type,
-          registration_status,
-          registration_deadline,
-          stripe_payment_intent,
-          customer_email
-        FROM tickets
-        WHERE ticket_id IN (${ticketIds.map(() => '?').join(',')})
+          t.ticket_id,
+          t.ticket_type,
+          t.registration_status,
+          t.registration_deadline,
+          t.transaction_id,
+          t.attendee_first_name,
+          t.attendee_last_name,
+          t.attendee_email,
+          tx.customer_email as purchaser_email
+        FROM tickets t
+        LEFT JOIN transactions tx ON t.transaction_id = tx.id
+        WHERE t.ticket_id IN (${ticketIds.map(() => '?').join(',')})
       `,
       args: ticketIds
     });
@@ -326,7 +330,9 @@ export default async function handler(req, res) {
         emailTasks.push({
           ticket,
           registration,
-          isPurchaser: registration.email.toLowerCase() === ticket.customer_email.toLowerCase()
+          isPurchaser: ticket.purchaser_email ?
+            registration.email.toLowerCase() === ticket.purchaser_email.toLowerCase() :
+            false
         });
       }
 
