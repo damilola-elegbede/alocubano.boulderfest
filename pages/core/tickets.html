@@ -704,16 +704,11 @@ Sent from A Lo Cubano Boulder Fest website`;
     <script type="module">
       import { initializeThemeToggle } from '/js/theme-toggle.js';
       import themeManager from '/js/theme-manager.js';
-      import TestModeTickets from '/js/test-mode-tickets.js';
 
       // Initialize theme system
       document.addEventListener('DOMContentLoaded', () => {
         themeManager.initializeTheme();
         initializeThemeToggle('#theme-toggle-container');
-
-        // Initialize test mode tickets for dev/preview environments
-        const testMode = new TestModeTickets();
-        testMode.init();
       });
     </script>
     <script src="/js/logo-switcher.js"></script>
