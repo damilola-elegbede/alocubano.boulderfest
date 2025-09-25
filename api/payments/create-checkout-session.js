@@ -178,11 +178,22 @@ export default async function handler(req, res) {
       mode: 'payment',
       success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}${isRequestTestMode ? '&test_mode=true' : ''}`,
       cancel_url: `${origin}/failure?session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}${isRequestTestMode ? '&test_mode=true' : ''}`,
-      // Use only customer_email - receipt_email is not valid for checkout sessions
+      // Set customer email for the checkout session
       ...(customerInfo?.email && {
         customer_email: customerInfo.email
       }),
-      // Enable invoice creation for automatic receipts
+      // Enable automatic receipt email via payment_intent_data
+      payment_intent_data: {
+        ...(customerInfo?.email && {
+          receipt_email: customerInfo.email
+        }),
+        description: `A Lo Cubano Boulder Fest - Order ${orderId}`,
+        metadata: {
+          orderId: orderId,
+          orderType: orderType
+        }
+      },
+      // Enable invoice creation as backup (for invoice-style receipts)
       invoice_creation: {
         enabled: true,
         invoice_data: {
