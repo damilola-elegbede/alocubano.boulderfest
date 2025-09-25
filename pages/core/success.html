@@ -672,14 +672,23 @@
           );
           const data = await response.json();
 
+          // Debug logging to see what we're receiving from the backend
+          console.log('Response from checkout-success:', {
+            orderNumber: data.orderNumber,
+            transactionOrderNumber: data.transaction?.orderNumber,
+            sessionId: data.session?.id
+          });
+
           if (response.ok && data.success) {
             // Transform Stripe data to unified format
             const unifiedData = {
               success: true,
               paymentMethod: 'stripe',
+              orderNumber: data.orderNumber,  // Pass through the clean order number
+              transaction: data.transaction,    // Pass through transaction data
               session: data.session,
               order: {
-                id: data.session.id,
+                id: data.orderNumber || data.session.id,  // Use orderNumber if available
                 totalAmount: data.session.amount,
                 customerEmail: data.session.customer_email
               },
@@ -811,29 +820,18 @@
             session: data.session
           });
 
-          let displayId = '';
-          if (data.orderNumber) {
-            // Use the clean order number (ALCBF-YYYY-XXXXX or TEST-YYYY-XXXXX)
-            displayId = data.orderNumber;
-            console.log('Using orderNumber:', displayId);
-          } else if (data.transaction?.orderNumber) {
-            displayId = data.transaction.orderNumber;
-            console.log('Using transaction.orderNumber:', displayId);
-          } else if (data.order?.id) {
-            displayId = data.order.id;
-            console.log('Using order.id:', displayId);
-          } else if (data.session?.id) {
-            // Fallback: Generate a temporary order number from session ID
-            const sessionId = data.session.id;
-            console.log('No order number, generating from session ID:', sessionId);
+          // ALWAYS use order number - it should always be present
+          let displayId = data.orderNumber || data.transaction?.orderNumber || '';
 
-            // If it's a test session, use TEST prefix, otherwise ALCBF
-            const isTest = sessionId.includes('test');
-            const year = new Date().getFullYear();
-            const shortId = sessionId.slice(-8).toUpperCase(); // Last 8 chars
-
-            displayId = `${isTest ? 'TEST' : 'ALCBF'}-${year}-${shortId}`;
-            console.log('Generated display ID:', displayId);
+          if (!displayId) {
+            console.error('ERROR: No order number received from backend!', {
+              orderNumber: data.orderNumber,
+              transactionOrderNumber: data.transaction?.orderNumber,
+              sessionId: data.session?.id
+            });
+            displayId = 'PENDING'; // Show PENDING if no order number
+          } else {
+            console.log('Displaying order number:', displayId);
           }
 
           if (orderId) {
