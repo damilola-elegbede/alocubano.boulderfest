@@ -182,11 +182,15 @@ class TicketSelection {
             quantitySpan.classList.remove('updating');
         }, 500);
 
+        // Get ticket name from either h4 (regular cards) or .ticket-type (vertical design)
+        const nameElement = card.querySelector('h4') || card.querySelector('.ticket-type');
+        const ticketName = nameElement ? nameElement.textContent.trim() : 'Ticket';
+
         if (currentQuantity > 0) {
             this.selectedTickets.set(ticketType, {
                 quantity: currentQuantity,
                 price: price,
-                name: card.querySelector('h4').textContent
+                name: ticketName
             });
             card.classList.add('selected');
             card.setAttribute('aria-pressed', 'true');
@@ -207,7 +211,7 @@ class TicketSelection {
             ticketType,
             quantity: currentQuantity,
             price,
-            name: card.querySelector('h4').textContent,
+            name: ticketName,
             eventId: 'alocubano-boulderfest-2026'
         };
 
@@ -240,6 +244,10 @@ class TicketSelection {
         const quantitySpan = card.querySelector('.quantity');
         let currentQuantity = parseInt(quantitySpan.textContent) || 0;
 
+        // Get ticket name from either h4 (regular cards) or .ticket-type (vertical design)
+        const nameElement = card.querySelector('h4') || card.querySelector('.ticket-type');
+        const ticketName = nameElement ? nameElement.textContent.trim() : 'Ticket';
+
         // Add one ticket
         currentQuantity++;
         quantitySpan.textContent = currentQuantity;
@@ -248,7 +256,7 @@ class TicketSelection {
         this.selectedTickets.set(ticketType, {
             quantity: currentQuantity,
             price: price,
-            name: card.querySelector('h4').textContent
+            name: ticketName
         });
         card.classList.add('selected');
         card.setAttribute('aria-pressed', 'true');
@@ -264,7 +272,7 @@ class TicketSelection {
             ticketType,
             quantity: currentQuantity,
             price,
-            name: card.querySelector('h4').textContent,
+            name: ticketName,
             eventId: 'alocubano-boulderfest-2026'
         };
 

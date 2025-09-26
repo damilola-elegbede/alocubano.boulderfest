@@ -1,6 +1,40 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <!-- Inline theme detection to prevent FOUC -->
+    <script>
+      (function() {
+        // Detect admin pages
+        const path = window.location.pathname.toLowerCase();
+        const isAdmin = path.includes('/admin') || path.includes('pages/admin');
+
+        if (isAdmin) {
+          // Admin pages always use dark theme
+          document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+          // Main site: check user preference
+          let stored = null;
+          try {
+            stored = localStorage.getItem('theme-preference');
+          } catch {
+            // localStorage might be disabled
+          }
+
+          const preference = stored || 'system';
+          let theme = preference;
+
+          if (preference === 'system') {
+            // Detect system preference
+            theme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+              ? 'dark'
+              : 'light';
+          }
+
+          document.documentElement.setAttribute('data-theme', theme);
+        }
+      })();
+    </script>
+
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Donations - A Lo Cubano Boulder Fest</title>
