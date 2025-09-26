@@ -221,9 +221,11 @@ export default async function handler(req, res) {
     // Use transaction for atomicity
     const results = [];
     const emailTasks = [];
+    let transactionActive = false;
 
     // Start transaction
     await db.execute('BEGIN TRANSACTION');
+    transactionActive = true;
 
     try {
       for (let i = 0; i < sanitizedRegistrations.length; i++) {
@@ -336,12 +338,26 @@ export default async function handler(req, res) {
         });
       }
 
-      // Commit transaction
+      // Commit transaction - CRITICAL: This ends the transaction
       await db.execute('COMMIT');
+      transactionActive = false;
 
-      // Send confirmation emails (after transaction commits)
+    } catch (error) {
+      // Only rollback if transaction is still active
+      if (transactionActive) {
+        try {
+          await db.execute('ROLLBACK');
+        } catch (rollbackError) {
+          console.error('Rollback failed:', rollbackError);
+        }
+      }
+      throw error;
+    }
+
+    // SEND EMAILS OUTSIDE TRANSACTION (after successful commit)
+    const emailResults = [];
+    try {
       const brevo = await getBrevoClient();
-      const emailResults = [];
 
       for (const task of emailTasks) {
         try {
@@ -362,7 +378,7 @@ export default async function handler(req, res) {
             }
           });
 
-          // Log email
+          // Log email sent
           await db.execute({
             sql: `
               INSERT INTO registration_emails (ticket_id, email_type, recipient_email, sent_at)
@@ -383,50 +399,49 @@ export default async function handler(req, res) {
           });
         }
       }
-
-      // Log batch operation summary (non-blocking)
-      const totalProcessingTime = Date.now() - startTime;
-      auditService.logDataChange({
-        requestId: requestId,
-        action: 'BATCH_REGISTRATION_COMPLETED',
-        targetType: 'registration_batch',
-        targetId: requestId,
-        beforeValue: null,
-        afterValue: {
-          total_tickets: results.length,
-          successful_registrations: results.length,
-          failed_registrations: 0,
-          email_success_count: emailResults.filter(e => e.emailSent).length,
-          email_failure_count: emailResults.filter(e => !e.emailSent).length
-        },
-        changedFields: ['registration_status', 'attendee_information'],
-        adminUser: null,
-        sessionId: null,
-        ipAddress: clientIP,
-        userAgent: userAgent,
-        metadata: {
-          processing_time_ms: totalProcessingTime,
-          batch_size: sanitizedRegistrations.length,
-          request_method: req.method,
-          user_agent_details: userAgent.substring(0, 200) // Truncate for storage
-        },
-        severity: 'info'
-      }).catch(auditError => {
-        console.error('Batch operation audit failed (non-blocking):', auditError.message);
-      });
-
-      res.status(200).json({
-        success: true,
-        message: `Successfully registered ${results.length} tickets`,
-        registrations: results,
-        emailStatus: emailResults
-      });
-
-    } catch (error) {
-      // Rollback transaction on error
-      await db.execute('ROLLBACK');
-      throw error;
+    } catch (emailServiceError) {
+      console.error('Email service error (non-blocking):', emailServiceError);
+      // Continue - registration was successful even if emails fail
     }
+
+    // Log batch operation summary (non-blocking)
+    const totalProcessingTime = Date.now() - startTime;
+    auditService.logDataChange({
+      requestId: requestId,
+      action: 'BATCH_REGISTRATION_COMPLETED',
+      targetType: 'registration_batch',
+      targetId: requestId,
+      beforeValue: null,
+      afterValue: {
+        total_tickets: results.length,
+        successful_registrations: results.length,
+        failed_registrations: 0,
+        email_success_count: emailResults.filter(e => e.emailSent).length,
+        email_failure_count: emailResults.filter(e => !e.emailSent).length
+      },
+      changedFields: ['registration_status', 'attendee_information'],
+      adminUser: null,
+      sessionId: null,
+      ipAddress: clientIP,
+      userAgent: userAgent,
+      metadata: {
+        processing_time_ms: totalProcessingTime,
+        batch_size: sanitizedRegistrations.length,
+        request_method: req.method,
+        user_agent_details: userAgent.substring(0, 200) // Truncate for storage
+      },
+      severity: 'info'
+    }).catch(auditError => {
+      console.error('Batch operation audit failed (non-blocking):', auditError.message);
+    });
+
+    // Return success response
+    res.status(200).json({
+      success: true,
+      message: `Successfully registered ${results.length} tickets`,
+      registrations: results,
+      emailStatus: emailResults
+    });
 
   } catch (error) {
     console.error('Batch registration error:', error);
