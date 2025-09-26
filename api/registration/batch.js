@@ -1,6 +1,6 @@
 import { getDatabaseClient } from "../../lib/database.js";
 import { getBrevoClient } from "../../lib/brevo-client.js";
-import rateLimit from "../../lib/rate-limiter.js";
+import rateLimit from "../../lib/rate-limit-middleware.js";
 import auditService from "../../lib/audit-service.js";
 
 // Input validation regex patterns
