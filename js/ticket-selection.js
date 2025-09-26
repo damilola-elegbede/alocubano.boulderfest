@@ -6,7 +6,42 @@
 class TicketSelection {
     constructor() {
         this.selectedTickets = new Map();
+        this.eventId = this.detectEventId();
         this.init();
+    }
+
+    detectEventId() {
+        // Detect event context from URL and page content
+        const pathname = window.location.pathname.toLowerCase();
+
+        // Check URL patterns first
+        if (pathname.includes('2025-11-weekender') || pathname.includes('november-2025')) {
+            return 'weekender-2025-11';
+        }
+        if (pathname.includes('boulder-fest-2026') || pathname.includes('2026')) {
+            return 'boulderfest-2026';
+        }
+        if (pathname.includes('boulder-fest-2025') || pathname.includes('2025')) {
+            return 'boulderfest-2025';
+        }
+
+        // Check page content for event names
+        const eventNameElements = document.querySelectorAll('.event-name, .tickets-header h1, [data-event]');
+        for (const element of eventNameElements) {
+            const text = element.textContent || element.dataset.event || '';
+            if (text.includes('November 2025') || text.includes('Weekender')) {
+                return 'weekender-2025-11';
+            }
+            if (text.includes('2026')) {
+                return 'boulderfest-2026';
+            }
+            if (text.includes('2025') && !text.includes('November')) {
+                return 'boulderfest-2025';
+            }
+        }
+
+        // Default fallback for main tickets page
+        return 'boulderfest-2026';
     }
 
     async init() {
@@ -212,7 +247,7 @@ class TicketSelection {
             quantity: currentQuantity,
             price,
             name: ticketName,
-            eventId: 'alocubano-boulderfest-2026'
+            eventId: this.eventId
         };
 
         document.dispatchEvent(
@@ -273,7 +308,7 @@ class TicketSelection {
             quantity: currentQuantity,
             price,
             name: ticketName,
-            eventId: 'alocubano-boulderfest-2026'
+            eventId: this.eventId
         };
 
         document.dispatchEvent(
