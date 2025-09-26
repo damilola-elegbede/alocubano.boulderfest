@@ -67,9 +67,10 @@ export default async function handler(req, res) {
     }
 
     if (process.env.NODE_ENV !== 'production') {
+      const email = fullSession.customer_email || fullSession.customer_details?.email;
       console.log('Checkout session verified as successful:', {
         sessionId: fullSession.id,
-        customerEmail: fullSession.customer_email || fullSession.customer_details?.email,
+        customerEmail: email ? email.replace(/(.).+(@.*)/, '$1***$2') : undefined,
         amount: fullSession.amount_total / 100,
         orderId: fullSession.metadata?.orderId
       });
