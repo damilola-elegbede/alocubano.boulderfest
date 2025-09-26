@@ -321,6 +321,11 @@ class TicketSelection {
             const ticketType = card.dataset.ticketType;
             const quantitySpan = card.querySelector('.quantity');
 
+            // Skip TEST- tickets (managed by Test Dashboard)
+            if (ticketType && ticketType.startsWith('TEST-')) {
+                return;
+            }
+
             if (quantitySpan) {
                 // Check if this ticket is in the cart
                 const cartTicket = cartTickets[ticketType];

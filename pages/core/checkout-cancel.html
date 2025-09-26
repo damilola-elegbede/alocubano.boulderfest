@@ -72,7 +72,7 @@
         width: 80px;
         height: 80px;
         margin: 0 auto var(--space-lg);
-        background: #fbbf24;
+        background: var(--color-warning, #fbbf24);
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -82,7 +82,7 @@
 
       .cancel-icon::after {
         content: "⏸";
-        color: white;
+        color: var(--color-text-on-warning, white);
         font-size: 2.5rem;
         font-weight: bold;
       }
@@ -104,7 +104,7 @@
       }
 
       .reassurance-box {
-        background: #e3f2fd;
+        background: var(--color-info-light, #e3f2fd);
         border-radius: 8px;
         padding: var(--space-lg);
         margin: var(--space-lg) 0;
@@ -129,7 +129,7 @@
       }
 
       .support-info {
-        background: #f8f9fa;
+        background: var(--color-surface, #f8f9fa);
         border-radius: 8px;
         padding: var(--space-lg);
         margin: var(--space-lg) 0;
@@ -204,7 +204,7 @@
 
       .countdown {
         font-size: var(--font-size-sm);
-        color: #666;
+        color: var(--color-text-secondary, #666);
         margin-top: var(--space-md);
         font-style: italic;
       }

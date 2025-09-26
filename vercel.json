@@ -22,6 +22,10 @@
     {
       "path": "/api/sheets/scheduled-sync",
       "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/email/process-retry-queue",
+      "schedule": "*/5 * * * *"
     }
   ],
   "images": {
@@ -75,6 +79,10 @@
       "destination": "/pages/core/tickets"
     },
     {
+      "source": "/register-tickets",
+      "destination": "/pages/core/register-tickets"
+    },
+    {
       "source": "/boulder-fest-2025",
       "destination": "/pages/events/2025-boulder/index"
     },
@@ -103,7 +111,7 @@
       "destination": "/pages/admin/index"
     },
     {
-      "source": "/admin/(login|dashboard|checkin|analytics|mfa-settings|registrations|tickets|api-endpoints)",
+      "source": "/admin/(login|dashboard|checkin|analytics|mfa-settings|registrations|tickets|api-endpoints|test-dashboard)",
       "destination": "/pages/admin/$1"
     }
   ],

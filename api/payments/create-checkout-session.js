@@ -170,7 +170,7 @@ export default async function handler(req, res) {
       `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}` ||
       'https://alocubano.boulderfest.com';
 
-    // Create Stripe Checkout Session
+    // Create Stripe Checkout Session with automatic receipt configuration
     const session = await stripe.checkout.sessions.create({
       // Enable all available payment methods including Apple Pay and Google Pay
       payment_method_types: ['card', 'link'],
@@ -178,8 +178,40 @@ export default async function handler(req, res) {
       mode: 'payment',
       success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}${isRequestTestMode ? '&test_mode=true' : ''}`,
       cancel_url: `${origin}/failure?session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}${isRequestTestMode ? '&test_mode=true' : ''}`,
-      // Only include customer_email if provided
-      ...(customerInfo?.email && { customer_email: customerInfo.email }),
+
+      // Customer configuration for automatic receipts
+      // If we have an email, use it. Otherwise, let Stripe collect it
+      customer_email: customerInfo?.email || undefined,
+
+      // CRITICAL: Create customer object for automatic receipts
+      customer_creation: 'always', // This ensures Stripe creates a customer and sends receipts
+
+      // Payment intent configuration with automatic receipts
+      payment_intent_data: {
+        // Let Stripe handle receipt_email automatically from customer object
+        description: `A Lo Cubano Boulder Fest - Order ${orderId}`,
+        metadata: {
+          orderId: orderId,
+          orderType: orderType
+        }
+        // Note: Removed setup_future_usage as null values cause Stripe errors
+        // One-time payments don't need this parameter
+      },
+
+      // Enable invoice creation as backup (for invoice-style receipts)
+      invoice_creation: {
+        enabled: true,
+        invoice_data: {
+          description: 'A Lo Cubano Boulder Fest Tickets',
+          metadata: {
+            orderId: orderId,
+            orderType: orderType
+          },
+          rendering_options: {
+            amount_tax_display: 'exclude_tax'
+          }
+        }
+      },
       metadata: {
         orderId: orderId,
         orderType: orderType,
@@ -202,6 +234,9 @@ export default async function handler(req, res) {
       sessionId: session.id,
       orderId: orderId,
       totalAmount: totalAmount,
+      customerEmail: customerInfo?.email || 'Will be collected by Stripe',
+      customerCreation: 'always (automatic receipts enabled)',
+      invoiceCreation: 'enabled (backup receipts)',
       testMode: isRequestTestMode
     });
 

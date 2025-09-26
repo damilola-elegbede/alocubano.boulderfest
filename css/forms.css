@@ -20,9 +20,9 @@
 .form-select {
   width: 100%;
   padding: var(--space-sm) var(--space-md);
-  border: 1px solid var(--color-border);
-  background-color: var(--color-surface);
-  color: var(--color-text-primary);
+  border: 1px solid var(--color-input-border);
+  background-color: var(--color-input-bg);
+  color: var(--color-input-text);
   font-size: var(--font-size-base);
   transition: all var(--transition-base);
 }
@@ -89,9 +89,9 @@
   padding: var(--space-md);
   font-family: var(--font-sans);
   font-size: var(--font-size-base);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text-primary);
+  border: 1px solid var(--color-input-border);
+  background: var(--color-input-bg);
+  color: var(--color-input-text);
   transition: border-color 0.2s ease;
 }
 
@@ -361,7 +361,7 @@ input[type="date"]::placeholder,
 input[type="time"]::placeholder,
 input[type="url"]::placeholder,
 textarea::placeholder {
-  color: var(--color-text-secondary);
+  color: var(--color-input-placeholder);
   opacity: 0.9;
 }
 
@@ -381,7 +381,7 @@ input[type="date"]::-moz-placeholder,
 input[type="time"]::-moz-placeholder,
 input[type="url"]::-moz-placeholder,
 textarea::-moz-placeholder {
-  color: var(--color-text-secondary);
+  color: var(--color-input-placeholder);
   opacity: 0.9;
 }
 
@@ -401,7 +401,7 @@ input[type="date"]::-webkit-input-placeholder,
 input[type="time"]::-webkit-input-placeholder,
 input[type="url"]::-webkit-input-placeholder,
 textarea::-webkit-input-placeholder {
-  color: var(--color-text-secondary);
+  color: var(--color-input-placeholder);
   opacity: 0.9;
 }
 
@@ -421,7 +421,7 @@ textarea::-webkit-input-placeholder {
 [data-theme="dark"] input[type="time"]::placeholder,
 [data-theme="dark"] input[type="url"]::placeholder,
 [data-theme="dark"] textarea::placeholder {
-  color: var(--color-text-secondary);
+  color: var(--color-input-placeholder);
   opacity: 1;
 }
 
@@ -510,4 +510,53 @@ input[type="radio"]:disabled + label,
 .form-group:has(:disabled),
 .form-group-type:has(:disabled) {
   opacity: 0.8;
+}
+
+/* Enhanced Form Input Dark Mode Compatibility
+ * Ensures all form input types use the new CSS variables for consistent theming */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="tel"],
+input[type="search"],
+input[type="date"],
+input[type="time"],
+input[type="url"],
+select,
+textarea {
+  background-color: var(--color-input-bg);
+  color: var(--color-input-text);
+  border-color: var(--color-input-border);
+}
+
+/* Focus states for enhanced accessibility */
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+input[type="tel"]:focus,
+input[type="search"]:focus,
+input[type="date"]:focus,
+input[type="time"]:focus,
+input[type="url"]:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-info-light);
+}
+
+/* Dark mode focus states */
+[data-theme="dark"] input[type="text"]:focus,
+[data-theme="dark"] input[type="email"]:focus,
+[data-theme="dark"] input[type="password"]:focus,
+[data-theme="dark"] input[type="number"]:focus,
+[data-theme="dark"] input[type="tel"]:focus,
+[data-theme="dark"] input[type="search"]:focus,
+[data-theme="dark"] input[type="date"]:focus,
+[data-theme="dark"] input[type="time"]:focus,
+[data-theme="dark"] input[type="url"]:focus,
+[data-theme="dark"] select:focus,
+[data-theme="dark"] textarea:focus {
+  box-shadow: 0 0 0 3px rgba(91, 107, 181, 0.3);
 }

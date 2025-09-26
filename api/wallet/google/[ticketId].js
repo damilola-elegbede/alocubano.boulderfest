@@ -1,5 +1,5 @@
-import googleWalletService from "../../lib/google-wallet-service.js";
-import { getCorsConfig, isOriginAllowed } from "../../lib/cors-config.js";
+import googleWalletService from "../../../lib/google-wallet-service.js";
+import { getCorsConfig, isOriginAllowed } from "../../../lib/cors-config.js";
 
 export default async function handler(req, res) {
   // Handle CORS

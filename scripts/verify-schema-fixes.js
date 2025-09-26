@@ -1,9 +1,9 @@
-import { getDatabase } from "../lib/database.js";
+import { getDatabaseClient } from "../lib/database.js";
 
 async function verifySchemaFixes() {
   console.log("🔍 Verifying database schema fixes...\n");
 
-  const db = getDatabase();
+  const db = await getDatabaseClient();
 
   try {
     // Test 1: Check transactions table has uuid, metadata, total_amount columns

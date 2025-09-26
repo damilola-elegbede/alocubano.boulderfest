@@ -1,5 +1,6 @@
+import { setSecureCorsHeaders } from '../../lib/cors-config.js';
+
 /**
-import { setSecureCorsHeaders } from '../lib/cors-config.js';
  * Checkout Cancel API Endpoint
  * Handles cancelled Stripe Checkout returns
  */

@@ -1,4 +1,4 @@
-import { getDatabase } from "../lib/database.js";
+import { getDatabaseClient } from "../lib/database.js";
 import dotenv from "dotenv";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
@@ -10,7 +10,7 @@ const __dirname = dirname(__filename);
 dotenv.config({ path: join(dirname(__dirname), ".env.local") });
 
 async function checkTables() {
-  const db = getDatabase();
+  const db = await getDatabaseClient();
 
   try {
     // Get table info for payment_events

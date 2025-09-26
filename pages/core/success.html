@@ -113,21 +113,22 @@
         font-size: var(--font-size-lg);
         line-height: 1.6;
         margin-bottom: var(--space-xl);
-        color: var(--color-gray-700);
+        color: var(--color-text-secondary);
       }
 
       /* Countdown timer */
       .countdown-timer {
         font-family: var(--font-code);
         font-size: var(--font-size-sm);
-        color: var(--color-gray-600);
+        color: var(--color-text-secondary);
         text-transform: uppercase;
         letter-spacing: var(--letter-spacing-wider);
         margin-bottom: var(--space-2xl);
         padding: var(--space-md) var(--space-lg);
-        background: var(--color-gray-100);
-        border: 1px solid var(--color-gray-200);
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
         display: inline-block;
+        border-radius: 4px;
       }
 
       .countdown-seconds {
@@ -135,9 +136,10 @@
         color: var(--color-red);
       }
 
+
       .success-details {
-        background: var(--color-gray-100);
-        border: 2px solid var(--color-black);
+        background: var(--color-surface);
+        border: 2px solid var(--color-border);
         padding: var(--space-xl);
         margin: var(--space-2xl) 0;
         text-align: left;
@@ -149,6 +151,7 @@
         text-transform: uppercase;
         letter-spacing: 0.05em;
         margin-bottom: var(--space-lg);
+        color: var(--color-text-primary);
       }
 
       .success-details p {
@@ -156,6 +159,7 @@
         font-size: var(--font-size-base);
         line-height: 1.6;
         margin-bottom: var(--space-md);
+        color: var(--color-text-primary);
       }
 
       .success-details p:last-child {
@@ -216,6 +220,65 @@
         color: var(--color-red);
       }
 
+      /* Registration section styling */
+      .ticket-field-group {
+        background: var(--color-background, #fff);
+        border: 1px solid var(--color-border, #e0e0e0);
+        border-radius: 8px;
+        padding: var(--space-lg);
+        margin-bottom: var(--space-lg);
+      }
+
+      .ticket-field-group h4 {
+        color: var(--color-primary, #5b6bb5);
+        margin-bottom: var(--space-md);
+        font-size: var(--font-size-lg);
+      }
+
+      .form-group {
+        margin-bottom: var(--space-md);
+      }
+
+      .form-group label {
+        display: block;
+        color: var(--color-text-primary);
+        font-weight: 600;
+        margin-bottom: var(--space-xs);
+      }
+
+      .form-group input {
+        width: 100%;
+        padding: var(--space-sm) var(--space-md);
+        border: 1px solid var(--color-border, #ccc);
+        border-radius: 4px;
+        font-size: var(--font-size-base);
+        background: var(--color-background);
+        color: var(--color-text-primary);
+      }
+
+      .form-group input:focus {
+        outline: none;
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px rgba(91, 107, 181, 0.1);
+      }
+
+      .form-group input[readonly] {
+        background: var(--color-gray-light, #f5f5f5);
+        color: var(--color-text-secondary);
+      }
+      /* Registration-related styles removed - handled on separate page */
+
+      @keyframes pulse {
+        0%, 100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
+        }
+      }
+
+      /* Registration button styles removed */
+
       .loading-state {
         display: none;
       }
@@ -251,6 +314,7 @@
           font-size: var(--font-size-xs);
           padding: var(--space-sm) var(--space-md);
         }
+
 
         .success-actions {
           flex-direction: column;
@@ -422,11 +486,15 @@
             Boulder Fest.
           </p>
 
-          <div class="countdown-timer" id="countdown-timer">
-            This page will redirect in
-            <span class="countdown-seconds" id="countdown-seconds">20</span>
-            seconds...
+          <div class="countdown-timer" id="countdown-timer" style="display: none;">
+            Redirecting to registration in <span class="countdown-seconds" id="countdown-seconds">20</span> seconds...
           </div>
+
+          <!-- Register Now button moved here for better visibility -->
+          <div style="margin-bottom: var(--space-xl); display: none;" id="register-now-container">
+            <a href="#" id="register-now-btn" class="success-btn accent">Register Now</a>
+          </div>
+
 
           <div class="success-details" id="order-details" style="display: none">
             <h3>Order Details</h3>
@@ -444,9 +512,11 @@
             </div>
           </div>
 
+          <!-- Registration will be handled on separate page -->
+
           <div class="success-actions">
             <a href="/home" class="success-btn">Return to Home</a>
-            <a href="/tickets" class="success-btn accent"
+            <a href="/tickets" class="success-btn secondary"
               >Purchase More Tickets</a
             >
           </div>
@@ -551,10 +621,56 @@
       const orderEmail = document.getElementById("order-email");
       const nextSteps = document.getElementById("next-steps");
       const stepsContent = document.getElementById("steps-content");
+      const countdownTimer = document.getElementById("countdown-timer");
+      const countdownSeconds = document.getElementById("countdown-seconds");
+      const registerNowBtn = document.getElementById("register-now-btn");
+      const registerNowContainer = document.getElementById("register-now-container");
 
       // Countdown timer variables
       let countdownInterval;
       let remainingSeconds = 20;
+      let registrationUrl = null;
+
+      // Start countdown timer
+      function startCountdown() {
+        // Show countdown timer
+        if (countdownTimer) {
+          countdownTimer.style.display = 'inline-block';
+        }
+
+        countdownInterval = setInterval(() => {
+          remainingSeconds--;
+          if (countdownSeconds) {
+            countdownSeconds.textContent = remainingSeconds;
+          }
+
+          if (remainingSeconds <= 0) {
+            clearInterval(countdownInterval);
+            // Use registrationUrl if available, otherwise fallback to home
+            const redirectUrl = registrationUrl || '/home';
+            window.location.href = redirectUrl;
+          }
+        }, 1000);
+      }
+
+      // Stop countdown timer
+      function stopCountdown() {
+        if (countdownInterval) {
+          clearInterval(countdownInterval);
+        }
+        if (countdownTimer) {
+          countdownTimer.style.display = 'none';
+        }
+      }
+
+      // Handle register now button click
+      function handleRegisterNow(event) {
+        event.preventDefault(); // Prevent default link behavior
+        if (registrationUrl) {
+          stopCountdown();
+          window.location.href = registrationUrl;
+        }
+      }
 
       // Detect payment method
       function detectPaymentMethod() {
@@ -580,22 +696,6 @@
         }
       }
 
-      // Start countdown timer
-      function startCountdown() {
-        const countdownElement = document.getElementById("countdown-seconds");
-
-        countdownInterval = setInterval(() => {
-          remainingSeconds--;
-          if (countdownElement) {
-            countdownElement.textContent = remainingSeconds;
-          }
-
-          if (remainingSeconds <= 0) {
-            clearInterval(countdownInterval);
-            window.location.href = "/home";
-          }
-        }, 1000);
-      }
 
       // Verify Stripe payment
       async function verifyStripePayment() {
@@ -605,14 +705,30 @@
           );
           const data = await response.json();
 
+          // Debug logging to see what we're receiving from the backend
+          console.log('Response from checkout-success:', {
+            orderNumber: data.orderNumber,
+            transactionOrderNumber: data.transaction?.orderNumber,
+            sessionId: data.session?.id,
+            hasTickets: data.hasTickets,
+            registrationToken: data.registrationToken,
+            registrationUrl: data.registrationUrl
+          });
+          console.log('Full response data:', data);
+
           if (response.ok && data.success) {
             // Transform Stripe data to unified format
             const unifiedData = {
               success: true,
               paymentMethod: 'stripe',
+              orderNumber: data.orderNumber,  // Pass through the clean order number
+              transaction: data.transaction,    // Pass through transaction data
               session: data.session,
+              hasTickets: data.hasTickets,  // CRITICAL: Pass through for registration
+              registrationToken: data.registrationToken,  // CRITICAL: Pass through for registration
+              registrationUrl: data.registrationUrl,  // CRITICAL: Pass through for registration
               order: {
-                id: data.session.id,
+                id: data.orderNumber || data.session.id,  // Use orderNumber if available
                 totalAmount: data.session.amount,
                 customerEmail: data.session.customer_email
               },
@@ -733,26 +849,29 @@
         announceToScreenReader(`Payment completed successfully. ${successMessage}`);
 
         // Show order details if available
-        if (data.order || data.session) {
+        if (data.order || data.session || data.transaction) {
           orderDetails.style.display = "block";
 
-          // Update order ID with payment method indicator
-          let displayId = '';
-          if (data.order?.id) {
-            displayId = data.order.id;
-          } else if (data.session?.id) {
-            displayId = data.session.id;
-          }
+          // Use the proper order number if available, otherwise fall back to session ID
+          console.log('Order data received:', {
+            orderNumber: data.orderNumber,
+            transaction: data.transaction,
+            order: data.order,
+            session: data.session
+          });
 
-          // Add payment method prefix for clarity
-          if (data.paymentMethod === 'paypal') {
-            displayId = `PayPal: ${displayId}`;
-            // Also show capture ID if available
-            if (data.paypal?.captureId) {
-              displayId += ` (Capture: ${data.paypal.captureId})`;
-            }
-          } else if (data.paymentMethod === 'stripe') {
-            displayId = `Stripe: ${displayId}`;
+          // ALWAYS use order number - it should always be present
+          let displayId = data.orderNumber || data.transaction?.orderNumber || '';
+
+          if (!displayId) {
+            console.error('ERROR: No order number received from backend!', {
+              orderNumber: data.orderNumber,
+              transactionOrderNumber: data.transaction?.orderNumber,
+              sessionId: data.session?.id
+            });
+            displayId = 'PENDING'; // Show PENDING if no order number
+          } else {
+            console.log('Displaying order number:', displayId);
           }
 
           if (orderId) {
@@ -760,41 +879,98 @@
           }
 
           // Update amount
-          if (data.order?.totalAmount !== undefined) {
+          if (data.transaction?.totalAmount !== undefined) {
+            // Convert cents to dollars if needed
+            const amount = data.transaction.totalAmount > 1000
+              ? data.transaction.totalAmount / 100
+              : data.transaction.totalAmount;
+            orderAmount.textContent = amount.toFixed(2);
+          } else if (data.order?.totalAmount !== undefined) {
             orderAmount.textContent = data.order.totalAmount.toFixed(2);
           } else if (data.session?.amount !== undefined) {
             orderAmount.textContent = data.session.amount.toFixed(2);
           }
 
           // Update email
-          if (data.order?.customerEmail) {
+          if (data.transaction?.customerEmail) {
+            orderEmail.textContent = data.transaction.customerEmail;
+          } else if (data.order?.customerEmail) {
             orderEmail.textContent = data.order.customerEmail;
           } else if (data.session?.customer_email) {
             orderEmail.textContent = data.session.customer_email;
           }
         }
 
-        // Update next steps based on payment and order type
-        if (data.instructions?.nextSteps) {
-          // Clear existing content safely
+        // Check if this is a ticket purchase (multiple ways to detect)
+        const isTicketPurchase = data.hasTickets ||
+                                data.order?.orderType === "tickets" ||
+                                hasTickets(data.order?.items) ||
+                                data.registrationUrl ||
+                                data.registrationToken;
+
+        // Debug logging for ticket purchase detection
+        console.log('Ticket purchase detection:', {
+          isTicketPurchase,
+          hasTickets: data.hasTickets,
+          orderType: data.order?.orderType,
+          hasTicketsInItems: hasTickets(data.order?.items),
+          hasRegistrationUrl: !!data.registrationUrl,
+          hasRegistrationToken: !!data.registrationToken
+        });
+
+        // Handle registration for ticket purchases
+        if (isTicketPurchase) {
+          // Set registration URL - use provided URL or fallback to registration page
+          if (data.registrationUrl) {
+            registrationUrl = data.registrationUrl;
+          } else if (data.registrationToken) {
+            // Use the expected query parameter format
+            registrationUrl = `/register-tickets?token=${data.registrationToken}`;
+          } else {
+            // Fallback to basic registration page
+            registrationUrl = '/register-tickets';
+          }
+
+          console.log('Using registration URL:', registrationUrl);
+
+          // Show register now button with its container
+          if (registerNowBtn && registerNowContainer) {
+            registerNowBtn.href = registrationUrl;
+            registerNowContainer.style.display = 'block';
+            registerNowBtn.addEventListener('click', handleRegisterNow);
+          }
+
+          // Update next steps for ticket purchases
           stepsContent.textContent = "";
-          // Add each step as a text node
+          const steps = [
+            "• Complete your festival registration using the link below",
+            "• Check your email for order confirmation",
+            "• Save your confirmation number for check-in",
+            "• Join our WhatsApp group for updates",
+          ];
+          steps.forEach((step) => {
+            const p = document.createElement("p");
+            p.textContent = step;
+            stepsContent.appendChild(p);
+          });
+
+          // Start countdown timer - now always starts for ticket purchases
+          startCountdown();
+        } else if (data.instructions?.nextSteps) {
+          // Handle normal next steps without immediate registration
+          stepsContent.textContent = "";
           data.instructions.nextSteps.forEach((step) => {
             const p = document.createElement("p");
             p.textContent = `• ${step}`;
             stepsContent.appendChild(p);
           });
-        } else if (
-          data.order?.orderType === "tickets" ||
-          hasTickets(data.order?.items)
-        ) {
-          // If the order contains tickets, show registration reminder
+        } else {
+          // Default steps for all other purchases
           stepsContent.textContent = "";
           const steps = [
             "• Check your email for order confirmation",
-            "• Complete your festival registration (link in email)",
-            "• Save your confirmation number for check-in",
-            "• Join our WhatsApp group for updates",
+            "• Save your confirmation number for your records",
+            "• Contact us if you have any questions",
           ];
           steps.forEach((step) => {
             const p = document.createElement("p");
@@ -808,8 +984,8 @@
           const testModeIndicator = document.createElement("div");
           testModeIndicator.className = "test-mode-indicator";
           testModeIndicator.style.cssText = `
-            background: #ff6b6b;
-            color: white;
+            background: var(--color-danger, #ff6b6b);
+            color: var(--color-text-on-danger, white);
             padding: 8px 16px;
             border-radius: 4px;
             margin: 16px 0;
@@ -842,8 +1018,6 @@
           window.dispatchEvent(new Event("cartCleared"));
         }
 
-        // Start the countdown timer
-        startCountdown();
       }
 
       function hasTickets(items) {
@@ -863,7 +1037,7 @@
 
         // Update error message based on payment method or error data
         const errorTitle = document.querySelector('.error-title');
-        const errorState = document.querySelector('.error-state');
+        const errorStateDiv = document.querySelector('.error-state');
 
         let errorMessage = 'Unable to verify payment';
         if (errorData && errorData.paymentMethod) {
@@ -877,7 +1051,7 @@
             paypalErrorMsg.textContent = 'There was an issue processing your PayPal payment. Please check your PayPal account or contact us for assistance.';
             paypalErrorMsg.setAttribute('role', 'alert');
             paypalErrorMsg.setAttribute('aria-live', 'assertive');
-            errorState.insertBefore(paypalErrorMsg, errorState.querySelector('.success-actions'));
+            errorStateDiv.insertBefore(paypalErrorMsg, errorStateDiv.querySelector('.success-actions'));
           } else if (errorData.paymentMethod === 'stripe') {
             errorMessage = 'Payment Verification Issue';
             if (errorTitle) {
@@ -919,6 +1093,10 @@
 
       // Start verification when page loads
       verifyPayment();
+
+      // populateRegistrationForm function removed - registration handled on separate page
+
+      // Registration form submission handling removed - handled on separate page
     </script>
 
     <script src="/js/navigation.js"></script>

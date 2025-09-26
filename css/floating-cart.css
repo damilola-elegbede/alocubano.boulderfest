@@ -138,6 +138,30 @@
   display: none;
 }
 
+/* Test Ticket Styling */
+.cart-item.test-ticket {
+  background: linear-gradient(135deg, #fff3cd 0%, #fef8e1 100%);
+  border: 1px solid #ffc107;
+  border-radius: var(--cart-radius);
+  padding: 18px 16px;
+  margin: 8px 0;
+}
+
+.test-ticket-badge {
+  display: inline-block;
+  background: #ffc107;
+  color: #212529;
+  font-size: 11px;
+  font-weight: 900;
+  font-family: var(--font-display);
+  padding: 2px 6px;
+  border-radius: 3px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
 /* Cart Categories */
 .cart-category {
   margin-bottom: var(--space-lg);
@@ -894,4 +918,15 @@
 
 [data-theme="dark"] .cart-footer {
   border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Test Ticket Dark Mode Support */
+[data-theme="dark"] .cart-item.test-ticket {
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.15) 0%, rgba(255, 193, 7, 0.08) 100%);
+  border-color: rgba(255, 193, 7, 0.3);
+}
+
+[data-theme="dark"] .test-ticket-badge {
+  background: rgba(255, 193, 7, 0.9);
+  color: #000;
 }

@@ -1,7 +1,7 @@
-import { getDatabase } from "../lib/database.js";
+import { getDatabaseClient } from "../lib/database.js";
 
 async function checkTicketsTable() {
-  const db = getDatabase();
+  const db = await getDatabaseClient();
 
   console.log("=== Checking Tickets Table ===\n");
 

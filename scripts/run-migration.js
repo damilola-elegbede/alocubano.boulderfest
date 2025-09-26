@@ -8,7 +8,7 @@
 import { MigrationRunner } from "../api/db/rollback-procedures.js";
 import { BackupManager } from "../api/db/backup-manager.js";
 import { SchemaValidator } from "./validate-schema.js";
-import { getDatabase } from "../lib/database.js";
+import { getDatabaseClient } from "../lib/database.js";
 import chalk from "chalk";
 
 // Helper function for colored output
@@ -28,7 +28,7 @@ const log = {
 async function runMigration() {
   log.header("Database Migration: Add Wallet Tracking Columns");
 
-  const database = getDatabase();
+  const database = await getDatabaseClient();
   const backupManager = new BackupManager();
   const migrationRunner = new MigrationRunner(database, backupManager);
   const validator = new SchemaValidator();

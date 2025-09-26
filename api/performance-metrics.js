@@ -1,5 +1,6 @@
-/**
 import { setSecureCorsHeaders } from '../lib/cors-config.js';
+
+/**
  * Performance Metrics API Endpoint
  * Collects, processes, and stores performance metrics from client applications
  *

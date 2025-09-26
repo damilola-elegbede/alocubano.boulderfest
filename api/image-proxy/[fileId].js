@@ -1,5 +1,5 @@
 import { google } from 'googleapis';
-import { setSecureCorsHeaders } from '../lib/cors-config.js';
+import { setSecureCorsHeaders } from '../../lib/cors-config.js';
 import {
   processImage,
   detectOptimalFormat,
@@ -86,7 +86,7 @@ export default async function handler(req, res) {
 
       // For development/preview, serve a placeholder image instead of failing
       // This allows the gallery to work without Google Drive credentials
-      return servePlaceholderImage(res, fileId);
+      return servePlaceholderImage(req, res, fileId);
     }
 
     // In production or other environments, fail fast to avoid masking configuration issues
@@ -330,7 +330,7 @@ export default async function handler(req, res) {
 /**
  * Serve a placeholder image for local development when Google Drive credentials are not available
  */
-function servePlaceholderImage(res, fileId) {
+function servePlaceholderImage(req, res, fileId) {
   // Generate a simple SVG placeholder with the file ID
   const svgContent = `
     <svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">

@@ -20,12 +20,9 @@ import Stripe from 'stripe';
 import transactionService from "../../lib/transaction-service.js";
 import paymentEventLogger from "../../lib/payment-event-logger.js";
 import ticketService from "../../lib/ticket-service.js";
-import { getTicketEmailService } from "../../lib/ticket-email-service-brevo.js";
-import { RegistrationTokenService } from "../../lib/registration-token-service.js";
-import { generateTicketId } from "../../lib/ticket-id-generator.js";
-import { scheduleRegistrationReminders } from "../../lib/reminder-scheduler.js";
 import { getDatabaseClient } from "../../lib/database.js";
 import auditService from "../../lib/audit-service.js";
+import { createOrRetrieveTickets } from "../../lib/ticket-creation-service.js";
 
 // Initialize Stripe with strict error handling
 if (!process.env.STRIPE_SECRET_KEY) {
@@ -39,25 +36,7 @@ if (!process.env.STRIPE_WEBHOOK_SECRET) {
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-// Helper to parse Stripe's single name field into first and last name
-function parseCustomerName(stripeCustomerName) {
-  if (!stripeCustomerName) {
-    return { firstName: 'Guest', lastName: 'Attendee' };
-  }
-
-  const parts = stripeCustomerName.trim().split(/\s+/);
-
-  if (parts.length === 1) {
-    return { firstName: parts[0], lastName: '' };
-  } else if (parts.length === 2) {
-    return { firstName: parts[0], lastName: parts[1] };
-  } else {
-    // Multiple parts - everything except last is first name
-    const lastName = parts[parts.length - 1];
-    const firstName = parts.slice(0, -1).join(' ');
-    return { firstName, lastName };
-  }
-}
+// Note: Customer name parsing moved to ticket-creation-service.js
 
 // Helper to log financial audit events (non-blocking)
 async function logFinancialAudit(params) {
@@ -69,150 +48,8 @@ async function logFinancialAudit(params) {
   }
 }
 
-// Helper to process universal registration flow for all tickets
-// This encapsulates the complete registration logic to avoid duplication
-async function processUniversalRegistration(fullSession, transaction) {
-  const db = await getDatabaseClient();
-  const tokenService = new RegistrationTokenService();
-  const ticketEmailService = getTicketEmailService();
-
-  // Check if this is a test transaction
-  const isTestTransaction = fullSession.metadata?.testMode === 'true' ||
-                           fullSession.metadata?.testTransaction === 'true' ||
-                           fullSession.id?.includes('test');
-
-  let committed = false;
-  const ticketsToSchedule = []; // Track tickets for post-commit reminder scheduling
-
-  try {
-    // Start transaction
-    await db.execute('BEGIN IMMEDIATE');
-
-    // Parse customer name for default values
-    const { firstName, lastName } = parseCustomerName(
-      fullSession.customer_details?.name || 'Guest'
-    );
-
-    // Calculate registration deadline (72 hours from now)
-    const now = new Date();
-    const registrationDeadline = new Date(now.getTime() + (72 * 60 * 60 * 1000));
-
-    // Create tickets with pending registration status
-    const tickets = [];
-    const lineItems = fullSession.line_items?.data || [];
-
-    for (const item of lineItems) {
-      const quantity = item.quantity || 1;
-      const ticketType = item.price?.lookup_key || item.price?.nickname || 'general';
-      const priceInCents = item.amount_total || 0;
-
-      // Extract event metadata from product or use defaults
-      const product = item.price?.product;
-      const meta = product?.metadata || {};
-      const eventId = meta.event_id || process.env.DEFAULT_EVENT_ID || 'boulder-fest-2026';
-      const eventDate = meta.event_date || process.env.DEFAULT_EVENT_DATE || '2026-05-15';
-
-      // Calculate cent-accurate price distribution
-      const perTicketBase = Math.floor(priceInCents / quantity);
-      const remainder = priceInCents % quantity;
-
-      for (let i = 0; i < quantity; i++) {
-        // Distribute remainder cents across first tickets
-        const priceForThisTicket = perTicketBase + (i < remainder ? 1 : 0);
-        const ticketId = await generateTicketId();
-
-        // Create ticket with pending registration
-        await db.execute({
-          sql: `INSERT INTO tickets (
-            ticket_id, transaction_id, ticket_type, event_id,
-            event_date, price_cents,
-            attendee_first_name, attendee_last_name,
-            registration_status, registration_deadline,
-            status, created_at, is_test
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          args: [
-            ticketId,
-            transaction.id,
-            isTestTransaction ? `TEST-${ticketType}` : ticketType,
-            eventId,
-            eventDate,
-            priceForThisTicket, // Preserves total cents across all tickets
-            isTestTransaction ? `TEST-${firstName}` : firstName, // Mark test first name
-            isTestTransaction ? `TEST-${lastName}` : lastName,  // Mark test last name
-            'pending', // All tickets start pending
-            registrationDeadline.toISOString(),
-            'valid',
-            now.toISOString(),
-            isTestTransaction ? 1 : 0 // Mark as test ticket
-          ]
-        });
-
-        // Defer scheduling reminders until after COMMIT
-        ticketsToSchedule.push({ ticketId, registrationDeadline });
-
-        tickets.push({
-          id: ticketId,
-          type: ticketType,
-          ticket_id: ticketId
-        });
-      }
-    }
-
-    // Commit DB work before external side effects
-    await db.execute('COMMIT');
-    committed = true;
-
-    // Post-commit side effects (best-effort, non-transactional)
-    // 1) Generate registration token (uses its own DB client)
-    const registrationToken = await tokenService.createToken(transaction.id);
-
-    // 2) Send registration invitation email
-    await ticketEmailService.sendRegistrationInvitation({
-      transactionId: transaction.uuid,
-      customerEmail: fullSession.customer_details?.email,
-      customerName: fullSession.customer_details?.name || 'Guest',
-      ticketCount: tickets.length,
-      registrationToken,
-      registrationDeadline,
-      tickets,
-      paymentProcessor: 'stripe',
-      processorTransactionId: fullSession.id
-    });
-
-    // 3) Log email sent (best-effort)
-    if (tickets.length && fullSession.customer_details?.email) {
-      await db.execute({
-        sql: `INSERT INTO registration_emails (
-          ticket_id, transaction_id, email_type,
-          recipient_email, sent_at
-        ) VALUES (?, ?, ?, ?, ?)`,
-        args: [
-          tickets[0].id, // Associate with first ticket
-          transaction.id,
-          'registration_invitation',
-          fullSession.customer_details?.email,
-          now.toISOString()
-        ]
-      });
-    }
-
-    // 4) Schedule reminders for each ticket
-    for (const { ticketId, registrationDeadline } of ticketsToSchedule) {
-      await scheduleRegistrationReminders(ticketId, registrationDeadline);
-    }
-
-    console.log(`${isTestTransaction ? 'TEST ' : ''}Universal registration initiated for transaction ${transaction.uuid}`);
-    console.log(`${tickets.length} ${isTestTransaction ? 'TEST ' : ''}tickets created with pending status`);
-    console.log(`Registration deadline: ${registrationDeadline.toISOString()}`);
-
-    return { success: true, tickets };
-  } catch (ticketError) {
-    if (!committed) {
-      await db.execute('ROLLBACK');
-    }
-    throw ticketError;
-  }
-}
+// Note: processUniversalRegistration has been replaced by centralized ticket-creation-service.js
+// This ensures both webhook and checkout-success use the same idempotent logic
 
 // For Vercel, we need the raw body for webhook verification
 export const config = {
@@ -295,57 +132,53 @@ export default async function handler(req, res) {
           }
         );
 
-        // Check if transaction already exists (idempotency)
-        const existingTransaction =
-            await transactionService.getByStripeSessionId(session.id);
-
-        if (existingTransaction) {
-          console.log(`Transaction already exists for session ${session.id}`);
-          return res.json({ received: true, status: 'already_exists' });
-        }
-
-        // Create transaction record
-        const transaction =
-            await transactionService.createFromStripeSession(fullSession);
-        console.log(`Created transaction: ${transaction.uuid}`);
-
-        // Update the payment event with transaction ID
-        await paymentEventLogger.updateEventTransactionId(
-          event.id,
-          transaction.id
-        );
-
-        // Log financial audit for successful payment
-        await logFinancialAudit({
-          requestId: `stripe_${event.id}`,
-          action: isTestTransaction ? 'TEST_PAYMENT_SUCCESSFUL' : 'PAYMENT_SUCCESSFUL',
-          amountCents: fullSession.amount_total,
-          currency: fullSession.currency?.toUpperCase() || 'USD',
-          transactionReference: transaction.uuid,
-          paymentStatus: 'completed',
-          targetType: 'stripe_session',
-          targetId: session.id,
-          metadata: {
-            stripe_event_id: event.id,
-            stripe_session_id: session.id,
-            payment_intent_id: fullSession.payment_intent,
-            customer_email: fullSession.customer_details?.email,
-            customer_name: fullSession.customer_details?.name,
-            payment_method_types: fullSession.payment_method_types,
-            mode: fullSession.mode,
-            line_items_count: fullSession.line_items?.data?.length || 0,
-            checkout_url: fullSession.url,
-            test_mode: isTestTransaction,
-            test_transaction: isTestTransaction
-          },
-          severity: isTestTransaction ? 'debug' : 'info'
-        });
-
-        // Universal registration flow for all tickets
+        // Use centralized ticket creation service for idempotency
         try {
-          await processUniversalRegistration(fullSession, transaction);
+          const result = await createOrRetrieveTickets(fullSession);
+          const transaction = result.transaction;
+
+          console.log(`Webhook: Transaction ${result.created ? 'created' : 'already exists'}: ${transaction.uuid}`);
+          console.log(`Webhook: ${result.tickets.length} tickets ${result.created ? 'created' : 'found'}`);
+
+          // Update the payment event with transaction ID
+          await paymentEventLogger.updateEventTransactionId(
+            event.id,
+            transaction.id
+          );
+
+          // Log financial audit for successful payment
+          await logFinancialAudit({
+            requestId: `stripe_${event.id}`,
+            action: isTestTransaction ? 'TEST_PAYMENT_SUCCESSFUL' : 'PAYMENT_SUCCESSFUL',
+            amountCents: fullSession.amount_total,
+            currency: fullSession.currency?.toUpperCase() || 'USD',
+            transactionReference: transaction.uuid,
+            paymentStatus: 'completed',
+            targetType: 'stripe_session',
+            targetId: session.id,
+            metadata: {
+              stripe_event_id: event.id,
+              stripe_session_id: session.id,
+              payment_intent_id: fullSession.payment_intent,
+              customer_email: fullSession.customer_details?.email,
+              customer_name: fullSession.customer_details?.name,
+              payment_method_types: fullSession.payment_method_types,
+              mode: fullSession.mode,
+              line_items_count: fullSession.line_items?.data?.length || 0,
+              checkout_url: fullSession.url,
+              test_mode: isTestTransaction,
+              test_transaction: isTestTransaction,
+              tickets_created: result.created,
+              ticket_count: result.tickets.length
+            },
+            severity: isTestTransaction ? 'debug' : 'info'
+          });
+
+          // Return success - tickets were created or already existed
+          return res.json({ received: true, status: result.created ? 'created' : 'already_exists' });
+
         } catch (ticketError) {
-          console.error('Failed to process checkout with registration:', ticketError);
+          console.error('Webhook: Failed to process checkout:', ticketError);
           await paymentEventLogger.logError(event, ticketError);
           throw ticketError; // Let top-level catch return non-2xx for retry
         }
@@ -375,14 +208,13 @@ export default async function handler(req, res) {
           }
         );
 
-        const existingTransaction =
-            await transactionService.getByStripeSessionId(session.id);
-        if (!existingTransaction) {
-          const transaction =
-              await transactionService.createFromStripeSession(fullSession);
-          console.log(
-            `Created transaction from async payment: ${transaction.uuid}`
-          );
+        // Use centralized ticket creation service for async payments too
+        try {
+          const result = await createOrRetrieveTickets(fullSession);
+          const transaction = result.transaction;
+
+          console.log(`Async payment: Transaction ${result.created ? 'created' : 'already exists'}: ${transaction.uuid}`);
+          console.log(`Async payment: ${result.tickets.length} tickets ${result.created ? 'created' : 'found'}`);
 
           // Log financial audit for async payment success
           await logFinancialAudit({
@@ -404,22 +236,16 @@ export default async function handler(req, res) {
               mode: fullSession.mode,
               async_payment: true,
               test_mode: isTestTransaction,
-              test_transaction: isTestTransaction
+              test_transaction: isTestTransaction,
+              tickets_created: result.created,
+              ticket_count: result.tickets.length
             },
             severity: isTestTransaction ? 'debug' : 'info'
           });
-
-          // Universal registration flow for async payments
-          try {
-            await processUniversalRegistration(fullSession, transaction);
-          } catch (ticketError) {
-            console.error(
-              'Failed to create tickets for async payment:',
-              ticketError
-            );
-            await paymentEventLogger.logError(event, ticketError);
-            throw ticketError; // Let top-level catch return non-2xx for retry
-          }
+        } catch (ticketError) {
+          console.error('Failed to process async payment:', ticketError);
+          await paymentEventLogger.logError(event, ticketError);
+          throw ticketError; // Let top-level catch return non-2xx for retry
         }
       } catch (error) {
         console.error('Failed to process async payment:', error);

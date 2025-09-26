@@ -1,10 +1,18 @@
+import { setSecureCorsHeaders } from '../../lib/cors-config.js';
+import { warmDatabaseInBackground } from '../../lib/database-warmer.js';
+
 /**
-import { setSecureCorsHeaders } from '../lib/cors-config.js';
  * Checkout Success API Endpoint
- * Handles successful Stripe Checkout returns
+ * Handles successful Stripe Checkout returns and creates tickets immediately
+ * Option 2 Implementation: Move ticket creation from webhook to checkout success
  */
 
 import Stripe from 'stripe';
+import { getDatabaseClient } from '../../lib/database.js';
+import { RegistrationTokenService } from '../../lib/registration-token-service.js';
+import { generateOrderId } from '../../lib/order-id-generator.js';
+import transactionService from '../../lib/transaction-service.js';
+import { createOrRetrieveTickets } from '../../lib/ticket-creation-service.js';
 
 // Initialize Stripe with strict error handling
 if (!process.env.STRIPE_SECRET_KEY) {
@@ -13,7 +21,13 @@ if (!process.env.STRIPE_SECRET_KEY) {
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
+// Note: Ticket creation has been moved to webhook handler only
+// This prevents duplicate tickets and ensures single source of truth
+
 export default async function handler(req, res) {
+  // Warm database connection in background to reduce latency
+  warmDatabaseInBackground();
+
   // Set CORS headers
   setSecureCorsHeaders(req, res);
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -39,36 +53,124 @@ export default async function handler(req, res) {
       });
     }
 
-    // Retrieve and validate Checkout Session from Stripe
-    const session = await stripe.checkout.sessions.retrieve(session_id);
+    // Retrieve and validate Checkout Session from Stripe (with expanded line items)
+    const fullSession = await stripe.checkout.sessions.retrieve(session_id, {
+      expand: ['line_items', 'line_items.data.price.product']
+    });
 
     // Verify the session is in a successful state
-    if (session.payment_status !== 'paid') {
+    if (fullSession.payment_status !== 'paid') {
       return res.status(400).json({
         error: 'Payment not completed',
-        status: session.payment_status
+        status: fullSession.payment_status
       });
     }
 
-    console.log('Checkout session verified as successful:', {
-      sessionId: session.id,
-      customerEmail: session.customer_email || session.customer_details?.email,
-      amount: session.amount_total / 100,
-      orderId: session.metadata?.orderId
-    });
+    if (process.env.NODE_ENV !== 'production') {
+      const email = fullSession.customer_email || fullSession.customer_details?.email;
+      console.log('Checkout session verified as successful:', {
+        sessionId: fullSession.id,
+        customerEmail: email ? email.replace(/(.).+(@.*)/, '$1***$2') : undefined,
+        amount: fullSession.amount_total / 100,
+        orderId: fullSession.metadata?.orderId
+      });
+    }
 
-    // Return success response
-    return res.status(200).json({
-      success: true,
-      session: {
-        id: session.id,
-        amount: session.amount_total / 100,
-        currency: session.currency,
-        customer_email:
-          session.customer_email || session.customer_details?.email,
-        metadata: session.metadata
+    // Use the centralized ticket creation service for idempotent operations
+    console.log(`Processing checkout success for session ${session_id}`);
+
+    let result;
+    let registrationToken = null;
+    let transaction = null;
+    let hasTickets = false;
+
+    try {
+      // This will create or retrieve transaction and tickets atomically
+      result = await createOrRetrieveTickets(fullSession);
+
+      transaction = result.transaction;
+      hasTickets = result.tickets && result.tickets.length > 0;
+
+      console.log(`Transaction ${result.created ? 'created' : 'retrieved'}: ${transaction.uuid}`);
+      console.log(`${result.tickets.length} tickets ${result.created ? 'created' : 'found'}`);
+
+      // Ensure order number exists
+      if (!transaction.order_number) {
+        const isTestTransaction = fullSession.mode === 'test' || fullSession.livemode === false;
+        transaction.order_number = await generateOrderId(isTestTransaction);
+        console.log(`Generated order number: ${transaction.order_number}`);
+
+        const db = await getDatabaseClient();
+        await db.execute({
+          sql: 'UPDATE transactions SET order_number = ? WHERE id = ?',
+          args: [transaction.order_number, transaction.id]
+        });
       }
-    });
+
+      // Get or generate registration token
+      if (transaction.registration_token) {
+        registrationToken = transaction.registration_token;
+        console.log(`Using existing registration token`);
+      } else {
+        try {
+          const tokenService = new RegistrationTokenService();
+          await tokenService.ensureInitialized();
+          registrationToken = await tokenService.createToken(transaction.id);
+          console.log(`Generated registration token for transaction ${transaction.uuid}`);
+
+          // Update transaction with token
+          const db = await getDatabaseClient();
+          await db.execute({
+            sql: 'UPDATE transactions SET registration_token = ? WHERE id = ?',
+            args: [registrationToken, transaction.id]
+          });
+        } catch (tokenError) {
+          console.error('Failed to generate registration token:', tokenError.message);
+          // Continue without token - not critical for success response
+        }
+      }
+
+    } catch (error) {
+      console.error('Failed to create or retrieve tickets:', error);
+
+      // For critical errors, return error response
+      return res.status(500).json({
+        error: 'Failed to process order',
+        message: 'Please contact support with your session ID',
+        sessionId: session_id
+      });
+    }
+
+    // Return success response with registration information and order details
+    const response = {
+      success: true,
+      orderNumber: transaction ? transaction.order_number : null,  // Add order number for user reference
+      session: {
+        id: fullSession.id,
+        amount: fullSession.amount_total / 100,
+        currency: fullSession.currency,
+        customer_email: fullSession.customer_email || fullSession.customer_details?.email,
+        customer_details: fullSession.customer_details, // Include full customer details for form
+        metadata: fullSession.metadata
+      },
+      hasTickets,
+      // Include transaction details for better frontend integration (without exposing internal IDs)
+      transaction: transaction ? {
+        orderNumber: transaction.order_number,
+        status: transaction.status,
+        totalAmount: Number(transaction.total_amount || transaction.amount_cents), // Convert BigInt to Number
+        customerEmail: transaction.customer_email,
+        customerName: transaction.customer_name
+      } : null
+    };
+
+    // Add registration information if token exists
+    if (registrationToken) {
+      response.registrationToken = registrationToken;
+      response.registrationUrl = `/pages/core/register-tickets.html?token=${registrationToken}`;
+    }
+
+    return res.status(200).json(response);
   } catch (error) {
     console.error('Error handling checkout success:', error);
 

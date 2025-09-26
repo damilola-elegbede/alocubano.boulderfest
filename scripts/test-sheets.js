@@ -1,6 +1,6 @@
 import "dotenv/config";
 import googleSheetsService from "../lib/google-sheets-service.js";
-import { getDatabase } from "../lib/database.js";
+import { getDatabaseClient } from "../lib/database.js";
 
 async function testSheets() {
   console.log("Testing Google Sheets Integration...\n");
@@ -37,7 +37,7 @@ async function testSheets() {
     console.log(`   ✓ Data synced at ${result.timestamp}\n`);
 
     // Get stats
-    const db = getDatabase();
+    const db = await getDatabaseClient();
     const stats = await db.execute("SELECT COUNT(*) as count FROM tickets");
     const checkedIn = await db.execute(
       "SELECT COUNT(*) as count FROM tickets WHERE checked_in_at IS NOT NULL",

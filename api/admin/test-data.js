@@ -244,7 +244,7 @@ async function handleDeleteTestData(db, req, res) {
     } = req.query;
 
     // Generate unique cleanup ID
-    const cleanupId = `cleanup_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const cleanupId = `cleanup_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 
     // Prepare cleanup criteria
     const cleanupCriteria = {
@@ -364,7 +364,7 @@ async function handleResetTestData(db, req, res) {
     }
 
     // Generate unique operation ID
-    const operationId = `reset_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const operationId = `reset_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 
     const operationCriteria = {
       operation_type,
@@ -454,9 +454,6 @@ async function performFullTestDataReset(db) {
   let transactionItemsDeleted = 0;
 
   try {
-    // Begin transaction for atomic operation
-    await db.execute('BEGIN TRANSACTION');
-
     // Count records before deletion
     const countResult = await db.execute(`
       SELECT
@@ -469,26 +466,31 @@ async function performFullTestDataReset(db) {
                             countResult.rows[0].tickets +
                             countResult.rows[0].transaction_items;
 
+    // Build batch operations for atomic deletion
+    const deleteOperations = [];
+
     // Delete in proper order to maintain referential integrity
-    const ticketsResult = await db.execute('DELETE FROM tickets WHERE is_test = 1');
-    ticketsDeleted = ticketsResult.changes || 0;
-
-    const transactionItemsResult = await db.execute('DELETE FROM transaction_items WHERE is_test = 1');
-    transactionItemsDeleted = transactionItemsResult.changes || 0;
-
-    const transactionsResult = await db.execute('DELETE FROM transactions WHERE is_test = 1');
-    transactionsDeleted = transactionsResult.changes || 0;
-
-    totalDeleted = ticketsDeleted + transactionItemsDeleted + transactionsDeleted;
+    deleteOperations.push('DELETE FROM tickets WHERE is_test = 1');
+    deleteOperations.push('DELETE FROM transaction_items WHERE is_test = 1');
+    deleteOperations.push('DELETE FROM transactions WHERE is_test = 1');
 
     // Clean up related audit logs for test data
-    const auditCleanupResult = await db.execute(`
+    deleteOperations.push(`
       DELETE FROM audit_logs
       WHERE metadata IS NOT NULL
         AND json_extract(metadata, '$.test_mode') = 1
     `);
 
-    await db.execute('COMMIT');
+    // Execute all operations in a single batch (transaction is automatic)
+    const results = await db.batch(deleteOperations);
+
+    // Extract deletion counts from results
+    ticketsDeleted = results[0]?.changes || results[0]?.rowsAffected || 0;
+    transactionItemsDeleted = results[1]?.changes || results[1]?.rowsAffected || 0;
+    transactionsDeleted = results[2]?.changes || results[2]?.rowsAffected || 0;
+    const auditDeleted = results[3]?.changes || results[3]?.rowsAffected || 0;
+
+    totalDeleted = ticketsDeleted + transactionItemsDeleted + transactionsDeleted;
 
     return {
       success: true,
@@ -497,7 +499,7 @@ async function performFullTestDataReset(db) {
       transactions_deleted: transactionsDeleted,
       tickets_deleted: ticketsDeleted,
       transaction_items_deleted: transactionItemsDeleted,
-      related_records_deleted: auditCleanupResult.changes || 0,
+      related_records_deleted: auditDeleted,
       verification_checksum: generateVerificationChecksum(totalDeleted, Date.now()),
       metadata: {
         operation: 'full_reset',
@@ -507,7 +509,8 @@ async function performFullTestDataReset(db) {
     };
 
   } catch (error) {
-    await db.execute('ROLLBACK');
+    // Rollback is automatic if batch fails
+    console.error('Full test data reset failed:', error);
     throw error;
   }
 }
@@ -523,8 +526,6 @@ async function performRecentTestDataReset(db) {
   let transactionItemsDeleted = 0;
 
   try {
-    await db.execute('BEGIN TRANSACTION');
-
     const recentFilter = `is_test = 1 AND created_at >= datetime('now', '-24 hours')`;
 
     // Count records before deletion
@@ -539,19 +540,23 @@ async function performRecentTestDataReset(db) {
                             countResult.rows[0].tickets +
                             countResult.rows[0].transaction_items;
 
+    // Build batch operations for atomic deletion
+    const deleteOperations = [];
+
     // Delete recent test data
-    const ticketsResult = await db.execute(`DELETE FROM tickets WHERE ${recentFilter}`);
-    ticketsDeleted = ticketsResult.changes || 0;
+    deleteOperations.push(`DELETE FROM tickets WHERE ${recentFilter}`);
+    deleteOperations.push(`DELETE FROM transaction_items WHERE ${recentFilter}`);
+    deleteOperations.push(`DELETE FROM transactions WHERE ${recentFilter}`);
 
-    const transactionItemsResult = await db.execute(`DELETE FROM transaction_items WHERE ${recentFilter}`);
-    transactionItemsDeleted = transactionItemsResult.changes || 0;
+    // Execute all operations in a single batch (transaction is automatic)
+    const results = await db.batch(deleteOperations);
 
-    const transactionsResult = await db.execute(`DELETE FROM transactions WHERE ${recentFilter}`);
-    transactionsDeleted = transactionsResult.changes || 0;
+    // Extract deletion counts from results
+    ticketsDeleted = results[0]?.changes || results[0]?.rowsAffected || 0;
+    transactionItemsDeleted = results[1]?.changes || results[1]?.rowsAffected || 0;
+    transactionsDeleted = results[2]?.changes || results[2]?.rowsAffected || 0;
 
     totalDeleted = ticketsDeleted + transactionItemsDeleted + transactionsDeleted;
-
-    await db.execute('COMMIT');
 
     return {
       success: true,
@@ -571,7 +576,8 @@ async function performRecentTestDataReset(db) {
     };
 
   } catch (error) {
-    await db.execute('ROLLBACK');
+    // Rollback is automatic if batch fails
+    console.error('Recent test data reset failed:', error);
     throw error;
   }
 }
@@ -587,8 +593,6 @@ async function performFailedTransactionReset(db) {
   let transactionItemsDeleted = 0;
 
   try {
-    await db.execute('BEGIN TRANSACTION');
-
     const failedFilter = `is_test = 1 AND status IN ('failed', 'cancelled', 'expired')`;
 
     // Get failed transaction IDs for cascading deletes
@@ -599,7 +603,6 @@ async function performFailedTransactionReset(db) {
     const failedTransactionIds = failedTransactionsResult.rows.map(row => row.id);
 
     if (failedTransactionIds.length === 0) {
-      await db.execute('COMMIT');
       return {
         success: true,
         records_identified: 0,
@@ -617,28 +620,34 @@ async function performFailedTransactionReset(db) {
       };
     }
 
+    // Build batch operations for atomic deletion
+    const deleteOperations = [];
+
     // Delete related tickets and transaction items
     const placeholders = failedTransactionIds.map(() => '?').join(',');
 
-    const ticketsResult = await db.execute(
-      `DELETE FROM tickets WHERE transaction_id IN (${placeholders}) AND is_test = 1`,
-      failedTransactionIds
-    );
-    ticketsDeleted = ticketsResult.changes || 0;
+    deleteOperations.push({
+      sql: `DELETE FROM tickets WHERE transaction_id IN (${placeholders}) AND is_test = 1`,
+      args: failedTransactionIds
+    });
 
-    const transactionItemsResult = await db.execute(
-      `DELETE FROM transaction_items WHERE transaction_id IN (${placeholders}) AND is_test = 1`,
-      failedTransactionIds
-    );
-    transactionItemsDeleted = transactionItemsResult.changes || 0;
+    deleteOperations.push({
+      sql: `DELETE FROM transaction_items WHERE transaction_id IN (${placeholders}) AND is_test = 1`,
+      args: failedTransactionIds
+    });
 
     // Delete failed transactions
-    const transactionsResult = await db.execute(`DELETE FROM transactions WHERE ${failedFilter}`);
-    transactionsDeleted = transactionsResult.changes || 0;
+    deleteOperations.push(`DELETE FROM transactions WHERE ${failedFilter}`);
+
+    // Execute all operations in a single batch (transaction is automatic)
+    const results = await db.batch(deleteOperations);
+
+    // Extract deletion counts from results
+    ticketsDeleted = results[0]?.changes || results[0]?.rowsAffected || 0;
+    transactionItemsDeleted = results[1]?.changes || results[1]?.rowsAffected || 0;
+    transactionsDeleted = results[2]?.changes || results[2]?.rowsAffected || 0;
 
     totalDeleted = ticketsDeleted + transactionItemsDeleted + transactionsDeleted;
-
-    await db.execute('COMMIT');
 
     return {
       success: true,
@@ -658,7 +667,8 @@ async function performFailedTransactionReset(db) {
     };
 
   } catch (error) {
-    await db.execute('ROLLBACK');
+    // Rollback is automatic if batch fails
+    console.error('Failed transaction reset failed:', error);
     throw error;
   }
 }

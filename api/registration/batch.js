@@ -1,17 +1,17 @@
 import { getDatabaseClient } from "../../lib/database.js";
 import { getBrevoClient } from "../../lib/brevo-client.js";
-import rateLimit from "../../lib/rate-limiter.js";
+import rateLimit from "../../lib/rate-limit-middleware.js";
 import auditService from "../../lib/audit-service.js";
 
 // Input validation regex patterns
 const NAME_REGEX = /^[a-zA-Z\s\-']{2,50}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// Rate limiting: 3 attempts per 15 minutes
+// Rate limiting: 10 attempts per 15 minutes (increased for better UX)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 3,
-  message: 'Too many registration attempts. Please try again later.'
+  max: 10,
+  message: 'Too many registration attempts. Please try again in a few minutes.'
 });
 
 // XSS prevention
@@ -143,11 +143,17 @@ export default async function handler(req, res) {
   const { registrations } = req.body;
 
   if (!registrations || !Array.isArray(registrations) || registrations.length === 0) {
-    return res.status(400).json({ error: 'Registrations array is required' });
+    return res.status(400).json({
+      error: 'Registrations array is required',
+      details: 'Please provide an array of ticket registrations to process.'
+    });
   }
 
   if (registrations.length > 10) {
-    return res.status(400).json({ error: 'Maximum 10 tickets per batch' });
+    return res.status(400).json({
+      error: 'Maximum 10 tickets per batch',
+      details: `You attempted to register ${registrations.length} tickets. Please register in batches of 10 or fewer.`
+    });
   }
 
   // Validate all registrations first
@@ -157,7 +163,8 @@ export default async function handler(req, res) {
   if (allErrors.length > 0) {
     return res.status(400).json({
       error: 'Validation failed',
-      details: allErrors
+      details: allErrors,
+      message: 'Please correct the validation errors and try again.'
     });
   }
 
@@ -166,19 +173,23 @@ export default async function handler(req, res) {
   try {
     const db = await getDatabaseClient();
 
-    // Fetch all tickets
+    // Fetch all tickets with transaction info
     const ticketIds = sanitizedRegistrations.map(r => r.ticketId);
     const ticketsResult = await db.execute({
       sql: `
         SELECT
-          ticket_id,
-          ticket_type,
-          registration_status,
-          registration_deadline,
-          stripe_payment_intent,
-          customer_email
-        FROM tickets
-        WHERE ticket_id IN (${ticketIds.map(() => '?').join(',')})
+          t.ticket_id,
+          t.ticket_type,
+          t.registration_status,
+          t.registration_deadline,
+          t.transaction_id,
+          t.attendee_first_name,
+          t.attendee_last_name,
+          t.attendee_email,
+          tx.customer_email as purchaser_email
+        FROM tickets t
+        LEFT JOIN transactions tx ON t.transaction_id = tx.id
+        WHERE t.ticket_id IN (${ticketIds.map(() => '?').join(',')})
       `,
       args: ticketIds
     });
@@ -214,14 +225,14 @@ export default async function handler(req, res) {
       });
     }
 
-    // Use transaction for atomicity
+    // Build batch operations for atomicity
     const results = [];
     const emailTasks = [];
-
-    // Start transaction
-    await db.execute('BEGIN TRANSACTION');
+    const batchOperations = [];
+    const auditTasks = [];
 
     try {
+      // Build all operations first
       for (let i = 0; i < sanitizedRegistrations.length; i++) {
         const registration = sanitizedRegistrations[i];
         const ticket = ticketsResult.rows.find(t => t.ticket_id === registration.ticketId);
@@ -235,8 +246,8 @@ export default async function handler(req, res) {
           email: ticket.attendee_email
         };
 
-        // Update ticket (guard against concurrent completion)
-        const updateRes = await db.execute({
+        // Add ticket update operation
+        batchOperations.push({
           sql: `
             UPDATE tickets
             SET
@@ -256,11 +267,15 @@ export default async function handler(req, res) {
           ]
         });
 
-        // Use portable rows changed check for different database implementations
-        const rowsChanged = updateRes?.rowsAffected ?? updateRes?.changes ?? 0;
-        if (rowsChanged === 0) {
-          throw new Error(`Concurrent update detected for ticket ${registration.ticketId}`);
-        }
+        // Add reminder cancellation operation
+        batchOperations.push({
+          sql: `
+            UPDATE registration_reminders
+            SET status = 'cancelled'
+            WHERE ticket_id = ? AND status = 'scheduled'
+          `,
+          args: [registration.ticketId]
+        });
 
         // Determine changed fields for audit
         const changedFields = [];
@@ -280,8 +295,8 @@ export default async function handler(req, res) {
           changedFields.push('registered_at');
         }
 
-        // Audit individual registration change (non-blocking)
-        auditRegistrationChange({
+        // Queue audit task for after transaction
+        auditTasks.push({
           requestId: requestId,
           ticketId: registration.ticketId,
           beforeStatus: beforeState.status,
@@ -302,16 +317,6 @@ export default async function handler(req, res) {
           processingTimeMs: Date.now() - operationStartTime
         });
 
-        // Cancel reminders
-        await db.execute({
-          sql: `
-            UPDATE registration_reminders
-            SET status = 'cancelled'
-            WHERE ticket_id = ? AND status = 'scheduled'
-          `,
-          args: [registration.ticketId]
-        });
-
         results.push({
           ticketId: registration.ticketId,
           status: 'registered',
@@ -326,27 +331,67 @@ export default async function handler(req, res) {
         emailTasks.push({
           ticket,
           registration,
-          isPurchaser: registration.email.toLowerCase() === ticket.customer_email.toLowerCase()
+          isPurchaser: ticket.purchaser_email ?
+            registration.email.toLowerCase() === ticket.purchaser_email.toLowerCase() :
+            false
         });
       }
 
-      // Commit transaction
-      await db.execute('COMMIT');
+      // Execute all operations in a single batch (transaction is automatic)
+      const batchResults = await db.batch(batchOperations);
 
-      // Send confirmation emails (after transaction commits)
+      // Check that all ticket updates succeeded
+      // Each UPDATE operation returns a result with rowsAffected
+      for (let i = 0; i < sanitizedRegistrations.length; i++) {
+        // Each registration has 2 operations: ticket update and reminder cancel
+        // So ticket update is at index: i * 2
+        const updateResultIndex = i * 2;
+        const updateResult = batchResults[updateResultIndex];
+        const rowsChanged = updateResult?.rowsAffected ?? updateResult?.changes ?? 0;
+
+        if (rowsChanged === 0) {
+          throw new Error(`Concurrent update detected for ticket ${sanitizedRegistrations[i].ticketId}`);
+        }
+      }
+
+      // Perform audit logging after successful transaction
+      for (const auditTask of auditTasks) {
+        try {
+          await auditRegistrationChange(auditTask);
+        } catch (auditError) {
+          // Log but don't fail the registration
+          console.error('Audit logging failed (non-blocking):', auditError.message);
+        }
+      }
+
+    } catch (error) {
+      // Rollback is automatic if batch fails
+      console.error('Batch transaction failed:', error);
+      throw error;
+    }
+
+    // SEND EMAILS OUTSIDE TRANSACTION (after successful commit)
+    const emailResults = [];
+    try {
       const brevo = await getBrevoClient();
-      const emailResults = [];
 
       for (const task of emailTasks) {
         try {
+          // Validate template IDs
+          const purchaserTemplateId = parseInt(process.env.BREVO_PURCHASER_CONFIRMATION_TEMPLATE_ID);
+          const attendeeTemplateId = parseInt(process.env.BREVO_ATTENDEE_CONFIRMATION_TEMPLATE_ID);
+
+          if (isNaN(purchaserTemplateId) || isNaN(attendeeTemplateId)) {
+            console.error('Invalid Brevo template IDs in environment variables');
+            throw new Error('Email configuration error');
+          }
+
           await brevo.sendTransactionalEmail({
             to: [{
               email: task.registration.email,
               name: `${task.registration.firstName} ${task.registration.lastName}`
             }],
-            templateId: task.isPurchaser ?
-              parseInt(process.env.BREVO_PURCHASER_CONFIRMATION_TEMPLATE_ID) :
-              parseInt(process.env.BREVO_ATTENDEE_CONFIRMATION_TEMPLATE_ID),
+            templateId: task.isPurchaser ? purchaserTemplateId : attendeeTemplateId,
             params: {
               firstName: task.registration.firstName,
               lastName: task.registration.lastName,
@@ -356,7 +401,7 @@ export default async function handler(req, res) {
             }
           });
 
-          // Log email
+          // Log email sent
           await db.execute({
             sql: `
               INSERT INTO registration_emails (ticket_id, email_type, recipient_email, sent_at)
@@ -377,50 +422,49 @@ export default async function handler(req, res) {
           });
         }
       }
-
-      // Log batch operation summary (non-blocking)
-      const totalProcessingTime = Date.now() - startTime;
-      auditService.logDataChange({
-        requestId: requestId,
-        action: 'BATCH_REGISTRATION_COMPLETED',
-        targetType: 'registration_batch',
-        targetId: requestId,
-        beforeValue: null,
-        afterValue: {
-          total_tickets: results.length,
-          successful_registrations: results.length,
-          failed_registrations: 0,
-          email_success_count: emailResults.filter(e => e.emailSent).length,
-          email_failure_count: emailResults.filter(e => !e.emailSent).length
-        },
-        changedFields: ['registration_status', 'attendee_information'],
-        adminUser: null,
-        sessionId: null,
-        ipAddress: clientIP,
-        userAgent: userAgent,
-        metadata: {
-          processing_time_ms: totalProcessingTime,
-          batch_size: sanitizedRegistrations.length,
-          request_method: req.method,
-          user_agent_details: userAgent.substring(0, 200) // Truncate for storage
-        },
-        severity: 'info'
-      }).catch(auditError => {
-        console.error('Batch operation audit failed (non-blocking):', auditError.message);
-      });
-
-      res.status(200).json({
-        success: true,
-        message: `Successfully registered ${results.length} tickets`,
-        registrations: results,
-        emailStatus: emailResults
-      });
-
-    } catch (error) {
-      // Rollback transaction on error
-      await db.execute('ROLLBACK');
-      throw error;
+    } catch (emailServiceError) {
+      console.error('Email service error (non-blocking):', emailServiceError);
+      // Continue - registration was successful even if emails fail
     }
+
+    // Log batch operation summary (non-blocking)
+    const totalProcessingTime = Date.now() - startTime;
+    auditService.logDataChange({
+      requestId: requestId,
+      action: 'BATCH_REGISTRATION_COMPLETED',
+      targetType: 'registration_batch',
+      targetId: requestId,
+      beforeValue: null,
+      afterValue: {
+        total_tickets: results.length,
+        successful_registrations: results.length,
+        failed_registrations: 0,
+        email_success_count: emailResults.filter(e => e.emailSent).length,
+        email_failure_count: emailResults.filter(e => !e.emailSent).length
+      },
+      changedFields: ['registration_status', 'attendee_information'],
+      adminUser: null,
+      sessionId: null,
+      ipAddress: clientIP,
+      userAgent: userAgent,
+      metadata: {
+        processing_time_ms: totalProcessingTime,
+        batch_size: sanitizedRegistrations.length,
+        request_method: req.method,
+        user_agent_details: userAgent.substring(0, 200) // Truncate for storage
+      },
+      severity: 'info'
+    }).catch(auditError => {
+      console.error('Batch operation audit failed (non-blocking):', auditError.message);
+    });
+
+    // Return success response
+    res.status(200).json({
+      success: true,
+      message: `Successfully registered ${results.length} tickets`,
+      registrations: results,
+      emailStatus: emailResults
+    });
 
   } catch (error) {
     console.error('Batch registration error:', error);

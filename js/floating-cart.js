@@ -646,12 +646,27 @@ export function createTicketItemElement(ticket) {
     item.className = 'cart-item';
     item.dataset.ticketType = ticket.ticketType;
 
+    // Check if this is a test ticket and add visual indicators
+    if (ticket.ticketType && ticket.ticketType.startsWith('TEST-')) {
+        item.classList.add('test-ticket');
+    }
+
     // Create info section
     const info = document.createElement('div');
     info.className = 'cart-item-info';
 
     const name = document.createElement('h4');
-    name.textContent = ticket.name;
+
+    // Add test badge for test tickets
+    if (ticket.ticketType && ticket.ticketType.startsWith('TEST-')) {
+        const testBadge = document.createElement('span');
+        testBadge.className = 'test-ticket-badge';
+        testBadge.textContent = 'TEST';
+        name.appendChild(testBadge);
+        name.appendChild(document.createTextNode(' '));
+    }
+
+    name.appendChild(document.createTextNode(ticket.name));
     info.appendChild(name);
 
     const price = document.createElement('p');

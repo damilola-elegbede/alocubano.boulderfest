@@ -1,4 +1,4 @@
-import { getDatabase } from "../lib/database.js";
+import { getDatabaseClient } from "../lib/database.js";
 
 async function testMobileCheckin() {
   console.log("Testing Mobile Check-in System...\n");
@@ -6,7 +6,7 @@ async function testMobileCheckin() {
   // Try to connect to database if available
   if (process.env.TURSO_DATABASE_URL) {
     try {
-      const db = getDatabase();
+      const db = await getDatabaseClient();
 
       // Get check-in statistics
       console.log("1. Current check-in statistics:");

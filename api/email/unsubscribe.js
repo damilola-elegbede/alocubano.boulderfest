@@ -1,10 +1,10 @@
 /**
-import { setSecureCorsHeaders } from '../lib/cors-config.js';
  * Email Unsubscribe API Endpoint
  * Handles newsletter unsubscribe requests
  */
 
 import { getEmailSubscriberService } from "../../lib/email-subscriber-service.js";
+import { setSecureCorsHeaders } from '../../lib/cors-config.js';
 
 // HTML escape function to prevent XSS attacks
 function escapeHtml(unsafe) {

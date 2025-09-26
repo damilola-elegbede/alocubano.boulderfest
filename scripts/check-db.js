@@ -1,7 +1,7 @@
-import { getDatabase } from "../lib/database.js";
+import { getDatabaseClient } from "../lib/database.js";
 
 async function checkDatabase() {
-  const db = getDatabase();
+  const db = await getDatabaseClient();
 
   console.log("=== Database Status Check ===\n");
 

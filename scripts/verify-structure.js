@@ -30,7 +30,6 @@ const expectedFiles = {
     "pages/core/success.html",
     "pages/core/failure.html",
     "pages/core/my-tickets.html",
-    "pages/core/checkout-success.html",
     "pages/core/checkout-cancel.html",
   ],
   "Standalone Pages": [

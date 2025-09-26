@@ -261,7 +261,7 @@ class FinancialAuditScenarioTester {
       currency = 'USD'
     } = scenario;
 
-    const chargeId = `ch_complex_refund_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const chargeId = `ch_complex_refund_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
     const auditEvents = [];
 
     // Original payment
@@ -381,7 +381,7 @@ class FinancialAuditScenarioTester {
     const promises = [];
 
     for (let i = 0; i < transactionCount; i++) {
-      const sessionId = `cs_concurrent_${i}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const sessionId = `cs_concurrent_${i}_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
       const amount = 1000 + (i * 50); // Varying amounts
 
       promises.push(

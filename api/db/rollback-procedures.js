@@ -6,11 +6,11 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { BackupManager } from './backup-manager.js';
-import { getDatabase } from "../../lib/database.js";
+import { getDatabaseClient } from "../../lib/database.js";
 
 class MigrationRunner {
   constructor(database = null, backupManager = null) {
-    this.database = database || getDatabase();
+    this.database = database;
     this.backupManager = backupManager || new BackupManager();
     this.migrationsDir = path.resolve(process.cwd(), 'migrations');
     this.logFile = path.resolve(process.cwd(), 'migration.log');
@@ -33,12 +33,23 @@ class MigrationRunner {
   }
 
   /**
+   * Ensure database client is initialized
+   */
+  async ensureDatabase() {
+    if (!this.database) {
+      this.database = await getDatabaseClient();
+    }
+    return this.database;
+  }
+
+  /**
    * Get migration status from database
    */
   async getMigrationStatus() {
     try {
+      const db = await this.ensureDatabase();
       // Check if schema_migrations table exists
-      const tableExists = await this.database.execute(
+      const tableExists = await db.execute(
         'SELECT name FROM sqlite_master WHERE type=\'table\' AND name=\'schema_migrations\''
       );
 
@@ -52,7 +63,7 @@ class MigrationRunner {
       }
 
       // Get applied migrations
-      const migrations = await this.database.execute(
+      const migrations = await db.execute(
         'SELECT version, applied_at, description FROM schema_migrations ORDER BY version'
       );
 
@@ -184,8 +195,9 @@ class MigrationRunner {
         await this.log(`Executing ${statements.length} statements...`, 'INFO');
 
         // Execute statements atomically within a transaction
+        const db = await this.ensureDatabase();
         const batchStatements = statements.map((sql) => ({ sql, args: [] }));
-        await this.database.batch(batchStatements);
+        await db.batch(batchStatements);
 
         await this.log(`Migration ${version} completed successfully`, 'INFO');
 
@@ -285,7 +297,8 @@ class MigrationRunner {
       );
 
       // Remove migration record
-      await this.database.execute(
+      const db = await this.ensureDatabase();
+      await db.execute(
         'DELETE FROM schema_migrations WHERE version = ?',
         [migrationVersion]
       );
@@ -339,8 +352,9 @@ class MigrationRunner {
 
       // Special validation for migration 009 (wallet tracking)
       if (migrationVersion === '009') {
+        const db = await this.ensureDatabase();
         // Check wallet_source column exists using correct PRAGMA syntax
-        const walletSourceCheck = await this.database.execute(
+        const walletSourceCheck = await db.execute(
           'SELECT COUNT(*) as count FROM PRAGMA_TABLE_INFO(\'tickets\') WHERE name = \'wallet_source\''
         );
 
@@ -355,7 +369,7 @@ class MigrationRunner {
         });
 
         // Check indexes exist
-        const indexCheck = await this.database.execute(
+        const indexCheck = await db.execute(
           'SELECT name FROM sqlite_master WHERE type = \'index\' AND name LIKE \'idx_tickets_wallet%\''
         );
 
@@ -466,8 +480,9 @@ class MigrationRunner {
     };
 
     try {
+      const db = await this.ensureDatabase();
       // Get all tables
-      const tables = await this.database.execute(
+      const tables = await db.execute(
         'SELECT name FROM sqlite_master WHERE type = \'table\' AND name NOT LIKE \'sqlite_%\''
       );
 
@@ -475,12 +490,12 @@ class MigrationRunner {
         const tableName = table.name;
 
         // Get table info using correct PRAGMA syntax
-        const columns = await this.database.execute(
+        const columns = await db.execute(
           `PRAGMA table_info('${tableName}')`
         );
 
         // Get row count
-        const rowCount = await this.database.execute(
+        const rowCount = await db.execute(
           `SELECT COUNT(*) as count FROM ${tableName}`
         );
 
@@ -492,7 +507,7 @@ class MigrationRunner {
       }
 
       // Get all indexes
-      const indexes = await this.database.execute(
+      const indexes = await db.execute(
         'SELECT name, tbl_name FROM sqlite_master WHERE type = \'index\''
       );
 
