@@ -1,0 +1,168 @@
+/**
+ * Flip Card Styles for Tickets Page
+ * Implements side-by-side layout with click-to-flip functionality
+ */
+
+/* Grid layout for side-by-side tickets */
+.ticket-options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-xl, 2rem);
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Mobile responsive - stack cards vertically */
+@media (max-width: 768px) {
+  .ticket-options-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-lg, 1.5rem);
+  }
+}
+
+/* Flip card container */
+.flip-card {
+  background-color: transparent;
+  width: 100%;
+  height: 400px;
+  perspective: 1000px;
+  cursor: pointer;
+  border-radius: 12px;
+}
+
+/* Inner container that does the flipping */
+.flip-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+  border-radius: 12px;
+}
+
+/* Flip when active */
+.flip-card.flipped .flip-card-inner {
+  transform: rotateY(180deg);
+}
+
+/* Position front and back */
+.flip-card-front, .flip-card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  border-radius: 12px;
+  border: 2px solid var(--color-border, #e0e0e0);
+  background: var(--color-card-bg, white);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+/* Back face should be rotated 180 degrees */
+.flip-card-back {
+  transform: rotateY(180deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-lg, 1.5rem);
+  background: var(--color-blue, #1e40af);
+  color: white;
+}
+
+/* Hover effects */
+.flip-card:hover .flip-card-front {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.flip-card:hover .flip-card-back {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+}
+
+/* Card back content styling */
+.card-back-content {
+  text-align: center;
+}
+
+.card-back-content h3 {
+  font-family: var(--font-display, 'Bebas Neue', sans-serif);
+  font-size: var(--font-size-xl, 1.5rem);
+  margin-bottom: var(--space-md, 1rem);
+  color: white;
+}
+
+.card-back-content p {
+  font-family: var(--font-body, 'Playfair Display', serif);
+  font-size: var(--font-size-lg, 1.125rem);
+  line-height: 1.6;
+  margin-bottom: var(--space-lg, 1.5rem);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Flip back button */
+.flip-back-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: var(--space-sm, 0.75rem) var(--space-md, 1rem);
+  border-radius: 6px;
+  font-family: var(--font-display, 'Bebas Neue', sans-serif);
+  font-size: var(--font-size-md, 1rem);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.flip-back-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px);
+}
+
+/* Selected state for flip cards */
+.flip-card.selected .flip-card-front {
+  border-color: var(--color-blue, #1e40af);
+  background: var(--color-blue-light, #dbeafe);
+}
+
+/* Ensure ticket cards within flip cards maintain their styling */
+.flip-card-front.ticket-card {
+  /* Inherit all existing ticket card styles */
+}
+
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+  .flip-card-front, .flip-card-back {
+    border-color: var(--color-border-dark, #374151);
+  }
+
+  .flip-card-front {
+    background: var(--color-card-bg-dark, #1f2937);
+  }
+}
+
+[data-theme="dark"] .flip-card-front,
+[data-theme="dark"] .flip-card-back {
+  border-color: var(--color-border-dark, #374151);
+}
+
+[data-theme="dark"] .flip-card-front {
+  background: var(--color-card-bg-dark, #1f2937);
+}
+
+/* Accessibility improvements */
+.flip-card:focus-within {
+  outline: 2px solid var(--color-blue, #1e40af);
+  outline-offset: 2px;
+}
+
+/* Prevent text selection during flip animation */
+.flip-card-inner * {
+  user-select: none;
+}
+
+/* Re-enable text selection for important content */
+.card-back-content p {
+  user-select: text;
+}

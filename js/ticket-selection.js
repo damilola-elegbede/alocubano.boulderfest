@@ -44,7 +44,7 @@ class TicketSelection {
     }
 
     detectEventId() {
-        // Find all ticket types on the current page
+        // Find all ticket types on the current page (including flip cards)
         const ticketCards = document.querySelectorAll('[data-ticket-type]');
         const ticketTypesOnPage = Array.from(ticketCards).map(card => card.dataset.ticketType);
 
@@ -90,8 +90,8 @@ class TicketSelection {
     }
 
     initializeTicketCards() {
-        // Set up initial test attributes on all ticket cards
-        document.querySelectorAll('.ticket-card').forEach((card) => {
+        // Set up initial test attributes on all ticket cards (including flip cards)
+        document.querySelectorAll('.ticket-card, .flip-card').forEach((card) => {
             // Initialize with default state for E2E test reliability
             card.setAttribute('data-quantity', '0');
             card.setAttribute('data-selected', 'false');
@@ -157,22 +157,24 @@ class TicketSelection {
             btn.addEventListener('click', (e) => this.handleAddToCartClick(e));
         });
 
-        // Ticket card click events and keyboard accessibility
-        document.querySelectorAll('.ticket-card').forEach((card) => {
+        // Ticket card click events and keyboard accessibility (including flip cards)
+        document.querySelectorAll('.ticket-card, .flip-card').forEach((card) => {
             // Skip unavailable tickets
             if (card.classList.contains('unavailable')) {
                 card.setAttribute('aria-disabled', 'true');
                 return;
             }
 
-            // Make cards keyboard accessible
-            card.setAttribute('tabindex', '0');
+            // Make cards keyboard accessible (but don't override flip card tabindex)
+            if (!card.classList.contains('flip-card')) {
+                card.setAttribute('tabindex', '0');
+            }
             card.setAttribute('role', 'button');
             card.setAttribute('aria-pressed', 'false');
 
-            // Click events
+            // Click events - only handle ticket selection, not flip
             card.addEventListener('click', (e) => {
-                if (!e.target.classList.contains('qty-btn')) {
+                if (this.shouldHandleTicketClick(e.target)) {
                     this.handleTicketCardClick(e);
                 }
             });
@@ -180,8 +182,8 @@ class TicketSelection {
             // Keyboard events for accessibility
             card.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    if (!e.target.classList.contains('qty-btn')) {
+                    if (this.shouldHandleTicketClick(e.target)) {
+                        e.preventDefault();
                         this.handleTicketCardClick(e);
                     }
                 }
@@ -215,10 +217,20 @@ class TicketSelection {
         });
     }
 
+    shouldHandleTicketClick(target) {
+        // Only handle ticket clicks on quantity buttons or empty card areas
+        // Don't interfere with flip functionality
+        const isQuantityButton = target.classList.contains('qty-btn') || target.closest('.qty-btn');
+        const isQuantityArea = target.classList.contains('quantity-selector') || target.closest('.quantity-selector');
+        const isAddToCartBtn = target.classList.contains('add-to-cart-btn') || target.closest('.add-to-cart-btn');
+
+        return isQuantityButton || (isQuantityArea && !isAddToCartBtn);
+    }
+
     handleQuantityChange(event) {
         event.stopPropagation();
         const btn = event.target;
-        const card = btn.closest('.ticket-card');
+        const card = btn.closest('.ticket-card') || btn.closest('.flip-card');
 
         // Skip if ticket is unavailable
         if (card.classList.contains('unavailable')) {
@@ -300,7 +312,7 @@ class TicketSelection {
             return;
         }
 
-        // Find corresponding ticket card
+        // Find corresponding ticket card (regular or flip card)
         const card = document.querySelector(`[data-ticket-type="${ticketType}"]`);
         if (!card) {
             console.error('Could not find ticket card for', ticketType);
@@ -400,8 +412,8 @@ class TicketSelection {
 
         const cartTickets = cartState.tickets || {};
 
-        // Reset all ticket cards first
-        document.querySelectorAll('.ticket-card').forEach((card) => {
+        // Reset all ticket cards first (including flip cards)
+        document.querySelectorAll('.ticket-card, .flip-card').forEach((card) => {
             const ticketType = card.dataset.ticketType;
             const quantitySpan = card.querySelector('.quantity');
 

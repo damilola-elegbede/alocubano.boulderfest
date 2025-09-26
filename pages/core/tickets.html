@@ -152,6 +152,8 @@
     <link rel="stylesheet" href="/css/mobile-overrides.css" />
     <!-- Theme styles -->
     <link rel="stylesheet" href="/css/theme-toggle.css" />
+    <!-- Flip card styles -->
+    <link rel="stylesheet" href="/css/flip-cards.css" />
   </head>
   <body class="typographic">
     <header class="header">
@@ -317,430 +319,131 @@
             <h1 style="color: var(--color-red)">
               November 2025 Weekender Tickets
             </h1>
-            <p class="tickets-subtitle">Join us for an intimate weekend of Cuban salsa!</p>
           </div>
 
           <!-- Ticket Selection Interface -->
           <section class="ticket-selection" data-testid="ticket-options">
             <h2>Select Your Tickets</h2>
 
-            <!-- 2026 Festival Tickets - Commented out for November 2025 Weekender -->
-            <!--
-            <div class="ticket-category">
-              <h3>Full Festival Pass</h3>
-              <p class="category-description">
-                Complete access to all workshops, socials, and performances
-              </p>
-
-              <div class="ticket-options">
-                <div
-                  class="ticket-card"
-                  data-ticket-type="2026-early-bird-full"
-                  data-price="100"
-                  data-testid="weekend-pass-card"
-                >
-                  <h4>2026 Early Bird Full Pass</h4>
-                  <div class="ticket-price">$100</div>
-                  <p class="ticket-description">Before April 1st</p>
-                  <div class="ticket-savings">Save $25!</div>
-                  <div class="quantity-selector">
-                    <button
-                      class="qty-btn minus"
-                      data-action="decrease"
-                      type="button"
-                      aria-label="Decrease quantity"
-                    >
-                      -
-                    </button>
-                    <span class="quantity">0</span>
-                    <button
-                      class="qty-btn plus"
-                      data-action="increase"
-                      data-action-alt="add-to-cart"
-                      type="button"
-                      aria-label="Increase quantity"
-                      data-testid="weekend-pass-add"
-                    >
-                      +
-                    </button>
-                  </div>
-                  <button
-                    class="add-to-cart-btn"
-                    data-action="add-to-cart"
-                    data-ticket-type="2026-early-bird-full"
-                    data-price="100"
-                    type="button"
-                    style="margin-top: var(--space-sm); width: 100%; padding: var(--space-sm); background: var(--color-blue); color: var(--color-text-on-primary, white); border: none; border-radius: 4px; font-family: var(--font-display); font-weight: 700; cursor: pointer; transition: background-color 0.2s ease;"
-                  >
-                    Add to Cart
-                  </button>
-                  </div>
-                </div>
-
-                <div
-                  class="ticket-card disabled"
-                  data-ticket-type="2026-regular-full"
-                  data-price="125"
-                  aria-disabled="true"
-                >
-                  <h4>2026 Regular Full Pass</h4>
-                  <div class="ticket-price">$125</div>
-                  <p class="ticket-description">At door pricing</p>
-                  <div class="quantity-selector">
-                    <button
-                      class="qty-btn minus"
-                      data-action="decrease"
-                      type="button"
-                      aria-label="Decrease quantity"
-                    >
-                      -
-                    </button>
-                    <span class="quantity">0</span>
-                    <button
-                      class="qty-btn plus"
-                      data-action="increase"
-                      type="button"
-                      aria-label="Increase quantity"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="ticket-category">
-              <h3>Day Passes</h3>
-              <p class="category-description">
-                Access to a single day of festivities (including socials!)
-              </p>
-
-              <div class="ticket-options">
-                <div
-                  class="ticket-card"
-                  data-ticket-type="2026-friday-pass"
-                  data-price="50"
-                >
-                  <h4>2026 Friday Pass</h4>
-                  <div class="ticket-price">$50</div>
-                  <p class="ticket-description">May 16, 2026</p>
-                  <div class="quantity-selector">
-                    <button
-                      class="qty-btn minus"
-                      data-action="decrease"
-                      type="button"
-                      aria-label="Decrease quantity"
-                    >
-                      -
-                    </button>
-                    <span class="quantity">0</span>
-                    <button
-                      class="qty-btn plus"
-                      data-action="increase"
-                      type="button"
-                      aria-label="Increase quantity"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-
-                <div
-                  class="ticket-card"
-                  data-ticket-type="2026-saturday-pass"
-                  data-price="85"
-                  data-testid="day-pass-card"
-                >
-                  <h4>2026 Saturday Pass</h4>
-                  <div class="ticket-price">$85</div>
-                  <p class="ticket-description">May 17, 2026</p>
-                  <div class="quantity-selector">
-                    <button
-                      class="qty-btn minus"
-                      data-action="decrease"
-                      type="button"
-                      aria-label="Decrease quantity"
-                    >
-                      -
-                    </button>
-                    <span class="quantity">0</span>
-                    <button
-                      class="qty-btn plus"
-                      data-action="increase"
-                      data-action-alt="add-to-cart"
-                      type="button"
-                      aria-label="Increase quantity"
-                      data-testid="day-pass-add"
-                    >
-                      +
-                    </button>
-                  </div>
-                  <button
-                    class="add-to-cart-btn"
-                    data-action="add-to-cart"
-                    data-ticket-type="2026-saturday-pass"
-                    data-price="85"
-                    type="button"
-                    style="margin-top: var(--space-sm); width: 100%; padding: var(--space-sm); background: var(--color-blue); color: var(--color-text-on-primary, white); border: none; border-radius: 4px; font-family: var(--font-display); font-weight: 700; cursor: pointer; transition: background-color 0.2s ease;"
-                  >
-                    Add to Cart
-                  </button>
-                  </div>
-                </div>
-
-                <div
-                  class="ticket-card"
-                  data-ticket-type="2026-sunday-pass"
-                  data-price="50"
-                >
-                  <h4>2026 Sunday Pass</h4>
-                  <div class="ticket-price">$50</div>
-                  <p class="ticket-description">May 18, 2026</p>
-                  <div class="quantity-selector">
-                    <button
-                      class="qty-btn minus"
-                      data-action="decrease"
-                      type="button"
-                      aria-label="Decrease quantity"
-                    >
-                      -
-                    </button>
-                    <span class="quantity">0</span>
-                    <button
-                      class="qty-btn plus"
-                      data-action="increase"
-                      type="button"
-                      aria-label="Increase quantity"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="ticket-category">
-              <h3>Individual Social Tickets</h3>
-              <p class="category-description">Single social event access</p>
-
-              <div class="ticket-options">
-                <div
-                  class="ticket-card vertical-design"
-                  data-ticket-type="2026-friday-social"
-                  data-price="20"
-                >
-                  <div class="ticket-header">
-                    <div class="event-label">EVENT</div>
-                    <div class="event-name">Boulder Fest 2026</div>
-                  </div>
-                  <div class="ticket-body">
-                    <div class="ticket-type-section">
-                      <div class="field-label">Ticket Type</div>
-                      <div class="ticket-type">FRIDAY SOCIAL</div>
-                      <div class="ticket-price">$20</div>
+            <!-- November 2025 Weekender Tickets - Side by Side -->
+            <div class="ticket-options-grid">
+              <!-- Full Pass Flip Card -->
+              <div class="flip-card" data-ticket-type="2025-11-weekender-full" data-price="65" data-testid="weekend-pass-card">
+                <div class="flip-card-inner">
+                  <!-- Front of card -->
+                  <div class="flip-card-front ticket-card vertical-design">
+                    <div class="ticket-header">
+                      <div class="event-label">EVENT</div>
+                      <div class="event-name">November 2025<br>Weekender</div>
                     </div>
-                    <div class="ticket-details">
-                      <div class="detail-row">
-                        <div class="field-label">Date</div>
-                        <div class="detail-value">May 16, 2026</div>
+                    <div class="ticket-body">
+                      <div class="ticket-type-section">
+                        <div class="field-label">Ticket Type</div>
+                        <div class="ticket-type">FULL PASS</div>
+                        <div class="ticket-price">$65</div>
+                      </div>
+                      <div class="ticket-details">
+                        <div class="detail-row">
+                          <div class="field-label">Date</div>
+                          <div class="detail-value">November 8, 2025</div>
+                        </div>
+                      </div>
+                      <div class="ticket-footer">
+                        <div class="venue-section">
+                          <div class="field-label">Venue</div>
+                          <div class="venue-name">Avalon Ballroom, Boulder, CO</div>
+                        </div>
+                      </div>
+                      <div class="quantity-selector">
+                        <button
+                          class="qty-btn minus"
+                          data-action="decrease"
+                          type="button"
+                          aria-label="Decrease quantity"
+                        >
+                          -
+                        </button>
+                        <span class="quantity">0</span>
+                        <button
+                          class="qty-btn plus"
+                          data-action="increase"
+                          data-action-alt="add-to-cart"
+                          type="button"
+                          aria-label="Increase quantity"
+                          data-testid="weekend-pass-add"
+                        >
+                          +
+                        </button>
                       </div>
                     </div>
-                    <div class="ticket-footer">
-                      <div class="venue-section">
-                        <div class="field-label">Venue</div>
-                        <div class="venue-name">Avalon Ballroom, Boulder, CO</div>
-                      </div>
-                    </div>
-                    <div class="quantity-selector">
-                      <button
-                        class="qty-btn minus"
-                        data-action="decrease"
-                        type="button"
-                        aria-label="Decrease quantity"
-                      >
-                        -
-                      </button>
-                      <span class="quantity">0</span>
-                      <button
-                        class="qty-btn plus"
-                        data-action="increase"
-                        type="button"
-                        aria-label="Increase quantity"
-                      >
-                        +
-                      </button>
-                    </div>
                   </div>
-                </div>
-
-                <div
-                  class="ticket-card vertical-design"
-                  data-ticket-type="2026-saturday-social"
-                  data-price="20"
-                >
-                  <div class="ticket-header">
-                    <div class="event-label">EVENT</div>
-                    <div class="event-name">Boulder Fest 2026</div>
-                  </div>
-                  <div class="ticket-body">
-                    <div class="ticket-type-section">
-                      <div class="field-label">Ticket Type</div>
-                      <div class="ticket-type">SATURDAY SOCIAL</div>
-                      <div class="ticket-price">$20</div>
-                    </div>
-                    <div class="ticket-details">
-                      <div class="detail-row">
-                        <div class="field-label">Date</div>
-                        <div class="detail-value">May 17, 2026</div>
-                      </div>
-                    </div>
-                    <div class="ticket-footer">
-                      <div class="venue-section">
-                        <div class="field-label">Venue</div>
-                        <div class="venue-name">Avalon Ballroom, Boulder, CO</div>
-                      </div>
-                    </div>
-                    <div class="quantity-selector">
-                      <button
-                        class="qty-btn minus"
-                        data-action="decrease"
-                        type="button"
-                        aria-label="Decrease quantity"
-                      >
-                        -
-                      </button>
-                      <span class="quantity">0</span>
-                      <button
-                        class="qty-btn plus"
-                        data-action="increase"
-                        type="button"
-                        aria-label="Increase quantity"
-                      >
-                        +
-                      </button>
+                  <!-- Back of card -->
+                  <div class="flip-card-back">
+                    <div class="card-back-content">
+                      <h3>Full Pass Details</h3>
+                      <p>Full access to all November 2025 Weekender workshops (Body movement, Casino, and Rueda -- $75 value!)</p>
+                      <button class="flip-back-btn" aria-label="Flip back to front">← Back</button>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-            -->
 
-            <!-- November 2025 Weekender Tickets -->
-            <div class="ticket-category">
-              <h3>Weekender Pass</h3>
-              <p class="category-description">
-                Full access to all November 2025 Weekender workshops and socials
-              </p>
-
-              <div class="ticket-options">
-                <div
-                  class="ticket-card vertical-design"
-                  data-ticket-type="2025-11-weekender-full"
-                  data-price="65"
-                  data-testid="weekend-pass-card"
-                >
-                  <div class="ticket-header">
-                    <div class="event-label">EVENT</div>
-                    <div class="event-name">November 2025<br>Weekender</div>
-                  </div>
-                  <div class="ticket-body">
-                    <div class="ticket-type-section">
-                      <div class="field-label">Ticket Type</div>
-                      <div class="ticket-type">FULL PASS</div>
-                      <div class="ticket-price">$65</div>
+              <!-- Single Class Flip Card -->
+              <div class="flip-card" data-ticket-type="2025-11-weekender-class" data-price="25" data-testid="day-pass-card">
+                <div class="flip-card-inner">
+                  <!-- Front of card -->
+                  <div class="flip-card-front ticket-card vertical-design">
+                    <div class="ticket-header">
+                      <div class="event-label">EVENT</div>
+                      <div class="event-name">November 2025<br>Weekender</div>
                     </div>
-                    <div class="ticket-details">
-                      <div class="detail-row">
-                        <div class="field-label">Date</div>
-                        <div class="detail-value">November 8, 2025</div>
+                    <div class="ticket-body">
+                      <div class="ticket-type-section">
+                        <div class="field-label">Ticket Type</div>
+                        <div class="ticket-type">SINGLE CLASS</div>
+                        <div class="ticket-price">$25</div>
                       </div>
-                    </div>
-                    <div class="ticket-footer">
-                      <div class="venue-section">
-                        <div class="field-label">Venue</div>
-                        <div class="venue-name">Avalon Ballroom, Boulder, CO</div>
+                      <div class="ticket-details">
+                        <div class="detail-row">
+                          <div class="field-label">Date</div>
+                          <div class="detail-value">November 8, 2025</div>
+                        </div>
                       </div>
-                    </div>
-                    <div class="quantity-selector">
-                      <button
-                        class="qty-btn minus"
-                        data-action="decrease"
-                        type="button"
-                        aria-label="Decrease quantity"
-                      >
-                        -
-                      </button>
-                      <span class="quantity">0</span>
-                      <button
-                        class="qty-btn plus"
-                        data-action="increase"
-                        data-action-alt="add-to-cart"
-                        type="button"
-                        aria-label="Increase quantity"
-                        data-testid="weekend-pass-add"
-                      >
-                        +
-                      </button>
+                      <div class="ticket-footer">
+                        <div class="venue-section">
+                          <div class="field-label">Venue</div>
+                          <div class="venue-name">Avalon Ballroom, Boulder, CO</div>
+                        </div>
+                      </div>
+                      <div class="quantity-selector">
+                        <button
+                          class="qty-btn minus"
+                          data-action="decrease"
+                          type="button"
+                          aria-label="Decrease quantity"
+                        >
+                          -
+                        </button>
+                        <span class="quantity">0</span>
+                        <button
+                          class="qty-btn plus"
+                          data-action="increase"
+                          data-action-alt="add-to-cart"
+                          type="button"
+                          aria-label="Increase quantity"
+                          data-testid="day-pass-add"
+                        >
+                          +
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Individual Class Tickets -->
-            <div class="ticket-category">
-              <h3>Individual Classes</h3>
-              <p class="category-description">Single class access for November 2025 Weekender</p>
-
-              <div class="ticket-options">
-                <div
-                  class="ticket-card vertical-design"
-                  data-ticket-type="2025-11-weekender-class"
-                  data-price="25"
-                  data-testid="day-pass-card"
-                >
-                  <div class="ticket-header">
-                    <div class="event-label">EVENT</div>
-                    <div class="event-name">November 2025<br>Weekender</div>
-                  </div>
-                  <div class="ticket-body">
-                    <div class="ticket-type-section">
-                      <div class="field-label">Ticket Type</div>
-                      <div class="ticket-type">SINGLE CLASS</div>
-                      <div class="ticket-price">$25</div>
-                    </div>
-                    <div class="ticket-details">
-                      <div class="detail-row">
-                        <div class="field-label">Date</div>
-                        <div class="detail-value">November 8, 2025</div>
-                      </div>
-                    </div>
-                    <div class="ticket-footer">
-                      <div class="venue-section">
-                        <div class="field-label">Venue</div>
-                        <div class="venue-name">Avalon Ballroom, Boulder, CO</div>
-                      </div>
-                    </div>
-                    <div class="quantity-selector">
-                      <button
-                        class="qty-btn minus"
-                        data-action="decrease"
-                        type="button"
-                        aria-label="Decrease quantity"
-                      >
-                        -
-                      </button>
-                      <span class="quantity">0</span>
-                      <button
-                        class="qty-btn plus"
-                        data-action="increase"
-                        data-action-alt="add-to-cart"
-                        type="button"
-                        aria-label="Increase quantity"
-                        data-testid="day-pass-add"
-                      >
-                        +
-                      </button>
+                  <!-- Back of card -->
+                  <div class="flip-card-back">
+                    <div class="card-back-content">
+                      <h3>Single Class Details</h3>
+                      <p>Single class access for November 2025 Weekender.</p>
+                      <button class="flip-back-btn" aria-label="Flip back to front">← Back</button>
                     </div>
                   </div>
                 </div>
@@ -869,6 +572,7 @@
     <script src="/js/main.js"></script>
     <script src="/js/typography.js"></script>
     <script src="/js/gallery-hero.js"></script>
+    <script src="/js/flip-cards.js"></script>
     <script type="module" src="/js/ticket-selection.js"></script>
     <script>
       function handleTicketForm(event) {
