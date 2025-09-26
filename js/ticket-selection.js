@@ -173,6 +173,15 @@ class TicketSelection {
 
         quantitySpan.textContent = currentQuantity;
 
+        // Add visual feedback for cart update
+        btn.classList.add('cart-updating');
+        quantitySpan.classList.add('updating');
+
+        setTimeout(() => {
+            btn.classList.remove('cart-updating');
+            quantitySpan.classList.remove('updating');
+        }, 500);
+
         if (currentQuantity > 0) {
             this.selectedTickets.set(ticketType, {
                 quantity: currentQuantity,

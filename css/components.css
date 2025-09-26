@@ -3205,6 +3205,53 @@
   color: var(--color-text-secondary);
 }
 
+/* Dark mode schedule item titles */
+[data-theme="dark"] .schedule-content h4 {
+  color: var(--color-text-primary);
+}
+
+/* Dark mode logo watermark adjustments */
+[data-theme="dark"] .ticket-card.vertical-design::before {
+  background: url('/images/logo-dark.png') no-repeat center;
+  background-size: contain;
+  opacity: 0.05; /* Keep subtle watermark */
+}
+
+/* Visual feedback for quantity buttons when updating cart */
+.qty-btn {
+  transition: all 0.2s ease;
+}
+
+.qty-btn:active {
+  transform: scale(0.95);
+  background: var(--color-blue) !important;
+  color: white !important;
+  border-color: var(--color-blue) !important;
+}
+
+/* Pulse animation for cart update feedback */
+@keyframes cartUpdatePulse {
+  0% { box-shadow: 0 0 0 0 rgba(0, 112, 233, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(0, 112, 233, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 112, 233, 0); }
+}
+
+.qty-btn.cart-updating {
+  animation: cartUpdatePulse 0.5s ease-out;
+}
+
+/* Quantity number flash when changed */
+.quantity.updating {
+  animation: quantityFlash 0.3s ease-out;
+  color: var(--color-blue);
+}
+
+@keyframes quantityFlash {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); font-weight: 700; }
+  100% { transform: scale(1); }
+}
+
 /* Container styling for vertical design tickets */
 .ticket-options {
   display: flex;
