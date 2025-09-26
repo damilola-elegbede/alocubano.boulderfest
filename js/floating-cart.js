@@ -635,7 +635,30 @@ function groupTicketsByEvent(tickets) {
     const grouped = {};
 
     tickets.forEach(ticket => {
-        const eventId = ticket.eventId || 'boulderfest-2026'; // fallback for legacy tickets
+        let eventId = ticket.eventId;
+
+        // If no eventId, try to derive it from ticket type
+        if (!eventId && ticket.type) {
+            try {
+                // Import the mapping function - assuming it's available globally
+                if (typeof TicketSelection !== 'undefined' && TicketSelection.getEventIdFromTicketType) {
+                    eventId = TicketSelection.getEventIdFromTicketType(ticket.type);
+                } else {
+                    console.error(`❌ TicketSelection.getEventIdFromTicketType not available for ticket type: ${ticket.type}`);
+                    console.error('Ticket details:', ticket);
+                    throw new Error(`Cannot determine event ID for ticket type: ${ticket.type}. TicketSelection mapping not available.`);
+                }
+            } catch (error) {
+                console.error(`❌ Failed to determine event ID for ticket:`, ticket);
+                throw new Error(`Cannot group tickets: ${error.message}`);
+            }
+        }
+
+        if (!eventId) {
+            console.error(`❌ No event ID available for ticket:`, ticket);
+            throw new Error(`Ticket missing event ID and type. Cannot group tickets without event context.`);
+        }
+
         if (!grouped[eventId]) {
             grouped[eventId] = [];
         }

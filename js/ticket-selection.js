@@ -10,38 +10,70 @@ class TicketSelection {
         this.init();
     }
 
-    detectEventId() {
-        // Detect event context from URL and page content
-        const pathname = window.location.pathname.toLowerCase();
+    // Deterministic mapping table: ticket type -> event ID
+    static TICKET_TYPE_TO_EVENT_MAP = {
+        // November 2025 Weekender
+        '2025-11-weekender-full': 'weekender-2025-11',
+        '2025-11-weekender-class': 'weekender-2025-11',
 
-        // Check URL patterns first
-        if (pathname.includes('2025-11-weekender') || pathname.includes('november-2025')) {
-            return 'weekender-2025-11';
+        // Boulder Fest 2026 (commented out tickets)
+        '2026-early-bird-full': 'boulderfest-2026',
+        '2026-regular-full': 'boulderfest-2026',
+        '2026-friday-pass': 'boulderfest-2026',
+        '2026-saturday-pass': 'boulderfest-2026',
+        '2026-sunday-pass': 'boulderfest-2026',
+        '2026-friday-social': 'boulderfest-2026',
+        '2026-saturday-social': 'boulderfest-2026',
+
+        // Boulder Fest 2025
+        '2025-early-bird-full': 'boulderfest-2025',
+        '2025-regular-full': 'boulderfest-2025',
+        '2025-friday-pass': 'boulderfest-2025',
+        '2025-saturday-pass': 'boulderfest-2025',
+        '2025-sunday-pass': 'boulderfest-2025'
+    };
+
+    static getEventIdFromTicketType(ticketType) {
+        const eventId = TicketSelection.TICKET_TYPE_TO_EVENT_MAP[ticketType];
+        if (!eventId) {
+            console.error(`❌ No event mapping found for ticket type: ${ticketType}`);
+            console.error('Available mappings:', Object.keys(TicketSelection.TICKET_TYPE_TO_EVENT_MAP));
+            throw new Error(`No event mapping found for ticket type: ${ticketType}. Add mapping to TICKET_TYPE_TO_EVENT_MAP.`);
         }
-        if (pathname.includes('boulder-fest-2026') || pathname.includes('2026')) {
+        return eventId;
+    }
+
+    detectEventId() {
+        // Find all ticket types on the current page
+        const ticketCards = document.querySelectorAll('[data-ticket-type]');
+        const ticketTypesOnPage = Array.from(ticketCards).map(card => card.dataset.ticketType);
+
+        if (ticketTypesOnPage.length === 0) {
+            console.warn('No ticket types found on page, falling back to default');
             return 'boulderfest-2026';
         }
-        if (pathname.includes('boulder-fest-2025') || pathname.includes('2025')) {
-            return 'boulderfest-2025';
+
+        // Get event ID from first ticket type (all tickets on a page should belong to same event)
+        const firstTicketType = ticketTypesOnPage[0];
+        const eventId = TicketSelection.getEventIdFromTicketType(firstTicketType);
+
+        // Verify all tickets on page belong to same event
+        const eventIds = ticketTypesOnPage.map(type => {
+            try {
+                return TicketSelection.getEventIdFromTicketType(type);
+            } catch (error) {
+                console.error(`Failed to map ticket type ${type}:`, error.message);
+                throw error;
+            }
+        });
+
+        const uniqueEventIds = [...new Set(eventIds)];
+        if (uniqueEventIds.length > 1) {
+            throw new Error(`Mixed events on page! Found tickets for events: ${uniqueEventIds.join(', ')}`);
         }
 
-        // Check page content for event names
-        const eventNameElements = document.querySelectorAll('.event-name, .tickets-header h1, [data-event]');
-        for (const element of eventNameElements) {
-            const text = element.textContent || element.dataset.event || '';
-            if (text.includes('November 2025') || text.includes('Weekender')) {
-                return 'weekender-2025-11';
-            }
-            if (text.includes('2026')) {
-                return 'boulderfest-2026';
-            }
-            if (text.includes('2025') && !text.includes('November')) {
-                return 'boulderfest-2025';
-            }
-        }
-
-        // Default fallback for main tickets page
-        return 'boulderfest-2026';
+        console.log(`✅ Detected event ID: ${eventId} from ${ticketTypesOnPage.length} ticket types`);
+        return eventId;
     }
 
     async init() {
