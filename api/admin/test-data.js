@@ -469,9 +469,6 @@ async function performFullTestDataReset(db) {
     // Build batch operations for atomic deletion
     const deleteOperations = [];
 
-    // Start with BEGIN TRANSACTION
-    deleteOperations.push('BEGIN TRANSACTION');
-
     // Delete in proper order to maintain referential integrity
     deleteOperations.push('DELETE FROM tickets WHERE is_test = 1');
     deleteOperations.push('DELETE FROM transaction_items WHERE is_test = 1');
@@ -484,18 +481,14 @@ async function performFullTestDataReset(db) {
         AND json_extract(metadata, '$.test_mode') = 1
     `);
 
-    // End with COMMIT
-    deleteOperations.push('COMMIT');
-
-    // Execute all operations in a single batch
+    // Execute all operations in a single batch (transaction is automatic)
     const results = await db.batch(deleteOperations);
 
     // Extract deletion counts from results
-    // Skip BEGIN (index 0) and COMMIT (last index)
-    ticketsDeleted = results[1]?.changes || results[1]?.rowsAffected || 0;
-    transactionItemsDeleted = results[2]?.changes || results[2]?.rowsAffected || 0;
-    transactionsDeleted = results[3]?.changes || results[3]?.rowsAffected || 0;
-    const auditDeleted = results[4]?.changes || results[4]?.rowsAffected || 0;
+    ticketsDeleted = results[0]?.changes || results[0]?.rowsAffected || 0;
+    transactionItemsDeleted = results[1]?.changes || results[1]?.rowsAffected || 0;
+    transactionsDeleted = results[2]?.changes || results[2]?.rowsAffected || 0;
+    const auditDeleted = results[3]?.changes || results[3]?.rowsAffected || 0;
 
     totalDeleted = ticketsDeleted + transactionItemsDeleted + transactionsDeleted;
 
@@ -550,25 +543,18 @@ async function performRecentTestDataReset(db) {
     // Build batch operations for atomic deletion
     const deleteOperations = [];
 
-    // Start with BEGIN TRANSACTION
-    deleteOperations.push('BEGIN TRANSACTION');
-
     // Delete recent test data
     deleteOperations.push(`DELETE FROM tickets WHERE ${recentFilter}`);
     deleteOperations.push(`DELETE FROM transaction_items WHERE ${recentFilter}`);
     deleteOperations.push(`DELETE FROM transactions WHERE ${recentFilter}`);
 
-    // End with COMMIT
-    deleteOperations.push('COMMIT');
-
-    // Execute all operations in a single batch
+    // Execute all operations in a single batch (transaction is automatic)
     const results = await db.batch(deleteOperations);
 
     // Extract deletion counts from results
-    // Skip BEGIN (index 0) and COMMIT (last index)
-    ticketsDeleted = results[1]?.changes || results[1]?.rowsAffected || 0;
-    transactionItemsDeleted = results[2]?.changes || results[2]?.rowsAffected || 0;
-    transactionsDeleted = results[3]?.changes || results[3]?.rowsAffected || 0;
+    ticketsDeleted = results[0]?.changes || results[0]?.rowsAffected || 0;
+    transactionItemsDeleted = results[1]?.changes || results[1]?.rowsAffected || 0;
+    transactionsDeleted = results[2]?.changes || results[2]?.rowsAffected || 0;
 
     totalDeleted = ticketsDeleted + transactionItemsDeleted + transactionsDeleted;
 
@@ -637,9 +623,6 @@ async function performFailedTransactionReset(db) {
     // Build batch operations for atomic deletion
     const deleteOperations = [];
 
-    // Start with BEGIN TRANSACTION
-    deleteOperations.push('BEGIN TRANSACTION');
-
     // Delete related tickets and transaction items
     const placeholders = failedTransactionIds.map(() => '?').join(',');
 
@@ -656,17 +639,13 @@ async function performFailedTransactionReset(db) {
     // Delete failed transactions
     deleteOperations.push(`DELETE FROM transactions WHERE ${failedFilter}`);
 
-    // End with COMMIT
-    deleteOperations.push('COMMIT');
-
-    // Execute all operations in a single batch
+    // Execute all operations in a single batch (transaction is automatic)
     const results = await db.batch(deleteOperations);
 
     // Extract deletion counts from results
-    // Skip BEGIN (index 0) and COMMIT (last index)
-    ticketsDeleted = results[1]?.changes || results[1]?.rowsAffected || 0;
-    transactionItemsDeleted = results[2]?.changes || results[2]?.rowsAffected || 0;
-    transactionsDeleted = results[3]?.changes || results[3]?.rowsAffected || 0;
+    ticketsDeleted = results[0]?.changes || results[0]?.rowsAffected || 0;
+    transactionItemsDeleted = results[1]?.changes || results[1]?.rowsAffected || 0;
+    transactionsDeleted = results[2]?.changes || results[2]?.rowsAffected || 0;
 
     totalDeleted = ticketsDeleted + transactionItemsDeleted + transactionsDeleted;
 

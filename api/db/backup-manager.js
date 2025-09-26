@@ -278,9 +278,6 @@ class BackupManager {
       // Build all operations for atomic restore
       const restoreOperations = [];
 
-      // Start with BEGIN TRANSACTION
-      restoreOperations.push('BEGIN TRANSACTION');
-
       // Disable foreign key checks during restore to prevent constraint violations
       restoreOperations.push('PRAGMA foreign_keys = OFF');
 
@@ -319,11 +316,8 @@ class BackupManager {
       // Re-enable foreign key checks after restore
       restoreOperations.push('PRAGMA foreign_keys = ON');
 
-      // End with COMMIT
-      restoreOperations.push('COMMIT');
-
       try {
-        // Execute all operations in a single batch
+        // Execute all operations in a single batch (transaction is automatic)
         await db.batch(restoreOperations);
       } catch (error) {
         // Rollback is automatic if batch fails

@@ -231,9 +231,6 @@ export default async function handler(req, res) {
     const batchOperations = [];
     const auditTasks = [];
 
-    // Start with BEGIN TRANSACTION
-    batchOperations.push('BEGIN TRANSACTION');
-
     try {
       // Build all operations first
       for (let i = 0; i < sanitizedRegistrations.length; i++) {
@@ -340,19 +337,15 @@ export default async function handler(req, res) {
         });
       }
 
-      // End with COMMIT
-      batchOperations.push('COMMIT');
-
-      // Execute all operations in a single batch
+      // Execute all operations in a single batch (transaction is automatic)
       const batchResults = await db.batch(batchOperations);
 
       // Check that all ticket updates succeeded
       // Each UPDATE operation returns a result with rowsAffected
-      // Skip BEGIN (index 0) and COMMIT (last index)
       for (let i = 0; i < sanitizedRegistrations.length; i++) {
         // Each registration has 2 operations: ticket update and reminder cancel
-        // So ticket update is at index: 1 + (i * 2)
-        const updateResultIndex = 1 + (i * 2);
+        // So ticket update is at index: i * 2
+        const updateResultIndex = i * 2;
         const updateResult = batchResults[updateResultIndex];
         const rowsChanged = updateResult?.rowsAffected ?? updateResult?.changes ?? 0;
 
