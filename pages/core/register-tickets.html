@@ -880,11 +880,28 @@
             if (response.ok) {
               this.showSuccess(result);
             } else {
-              throw new Error(result.error || 'Registration failed');
+              const error = new Error(result.error || 'Registration failed');
+              // Attach response data for detailed error handling
+              error.response = { data: result };
+              throw error;
             }
           } catch (error) {
             console.error('Registration error:', error);
-            this.showError(error.message || 'Failed to register tickets. Please try again.');
+
+            // Provide detailed error message based on response
+            let errorMessage = 'Failed to register tickets.';
+            if (error.message) {
+              errorMessage = error.message;
+            }
+            if (error.response?.data?.details) {
+              if (Array.isArray(error.response.data.details)) {
+                errorMessage += '\n\nValidation errors:\n• ' + error.response.data.details.join('\n• ');
+              } else {
+                errorMessage += '\n\n' + error.response.data.details;
+              }
+            }
+
+            this.showError(errorMessage);
 
             // Re-enable submit button
             submitButton.disabled = false;

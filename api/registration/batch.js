@@ -7,11 +7,11 @@ import auditService from "../../lib/audit-service.js";
 const NAME_REGEX = /^[a-zA-Z\s\-']{2,50}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// Rate limiting: 3 attempts per 15 minutes
+// Rate limiting: 10 attempts per 15 minutes (increased for better UX)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 3,
-  message: 'Too many registration attempts. Please try again later.'
+  max: 10,
+  message: 'Too many registration attempts. Please try again in a few minutes.'
 });
 
 // XSS prevention
@@ -143,11 +143,17 @@ export default async function handler(req, res) {
   const { registrations } = req.body;
 
   if (!registrations || !Array.isArray(registrations) || registrations.length === 0) {
-    return res.status(400).json({ error: 'Registrations array is required' });
+    return res.status(400).json({
+      error: 'Registrations array is required',
+      details: 'Please provide an array of ticket registrations to process.'
+    });
   }
 
   if (registrations.length > 10) {
-    return res.status(400).json({ error: 'Maximum 10 tickets per batch' });
+    return res.status(400).json({
+      error: 'Maximum 10 tickets per batch',
+      details: `You attempted to register ${registrations.length} tickets. Please register in batches of 10 or fewer.`
+    });
   }
 
   // Validate all registrations first
@@ -157,7 +163,8 @@ export default async function handler(req, res) {
   if (allErrors.length > 0) {
     return res.status(400).json({
       error: 'Validation failed',
-      details: allErrors
+      details: allErrors,
+      message: 'Please correct the validation errors and try again.'
     });
   }
 
@@ -286,27 +293,32 @@ export default async function handler(req, res) {
           changedFields.push('registered_at');
         }
 
-        // Audit individual registration change (non-blocking)
-        auditRegistrationChange({
-          requestId: requestId,
-          ticketId: registration.ticketId,
-          beforeStatus: beforeState.status,
-          beforeFirstName: beforeState.firstName,
-          beforeLastName: beforeState.lastName,
-          beforeEmail: beforeState.email,
-          afterFirstName: registration.firstName,
-          afterLastName: registration.lastName,
-          afterEmail: registration.email,
-          changedFields: changedFields,
-          adminUser: null, // Batch operations are typically self-service
-          sessionId: null,
-          ipAddress: clientIP,
-          userAgent: userAgent,
-          batchSize: sanitizedRegistrations.length,
-          batchPosition: i + 1,
-          ticketType: ticket.ticket_type,
-          processingTimeMs: Date.now() - operationStartTime
-        });
+        // Audit individual registration change (await for proper error handling)
+        try {
+          await auditRegistrationChange({
+            requestId: requestId,
+            ticketId: registration.ticketId,
+            beforeStatus: beforeState.status,
+            beforeFirstName: beforeState.firstName,
+            beforeLastName: beforeState.lastName,
+            beforeEmail: beforeState.email,
+            afterFirstName: registration.firstName,
+            afterLastName: registration.lastName,
+            afterEmail: registration.email,
+            changedFields: changedFields,
+            adminUser: null, // Batch operations are typically self-service
+            sessionId: null,
+            ipAddress: clientIP,
+            userAgent: userAgent,
+            batchSize: sanitizedRegistrations.length,
+            batchPosition: i + 1,
+            ticketType: ticket.ticket_type,
+            processingTimeMs: Date.now() - operationStartTime
+          });
+        } catch (auditError) {
+          // Log but don't fail the registration
+          console.error('Audit logging failed (non-blocking):', auditError.message);
+        }
 
         // Cancel reminders
         await db.execute({
@@ -361,14 +373,21 @@ export default async function handler(req, res) {
 
       for (const task of emailTasks) {
         try {
+          // Validate template IDs
+          const purchaserTemplateId = parseInt(process.env.BREVO_PURCHASER_CONFIRMATION_TEMPLATE_ID);
+          const attendeeTemplateId = parseInt(process.env.BREVO_ATTENDEE_CONFIRMATION_TEMPLATE_ID);
+
+          if (isNaN(purchaserTemplateId) || isNaN(attendeeTemplateId)) {
+            console.error('Invalid Brevo template IDs in environment variables');
+            throw new Error('Email configuration error');
+          }
+
           await brevo.sendTransactionalEmail({
             to: [{
               email: task.registration.email,
               name: `${task.registration.firstName} ${task.registration.lastName}`
             }],
-            templateId: task.isPurchaser ?
-              parseInt(process.env.BREVO_PURCHASER_CONFIRMATION_TEMPLATE_ID) :
-              parseInt(process.env.BREVO_ATTENDEE_CONFIRMATION_TEMPLATE_ID),
+            templateId: task.isPurchaser ? purchaserTemplateId : attendeeTemplateId,
             params: {
               firstName: task.registration.firstName,
               lastName: task.registration.lastName,
