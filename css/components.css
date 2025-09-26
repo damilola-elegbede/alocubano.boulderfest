@@ -1846,8 +1846,9 @@
   cursor: pointer;
   transition: all 0.2s ease;
   position: relative;
-  width: 120px;
-  height: 120px;
+  width: 140px;
+  min-height: 140px;
+  height: auto;
   display: flex;
   flex-direction: column;
   justify-content: center;

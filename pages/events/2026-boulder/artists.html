@@ -105,6 +105,7 @@
     <link rel="stylesheet" href="/css/theme-toggle.css" />
     <link rel="stylesheet" href="/css/header-cart.css" />
     <link rel="stylesheet" href="/css/mobile-overrides.css" />
+    <link rel="stylesheet" href="/css/newsletter.css" />
   </head>
   <body class="typographic">
     <header class="header">
@@ -251,7 +252,7 @@
               <li>
                 <a
                   href="/2026-artists"
-                  class="event-nav-link"
+                  class="event-nav-link active"
                   data-text="Artists"
                   >Artists</a
                 >
@@ -280,10 +281,9 @@
       <!-- Coming Soon Section -->
       <section class="section-typographic">
         <div class="container">
-          <h1 class="text-mask">Boulder Fest 2026</h1>
-          <h2 class="text-gradient" style="margin-bottom: var(--space-lg)">
+          <h1 class="text-gradient" style="margin-bottom: var(--space-lg)">
             ARTISTS
-          </h2>
+          </h1>
 
           <!-- Countdown Timer -->
           <div
@@ -399,7 +399,7 @@
               >
                 We're curating an incredible lineup of world-class Cuban salsa
                 artists and instructors for Boulder Fest 2026. Get ready for
-                authentic masters of Cuban dance, music, and cultural
+                world class instructors of Cuban dance, music, and cultural
                 traditions.
               </p>
             </div>
@@ -409,7 +409,7 @@
               <div
                 class="date-block"
                 style="
-                  background: var(--color-gray-100);
+                  background: var(--color-background-secondary);
                   padding: var(--space-lg);
                   border-radius: 8px;
                   display: inline-block;
@@ -420,6 +420,7 @@
                   style="
                     font-size: var(--font-size-sm);
                     margin-bottom: var(--space-xs);
+                    color: var(--color-text-primary);
                   "
                 >
                   SAVE THE DATE
@@ -437,7 +438,7 @@
                   class="font-serif"
                   style="
                     font-size: var(--font-size-sm);
-                    color: var(--color-gray-600);
+                    color: var(--color-text-secondary);
                   "
                 >
                   BOULDER, COLORADO
@@ -446,7 +447,7 @@
             </div>
           </div>
 
-          <!-- Early Bird Signup -->
+          <!-- Newsletter Signup -->
           <div
             class="early-bird-signup"
             style="
@@ -458,7 +459,7 @@
             "
           >
             <h3 class="text-gradient" style="margin-bottom: var(--space-md)">
-              BE THE FIRST TO KNOW
+              STAY UPDATED
             </h3>
             <p
               class="font-serif"
@@ -469,143 +470,61 @@
                 margin-right: auto;
               "
             >
-              Sign up for early bird notifications and be the first to hear
-              about our amazing 2026 artist lineup, special discounts, and
-              exclusive updates.
+              Subscribe to our newsletter for updates on Boulder Fest 2026
+              artist announcements, ticket sales, and festival news.
             </p>
             <form
-              class="notification-form"
+              class="newsletter-form-type"
+              id="newsletter-form"
+              aria-label="Email newsletter signup"
               style="max-width: 400px; margin: 0 auto"
             >
-              <div style="display: flex; gap: var(--space-sm)">
-                <input
-                  type="email"
-                  placeholder="Your email address"
-                  required
-                  style="
-                    flex: 1;
-                    padding: var(--space-md);
-                    border: 1px solid var(--color-gray-300);
-                    border-radius: 4px;
-                    font-family: var(--font-serif);
-                  "
-                />
-                <button
-                  type="submit"
-                  class="btn-primary"
-                  style="
-                    padding: var(--space-md) var(--space-lg);
-                    background: var(--color-blue);
-                    color: white;
-                    border: none;
-                    border-radius: 4px;
-                    font-family: var(--font-mono);
-                    cursor: pointer;
-                  "
+              <div class="form-group-type">
+                <div class="newsletter-input-wrapper">
+                  <input
+                    type="email"
+                    id="newsletter-email"
+                    name="email"
+                    class="form-input-type newsletter-input"
+                    placeholder="YOUR EMAIL ADDRESS"
+                    required
+                    aria-required="true"
+                    autocomplete="email"
+                    inputmode="email"
+                  />
+                  <button
+                    type="submit"
+                    class="form-button-type newsletter-submit"
+                    aria-label="Subscribe to newsletter"
+                  >
+                    <span class="button-text">SUBSCRIBE</span>
+                    <span class="button-icon" aria-hidden="true">→</span>
+                  </button>
+                </div>
+                <span
+                  id="newsletter-error"
+                  class="error-message"
+                  role="alert"
+                  aria-live="polite"
+                ></span>
+                <div
+                  id="newsletter-success"
+                  class="newsletter-success"
+                  role="status"
+                  aria-live="polite"
+                  aria-hidden="true"
                 >
-                  NOTIFY ME
-                </button>
+                  <span class="success-icon">✓</span>
+                  <span class="success-text"
+                    >Welcome to the A Lo Cubano family!</span
+                  >
+                </div>
               </div>
-              <p
-                style="
-                  font-size: var(--font-size-xs);
-                  color: var(--color-gray-600);
-                  margin-top: var(--space-sm);
-                "
-              >
-                We respect your privacy. Unsubscribe at any time.
-              </p>
             </form>
           </div>
         </div>
       </section>
 
-      <hr class="hr-typographic style-minimal" />
-
-      <!-- Boulder Fest 2025 Reference -->
-      <section class="section-typographic">
-        <div class="container">
-          <h2 class="text-mask">Boulder Fest 2025</h2>
-          <p
-            class="font-serif"
-            style="margin-bottom: var(--space-lg); max-width: 700px"
-          >
-            Boulder Fest 2025 featured an incredible lineup of authentic Cuban
-            artists including Laroye, Malena & Adriel, Emarlos & Courtney,
-            Giselle Soto, and Nathan Hook. Expect even more amazing talent for
-            2026!
-          </p>
-
-          <div
-            class="previous-event-highlights"
-            style="
-              display: grid;
-              grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-              gap: var(--space-lg);
-              margin-top: var(--space-xl);
-            "
-          >
-            <div class="highlight-item" style="text-align: center">
-              <div
-                class="highlight-number font-display"
-                style="
-                  font-size: var(--font-size-3xl);
-                  color: var(--color-blue);
-                "
-              >
-                5,000+
-              </div>
-              <div
-                class="highlight-label font-mono"
-                style="font-size: var(--font-size-sm)"
-              >
-                EXPECTED ATTENDEES
-              </div>
-            </div>
-            <div class="highlight-item" style="text-align: center">
-              <div
-                class="highlight-number font-display"
-                style="font-size: var(--font-size-3xl); color: var(--color-red)"
-              >
-                3
-              </div>
-              <div
-                class="highlight-label font-mono"
-                style="font-size: var(--font-size-sm)"
-              >
-                DAYS OF DANCING
-              </div>
-            </div>
-            <div class="highlight-item" style="text-align: center">
-              <div
-                class="highlight-number font-display"
-                style="
-                  font-size: var(--font-size-3xl);
-                  color: var(--color-blue);
-                "
-              >
-                15+
-              </div>
-              <div
-                class="highlight-label font-mono"
-                style="font-size: var(--font-size-sm)"
-              >
-                WORKSHOPS
-              </div>
-            </div>
-          </div>
-
-          <div style="text-align: center; margin-top: var(--space-xl)">
-            <a
-              href="/2025-artists"
-              class="text-block-mono"
-              style="color: var(--color-red); text-decoration: underline"
-            >
-              → View Boulder Fest 2025 Artists
-            </a>
-          </div>
-        </div>
-      </section>
     </main>
 
     <footer class="footer-typographic">
@@ -726,31 +645,6 @@
       updateCountdown();
       setInterval(updateCountdown, 1000);
 
-      // Early Bird Signup Form Handler
-      document
-        .querySelector(".notification-form")
-        .addEventListener("submit", function (e) {
-          e.preventDefault();
-          const email = this.querySelector('input[type="email"]').value;
-
-          // Simple validation
-          if (email && email.includes("@")) {
-            // For now, show success message (in production, this would connect to an email service)
-            const button = this.querySelector("button");
-            const originalText = button.textContent;
-            button.textContent = "THANK YOU!";
-            button.style.background = "var(--color-green, #10B981)";
-
-            setTimeout(() => {
-              button.textContent = originalText;
-              button.style.background = "var(--color-blue)";
-              this.reset();
-            }, 3000);
-
-            // TODO: Integrate with email service (Mailchimp, ConvertKit, etc.)
-            console.log("Email signup:", email);
-          }
-        });
     </script>
 
     <script src="/js/navigation.js"></script>
@@ -759,6 +653,7 @@
     <script src="/js/main.js"></script>
     <script src="/js/typography.js"></script>
     <script src="/js/gallery-hero.js"></script>
+    <script src="/js/newsletter.js"></script>
     <script type="module" src="/js/global-cart.js"></script>
     
       <script src="/js/logo-switcher.js"></script>

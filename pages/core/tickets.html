@@ -6,7 +6,7 @@
     <title>Tickets - A Lo Cubano Boulder Fest</title>
     <meta
       name="description"
-      content="Purchase tickets for A Lo Cubano Boulder Fest 2026. Choose from full festival passes ($100-125), day passes, single workshops ($30), or social events ($20). Early bird pricing available."
+      content="Purchase tickets for November 2025 Weekender. Choose from full weekender pass ($65, door price $70) or individual class tickets ($25). Join us for an intimate weekend of Cuban salsa!"
     />
     <!-- Favicons -->
     <link
@@ -203,6 +203,33 @@
                       </li>
                     </ul>
                   </li>
+                  <li class="dropdown-category" role="group">
+                    <span class="dropdown-category-title" role="presentation"
+                      >Weekenders</span
+                    >
+                    <ul class="dropdown-submenu">
+                      <li>
+                        <a
+                          href="/2025-11-weekender"
+                          class="dropdown-link"
+                          role="menuitem"
+                          data-event="2025-11-weekender"
+                          data-event-status="upcoming"
+                          >November 2025</a
+                        >
+                      </li>
+                      <li>
+                        <a
+                          href="/weekender-2026-09"
+                          class="dropdown-link"
+                          role="menuitem"
+                          data-event="weekender-2026-09"
+                          data-event-status="upcoming"
+                          >September 2026</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
                 </ul>
               </li>
               <li>
@@ -251,18 +278,30 @@
       <!-- Tickets Header -->
       <section class="section-typographic">
         <div class="container">
+          <!-- 2026 Festival Banner - Commented out for November 2025 Weekender -->
+          <!--
           <div class="tickets-header">
             <h1 style="color: var(--color-red)">
               A Lo Cubano Boulder Fest 2026 Tickets
             </h1>
             <p class="tickets-subtitle">Early bird pricing available now!</p>
           </div>
+          -->
+
+          <!-- November 2025 Weekender Header -->
+          <div class="tickets-header">
+            <h1 style="color: var(--color-red)">
+              November 2025 Weekender Tickets
+            </h1>
+            <p class="tickets-subtitle">Join us for an intimate weekend of Cuban salsa!</p>
+          </div>
 
           <!-- Ticket Selection Interface -->
           <section class="ticket-selection" data-testid="ticket-options">
             <h2>Select Your Tickets</h2>
 
-            <!-- Full Festival Passes -->
+            <!-- 2026 Festival Tickets - Commented out for November 2025 Weekender -->
+            <!--
             <div class="ticket-category">
               <h3>Full Festival Pass</h3>
               <p class="category-description">
@@ -345,7 +384,6 @@
               </div>
             </div>
 
-            <!-- Day Passes -->
             <div class="ticket-category">
               <h3>Day Passes</h3>
               <p class="category-description">
@@ -455,7 +493,6 @@
               </div>
             </div>
 
-            <!-- Individual Items -->
             <div class="ticket-category">
               <h3>Individual Social Tickets</h3>
               <p class="category-description">Single social event access</p>
@@ -520,6 +557,110 @@
                 </div>
               </div>
             </div>
+            -->
+
+            <!-- November 2025 Weekender Tickets -->
+            <div class="ticket-category">
+              <h3>Weekender Pass</h3>
+              <p class="category-description">
+                Full access to all November 2025 Weekender workshops and socials
+              </p>
+
+              <div class="ticket-options">
+                <div
+                  class="ticket-card"
+                  data-ticket-type="2025-11-weekender-full"
+                  data-price="65"
+                  data-testid="weekend-pass-card"
+                >
+                  <h4>November 2025 Weekender Full Pass</h4>
+                  <div class="ticket-price">$65</div>
+                  <p class="ticket-description">Early bird pricing - Save $5!</p>
+                  <div class="ticket-savings">Door price: $70</div>
+                  <div class="quantity-selector">
+                    <button
+                      class="qty-btn minus"
+                      data-action="decrease"
+                      type="button"
+                      aria-label="Decrease quantity"
+                    >
+                      -
+                    </button>
+                    <span class="quantity">0</span>
+                    <button
+                      class="qty-btn plus"
+                      data-action="increase"
+                      data-action-alt="add-to-cart"
+                      type="button"
+                      aria-label="Increase quantity"
+                      data-testid="weekend-pass-add"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <button
+                    class="add-to-cart-btn"
+                    data-action="add-to-cart"
+                    data-ticket-type="2025-11-weekender-full"
+                    data-price="65"
+                    type="button"
+                    style="margin-top: var(--space-sm); width: 100%; padding: var(--space-sm); background: var(--color-blue); color: var(--color-text-on-primary, white); border: none; border-radius: 4px; font-family: var(--font-display); font-weight: 700; cursor: pointer; transition: background-color 0.2s ease;"
+                  >
+                    Add to Cart
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Individual Class Tickets -->
+            <div class="ticket-category">
+              <h3>Individual Classes</h3>
+              <p class="category-description">Single class access for November 2025 Weekender</p>
+
+              <div class="ticket-options">
+                <div
+                  class="ticket-card"
+                  data-ticket-type="2025-11-weekender-class"
+                  data-price="25"
+                  data-testid="day-pass-card"
+                >
+                  <h4>Per Class Ticket</h4>
+                  <div class="ticket-price">$25</div>
+                  <p class="ticket-description">Single workshop access</p>
+                  <div class="quantity-selector">
+                    <button
+                      class="qty-btn minus"
+                      data-action="decrease"
+                      type="button"
+                      aria-label="Decrease quantity"
+                    >
+                      -
+                    </button>
+                    <span class="quantity">0</span>
+                    <button
+                      class="qty-btn plus"
+                      data-action="increase"
+                      data-action-alt="add-to-cart"
+                      type="button"
+                      aria-label="Increase quantity"
+                      data-testid="day-pass-add"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <button
+                    class="add-to-cart-btn"
+                    data-action="add-to-cart"
+                    data-ticket-type="2025-11-weekender-class"
+                    data-price="25"
+                    type="button"
+                    style="margin-top: var(--space-sm); width: 100%; padding: var(--space-sm); background: var(--color-blue); color: var(--color-text-on-primary, white); border: none; border-radius: 4px; font-family: var(--font-display); font-weight: 700; cursor: pointer; transition: background-color 0.2s ease;"
+                  >
+                    Add to Cart
+                  </button>
+                </div>
+              </div>
+            </div>
           </section>
 
           <!-- Policy -->
@@ -538,9 +679,9 @@
     <footer class="footer-typographic">
       <div class="container">
         <p class="footer-credits">
-          MAY 15-17, 2026 •
+          NOVEMBER 2025 WEEKENDER •
           <a
-            href="mailto:alocubanoboulderfest@gmail.com?subject=A Lo Cubano Boulder Fest Inquiry"
+            href="mailto:alocubanoboulderfest@gmail.com?subject=November 2025 Weekender Inquiry"
             style="color: inherit; text-decoration: underline"
             >alocubanoboulderfest@gmail.com</a
           >

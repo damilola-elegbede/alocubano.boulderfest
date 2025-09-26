@@ -133,6 +133,7 @@
     <link rel="stylesheet" href="/css/navigation.css" />
     <link rel="stylesheet" href="/css/header-cart.css" />
     <link rel="stylesheet" href="/css/mobile-overrides.css" />
+    <link rel="stylesheet" href="/css/newsletter.css" />
   </head>
   <body class="typographic">
     <header class="header">
@@ -295,7 +296,7 @@
               <li>
                 <a
                   href="/2026-gallery"
-                  class="event-nav-link"
+                  class="event-nav-link active"
                   data-text="Gallery"
                   >Gallery</a
                 >
@@ -308,10 +309,9 @@
       <!-- Coming Soon Section -->
       <section class="section-typographic">
         <div class="container">
-          <h1 class="text-mask">Boulder Fest 2026</h1>
-          <h2 class="text-gradient" style="margin-bottom: var(--space-lg)">
+          <h1 class="text-gradient" style="margin-bottom: var(--space-lg)">
             GALLERY
-          </h2>
+          </h1>
 
           <!-- Countdown Timer -->
           <div
@@ -427,7 +427,7 @@
               >
                 Get ready to create unforgettable moments! Boulder Fest 2026
                 will be captured by our professional photographers, preserving
-                the energy, passion, and authentic Cuban culture for years to
+                the energy, passion, and authentic Cuban culture taught by world class instructors for years to
                 come.
               </p>
             </div>
@@ -452,7 +452,7 @@
                 <div
                   class="category-item"
                   style="
-                    background: var(--color-gray-100);
+                    background: var(--color-background-secondary);
                     padding: var(--space-lg);
                     border-radius: 8px;
                     text-align: center;
@@ -473,6 +473,7 @@
                     style="
                       font-size: var(--font-size-sm);
                       margin-bottom: var(--space-xs);
+                      color: var(--color-text-primary);
                     "
                   >
                     WORKSHOPS
@@ -481,7 +482,7 @@
                     class="category-subtitle font-serif"
                     style="
                       font-size: var(--font-size-xs);
-                      color: var(--color-gray-600);
+                      color: var(--color-text-secondary);
                     "
                   >
                     Learning in action
@@ -490,7 +491,7 @@
                 <div
                   class="category-item"
                   style="
-                    background: var(--color-gray-100);
+                    background: var(--color-background-secondary);
                     padding: var(--space-lg);
                     border-radius: 8px;
                     text-align: center;
@@ -511,6 +512,7 @@
                     style="
                       font-size: var(--font-size-sm);
                       margin-bottom: var(--space-xs);
+                      color: var(--color-text-primary);
                     "
                   >
                     SOCIAL DANCING
@@ -519,7 +521,7 @@
                     class="category-subtitle font-serif"
                     style="
                       font-size: var(--font-size-xs);
-                      color: var(--color-gray-600);
+                      color: var(--color-text-secondary);
                     "
                   >
                     Pure joy & connection
@@ -528,7 +530,7 @@
                 <div
                   class="category-item"
                   style="
-                    background: var(--color-gray-100);
+                    background: var(--color-background-secondary);
                     padding: var(--space-lg);
                     border-radius: 8px;
                     text-align: center;
@@ -549,6 +551,7 @@
                     style="
                       font-size: var(--font-size-sm);
                       margin-bottom: var(--space-xs);
+                      color: var(--color-text-primary);
                     "
                   >
                     CULTURAL MOMENTS
@@ -557,7 +560,7 @@
                     class="category-subtitle font-serif"
                     style="
                       font-size: var(--font-size-xs);
-                      color: var(--color-gray-600);
+                      color: var(--color-text-secondary);
                     "
                   >
                     Authentic expressions
@@ -566,7 +569,7 @@
                 <div
                   class="category-item"
                   style="
-                    background: var(--color-gray-100);
+                    background: var(--color-background-secondary);
                     padding: var(--space-lg);
                     border-radius: 8px;
                     text-align: center;
@@ -587,6 +590,7 @@
                     style="
                       font-size: var(--font-size-sm);
                       margin-bottom: var(--space-xs);
+                      color: var(--color-text-primary);
                     "
                   >
                     COMMUNITY
@@ -595,7 +599,7 @@
                     class="category-subtitle font-serif"
                     style="
                       font-size: var(--font-size-xs);
-                      color: var(--color-gray-600);
+                      color: var(--color-text-secondary);
                     "
                   >
                     Friendships & connections
@@ -683,7 +687,7 @@
             </div>
           </div>
 
-          <!-- Early Bird Signup -->
+          <!-- Newsletter Signup -->
           <div
             class="early-bird-signup"
             style="
@@ -695,7 +699,7 @@
             "
           >
             <h3 class="text-gradient" style="margin-bottom: var(--space-md)">
-              GET PHOTO UPDATES
+              STAY UPDATED
             </h3>
             <p
               class="font-serif"
@@ -706,305 +710,61 @@
                 margin-right: auto;
               "
             >
-              Be notified as soon as Boulder Fest 2026 photos are live! We'll
-              send you direct links to download your favorites in high
-              resolution.
+              Subscribe to our newsletter for Boulder Fest 2026 photo updates,
+              gallery announcements, and festival news.
             </p>
             <form
-              class="notification-form"
+              class="newsletter-form-type"
+              id="newsletter-form"
+              aria-label="Email newsletter signup"
               style="max-width: 400px; margin: 0 auto"
             >
-              <div style="display: flex; gap: var(--space-sm)">
-                <input
-                  type="email"
-                  placeholder="Your email address"
-                  required
-                  style="
-                    flex: 1;
-                    padding: var(--space-md);
-                    border: 1px solid var(--color-gray-300);
-                    border-radius: 4px;
-                    font-family: var(--font-serif);
-                  "
-                />
-                <button
-                  type="submit"
-                  class="btn-primary"
-                  style="
-                    padding: var(--space-md) var(--space-lg);
-                    background: var(--color-blue);
-                    color: white;
-                    border: none;
-                    border-radius: 4px;
-                    font-family: var(--font-mono);
-                    cursor: pointer;
-                  "
+              <div class="form-group-type">
+                <div class="newsletter-input-wrapper">
+                  <input
+                    type="email"
+                    id="newsletter-email"
+                    name="email"
+                    class="form-input-type newsletter-input"
+                    placeholder="YOUR EMAIL ADDRESS"
+                    required
+                    aria-required="true"
+                    autocomplete="email"
+                    inputmode="email"
+                  />
+                  <button
+                    type="submit"
+                    class="form-button-type newsletter-submit"
+                    aria-label="Subscribe to newsletter"
+                  >
+                    <span class="button-text">SUBSCRIBE</span>
+                    <span class="button-icon" aria-hidden="true">→</span>
+                  </button>
+                </div>
+                <span
+                  id="newsletter-error"
+                  class="error-message"
+                  role="alert"
+                  aria-live="polite"
+                ></span>
+                <div
+                  id="newsletter-success"
+                  class="newsletter-success"
+                  role="status"
+                  aria-live="polite"
+                  aria-hidden="true"
                 >
-                  NOTIFY ME
-                </button>
+                  <span class="success-icon">✓</span>
+                  <span class="success-text"
+                    >Welcome to the A Lo Cubano family!</span
+                  >
+                </div>
               </div>
-              <p
-                style="
-                  font-size: var(--font-size-xs);
-                  color: var(--color-gray-600);
-                  margin-top: var(--space-sm);
-                "
-              >
-                Photo release notifications • High-res download links • Album
-                updates
-              </p>
             </form>
           </div>
         </div>
       </section>
 
-      <hr class="hr-typographic style-minimal" />
-
-      <!-- Previous Years Gallery -->
-      <section class="section-typographic">
-        <div class="container">
-          <h2 class="text-mask">Previous Years</h2>
-          <p
-            class="font-serif"
-            style="margin-bottom: var(--space-lg); max-width: 700px"
-          >
-            Experience the magic through our lens! Here's a taste of what
-            Boulder Fest photography captures - the authentic moments, genuine
-            emotions, and vibrant culture that make our festival special.
-          </p>
-
-          <!-- Gallery Stats -->
-          <div
-            class="gallery-stats"
-            style="
-              display: grid;
-              grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-              gap: var(--space-lg);
-              margin: var(--space-xl) 0;
-              text-align: center;
-            "
-          >
-            <div class="stat-item">
-              <div
-                class="stat-number font-display"
-                style="
-                  font-size: var(--font-size-3xl);
-                  color: var(--color-blue);
-                "
-              >
-                2,500+
-              </div>
-              <div
-                class="stat-label font-mono"
-                style="font-size: var(--font-size-sm)"
-              >
-                PHOTOS (2025)
-              </div>
-            </div>
-            <div class="stat-item">
-              <div
-                class="stat-number font-display"
-                style="font-size: var(--font-size-3xl); color: var(--color-red)"
-              >
-                48
-              </div>
-              <div
-                class="stat-label font-mono"
-                style="font-size: var(--font-size-sm)"
-              >
-                HOURS COVERAGE
-              </div>
-            </div>
-            <div class="stat-item">
-              <div
-                class="stat-number font-display"
-                style="
-                  font-size: var(--font-size-3xl);
-                  color: var(--color-blue);
-                "
-              >
-                15,000+
-              </div>
-              <div
-                class="stat-label font-mono"
-                style="font-size: var(--font-size-sm)"
-              >
-                DOWNLOADS
-              </div>
-            </div>
-            <div class="stat-item">
-              <div
-                class="stat-number font-display"
-                style="font-size: var(--font-size-3xl); color: var(--color-red)"
-              >
-                3
-              </div>
-              <div
-                class="stat-label font-mono"
-                style="font-size: var(--font-size-sm)"
-              >
-                PHOTOGRAPHERS
-              </div>
-            </div>
-          </div>
-
-          <!-- Gallery Links -->
-          <div
-            class="gallery-links"
-            style="
-              display: grid;
-              grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-              gap: var(--space-lg);
-              margin-top: var(--space-xl);
-            "
-          >
-            <div
-              class="gallery-link-item"
-              style="
-                border: 1px solid var(--color-gray-200);
-                padding: var(--space-lg);
-                border-radius: 8px;
-                text-align: center;
-              "
-            >
-              <h4 class="font-display" style="margin-bottom: var(--space-sm)">
-                Boulder Fest 2025
-              </h4>
-              <p
-                class="font-serif"
-                style="
-                  font-size: var(--font-size-sm);
-                  margin-bottom: var(--space-md);
-                  color: var(--color-gray-600);
-                "
-              >
-                2,500+ photos from our most successful festival yet
-              </p>
-              <a
-                href="/gallery-2025"
-                class="text-block-mono"
-                style="color: var(--color-blue); text-decoration: underline"
-              >
-                → VIEW 2025 GALLERY
-              </a>
-            </div>
-
-            <div
-              class="gallery-link-item"
-              style="
-                border: 1px solid var(--color-gray-200);
-                padding: var(--space-lg);
-                border-radius: 8px;
-                text-align: center;
-              "
-            >
-              <h4 class="font-display" style="margin-bottom: var(--space-sm)">
-                All Years Gallery
-              </h4>
-              <p
-                class="font-serif"
-                style="
-                  font-size: var(--font-size-sm);
-                  margin-bottom: var(--space-md);
-                  color: var(--color-gray-600);
-                "
-              >
-                Browse through our complete photo archive
-              </p>
-              <a
-                href="/gallery"
-                class="text-block-mono"
-                style="color: var(--color-blue); text-decoration: underline"
-              >
-                → VIEW ALL GALLERIES
-              </a>
-            </div>
-          </div>
-
-          <!-- Photographer Credits -->
-          <div
-            class="photographer-credits"
-            style="
-              background: var(--color-gray-50);
-              padding: var(--space-xl);
-              border-radius: 12px;
-              margin-top: var(--space-xl);
-              text-align: center;
-            "
-          >
-            <h3 class="text-gradient" style="margin-bottom: var(--space-md)">
-              CAPTURED BY PROFESSIONALS
-            </h3>
-            <p
-              class="font-serif"
-              style="
-                margin-bottom: var(--space-lg);
-                max-width: 600px;
-                margin-left: auto;
-                margin-right: auto;
-              "
-            >
-              Our team of experienced event photographers specializes in dance
-              photography, ensuring every spin, dip, and smile is perfectly
-              captured.
-            </p>
-            <div
-              class="photo-quality-notes"
-              style="
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: var(--space-md);
-                margin-top: var(--space-lg);
-              "
-            >
-              <div class="quality-item">
-                <div
-                  class="font-mono"
-                  style="
-                    font-size: var(--font-size-sm);
-                    color: var(--color-blue);
-                  "
-                >
-                  4K RESOLUTION
-                </div>
-              </div>
-              <div class="quality-item">
-                <div
-                  class="font-mono"
-                  style="
-                    font-size: var(--font-size-sm);
-                    color: var(--color-red);
-                  "
-                >
-                  MULTIPLE FORMATS
-                </div>
-              </div>
-              <div class="quality-item">
-                <div
-                  class="font-mono"
-                  style="
-                    font-size: var(--font-size-sm);
-                    color: var(--color-blue);
-                  "
-                >
-                  FAST EDITING
-                </div>
-              </div>
-              <div class="quality-item">
-                <div
-                  class="font-mono"
-                  style="
-                    font-size: var(--font-size-sm);
-                    color: var(--color-red);
-                  "
-                >
-                  FREE DOWNLOADS
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
     </main>
 
     <footer class="footer-typographic">
@@ -1125,31 +885,6 @@
       updateCountdown();
       setInterval(updateCountdown, 1000);
 
-      // Photo Notification Form Handler
-      document
-        .querySelector(".notification-form")
-        .addEventListener("submit", function (e) {
-          e.preventDefault();
-          const email = this.querySelector('input[type="email"]').value;
-
-          // Simple validation
-          if (email && email.includes("@")) {
-            // For now, show success message (in production, this would connect to an email service)
-            const button = this.querySelector("button");
-            const originalText = button.textContent;
-            button.textContent = "SIGNED UP!";
-            button.style.background = "var(--color-green, #10B981)";
-
-            setTimeout(() => {
-              button.textContent = originalText;
-              button.style.background = "var(--color-blue)";
-              this.reset();
-            }, 3000);
-
-            // TODO: Integrate with email service (Mailchimp, ConvertKit, etc.)
-            console.log("Photo notification signup:", email);
-          }
-        });
     </script>
 
     <script src="/js/navigation.js"></script>
@@ -1158,6 +893,7 @@
     <script src="/js/main.js"></script>
     <script src="/js/typography.js"></script>
     <script src="/js/gallery-hero.js"></script>
+    <script src="/js/newsletter.js"></script>
     <script type="module" src="/js/global-cart.js"></script>
     
       <script src="/js/logo-switcher.js"></script>
