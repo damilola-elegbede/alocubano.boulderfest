@@ -19,9 +19,12 @@ class FlipCardManager {
             card.addEventListener('click', (e) => {
                 // Don't flip if clicking on quantity buttons or other interactive elements
                 if (this.shouldPreventFlip(e.target)) {
+                    console.log('Flip prevented for interactive element:', e.target);
                     return;
                 }
 
+                const ticketType = card.dataset.ticketType || 'unknown';
+                console.log(`Click detected on card: ${ticketType}`, e.target);
                 this.flipCard(card);
             });
 
@@ -70,6 +73,9 @@ class FlipCardManager {
 
     flipCard(card, toBack = null) {
         const isFlipped = card.classList.contains('flipped');
+        const ticketType = card.dataset.ticketType || 'unknown';
+
+        console.log(`Flipping card: ${ticketType}, currently flipped: ${isFlipped}`);
 
         if (toBack === null) {
             // Toggle flip state
@@ -82,8 +88,11 @@ class FlipCardManager {
             card.classList.remove('flipped');
         }
 
+        const newFlippedState = card.classList.contains('flipped');
+        console.log(`Card ${ticketType} now flipped: ${newFlippedState}`);
+
         // Announce state change for screen readers
-        const ticketType = card.querySelector('.ticket-type')?.textContent || 'Ticket';
+        const ticketTypeDisplay = card.querySelector('.ticket-type')?.textContent || 'Ticket';
         const newState = card.classList.contains('flipped') ? 'showing details' : 'showing front';
 
         // Create temporary announcement for screen readers
@@ -91,11 +100,13 @@ class FlipCardManager {
         announcement.setAttribute('aria-live', 'polite');
         announcement.setAttribute('aria-atomic', 'true');
         announcement.className = 'sr-only';
-        announcement.textContent = `${ticketType} card ${newState}`;
+        announcement.textContent = `${ticketTypeDisplay} card ${newState}`;
 
         document.body.appendChild(announcement);
         setTimeout(() => {
-            document.body.removeChild(announcement);
+            if (document.body.contains(announcement)) {
+                document.body.removeChild(announcement);
+            }
         }, 1000);
     }
 
