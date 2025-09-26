@@ -2935,16 +2935,60 @@
 }
 
 /* Schedule Components */
+.schedule-day {
+  margin-bottom: var(--space-3xl);
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.schedule-day h3 {
+  font-family: var(--font-display);
+  font-size: var(--font-size-2xl);
+  color: var(--color-primary);
+  margin-bottom: var(--space-xl);
+  padding-bottom: var(--space-sm);
+  border-bottom: 2px solid var(--color-primary);
+}
+
 .schedule-item {
   display: grid;
-  grid-template-columns: 120px 1fr;
-  gap: var(--space-xl);
+  grid-template-columns: 180px 1fr;
+  gap: var(--space-3xl);
+  padding: var(--space-xl) 0;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.schedule-item:last-child {
+  border-bottom: none;
+}
+
+.schedule-time {
+  font-family: var(--font-display);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-accent);
+  white-space: nowrap;
+}
+
+.schedule-content h4 {
+  font-family: var(--font-display);
+  font-size: var(--font-size-xl);
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-xs);
+}
+
+.schedule-content p {
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  max-width: 800px;
 }
 
 @media (max-width: 768px) {
   .schedule-item {
     grid-template-columns: 1fr;
     gap: var(--space-md);
+    padding: var(--space-lg) 0;
   }
 
   .schedule-time {
@@ -2974,8 +3018,8 @@
    ========================================================================== */
 
 .ticket-card.vertical-design {
-  width: 320px;
-  height: 480px;
+  width: 380px;
+  height: 520px;
   background: white;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
@@ -2983,7 +3027,6 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  margin: 0 auto;
 }
 
 /* Faded logo background watermark */
@@ -3154,10 +3197,30 @@
   color: var(--color-text-secondary);
 }
 
+[data-theme="dark"] .ticket-card.vertical-design .ticket-type {
+  color: #4A90E2; /* Lighter blue for dark mode visibility */
+}
+
+[data-theme="dark"] .ticket-card.vertical-design .field-label {
+  color: var(--color-text-secondary);
+}
+
+/* Container styling for vertical design tickets */
+.ticket-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xl);
+  justify-content: flex-start;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .ticket-card.vertical-design {
     width: 100%;
-    max-width: 320px;
+    max-width: 380px;
+  }
+
+  .ticket-options {
+    justify-content: center;
   }
 }

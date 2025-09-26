@@ -959,12 +959,21 @@ class SiteNavigation {
 
         // Define event sub-page patterns with their corresponding overview pages
         const eventPatterns = [
-            // Boulder Fest 2025
-            { overview: '/boulder-fest-2025', patterns: ['/2025-artists', '/2025-schedule', '/2025-gallery'] },
-            // Boulder Fest 2026
-            { overview: '/boulder-fest-2026', patterns: ['/2026-artists', '/2026-schedule', '/2026-gallery'] },
-            // Weekender 2025-11
-            { overview: '/2025-11-weekender', patterns: ['/2025-nov-artists', '/2025-nov-schedule', '/2025-nov-gallery'] }
+            // Boulder Fest 2025 (handle both redirected paths and direct paths)
+            { overview: '/boulder-fest-2025', patterns: [
+                '/2025-artists', '/2025-schedule', '/2025-gallery',
+                '/boulder-fest-2025/artists', '/boulder-fest-2025/schedule', '/boulder-fest-2025/gallery'
+            ] },
+            // Boulder Fest 2026 (handle both redirected paths and direct paths)
+            { overview: '/boulder-fest-2026', patterns: [
+                '/2026-artists', '/2026-schedule', '/2026-gallery',
+                '/boulder-fest-2026/artists', '/boulder-fest-2026/schedule', '/boulder-fest-2026/gallery'
+            ] },
+            // Weekender 2025-11 (handle both redirected paths and direct paths)
+            { overview: '/2025-11-weekender', patterns: [
+                '/2025-nov-artists', '/2025-nov-schedule', '/2025-nov-gallery',
+                '/2025-11-weekender/artists', '/2025-11-weekender/schedule', '/2025-11-weekender/gallery'
+            ] }
         ];
 
         // Check if current page is an event sub-page
@@ -1018,7 +1027,27 @@ class SiteNavigation {
         eventNavLinks.forEach((link) => {
             const linkPath = new URL(link.href).pathname;
 
-            if (currentPath === linkPath) {
+            // Map the actual paths to the link paths
+            const pathMapping = {
+                // 2025-11 Weekender
+                '/2025-11-weekender/artists': '/2025-nov-artists',
+                '/2025-11-weekender/schedule': '/2025-nov-schedule',
+                '/2025-11-weekender/gallery': '/2025-nov-gallery',
+                // Boulder Fest 2025
+                '/boulder-fest-2025/artists': '/2025-artists',
+                '/boulder-fest-2025/schedule': '/2025-schedule',
+                '/boulder-fest-2025/gallery': '/2025-gallery',
+                // Boulder Fest 2026
+                '/boulder-fest-2026/artists': '/2026-artists',
+                '/boulder-fest-2026/schedule': '/2026-schedule',
+                '/boulder-fest-2026/gallery': '/2026-gallery'
+            };
+
+            // Check if current path matches either directly or through mapping
+            const isCurrentPage = currentPath === linkPath ||
+                                 (pathMapping[currentPath] && pathMapping[currentPath] === linkPath);
+
+            if (isCurrentPage) {
                 link.classList.add('is-active');
                 link.setAttribute('aria-current', 'page');
             }
@@ -1028,7 +1057,11 @@ class SiteNavigation {
         const allEventPaths = [
             '/boulder-fest-2025', '/2025-artists', '/2025-schedule', '/2025-gallery',
             '/boulder-fest-2026', '/2026-artists', '/2026-schedule', '/2026-gallery',
-            '/2025-11-weekender', '/2025-nov-artists', '/2025-nov-schedule', '/2025-nov-gallery'
+            '/2025-11-weekender', '/2025-nov-artists', '/2025-nov-schedule', '/2025-nov-gallery',
+            // Also include the actual paths after redirect
+            '/boulder-fest-2025/artists', '/boulder-fest-2025/schedule', '/boulder-fest-2025/gallery',
+            '/boulder-fest-2026/artists', '/boulder-fest-2026/schedule', '/boulder-fest-2026/gallery',
+            '/2025-11-weekender/artists', '/2025-11-weekender/schedule', '/2025-11-weekender/gallery'
         ];
 
         if (allEventPaths.includes(currentPath)) {
