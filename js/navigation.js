@@ -950,48 +950,57 @@ class SiteNavigation {
 
     highlightCurrentPage() {
         const currentPath = window.location.pathname;
-        const navLinks = document.querySelectorAll(
-            '.nav-link, .dropdown-link, .event-nav-link'
-        );
 
-        // First, clear all active states
-        document.querySelectorAll('.nav-trigger, .nav-item').forEach((el) => {
-            el.classList.remove('is-active');
+        // Clear all active states first
+        document.querySelectorAll('.nav-trigger, .nav-item, .nav-link, .dropdown-link, .event-nav-link').forEach((el) => {
+            el.classList.remove('is-active', 'active', 'current');
+            el.removeAttribute('aria-current');
         });
 
-        // Get Events sub-page patterns dynamically
-        const eventSubPagePatterns = this.getEventSubPagePatterns();
+        // Define event sub-page patterns with their corresponding overview pages
+        const eventPatterns = [
+            // Boulder Fest 2025
+            { overview: '/boulder-fest-2025', patterns: ['/2025-artists', '/2025-schedule', '/2025-gallery'] },
+            // Boulder Fest 2026
+            { overview: '/boulder-fest-2026', patterns: ['/2026-artists', '/2026-schedule', '/2026-gallery'] },
+            // Weekender 2025-11
+            { overview: '/2025-11-weekender', patterns: ['/2025-nov-artists', '/2025-nov-schedule', '/2025-nov-gallery'] }
+        ];
 
-        // Check if current page is an Events sub-page
-        const isEventSubPage = eventSubPagePatterns.some(
-            (pattern) => currentPath === pattern
-        );
+        // Check if current page is an event sub-page
+        let currentEventOverview = null;
+        let isEventSubPage = false;
 
+        for (const event of eventPatterns) {
+            if (event.patterns.includes(currentPath)) {
+                currentEventOverview = event.overview;
+                isEventSubPage = true;
+                break;
+            }
+        }
+
+        // Handle regular navigation links
+        const navLinks = document.querySelectorAll('.nav-link, .dropdown-link');
         navLinks.forEach((link) => {
-            link.classList.remove('is-active');
             const linkPath = new URL(link.href).pathname;
 
             // Enhanced path matching for current page highlighting
             const isCurrentPage =
-        currentPath === linkPath ||
-        (currentPath === '/' && linkPath === '/home') ||
-        (currentPath === '/home' && linkPath === '/home') ||
-        (currentPath.startsWith(linkPath + '/') && linkPath !== '/');
+                currentPath === linkPath ||
+                (currentPath === '/' && linkPath === '/home') ||
+                (currentPath === '/home' && linkPath === '/home') ||
+                (currentPath.startsWith(linkPath + '/') && linkPath !== '/') ||
+                // Special case for event overview pages when on sub-pages
+                (isEventSubPage && linkPath === currentEventOverview);
 
             if (isCurrentPage) {
                 link.classList.add('is-active');
-
-                // Set aria-current for accessibility
                 link.setAttribute('aria-current', 'page');
 
                 // If this is in a dropdown, mark the parent trigger as active too
-                const dropdown = link.closest(
-                    '.nav-item.has-dropdown, .dropdown-container'
-                );
+                const dropdown = link.closest('.nav-item.has-dropdown, .dropdown-container');
                 if (dropdown) {
-                    const trigger = dropdown.querySelector(
-                        '.dropdown-trigger, .nav-trigger'
-                    );
+                    const trigger = dropdown.querySelector('.dropdown-trigger, .nav-trigger');
                     if (trigger) {
                         trigger.classList.add('is-active');
                         // Also mark the parent nav-item as active for desktop styles
@@ -1001,17 +1010,29 @@ class SiteNavigation {
                         }
                     }
                 }
-            } else {
-                link.removeAttribute('aria-current');
             }
         });
 
-        // Special handling for Events sub-pages
-        if (isEventSubPage) {
-            // Find the Events trigger and mark it as active
-            const eventsTriggers = document.querySelectorAll(
-                '[data-dropdown="events"], .nav-trigger'
-            );
+        // Handle event sub-navigation links
+        const eventNavLinks = document.querySelectorAll('.event-nav-link');
+        eventNavLinks.forEach((link) => {
+            const linkPath = new URL(link.href).pathname;
+
+            if (currentPath === linkPath) {
+                link.classList.add('is-active');
+                link.setAttribute('aria-current', 'page');
+            }
+        });
+
+        // Ensure Events dropdown is highlighted when on any event page (overview or sub-page)
+        const allEventPaths = [
+            '/boulder-fest-2025', '/2025-artists', '/2025-schedule', '/2025-gallery',
+            '/boulder-fest-2026', '/2026-artists', '/2026-schedule', '/2026-gallery',
+            '/2025-11-weekender', '/2025-nov-artists', '/2025-nov-schedule', '/2025-nov-gallery'
+        ];
+
+        if (allEventPaths.includes(currentPath)) {
+            const eventsTriggers = document.querySelectorAll('[data-dropdown="events"], .nav-trigger');
             eventsTriggers.forEach((trigger) => {
                 const triggerText = trigger.textContent.trim();
                 if (triggerText.includes('Events')) {
