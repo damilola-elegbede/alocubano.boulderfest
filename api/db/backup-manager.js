@@ -274,68 +274,60 @@ class BackupManager {
       const backupData = JSON.parse(decompressedData.toString());
 
       const db = await this.ensureDatabase();
-      // Begin explicit transaction for atomic restore
-      await db.execute('BEGIN TRANSACTION');
 
-      try {
-        // Disable foreign key checks during restore to prevent constraint violations
-        await db.execute('PRAGMA foreign_keys = OFF');
+      // Build all operations for atomic restore
+      const restoreOperations = [];
 
-        // Drop existing tables (careful!)
-        for (const tableName of Object.keys(backupData.tables)) {
-          await db.execute({
-            sql: `DROP TABLE IF EXISTS ${tableName}`,
+      // Start with BEGIN TRANSACTION
+      restoreOperations.push('BEGIN TRANSACTION');
+
+      // Disable foreign key checks during restore to prevent constraint violations
+      restoreOperations.push('PRAGMA foreign_keys = OFF');
+
+      // Drop existing tables (careful!)
+      for (const tableName of Object.keys(backupData.tables)) {
+        restoreOperations.push({
+          sql: `DROP TABLE IF EXISTS ${tableName}`,
+          args: []
+        });
+      }
+
+      // Recreate schemas
+      for (const schema of backupData.schemas) {
+        if (schema) {
+          restoreOperations.push({
+            sql: schema,
             args: []
           });
         }
+      }
 
-        // Recreate schemas
-        for (const schema of backupData.schemas) {
-          if (schema) {
-            await db.execute({
-              sql: schema,
-              args: []
-            });
-          }
+      // Restore data - add all INSERT operations
+      for (const [tableName, rows] of Object.entries(backupData.tables)) {
+        for (const row of rows) {
+          const columns = Object.keys(row);
+          const values = Object.values(row);
+          const placeholders = columns.map(() => '?').join(', ');
+
+          restoreOperations.push({
+            sql: `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES (${placeholders})`,
+            args: values
+          });
         }
+      }
 
-        // Restore data in batches to manage memory
-        const batchSize = 100;
-        for (const [tableName, rows] of Object.entries(backupData.tables)) {
-          if (rows.length === 0) {
-            continue;
-          }
+      // Re-enable foreign key checks after restore
+      restoreOperations.push('PRAGMA foreign_keys = ON');
 
-          // Process in batches
-          for (let i = 0; i < rows.length; i += batchSize) {
-            const batch = rows.slice(i, i + batchSize);
-            const batchStatements = [];
+      // End with COMMIT
+      restoreOperations.push('COMMIT');
 
-            for (const row of batch) {
-              const columns = Object.keys(row);
-              const values = Object.values(row);
-              const placeholders = columns.map(() => '?').join(', ');
-
-              batchStatements.push({
-                sql: `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES (${placeholders})`,
-                args: values
-              });
-            }
-
-            // Execute batch
-            await db.batch(batchStatements);
-          }
-        }
-
-        // Re-enable foreign key checks after restore
-        await db.execute('PRAGMA foreign_keys = ON');
-
-        // Commit transaction
-        await db.execute('COMMIT');
-
+      try {
+        // Execute all operations in a single batch
+        await db.batch(restoreOperations);
       } catch (error) {
-        // Rollback on error
-        await db.execute('ROLLBACK');
+        // Rollback is automatic if batch fails
+        console.error('Restore batch transaction failed:', error);
         throw error;
       }
 

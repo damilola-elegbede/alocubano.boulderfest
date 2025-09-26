@@ -225,16 +225,17 @@ export default async function handler(req, res) {
       });
     }
 
-    // Use transaction for atomicity
+    // Build batch operations for atomicity
     const results = [];
     const emailTasks = [];
-    let transactionActive = false;
+    const batchOperations = [];
+    const auditTasks = [];
 
-    // Start transaction
-    await db.execute('BEGIN TRANSACTION');
-    transactionActive = true;
+    // Start with BEGIN TRANSACTION
+    batchOperations.push('BEGIN TRANSACTION');
 
     try {
+      // Build all operations first
       for (let i = 0; i < sanitizedRegistrations.length; i++) {
         const registration = sanitizedRegistrations[i];
         const ticket = ticketsResult.rows.find(t => t.ticket_id === registration.ticketId);
@@ -248,8 +249,8 @@ export default async function handler(req, res) {
           email: ticket.attendee_email
         };
 
-        // Update ticket (guard against concurrent completion)
-        const updateRes = await db.execute({
+        // Add ticket update operation
+        batchOperations.push({
           sql: `
             UPDATE tickets
             SET
@@ -269,11 +270,15 @@ export default async function handler(req, res) {
           ]
         });
 
-        // Use portable rows changed check for different database implementations
-        const rowsChanged = updateRes?.rowsAffected ?? updateRes?.changes ?? 0;
-        if (rowsChanged === 0) {
-          throw new Error(`Concurrent update detected for ticket ${registration.ticketId}`);
-        }
+        // Add reminder cancellation operation
+        batchOperations.push({
+          sql: `
+            UPDATE registration_reminders
+            SET status = 'cancelled'
+            WHERE ticket_id = ? AND status = 'scheduled'
+          `,
+          args: [registration.ticketId]
+        });
 
         // Determine changed fields for audit
         const changedFields = [];
@@ -293,41 +298,26 @@ export default async function handler(req, res) {
           changedFields.push('registered_at');
         }
 
-        // Audit individual registration change (await for proper error handling)
-        try {
-          await auditRegistrationChange({
-            requestId: requestId,
-            ticketId: registration.ticketId,
-            beforeStatus: beforeState.status,
-            beforeFirstName: beforeState.firstName,
-            beforeLastName: beforeState.lastName,
-            beforeEmail: beforeState.email,
-            afterFirstName: registration.firstName,
-            afterLastName: registration.lastName,
-            afterEmail: registration.email,
-            changedFields: changedFields,
-            adminUser: null, // Batch operations are typically self-service
-            sessionId: null,
-            ipAddress: clientIP,
-            userAgent: userAgent,
-            batchSize: sanitizedRegistrations.length,
-            batchPosition: i + 1,
-            ticketType: ticket.ticket_type,
-            processingTimeMs: Date.now() - operationStartTime
-          });
-        } catch (auditError) {
-          // Log but don't fail the registration
-          console.error('Audit logging failed (non-blocking):', auditError.message);
-        }
-
-        // Cancel reminders
-        await db.execute({
-          sql: `
-            UPDATE registration_reminders
-            SET status = 'cancelled'
-            WHERE ticket_id = ? AND status = 'scheduled'
-          `,
-          args: [registration.ticketId]
+        // Queue audit task for after transaction
+        auditTasks.push({
+          requestId: requestId,
+          ticketId: registration.ticketId,
+          beforeStatus: beforeState.status,
+          beforeFirstName: beforeState.firstName,
+          beforeLastName: beforeState.lastName,
+          beforeEmail: beforeState.email,
+          afterFirstName: registration.firstName,
+          afterLastName: registration.lastName,
+          afterEmail: registration.email,
+          changedFields: changedFields,
+          adminUser: null, // Batch operations are typically self-service
+          sessionId: null,
+          ipAddress: clientIP,
+          userAgent: userAgent,
+          batchSize: sanitizedRegistrations.length,
+          batchPosition: i + 1,
+          ticketType: ticket.ticket_type,
+          processingTimeMs: Date.now() - operationStartTime
         });
 
         results.push({
@@ -350,19 +340,40 @@ export default async function handler(req, res) {
         });
       }
 
-      // Commit transaction - CRITICAL: This ends the transaction
-      await db.execute('COMMIT');
-      transactionActive = false;
+      // End with COMMIT
+      batchOperations.push('COMMIT');
 
-    } catch (error) {
-      // Only rollback if transaction is still active
-      if (transactionActive) {
-        try {
-          await db.execute('ROLLBACK');
-        } catch (rollbackError) {
-          console.error('Rollback failed:', rollbackError);
+      // Execute all operations in a single batch
+      const batchResults = await db.batch(batchOperations);
+
+      // Check that all ticket updates succeeded
+      // Each UPDATE operation returns a result with rowsAffected
+      // Skip BEGIN (index 0) and COMMIT (last index)
+      for (let i = 0; i < sanitizedRegistrations.length; i++) {
+        // Each registration has 2 operations: ticket update and reminder cancel
+        // So ticket update is at index: 1 + (i * 2)
+        const updateResultIndex = 1 + (i * 2);
+        const updateResult = batchResults[updateResultIndex];
+        const rowsChanged = updateResult?.rowsAffected ?? updateResult?.changes ?? 0;
+
+        if (rowsChanged === 0) {
+          throw new Error(`Concurrent update detected for ticket ${sanitizedRegistrations[i].ticketId}`);
         }
       }
+
+      // Perform audit logging after successful transaction
+      for (const auditTask of auditTasks) {
+        try {
+          await auditRegistrationChange(auditTask);
+        } catch (auditError) {
+          // Log but don't fail the registration
+          console.error('Audit logging failed (non-blocking):', auditError.message);
+        }
+      }
+
+    } catch (error) {
+      // Rollback is automatic if batch fails
+      console.error('Batch transaction failed:', error);
       throw error;
     }
 
