@@ -1,12 +1,46 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <!-- Inline theme detection to prevent FOUC -->
+    <script>
+      (function() {
+        // Detect admin pages
+        const path = window.location.pathname.toLowerCase();
+        const isAdmin = path.includes('/admin') || path.includes('pages/admin');
+
+        if (isAdmin) {
+          // Admin pages always use dark theme
+          document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+          // Main site: check user preference
+          let stored = null;
+          try {
+            stored = localStorage.getItem('theme-preference');
+          } catch {
+            // localStorage might be disabled
+          }
+
+          const preference = stored || 'system';
+          let theme = preference;
+
+          if (preference === 'system') {
+            // Detect system preference
+            theme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+              ? 'dark'
+              : 'light';
+          }
+
+          document.documentElement.setAttribute('data-theme', theme);
+        }
+      })();
+    </script>
+
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tickets - A Lo Cubano Boulder Fest</title>
     <meta
       name="description"
-      content="Purchase tickets for A Lo Cubano Boulder Fest 2026. Choose from full festival passes ($100-125), day passes, single workshops ($30), or social events ($20). Early bird pricing available."
+      content="Purchase tickets for November 2025 Weekender. Choose from full weekender pass ($65, door price $70) or individual class tickets ($25). Join us for an intimate weekend of Cuban salsa!"
     />
     <!-- Favicons -->
     <link
@@ -107,6 +141,9 @@
     <link rel="dns-prefetch" href="//fonts.googleapis.com" />
     <link rel="dns-prefetch" href="//fonts.gstatic.com" />
 
+    <!-- Theme Management - Early inclusion to prevent FOUC -->
+    <script type="module" src="/js/theme-manager.js"></script>
+
     <link rel="stylesheet" href="/css/base.css" />
     <link rel="stylesheet" href="/css/components.css" />
     <link rel="stylesheet" href="/css/typography.css" />
@@ -118,6 +155,8 @@
     <link rel="stylesheet" href="/css/mobile-overrides.css" />
     <!-- Theme styles -->
     <link rel="stylesheet" href="/css/theme-toggle.css" />
+    <!-- Flip card styles -->
+    <link rel="stylesheet" href="/css/flip-cards.css" />
   </head>
   <body class="typographic">
     <header class="header">
@@ -203,6 +242,23 @@
                       </li>
                     </ul>
                   </li>
+                  <li class="dropdown-category" role="group">
+                    <span class="dropdown-category-title" role="presentation"
+                      >Weekenders</span
+                    >
+                    <ul class="dropdown-submenu">
+                      <li>
+                        <a
+                          href="/2025-11-weekender"
+                          class="dropdown-link"
+                          role="menuitem"
+                          data-event="2025-11-weekender"
+                          data-event-status="upcoming"
+                          >November 2025</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
                 </ul>
               </li>
               <li>
@@ -251,271 +307,147 @@
       <!-- Tickets Header -->
       <section class="section-typographic">
         <div class="container">
+          <!-- 2026 Festival Banner - Commented out for November 2025 Weekender -->
+          <!--
           <div class="tickets-header">
             <h1 style="color: var(--color-red)">
               A Lo Cubano Boulder Fest 2026 Tickets
             </h1>
             <p class="tickets-subtitle">Early bird pricing available now!</p>
           </div>
+          -->
+
+          <!-- November 2025 Weekender Header -->
+          <div class="tickets-header" data-event="weekender-2025-11">
+            <h1 style="color: var(--color-red)">
+              November 2025 Weekender Tickets
+            </h1>
+          </div>
 
           <!-- Ticket Selection Interface -->
           <section class="ticket-selection" data-testid="ticket-options">
             <h2>Select Your Tickets</h2>
 
-            <!-- Full Festival Passes -->
-            <div class="ticket-category">
-              <h3>Full Festival Pass</h3>
-              <p class="category-description">
-                Complete access to all workshops, socials, and performances
-              </p>
-
-              <div class="ticket-options">
-                <div
-                  class="ticket-card"
-                  data-ticket-type="2026-early-bird-full"
-                  data-price="100"
-                  data-testid="weekend-pass-card"
-                >
-                  <h4>2026 Early Bird Full Pass</h4>
-                  <div class="ticket-price">$100</div>
-                  <p class="ticket-description">Before April 1st</p>
-                  <div class="ticket-savings">Save $25!</div>
-                  <div class="quantity-selector">
-                    <button
-                      class="qty-btn minus"
-                      data-action="decrease"
-                      type="button"
-                      aria-label="Decrease quantity"
-                    >
-                      -
-                    </button>
-                    <span class="quantity">0</span>
-                    <button
-                      class="qty-btn plus"
-                      data-action="increase"
-                      data-action-alt="add-to-cart"
-                      type="button"
-                      aria-label="Increase quantity"
-                      data-testid="weekend-pass-add"
-                    >
-                      +
-                    </button>
+            <!-- November 2025 Weekender Tickets - Side by Side -->
+            <div class="ticket-options-grid">
+              <!-- Full Pass Flip Card -->
+              <div class="flip-card" data-testid="weekend-pass-card">
+                <div class="flip-card-inner">
+                  <!-- Front of card -->
+                  <div class="flip-card-front ticket-card vertical-design" data-ticket-type="2025-11-weekender-full" data-price="65">
+                    <div class="ticket-header">
+                      <div class="event-label">EVENT</div>
+                      <div class="event-name">November 2025<br>Weekender</div>
+                    </div>
+                    <div class="ticket-body">
+                      <div class="ticket-type-section">
+                        <div class="field-label">Ticket Type</div>
+                        <div class="ticket-type">FULL PASS</div>
+                        <div class="ticket-price">$65</div>
+                      </div>
+                      <div class="ticket-details">
+                        <div class="detail-row">
+                          <div class="field-label">Date</div>
+                          <div class="detail-value">November 8, 2025</div>
+                        </div>
+                      </div>
+                      <div class="ticket-footer">
+                        <div class="venue-section">
+                          <div class="field-label">Venue</div>
+                          <div class="venue-name">Avalon Ballroom, Boulder, CO</div>
+                        </div>
+                      </div>
+                      <div class="quantity-selector">
+                        <button
+                          class="qty-btn minus"
+                          data-action="decrease"
+                          type="button"
+                          aria-label="Decrease quantity"
+                        >
+                          -
+                        </button>
+                        <span class="quantity">0</span>
+                        <button
+                          class="qty-btn plus"
+                          data-action="increase"
+                          data-action-alt="add-to-cart"
+                          type="button"
+                          aria-label="Increase quantity"
+                          data-testid="weekend-pass-add"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <button
-                    class="add-to-cart-btn"
-                    data-action="add-to-cart"
-                    data-ticket-type="2026-early-bird-full"
-                    data-price="100"
-                    type="button"
-                    style="margin-top: var(--space-sm); width: 100%; padding: var(--space-sm); background: var(--color-blue); color: var(--color-text-on-primary, white); border: none; border-radius: 4px; font-family: var(--font-display); font-weight: 700; cursor: pointer; transition: background-color 0.2s ease;"
-                  >
-                    Add to Cart
-                  </button>
-                </div>
-
-                <div
-                  class="ticket-card disabled"
-                  data-ticket-type="2026-regular-full"
-                  data-price="125"
-                  aria-disabled="true"
-                >
-                  <h4>2026 Regular Full Pass</h4>
-                  <div class="ticket-price">$125</div>
-                  <p class="ticket-description">At door pricing</p>
-                  <div class="quantity-selector">
-                    <button
-                      class="qty-btn minus"
-                      data-action="decrease"
-                      type="button"
-                      aria-label="Decrease quantity"
-                    >
-                      -
-                    </button>
-                    <span class="quantity">0</span>
-                    <button
-                      class="qty-btn plus"
-                      data-action="increase"
-                      type="button"
-                      aria-label="Increase quantity"
-                    >
-                      +
-                    </button>
+                  <!-- Back of card -->
+                  <div class="flip-card-back full-pass-back">
+                    <div class="card-back-content">
+                      <h3>Full Pass Details</h3>
+                      <p>Full access to all November 2025 Weekender workshops (Body movement, Casino, and Rueda -- $75 value!)</p>
+                      <button class="flip-back-btn" aria-label="Flip back to front">← Back</button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <!-- Day Passes -->
-            <div class="ticket-category">
-              <h3>Day Passes</h3>
-              <p class="category-description">
-                Access to a single day of festivities (including socials!)
-              </p>
-
-              <div class="ticket-options">
-                <div
-                  class="ticket-card"
-                  data-ticket-type="2026-friday-pass"
-                  data-price="50"
-                >
-                  <h4>2026 Friday Pass</h4>
-                  <div class="ticket-price">$50</div>
-                  <p class="ticket-description">May 16, 2026</p>
-                  <div class="quantity-selector">
-                    <button
-                      class="qty-btn minus"
-                      data-action="decrease"
-                      type="button"
-                      aria-label="Decrease quantity"
-                    >
-                      -
-                    </button>
-                    <span class="quantity">0</span>
-                    <button
-                      class="qty-btn plus"
-                      data-action="increase"
-                      type="button"
-                      aria-label="Increase quantity"
-                    >
-                      +
-                    </button>
+              <!-- Single Class Flip Card -->
+              <div class="flip-card" data-testid="day-pass-card">
+                <div class="flip-card-inner">
+                  <!-- Front of card -->
+                  <div class="flip-card-front ticket-card vertical-design" data-ticket-type="2025-11-weekender-class" data-price="25">
+                    <div class="ticket-header">
+                      <div class="event-label">EVENT</div>
+                      <div class="event-name">November 2025<br>Weekender</div>
+                    </div>
+                    <div class="ticket-body">
+                      <div class="ticket-type-section">
+                        <div class="field-label">Ticket Type</div>
+                        <div class="ticket-type">SINGLE CLASS</div>
+                        <div class="ticket-price">$25</div>
+                      </div>
+                      <div class="ticket-details">
+                        <div class="detail-row">
+                          <div class="field-label">Date</div>
+                          <div class="detail-value">November 8, 2025</div>
+                        </div>
+                      </div>
+                      <div class="ticket-footer">
+                        <div class="venue-section">
+                          <div class="field-label">Venue</div>
+                          <div class="venue-name">Avalon Ballroom, Boulder, CO</div>
+                        </div>
+                      </div>
+                      <div class="quantity-selector">
+                        <button
+                          class="qty-btn minus"
+                          data-action="decrease"
+                          type="button"
+                          aria-label="Decrease quantity"
+                        >
+                          -
+                        </button>
+                        <span class="quantity">0</span>
+                        <button
+                          class="qty-btn plus"
+                          data-action="increase"
+                          data-action-alt="add-to-cart"
+                          type="button"
+                          aria-label="Increase quantity"
+                          data-testid="day-pass-add"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-
-                <div
-                  class="ticket-card"
-                  data-ticket-type="2026-saturday-pass"
-                  data-price="85"
-                  data-testid="day-pass-card"
-                >
-                  <h4>2026 Saturday Pass</h4>
-                  <div class="ticket-price">$85</div>
-                  <p class="ticket-description">May 17, 2026</p>
-                  <div class="quantity-selector">
-                    <button
-                      class="qty-btn minus"
-                      data-action="decrease"
-                      type="button"
-                      aria-label="Decrease quantity"
-                    >
-                      -
-                    </button>
-                    <span class="quantity">0</span>
-                    <button
-                      class="qty-btn plus"
-                      data-action="increase"
-                      data-action-alt="add-to-cart"
-                      type="button"
-                      aria-label="Increase quantity"
-                      data-testid="day-pass-add"
-                    >
-                      +
-                    </button>
-                  </div>
-                  <button
-                    class="add-to-cart-btn"
-                    data-action="add-to-cart"
-                    data-ticket-type="2026-saturday-pass"
-                    data-price="85"
-                    type="button"
-                    style="margin-top: var(--space-sm); width: 100%; padding: var(--space-sm); background: var(--color-blue); color: var(--color-text-on-primary, white); border: none; border-radius: 4px; font-family: var(--font-display); font-weight: 700; cursor: pointer; transition: background-color 0.2s ease;"
-                  >
-                    Add to Cart
-                  </button>
-                </div>
-
-                <div
-                  class="ticket-card"
-                  data-ticket-type="2026-sunday-pass"
-                  data-price="50"
-                >
-                  <h4>2026 Sunday Pass</h4>
-                  <div class="ticket-price">$50</div>
-                  <p class="ticket-description">May 18, 2026</p>
-                  <div class="quantity-selector">
-                    <button
-                      class="qty-btn minus"
-                      data-action="decrease"
-                      type="button"
-                      aria-label="Decrease quantity"
-                    >
-                      -
-                    </button>
-                    <span class="quantity">0</span>
-                    <button
-                      class="qty-btn plus"
-                      data-action="increase"
-                      type="button"
-                      aria-label="Increase quantity"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Individual Items -->
-            <div class="ticket-category">
-              <h3>Individual Social Tickets</h3>
-              <p class="category-description">Single social event access</p>
-
-              <div class="ticket-options">
-                <div
-                  class="ticket-card"
-                  data-ticket-type="2026-friday-social"
-                  data-price="20"
-                >
-                  <h4>2026 Friday Social</h4>
-                  <div class="ticket-price">$20</div>
-                  <p class="ticket-description">Friday night social access</p>
-                  <div class="quantity-selector">
-                    <button
-                      class="qty-btn minus"
-                      data-action="decrease"
-                      type="button"
-                      aria-label="Decrease quantity"
-                    >
-                      -
-                    </button>
-                    <span class="quantity">0</span>
-                    <button
-                      class="qty-btn plus"
-                      data-action="increase"
-                      type="button"
-                      aria-label="Increase quantity"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-
-                <div
-                  class="ticket-card"
-                  data-ticket-type="2026-saturday-social"
-                  data-price="20"
-                >
-                  <h4>2026 Saturday Social</h4>
-                  <div class="ticket-price">$20</div>
-                  <p class="ticket-description">Saturday night social access</p>
-                  <div class="quantity-selector">
-                    <button
-                      class="qty-btn minus"
-                      data-action="decrease"
-                      type="button"
-                      aria-label="Decrease quantity"
-                    >
-                      -
-                    </button>
-                    <span class="quantity">0</span>
-                    <button
-                      class="qty-btn plus"
-                      data-action="increase"
-                      type="button"
-                      aria-label="Increase quantity"
-                    >
-                      +
-                    </button>
+                  <!-- Back of card -->
+                  <div class="flip-card-back single-class-back">
+                    <div class="card-back-content">
+                      <h3>Single Class Details</h3>
+                      <p>Single class access for November 2025 Weekender.</p>
+                      <button class="flip-back-btn" aria-label="Flip back to front">← Back</button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -525,7 +457,7 @@
           <!-- Policy -->
           <div
             class="policy-section"
-            style="margin-bottom: var(--space-4xl); text-align: center"
+            style="margin-top: var(--space-4xl, 3rem); margin-bottom: var(--space-4xl); text-align: center; clear: both;"
           >
             <p class="font-display" style="font-size: var(--font-size-xl)">
               NO REFUNDS
@@ -538,9 +470,9 @@
     <footer class="footer-typographic">
       <div class="container">
         <p class="footer-credits">
-          MAY 15-17, 2026 •
+          NOVEMBER 2025 WEEKENDER •
           <a
-            href="mailto:alocubanoboulderfest@gmail.com?subject=A Lo Cubano Boulder Fest Inquiry"
+            href="mailto:alocubanoboulderfest@gmail.com?subject=November 2025 Weekender Inquiry"
             style="color: inherit; text-decoration: underline"
             >alocubanoboulderfest@gmail.com</a
           >
@@ -643,6 +575,7 @@
     <script src="/js/main.js"></script>
     <script src="/js/typography.js"></script>
     <script src="/js/gallery-hero.js"></script>
+    <script src="/js/flip-cards.js"></script>
     <script type="module" src="/js/ticket-selection.js"></script>
     <script>
       function handleTicketForm(event) {

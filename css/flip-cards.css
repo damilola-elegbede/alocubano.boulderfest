@@ -1,0 +1,279 @@
+/**
+ * Flip Card Styles for Tickets Page
+ * Implements side-by-side layout with click-to-flip functionality
+ */
+
+/* Grid layout for side-by-side tickets */
+.ticket-options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4xl, 4rem);
+  max-width: 800px;
+  margin: 0 auto var(--space-4xl, 3rem) auto;
+  /* Allow overflow for hover animations */
+  overflow: visible;
+  /* Add padding to prevent clipping on hover */
+  padding: 10px 0;
+}
+
+/* Mobile responsive - stack cards vertically */
+@media (max-width: 768px) {
+  .ticket-options-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-lg, 1.5rem);
+  }
+
+  /* Maintain sufficient height on mobile for vertical design */
+  .flip-card {
+    height: 560px; /* Match desktop height for consistency */
+  }
+}
+
+/* Flip card container */
+.flip-card {
+  background-color: transparent;
+  width: 100%;
+  height: 560px; /* Increased to accommodate hover animation (520px ticket + 20px padding top/bottom) */
+  cursor: pointer;
+  /* Contain the 2D transformation - removed perspective for simpler flip */
+  isolation: isolate;
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
+  /* Add padding to prevent hover cutoff */
+  padding: 10px 0;
+  box-sizing: border-box;
+}
+
+/* Inner container that does the flipping */
+.flip-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  -webkit-transition: -webkit-transform 0.6s;
+  -moz-transition: -moz-transform 0.6s;
+  transition: transform 0.6s;
+  -webkit-transform-style: preserve-3d;
+  -moz-transform-style: preserve-3d;
+  transform-style: preserve-3d;
+  border-radius: 12px;
+  /* Force GPU rendering to prevent artifacts */
+  -webkit-transform: translateZ(0);
+  -moz-transform: translateZ(0);
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Flip when active */
+.flip-card.flipped .flip-card-inner {
+  -webkit-transform: rotateY(180deg);
+  -moz-transform: rotateY(180deg);
+  transform: rotateY(180deg);
+}
+
+/* Position front and back */
+.flip-card-front, .flip-card-back {
+  position: absolute;
+  top: 10px;  /* Account for padding */
+  left: 0;  /* Align both faces to the same left edge */
+  right: 0;  /* Use left: 0 and right: 0 with margin: auto for perfect centering */
+  margin: 0 auto;  /* Center horizontally */
+  width: 95%;  /* Reduced from 100% to prevent edge bleeding */
+  height: calc(100% - 20px);  /* Account for top and bottom padding */
+  -webkit-backface-visibility: hidden;
+  -moz-backface-visibility: hidden;
+  backface-visibility: hidden;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px var(--shadow-sm);
+  transition: all 0.3s ease;
+  /* Use normal overflow to prevent cropping */
+  overflow: visible;
+  /* Ensure consistent box model */
+  box-sizing: border-box;
+}
+
+/* Front face specific styles */
+.flip-card-front {
+  background: var(--color-card-bg);
+  border: 2px solid var(--color-border);
+  /* Simple rotation without 3D depth */
+  -webkit-transform: rotateY(0deg);
+  -moz-transform: rotateY(0deg);
+  transform: rotateY(0deg);
+  z-index: 2;
+}
+
+/* Back face should be rotated 180 degrees */
+.flip-card-back {
+  /* Rotate without scaling since both faces are now 95% width */
+  -webkit-transform: rotateY(180deg);
+  -moz-transform: rotateY(180deg);
+  transform: rotateY(180deg);
+  background: linear-gradient(135deg, var(--color-blue) 0%, var(--color-blue-dark) 100%);
+  color: var(--color-white);
+  /* Remove flex centering - use same layout as front */
+  padding: 0;
+  display: block;
+  /* Ensure back is visible when flipped */
+  opacity: 1;
+  visibility: visible;
+  /* Remove border to prevent bleed */
+  border: none !important;
+  /* Add inset shadow for depth instead of border */
+  box-shadow: inset 0 0 0 2px var(--shadow-inset-light), 0 4px 12px var(--shadow-md);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Hover effects - only apply to non-flipped cards */
+.flip-card:not(.flipped):hover .flip-card-front {
+  -webkit-transform: rotateY(0deg) translateY(-4px);
+  -moz-transform: rotateY(0deg) translateY(-4px);
+  transform: rotateY(0deg) translateY(-4px);
+  box-shadow: 0 8px 20px var(--shadow-lg);
+}
+
+.flip-card.flipped:hover .flip-card-back {
+  box-shadow: 0 8px 20px var(--shadow-xl);
+}
+
+/* Card back content styling - vertical ticket design layout */
+.card-back-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  text-align: center;
+  padding: var(--space-2xl, 2rem);
+  box-sizing: border-box;
+  position: relative;
+}
+
+/* Watermark removed for cleaner design */
+
+/* Card back content styling */
+.card-back-content > * {
+  position: relative;
+  z-index: 1;
+}
+
+.card-back-content h3 {
+  font-family: var(--font-display, 'Bebas Neue', sans-serif);
+  font-size: var(--font-size-2xl, 2rem);
+  margin-top: var(--space-xl, 2rem);
+  margin-bottom: var(--space-md, 1rem);
+  color: var(--color-white);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.card-back-content p {
+  font-family: var(--font-body, 'Playfair Display', serif);
+  font-size: var(--font-size-lg, 1.25rem);
+  line-height: 1.8;
+  margin-bottom: var(--space-lg, 1.5rem);
+  color: var(--color-white-muted);
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-md, 1rem);
+  max-width: 90%;
+}
+
+/* Flip back button */
+.flip-back-btn {
+  background: var(--bg-white-transparent);
+  border: 2px solid var(--border-white-transparent);
+  color: var(--color-white);
+  padding: var(--space-sm, 0.75rem) var(--space-lg, 1.5rem);
+  border-radius: 8px;
+  font-family: var(--font-display, 'Bebas Neue', sans-serif);
+  font-size: var(--font-size-md, 1rem);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: var(--space-xl, 2rem);
+}
+
+.flip-back-btn:hover {
+  background: var(--bg-white-transparent-hover);
+  border-color: var(--border-white-transparent-hover);
+  transform: translateY(-2px);
+}
+
+/* Ensure ticket cards within flip cards maintain their styling */
+.flip-card-front.ticket-card {
+  /* Inherit all existing ticket card styles */
+}
+
+/* Override fixed dimensions for vertical-design when inside flip card */
+.flip-card .ticket-card.vertical-design {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+}
+
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+  .flip-card-front, .flip-card-back {
+    border-color: var(--color-border-dark);
+  }
+
+  .flip-card-front {
+    background: var(--color-card-bg-dark);
+  }
+}
+
+[data-theme="dark"] .flip-card-front,
+[data-theme="dark"] .flip-card-back {
+  border-color: var(--color-border-dark);
+}
+
+[data-theme="dark"] .flip-card-front {
+  background: var(--color-card-bg-dark);
+}
+
+/* Accessibility: visible focus styles for keyboard users */
+.flip-card:focus-visible .flip-card-inner {
+  outline: 3px solid var(--color-focus, var(--color-blue));
+  outline-offset: 2px;
+}
+
+.flip-back-btn:focus-visible {
+  outline: 2px solid var(--color-white);
+  outline-offset: 2px;
+}
+
+/* Prevent text selection during flip animation */
+.flip-card-inner * {
+  user-select: none;
+}
+
+/* Re-enable text selection for important content */
+.card-back-content p {
+  user-select: text;
+}
+
+/* Ensure each card back is properly isolated */
+.full-pass-back .card-back-content h3::after {
+  content: " (Full Pass)";
+  font-size: 0.8em;
+  opacity: 0.7;
+}
+
+.single-class-back .card-back-content h3::after {
+  content: " (Single Class)";
+  font-size: 0.8em;
+  opacity: 0.7;
+}
+
+/* Additional isolation for debugging */
+.flip-card:nth-child(1) {
+  z-index: 10;
+}
+
+.flip-card:nth-child(2) {
+  z-index: 9;
+}

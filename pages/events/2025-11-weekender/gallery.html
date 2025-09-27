@@ -34,14 +34,14 @@
         }
       })();
     </script>
+
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>A Lo Cubano Boulder Fest</title>
+    <title>Gallery - A Lo Cubano Weekender November 2025</title>
     <meta
       name="description"
-      content="Experience 3 days of workshops and social dancing at A Lo Cubano Boulder Fest, May 15-17, 2026. Join workshops, social dancing, and celebrate Cuban music traditions in Boulder, Colorado."
+      content="Photo gallery for A Lo Cubano Weekender November 2025. Browse photos and memories from our Cuban salsa weekend in Boulder, Colorado."
     />
-
     <!-- Favicons -->
     <link
       rel="icon"
@@ -73,70 +73,6 @@
       href="/images/favicons/favicon-192x192.png"
     />
 
-    <!-- Critical resource preloading -->
-    <script>
-      // Inline critical path optimization - Event hero images with responsive variants
-      (function () {
-        // Check if optimized variants exist for event heroes
-        const heroPath = "/images/hero/home.jpg";
-        const isEventHero = false;
-
-        if (isEventHero) {
-          // Preload optimized variants for event heroes (WebP first, then JPEG fallback)
-          const isMobile = window.innerWidth <= 768;
-          const variant = isMobile ? "mobile" : "desktop";
-          const baseName = "home";
-
-          // Preload WebP variant
-          const webpPreload = document.createElement("link");
-          webpPreload.rel = "preload";
-          webpPreload.as = "image";
-          webpPreload.href = `/images/hero-optimized/${variant}/${baseName}.webp`;
-          webpPreload.type = "image/webp";
-          document.head.appendChild(webpPreload);
-
-          // Preload AVIF variant for supported browsers
-          if (typeof window !== "undefined" && "OffscreenCanvas" in window) {
-            const avifPreload = document.createElement("link");
-            avifPreload.rel = "preload";
-            avifPreload.as = "image";
-            avifPreload.href = `/images/hero-optimized/${variant}/${baseName}.avif`;
-            avifPreload.type = "image/avif";
-            document.head.appendChild(avifPreload);
-          }
-
-          // Fallback JPEG preload
-          const jpegPreload = document.createElement("link");
-          jpegPreload.rel = "preload";
-          jpegPreload.as = "image";
-          jpegPreload.href = `/images/hero-optimized/${variant}/${baseName}.jpg`;
-          jpegPreload.type = "image/jpeg";
-          document.head.appendChild(jpegPreload);
-        } else {
-          // Standard hero image preload for top-level pages
-          const heroPreload = document.createElement("link");
-          heroPreload.rel = "preload";
-          heroPreload.as = "image";
-          heroPreload.href = heroPath;
-          document.head.appendChild(heroPreload);
-        }
-
-        // Preload gallery data for gallery pages
-        const pageId = window.location.pathname.split("/").pop() || "home";
-        if (pageId.includes("gallery")) {
-          const year = pageId.includes("2025")
-            ? "2025"
-            : new Date().getFullYear();
-          const galleryDataPreload = document.createElement("link");
-          galleryDataPreload.rel = "preload";
-          galleryDataPreload.as = "fetch";
-          galleryDataPreload.href = `/api/gallery?year=${year}&category=workshops`;
-          galleryDataPreload.crossOrigin = "anonymous";
-          document.head.appendChild(galleryDataPreload);
-        }
-      })();
-    </script>
-
     <!-- DNS prefetch for external resources -->
     <link rel="dns-prefetch" href="//fonts.googleapis.com" />
     <link rel="dns-prefetch" href="//fonts.gstatic.com" />
@@ -149,10 +85,15 @@
     <link rel="stylesheet" href="/css/typography.css" />
     <link rel="stylesheet" href="/css/floating-cart.css" />
     <link rel="stylesheet" href="/css/floating-cart-dark.css" />
+    <link rel="stylesheet" href="/css/navigation.css" />
+    <link rel="stylesheet" href="/css/forms.css" />
     <link rel="stylesheet" href="/css/header-cart.css" />
     <link rel="stylesheet" href="/css/mobile-overrides.css" />
+    <link rel="stylesheet" href="/css/gallery.css" />
     <!-- Theme styles -->
     <link rel="stylesheet" href="/css/theme-toggle.css" />
+    <script type="module" src="/js/theme-manager.js"></script>
+    <link rel="stylesheet" href="/css/newsletter.css" />
   </head>
   <body class="typographic">
     <!-- Skip Links for Accessibility -->
@@ -279,6 +220,8 @@
                     <ul class="dropdown-submenu">
                       <li>
                         <a
+                      <li>
+                        <a
                           href="/2025-11-weekender"
                           class="dropdown-link"
                           role="menuitem"
@@ -308,7 +251,7 @@
               </li>
               <li class="nav-cart-item">
                 <button class="nav-cart-button" aria-label="View cart" data-testid="view-cart">
-                  <svg class="nav-cart-icon" viewBox="0 0 24 24">
+                  <svg class="nav-cart-icon" viewBox="0 0 24 24" width="20" height="20">
                     <path d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12L8.1 13h7.45c.75 0 1.41-.41 1.75-1.03L21.7 4H5.21l-.94-2H1zm16 16c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
                   </svg>
                   <span class="nav-cart-badge" style="display: none;" data-testid="cart-counter">0</span>
@@ -325,141 +268,212 @@
       <section class="gallery-hero-splash">
         <div class="hero-image-container">
           <img
-            id="hero-splash-image"
-            src=""
-            alt="Dynamic festival photo showcasing A Lo Cubano Boulder Fest celebration with dancers, musicians, and Cuban culture"
+            src="/images/hero/weekender-2025-11-hero.jpg"
+            alt="November 2025 Weekender photo gallery and memories"
             class="hero-splash-img"
             style="object-position: top center !important"
           />
         </div>
       </section>
 
-      <!-- Typographic Festival Info -->
+      <!-- Event Sub Navigation -->
+      <section class="event-subnav">
+        <div class="container">
+          <nav
+            class="event-nav"
+            aria-label="November 2025 Weekender Navigation"
+          >
+            <ul class="event-nav-list">
+              <li>
+                <a
+                  href="/2025-11-weekender"
+                  class="event-nav-link"
+                  data-text="Overview"
+                  >Overview</a
+                >
+              </li>
+              <li>
+                <a
+                  href="/2025-nov-artists"
+                  class="event-nav-link"
+                  data-text="Artists"
+                  >Artists</a
+                >
+              </li>
+              <li>
+                <a
+                  href="/2025-nov-schedule"
+                  class="event-nav-link"
+                  data-text="Schedule"
+                  >Schedule</a
+                >
+              </li>
+              <li>
+                <a
+                  href="/2025-nov-gallery"
+                  class="event-nav-link"
+                  data-text="Gallery"
+                  >Gallery</a
+                >
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </section>
+
+      <!-- Gallery Header -->
       <section class="section-typographic" style="padding: var(--space-xl) 0">
         <div class="container">
           <div class="text-composition">
             <div class="text-block-large">
               <h1 class="hero__title text-mask">
-                A Lo Cubano Boulder Fest 2026!
+                Event Gallery
               </h1>
               <h2 class="hero__subtitle">
-                Experience 3 days of workshops and social dancing
+                Memories and moments from A Lo Cubano Weekender November 2025
               </h2>
             </div>
             <div class="text-block-mono">
-              // MAY 15-17, 2026<br />
+              // NOVEMBER 2025<br />
               // BOULDER, COLORADO<br />
-              // 4 WORLD CLASS CUBAN ARTISTS<br />
-              // VENUES ACROSS THE CITY<br />
-              // UNLIMITED MEMORIES
+              // INTIMATE WEEKEND MOMENTS<br />
+              // AUTHENTIC CUBAN CULTURE
             </div>
           </div>
         </div>
       </section>
 
-      <!-- What To Expect Typography -->
+      <!-- Gallery Content -->
       <section class="section-typographic" style="padding: var(--space-xl) 0">
         <div class="container">
-          <h2 class="text-mask">WHAT TO EXPECT</h2>
-          <div class="expectations">
-            <div class="expectations__item">
-              <h3 class="expectations__item-title">Workshops</h3>
-              <p class="expectations__item-description">
-                Casino, Rueda, Suelta, Reggaeton, Rumba, and Afro
-              </p>
-            </div>
 
-            <div class="expectations__item">
-              <h3 class="expectations__item-title">Socials</h3>
-              <p class="expectations__item-description">
-                Electrifying social dance events where the community comes
-                together to celebrate Cuban rhythms, connect with fellow
-                dancers, and experience the joy of salsa in a vibrant,
-                welcoming atmosphere.
-              </p>
-            </div>
+          <!-- Coming Soon Message -->
+          <div style="text-align: center; padding: var(--space-3xl) var(--space-xl);">
+            <h3 style="font-family: var(--font-display); font-size: var(--font-size-2xl); margin: 0 0 var(--space-lg); color: var(--color-red);">Coming Soon</h3>
+            <p style="color: var(--color-gray-600); line-height: 1.6; font-size: var(--font-size-lg);">
+              Photos of the event will be loaded here.
+            </p>
+          </div>
+                    <path d="M21 15l-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+                  </svg>
+                </div>
+              </a>
 
-            <div class="expectations__item">
-              <h3 class="expectations__item-title">Performances</h3>
-              <p class="expectations__item-description">
-                Captivating performances by world-class artists and talented
-                dancers showcasing the beauty and passion of Cuban
-                dance styles.
-              </p>
             </div>
           </div>
+
+          <!-- Newsletter Signup Section -->
+          <div class="newsletter-cta-section" style="margin-top: var(--space-xl); text-align: center;">
+            <h3 style="margin: 0 0 var(--space-md); font-family: var(--font-display); font-size: var(--font-size-xl);">Stay Updated</h3>
+            <p
+              style="
+                margin: 0 0 var(--space-lg);
+                font-size: var(--font-size-md);
+                max-width: 500px;
+                margin-left: auto;
+                margin-right: auto;
+              "
+            >
+              Subscribe to our newsletter for November 2025 Weekender updates,
+              photo galleries, and festival announcements.
+            </p>
+            <form
+              class="newsletter-form-type"
+              id="newsletter-form"
+              aria-label="Email newsletter signup"
+              style="max-width: 400px; margin: 0 auto"
+            >
+              <div class="form-group-type">
+                <div class="newsletter-input-wrapper">
+                  <input
+                    type="email"
+                    id="newsletter-email"
+                    name="email"
+                    class="form-input-type newsletter-input"
+                    placeholder="YOUR EMAIL ADDRESS"
+                    required
+                    aria-required="true"
+                    aria-label="Email address for newsletter subscription"
+                    autocomplete="email"
+                    inputmode="email"
+                  />
+                  <button
+                    type="submit"
+                    class="form-button-type newsletter-submit"
+                    aria-label="Subscribe to newsletter"
+                  >
+                    <span class="button-text">SUBSCRIBE</span>
+                    <span class="button-icon" aria-hidden="true">→</span>
+                  </button>
+                </div>
+                <span
+                  id="newsletter-error"
+                  class="error-message"
+                  role="alert"
+                  aria-live="polite"
+                ></span>
+                <div
+                  id="newsletter-success"
+                  class="newsletter-success"
+                  role="status"
+                  aria-live="polite"
+                  aria-hidden="true"
+                >
+                  <span class="success-icon">✓</span>
+                  <span class="success-text"
+                    >Welcome to the A Lo Cubano family!</span
+                  >
+                </div>
+              </div>
+              <div class="newsletter-consent">
+                <label class="custom-checkbox">
+                  <input
+                    type="checkbox"
+                    name="consent"
+                    required
+                    aria-required="true"
+                  />
+                  <span class="checkmark"></span>
+                  <span class="checkbox-label"
+                    >I agree to receive marketing emails about festival
+                    updates and events</span
+                  >
+                </label>
+              </div>
+            </form>
+          </div>
+
         </div>
       </section>
 
-      <!-- Genre Typography Section -->
-      <section class="section-typographic" style="padding: var(--space-xl) 0">
-        <div class="container">
-          <h2 class="text-glitch" data-text="GENRES">GENRES</h2>
-          <div class="gallery-typographic">
-            <div class="gallery-item-type" data-number="01">
-              <h3 class="gallery-type-title">SALSA</h3>
-              <p class="gallery-type-meta">The heartbeat of Cuban music</p>
-              <p class="gallery-type-description">
-                Fast rhythms • Partner dancing • Social energy
-              </p>
-            </div>
-            <div class="gallery-item-type" data-number="02">
-              <h3 class="gallery-type-title">RUMBA</h3>
-              <p class="gallery-type-meta">Sacred rhythms of the ancestors</p>
-              <p class="gallery-type-description">
-                Percussion • Storytelling • Connection
-              </p>
-            </div>
-            <div class="gallery-item-type" data-number="03">
-              <h3 class="gallery-type-title">SON CUBANO</h3>
-              <p class="gallery-type-meta">The foundation of Latin music</p>
-              <p class="gallery-type-description">
-                Elegance • Classic • Timeless
-              </p>
-            </div>
-            <div class="gallery-item-type" data-number="04">
-              <h3 class="gallery-type-title">TIMBA</h3>
-              <p class="gallery-type-meta">Modern Cuban fusion</p>
-              <p class="gallery-type-description">
-                Complex rhythms • High Energy • Contemporary edge
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Typography-driven Call to Action -->
-      <section
-        class="section-typographic"
-        style="padding: var(--space-xl) 0; padding-bottom: 50px"
-      >
-        <div class="container">
-          <div class="text-composition">
-            <div class="text-block-large">
-              JOIN US FOR AN AMAZING<br />
-              <span>WEEKEND</span><br />
-              OF DANCE
-            </div>
-            <div class="text-block-mono">
-              LIMITED TICKETS • EARLY BIRD PRICING • VIP PACKAGES<br />
-              <span style="color: var(--color-red)">// MAY 15-17, 2026</span
-              ><br />
-              <span style="color: var(--color-red)"
-                >// TICKETS COMING SOON</span
-              >
-            </div>
-          </div>
-          <div style="text-align: center; margin-top: var(--space-3xl)">
-            <a href="/tickets" class="form-button-type">GET TICKETS NOW</a>
-          </div>
-        </div>
-      </section>
     </main>
+
+    <!-- Scripts -->
+    <script src="/js/components/lightbox.js"></script>
+    <script src="/js/components/lazy-loading.js"></script>
+    <script src="/js/main.js"></script>
+    <script src="/js/navigation.js"></script>
+    <script src="/js/gallery-hero.js"></script>
+    <script src="/js/typography.js"></script>
+    <script src="/js/newsletter.js"></script>
+    <script type="module" src="/js/global-cart.js"></script>
+
+    <!-- Theme Management -->
+    <script type="module">
+      import { initializeThemeToggle } from '/js/theme-toggle.js';
+      import themeManager from '/js/theme-manager.js';
+
+      // Initialize theme system
+      document.addEventListener('DOMContentLoaded', () => {
+        themeManager.initializeTheme();
+        initializeThemeToggle('#theme-toggle-container');
+      });
+    </script>
 
     <footer class="footer-typographic">
       <div class="container">
         <p class="footer-credits">
-          MAY 15-17, 2026 • BOULDER, COLORADO •
+          NOVEMBER 2025 WEEKENDER • BOULDER, COLORADO •
           <a
             href="mailto:alocubanoboulderfest@gmail.com?subject=A Lo Cubano Boulder Fest Inquiry"
             style="color: inherit; text-decoration: underline"
@@ -517,28 +531,7 @@
         <div id="theme-toggle-container" class="footer-theme-toggle"></div>
       </div>
     </footer>
-    <script src="/js/navigation.js"></script>
-    <script src="/js/components/lightbox.js"></script>
-    <script src="/js/components/lazy-loading.js"></script>
-    <script src="/js/main.js"></script>
-    <script src="/js/typography.js"></script>
-    <script src="/js/gallery-hero.js"></script>
 
-    <!-- Global Cart System -->
-    <script type="module" src="/js/global-cart.js"></script>
-    
-    
-    <!-- Theme Management -->
-    <script type="module">
-      import { initializeThemeToggle } from '/js/theme-toggle.js';
-      import themeManager from '/js/theme-manager.js';
-      
-      // Initialize theme system
-      document.addEventListener('DOMContentLoaded', () => {
-        themeManager.initializeTheme();
-        initializeThemeToggle('#theme-toggle-container');
-      });
-    </script>
     <script src="/js/logo-switcher.js"></script>
   </body>
 </html>

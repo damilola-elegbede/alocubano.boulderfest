@@ -1519,9 +1519,6 @@
   box-shadow: 0 4px 12px var(--shadow-color);
 }
 
-[data-theme="dark"] .ticket-card.selected {
-  background: var(--color-info-light);
-}
 
 [data-theme="dark"] .ticket-card.unavailable,
 [data-theme="dark"] .ticket-card.disabled {
@@ -1846,8 +1843,9 @@
   cursor: pointer;
   transition: all 0.2s ease;
   position: relative;
-  width: 120px;
-  height: 120px;
+  width: 140px;
+  min-height: 140px;
+  height: auto;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -2144,9 +2142,6 @@
   box-shadow: 0 4px 12px var(--shadow-color);
 }
 
-.ticket-card.selected {
-  background: var(--color-info-light);
-}
 
 .ticket-card.disabled,
 .ticket-card.unavailable {
@@ -2503,10 +2498,6 @@
   box-shadow: 0 8px 25px var(--shadow-color-strong);
 }
 
-.ticket-card.selected {
-  box-shadow: 0 0 0 3px var(--color-info-light);
-  background: var(--color-info-light);
-}
 
 .ticket-card h4 {
   font-family: var(--font-display);
@@ -2934,16 +2925,60 @@
 }
 
 /* Schedule Components */
+.schedule-day {
+  margin-bottom: var(--space-3xl);
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.schedule-day h3 {
+  font-family: var(--font-display);
+  font-size: var(--font-size-2xl);
+  color: var(--color-primary);
+  margin-bottom: var(--space-xl);
+  padding-bottom: var(--space-sm);
+  border-bottom: 2px solid var(--color-primary);
+}
+
 .schedule-item {
   display: grid;
-  grid-template-columns: 120px 1fr;
-  gap: var(--space-xl);
+  grid-template-columns: 180px 1fr;
+  gap: var(--space-3xl);
+  padding: var(--space-xl) 0;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.schedule-item:last-child {
+  border-bottom: none;
+}
+
+.schedule-time {
+  font-family: var(--font-display);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-accent);
+  white-space: nowrap;
+}
+
+.schedule-content h4 {
+  font-family: var(--font-display);
+  font-size: var(--font-size-xl);
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-xs);
+}
+
+.schedule-content p {
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  max-width: 800px;
 }
 
 @media (max-width: 768px) {
   .schedule-item {
     grid-template-columns: 1fr;
     gap: var(--space-md);
+    padding: var(--space-lg) 0;
   }
 
   .schedule-time {
@@ -2966,4 +3001,263 @@
 /* Simple feedback link styling - inherits from contact-link */
 .feedback-link {
   /* Uses existing contact-link styles */
+}
+
+/* ==========================================================================
+   VERTICAL TICKET CARD DESIGN - November 2025 Weekender & 2026 Festival
+   ========================================================================== */
+
+.ticket-card.vertical-design {
+  width: 380px;
+  height: 520px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Faded logo background watermark */
+.ticket-card.vertical-design::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 200px;
+  height: 200px;
+  background: url('/images/logo.png') no-repeat center;
+  background-size: contain;
+  opacity: 0.05;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.ticket-card.vertical-design .ticket-header {
+  background: #000000;
+  padding: 20px;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.ticket-card.vertical-design .ticket-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #DC143C;
+}
+
+.ticket-card.vertical-design .event-label {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.ticket-card.vertical-design .event-name {
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+  line-height: 1.2;
+}
+
+.ticket-card.vertical-design .ticket-body {
+  flex: 1;
+  padding: 30px 25px 25px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 1;
+}
+
+.ticket-card.vertical-design .ticket-type-section {
+  margin-bottom: 25px;
+}
+
+.ticket-card.vertical-design .field-label {
+  color: #666;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.ticket-card.vertical-design .ticket-type {
+  color: #002868;
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.ticket-card.vertical-design .ticket-price {
+  color: #DC143C !important;
+  font-size: 32px !important;
+  font-weight: bold;
+  margin-top: 8px;
+  display: block;
+}
+
+.ticket-card.vertical-design .ticket-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.ticket-card.vertical-design .detail-row {
+  display: flex;
+  flex-direction: column;
+}
+
+.ticket-card.vertical-design .detail-value {
+  color: #333;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.ticket-card.vertical-design .ticket-footer {
+  border-top: 1px dashed #ddd;
+  padding-top: 20px;
+  margin-top: auto;
+}
+
+.ticket-card.vertical-design .venue-section {
+  text-align: center;
+}
+
+.ticket-card.vertical-design .venue-name {
+  color: #666;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Cart controls integration */
+.ticket-card.vertical-design .quantity-selector {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.ticket-card.vertical-design .add-to-cart-btn {
+  margin-top: var(--space-sm);
+  width: 100%;
+  padding: var(--space-sm);
+  background: var(--color-blue);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.ticket-card.vertical-design .add-to-cart-btn:hover {
+  background: var(--color-blue-dark, #0040a0);
+}
+
+/* Dark mode support */
+[data-theme="dark"] .ticket-card.vertical-design {
+  background: var(--color-surface);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .ticket-card.vertical-design .ticket-header {
+  background: #000000;
+}
+
+[data-theme="dark"] .ticket-card.vertical-design .detail-value {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ticket-card.vertical-design .ticket-footer {
+  border-top-color: var(--color-border);
+}
+
+[data-theme="dark"] .ticket-card.vertical-design .venue-name {
+  color: var(--color-text-secondary);
+}
+
+[data-theme="dark"] .ticket-card.vertical-design .ticket-type {
+  color: #4A90E2; /* Lighter blue for dark mode visibility */
+}
+
+[data-theme="dark"] .ticket-card.vertical-design .field-label {
+  color: var(--color-text-secondary);
+}
+
+/* Dark mode schedule item titles */
+[data-theme="dark"] .schedule-content h4 {
+  color: var(--color-text-primary);
+}
+
+/* Dark mode logo watermark adjustments */
+[data-theme="dark"] .ticket-card.vertical-design::before {
+  background: url('/images/logo-dark.png') no-repeat center;
+  background-size: contain;
+  opacity: 0.05; /* Keep subtle watermark */
+}
+
+/* Visual feedback for quantity buttons when updating cart */
+.qty-btn {
+  transition: all 0.2s ease;
+}
+
+.qty-btn:active {
+  transform: scale(0.95);
+  background: var(--color-blue) !important;
+  color: white !important;
+  border-color: var(--color-blue) !important;
+}
+
+/* Pulse animation for cart update feedback */
+@keyframes cartUpdatePulse {
+  0% { box-shadow: 0 0 0 0 rgba(0, 112, 233, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(0, 112, 233, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 112, 233, 0); }
+}
+
+.qty-btn.cart-updating {
+  animation: cartUpdatePulse 0.5s ease-out;
+}
+
+/* Quantity number flash when changed */
+.quantity.updating {
+  animation: quantityFlash 0.3s ease-out;
+  color: var(--color-blue);
+}
+
+@keyframes quantityFlash {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); font-weight: 700; }
+  100% { transform: scale(1); }
+}
+
+/* Container styling for vertical design tickets */
+.ticket-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xl);
+  justify-content: flex-start;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .ticket-card.vertical-design {
+    width: 100%;
+    max-width: 380px;
+  }
+
+  .ticket-options {
+    justify-content: center;
+  }
 }

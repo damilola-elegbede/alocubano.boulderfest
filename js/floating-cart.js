@@ -596,18 +596,23 @@ function renderCartItemsOptimized(container, tickets, donations) {
     // Use document fragment for batch DOM operations
     const fragment = document.createDocumentFragment();
 
-    // Render tickets category
-    const ticketValues = Object.values(tickets);
-    if (ticketValues.length > 0) {
-        const ticketsSection = createCartSection('A Lo Cubano 2026 Tickets', 'tickets');
+    // Group tickets by event
+    const ticketsByEvent = groupTicketsByEvent(Object.values(tickets));
 
-        ticketValues.forEach((ticket) => {
-            const itemElement = createTicketItemElement(ticket);
-            ticketsSection.appendChild(itemElement);
-        });
+    // Render each event's tickets with proper banner
+    Object.entries(ticketsByEvent).forEach(([eventId, eventTickets]) => {
+        if (eventTickets.length > 0) {
+            const eventDisplayName = getEventDisplayName(eventId);
+            const ticketsSection = createCartSection(eventDisplayName, 'tickets');
 
-        fragment.appendChild(ticketsSection);
-    }
+            eventTickets.forEach((ticket) => {
+                const itemElement = createTicketItemElement(ticket);
+                ticketsSection.appendChild(itemElement);
+            });
+
+            fragment.appendChild(ticketsSection);
+        }
+    });
 
     // Render donations category
     if (donations && donations.length > 0) {
@@ -623,6 +628,58 @@ function renderCartItemsOptimized(container, tickets, donations) {
 
     // Batch append to DOM
     container.appendChild(fragment);
+}
+
+// Helper function to group tickets by event
+function groupTicketsByEvent(tickets) {
+    const grouped = {};
+
+    tickets.forEach(ticket => {
+        let eventId = ticket.eventId;
+
+        // If no eventId, try to derive it from ticket type
+        if (!eventId && ticket.type) {
+            try {
+                // Import the mapping function - assuming it's available globally
+                if (typeof TicketSelection !== 'undefined' && TicketSelection.getEventIdFromTicketType) {
+                    eventId = TicketSelection.getEventIdFromTicketType(ticket.type);
+                } else {
+                    console.error(`❌ TicketSelection.getEventIdFromTicketType not available for ticket type: ${ticket.type}`);
+                    console.error('Ticket details:', ticket);
+                    throw new Error(`Cannot determine event ID for ticket type: ${ticket.type}. TicketSelection mapping not available.`);
+                }
+            } catch (error) {
+                console.error(`❌ Failed to determine event ID for ticket:`, ticket);
+                throw new Error(`Cannot group tickets: ${error.message}`);
+            }
+        }
+
+        if (!eventId) {
+            console.error(`❌ No event ID available for ticket:`, ticket);
+            throw new Error(`Ticket missing event ID and type. Cannot group tickets without event context.`);
+        }
+
+        if (!grouped[eventId]) {
+            grouped[eventId] = [];
+        }
+        grouped[eventId].push(ticket);
+    });
+
+    return grouped;
+}
+
+// Helper function to get display name for events
+function getEventDisplayName(eventId) {
+    const eventDisplayMap = {
+        'weekender-2025-11': 'November 2025 Weekender Tickets',
+        'boulderfest-2026': 'Boulder Fest 2026 Tickets',
+        'boulderfest-2025': 'Boulder Fest 2025 Tickets',
+        // Legacy fallbacks
+        'alocubano-boulderfest-2026': 'Boulder Fest 2026 Tickets',
+        'november-2025-weekender': 'November 2025 Weekender Tickets'
+    };
+
+    return eventDisplayMap[eventId] || 'A Lo Cubano Tickets';
 }
 
 // Create a cart section element

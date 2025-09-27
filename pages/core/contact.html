@@ -1,6 +1,40 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <!-- Inline theme detection to prevent FOUC -->
+    <script>
+      (function() {
+        // Detect admin pages
+        const path = window.location.pathname.toLowerCase();
+        const isAdmin = path.includes('/admin') || path.includes('pages/admin');
+
+        if (isAdmin) {
+          // Admin pages always use dark theme
+          document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+          // Main site: check user preference
+          let stored = null;
+          try {
+            stored = localStorage.getItem('theme-preference');
+          } catch {
+            // localStorage might be disabled
+          }
+
+          const preference = stored || 'system';
+          let theme = preference;
+
+          if (preference === 'system') {
+            // Detect system preference
+            theme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+              ? 'dark'
+              : 'light';
+          }
+
+          document.documentElement.setAttribute('data-theme', theme);
+        }
+      })();
+    </script>
+
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Contact Us - A Lo Cubano Boulder Fest</title>
@@ -181,6 +215,9 @@
     <link rel="dns-prefetch" href="//fonts.googleapis.com" />
     <link rel="dns-prefetch" href="//fonts.gstatic.com" />
 
+    <!-- Theme Management - Early inclusion to prevent FOUC -->
+    <script type="module" src="/js/theme-manager.js"></script>
+
     <link rel="stylesheet" href="/css/base.css" />
     <link rel="stylesheet" href="/css/components.css" />
     <link rel="stylesheet" href="/css/typography.css" />
@@ -272,6 +309,23 @@
                           data-event="boulder-fest-2025"
                           data-event-status="current"
                           >2025 Festival</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                  <li class="dropdown-category" role="group">
+                    <span class="dropdown-category-title" role="presentation"
+                      >Weekenders</span
+                    >
+                    <ul class="dropdown-submenu">
+                      <li>
+                        <a
+                          href="/2025-11-weekender"
+                          class="dropdown-link"
+                          role="menuitem"
+                          data-event="2025-11-weekender"
+                          data-event-status="upcoming"
+                          >November 2025</a
                         >
                       </li>
                     </ul>
@@ -499,6 +553,7 @@
                         placeholder="YOUR EMAIL ADDRESS"
                         required
                         aria-required="true"
+                        aria-label="Email address for newsletter subscription"
                         aria-describedby="newsletter-error newsletter-success"
                         autocomplete="email"
                         inputmode="email"

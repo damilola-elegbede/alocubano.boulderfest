@@ -1,6 +1,40 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <!-- Inline theme detection to prevent FOUC -->
+    <script>
+      (function() {
+        // Detect admin pages
+        const path = window.location.pathname.toLowerCase();
+        const isAdmin = path.includes('/admin') || path.includes('pages/admin');
+
+        if (isAdmin) {
+          // Admin pages always use dark theme
+          document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+          // Main site: check user preference
+          let stored = null;
+          try {
+            stored = localStorage.getItem('theme-preference');
+          } catch {
+            // localStorage might be disabled
+          }
+
+          const preference = stored || 'system';
+          let theme = preference;
+
+          if (preference === 'system') {
+            // Detect system preference
+            theme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+              ? 'dark'
+              : 'light';
+          }
+
+          document.documentElement.setAttribute('data-theme', theme);
+        }
+      })();
+    </script>
+
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Schedule - Boulder Fest 2026 - A Lo Cubano</title>
@@ -117,6 +151,7 @@
     <link rel="stylesheet" href="/css/navigation.css" />
     <link rel="stylesheet" href="/css/header-cart.css" />
     <link rel="stylesheet" href="/css/mobile-overrides.css" />
+    <link rel="stylesheet" href="/css/newsletter.css" />
   </head>
   <body class="typographic">
     <header class="header">
@@ -292,10 +327,9 @@
       <!-- Coming Soon Section -->
       <section class="section-typographic">
         <div class="container">
-          <h1 class="text-mask">Boulder Fest 2026</h1>
-          <h2 class="text-gradient" style="margin-bottom: var(--space-lg)">
+          <h1 class="text-gradient" style="margin-bottom: var(--space-lg)">
             SCHEDULE
-          </h2>
+          </h1>
 
           <!-- Countdown Timer -->
           <div
@@ -410,7 +444,7 @@
                 "
               >
                 We're carefully crafting an incredible 3-day schedule packed
-                with workshops, social dancing, and cultural experiences. Get
+                with workshops by world class instructors, social dancing, and cultural experiences. Get
                 ready for the most comprehensive Cuban salsa experience in
                 Colorado.
               </p>
@@ -430,7 +464,7 @@
                 <div
                   class="overview-item"
                   style="
-                    background: var(--color-gray-100);
+                    background: var(--color-background-secondary);
                     padding: var(--space-lg);
                     border-radius: 8px;
                     text-align: center;
@@ -451,6 +485,7 @@
                     style="
                       font-size: var(--font-size-sm);
                       margin-bottom: var(--space-xs);
+                      color: var(--color-text-primary);
                     "
                   >
                     DAYS
@@ -459,7 +494,7 @@
                     class="overview-subtitle font-serif"
                     style="
                       font-size: var(--font-size-xs);
-                      color: var(--color-gray-600);
+                      color: var(--color-text-secondary);
                     "
                   >
                     May 15-17, 2026
@@ -468,7 +503,7 @@
                 <div
                   class="overview-item"
                   style="
-                    background: var(--color-gray-100);
+                    background: var(--color-background-secondary);
                     padding: var(--space-lg);
                     border-radius: 8px;
                     text-align: center;
@@ -489,6 +524,7 @@
                     style="
                       font-size: var(--font-size-sm);
                       margin-bottom: var(--space-xs);
+                      color: var(--color-text-primary);
                     "
                   >
                     WORKSHOPS
@@ -497,7 +533,7 @@
                     class="overview-subtitle font-serif"
                     style="
                       font-size: var(--font-size-xs);
-                      color: var(--color-gray-600);
+                      color: var(--color-text-secondary);
                     "
                   >
                     All skill levels
@@ -506,7 +542,7 @@
                 <div
                   class="overview-item"
                   style="
-                    background: var(--color-gray-100);
+                    background: var(--color-background-secondary);
                     padding: var(--space-lg);
                     border-radius: 8px;
                     text-align: center;
@@ -527,6 +563,7 @@
                     style="
                       font-size: var(--font-size-sm);
                       margin-bottom: var(--space-xs);
+                      color: var(--color-text-primary);
                     "
                   >
                     SOCIAL NIGHTS
@@ -535,7 +572,7 @@
                     class="overview-subtitle font-serif"
                     style="
                       font-size: var(--font-size-xs);
-                      color: var(--color-gray-600);
+                      color: var(--color-text-secondary);
                     "
                   >
                     Friday & Saturday
@@ -584,7 +621,7 @@
             </div>
           </div>
 
-          <!-- Early Bird Signup -->
+          <!-- Newsletter Signup -->
           <div
             class="early-bird-signup"
             style="
@@ -596,7 +633,7 @@
             "
           >
             <h3 class="text-gradient" style="margin-bottom: var(--space-md)">
-              GET SCHEDULE UPDATES
+              STAY UPDATED
             </h3>
             <p
               class="font-serif"
@@ -607,177 +644,73 @@
                 margin-right: auto;
               "
             >
-              Be the first to see our detailed schedule and secure your spot in
-              your favorite workshops. Early birds get priority scheduling!
+              Subscribe to our newsletter for Boulder Fest 2026 schedule updates,
+              workshop details, and festival announcements.
             </p>
             <form
-              class="notification-form"
+              class="newsletter-form-type"
+              id="newsletter-form"
+              aria-label="Email newsletter signup"
               style="max-width: 400px; margin: 0 auto"
             >
-              <div style="display: flex; gap: var(--space-sm)">
-                <input
-                  type="email"
-                  placeholder="Your email address"
-                  required
-                  style="
-                    flex: 1;
-                    padding: var(--space-md);
-                    border: 1px solid var(--color-gray-300);
-                    border-radius: 4px;
-                    font-family: var(--font-serif);
-                  "
-                />
-                <button
-                  type="submit"
-                  class="btn-primary"
-                  style="
-                    padding: var(--space-md) var(--space-lg);
-                    background: var(--color-blue);
-                    color: white;
-                    border: none;
-                    border-radius: 4px;
-                    font-family: var(--font-mono);
-                    cursor: pointer;
-                  "
+              <div class="form-group-type">
+                <div class="newsletter-input-wrapper">
+                  <input
+                    type="email"
+                    id="newsletter-email"
+                    name="email"
+                    class="form-input-type newsletter-input"
+                    placeholder="YOUR EMAIL ADDRESS"
+                    required
+                    aria-required="true"
+                    aria-label="Email address for newsletter subscription"
+                    autocomplete="email"
+                    inputmode="email"
+                  />
+                  <button
+                    type="submit"
+                    class="form-button-type newsletter-submit"
+                    aria-label="Subscribe to newsletter"
+                  >
+                    <span class="button-text">SUBSCRIBE</span>
+                    <span class="button-icon" aria-hidden="true">→</span>
+                  </button>
+                </div>
+                <span
+                  id="newsletter-error"
+                  class="error-message"
+                  role="alert"
+                  aria-live="polite"
+                ></span>
+                <div
+                  id="newsletter-success"
+                  class="newsletter-success"
+                  role="status"
+                  aria-live="polite"
+                  aria-hidden="true"
                 >
-                  NOTIFY ME
-                </button>
+                  <span class="success-icon">✓</span>
+                  <span class="success-text"
+                    >Welcome to the A Lo Cubano family!</span
+                  >
+                </div>
               </div>
-              <p
-                style="
-                  font-size: var(--font-size-xs);
-                  color: var(--color-gray-600);
-                  margin-top: var(--space-sm);
-                "
-              >
-                Priority workshop registration • Schedule updates • Special
-                offers
-              </p>
+              <div class="newsletter-consent">
+                <label class="custom-checkbox">
+                  <input
+                    type="checkbox"
+                    name="consent"
+                    required
+                    aria-required="true"
+                  />
+                  <span class="checkmark"></span>
+                  <span class="checkbox-label"
+                    >I agree to receive marketing emails about festival
+                    updates and events</span
+                  >
+                </label>
+              </div>
             </form>
-          </div>
-        </div>
-      </section>
-
-      <hr class="hr-typographic style-minimal" />
-
-      <!-- Boulder Fest 2025 Reference -->
-      <section class="section-typographic">
-        <div class="container">
-          <h2 class="text-mask">Boulder Fest 2025</h2>
-          <p
-            class="font-serif"
-            style="margin-bottom: var(--space-lg); max-width: 700px"
-          >
-            Boulder Fest 2025 featured a packed 3-day schedule with workshops
-            covering everything from Orishas and Rumba to Timba Suelta and
-            Casino, plus amazing social dances every night.
-          </p>
-
-          <!-- Sample Schedule Preview -->
-          <div class="schedule-preview" style="margin-top: var(--space-xl)">
-            <h3 class="font-display" style="margin-bottom: var(--space-lg)">
-              WHAT TO EXPECT IN 2026
-            </h3>
-
-            <div
-              class="schedule-categories"
-              style="
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-                gap: var(--space-lg);
-              "
-            >
-              <div
-                class="category-item"
-                style="
-                  border: 1px solid var(--color-gray-200);
-                  padding: var(--space-lg);
-                  border-radius: 8px;
-                "
-              >
-                <h4
-                  class="font-mono"
-                  style="
-                    color: var(--color-blue);
-                    margin-bottom: var(--space-sm);
-                  "
-                >
-                  FRIDAY WORKSHOPS
-                </h4>
-                <ul
-                  class="font-serif"
-                  style="line-height: 1.6; font-size: var(--font-size-sm)"
-                >
-                  <li>Afro-Cuban foundations</li>
-                  <li>Timba techniques</li>
-                  <li>Cultural context sessions</li>
-                </ul>
-              </div>
-
-              <div
-                class="category-item"
-                style="
-                  border: 1px solid var(--color-gray-200);
-                  padding: var(--space-lg);
-                  border-radius: 8px;
-                "
-              >
-                <h4
-                  class="font-mono"
-                  style="
-                    color: var(--color-red);
-                    margin-bottom: var(--space-sm);
-                  "
-                >
-                  SATURDAY WORKSHOPS
-                </h4>
-                <ul
-                  class="font-serif"
-                  style="line-height: 1.6; font-size: var(--font-size-sm)"
-                >
-                  <li>Advanced partner work</li>
-                  <li>Ladies & Men's styling</li>
-                  <li>Rueda formations</li>
-                </ul>
-              </div>
-
-              <div
-                class="category-item"
-                style="
-                  border: 1px solid var(--color-gray-200);
-                  padding: var(--space-lg);
-                  border-radius: 8px;
-                "
-              >
-                <h4
-                  class="font-mono"
-                  style="
-                    color: var(--color-blue);
-                    margin-bottom: var(--space-sm);
-                  "
-                >
-                  SUNDAY SESSIONS
-                </h4>
-                <ul
-                  class="font-serif"
-                  style="line-height: 1.6; font-size: var(--font-size-sm)"
-                >
-                  <li>Integration workshops</li>
-                  <li>Q&A with masters</li>
-                  <li>Community building</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          <div style="text-align: center; margin-top: var(--space-xl)">
-            <a
-              href="/schedule"
-              class="text-block-mono"
-              style="color: var(--color-blue); text-decoration: underline"
-            >
-              → View Boulder Fest 2025 Full Schedule
-            </a>
           </div>
         </div>
       </section>
@@ -900,32 +833,6 @@
       // Update countdown every second
       updateCountdown();
       setInterval(updateCountdown, 1000);
-
-      // Schedule Notification Form Handler
-      document
-        .querySelector(".notification-form")
-        .addEventListener("submit", function (e) {
-          e.preventDefault();
-          const email = this.querySelector('input[type="email"]').value;
-
-          // Simple validation
-          if (email && email.includes("@")) {
-            // For now, show success message (in production, this would connect to an email service)
-            const button = this.querySelector("button");
-            const originalText = button.textContent;
-            button.textContent = "SUBSCRIBED!";
-            button.style.background = "var(--color-green, #10B981)";
-
-            setTimeout(() => {
-              button.textContent = originalText;
-              button.style.background = "var(--color-blue)";
-              this.reset();
-            }, 3000);
-
-            // TODO: Integrate with email service (Mailchimp, ConvertKit, etc.)
-            console.log("Schedule notification signup:", email);
-          }
-        });
     </script>
 
     <script src="/js/navigation.js"></script>
@@ -934,8 +841,9 @@
     <script src="/js/main.js"></script>
     <script src="/js/typography.js"></script>
     <script src="/js/gallery-hero.js"></script>
+    <script src="/js/newsletter.js"></script>
     <script type="module" src="/js/global-cart.js"></script>
-    
+
       <script src="/js/logo-switcher.js"></script>
 </body>
 </html>

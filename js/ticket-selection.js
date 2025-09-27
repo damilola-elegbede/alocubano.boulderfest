@@ -6,19 +6,88 @@
 class TicketSelection {
     constructor() {
         this.selectedTickets = new Map();
+        this.eventId = this.detectEventId();
         this.init();
+    }
+
+    // Deterministic mapping table: ticket type -> event ID
+    static TICKET_TYPE_TO_EVENT_MAP = {
+        // November 2025 Weekender
+        '2025-11-weekender-full': 'weekender-2025-11',
+        '2025-11-weekender-class': 'weekender-2025-11',
+
+        // Boulder Fest 2026 (commented out tickets)
+        '2026-early-bird-full': 'boulderfest-2026',
+        '2026-regular-full': 'boulderfest-2026',
+        '2026-friday-pass': 'boulderfest-2026',
+        '2026-saturday-pass': 'boulderfest-2026',
+        '2026-sunday-pass': 'boulderfest-2026',
+        '2026-friday-social': 'boulderfest-2026',
+        '2026-saturday-social': 'boulderfest-2026',
+
+        // Boulder Fest 2025
+        '2025-early-bird-full': 'boulderfest-2025',
+        '2025-regular-full': 'boulderfest-2025',
+        '2025-friday-pass': 'boulderfest-2025',
+        '2025-saturday-pass': 'boulderfest-2025',
+        '2025-sunday-pass': 'boulderfest-2025'
+    };
+
+    static getEventIdFromTicketType(ticketType) {
+        const eventId = TicketSelection.TICKET_TYPE_TO_EVENT_MAP[ticketType];
+        if (!eventId) {
+            console.error(`❌ No event mapping found for ticket type: ${ticketType}`);
+            console.error('Available mappings:', Object.keys(TicketSelection.TICKET_TYPE_TO_EVENT_MAP));
+            throw new Error(`No event mapping found for ticket type: ${ticketType}. Add mapping to TICKET_TYPE_TO_EVENT_MAP.`);
+        }
+        return eventId;
+    }
+
+    detectEventId() {
+        // Find all ticket types on the current page (including flip cards)
+        const ticketCards = document.querySelectorAll('[data-ticket-type]');
+        const ticketTypesOnPage = Array.from(ticketCards).map(card => card.dataset.ticketType);
+
+        if (ticketTypesOnPage.length === 0) {
+            console.warn('No ticket types found on page, falling back to default');
+            return 'boulderfest-2026';
+        }
+
+        // Get event ID from first ticket type (all tickets on a page should belong to same event)
+        const firstTicketType = ticketTypesOnPage[0];
+        const eventId = TicketSelection.getEventIdFromTicketType(firstTicketType);
+
+        // Verify all tickets on page belong to same event
+        const eventIds = ticketTypesOnPage.map(type => {
+            try {
+                return TicketSelection.getEventIdFromTicketType(type);
+            } catch (error) {
+                console.error(`Failed to map ticket type ${type}:`, error.message);
+                throw error;
+            }
+        });
+
+        const uniqueEventIds = [...new Set(eventIds)];
+        if (uniqueEventIds.length > 1) {
+            throw new Error(`Mixed events on page! Found tickets for events: ${uniqueEventIds.join(', ')}`);
+        }
+
+        console.log(`✅ Detected event ID: ${eventId} from ${ticketTypesOnPage.length} ticket types`);
+        return eventId;
     }
 
     async init() {
         // Initialize ticket cards with default attributes for testing
         this.initializeTicketCards();
 
+        // Sync with cart state immediately - localStorage is always available
+        this.syncWithCartState();
+
         this.bindEvents();
 
-        // CRITICAL FIX: Wait for cart manager to be fully initialized
+        // Wait for cart manager only for write operations
         await this.waitForCartManager();
 
-        this.syncWithCartState();
         this.updateDisplay();
     }
 
@@ -26,15 +95,19 @@ class TicketSelection {
         // Set up initial test attributes on all ticket cards
         document.querySelectorAll('.ticket-card').forEach((card) => {
             // Initialize with default state for E2E test reliability
-            card.setAttribute('data-quantity', '0');
-            card.setAttribute('data-selected', 'false');
-            card.setAttribute('aria-pressed', 'false');
             card.setAttribute('data-initialized', 'true');
 
-            // Make sure quantity displays are initialized
-            const quantitySpan = card.querySelector('.quantity');
-            if (quantitySpan && !quantitySpan.textContent) {
-                quantitySpan.textContent = '0';
+            // Only set defaults if not already set by syncWithCartState
+            if (!card.hasAttribute('data-quantity')) {
+                card.setAttribute('data-quantity', '0');
+                card.setAttribute('data-selected', 'false');
+                card.setAttribute('aria-pressed', 'false');
+
+                // Make sure quantity displays are initialized
+                const quantitySpan = card.querySelector('.quantity');
+                if (quantitySpan && !quantitySpan.textContent) {
+                    quantitySpan.textContent = '0';
+                }
             }
 
             // Initialize add to cart buttons with ready state
@@ -98,14 +171,16 @@ class TicketSelection {
                 return;
             }
 
-            // Make cards keyboard accessible
-            card.setAttribute('tabindex', '0');
+            // Make cards keyboard accessible (but don't override flip card tabindex)
+            if (!card.classList.contains('flip-card')) {
+                card.setAttribute('tabindex', '0');
+            }
             card.setAttribute('role', 'button');
             card.setAttribute('aria-pressed', 'false');
 
-            // Click events
+            // Click events - only handle ticket selection, not flip
             card.addEventListener('click', (e) => {
-                if (!e.target.classList.contains('qty-btn')) {
+                if (this.shouldHandleTicketClick(e.target)) {
                     this.handleTicketCardClick(e);
                 }
             });
@@ -113,8 +188,8 @@ class TicketSelection {
             // Keyboard events for accessibility
             card.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    if (!e.target.classList.contains('qty-btn')) {
+                    if (this.shouldHandleTicketClick(e.target)) {
+                        e.preventDefault();
                         this.handleTicketCardClick(e);
                     }
                 }
@@ -148,10 +223,32 @@ class TicketSelection {
         });
     }
 
+    shouldHandleTicketClick(target) {
+        // Only handle ticket clicks on quantity buttons or empty card areas
+        // Don't interfere with flip functionality
+        const isQuantityButton = target.classList.contains('qty-btn') || target.closest('.qty-btn');
+        const isQuantityArea = target.classList.contains('quantity-selector') || target.closest('.quantity-selector');
+        const isAddToCartBtn = target.classList.contains('add-to-cart-btn') || target.closest('.add-to-cart-btn');
+        const card = target.closest('.ticket-card');
+        const isFlipCard = card && card.closest('.flip-card');
+
+        // For non-flip cards, allow Enter/Space on the card itself for accessibility
+        if (!isFlipCard && card === target) {
+            return true;
+        }
+
+        return isQuantityButton || (isQuantityArea && !isAddToCartBtn);
+    }
+
     handleQuantityChange(event) {
         event.stopPropagation();
         const btn = event.target;
         const card = btn.closest('.ticket-card');
+
+        if (!card) {
+            console.error('Could not find ticket card for button', btn);
+            return;
+        }
 
         // Skip if ticket is unavailable
         if (card.classList.contains('unavailable')) {
@@ -173,22 +270,29 @@ class TicketSelection {
 
         quantitySpan.textContent = currentQuantity;
 
+        // Add visual feedback for cart update
+        btn.classList.add('cart-updating');
+        quantitySpan.classList.add('updating');
+
+        setTimeout(() => {
+            btn.classList.remove('cart-updating');
+            quantitySpan.classList.remove('updating');
+        }, 500);
+
+        // Get ticket name from either h4 (regular cards) or .ticket-type (vertical design)
+        const nameElement = card.querySelector('h4') || card.querySelector('.ticket-type');
+        const ticketName = nameElement ? nameElement.textContent.trim() : 'Ticket';
+
         if (currentQuantity > 0) {
             this.selectedTickets.set(ticketType, {
                 quantity: currentQuantity,
                 price: price,
-                name: card.querySelector('h4').textContent
+                name: ticketName
             });
-            card.classList.add('selected');
-            card.setAttribute('aria-pressed', 'true');
             card.setAttribute('data-quantity', currentQuantity.toString());
-            card.setAttribute('data-selected', 'true');
         } else {
             this.selectedTickets.delete(ticketType);
-            card.classList.remove('selected');
-            card.setAttribute('aria-pressed', 'false');
             card.setAttribute('data-quantity', '0');
-            card.setAttribute('data-selected', 'false');
         }
 
         this.updateDisplay();
@@ -198,8 +302,8 @@ class TicketSelection {
             ticketType,
             quantity: currentQuantity,
             price,
-            name: card.querySelector('h4').textContent,
-            eventId: 'alocubano-boulderfest-2026'
+            name: ticketName,
+            eventId: this.eventId
         };
 
         document.dispatchEvent(
@@ -220,7 +324,7 @@ class TicketSelection {
             return;
         }
 
-        // Find corresponding ticket card
+        // Find corresponding ticket card (regular or flip card)
         const card = document.querySelector(`[data-ticket-type="${ticketType}"]`);
         if (!card) {
             console.error('Could not find ticket card for', ticketType);
@@ -231,6 +335,10 @@ class TicketSelection {
         const quantitySpan = card.querySelector('.quantity');
         let currentQuantity = parseInt(quantitySpan.textContent) || 0;
 
+        // Get ticket name from either h4 (regular cards) or .ticket-type (vertical design)
+        const nameElement = card.querySelector('h4') || card.querySelector('.ticket-type');
+        const ticketName = nameElement ? nameElement.textContent.trim() : 'Ticket';
+
         // Add one ticket
         currentQuantity++;
         quantitySpan.textContent = currentQuantity;
@@ -239,7 +347,7 @@ class TicketSelection {
         this.selectedTickets.set(ticketType, {
             quantity: currentQuantity,
             price: price,
-            name: card.querySelector('h4').textContent
+            name: ticketName
         });
         card.classList.add('selected');
         card.setAttribute('aria-pressed', 'true');
@@ -255,8 +363,8 @@ class TicketSelection {
             ticketType,
             quantity: currentQuantity,
             price,
-            name: card.querySelector('h4').textContent,
-            eventId: 'alocubano-boulderfest-2026'
+            name: ticketName,
+            eventId: this.eventId
         };
 
         document.dispatchEvent(
