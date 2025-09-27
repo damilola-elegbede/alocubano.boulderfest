@@ -10,9 +10,10 @@
   gap: var(--space-4xl, 4rem);
   max-width: 800px;
   margin: 0 auto var(--space-4xl, 3rem) auto;
-  /* Ensure no overflow */
-  overflow: hidden;
-  contain: layout;
+  /* Allow overflow for hover animations */
+  overflow: visible;
+  /* Add padding to prevent clipping on hover */
+  padding: 10px 0;
 }
 
 /* Mobile responsive - stack cards vertically */
@@ -24,7 +25,7 @@
 
   /* Maintain sufficient height on mobile for vertical design */
   .flip-card {
-    height: 540px; /* Keep same height as desktop to fit vertical ticket */
+    height: 560px; /* Match desktop height for consistency */
   }
 }
 
@@ -32,7 +33,7 @@
 .flip-card {
   background-color: transparent;
   width: 100%;
-  height: 540px; /* Increased to accommodate vertical ticket design (520px) + padding */
+  height: 560px; /* Increased to accommodate hover animation (520px ticket + 20px padding top/bottom) */
   perspective: 1000px;
   cursor: pointer;
   border-radius: 12px;
@@ -40,6 +41,9 @@
   isolation: isolate;
   -webkit-transform: translate3d(0, 0, 0);
   transform: translate3d(0, 0, 0);
+  /* Add padding to prevent hover cutoff */
+  padding: 10px 0;
+  box-sizing: border-box;
 }
 
 /* Inner container that does the flipping */
@@ -72,10 +76,10 @@
 /* Position front and back */
 .flip-card-front, .flip-card-back {
   position: absolute;
-  top: 0;
+  top: 10px;  /* Account for padding */
   left: 0;
   width: 100%;
-  height: 100%;
+  height: calc(100% - 20px);  /* Account for top and bottom padding */
   -webkit-backface-visibility: hidden;
   -moz-backface-visibility: hidden;
   backface-visibility: hidden;
@@ -83,10 +87,8 @@
   border: 2px solid var(--color-border, #e0e0e0);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
-  /* Aggressive clipping to prevent bleed */
-  overflow: hidden;
-  -webkit-clip-path: inset(0 round 12px);
-  clip-path: inset(0 round 12px);
+  /* Use normal overflow to prevent cropping */
+  overflow: visible;
 }
 
 /* Front face specific styles */
