@@ -209,6 +209,11 @@ BREVO_API_KEY=
 BREVO_NEWSLETTER_LIST_ID=
 BREVO_WEBHOOK_SECRET=
 
+# Registration Email Templates
+BREVO_PURCHASER_CONFIRMATION_TEMPLATE_ID=    # Individual purchaser confirmation
+BREVO_ATTENDEE_CONFIRMATION_TEMPLATE_ID=     # Individual attendee confirmation
+BREVO_BATCH_REGISTRATION_TEMPLATE_ID=        # Comprehensive batch registration summary (optional)
+
 # Payments
 STRIPE_PUBLISHABLE_KEY=
 STRIPE_SECRET_KEY=

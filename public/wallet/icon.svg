@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="29" height="29" viewBox="0 0 29 29">
+  <defs>
+    <linearGradient id="iconGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#CE1126"/>
+      <stop offset="50%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#002A8F"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="14.5" cy="14.5" r="14.5" fill="url(#iconGradient)"/>
+
+  <!-- ALO text -->
+  <text x="14.5" y="12" font-family="Arial, sans-serif" font-size="6" font-weight="bold" text-anchor="middle" fill="#ffffff">ALO</text>
+
+  <!-- Dance accent -->
+  <path d="M 14.5 18 Q 12 20 14.5 22 Q 17 20 14.5 18" fill="#ffffff" opacity="0.8"/>
+</svg>

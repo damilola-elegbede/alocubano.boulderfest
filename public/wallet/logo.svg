@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="50" viewBox="0 0 160 50">
+  <defs>
+    <linearGradient id="cubanGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#CE1126"/>
+      <stop offset="33%" stop-color="#CE1126"/>
+      <stop offset="33%" stop-color="#ffffff"/>
+      <stop offset="66%" stop-color="#ffffff"/>
+      <stop offset="66%" stop-color="#002A8F"/>
+      <stop offset="100%" stop-color="#002A8F"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="160" height="50" fill="white" rx="4"/>
+
+  <!-- Cuban flag inspired accent bar -->
+  <rect x="0" y="2" width="160" height="3" fill="url(#cubanGradient)"/>
+
+  <!-- Main text -->
+  <text x="10" y="30" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#002A8F">A LO CUBANO</text>
+
+  <!-- Salsa accent -->
+  <circle cx="145" cy="25" r="8" fill="#CE1126" opacity="0.8"/>
+  <path d="M 141 25 Q 145 21 149 25 Q 145 29 141 25" fill="#ffffff" opacity="0.9"/>
+</svg>

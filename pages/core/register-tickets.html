@@ -77,8 +77,18 @@
     <link rel="dns-prefetch" href="//fonts.googleapis.com" />
     <link rel="dns-prefetch" href="//fonts.gstatic.com" />
 
+    <!-- Performance optimizations -->
+    <link rel="dns-prefetch" href="//api.qrserver.com">
+    <link rel="preconnect" href="https://wallet.apple.com">
+    <link rel="preconnect" href="https://wallet.google.com">
+
     <!-- Theme Management - Early inclusion to prevent FOUC -->
     <script type="module" src="/js/theme-manager.js"></script>
+
+    <!-- Performance optimization system -->
+    <script type="module" src="/js/qr-cache-manager.js"></script>
+    <script type="module" src="/js/wallet-lazy-loader.js"></script>
+    <script type="module" src="/js/performance-integration.js"></script>
 
     <link rel="stylesheet" href="/css/base.css" />
     <link rel="stylesheet" href="/css/components.css" />
@@ -494,14 +504,14 @@
 
           <!-- Success State -->
           <div id="success-state" class="registration-summary" style="display: none;">
-            <h2>🎉 Registration Complete!</h2>
-            <p>Your tickets have been successfully registered. You should receive confirmation emails shortly.</p>
+            <!-- Content will be populated by updateSuccessMessage() -->
+          </div>
 
             <div class="next-steps">
               <h3>What's Next?</h3>
               <ul>
                 <li>📧 Check your email for confirmation and digital wallet passes</li>
-                <li>📱 Add your tickets to Apple Wallet or Google Pay</li>
+                <li>📱 Add your tickets to Apple Wallet or Google Pay using the buttons above</li>
                 <li>📅 Mark May 15-17, 2026 on your calendar</li>
                 <li>🎺 Follow us on Instagram @alocubano.boulderfest for updates</li>
                 <li>💃 Get ready to dance!</li>
@@ -509,7 +519,6 @@
             </div>
           </div>
         </div>
-      </div>
     </main>
 
     <footer class="footer-typographic">
@@ -578,6 +587,7 @@
     <script src="/js/navigation.js"></script>
     <script src="/js/main.js"></script>
     <script src="/js/typography.js"></script>
+    <!-- Wallet buttons loaded lazily via wallet-lazy-loader -->
 
     <!-- Theme Management -->
     <script type="module">
@@ -949,12 +959,154 @@
         showSuccess(result) {
           // Hide form, show success
           document.getElementById('registration-form').style.display = 'none';
+
+          // Update success message with order details
+          this.updateSuccessMessage(result);
+
           document.getElementById('success-state').style.display = 'block';
+
+          // Create wallet buttons for registered tickets
+          this.createWalletButtons(result);
 
           // Scroll to success message
           document.getElementById('success-state').scrollIntoView({
             behavior: 'smooth'
           });
+        }
+
+        updateSuccessMessage(result) {
+          const successState = document.getElementById('success-state');
+
+          // Create enhanced success content
+          const orderNumber = result.orderNumber || 'N/A';
+          const totalTickets = result.summary?.totalRegistered || result.registrations?.length || 0;
+          const registrationDate = result.summary?.registrationDate ?
+            new Date(result.summary.registrationDate).toLocaleDateString('en-US', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            }) : new Date().toLocaleDateString();
+
+          // Update the success content with order information
+          successState.innerHTML = `
+            <h2>🎉 Registration Complete!</h2>
+            <div style="background: var(--color-surface); border: 1px solid var(--color-success); border-radius: 8px; padding: var(--space-lg); margin: var(--space-lg) 0;">
+              <h3 style="color: var(--color-success-700); margin-top: 0;">Order Summary</h3>
+              <p><strong>Order Number:</strong> <span style="font-family: var(--font-code); font-size: 1.1em; color: var(--color-primary);">${orderNumber}</span></p>
+              <p><strong>Registration Date:</strong> ${registrationDate}</p>
+              <p><strong>Total Tickets Registered:</strong> ${totalTickets}</p>
+            </div>
+
+            <p>Your tickets have been successfully registered. You should receive a comprehensive confirmation email shortly with all the details.</p>
+
+            <!-- Registered Attendees Summary -->
+            ${result.registeredTickets && result.registeredTickets.length > 0 ? `
+              <div style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 8px; padding: var(--space-lg); margin: var(--space-lg) 0;">
+                <h3 style="color: var(--color-primary); margin-top: 0;">Registered Attendees</h3>
+                ${result.registeredTickets.map((ticket, index) => `
+                  <div style="padding: var(--space-md) 0; border-bottom: 1px solid var(--color-border-light); ${index === result.registeredTickets.length - 1 ? 'border-bottom: none;' : ''}">
+                    <p style="margin: 0; font-weight: 600;">${ticket.attendeeName}</p>
+                    <p style="margin: 0; color: var(--color-text-secondary); font-size: var(--font-size-sm);">
+                      ${ticket.attendeeEmail} • ${ticket.ticketType} • ID: ${ticket.ticketId}
+                    </p>
+                  </div>
+                `).join('')}
+              </div>
+            ` : ''}
+
+            <!-- Wallet Download Section -->
+            <div id="registration-wallet-section" style="margin: var(--space-xl) 0;">
+              <div class="success-details">
+                <h3>Add Your Tickets to Wallet</h3>
+                <p>Get instant access to your tickets by adding them to your phone's wallet app:</p>
+                <div id="registration-wallet-buttons" class="registration-wallet-container"></div>
+              </div>
+            </div>
+
+            <div class="next-steps">
+              <h3>What's Next?</h3>
+              <ul>
+                <li>📧 Check your email for a comprehensive summary with all ticket details</li>
+                <li>📱 Add your tickets to Apple Wallet or Google Pay using the buttons above</li>
+                <li>📅 Mark May 15-17, 2026 on your calendar</li>
+                <li>📍 Save the venue: Avalon Ballroom, Boulder, CO</li>
+                <li>🎺 Follow us on Instagram @alocubano.boulderfest for updates</li>
+                <li>💃 Get ready to dance!</li>
+              </ul>
+
+              <div style="text-align: center; margin-top: var(--space-lg);">
+                <p><strong>Need help?</strong> Contact us at <a href="mailto:alocubanoboulderfest@gmail.com">alocubanoboulderfest@gmail.com</a></p>
+                <p style="font-style: italic; color: var(--color-text-secondary);">¡Nos vemos en la pista de baile!</p>
+              </div>
+            </div>
+          `;
+        }
+
+        createWalletButtons(result) {
+          const walletContainer = document.getElementById('registration-wallet-buttons');
+          if (!walletContainer) return;
+
+          walletContainer.innerHTML = '';
+
+          // Use registeredTickets from the enhanced response
+          const tickets = result.registeredTickets || result.registrations || [];
+
+          if (tickets.length > 0) {
+            tickets.forEach((ticket, index) => {
+              const ticketId = ticket.ticketId || ticket.id;
+              if (ticketId) {
+                // Create a wrapper for each ticket's wallet buttons
+                const ticketWrapper = document.createElement('div');
+                ticketWrapper.style.marginBottom = 'var(--space-lg)';
+                ticketWrapper.style.padding = 'var(--space-md)';
+                ticketWrapper.style.border = '1px solid var(--color-border-light)';
+                ticketWrapper.style.borderRadius = '8px';
+                ticketWrapper.style.background = 'var(--color-surface)';
+
+                // Add ticket label
+                const ticketLabel = document.createElement('div');
+                ticketLabel.style.marginBottom = 'var(--space-sm)';
+                ticketLabel.style.fontWeight = '600';
+                ticketLabel.style.color = 'var(--color-text-primary)';
+
+                if (tickets.length > 1) {
+                  const attendeeName = ticket.attendeeName || `${ticket.attendee?.firstName} ${ticket.attendee?.lastName}`.trim() || `Ticket ${index + 1}`;
+                  const ticketType = ticket.ticketType || ticket.ticket_type || 'Festival Pass';
+                  ticketLabel.textContent = `${attendeeName} - ${ticketType}`;
+                } else {
+                  ticketLabel.textContent = 'Your Festival Ticket';
+                }
+
+                ticketWrapper.appendChild(ticketLabel);
+
+                // Create lazy-loaded wallet container
+                const walletLazyContainer = document.createElement('div');
+                walletLazyContainer.className = 'wallet-lazy-container registration-wallet-item';
+
+                // Initialize lazy loading
+                window.walletLazyLoader.observeWalletContainer(walletLazyContainer, ticketId, {
+                  title: '', // We're handling the title separately above
+                  size: 'default',
+                  showBothOnDesktop: true,
+                  className: 'wallet-buttons-registration'
+                });
+
+                ticketWrapper.appendChild(walletLazyContainer);
+                walletContainer.appendChild(ticketWrapper);
+              }
+            });
+
+            // Preload QR codes for registered tickets
+            if (result.qrTokens && Array.isArray(result.qrTokens)) {
+              result.qrTokens.forEach(token => {
+                window.qrCacheManager.preloadQRCode(token);
+              });
+            }
+          } else {
+            // Fallback message if no tickets available
+            walletContainer.innerHTML = '<p style="color: var(--color-text-secondary); font-style: italic;">Wallet passes will be available once registration is confirmed.</p>';
+          }
         }
 
         showError(message) {

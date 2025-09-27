@@ -39,8 +39,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>My Tickets - A Lo Cubano Boulder Fest</title>
 
+    <!-- Performance optimizations -->
+    <link rel="dns-prefetch" href="//api.qrserver.com">
+    <link rel="preconnect" href="https://wallet.apple.com">
+    <link rel="preconnect" href="https://wallet.google.com">
+
     <!-- Theme Management - Early inclusion to prevent FOUC -->
     <script type="module" src="/js/theme-manager.js"></script>
+
+    <!-- Performance optimization system -->
+    <script type="module" src="/js/qr-cache-manager.js"></script>
+    <script type="module" src="/js/wallet-lazy-loader.js"></script>
+    <script type="module" src="/js/performance-integration.js"></script>
 
     <link rel="stylesheet" href="/css/base.css" />
     <link rel="stylesheet" href="/css/components.css" />
@@ -442,6 +452,7 @@
 
     <script type="module">
       import { setSafeTextContent, displayMessage, createElementWithContent, escapeHtml } from '/js/lib/dom-security.js';
+      import WalletButtons from '/js/wallet-buttons.js';
 
       // Check for token or email in URL parameters
       const urlParams = new URLSearchParams(window.location.search);
@@ -596,23 +607,8 @@
                             <dd>${ticket.order_number || "N/A"}</dd>
                         </dl>
                         
-                        <!-- Add wallet buttons -->
-                        <div style="margin-top: 20px; text-align: center;">
-                            <a href="/api/tickets/apple-wallet/${ticket.ticket_id}" 
-                               class="wallet-button apple-wallet"
-                               style="display: inline-block; margin: 5px; padding: 10px 20px; 
-                                      background: #000; color: white; text-decoration: none; 
-                                      border-radius: 5px;">
-                              📱 Apple Wallet
-                            </a>
-                            <a href="/api/tickets/google-wallet/${ticket.ticket_id}" 
-                               class="wallet-button google-wallet"
-                               style="display: inline-block; margin: 5px; padding: 10px 20px; 
-                                      background: #4285f4; color: white; text-decoration: none; 
-                                      border-radius: 5px;">
-                              📱 Google Wallet
-                            </a>
-                        </div>
+                        <!-- Lazy-loaded wallet buttons -->
+                        <div class="wallet-lazy-container" data-ticket-id="${ticket.ticket_id}" data-lazy-wallet="true"></div>
                         
                         ${actionsHtml}
                     </div>
@@ -630,6 +626,30 @@
                     ${ticketsHtml}
                 </div>
             `;
+
+        // Initialize lazy-loaded wallet buttons
+        setTimeout(() => {
+          const walletContainers = document.querySelectorAll('.wallet-lazy-container[data-ticket-id]');
+          walletContainers.forEach(container => {
+            const ticketId = container.getAttribute('data-ticket-id');
+            if (ticketId) {
+              window.walletLazyLoader.observeWalletContainer(container, ticketId, {
+                title: 'Add to Wallet',
+                size: 'small',
+                showBothOnDesktop: true,
+                className: 'wallet-buttons-ticket-list'
+              });
+            }
+          });
+
+          // Preload QR codes for first few tickets
+          const firstFewTickets = tickets.slice(0, 3);
+          firstFewTickets.forEach(ticket => {
+            if (ticket.qr_token) {
+              window.qrCacheManager.preloadQRCode(ticket.qr_token);
+            }
+          });
+        }, 100);
       }
 
       function formatTicketType(type) {
@@ -721,7 +741,40 @@
       // Enhanced ticket management functions
       async function generateQRCode(ticketId, accessToken) {
         try {
-          const response = await fetch("/api/tickets/qr-code", {
+          // Get QR token for this ticket
+          const qrToken = await getQRTokenForTicket(ticketId, accessToken);
+
+          if (!qrToken) {
+            throw new Error('Unable to get QR token for ticket');
+          }
+
+          // Create a container for the QR code
+          const qrContainer = document.createElement('div');
+
+          // Load QR code using cache manager
+          await window.qrCacheManager.loadQRCode(qrToken, qrContainer, {
+            showSkeleton: true,
+            retryOnError: true
+          });
+
+          // Display QR code in modal
+          document.getElementById("qrCodeContainer").innerHTML = `
+            <h3>Ticket ${ticketId}</h3>
+            <p>Show this QR code at the event entrance</p>
+            <div style="background: white; padding: 20px; border-radius: 8px; border: 2px solid #ddd;">
+              ${qrContainer.innerHTML}
+            </div>
+          `;
+
+          openModal("qrModal");
+        } catch (error) {
+          showError(`Failed to generate QR code: ${error.message}`);
+        }
+      }
+
+      async function getQRTokenForTicket(ticketId, accessToken) {
+        try {
+          const response = await fetch("/api/tickets/qr-token", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ ticketId, accessToken }),
@@ -730,22 +783,13 @@
           const data = await response.json();
 
           if (!response.ok) {
-            throw new Error(data.error);
+            throw new Error(data.error || 'Failed to get QR token');
           }
 
-          // Display QR code in modal
-          document.getElementById("qrCodeContainer").innerHTML = `
-                    <h3>Ticket ${ticketId}</h3>
-                    <p>Show this QR code at the event entrance</p>
-                    <div style="background: white; padding: 20px; border-radius: 8px; border: 2px solid #ddd;">
-                        <p style="font-size: 18px; margin: 0;">📱 QR Code Generated</p>
-                        <p style="font-size: 14px; color: #666; margin: 5px 0 0 0;">Ready for scanning</p>
-                    </div>
-                `;
-          document.getElementById("qrCodeData").textContent = data.qrData;
-          openModal("qrModal");
+          return data.qrToken;
         } catch (error) {
-          showError(`Failed to generate QR code: ${error.message}`);
+          console.error('Error getting QR token:', error);
+          return null;
         }
       }
 
