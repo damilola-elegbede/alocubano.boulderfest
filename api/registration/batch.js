@@ -73,12 +73,7 @@ function getClientIP(req) {
          'unknown';
 }
 
-/**
- * Send comprehensive batch registration summary email to purchaser
- */
-async function sendBatchRegistrationSummaryEmail(brevo, db, transactionInfo, results, registrations, tickets) {
-  try {
-    const summaryTemplateId = parseInt(process.env.BREVO_BATCH_REGISTRATION_TEMPLATE_ID);
+// Removed redundant batch summary email function
 
     // If no template ID is configured, send detailed plain text email
     if (isNaN(summaryTemplateId)) {
@@ -594,12 +589,13 @@ export default async function handler(req, res) {
 
     // SEND EMAILS OUTSIDE TRANSACTION (after successful commit)
     const emailResults = [];
+
+    // Get transaction information for order number and purchaser details (declare outside try block)
+    const transactionIds = [...new Set(ticketsResult.rows.map(t => t.transaction_id))];
+    let transactionInfo = null;
+
     try {
       const brevo = await getBrevoClient();
-
-      // Get transaction information for order number and purchaser details
-      const transactionIds = [...new Set(ticketsResult.rows.map(t => t.transaction_id))];
-      let transactionInfo = null;
 
       if (transactionIds.length === 1) {
         // Single transaction - get order details for summary email
@@ -616,12 +612,11 @@ export default async function handler(req, res) {
       // Send individual confirmation emails
       for (const task of emailTasks) {
         try {
-          // Validate template IDs
-          const purchaserTemplateId = parseInt(process.env.BREVO_PURCHASER_CONFIRMATION_TEMPLATE_ID);
+          // Validate attendee template ID (simplified - single template for all)
           const attendeeTemplateId = parseInt(process.env.BREVO_ATTENDEE_CONFIRMATION_TEMPLATE_ID);
 
-          if (isNaN(purchaserTemplateId) || isNaN(attendeeTemplateId)) {
-            console.error('Invalid Brevo template IDs in environment variables');
+          if (isNaN(attendeeTemplateId)) {
+            console.error('Invalid Brevo attendee template ID in environment variables');
             throw new Error('Email configuration error');
           }
 
@@ -630,7 +625,7 @@ export default async function handler(req, res) {
               email: task.registration.email,
               name: `${task.registration.firstName} ${task.registration.lastName}`
             }],
-            templateId: task.isPurchaser ? purchaserTemplateId : attendeeTemplateId,
+            templateId: attendeeTemplateId,
             params: {
               firstName: task.registration.firstName,
               lastName: task.registration.lastName,
@@ -663,10 +658,7 @@ export default async function handler(req, res) {
         }
       }
 
-      // Send comprehensive summary email to purchaser if we have transaction info
-      if (transactionInfo && results.length > 0) {
-        await sendBatchRegistrationSummaryEmail(brevo, db, transactionInfo, results, sanitizedRegistrations, ticketsResult.rows);
-      }
+      // Note: Batch summary email removed - individual confirmations only
 
     } catch (emailServiceError) {
       console.error('Email service error (non-blocking):', emailServiceError);

@@ -270,19 +270,17 @@ export default async function handler(req, res) {
     // Send confirmation email
     try {
       const brevo = await getBrevoClient();
-      const isPurchaser = cleanEmail.toLowerCase() === ticket.attendee_email?.toLowerCase();
 
       await brevo.sendTransactionalEmail({
         to: [{ email: cleanEmail, name: `${cleanFirstName} ${cleanLastName}` }],
-        templateId: isPurchaser ?
-          parseInt(process.env.BREVO_PURCHASER_CONFIRMATION_TEMPLATE_ID) :
-          parseInt(process.env.BREVO_ATTENDEE_CONFIRMATION_TEMPLATE_ID),
+        templateId: parseInt(process.env.BREVO_ATTENDEE_CONFIRMATION_TEMPLATE_ID),
         params: {
           firstName: cleanFirstName,
           lastName: cleanLastName,
           ticketId: ticketId,
           ticketType: ticket.ticket_type,
-          walletPassUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/api/tickets/apple-wallet/${ticketId}`
+          walletPassUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/api/tickets/apple-wallet/${ticketId}`,
+          orderNumber: 'N/A' // Individual registrations don't have order context
         }
       });
 
