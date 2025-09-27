@@ -90,8 +90,8 @@ class TicketSelection {
     }
 
     initializeTicketCards() {
-        // Set up initial test attributes on all ticket cards (including flip cards)
-        document.querySelectorAll('.ticket-card, .flip-card').forEach((card) => {
+        // Set up initial test attributes on all ticket cards
+        document.querySelectorAll('.ticket-card').forEach((card) => {
             // Initialize with default state for E2E test reliability
             card.setAttribute('data-quantity', '0');
             card.setAttribute('data-selected', 'false');
@@ -157,8 +157,8 @@ class TicketSelection {
             btn.addEventListener('click', (e) => this.handleAddToCartClick(e));
         });
 
-        // Ticket card click events and keyboard accessibility (including flip cards)
-        document.querySelectorAll('.ticket-card, .flip-card').forEach((card) => {
+        // Ticket card click events and keyboard accessibility
+        document.querySelectorAll('.ticket-card').forEach((card) => {
             // Skip unavailable tickets
             if (card.classList.contains('unavailable')) {
                 card.setAttribute('aria-disabled', 'true');
@@ -411,8 +411,8 @@ class TicketSelection {
 
         const cartTickets = cartState.tickets || {};
 
-        // Reset all ticket cards first (including flip cards)
-        document.querySelectorAll('.ticket-card, .flip-card').forEach((card) => {
+        // Reset all ticket cards first
+        document.querySelectorAll('.ticket-card').forEach((card) => {
             const ticketType = card.dataset.ticketType;
             const quantitySpan = card.querySelector('.quantity');
 
