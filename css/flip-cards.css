@@ -36,6 +36,10 @@
   perspective: 1000px;
   cursor: pointer;
   border-radius: 12px;
+  /* Contain the 3D transformation */
+  isolation: isolate;
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
 }
 
 /* Inner container that does the flipping */
@@ -51,6 +55,11 @@
   -moz-transform-style: preserve-3d;
   transform-style: preserve-3d;
   border-radius: 12px;
+  /* Force GPU rendering to prevent artifacts */
+  -webkit-transform: translateZ(0);
+  -moz-transform: translateZ(0);
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 /* Flip when active */
@@ -74,21 +83,28 @@
   border: 2px solid var(--color-border, #e0e0e0);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
+  /* Aggressive clipping to prevent bleed */
+  overflow: hidden;
+  -webkit-clip-path: inset(0 round 12px);
+  clip-path: inset(0 round 12px);
 }
 
 /* Front face specific styles */
 .flip-card-front {
   background: var(--color-card-bg, white);
-  -webkit-transform: rotateY(0deg);
-  -moz-transform: rotateY(0deg);
-  transform: rotateY(0deg);
+  /* Position front face slightly forward to ensure clean separation */
+  -webkit-transform: rotateY(0deg) translateZ(1px);
+  -moz-transform: rotateY(0deg) translateZ(1px);
+  transform: rotateY(0deg) translateZ(1px);
+  z-index: 2;
 }
 
 /* Back face should be rotated 180 degrees */
 .flip-card-back {
-  -webkit-transform: rotateY(180deg);
-  -moz-transform: rotateY(180deg);
-  transform: rotateY(180deg);
+  /* Rotate and position to prevent bleeding */
+  -webkit-transform: rotateY(180deg) translateZ(-2px) scale(0.99);
+  -moz-transform: rotateY(180deg) translateZ(-2px) scale(0.99);
+  transform: rotateY(180deg) translateZ(-2px) scale(0.99);
   background: linear-gradient(135deg, var(--color-blue, #1e40af) 0%, var(--color-blue-dark, #1e3a8a) 100%);
   color: white;
   /* Remove flex centering - use same layout as front */
@@ -97,13 +113,19 @@
   /* Ensure back is visible when flipped */
   opacity: 1;
   visibility: visible;
+  /* Remove border to prevent bleed */
+  border: none !important;
+  /* Add inset shadow for depth instead of border */
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.1), 0 4px 12px rgba(0, 0, 0, 0.2);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Hover effects - only apply to non-flipped cards */
 .flip-card:not(.flipped):hover .flip-card-front {
-  -webkit-transform: rotateY(0deg) translateY(-4px);
-  -moz-transform: rotateY(0deg) translateY(-4px);
-  transform: rotateY(0deg) translateY(-4px);
+  -webkit-transform: rotateY(0deg) translateZ(1px) translateY(-4px);
+  -moz-transform: rotateY(0deg) translateZ(1px) translateY(-4px);
+  transform: rotateY(0deg) translateZ(1px) translateY(-4px);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
 
@@ -124,22 +146,9 @@
   position: relative;
 }
 
-/* Subtle watermark for back of card */
-.card-back-content::before {
-  content: 'TICKET';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 4rem;
-  font-family: var(--font-display, 'Bebas Neue', sans-serif);
-  opacity: 0.1;
-  color: white;
-  pointer-events: none;
-  z-index: 0;
-}
+/* Watermark removed for cleaner design */
 
-/* Ensure content appears above watermark */
+/* Card back content styling */
 .card-back-content > * {
   position: relative;
   z-index: 1;
