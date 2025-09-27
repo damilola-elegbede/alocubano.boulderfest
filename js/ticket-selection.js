@@ -230,7 +230,30 @@ class TicketSelection {
     handleQuantityChange(event) {
         event.stopPropagation();
         const btn = event.target;
-        const card = btn.closest('.ticket-card') || btn.closest('.flip-card');
+
+        // Find the card element that has the data attributes
+        // For flip cards, the data is on the .flip-card element
+        // For regular cards, it would be on the .ticket-card element
+        let card = btn.closest('.flip-card');
+
+        // If no flip-card found, look for ticket-card with data attributes
+        if (!card) {
+            card = btn.closest('.ticket-card[data-ticket-type]');
+        }
+
+        // If still no card with data attributes, there might be a nested structure
+        if (!card) {
+            // Find any ticket-card and check if it's inside a flip-card
+            const ticketCard = btn.closest('.ticket-card');
+            if (ticketCard) {
+                card = ticketCard.closest('.flip-card') || ticketCard;
+            }
+        }
+
+        if (!card) {
+            console.error('Could not find ticket card for button', btn);
+            return;
+        }
 
         // Skip if ticket is unavailable
         if (card.classList.contains('unavailable')) {
