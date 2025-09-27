@@ -84,7 +84,6 @@
   -moz-backface-visibility: hidden;
   backface-visibility: hidden;
   border-radius: 12px;
-  border: 2px solid var(--color-border, #e0e0e0);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
   /* Use normal overflow to prevent cropping */
@@ -94,6 +93,7 @@
 /* Front face specific styles */
 .flip-card-front {
   background: var(--color-card-bg, white);
+  border: 2px solid var(--color-border, #e0e0e0);
   /* Position front face slightly forward to ensure clean separation */
   -webkit-transform: rotateY(0deg) translateZ(1px);
   -moz-transform: rotateY(0deg) translateZ(1px);
