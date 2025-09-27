@@ -25,7 +25,7 @@ INSERT OR IGNORE INTO events (
     created_by,
     config
 ) VALUES (
-    'weekender-2025-11',
+    '2025-11-weekender',
     'A Lo Cubano Weekender November 2025',
     'weekender',
     'upcoming',
@@ -49,9 +49,9 @@ INSERT OR IGNORE INTO events (
 
 -- Add event settings for November 2025 Weekender
 INSERT OR IGNORE INTO event_settings (event_id, key, value) VALUES
-    ((SELECT id FROM events WHERE slug = 'weekender-2025-11'), 'registration_open', 'false'),
-    ((SELECT id FROM events WHERE slug = 'weekender-2025-11'), 'early_bird_active', 'false'),
-    ((SELECT id FROM events WHERE slug = 'weekender-2025-11'), 'artist_announcements', 'pending'),
-    ((SELECT id FROM events WHERE slug = 'weekender-2025-11'), 'schedule_published', 'false'),
-    ((SELECT id FROM events WHERE slug = 'weekender-2025-11'), 'venue_confirmed', 'false'),
-    ((SELECT id FROM events WHERE slug = 'weekender-2025-11'), 'dates_confirmed', 'false');
+    ((SELECT id FROM events WHERE slug = '2025-11-weekender'), 'registration_open', 'false'),
+    ((SELECT id FROM events WHERE slug = '2025-11-weekender'), 'early_bird_active', 'false'),
+    ((SELECT id FROM events WHERE slug = '2025-11-weekender'), 'artist_announcements', 'pending'),
+    ((SELECT id FROM events WHERE slug = '2025-11-weekender'), 'schedule_published', 'false'),
+    ((SELECT id FROM events WHERE slug = '2025-11-weekender'), 'venue_confirmed', 'false'),
+    ((SELECT id FROM events WHERE slug = '2025-11-weekender'), 'dates_confirmed', 'false');
