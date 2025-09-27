@@ -128,9 +128,11 @@ function setupTicketsPageIntegration(cartManager) {
                     name,
                     eventId
                 });
-            } else {
+            } else if (quantity === 0) {
+                // Explicitly handle quantity 0 - remove the ticket
                 await cartManager.removeTicket(ticketType);
             }
+            // Ignore negative quantities
         } catch (error) {
             console.error('Failed to update cart with ticket:', error);
             // Show user notification if needed

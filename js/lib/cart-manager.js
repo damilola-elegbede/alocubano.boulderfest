@@ -251,13 +251,19 @@ export class CartManager extends EventTarget {
     async upsertTicket(ticketData) {
         const { ticketType, price, name, eventId, quantity } = ticketData;
 
-        // If quantity is 0, remove the ticket
-        if (quantity === 0) {
+        // If quantity is 0 or undefined/null, remove the ticket
+        if (quantity === 0 || quantity === null || quantity === undefined) {
             return this.removeTicket(ticketType);
         }
 
-        if (!ticketType || !price || !name || quantity < 0) {
+        // Check required fields only when adding/updating (not removing)
+        if (!ticketType || quantity < 0) {
             throw new Error('Invalid ticket data for upsert');
+        }
+
+        // For positive quantities, we need price and name
+        if (quantity > 0 && (!price || !name)) {
+            throw new Error('Price and name are required for adding tickets');
         }
 
         return this.queueOperation('upsertTicket', async() => {
