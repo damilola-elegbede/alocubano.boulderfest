@@ -44,25 +44,31 @@
   width: 100%;
   height: 100%;
   text-align: center;
+  -webkit-transition: -webkit-transform 0.6s;
+  -moz-transition: -moz-transform 0.6s;
   transition: transform 0.6s;
+  -webkit-transform-style: preserve-3d;
+  -moz-transform-style: preserve-3d;
   transform-style: preserve-3d;
   border-radius: 12px;
-  /* Ensure proper stacking context */
-  isolation: isolate;
-  z-index: 1;
 }
 
 /* Flip when active */
 .flip-card.flipped .flip-card-inner {
+  -webkit-transform: rotateY(180deg);
+  -moz-transform: rotateY(180deg);
   transform: rotateY(180deg);
 }
 
 /* Position front and back */
 .flip-card-front, .flip-card-back {
   position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   -webkit-backface-visibility: hidden;
+  -moz-backface-visibility: hidden;
   backface-visibility: hidden;
   border-radius: 12px;
   border: 2px solid var(--color-border, #e0e0e0);
@@ -73,15 +79,18 @@
 /* Front face specific styles */
 .flip-card-front {
   background: var(--color-card-bg, white);
-  z-index: 2;
+  -webkit-transform: rotateY(0deg);
+  -moz-transform: rotateY(0deg);
+  transform: rotateY(0deg);
 }
 
 /* Back face should be rotated 180 degrees */
 .flip-card-back {
+  -webkit-transform: rotateY(180deg);
+  -moz-transform: rotateY(180deg);
   transform: rotateY(180deg);
   background: linear-gradient(135deg, var(--color-blue, #1e40af) 0%, var(--color-blue-dark, #1e3a8a) 100%);
   color: white;
-  z-index: 1;
   /* Remove flex centering - use same layout as front */
   padding: 0;
   display: block;
@@ -92,7 +101,9 @@
 
 /* Hover effects - only apply to non-flipped cards */
 .flip-card:not(.flipped):hover .flip-card-front {
-  transform: translateY(-4px);
+  -webkit-transform: rotateY(0deg) translateY(-4px);
+  -moz-transform: rotateY(0deg) translateY(-4px);
+  transform: rotateY(0deg) translateY(-4px);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
 
