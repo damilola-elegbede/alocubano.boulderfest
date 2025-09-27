@@ -701,6 +701,27 @@ export default async function handler(req, res) {
       failures: emailResults.filter(e => !e.emailSent)
     });
 
+    // CRITICAL: Verify the tickets are actually marked as completed in the database
+    console.log('[BATCH_REG] Verifying ticket status in database after registration...');
+    const verifyResult = await db.execute({
+      sql: `
+        SELECT ticket_id, registration_status, attendee_first_name, attendee_last_name, attendee_email, registered_at
+        FROM tickets
+        WHERE ticket_id IN (${sanitizedRegistrations.map(() => '?').join(',')})
+      `,
+      args: sanitizedRegistrations.map(r => r.ticketId)
+    });
+
+    console.log('[BATCH_REG] Database verification - tickets after registration:',
+      verifyResult.rows.map(t => ({
+        id: t.ticket_id,
+        status: t.registration_status,
+        attendee: `${t.attendee_first_name} ${t.attendee_last_name}`,
+        email: t.attendee_email,
+        registeredAt: t.registered_at
+      }))
+    );
+
     // Log batch operation summary (non-blocking)
     const totalProcessingTime = Date.now() - startTime;
     auditService.logDataChange({

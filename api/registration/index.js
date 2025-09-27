@@ -72,6 +72,8 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: 'No tickets found for this transaction' });
     }
 
+    console.log('[REG_STATUS] Raw database results:', tickets.rows);
+
     console.log('[REG_STATUS] Found tickets:', tickets.rows.map(t => ({
       id: t.ticket_id,
       type: t.ticket_type,
