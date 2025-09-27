@@ -114,7 +114,7 @@ alocubano.boulderfest/
 - **Tickets**: Pricing tiers and registration with floating cart system
 - **Donations**: Support the festival with floating cart integration
 
-### Technical
+### Technical Features
 
 - ✅ Typographic design system
 - ✅ Mobile-responsive layouts with slide-in navigation
@@ -131,6 +131,55 @@ alocubano.boulderfest/
 - ✅ Floating cart system with intelligent page-specific visibility
 - ✅ Stripe Checkout Sessions for secure, streamlined payments
 - ✅ PCI-compliant payment processing with built-in fraud protection
+
+## 🆕 New Ticket Payment Features (2024)
+
+### QR Code System
+- ✅ **Secure QR Generation**: JWT-based QR code endpoint (`/api/qr/generate`)
+- ✅ **PNG Image Format**: 300x300px optimized for email compatibility
+- ✅ **Performance Caching**: 7-day localStorage cache with automatic cleanup
+- ✅ **Progressive Loading**: Skeleton UI with retry logic and exponential backoff
+- ✅ **Email Integration**: Direct QR code embedding in confirmation emails
+
+### Order Number System
+- ✅ **Sequential Order IDs**: Format `ALCBF-YYYY-NNNNN` for production
+- ✅ **Test Order Support**: Format `TEST-YYYY-NNNNN` starting at 90000
+- ✅ **Thread-Safe Generation**: Database-backed atomic sequence increments
+- ✅ **Year-Based Sequences**: Independent order numbering per year
+- ✅ **Fallback Mechanism**: Timestamp-based IDs when database unavailable
+
+### Mobile Wallet Integration
+- ✅ **Apple Wallet Passes**: `.pkpass` files with certificate signing
+- ✅ **Google Wallet Support**: Web-based pass URLs with JWT authentication
+- ✅ **Dynamic Pass Generation**: Real-time ticket details in wallet passes
+- ✅ **Branding Integration**: Festival colors, logos, and visual identity
+- ✅ **QR Code Integration**: Seamless scanning for event entry
+
+### Enhanced Ticket Display
+- ✅ **My Ticket Page**: Comprehensive ticket viewing with QR codes
+- ✅ **Wallet Download Buttons**: One-click wallet pass generation
+- ✅ **Dark Mode Support**: Theme-aware ticket display
+- ✅ **Print & Share Options**: Multiple ticket sharing methods
+- ✅ **Lazy Loading**: Performance-optimized wallet button loading
+
+### Email Service Updates
+- ✅ **QR Code Emails**: Direct QR image embedding in transactional emails
+- ✅ **Confirmation Summaries**: Enhanced email templates with order details
+- ✅ **Registration Reminders**: Automated follow-up email sequences
+- ✅ **Wallet Pass Links**: Direct links to add tickets to mobile wallets
+
+### Performance Optimizations
+- ✅ **Service Worker**: Background caching for offline QR code access
+- ✅ **Intersection Observer**: Lazy loading for wallet components
+- ✅ **Performance Dashboard**: Real-time monitoring of QR and wallet metrics
+- ✅ **Cache Management**: Intelligent cache expiration and cleanup
+- ✅ **Error Tracking**: Comprehensive error monitoring and recovery
+
+### Enhanced Security
+- ✅ **JWT Validation**: Enhanced ticket validation with JWT tokens
+- ✅ **Wallet Authentication**: Secure pass generation with JWT signing
+- ✅ **Token Expiration**: Configurable TTL for security tokens
+- ✅ **Scan Prevention**: `validateOnly` flag to prevent accidental scans
 
 ## 👥 Board of Directors
 
@@ -289,8 +338,15 @@ npm run migrate:status         # Check migration status
 
 ### API Documentation
 
-- [Main API Documentation](/docs/api/README.md) - Gallery, performance, and core APIs
+- [Main API Documentation](/docs/api/README.md) - Complete API reference with new endpoints
+- [QR Code Generation](/docs/api/QR_ENDPOINT.md) - QR code API specification
 - [Registration API](/docs/api/REGISTRATION_API.md) - Ticket registration system endpoints
+
+### New Features Documentation
+
+- [Order Number System](/docs/ORDER_NUMBERS.md) - Order ID format and generation
+- [Wallet Pass Setup](/docs/WALLET_SETUP.md) - Mobile wallet configuration guide
+- [Performance Optimization](/docs/PERFORMANCE_OPTIMIZATION.md) - Caching and optimization features
 
 ### Setup Documentation
 
@@ -300,13 +356,41 @@ npm run migrate:status         # Check migration status
 
 ### Key Features Documentation
 
+- **QR Code System**: JWT-based QR generation with 7-day caching
+- **Order Number System**: Sequential order tracking with ALCBF-YYYY-NNNNN format
+- **Mobile Wallet Passes**: Apple Wallet and Google Wallet integration
+- **Performance Optimization**: Advanced caching, lazy loading, and monitoring
 - **Registration System**: JWT-based ticket registration with 72-hour window
-- **Email Integration**: Brevo/SendinBlue for transactional emails
-- **Payment Processing**: Stripe Checkout with webhook handling
-- **Wallet Passes**: Apple Wallet and Google Wallet integration
+- **Email Integration**: Brevo/SendinBlue for transactional emails with QR codes
+- **Payment Processing**: Stripe Checkout with webhook handling and order numbers
 - **Gallery System**: Google Drive integration with AVIF/WebP optimization
 - **E2E Testing**: Comprehensive browser automation with Vercel Preview Deployments
 - **Admin Panel**: Complete administration dashboard with security features
+
+## Environment Variables
+
+### New Required Variables
+
+```bash
+# QR Code & Wallet Authentication
+REGISTRATION_SECRET=minimum-32-character-secret-for-jwt-signing
+WALLET_AUTH_SECRET=minimum-32-character-secret-for-wallet-passes
+
+# Apple Wallet (optional)
+APPLE_PASS_TYPE_ID=pass.com.alocubano.boulderfest.tickets
+APPLE_TEAM_ID=your-apple-team-id
+APPLE_PASS_KEY=base64-encoded-certificate-and-private-key
+
+# Google Wallet (optional)
+GOOGLE_WALLET_ISSUER_ID=your-google-wallet-issuer-id
+GOOGLE_WALLET_APPLICATION_NAME=A Lo Cubano Boulder Fest
+GOOGLE_WALLET_SERVICE_ACCOUNT_KEY=base64-encoded-service-account-json
+
+# Performance Monitoring (optional)
+QR_CACHE_DEBUG=true          # Enable QR cache debugging
+WALLET_DEBUG_MODE=true       # Enable wallet debugging
+PERFORMANCE_MONITORING=true  # Enable performance metrics
+```
 
 ## Streamlined Development Experience
 

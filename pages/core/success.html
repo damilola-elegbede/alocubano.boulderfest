@@ -77,8 +77,18 @@
     <link rel="dns-prefetch" href="//fonts.googleapis.com" />
     <link rel="dns-prefetch" href="//fonts.gstatic.com" />
 
+    <!-- Performance optimizations -->
+    <link rel="dns-prefetch" href="//api.qrserver.com">
+    <link rel="preconnect" href="https://wallet.apple.com">
+    <link rel="preconnect" href="https://wallet.google.com">
+
     <!-- Theme Management - Early inclusion to prevent FOUC -->
     <script type="module" src="/js/theme-manager.js"></script>
+
+    <!-- Performance optimization system -->
+    <script type="module" src="/js/qr-cache-manager.js"></script>
+    <script type="module" src="/js/wallet-lazy-loader.js"></script>
+    <script type="module" src="/js/performance-integration.js"></script>
 
     <link rel="stylesheet" href="/css/base.css" />
     <link rel="stylesheet" href="/css/components.css" />
@@ -532,6 +542,15 @@
             <a href="#" id="register-now-btn" class="success-btn accent">Register Now</a>
           </div>
 
+          <!-- Wallet Download Section -->
+          <div id="wallet-download-section" style="display: none; margin: var(--space-2xl) 0;">
+            <div class="success-details">
+              <h3>Add Tickets to Your Wallet</h3>
+              <p>Get quick access to your tickets by adding them to your phone's wallet app.</p>
+              <div id="wallet-buttons-container" class="success-wallet-container"></div>
+            </div>
+          </div>
+
 
           <div class="success-details" id="order-details" style="display: none">
             <h3>Order Details</h3>
@@ -945,6 +964,14 @@
                                 data.registrationUrl ||
                                 data.registrationToken;
 
+        // Extract and cache QR tokens for quick access
+        if (isTicketPurchase && data.qrTokens) {
+          // Preload first QR code immediately for quick access
+          if (data.qrTokens.length > 0) {
+            window.qrCacheManager.preloadQRCode(data.qrTokens[0]);
+          }
+        }
+
         // Debug logging for ticket purchase detection
         console.log('Ticket purchase detection:', {
           isTicketPurchase,
@@ -977,10 +1004,14 @@
             registerNowBtn.addEventListener('click', handleRegisterNow);
           }
 
+          // Show wallet download section for ticket purchases
+          showWalletDownloadSection(data);
+
           // Update next steps for ticket purchases
           stepsContent.textContent = "";
           const steps = [
             "• Complete your festival registration using the link below",
+            "• Add your tickets to your phone's wallet app",
             "• Check your email for order confirmation",
             "• Save your confirmation number for check-in",
             "• Join our WhatsApp group for updates",
@@ -1128,6 +1159,80 @@
         announcer.textContent = message;
       }
 
+      // Show wallet download section for ticket purchases
+      function showWalletDownloadSection(data) {
+        const walletSection = document.getElementById('wallet-download-section');
+        const walletButtonsContainer = document.getElementById('wallet-buttons-container');
+
+        if (!walletSection || !walletButtonsContainer) return;
+
+        // Extract ticket IDs from transaction data
+        const ticketIds = getTicketIdsFromTransactionData(data);
+
+        if (ticketIds.length > 0) {
+          walletButtonsContainer.innerHTML = '';
+
+          // Create lazy-loaded wallet containers for each ticket
+          ticketIds.forEach((ticketId, index) => {
+            const walletContainer = document.createElement('div');
+            walletContainer.className = 'wallet-lazy-container success-wallet-item';
+            walletContainer.style.marginBottom = 'var(--space-md)';
+
+            // Initialize lazy loading for this ticket
+            window.walletLazyLoader.observeWalletContainer(walletContainer, ticketId, {
+              title: ticketIds.length > 1 ? `Ticket ${index + 1}` : 'Your Ticket',
+              size: 'default',
+              showBothOnDesktop: true,
+              className: 'wallet-buttons-success-page'
+            });
+
+            walletButtonsContainer.appendChild(walletContainer);
+          });
+
+          // Show the section
+          walletSection.style.display = 'block';
+
+          // Preload QR codes for these tickets
+          if (data.qrTokens && Array.isArray(data.qrTokens)) {
+            data.qrTokens.forEach(token => {
+              window.qrCacheManager.preloadQRCode(token);
+            });
+          }
+        }
+      }
+
+      // Extract ticket IDs from various transaction data formats
+      function getTicketIdsFromTransactionData(data) {
+        const ticketIds = [];
+
+        // Try to get ticket IDs from different possible locations in the response
+        if (data.ticketIds && Array.isArray(data.ticketIds)) {
+          ticketIds.push(...data.ticketIds);
+        } else if (data.tickets && Array.isArray(data.tickets)) {
+          data.tickets.forEach(ticket => {
+            if (ticket.id) ticketIds.push(ticket.id);
+            else if (ticket.ticketId) ticketIds.push(ticket.ticketId);
+            else if (ticket.ticket_id) ticketIds.push(ticket.ticket_id);
+          });
+        } else if (data.transaction && data.transaction.tickets) {
+          data.transaction.tickets.forEach(ticket => {
+            if (ticket.id) ticketIds.push(ticket.id);
+            else if (ticket.ticketId) ticketIds.push(ticket.ticketId);
+            else if (ticket.ticket_id) ticketIds.push(ticket.ticket_id);
+          });
+        }
+
+        // If no specific ticket IDs found, generate placeholder IDs for the order
+        if (ticketIds.length === 0 && data.orderNumber) {
+          // This is a fallback - in practice, the backend should provide actual ticket IDs
+          console.warn('No specific ticket IDs found, using order-based placeholder');
+          // For now, we'll create a placeholder - ideally the backend would provide ticket IDs
+          ticketIds.push(`${data.orderNumber}-001`);
+        }
+
+        return ticketIds.filter(id => id); // Remove any undefined/null values
+      }
+
       // Start verification when page loads
       verifyPayment();
 
@@ -1139,6 +1244,7 @@
     <script src="/js/navigation.js"></script>
     <script src="/js/main.js"></script>
     <script src="/js/typography.js"></script>
+    <!-- Wallet buttons loaded lazily via wallet-lazy-loader -->
 
     <!-- Cart system not needed on success page - cart is cleared after payment -->
     
