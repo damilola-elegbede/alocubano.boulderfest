@@ -238,11 +238,8 @@
   background: var(--color-card-bg-dark, #1f2937);
 }
 
-/* Accessibility improvements */
-.flip-card:focus-within {
-  outline: 2px solid var(--color-blue, #1e40af);
-  outline-offset: 2px;
-}
+/* Accessibility improvements - removed outline to prevent blue border */
+/* Focus styles can be applied to interactive elements inside if needed */
 
 /* Prevent text selection during flip animation */
 .flip-card-inner * {
