@@ -78,9 +78,9 @@
     <link rel="dns-prefetch" href="//fonts.gstatic.com" />
 
     <!-- Performance optimizations -->
-    <link rel="dns-prefetch" href="//api.qrserver.com">
+    
     <link rel="preconnect" href="https://wallet.apple.com">
-    <link rel="preconnect" href="https://wallet.google.com">
+    <link rel="preconnect" href="https://pay.google.com">
 
     <!-- Theme Management - Early inclusion to prevent FOUC -->
     <script type="module" src="/js/theme-manager.js"></script>
@@ -457,7 +457,7 @@
           <button
             type="button"
             class="form-button-type"
-            onclick="window.location.reload()"
+            id="retry-button"
             style="margin-top: var(--space-md);"
           >
             Try Again
@@ -1120,6 +1120,12 @@
       // Initialize registration when DOM is loaded
       document.addEventListener('DOMContentLoaded', () => {
         new TicketRegistration();
+
+        // Add event listener for retry button (CSP compliance)
+        const retryBtn = document.getElementById('retry-button');
+        if (retryBtn) {
+          retryBtn.addEventListener('click', () => window.location.reload());
+        }
       });
     </script>
   </body>

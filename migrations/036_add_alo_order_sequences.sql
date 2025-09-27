@@ -8,16 +8,25 @@
 -- ================================================================================
 
 -- Initialize ALO sequence for 2025
-INSERT OR IGNORE INTO order_sequences (sequence_key, last_number)
-VALUES ('ALO-2025', 0);
+INSERT INTO order_sequences (sequence_key, last_number)
+SELECT 'ALO-2025', 0
+WHERE NOT EXISTS (
+  SELECT 1 FROM order_sequences WHERE sequence_key = 'ALO-2025'
+);
 
 -- Initialize ALO sequence for 2026 (main event year)
-INSERT OR IGNORE INTO order_sequences (sequence_key, last_number)
-VALUES ('ALO-2026', 0);
+INSERT INTO order_sequences (sequence_key, last_number)
+SELECT 'ALO-2026', 0
+WHERE NOT EXISTS (
+  SELECT 1 FROM order_sequences WHERE sequence_key = 'ALO-2026'
+);
 
 -- Initialize ALO sequence for 2027 (future events)
-INSERT OR IGNORE INTO order_sequences (sequence_key, last_number)
-VALUES ('ALO-2027', 0);
+INSERT INTO order_sequences (sequence_key, last_number)
+SELECT 'ALO-2027', 0
+WHERE NOT EXISTS (
+  SELECT 1 FROM order_sequences WHERE sequence_key = 'ALO-2027'
+);
 
 -- ================================================================================
 -- Migration Complete

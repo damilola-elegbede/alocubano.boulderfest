@@ -59,12 +59,12 @@ class WalletLazyLoader {
    */
   setupResourceHints() {
     // DNS prefetch for wallet API endpoints
-    this.addResourceHint('dns-prefetch', '//wallet.google.com');
+    this.addResourceHint('dns-prefetch', '//pay.google.com');
     this.addResourceHint('dns-prefetch', '//wallet.apple.com');
 
     // Preconnect to Apple Wallet API
     this.addResourceHint('preconnect', 'https://wallet.apple.com');
-    this.addResourceHint('preconnect', 'https://wallet.google.com');
+    this.addResourceHint('preconnect', 'https://pay.google.com');
   }
 
   /**
