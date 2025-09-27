@@ -229,6 +229,13 @@ class TicketSelection {
         const isQuantityButton = target.classList.contains('qty-btn') || target.closest('.qty-btn');
         const isQuantityArea = target.classList.contains('quantity-selector') || target.closest('.quantity-selector');
         const isAddToCartBtn = target.classList.contains('add-to-cart-btn') || target.closest('.add-to-cart-btn');
+        const card = target.closest('.ticket-card');
+        const isFlipCard = card && card.closest('.flip-card');
+
+        // For non-flip cards, allow Enter/Space on the card itself for accessibility
+        if (!isFlipCard && card === target) {
+            return true;
+        }
 
         return isQuantityButton || (isQuantityArea && !isAddToCartBtn);
     }

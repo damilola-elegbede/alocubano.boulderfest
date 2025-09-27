@@ -22,6 +22,7 @@ defaultExport.pathToRegexp = pathToRegexp;
 defaultExport.compile = compile;
 defaultExport.parse = parse;
 defaultExport.tokensToRegexp = tokensToRegexp;
+defaultExport.match = match;
 export default defaultExport;
 `;
 

@@ -267,8 +267,10 @@ export class CartManager extends EventTarget {
         }
 
         return this.queueOperation('upsertTicket', async() => {
+            const isNew = !this.state.tickets[ticketType];
+
             // Update state - handles both new and existing tickets
-            if (!this.state.tickets[ticketType]) {
+            if (isNew) {
                 // Add new ticket
                 this.state.tickets[ticketType] = {
                     ticketType,
@@ -278,6 +280,17 @@ export class CartManager extends EventTarget {
                     quantity: 0,
                     addedAt: Date.now()
                 };
+            } else {
+                // Update existing ticket metadata if provided
+                if (price) {
+                    this.state.tickets[ticketType].price = price;
+                }
+                if (name) {
+                    this.state.tickets[ticketType].name = name;
+                }
+                if (eventId) {
+                    this.state.tickets[ticketType].eventId = eventId;
+                }
             }
 
             // Set the exact quantity (replaces current quantity)
@@ -288,7 +301,11 @@ export class CartManager extends EventTarget {
             await this.saveToStorage();
 
             // Emit events using dual dispatch pattern
-            this.emit('cart:ticket:updated', { ticketType, quantity });
+            if (isNew && quantity > 0) {
+                this.emit('cart:ticket:added', { ticketType, quantity, price, name, eventId });
+            } else {
+                this.emit('cart:ticket:updated', { ticketType, quantity });
+            }
             this.emit('cart:updated', this.getState());
 
             return this.state.tickets[ticketType];

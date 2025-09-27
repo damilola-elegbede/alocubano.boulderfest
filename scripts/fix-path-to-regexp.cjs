@@ -20,8 +20,8 @@ try {
       // Add default export at the end
       const patch = `
 // PATCHED FOR VERCEL
-exports.default = exports.pathToRegexp;
 module.exports = exports.pathToRegexp;
+module.exports.default = exports.pathToRegexp;
 module.exports.pathToRegexp = exports.pathToRegexp;
 module.exports.compile = exports.compile;
 module.exports.parse = exports.parse;
