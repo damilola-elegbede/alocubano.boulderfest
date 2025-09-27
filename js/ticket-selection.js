@@ -80,12 +80,14 @@ class TicketSelection {
         // Initialize ticket cards with default attributes for testing
         this.initializeTicketCards();
 
+        // Sync with cart state immediately - localStorage is always available
+        this.syncWithCartState();
+
         this.bindEvents();
 
-        // CRITICAL FIX: Wait for cart manager to be fully initialized
+        // Wait for cart manager only for write operations
         await this.waitForCartManager();
 
-        this.syncWithCartState();
         this.updateDisplay();
     }
 
@@ -93,15 +95,19 @@ class TicketSelection {
         // Set up initial test attributes on all ticket cards
         document.querySelectorAll('.ticket-card').forEach((card) => {
             // Initialize with default state for E2E test reliability
-            card.setAttribute('data-quantity', '0');
-            card.setAttribute('data-selected', 'false');
-            card.setAttribute('aria-pressed', 'false');
             card.setAttribute('data-initialized', 'true');
 
-            // Make sure quantity displays are initialized
-            const quantitySpan = card.querySelector('.quantity');
-            if (quantitySpan && !quantitySpan.textContent) {
-                quantitySpan.textContent = '0';
+            // Only set defaults if not already set by syncWithCartState
+            if (!card.hasAttribute('data-quantity')) {
+                card.setAttribute('data-quantity', '0');
+                card.setAttribute('data-selected', 'false');
+                card.setAttribute('aria-pressed', 'false');
+
+                // Make sure quantity displays are initialized
+                const quantitySpan = card.querySelector('.quantity');
+                if (quantitySpan && !quantitySpan.textContent) {
+                    quantitySpan.textContent = '0';
+                }
             }
 
             // Initialize add to cart buttons with ready state
