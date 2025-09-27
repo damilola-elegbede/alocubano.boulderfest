@@ -75,7 +75,9 @@
 .flip-card-front, .flip-card-back {
   position: absolute;
   top: 10px;  /* Account for padding */
-  left: 2.5%;  /* Center with 95% width */
+  left: 0;  /* Align both faces to the same left edge */
+  right: 0;  /* Use left: 0 and right: 0 with margin: auto for perfect centering */
+  margin: 0 auto;  /* Center horizontally */
   width: 95%;  /* Reduced from 100% to prevent edge bleeding */
   height: calc(100% - 20px);  /* Account for top and bottom padding */
   -webkit-backface-visibility: hidden;
@@ -86,13 +88,14 @@
   transition: all 0.3s ease;
   /* Use normal overflow to prevent cropping */
   overflow: visible;
+  /* Ensure consistent box model */
+  box-sizing: border-box;
 }
 
 /* Front face specific styles */
 .flip-card-front {
   background: var(--color-card-bg, white);
   border: 2px solid var(--color-border, #e0e0e0);
-  box-sizing: border-box; /* Include border in width calculation */
   /* Simple rotation without 3D depth */
   -webkit-transform: rotateY(0deg);
   -moz-transform: rotateY(0deg);
