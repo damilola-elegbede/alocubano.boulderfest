@@ -639,10 +639,13 @@
         }
 
         async loadRegistrationData() {
+          console.log('[FRONTEND] Loading registration data with token:', this.token?.substring(0, 20) + '...');
+
           const response = await fetch(`/api/registration?token=${this.token}`);
 
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
+            console.error('[FRONTEND] Registration API error:', response.status, errorData);
             if (response.status === 401) {
               throw new Error('Invalid or expired registration token. Please check your email for the correct link.');
             } else if (response.status === 404) {
@@ -653,6 +656,19 @@
           }
 
           this.registrationData = await response.json();
+
+          console.log('[FRONTEND] Loaded registration data:', {
+            transactionId: this.registrationData.transactionId,
+            purchaserEmail: this.registrationData.purchaserEmail,
+            ticketCount: this.registrationData.tickets.length,
+            tickets: this.registrationData.tickets.map(t => ({
+              id: t.ticketId,
+              type: t.ticketType,
+              status: t.status,
+              hasAttendee: !!t.attendee,
+              attendeeName: t.attendee ? `${t.attendee.firstName} ${t.attendee.lastName}` : 'NONE'
+            }))
+          });
         }
 
         renderRegistrationForm() {
@@ -704,6 +720,13 @@
         }
 
         createTicketSection(ticket, index) {
+          console.log(`[FRONTEND] Creating section for ticket ${index}:`, {
+            id: ticket.ticketId,
+            status: ticket.status,
+            attendee: ticket.attendee,
+            type: ticket.ticketType
+          });
+
           const section = document.createElement('div');
           section.className = `ticket-section ${ticket.status === 'completed' || ticket.status === 'expired' ? 'disabled-ticket' : ''}`;
 
@@ -711,6 +734,12 @@
                              ticket.status === 'completed' ? 'completed' : 'expired';
 
           const isDisabled = ticket.status === 'completed' || ticket.status === 'expired';
+
+          console.log(`[FRONTEND] Ticket ${ticket.ticketId} display settings:`, {
+            statusClass,
+            isDisabled,
+            willShowAsCompleted: ticket.status === 'completed'
+          });
 
           section.innerHTML = `
             <div class="ticket-header">
@@ -858,10 +887,12 @@
         }
 
         validateForm() {
+          console.log('[FRONTEND] Validating form for submission');
           let isValid = true;
           const registrations = [];
 
           this.registrationData.tickets.forEach((ticket, index) => {
+            console.log(`[FRONTEND] Checking ticket ${ticket.ticketId}: status=${ticket.status}`);
             if (ticket.status === 'pending') {
               const firstName = document.getElementById(`firstName-${index}`).value.trim();
               const lastName = document.getElementById(`lastName-${index}`).value.trim();
@@ -911,6 +942,8 @@
           submitButton.disabled = true;
           submitButton.textContent = 'Registering...';
 
+          console.log('[FRONTEND] Submitting registrations:', validation.registrations);
+
           try {
             const response = await fetch('/api/registration/batch', {
               method: 'POST',
@@ -923,6 +956,12 @@
             });
 
             const result = await response.json();
+
+            console.log('[FRONTEND] Registration response:', {
+              status: response.status,
+              ok: response.ok,
+              result: result
+            });
 
             if (response.ok) {
               this.showSuccess(result);

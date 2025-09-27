@@ -14,19 +14,32 @@ export default async function handler(req, res) {
   }
 
   try {
+    console.log('[REG_STATUS] Registration status check for token:', token?.substring(0, 20) + '...');
+
     // Verify JWT token strictly with the registration secret
     const secret = process.env.REGISTRATION_SECRET;
     if (!secret) {
-      console.error('Missing REGISTRATION_SECRET');
+      console.error('[REG_STATUS] Missing REGISTRATION_SECRET');
       return res.status(503).json({ error: 'Service misconfigured' });
     }
     const decoded = jwt.verify(token, secret, { algorithms: ['HS256'] });
 
+    console.log('[REG_STATUS] Decoded JWT:', {
+      tid: decoded.tid,
+      txn: decoded.txn,
+      transactionId: decoded.transactionId,
+      type: decoded.type,
+      exp: new Date(decoded.exp * 1000).toISOString()
+    });
+
     // Handle both old format (transactionId) and new format (txn)
     const transactionId = decoded.transactionId || decoded.txn;
     if (!transactionId) {
+      console.error('[REG_STATUS] Invalid token format - missing transaction ID');
       return res.status(400).json({ error: 'Invalid token format - missing transaction ID' });
     }
+
+    console.log('[REG_STATUS] Looking up tickets for transaction ID:', transactionId);
 
     const db = await getDatabaseClient();
 
@@ -55,8 +68,20 @@ export default async function handler(req, res) {
     });
 
     if (!tickets.rows || tickets.rows.length === 0) {
+      console.log('[REG_STATUS] No tickets found for transaction ID:', transactionId);
       return res.status(404).json({ error: 'No tickets found for this transaction' });
     }
+
+    console.log('[REG_STATUS] Found tickets:', tickets.rows.map(t => ({
+      id: t.ticket_id,
+      type: t.ticket_type,
+      registration_status: t.registration_status,
+      current_status: t.current_status,
+      has_attendee: !!(t.attendee_first_name || t.attendee_email),
+      attendee_name: `${t.attendee_first_name || 'NONE'} ${t.attendee_last_name || 'NONE'}`,
+      deadline: t.registration_deadline,
+      registered_at: t.registered_at
+    })));
 
     // Update expired tickets if needed
     const expiredTickets = tickets.rows.filter(t =>
@@ -64,6 +89,7 @@ export default async function handler(req, res) {
     );
 
     if (expiredTickets.length > 0) {
+      console.log('[REG_STATUS] Updating expired tickets:', expiredTickets.map(t => t.ticket_id));
       await db.execute({
         sql: `
           UPDATE tickets
@@ -92,6 +118,9 @@ export default async function handler(req, res) {
         } : null
       }))
     };
+
+    console.log('[REG_STATUS] Returning response with', response.tickets.length, 'tickets');
+    console.log('[REG_STATUS] Ticket statuses:', response.tickets.map(t => `${t.ticketId}: ${t.status}`));
 
     res.status(200).json(response);
   } catch (error) {

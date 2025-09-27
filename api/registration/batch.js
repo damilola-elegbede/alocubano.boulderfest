@@ -320,6 +320,11 @@ export default async function handler(req, res) {
 
     // Fetch all tickets with transaction info
     const ticketIds = sanitizedRegistrations.map(r => r.ticketId);
+
+    console.log('[BATCH_REG] Starting batch registration for tickets:', ticketIds);
+    console.log('[BATCH_REG] Request ID:', requestId);
+    console.log('[BATCH_REG] Client IP:', clientIP);
+
     const ticketsResult = await db.execute({
       sql: `
         SELECT
@@ -339,6 +344,14 @@ export default async function handler(req, res) {
       args: ticketIds
     });
 
+    console.log('[BATCH_REG] Found tickets:', ticketsResult.rows.map(t => ({
+      id: t.ticket_id,
+      status: t.registration_status,
+      hasAttendee: !!(t.attendee_first_name || t.attendee_email),
+      attendeeName: `${t.attendee_first_name || 'NO_FIRST'} ${t.attendee_last_name || 'NO_LAST'}`,
+      type: t.ticket_type
+    })));
+
     if (ticketsResult.rows.length !== ticketIds.length) {
       const foundIds = ticketsResult.rows.map(t => t.ticket_id);
       const missingIds = ticketIds.filter(id => !foundIds.includes(id));
@@ -350,23 +363,58 @@ export default async function handler(req, res) {
 
     // Check for already registered or expired tickets
     const issues = [];
+    const alreadyRegistered = [];
     const now = new Date();
 
     for (const ticket of ticketsResult.rows) {
       if (ticket.registration_status === 'completed') {
-        issues.push(`Ticket ${ticket.ticket_id} is already registered`);
+        console.log(`[BATCH_REG] WARNING: Ticket ${ticket.ticket_id} is already registered with status: ${ticket.registration_status}`);
+        console.log(`[BATCH_REG] Existing attendee: ${ticket.attendee_first_name} ${ticket.attendee_last_name} (${ticket.attendee_email})`);
+        alreadyRegistered.push({
+          ticketId: ticket.ticket_id,
+          attendeeName: `${ticket.attendee_first_name} ${ticket.attendee_last_name}`,
+          attendeeEmail: ticket.attendee_email
+        });
+        // Don't add to issues - we'll handle gracefully below
       }
 
       const deadline = new Date(ticket.registration_deadline);
       if (now > deadline) {
+        console.log(`[BATCH_REG] ERROR: Ticket ${ticket.ticket_id} registration deadline has passed`);
         issues.push(`Ticket ${ticket.ticket_id} registration deadline has passed`);
       }
     }
 
+    // Only fail for expired tickets, not already registered ones
     if (issues.length > 0) {
+      console.log('[BATCH_REG] Registration validation failed:', issues);
       return res.status(400).json({
         error: 'Registration validation failed',
         details: issues
+      });
+    }
+
+    // If ALL tickets are already registered, return success with that info
+    if (alreadyRegistered.length === ticketIds.length) {
+      console.log('[BATCH_REG] All tickets already registered, returning success');
+      return res.status(200).json({
+        success: true,
+        message: 'All tickets were already registered',
+        alreadyRegistered: alreadyRegistered,
+        registrations: alreadyRegistered.map(t => ({
+          ticketId: t.ticketId,
+          status: 'already_registered',
+          attendee: {
+            firstName: t.attendeeName.split(' ')[0],
+            lastName: t.attendeeName.split(' ').slice(1).join(' '),
+            email: t.attendeeEmail
+          }
+        })),
+        summary: {
+          totalRegistered: 0,
+          alreadyRegistered: alreadyRegistered.length,
+          registrationDate: new Date().toISOString()
+        }
       });
     }
 
@@ -382,6 +430,23 @@ export default async function handler(req, res) {
         const registration = sanitizedRegistrations[i];
         const ticket = ticketsResult.rows.find(t => t.ticket_id === registration.ticketId);
         const operationStartTime = Date.now();
+
+        // Skip if already registered
+        if (ticket.registration_status === 'completed') {
+          console.log(`[BATCH_REG] Skipping already registered ticket ${ticket.ticket_id}`);
+          results.push({
+            ticketId: registration.ticketId,
+            status: 'already_registered',
+            attendee: {
+              firstName: ticket.attendee_first_name,
+              lastName: ticket.attendee_last_name,
+              email: ticket.attendee_email
+            }
+          });
+          continue; // Skip to next ticket
+        }
+
+        console.log(`[BATCH_REG] Processing ticket ${registration.ticketId} (${i + 1}/${sanitizedRegistrations.length})`);
 
         // Capture before state for audit
         const beforeState = {
@@ -483,20 +548,40 @@ export default async function handler(req, res) {
       }
 
       // Execute all operations in a single batch (transaction is automatic)
-      const batchResults = await db.batch(batchOperations);
+      console.log(`[BATCH_REG] Executing ${batchOperations.length} batch operations`);
+      if (batchOperations.length === 0) {
+        console.log('[BATCH_REG] No operations to execute (all tickets already registered)');
+      } else {
+        const batchResults = await db.batch(batchOperations);
 
-      // Check that all ticket updates succeeded
-      // Each UPDATE operation returns a result with rowsAffected
-      for (let i = 0; i < sanitizedRegistrations.length; i++) {
-        // Each registration has 2 operations: ticket update and reminder cancel
-        // So ticket update is at index: i * 2
-        const updateResultIndex = i * 2;
-        const updateResult = batchResults[updateResultIndex];
-        const rowsChanged = updateResult?.rowsAffected ?? updateResult?.changes ?? 0;
+        // Check that all ticket updates succeeded
+        let successCount = 0;
+        let actualUpdateIndex = 0;
+        for (let i = 0; i < sanitizedRegistrations.length; i++) {
+          const ticket = ticketsResult.rows.find(t => t.ticket_id === sanitizedRegistrations[i].ticketId);
 
-        if (rowsChanged === 0) {
-          throw new Error(`Concurrent update detected for ticket ${sanitizedRegistrations[i].ticketId}`);
+          // Skip already registered tickets
+          if (ticket.registration_status === 'completed') {
+            continue;
+          }
+
+          // Each registration has 2 operations: ticket update and reminder cancel
+          const updateResultIndex = actualUpdateIndex * 2;
+          const updateResult = batchResults[updateResultIndex];
+          const rowsChanged = updateResult?.rowsAffected ?? updateResult?.changes ?? 0;
+
+          console.log(`[BATCH_REG] Update result for ${sanitizedRegistrations[i].ticketId}: ${rowsChanged} rows affected`);
+
+          if (rowsChanged === 0) {
+            console.error(`[BATCH_REG] WARNING: No rows updated for ticket ${sanitizedRegistrations[i].ticketId} - may be already registered`);
+            // Don't throw error - ticket might have been registered by another process
+          } else {
+            successCount++;
+          }
+          actualUpdateIndex++;
         }
+
+        console.log(`[BATCH_REG] Successfully updated ${successCount} tickets`);
       }
 
       // Perform audit logging after successful transaction
@@ -511,19 +596,25 @@ export default async function handler(req, res) {
 
     } catch (error) {
       // Rollback is automatic if batch fails
-      console.error('Batch transaction failed:', error);
+      console.error('[BATCH_REG] Batch transaction failed:', error);
+      console.error('[BATCH_REG] Error stack:', error.stack);
       throw error;
     }
 
     // SEND EMAILS OUTSIDE TRANSACTION (after successful commit)
     const emailResults = [];
 
+    console.log('[BATCH_REG] Starting email sending phase');
+
     // Get transaction information for order number and purchaser details (declare outside try block)
     const transactionIds = [...new Set(ticketsResult.rows.map(t => t.transaction_id))];
     let transactionInfo = null;
 
+    console.log('[BATCH_REG] Transaction IDs involved:', transactionIds);
+
     try {
       const brevo = await getBrevoClient();
+      console.log('[BATCH_REG] Brevo client initialized');
 
       if (transactionIds.length === 1) {
         // Single transaction - get order details for summary email
@@ -538,15 +629,21 @@ export default async function handler(req, res) {
       }
 
       // Send individual confirmation emails
+      console.log(`[BATCH_REG] Preparing to send ${emailTasks.length} confirmation emails`);
+
       for (const task of emailTasks) {
         try {
+          console.log(`[BATCH_REG] Sending email for ticket ${task.registration.ticketId} to ${task.registration.email}`);
+
           // Validate attendee template ID (simplified - single template for all)
           const attendeeTemplateId = parseInt(process.env.BREVO_ATTENDEE_CONFIRMATION_TEMPLATE_ID);
 
           if (isNaN(attendeeTemplateId)) {
-            console.error('Invalid Brevo attendee template ID in environment variables');
+            console.error('[BATCH_REG] Invalid Brevo attendee template ID in environment variables');
             throw new Error('Email configuration error');
           }
+
+          console.log('[BATCH_REG] Using Brevo template ID:', attendeeTemplateId);
 
           await brevo.sendTransactionalEmail({
             to: [{
@@ -573,15 +670,18 @@ export default async function handler(req, res) {
             args: [task.registration.ticketId, 'confirmation', task.registration.email]
           });
 
+          console.log(`[BATCH_REG] Email sent successfully for ticket ${task.registration.ticketId}`);
           emailResults.push({
             ticketId: task.registration.ticketId,
             emailSent: true
           });
         } catch (emailError) {
-          console.error(`Failed to send email for ${task.registration.ticketId}:`, emailError);
+          console.error(`[BATCH_REG] Failed to send email for ${task.registration.ticketId}:`, emailError);
+          console.error(`[BATCH_REG] Email error details:`, emailError.message, emailError.stack);
           emailResults.push({
             ticketId: task.registration.ticketId,
-            emailSent: false
+            emailSent: false,
+            error: emailError.message
           });
         }
       }
@@ -589,9 +689,17 @@ export default async function handler(req, res) {
       // Note: Batch summary email removed - individual confirmations only
 
     } catch (emailServiceError) {
-      console.error('Email service error (non-blocking):', emailServiceError);
+      console.error('[BATCH_REG] Email service error (non-blocking):', emailServiceError);
+      console.error('[BATCH_REG] Email service error details:', emailServiceError.message, emailServiceError.stack);
       // Continue - registration was successful even if emails fail
     }
+
+    console.log('[BATCH_REG] Email results summary:', {
+      total: emailResults.length,
+      sent: emailResults.filter(e => e.emailSent).length,
+      failed: emailResults.filter(e => !e.emailSent).length,
+      failures: emailResults.filter(e => !e.emailSent)
+    });
 
     // Log batch operation summary (non-blocking)
     const totalProcessingTime = Date.now() - startTime;
@@ -625,6 +733,9 @@ export default async function handler(req, res) {
     });
 
     // Return success response with enhanced data for frontend
+    console.log('[BATCH_REG] Preparing final response with', results.length, 'results');
+    console.log('[BATCH_REG] Final results:', results);
+
     res.status(200).json({
       success: true,
       message: `Successfully registered ${results.length} tickets`,
