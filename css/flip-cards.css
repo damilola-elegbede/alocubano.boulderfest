@@ -66,9 +66,14 @@
   backface-visibility: hidden;
   border-radius: 12px;
   border: 2px solid var(--color-border, #e0e0e0);
-  background: var(--color-card-bg, white);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
+}
+
+/* Front face specific styles */
+.flip-card-front {
+  background: var(--color-card-bg, white);
+  z-index: 2;
 }
 
 /* Back face should be rotated 180 degrees */
@@ -76,6 +81,7 @@
   transform: rotateY(180deg);
   background: linear-gradient(135deg, var(--color-blue, #1e40af) 0%, var(--color-blue-dark, #1e3a8a) 100%);
   color: white;
+  z-index: 1;
   /* Remove flex centering - use same layout as front */
   padding: 0;
   display: block;
@@ -84,13 +90,13 @@
   visibility: visible;
 }
 
-/* Hover effects */
-.flip-card:hover .flip-card-front {
+/* Hover effects - only apply to non-flipped cards */
+.flip-card:not(.flipped):hover .flip-card-front {
   transform: translateY(-4px);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
 
-.flip-card:hover .flip-card-back {
+.flip-card.flipped:hover .flip-card-back {
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
 }
 
@@ -104,8 +110,28 @@
   text-align: center;
   padding: var(--space-2xl, 2rem);
   box-sizing: border-box;
-  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" opacity="0.1"><text x="50%" y="50%" text-anchor="middle" font-size="48" fill="white">TICKET</text></svg>') center center no-repeat;
-  background-size: 200px;
+  position: relative;
+}
+
+/* Subtle watermark for back of card */
+.card-back-content::before {
+  content: 'TICKET';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 4rem;
+  font-family: var(--font-display, 'Bebas Neue', sans-serif);
+  opacity: 0.1;
+  color: white;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Ensure content appears above watermark */
+.card-back-content > * {
+  position: relative;
+  z-index: 1;
 }
 
 .card-back-content h3 {
