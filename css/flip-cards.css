@@ -203,12 +203,6 @@
   transform: translateY(-2px);
 }
 
-/* Selected state for flip cards */
-.flip-card.selected .flip-card-front {
-  border-color: var(--color-blue, #1e40af);
-  background: var(--color-selected-bg, #dbeafe);
-}
-
 /* Ensure ticket cards within flip cards maintain their styling */
 .flip-card-front.ticket-card {
   /* Inherit all existing ticket card styles */
@@ -230,12 +224,6 @@
   .flip-card-front {
     background: var(--color-card-bg-dark, #1f2937);
   }
-
-  /* Selected state in dark mode */
-  .flip-card.selected .flip-card-front {
-    border-color: var(--color-blue-dark, #2563eb);
-    background: rgba(37, 99, 235, 0.2); /* Semi-transparent blue for dark mode */
-  }
 }
 
 [data-theme="dark"] .flip-card-front,
@@ -245,12 +233,6 @@
 
 [data-theme="dark"] .flip-card-front {
   background: var(--color-card-bg-dark, #1f2937);
-}
-
-/* Dark mode selected state */
-[data-theme="dark"] .flip-card.selected .flip-card-front {
-  border-color: var(--color-blue-dark, #2563eb);
-  background: rgba(37, 99, 235, 0.2); /* Semi-transparent blue for dark mode */
 }
 
 /* Accessibility improvements - removed outline to prevent blue border */

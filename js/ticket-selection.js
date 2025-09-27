@@ -294,16 +294,10 @@ class TicketSelection {
                 price: price,
                 name: ticketName
             });
-            card.classList.add('selected');
-            card.setAttribute('aria-pressed', 'true');
             card.setAttribute('data-quantity', currentQuantity.toString());
-            card.setAttribute('data-selected', 'true');
         } else {
             this.selectedTickets.delete(ticketType);
-            card.classList.remove('selected');
-            card.setAttribute('aria-pressed', 'false');
             card.setAttribute('data-quantity', '0');
-            card.setAttribute('data-selected', 'false');
         }
 
         this.updateDisplay();

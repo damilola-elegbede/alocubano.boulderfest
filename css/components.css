@@ -1519,9 +1519,6 @@
   box-shadow: 0 4px 12px var(--shadow-color);
 }
 
-[data-theme="dark"] .ticket-card.selected {
-  background: var(--color-info-light);
-}
 
 [data-theme="dark"] .ticket-card.unavailable,
 [data-theme="dark"] .ticket-card.disabled {
@@ -2145,9 +2142,6 @@
   box-shadow: 0 4px 12px var(--shadow-color);
 }
 
-.ticket-card.selected {
-  background: var(--color-info-light);
-}
 
 .ticket-card.disabled,
 .ticket-card.unavailable {
@@ -2504,10 +2498,6 @@
   box-shadow: 0 8px 25px var(--shadow-color-strong);
 }
 
-.ticket-card.selected {
-  box-shadow: 0 0 0 3px var(--color-info-light);
-  background: var(--color-info-light);
-}
 
 .ticket-card h4 {
   font-family: var(--font-display);
