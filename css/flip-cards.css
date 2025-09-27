@@ -77,8 +77,8 @@
 .flip-card-front, .flip-card-back {
   position: absolute;
   top: 10px;  /* Account for padding */
-  left: 0;
-  width: 100%;
+  left: 2.5%;  /* Center with 95% width */
+  width: 95%;  /* Reduced from 100% to prevent edge bleeding */
   height: calc(100% - 20px);  /* Account for top and bottom padding */
   -webkit-backface-visibility: hidden;
   -moz-backface-visibility: hidden;
@@ -103,10 +103,10 @@
 
 /* Back face should be rotated 180 degrees */
 .flip-card-back {
-  /* Rotate and position to prevent bleeding */
-  -webkit-transform: rotateY(180deg) translateZ(-2px) scale(0.99);
-  -moz-transform: rotateY(180deg) translateZ(-2px) scale(0.99);
-  transform: rotateY(180deg) translateZ(-2px) scale(0.99);
+  /* Rotate without scaling since both faces are now 95% width */
+  -webkit-transform: rotateY(180deg);
+  -moz-transform: rotateY(180deg);
+  transform: rotateY(180deg);
   background: linear-gradient(135deg, var(--color-blue, #1e40af) 0%, var(--color-blue-dark, #1e3a8a) 100%);
   color: white;
   /* Remove flex centering - use same layout as front */
