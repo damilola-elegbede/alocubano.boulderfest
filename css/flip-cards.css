@@ -22,9 +22,9 @@
     gap: var(--space-lg, 1.5rem);
   }
 
-  /* Reduce height on mobile */
+  /* Maintain sufficient height on mobile for vertical design */
   .flip-card {
-    height: 320px;
+    height: 540px; /* Keep same height as desktop to fit vertical ticket */
   }
 }
 
@@ -32,7 +32,7 @@
 .flip-card {
   background-color: transparent;
   width: 100%;
-  height: 350px;
+  height: 540px; /* Increased to accommodate vertical ticket design (520px) + padding */
   perspective: 1000px;
   cursor: pointer;
   border-radius: 12px;
@@ -74,11 +74,14 @@
 /* Back face should be rotated 180 degrees */
 .flip-card-back {
   transform: rotateY(180deg);
-  background: var(--color-blue, #1e40af);
+  background: linear-gradient(135deg, var(--color-blue, #1e40af) 0%, var(--color-blue-dark, #1e3a8a) 100%);
   color: white;
   /* Remove flex centering - use same layout as front */
   padding: 0;
   display: block;
+  /* Ensure back is visible when flipped */
+  opacity: 1;
+  visibility: visible;
 }
 
 /* Hover effects */
@@ -91,47 +94,57 @@
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
 }
 
-/* Card back content styling - match front card layout */
+/* Card back content styling - vertical ticket design layout */
 .card-back-content {
   height: 100%;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
   text-align: center;
-  padding: var(--space-lg, 1.5rem);
+  padding: var(--space-2xl, 2rem);
   box-sizing: border-box;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" opacity="0.1"><text x="50%" y="50%" text-anchor="middle" font-size="48" fill="white">TICKET</text></svg>') center center no-repeat;
+  background-size: 200px;
 }
 
 .card-back-content h3 {
   font-family: var(--font-display, 'Bebas Neue', sans-serif);
-  font-size: var(--font-size-xl, 1.5rem);
+  font-size: var(--font-size-2xl, 2rem);
+  margin-top: var(--space-xl, 2rem);
   margin-bottom: var(--space-md, 1rem);
   color: white;
+  text-transform: uppercase;
+  letter-spacing: 2px;
 }
 
 .card-back-content p {
   font-family: var(--font-body, 'Playfair Display', serif);
-  font-size: var(--font-size-md, 1rem);
-  line-height: 1.6;
+  font-size: var(--font-size-lg, 1.25rem);
+  line-height: 1.8;
   margin-bottom: var(--space-lg, 1.5rem);
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.95);
   flex: 1;
   display: flex;
   align-items: center;
+  padding: 0 var(--space-md, 1rem);
+  max-width: 90%;
 }
 
 /* Flip back button */
 .flip-back-btn {
   background: rgba(255, 255, 255, 0.2);
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.4);
   color: white;
-  padding: var(--space-sm, 0.75rem) var(--space-md, 1rem);
-  border-radius: 6px;
+  padding: var(--space-sm, 0.75rem) var(--space-lg, 1.5rem);
+  border-radius: 8px;
   font-family: var(--font-display, 'Bebas Neue', sans-serif);
   font-size: var(--font-size-md, 1rem);
   cursor: pointer;
   transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: var(--space-xl, 2rem);
 }
 
 .flip-back-btn:hover {
@@ -149,6 +162,13 @@
 /* Ensure ticket cards within flip cards maintain their styling */
 .flip-card-front.ticket-card {
   /* Inherit all existing ticket card styles */
+}
+
+/* Override fixed dimensions for vertical-design when inside flip card */
+.flip-card .ticket-card.vertical-design {
+  width: 100%;
+  height: 100%;
+  max-width: none;
 }
 
 /* Dark theme support */

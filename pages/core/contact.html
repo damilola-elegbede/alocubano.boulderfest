@@ -215,6 +215,9 @@
     <link rel="dns-prefetch" href="//fonts.googleapis.com" />
     <link rel="dns-prefetch" href="//fonts.gstatic.com" />
 
+    <!-- Theme Management - Early inclusion to prevent FOUC -->
+    <script type="module" src="/js/theme-manager.js"></script>
+
     <link rel="stylesheet" href="/css/base.css" />
     <link rel="stylesheet" href="/css/components.css" />
     <link rel="stylesheet" href="/css/typography.css" />
@@ -315,6 +318,16 @@
                       >Weekenders</span
                     >
                     <ul class="dropdown-submenu">
+                      <li>
+                        <a
+                          href="/weekender-2026-09"
+                          class="dropdown-link"
+                          role="menuitem"
+                          data-event="weekender-2026-09"
+                          data-event-status="upcoming"
+                          >September 2026</a
+                        >
+                      </li>
                       <li>
                         <a
                           href="/2025-11-weekender"
@@ -550,6 +563,7 @@
                         placeholder="YOUR EMAIL ADDRESS"
                         required
                         aria-required="true"
+                        aria-label="Email address for newsletter subscription"
                         aria-describedby="newsletter-error newsletter-success"
                         autocomplete="email"
                         inputmode="email"

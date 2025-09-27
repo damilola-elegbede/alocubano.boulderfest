@@ -78,6 +78,9 @@
     <link rel="dns-prefetch" href="//fonts.googleapis.com" />
     <link rel="dns-prefetch" href="//fonts.gstatic.com" />
 
+    <!-- Theme Management - Early inclusion to prevent FOUC -->
+    <script type="module" src="/js/theme-manager.js"></script>
+
     <link rel="stylesheet" href="/css/base.css" />
     <link rel="stylesheet" href="/css/components.css" />
     <link rel="stylesheet" href="/css/typography.css" />
@@ -216,6 +219,33 @@
                           data-event="boulder-fest-2025"
                           data-event-status="current"
                           >2025 Festival</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                  <li class="dropdown-category" role="group">
+                    <span class="dropdown-category-title" role="presentation"
+                      >Weekenders</span
+                    >
+                    <ul class="dropdown-submenu">
+                      <li>
+                        <a
+                          href="/weekender-2026-09"
+                          class="dropdown-link"
+                          role="menuitem"
+                          data-event="weekender-2026-09"
+                          data-event-status="upcoming"
+                          >September 2026</a
+                        >
+                      </li>
+                      <li>
+                        <a
+                          href="/2025-11-weekender"
+                          class="dropdown-link"
+                          role="menuitem"
+                          data-event="2025-11-weekender"
+                          data-event-status="upcoming"
+                          >November 2025</a
                         >
                       </li>
                     </ul>
@@ -366,7 +396,7 @@
       <!-- Event Navigation -->
       <section class="section-typographic" style="padding: var(--space-xl) 0">
         <div class="container">
-          <h2 class="text-mask">BOULDER FEST 2026</h2>
+          <h2 class="text-mask">SEPTEMBER 2026 WEEKENDER</h2>
           <div
             class="event-nav-grid"
             style="
@@ -377,7 +407,7 @@
             "
           >
             <a
-              href="/2026-artists"
+              href="/2026-sept-artists"
               class="event-nav-card"
               style="
                 display: block;
@@ -403,7 +433,7 @@
               </p>
             </a>
             <a
-              href="/2026-schedule"
+              href="/2026-sept-schedule"
               class="event-nav-card"
               style="
                 display: block;
@@ -425,11 +455,11 @@
                 Schedule
               </h3>
               <p style="margin: 0; color: var(--color-gray-600)">
-                Three-day schedule of workshops, socials, and performances
+                Weekend intensive schedule
               </p>
             </a>
             <a
-              href="/2026-gallery"
+              href="/2026-sept-gallery"
               class="event-nav-card"
               style="
                 display: block;
@@ -451,34 +481,32 @@
                 Gallery
               </h3>
               <p style="margin: 0; color: var(--color-gray-600)">
-                Photos and memories from Boulder Fest events
+                Photos and memories from A Lo Cubano events
               </p>
             </a>
+          </div>
+
+          <!-- Get Tickets Button -->
+          <div style="text-align: center; margin-top: var(--space-2xl);">
             <a
               href="/tickets"
-              class="event-nav-card"
+              class="btn-primary"
               style="
-                display: block;
-                padding: var(--space-lg);
-                border: 2px solid var(--color-gray-300);
+                display: inline-block;
+                padding: var(--space-md) var(--space-2xl);
+                background: var(--color-primary);
+                color: white;
                 text-decoration: none;
-                color: var(--color-black);
+                font-family: var(--font-display);
+                font-size: var(--font-size-lg);
+                font-weight: 700;
+                border-radius: 4px;
                 transition: all var(--transition-base);
               "
+              onmouseover="this.style.background='var(--color-primary-dark, #8B0000)'"
+              onmouseout="this.style.background='var(--color-primary)'"
             >
-              <h3
-                style="
-                  margin: 0 0 var(--space-sm) 0;
-                  font-family: var(--font-display);
-                  font-size: var(--font-size-xl);
-                  color: var(--color-black);
-                "
-              >
-                Tickets
-              </h3>
-              <p style="margin: 0; color: var(--color-gray-600)">
-                Early bird pricing and festival passes available
-              </p>
+              GET TICKETS NOW
             </a>
           </div>
         </div>

@@ -77,6 +77,9 @@
     <link rel="dns-prefetch" href="//fonts.googleapis.com" />
     <link rel="dns-prefetch" href="//fonts.gstatic.com" />
 
+    <!-- Theme Management - Early inclusion to prevent FOUC -->
+    <script type="module" src="/js/theme-manager.js"></script>
+
     <link rel="stylesheet" href="/css/base.css" />
     <link rel="stylesheet" href="/css/components.css" />
     <link rel="stylesheet" href="/css/typography.css" />
@@ -99,31 +102,7 @@
         font-family: var(--font-display);
         font-size: var(--font-size-xl);
       }
-      .schedule-item {
-        display: grid;
-        grid-template-columns: 180px 1fr;
-        gap: var(--space-md);
-        padding: var(--space-md) 0;
-        border-bottom: 1px solid var(--color-gray-200);
-      }
-      .schedule-item:last-child {
-        border-bottom: none;
-      }
-      .schedule-time {
-        font-family: var(--font-mono);
-        font-weight: 600;
-        color: var(--color-gray-600);
-      }
-      .schedule-content h4 {
-        margin: 0 0 var(--space-xs);
-        color: var(--color-black);
-        font-family: var(--font-display);
-      }
-      .schedule-content p {
-        margin: 0;
-        color: var(--color-gray-600);
-        font-size: var(--font-size-sm);
-      }
+      /* Using global .schedule-item styles from components.css - no override needed */
       .schedule-content .instructor {
         font-style: italic;
         color: var(--color-gray-500);
@@ -141,12 +120,6 @@
         -webkit-text-fill-color: transparent;
         background-clip: text;
         font-weight: bold;
-      }
-      @media (max-width: 768px) {
-        .schedule-item {
-          grid-template-columns: 1fr;
-          gap: var(--space-xs);
-        }
       }
     </style>
   </head>
@@ -239,6 +212,16 @@
                       >Weekenders</span
                     >
                     <ul class="dropdown-submenu">
+                      <li>
+                        <a
+                          href="/weekender-2026-09"
+                          class="dropdown-link"
+                          role="menuitem"
+                          data-event="weekender-2026-09"
+                          data-event-status="upcoming"
+                          >September 2026</a
+                        >
+                      </li>
                       <li>
                         <a
                           href="/2025-11-weekender"
