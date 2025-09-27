@@ -251,7 +251,12 @@ export class CartManager extends EventTarget {
     async upsertTicket(ticketData) {
         const { ticketType, price, name, eventId, quantity } = ticketData;
 
-        if (!ticketType || !price || !name || quantity <= 0) {
+        // If quantity is 0, remove the ticket
+        if (quantity === 0) {
+            return this.removeTicket(ticketType);
+        }
+
+        if (!ticketType || !price || !name || quantity < 0) {
             throw new Error('Invalid ticket data for upsert');
         }
 
