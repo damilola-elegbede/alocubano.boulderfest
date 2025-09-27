@@ -661,10 +661,6 @@ class SiteNavigation {
                     year: '2025',
                     prefix: '2025'
                 },
-                'weekender-2026-09': {
-                    year: '2026',
-                    prefix: '2026-sept'
-                },
                 '2025-11-weekender': {
                     year: '2025',
                     prefix: '2025-nov'
@@ -978,11 +974,6 @@ class SiteNavigation {
                 '/2025-nov-artists', '/2025-nov-schedule', '/2025-nov-gallery',
                 '/2025-11-weekender/artists', '/2025-11-weekender/schedule', '/2025-11-weekender/gallery'
             ] },
-            // Weekender 2026-09 (handle both redirected paths and direct paths)
-            { overview: '/weekender-2026-09', patterns: [
-                '/2026-sept-artists', '/2026-sept-schedule', '/2026-sept-gallery',
-                '/weekender-2026-09/artists', '/weekender-2026-09/schedule', '/weekender-2026-09/gallery'
-            ] }
         ];
 
         // Check if current page is an event sub-page
@@ -1042,10 +1033,6 @@ class SiteNavigation {
                 '/2025-11-weekender/artists': '/2025-nov-artists',
                 '/2025-11-weekender/schedule': '/2025-nov-schedule',
                 '/2025-11-weekender/gallery': '/2025-nov-gallery',
-                // 2026-09 Weekender
-                '/weekender-2026-09/artists': '/2026-sept-artists',
-                '/weekender-2026-09/schedule': '/2026-sept-schedule',
-                '/weekender-2026-09/gallery': '/2026-sept-gallery',
                 // Boulder Fest 2025
                 '/boulder-fest-2025/artists': '/2025-artists',
                 '/boulder-fest-2025/schedule': '/2025-schedule',
@@ -1071,12 +1058,10 @@ class SiteNavigation {
             '/boulder-fest-2025', '/2025-artists', '/2025-schedule', '/2025-gallery',
             '/boulder-fest-2026', '/2026-artists', '/2026-schedule', '/2026-gallery',
             '/2025-11-weekender', '/2025-nov-artists', '/2025-nov-schedule', '/2025-nov-gallery',
-            '/weekender-2026-09', '/2026-sept-artists', '/2026-sept-schedule', '/2026-sept-gallery',
             // Also include the actual paths after redirect
             '/boulder-fest-2025/artists', '/boulder-fest-2025/schedule', '/boulder-fest-2025/gallery',
             '/boulder-fest-2026/artists', '/boulder-fest-2026/schedule', '/boulder-fest-2026/gallery',
             '/2025-11-weekender/artists', '/2025-11-weekender/schedule', '/2025-11-weekender/gallery',
-            '/weekender-2026-09/artists', '/weekender-2026-09/schedule', '/weekender-2026-09/gallery'
         ];
 
         if (allEventPaths.includes(currentPath)) {

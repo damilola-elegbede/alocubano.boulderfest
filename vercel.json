@@ -99,14 +99,6 @@
       "destination": "/pages/events/2026-boulder/$1"
     },
     {
-      "source": "/weekender-2026-09",
-      "destination": "/pages/events/2026-weekender/index"
-    },
-    {
-      "source": "/weekender-2026-09/(artists|schedule|gallery)",
-      "destination": "/pages/events/2026-weekender/$1"
-    },
-    {
       "source": "/2025-11-weekender",
       "destination": "/pages/events/2025-11-weekender/index"
     },
@@ -165,21 +157,6 @@
       "permanent": true
     },
     {
-      "source": "/2026-sept-artists",
-      "destination": "/weekender-2026-09/artists",
-      "permanent": true
-    },
-    {
-      "source": "/2026-sept-schedule",
-      "destination": "/weekender-2026-09/schedule",
-      "permanent": true
-    },
-    {
-      "source": "/2026-sept-gallery",
-      "destination": "/weekender-2026-09/gallery",
-      "permanent": true
-    },
-    {
       "source": "/2025-nov-artists",
       "destination": "/2025-11-weekender/artists",
       "permanent": true
@@ -211,11 +188,6 @@
     },
     {
       "source": "/boulder-fest-2026/tickets",
-      "destination": "/tickets",
-      "permanent": true
-    },
-    {
-      "source": "/weekender-2026-09/tickets",
       "destination": "/tickets",
       "permanent": true
     },
