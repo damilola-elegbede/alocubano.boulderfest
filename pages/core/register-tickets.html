@@ -963,6 +963,18 @@
               result: result
             });
 
+            // Log the actual result details
+            console.log('[FRONTEND] Full registration result:', result);
+            if (result.results) {
+              result.results.forEach((r, i) => {
+                console.log(`[FRONTEND] Ticket ${i} result:`, {
+                  ticketId: r.ticketId,
+                  status: r.status,
+                  attendee: r.attendee
+                });
+              });
+            }
+
             if (response.ok) {
               this.showSuccess(result);
             } else {
@@ -1006,6 +1018,24 @@
 
           // Create wallet buttons for registered tickets
           this.createWalletButtons(result);
+
+          // After 3 seconds, reload the registration status to verify
+          setTimeout(async () => {
+            console.log('[FRONTEND] Verifying registration status after success...');
+            try {
+              const response = await fetch(`/api/registration?token=${this.token}`);
+              const data = await response.json();
+              console.log('[FRONTEND] Post-registration status check:', {
+                tickets: data.tickets?.map(t => ({
+                  id: t.ticketId,
+                  status: t.status,
+                  attendee: t.attendee
+                }))
+              });
+            } catch (error) {
+              console.error('[FRONTEND] Failed to verify status:', error);
+            }
+          }, 3000);
 
           // Scroll to success message
           document.getElementById('success-state').scrollIntoView({

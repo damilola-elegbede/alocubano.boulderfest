@@ -100,9 +100,15 @@ public/css/
 public/js/
 public/images/
 
-# API test files
+# API test and debug files (reduce bundle analysis)
 api/**/*.test.js
 api/**/*.spec.js
+api/**/test-*.js
+api/admin/test-*.js
+api/admin/debug-*.js
+api/monitoring/*.js
+api/security/audit-*.js
+api/performance/*.js
 
 # Lib test files  
 lib/**/*.test.js

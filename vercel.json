@@ -3,19 +3,30 @@
   "framework": null,
   "cleanUrls": true,
   "trailingSlash": false,
-  "buildCommand": "npm run migrate:vercel && npm run bootstrap:vercel && npm run build",
+  "buildCommand": "(npm run migrate:vercel & npm run bootstrap:vercel) && npm run build",
   "functions": {
     "api/docs.js": {
       "maxDuration": 10
     },
     "api/admin/*.js": {
-      "maxDuration": 15
+      "maxDuration": 15,
+      "includeFiles": "lib/**"
     },
     "api/payments/*.js": {
-      "maxDuration": 30
+      "maxDuration": 30,
+      "includeFiles": "lib/**"
     },
     "api/tickets/*.js": {
-      "maxDuration": 20
+      "maxDuration": 20,
+      "includeFiles": "lib/**"
+    },
+    "api/registration/*.js": {
+      "maxDuration": 20,
+      "includeFiles": "lib/**"
+    },
+    "api/health/*.js": {
+      "maxDuration": 5,
+      "includeFiles": "lib/database.js"
     }
   },
   "crons": [

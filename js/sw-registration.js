@@ -118,7 +118,8 @@ class ServiceWorkerManager {
 
         switch (type) {
         case 'CACHE_CLEANUP_COMPLETE':
-            console.log(`Service Worker cache cleanup: ${data.cleanedCount} entries removed`);
+            // Fix: event.data contains cleanedCount directly, not in a data property
+            console.log(`Service Worker cache cleanup: ${event.data.cleanedCount} entries removed`);
             break;
 
         case 'SW_METRICS':
