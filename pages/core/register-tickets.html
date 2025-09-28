@@ -669,9 +669,9 @@
           const allCompleted = completedTickets.length === this.registrationData.tickets.length;
 
           if (allCompleted) {
-            // All tickets are registered - show success state instead
-            console.log('[FRONTEND] All tickets already registered, showing success state');
-            this.showAlreadyRegisteredState();
+            // All tickets are registered - redirect to view page
+            console.log('[FRONTEND] All tickets already registered, redirecting to view page');
+            window.location.href = `/view-tickets?token=${this.token}`;
             return;
           }
 
@@ -1007,68 +1007,7 @@
           }
         }
 
-        showAlreadyRegisteredState() {
-          // Hide registration form
-          document.getElementById('registration-form').style.display = 'none';
-
-          // Create a success-like message for already registered tickets
-          const successState = document.getElementById('success-state');
-
-          const registeredTicketsInfo = this.registrationData.tickets.map(ticket => `
-            <div class="ticket-confirmation">
-              <h4>${ticket.ticketType}</h4>
-              <p><strong>Ticket ID:</strong> ${ticket.ticketId}</p>
-              ${ticket.attendee ? `
-                <p><strong>Attendee:</strong> ${ticket.attendee.firstName} ${ticket.attendee.lastName}</p>
-                <p><strong>Email:</strong> ${ticket.attendee.email}</p>
-                <p><strong>Registered:</strong> ${new Date(ticket.registeredAt).toLocaleString()}</p>
-              ` : ''}
-              <div class="wallet-buttons">
-                <a href="/api/tickets/apple-wallet/${ticket.ticketId}"
-                   class="wallet-button apple-wallet">
-                  📱 Apple Wallet
-                </a>
-                <a href="/api/tickets/google-wallet/${ticket.ticketId}"
-                   class="wallet-button google-wallet">
-                  📱 Google Pay
-                </a>
-              </div>
-            </div>
-          `).join('');
-
-          successState.innerHTML = `
-            <h2>✅ Registration Already Complete</h2>
-
-            <p style="margin: var(--space-lg) 0;">
-              All tickets have been successfully registered. No further action is required.
-            </p>
-
-            <div class="registered-tickets-summary">
-              <h3>Registered Tickets</h3>
-              ${registeredTicketsInfo}
-            </div>
-
-            <div class="next-steps">
-              <h3>Next Steps</h3>
-              <ul>
-                <li>📱 Add tickets to your phone's wallet using the buttons above</li>
-                <li>📅 Mark your calendar: May 15-17, 2026</li>
-                <li>📍 Venue: Avalon Ballroom, Boulder, CO</li>
-                <li>📧 Check your email for confirmation</li>
-              </ul>
-            </div>
-
-            <div class="action-buttons">
-              <a href="/home" class="button-type button-type-primary">Return to Home</a>
-              <a href="/my-tickets" class="button-type button-type-secondary">View All Tickets</a>
-            </div>
-          `;
-
-          successState.style.display = 'block';
-
-          // Scroll to success message
-          successState.scrollIntoView({ behavior: 'smooth' });
-        }
+        // Removed showAlreadyRegisteredState function - now redirecting to view-tickets page
 
         showSuccess(result) {
           // Hide form, show success
@@ -1079,22 +1018,10 @@
 
           document.getElementById('success-state').style.display = 'block';
 
-          // After 3 seconds, reload the registration status to verify
-          setTimeout(async () => {
-            console.log('[FRONTEND] Verifying registration status after success...');
-            try {
-              const response = await fetch(`/api/registration?token=${this.token}`);
-              const data = await response.json();
-              console.log('[FRONTEND] Post-registration status check:', {
-                tickets: data.tickets?.map(t => ({
-                  id: t.ticketId,
-                  status: t.status,
-                  attendee: t.attendee
-                }))
-              });
-            } catch (error) {
-              console.error('[FRONTEND] Failed to verify status:', error);
-            }
+          // After 3 seconds, redirect to the view page to see registered tickets
+          setTimeout(() => {
+            console.log('[FRONTEND] Registration complete, redirecting to view page...');
+            window.location.href = `/view-tickets?token=${this.token}`;
           }, 3000);
 
           // Scroll to success message
@@ -1150,6 +1077,7 @@
             <h2>Registration Complete</h2>
 
             <p style="margin: var(--space-lg) 0;">Your tickets have been successfully registered.</p>
+            <p style="margin: var(--space-lg) 0; color: var(--color-text-secondary);">Redirecting to your tickets...</p>
 
             <!-- Registered Attendees Summary -->
             ${registeredTicketsInfo.length > 0 ? `
