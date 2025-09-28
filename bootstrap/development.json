@@ -499,8 +499,8 @@
         "currency": "usd"
       },
       "email": {
-        "from_name": "Dev Festival",
-        "reply_to": "dev@localhost",
+        "from_name": "Test Festival",
+        "reply_to": "test@example.com",
         "template_style": "default"
       },
       "wallet": {

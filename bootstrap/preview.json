@@ -8,11 +8,11 @@
 
   "events": [
     {
-      "slug": "test-weekender-2025",
-      "name": "Test Salsa Weekender 2025",
+      "slug": "test-weekender",
+      "name": "Test Weekender",
       "type": "weekender",
       "status": "upcoming",
-      "description": "A test weekend event for preview and staging environments. This is test data for development purposes.",
+      "description": "Test weekend event for testing ticketing flows in non-production environments.",
 
       "venue": {
         "name": "Test Venue",
@@ -229,11 +229,11 @@
     },
 
     {
-      "slug": "test-festival-2025",
-      "name": "Test Festival 2025",
+      "slug": "test-festival",
+      "name": "Test Boulder Fest",
       "type": "festival",
       "status": "upcoming",
-      "description": "A test festival event for preview and staging environments. This is test data for development purposes.",
+      "description": "Test festival event for testing complete ticketing flows in non-production environments.",
 
       "venue": {
         "name": "Test Ballroom",
