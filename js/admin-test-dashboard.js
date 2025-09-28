@@ -13,43 +13,43 @@ const logger = {
     debug: (...args) => console.debug('[AdminTestDashboard]', ...args)
 };
 
-// Test dashboard configuration - with TEST prefixes for test items
+// Test dashboard configuration - updated for API-driven system
 const TEST_DASHBOARD_CONFIG = {
     testItems: {
-        'vip-pass': {
+        'test-vip-pass': {
             name: '[TEST] VIP Pass',
             price: 150.00,
-            type: 'vip-pass',
+            type: 'test-vip-pass',
             description: 'Full festival access with VIP perks'
         },
-        'weekend-pass': {
-            name: '[TEST] Weekend Pass',
+        'test-weekender-pass': {
+            name: '[TEST] Weekender Pass',
             price: 75.00,
-            type: 'weekend-pass',
+            type: 'test-weekender-pass',
             description: 'Access to all weekend events'
         },
-        'friday-pass': {
+        'test-friday-pass': {
             name: '[TEST] Friday Pass',
             price: 35.00,
-            type: 'friday-pass',
+            type: 'test-friday-pass',
             description: 'Friday night access'
         },
-        'saturday-pass': {
+        'test-saturday-pass': {
             name: '[TEST] Saturday Pass',
             price: 35.00,
-            type: 'saturday-pass',
+            type: 'test-saturday-pass',
             description: 'Saturday access'
         },
-        'sunday-pass': {
+        'test-sunday-pass': {
             name: '[TEST] Sunday Pass',
             price: 35.00,
-            type: 'sunday-pass',
+            type: 'test-sunday-pass',
             description: 'Sunday access'
         },
-        'donation': {
+        'test-donation': {
             name: '[TEST] Festival Donation',
             price: 25.00,
-            type: 'donation',
+            type: 'test-donation',
             description: 'Support the festival'
         }
     },
@@ -250,13 +250,13 @@ async function addTestItemToCart(itemType) {
     // Add TEST- prefix for cart storage
     const testItemType = `TEST-${itemType}`;
 
-    // Determine test event details based on ticket type
+    // Determine test event details based on ticket type - simplified for API-driven system
     let testEventId;
     let testVenue = 'Test Ballroom';
     let testEventDate = '2028-02-29'; // Leap year date for test
 
-    // Set event ID based on ticket type (using integer IDs for test events)
-    if (itemType.includes('weekend') || itemType.includes('friday') || itemType.includes('saturday') || itemType.includes('sunday')) {
+    // Set event ID based on ticket type (using negative IDs for test events)
+    if (itemType.includes('weekender') || itemType.includes('friday') || itemType.includes('saturday') || itemType.includes('sunday')) {
         testEventId = -2; // Test Weekender (negative ID for test)
     } else {
         testEventId = -1; // Test Festival (negative ID for test)

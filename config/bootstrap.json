@@ -1,0 +1,170 @@
+{
+  "version": "1.0.0",
+  "generated": "2025-01-28T00:00:00Z",
+  "description": "Bootstrap configuration for A Lo Cubano events and ticket types",
+
+  "events": {
+    "1": {
+      "id": 1,
+      "name": "A Lo Cubano Boulder Fest 2026",
+      "slug": "boulderfest-2026",
+      "type": "festival",
+      "status": "upcoming",
+      "description": "The premier Cuban salsa festival in Boulder, featuring world-class instructors, live music, and three nights of social dancing.",
+      "venue": "Avalon Ballroom, Boulder, CO",
+      "start_date": "2026-05-15",
+      "end_date": "2026-05-17",
+      "display_order": 1,
+      "is_featured": true,
+      "is_visible": true
+    },
+    "4": {
+      "id": 4,
+      "name": "A Lo Cubano Boulder Fest 2025",
+      "slug": "boulderfest-2025",
+      "type": "festival",
+      "status": "completed",
+      "description": "The 2025 Cuban salsa festival in Boulder - featuring world-class instructors and live music.",
+      "venue": "Avalon Ballroom, Boulder, CO",
+      "start_date": "2025-05-16",
+      "end_date": "2025-05-18",
+      "display_order": 3,
+      "is_featured": false,
+      "is_visible": false
+    },
+    "5": {
+      "id": 5,
+      "name": "November Salsa Weekender 2025",
+      "slug": "weekender-2025-11",
+      "type": "weekender",
+      "status": "upcoming",
+      "description": "An intimate weekend of Cuban salsa workshops and social dancing in the heart of Boulder.",
+      "venue": "Boulder Theater, Boulder, CO",
+      "start_date": "2025-11-08",
+      "end_date": "2025-11-09",
+      "display_order": 2,
+      "is_featured": true,
+      "is_visible": true
+    },
+    "-1": {
+      "id": -1,
+      "name": "Test Festival",
+      "slug": "test-festival",
+      "type": "festival",
+      "status": "test",
+      "description": "Test festival event for development and testing purposes only.",
+      "venue": "Test Ballroom, Boulder, CO",
+      "start_date": "2024-01-01",
+      "end_date": "2024-01-03",
+      "display_order": 998,
+      "is_featured": false,
+      "is_visible": false
+    },
+    "-2": {
+      "id": -2,
+      "name": "Test Weekender",
+      "slug": "test-weekender",
+      "type": "weekender",
+      "status": "test",
+      "description": "Test weekender event for development and testing purposes only.",
+      "venue": "Test Ballroom, Boulder, CO",
+      "start_date": "2024-01-01",
+      "end_date": "2024-01-02",
+      "display_order": 999,
+      "is_featured": false,
+      "is_visible": false
+    }
+  },
+
+  "ticket_types": {
+    "2025-11-weekender-full": {
+      "id": "2025-11-weekender-full",
+      "event_id": 5,
+      "name": "Full Pass",
+      "description": "Full weekend access to workshops and socials",
+      "price_cents": 6500,
+      "status": "available",
+      "sort_order": 1
+    },
+    "2025-11-weekender-class": {
+      "id": "2025-11-weekender-class",
+      "event_id": 5,
+      "name": "Single Class",
+      "description": "Access to one workshop session",
+      "price_cents": 2500,
+      "status": "available",
+      "sort_order": 2
+    },
+    "2026-early-bird-full": {
+      "id": "2026-early-bird-full",
+      "event_id": 1,
+      "name": "Early Bird Full Pass",
+      "description": "Special early pricing for full festival access",
+      "price_cents": null,
+      "status": "coming-soon",
+      "sort_order": 1
+    },
+    "2026-regular-full": {
+      "id": "2026-regular-full",
+      "event_id": 1,
+      "name": "Full Festival Pass",
+      "description": "Complete 3-day festival experience",
+      "price_cents": null,
+      "status": "coming-soon",
+      "sort_order": 2
+    },
+    "2026-friday-pass": {
+      "id": "2026-friday-pass",
+      "event_id": 1,
+      "name": "Friday Pass",
+      "description": "Friday workshops and social dance",
+      "price_cents": null,
+      "status": "coming-soon",
+      "sort_order": 3
+    },
+    "2026-saturday-pass": {
+      "id": "2026-saturday-pass",
+      "event_id": 1,
+      "name": "Saturday Pass",
+      "description": "Saturday workshops and social dance",
+      "price_cents": null,
+      "status": "coming-soon",
+      "sort_order": 4
+    },
+    "2026-sunday-pass": {
+      "id": "2026-sunday-pass",
+      "event_id": 1,
+      "name": "Sunday Pass",
+      "description": "Sunday workshops and social dance",
+      "price_cents": null,
+      "status": "coming-soon",
+      "sort_order": 5
+    },
+    "test-basic": {
+      "id": "test-basic",
+      "event_id": -1,
+      "name": "Test Basic Ticket",
+      "description": "Basic test ticket for development",
+      "price_cents": 100,
+      "status": "test",
+      "sort_order": 1
+    },
+    "test-premium": {
+      "id": "test-premium",
+      "event_id": -2,
+      "name": "Test Premium Ticket",
+      "description": "Premium test ticket for development",
+      "price_cents": 500,
+      "status": "test",
+      "sort_order": 1
+    }
+  },
+
+  "metadata": {
+    "currency": "USD",
+    "timezone": "America/Denver",
+    "max_tickets_per_transaction": 10,
+    "ticket_statuses": ["available", "sold-out", "coming-soon", "test"],
+    "event_statuses": ["upcoming", "completed", "test"]
+  }
+}

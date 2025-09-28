@@ -3,92 +3,150 @@
  * Handles ticket selection, quantity management, and price calculation
  */
 
+import { ticketDataService } from './lib/ticket-data-service.js';
+
 class TicketSelection {
     constructor() {
         this.selectedTickets = new Map();
-        this.eventId = this.detectEventId();
+        this.eventId = null;
+        this.ticketData = new Map();
+        this.isLoading = true;
         this.init();
     }
 
-    // Deterministic mapping table: ticket type -> event ID (integer)
-    static TICKET_TYPE_TO_EVENT_MAP = {
-        // November 2025 Weekender (event ID: 2)
-        '2025-11-weekender-full': 2,
-        '2025-11-weekender-class': 2,
-
-        // Boulder Fest 2026 (event ID: 3)
-        '2026-early-bird-full': 3,
-        '2026-regular-full': 3,
-        '2026-friday-pass': 3,
-        '2026-saturday-pass': 3,
-        '2026-sunday-pass': 3,
-        '2026-friday-social': 3,
-        '2026-saturday-social': 3,
-
-        // Boulder Fest 2025 (event ID: 1)
-        '2025-early-bird-full': 1,
-        '2025-regular-full': 1,
-        '2025-friday-pass': 1,
-        '2025-saturday-pass': 1,
-        '2025-sunday-pass': 1
-    };
-
-    static getEventIdFromTicketType(ticketType) {
-        const eventId = TicketSelection.TICKET_TYPE_TO_EVENT_MAP[ticketType];
-        if (!eventId) {
-            console.error(`❌ No event mapping found for ticket type: ${ticketType}`);
-            console.error('Available mappings:', Object.keys(TicketSelection.TICKET_TYPE_TO_EVENT_MAP));
-            throw new Error(`No event mapping found for ticket type: ${ticketType}. Add mapping to TICKET_TYPE_TO_EVENT_MAP.`);
-        }
-        return eventId;
-    }
-
-    detectEventId() {
-        // Find all ticket types on the current page (including flip cards)
-        const ticketCards = document.querySelectorAll('[data-ticket-type]');
-        const ticketTypesOnPage = Array.from(ticketCards).map(card => card.dataset.ticketType);
-
-        if (ticketTypesOnPage.length === 0) {
-            console.warn('No ticket types found on page, falling back to default');
+    async detectEventId() {
+        try {
+            return await ticketDataService.detectEventIdFromPage();
+        } catch (error) {
+            console.error('Failed to detect event ID:', error);
             return 3; // Default to boulderfest-2026 (event ID: 3)
         }
-
-        // Get event ID from first ticket type (all tickets on a page should belong to same event)
-        const firstTicketType = ticketTypesOnPage[0];
-        const eventId = TicketSelection.getEventIdFromTicketType(firstTicketType);
-
-        // Verify all tickets on page belong to same event
-        const eventIds = ticketTypesOnPage.map(type => {
-            try {
-                return TicketSelection.getEventIdFromTicketType(type);
-            } catch (error) {
-                console.error(`Failed to map ticket type ${type}:`, error.message);
-                throw error;
-            }
-        });
-
-        const uniqueEventIds = [...new Set(eventIds)];
-        if (uniqueEventIds.length > 1) {
-            throw new Error(`Mixed events on page! Found tickets for events: ${uniqueEventIds.join(', ')}`);
-        }
-
-        console.log(`✅ Detected event ID: ${eventId} from ${ticketTypesOnPage.length} ticket types`);
-        return eventId;
     }
 
     async init() {
-        // Initialize ticket cards with default attributes for testing
-        this.initializeTicketCards();
+        try {
+            // Show loading state
+            this.showLoadingState();
 
-        // Sync with cart state immediately - localStorage is always available
-        this.syncWithCartState();
+            // Load ticket data from API
+            await this.loadTicketData();
 
-        this.bindEvents();
+            // Detect event ID from loaded data
+            this.eventId = await this.detectEventId();
 
-        // Wait for cart manager only for write operations
-        await this.waitForCartManager();
+            // Initialize ticket cards with default attributes for testing
+            this.initializeTicketCards();
 
-        this.updateDisplay();
+            // Sync with cart state immediately - localStorage is always available
+            this.syncWithCartState();
+
+            this.bindEvents();
+
+            // Wait for cart manager only for write operations
+            await this.waitForCartManager();
+
+            this.updateDisplay();
+
+            // Hide loading state
+            this.hideLoadingState();
+
+        } catch (error) {
+            console.error('Failed to initialize ticket selection:', error);
+            this.showErrorState(error.message);
+        }
+    }
+
+    async loadTicketData() {
+        try {
+            const tickets = await ticketDataService.loadTicketData();
+
+            // Cache ticket data for quick lookup
+            this.ticketData.clear();
+            for (const ticket of tickets) {
+                // Use ticket_type field from API, fallback to type field
+                const ticketType = ticket.ticket_type || ticket.type;
+                if (ticketType) {
+                    this.ticketData.set(ticketType, ticket);
+                }
+            }
+
+            this.isLoading = false;
+            console.log(`✅ Loaded ${tickets.length} ticket types`);
+
+        } catch (error) {
+            this.isLoading = false;
+            console.error('Failed to load ticket data:', error);
+            throw error;
+        }
+    }
+
+    showLoadingState() {
+        // Add loading class to ticket cards
+        document.querySelectorAll('.ticket-card').forEach(card => {
+            card.classList.add('loading');
+            card.setAttribute('aria-busy', 'true');
+
+            // Disable interactions during loading
+            const buttons = card.querySelectorAll('button, .qty-btn, .add-to-cart-btn');
+            buttons.forEach(btn => {
+                btn.disabled = true;
+                btn.setAttribute('data-loading', 'true');
+            });
+        });
+    }
+
+    hideLoadingState() {
+        // Remove loading class from ticket cards
+        document.querySelectorAll('.ticket-card').forEach(card => {
+            card.classList.remove('loading');
+            card.removeAttribute('aria-busy');
+
+            // Re-enable interactions
+            const buttons = card.querySelectorAll('button, .qty-btn, .add-to-cart-btn');
+            buttons.forEach(btn => {
+                btn.disabled = false;
+                btn.removeAttribute('data-loading');
+            });
+        });
+    }
+
+    showErrorState(message) {
+        // Show error message to user
+        const errorContainer = document.querySelector('.ticket-selection-error') ||
+                              this.createErrorContainer();
+
+        errorContainer.textContent = `Error loading tickets: ${message}`;
+        errorContainer.style.display = 'block';
+
+        // Disable all ticket interactions
+        document.querySelectorAll('.ticket-card').forEach(card => {
+            card.classList.add('disabled');
+            card.setAttribute('aria-disabled', 'true');
+
+            const buttons = card.querySelectorAll('button, .qty-btn, .add-to-cart-btn');
+            buttons.forEach(btn => {
+                btn.disabled = true;
+            });
+        });
+    }
+
+    createErrorContainer() {
+        const container = document.createElement('div');
+        container.className = 'ticket-selection-error';
+        container.style.cssText = `
+            background: var(--color-red, #dc3545);
+            color: white;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+            text-align: center;
+            display: none;
+        `;
+
+        const ticketSection = document.querySelector('.ticket-selection') || document.body;
+        ticketSection.insertBefore(container, ticketSection.firstChild);
+
+        return container;
     }
 
     initializeTicketCards() {
@@ -124,6 +182,38 @@ class TicketSelection {
                 btn.setAttribute('data-ready', 'true');
                 btn.disabled = false;
             });
+        });
+
+        // Update ticket cards with API data
+        this.updateTicketCardsFromAPI();
+    }
+
+    async updateTicketCardsFromAPI() {
+        // Update ticket cards with data from API
+        document.querySelectorAll('.ticket-card[data-ticket-id]').forEach(async(card) => {
+            const ticketId = card.dataset.ticketId;
+
+            try {
+                const ticketData = await ticketDataService.getTicketById(ticketId);
+                if (ticketData) {
+                    // Update price display
+                    const priceElement = card.querySelector('.ticket-price');
+                    if (priceElement) {
+                        const formattedPrice = `$${(ticketData.price_cents / 100).toFixed(0)}`;
+                        priceElement.textContent = formattedPrice;
+                    }
+
+                    // Update any other data that should come from API
+                    // (name, description, etc. could be added here if needed)
+                }
+            } catch (error) {
+                console.error(`Failed to load data for ticket ${ticketId}:`, error);
+                // Keep the "Loading..." placeholder or show an error state
+                const priceElement = card.querySelector('.ticket-price');
+                if (priceElement && priceElement.textContent === 'Loading...') {
+                    priceElement.textContent = 'Price unavailable';
+                }
+            }
         });
     }
 
@@ -240,7 +330,7 @@ class TicketSelection {
         return isQuantityButton || (isQuantityArea && !isAddToCartBtn);
     }
 
-    handleQuantityChange(event) {
+    async handleQuantityChange(event) {
         event.stopPropagation();
         const btn = event.target;
         const card = btn.closest('.ticket-card');
@@ -250,15 +340,25 @@ class TicketSelection {
             return;
         }
 
-        // Skip if ticket is unavailable
-        if (card.classList.contains('unavailable')) {
+        // Skip if ticket is unavailable or still loading
+        if (card.classList.contains('unavailable') || this.isLoading) {
             return;
         }
 
-        const ticketType = card.dataset.ticketType;
-        const price = parseInt(card.dataset.price);
+        const ticketType = card.dataset.ticketId;
         const action = btn.dataset.action;
         const quantitySpan = card.querySelector('.quantity');
+
+        // Get ticket data from API cache
+        const ticketData = this.ticketData.get(ticketType);
+        if (!ticketData) {
+            console.error(`No ticket data found for type: ${ticketType}`);
+            return;
+        }
+
+        // Use API data for price and name
+        const price = ticketData.price_cents;
+        const ticketName = ticketData.name;
 
         let currentQuantity = parseInt(quantitySpan.textContent) || 0;
 
@@ -278,10 +378,6 @@ class TicketSelection {
             btn.classList.remove('cart-updating');
             quantitySpan.classList.remove('updating');
         }, 500);
-
-        // Get ticket name from either h4 (regular cards) or .ticket-type (vertical design)
-        const nameElement = card.querySelector('h4') || card.querySelector('.ticket-type');
-        const ticketName = nameElement ? nameElement.textContent.trim() : 'Ticket';
 
         if (currentQuantity > 0) {
             this.selectedTickets.set(ticketType, {
@@ -313,19 +409,34 @@ class TicketSelection {
         );
     }
 
-    handleAddToCartClick(event) {
+    async handleAddToCartClick(event) {
         event.stopPropagation();
         const btn = event.target;
-        const ticketType = btn.dataset.ticketType;
-        const price = parseInt(btn.dataset.price);
+        const ticketType = btn.dataset.ticketId;
 
-        if (!ticketType || !price) {
-            console.error('Missing ticket data for add to cart button');
+        if (!ticketType) {
+            console.error('Missing ticket type for add to cart button');
             return;
         }
 
+        // Skip if still loading
+        if (this.isLoading) {
+            return;
+        }
+
+        // Get ticket data from API cache
+        const ticketData = this.ticketData.get(ticketType);
+        if (!ticketData) {
+            console.error(`No ticket data found for type: ${ticketType}`);
+            return;
+        }
+
+        // Use API data for price and name
+        const price = ticketData.price_cents;
+        const ticketName = ticketData.name;
+
         // Find corresponding ticket card (regular or flip card)
-        const card = document.querySelector(`[data-ticket-type="${ticketType}"]`);
+        const card = document.querySelector(`[data-ticket-id="${ticketType}"]`);
         if (!card) {
             console.error('Could not find ticket card for', ticketType);
             return;
@@ -334,10 +445,6 @@ class TicketSelection {
         // Get current quantity
         const quantitySpan = card.querySelector('.quantity');
         let currentQuantity = parseInt(quantitySpan.textContent) || 0;
-
-        // Get ticket name from either h4 (regular cards) or .ticket-type (vertical design)
-        const nameElement = card.querySelector('h4') || card.querySelector('.ticket-type');
-        const ticketName = nameElement ? nameElement.textContent.trim() : 'Ticket';
 
         // Add one ticket
         currentQuantity++;
@@ -426,7 +533,7 @@ class TicketSelection {
 
         // Reset all ticket cards first
         document.querySelectorAll('.ticket-card').forEach((card) => {
-            const ticketType = card.dataset.ticketType;
+            const ticketType = card.dataset.ticketId;
             const quantitySpan = card.querySelector('.quantity');
 
             // Skip TEST- tickets (managed by Test Dashboard)

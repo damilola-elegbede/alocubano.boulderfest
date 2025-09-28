@@ -659,21 +659,9 @@ function groupTicketsByEvent(tickets) {
     tickets.forEach(ticket => {
         let eventId = ticket.eventId;
 
-        // If no eventId, try to derive it from ticket type
-        if (!eventId && ticket.type) {
-            try {
-                // Import the mapping function - assuming it's available globally
-                if (typeof TicketSelection !== 'undefined' && TicketSelection.getEventIdFromTicketType) {
-                    eventId = TicketSelection.getEventIdFromTicketType(ticket.type);
-                } else {
-                    console.error(`❌ TicketSelection.getEventIdFromTicketType not available for ticket type: ${ticket.type}`);
-                    console.error('Ticket details:', ticket);
-                    throw new Error(`Cannot determine event ID for ticket type: ${ticket.type}. TicketSelection mapping not available.`);
-                }
-            } catch (error) {
-                console.error(`❌ Failed to determine event ID for ticket:`, ticket);
-                throw new Error(`Cannot group tickets: ${error.message}`);
-            }
+        // If no eventId, use the one provided in ticket data (API-driven system)
+        if (!eventId && ticket.eventId) {
+            eventId = ticket.eventId;
         }
 
         if (!eventId) {
@@ -719,27 +707,25 @@ async function getEventDisplayName(eventId) {
     }
 }
 
-// Synchronous fallback for immediate use (will be replaced by async version)
+// Synchronous fallback for immediate use (simplified for API-driven system)
 function getEventDisplayNameSync(eventId) {
-    // Fallback mapping for immediate use before async service loads
+    // Basic fallback for common event IDs while async service loads
     const fallbackMap = {
-        'weekender-2025-11': 'November 2025 Weekender Tickets',
-        '2025-11-weekender': 'November 2025 Weekender Tickets',
-        'boulderfest-2026': 'Boulder Fest 2026 Tickets',
-        'boulderfest-2025': 'Boulder Fest 2025 Tickets',
-        'Test Weekender': '[TEST] Weekender Tickets',
-        'Test Festival': '[TEST] Festival Tickets',
-        'test-weekender': '[TEST] Weekender Tickets',
-        'test-festival': '[TEST] Festival Tickets',
-        'alocubano-boulderfest-2026': 'Boulder Fest 2026 Tickets',
-        'november-2025-weekender': 'November 2025 Weekender Tickets',
-        1: 'Boulder Fest 2026 Tickets',
+        1: 'Boulder Fest 2025 Tickets',
         2: 'November 2025 Weekender Tickets',
-        '-1': '[TEST] Weekender Tickets',
-        '-2': '[TEST] Festival Tickets'
+        3: 'Boulder Fest 2026 Tickets',
+        '-1': '[TEST] Festival Tickets',
+        '-2': '[TEST] Weekender Tickets'
     };
 
-    return fallbackMap[eventId] || 'A Lo Cubano Tickets';
+    // For numeric event IDs, use the fallback map
+    if (typeof eventId === 'number' || /^-?\d+$/.test(eventId)) {
+        const numericId = typeof eventId === 'number' ? eventId : parseInt(eventId);
+        return fallbackMap[numericId] || 'A Lo Cubano Tickets';
+    }
+
+    // For other identifiers, use generic fallback
+    return 'A Lo Cubano Tickets';
 }
 
 // Create a cart section element

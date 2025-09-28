@@ -1,0 +1,352 @@
+{
+  "version": "1.0.0",
+  "generated": "2025-01-28T00:00:00Z",
+  "environment": "production",
+
+  "events": {
+    "boulder-fest-2025": {
+      "id": "boulder-fest-2025",
+      "name": "A Lo Cubano Boulder Fest 2025",
+      "date": "2025-05-15",
+      "end_date": "2025-05-17",
+      "venue": "Avalon Ballroom, Boulder, CO",
+      "status": "past",
+      "display_order": 1,
+      "metadata": {
+        "description": "3-day Cuban Salsa Festival",
+        "timezone": "America/Denver",
+        "capacity": 500,
+        "image_url": "/images/events/boulder-fest-2025.jpg"
+      }
+    },
+
+    "weekender-2025-11": {
+      "id": "weekender-2025-11",
+      "name": "November 2025 Weekender",
+      "date": "2025-11-07",
+      "end_date": "2025-11-09",
+      "venue": "Avalon Ballroom, Boulder, CO",
+      "status": "active",
+      "display_order": 2,
+      "metadata": {
+        "description": "Fall Weekend Intensive",
+        "timezone": "America/Denver",
+        "capacity": 200,
+        "image_url": "/images/events/weekender-2025-11.jpg"
+      }
+    },
+
+    "boulder-fest-2026": {
+      "id": "boulder-fest-2026",
+      "name": "A Lo Cubano Boulder Fest 2026",
+      "date": "2026-05-15",
+      "end_date": "2026-05-17",
+      "venue": "Avalon Ballroom, Boulder, CO",
+      "status": "active",
+      "display_order": 3,
+      "metadata": {
+        "description": "3-day Cuban Salsa Festival",
+        "timezone": "America/Denver",
+        "capacity": 500,
+        "image_url": "/images/events/boulder-fest-2026.jpg",
+        "featured": true
+      }
+    },
+
+    "test-event-1": {
+      "id": "test-event-1",
+      "name": "Test Event Alpha",
+      "date": "2099-12-31",
+      "venue": "Test Venue",
+      "status": "test",
+      "display_order": -1,
+      "metadata": {
+        "description": "Test event for development",
+        "test_mode": true
+      }
+    },
+
+    "test-event-2": {
+      "id": "test-event-2",
+      "name": "Test Event Beta",
+      "date": "2099-12-31",
+      "venue": "Test Venue",
+      "status": "test",
+      "display_order": -2,
+      "metadata": {
+        "description": "Secondary test event",
+        "test_mode": true
+      }
+    }
+  },
+
+  "ticket_types": {
+    "boulder-fest-2026-full-pass": {
+      "id": "boulder-fest-2026-full-pass",
+      "event_id": "boulder-fest-2026",
+      "stripe_price_id": "price_1234567890abcdef",
+      "name": "Full Festival Pass",
+      "description": "Access to all 3 days, workshops, and social dances",
+      "price_cents": 25000,
+      "currency": "USD",
+      "status": "available",
+      "max_quantity": 200,
+      "sold_count": 45,
+      "display_order": 1,
+      "metadata": {
+        "includes_meals": false,
+        "includes_workshops": true,
+        "includes_socials": true,
+        "early_bird": false,
+        "refundable_until": "2026-05-01"
+      },
+      "availability": {
+        "start_date": "2025-01-01T00:00:00Z",
+        "end_date": "2026-05-14T23:59:59Z",
+        "max_per_transaction": 10
+      }
+    },
+
+    "boulder-fest-2026-early-bird": {
+      "id": "boulder-fest-2026-early-bird",
+      "event_id": "boulder-fest-2026",
+      "stripe_price_id": "price_early_bird_2026",
+      "name": "Early Bird Full Pass",
+      "description": "Special pricing for early registrations",
+      "price_cents": 20000,
+      "currency": "USD",
+      "status": "coming-soon",
+      "max_quantity": 50,
+      "sold_count": 0,
+      "display_order": 0,
+      "metadata": {
+        "includes_meals": false,
+        "includes_workshops": true,
+        "includes_socials": true,
+        "early_bird": true,
+        "discount_percentage": 20
+      },
+      "availability": {
+        "start_date": "2026-01-01T00:00:00Z",
+        "end_date": "2026-03-31T23:59:59Z",
+        "max_per_transaction": 4
+      }
+    },
+
+    "boulder-fest-2026-day-pass": {
+      "id": "boulder-fest-2026-day-pass",
+      "event_id": "boulder-fest-2026",
+      "stripe_price_id": "price_day_pass_2026",
+      "name": "Single Day Pass",
+      "description": "Access to one day of the festival",
+      "price_cents": 10000,
+      "currency": "USD",
+      "status": "available",
+      "max_quantity": 150,
+      "sold_count": 12,
+      "display_order": 2,
+      "metadata": {
+        "includes_meals": false,
+        "includes_workshops": true,
+        "includes_socials": true,
+        "pass_type": "day",
+        "valid_days": ["2026-05-15", "2026-05-16", "2026-05-17"]
+      },
+      "availability": {
+        "start_date": "2025-01-01T00:00:00Z",
+        "end_date": "2026-05-14T23:59:59Z",
+        "max_per_transaction": 3
+      }
+    },
+
+    "boulder-fest-2026-social-only": {
+      "id": "boulder-fest-2026-social-only",
+      "event_id": "boulder-fest-2026",
+      "stripe_price_id": "price_social_only_2026",
+      "name": "Social Dance Only Pass",
+      "description": "Access to evening social dances only",
+      "price_cents": 7500,
+      "currency": "USD",
+      "status": "available",
+      "max_quantity": 100,
+      "sold_count": 8,
+      "display_order": 3,
+      "metadata": {
+        "includes_meals": false,
+        "includes_workshops": false,
+        "includes_socials": true,
+        "pass_type": "social"
+      },
+      "availability": {
+        "start_date": "2025-01-01T00:00:00Z",
+        "end_date": "2026-05-14T23:59:59Z",
+        "max_per_transaction": 10
+      }
+    },
+
+    "weekender-2025-11-full": {
+      "id": "weekender-2025-11-full",
+      "event_id": "weekender-2025-11",
+      "stripe_price_id": "price_weekender_202511_full",
+      "name": "Weekend Pass",
+      "description": "Full weekend access to workshops and socials",
+      "price_cents": 15000,
+      "currency": "USD",
+      "status": "available",
+      "max_quantity": 100,
+      "sold_count": 23,
+      "display_order": 1,
+      "metadata": {
+        "includes_workshops": true,
+        "includes_socials": true
+      },
+      "availability": {
+        "start_date": "2025-01-01T00:00:00Z",
+        "end_date": "2025-11-06T23:59:59Z",
+        "max_per_transaction": 10
+      }
+    },
+
+    "weekender-2025-11-day": {
+      "id": "weekender-2025-11-day",
+      "event_id": "weekender-2025-11",
+      "stripe_price_id": "price_weekender_202511_day",
+      "name": "Day Pass",
+      "description": "Single day access",
+      "price_cents": 6000,
+      "currency": "USD",
+      "status": "available",
+      "max_quantity": 50,
+      "sold_count": 5,
+      "display_order": 2,
+      "metadata": {
+        "includes_workshops": true,
+        "includes_socials": false,
+        "pass_type": "day"
+      },
+      "availability": {
+        "start_date": "2025-01-01T00:00:00Z",
+        "end_date": "2025-11-06T23:59:59Z",
+        "max_per_transaction": 3
+      }
+    },
+
+    "boulder-fest-2025-full": {
+      "id": "boulder-fest-2025-full",
+      "event_id": "boulder-fest-2025",
+      "stripe_price_id": "price_2025_full",
+      "name": "Full Festival Pass",
+      "description": "3-day pass (event completed)",
+      "price_cents": 22000,
+      "currency": "USD",
+      "status": "closed",
+      "max_quantity": 200,
+      "sold_count": 187,
+      "display_order": 1,
+      "metadata": {
+        "includes_workshops": true,
+        "includes_socials": true
+      },
+      "availability": {
+        "start_date": "2024-11-01T00:00:00Z",
+        "end_date": "2025-05-14T23:59:59Z"
+      }
+    },
+
+    "test-ticket-basic": {
+      "id": "test-ticket-basic",
+      "event_id": "test-event-1",
+      "stripe_price_id": "price_test_basic",
+      "name": "Test Ticket",
+      "description": "Test ticket for development",
+      "price_cents": 100,
+      "currency": "USD",
+      "status": "test",
+      "max_quantity": 9999,
+      "sold_count": 0,
+      "display_order": -1,
+      "metadata": {
+        "test_mode": true
+      },
+      "availability": {
+        "max_per_transaction": 99
+      }
+    },
+
+    "test-ticket-premium": {
+      "id": "test-ticket-premium",
+      "event_id": "test-event-1",
+      "stripe_price_id": "price_test_premium",
+      "name": "Test Premium Ticket",
+      "description": "Premium test ticket",
+      "price_cents": 500,
+      "currency": "USD",
+      "status": "test",
+      "max_quantity": 9999,
+      "sold_count": 0,
+      "display_order": -2,
+      "metadata": {
+        "test_mode": true
+      },
+      "availability": {
+        "max_per_transaction": 99
+      }
+    }
+  },
+
+  "ticket_states": {
+    "available": {
+      "purchasable": true,
+      "display": true,
+      "message": null,
+      "badge_color": "green",
+      "badge_text": "Available"
+    },
+    "sold-out": {
+      "purchasable": false,
+      "display": true,
+      "message": "This ticket type is sold out",
+      "badge_color": "red",
+      "badge_text": "Sold Out"
+    },
+    "coming-soon": {
+      "purchasable": false,
+      "display": true,
+      "message": "Tickets will be available soon",
+      "badge_color": "yellow",
+      "badge_text": "Coming Soon"
+    },
+    "closed": {
+      "purchasable": false,
+      "display": false,
+      "message": "Ticket sales have ended",
+      "badge_color": "gray",
+      "badge_text": "Sales Ended"
+    },
+    "test": {
+      "purchasable": true,
+      "display": false,
+      "message": "Test ticket - not for production",
+      "badge_color": "purple",
+      "badge_text": "Test Mode"
+    }
+  },
+
+  "validation_rules": {
+    "max_tickets_per_transaction": 10,
+    "max_tickets_per_email": 20,
+    "allow_duplicate_emails": true,
+    "require_attendee_info": true,
+    "registration_deadline_hours": 72
+  },
+
+  "stripe_mapping": {
+    "lookup_key_prefix": "alocubano_",
+    "metadata_keys": {
+      "event_id": "event_id",
+      "event_date": "event_date",
+      "ticket_type": "ticket_type",
+      "venue": "venue"
+    }
+  }
+}
