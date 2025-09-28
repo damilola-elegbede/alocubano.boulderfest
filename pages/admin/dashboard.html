@@ -314,7 +314,9 @@
       async function fetchCSRFToken() {
         try {
           const response = await fetch("/api/admin/csrf-token", {
-            credentials: "include" // Include cookies for production
+            headers: {
+              "Authorization": `Bearer ${localStorage.getItem('adminToken')}`
+            }
           });
           if (response.ok) {
             const data = await response.json();
@@ -339,7 +341,6 @@
           }
 
           const response = await fetch("/api/admin/verify-session", {
-            credentials: "include",
             headers: {
               "Authorization": `Bearer ${token}`,
               "Cache-Control": "no-cache"
@@ -403,10 +404,14 @@
           }
 
           const token = localStorage.getItem('adminToken');
+          if (!token) {
+            throw new Error('No authentication token found');
+          }
+
           const response = await fetch(url.toString(), {
-            credentials: "include", // CRITICAL: Include cookies for production
             headers: {
-              "Authorization": `Bearer ${token}`
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "application/json"
             }
           });
 
@@ -627,10 +632,13 @@
 
         try {
           const token = localStorage.getItem('adminToken');
+          if (!token) {
+            throw new Error('No authentication token found');
+          }
           const response = await fetch(`/api/admin/registrations?${params}`, {
-            credentials: "include", // Include cookies for production
             headers: {
-              "Authorization": `Bearer ${token}`
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "application/json"
             }
           });
 
@@ -804,11 +812,16 @@
             headers["X-CSRF-Token"] = csrfToken;
           }
 
+          const token = localStorage.getItem('adminToken');
+          if (!token) {
+            throw new Error('No authentication token found');
+          }
+          headers["Authorization"] = `Bearer ${token}`;
+
           const response = await fetch(
             `/api/admin/registrations?ticketId=${encodeURIComponent(ticketId)}`,
             {
               method: "PUT",
-              credentials: "same-origin", // CRITICAL: Include cookies for production
               headers: headers,
               body: JSON.stringify({ action: "checkin" }),
             },
@@ -835,11 +848,16 @@
             headers["X-CSRF-Token"] = csrfToken;
           }
 
+          const token = localStorage.getItem('adminToken');
+          if (!token) {
+            throw new Error('No authentication token found');
+          }
+          headers["Authorization"] = `Bearer ${token}`;
+
           const response = await fetch(
             `/api/admin/registrations?ticketId=${encodeURIComponent(ticketId)}`,
             {
               method: "PUT",
-              credentials: "same-origin", // CRITICAL: Include cookies for production
               headers: headers,
               body: JSON.stringify({ action: "undo_checkin" }),
             },
@@ -878,10 +896,13 @@
 
         try {
           const token = localStorage.getItem('adminToken');
+          if (!token) {
+            throw new Error('No authentication token found');
+          }
           const response = await fetch(`/api/admin/registrations?${params}`, {
-            credentials: "include", // Include cookies for production
             headers: {
-              "Authorization": `Bearer ${token}`
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "application/json"
             }
           });
           const data = await response.json();
@@ -970,8 +991,11 @@
             headers["X-CSRF-Token"] = csrfToken;
           }
 
+          const token = localStorage.getItem('adminToken');
+          if (token) {
+            headers["Authorization"] = `Bearer ${token}`;
+          }
           await fetch("/api/admin/login", {
-            credentials: "same-origin", // Include cookies for production
             method: "DELETE",
             headers: headers,
           });
@@ -993,12 +1017,13 @@
         btn.textContent = "Syncing...";
 
         try {
+          const token = localStorage.getItem('adminToken');
           const response = await fetch("/api/sheets/sync", {
-            credentials: "same-origin", // Include cookies for production
             method: "POST",
             headers: {
               "Content-Type": "application/json",
               "X-CSRF-Token": csrfToken,
+              "Authorization": `Bearer ${token}`
             },
           });
 
