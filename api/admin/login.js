@@ -9,6 +9,7 @@ import {
 import { withAuthAudit } from "../../lib/admin-audit-middleware.js";
 import adminSessionMonitor from "../../lib/admin-session-monitor.js";
 import securityAlertService from "../../lib/security-alert-service.js";
+import { processDatabaseResult } from "../../lib/bigint-serializer.js";
 
 /**
  * Input validation schemas
@@ -550,12 +551,14 @@ async function handlePasswordStep(req, res, username, password, clientIP) {
     console.error('Failed to create temporary session:', error);
   }
 
-  return res.status(200).json({
+  const responseData = {
     success: true,
     requiresMfa: true,
     tempToken,
     message: 'Password verified. Please provide your MFA code.'
-  });
+  };
+
+  return res.status(200).json(processDatabaseResult(responseData));
 }
 
 /**
@@ -796,13 +799,15 @@ async function completeLogin(
   }
 
   res.setHeader('Set-Cookie', cookie);
-  res.status(200).json({
+  const responseData = {
     success: true,
     token: token,
     expiresIn: authService.sessionDuration,
     mfaUsed,
     adminId
-  });
+  };
+
+  res.status(200).json(processDatabaseResult(responseData));
 }
 
 /**

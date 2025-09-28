@@ -1,6 +1,7 @@
 import { getDatabaseClient } from "../../lib/database.js";
 import { setSecureCorsHeaders } from "../../lib/cors-config.js";
 import timeUtils from "../../lib/time-utils.js";
+import { processDatabaseResult } from "../../lib/bigint-serializer.js";
 
 /**
  * Ticket Details API Endpoint
@@ -69,7 +70,9 @@ export default async function handler(req, res) {
       });
     }
 
-    const ticket = result.rows[0];
+    // Process database result to handle BigInt values
+    const processedResult = processDatabaseResult(result);
+    const ticket = processedResult.rows[0];
 
     // Calculate registration deadline (24 hours from ticket creation)
     const registrationDeadlineHours = 24;

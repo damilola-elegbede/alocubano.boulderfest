@@ -3,6 +3,7 @@ import { setSecureCorsHeaders } from '../../lib/cors-config.js';
 import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
 import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
 import { warmDatabaseInBackground } from "../../lib/database-warmer.js";
+import { processDatabaseResult } from "../../lib/bigint-serializer.js";
 
 /**
  * Verify admin session endpoint
@@ -54,7 +55,7 @@ async function handler(req, res) {
       const sessionDuration = authService.sessionDuration;
       const elapsed = now - loginTime;
       const remaining = Math.max(0, sessionDuration - elapsed);
-      return res.status(200).json({
+      const responseData = {
         valid: true,
         admin: {
           id: session.admin.id,
@@ -66,7 +67,9 @@ async function handler(req, res) {
           remainingMinutes: Math.floor(remaining / 60000),
           expiresAt: loginTime + sessionDuration
         }
-      });
+      };
+
+      return res.status(200).json(processDatabaseResult(responseData));
     } else {
       return res.status(401).json({
         valid: false,

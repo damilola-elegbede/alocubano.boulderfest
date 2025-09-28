@@ -5,6 +5,7 @@ import { withSecurityHeaders } from "../../lib/security-headers.js";
 import auditService from "../../lib/audit-service.js";
 import { isTestMode, getTestModeFlag } from "../../lib/test-mode-utils.js";
 import { getQRTokenService } from "../../lib/qr-token-service.js";
+import { processDatabaseResult } from "../../lib/bigint-serializer.js";
 
 // Enhanced rate limiting configuration
 const TICKET_RATE_LIMIT = {
@@ -327,7 +328,9 @@ async function validateTicket(db, validationCode, source, isJWT = false) {
         `,
         args: [validationCode]
       });
-      ticket = result.rows[0];
+      // Process database result to handle BigInt values
+      const processedResult = processDatabaseResult(result);
+      ticket = processedResult.rows[0];
     } else {
       // Legacy validation - use validation_code
       const result = await tx.execute({
@@ -340,7 +343,9 @@ async function validateTicket(db, validationCode, source, isJWT = false) {
         `,
         args: [validationCode]
       });
-      ticket = result.rows[0];
+      // Process database result to handle BigInt values
+      const processedResult = processDatabaseResult(result);
+      ticket = processedResult.rows[0];
     }
 
     if (!ticket) {
@@ -785,7 +790,9 @@ async function handler(req, res) {
           `,
           args: [validationCode]
         });
-        ticket = result.rows[0];
+        // Process database result to handle BigInt values
+        const processedResult = processDatabaseResult(result);
+        ticket = processedResult.rows[0];
       } else {
         // Legacy validation - use validation_code
         const result = await db.execute({
@@ -798,7 +805,9 @@ async function handler(req, res) {
           `,
           args: [validationCode]
         });
-        ticket = result.rows[0];
+        // Process database result to handle BigInt values
+        const processedResult = processDatabaseResult(result);
+        ticket = processedResult.rows[0];
       }
 
       if (!ticket) {

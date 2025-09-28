@@ -2,6 +2,7 @@ import { getDatabaseClient } from "../../lib/database.js";
 import { getBrevoClient } from "../../lib/brevo-client.js";
 import rateLimit from "../../lib/rate-limit-middleware.js";
 import auditService from "../../lib/audit-service.js";
+import { processDatabaseResult } from "../../lib/bigint-serializer.js";
 
 // Input validation regex patterns
 const NAME_REGEX = /^[a-zA-Z\s\-']{2,50}$/;
@@ -353,7 +354,10 @@ export default async function handler(req, res) {
       args: ticketIds
     });
 
-    console.log('[BATCH_REG] Found tickets:', ticketsResult.rows.map(t => ({
+    // Process database result to handle BigInt values
+    const processedTicketsResult = processDatabaseResult(ticketsResult);
+
+    console.log('[BATCH_REG] Found tickets:', processedTicketsResult.rows.map(t => ({
       id: t.ticket_id,
       status: t.registration_status,
       hasAttendee: !!(t.attendee_first_name || t.attendee_email),
@@ -361,8 +365,8 @@ export default async function handler(req, res) {
       type: t.ticket_type
     })));
 
-    if (ticketsResult.rows.length !== ticketIds.length) {
-      const foundIds = ticketsResult.rows.map(t => t.ticket_id);
+    if (processedTicketsResult.rows.length !== ticketIds.length) {
+      const foundIds = processedTicketsResult.rows.map(t => t.ticket_id);
       const missingIds = ticketIds.filter(id => !foundIds.includes(id));
       return res.status(404).json({
         error: 'Some tickets not found',
@@ -375,7 +379,7 @@ export default async function handler(req, res) {
     const alreadyRegistered = [];
     const now = new Date();
 
-    for (const ticket of ticketsResult.rows) {
+    for (const ticket of processedTicketsResult.rows) {
       if (ticket.registration_status === 'completed') {
         console.log(`[BATCH_REG] WARNING: Ticket ${ticket.ticket_id} is already registered with status: ${ticket.registration_status}`);
         console.log(`[BATCH_REG] Existing attendee: ${ticket.attendee_first_name} ${ticket.attendee_last_name} (${ticket.attendee_email})`);
@@ -408,7 +412,7 @@ export default async function handler(req, res) {
       console.log('[BATCH_REG] All tickets already registered, returning success');
 
       // Get full ticket details for already registered tickets
-      const registeredDetails = ticketsResult.rows.map(ticket => ({
+      const registeredDetails = processedTicketsResult.rows.map(ticket => ({
         ticketId: ticket.ticket_id,
         ticketType: ticket.ticket_type,
         status: 'already_registered',
@@ -446,7 +450,7 @@ export default async function handler(req, res) {
       // Build all operations first
       for (let i = 0; i < sanitizedRegistrations.length; i++) {
         const registration = sanitizedRegistrations[i];
-        const ticket = ticketsResult.rows.find(t => t.ticket_id === registration.ticketId);
+        const ticket = processedTicketsResult.rows.find(t => t.ticket_id === registration.ticketId);
         const operationStartTime = Date.now();
 
         // Skip if already registered
@@ -578,7 +582,7 @@ export default async function handler(req, res) {
         let successCount = 0;
         let actualUpdateIndex = 0;
         for (let i = 0; i < sanitizedRegistrations.length; i++) {
-          const ticket = ticketsResult.rows.find(t => t.ticket_id === sanitizedRegistrations[i].ticketId);
+          const ticket = processedTicketsResult.rows.find(t => t.ticket_id === sanitizedRegistrations[i].ticketId);
 
           // Skip already registered tickets
           if (ticket.registration_status === 'completed') {
@@ -627,7 +631,7 @@ export default async function handler(req, res) {
     console.log('[BATCH_REG] Starting email sending phase');
 
     // Get transaction information for order number and purchaser details (declare outside try block)
-    const transactionIds = [...new Set(ticketsResult.rows.map(t => t.transaction_id))];
+    const transactionIds = [...new Set(processedTicketsResult.rows.map(t => t.transaction_id))];
     let transactionInfo = null;
 
     console.log('[BATCH_REG] Transaction IDs involved:', transactionIds);
@@ -643,8 +647,10 @@ export default async function handler(req, res) {
           args: [transactionIds[0]]
         });
 
-        if (transactionResult.rows.length > 0) {
-          transactionInfo = transactionResult.rows[0];
+        // Process database result to handle BigInt values
+        const processedTransactionResult = processDatabaseResult(transactionResult);
+        if (processedTransactionResult.rows.length > 0) {
+          transactionInfo = processedTransactionResult.rows[0];
         }
       }
 
@@ -768,8 +774,11 @@ export default async function handler(req, res) {
       args: sanitizedRegistrations.map(r => r.ticketId)
     });
 
+    // Process database result to handle BigInt values
+    const processedVerifyResult = processDatabaseResult(verifyResult);
+
     console.log('[BATCH_REG] Database verification - tickets after registration:',
-      verifyResult.rows.map(t => ({
+      processedVerifyResult.rows.map(t => ({
         id: t.ticket_id,
         status: t.registration_status,
         attendee: `${t.attendee_first_name} ${t.attendee_last_name}`,
@@ -780,7 +789,7 @@ export default async function handler(req, res) {
     );
 
     // Check for any tickets that are still pending
-    const stillPending = verifyResult.rows.filter(t => t.registration_status !== 'completed');
+    const stillPending = processedVerifyResult.rows.filter(t => t.registration_status !== 'completed');
     if (stillPending.length > 0) {
       console.error('[BATCH_REG] WARNING: Some tickets are still pending after registration!', stillPending.map(t => t.ticket_id));
     } else {
@@ -830,7 +839,7 @@ export default async function handler(req, res) {
       orderNumber: transactionInfo ? (transactionInfo.order_number || `ALO-${new Date().getFullYear()}-${String(transactionInfo.id).padStart(4, '0')}`) : null,
       registeredTickets: results.map((result) => {
         const registration = sanitizedRegistrations.find(r => r.ticketId === result.ticketId);
-        const ticket = ticketsResult.rows.find(t => t.ticket_id === result.ticketId);
+        const ticket = processedTicketsResult.rows.find(t => t.ticket_id === result.ticketId);
         return {
           ticketId: result.ticketId,
           ticketType: result.ticketType || ticket?.ticket_type || 'Festival Pass',

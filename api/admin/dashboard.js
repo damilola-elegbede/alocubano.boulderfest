@@ -5,6 +5,7 @@ import { columnExists, safeParseInt } from "../../lib/db-utils.js";
 import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
 import { isTestMode, createTestModeFilter } from "../../lib/test-mode-utils.js";
 import timeUtils from "../../lib/time-utils.js";
+import { processDatabaseResult } from "../../lib/bigint-serializer.js";
 
 async function handler(req, res) {
   let db;
@@ -280,7 +281,7 @@ async function handler(req, res) {
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
 
-    res.status(200).json({
+    const responseData = {
       stats: stats,
       recentRegistrations: timeUtils.enhanceApiResponse(recentRegistrations.rows || [], ['created_at']),
       ticketBreakdown: ticketBreakdown.rows || [],
@@ -305,7 +306,9 @@ async function handler(req, res) {
       currentTime: timeUtils.getCurrentTime(),
       timestamp: new Date().toISOString(),
       timestamp_mt: timeUtils.toMountainTime(new Date())
-    });
+    };
+
+    res.status(200).json(processDatabaseResult(responseData));
   } catch (error) {
     console.error('Dashboard API error:', error);
 

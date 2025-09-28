@@ -2,6 +2,7 @@ import authService from "../../lib/auth-service.js";
 import { getDatabaseClient } from "../../lib/database.js";
 import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
 import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
+import { processDatabaseResult } from "../../lib/bigint-serializer.js";
 
 /**
  * Mock events data for development when events table doesn't exist yet
@@ -53,11 +54,8 @@ async function handler(req, res) {
         ORDER BY start_date DESC
       `);
 
-      // Convert any BigInt values to numbers or strings
-      events = result.rows.map(row => ({
-        ...row,
-        id: row.id ? Number(row.id) : row.id
-      }));
+      // Process database results to handle BigInt values
+      events = processDatabaseResult(result.rows);
     } catch (error) {
       // If events table doesn't exist yet, return mock data
       if (error.message.includes('no such table: events') ||
@@ -70,11 +68,13 @@ async function handler(req, res) {
       }
     }
 
-    res.status(200).json({
+    const responseData = {
       events: events,
       total: events.length,
       timestamp: new Date().toISOString()
-    });
+    };
+
+    res.status(200).json(processDatabaseResult(responseData));
 
   } catch (error) {
     // SECURITY: Log detailed error for debugging but return generic message to client

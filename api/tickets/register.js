@@ -2,6 +2,7 @@ import { getDatabaseClient } from "../../lib/database.js";
 import { getBrevoClient } from "../../lib/brevo-client.js";
 import rateLimit from "../../lib/rate-limit-middleware.js";
 import auditService from "../../lib/audit-service.js";
+import { processDatabaseResult } from "../../lib/bigint-serializer.js";
 
 // Input validation regex patterns
 const NAME_REGEX = /^[a-zA-Z\s\-']{2,50}$/;
@@ -159,11 +160,13 @@ export default async function handler(req, res) {
       args: [ticketId]
     });
 
-    if (!ticketResult.rows || ticketResult.rows.length === 0) {
+    // Process database result to handle BigInt values
+    const processedTicketResult = processDatabaseResult(ticketResult);
+    if (!processedTicketResult.rows || processedTicketResult.rows.length === 0) {
       return res.status(404).json({ error: 'Ticket not found' });
     }
 
-    const ticket = ticketResult.rows[0];
+    const ticket = processedTicketResult.rows[0];
 
     // Capture before state for audit
     const beforeState = {
@@ -334,7 +337,9 @@ export default async function handler(req, res) {
       args: [ticket.transaction_id]
     });
 
-    const allRegistered = transactionTickets.rows[0].total === transactionTickets.rows[0].completed;
+    // Process database result to handle BigInt values
+    const processedTransactionTickets = processDatabaseResult(transactionTickets);
+    const allRegistered = processedTransactionTickets.rows[0].total === processedTransactionTickets.rows[0].completed;
 
     res.status(200).json({
       success: true,

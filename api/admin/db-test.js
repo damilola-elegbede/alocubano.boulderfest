@@ -3,6 +3,7 @@ import { getDatabaseClient } from "../../lib/database.js";
 import authService from "../../lib/auth-service.js";
 import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
 import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
+import { processDatabaseResult } from "../../lib/bigint-serializer.js";
 
 async function handler(req, res) {
   console.log('[DB-Test] Handler started');
@@ -17,7 +18,7 @@ async function handler(req, res) {
     const result = await db.execute('SELECT 1 as test');
     console.log('[DB-Test] Query successful:', result.rows);
 
-    res.status(200).json({
+    const responseData = {
       status: 'ok',
       message: 'Database connection successful',
       testResult: result.rows[0],
@@ -27,7 +28,9 @@ async function handler(req, res) {
         hasTursoUrl: !!process.env.TURSO_DATABASE_URL,
         hasTursoAuth: !!process.env.TURSO_AUTH_TOKEN
       }
-    });
+    };
+
+    res.status(200).json(processDatabaseResult(responseData));
   } catch (error) {
     console.error('[DB-Test] Error:', error.message);
     console.error('[DB-Test] Stack:', error.stack);

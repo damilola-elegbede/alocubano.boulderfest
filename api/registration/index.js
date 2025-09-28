@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { getDatabaseClient } from "../../lib/database.js";
 import timeUtils from "../../lib/time-utils.js";
+import { processDatabaseResult } from "../../lib/bigint-serializer.js";
 
 export default async function handler(req, res) {
   // Only allow GET requests
@@ -79,9 +80,11 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: 'No tickets found for this transaction' });
     }
 
-    console.log('[REG_STATUS] Raw database results:', tickets.rows);
+    // Process database result to handle BigInt values
+    const processedTickets = processDatabaseResult(tickets);
+    console.log('[REG_STATUS] Raw database results:', processedTickets.rows);
 
-    console.log('[REG_STATUS] Found tickets:', tickets.rows.map(t => ({
+    console.log('[REG_STATUS] Found tickets:', processedTickets.rows.map(t => ({
       id: t.ticket_id,
       type: t.ticket_type,
       registration_status: t.registration_status,
@@ -93,7 +96,7 @@ export default async function handler(req, res) {
     })));
 
     // Update expired tickets if needed
-    const expiredTickets = tickets.rows.filter(t =>
+    const expiredTickets = processedTickets.rows.filter(t =>
       t.current_status === 'expired' && t.registration_status !== 'expired'
     );
 
@@ -110,7 +113,7 @@ export default async function handler(req, res) {
     }
 
     // Format response with Mountain Time information
-    const enhancedTickets = tickets.rows.map(ticket => {
+    const enhancedTickets = processedTickets.rows.map(ticket => {
       const baseTicket = {
         ticketId: ticket.ticket_id,
         ticketType: ticket.ticket_type,
@@ -132,8 +135,8 @@ export default async function handler(req, res) {
     const response = {
       transactionId: transactionId,
       purchaserEmail: decoded.purchaserEmail,
-      deadline: tickets.rows[0].registration_deadline,
-      deadline_mt: timeUtils.toMountainTime(tickets.rows[0].registration_deadline),
+      deadline: processedTickets.rows[0].registration_deadline,
+      deadline_mt: timeUtils.toMountainTime(processedTickets.rows[0].registration_deadline),
       tickets: enhancedTickets,
       timezone: 'America/Denver',
       currentTime: timeUtils.getCurrentTime()
