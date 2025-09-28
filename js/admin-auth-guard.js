@@ -15,16 +15,20 @@
   // CRITICAL: Run immediately before DOM parsing
   // This must execute as early as possible to prevent flash
 
-  // Hide content immediately
-  document.documentElement.style.visibility = 'hidden';
-  document.documentElement.style.opacity = '0';
-  document.documentElement.style.transition = 'opacity 0.2s ease-in-out';
+  // Only hide content if we're on an admin page (not login page)
+  const isLoginPage = window.location.pathname.includes('/admin/login');
+  if (!isLoginPage) {
+    // Hide content immediately
+    document.documentElement.style.visibility = 'hidden';
+    document.documentElement.style.opacity = '0';
+    document.documentElement.style.transition = 'opacity 0.2s ease-in-out';
+  }
 
   // Quick sync check for token existence
   const hasToken = localStorage.getItem('adminToken');
 
-  // If no token at all, redirect immediately without waiting
-  if (!hasToken) {
+  // If no token at all and not on login page, redirect immediately
+  if (!hasToken && !isLoginPage) {
     window.location.replace('/admin/login');
     return;
   }
@@ -45,15 +49,48 @@
   window.AdminAuthGuard = {
     async verifyAndShow() {
       try {
+        // Don't verify on login page
+        if (window.location.pathname.includes('/admin/login')) {
+          this.showContent();
+          return true;
+        }
+
+        // Get the token from localStorage
+        const token = localStorage.getItem('adminToken');
+        if (!token) {
+          throw new Error('No auth token found');
+        }
+
         // Verify token with server
         const response = await fetch('/api/admin/verify-session', {
+          method: 'GET',
           credentials: 'include',
-          headers: { 'Cache-Control': 'no-cache' },
-          signal: AbortSignal.timeout(3000)
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Cache-Control': 'no-cache'
+          }
         });
 
         if (!response.ok) {
-          throw new Error('Auth verification failed');
+          // If it's a 500 error, might be a server issue, try dashboard endpoint instead
+          if (response.status === 500) {
+            console.warn('verify-session returned 500, trying dashboard endpoint');
+            const dashboardResponse = await fetch('/api/admin/dashboard', {
+              method: 'GET',
+              credentials: 'include',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Cache-Control': 'no-cache'
+              }
+            });
+
+            if (dashboardResponse.ok) {
+              // Dashboard worked, so auth is valid
+              this.showContent();
+              return true;
+            }
+          }
+          throw new Error(`Auth verification failed: ${response.status}`);
         }
 
         const data = await response.json();
@@ -68,6 +105,13 @@
 
       } catch (error) {
         console.error('Auth verification failed:', error);
+
+        // Don't redirect from login page
+        if (window.location.pathname.includes('/admin/login')) {
+          this.showContent();
+          return true;
+        }
+
         // Clear invalid token
         localStorage.removeItem('adminToken');
         sessionStorage.clear();

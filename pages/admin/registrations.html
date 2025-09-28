@@ -35,8 +35,6 @@
       })();
     </script>
 
-    <!-- Pre-render auth guard - MUST be before any other scripts -->
-    <script src="/js/admin-auth-guard.js"></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Registrations - A Lo Cubano Boulder Fest</title>
@@ -46,12 +44,11 @@
     <link rel="stylesheet" href="/css/navigation.css" />
     <link rel="stylesheet" href="/css/forms.css" />
     <link rel="stylesheet" href="/css/admin-overrides.css" />
-    <link rel="stylesheet" href="/css/admin-auth-guard.css" />
     <script type="module" src="/js/theme-manager.js"></script>
   </head>
-  <body class="admin-container auth-checking">
+  <body class="admin-container">
     <!-- Auth Loading State -->
-    <div id="auth-loading" class="auth-loading">
+    <div id="auth-loading" class="auth-loading" style="display: none;">
       <div class="auth-loading-content">
         <div class="auth-spinner"></div>
         <h2>Verifying Authentication...</h2>
@@ -209,12 +206,40 @@
         }
       }
 
-      // Check authentication using AdminAuthGuard
+      // Check authentication
       async function checkAuth() {
-        if (window.AdminAuthGuard) {
-          return await window.AdminAuthGuard.verifyAndShow();
-        } else {
-          console.error("AdminAuthGuard not available");
+        try {
+          const token = localStorage.getItem('adminToken');
+          if (!token) {
+            window.location.href = "/admin/login";
+            return false;
+          }
+
+          const response = await fetch("/api/admin/verify-session", {
+            credentials: "include",
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Cache-Control': 'no-cache'
+            }
+          });
+
+          if (!response.ok) {
+            localStorage.removeItem('adminToken');
+            window.location.href = "/admin/login";
+            return false;
+          }
+
+          const data = await response.json();
+          if (!data.valid) {
+            localStorage.removeItem('adminToken');
+            window.location.href = "/admin/login";
+            return false;
+          }
+
+          return true;
+        } catch (error) {
+          console.error("Auth check failed:", error);
+          localStorage.removeItem('adminToken');
           window.location.href = "/admin/login";
           return false;
         }

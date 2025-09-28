@@ -35,25 +35,7 @@
       })();
     </script>
 
-    <!-- Pre-render auth check to prevent content flash -->
-    <script>
-      (function() {
-        // Immediately hide the body to prevent flash
-        document.documentElement.style.visibility = 'hidden';
-        document.documentElement.style.opacity = '0';
-
-        // Check for auth token in localStorage (sync check)
-        const hasToken = localStorage.getItem('adminToken');
-
-        // If no token at all, redirect immediately
-        if (!hasToken) {
-          window.location.replace('/admin/login');
-        }
-
-        // Token exists, but we'll verify it properly after DOM loads
-        // The body will remain hidden until auth is verified
-      })();
-    </script>
+    <!-- Pre-render auth check will be handled by checkAuth() after DOM loads -->
 
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -68,11 +50,7 @@
     <script type="module" src="/js/theme-manager.js"></script>
 
     <style>
-      /* Critical auth styles - prevent content flash */
-      .auth-checking {
-        display: none !important;
-      }
-
+      /* Auth loading overlay */
       .auth-loading {
         position: fixed;
         top: 0;
@@ -106,9 +84,9 @@
       }
     </style>
   </head>
-  <body class="admin-container auth-checking">
-    <!-- Auth Loading State -->
-    <div id="auth-loading" class="auth-loading">
+  <body class="admin-container">
+    <!-- Auth Loading State (hidden by default, shown only during auth check) -->
+    <div id="auth-loading" class="auth-loading" style="display: none;">
       <div class="auth-loading-content">
         <div class="auth-spinner"></div>
         <h2>Verifying Authentication...</h2>
