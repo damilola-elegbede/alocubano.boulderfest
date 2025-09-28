@@ -436,8 +436,8 @@
             }
           });
           if (response.ok) {
-            // Already authenticated, redirect to admin portal
-            window.location.href = "/admin";
+            // Already authenticated, redirect to dashboard
+            window.location.href = "/admin/dashboard";
           }
         } catch (error) {
           // Not authenticated, stay on login page
@@ -473,8 +473,8 @@
             if (data.token) {
               localStorage.setItem('adminToken', data.token);
             }
-            // Success - redirect to admin portal
-            window.location.href = "/admin";
+            // Success - redirect to dashboard
+            window.location.href = "/admin/dashboard";
           } else {
             // Show error - use textContent for safe display
             errorDiv.textContent = data.error;

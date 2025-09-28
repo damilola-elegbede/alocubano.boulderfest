@@ -42,15 +42,35 @@
       document.documentElement.style.opacity = '0';
       document.documentElement.style.transition = 'opacity 0.2s ease-in';
 
-      // Check for token and redirect if missing
-      if (!window.location.pathname.includes('/admin/login')) {
-        const token = localStorage.getItem('adminToken');
-        if (!token) {
-          // No token - redirect immediately (content stays hidden)
-          window.location.replace('/admin/login');
+      // Quick token validation to prevent flash with invalid tokens
+      (async function() {
+        if (!window.location.pathname.includes('/admin/login')) {
+          const token = localStorage.getItem('adminToken');
+          if (!token) {
+            // No token - redirect immediately
+            window.location.replace('/admin/login');
+            return;
+          }
+
+          // Quick validation - check if token is expired client-side
+          try {
+            // Parse JWT to check expiration (basic check)
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            if (payload.exp && payload.exp * 1000 < Date.now()) {
+              // Token expired - clear and redirect
+              localStorage.removeItem('adminToken');
+              window.location.replace('/admin/login');
+              return;
+            }
+          } catch (e) {
+            // Invalid token format - clear and redirect
+            localStorage.removeItem('adminToken');
+            window.location.replace('/admin/login');
+            return;
+          }
+          // Valid token format - wait for server verification
         }
-        // If token exists, content stays hidden until verified by checkAuth()
-      }
+      })();
     </script>
 
     <meta charset="UTF-8" />
@@ -1088,13 +1108,19 @@
         }
       }
 
-      // Initialize dashboard immediately
+      // Global auth promise to prevent race conditions
+      let authPromise = null;
+
+      // Initialize dashboard with single auth check
       document.body.setAttribute('data-auth-status', 'checking');
 
       // Initialize event selector and load dashboard data
       document.addEventListener('DOMContentLoaded', async () => {
-        // CRITICAL: Check authentication FIRST before anything else
-        const isAuthenticated = await checkAuth();
+        // CRITICAL: Use single auth check to prevent race conditions
+        if (!authPromise) {
+          authPromise = checkAuth();
+        }
+        const isAuthenticated = await authPromise;
 
         // If auth failed, checkAuth will redirect, so stop here
         if (!isAuthenticated) {
