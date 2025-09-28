@@ -4,12 +4,15 @@
     <!-- Inline theme detection to prevent FOUC -->
     <script>
       (function() {
+        // Detect admin pages
         const path = window.location.pathname.toLowerCase();
         const isAdmin = path.includes('/admin') || path.includes('pages/admin');
 
         if (isAdmin) {
+          // Admin pages always use dark theme
           document.documentElement.setAttribute('data-theme', 'dark');
         } else {
+          // Main site: check user preference
           let stored = null;
           try {
             stored = localStorage.getItem('theme-preference');
@@ -21,6 +24,7 @@
           let theme = preference;
 
           if (preference === 'system') {
+            // Detect system preference
             theme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
               ? 'dark'
               : 'light';
@@ -33,12 +37,11 @@
 
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Weekender November 2025 Schedule - A Lo Cubano Boulder Fest</title>
+    <title>Schedule - A Lo Cubano Weekender November 2025</title>
     <meta
       name="description"
-      content="Schedule for A Lo Cubano Weekender November 2025. View workshop times, social dance events, and activities throughout the weekend."
+      content="Weekend schedule for A Lo Cubano Weekender November 2025. Saturday afternoon workshops featuring Body Movement, Casino, and Rueda de Casino."
     />
-
     <!-- Favicons -->
     <link
       rel="icon"
@@ -46,6 +49,33 @@
       href="/images/favicons/favicon-32x32.png"
     />
     <link rel="icon" type="image/x-icon" href="/images/favicon.ico" />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/images/favicons/favicon-16x16.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/images/favicons/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="192x192"
+      href="/images/favicons/favicon-192x192.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="192x192"
+      href="/images/favicons/favicon-192x192.png"
+    />
+
+    <!-- DNS prefetch for external resources -->
+    <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="//fonts.gstatic.com" />
 
     <!-- Theme Management - Early inclusion to prevent FOUC -->
     <script type="module" src="/js/theme-manager.js"></script>
@@ -55,8 +85,28 @@
     <link rel="stylesheet" href="/css/typography.css" />
     <link rel="stylesheet" href="/css/floating-cart.css" />
     <link rel="stylesheet" href="/css/floating-cart-dark.css" />
+    <link rel="stylesheet" href="/css/navigation.css" />
+    <link rel="stylesheet" href="/css/forms.css" />
     <link rel="stylesheet" href="/css/header-cart.css" />
     <link rel="stylesheet" href="/css/mobile-overrides.css" />
+    <!-- Theme styles -->
+    <link rel="stylesheet" href="/css/theme-toggle.css" />
+    <script type="module" src="/js/theme-manager.js"></script>
+
+    <style>
+      .schedule-day {
+        margin-bottom: var(--space-xl);
+        border: 2px solid var(--color-gray-300);
+        padding: var(--space-lg);
+      }
+      .schedule-day h3 {
+        color: var(--color-red);
+        margin: 0 0 var(--space-md);
+        font-family: var(--font-display);
+        font-size: var(--font-size-xl);
+      }
+      /* Using global .schedule-item styles from components.css - no override needed */
+    </style>
   </head>
   <body class="typographic">
     <!-- Skip Links for Accessibility -->
@@ -76,8 +126,24 @@
       "
       >Skip to main content</a
     >
+    <a
+      href="#navigation"
+      class="skip-link"
+      style="
+        position: absolute;
+        top: -40px;
+        left: 0;
+        background: var(--color-black);
+        color: var(--color-white);
+        padding: 8px;
+        text-decoration: none;
+        z-index: 1000;
+        transition: top 0.3s;
+      "
+      >Skip to navigation</a
+    >
 
-    <header class="header">
+    <header class="header" id="navigation">
       <div class="container">
         <div class="grid">
           <div class="header-left">
@@ -167,10 +233,12 @@
                     <ul class="dropdown-submenu">
                       <li>
                         <a
-                          href="/weekender-2025-11"
+                      <li>
+                        <a
+                          href="/2025-11-weekender"
                           class="dropdown-link"
                           role="menuitem"
-                          data-event="weekender-2025-11"
+                          data-event="2025-11-weekender"
                           data-event-status="upcoming"
                           >November 2025</a
                         >
@@ -209,14 +277,29 @@
     </header>
 
     <main id="main-content">
+      <!-- Hero Splash Image -->
+      <section class="gallery-hero-splash">
+        <div class="hero-image-container">
+          <img
+            src="/images/hero/weekender-2025-11-hero.jpg"
+            alt="November 2025 Weekender schedule and workshop activities"
+            class="hero-splash-img"
+            style="object-position: top center !important"
+          />
+        </div>
+      </section>
+
       <!-- Event Sub Navigation -->
       <section class="event-subnav">
         <div class="container">
-          <nav class="event-nav" aria-label="Weekender November 2025 Navigation">
+          <nav
+            class="event-nav"
+            aria-label="November 2025 Weekender Navigation"
+          >
             <ul class="event-nav-list">
               <li>
                 <a
-                  href="/weekender-2025-11"
+                  href="/2025-11-weekender"
                   class="event-nav-link"
                   data-text="Overview"
                   >Overview</a
@@ -224,7 +307,7 @@
               </li>
               <li>
                 <a
-                  href="/weekender-2025-11-artists"
+                  href="/2025-nov-artists"
                   class="event-nav-link"
                   data-text="Artists"
                   >Artists</a
@@ -232,7 +315,7 @@
               </li>
               <li>
                 <a
-                  href="/weekender-2025-11-schedule"
+                  href="/2025-nov-schedule"
                   class="event-nav-link"
                   data-text="Schedule"
                   >Schedule</a
@@ -240,7 +323,7 @@
               </li>
               <li>
                 <a
-                  href="/weekender-2025-11-gallery"
+                  href="/2025-nov-gallery"
                   class="event-nav-link"
                   data-text="Gallery"
                   >Gallery</a
@@ -251,46 +334,90 @@
         </div>
       </section>
 
-      <!-- Schedule Section -->
+      <!-- Schedule Header -->
       <section class="section-typographic" style="padding: var(--space-xl) 0">
         <div class="container">
-          <h1 class="text-mask">SCHEDULE</h1>
           <div class="text-composition">
             <div class="text-block-large">
+              <h1 class="hero__title text-mask">
+                Weekend Schedule
+              </h1>
               <h2 class="hero__subtitle">
-                Weekend schedule for intimate workshops and social dancing
-                at the Weekender November 2025
+                Three focused workshops on Saturday afternoon
               </h2>
             </div>
             <div class="text-block-mono">
-              // COMING SOON<br />
-              // DETAILED SCHEDULE<br />
-              // WORKSHOP TIMETABLES<br />
-              // SOCIAL DANCE EVENTS
+              // SATURDAY, NOVEMBER 8, 2025<br />
+              // BOULDER, COLORADO<br />
+              // 1:00 PM - 4:00 PM
             </div>
           </div>
         </div>
       </section>
+
+      <!-- Schedule Content -->
+      <section class="section-typographic" style="padding: var(--space-xl) 0">
+        <div class="container">
+
+          <!-- Saturday Only -->
+          <div class="schedule-day">
+            <h3>Saturday, November 8th, 2025</h3>
+            <div class="schedule-item">
+              <div class="schedule-time">1:00 PM</div>
+              <div class="schedule-content">
+                <h4>Body Movement</h4>
+                <p>Foundation techniques for Cuban dance movement and styling</p>
+              </div>
+            </div>
+            <div class="schedule-item">
+              <div class="schedule-time">2:00 PM</div>
+              <div class="schedule-content">
+                <h4>Casino</h4>
+                <p>Partner work fundamentals and turn patterns</p>
+              </div>
+            </div>
+            <div class="schedule-item">
+              <div class="schedule-time">3:00 PM</div>
+              <div class="schedule-content">
+                <h4>Rueda de Casino</h4>
+                <p>Group circle dancing with calls and formations</p>
+              </div>
+            </div>
+          </div>
+
+
+        </div>
+      </section>
+
     </main>
 
     <!-- Scripts -->
-    <link rel="stylesheet" href="/css/navigation.css" />
-    <link rel="stylesheet" href="/css/theme-toggle.css" />
-    <link rel="stylesheet" href="/css/forms.css" />
     <script src="/js/components/lightbox.js"></script>
     <script src="/js/components/lazy-loading.js"></script>
     <script src="/js/main.js"></script>
     <script src="/js/navigation.js"></script>
+    <script src="/js/gallery-hero.js"></script>
     <script src="/js/typography.js"></script>
     <script type="module" src="/js/global-cart.js"></script>
-    <script src="/js/logo-switcher.js"></script>
+
+    <!-- Theme Management -->
+    <script type="module">
+      import { initializeThemeToggle } from '/js/theme-toggle.js';
+      import themeManager from '/js/theme-manager.js';
+
+      // Initialize theme system
+      document.addEventListener('DOMContentLoaded', () => {
+        themeManager.initializeTheme();
+        initializeThemeToggle('#theme-toggle-container');
+      });
+    </script>
 
     <footer class="footer-typographic">
       <div class="container">
         <p class="footer-credits">
-          NOVEMBER 2025 • BOULDER, COLORADO •
+          NOVEMBER 2025 WEEKENDER • BOULDER, COLORADO •
           <a
-            href="mailto:alocubanoboulderfest@gmail.com?subject=A Lo Cubano Weekender Inquiry"
+            href="mailto:alocubanoboulderfest@gmail.com?subject=A Lo Cubano Boulder Fest Inquiry"
             style="color: inherit; text-decoration: underline"
             >alocubanoboulderfest@gmail.com</a
           >
@@ -347,16 +474,6 @@
       </div>
     </footer>
 
-    <!-- Theme Management -->
-    <script type="module">
-      import { initializeThemeToggle } from '/js/theme-toggle.js';
-      import themeManager from '/js/theme-manager.js';
-
-      // Initialize theme
-      document.addEventListener('DOMContentLoaded', () => {
-        themeManager.initializeTheme();
-        initializeThemeToggle('#theme-toggle-container');
-      });
-    </script>
-</body>
+    <script src="/js/logo-switcher.js"></script>
+  </body>
 </html>

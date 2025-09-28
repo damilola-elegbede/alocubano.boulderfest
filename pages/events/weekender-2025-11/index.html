@@ -37,10 +37,10 @@
 
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Weekender November 2025 - A Lo Cubano Boulder Fest</title>
+    <title>November 2025 Weekender - A Lo Cubano</title>
     <meta
       name="description"
-      content="A Lo Cubano Weekender November 2025 - An intimate weekend of authentic Cuban salsa, workshops, and social dancing in Boulder, Colorado."
+      content="Join us for a weekender experience in November 2025. Cuban salsa workshops and social dancing in Boulder."
     />
 
     <!-- Favicons -->
@@ -86,8 +86,25 @@
     <link rel="stylesheet" href="/css/typography.css" />
     <link rel="stylesheet" href="/css/floating-cart.css" />
     <link rel="stylesheet" href="/css/floating-cart-dark.css" />
+    <link rel="stylesheet" href="/css/navigation.css" />
+    <link rel="stylesheet" href="/css/forms.css" />
     <link rel="stylesheet" href="/css/header-cart.css" />
     <link rel="stylesheet" href="/css/mobile-overrides.css" />
+    <!-- Theme styles -->
+    <link rel="stylesheet" href="/css/theme-toggle.css" />
+    <script type="module" src="/js/theme-manager.js"></script>
+
+    <style>
+      .event-nav-card:hover {
+        border-color: var(--color-red);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      .event-nav-card:hover h3 {
+        color: var(--color-red);
+      }
+    </style>
   </head>
   <body class="typographic">
     <!-- Skip Links for Accessibility -->
@@ -214,10 +231,12 @@
                     <ul class="dropdown-submenu">
                       <li>
                         <a
-                          href="/weekender-2025-11"
+                      <li>
+                        <a
+                          href="/2025-11-weekender"
                           class="dropdown-link"
                           role="menuitem"
-                          data-event="weekender-2025-11"
+                          data-event="2025-11-weekender"
                           data-event-status="upcoming"
                           >November 2025</a
                         >
@@ -261,7 +280,7 @@
         <div class="hero-image-container">
           <img
             src="/images/hero/weekender-2025-11-hero.jpg"
-            alt="A Lo Cubano Weekender November 2025 - Intimate Cuban salsa weekend"
+            alt="November 2025 Weekender - Cuban salsa experience"
             class="hero-splash-img"
             style="object-position: top center !important"
           />
@@ -271,11 +290,11 @@
       <!-- Event Sub Navigation -->
       <section class="event-subnav">
         <div class="container">
-          <nav class="event-nav" aria-label="Weekender November 2025 Navigation">
+          <nav class="event-nav" aria-label="November 2025 Weekender Navigation">
             <ul class="event-nav-list">
               <li>
                 <a
-                  href="/weekender-2025-11"
+                  href="/2025-11-weekender"
                   class="event-nav-link"
                   data-text="Overview"
                   >Overview</a
@@ -283,7 +302,7 @@
               </li>
               <li>
                 <a
-                  href="/weekender-2025-11-artists"
+                  href="/2025-nov-artists"
                   class="event-nav-link"
                   data-text="Artists"
                   >Artists</a
@@ -291,7 +310,7 @@
               </li>
               <li>
                 <a
-                  href="/weekender-2025-11-schedule"
+                  href="/2025-nov-schedule"
                   class="event-nav-link"
                   data-text="Schedule"
                   >Schedule</a
@@ -299,7 +318,7 @@
               </li>
               <li>
                 <a
-                  href="/weekender-2025-11-gallery"
+                  href="/2025-nov-gallery"
                   class="event-nav-link"
                   data-text="Gallery"
                   >Gallery</a
@@ -310,7 +329,7 @@
         </div>
       </section>
 
-      <!-- Typographic Event Info -->
+      <!-- Typographic Festival Info -->
       <section class="section-typographic" style="padding: var(--space-xl) 0">
         <div class="container">
           <div class="text-composition">
@@ -319,22 +338,20 @@
                 A Lo Cubano Weekender November 2025!
               </h1>
               <h2 class="hero__subtitle">
-                Join us for an intimate weekend of authentic Cuban salsa,
-                workshops, and social dancing with world-class artists
+                A weekend of Cuban salsa workshops and social dancing
               </h2>
             </div>
             <div class="text-block-mono">
-              // NOVEMBER 2025<br />
+              // NOVEMBER 8, 2025<br />
               // BOULDER, COLORADO<br />
-              // WORLD CLASS CUBAN ARTISTS<br />
-              // INTIMATE WEEKEND SETTING<br />
-              // AUTHENTIC CUBAN EXPERIENCE
+              // SATURDAY WORKSHOPS<br />
+              // FRIDAY SOCIAL
             </div>
           </div>
         </div>
       </section>
 
-      <!-- What to Expect Typography -->
+      <!-- What To Expect Typography -->
       <section class="section-typographic" style="padding: var(--space-xl) 0">
         <div class="container">
           <h2 class="text-mask">WHAT TO EXPECT</h2>
@@ -342,35 +359,185 @@
             <div class="expectations__item">
               <h3 class="expectations__item-title">Workshops</h3>
               <p class="expectations__item-description">
-                Intensive Casino, Rueda, and Suelta workshops with
-                Cuban masters in an intimate setting
+                Body Movement, Casino, and Rueda de Casino
               </p>
             </div>
 
             <div class="expectations__item">
-              <h3 class="expectations__item-title">Social Dancing</h3>
+              <h3 class="expectations__item-title">Social</h3>
               <p class="expectations__item-description">
-                Connect with fellow dancers in authentic Cuban social
-                dance experiences throughout the weekend
+                Friday night social at the Junkyard. Join us for an evening of Cuban salsa dancing.
+                Facebook event link coming soon.
               </p>
             </div>
+          </div>
+        </div>
+      </section>
 
-            <div class="expectations__item">
-              <h3 class="expectations__item-title">Community</h3>
-              <p class="expectations__item-description">
-                Build lasting connections with passionate Cuban salsa
-                dancers from around the region
+      <!-- Event Navigation -->
+      <section class="section-typographic" style="padding: var(--space-xl) 0">
+        <div class="container">
+          <h2 class="text-mask">NOVEMBER 2025 WEEKENDER</h2>
+          <div
+            class="event-nav-grid"
+            style="
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+              gap: var(--space-lg);
+              margin-top: var(--space-lg);
+            "
+          >
+            <a
+              href="/2025-nov-artists"
+              class="event-nav-card"
+              style="
+                display: block;
+                padding: var(--space-lg);
+                border: 2px solid var(--color-gray-300);
+                text-decoration: none;
+                color: var(--color-text-primary);
+                transition: all var(--transition-base);
+              "
+            >
+              <h3
+                style="
+                  margin: 0 0 var(--space-sm) 0;
+                  font-family: var(--font-display);
+                  font-size: var(--font-size-xl);
+                  color: var(--color-text-primary);
+                "
+              >
+                Artists
+              </h3>
+              <p style="margin: 0; color: var(--color-gray-600)">
+                Meet our world-class Cuban artists and instructors
               </p>
-            </div>
+            </a>
+            <a
+              href="/2025-nov-schedule"
+              class="event-nav-card"
+              style="
+                display: block;
+                padding: var(--space-lg);
+                border: 2px solid var(--color-gray-300);
+                text-decoration: none;
+                color: var(--color-text-primary);
+                transition: all var(--transition-base);
+              "
+            >
+              <h3
+                style="
+                  margin: 0 0 var(--space-sm) 0;
+                  font-family: var(--font-display);
+                  font-size: var(--font-size-xl);
+                  color: var(--color-text-primary);
+                "
+              >
+                Schedule
+              </h3>
+              <p style="margin: 0; color: var(--color-gray-600)">
+                Saturday workshop schedule
+              </p>
+            </a>
+            <a
+              href="/2025-nov-gallery"
+              class="event-nav-card"
+              style="
+                display: block;
+                padding: var(--space-lg);
+                border: 2px solid var(--color-gray-300);
+                text-decoration: none;
+                color: var(--color-text-primary);
+                transition: all var(--transition-base);
+              "
+            >
+              <h3
+                style="
+                  margin: 0 0 var(--space-sm) 0;
+                  font-family: var(--font-display);
+                  font-size: var(--font-size-xl);
+                  color: var(--color-text-primary);
+                "
+              >
+                Gallery
+              </h3>
+              <p style="margin: 0; color: var(--color-gray-600)">
+                Photos and memories from A Lo Cubano events
+              </p>
+            </a>
+          </div>
+
+          <!-- Get Tickets Button -->
+          <div style="text-align: center; margin-top: var(--space-2xl);">
+            <a
+              href="/tickets"
+              class="btn-primary"
+              style="
+                display: inline-block;
+                padding: var(--space-md) var(--space-2xl);
+                background: var(--color-primary);
+                color: white;
+                text-decoration: none;
+                font-family: var(--font-display);
+                font-size: var(--font-size-lg);
+                font-weight: 700;
+                border-radius: 4px;
+                transition: all var(--transition-base);
+              "
+              onmouseover="this.style.background='var(--color-primary-dark, #8B0000)'"
+              onmouseout="this.style.background='var(--color-primary)'"
+            >
+              GET TICKETS NOW
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Removed duplicate ticket card, keeping only nav cards -->
+      <section class="section-typographic" style="padding: var(--space-xl) 0; display: none;">
+        <div class="container">
+          <div
+            class="event-nav-grid"
+            style="
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+              gap: var(--space-lg);
+              margin-top: var(--space-lg);
+            "
+          >
+            <a
+              href="/tickets"
+              class="event-nav-card"
+              style="
+                display: block;
+                padding: var(--space-lg);
+                border: 2px solid var(--color-gray-300);
+                text-decoration: none;
+                color: var(--color-text-primary);
+                transition: all var(--transition-base);
+              "
+            >
+              <h3
+                style="
+                  margin: 0 0 var(--space-sm) 0;
+                  font-family: var(--font-display);
+                  font-size: var(--font-size-xl);
+                  color: var(--color-text-primary);
+                "
+              >
+                Tickets
+              </h3>
+              <p style="margin: 0; color: var(--color-gray-600)">
+                Early bird pricing and weekender passes available
+              </p>
+            </a>
+          </div>
           </div>
         </div>
       </section>
     </main>
 
     <!-- Scripts -->
-    <link rel="stylesheet" href="/css/navigation.css" />
-    <link rel="stylesheet" href="/css/theme-toggle.css" />
-    <link rel="stylesheet" href="/css/forms.css" />
     <script src="/js/components/lightbox.js"></script>
     <script src="/js/components/lazy-loading.js"></script>
     <script src="/js/main.js"></script>
@@ -387,14 +554,25 @@
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
       }
     </style>
-      <script src="/js/logo-switcher.js"></script>
+
+    <!-- Theme Management -->
+    <script type="module">
+      import { initializeThemeToggle } from '/js/theme-toggle.js';
+      import themeManager from '/js/theme-manager.js';
+
+      // Initialize theme system
+      document.addEventListener('DOMContentLoaded', () => {
+        themeManager.initializeTheme();
+        initializeThemeToggle('#theme-toggle-container');
+      });
+    </script>
 
     <footer class="footer-typographic">
       <div class="container">
         <p class="footer-credits">
-          NOVEMBER 2025 • BOULDER, COLORADO •
+          NOVEMBER 2025 WEEKENDER • BOULDER, COLORADO •
           <a
-            href="mailto:alocubanoboulderfest@gmail.com?subject=A Lo Cubano Weekender Inquiry"
+            href="mailto:alocubanoboulderfest@gmail.com?subject=A Lo Cubano Boulder Fest Inquiry"
             style="color: inherit; text-decoration: underline"
             >alocubanoboulderfest@gmail.com</a
           >
@@ -451,16 +629,6 @@
       </div>
     </footer>
 
-    <!-- Theme Management -->
-    <script type="module">
-      import { initializeThemeToggle } from '/js/theme-toggle.js';
-      import themeManager from '/js/theme-manager.js';
-
-      // Initialize theme
-      document.addEventListener('DOMContentLoaded', () => {
-        themeManager.initializeTheme();
-        initializeThemeToggle('#theme-toggle-container');
-      });
-    </script>
-</body>
+    <script src="/js/logo-switcher.js"></script>
+  </body>
 </html>

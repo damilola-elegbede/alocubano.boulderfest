@@ -4,12 +4,15 @@
     <!-- Inline theme detection to prevent FOUC -->
     <script>
       (function() {
+        // Detect admin pages
         const path = window.location.pathname.toLowerCase();
         const isAdmin = path.includes('/admin') || path.includes('pages/admin');
 
         if (isAdmin) {
+          // Admin pages always use dark theme
           document.documentElement.setAttribute('data-theme', 'dark');
         } else {
+          // Main site: check user preference
           let stored = null;
           try {
             stored = localStorage.getItem('theme-preference');
@@ -21,6 +24,7 @@
           let theme = preference;
 
           if (preference === 'system') {
+            // Detect system preference
             theme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
               ? 'dark'
               : 'light';
@@ -33,12 +37,11 @@
 
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Weekender November 2025 Gallery - A Lo Cubano Boulder Fest</title>
+    <title>Gallery - A Lo Cubano Weekender November 2025</title>
     <meta
       name="description"
-      content="Gallery for A Lo Cubano Weekender November 2025. View photos and videos from this intimate Cuban salsa weekend experience."
+      content="Photo gallery for A Lo Cubano Weekender November 2025. Browse photos and memories from our Cuban salsa weekend in Boulder, Colorado."
     />
-
     <!-- Favicons -->
     <link
       rel="icon"
@@ -46,6 +49,33 @@
       href="/images/favicons/favicon-32x32.png"
     />
     <link rel="icon" type="image/x-icon" href="/images/favicon.ico" />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/images/favicons/favicon-16x16.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/images/favicons/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="192x192"
+      href="/images/favicons/favicon-192x192.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="192x192"
+      href="/images/favicons/favicon-192x192.png"
+    />
+
+    <!-- DNS prefetch for external resources -->
+    <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="//fonts.gstatic.com" />
 
     <!-- Theme Management - Early inclusion to prevent FOUC -->
     <script type="module" src="/js/theme-manager.js"></script>
@@ -55,8 +85,15 @@
     <link rel="stylesheet" href="/css/typography.css" />
     <link rel="stylesheet" href="/css/floating-cart.css" />
     <link rel="stylesheet" href="/css/floating-cart-dark.css" />
+    <link rel="stylesheet" href="/css/navigation.css" />
+    <link rel="stylesheet" href="/css/forms.css" />
     <link rel="stylesheet" href="/css/header-cart.css" />
     <link rel="stylesheet" href="/css/mobile-overrides.css" />
+    <link rel="stylesheet" href="/css/gallery.css" />
+    <!-- Theme styles -->
+    <link rel="stylesheet" href="/css/theme-toggle.css" />
+    <script type="module" src="/js/theme-manager.js"></script>
+    <link rel="stylesheet" href="/css/newsletter.css" />
   </head>
   <body class="typographic">
     <!-- Skip Links for Accessibility -->
@@ -76,8 +113,24 @@
       "
       >Skip to main content</a
     >
+    <a
+      href="#navigation"
+      class="skip-link"
+      style="
+        position: absolute;
+        top: -40px;
+        left: 0;
+        background: var(--color-black);
+        color: var(--color-white);
+        padding: 8px;
+        text-decoration: none;
+        z-index: 1000;
+        transition: top 0.3s;
+      "
+      >Skip to navigation</a
+    >
 
-    <header class="header">
+    <header class="header" id="navigation">
       <div class="container">
         <div class="grid">
           <div class="header-left">
@@ -167,10 +220,12 @@
                     <ul class="dropdown-submenu">
                       <li>
                         <a
-                          href="/weekender-2025-11"
+                      <li>
+                        <a
+                          href="/2025-11-weekender"
                           class="dropdown-link"
                           role="menuitem"
-                          data-event="weekender-2025-11"
+                          data-event="2025-11-weekender"
                           data-event-status="upcoming"
                           >November 2025</a
                         >
@@ -209,14 +264,29 @@
     </header>
 
     <main id="main-content">
+      <!-- Hero Splash Image -->
+      <section class="gallery-hero-splash">
+        <div class="hero-image-container">
+          <img
+            src="/images/hero/weekender-2025-11-hero.jpg"
+            alt="November 2025 Weekender photo gallery and memories"
+            class="hero-splash-img"
+            style="object-position: top center !important"
+          />
+        </div>
+      </section>
+
       <!-- Event Sub Navigation -->
       <section class="event-subnav">
         <div class="container">
-          <nav class="event-nav" aria-label="Weekender November 2025 Navigation">
+          <nav
+            class="event-nav"
+            aria-label="November 2025 Weekender Navigation"
+          >
             <ul class="event-nav-list">
               <li>
                 <a
-                  href="/weekender-2025-11"
+                  href="/2025-11-weekender"
                   class="event-nav-link"
                   data-text="Overview"
                   >Overview</a
@@ -224,7 +294,7 @@
               </li>
               <li>
                 <a
-                  href="/weekender-2025-11-artists"
+                  href="/2025-nov-artists"
                   class="event-nav-link"
                   data-text="Artists"
                   >Artists</a
@@ -232,7 +302,7 @@
               </li>
               <li>
                 <a
-                  href="/weekender-2025-11-schedule"
+                  href="/2025-nov-schedule"
                   class="event-nav-link"
                   data-text="Schedule"
                   >Schedule</a
@@ -240,7 +310,7 @@
               </li>
               <li>
                 <a
-                  href="/weekender-2025-11-gallery"
+                  href="/2025-nov-gallery"
                   class="event-nav-link"
                   data-text="Gallery"
                   >Gallery</a
@@ -251,45 +321,161 @@
         </div>
       </section>
 
-      <!-- Gallery Section -->
+      <!-- Gallery Header -->
       <section class="section-typographic" style="padding: var(--space-xl) 0">
         <div class="container">
-          <h1 class="text-mask">GALLERY</h1>
           <div class="text-composition">
             <div class="text-block-large">
+              <h1 class="hero__title text-mask">
+                Event Gallery
+              </h1>
               <h2 class="hero__subtitle">
-                Photos and videos from the Weekender November 2025 experience
+                Memories and moments from A Lo Cubano Weekender November 2025
               </h2>
             </div>
             <div class="text-block-mono">
-              // COMING SOON<br />
-              // EVENT PHOTOS<br />
-              // WORKSHOP HIGHLIGHTS<br />
-              // SOCIAL DANCE MOMENTS
+              // NOVEMBER 2025<br />
+              // BOULDER, COLORADO<br />
+              // INTIMATE WEEKEND MOMENTS<br />
+              // AUTHENTIC CUBAN CULTURE
             </div>
           </div>
         </div>
       </section>
+
+      <!-- Gallery Content -->
+      <section class="section-typographic" style="padding: var(--space-xl) 0">
+        <div class="container">
+
+          <!-- Coming Soon Message -->
+          <div style="text-align: center; padding: var(--space-3xl) var(--space-xl);">
+            <h3 style="font-family: var(--font-display); font-size: var(--font-size-2xl); margin: 0 0 var(--space-lg); color: var(--color-red);">Coming Soon</h3>
+            <p style="color: var(--color-gray-600); line-height: 1.6; font-size: var(--font-size-lg);">
+              Photos of the event will be loaded here.
+            </p>
+          </div>
+                    <path d="M21 15l-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+                  </svg>
+                </div>
+              </a>
+
+            </div>
+          </div>
+
+          <!-- Newsletter Signup Section -->
+          <div class="newsletter-cta-section" style="margin-top: var(--space-xl); text-align: center;">
+            <h3 style="margin: 0 0 var(--space-md); font-family: var(--font-display); font-size: var(--font-size-xl);">Stay Updated</h3>
+            <p
+              style="
+                margin: 0 0 var(--space-lg);
+                font-size: var(--font-size-md);
+                max-width: 500px;
+                margin-left: auto;
+                margin-right: auto;
+              "
+            >
+              Subscribe to our newsletter for November 2025 Weekender updates,
+              photo galleries, and festival announcements.
+            </p>
+            <form
+              class="newsletter-form-type"
+              id="newsletter-form"
+              aria-label="Email newsletter signup"
+              style="max-width: 400px; margin: 0 auto"
+            >
+              <div class="form-group-type">
+                <div class="newsletter-input-wrapper">
+                  <input
+                    type="email"
+                    id="newsletter-email"
+                    name="email"
+                    class="form-input-type newsletter-input"
+                    placeholder="YOUR EMAIL ADDRESS"
+                    required
+                    aria-required="true"
+                    aria-label="Email address for newsletter subscription"
+                    autocomplete="email"
+                    inputmode="email"
+                  />
+                  <button
+                    type="submit"
+                    class="form-button-type newsletter-submit"
+                    aria-label="Subscribe to newsletter"
+                  >
+                    <span class="button-text">SUBSCRIBE</span>
+                    <span class="button-icon" aria-hidden="true">→</span>
+                  </button>
+                </div>
+                <span
+                  id="newsletter-error"
+                  class="error-message"
+                  role="alert"
+                  aria-live="polite"
+                ></span>
+                <div
+                  id="newsletter-success"
+                  class="newsletter-success"
+                  role="status"
+                  aria-live="polite"
+                  aria-hidden="true"
+                >
+                  <span class="success-icon">✓</span>
+                  <span class="success-text"
+                    >Welcome to the A Lo Cubano family!</span
+                  >
+                </div>
+              </div>
+              <div class="newsletter-consent">
+                <label class="custom-checkbox">
+                  <input
+                    type="checkbox"
+                    name="consent"
+                    required
+                    aria-required="true"
+                  />
+                  <span class="checkmark"></span>
+                  <span class="checkbox-label"
+                    >I agree to receive marketing emails about festival
+                    updates and events</span
+                  >
+                </label>
+              </div>
+            </form>
+          </div>
+
+        </div>
+      </section>
+
     </main>
 
     <!-- Scripts -->
-    <link rel="stylesheet" href="/css/navigation.css" />
-    <link rel="stylesheet" href="/css/theme-toggle.css" />
-    <link rel="stylesheet" href="/css/forms.css" />
     <script src="/js/components/lightbox.js"></script>
     <script src="/js/components/lazy-loading.js"></script>
     <script src="/js/main.js"></script>
     <script src="/js/navigation.js"></script>
+    <script src="/js/gallery-hero.js"></script>
     <script src="/js/typography.js"></script>
+    <script src="/js/newsletter.js"></script>
     <script type="module" src="/js/global-cart.js"></script>
-    <script src="/js/logo-switcher.js"></script>
+
+    <!-- Theme Management -->
+    <script type="module">
+      import { initializeThemeToggle } from '/js/theme-toggle.js';
+      import themeManager from '/js/theme-manager.js';
+
+      // Initialize theme system
+      document.addEventListener('DOMContentLoaded', () => {
+        themeManager.initializeTheme();
+        initializeThemeToggle('#theme-toggle-container');
+      });
+    </script>
 
     <footer class="footer-typographic">
       <div class="container">
         <p class="footer-credits">
-          NOVEMBER 2025 • BOULDER, COLORADO •
+          NOVEMBER 2025 WEEKENDER • BOULDER, COLORADO •
           <a
-            href="mailto:alocubanoboulderfest@gmail.com?subject=A Lo Cubano Weekender Inquiry"
+            href="mailto:alocubanoboulderfest@gmail.com?subject=A Lo Cubano Boulder Fest Inquiry"
             style="color: inherit; text-decoration: underline"
             >alocubanoboulderfest@gmail.com</a
           >
@@ -346,16 +532,6 @@
       </div>
     </footer>
 
-    <!-- Theme Management -->
-    <script type="module">
-      import { initializeThemeToggle } from '/js/theme-toggle.js';
-      import themeManager from '/js/theme-manager.js';
-
-      // Initialize theme
-      document.addEventListener('DOMContentLoaded', () => {
-        themeManager.initializeTheme();
-        initializeThemeToggle('#theme-toggle-container');
-      });
-    </script>
-</body>
+    <script src="/js/logo-switcher.js"></script>
+  </body>
 </html>
