@@ -5,6 +5,7 @@
 import { getStripePaymentHandler } from './lib/stripe-integration.js';
 import { getPaymentSelector } from './components/payment-selector.js';
 import { setSafeHTML, escapeHtml } from './utils/dom-sanitizer.js';
+import eventsService from './lib/events-service.js';
 
 export function initializeFloatingCart(cartManager) {
     // Check if already initialized
@@ -541,7 +542,7 @@ function performCartUIUpdate(elements, cartState) {
             }
         });
     } else {
-        updates.push(() => {
+        updates.push(async () => {
             elements.emptyMessage.style.display = 'none';
             elements.itemsContainer.style.display = 'block';
             elements.checkoutButton.disabled = false;
@@ -549,8 +550,8 @@ function performCartUIUpdate(elements, cartState) {
                 elements.clearButton.style.display = 'block';
             }
 
-            // Render items (optimized)
-            renderCartItemsOptimized(elements.itemsContainer, tickets, donations);
+            // Render items (optimized) - now async
+            await renderCartItemsOptimized(elements.itemsContainer, tickets, donations);
         });
     }
 
@@ -580,7 +581,14 @@ function performCartUIUpdate(elements, cartState) {
     });
 
     // Execute all updates in a single animation frame
-    updates.forEach(update => update());
+    // Handle async updates properly
+    updates.forEach(async (update) => {
+        try {
+            await update();
+        } catch (error) {
+            console.error('Error executing cart UI update:', error);
+        }
+    });
 }
 
 // Legacy function for compatibility - now redirects to optimized version
@@ -589,7 +597,7 @@ function renderCartItems(container, tickets, donations) {
 }
 
 // Optimized cart rendering with virtual scrolling for large carts
-function renderCartItemsOptimized(container, tickets, donations) {
+async function renderCartItemsOptimized(container, tickets, donations) {
     // Clear container first
     container.innerHTML = '';
 
@@ -600,19 +608,33 @@ function renderCartItemsOptimized(container, tickets, donations) {
     const ticketsByEvent = groupTicketsByEvent(Object.values(tickets));
 
     // Render each event's tickets with proper banner
-    Object.entries(ticketsByEvent).forEach(([eventId, eventTickets]) => {
+    const eventEntries = Object.entries(ticketsByEvent);
+    for (const [eventId, eventTickets] of eventEntries) {
         if (eventTickets.length > 0) {
-            const eventDisplayName = getEventDisplayName(eventId);
-            const ticketsSection = createCartSection(eventDisplayName, 'tickets');
+            try {
+                const eventDisplayName = await getEventDisplayName(eventId);
+                const ticketsSection = createCartSection(eventDisplayName, 'tickets');
 
-            eventTickets.forEach((ticket) => {
-                const itemElement = createTicketItemElement(ticket);
-                ticketsSection.appendChild(itemElement);
-            });
+                eventTickets.forEach((ticket) => {
+                    const itemElement = createTicketItemElement(ticket);
+                    ticketsSection.appendChild(itemElement);
+                });
 
-            fragment.appendChild(ticketsSection);
+                fragment.appendChild(ticketsSection);
+            } catch (error) {
+                console.error('Failed to get event display name, using fallback:', error);
+                const fallbackName = getEventDisplayNameSync(eventId);
+                const ticketsSection = createCartSection(fallbackName, 'tickets');
+
+                eventTickets.forEach((ticket) => {
+                    const itemElement = createTicketItemElement(ticket);
+                    ticketsSection.appendChild(itemElement);
+                });
+
+                fragment.appendChild(ticketsSection);
+            }
         }
-    });
+    }
 
     // Render donations category
     if (donations && donations.length > 0) {
@@ -668,21 +690,56 @@ function groupTicketsByEvent(tickets) {
     return grouped;
 }
 
-// Helper function to get display name for events
-function getEventDisplayName(eventId) {
-    const eventDisplayMap = {
+// Helper function to get display name for events using events service
+async function getEventDisplayName(eventId) {
+    try {
+        // Check if eventId is a number (integer ID) or string (slug/legacy)
+        if (typeof eventId === 'number' || /^-?\d+$/.test(eventId)) {
+            const numericId = typeof eventId === 'number' ? eventId : parseInt(eventId);
+            return await eventsService.getEventName(numericId);
+        } else {
+            // Handle string identifiers (slugs or legacy names)
+            const event = await eventsService.getEventBySlug(eventId);
+            if (event) {
+                return event.displayName;
+            }
+
+            // Try migration for legacy identifiers
+            const migratedId = await eventsService.migrateLegacyEventId(eventId);
+            if (migratedId) {
+                return await eventsService.getEventName(migratedId);
+            }
+        }
+
+        console.warn(`Event not found for ID: ${eventId}`);
+        return 'A Lo Cubano Tickets';
+    } catch (error) {
+        console.error('Failed to get event display name:', error);
+        return 'A Lo Cubano Tickets';
+    }
+}
+
+// Synchronous fallback for immediate use (will be replaced by async version)
+function getEventDisplayNameSync(eventId) {
+    // Fallback mapping for immediate use before async service loads
+    const fallbackMap = {
         'weekender-2025-11': 'November 2025 Weekender Tickets',
+        '2025-11-weekender': 'November 2025 Weekender Tickets',
         'boulderfest-2026': 'Boulder Fest 2026 Tickets',
         'boulderfest-2025': 'Boulder Fest 2025 Tickets',
-        // Test events
         'Test Weekender': '[TEST] Weekender Tickets',
         'Test Festival': '[TEST] Festival Tickets',
-        // Legacy fallbacks
+        'test-weekender': '[TEST] Weekender Tickets',
+        'test-festival': '[TEST] Festival Tickets',
         'alocubano-boulderfest-2026': 'Boulder Fest 2026 Tickets',
-        'november-2025-weekender': 'November 2025 Weekender Tickets'
+        'november-2025-weekender': 'November 2025 Weekender Tickets',
+        1: 'Boulder Fest 2026 Tickets',
+        2: 'November 2025 Weekender Tickets',
+        '-1': '[TEST] Weekender Tickets',
+        '-2': '[TEST] Festival Tickets'
     };
 
-    return eventDisplayMap[eventId] || 'A Lo Cubano Tickets';
+    return fallbackMap[eventId] || 'A Lo Cubano Tickets';
 }
 
 // Create a cart section element

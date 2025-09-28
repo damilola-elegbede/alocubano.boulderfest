@@ -255,11 +255,11 @@ async function addTestItemToCart(itemType) {
     let testVenue = 'Test Ballroom';
     let testEventDate = '2028-02-29'; // Leap year date for test
 
-    // Set event ID based on ticket type
+    // Set event ID based on ticket type (using integer IDs for test events)
     if (itemType.includes('weekend') || itemType.includes('friday') || itemType.includes('saturday') || itemType.includes('sunday')) {
-        testEventId = 'Test Weekender';
+        testEventId = -2; // Test Weekender (negative ID for test)
     } else {
-        testEventId = 'Test Festival';
+        testEventId = -1; // Test Festival (negative ID for test)
     }
 
     try {
