@@ -674,6 +674,9 @@ function getEventDisplayName(eventId) {
         'weekender-2025-11': 'November 2025 Weekender Tickets',
         'boulderfest-2026': 'Boulder Fest 2026 Tickets',
         'boulderfest-2025': 'Boulder Fest 2025 Tickets',
+        // Test events
+        'Test Weekender': '[TEST] Weekender Tickets',
+        'Test Festival': '[TEST] Festival Tickets',
         // Legacy fallbacks
         'alocubano-boulderfest-2026': 'Boulder Fest 2026 Tickets',
         'november-2025-weekender': 'November 2025 Weekender Tickets'
