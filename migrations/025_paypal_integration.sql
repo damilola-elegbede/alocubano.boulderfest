@@ -107,6 +107,7 @@ CREATE INDEX IF NOT EXISTS idx_transactions_processor_status
 CREATE INDEX IF NOT EXISTS idx_transactions_processor_created_at
     ON transactions(payment_processor, created_at DESC);
 
+-- REQUIRES COLUMN: transactions.is_test
 CREATE INDEX IF NOT EXISTS idx_transactions_processor_test_mode
     ON transactions(payment_processor, is_test, status, created_at DESC);
 

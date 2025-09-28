@@ -48,10 +48,32 @@ INSERT OR IGNORE INTO events (
 );
 
 -- Add event settings for November 2025 Weekender
-INSERT OR IGNORE INTO event_settings (event_id, key, value) VALUES
-    ((SELECT id FROM events WHERE slug = '2025-11-weekender'), 'registration_open', 'false'),
-    ((SELECT id FROM events WHERE slug = '2025-11-weekender'), 'early_bird_active', 'false'),
-    ((SELECT id FROM events WHERE slug = '2025-11-weekender'), 'artist_announcements', 'pending'),
-    ((SELECT id FROM events WHERE slug = '2025-11-weekender'), 'schedule_published', 'false'),
-    ((SELECT id FROM events WHERE slug = '2025-11-weekender'), 'venue_confirmed', 'false'),
-    ((SELECT id FROM events WHERE slug = '2025-11-weekender'), 'dates_confirmed', 'false');
+-- Only add settings if the event was successfully created
+INSERT OR IGNORE INTO event_settings (event_id, key, value)
+SELECT event_id, key, value FROM (
+    SELECT
+        (SELECT id FROM events WHERE slug = '2025-11-weekender') as event_id,
+        'registration_open' as key,
+        'false' as value
+    UNION ALL SELECT
+        (SELECT id FROM events WHERE slug = '2025-11-weekender'),
+        'early_bird_active',
+        'false'
+    UNION ALL SELECT
+        (SELECT id FROM events WHERE slug = '2025-11-weekender'),
+        'artist_announcements',
+        'pending'
+    UNION ALL SELECT
+        (SELECT id FROM events WHERE slug = '2025-11-weekender'),
+        'schedule_published',
+        'false'
+    UNION ALL SELECT
+        (SELECT id FROM events WHERE slug = '2025-11-weekender'),
+        'venue_confirmed',
+        'false'
+    UNION ALL SELECT
+        (SELECT id FROM events WHERE slug = '2025-11-weekender'),
+        'dates_confirmed',
+        'false'
+) AS settings
+WHERE event_id IS NOT NULL;

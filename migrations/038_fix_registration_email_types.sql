@@ -54,6 +54,7 @@ SELECT
 CREATE INDEX IF NOT EXISTS idx_paypal_webhook_events_event_id
     ON paypal_webhook_events(event_id);
 
+-- REQUIRES COLUMN: paypal_webhook_events.is_test
 CREATE INDEX IF NOT EXISTS idx_paypal_webhook_events_test_mode
     ON paypal_webhook_events(is_test, processing_status, created_at DESC);
 
