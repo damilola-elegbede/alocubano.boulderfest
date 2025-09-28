@@ -406,19 +406,28 @@ export default async function handler(req, res) {
     // If ALL tickets are already registered, return success with that info
     if (alreadyRegistered.length === ticketIds.length) {
       console.log('[BATCH_REG] All tickets already registered, returning success');
+
+      // Get full ticket details for already registered tickets
+      const registeredDetails = ticketsResult.rows.map(ticket => ({
+        ticketId: ticket.ticket_id,
+        ticketType: ticket.ticket_type,
+        status: 'already_registered',
+        attendee: {
+          firstName: ticket.attendee_first_name,
+          lastName: ticket.attendee_last_name,
+          email: ticket.attendee_email
+        },
+        registeredAt: ticket.registered_at,
+        eventName: ticket.event_name || 'A Lo Cubano Boulder Fest',
+        eventLocation: `${ticket.venue_name || 'Avalon Ballroom'}, ${ticket.venue_city || 'Boulder'}, ${ticket.venue_state || 'CO'}`
+      }));
+
       return res.status(200).json({
         success: true,
         message: 'All tickets were already registered',
         alreadyRegistered: alreadyRegistered,
-        registrations: alreadyRegistered.map(t => ({
-          ticketId: t.ticketId,
-          status: 'already_registered',
-          attendee: {
-            firstName: t.attendeeName.split(' ')[0],
-            lastName: t.attendeeName.split(' ').slice(1).join(' '),
-            email: t.attendeeEmail
-          }
-        })),
+        registrations: registeredDetails,
+        registeredTickets: registeredDetails, // Include this for frontend compatibility
         summary: {
           totalRegistered: 0,
           alreadyRegistered: alreadyRegistered.length,
