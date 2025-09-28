@@ -589,7 +589,9 @@ class PaymentSelector {
                 name: ticket.name,
                 price: ticket.price,
                 quantity: ticket.quantity,
-                eventDate: ticket.eventDate || this.eventDate  // Use ticket-specific date or fallback
+                eventDate: ticket.eventDate || this.eventDate,  // Use ticket-specific date or fallback
+                eventId: ticket.eventId || this.eventId,        // Include event ID
+                venue: ticket.venue || this.venue                // Include venue
             });
         });
 
