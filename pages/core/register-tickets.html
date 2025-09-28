@@ -468,12 +468,11 @@
         <div id="registration-content" style="display: none;">
           <div class="registration-header">
             <h1>Register Your Festival Tickets</h1>
-            <p>Complete the attendee information for your A Lo Cubano Boulder Fest 2026 tickets.</p>
+            <p>Complete the attendee information for your event tickets.</p>
           </div>
 
           <div class="registration-info">
             <h3>Registration Information</h3>
-            <p><strong>Purchaser:</strong> <span id="purchaser-email"></span></p>
             <p><strong>Total Tickets:</strong> <span id="ticket-count"></span></p>
             <p><strong>Registration Deadline:</strong> <span id="registration-deadline"></span></p>
           </div>
@@ -677,7 +676,6 @@
           document.getElementById('registration-content').style.display = 'block';
 
           // Populate header info
-          document.getElementById('purchaser-email').textContent = this.registrationData.purchaserEmail;
           document.getElementById('ticket-count').textContent = this.registrationData.tickets.length;
           document.getElementById('registration-deadline').textContent =
             new Date(this.registrationData.deadline).toLocaleString();
@@ -1047,37 +1045,69 @@
           const successState = document.getElementById('success-state');
 
           // Create enhanced success content
-          const orderNumber = result.orderNumber || 'N/A';
           const totalTickets = result.summary?.totalRegistered || result.registrations?.length || 0;
-          const registrationDate = result.summary?.registrationDate ?
-            new Date(result.summary.registrationDate).toLocaleDateString('en-US', {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            }) : new Date().toLocaleDateString();
+
+          // Process ticket information properly
+          let registeredTicketsInfo = [];
+
+          // Try to get information from results first, then registrations
+          if (result.results && Array.isArray(result.results)) {
+            registeredTicketsInfo = result.results.map(r => ({
+              firstName: r.attendee?.firstName || '',
+              lastName: r.attendee?.lastName || '',
+              email: r.attendee?.email || '',
+              ticketId: r.ticketId,
+              ticketType: r.ticketType || 'Festival Pass',
+              eventName: 'A Lo Cubano Boulder Fest 2026'
+            }));
+          } else if (result.registrations && Array.isArray(result.registrations)) {
+            registeredTicketsInfo = result.registrations.map(r => ({
+              firstName: r.firstName,
+              lastName: r.lastName,
+              email: r.email,
+              ticketId: r.ticketId,
+              ticketType: r.ticketType || 'Festival Pass',
+              eventName: 'A Lo Cubano Boulder Fest 2026'
+            }));
+          }
+
+          // Filter out TEST tickets and clean up ticket types
+          registeredTicketsInfo = registeredTicketsInfo.map(ticket => {
+            let cleanTicketType = ticket.ticketType;
+            // Remove TEST- prefix from ticket types
+            if (cleanTicketType && cleanTicketType.startsWith('TEST-')) {
+              cleanTicketType = cleanTicketType.substring(5);
+            }
+            // Capitalize first letter
+            if (cleanTicketType) {
+              cleanTicketType = cleanTicketType.charAt(0).toUpperCase() + cleanTicketType.slice(1);
+              // Convert underscores to spaces
+              cleanTicketType = cleanTicketType.replace(/_/g, ' ');
+            }
+            return {
+              ...ticket,
+              ticketType: cleanTicketType
+            };
+          });
 
           // Update the success content with order information
           successState.innerHTML = `
             <h2>🎉 Registration Complete!</h2>
-            <div style="background: var(--color-surface); border: 1px solid var(--color-success); border-radius: 8px; padding: var(--space-lg); margin: var(--space-lg) 0;">
-              <h3 style="color: var(--color-success-700); margin-top: 0;">Order Summary</h3>
-              <p><strong>Order Number:</strong> <span style="font-family: var(--font-code); font-size: 1.1em; color: var(--color-primary);">${orderNumber}</span></p>
-              <p><strong>Registration Date:</strong> ${registrationDate}</p>
-              <p><strong>Total Tickets Registered:</strong> ${totalTickets}</p>
-            </div>
 
-            <p>Your tickets have been successfully registered. You should receive a comprehensive confirmation email shortly with all the details.</p>
+            <p style="margin: var(--space-lg) 0;">Your tickets have been successfully registered.</p>
 
             <!-- Registered Attendees Summary -->
-            ${result.registeredTickets && result.registeredTickets.length > 0 ? `
+            ${registeredTicketsInfo.length > 0 ? `
               <div style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 8px; padding: var(--space-lg); margin: var(--space-lg) 0;">
                 <h3 style="color: var(--color-primary); margin-top: 0;">Registered Attendees</h3>
-                ${result.registeredTickets.map((ticket, index) => `
-                  <div style="padding: var(--space-md) 0; border-bottom: 1px solid var(--color-border-light); ${index === result.registeredTickets.length - 1 ? 'border-bottom: none;' : ''}">
-                    <p style="margin: 0; font-weight: 600;">${ticket.attendeeName}</p>
+                ${registeredTicketsInfo.map((ticket, index) => `
+                  <div style="padding: var(--space-md) 0; border-bottom: 1px solid var(--color-border-light); ${index === registeredTicketsInfo.length - 1 ? 'border-bottom: none;' : ''}">
+                    <p style="margin: 0; font-weight: 600;">${ticket.firstName} ${ticket.lastName}</p>
                     <p style="margin: 0; color: var(--color-text-secondary); font-size: var(--font-size-sm);">
-                      ${ticket.attendeeEmail} • ${ticket.ticketType} • ID: ${ticket.ticketId}
+                      ${ticket.email}
+                    </p>
+                    <p style="margin: 0; color: var(--color-text-secondary); font-size: var(--font-size-sm);">
+                      ${ticket.eventName} • ${ticket.ticketType} • Ticket ID: ${ticket.ticketId}
                     </p>
                   </div>
                 `).join('')}
@@ -1093,21 +1123,10 @@
               </div>
             </div>
 
-            <div class="next-steps">
-              <h3>What's Next?</h3>
-              <ul>
-                <li>📧 Check your email for a comprehensive summary with all ticket details</li>
-                <li>📱 Add your tickets to Apple Wallet or Google Pay using the buttons above</li>
-                <li>📅 Mark May 15-17, 2026 on your calendar</li>
-                <li>📍 Save the venue: Avalon Ballroom, Boulder, CO</li>
-                <li>🎺 Follow us on Instagram @alocubano.boulderfest for updates</li>
-                <li>💃 Get ready to dance!</li>
-              </ul>
-
-              <div style="text-align: center; margin-top: var(--space-lg);">
-                <p><strong>Need help?</strong> Contact us at <a href="mailto:alocubanoboulderfest@gmail.com">alocubanoboulderfest@gmail.com</a></p>
-                <p style="font-style: italic; color: var(--color-text-secondary);">¡Nos vemos en la pista de baile!</p>
-              </div>
+            <div style="text-align: center; margin-top: var(--space-xl);">
+              <a href="/home" class="form-button-type" style="display: inline-block; text-decoration: none;">
+                Return to Home Page
+              </a>
             </div>
           `;
         }

@@ -437,6 +437,7 @@ export default async function handler(req, res) {
           results.push({
             ticketId: registration.ticketId,
             status: 'already_registered',
+            ticketType: ticket.ticket_type,
             attendee: {
               firstName: ticket.attendee_first_name,
               lastName: ticket.attendee_last_name,
@@ -530,6 +531,7 @@ export default async function handler(req, res) {
         results.push({
           ticketId: registration.ticketId,
           status: 'registered',
+          ticketType: ticket.ticket_type,
           attendee: {
             firstName: registration.firstName,
             lastName: registration.lastName,
@@ -731,7 +733,7 @@ export default async function handler(req, res) {
     console.log('[BATCH_REG] Verifying ticket status in database after registration...');
     const verifyResult = await db.execute({
       sql: `
-        SELECT ticket_id, registration_status, attendee_first_name, attendee_last_name, attendee_email, registered_at
+        SELECT ticket_id, registration_status, attendee_first_name, attendee_last_name, attendee_email, registered_at, transaction_id
         FROM tickets
         WHERE ticket_id IN (${sanitizedRegistrations.map(() => '?').join(',')})
       `,
@@ -744,9 +746,18 @@ export default async function handler(req, res) {
         status: t.registration_status,
         attendee: `${t.attendee_first_name} ${t.attendee_last_name}`,
         email: t.attendee_email,
-        registeredAt: t.registered_at
+        registeredAt: t.registered_at,
+        transactionId: t.transaction_id
       }))
     );
+
+    // Check for any tickets that are still pending
+    const stillPending = verifyResult.rows.filter(t => t.registration_status !== 'completed');
+    if (stillPending.length > 0) {
+      console.error('[BATCH_REG] WARNING: Some tickets are still pending after registration!', stillPending.map(t => t.ticket_id));
+    } else {
+      console.log('[BATCH_REG] SUCCESS: All tickets confirmed as completed in database');
+    }
 
     // Log batch operation summary (non-blocking)
     const totalProcessingTime = Date.now() - startTime;
