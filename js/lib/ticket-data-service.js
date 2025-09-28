@@ -237,7 +237,7 @@ class TicketDataService {
 
         if (ticketTypesOnPage.length === 0) {
             console.warn('No ticket types found on page, falling back to default');
-            return 3; // Default to boulderfest-2026 (event ID: 3)
+            return 1; // Default to boulderfest-2026 (event ID: 1)
         }
 
         // Get event ID from first ticket type

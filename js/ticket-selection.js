@@ -19,7 +19,7 @@ class TicketSelection {
             return await ticketDataService.detectEventIdFromPage();
         } catch (error) {
             console.error('Failed to detect event ID:', error);
-            return 3; // Default to boulderfest-2026 (event ID: 3)
+            return 1; // Default to boulderfest-2026 (event ID: 1)
         }
     }
 
