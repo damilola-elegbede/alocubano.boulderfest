@@ -143,15 +143,22 @@ export default async function handler(req, res) {
 
       // Add metadata for different item types
       if (item.type === 'ticket') {
+        // Validate ticket type is present - NO DEFAULTS
+        if (!item.ticketType) {
+          return res.status(400).json({
+            error: `Missing ticket type for ticket: ${item.name || 'Unknown'}. This is a critical error - please contact support.`
+          });
+        }
+
         lineItem.price_data.product_data.metadata = {
           type: 'ticket',
-          ticket_type: item.ticketType || 'general',
+          ticket_type: item.ticketType,  // No default - must be explicit
           event_date: item.eventDate || '2026-05-15'
         };
       } else if (item.type === 'donation') {
         lineItem.price_data.product_data.metadata = {
           type: 'donation',
-          donation_category: item.category || 'general'
+          donation_category: item.category || 'general'  // Donations can have a default category
         };
       }
 

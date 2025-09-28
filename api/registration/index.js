@@ -13,6 +13,12 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Token is required' });
   }
 
+  // Set no-cache headers to prevent stale data issues
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.setHeader('Surrogate-Control', 'no-store');
+
   try {
     console.log('[REG_STATUS] Registration status check for token:', token?.substring(0, 20) + '...');
 
