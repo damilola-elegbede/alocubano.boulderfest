@@ -6,8 +6,9 @@
 -- STEP 1: Insert Missing Event Records (Idempotent)
 -- =============================================================================
 
--- Insert Boulder Fest 2026 (main production event) if not exists
+-- Insert Boulder Fest 2025 (ID: 1) if not exists
 INSERT OR IGNORE INTO events (
+    id,
     slug,
     name,
     type,
@@ -29,51 +30,7 @@ INSERT OR IGNORE INTO events (
     created_by,
     config
 ) VALUES (
-    'boulderfest-2026',
-    'A Lo Cubano Boulder Fest 2026',
-    'festival',
-    'upcoming',
-    'The premier Cuban salsa festival in Boulder, featuring world-class instructors, live music, and three nights of social dancing.',
-    'Avalon Ballroom',
-    '6185 Arapahoe Road',
-    'Boulder',
-    'CO',
-    '80303',
-    '2026-05-15',
-    '2026-05-17',
-    500,
-    '2026-03-01',
-    '2026-04-01',
     1,
-    TRUE,
-    TRUE,
-    'system',
-    json('{"ticket_types": ["full-pass", "day-pass", "workshop-only", "social-only", "vip"], "features": {"workshops": true, "performances": true, "social_dancing": true, "live_music": true, "vendor_booths": true}}')
-);
-
--- Insert Boulder Fest 2025 (legacy event) if not exists
-INSERT OR IGNORE INTO events (
-    slug,
-    name,
-    type,
-    status,
-    description,
-    venue_name,
-    venue_address,
-    venue_city,
-    venue_state,
-    venue_zip,
-    start_date,
-    end_date,
-    max_capacity,
-    early_bird_end_date,
-    regular_price_start_date,
-    display_order,
-    is_featured,
-    is_visible,
-    created_by,
-    config
-) VALUES (
     'boulderfest-2025',
     'A Lo Cubano Boulder Fest 2025',
     'festival',
@@ -96,8 +53,9 @@ INSERT OR IGNORE INTO events (
     json('{"ticket_types": ["full-pass", "day-pass", "workshop-only", "social-only"], "features": {"workshops": true, "performances": true, "social_dancing": true, "live_music": true}}')
 );
 
--- Insert November 2025 Weekender (current production weekender) if not exists
+-- Insert November 2025 Weekender (ID: 2) if not exists
 INSERT OR IGNORE INTO events (
+    id,
     slug,
     name,
     type,
@@ -119,6 +77,7 @@ INSERT OR IGNORE INTO events (
     created_by,
     config
 ) VALUES (
+    2,
     'weekender-2025-11',
     'November Salsa Weekender 2025',
     'weekender',
@@ -139,6 +98,53 @@ INSERT OR IGNORE INTO events (
     TRUE,
     'system',
     json('{"ticket_types": ["weekend-pass", "saturday-pass", "sunday-pass", "saturday-social", "sunday-social"], "features": {"workshops": true, "social_dancing": true, "intimate_format": true, "limited_capacity": true}}')
+);
+
+-- Insert Boulder Fest 2026 (ID: 3) if not exists
+INSERT OR IGNORE INTO events (
+    id,
+    slug,
+    name,
+    type,
+    status,
+    description,
+    venue_name,
+    venue_address,
+    venue_city,
+    venue_state,
+    venue_zip,
+    start_date,
+    end_date,
+    max_capacity,
+    early_bird_end_date,
+    regular_price_start_date,
+    display_order,
+    is_featured,
+    is_visible,
+    created_by,
+    config
+) VALUES (
+    3,
+    'boulderfest-2026',
+    'A Lo Cubano Boulder Fest 2026',
+    'festival',
+    'upcoming',
+    'The premier Cuban salsa festival in Boulder, featuring world-class instructors, live music, and three nights of social dancing.',
+    'Avalon Ballroom',
+    '6185 Arapahoe Road',
+    'Boulder',
+    'CO',
+    '80303',
+    '2026-05-15',
+    '2026-05-17',
+    500,
+    '2026-03-01',
+    '2026-04-01',
+    1,
+    TRUE,
+    TRUE,
+    'system',
+    json('{"ticket_types": ["full-pass", "day-pass", "workshop-only", "social-only", "vip"], "features": {"workshops": true, "performances": true, "social_dancing": true, "live_music": true, "vendor_booths": true}}')
 );
 
 -- Insert Test Weekender (for testing) if not exists - using negative ID for clear test identification

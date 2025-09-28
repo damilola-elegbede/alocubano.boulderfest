@@ -12,25 +12,25 @@ class TicketSelection {
 
     // Deterministic mapping table: ticket type -> event ID (integer)
     static TICKET_TYPE_TO_EVENT_MAP = {
-        // November 2025 Weekender (event ID: 3)
-        '2025-11-weekender-full': 3,
-        '2025-11-weekender-class': 3,
+        // November 2025 Weekender (event ID: 2)
+        '2025-11-weekender-full': 2,
+        '2025-11-weekender-class': 2,
 
-        // Boulder Fest 2026 (event ID: 1)
-        '2026-early-bird-full': 1,
-        '2026-regular-full': 1,
-        '2026-friday-pass': 1,
-        '2026-saturday-pass': 1,
-        '2026-sunday-pass': 1,
-        '2026-friday-social': 1,
-        '2026-saturday-social': 1,
+        // Boulder Fest 2026 (event ID: 3)
+        '2026-early-bird-full': 3,
+        '2026-regular-full': 3,
+        '2026-friday-pass': 3,
+        '2026-saturday-pass': 3,
+        '2026-sunday-pass': 3,
+        '2026-friday-social': 3,
+        '2026-saturday-social': 3,
 
-        // Boulder Fest 2025 (event ID: 4)
-        '2025-early-bird-full': 4,
-        '2025-regular-full': 4,
-        '2025-friday-pass': 4,
-        '2025-saturday-pass': 4,
-        '2025-sunday-pass': 4
+        // Boulder Fest 2025 (event ID: 1)
+        '2025-early-bird-full': 1,
+        '2025-regular-full': 1,
+        '2025-friday-pass': 1,
+        '2025-saturday-pass': 1,
+        '2025-sunday-pass': 1
     };
 
     static getEventIdFromTicketType(ticketType) {
@@ -50,7 +50,7 @@ class TicketSelection {
 
         if (ticketTypesOnPage.length === 0) {
             console.warn('No ticket types found on page, falling back to default');
-            return 1; // Default to boulderfest-2026 (event ID: 1)
+            return 3; // Default to boulderfest-2026 (event ID: 3)
         }
 
         // Get event ID from first ticket type (all tickets on a page should belong to same event)

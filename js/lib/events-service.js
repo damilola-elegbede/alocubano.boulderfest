@@ -173,6 +173,48 @@ class EventsService {
         const fallbackEvents = [
             {
                 id: 1,
+                slug: 'boulderfest-2025',
+                name: 'A Lo Cubano Boulder Fest 2025',
+                displayName: 'Boulder Fest 2025 Tickets',
+                type: 'festival',
+                status: 'completed',
+                description: 'The 2025 Cuban salsa festival in Boulder',
+                venue: {
+                    name: 'Avalon Ballroom',
+                    address: '6185 Arapahoe Road',
+                    city: 'Boulder',
+                    state: 'CO',
+                    zip: '80303'
+                },
+                dates: {
+                    start: '2025-05-16',
+                    end: '2025-05-18',
+                    year: 2025
+                }
+            },
+            {
+                id: 2,
+                slug: 'weekender-2025-11',
+                name: 'November Salsa Weekender 2025',
+                displayName: 'November 2025 Weekender Tickets',
+                type: 'weekender',
+                status: 'upcoming',
+                description: 'An intimate weekend of Cuban salsa workshops',
+                venue: {
+                    name: 'Boulder Theater',
+                    address: '2032 14th Street',
+                    city: 'Boulder',
+                    state: 'CO',
+                    zip: '80302'
+                },
+                dates: {
+                    start: '2025-11-08',
+                    end: '2025-11-09',
+                    year: 2025
+                }
+            },
+            {
+                id: 3,
                 slug: 'boulderfest-2026',
                 name: 'A Lo Cubano Boulder Fest 2026',
                 displayName: 'Boulder Fest 2026 Tickets',
@@ -190,26 +232,6 @@ class EventsService {
                     start: '2026-05-15',
                     end: '2026-05-17',
                     year: 2026
-                }
-            },
-            {
-                id: 2,
-                slug: '2025-11-weekender',
-                name: 'A Lo Cubano Weekender November 2025',
-                displayName: 'November 2025 Weekender Tickets',
-                type: 'weekender',
-                status: 'upcoming',
-                description: 'An intimate weekend intensive',
-                venue: {
-                    name: 'Venue TBA',
-                    address: 'Address TBA',
-                    city: 'Boulder',
-                    state: 'CO'
-                },
-                dates: {
-                    start: '2025-11-01',
-                    end: '2025-11-03',
-                    year: 2025
                 }
             },
             // Test events
@@ -257,10 +279,10 @@ class EventsService {
 
         // Legacy slug mappings for migration support
         const legacyMappings = [
-            { legacy: 'weekender-2025-11', current: '2025-11-weekender' },
-            { legacy: 'boulderfest-2025', current: 'boulderfest-2026' },
-            { legacy: 'alocubano-boulderfest-2026', current: 'boulderfest-2026' },
-            { legacy: 'november-2025-weekender', current: '2025-11-weekender' }
+            { legacy: '2025-11-weekender', current: 'weekender-2025-11' },
+            { legacy: 'november-2025-weekender', current: 'weekender-2025-11' },
+            { legacy: 'alocubano-boulderfest-2025', current: 'boulderfest-2025' },
+            { legacy: 'alocubano-boulderfest-2026', current: 'boulderfest-2026' }
         ];
 
         fallbackEvents.forEach(event => {
@@ -285,10 +307,10 @@ class EventsService {
 
         // Handle legacy string identifiers that should map to slugs
         const legacyMappings = {
-            'weekender-2025-11': '2025-11-weekender',
-            'boulderfest-2025': 'boulderfest-2026',
+            '2025-11-weekender': 'weekender-2025-11',
+            'november-2025-weekender': 'weekender-2025-11',
+            'alocubano-boulderfest-2025': 'boulderfest-2025',
             'alocubano-boulderfest-2026': 'boulderfest-2026',
-            'november-2025-weekender': '2025-11-weekender',
             'Test Weekender': 'test-weekender',
             'Test Festival': 'test-festival'
         };
