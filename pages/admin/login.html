@@ -459,6 +459,10 @@
           const data = await response.json();
 
           if (response.ok) {
+            // Save token to localStorage
+            if (data.token) {
+              localStorage.setItem('adminToken', data.token);
+            }
             // Success - redirect to admin portal
             window.location.href = "/admin";
           } else {

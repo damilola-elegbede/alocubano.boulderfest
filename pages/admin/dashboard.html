@@ -37,16 +37,17 @@
 
     <!-- Pre-render auth check to prevent content flash -->
     <script>
-      // Only hide if we're not on the login page and no valid token
+      // Hide content immediately to prevent flash
+      document.documentElement.style.visibility = 'hidden';
+
+      // Check for token and redirect if missing
       if (!window.location.pathname.includes('/admin/login')) {
         const token = localStorage.getItem('adminToken');
         if (!token) {
-          // No token - redirect immediately
+          // No token - redirect immediately (content stays hidden)
           window.location.replace('/admin/login');
-        } else {
-          // Has token - hide until verified
-          document.documentElement.style.visibility = 'hidden';
         }
+        // If token exists, content stays hidden until verified by checkAuth()
       }
     </script>
 
