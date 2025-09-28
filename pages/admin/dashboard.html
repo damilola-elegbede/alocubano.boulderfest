@@ -35,7 +35,20 @@
       })();
     </script>
 
-    <!-- Pre-render auth check will be handled by checkAuth() after DOM loads -->
+    <!-- Pre-render auth check to prevent content flash -->
+    <script>
+      // Only hide if we're not on the login page and no valid token
+      if (!window.location.pathname.includes('/admin/login')) {
+        const token = localStorage.getItem('adminToken');
+        if (!token) {
+          // No token - redirect immediately
+          window.location.replace('/admin/login');
+        } else {
+          // Has token - hide until verified
+          document.documentElement.style.visibility = 'hidden';
+        }
+      }
+    </script>
 
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -315,15 +328,24 @@
       // ✅ PROPER AUTH CHECK - Use verify-session endpoint with credentials
       async function checkAuth() {
         try {
+          // Get token from localStorage
+          const token = localStorage.getItem('adminToken');
+          if (!token) {
+            window.location.replace("/admin/login");
+            return false;
+          }
+
           const response = await fetch("/api/admin/verify-session", {
-            credentials: "include", // CRITICAL: Include cookies for production
-            headers: { "Cache-Control": "no-cache" },
-            signal: AbortSignal.timeout(3000) // 3-second timeout, no retries
+            credentials: "include",
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "Cache-Control": "no-cache"
+            }
           });
 
           if (!response.ok) {
-            // Immediate redirect on auth failure
-            document.body.setAttribute("data-auth-status", "unauthenticated");
+            // Clear invalid token and redirect
+            localStorage.removeItem('adminToken');
             window.location.replace("/admin/login");
             return false;
           }
@@ -331,27 +353,23 @@
           // Success - verify the session is valid
           const data = await response.json();
           if (!data.valid) {
-            document.body.setAttribute("data-auth-status", "unauthenticated");
+            localStorage.removeItem('adminToken');
             window.location.replace("/admin/login");
             return false;
           }
 
           // Session is valid - show the content
-          document.body.setAttribute("data-auth-status", "authenticated");
-          document.body.classList.remove("auth-checking");
           document.documentElement.style.visibility = 'visible';
-          document.documentElement.style.opacity = '1';
+          document.body.setAttribute("data-auth-status", "authenticated");
 
-          // Hide loading overlay
+          // Hide loading overlay if it exists
           const loadingOverlay = document.getElementById('auth-loading');
           if (loadingOverlay) {
             loadingOverlay.style.display = 'none';
           }
 
-          console.log("Session verified successfully");
           return true;
         } catch (error) {
-          // Immediate redirect on any error (timeout, network, etc.)
           console.error("Auth check failed:", error);
           document.body.setAttribute("data-auth-status", "error");
           window.location.replace("/admin/login");
