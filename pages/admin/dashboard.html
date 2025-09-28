@@ -39,6 +39,8 @@
     <script>
       // Hide content immediately to prevent flash
       document.documentElement.style.visibility = 'hidden';
+      document.documentElement.style.opacity = '0';
+      document.documentElement.style.transition = 'opacity 0.2s ease-in';
 
       // Check for token and redirect if missing
       if (!window.location.pathname.includes('/admin/login')) {
@@ -359,8 +361,9 @@
             return false;
           }
 
-          // Session is valid - show the content
+          // Session is valid - show the content with smooth transition
           document.documentElement.style.visibility = 'visible';
+          document.documentElement.style.opacity = '1';
           document.body.style.visibility = 'visible';
           document.body.setAttribute("data-auth-status", "authenticated");
 
