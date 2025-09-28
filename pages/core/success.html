@@ -546,14 +546,6 @@
             <p><strong>Email:</strong> <span id="order-email"></span></p>
           </div>
 
-          <div class="success-details" id="next-steps">
-            <h3>Next Steps</h3>
-            <div id="steps-content">
-              <p>• Check your email for order confirmation</p>
-              <p>• Save your order confirmation number</p>
-              <p>• Contact us if you have any questions</p>
-            </div>
-          </div>
 
           <!-- Registration will be handled on separate page -->
 
@@ -662,8 +654,6 @@
       const orderId = document.getElementById("order-id");
       const orderAmount = document.getElementById("order-amount");
       const orderEmail = document.getElementById("order-email");
-      const nextSteps = document.getElementById("next-steps");
-      const stepsContent = document.getElementById("steps-content");
       const countdownTimer = document.getElementById("countdown-timer");
       const countdownSeconds = document.getElementById("countdown-seconds");
       const registerNowBtn = document.getElementById("register-now-btn");
@@ -985,43 +975,8 @@
           }
 
 
-          // Update next steps for ticket purchases
-          stepsContent.textContent = "";
-          const steps = [
-            "• Complete your festival registration using the link below",
-            "• Check your email for order confirmation",
-            "• Save your confirmation number for check-in",
-            "• Join our WhatsApp group for updates",
-          ];
-          steps.forEach((step) => {
-            const p = document.createElement("p");
-            p.textContent = step;
-            stepsContent.appendChild(p);
-          });
-
-          // Start countdown timer - now always starts for ticket purchases
+          // Start countdown timer for ticket purchases
           startCountdown();
-        } else if (data.instructions?.nextSteps) {
-          // Handle normal next steps without immediate registration
-          stepsContent.textContent = "";
-          data.instructions.nextSteps.forEach((step) => {
-            const p = document.createElement("p");
-            p.textContent = `• ${step}`;
-            stepsContent.appendChild(p);
-          });
-        } else {
-          // Default steps for all other purchases
-          stepsContent.textContent = "";
-          const steps = [
-            "• Check your email for order confirmation",
-            "• Save your confirmation number for your records",
-            "• Contact us if you have any questions",
-          ];
-          steps.forEach((step) => {
-            const p = document.createElement("p");
-            p.textContent = step;
-            stepsContent.appendChild(p);
-          });
         }
 
         // Show test mode indicator if applicable
