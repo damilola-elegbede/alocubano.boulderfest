@@ -46,7 +46,7 @@
     <link rel="stylesheet" href="/css/admin-overrides.css" />
     <script type="module" src="/js/theme-manager.js"></script>
   </head>
-  <body class="admin-container">
+  <body class="admin-container" style="visibility: hidden;">
     <!-- Auth Loading State -->
     <div id="auth-loading" class="auth-loading" style="display: none;">
       <div class="auth-loading-content">
@@ -236,6 +236,8 @@
             return false;
           }
 
+          // Auth successful - show the content
+          document.body.style.visibility = 'visible';
           return true;
         } catch (error) {
           console.error("Auth check failed:", error);
