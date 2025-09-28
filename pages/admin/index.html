@@ -35,6 +35,44 @@
       })();
     </script>
 
+    <!-- Pre-render auth check to prevent content flash -->
+    <script>
+      // Hide content immediately to prevent flash
+      document.documentElement.style.visibility = 'hidden';
+      document.documentElement.style.opacity = '0';
+      document.documentElement.style.transition = 'opacity 0.2s ease-in';
+
+      // Quick token validation to prevent flash with invalid tokens
+      (async function() {
+        if (!window.location.pathname.includes('/admin/login')) {
+          const token = localStorage.getItem('adminToken');
+          if (!token) {
+            // No token - redirect immediately
+            window.location.replace('/admin/login');
+            return;
+          }
+
+          // Quick validation - check if token is expired client-side
+          try {
+            // Parse JWT to check expiration (basic check)
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            if (payload.exp && payload.exp * 1000 < Date.now()) {
+              // Token expired - clear and redirect
+              localStorage.removeItem('adminToken');
+              window.location.replace('/admin/login');
+              return;
+            }
+          } catch (e) {
+            // Invalid token format - clear and redirect
+            localStorage.removeItem('adminToken');
+            window.location.replace('/admin/login');
+            return;
+          }
+          // Valid token format - wait for server verification
+        }
+      })();
+    </script>
+
 
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -1519,7 +1557,9 @@
           if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
             try {
               const csrfResponse = await fetch('/api/admin/csrf-token', {
-                credentials: 'same-origin'
+                headers: {
+                  'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                }
               });
               if (csrfResponse.ok) {
                 const csrfData = await csrfResponse.json();
@@ -1687,12 +1727,45 @@
     <script>
       // Use the AdminAuthGuard for authentication
       async function checkAuth() {
-        if (window.AdminAuthGuard) {
-          return await window.AdminAuthGuard.verifyAndShow();
-        } else {
-          // Fallback - redirect if auth guard not available
-          console.error("AdminAuthGuard not available");
-          window.location.href = "/admin/login";
+        try {
+          // Get token from localStorage
+          const token = localStorage.getItem('adminToken');
+          if (!token) {
+            window.location.replace("/admin/login");
+            return false;
+          }
+
+          const response = await fetch("/api/admin/verify-session", {
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "Cache-Control": "no-cache"
+            }
+          });
+
+          if (!response.ok) {
+            // Clear invalid token and redirect
+            localStorage.removeItem('adminToken');
+            window.location.replace("/admin/login");
+            return false;
+          }
+
+          // Success - verify the session is valid
+          const data = await response.json();
+          if (!data.valid) {
+            localStorage.removeItem('adminToken');
+            window.location.replace("/admin/login");
+            return false;
+          }
+
+          // Session is valid - show the content with smooth transition
+          document.documentElement.style.visibility = 'visible';
+          document.documentElement.style.opacity = '1';
+          document.body.style.visibility = 'visible';
+
+          return true;
+        } catch (error) {
+          console.error("Auth check failed:", error);
+          window.location.replace("/admin/login");
           return false;
         }
       }
@@ -1705,9 +1778,10 @@
           // Get CSRF token for state-changing operation
           const headers = { "Content-Type": "application/json" };
           try {
+            const token = localStorage.getItem('adminToken');
             const csrfResponse = await fetch("/api/admin/csrf-token", {
-              credentials: "same-origin", // Use same-origin for better compatibility
               headers: {
+                "Authorization": `Bearer ${token}`,
                 "Accept": "application/json"
               }
             });
@@ -1726,10 +1800,11 @@
             return;
           }
 
+          const token = localStorage.getItem('adminToken');
+          headers["Authorization"] = `Bearer ${token}`;
           const response = await fetch("/api/sheets/sync", {
             method: "POST",
             headers: headers,
-            credentials: "same-origin" // Use same-origin for better compatibility
           });
 
           if (response.ok) {
@@ -1954,10 +2029,18 @@
         try {
           const headers = {};
 
+          // Add token for secure logout
+          const token = localStorage.getItem('adminToken');
+          if (token) {
+            headers["Authorization"] = `Bearer ${token}`;
+          }
+
           // Add CSRF token for secure logout
           try {
             const csrfResponse = await fetch("/api/admin/csrf-token", {
-              credentials: "same-origin"
+              headers: {
+                "Authorization": `Bearer ${token}`
+              }
             });
             if (csrfResponse.ok) {
               const csrfData = await csrfResponse.json();
@@ -1969,8 +2052,7 @@
 
           await fetch("/api/admin/login", {
             method: "DELETE",
-            headers: headers,
-            credentials: "same-origin"
+            headers: headers
           });
         } finally {
           // Clear client storage
