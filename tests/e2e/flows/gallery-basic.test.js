@@ -117,7 +117,7 @@ test.describe('Gallery Basic Browsing', () => {
       testContext.galleryData = galleryData;
 
       // Navigate to gallery page
-      await page.goto('/2025-gallery');
+      await page.goto('/boulder-fest-2025/gallery');
 
       // Wait for page to fully load including network idle for preview deployments
       await page.waitForLoadState('domcontentloaded');
@@ -126,7 +126,7 @@ test.describe('Gallery Basic Browsing', () => {
     } catch (error) {
       // Still navigate to the page even if config checks fail
       try {
-        await page.goto('/2025-gallery');
+        await page.goto('/boulder-fest-2025/gallery');
         await page.waitForLoadState('domcontentloaded');
       } catch (navError) {
         throw navError;

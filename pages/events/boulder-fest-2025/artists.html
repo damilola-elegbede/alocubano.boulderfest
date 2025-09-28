@@ -37,10 +37,10 @@
 
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Artists - Boulder Fest 2026 - A Lo Cubano</title>
+    <title>Boulder Fest 2025 Artists - A Lo Cubano Boulder Fest</title>
     <meta
       name="description"
-      content="Coming Soon! Meet the incredible Cuban salsa instructors and artists performing at Boulder Fest 2026 (May 15-17). Sign up for early bird notifications about our amazing lineup."
+      content="Meet the incredible Cuban salsa instructors and artists performing at A Lo Cubano Boulder Fest 2025. Learn from authentic masters of Cuban dance, music, and cultural traditions."
     />
     <!-- Favicons -->
     <link
@@ -78,14 +78,14 @@
       // Inline critical path optimization - Event hero images with responsive variants
       (function () {
         // Check if optimized variants exist for event heroes
-        const heroPath = "/images/hero/boulder-fest-2026-hero.jpg";
+        const heroPath = "/images/hero/boulder-fest-2025-hero.jpg";
         const isEventHero = true;
 
         if (isEventHero) {
           // Preload optimized variants for event heroes (WebP first, then JPEG fallback)
           const isMobile = window.innerWidth <= 768;
           const variant = isMobile ? "mobile" : "desktop";
-          const baseName = "boulder-fest-2026-hero";
+          const baseName = "boulder-fest-2025-hero";
 
           // Preload WebP variant
           const webpPreload = document.createElement("link");
@@ -120,6 +120,20 @@
           heroPreload.href = heroPath;
           document.head.appendChild(heroPreload);
         }
+
+        // Preload gallery data for gallery pages
+        const pageId = window.location.pathname.split("/").pop() || "home";
+        if (pageId.includes("gallery")) {
+          const year = pageId.includes("2025")
+            ? "2025"
+            : new Date().getFullYear();
+          const galleryDataPreload = document.createElement("link");
+          galleryDataPreload.rel = "preload";
+          galleryDataPreload.as = "fetch";
+          galleryDataPreload.href = `/api/gallery?year=${year}&category=workshops`;
+          galleryDataPreload.crossOrigin = "anonymous";
+          document.head.appendChild(galleryDataPreload);
+        }
       })();
     </script>
 
@@ -127,19 +141,66 @@
     <link rel="dns-prefetch" href="//fonts.googleapis.com" />
     <link rel="dns-prefetch" href="//fonts.gstatic.com" />
 
+    <!-- Structured Data for SEO -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "DanceEvent",
+        "name": "A Lo Cubano Boulder Fest 2025",
+        "description": "Cuban salsa festival featuring authentic masters teaching Orishas, Rumba, Timba Suelta, Casino, Cubaton, and more.",
+        "startDate": "2025-05-15",
+        "endDate": "2025-05-17",
+        "eventStatus": "https://schema.org/EventScheduled",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "location": {
+          "@type": "Place",
+          "name": "Avalon Ballroom",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "6185 Arapahoe Rd",
+            "addressLocality": "Boulder",
+            "addressRegion": "CO",
+            "postalCode": "80302",
+            "addressCountry": "US"
+          }
+        },
+        "organizer": {
+          "@type": "Organization",
+          "name": "A Lo Cubano Boulder Fest",
+          "email": "alocubanoboulderfest@gmail.com",
+          "url": "https://alocubanoboulderfest.com"
+        },
+        "performer": [
+          { "@type": "Person", "name": "Laroye" },
+          { "@type": "Person", "name": "Malena" },
+          { "@type": "Person", "name": "Adriel" },
+          { "@type": "Person", "name": "Emarlos" },
+          { "@type": "Person", "name": "Courtney" },
+          { "@type": "Person", "name": "Giselle Soto" },
+          { "@type": "Person", "name": "Nathan Hook" }
+        ],
+        "offers": {
+          "@type": "Offer",
+          "availability": "https://schema.org/InStock",
+          "price": "100",
+          "priceCurrency": "USD",
+          "url": "https://alocubanoboulderfest.com/boulder-fest-2025-tickets"
+        }
+      }
+    </script>
+
     <!-- Theme Management - Early inclusion to prevent FOUC -->
     <script type="module" src="/js/theme-manager.js"></script>
 
     <link rel="stylesheet" href="/css/base.css" />
     <link rel="stylesheet" href="/css/components.css" />
     <link rel="stylesheet" href="/css/typography.css" />
+    <link rel="stylesheet" href="/css/navigation.css" />
     <link rel="stylesheet" href="/css/floating-cart.css" />
     <link rel="stylesheet" href="/css/floating-cart-dark.css" />
-    <link rel="stylesheet" href="/css/navigation.css" />
     <link rel="stylesheet" href="/css/theme-toggle.css" />
     <link rel="stylesheet" href="/css/header-cart.css" />
     <link rel="stylesheet" href="/css/mobile-overrides.css" />
-    <link rel="stylesheet" href="/css/newsletter.css" />
   </head>
   <body class="typographic">
     <header class="header">
@@ -262,8 +323,8 @@
         <div class="hero-image-container">
           <img
             id="hero-splash-image"
-            src="/images/hero/boulder-fest-2026-hero.jpg"
-            alt="Boulder Fest 2026 - Coming Soon! World-class Cuban salsa artists and instructors"
+            src="/images/hero/boulder-fest-2025-hero.jpg"
+            alt="Featured Cuban salsa instructors and artists performing at A Lo Cubano Boulder Fest 2025, showcasing authentic dance techniques"
             class="hero-splash-img"
             style="object-position: top center !important"
           />
@@ -273,11 +334,11 @@
       <!-- Event Sub Navigation -->
       <section class="event-subnav">
         <div class="container">
-          <nav class="event-nav" aria-label="Boulder Fest 2026 Navigation">
+          <nav class="event-nav" aria-label="Boulder Fest 2025 Navigation">
             <ul class="event-nav-list">
               <li>
                 <a
-                  href="/boulder-fest-2026"
+                  href="/boulder-fest-2025"
                   class="event-nav-link"
                   data-text="Overview"
                   >Overview</a
@@ -285,7 +346,7 @@
               </li>
               <li>
                 <a
-                  href="/2026-artists"
+                  href="/boulder-fest-2025/artists"
                   class="event-nav-link"
                   data-text="Artists"
                   >Artists</a
@@ -293,7 +354,7 @@
               </li>
               <li>
                 <a
-                  href="/2026-schedule"
+                  href="/boulder-fest-2025/schedule"
                   class="event-nav-link"
                   data-text="Schedule"
                   >Schedule</a
@@ -301,7 +362,7 @@
               </li>
               <li>
                 <a
-                  href="/2026-gallery"
+                  href="/boulder-fest-2025/gallery"
                   class="event-nav-link"
                   data-text="Gallery"
                   >Gallery</a
@@ -312,277 +373,244 @@
         </div>
       </section>
 
-      <!-- Coming Soon Section -->
+      <!-- 2025 Artists Grid Typography -->
       <section class="section-typographic">
         <div class="container">
-          <h1 class="text-gradient" style="margin-bottom: var(--space-lg)">
-            ARTISTS
-          </h1>
-
-          <!-- Countdown Timer -->
-          <div
-            class="coming-soon-container"
-            style="text-align: center; margin: var(--space-2xl) 0"
-          >
-            <div
-              class="countdown-display"
-              style="margin-bottom: var(--space-xl)"
-            >
-              <div
-                class="countdown-timer"
-                style="
-                  display: flex;
-                  justify-content: center;
-                  gap: var(--space-lg);
-                  flex-wrap: wrap;
-                "
-              >
-                <div class="countdown-unit" style="text-align: center">
-                  <div
-                    id="days"
-                    class="countdown-number font-display"
-                    style="
-                      font-size: var(--font-size-4xl);
-                      color: var(--color-blue);
-                    "
-                  >
-                    000
-                  </div>
-                  <div
-                    class="countdown-label font-mono"
-                    style="font-size: var(--font-size-sm)"
-                  >
-                    DAYS
-                  </div>
-                </div>
-                <div class="countdown-unit" style="text-align: center">
-                  <div
-                    id="hours"
-                    class="countdown-number font-display"
-                    style="
-                      font-size: var(--font-size-4xl);
-                      color: var(--color-red);
-                    "
-                  >
-                    00
-                  </div>
-                  <div
-                    class="countdown-label font-mono"
-                    style="font-size: var(--font-size-sm)"
-                  >
-                    HOURS
-                  </div>
-                </div>
-                <div class="countdown-unit" style="text-align: center">
-                  <div
-                    id="minutes"
-                    class="countdown-number font-display"
-                    style="
-                      font-size: var(--font-size-4xl);
-                      color: var(--color-blue);
-                    "
-                  >
-                    00
-                  </div>
-                  <div
-                    class="countdown-label font-mono"
-                    style="font-size: var(--font-size-sm)"
-                  >
-                    MINUTES
-                  </div>
-                </div>
-                <div class="countdown-unit" style="text-align: center">
-                  <div
-                    id="seconds"
-                    class="countdown-number font-display"
-                    style="
-                      font-size: var(--font-size-4xl);
-                      color: var(--color-red);
-                    "
-                  >
-                    00
-                  </div>
-                  <div
-                    class="countdown-label font-mono"
-                    style="font-size: var(--font-size-sm)"
-                  >
-                    SECONDS
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div
-              class="coming-soon-message"
-              style="margin-bottom: var(--space-xl)"
-            >
-              <h3
-                class="text-block-large"
-                style="margin-bottom: var(--space-md)"
-              >
-                COMING SOON
-              </h3>
-              <p
-                class="font-serif"
-                style="
-                  font-size: var(--font-size-lg);
-                  max-width: 600px;
-                  margin: 0 auto;
-                  line-height: 1.6;
-                "
-              >
-                We're curating an incredible lineup of world-class Cuban salsa
-                artists and instructors for Boulder Fest 2026. Get ready for
-                world class instructors of Cuban dance, music, and cultural
-                traditions.
+          <h1 class="text-mask">2025 Festival</h1>
+          <div class="gallery-typographic">
+            <article class="gallery-item-type" data-number="01">
+              <h3 class="gallery-type-title font-display">LAROYE</h3>
+              <p class="gallery-type-meta">ORISHAS • RUMBA • LADIES STYLING</p>
+              <p class="gallery-type-description font-serif">
+                "Master of Afro-Cuban traditions"
               </p>
-            </div>
-
-            <!-- Save the Date -->
-            <div class="save-the-date" style="margin-bottom: var(--space-xl)">
               <div
-                class="date-block"
+                class="text-block-mono"
                 style="
-                  background: var(--color-background-secondary);
-                  padding: var(--space-lg);
-                  border-radius: 8px;
-                  display: inline-block;
+                  margin-top: var(--space-md);
+                  font-size: var(--font-size-xs);
                 "
               >
-                <p
-                  class="font-mono"
+                // Deep roots in Cuban culture<br />
+                // Teaching Orishas dance<br />
+                // Rumba fundamentals<br />
+                // Empowering ladies' movement
+              </div>
+              <div style="margin-top: var(--space-lg)">
+                <span
+                  class="text-split font-mono"
                   style="
-                    font-size: var(--font-size-sm);
-                    margin-bottom: var(--space-xs);
-                    color: var(--color-text-primary);
-                  "
-                >
-                  SAVE THE DATE
-                </p>
-                <p
-                  class="font-display"
-                  style="
-                    font-size: var(--font-size-2xl);
+                    font-size: var(--font-size-xs);
                     color: var(--color-blue);
                   "
-                >
-                  MAY 15-17, 2026
-                </p>
-                <p
-                  class="font-serif"
-                  style="
-                    font-size: var(--font-size-sm);
-                    color: var(--color-text-secondary);
-                  "
-                >
-                  BOULDER, COLORADO
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Newsletter Signup -->
-          <div
-            class="early-bird-signup"
-            style="
-              background: var(--color-gray-50);
-              padding: var(--space-xl);
-              border-radius: 12px;
-              text-align: center;
-              margin: var(--space-xl) 0;
-            "
-          >
-            <h3 class="text-gradient" style="margin-bottom: var(--space-md)">
-              STAY UPDATED
-            </h3>
-            <p
-              class="font-serif"
-              style="
-                margin-bottom: var(--space-lg);
-                max-width: 500px;
-                margin-left: auto;
-                margin-right: auto;
-              "
-            >
-              Subscribe to our newsletter for updates on Boulder Fest 2026
-              artist announcements, ticket sales, and festival news.
-            </p>
-            <form
-              class="newsletter-form-type"
-              id="newsletter-form"
-              aria-label="Email newsletter signup"
-              style="max-width: 400px; margin: 0 auto"
-            >
-              <div class="form-group-type">
-                <div class="newsletter-input-wrapper">
-                  <input
-                    type="email"
-                    id="newsletter-email"
-                    name="email"
-                    class="form-input-type newsletter-input"
-                    placeholder="YOUR EMAIL ADDRESS"
-                    required
-                    aria-required="true"
-                    aria-label="Email address for newsletter subscription"
-                    autocomplete="email"
-                    inputmode="email"
-                  />
-                  <button
-                    type="submit"
-                    class="form-button-type newsletter-submit"
-                    aria-label="Subscribe to newsletter"
-                  >
-                    <span class="button-text">SUBSCRIBE</span>
-                    <span class="button-icon" aria-hidden="true">→</span>
-                  </button>
-                </div>
+                  >CULTURAL AMBASSADOR</span
+                ><br />
                 <span
-                  id="newsletter-error"
-                  class="error-message"
-                  role="alert"
-                  aria-live="polite"
-                ></span>
-                <div
-                  id="newsletter-success"
-                  class="newsletter-success"
-                  role="status"
-                  aria-live="polite"
-                  aria-hidden="true"
+                  class="text-split font-mono"
+                  style="
+                    font-size: var(--font-size-xs);
+                    color: var(--color-red);
+                  "
+                  >TRADITION KEEPER</span
                 >
-                  <span class="success-icon">✓</span>
-                  <span class="success-text"
-                    >Welcome to the A Lo Cubano family!</span
-                  >
-                </div>
               </div>
-              <div class="newsletter-consent">
-                <label class="custom-checkbox">
-                  <input
-                    type="checkbox"
-                    name="consent"
-                    required
-                    aria-required="true"
-                  />
-                  <span class="checkmark"></span>
-                  <span class="checkbox-label"
-                    >I agree to receive marketing emails about festival
-                    updates and events</span
-                  >
-                </label>
+            </article>
+
+            <article class="gallery-item-type" data-number="02">
+              <h3 class="gallery-type-title font-display">
+                MALENA<br />& ADRIEL
+              </h3>
+              <p class="gallery-type-meta">
+                TIMBA SUELTA • CASINO INTERMEDIATE
+              </p>
+              <p class="gallery-type-description font-serif">
+                "Dynamic duo of Cuban dance"
+              </p>
+              <div
+                class="text-block-mono"
+                style="
+                  margin-top: var(--space-md);
+                  font-size: var(--font-size-xs);
+                "
+              >
+                // Partner perfection<br />
+                // Masters of Timba Suelta<br />
+                // Casino intermediate specialists<br />
+                // Energy and precision combined
               </div>
-            </form>
+              <div style="margin-top: var(--space-lg)">
+                <span
+                  class="text-split font-mono"
+                  style="
+                    font-size: var(--font-size-xs);
+                    color: var(--color-blue);
+                  "
+                  >INTERNATIONAL INSTRUCTORS</span
+                ><br />
+                <span
+                  class="text-split font-mono"
+                  style="
+                    font-size: var(--font-size-xs);
+                    color: var(--color-red);
+                  "
+                  >FESTIVAL FAVORITES</span
+                >
+              </div>
+            </article>
+
+            <article class="gallery-item-type" data-number="03">
+              <h3 class="gallery-type-title font-display">
+                EMARLOS<br />& COURTNEY
+              </h3>
+              <p class="gallery-type-meta">SON CUBANO • CASINO INTERMEDIATE</p>
+              <p class="gallery-type-description font-serif">
+                "Bridging traditional and modern"
+              </p>
+              <div
+                class="text-block-mono"
+                style="
+                  margin-top: var(--space-md);
+                  font-size: var(--font-size-xs);
+                "
+              >
+                // Son Cubano specialists<br />
+                // Casino intermediate focus<br />
+                // Teaching with passion<br />
+                // Connection through movement
+              </div>
+              <div style="margin-top: var(--space-lg)">
+                <span
+                  class="text-split font-mono"
+                  style="
+                    font-size: var(--font-size-xs);
+                    color: var(--color-blue);
+                  "
+                  >DANCE EDUCATORS</span
+                ><br />
+                <span
+                  class="text-split font-mono"
+                  style="
+                    font-size: var(--font-size-xs);
+                    color: var(--color-red);
+                  "
+                  >COMMUNITY BUILDERS</span
+                >
+              </div>
+            </article>
+
+            <article class="gallery-item-type" data-number="04">
+              <h3 class="gallery-type-title font-display">GISELLE<br />SOTO</h3>
+              <p class="gallery-type-meta">CUBATON • LADIES STYLING</p>
+              <p class="gallery-type-description font-serif">
+                "Queen of Cuban urban movement"
+              </p>
+              <div
+                class="text-block-mono"
+                style="
+                  margin-top: var(--space-md);
+                  font-size: var(--font-size-xs);
+                "
+              >
+                // Cubaton specialist<br />
+                // Ladies styling expert<br />
+                // Modern Cuban movement<br />
+                // Confidence through dance
+              </div>
+              <div style="margin-top: var(--space-lg)">
+                <span
+                  class="text-split font-mono"
+                  style="
+                    font-size: var(--font-size-xs);
+                    color: var(--color-blue);
+                  "
+                  >URBAN DANCE INNOVATOR</span
+                ><br />
+                <span
+                  class="text-split font-mono"
+                  style="
+                    font-size: var(--font-size-xs);
+                    color: var(--color-red);
+                  "
+                  >EMPOWERMENT COACH</span
+                >
+              </div>
+            </article>
+
+            <article class="gallery-item-type" data-number="05">
+              <h3 class="gallery-type-title font-display">NATHAN<br />HOOK</h3>
+              <p class="gallery-type-meta">RUEDA INTERMEDIATE/ADVANCED</p>
+              <p class="gallery-type-description font-serif">
+                "Master of the wheel"
+              </p>
+              <div
+                class="text-block-mono"
+                style="
+                  margin-top: var(--space-md);
+                  font-size: var(--font-size-xs);
+                "
+              >
+                // Rueda de Casino expert<br />
+                // Intermediate to advanced levels<br />
+                // Complex formations<br />
+                // Group dynamics specialist
+              </div>
+              <div style="margin-top: var(--space-lg)">
+                <span
+                  class="text-split font-mono"
+                  style="
+                    font-size: var(--font-size-xs);
+                    color: var(--color-blue);
+                  "
+                  >RUEDA CHAMPION</span
+                ><br />
+                <span
+                  class="text-split font-mono"
+                  style="
+                    font-size: var(--font-size-xs);
+                    color: var(--color-red);
+                  "
+                  >TECHNICAL MASTER</span
+                >
+              </div>
+            </article>
           </div>
         </div>
       </section>
 
+      <!-- DJ Typography -->
+      <section class="section-typographic">
+        <div class="container">
+          <h3 class="text-gradient">AMAZING DJ'S</h3>
+          <div class="gallery-typographic">
+            <div class="gallery-item-type" data-number="DJ">
+              <h3 class="gallery-type-title text-glitch" data-text="DJ BYRON">
+                DJ BYRON
+              </h3>
+              <p class="gallery-type-description">The authentic sound master</p>
+            </div>
+            <div class="gallery-item-type" data-number="DJ">
+              <h3 class="gallery-type-title text-glitch" data-text="DJ TITO">
+                DJ TITO
+              </h3>
+              <p class="gallery-type-description">The energy conductor</p>
+            </div>
+            <div class="gallery-item-type" data-number="DJ">
+              <h3 class="gallery-type-title text-glitch" data-text="DJ DIVA">
+                DJ DIVA
+              </h3>
+              <p class="gallery-type-description">The crowd igniter</p>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
 
     <footer class="footer-typographic">
       <div class="container">
         <p class="footer-credits">
-          MAY 15-17, 2026 •
+          MAY 15-17, 2025 •
           <a
-            href="mailto:alocubanoboulderfest@gmail.com?subject=Boulder Fest 2026 Artist Inquiry"
+            href="mailto:alocubanoboulderfest@gmail.com?subject=A Lo Cubano Boulder Fest Inquiry"
             style="color: inherit; text-decoration: underline"
             >alocubanoboulderfest@gmail.com</a
           >
@@ -651,59 +679,12 @@
       });
     </script>
 
-    <script>
-      // Countdown Timer Implementation
-      function updateCountdown() {
-        const targetDate = new Date("2026-05-15T00:00:00-06:00"); // Boulder, CO timezone
-        const now = new Date();
-        const difference = targetDate - now;
-
-        if (difference > 0) {
-          const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-          const hours = Math.floor(
-            (difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
-          );
-          const minutes = Math.floor(
-            (difference % (1000 * 60 * 60)) / (1000 * 60),
-          );
-          const seconds = Math.floor((difference % (1000 * 60)) / 1000);
-
-          document.getElementById("days").textContent = String(days).padStart(
-            3,
-            "0",
-          );
-          document.getElementById("hours").textContent = String(hours).padStart(
-            2,
-            "0",
-          );
-          document.getElementById("minutes").textContent = String(
-            minutes,
-          ).padStart(2, "0");
-          document.getElementById("seconds").textContent = String(
-            seconds,
-          ).padStart(2, "0");
-        } else {
-          // Event has started or passed
-          document.getElementById("days").textContent = "000";
-          document.getElementById("hours").textContent = "00";
-          document.getElementById("minutes").textContent = "00";
-          document.getElementById("seconds").textContent = "00";
-        }
-      }
-
-      // Update countdown every second
-      updateCountdown();
-      setInterval(updateCountdown, 1000);
-
-    </script>
-
     <script src="/js/navigation.js"></script>
     <script src="/js/components/lightbox.js"></script>
     <script src="/js/components/lazy-loading.js"></script>
     <script src="/js/main.js"></script>
     <script src="/js/typography.js"></script>
     <script src="/js/gallery-hero.js"></script>
-    <script src="/js/newsletter.js"></script>
     <script type="module" src="/js/global-cart.js"></script>
     
       <script src="/js/logo-switcher.js"></script>

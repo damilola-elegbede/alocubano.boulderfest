@@ -37,10 +37,10 @@
 
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Schedule - Boulder Fest 2026 - A Lo Cubano</title>
+    <title>Artists - Boulder Fest 2026 - A Lo Cubano</title>
     <meta
       name="description"
-      content="Coming Soon! Full 3-day schedule for Boulder Fest 2026 (May 15-17). Workshop times, social dance events, and performance schedules at Avalon Ballroom in Boulder, Colorado."
+      content="Coming Soon! Meet the incredible Cuban salsa instructors and artists performing at Boulder Fest 2026 (May 15-17). Sign up for early bird notifications about our amazing lineup."
     />
     <!-- Favicons -->
     <link
@@ -95,27 +95,15 @@
           webpPreload.type = "image/webp";
           document.head.appendChild(webpPreload);
 
-          // Preload AVIF variant with proper detection
-          function supportsAVIF() {
-            return new Promise((resolve) => {
-              const img = new Image();
-              img.onload = () => resolve(true);
-              img.onerror = () => resolve(false);
-              img.src =
-                "data:image/avif;base64,AAAAIGZ0eXBhdmlmAAAAAGF2aWZtaWYxbWlhZk1BMUIAAADybWV0YQAAAAAAAAAoaGRscgAAAAAAAAAAcGljdAAAAAAAAAAAAAAAAGxpYmF2aWYAAAAADnBpdG0AAAAAAAEAAAAeaWxvYwAAAABEAAABAAEAAAABAAABGgAAAB0AAAAoaWluZgAAAAAAAQAAABppbmZlAgAAAAABAABhdjAxQ29sb3IAAAAAamlwcnAAAABLaXBjbwAAABRpc3BlAAAAAAAAAAIAAAACAAAAEHBpeGkAAAAAAwgICAAAAAxhdjFDgQ0MAAAAABNjb2xybmNseAACAAIAAYAAAAAXaXBtYQAAAAAAAAABAAEEAQKDBAAAACVtZGF0EgAKCBgABogQEAwgMg8f8D///8WfhwB8+ErK42A=";
-            });
+          // Preload AVIF variant for supported browsers
+          if (typeof window !== "undefined" && "OffscreenCanvas" in window) {
+            const avifPreload = document.createElement("link");
+            avifPreload.rel = "preload";
+            avifPreload.as = "image";
+            avifPreload.href = `/images/hero-optimized/${variant}/${baseName}.avif`;
+            avifPreload.type = "image/avif";
+            document.head.appendChild(avifPreload);
           }
-
-          supportsAVIF().then((supported) => {
-            if (supported) {
-              const avifPreload = document.createElement("link");
-              avifPreload.rel = "preload";
-              avifPreload.as = "image";
-              avifPreload.href = `/images/hero-optimized/${variant}/${baseName}.avif`;
-              avifPreload.type = "image/avif";
-              document.head.appendChild(avifPreload);
-            }
-          });
 
           // Fallback JPEG preload
           const jpegPreload = document.createElement("link");
@@ -147,8 +135,8 @@
     <link rel="stylesheet" href="/css/typography.css" />
     <link rel="stylesheet" href="/css/floating-cart.css" />
     <link rel="stylesheet" href="/css/floating-cart-dark.css" />
-    <link rel="stylesheet" href="/css/theme-toggle.css" />
     <link rel="stylesheet" href="/css/navigation.css" />
+    <link rel="stylesheet" href="/css/theme-toggle.css" />
     <link rel="stylesheet" href="/css/header-cart.css" />
     <link rel="stylesheet" href="/css/mobile-overrides.css" />
     <link rel="stylesheet" href="/css/newsletter.css" />
@@ -275,7 +263,7 @@
           <img
             id="hero-splash-image"
             src="/images/hero/boulder-fest-2026-hero.jpg"
-            alt="Boulder Fest 2026 - Coming Soon! Workshop sessions and dance classes schedule"
+            alt="Boulder Fest 2026 - Coming Soon! World-class Cuban salsa artists and instructors"
             class="hero-splash-img"
             style="object-position: top center !important"
           />
@@ -297,7 +285,7 @@
               </li>
               <li>
                 <a
-                  href="/2026-artists"
+                  href="/boulder-fest-2026/artists"
                   class="event-nav-link"
                   data-text="Artists"
                   >Artists</a
@@ -305,7 +293,7 @@
               </li>
               <li>
                 <a
-                  href="/2026-schedule"
+                  href="/boulder-fest-2026/schedule"
                   class="event-nav-link"
                   data-text="Schedule"
                   >Schedule</a
@@ -313,7 +301,7 @@
               </li>
               <li>
                 <a
-                  href="/2026-gallery"
+                  href="/boulder-fest-2026/gallery"
                   class="event-nav-link"
                   data-text="Gallery"
                   >Gallery</a
@@ -328,7 +316,7 @@
       <section class="section-typographic">
         <div class="container">
           <h1 class="text-gradient" style="margin-bottom: var(--space-lg)">
-            SCHEDULE
+            ARTISTS
           </h1>
 
           <!-- Countdown Timer -->
@@ -432,7 +420,7 @@
                 class="text-block-large"
                 style="margin-bottom: var(--space-md)"
               >
-                SCHEDULE COMING SOON
+                COMING SOON
               </h3>
               <p
                 class="font-serif"
@@ -443,179 +431,51 @@
                   line-height: 1.6;
                 "
               >
-                We're carefully crafting an incredible 3-day schedule packed
-                with workshops by world class instructors, social dancing, and cultural experiences. Get
-                ready for the most comprehensive Cuban salsa experience in
-                Colorado.
+                We're curating an incredible lineup of world-class Cuban salsa
+                artists and instructors for Boulder Fest 2026. Get ready for
+                world class instructors of Cuban dance, music, and cultural
+                traditions.
               </p>
             </div>
 
-            <!-- Event Overview -->
-            <div class="event-overview" style="margin-bottom: var(--space-xl)">
+            <!-- Save the Date -->
+            <div class="save-the-date" style="margin-bottom: var(--space-xl)">
               <div
-                class="overview-grid"
+                class="date-block"
                 style="
-                  display: grid;
-                  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                  gap: var(--space-lg);
-                  margin: var(--space-xl) 0;
+                  background: var(--color-background-secondary);
+                  padding: var(--space-lg);
+                  border-radius: 8px;
+                  display: inline-block;
                 "
               >
-                <div
-                  class="overview-item"
-                  style="
-                    background: var(--color-background-secondary);
-                    padding: var(--space-lg);
-                    border-radius: 8px;
-                    text-align: center;
-                  "
-                >
-                  <div
-                    class="overview-icon font-display"
-                    style="
-                      font-size: var(--font-size-3xl);
-                      color: var(--color-blue);
-                      margin-bottom: var(--space-sm);
-                    "
-                  >
-                    3
-                  </div>
-                  <div
-                    class="overview-title font-mono"
-                    style="
-                      font-size: var(--font-size-sm);
-                      margin-bottom: var(--space-xs);
-                      color: var(--color-text-primary);
-                    "
-                  >
-                    DAYS
-                  </div>
-                  <div
-                    class="overview-subtitle font-serif"
-                    style="
-                      font-size: var(--font-size-xs);
-                      color: var(--color-text-secondary);
-                    "
-                  >
-                    May 15-17, 2026
-                  </div>
-                </div>
-                <div
-                  class="overview-item"
-                  style="
-                    background: var(--color-background-secondary);
-                    padding: var(--space-lg);
-                    border-radius: 8px;
-                    text-align: center;
-                  "
-                >
-                  <div
-                    class="overview-icon font-display"
-                    style="
-                      font-size: var(--font-size-3xl);
-                      color: var(--color-red);
-                      margin-bottom: var(--space-sm);
-                    "
-                  >
-                    15+
-                  </div>
-                  <div
-                    class="overview-title font-mono"
-                    style="
-                      font-size: var(--font-size-sm);
-                      margin-bottom: var(--space-xs);
-                      color: var(--color-text-primary);
-                    "
-                  >
-                    WORKSHOPS
-                  </div>
-                  <div
-                    class="overview-subtitle font-serif"
-                    style="
-                      font-size: var(--font-size-xs);
-                      color: var(--color-text-secondary);
-                    "
-                  >
-                    All skill levels
-                  </div>
-                </div>
-                <div
-                  class="overview-item"
-                  style="
-                    background: var(--color-background-secondary);
-                    padding: var(--space-lg);
-                    border-radius: 8px;
-                    text-align: center;
-                  "
-                >
-                  <div
-                    class="overview-icon font-display"
-                    style="
-                      font-size: var(--font-size-3xl);
-                      color: var(--color-blue);
-                      margin-bottom: var(--space-sm);
-                    "
-                  >
-                    2
-                  </div>
-                  <div
-                    class="overview-title font-mono"
-                    style="
-                      font-size: var(--font-size-sm);
-                      margin-bottom: var(--space-xs);
-                      color: var(--color-text-primary);
-                    "
-                  >
-                    SOCIAL NIGHTS
-                  </div>
-                  <div
-                    class="overview-subtitle font-serif"
-                    style="
-                      font-size: var(--font-size-xs);
-                      color: var(--color-text-secondary);
-                    "
-                  >
-                    Friday & Saturday
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Venue Information -->
-            <div
-              class="venue-info"
-              style="
-                background: var(--color-gray-50);
-                padding: var(--space-xl);
-                border-radius: 12px;
-                margin: var(--space-xl) 0;
-              "
-            >
-              <h3 class="text-gradient" style="margin-bottom: var(--space-md)">
-                VENUE
-              </h3>
-              <div class="venue-details" style="text-align: center">
-                <p
-                  class="font-display"
-                  style="
-                    font-size: var(--font-size-xl);
-                    margin-bottom: var(--space-sm);
-                  "
-                >
-                  AVALON BALLROOM
-                </p>
-                <p class="font-serif" style="margin-bottom: var(--space-sm)">
-                  6185 Arapahoe Rd, Boulder, CO 80302
-                </p>
                 <p
                   class="font-mono"
                   style="
                     font-size: var(--font-size-sm);
-                    color: var(--color-gray-600);
+                    margin-bottom: var(--space-xs);
+                    color: var(--color-text-primary);
                   "
                 >
-                  Professional dance floors • Climate controlled • Full sound
-                  system
+                  SAVE THE DATE
+                </p>
+                <p
+                  class="font-display"
+                  style="
+                    font-size: var(--font-size-2xl);
+                    color: var(--color-blue);
+                  "
+                >
+                  MAY 15-17, 2026
+                </p>
+                <p
+                  class="font-serif"
+                  style="
+                    font-size: var(--font-size-sm);
+                    color: var(--color-text-secondary);
+                  "
+                >
+                  BOULDER, COLORADO
                 </p>
               </div>
             </div>
@@ -644,8 +504,8 @@
                 margin-right: auto;
               "
             >
-              Subscribe to our newsletter for Boulder Fest 2026 schedule updates,
-              workshop details, and festival announcements.
+              Subscribe to our newsletter for updates on Boulder Fest 2026
+              artist announcements, ticket sales, and festival news.
             </p>
             <form
               class="newsletter-form-type"
@@ -714,6 +574,7 @@
           </div>
         </div>
       </section>
+
     </main>
 
     <footer class="footer-typographic">
@@ -721,7 +582,7 @@
         <p class="footer-credits">
           MAY 15-17, 2026 •
           <a
-            href="mailto:alocubanoboulderfest@gmail.com?subject=Boulder Fest 2026 Schedule Inquiry"
+            href="mailto:alocubanoboulderfest@gmail.com?subject=Boulder Fest 2026 Artist Inquiry"
             style="color: inherit; text-decoration: underline"
             >alocubanoboulderfest@gmail.com</a
           >
@@ -833,6 +694,7 @@
       // Update countdown every second
       updateCountdown();
       setInterval(updateCountdown, 1000);
+
     </script>
 
     <script src="/js/navigation.js"></script>
@@ -843,7 +705,7 @@
     <script src="/js/gallery-hero.js"></script>
     <script src="/js/newsletter.js"></script>
     <script type="module" src="/js/global-cart.js"></script>
-
+    
       <script src="/js/logo-switcher.js"></script>
 </body>
 </html>

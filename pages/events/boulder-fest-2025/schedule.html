@@ -37,10 +37,10 @@
 
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Artists - A Lo Cubano Weekender November 2025</title>
+    <title>Boulder Fest 2025 Schedule - A Lo Cubano Boulder Fest</title>
     <meta
       name="description"
-      content="Meet the incredible Cuban salsa instructors teaching at A Lo Cubano Weekender November 2025. Learn from experienced masters in our weekend workshops."
+      content="Full 3-day schedule for A Lo Cubano Boulder Fest 2025 (May 15-17). View workshop times, social dance events, and performance schedules at Avalon Ballroom in Boulder, Colorado."
     />
     <!-- Favicons -->
     <link
@@ -83,52 +83,48 @@
     <link rel="stylesheet" href="/css/base.css" />
     <link rel="stylesheet" href="/css/components.css" />
     <link rel="stylesheet" href="/css/typography.css" />
+    <link rel="stylesheet" href="/css/navigation.css" />
     <link rel="stylesheet" href="/css/floating-cart.css" />
     <link rel="stylesheet" href="/css/floating-cart-dark.css" />
-    <link rel="stylesheet" href="/css/navigation.css" />
-    <link rel="stylesheet" href="/css/forms.css" />
+    <link rel="stylesheet" href="/css/theme-toggle.css" />
     <link rel="stylesheet" href="/css/header-cart.css" />
     <link rel="stylesheet" href="/css/mobile-overrides.css" />
-    <!-- Theme styles -->
-    <link rel="stylesheet" href="/css/theme-toggle.css" />
-    <script type="module" src="/js/theme-manager.js"></script>
+
+    <style>
+      .schedule-day {
+        margin-bottom: var(--space-xl);
+        border: 2px solid var(--color-gray-300);
+        padding: var(--space-lg);
+      }
+      .schedule-day h3 {
+        color: var(--color-red);
+        margin: 0 0 var(--space-md);
+        font-family: var(--font-display);
+        font-size: var(--font-size-xl);
+      }
+      /* Using global .schedule-item styles from components.css - no override needed */
+      .schedule-content .instructor {
+        font-style: italic;
+        color: var(--color-gray-500);
+        font-size: var(--font-size-sm);
+        margin-top: var(--space-xs);
+      }
+      .schedule-content .venue {
+        color: var(--color-gray-500);
+        font-size: var(--font-size-sm);
+        margin-top: var(--space-xs);
+      }
+      .schedule-social {
+        background: linear-gradient(135deg, var(--color-red) 0%, var(--color-orange) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: bold;
+      }
+    </style>
   </head>
   <body class="typographic">
-    <!-- Skip Links for Accessibility -->
-    <a
-      href="#main-content"
-      class="skip-link"
-      style="
-        position: absolute;
-        top: -40px;
-        left: 0;
-        background: var(--color-black);
-        color: var(--color-white);
-        padding: 8px;
-        text-decoration: none;
-        z-index: 1000;
-        transition: top 0.3s;
-      "
-      >Skip to main content</a
-    >
-    <a
-      href="#navigation"
-      class="skip-link"
-      style="
-        position: absolute;
-        top: -40px;
-        left: 0;
-        background: var(--color-black);
-        color: var(--color-white);
-        padding: 8px;
-        text-decoration: none;
-        z-index: 1000;
-        transition: top 0.3s;
-      "
-      >Skip to navigation</a
-    >
-
-    <header class="header" id="navigation">
+    <header class="header">
       <div class="container">
         <div class="grid">
           <div class="header-left">
@@ -220,10 +216,10 @@
                         <a
                       <li>
                         <a
-                          href="/2025-11-weekender"
+                          href="/tickets"
                           class="dropdown-link"
                           role="menuitem"
-                          data-event="2025-11-weekender"
+                          data-event="weekender-2025-11"
                           data-event-status="upcoming"
                           >November 2025</a
                         >
@@ -261,13 +257,13 @@
       </div>
     </header>
 
-    <main id="main-content">
+    <main>
       <!-- Hero Splash Image -->
       <section class="gallery-hero-splash">
         <div class="hero-image-container">
           <img
-            src="/images/hero/weekender-2025-11-hero.jpg"
-            alt="Cuban salsa instructors teaching at November 2025 Weekender"
+            src="/images/hero/boulder-fest-2025-hero.jpg"
+            alt="Workshop sessions and dance classes in action at A Lo Cubano Boulder Fest 2025"
             class="hero-splash-img"
             style="object-position: top center !important"
           />
@@ -277,14 +273,11 @@
       <!-- Event Sub Navigation -->
       <section class="event-subnav">
         <div class="container">
-          <nav
-            class="event-nav"
-            aria-label="November 2025 Weekender Navigation"
-          >
+          <nav class="event-nav" aria-label="Boulder Fest 2025 Navigation">
             <ul class="event-nav-list">
               <li>
                 <a
-                  href="/2025-11-weekender"
+                  href="/boulder-fest-2025"
                   class="event-nav-link"
                   data-text="Overview"
                   >Overview</a
@@ -292,7 +285,7 @@
               </li>
               <li>
                 <a
-                  href="/2025-nov-artists"
+                  href="/boulder-fest-2025/artists"
                   class="event-nav-link"
                   data-text="Artists"
                   >Artists</a
@@ -300,7 +293,7 @@
               </li>
               <li>
                 <a
-                  href="/2025-nov-schedule"
+                  href="/boulder-fest-2025/schedule"
                   class="event-nav-link"
                   data-text="Schedule"
                   >Schedule</a
@@ -308,7 +301,7 @@
               </li>
               <li>
                 <a
-                  href="/2025-nov-gallery"
+                  href="/boulder-fest-2025/gallery"
                   class="event-nav-link"
                   data-text="Gallery"
                   >Gallery</a
@@ -319,102 +312,164 @@
         </div>
       </section>
 
-      <!-- Artists Section -->
+      <!-- Schedule Header -->
       <section class="section-typographic" style="padding: var(--space-xl) 0">
         <div class="container">
           <div class="text-composition">
             <div class="text-block-large">
               <h1 class="hero__title text-mask">
-                Instructor
+                Festival Schedule
               </h1>
               <h2 class="hero__subtitle">
-                We are excited to bring Steven Messina back to Boulder!!
+                Three days of workshops, socials, and performances
               </h2>
             </div>
+            <div class="text-block-mono">
+              // MAY 16-18, 2025<br />
+              // BOULDER, COLORADO<br />
+              // AVALON BALLROOM
+            </div>
           </div>
         </div>
       </section>
 
-      <!-- Guest Instructor -->
+      <!-- Schedule Content -->
       <section class="section-typographic" style="padding: var(--space-xl) 0">
         <div class="container">
-          <div class="artist-card" style="max-width: 600px; margin: 0 auto; text-align: center;">
-            <div class="artist-image" style="width: 300px; height: 300px; margin: 0 auto var(--space-lg); overflow: hidden; border-radius: 50%; border: 3px solid var(--color-primary);">
-              <img src="/images/artists/steven-messina.jpg" alt="Steven Messina" style="width: 100%; height: 100%; object-fit: cover;">
+
+          <!-- FRIDAY -->
+          <div class="schedule-day">
+            <h3>Friday, May 16th, 2025</h3>
+            <div class="schedule-item">
+              <div class="schedule-time">4:00 - 5:00 PM</div>
+              <div class="schedule-content">
+                <h4>Orishas Workshop</h4>
+                <p>Explore the spiritual foundations of Afro-Cuban dance through Orishas movements</p>
+                <p class="instructor">Instructor: Laroye</p>
+              </div>
             </div>
-            <h3 style="font-family: var(--font-display); font-size: var(--font-size-2xl); margin: 0 0 var(--space-sm); color: var(--color-red);">Steven Messina</h3>
-            <p style="color: var(--color-gray-600); margin: 0 0 var(--space-md); font-size: var(--font-size-lg);">Guest Instructor from Raleigh-Durham, North Carolina</p>
-            <p style="line-height: 1.8; margin: 0 0 var(--space-xl); font-size: var(--font-size-base);">
-              Steven Messina brings his passion and expertise in Cuban salsa to Boulder for our November 2025 Weekender.
-              Join us for workshops in Body Movement, Casino, and Rueda de Casino.
-            </p>
-
-            <!-- Social Links -->
-            <div style="display: flex; gap: var(--space-lg); justify-content: center; align-items: center;">
-              <a
-                href="https://www.instagram.com/messinadancecompany/?hl=en"
-                target="_blank"
-                rel="noopener noreferrer"
-                style="display: flex; align-items: center; gap: var(--space-xs); color: var(--color-text-primary); text-decoration: none; transition: color var(--transition-base);"
-                onmouseover="this.style.color='var(--color-primary)'"
-                onmouseout="this.style.color='var(--color-text-primary)'"
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
-                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
-                  <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
-                </svg>
-                <span>Instagram</span>
-              </a>
-
-              <a
-                href="https://www.messinadance.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                style="display: flex; align-items: center; gap: var(--space-xs); color: var(--color-text-primary); text-decoration: none; transition: color var(--transition-base);"
-                onmouseover="this.style.color='var(--color-primary)'"
-                onmouseout="this.style.color='var(--color-text-primary)'"
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="2" y1="12" x2="22" y2="12"></line>
-                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-                </svg>
-                <span>Website</span>
-              </a>
+            <div class="schedule-item">
+              <div class="schedule-time">5:15 - 6:15 PM</div>
+              <div class="schedule-content">
+                <h4>Timba Suelta</h4>
+                <p>Master the dynamic solo styling of Timba</p>
+                <p class="instructor">Instructors: Malena & Adriel</p>
+              </div>
+            </div>
+            <div class="schedule-item">
+              <div class="schedule-time">8:00 PM - 12:00 AM</div>
+              <div class="schedule-content">
+                <h4 class="schedule-social">Social Dance</h4>
+                <p>Dance the night away with DJ Byron (California) & DJ Tito (Boulder)</p>
+                <p class="venue">Venue: La Mariposa • 2845 28th St, Boulder</p>
+                <p class="instructor">Rueda class by Nathan Hook from 8:00-8:30 PM</p>
+              </div>
             </div>
           </div>
+
+          <!-- SATURDAY -->
+          <div class="schedule-day">
+            <h3>Saturday, May 17th, 2025</h3>
+            <div class="schedule-item">
+              <div class="schedule-time">11:00 AM - 12:00 PM</div>
+              <div class="schedule-content">
+                <h4>Son Cubano</h4>
+                <p>Discover the roots of Cuban salsa through Son Cubano</p>
+                <p class="instructor">Instructors: Emarlos & Courtney</p>
+              </div>
+            </div>
+            <div class="schedule-item">
+              <div class="schedule-time">12:15 - 1:15 PM</div>
+              <div class="schedule-content">
+                <h4>Rumba Fundamentals</h4>
+                <p>Learn the essential movements of Rumba Guaguancó</p>
+                <p class="instructor">Instructor: Laroye</p>
+              </div>
+            </div>
+            <div class="schedule-item">
+              <div class="schedule-time">1:30 - 2:30 PM</div>
+              <div class="schedule-content">
+                <h4>Casino Intermediate</h4>
+                <p>Advance your Casino skills with complex patterns and smooth transitions</p>
+                <p class="instructor">Instructors: Malena & Adriel</p>
+              </div>
+            </div>
+            <div class="schedule-item">
+              <div class="schedule-time">2:45 - 3:45 PM</div>
+              <div class="schedule-content">
+                <h4>Cubaton</h4>
+                <p>Experience the urban fusion of Cuban culture with modern reggaeton beats</p>
+                <p class="instructor">Instructor: Giselle Soto</p>
+              </div>
+            </div>
+            <div class="schedule-item">
+              <div class="schedule-time">4:00 - 5:00 PM</div>
+              <div class="schedule-content">
+                <h4>Ladies Styling</h4>
+                <p>Develop feminine grace and power in Cuban dance</p>
+                <p class="instructor">Instructor: Laroye • Ladies Only</p>
+              </div>
+            </div>
+            <div class="schedule-item">
+              <div class="schedule-time">8:00 PM - 12:00 AM</div>
+              <div class="schedule-content">
+                <h4 class="schedule-social">Social Dance</h4>
+                <p>Dance the night away with DJ Byron (California) & DJ Diva (Boulder)</p>
+                <p class="venue">Venue: Junkyard Social Club • 2525 Frontier Ave, Boulder</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- SUNDAY -->
+          <div class="schedule-day">
+            <h3>Sunday, May 18th, 2025</h3>
+            <div class="schedule-item">
+              <div class="schedule-time">10:00 - 11:00 AM</div>
+              <div class="schedule-content">
+                <h4>Ladies Styling</h4>
+                <p>Master the art of Cuban feminine expression</p>
+                <p class="instructor">Instructor: Giselle Soto • Ladies Only</p>
+              </div>
+            </div>
+            <div class="schedule-item">
+              <div class="schedule-time">11:00 AM - 12:00 PM</div>
+              <div class="schedule-content">
+                <h4>Lunch Break</h4>
+                <p>Enjoy local Boulder cuisine and connect with fellow dancers</p>
+              </div>
+            </div>
+            <div class="schedule-item">
+              <div class="schedule-time">12:00 - 1:00 PM</div>
+              <div class="schedule-content">
+                <h4>Casino Intermediate</h4>
+                <p>Build on yesterday's foundation with more advanced Casino patterns</p>
+                <p class="instructor">Instructors: Emarlos & Courtney</p>
+              </div>
+            </div>
+            <div class="schedule-item">
+              <div class="schedule-time">1:15 - 2:15 PM</div>
+              <div class="schedule-content">
+                <h4>Rueda Intermediate/Advanced</h4>
+                <p>Experience the joy of group Casino dancing with complex Rueda calls</p>
+                <p class="instructor">Instructor: Nathan Hook</p>
+              </div>
+            </div>
+            <div class="schedule-item">
+              <div class="schedule-time"></div>
+              <div class="schedule-content">
+                <p style="color: var(--color-gray-500); font-style: italic;">No social dance on Sunday</p>
+              </div>
+            </div>
+          </div>
+
         </div>
       </section>
-
-
     </main>
-
-    <!-- Scripts -->
-    <script src="/js/components/lightbox.js"></script>
-    <script src="/js/components/lazy-loading.js"></script>
-    <script src="/js/main.js"></script>
-    <script src="/js/navigation.js"></script>
-    <script src="/js/gallery-hero.js"></script>
-    <script src="/js/typography.js"></script>
-    <script type="module" src="/js/global-cart.js"></script>
-
-    <!-- Theme Management -->
-    <script type="module">
-      import { initializeThemeToggle } from '/js/theme-toggle.js';
-      import themeManager from '/js/theme-manager.js';
-
-      // Initialize theme system
-      document.addEventListener('DOMContentLoaded', () => {
-        themeManager.initializeTheme();
-        initializeThemeToggle('#theme-toggle-container');
-      });
-    </script>
 
     <footer class="footer-typographic">
       <div class="container">
         <p class="footer-credits">
-          NOVEMBER 2025 WEEKENDER • BOULDER, COLORADO •
+          MAY 15-17, 2025 •
           <a
             href="mailto:alocubanoboulderfest@gmail.com?subject=A Lo Cubano Boulder Fest Inquiry"
             style="color: inherit; text-decoration: underline"
@@ -473,6 +528,24 @@
       </div>
     </footer>
 
+    <!-- Theme Management -->
+    <script type="module">
+      import { initializeThemeToggle } from '/js/theme-toggle.js';
+      import themeManager from '/js/theme-manager.js';
+
+      // Initialize theme
+      document.addEventListener('DOMContentLoaded', () => {
+        themeManager.initializeTheme();
+        initializeThemeToggle('#theme-toggle-container');
+      });
+    </script>
+    <script src="/js/navigation.js"></script>
+    <script src="/js/components/lightbox.js"></script>
+    <script src="/js/components/lazy-loading.js"></script>
+    <script src="/js/main.js"></script>
+    <script src="/js/typography.js"></script>
+    <script src="/js/gallery-hero.js"></script>
+    <script type="module" src="/js/global-cart.js"></script>
     <script src="/js/logo-switcher.js"></script>
-  </body>
+</body>
 </html>

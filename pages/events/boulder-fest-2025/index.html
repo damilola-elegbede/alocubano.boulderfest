@@ -1,37 +1,48 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <!-- Synchronous theme detection to prevent lightbox arrow color issues -->
+    <!-- Inline theme detection to prevent FOUC -->
     <script>
       (function() {
-        // Sync theme detection based on theme-manager.js logic
-        function detectSystemPreference() {
-          if (typeof window !== 'undefined' && window.matchMedia) {
-            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-          }
-          return 'light';
-        }
+        // Detect admin pages
+        const path = window.location.pathname.toLowerCase();
+        const isAdmin = path.includes('/admin') || path.includes('pages/admin');
 
-        function getStoredPreference() {
+        if (isAdmin) {
+          // Admin pages always use dark theme
+          document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+          // Main site: check user preference
+          let stored = null;
           try {
-            return localStorage.getItem('theme-preference');
+            stored = localStorage.getItem('theme-preference');
           } catch {
-            return null;
+            // localStorage might be disabled
           }
+
+          const preference = stored || 'system';
+          let theme = preference;
+
+          if (preference === 'system') {
+            // Detect system preference
+            theme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+              ? 'dark'
+              : 'light';
+          }
+
+          document.documentElement.setAttribute('data-theme', theme);
         }
-
-        // Gallery pages are main site (not admin), so use user preference
-        const stored = getStoredPreference();
-        const preference = stored || 'system';
-        const theme = preference === 'system' ? detectSystemPreference() : preference;
-
-        // Apply theme immediately to prevent race condition
-        document.documentElement.setAttribute('data-theme', theme);
       })();
     </script>
+
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>2025 Gallery - A Lo Cubano Boulder Fest</title>
+    <title>Boulder Fest 2025 - A Lo Cubano Boulder Fest</title>
+    <meta
+      name="description"
+      content="Boulder Fest 2025 - Experience authentic Cuban salsa, workshops, and social dancing with world-class artists in Boulder, Colorado."
+    />
+
     <!-- Favicons -->
     <link
       rel="icon"
@@ -63,70 +74,6 @@
       href="/images/favicons/favicon-192x192.png"
     />
 
-    <!-- Critical resource preloading -->
-    <script>
-      // Inline critical path optimization - Event hero images with responsive variants
-      (function () {
-        // Check if optimized variants exist for event heroes
-        const heroPath = "/images/hero/hero-default.jpg";
-        const isEventHero = false;
-
-        if (isEventHero) {
-          // Preload optimized variants for event heroes (WebP first, then JPEG fallback)
-          const isMobile = window.innerWidth <= 768;
-          const variant = isMobile ? "mobile" : "desktop";
-          const baseName = "hero-default";
-
-          // Preload WebP variant
-          const webpPreload = document.createElement("link");
-          webpPreload.rel = "preload";
-          webpPreload.as = "image";
-          webpPreload.href = `/images/hero-optimized/${variant}/${baseName}.webp`;
-          webpPreload.type = "image/webp";
-          document.head.appendChild(webpPreload);
-
-          // Preload AVIF variant for supported browsers
-          if (typeof window !== "undefined" && "OffscreenCanvas" in window) {
-            const avifPreload = document.createElement("link");
-            avifPreload.rel = "preload";
-            avifPreload.as = "image";
-            avifPreload.href = `/images/hero-optimized/${variant}/${baseName}.avif`;
-            avifPreload.type = "image/avif";
-            document.head.appendChild(avifPreload);
-          }
-
-          // Fallback JPEG preload
-          const jpegPreload = document.createElement("link");
-          jpegPreload.rel = "preload";
-          jpegPreload.as = "image";
-          jpegPreload.href = `/images/hero-optimized/${variant}/${baseName}.jpg`;
-          jpegPreload.type = "image/jpeg";
-          document.head.appendChild(jpegPreload);
-        } else {
-          // Standard hero image preload for top-level pages
-          const heroPreload = document.createElement("link");
-          heroPreload.rel = "preload";
-          heroPreload.as = "image";
-          heroPreload.href = heroPath;
-          document.head.appendChild(heroPreload);
-        }
-
-        // Preload gallery data for gallery pages
-        const pageId = window.location.pathname.split("/").pop() || "home";
-        if (pageId.includes("gallery")) {
-          const year = pageId.includes("2025")
-            ? "2025"
-            : new Date().getFullYear();
-          const galleryDataPreload = document.createElement("link");
-          galleryDataPreload.rel = "preload";
-          galleryDataPreload.as = "fetch";
-          galleryDataPreload.href = `/api/gallery?year=${year}&category=workshops`;
-          galleryDataPreload.crossOrigin = "anonymous";
-          document.head.appendChild(galleryDataPreload);
-        }
-      })();
-    </script>
-
     <!-- DNS prefetch for external resources -->
     <link rel="dns-prefetch" href="//fonts.googleapis.com" />
     <link rel="dns-prefetch" href="//fonts.gstatic.com" />
@@ -137,15 +84,47 @@
     <link rel="stylesheet" href="/css/base.css" />
     <link rel="stylesheet" href="/css/components.css" />
     <link rel="stylesheet" href="/css/typography.css" />
-    <link rel="stylesheet" href="/css/navigation.css" />
     <link rel="stylesheet" href="/css/floating-cart.css" />
     <link rel="stylesheet" href="/css/floating-cart-dark.css" />
-    <link rel="stylesheet" href="/css/theme-toggle.css" />
     <link rel="stylesheet" href="/css/header-cart.css" />
     <link rel="stylesheet" href="/css/mobile-overrides.css" />
   </head>
   <body class="typographic">
-    <header class="header">
+    <!-- Skip Links for Accessibility -->
+    <a
+      href="#main-content"
+      class="skip-link"
+      style="
+        position: absolute;
+        top: -40px;
+        left: 0;
+        background: var(--color-black);
+        color: var(--color-white);
+        padding: 8px;
+        text-decoration: none;
+        z-index: 1000;
+        transition: top 0.3s;
+      "
+      >Skip to main content</a
+    >
+    <a
+      href="#navigation"
+      class="skip-link"
+      style="
+        position: absolute;
+        top: -40px;
+        left: 0;
+        background: var(--color-black);
+        color: var(--color-white);
+        padding: 8px;
+        text-decoration: none;
+        z-index: 1000;
+        transition: top 0.3s;
+      "
+      >Skip to navigation</a
+    >
+
+    <header class="header" id="navigation">
       <div class="container">
         <div class="grid">
           <div class="header-left">
@@ -228,6 +207,25 @@
                       </li>
                     </ul>
                   </li>
+                  <li class="dropdown-category" role="group">
+                    <span class="dropdown-category-title" role="presentation"
+                      >Weekenders</span
+                    >
+                    <ul class="dropdown-submenu">
+                      <li>
+                        <a
+                      <li>
+                        <a
+                          href="/tickets"
+                          class="dropdown-link"
+                          role="menuitem"
+                          data-event="weekender-2025-11"
+                          data-event-status="upcoming"
+                          >November 2025</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
                 </ul>
               </li>
               <li>
@@ -259,13 +257,13 @@
       </div>
     </header>
 
-    <main>
+    <main id="main-content">
       <!-- Hero Splash Image -->
       <section class="gallery-hero-splash">
         <div class="hero-image-container">
           <img
             src="/images/hero/boulder-fest-2025-hero.jpg"
-            alt="Boulder Fest 2025 gallery moments showcasing workshops, socials, and authentic Cuban culture celebration"
+            alt="Boulder Fest 2025 celebration with dancers, musicians, and authentic Cuban culture"
             class="hero-splash-img"
             style="object-position: top center !important"
           />
@@ -287,7 +285,7 @@
               </li>
               <li>
                 <a
-                  href="/2025-artists"
+                  href="/boulder-fest-2025/artists"
                   class="event-nav-link"
                   data-text="Artists"
                   >Artists</a
@@ -295,7 +293,7 @@
               </li>
               <li>
                 <a
-                  href="/2025-schedule"
+                  href="/boulder-fest-2025/schedule"
                   class="event-nav-link"
                   data-text="Schedule"
                   >Schedule</a
@@ -303,7 +301,7 @@
               </li>
               <li>
                 <a
-                  href="/2025-gallery"
+                  href="/boulder-fest-2025/gallery"
                   class="event-nav-link"
                   data-text="Gallery"
                   >Gallery</a
@@ -314,90 +312,89 @@
         </div>
       </section>
 
-      <!-- Traditional Gallery Grid Section -->
-      <section
-        class="section-typographic gallery-detail-section"
-        id="traditional-gallery"
-        data-gallery-year="2025"
-      >
+      <!-- Typographic Festival Info -->
+      <section class="section-typographic" style="padding: var(--space-xl) 0">
         <div class="container">
-          <div class="gallery-loading" id="gallery-detail-loading">
-            <p class="font-mono">Loading festival memories...</p>
-          </div>
-
-          <!-- Gallery Stats - Moved to top -->
-          <div class="stats-grid" style="margin-bottom: 3rem;">
-            <div class="stat-item">
-              <h3 class="font-display">150+</h3>
-              <p class="font-mono">Attendees</p>
-            </div>
-            <div class="stat-item">
-              <h3 class="font-display">3</h3>
-              <p class="font-mono">Days of Dance</p>
-            </div>
-            <div class="stat-item">
-              <h3 class="font-display">10</h3>
-              <p class="font-mono">Workshops</p>
-            </div>
-            <div class="stat-item">
-              <h3 class="font-display">∞</h3>
-              <p class="font-mono">Memories Made</p>
-            </div>
-          </div>
-
-          <div id="gallery-detail-content">
-            <!-- Workshops Section -->
-            <div class="gallery-section" id="workshops-section">
-              <h2 class="text-display">WORKSHOPS</h2>
-              <div
-                class="gallery-grid gallery-detail-grid"
-                id="workshops-gallery"
-              >
-                <!-- Workshop images will be loaded here -->
-              </div>
-            </div>
-
-            <!-- Socials Section -->
-            <div class="gallery-section socials-section" id="socials-section">
-              <h2 class="text-display">SOCIALS</h2>
-              <div
-                class="gallery-grid gallery-detail-grid"
-                id="socials-gallery"
-              >
-                <!-- Social images will be loaded here -->
-              </div>
-            </div>
-          </div>
-
-          <!-- Fallback static gallery -->
-          <div class="gallery-grid-static" id="gallery-detail-static">
-            <div class="gallery-static-content">
-              <h2 class="text-display gallery-static-title">
-                2025 FESTIVAL GALLERY
+          <div class="text-composition">
+            <div class="text-block-large">
+              <h1 class="hero__title text-mask">
+                A Lo Cubano Boulder Fest 2025!
+              </h1>
+              <h2 class="hero__subtitle">
+                Celebrate with us as we look back on an incredible year of
+                authentic Cuban salsa, workshops, and social dancing
               </h2>
-              <p class="font-serif gallery-static-description">
-                Our 2025 festival was an incredible celebration of Cuban culture
-                and dance. Photos from workshops, socials, and performances will
-                be uploaded soon.
+            </div>
+            <div class="text-block-mono">
+              // MAY 16-18, 2025<br />
+              // BOULDER, COLORADO<br />
+              // WORLD CLASS CUBAN ARTISTS<br />
+              // MULTIPLE VENUES<br />
+              // UNFORGETTABLE MEMORIES
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- What Happened Typography -->
+      <section class="section-typographic" style="padding: var(--space-xl) 0">
+        <div class="container">
+          <h2 class="text-mask">WHAT HAPPENED</h2>
+          <div class="expectations">
+            <div class="expectations__item">
+              <h3 class="expectations__item-title">Workshops</h3>
+              <p class="expectations__item-description">
+                Casino, Rueda, Suelta, Reggaeton, Rumba, and Afro workshops by
+                world-class instructors
               </p>
-              <p class="font-mono gallery-static-note">
-                Check back later or follow us on social media for updates!
+            </div>
+
+            <div class="expectations__item">
+              <h3 class="expectations__item-title">Socials</h3>
+              <p class="expectations__item-description">
+                Amazing social dance events where our community came together to
+                celebrate Cuban rhythms and create lasting connections.
               </p>
-              <div class="gallery-static-actions">
-                <a href="/tickets" class="form-button-type tickets-button"
-                  >Get 2026 Tickets</a
-                >
-              </div>
+            </div>
+
+            <div class="expectations__item">
+              <h3 class="expectations__item-title">Performances</h3>
+              <p class="expectations__item-description">
+                Incredible performances by our Cuban artists and talented
+                community dancers.
+              </p>
             </div>
           </div>
         </div>
       </section>
     </main>
 
+    <!-- Scripts -->
+    <link rel="stylesheet" href="/css/navigation.css" />
+    <link rel="stylesheet" href="/css/theme-toggle.css" />
+    <link rel="stylesheet" href="/css/forms.css" />
+    <script src="/js/components/lightbox.js"></script>
+    <script src="/js/components/lazy-loading.js"></script>
+    <script src="/js/main.js"></script>
+    <script src="/js/navigation.js"></script>
+    <script src="/js/gallery-hero.js"></script>
+    <script src="/js/typography.js"></script>
+    <script type="module" src="/js/global-cart.js"></script>
+    
+
+    <style>
+      .event-nav-card:hover {
+        border-color: var(--color-red);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+    </style>
+      <script src="/js/logo-switcher.js"></script>
+
     <footer class="footer-typographic">
       <div class="container">
         <p class="footer-credits">
-          MAY 15-17, 2025 •
+          MAY 2025 • BOULDER, COLORADO •
           <a
             href="mailto:alocubanoboulderfest@gmail.com?subject=A Lo Cubano Boulder Fest Inquiry"
             style="color: inherit; text-decoration: underline"
@@ -460,55 +457,12 @@
     <script type="module">
       import { initializeThemeToggle } from '/js/theme-toggle.js';
       import themeManager from '/js/theme-manager.js';
-
+      
       // Initialize theme
       document.addEventListener('DOMContentLoaded', () => {
         themeManager.initializeTheme();
         initializeThemeToggle('#theme-toggle-container');
       });
     </script>
-
-    <script src="/js/navigation.js"></script>
-    <script src="/js/components/lightbox.js"></script>
-    <script src="/js/components/lazy-loading.js"></script>
-    <!-- Performance Optimization Modules -->
-    <script type="module" src="/js/performance-monitor.esm.js"></script>
-    <script nomodule src="/js/performance-monitor.js"></script>
-    <script src="/js/prefetch-manager.js"></script>
-    <script src="/js/progressive-loader.js"></script>
-    <script src="/js/cache-warmer.js"></script>
-    <script src="/js/main.js"></script>
-    <script src="/js/typography.js"></script>
-    <script type="module" src="/js/global-cart.js"></script>
-    
-    <script>
-      // Debug logging
-      console.log("Gallery page loaded, checking for elements...");
-      document.addEventListener("DOMContentLoaded", () => {
-        console.log("DOM loaded, checking gallery elements:");
-        console.log(
-          "- gallery-detail-loading:",
-          document.getElementById("gallery-detail-loading"),
-        );
-        console.log(
-          "- gallery-detail-content:",
-          document.getElementById("gallery-detail-content"),
-        );
-        console.log(
-          "- gallery-detail-static:",
-          document.getElementById("gallery-detail-static"),
-        );
-        console.log(
-          "- workshops-section:",
-          document.getElementById("workshops-section"),
-        );
-        console.log(
-          "- socials-section:",
-          document.getElementById("socials-section"),
-        );
-      });
-    </script>
-    <script src="/js/gallery-detail.js?v=2025-07-22-PERFORMANCE-OPTIMIZED"></script>
-      <script src="/js/logo-switcher.js"></script>
 </body>
 </html>

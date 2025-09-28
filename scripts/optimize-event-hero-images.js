@@ -38,7 +38,7 @@ const OPTIMIZATION_CONFIG = {
 const EVENT_HERO_MAPPING = {
   "boulder-fest-2025": "boulder-fest-2025-hero.jpg",
   "boulder-fest-2026": "boulder-fest-2026-hero.jpg",
-  "weekender-2026-09": "weekender-2026-09-hero.jpg",
+  "weekender-2025-11": "weekender-2025-11-hero.jpg",
   // Future events use numbered hero images
   "future-event-1": "future-event-hero1.jpg",
   "future-event-2": "future-event-hero2.jpg",

@@ -87,7 +87,7 @@
     },
     {
       "source": "/(gallery|artists|schedule)",
-      "destination": "/pages/events/2026-boulder/$1"
+      "destination": "/pages/events/boulder-fest-2026/$1"
     },
     {
       "source": "/registration",
@@ -99,27 +99,27 @@
     },
     {
       "source": "/boulder-fest-2025",
-      "destination": "/pages/events/2025-boulder/index"
+      "destination": "/pages/events/boulder-fest-2025/index"
     },
     {
       "source": "/boulder-fest-2025/(artists|schedule|gallery)",
-      "destination": "/pages/events/2025-boulder/$1"
+      "destination": "/pages/events/boulder-fest-2025/$1"
     },
     {
       "source": "/boulder-fest-2026",
-      "destination": "/pages/events/2026-boulder/index"
+      "destination": "/pages/events/boulder-fest-2026/index"
     },
     {
       "source": "/boulder-fest-2026/(artists|schedule|gallery)",
-      "destination": "/pages/events/2026-boulder/$1"
+      "destination": "/pages/events/boulder-fest-2026/$1"
     },
     {
-      "source": "/2025-11-weekender",
-      "destination": "/pages/events/2025-11-weekender/index"
+      "source": "/weekender-2025-11",
+      "destination": "/pages/events/weekender-2025-11/index"
     },
     {
-      "source": "/2025-11-weekender/(artists|schedule|gallery)",
-      "destination": "/pages/events/2025-11-weekender/$1"
+      "source": "/weekender-2025-11-(artists|schedule|gallery)",
+      "destination": "/pages/events/weekender-2025-11/$1"
     },
     {
       "source": "/admin",
@@ -172,42 +172,12 @@
       "permanent": true
     },
     {
-      "source": "/2025-nov-artists",
-      "destination": "/2025-11-weekender/artists",
-      "permanent": true
-    },
-    {
-      "source": "/2025-nov-schedule",
-      "destination": "/2025-11-weekender/schedule",
-      "permanent": true
-    },
-    {
-      "source": "/2025-nov-gallery",
-      "destination": "/2025-11-weekender/gallery",
-      "permanent": true
-    },
-    {
-      "source": "/weekender-2025-11",
-      "destination": "/2025-11-weekender",
-      "permanent": true
-    },
-    {
-      "source": "/weekender-2025-11/(artists|schedule|gallery)",
-      "destination": "/2025-11-weekender/$1",
-      "permanent": true
-    },
-    {
       "source": "/boulder-fest-2025/tickets",
       "destination": "/tickets",
       "permanent": true
     },
     {
       "source": "/boulder-fest-2026/tickets",
-      "destination": "/tickets",
-      "permanent": true
-    },
-    {
-      "source": "/2025-11-weekender/tickets",
       "destination": "/tickets",
       "permanent": true
     },

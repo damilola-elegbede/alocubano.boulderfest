@@ -661,9 +661,9 @@ class SiteNavigation {
                     year: '2025',
                     prefix: '2025'
                 },
-                '2025-11-weekender': {
+                'weekender-2025-11': {
                     year: '2025',
-                    prefix: '2025-nov'
+                    prefix: 'weekender-2025-11'
                 }
             }
         };
@@ -961,18 +961,15 @@ class SiteNavigation {
         const eventPatterns = [
             // Boulder Fest 2025 (handle both redirected paths and direct paths)
             { overview: '/boulder-fest-2025', patterns: [
-                '/2025-artists', '/2025-schedule', '/2025-gallery',
                 '/boulder-fest-2025/artists', '/boulder-fest-2025/schedule', '/boulder-fest-2025/gallery'
             ] },
             // Boulder Fest 2026 (handle both redirected paths and direct paths)
             { overview: '/boulder-fest-2026', patterns: [
-                '/2026-artists', '/2026-schedule', '/2026-gallery',
                 '/boulder-fest-2026/artists', '/boulder-fest-2026/schedule', '/boulder-fest-2026/gallery'
             ] },
-            // Weekender 2025-11 (handle both redirected paths and direct paths)
-            { overview: '/2025-11-weekender', patterns: [
-                '/2025-nov-artists', '/2025-nov-schedule', '/2025-nov-gallery',
-                '/2025-11-weekender/artists', '/2025-11-weekender/schedule', '/2025-11-weekender/gallery'
+            // Weekender 2025-11
+            { overview: '/weekender-2025-11', patterns: [
+                '/weekender-2025-11/artists', '/weekender-2025-11/schedule', '/weekender-2025-11/gallery'
             ] },
         ];
 
@@ -1029,10 +1026,6 @@ class SiteNavigation {
 
             // Map the actual paths to the link paths
             const pathMapping = {
-                // 2025-11 Weekender
-                '/2025-11-weekender/artists': '/2025-nov-artists',
-                '/2025-11-weekender/schedule': '/2025-nov-schedule',
-                '/2025-11-weekender/gallery': '/2025-nov-gallery',
                 // Boulder Fest 2025
                 '/boulder-fest-2025/artists': '/2025-artists',
                 '/boulder-fest-2025/schedule': '/2025-schedule',
@@ -1040,7 +1033,11 @@ class SiteNavigation {
                 // Boulder Fest 2026
                 '/boulder-fest-2026/artists': '/2026-artists',
                 '/boulder-fest-2026/schedule': '/2026-schedule',
-                '/boulder-fest-2026/gallery': '/2026-gallery'
+                '/boulder-fest-2026/gallery': '/2026-gallery',
+                // Weekender 2025-11
+                '/weekender-2025-11/artists': '/weekender-2025-11-artists',
+                '/weekender-2025-11/schedule': '/weekender-2025-11-schedule',
+                '/weekender-2025-11/gallery': '/weekender-2025-11-gallery'
             };
 
             // Check if current path matches either directly or through mapping
@@ -1055,13 +1052,9 @@ class SiteNavigation {
 
         // Ensure Events dropdown is highlighted when on any event page (overview or sub-page)
         const allEventPaths = [
-            '/boulder-fest-2025', '/2025-artists', '/2025-schedule', '/2025-gallery',
-            '/boulder-fest-2026', '/2026-artists', '/2026-schedule', '/2026-gallery',
-            '/2025-11-weekender', '/2025-nov-artists', '/2025-nov-schedule', '/2025-nov-gallery',
-            // Also include the actual paths after redirect
-            '/boulder-fest-2025/artists', '/boulder-fest-2025/schedule', '/boulder-fest-2025/gallery',
-            '/boulder-fest-2026/artists', '/boulder-fest-2026/schedule', '/boulder-fest-2026/gallery',
-            '/2025-11-weekender/artists', '/2025-11-weekender/schedule', '/2025-11-weekender/gallery',
+            '/boulder-fest-2025', '/boulder-fest-2025/artists', '/boulder-fest-2025/schedule', '/boulder-fest-2025/gallery',
+            '/boulder-fest-2026', '/boulder-fest-2026/artists', '/boulder-fest-2026/schedule', '/boulder-fest-2026/gallery',
+            '/weekender-2025-11', '/weekender-2025-11/artists', '/weekender-2025-11/schedule', '/weekender-2025-11/gallery',
         ];
 
         if (allEventPaths.includes(currentPath)) {

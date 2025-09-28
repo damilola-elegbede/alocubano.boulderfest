@@ -47,23 +47,23 @@ const expectedFiles = {
     "pages/admin/tickets.html",
     "pages/admin/registrations.html",
   ],
-  "Event Pages - 2025 Boulder (pages/events/2025-boulder/)": [
-    "pages/events/2025-boulder/index.html",
-    "pages/events/2025-boulder/artists.html",
-    "pages/events/2025-boulder/schedule.html",
-    "pages/events/2025-boulder/gallery.html",
+  "Event Pages - Boulder Fest 2025 (pages/events/boulder-fest-2025/)": [
+    "pages/events/boulder-fest-2025/index.html",
+    "pages/events/boulder-fest-2025/artists.html",
+    "pages/events/boulder-fest-2025/schedule.html",
+    "pages/events/boulder-fest-2025/gallery.html",
   ],
-  "Event Pages - 2026 Boulder (pages/events/2026-boulder/)": [
-    "pages/events/2026-boulder/index.html",
-    "pages/events/2026-boulder/artists.html",
-    "pages/events/2026-boulder/schedule.html",
-    "pages/events/2026-boulder/gallery.html",
+  "Event Pages - Boulder Fest 2026 (pages/events/boulder-fest-2026/)": [
+    "pages/events/boulder-fest-2026/index.html",
+    "pages/events/boulder-fest-2026/artists.html",
+    "pages/events/boulder-fest-2026/schedule.html",
+    "pages/events/boulder-fest-2026/gallery.html",
   ],
-  "Event Pages - 2026 Weekender (pages/events/2026-weekender/)": [
-    "pages/events/2026-weekender/index.html",
-    "pages/events/2026-weekender/artists.html",
-    "pages/events/2026-weekender/schedule.html",
-    "pages/events/2026-weekender/gallery.html",
+  "Event Pages - Weekender 2025-11 (pages/events/weekender-2025-11/)": [
+    "pages/events/weekender-2025-11/index.html",
+    "pages/events/weekender-2025-11/artists.html",
+    "pages/events/weekender-2025-11/schedule.html",
+    "pages/events/weekender-2025-11/gallery.html",
   ],
   "API Directory": [
     "api/debug.js",
@@ -88,9 +88,9 @@ let extraInfo = [];
 // Event structure validation - Updated for organized structure
 function validateEventStructure() {
   const events = [
-    { name: "2025-boulder", path: "pages/events/2025-boulder" },
-    { name: "2026-boulder", path: "pages/events/2026-boulder" },
-    { name: "2026-weekender", path: "pages/events/2026-weekender" },
+    { name: "boulder-fest-2025", path: "pages/events/boulder-fest-2025" },
+    { name: "boulder-fest-2026", path: "pages/events/boulder-fest-2026" },
+    { name: "weekender-2025-11", path: "pages/events/weekender-2025-11" },
   ];
   const eventPages = ["index", "artists", "schedule", "gallery"];
 
@@ -117,15 +117,13 @@ function validateEventStructure() {
       }
     });
 
-    // Check hero images (using legacy naming for compatibility)
-    const legacyEventName = event.name === "2025-boulder" ? "boulder-fest-2025" :
-                           event.name === "2026-boulder" ? "boulder-fest-2026" :
-                           "weekender-2026-09";
-    const heroImage = path.join(heroImagePath, `${legacyEventName}-hero.jpg`);
+    // Check hero images (using current event naming)
+    const heroEventName = event.name;
+    const heroImage = path.join(heroImagePath, `${heroEventName}-hero.jpg`);
     if (fs.existsSync(heroImage)) {
-      console.log(`    ✅ Hero image exists: ${legacyEventName}-hero.jpg`);
+      console.log(`    ✅ Hero image exists: ${heroEventName}-hero.jpg`);
     } else {
-      console.log(`    ⚠️  Hero image missing: ${legacyEventName}-hero.jpg`);
+      console.log(`    ⚠️  Hero image missing: ${heroEventName}-hero.jpg`);
     }
 
     // Check optimized hero variants
@@ -138,11 +136,11 @@ function validateEventStructure() {
         formats.forEach((format) => {
           const optimizedImage = path.join(
             variantDir,
-            `${legacyEventName}-hero.${format}`,
+            `${heroEventName}-hero.${format}`,
           );
           if (!fs.existsSync(optimizedImage)) {
             console.log(
-              `    ⚠️  Missing optimized ${variant}/${format}: ${legacyEventName}-hero.${format}`,
+              `    ⚠️  Missing optimized ${variant}/${format}: ${heroEventName}-hero.${format}`,
             );
           }
         });
@@ -172,23 +170,21 @@ function validateEventStructure() {
   if (galleryDataDir) {
     console.log(`    ✅ Gallery data directory exists at ${galleryDataDir}`);
     events.forEach((event) => {
-      const legacyEventName = event.name === "2025-boulder" ? "boulder-fest-2025" :
-                             event.name === "2026-boulder" ? "boulder-fest-2026" :
-                             "weekender-2026-09";
-      const galleryFile = path.join(galleryDataDir, `${legacyEventName}.json`);
+      const galleryEventName = event.name;
+      const galleryFile = path.join(galleryDataDir, `${galleryEventName}.json`);
       if (fs.existsSync(galleryFile)) {
         try {
           const data = JSON.parse(fs.readFileSync(galleryFile, "utf8"));
-          if (data.eventId === legacyEventName || data.event === legacyEventName) {
-            console.log(`    ✅ Gallery data valid: ${legacyEventName}.json`);
+          if (data.eventId === galleryEventName || data.event === galleryEventName) {
+            console.log(`    ✅ Gallery data valid: ${galleryEventName}.json`);
           } else {
-            console.log(`    ⚠️  Gallery data structure issue: ${legacyEventName}.json`);
+            console.log(`    ⚠️  Gallery data structure issue: ${galleryEventName}.json`);
           }
         } catch (error) {
-          console.log(`    ❌ Gallery data invalid JSON: ${legacyEventName}.json`);
+          console.log(`    ❌ Gallery data invalid JSON: ${galleryEventName}.json`);
         }
       } else {
-        console.log(`    ⚠️  Gallery data missing: ${legacyEventName}.json`);
+        console.log(`    ⚠️  Gallery data missing: ${galleryEventName}.json`);
       }
     });
   } else {

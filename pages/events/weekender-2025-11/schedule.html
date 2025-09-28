@@ -4,15 +4,12 @@
     <!-- Inline theme detection to prevent FOUC -->
     <script>
       (function() {
-        // Detect admin pages
         const path = window.location.pathname.toLowerCase();
         const isAdmin = path.includes('/admin') || path.includes('pages/admin');
 
         if (isAdmin) {
-          // Admin pages always use dark theme
           document.documentElement.setAttribute('data-theme', 'dark');
         } else {
-          // Main site: check user preference
           let stored = null;
           try {
             stored = localStorage.getItem('theme-preference');
@@ -24,7 +21,6 @@
           let theme = preference;
 
           if (preference === 'system') {
-            // Detect system preference
             theme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
               ? 'dark'
               : 'light';
@@ -37,10 +33,10 @@
 
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Boulder Fest 2026 - A Lo Cubano Boulder Fest</title>
+    <title>Weekender November 2025 Schedule - A Lo Cubano Boulder Fest</title>
     <meta
       name="description"
-      content="Join us for Boulder Fest 2026, May 15-17. Experience 3 days of authentic Cuban salsa, workshops, and social dancing with world-class artists in Boulder, Colorado."
+      content="Schedule for A Lo Cubano Weekender November 2025. View workshop times, social dance events, and activities throughout the weekend."
     />
 
     <!-- Favicons -->
@@ -50,33 +46,6 @@
       href="/images/favicons/favicon-32x32.png"
     />
     <link rel="icon" type="image/x-icon" href="/images/favicon.ico" />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="16x16"
-      href="/images/favicons/favicon-16x16.png"
-    />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="32x32"
-      href="/images/favicons/favicon-32x32.png"
-    />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="192x192"
-      href="/images/favicons/favicon-192x192.png"
-    />
-    <link
-      rel="apple-touch-icon"
-      sizes="192x192"
-      href="/images/favicons/favicon-192x192.png"
-    />
-
-    <!-- DNS prefetch for external resources -->
-    <link rel="dns-prefetch" href="//fonts.googleapis.com" />
-    <link rel="dns-prefetch" href="//fonts.gstatic.com" />
 
     <!-- Theme Management - Early inclusion to prevent FOUC -->
     <script type="module" src="/js/theme-manager.js"></script>
@@ -86,24 +55,8 @@
     <link rel="stylesheet" href="/css/typography.css" />
     <link rel="stylesheet" href="/css/floating-cart.css" />
     <link rel="stylesheet" href="/css/floating-cart-dark.css" />
-    <link rel="stylesheet" href="/css/navigation.css" />
-    <link rel="stylesheet" href="/css/forms.css" />
     <link rel="stylesheet" href="/css/header-cart.css" />
     <link rel="stylesheet" href="/css/mobile-overrides.css" />
-    <!-- Theme styles -->
-    <link rel="stylesheet" href="/css/theme-toggle.css" />
-
-    <style>
-      .event-nav-card:hover {
-        border-color: var(--color-red);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      }
-
-      .event-nav-card:hover h3 {
-        color: var(--color-red);
-      }
-    </style>
   </head>
   <body class="typographic">
     <!-- Skip Links for Accessibility -->
@@ -123,24 +76,8 @@
       "
       >Skip to main content</a
     >
-    <a
-      href="#navigation"
-      class="skip-link"
-      style="
-        position: absolute;
-        top: -40px;
-        left: 0;
-        background: var(--color-black);
-        color: var(--color-white);
-        padding: 8px;
-        text-decoration: none;
-        z-index: 1000;
-        transition: top 0.3s;
-      "
-      >Skip to navigation</a
-    >
 
-    <header class="header" id="navigation">
+    <header class="header">
       <div class="container">
         <div class="grid">
           <div class="header-left">
@@ -230,12 +167,10 @@
                     <ul class="dropdown-submenu">
                       <li>
                         <a
-                      <li>
-                        <a
-                          href="/2025-11-weekender"
+                          href="/weekender-2025-11"
                           class="dropdown-link"
                           role="menuitem"
-                          data-event="2025-11-weekender"
+                          data-event="weekender-2025-11"
                           data-event-status="upcoming"
                           >November 2025</a
                         >
@@ -274,26 +209,14 @@
     </header>
 
     <main id="main-content">
-      <!-- Hero Splash Image -->
-      <section class="gallery-hero-splash">
-        <div class="hero-image-container">
-          <img
-            src="/images/hero/boulder-fest-2026-hero.jpg"
-            alt="Boulder Fest 2026 celebration with dancers, musicians, and authentic Cuban culture"
-            class="hero-splash-img"
-            style="object-position: top center !important"
-          />
-        </div>
-      </section>
-
       <!-- Event Sub Navigation -->
       <section class="event-subnav">
         <div class="container">
-          <nav class="event-nav" aria-label="Boulder Fest 2026 Navigation">
+          <nav class="event-nav" aria-label="Weekender November 2025 Navigation">
             <ul class="event-nav-list">
               <li>
                 <a
-                  href="/boulder-fest-2026"
+                  href="/weekender-2025-11"
                   class="event-nav-link"
                   data-text="Overview"
                   >Overview</a
@@ -301,7 +224,7 @@
               </li>
               <li>
                 <a
-                  href="/2026-artists"
+                  href="/weekender-2025-11-artists"
                   class="event-nav-link"
                   data-text="Artists"
                   >Artists</a
@@ -309,7 +232,7 @@
               </li>
               <li>
                 <a
-                  href="/2026-schedule"
+                  href="/weekender-2025-11-schedule"
                   class="event-nav-link"
                   data-text="Schedule"
                   >Schedule</a
@@ -317,7 +240,7 @@
               </li>
               <li>
                 <a
-                  href="/2026-gallery"
+                  href="/weekender-2025-11-gallery"
                   class="event-nav-link"
                   data-text="Gallery"
                   >Gallery</a
@@ -328,222 +251,46 @@
         </div>
       </section>
 
-      <!-- Typographic Festival Info -->
+      <!-- Schedule Section -->
       <section class="section-typographic" style="padding: var(--space-xl) 0">
         <div class="container">
+          <h1 class="text-mask">SCHEDULE</h1>
           <div class="text-composition">
             <div class="text-block-large">
-              <h1 class="hero__title text-mask">
-                A Lo Cubano Boulder Fest 2026!
-              </h1>
               <h2 class="hero__subtitle">
-                Experience 3 days of authentic Cuban salsa, workshops, and
-                social dancing in Boulder, Colorado
+                Weekend schedule for intimate workshops and social dancing
+                at the Weekender November 2025
               </h2>
             </div>
             <div class="text-block-mono">
-              // MAY 15-17, 2026<br />
-              // BOULDER, COLORADO<br />
-              // 4 WORLD CLASS CUBAN ARTISTS<br />
-              // VENUES ACROSS THE CITY<br />
-              // UNLIMITED MEMORIES
+              // COMING SOON<br />
+              // DETAILED SCHEDULE<br />
+              // WORKSHOP TIMETABLES<br />
+              // SOCIAL DANCE EVENTS
             </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- What To Expect Typography -->
-      <section class="section-typographic" style="padding: var(--space-xl) 0">
-        <div class="container">
-          <h2 class="text-mask">WHAT TO EXPECT</h2>
-          <div class="expectations">
-            <div class="expectations__item">
-              <h3 class="expectations__item-title">Workshops</h3>
-              <p class="expectations__item-description">
-                Casino, Rueda, Suelta, Reggaeton, Rumba, and Afro
-              </p>
-            </div>
-
-            <div class="expectations__item">
-              <h3 class="expectations__item-title">Socials</h3>
-              <p class="expectations__item-description">
-                Electrifying social dance events where the community comes
-                together to celebrate Cuban rhythms, connect with fellow
-                dancers, and experience the joy of authentic salsa in a vibrant,
-                welcoming atmosphere.
-              </p>
-            </div>
-
-            <div class="expectations__item">
-              <h3 class="expectations__item-title">Performances</h3>
-              <p class="expectations__item-description">
-                Captivating performances by world-class artists and talented
-                dancers showcasing the beauty and passion of authentic Cuban
-                dance styles.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Event Navigation -->
-      <section class="section-typographic" style="padding: var(--space-xl) 0">
-        <div class="container">
-          <h2 class="text-mask">BOULDER FEST 2026</h2>
-          <div
-            class="event-nav-grid"
-            style="
-              display: grid;
-              grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-              gap: var(--space-lg);
-              margin-top: var(--space-lg);
-            "
-          >
-            <a
-              href="/2026-artists"
-              class="event-nav-card"
-              style="
-                display: block;
-                padding: var(--space-lg);
-                border: 2px solid var(--color-border-medium);
-                text-decoration: none;
-                color: var(--color-text-primary);
-                transition: all var(--transition-base);
-              "
-            >
-              <h3
-                style="
-                  margin: 0 0 var(--space-sm) 0;
-                  font-family: var(--font-display);
-                  font-size: var(--font-size-xl);
-                  color: var(--color-text-primary);
-                "
-              >
-                Artists
-              </h3>
-              <p style="margin: 0; color: var(--color-text-secondary)">
-                Meet our world-class Cuban artists and instructors
-              </p>
-            </a>
-            <a
-              href="/2026-schedule"
-              class="event-nav-card"
-              style="
-                display: block;
-                padding: var(--space-lg);
-                border: 2px solid var(--color-border-medium);
-                text-decoration: none;
-                color: var(--color-text-primary);
-                transition: all var(--transition-base);
-              "
-            >
-              <h3
-                style="
-                  margin: 0 0 var(--space-sm) 0;
-                  font-family: var(--font-display);
-                  font-size: var(--font-size-xl);
-                  color: var(--color-text-primary);
-                "
-              >
-                Schedule
-              </h3>
-              <p style="margin: 0; color: var(--color-text-secondary)">
-                Three-day schedule of workshops, socials, and performances
-              </p>
-            </a>
-            <a
-              href="/2026-gallery"
-              class="event-nav-card"
-              style="
-                display: block;
-                padding: var(--space-lg);
-                border: 2px solid var(--color-border-medium);
-                text-decoration: none;
-                color: var(--color-text-primary);
-                transition: all var(--transition-base);
-              "
-            >
-              <h3
-                style="
-                  margin: 0 0 var(--space-sm) 0;
-                  font-family: var(--font-display);
-                  font-size: var(--font-size-xl);
-                  color: var(--color-text-primary);
-                "
-              >
-                Gallery
-              </h3>
-              <p style="margin: 0; color: var(--color-text-secondary)">
-                Photos and memories from Boulder Fest events
-              </p>
-            </a>
-            <a
-              href="/tickets"
-              class="event-nav-card"
-              style="
-                display: block;
-                padding: var(--space-lg);
-                border: 2px solid var(--color-border-medium);
-                text-decoration: none;
-                color: var(--color-text-primary);
-                transition: all var(--transition-base);
-              "
-            >
-              <h3
-                style="
-                  margin: 0 0 var(--space-sm) 0;
-                  font-family: var(--font-display);
-                  font-size: var(--font-size-xl);
-                  color: var(--color-text-primary);
-                "
-              >
-                Tickets
-              </h3>
-              <p style="margin: 0; color: var(--color-text-secondary)">
-                Early bird pricing and festival passes available
-              </p>
-            </a>
           </div>
         </div>
       </section>
     </main>
 
     <!-- Scripts -->
+    <link rel="stylesheet" href="/css/navigation.css" />
+    <link rel="stylesheet" href="/css/theme-toggle.css" />
+    <link rel="stylesheet" href="/css/forms.css" />
     <script src="/js/components/lightbox.js"></script>
     <script src="/js/components/lazy-loading.js"></script>
     <script src="/js/main.js"></script>
     <script src="/js/navigation.js"></script>
-    <script src="/js/gallery-hero.js"></script>
     <script src="/js/typography.js"></script>
     <script type="module" src="/js/global-cart.js"></script>
-    
+    <script src="/js/logo-switcher.js"></script>
 
-    <style>
-      .event-nav-card:hover {
-        border-color: var(--color-red);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      }
-    </style>
-    
-    <!-- Theme Management -->
-    <script type="module">
-      import { initializeThemeToggle } from '/js/theme-toggle.js';
-      import themeManager from '/js/theme-manager.js';
-      
-      // Initialize theme system
-      document.addEventListener('DOMContentLoaded', () => {
-        themeManager.initializeTheme();
-        initializeThemeToggle('#theme-toggle-container');
-      });
-    </script>
-    
     <footer class="footer-typographic">
       <div class="container">
         <p class="footer-credits">
-          MAY 15-17, 2026 • BOULDER, COLORADO •
+          NOVEMBER 2025 • BOULDER, COLORADO •
           <a
-            href="mailto:alocubanoboulderfest@gmail.com?subject=A Lo Cubano Boulder Fest Inquiry"
+            href="mailto:alocubanoboulderfest@gmail.com?subject=A Lo Cubano Weekender Inquiry"
             style="color: inherit; text-decoration: underline"
             >alocubanoboulderfest@gmail.com</a
           >
@@ -599,7 +346,17 @@
         <div id="theme-toggle-container" class="footer-theme-toggle"></div>
       </div>
     </footer>
-    
-    <script src="/js/logo-switcher.js"></script>
-  </body>
+
+    <!-- Theme Management -->
+    <script type="module">
+      import { initializeThemeToggle } from '/js/theme-toggle.js';
+      import themeManager from '/js/theme-manager.js';
+
+      // Initialize theme
+      document.addEventListener('DOMContentLoaded', () => {
+        themeManager.initializeTheme();
+        initializeThemeToggle('#theme-toggle-container');
+      });
+    </script>
+</body>
 </html>
