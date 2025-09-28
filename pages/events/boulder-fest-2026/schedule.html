@@ -422,6 +422,21 @@
                   </div>
                 </div>
               </div>
+
+              <!-- Timezone Display -->
+              <div
+                id="countdown-timezone"
+                class="countdown-timezone font-mono"
+                style="
+                  text-align: center;
+                  margin-top: var(--space-md);
+                  font-size: var(--font-size-sm);
+                  color: var(--color-text-muted);
+                  opacity: 0.8;
+                "
+              >
+                Mountain Time
+              </div>
             </div>
 
             <div
@@ -790,49 +805,20 @@
       });
     </script>
 
-    <script>
-      // Countdown Timer Implementation
-      function updateCountdown() {
-        const targetDate = new Date("2026-05-15T00:00:00-06:00"); // Boulder, CO timezone
-        const now = new Date();
-        const difference = targetDate - now;
+    <script type="module">
+      // Import countdown functionality
+      import { createBoulderFest2026Countdown } from '/js/countdown.js';
 
-        if (difference > 0) {
-          const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-          const hours = Math.floor(
-            (difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
-          );
-          const minutes = Math.floor(
-            (difference % (1000 * 60 * 60)) / (1000 * 60),
-          );
-          const seconds = Math.floor((difference % (1000 * 60)) / 1000);
-
-          document.getElementById("days").textContent = String(days).padStart(
-            3,
-            "0",
-          );
-          document.getElementById("hours").textContent = String(hours).padStart(
-            2,
-            "0",
-          );
-          document.getElementById("minutes").textContent = String(
-            minutes,
-          ).padStart(2, "0");
-          document.getElementById("seconds").textContent = String(
-            seconds,
-          ).padStart(2, "0");
-        } else {
-          // Event has started or passed
-          document.getElementById("days").textContent = "000";
-          document.getElementById("hours").textContent = "00";
-          document.getElementById("minutes").textContent = "00";
-          document.getElementById("seconds").textContent = "00";
-        }
-      }
-
-      // Update countdown every second
-      updateCountdown();
-      setInterval(updateCountdown, 1000);
+      // Initialize countdown with Mountain Time timezone display
+      document.addEventListener('DOMContentLoaded', () => {
+        createBoulderFest2026Countdown({
+          days: 'days',
+          hours: 'hours',
+          minutes: 'minutes',
+          seconds: 'seconds',
+          timezone: 'countdown-timezone'
+        });
+      });
     </script>
 
     <script src="/js/navigation.js"></script>

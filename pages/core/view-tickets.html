@@ -300,6 +300,10 @@
 
     <!-- Theme Manager -->
     <script src="/js/theme-manager.js"></script>
+    <script type="module">
+      import timeManager from '/js/time-manager.js';
+      window.timeManager = timeManager; // Make available globally for the main script
+    </script>
   </head>
   <body>
     <!-- Main Header -->
@@ -355,7 +359,7 @@
             <h1>Your Tickets</h1>
             <p>All tickets for A Lo Cubano Boulder Fest 2026</p>
             <div class="event-info">
-              <span>📅 May 15-17, 2026</span>
+              <span>📅 May 15-17, 2026 (Mountain Time)</span>
               <span>📍 Avalon Ballroom, Boulder, CO</span>
               <span>🎟️ <span id="total-tickets">0</span> Tickets</span>
             </div>
@@ -376,7 +380,7 @@
     <footer class="footer-typographic">
       <div class="container">
         <p class="footer-credits">
-          MAY 15-17, 2026 •
+          MAY 15-17, 2026 (MT) •
           <a
             href="mailto:alocubanoboulderfest@gmail.com?subject=A Lo Cubano Boulder Fest Inquiry"
             style="color: inherit; text-decoration: underline"
@@ -526,17 +530,10 @@
           }
           displayType = displayType.charAt(0).toUpperCase() + displayType.slice(1).replace(/_/g, ' ');
 
-          // Format registration date
+          // Format registration date in Mountain Time
           let registrationDate = 'Not registered';
           if (ticket.registeredAt) {
-            registrationDate = new Date(ticket.registeredAt).toLocaleString('en-US', {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              hour: 'numeric',
-              minute: '2-digit'
-            });
+            registrationDate = window.timeManager.formatDateTime(ticket.registeredAt, true) + ' (Mountain Time)';
           }
 
           // Determine status display

@@ -4,6 +4,7 @@ import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
 import { columnExists, safeParseInt } from "../../lib/db-utils.js";
 import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
 import { isTestMode, createTestModeFilter } from "../../lib/test-mode-utils.js";
+import timeUtils from "../../lib/time-utils.js";
 
 async function handler(req, res) {
   let db;
@@ -281,10 +282,10 @@ async function handler(req, res) {
 
     res.status(200).json({
       stats: stats,
-      recentRegistrations: recentRegistrations.rows || [],
+      recentRegistrations: timeUtils.enhanceApiResponse(recentRegistrations.rows || [], ['created_at']),
       ticketBreakdown: ticketBreakdown.rows || [],
       dailySales: dailySales.rows || [],
-      eventInfo,
+      eventInfo: eventInfo ? timeUtils.enhanceApiResponse(eventInfo, ['start_date', 'end_date']) : null,
       eventId,
       hasEventFiltering: {
         tickets: ticketsHasEventId,
@@ -300,7 +301,10 @@ async function handler(req, res) {
           transactions: transactionsHasTestMode
         }
       },
-      timestamp: new Date().toISOString()
+      timezone: 'America/Denver',
+      currentTime: timeUtils.getCurrentTime(),
+      timestamp: new Date().toISOString(),
+      timestamp_mt: timeUtils.toMountainTime(new Date())
     });
   } catch (error) {
     console.error('Dashboard API error:', error);

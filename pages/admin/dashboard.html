@@ -84,6 +84,7 @@
     <link rel="stylesheet" href="/css/admin-overrides.css" />
     <link rel="stylesheet" href="/css/admin-test-dashboard.css" />
     <script type="module" src="/js/theme-manager.js"></script>
+    <script type="module" src="/js/time-manager.js"></script>
 
     <style>
       /* Auth loading overlay */
@@ -317,6 +318,12 @@
       const pageSize = 50;
       let authToken = null;
       let csrfToken = null;
+      let timeManager = null;
+
+      // Import timeManager
+      import('/js/time-manager.js').then(module => {
+        timeManager = module.default;
+      });
 
       // HTML escaping function to prevent XSS attacks
       // CRITICAL: Use this for ALL user-provided data displayed in innerHTML
@@ -938,7 +945,7 @@
           const a = document.createElement("a");
           a.href = url;
           const modePrefix = window.testModeView ? 'test-data-' : 'production-data-';
-          const timestamp = new Date().toISOString().split("T")[0];
+          const timestamp = timeManager ? timeManager.formatDate(new Date()).replace(/\s/g, '-') : new Date().toISOString().split("T")[0];
           a.download = `${modePrefix}registrations-${timestamp}.csv`;
           a.click();
         } catch (error) {

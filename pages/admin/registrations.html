@@ -45,6 +45,7 @@
     <link rel="stylesheet" href="/css/forms.css" />
     <link rel="stylesheet" href="/css/admin-overrides.css" />
     <script type="module" src="/js/theme-manager.js"></script>
+    <script type="module" src="/js/time-manager.js"></script>
   </head>
   <body class="admin-container" style="visibility: hidden;">
     <!-- Auth Loading State -->
@@ -178,6 +179,12 @@
       const pageSize = 50;
       let authToken = null;
       let csrfToken = null;
+      let timeManager = null;
+
+      // Import timeManager
+      import('/js/time-manager.js').then(module => {
+        timeManager = module.default;
+      });
 
       // HTML escaping function to prevent XSS attacks
       // CRITICAL: Use this for ALL user-provided data displayed in innerHTML
@@ -306,7 +313,7 @@
               <td>${escapeHtml(reg.email || '')}</td>
               <td>${escapeHtml(reg.ticketType || '')}</td>
               <td>${escapeHtml(reg.registrationStatus || '')}</td>
-              <td>${reg.registeredAt ? new Date(reg.registeredAt).toLocaleDateString() : 'N/A'}</td>
+              <td>${reg.registeredAt ? (timeManager ? timeManager.formatDateTime(reg.registeredAt) : new Date(reg.registeredAt).toLocaleDateString()) : 'N/A'}</td>
               <td>${reg.checkedIn ? 'Yes' : 'No'}</td>
               <td>${reg.purchaserEmail || ''}</td>
             </tr>

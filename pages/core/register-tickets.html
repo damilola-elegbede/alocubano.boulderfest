@@ -513,7 +513,7 @@
     <footer class="footer-typographic">
       <div class="container">
         <p class="footer-credits">
-          MAY 15-17, 2026 •
+          MAY 15-17, 2026 (MT) •
           <a
             href="mailto:alocubanoboulderfest@gmail.com?subject=A Lo Cubano Boulder Fest Inquiry"
             style="color: inherit; text-decoration: underline"
@@ -582,6 +582,10 @@
     <script type="module">
       import { initializeThemeToggle } from '/js/theme-toggle.js';
       import themeManager from '/js/theme-manager.js';
+      import timeManager from '/js/time-manager.js';
+
+      // Make timeManager available globally for the main script
+      window.timeManager = timeManager;
 
       // Initialize theme system
       document.addEventListener('DOMContentLoaded', () => {
@@ -680,7 +684,7 @@
           // Populate header info
           document.getElementById('ticket-count').textContent = this.registrationData.tickets.length;
           document.getElementById('registration-deadline').textContent =
-            new Date(this.registrationData.deadline).toLocaleString();
+            window.timeManager.formatDateTime(this.registrationData.deadline, true) + ' (Mountain Time)';
 
           // Check deadline status
           this.checkDeadlineStatus();
@@ -706,7 +710,7 @@
           } else if (hoursRemaining <= 24) {
             // Warning - less than 24 hours
             warningDiv.style.display = 'block';
-            messageDiv.innerHTML = `⏰ Only ${hoursRemaining} hour${hoursRemaining !== 1 ? 's' : ''} remaining to complete registration!`;
+            messageDiv.innerHTML = `⏰ Only ${hoursRemaining} hour${hoursRemaining !== 1 ? 's' : ''} remaining to complete registration! (Mountain Time)`;
           }
         }
 

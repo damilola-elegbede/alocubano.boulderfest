@@ -23,10 +23,10 @@
       },
 
       "dates": {
-        "start": "2025-06-14",
-        "end": "2025-06-15",
-        "early_bird_end": "2025-05-01",
-        "regular_price_start": "2025-05-15"
+        "start": "2028-02-29",
+        "end": "2028-02-29",
+        "early_bird_end": "2028-01-15",
+        "regular_price_start": "2028-02-01"
       },
 
       "capacity": 100,
@@ -134,8 +134,8 @@
             "max_quantity": 50,
             "min_purchase": 1,
             "max_purchase": 2,
-            "sales_start": "2025-04-01",
-            "sales_end": "2025-06-14"
+            "sales_start": "2027-12-01",
+            "sales_end": "2028-02-29"
           },
 
           "restrictions": {
@@ -170,8 +170,8 @@
             "max_quantity": 30,
             "min_purchase": 1,
             "max_purchase": 2,
-            "sales_start": "2025-04-01",
-            "sales_end": "2025-06-14"
+            "sales_start": "2027-12-01",
+            "sales_end": "2028-02-29"
           },
 
           "restrictions": {
@@ -206,8 +206,8 @@
             "max_quantity": 20,
             "min_purchase": 1,
             "max_purchase": 1,
-            "sales_start": "2025-04-01",
-            "sales_end": "2025-06-14"
+            "sales_start": "2027-12-01",
+            "sales_end": "2028-02-29"
           },
 
           "restrictions": {
@@ -244,10 +244,10 @@
       },
 
       "dates": {
-        "start": "2025-08-15",
-        "end": "2025-08-17",
-        "early_bird_end": "2025-06-01",
-        "regular_price_start": "2025-07-01"
+        "start": "2028-02-29",
+        "end": "2028-02-29",
+        "early_bird_end": "2028-01-15",
+        "regular_price_start": "2028-02-01"
       },
 
       "capacity": 200,
@@ -353,8 +353,8 @@
             "max_quantity": 50,
             "min_purchase": 1,
             "max_purchase": 2,
-            "sales_start": "2025-04-01",
-            "sales_end": "2025-06-01"
+            "sales_start": "2027-12-01",
+            "sales_end": "2028-01-15"
           },
 
           "restrictions": {
@@ -389,8 +389,8 @@
             "max_quantity": 100,
             "min_purchase": 1,
             "max_purchase": 2,
-            "sales_start": "2025-06-01",
-            "sales_end": "2025-08-15"
+            "sales_start": "2028-01-15",
+            "sales_end": "2028-02-29"
           },
 
           "restrictions": {
@@ -425,8 +425,8 @@
             "max_quantity": 75,
             "min_purchase": 1,
             "max_purchase": 2,
-            "sales_start": "2025-04-01",
-            "sales_end": "2025-08-16"
+            "sales_start": "2027-12-01",
+            "sales_end": "2028-02-29"
           },
 
           "restrictions": {
@@ -461,8 +461,8 @@
             "max_quantity": 50,
             "min_purchase": 1,
             "max_purchase": 1,
-            "sales_start": "2025-04-01",
-            "sales_end": "2025-08-16"
+            "sales_start": "2027-12-01",
+            "sales_end": "2028-02-29"
           },
 
           "restrictions": {

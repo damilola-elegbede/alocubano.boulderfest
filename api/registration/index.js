@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { getDatabaseClient } from "../../lib/database.js";
+import timeUtils from "../../lib/time-utils.js";
 
 export default async function handler(req, res) {
   // Only allow GET requests
@@ -108,12 +109,9 @@ export default async function handler(req, res) {
       });
     }
 
-    // Format response
-    const response = {
-      transactionId: transactionId,
-      purchaserEmail: decoded.purchaserEmail,
-      deadline: tickets.rows[0].registration_deadline,
-      tickets: tickets.rows.map(ticket => ({
+    // Format response with Mountain Time information
+    const enhancedTickets = tickets.rows.map(ticket => {
+      const baseTicket = {
         ticketId: ticket.ticket_id,
         ticketType: ticket.ticket_type,
         status: ticket.current_status,
@@ -123,8 +121,22 @@ export default async function handler(req, res) {
           firstName: ticket.attendee_first_name,
           lastName: ticket.attendee_last_name,
           email: ticket.attendee_email
-        } : null
-      }))
+        } : null,
+        registration_deadline: ticket.registration_deadline
+      };
+
+      // Add Mountain Time fields
+      return timeUtils.enhanceApiResponse(baseTicket, ['registeredAt', 'registration_deadline']);
+    });
+
+    const response = {
+      transactionId: transactionId,
+      purchaserEmail: decoded.purchaserEmail,
+      deadline: tickets.rows[0].registration_deadline,
+      deadline_mt: timeUtils.toMountainTime(tickets.rows[0].registration_deadline),
+      tickets: enhancedTickets,
+      timezone: 'America/Denver',
+      currentTime: timeUtils.getCurrentTime()
     };
 
     console.log('[REG_STATUS] Returning response with', response.tickets.length, 'tickets');

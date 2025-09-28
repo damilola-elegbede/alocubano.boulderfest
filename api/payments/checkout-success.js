@@ -1,5 +1,6 @@
 import { setSecureCorsHeaders } from '../../lib/cors-config.js';
 import { warmDatabaseInBackground } from '../../lib/database-warmer.js';
+import timeUtils from '../../lib/time-utils.js';
 
 /**
  * Checkout Success API Endpoint
@@ -155,13 +156,18 @@ export default async function handler(req, res) {
       },
       hasTickets,
       // Include transaction details for better frontend integration (without exposing internal IDs)
-      transaction: transaction ? {
+      transaction: transaction ? timeUtils.enhanceApiResponse({
         orderNumber: transaction.order_number,
         status: transaction.status,
         totalAmount: Number(transaction.total_amount || transaction.amount_cents), // Convert BigInt to Number
         customerEmail: transaction.customer_email,
-        customerName: transaction.customer_name
-      } : null
+        customerName: transaction.customer_name,
+        created_at: transaction.created_at,
+        updated_at: transaction.updated_at
+      }, ['created_at', 'updated_at'], { includeDeadline: true, deadlineHours: 24 }) : null,
+      // Add Mountain Time information
+      timezone: 'America/Denver',
+      currentTime: timeUtils.getCurrentTime()
     };
 
     // Add registration information if token exists

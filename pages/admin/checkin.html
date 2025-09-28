@@ -55,6 +55,7 @@
 
     <!-- Theme Manager - loaded early to prevent FOUC -->
     <script type="module" src="/js/theme-manager.js"></script>
+    <script type="module" src="/js/time-manager.js"></script>
 
     <!-- CSS System -->
     <link rel="stylesheet" href="/css/base.css" />
@@ -1325,6 +1326,12 @@
       let scanner = null;
       let sessionCount = 0;
       let isScanning = false;
+      let timeManager = null;
+
+      // Import timeManager
+      import('/js/time-manager.js').then(module => {
+        timeManager = module.default;
+      });
 
       // Statistics
       const stats = {
@@ -3261,7 +3268,7 @@
 
           if (data.stats) {
             // Get today's check-ins from the daily_checkins array if available
-            const today = new Date().toISOString().split('T')[0];
+            const today = timeManager ? timeManager.formatDate(new Date()).replace(/\s/g, '-') : new Date().toISOString().split('T')[0];
             const todayCheckins = data.stats.daily_checkins?.find(d => d.date === today);
 
             stats.today = todayCheckins?.count || data.stats.today_checkins || 0;
@@ -3600,7 +3607,7 @@
             session: getPerformanceMetrics(),
             deviceInfo: deviceInfo,
             userAgent: navigator.userAgent,
-            timestamp: new Date().toISOString()
+            timestamp: timeManager ? timeManager.formatDateTime(new Date()) : new Date().toISOString()
           };
           console.log('Performance metrics:', JSON.stringify(metrics, null, 2));
           return metrics;

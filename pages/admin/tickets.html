@@ -46,6 +46,7 @@
     <link rel="stylesheet" href="/css/admin-overrides.css" />
     <script src="/js/admin-auth-guard.js"></script>
     <script type="module" src="/js/theme-manager.js"></script>
+    <script type="module" src="/js/time-manager.js"></script>
   </head>
   <body class="admin-container">
     <!-- Auth Loading State -->
@@ -201,6 +202,12 @@
       const pageSize = 50;
       let authToken = null;
       let csrfToken = null;
+      let timeManager = null;
+
+      // Import timeManager
+      import('/js/time-manager.js').then(module => {
+        timeManager = module.default;
+      });
       
       // AbortController for canceling stale fetches during rapid searches
       let searchAbortController = null;
@@ -518,7 +525,8 @@
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement("a");
           a.href = url;
-          a.download = `tickets-${new Date().toISOString().split("T")[0]}.csv`;
+          const timestamp = timeManager ? timeManager.formatDate(new Date()).replace(/\s/g, '-') : new Date().toISOString().split("T")[0];
+          a.download = `tickets-${timestamp}.csv`;
           a.click();
         } catch (error) {
           alert(`Export failed: ${escapeHtml(error.message)}`);

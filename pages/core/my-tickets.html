@@ -47,6 +47,9 @@
     <!-- Theme Management - Early inclusion to prevent FOUC -->
     <script type="module" src="/js/theme-manager.js"></script>
 
+    <!-- Time Management - Mountain Time support -->
+    <script type="module" src="/js/time-manager.js"></script>
+
     <!-- Performance optimization system -->
     <script type="module" src="/js/qr-cache-manager.js"></script>
     <script type="module" src="/js/wallet-lazy-loader.js"></script>
@@ -452,6 +455,7 @@
 
     <script type="module">
       import { setSafeTextContent, displayMessage, createElementWithContent, escapeHtml } from '/js/lib/dom-security.js';
+      import timeManager from '/js/time-manager.js';
 
       // Check for token or email in URL parameters
       const urlParams = new URLSearchParams(window.location.search);
@@ -567,7 +571,7 @@
             const ticketStatus = escapeHtml(ticket.status || '');
             const attendeeFirstName = escapeHtml(ticket.attendee_first_name || '');
             const attendeeLastName = escapeHtml(ticket.attendee_last_name || '');
-            const formattedDate = escapeHtml(ticket.formatted_date || formatDate(ticket.event_date) || '');
+            const formattedDate = escapeHtml(ticket.formatted_date || timeManager.formatDate(ticket.event_date, true) || '');
             const orderNumber = escapeHtml(ticket.order_number || 'N/A');
             const escapedAccessToken = escapeHtml(accessToken || '');
 
@@ -906,14 +910,8 @@
       }
 
       function formatDate(dateStr) {
-        if (!dateStr) return "May 15-17, 2026";
-        const date = new Date(dateStr + "T00:00:00");
-        return date.toLocaleDateString("en-US", {
-          weekday: "long",
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        });
+        if (!dateStr) return "May 15-17, 2026 (Mountain Time)";
+        return timeManager.formatDate(dateStr, true) + " (Mountain Time)";
       }
     </script>
     

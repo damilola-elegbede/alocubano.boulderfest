@@ -6,6 +6,7 @@ import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
 import { columnExists } from "../../lib/db-utils.js";
 import csrfService from "../../lib/csrf-service.js";
 import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
+import timeUtils from "../../lib/time-utils.js";
 
 async function handler(req, res) {
   let db;
@@ -158,7 +159,7 @@ async function handler(req, res) {
       res.setHeader('Expires', '0');
 
       res.status(200).json({
-        registrations: result.rows,
+        registrations: timeUtils.enhanceApiResponse(result.rows, ['created_at', 'updated_at', 'checked_in_at', 'registered_at', 'registration_deadline']),
         total: countResult.rows[0].total,
         limit: sanitized.limit,
         offset: sanitized.offset,
@@ -174,7 +175,9 @@ async function handler(req, res) {
           ticketType: sanitized.ticketType || null,
           paymentMethod: sanitized.paymentMethod || null,
           checkedIn: sanitized.checkedIn !== undefined ? sanitized.checkedIn : null
-        }
+        },
+        timezone: 'America/Denver',
+        currentTime: timeUtils.getCurrentTime()
       });
     } else if (req.method === 'PUT') {
       // Update registration (check-in, edit details)

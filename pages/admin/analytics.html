@@ -54,6 +54,7 @@
 
     <!-- Theme Manager -->
     <script type="module" src="/js/theme-manager.js"></script>
+    <script type="module" src="/js/time-manager.js"></script>
 
     <style>
       /* Analytics Page Specific Styles */
@@ -396,7 +397,7 @@
                 <th>Email</th>
                 <th>Tickets</th>
                 <th>Total Spent</th>
-                <th>Last Purchase</th>
+                <th>Last Purchase (MT)</th>
               </tr>
             </thead>
             <tbody id="top-customers-tbody">
@@ -432,6 +433,12 @@
       let currentTimeRange = 30;
       let charts = {};
       let refreshInterval = null;
+      let timeManager = null;
+
+      // Import timeManager
+      import('/js/time-manager.js').then(module => {
+        timeManager = module.default;
+      });
 
       // Theme-aware color management
       function getThemeColor(cssVar) {
@@ -1144,6 +1151,10 @@
       }
 
       function formatDate(dateString) {
+        if (timeManager) {
+          return timeManager.formatDate(dateString);
+        }
+        // Fallback for when timeManager is not loaded yet
         const date = new Date(dateString);
         return date.toLocaleDateString("en-US", {
           month: "short",
@@ -1159,11 +1170,20 @@
 
       function updateLastUpdated() {
         const now = new Date();
-        document.getElementById("update-time").textContent =
-          now.toLocaleTimeString("en-US", {
-            hour: "2-digit",
-            minute: "2-digit",
+        if (timeManager) {
+          document.getElementById("update-time").textContent = timeManager.formatEventTime(now, {
+            includeTime: true,
+            includeTimezone: true,
+            longFormat: false,
+            shortTime: true
           });
+        } else {
+          document.getElementById("update-time").textContent =
+            now.toLocaleTimeString("en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+            });
+        }
       }
 
       function showError(message) {
