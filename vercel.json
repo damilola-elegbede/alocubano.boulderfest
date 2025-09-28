@@ -8,25 +8,29 @@
     "api/docs.js": {
       "maxDuration": 10
     },
-    "api/admin/*.js": {
+    "api/admin/**/*.js": {
       "maxDuration": 15,
       "includeFiles": "lib/**"
     },
-    "api/payments/*.js": {
+    "api/payments/**/*.js": {
       "maxDuration": 30,
       "includeFiles": "lib/**"
     },
-    "api/tickets/*.js": {
+    "api/tickets/**/*.js": {
       "maxDuration": 20,
       "includeFiles": "lib/**"
     },
-    "api/registration/*.js": {
+    "api/registration/**/*.js": {
       "maxDuration": 20,
       "includeFiles": "lib/**"
     },
-    "api/health/*.js": {
+    "api/health/**/*.js": {
       "maxDuration": 5,
       "includeFiles": "lib/database.js"
+    },
+    "api/wallet/**/*.js": {
+      "maxDuration": 20,
+      "includeFiles": "lib/**"
     }
   },
   "crons": [
