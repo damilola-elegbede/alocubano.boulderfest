@@ -250,13 +250,27 @@ async function addTestItemToCart(itemType) {
     // Add TEST- prefix for cart storage
     const testItemType = `TEST-${itemType}`;
 
+    // Determine test event details based on ticket type
+    let testEventId;
+    let testVenue = 'Test Ballroom';
+    let testEventDate = '2028-02-29'; // Leap year date for test
+
+    // Set event ID based on ticket type
+    if (itemType.includes('weekend') || itemType.includes('friday') || itemType.includes('saturday') || itemType.includes('sunday')) {
+        testEventId = 'Test Weekender';
+    } else {
+        testEventId = 'Test Festival';
+    }
+
     try {
-        // Add ticket using cart manager with TEST- prefix
+        // Add ticket using cart manager with TEST- prefix and explicit test values
         await testDashboardState.cartManager.addTicket({
             ticketType: testItemType,
             price: itemConfig.price,
             name: itemConfig.name,
-            eventId: 'test-event',
+            eventId: testEventId,
+            eventDate: testEventDate,
+            venue: testVenue,
             quantity: 1
         });
 

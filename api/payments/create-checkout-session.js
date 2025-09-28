@@ -150,10 +150,20 @@ export default async function handler(req, res) {
           });
         }
 
+        // Validate event date is present
+        if (!item.eventDate) {
+          return res.status(400).json({
+            error: `Missing event date for ticket: ${item.name || 'Unknown'}. This is a critical error - please contact support.`
+          });
+        }
+
+        // Set event metadata for tickets - no defaults
         lineItem.price_data.product_data.metadata = {
           type: 'ticket',
           ticket_type: item.ticketType,  // No default - must be explicit
-          event_date: item.eventDate || '2026-05-15'
+          event_date: item.eventDate,     // No default - must be explicit
+          event_id: item.eventId || '',   // Pass event ID through if present
+          venue: item.venue || ''          // Pass venue through if present
         };
       } else if (item.type === 'donation') {
         lineItem.price_data.product_data.metadata = {

@@ -16,7 +16,7 @@ class PaymentSelector {
         this.cartManager = null;
         this.cssLoaded = false;
         this.eventListeners = new Map(); // Track event listeners for cleanup
-        this.eventDate = '2026-05-15'; // Default event date
+        this.eventDate = null; // No default - must be explicitly set
     }
 
     /**
@@ -578,13 +578,18 @@ class PaymentSelector {
 
         // Add tickets
         Object.values(cartState.tickets).forEach((ticket) => {
+            // Require eventDate to be set explicitly - no defaults
+            if (!ticket.eventDate && !this.eventDate) {
+                throw new Error(`Event date is required for ticket: ${ticket.name}`);
+            }
+
             cartItems.push({
                 type: 'ticket',
                 ticketType: ticket.ticketType,
                 name: ticket.name,
                 price: ticket.price,
                 quantity: ticket.quantity,
-                eventDate: this.eventDate
+                eventDate: ticket.eventDate || this.eventDate  // Use ticket-specific date or fallback
             });
         });
 
