@@ -35,6 +35,26 @@
       })();
     </script>
 
+    <!-- Pre-render auth check to prevent content flash -->
+    <script>
+      (function() {
+        // Immediately hide the body to prevent flash
+        document.documentElement.style.visibility = 'hidden';
+        document.documentElement.style.opacity = '0';
+
+        // Check for auth token in localStorage (sync check)
+        const hasToken = localStorage.getItem('adminToken');
+
+        // If no token at all, redirect immediately
+        if (!hasToken) {
+          window.location.replace('/admin/login');
+        }
+
+        // Token exists, but we'll verify it properly after DOM loads
+        // The body will remain hidden until auth is verified
+      })();
+    </script>
+
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Dashboard - A Lo Cubano Boulder Fest</title>
@@ -46,8 +66,55 @@
     <link rel="stylesheet" href="/css/admin-overrides.css" />
     <link rel="stylesheet" href="/css/admin-test-dashboard.css" />
     <script type="module" src="/js/theme-manager.js"></script>
+
+    <style>
+      /* Critical auth styles - prevent content flash */
+      .auth-checking {
+        display: none !important;
+      }
+
+      .auth-loading {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: var(--color-background-dark, #1a1a1a);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+      }
+
+      .auth-loading-content {
+        text-align: center;
+        color: var(--color-text-primary);
+      }
+
+      .auth-spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid rgba(255, 255, 255, 0.1);
+        border-top-color: var(--color-primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
+      }
+
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
   </head>
-  <body class="admin-container">
+  <body class="admin-container auth-checking">
+    <!-- Auth Loading State -->
+    <div id="auth-loading" class="auth-loading">
+      <div class="auth-loading-content">
+        <div class="auth-spinner"></div>
+        <h2>Verifying Authentication...</h2>
+      </div>
+    </div>
+
     <!-- Skip Links for Accessibility -->
     <a href="#main-content" class="skip-link">Skip to main content</a>
     <a href="#registrations" class="skip-link">Skip to registrations</a>
@@ -291,8 +358,18 @@
             return false;
           }
 
-          // Session is valid
+          // Session is valid - show the content
           document.body.setAttribute("data-auth-status", "authenticated");
+          document.body.classList.remove("auth-checking");
+          document.documentElement.style.visibility = 'visible';
+          document.documentElement.style.opacity = '1';
+
+          // Hide loading overlay
+          const loadingOverlay = document.getElementById('auth-loading');
+          if (loadingOverlay) {
+            loadingOverlay.style.display = 'none';
+          }
+
           console.log("Session verified successfully");
           return true;
         } catch (error) {
@@ -312,14 +389,7 @@
         }
 
         try {
-          // Perform authentication check first
-          const isAuthenticated = await checkAuth();
-
-          // If auth failed, checkAuth will redirect, so this won't execute
-          if (!isAuthenticated) {
-            return;
-          }
-
+          // Auth check already done in DOMContentLoaded, proceed with dashboard data
           // Now fetch the actual dashboard data with credentials
           const url = new URL("/api/admin/dashboard", window.location.origin);
           if (eventId && eventId !== 'all') {
@@ -985,15 +1055,23 @@
 
       // Initialize event selector and load dashboard data
       document.addEventListener('DOMContentLoaded', async () => {
-        // Initialize header toggle state
+        // CRITICAL: Check authentication FIRST before anything else
+        const isAuthenticated = await checkAuth();
+
+        // If auth failed, checkAuth will redirect, so stop here
+        if (!isAuthenticated) {
+          return;
+        }
+
+        // Only proceed with initialization if authenticated
         initializeHeaderToggleState();
         if (window.eventSelector) {
           await window.eventSelector.init();
-          
+
           // Render event selector in both navigation and header
           window.eventSelector.render('event-selector-container');
           window.eventSelector.render('header-event-selector-container');
-          
+
           // Load dashboard with selected event
           const selectedEventId = window.eventSelector.getSelectedEventId();
           loadDashboardData(selectedEventId);

@@ -35,6 +35,9 @@
       })();
     </script>
 
+    <!-- Pre-render auth guard - MUST be before any other scripts -->
+    <script src="/js/admin-auth-guard.js"></script>
+
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Portal - A Lo Cubano Boulder Fest</title>
@@ -45,6 +48,7 @@
     <link rel="stylesheet" href="/css/components.css" />
     <link rel="stylesheet" href="/css/navigation.css" />
     <link rel="stylesheet" href="/css/admin-overrides.css" />
+    <link rel="stylesheet" href="/css/admin-auth-guard.css" />
 
     <style>
       /* Admin Portal Specific Styles */
@@ -605,7 +609,15 @@
     <!-- Theme Manager -->
     <script type="module" src="/js/theme-manager.js"></script>
   </head>
-  <body class="admin-container">
+  <body class="admin-container auth-checking">
+    <!-- Auth Loading State -->
+    <div id="auth-loading" class="auth-loading">
+      <div class="auth-loading-content">
+        <div class="auth-spinner"></div>
+        <h2>Verifying Authentication...</h2>
+      </div>
+    </div>
+
     <!-- Unified Admin Header -->
     <header class="admin-header">
       <div class="admin-header-content">
@@ -1314,7 +1326,13 @@
       // Enhanced Endpoint System JavaScript
 
       // Toggle category sections
-      document.addEventListener('DOMContentLoaded', function() {
+      document.addEventListener('DOMContentLoaded', async function() {
+        // CRITICAL: Check auth first before any initialization
+        const isAuthenticated = await checkAuth();
+        if (!isAuthenticated) {
+          return; // Stop if not authenticated
+        }
+
         const categoryToggles = document.querySelectorAll('.category-toggle');
 
         categoryToggles.forEach(toggle => {
@@ -1670,24 +1688,13 @@
     </div>
 
     <script>
-      // Check authentication on load using verify-session endpoint
+      // Use the AdminAuthGuard for authentication
       async function checkAuth() {
-        try {
-          const response = await fetch("/api/admin/verify-session", {
-            credentials: "include" // CRITICAL: Include cookies for production
-          });
-          if (!response.ok) {
-            window.location.href = "/admin/login";
-            return false;
-          }
-          const data = await response.json();
-          if (!data.valid) {
-            window.location.href = "/admin/login";
-            return false;
-          }
-          return true;
-        } catch (error) {
-          console.error("Auth check failed:", error);
+        if (window.AdminAuthGuard) {
+          return await window.AdminAuthGuard.verifyAndShow();
+        } else {
+          // Fallback - redirect if auth guard not available
+          console.error("AdminAuthGuard not available");
           window.location.href = "/admin/login";
           return false;
         }
@@ -2495,9 +2502,8 @@ Full API docs: /docs/api/README.md
       // Initialize history panel
       responseHistory.updateHistoryPanel();
 
-      // Initialize
-      checkAuth();
-      // Note: DB Health button now always visible as it uses production-safe endpoint
+      // Note: Auth check is now handled in DOMContentLoaded with AdminAuthGuard
+      // DB Health button now always visible as it uses production-safe endpoint
     </script>
 
     <!-- Response Modal -->

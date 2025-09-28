@@ -506,16 +506,6 @@
             <!-- Content will be populated by updateSuccessMessage() -->
           </div>
 
-            <div class="next-steps">
-              <h3>What's Next?</h3>
-              <ul>
-                <li>📧 Check your email for confirmation and digital wallet passes</li>
-                <li>📱 Add your tickets to Apple Wallet or Google Pay using the buttons above</li>
-                <li>📅 Mark May 15-17, 2026 on your calendar</li>
-                <li>🎺 Follow us on Instagram @alocubano.boulderfest for updates</li>
-                <li>💃 Get ready to dance!</li>
-              </ul>
-            </div>
           </div>
         </div>
     </main>
@@ -1014,9 +1004,6 @@
 
           document.getElementById('success-state').style.display = 'block';
 
-          // Create wallet buttons for registered tickets
-          this.createWalletButtons(result);
-
           // After 3 seconds, reload the registration status to verify
           setTimeout(async () => {
             console.log('[FRONTEND] Verifying registration status after success...');
@@ -1047,52 +1034,45 @@
           // Create enhanced success content
           const totalTickets = result.summary?.totalRegistered || result.registrations?.length || 0;
 
-          // Process ticket information properly
+          // Process ticket information properly - use registeredTickets from backend
           let registeredTicketsInfo = [];
 
-          // Try to get information from results first, then registrations
-          if (result.results && Array.isArray(result.results)) {
-            registeredTicketsInfo = result.results.map(r => ({
-              firstName: r.attendee?.firstName || '',
-              lastName: r.attendee?.lastName || '',
-              email: r.attendee?.email || '',
-              ticketId: r.ticketId,
-              ticketType: r.ticketType || 'Festival Pass',
-              eventName: 'A Lo Cubano Boulder Fest 2026'
-            }));
-          } else if (result.registrations && Array.isArray(result.registrations)) {
-            registeredTicketsInfo = result.registrations.map(r => ({
-              firstName: r.firstName,
-              lastName: r.lastName,
-              email: r.email,
-              ticketId: r.ticketId,
-              ticketType: r.ticketType || 'Festival Pass',
-              eventName: 'A Lo Cubano Boulder Fest 2026'
-            }));
-          }
+          if (result.registeredTickets && Array.isArray(result.registeredTickets)) {
+            registeredTicketsInfo = result.registeredTickets.map(ticket => {
+              // Extract firstName and lastName from attendeeName if individual fields aren't available
+              let firstName = '', lastName = '';
+              if (ticket.attendeeName && ticket.attendeeName !== 'Name not provided') {
+                const nameParts = ticket.attendeeName.split(' ');
+                firstName = nameParts[0] || '';
+                lastName = nameParts.slice(1).join(' ') || '';
+              }
 
-          // Filter out TEST tickets and clean up ticket types
-          registeredTicketsInfo = registeredTicketsInfo.map(ticket => {
-            let cleanTicketType = ticket.ticketType;
-            // Remove TEST- prefix from ticket types
-            if (cleanTicketType && cleanTicketType.startsWith('TEST-')) {
-              cleanTicketType = cleanTicketType.substring(5);
-            }
-            // Capitalize first letter
-            if (cleanTicketType) {
-              cleanTicketType = cleanTicketType.charAt(0).toUpperCase() + cleanTicketType.slice(1);
-              // Convert underscores to spaces
-              cleanTicketType = cleanTicketType.replace(/_/g, ' ');
-            }
-            return {
-              ...ticket,
-              ticketType: cleanTicketType
-            };
-          });
+              // Clean up ticket type - remove TEST- prefix and format
+              let cleanTicketType = ticket.ticketType || 'Festival Pass';
+              if (cleanTicketType.startsWith('TEST-')) {
+                cleanTicketType = cleanTicketType.substring(5);
+              }
+              // Capitalize first letter and convert underscores to spaces
+              if (cleanTicketType) {
+                cleanTicketType = cleanTicketType.charAt(0).toUpperCase() + cleanTicketType.slice(1);
+                cleanTicketType = cleanTicketType.replace(/_/g, ' ');
+              }
+
+              return {
+                firstName: firstName,
+                lastName: lastName,
+                email: ticket.attendeeEmail || 'Email not provided',
+                ticketId: ticket.ticketId,
+                ticketType: cleanTicketType,
+                eventName: ticket.eventName || 'Event',
+                eventLocation: ticket.eventLocation || ''
+              };
+            });
+          }
 
           // Update the success content with order information
           successState.innerHTML = `
-            <h2>🎉 Registration Complete!</h2>
+            <h2>Registration Complete</h2>
 
             <p style="margin: var(--space-lg) 0;">Your tickets have been successfully registered.</p>
 
@@ -1100,28 +1080,24 @@
             ${registeredTicketsInfo.length > 0 ? `
               <div style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 8px; padding: var(--space-lg); margin: var(--space-lg) 0;">
                 <h3 style="color: var(--color-primary); margin-top: 0;">Registered Attendees</h3>
-                ${registeredTicketsInfo.map((ticket, index) => `
-                  <div style="padding: var(--space-md) 0; border-bottom: 1px solid var(--color-border-light); ${index === registeredTicketsInfo.length - 1 ? 'border-bottom: none;' : ''}">
-                    <p style="margin: 0; font-weight: 600;">${ticket.firstName} ${ticket.lastName}</p>
-                    <p style="margin: 0; color: var(--color-text-secondary); font-size: var(--font-size-sm);">
-                      ${ticket.email}
-                    </p>
-                    <p style="margin: 0; color: var(--color-text-secondary); font-size: var(--font-size-sm);">
-                      ${ticket.eventName} • ${ticket.ticketType} • Ticket ID: ${ticket.ticketId}
-                    </p>
-                  </div>
-                `).join('')}
+                ${registeredTicketsInfo.map((ticket, index) => {
+                  const eventDisplay = ticket.eventLocation ?
+                    `${ticket.eventName} • ${ticket.eventLocation}` :
+                    ticket.eventName;
+                  return `
+                    <div style="padding: var(--space-md) 0; border-bottom: 1px solid var(--color-border-light); ${index === registeredTicketsInfo.length - 1 ? 'border-bottom: none;' : ''}">
+                      <p style="margin: 0; font-weight: 600;">${ticket.firstName} ${ticket.lastName}</p>
+                      <p style="margin: 0; color: var(--color-text-secondary); font-size: var(--font-size-sm);">
+                        ${ticket.email}
+                      </p>
+                      <p style="margin: 0; color: var(--color-text-secondary); font-size: var(--font-size-sm);">
+                        ${eventDisplay} • ${ticket.ticketType} • Ticket ID: ${ticket.ticketId}
+                      </p>
+                    </div>
+                  `;
+                }).join('')}
               </div>
             ` : ''}
-
-            <!-- Wallet Download Section -->
-            <div id="registration-wallet-section" style="margin: var(--space-xl) 0;">
-              <div class="success-details">
-                <h3>Add Your Tickets to Wallet</h3>
-                <p>Get instant access to your tickets by adding them to your phone's wallet app:</p>
-                <div id="registration-wallet-buttons" class="registration-wallet-container"></div>
-              </div>
-            </div>
 
             <div style="text-align: center; margin-top: var(--space-xl);">
               <a href="/home" class="form-button-type" style="display: inline-block; text-decoration: none;">
@@ -1131,71 +1107,6 @@
           `;
         }
 
-        createWalletButtons(result) {
-          const walletContainer = document.getElementById('registration-wallet-buttons');
-          if (!walletContainer) return;
-
-          walletContainer.innerHTML = '';
-
-          // Use registeredTickets from the enhanced response
-          const tickets = result.registeredTickets || result.registrations || [];
-
-          if (tickets.length > 0) {
-            tickets.forEach((ticket, index) => {
-              const ticketId = ticket.ticketId || ticket.id;
-              if (ticketId) {
-                // Create a wrapper for each ticket's wallet buttons
-                const ticketWrapper = document.createElement('div');
-                ticketWrapper.style.marginBottom = 'var(--space-lg)';
-                ticketWrapper.style.padding = 'var(--space-md)';
-                ticketWrapper.style.border = '1px solid var(--color-border-light)';
-                ticketWrapper.style.borderRadius = '8px';
-                ticketWrapper.style.background = 'var(--color-surface)';
-
-                // Add ticket label
-                const ticketLabel = document.createElement('div');
-                ticketLabel.style.marginBottom = 'var(--space-sm)';
-                ticketLabel.style.fontWeight = '600';
-                ticketLabel.style.color = 'var(--color-text-primary)';
-
-                if (tickets.length > 1) {
-                  const attendeeName = ticket.attendeeName || `${ticket.attendee?.firstName} ${ticket.attendee?.lastName}`.trim() || `Ticket ${index + 1}`;
-                  const ticketType = ticket.ticketType || ticket.ticket_type || 'Festival Pass';
-                  ticketLabel.textContent = `${attendeeName} - ${ticketType}`;
-                } else {
-                  ticketLabel.textContent = 'Your Festival Ticket';
-                }
-
-                ticketWrapper.appendChild(ticketLabel);
-
-                // Create lazy-loaded wallet container
-                const walletLazyContainer = document.createElement('div');
-                walletLazyContainer.className = 'wallet-lazy-container registration-wallet-item';
-
-                // Initialize lazy loading
-                window.walletLazyLoader.observeWalletContainer(walletLazyContainer, ticketId, {
-                  title: '', // We're handling the title separately above
-                  size: 'default',
-                  showBothOnDesktop: true,
-                  className: 'wallet-buttons-registration'
-                });
-
-                ticketWrapper.appendChild(walletLazyContainer);
-                walletContainer.appendChild(ticketWrapper);
-              }
-            });
-
-            // Preload QR codes for registered tickets
-            if (result.qrTokens && Array.isArray(result.qrTokens)) {
-              result.qrTokens.forEach(token => {
-                window.qrCacheManager.preloadQRCode(token);
-              });
-            }
-          } else {
-            // Fallback message if no tickets available
-            walletContainer.innerHTML = '<p style="color: var(--color-text-secondary); font-style: italic;">Wallet passes will be available once registration is confirmed.</p>';
-          }
-        }
 
         showError(message) {
           document.getElementById('loading-state').style.display = 'none';

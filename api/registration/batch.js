@@ -336,9 +336,18 @@ export default async function handler(req, res) {
           t.attendee_first_name,
           t.attendee_last_name,
           t.attendee_email,
-          tx.customer_email as purchaser_email
+          t.event_id,
+          t.is_test,
+          tx.customer_email as purchaser_email,
+          e.name as event_name,
+          e.venue_name,
+          e.venue_city,
+          e.venue_state,
+          e.start_date,
+          e.end_date
         FROM tickets t
         LEFT JOIN transactions tx ON t.transaction_id = tx.id
+        LEFT JOIN events e ON t.event_id = e.id
         WHERE t.ticket_id IN (${ticketIds.map(() => '?').join(',')})
       `,
       args: ticketIds
@@ -684,8 +693,15 @@ export default async function handler(req, res) {
               googleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-google.png`,
               // Event details
               eventName: task.ticket.event_name || 'A Lo Cubano Boulder Fest',
-              eventDate: task.ticket.event_date || 'May 15-17, 2026',
-              eventLocation: task.ticket.event_location || 'Avalon Ballroom, Boulder, CO'
+              eventDate: task.ticket.start_date && task.ticket.end_date
+                ? `${new Date(task.ticket.start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}-${new Date(task.ticket.end_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
+                : 'May 15-17, 2026',
+              eventLocation: task.ticket.venue_name && task.ticket.venue_city && task.ticket.venue_state
+                ? `${task.ticket.venue_name}, ${task.ticket.venue_city}, ${task.ticket.venue_state}`
+                : 'Avalon Ballroom, Boulder, CO',
+              venueName: task.ticket.venue_name || 'Avalon Ballroom',
+              venueCity: task.ticket.venue_city || 'Boulder',
+              venueState: task.ticket.venue_state || 'CO'
             }
           });
 
@@ -733,9 +749,12 @@ export default async function handler(req, res) {
     console.log('[BATCH_REG] Verifying ticket status in database after registration...');
     const verifyResult = await db.execute({
       sql: `
-        SELECT ticket_id, registration_status, attendee_first_name, attendee_last_name, attendee_email, registered_at, transaction_id
-        FROM tickets
-        WHERE ticket_id IN (${sanitizedRegistrations.map(() => '?').join(',')})
+        SELECT t.ticket_id, t.registration_status, t.attendee_first_name, t.attendee_last_name,
+               t.attendee_email, t.registered_at, t.transaction_id, t.event_id, t.is_test,
+               e.name as event_name, e.venue_name, e.venue_city, e.venue_state, e.start_date, e.end_date
+        FROM tickets t
+        LEFT JOIN events e ON t.event_id = e.id
+        WHERE t.ticket_id IN (${sanitizedRegistrations.map(() => '?').join(',')})
       `,
       args: sanitizedRegistrations.map(r => r.ticketId)
     });
@@ -800,14 +819,19 @@ export default async function handler(req, res) {
       registrations: results,
       emailStatus: emailResults,
       orderNumber: transactionInfo ? (transactionInfo.order_number || `ALO-${new Date().getFullYear()}-${String(transactionInfo.id).padStart(4, '0')}`) : null,
-      registeredTickets: results.map((result, index) => {
-        const registration = sanitizedRegistrations[index];
+      registeredTickets: results.map((result) => {
+        const registration = sanitizedRegistrations.find(r => r.ticketId === result.ticketId);
         const ticket = ticketsResult.rows.find(t => t.ticket_id === result.ticketId);
         return {
           ticketId: result.ticketId,
-          ticketType: ticket?.ticket_type || 'Festival Pass',
-          attendeeName: `${registration.firstName} ${registration.lastName}`,
-          attendeeEmail: registration.email
+          ticketType: result.ticketType || ticket?.ticket_type || 'Festival Pass',
+          eventName: ticket?.event_name || 'Event',
+          eventLocation: ticket?.venue_name && ticket?.venue_city ?
+            `${ticket.venue_name}, ${ticket.venue_city}, ${ticket.venue_state || ''}` : '',
+          attendeeName: result.attendee?.firstName && result.attendee?.lastName ?
+            `${result.attendee.firstName} ${result.attendee.lastName}` :
+            (registration ? `${registration.firstName} ${registration.lastName}` : 'Name not provided'),
+          attendeeEmail: result.attendee?.email || registration?.email || 'Email not provided'
         };
       }),
       summary: {

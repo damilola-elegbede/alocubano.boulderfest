@@ -35,6 +35,8 @@
       })();
     </script>
 
+    <!-- Pre-render auth guard - MUST be before any other scripts -->
+    <script src="/js/admin-auth-guard.js"></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Registrations - A Lo Cubano Boulder Fest</title>
@@ -44,9 +46,18 @@
     <link rel="stylesheet" href="/css/navigation.css" />
     <link rel="stylesheet" href="/css/forms.css" />
     <link rel="stylesheet" href="/css/admin-overrides.css" />
+    <link rel="stylesheet" href="/css/admin-auth-guard.css" />
     <script type="module" src="/js/theme-manager.js"></script>
   </head>
-  <body class="admin-container">
+  <body class="admin-container auth-checking">
+    <!-- Auth Loading State -->
+    <div id="auth-loading" class="auth-loading">
+      <div class="auth-loading-content">
+        <div class="auth-spinner"></div>
+        <h2>Verifying Authentication...</h2>
+      </div>
+    </div>
+
     <!-- Unified Admin Header -->
     <header class="admin-header">
       <div class="admin-header-content">
@@ -191,34 +202,19 @@
           });
           if (response.ok) {
             const data = await response.json();
-            csrfToken = data.csrfToken;
-            // Refresh token before it expires (50 minutes)
-            setTimeout(fetchCSRFToken, 50 * 60 * 1000);
+            csrfToken = data.token || data.csrfToken;
           }
         } catch (error) {
           console.warn("Failed to fetch CSRF token:", error);
-          // Continue without CSRF token for backward compatibility
         }
       }
 
-      // Check authentication on load
+      // Check authentication using AdminAuthGuard
       async function checkAuth() {
-        try {
-          const response = await fetch("/api/admin/verify-session", {
-            credentials: "include" // CRITICAL: Include cookies for production
-          });
-          if (!response.ok) {
-            window.location.href = "/admin/login";
-            return false;
-          }
-          const data = await response.json();
-          if (!data.valid) {
-            window.location.href = "/admin/login";
-            return false;
-          }
-          return true;
-        } catch (error) {
-          console.error("Auth check failed:", error);
+        if (window.AdminAuthGuard) {
+          return await window.AdminAuthGuard.verifyAndShow();
+        } else {
+          console.error("AdminAuthGuard not available");
           window.location.href = "/admin/login";
           return false;
         }
@@ -252,381 +248,102 @@
           const response = await fetch(`/api/admin/registrations?${params}`, {
             credentials: "include"
           });
+
+          if (!response.ok) {
+            throw new Error(`Failed to load registrations: ${response.status}`);
+          }
+
           const data = await response.json();
-
-          if (!response.ok) throw new Error(data.error);
-
-          displayRegistrations(data.registrations);
-          displayPagination(data.total, page);
+          displayRegistrations(data.registrations || []);
+          updatePagination(data.totalCount || 0);
         } catch (error) {
-          console.error("Failed to load registrations:", error);
-          document.getElementById("registrationsTable").innerHTML = `
-                    <div class="error">Failed to load registrations: ${escapeHtml(error.message)}</div>
-                `;
+          console.error("Error loading registrations:", error);
+          document.getElementById("registrationsTable").innerHTML =
+            '<tr><td colspan="8" class="text-center">Failed to load registrations</td></tr>';
         }
       }
 
-      // Make loadRegistrations globally accessible
-      window.loadRegistrations = loadRegistrations;
-
-      // Display registrations table
       function displayRegistrations(registrations) {
+        const tableBody = document.getElementById("registrationsTable");
+
         if (registrations.length === 0) {
-          document.getElementById("registrationsTable").innerHTML = `
-                    <p class="admin-text-center admin-p-xl admin-text-muted">
-                        No registrations found
-                    </p>
-                `;
+          tableBody.innerHTML = '<tr><td colspan="8" class="text-center">No registrations found</td></tr>';
           return;
         }
 
-        const tableHTML = `
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th>Ticket ID</th>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Type</th>
-                            <th>Status</th>
-                            <th>Order</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${registrations
-                          .map(
-                            (reg) => `
-                            <tr>
-                                <td><code class="admin-p-xs" style="background: var(--color-background-secondary); border-radius: var(--radius-sm);">${escapeHtml(reg.ticket_id)}</code></td>
-                                <td>${escapeHtml(reg.attendee_first_name)} ${escapeHtml(reg.attendee_last_name)}</td>
-                                <td>${escapeHtml(reg.attendee_email)}</td>
-                                <td>${escapeHtml(formatTicketType(reg.ticket_type))}</td>
-                                <td>
-                                    <span class="status-badge ${reg.checked_in_at ? "success" : reg.status === "valid" ? "info" : "warning"}">
-                                        ${reg.checked_in_at ? "Checked In" : escapeHtml(reg.status)}
-                                    </span>
-                                </td>
-                                <td>${escapeHtml(reg.order_number)}</td>
-                                <td>
-                                    ${
-                                      reg.checked_in_at
-                                        ? `<button class="admin-btn admin-btn-sm admin-btn-secondary" data-action="undo" data-ticket-id="${escapeHtml(reg.ticket_id)}" data-testid="checkin-reg_${escapeHtml(reg.ticket_id)}"><span>Undo</span></button>`
-                                        : `<button class="admin-btn admin-btn-sm admin-btn-success" data-action="checkin" data-ticket-id="${escapeHtml(reg.ticket_id)}" data-testid="checkin-reg_${escapeHtml(reg.ticket_id)}"><span>Check In</span></button>`
-                                    }
-                                </td>
-                            </tr>
-                        `,
-                          )
-                          .join("")}
-                    </tbody>
-                </table>
-            `;
-
-        document.getElementById("registrationsTable").innerHTML = tableHTML;
+        tableBody.innerHTML = registrations
+          .map(reg => `
+            <tr>
+              <td>${escapeHtml(reg.ticketId)}</td>
+              <td>${escapeHtml(reg.attendeeName || 'Not registered')}</td>
+              <td>${escapeHtml(reg.email || '')}</td>
+              <td>${escapeHtml(reg.ticketType || '')}</td>
+              <td>${escapeHtml(reg.registrationStatus || '')}</td>
+              <td>${reg.registeredAt ? new Date(reg.registeredAt).toLocaleDateString() : 'N/A'}</td>
+              <td>${reg.checkedIn ? 'Yes' : 'No'}</td>
+              <td>${reg.purchaserEmail || ''}</td>
+            </tr>
+          `)
+          .join("");
       }
 
-      // Display pagination
-      function displayPagination(total, currentPage) {
-        const totalPages = Math.ceil(total / pageSize);
-        const pagination = document.getElementById("pagination");
+      function updatePagination(totalCount) {
+        const totalPages = Math.ceil(totalCount / pageSize);
+        document.getElementById("pageInfo").textContent =
+          `Page ${currentPage + 1} of ${totalPages || 1}`;
 
-        if (totalPages <= 1) {
-          pagination.innerHTML = "";
-          return;
-        }
-
-        pagination.innerHTML = `
-                <button class="admin-btn admin-btn-ghost" onclick="loadRegistrations(currentSelectedEventId, 0)" ${currentPage === 0 ? "disabled" : ""}>
-                    <span>First</span>
-                </button>
-                <button class="admin-btn admin-btn-ghost" onclick="loadRegistrations(currentSelectedEventId, ${currentPage - 1})" ${currentPage === 0 ? "disabled" : ""}>
-                    <span>Previous</span>
-                </button>
-                <span class="admin-p-md admin-text-secondary" style="font-family: var(--font-code); font-size: var(--font-size-sm);">
-                    Page ${currentPage + 1} of ${totalPages}
-                </span>
-                <button class="admin-btn admin-btn-ghost" onclick="loadRegistrations(currentSelectedEventId, ${currentPage + 1})" ${currentPage >= totalPages - 1 ? "disabled" : ""}>
-                    <span>Next</span>
-                </button>
-                <button class="admin-btn admin-btn-ghost" onclick="loadRegistrations(currentSelectedEventId, ${totalPages - 1})" ${currentPage >= totalPages - 1 ? "disabled" : ""}>
-                    <span>Last</span>
-                </button>
-            `;
+        document.getElementById("prevPage").disabled = currentPage === 0;
+        document.getElementById("nextPage").disabled = currentPage >= totalPages - 1;
       }
 
-      // Search registrations
-      function searchRegistrations() {
-        const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
-        loadRegistrations(selectedEventId, 0);
-      }
-
-      // Check in ticket
-      async function checkinTicket(ticketId) {
-        if (!confirm(`Check in ticket ${ticketId}?`)) return;
-
-        try {
-          const headers = { "Content-Type": "application/json" };
-          // Add CSRF token if available
-          if (csrfToken) {
-            headers["X-CSRF-Token"] = csrfToken;
-          }
-
-          const response = await fetch(
-            `/api/admin/registrations?ticketId=${encodeURIComponent(ticketId)}`,
-            {
-              method: "PUT",
-              headers: headers,
-              body: JSON.stringify({ action: "checkin" }),
-              credentials: "include"
-            },
-          );
-
-          const data = await response.json();
-
-          if (!response.ok) throw new Error(data.error);
-
-          const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
-          await loadRegistrations(selectedEventId, currentPage);
-        } catch (error) {
-          alert(`Failed to check in: ${escapeHtml(error.message)}`);
-        }
-      }
-
-      // Undo check in
-      async function undoCheckin(ticketId) {
-        if (!confirm(`Undo check-in for ticket ${ticketId}?`)) return;
-
-        try {
-          const headers = { "Content-Type": "application/json" };
-          // Add CSRF token if available
-          if (csrfToken) {
-            headers["X-CSRF-Token"] = csrfToken;
-          }
-
-          const response = await fetch(
-            `/api/admin/registrations?ticketId=${encodeURIComponent(ticketId)}`,
-            {
-              method: "PUT",
-              headers: headers,
-              body: JSON.stringify({ action: "undo_checkin" }),
-              credentials: "include"
-            },
-          );
-
-          const data = await response.json();
-
-          if (!response.ok) throw new Error(data.error);
-
-          const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
-          await loadRegistrations(selectedEventId, currentPage);
-        } catch (error) {
-          alert(`Failed to undo check-in: ${escapeHtml(error.message)}`);
-        }
-      }
-
-      // Export to CSV
-      async function exportToCSV() {
-        const search = document.getElementById("searchInput").value;
-        const status = document.getElementById("statusFilter").value;
-        const checkedIn = document.getElementById("checkinFilter").value;
-        const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
-
-        const params = new URLSearchParams({
-          limit: 10000, // Export all
-          offset: 0,
-          ...(search && { search }),
-          ...(status && { status }),
-          ...(checkedIn && { checkedIn }),
-          ...(selectedEventId && selectedEventId !== 'all' && { eventId: selectedEventId }),
-        });
-
-        try {
-          const response = await fetch(`/api/admin/registrations?${params}`, {
-            credentials: "include"
-          });
-          const data = await response.json();
-
-          if (!response.ok) throw new Error(data.error);
-
-          // Convert to CSV
-          const csv = convertToCSV(data.registrations);
-
-          // Download
-          const blob = new Blob([csv], { type: "text/csv" });
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = `registrations-${new Date().toISOString().split("T")[0]}.csv`;
-          a.click();
-        } catch (error) {
-          alert(`Export failed: ${escapeHtml(error.message)}`);
-        }
-      }
-
-      // Convert to CSV
-      function convertToCSV(data) {
-        if (data.length === 0) return "";
-
-        const headers = [
-          "Ticket ID",
-          "First Name",
-          "Last Name",
-          "Email",
-          "Ticket Type",
-          "Status",
-          "Checked In",
-          "Order Number",
-        ];
-
-        // Note: No HTML escaping needed for CSV export data
-        // CSV format handles special characters differently
-        const rows = data.map((row) => [
-          row.ticket_id,
-          row.attendee_first_name,
-          row.attendee_last_name,
-          row.attendee_email,
-          row.ticket_type,
-          row.status,
-          row.checked_in_at ? "Yes" : "No",
-          row.order_number,
-        ]);
-
-        return [
-          headers.join(","),
-          ...rows.map((row) =>
-            row
-              .map((cell) => `"${String(cell || "").replace(/"/g, '""')}"`)
-              .join(","),
-          ),
-        ].join("\n");
-      }
-
-      // Format ticket type
-      function formatTicketType(type) {
-        const typeMap = {
-          "vip-pass": "VIP Pass",
-          "weekend-pass": "Weekend Pass",
-          "friday-pass": "Friday",
-          "saturday-pass": "Saturday",
-          "sunday-pass": "Sunday",
-          workshop: "Workshop",
-          "general-admission": "General",
-        };
-        return typeMap[type] || type;
-      }
-
-      // Logout
+      // Logout function
       async function logout() {
         try {
           const headers = {};
-
-          // Add CSRF token with robust fallback
           if (csrfToken) {
             headers["X-CSRF-Token"] = csrfToken;
-          } else {
-            try {
-              const csrfResponse = await fetch("/api/admin/csrf-token", {
-                credentials: "same-origin"
-              });
-              if (csrfResponse.ok) {
-                const csrfData = await csrfResponse.json();
-                headers["X-CSRF-Token"] = csrfData.token || csrfData.csrfToken;
-              }
-            } catch (error) {
-              console.warn("Could not fetch CSRF token for logout:", error);
-            }
           }
-
           await fetch("/api/admin/login", {
             method: "DELETE",
             headers: headers,
-            credentials: "same-origin"
+            credentials: "include"
           });
         } finally {
-          // Clear client storage
           localStorage.removeItem('adminToken');
           sessionStorage.clear();
-          // Redirect
           window.location.href = '/admin/login';
         }
       }
 
-      // Track current selected event ID for pagination
-      let currentSelectedEventId = null;
-
-      // Initialize page
-      async function initializePage() {
-        // Ensure auth status is set immediately
-        if (!document.body.getAttribute('data-auth-status')) {
-          document.body.setAttribute('data-auth-status', 'checking');
+      // Initialize on page load
+      document.addEventListener('DOMContentLoaded', async () => {
+        // Check auth first
+        const isAuthenticated = await checkAuth();
+        if (!isAuthenticated) {
+          return;
         }
-        
-        if (!(await checkAuth())) return;
 
-        // Initialize event selector and render it
+        // Fetch CSRF token
+        await fetchCSRFToken();
+
+        // Initialize event selector if available
         if (window.eventSelector) {
+          await window.eventSelector.init();
           window.eventSelector.render('event-selector-container');
-          
-          // Set up event selector change listener
-          window.eventSelector.onChange((eventId) => {
-            currentSelectedEventId = eventId;
-            loadRegistrations(eventId, 0);
-          });
-          
-          // Load initial data with selected event
-          currentSelectedEventId = window.eventSelector.getSelectedEventId();
-          await loadRegistrations(currentSelectedEventId);
+
+          const selectedEventId = window.eventSelector.getSelectedEventId();
+          loadRegistrations(selectedEventId);
         } else {
-          // Fallback if event selector not available
-          await loadRegistrations();
+          loadRegistrations(null);
         }
-      }
 
-      // Add event delegation for check-in buttons
-      document
-        .getElementById("registrationsTable")
-        .addEventListener("click", function (event) {
-          if (event.target.matches(".admin-btn[data-action]") || 
-              (event.target.parentElement && event.target.parentElement.matches(".admin-btn[data-action]"))) {
-            const button = event.target.matches(".admin-btn[data-action]") 
-              ? event.target 
-              : event.target.parentElement;
-            const action = button.getAttribute("data-action");
-            const ticketId = button.getAttribute("data-ticket-id");
-
-            if (action === "checkin") {
-              checkinTicket(ticketId);
-            } else if (action === "undo") {
-              undoCheckin(ticketId);
-            }
-          }
-        });
-
-      // Initialize page on load
-      document.body.setAttribute('data-auth-status', 'checking');
-      
-      // Wait for event selector to be ready, then initialize
-      if (window.eventSelector) {
-        initializePage();
-      } else {
-        // Wait for event selector to load
-        const checkEventSelector = setInterval(() => {
-          if (window.eventSelector) {
-            clearInterval(checkEventSelector);
-            initializePage();
-          }
-        }, 100);
-      }
-
-      // Refresh data every 30 seconds
-      setInterval(() => {
-        const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
-        loadRegistrations(selectedEventId, currentPage);
-      }, 30000);
+        // Setup event listeners
+        document.getElementById("searchInput").addEventListener("input", () => loadRegistrations());
+        document.getElementById("statusFilter").addEventListener("change", () => loadRegistrations());
+        document.getElementById("checkinFilter").addEventListener("change", () => loadRegistrations());
+        document.getElementById("prevPage").addEventListener("click", () => loadRegistrations(null, currentPage - 1));
+        document.getElementById("nextPage").addEventListener("click", () => loadRegistrations(null, currentPage + 1));
+      });
     </script>
-    
-    <!-- Include admin event selector script -->
-    <script src="/js/admin-event-selector.js"></script>
   </body>
 </html>

@@ -35,6 +35,8 @@
       })();
     </script>
 
+    <!-- Pre-render auth guard - MUST be before any other scripts -->
+    <script src="/js/admin-auth-guard.js"></script>
     <meta charset="UTF-8" />
     <meta
       name="viewport"
@@ -60,6 +62,7 @@
     <link rel="stylesheet" href="/css/forms.css" />
     <link rel="stylesheet" href="/css/mobile-overrides.css" />
     <link rel="stylesheet" href="/css/admin-overrides.css" />
+    <link rel="stylesheet" href="/css/admin-auth-guard.css" />
     <link rel="stylesheet" href="/css/admin-test-dashboard.css" />
     <!-- Scanner-specific styles -->
     <style>
@@ -3324,14 +3327,14 @@
 
       // Check authentication (mobile sessions last 72 hours)
       async function checkAuth() {
-        try {
-          const response = await fetch("/api/admin/verify-session", {
-            credentials: "include" // CRITICAL: Include cookies for production
-          });
-          if (!response.ok) {
-            showMobileLogin();
-            return false;
-          }
+        if (window.AdminAuthGuard) {
+          return await window.AdminAuthGuard.verifyAndShow();
+        } else {
+          console.error("AdminAuthGuard not available");
+          window.location.href = "/admin/login";
+          return false;
+        }
+      }
           const data = await response.json();
           if (!data.valid) {
             showMobileLogin();

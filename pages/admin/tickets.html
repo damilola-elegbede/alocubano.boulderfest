@@ -35,6 +35,8 @@
       })();
     </script>
 
+    <!-- Pre-render auth guard - MUST be before any other scripts -->
+    <script src="/js/admin-auth-guard.js"></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Tickets - A Lo Cubano Boulder Fest</title>
@@ -44,9 +46,18 @@
     <link rel="stylesheet" href="/css/navigation.css" />
     <link rel="stylesheet" href="/css/forms.css" />
     <link rel="stylesheet" href="/css/admin-overrides.css" />
+    <link rel="stylesheet" href="/css/admin-auth-guard.css" />
     <script type="module" src="/js/theme-manager.js"></script>
   </head>
-  <body class="admin-container">
+  <body class="admin-container auth-checking">
+    <!-- Auth Loading State -->
+    <div id="auth-loading" class="auth-loading">
+      <div class="auth-loading-content">
+        <div class="auth-spinner"></div>
+        <h2>Verifying Authentication...</h2>
+      </div>
+    </div>
+
     <!-- Unified Admin Header -->
     <header class="admin-header">
       <div class="admin-header-content">
@@ -231,22 +242,10 @@
 
       // Check authentication on load
       async function checkAuth() {
-        try {
-          const response = await fetch("/api/admin/verify-session", {
-            credentials: "include" // CRITICAL: Include cookies for production
-          });
-          if (!response.ok) {
-            window.location.href = "/admin/login";
-            return false;
-          }
-          const data = await response.json();
-          if (!data.valid) {
-            window.location.href = "/admin/login";
-            return false;
-          }
-          return true;
-        } catch (error) {
-          console.error("Auth check failed:", error);
+        if (window.AdminAuthGuard) {
+          return await window.AdminAuthGuard.verifyAndShow();
+        } else {
+          console.error("AdminAuthGuard not available");
           window.location.href = "/admin/login";
           return false;
         }
