@@ -398,8 +398,12 @@
             url.searchParams.set('includeTestData', 'true');
           }
 
+          const token = localStorage.getItem('adminToken');
           const response = await fetch(url.toString(), {
-            credentials: "include" // CRITICAL: Include cookies for production
+            credentials: "include", // CRITICAL: Include cookies for production
+            headers: {
+              "Authorization": `Bearer ${token}`
+            }
           });
 
           if (!response.ok) {
@@ -618,8 +622,12 @@
         });
 
         try {
+          const token = localStorage.getItem('adminToken');
           const response = await fetch(`/api/admin/registrations?${params}`, {
-            credentials: "include" // Include cookies for production
+            credentials: "include", // Include cookies for production
+            headers: {
+              "Authorization": `Bearer ${token}`
+            }
           });
 
           const data = await response.json();
@@ -865,8 +873,12 @@
         });
 
         try {
+          const token = localStorage.getItem('adminToken');
           const response = await fetch(`/api/admin/registrations?${params}`, {
-            credentials: "include" // Include cookies for production
+            credentials: "include", // Include cookies for production
+            headers: {
+              "Authorization": `Bearer ${token}`
+            }
           });
           const data = await response.json();
 
