@@ -138,7 +138,7 @@ export default async function handler(req, res) {
           const transaction = result.transaction;
 
           console.log(`Webhook: Transaction ${result.created ? 'created' : 'already exists'}: ${transaction.uuid}`);
-          console.log(`Webhook: ${result.tickets.length} tickets ${result.created ? 'created' : 'found'}`);
+          console.log(`Webhook: ${result.ticketCount} tickets ${result.created ? 'created' : 'found'}`);
 
           // Update the payment event with transaction ID
           await paymentEventLogger.updateEventTransactionId(
@@ -169,7 +169,7 @@ export default async function handler(req, res) {
               test_mode: isTestTransaction,
               test_transaction: isTestTransaction,
               tickets_created: result.created,
-              ticket_count: result.tickets.length
+              ticket_count: result.ticketCount
             },
             severity: isTestTransaction ? 'debug' : 'info'
           });
@@ -214,7 +214,7 @@ export default async function handler(req, res) {
           const transaction = result.transaction;
 
           console.log(`Async payment: Transaction ${result.created ? 'created' : 'already exists'}: ${transaction.uuid}`);
-          console.log(`Async payment: ${result.tickets.length} tickets ${result.created ? 'created' : 'found'}`);
+          console.log(`Async payment: ${result.ticketCount} tickets ${result.created ? 'created' : 'found'}`);
 
           // Log financial audit for async payment success
           await logFinancialAudit({
@@ -238,7 +238,7 @@ export default async function handler(req, res) {
               test_mode: isTestTransaction,
               test_transaction: isTestTransaction,
               tickets_created: result.created,
-              ticket_count: result.tickets.length
+              ticket_count: result.ticketCount
             },
             severity: isTestTransaction ? 'debug' : 'info'
           });

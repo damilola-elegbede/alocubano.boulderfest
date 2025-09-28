@@ -18,11 +18,13 @@ async function createTestTransaction() {
         amount_total: 15000, // $150.00 each
         price: {
           unit_amount: 15000,
+          lookup_key: "weekend-pass", // Ensures deterministic ticket type mapping
           product: {
             id: "prod_test_weekend",
             name: "Weekend Pass",
             metadata: {
-              event: "boulder-fest-2026",
+              event_id: "boulder-fest-2026", // Match production webhook structure
+              event_date: "2026-05-15",
             },
           },
         },
@@ -33,12 +35,14 @@ async function createTestTransaction() {
         amount_total: 5000, // $50.00
         price: {
           unit_amount: 5000,
+          lookup_key: "workshop-beginner", // Ensures deterministic ticket type mapping
           product: {
             id: "prod_test_workshop",
             name: "Beginner Workshop",
             metadata: {
+              event_id: "boulder-fest-2026", // Match production webhook structure
+              event_date: "2026-05-15",
               level: "beginner",
-              date: "2026-05-15",
             },
           },
         },
@@ -100,7 +104,7 @@ async function createTestTransaction() {
 
   // Send confirmation email (will just log for now)
   console.log("\nSending confirmation email...");
-  await ticketEmailService.sendTicketConfirmation(transaction, tickets);
+  await ticketEmailService.sendTicketConfirmation(transaction);
 
   console.log("\n=== Test Transaction Created Successfully ===");
   console.log(`\nYou can now:`);

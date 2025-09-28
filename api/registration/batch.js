@@ -213,7 +213,7 @@ This is an automated confirmation email for your ticket registration.`;
       INSERT INTO registration_emails (ticket_id, email_type, recipient_email, sent_at)
       VALUES (?, ?, ?, datetime('now'))
     `,
-    args: [results[0]?.ticketId || 'BATCH', 'batch_summary_plaintext', transactionInfo.customer_email]
+    args: [results[0]?.ticketId || 'BATCH', 'purchaser_completion', transactionInfo.customer_email]
   });
 }
 
@@ -720,7 +720,7 @@ export default async function handler(req, res) {
               INSERT INTO registration_emails (ticket_id, email_type, recipient_email, sent_at)
               VALUES (?, ?, ?, datetime('now'))
             `,
-            args: [task.registration.ticketId, 'confirmation', task.registration.email]
+            args: [task.registration.ticketId, 'attendee_confirmation', task.registration.email]
           });
 
           console.log(`[BATCH_REG] Email sent successfully for ticket ${task.registration.ticketId}`);

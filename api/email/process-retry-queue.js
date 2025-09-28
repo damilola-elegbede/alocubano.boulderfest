@@ -125,7 +125,7 @@ export default async function handler(req, res) {
           }));
 
           // Send the email
-          await ticketEmailService.sendTicketConfirmation(transaction, tickets);
+          await ticketEmailService.sendTicketConfirmation(transaction);
 
           // Mark as successful
           await db.execute({

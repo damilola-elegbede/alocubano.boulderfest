@@ -89,10 +89,10 @@ export default async function handler(req, res) {
       result = await createOrRetrieveTickets(fullSession);
 
       transaction = result.transaction;
-      hasTickets = result.tickets && result.tickets.length > 0;
+      hasTickets = result.ticketCount > 0;
 
       console.log(`Transaction ${result.created ? 'created' : 'retrieved'}: ${transaction.uuid}`);
-      console.log(`${result.tickets.length} tickets ${result.created ? 'created' : 'found'}`);
+      console.log(`${result.ticketCount} tickets ${result.created ? 'created' : 'found'}`);
 
       // Ensure order number exists
       if (!transaction.order_number) {
