@@ -86,7 +86,7 @@
       "destination": "/pages/core/home"
     },
     {
-      "source": "/(about|tickets|donations|contact|checkout-success|checkout-cancel|my-tickets|success|failure)",
+      "source": "/(about|tickets|donations|contact|checkout-success|checkout-cancel|my-tickets|success|failure|register-tickets|view-tickets)",
       "destination": "/pages/core/$1"
     },
     {
@@ -96,10 +96,6 @@
     {
       "source": "/registration",
       "destination": "/pages/core/tickets"
-    },
-    {
-      "source": "/register-tickets",
-      "destination": "/pages/core/register-tickets"
     },
     {
       "source": "/boulder-fest-2025",
