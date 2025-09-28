@@ -169,7 +169,7 @@ export class CartManager extends EventTarget {
 
     // Ticket operations
     async addTicket(ticketData) {
-        const { ticketType, price, name, eventId, quantity = 1 } = ticketData;
+        const { ticketType, price, name, eventId, eventDate, venue, quantity = 1 } = ticketData;
 
         if (!ticketType || !price || !name) {
             throw new Error('Invalid ticket data');
@@ -184,6 +184,8 @@ export class CartManager extends EventTarget {
                     price,
                     name,
                     eventId,
+                    eventDate,  // Store event date
+                    venue,      // Store venue
                     quantity: 0,
                     addedAt: Date.now()
                 };
@@ -191,6 +193,13 @@ export class CartManager extends EventTarget {
 
             this.state.tickets[ticketType].quantity += quantity;
             this.state.tickets[ticketType].updatedAt = Date.now();
+            // Update eventDate and venue if provided (in case they changed)
+            if (eventDate) {
+                this.state.tickets[ticketType].eventDate = eventDate;
+            }
+            if (venue) {
+                this.state.tickets[ticketType].venue = venue;
+            }
 
             // Use coordinated storage write
             await this.saveToStorage();
@@ -249,7 +258,7 @@ export class CartManager extends EventTarget {
 
     // Upsert operation that combines add and update logic
     async upsertTicket(ticketData) {
-        const { ticketType, price, name, eventId, quantity } = ticketData;
+        const { ticketType, price, name, eventId, eventDate, venue, quantity } = ticketData;
 
         // If quantity is 0 or undefined/null, remove the ticket
         if (quantity === 0 || quantity === null || quantity === undefined) {
@@ -277,6 +286,8 @@ export class CartManager extends EventTarget {
                     price,
                     name,
                     eventId,
+                    eventDate,  // Store event date
+                    venue,      // Store venue
                     quantity: 0,
                     addedAt: Date.now()
                 };
@@ -290,6 +301,12 @@ export class CartManager extends EventTarget {
                 }
                 if (eventId) {
                     this.state.tickets[ticketType].eventId = eventId;
+                }
+                if (eventDate) {
+                    this.state.tickets[ticketType].eventDate = eventDate;
+                }
+                if (venue) {
+                    this.state.tickets[ticketType].venue = venue;
                 }
             }
 
