@@ -645,6 +645,21 @@ export default async function handler(req, res) {
 
           console.log('[BATCH_REG] Using Brevo template ID:', attendeeTemplateId);
 
+          // Determine base URL for email links
+          let baseUrl;
+          if (process.env.VERCEL_ENV === 'production') {
+            baseUrl = "https://www.alocubanoboulderfest.org";
+          } else if (process.env.VERCEL_URL) {
+            baseUrl = `https://${process.env.VERCEL_URL}`;
+          } else {
+            baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://alocubanoboulderfest.org";
+          }
+
+          // Generate QR token for the ticket
+          const { getQRTokenService } = await import('../../lib/qr-token-service.js');
+          const qrService = getQRTokenService();
+          const qrToken = await qrService.getOrCreateToken(task.registration.ticketId);
+
           await brevo.sendTransactionalEmail({
             to: [{
               email: task.registration.email,
@@ -656,8 +671,19 @@ export default async function handler(req, res) {
               lastName: task.registration.lastName,
               ticketId: task.registration.ticketId,
               ticketType: task.ticket.ticket_type,
-              walletPassUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/api/tickets/apple-wallet/${task.registration.ticketId}`,
-              orderNumber: transactionInfo ? (transactionInfo.order_number || transactionInfo.id) : 'N/A'
+              orderNumber: transactionInfo ? (transactionInfo.order_number || transactionInfo.id) : 'N/A',
+              // QR code URL
+              qrCodeUrl: `${baseUrl}/api/qr/generate?token=${qrToken}`,
+              // Wallet pass URLs
+              walletPassUrl: `${baseUrl}/api/tickets/apple-wallet/${task.registration.ticketId}`,
+              googleWalletUrl: `${baseUrl}/api/tickets/google-wallet/${task.registration.ticketId}`,
+              // Wallet button image URLs
+              appleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-apple.svg`,
+              googleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-google.png`,
+              // Event details
+              eventName: task.ticket.event_name || 'A Lo Cubano Boulder Fest',
+              eventDate: task.ticket.event_date || 'May 15-17, 2026',
+              eventLocation: task.ticket.event_location || 'Avalon Ballroom, Boulder, CO'
             }
           });
 

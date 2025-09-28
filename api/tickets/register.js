@@ -271,6 +271,21 @@ export default async function handler(req, res) {
     try {
       const brevo = await getBrevoClient();
 
+      // Determine base URL for email links
+      let baseUrl;
+      if (process.env.VERCEL_ENV === 'production') {
+        baseUrl = "https://www.alocubanoboulderfest.org";
+      } else if (process.env.VERCEL_URL) {
+        baseUrl = `https://${process.env.VERCEL_URL}`;
+      } else {
+        baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://alocubanoboulderfest.org";
+      }
+
+      // Generate QR token for the ticket
+      const { getQRTokenService } = await import('../../lib/qr-token-service.js');
+      const qrService = getQRTokenService();
+      const qrToken = await qrService.getOrCreateToken(ticketId);
+
       await brevo.sendTransactionalEmail({
         to: [{ email: cleanEmail, name: `${cleanFirstName} ${cleanLastName}` }],
         templateId: parseInt(process.env.BREVO_ATTENDEE_CONFIRMATION_TEMPLATE_ID),
@@ -279,8 +294,19 @@ export default async function handler(req, res) {
           lastName: cleanLastName,
           ticketId: ticketId,
           ticketType: ticket.ticket_type,
-          walletPassUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/api/tickets/apple-wallet/${ticketId}`,
-          orderNumber: 'N/A' // Individual registrations don't have order context
+          orderNumber: 'N/A', // Individual registrations don't have order context
+          // QR code URL
+          qrCodeUrl: `${baseUrl}/api/qr/generate?token=${qrToken}`,
+          // Wallet pass URLs
+          walletPassUrl: `${baseUrl}/api/tickets/apple-wallet/${ticketId}`,
+          googleWalletUrl: `${baseUrl}/api/tickets/google-wallet/${ticketId}`,
+          // Wallet button image URLs
+          appleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-apple.svg`,
+          googleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-google.png`,
+          // Event details
+          eventName: ticket.event_name || 'A Lo Cubano Boulder Fest',
+          eventDate: ticket.event_date || 'May 15-17, 2026',
+          eventLocation: ticket.event_location || 'Avalon Ballroom, Boulder, CO'
         }
       });
 
