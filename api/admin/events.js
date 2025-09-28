@@ -53,7 +53,11 @@ async function handler(req, res) {
         ORDER BY start_date DESC
       `);
 
-      events = result.rows;
+      // Convert any BigInt values to numbers or strings
+      events = result.rows.map(row => ({
+        ...row,
+        id: row.id ? Number(row.id) : row.id
+      }));
     } catch (error) {
       // If events table doesn't exist yet, return mock data
       if (error.message.includes('no such table: events') ||
