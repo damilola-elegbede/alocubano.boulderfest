@@ -58,6 +58,7 @@
     <link rel="stylesheet" href="/css/floating-cart.css" />
     <link rel="stylesheet" href="/css/floating-cart-dark.css" />
     <link rel="stylesheet" href="/css/header-cart.css" />
+    <link rel="stylesheet" href="/css/theme-toggle.css" />
     <style>
       body {
         background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
@@ -651,6 +652,19 @@
 
       // Load ticket on page load
       loadTicket();
+    </script>
+
+    <!-- Theme Toggle -->
+    <script type="module">
+      import { initializeThemeToggle } from '/js/theme-toggle.js';
+      document.addEventListener('DOMContentLoaded', () => {
+        // Add floating theme toggle for special page
+        const toggleContainer = document.createElement('div');
+        toggleContainer.id = 'theme-toggle-container';
+        toggleContainer.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 1000;';
+        document.body.appendChild(toggleContainer);
+        initializeThemeToggle('#theme-toggle-container');
+      });
     </script>
 
     <!-- Optional: Include html2canvas for better download functionality -->

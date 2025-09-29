@@ -1,6 +1,39 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="system">
+<html lang="en">
   <head>
+    <!-- Inline theme detection to prevent FOUC -->
+    <script>
+      (function() {
+        // Detect admin pages
+        const path = window.location.pathname.toLowerCase();
+        const isAdmin = path.includes('/admin') || path.includes('pages/admin');
+
+        if (isAdmin) {
+          // Admin pages always use dark theme
+          document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+          // Main site: check user preference
+          let stored = null;
+          try {
+            stored = localStorage.getItem('theme-preference');
+          } catch {
+            // localStorage might be disabled
+          }
+
+          const preference = stored || 'system';
+          let theme = preference;
+
+          if (preference === 'system') {
+            // Detect system preference
+            theme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+              ? 'dark'
+              : 'light';
+          }
+
+          document.documentElement.setAttribute('data-theme', theme);
+        }
+      })();
+    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Your Tickets - A Lo Cubano Boulder Fest</title>
@@ -17,6 +50,7 @@
     <link rel="stylesheet" href="/css/footer.css" />
     <link rel="stylesheet" href="/css/forms.css" />
     <link rel="stylesheet" href="/css/register.css" />
+    <link rel="stylesheet" href="/css/theme-toggle.css" />
 
     <style>
       .view-tickets-container {
@@ -437,11 +471,20 @@
             </svg>
           </a>
         </div>
+        <div id="theme-toggle-container" class="footer-theme-toggle"></div>
       </div>
     </footer>
 
     <!-- Mobile Menu Script -->
     <script src="/js/mobile-menu.js"></script>
+
+    <!-- Theme Toggle -->
+    <script type="module">
+      import { initializeThemeToggle } from '/js/theme-toggle.js';
+      document.addEventListener('DOMContentLoaded', () => {
+        initializeThemeToggle('#theme-toggle-container');
+      });
+    </script>
 
     <script>
       class TicketViewer {

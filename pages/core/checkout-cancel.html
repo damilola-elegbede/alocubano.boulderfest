@@ -469,7 +469,12 @@
       // Initialize theme system
       document.addEventListener('DOMContentLoaded', () => {
         themeManager.initializeTheme();
-        // Note: checkout-cancel doesn't have standard header, so we handle theme without toggle UI
+        // Add floating theme toggle for special page
+        const toggleContainer = document.createElement('div');
+        toggleContainer.id = 'theme-toggle-container';
+        toggleContainer.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 1000;';
+        document.body.appendChild(toggleContainer);
+        initializeThemeToggle('#theme-toggle-container');
       });
     </script>
   </body>
