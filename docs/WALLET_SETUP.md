@@ -75,16 +75,19 @@ The A Lo Cubano Boulder Fest platform supports both Apple Wallet and Google Wall
 
 ### Step 3: Environment Configuration
 
-Add these variables to your `.env.local`:
+Configure these variables in **Vercel Dashboard** (Settings → Environment Variables):
 
+| Variable | Description | Environment Scope |
+|----------|-------------|-------------------|
+| `APPLE_PASS_TYPE_ID` | Pass Type ID from Apple Developer | Development, Preview, Production |
+| `APPLE_TEAM_ID` | Your Apple Team ID | Development, Preview, Production |
+| `APPLE_PASS_KEY` | Base64-encoded certificate and key | Development, Preview, Production |
+| `WALLET_AUTH_SECRET` | JWT signing secret (32+ chars) | Development, Preview, Production |
+
+**Pull Variables Locally:**
 ```bash
-# Apple Wallet Configuration
-APPLE_PASS_TYPE_ID=pass.com.alocubano.boulderfest.tickets
-APPLE_TEAM_ID=YOUR_TEAM_ID
-APPLE_PASS_KEY=base64_encoded_certificate_and_key
-
-# Wallet Authentication
-WALLET_AUTH_SECRET=your-32-character-secret-key
+# After configuring in Vercel Dashboard
+vercel env pull
 ```
 
 ### Step 4: Certificate Encoding
@@ -143,11 +146,18 @@ cat apple_pass_certificate.base64
 
 ### Step 3: Environment Configuration
 
+Configure these variables in **Vercel Dashboard** (Settings → Environment Variables):
+
+| Variable | Description | Environment Scope |
+|----------|-------------|-------------------|
+| `GOOGLE_WALLET_ISSUER_ID` | Issuer ID from Google Wallet Console | Development, Preview, Production |
+| `GOOGLE_WALLET_APPLICATION_NAME` | Application name | Development, Preview, Production |
+| `GOOGLE_WALLET_SERVICE_ACCOUNT_KEY` | Base64-encoded service account JSON | Development, Preview, Production |
+
+**Pull Variables Locally:**
 ```bash
-# Google Wallet Configuration
-GOOGLE_WALLET_ISSUER_ID=your_issuer_id_from_google_wallet_console
-GOOGLE_WALLET_APPLICATION_NAME=A Lo Cubano Boulder Fest
-GOOGLE_WALLET_SERVICE_ACCOUNT_KEY=base64_encoded_service_account_json
+# After configuring in Vercel Dashboard
+vercel env pull
 ```
 
 ### Step 4: Service Account Key Encoding
@@ -237,38 +247,43 @@ const googlePassTemplate = {
 
 ## Complete Environment Variables
 
+All environment variables are configured in **Vercel Dashboard** (Settings → Environment Variables):
+
 ### Required Variables
 
-```bash
-# Apple Wallet
-APPLE_PASS_TYPE_ID=pass.com.alocubano.boulderfest.tickets
-APPLE_TEAM_ID=YOUR_APPLE_TEAM_ID
-APPLE_PASS_KEY=base64_encoded_certificate_and_private_key
-
-# Google Wallet
-GOOGLE_WALLET_ISSUER_ID=your_google_wallet_issuer_id
-GOOGLE_WALLET_APPLICATION_NAME=A Lo Cubano Boulder Fest
-GOOGLE_WALLET_SERVICE_ACCOUNT_KEY=base64_encoded_service_account_json
-
-# Wallet Authentication (shared)
-WALLET_AUTH_SECRET=minimum-32-character-secret-for-jwt-signing
-
-# Optional: Wallet Pass Customization
-WALLET_PASS_BACKGROUND_COLOR=#ce1126
-WALLET_PASS_FOREGROUND_COLOR=#ffffff
-WALLET_PASS_LABEL_COLOR=#002868
-```
+| Variable | Description | Value Example |
+|----------|-------------|---------------|
+| `APPLE_PASS_TYPE_ID` | Apple Pass Type ID | `pass.com.alocubano.boulderfest.tickets` |
+| `APPLE_TEAM_ID` | Apple Team ID | Your team ID |
+| `APPLE_PASS_KEY` | Certificate and key | Base64-encoded |
+| `GOOGLE_WALLET_ISSUER_ID` | Google Wallet issuer ID | Your issuer ID |
+| `GOOGLE_WALLET_APPLICATION_NAME` | Application name | `A Lo Cubano Boulder Fest` |
+| `GOOGLE_WALLET_SERVICE_ACCOUNT_KEY` | Service account JSON | Base64-encoded |
+| `WALLET_AUTH_SECRET` | JWT signing secret | Min 32 characters |
 
 ### Optional Variables
 
-```bash
-# Wallet Pass URLs (auto-detected if not set)
-APPLE_WALLET_PASS_URL=https://yourdomain.com/api/tickets/apple-wallet
-GOOGLE_WALLET_PASS_URL=https://yourdomain.com/api/tickets/google-wallet
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `WALLET_PASS_BACKGROUND_COLOR` | Pass background color | `#ce1126` |
+| `WALLET_PASS_FOREGROUND_COLOR` | Pass foreground color | `#ffffff` |
+| `WALLET_PASS_LABEL_COLOR` | Pass label color | `#002868` |
+| `WALLET_DEBUG_MODE` | Enable verbose logging | `false` |
+| `WALLET_TEST_MODE` | Use test certificates | `false` |
+| `APPLE_WALLET_PASS_URL` | Apple Wallet URL | Auto-detected |
+| `GOOGLE_WALLET_PASS_URL` | Google Wallet URL | Auto-detected |
 
-# Debug settings
-WALLET_DEBUG_MODE=true  # Enables verbose logging
-WALLET_TEST_MODE=true   # Uses test certificates/keys
+### Local Development
+
+```bash
+# Pull all environment variables from Vercel
+vercel env pull
+
+# Verify .env.local was created
+ls -la .env.local
+
+# Start development server
+npm run vercel:dev
 ```
 
 ## Testing Wallet Passes
@@ -384,30 +399,47 @@ console.log('Service account email:', serviceAccount.client_email);
 
 ### Debug Mode
 
-Enable debug logging for wallet operations:
+Enable debug logging for wallet operations in **Vercel Dashboard**:
 
-```bash
-# Enable wallet debugging
-WALLET_DEBUG_MODE=true
-NODE_ENV=development
+1. **Configure Debug Variables**
+   - Go to Settings → Environment Variables
+   - Add `WALLET_DEBUG_MODE=true` for Development environment
+   - Add `NODE_ENV=development` for Development environment
 
-# Check logs for detailed error information
-npm run vercel:dev
-```
+2. **Pull Updated Configuration**
+   ```bash
+   # Pull latest environment variables
+   vercel env pull
+
+   # Start development server
+   npm run vercel:dev
+   ```
+
+3. **Check Logs**
+   - View detailed error information in terminal
+   - Monitor wallet operations in console
 
 ## Security Best Practices
 
 ### Certificate Management
 
 1. **Secure Storage**
-   - Store certificates in environment variables, not in code
+   - Store all certificates in **Vercel Dashboard** (Settings → Environment Variables)
    - Use base64 encoding for multi-line certificates
+   - Never commit certificates to version control
    - Rotate certificates before expiration
 
 2. **Access Control**
-   - Limit certificate access to production servers only
-   - Use separate certificates for development/testing
-   - Monitor certificate usage and expiration
+   - Configure separate certificates for Development, Preview, and Production
+   - Use test certificates for Development environment
+   - Monitor certificate usage through Vercel logs
+   - Set certificate expiration alerts in calendar
+
+3. **Environment Variables Security**
+   - Use Vercel's encrypted environment variable storage
+   - Set appropriate environment scopes (Development/Preview/Production)
+   - Regularly audit configured variables
+   - Remove unused or expired variables
 
 ### JWT Security
 

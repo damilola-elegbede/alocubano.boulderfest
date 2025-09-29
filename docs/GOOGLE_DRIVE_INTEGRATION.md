@@ -35,12 +35,22 @@ The Google Drive service fetches images and videos from a Google Drive folder an
 
 ### 3. Environment Variables
 
-Add these variables to your `.env.local` file:
+Configure these variables in **Vercel Dashboard** (Settings → Environment Variables):
 
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `GOOGLE_DRIVE_API_KEY` | API key from Google Cloud Console | `AIza...` |
+| `GOOGLE_DRIVE_FOLDER_ID` | Google Drive folder ID | `1elqFy...` |
+| `GOOGLE_SERVICE_ACCOUNT_EMAIL` | Service account email | `service@project.iam.gserviceaccount.com` |
+| `GOOGLE_PRIVATE_KEY` | Service account private key | `-----BEGIN PRIVATE KEY-----...` |
+
+**Local Setup:**
 ```bash
-# Google Drive Integration
-GOOGLE_DRIVE_API_KEY=your_api_key_here
-GOOGLE_DRIVE_FOLDER_ID=your_folder_id_here
+# Pull environment variables from Vercel
+vercel env pull
+
+# Verify .env.local was created
+ls -la .env.local
 ```
 
 ## Image Categorization

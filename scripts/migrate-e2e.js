@@ -16,9 +16,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Load environment configuration
 // In CI/Vercel, env vars are already set
-// Locally, load from .env.local
+// Locally, load from .env.vercel
 if (!process.env.VERCEL && !process.env.CI) {
-  const envPath = resolve(__dirname, '../.env.local');
+  const envPath = resolve(__dirname, '../.env.vercel');
   if (existsSync(envPath)) {
     config({ path: envPath });
   }

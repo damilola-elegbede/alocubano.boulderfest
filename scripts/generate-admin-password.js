@@ -73,7 +73,7 @@ async function main() {
   // Generate session secret
   const sessionSecret = crypto.randomBytes(32).toString("base64");
 
-  console.log("=== Configuration for .env.local ===\n");
+  console.log("=== Configuration for .env.vercel ===\n");
   console.log("# Admin Dashboard Configuration");
   console.log(`ADMIN_PASSWORD=${hash}`);
   console.log(`ADMIN_SECRET=${sessionSecret}`);
@@ -81,7 +81,7 @@ async function main() {
   console.log("ADMIN_MAX_LOGIN_ATTEMPTS=5\n");
 
   console.log("=== Next Steps ===\n");
-  console.log("1. Copy the configuration above to your .env.local file");
+  console.log("1. Copy the configuration above to your .env.vercel file");
   console.log("2. Restart your development server");
   console.log("3. Login at: http://localhost:8080/pages/admin/login.html");
   console.log("4. Use the password you just entered (not the hash!)\n");

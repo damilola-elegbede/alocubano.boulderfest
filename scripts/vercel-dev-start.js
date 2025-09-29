@@ -246,8 +246,8 @@ class VercelDevStarter {
   async prepareEnvironmentFiles() {
     console.log('📁 Preparing environment files...');
 
-    // Create minimal .env.local if it doesn't exist
-    const envLocalPath = resolve(projectRoot, '.env.local');
+    // Create minimal .env.vercel if it doesn't exist
+    const envLocalPath = resolve(projectRoot, '.env.vercel');
     if (!existsSync(envLocalPath)) {
       const minimalEnv = `# Minimal environment for Vercel dev
 NODE_ENV=development
@@ -264,7 +264,7 @@ TURSO_DATABASE_URL=file:./data/development.db
 TEST_ADMIN_PASSWORD=test-password
 `;
       writeFileSync(envLocalPath, minimalEnv);
-      console.log('   ✅ Created minimal .env.local');
+      console.log('   ✅ Created minimal .env.vercel');
     }
 
     // Ensure data directory exists

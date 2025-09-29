@@ -31,10 +31,13 @@ The official website for **A Lo Cubano Boulder Fest**, Boulder's premier Cuban s
 3. **Environment setup**
 
    ```bash
-   # Copy environment template
-   cp .env.example .env.local
+   # Link to Vercel project (one-time setup)
+   vercel link
 
-   # Edit .env.local with your configuration
+   # Pull environment variables from Vercel Dashboard
+   vercel env pull
+
+   # This creates .env.local with all configured variables
    # See INSTALLATION.md for detailed setup instructions
    ```
 
@@ -369,28 +372,31 @@ npm run migrate:status         # Check migration status
 
 ## Environment Variables
 
-### New Required Variables
+All environment variables are managed through the **Vercel Dashboard**. To configure:
 
-```bash
-# QR Code & Wallet Authentication
-REGISTRATION_SECRET=minimum-32-character-secret-for-jwt-signing
-WALLET_AUTH_SECRET=minimum-32-character-secret-for-wallet-passes
+1. Go to [vercel.com/dashboard](https://vercel.com/dashboard)
+2. Select your project
+3. Navigate to **Settings → Environment Variables**
+4. Add required variables (see INSTALLATION.md for complete list)
+5. Pull variables locally: `vercel env pull`
 
-# Apple Wallet (optional)
-APPLE_PASS_TYPE_ID=pass.com.alocubano.boulderfest.tickets
-APPLE_TEAM_ID=your-apple-team-id
-APPLE_PASS_KEY=base64-encoded-certificate-and-private-key
+### Key Required Variables
 
-# Google Wallet (optional)
-GOOGLE_WALLET_ISSUER_ID=your-google-wallet-issuer-id
-GOOGLE_WALLET_APPLICATION_NAME=A Lo Cubano Boulder Fest
-GOOGLE_WALLET_SERVICE_ACCOUNT_KEY=base64-encoded-service-account-json
+- `TURSO_DATABASE_URL` - Production database URL
+- `TURSO_AUTH_TOKEN` - Database authentication
+- `ADMIN_PASSWORD` - Admin panel access (bcrypt hashed)
+- `ADMIN_SECRET` - Session secret (32+ chars)
+- `REGISTRATION_SECRET` - JWT signing for tickets (32+ chars)
+- `WALLET_AUTH_SECRET` - JWT signing for wallet passes (32+ chars)
 
-# Performance Monitoring (optional)
-QR_CACHE_DEBUG=true          # Enable QR cache debugging
-WALLET_DEBUG_MODE=true       # Enable wallet debugging
-PERFORMANCE_MONITORING=true  # Enable performance metrics
-```
+### Optional Service Variables
+
+- **Email**: `BREVO_API_KEY`, `BREVO_NEWSLETTER_LIST_ID`
+- **Payments**: `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`
+- **Gallery**: `GOOGLE_DRIVE_FOLDER_ID`, `GOOGLE_SERVICE_ACCOUNT_EMAIL`
+- **Wallet Passes**: `APPLE_PASS_TYPE_ID`, `GOOGLE_WALLET_ISSUER_ID`
+
+See [INSTALLATION.md](INSTALLATION.md) for complete environment variable documentation.
 
 ## Streamlined Development Experience
 

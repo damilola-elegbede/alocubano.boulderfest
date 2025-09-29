@@ -112,7 +112,7 @@ async function main() {
       }
 
       console.error('\n💡 To fix these issues:');
-      console.error('   1. Set the missing environment variables in .env.local');
+      console.error('   1. Set the missing environment variables in .env.vercel');
       console.error('   2. Ensure Turso credentials are configured for E2E tests');
       console.error('   3. Check CLAUDE.md for complete environment setup guide');
       console.error('');

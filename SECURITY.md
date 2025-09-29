@@ -189,16 +189,28 @@ function sanitizeInput(input) {
 ### Environment Security
 
 #### Environment Variables
-```bash
-# Use strong secrets (minimum 32 characters)
-ADMIN_SECRET=your-very-secure-secret-key-with-32-plus-characters
-JWT_SECRET=another-very-secure-jwt-signing-secret-key
-WEBHOOK_SECRET=secure-webhook-validation-secret
 
-# Never commit real values to version control
-# Use .env.local for development
-# Use platform environment variables for production
-```
+All environment variables are managed through the **Vercel Dashboard**:
+
+1. **Configure in Vercel Dashboard**:
+   - Go to Settings → Environment Variables
+   - Add variables for Development, Preview, and Production
+   - Use strong secrets (minimum 32 characters)
+
+2. **Local Development**:
+   ```bash
+   # Pull environment variables from Vercel
+   vercel env pull
+
+   # This creates .env.local automatically
+   # Never commit .env.local to version control
+   ```
+
+3. **Security Best Practices**:
+   - Use different secrets for each environment
+   - Rotate secrets regularly
+   - Never hardcode secrets in code
+   - Use Vercel's encrypted storage
 
 #### Database Security
 ```javascript

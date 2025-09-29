@@ -207,9 +207,10 @@ All environment variables are configured in the Vercel Dashboard and automatical
 
 ### Configuration Approach
 
-- **Development**: `vercel dev` automatically pulls environment variables from Vercel Dashboard
-- **Production**: Vercel deployment uses Dashboard configuration
-- **No local .env files**: All configuration lives in Vercel Dashboard
+- **Running the app**: `vercel dev` automatically pulls environment variables from Vercel Dashboard
+- **Running tests/scripts locally**: `vercel link` creates `.env.vercel` file with all Dashboard variables
+- **Production**: Vercel deployment uses Dashboard configuration directly
+- **CI/CD**: GitHub Actions uses GitHub Secrets (synced from Vercel Dashboard)
 
 ### Required Environment Variables
 
@@ -273,10 +274,18 @@ VITEST_REQUEST_TIMEOUT=                       # HTTP request timeout in ms (defa
 
 ### Environment Variable Management
 
-- **Setup**: Configure variables once in Vercel Dashboard
-- **Development**: Run `vercel dev` to automatically pull configuration
-- **CI/CD**: GitHub Actions inherits variables from Vercel project
-- **Security**: Sensitive values never stored in repository
+- **Initial Setup**:
+  1. Configure variables in Vercel Dashboard (Settings → Environment Variables)
+  2. Run `vercel link` to link your local project
+  3. This creates `.env.vercel` with all Dashboard variables
+
+- **Running the app**: `vercel dev` (no .env file needed - pulls directly from Dashboard)
+- **Running tests/scripts**: Uses `.env.vercel` file (created by `vercel link`)
+- **Updating variables**:
+  - Change in Vercel Dashboard
+  - Run `vercel env pull .env.vercel` to refresh local file
+- **CI/CD**: GitHub Actions uses GitHub Secrets (no .env files)
+- **Security**: `.env.vercel` is gitignored, sensitive values never committed
 
 ## API Endpoints
 

@@ -15,7 +15,7 @@ async function generateAdminCredentials() {
   const crypto = await import("crypto");
   const sessionSecret = crypto.randomBytes(32).toString("base64");
 
-  console.log("1. Add these to your .env.local file:\n");
+  console.log("1. Add these to your .env.vercel file:\n");
   console.log("# Admin Dashboard Configuration");
   console.log(`ADMIN_PASSWORD=${passwordHash}`);
   console.log(`ADMIN_SECRET=${sessionSecret}`);
@@ -40,7 +40,7 @@ async function generateAdminCredentials() {
   console.log("   - Update ADMIN_PASSWORD in production environment\n");
 
   console.log("=== Security Notes ===");
-  console.log("- Never commit .env.local to git");
+  console.log("- Never commit .env.vercel to git");
   console.log("- Use different passwords for development and production");
   console.log("- Rotate session secrets periodically");
   console.log("- Monitor login attempts in production logs\n");

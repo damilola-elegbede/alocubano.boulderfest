@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Load environment variables
-config({ path: path.join(__dirname, "..", ".env.local") });
+config({ path: path.join(__dirname, "..", ".env.vercel") });
 
 console.log("🎫 Testing Apple Wallet Pass Configuration\n");
 console.log("========================================\n");
@@ -51,7 +51,7 @@ if (allConfigured) {
   console.log("\n🚀 Ready to generate Apple Wallet passes!");
 } else {
   console.log(
-    "⚠️  Some variables are missing. Please check your .env.local file.",
+    "⚠️  Some variables are missing. Please check your .env.vercel file.",
   );
   process.exit(1);
 }

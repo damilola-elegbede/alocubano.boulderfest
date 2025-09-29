@@ -200,8 +200,8 @@ class VercelDevE2E {
     process.env.SKIP_DATABASE_INIT = 'true';
     process.env.VERCEL_DEV_STARTUP = 'true';
 
-    // Ensure .env.local exists with minimal config
-    const envLocalPath = resolve(projectRoot, '.env.local');
+    // Ensure .env.vercel exists with minimal config
+    const envLocalPath = resolve(projectRoot, '.env.vercel');
     if (!existsSync(envLocalPath)) {
       const minimalEnv = `# E2E Testing Environment
 NODE_ENV=development
@@ -218,7 +218,7 @@ ADMIN_SECRET=${process.env.ADMIN_SECRET || 'test-secret-key-for-e2e-testing-only
 ADMIN_PASSWORD=${process.env.ADMIN_PASSWORD || '$2a$10$YourHashedPasswordHere'}
 `;
       writeFileSync(envLocalPath, minimalEnv);
-      console.log('   ✅ Created .env.local for E2E testing');
+      console.log('   ✅ Created .env.vercel for E2E testing');
     }
 
     // Ensure data directory exists

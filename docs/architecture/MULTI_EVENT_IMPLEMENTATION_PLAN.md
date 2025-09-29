@@ -477,8 +477,11 @@ If issues arise, rollback strategy:
 4. **Full Revert**: If critical, restore from backup
 
 ```bash
-# Disable multi-event feature
-echo "ENABLE_MULTI_EVENT=false" >> .env.local
+# Disable multi-event feature in Vercel Dashboard
+# Settings → Environment Variables → ENABLE_MULTI_EVENT=false
+
+# Pull updated configuration
+vercel env pull
 
 # Use single-event mode
 npm run migrate:down -- 20_multi_event_support

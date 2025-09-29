@@ -236,8 +236,8 @@ The system automatically determines required secrets based on test file names:
 
 1. **Tests skip unexpectedly**
    - Check `npm run test:e2e:secrets` output
-   - Verify secrets are set correctly
-   - Ensure `.env.local` is properly configured
+   - Verify secrets are set correctly in Vercel Dashboard
+   - Pull latest environment variables: `vercel env pull`
 
 2. **Admin tests fail**
    - Verify `TEST_ADMIN_PASSWORD` is set (plain text)

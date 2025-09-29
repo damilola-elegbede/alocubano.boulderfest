@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Load environment variables
-dotenv.config({ path: join(dirname(__dirname), ".env.local") });
+dotenv.config({ path: join(dirname(__dirname), ".env.vercel") });
 
 async function checkTables() {
   const db = await getDatabaseClient();

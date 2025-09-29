@@ -75,48 +75,54 @@ You'll need:
 5. Uncheck "Notify people" (service accounts don't have inboxes)
 6. Click **"Share"**
 
-## Step 7: Configure Vercel Environment Variables
+## Step 7: Configure Environment Variables in Vercel Dashboard
 
-1. Log in to your [Vercel Dashboard](https://vercel.com/dashboard)
-2. Select your project
-3. Go to **"Settings"** > **"Environment Variables"**
-4. Add the following variables:
+1. **Log in to Vercel Dashboard**
+   - Go to [vercel.com/dashboard](https://vercel.com/dashboard)
+   - Select your project
+   - Navigate to **Settings → Environment Variables**
 
-### GOOGLE_SERVICE_ACCOUNT_EMAIL
+2. **Add Google Drive Variables**
 
-- **Value**: The `client_email` from your JSON file
-- **Example**: `alocubano-drive-reader@your-project-id.iam.gserviceaccount.com`
+   Add the following variables with values from your JSON file:
 
-### GOOGLE_PRIVATE_KEY
+   | Variable | Value | Environment Scope |
+   |----------|-------|-------------------|
+   | `GOOGLE_SERVICE_ACCOUNT_EMAIL` | `client_email` from JSON | Development, Preview, Production |
+   | `GOOGLE_PRIVATE_KEY` | `private_key` from JSON (with line breaks) | Development, Preview, Production |
+   | `GOOGLE_PROJECT_ID` | `project_id` from JSON | Development, Preview, Production |
+   | `GOOGLE_DRIVE_FOLDER_ID` | `1elqFy6HFf792_vGju8wYaEBJtLjQyOSq` | Development, Preview, Production |
 
-- **Value**: The `private_key` from your JSON file
-- **IMPORTANT**: Include the entire key with line breaks preserved
-- The value should start with `-----BEGIN PRIVATE KEY-----` and end with `-----END PRIVATE KEY-----`
+3. **Important Notes**
+   - The `GOOGLE_PRIVATE_KEY` must include the entire key with line breaks
+   - Start with `-----BEGIN PRIVATE KEY-----`
+   - End with `-----END PRIVATE KEY-----`
+   - Select appropriate environment scopes for each variable
 
-### GOOGLE_PROJECT_ID
+4. **Pull Variables Locally**
+   ```bash
+   # After configuring in Vercel Dashboard
+   vercel env pull
 
-- **Value**: The `project_id` from your JSON file
-- **Example**: `alocubano-gallery-123456`
+   # This creates .env.local with all variables
+   ```
 
-### GOOGLE_DRIVE_FOLDER_ID
+## Step 8: Verify Local Setup
 
-- **Value**: `1elqFy6HFf792_vGju8wYaEBJtLjQyOSq`
-- This is extracted from the Google Drive URL
-
-5. Make sure to add these for all environments (Production, Preview, Development)
-
-## Step 8: Test Locally (Optional)
-
-For local development, create a `.env.local` file:
+After pulling environment variables from Vercel:
 
 ```bash
-GOOGLE_SERVICE_ACCOUNT_EMAIL=your-service-account@project.iam.gserviceaccount.com
-GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
-GOOGLE_PROJECT_ID=your-project-id
-GOOGLE_DRIVE_FOLDER_ID=1elqFy6HFf792_vGju8wYaEBJtLjQyOSq
+# Verify .env.local was created
+ls -la .env.local
+
+# Start development server
+npm run vercel:dev
+
+# Test the gallery API
+curl http://localhost:3000/api/gallery
 ```
 
-**IMPORTANT**: Never commit this file to version control!
+**IMPORTANT**: The `.env.local` file is automatically created by `vercel env pull` and should never be committed to version control!
 
 ## Step 9: Deploy and Verify
 
@@ -161,37 +167,32 @@ Once configured, the gallery will:
 3. Cache results for better performance
 4. Provide fallback content if the API is unavailable
 
-## Local Development Setup
+## Local Development Workflow
 
-For local testing, you can use the `.env.local` file:
-
-1. Copy the example file:
-
+1. **Pull Environment Variables**
    ```bash
-   cp .env.example .env.local
+   # Ensure you're linked to Vercel project
+   vercel link
+
+   # Pull all environment variables
+   vercel env pull
    ```
 
-2. Add your credentials to `.env.local`:
-
-   ```env
-   GOOGLE_SERVICE_ACCOUNT_EMAIL=your-service-account@your-project.iam.gserviceaccount.com
-   GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
-   GOOGLE_PROJECT_ID=your-project-id
-   GOOGLE_DRIVE_FOLDER_ID=1elqFy6HFf792_vGju8wYaEBJtLjQyOSq
-   ```
-
-3. Run the development server:
-
+2. **Start Development Server**
    ```bash
-   ./scripts/start.sh
-   # or
-   npm start
+   # Start Vercel dev server with all environment variables
+   npm run vercel:dev
    ```
 
-4. Test the gallery:
+3. **Test Gallery Integration**
    - Gallery page: http://localhost:3000/pages/typographic/gallery.html
    - API endpoint: http://localhost:3000/api/gallery
 
-The local server includes the Google Drive API integration, so you'll see real photos from your Google Drive folder in development.
+4. **Update Variables**
+   - Update in Vercel Dashboard (Settings → Environment Variables)
+   - Pull latest changes: `vercel env pull`
+   - Restart dev server: `npm run vercel:dev`
+
+The development server automatically uses environment variables from `.env.local` (created by `vercel env pull`), giving you access to the Google Drive integration with real photos from your configured folder.
 
 For more information about the implementation, see the `/api/gallery.js` serverless function.
