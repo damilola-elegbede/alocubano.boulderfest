@@ -51,7 +51,7 @@
       "name": "Test Festival",
       "slug": "test-festival",
       "type": "festival",
-      "status": "test",
+      "status": "draft",
       "description": "Test festival event for development and testing purposes only.",
       "venue": "Test Ballroom, Boulder, CO",
       "start_date": "2024-01-01",
@@ -65,7 +65,7 @@
       "name": "Test Weekender",
       "slug": "test-weekender",
       "type": "weekender",
-      "status": "test",
+      "status": "draft",
       "description": "Test weekender event for development and testing purposes only.",
       "venue": "Test Ballroom, Boulder, CO",
       "start_date": "2024-01-01",
@@ -146,7 +146,7 @@
       "name": "Test Basic Ticket",
       "description": "Basic test ticket for development",
       "price_cents": 100,
-      "status": "test",
+      "status": "available",
       "sort_order": 1
     },
     {
@@ -155,7 +155,7 @@
       "name": "Test Premium Ticket",
       "description": "Premium test ticket for development",
       "price_cents": 500,
-      "status": "test",
+      "status": "available",
       "sort_order": 1
     }
   ],
@@ -164,7 +164,7 @@
     "currency": "USD",
     "timezone": "America/Denver",
     "max_tickets_per_transaction": 100,
-    "ticket_statuses": ["available", "sold-out", "coming-soon", "test"],
-    "event_statuses": ["upcoming", "completed", "test"]
+    "ticket_statuses": ["available", "sold-out", "coming-soon", "closed"],
+    "event_statuses": ["draft", "upcoming", "active", "completed", "cancelled"]
   }
 }
