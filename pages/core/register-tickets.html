@@ -1022,16 +1022,34 @@
 
           document.getElementById('success-state').style.display = 'block';
 
-          // After 3 seconds, redirect to the view page to see registered tickets
-          setTimeout(() => {
-            console.log('[FRONTEND] Registration complete, redirecting to view page...');
-            window.location.href = `/view-tickets?token=${this.token}`;
-          }, 3000);
+          // Start 20-second countdown timer
+          this.startCountdownTimer();
 
           // Scroll to success message
           document.getElementById('success-state').scrollIntoView({
             behavior: 'smooth'
           });
+        }
+
+        startCountdownTimer() {
+          let secondsRemaining = 20;
+          const countdownElement = document.getElementById('countdown-timer');
+
+          // Update countdown every second
+          const countdownInterval = setInterval(() => {
+            secondsRemaining--;
+            if (countdownElement) {
+              countdownElement.textContent = secondsRemaining;
+            }
+
+            if (secondsRemaining <= 0) {
+              clearInterval(countdownInterval);
+              window.location.href = `/view-tickets?token=${this.token}`;
+            }
+          }, 1000);
+
+          // Store interval ID so it can be cleared if user navigates manually
+          this.countdownInterval = countdownInterval;
         }
 
         updateSuccessMessage(result) {
@@ -1081,7 +1099,9 @@
             <h2>Registration Complete</h2>
 
             <p style="margin: var(--space-lg) 0;">Your tickets have been successfully registered.</p>
-            <p style="margin: var(--space-lg) 0; color: var(--color-text-secondary);">Redirecting to your tickets...</p>
+            <p style="margin: var(--space-lg) 0; color: var(--color-text-secondary);">
+              Redirecting to your tickets in <span id="countdown-timer" style="font-weight: 600; color: var(--color-primary);">20</span> seconds...
+            </p>
 
             <!-- Registered Attendees Summary -->
             ${registeredTicketsInfo.length > 0 ? `
@@ -1106,8 +1126,11 @@
               </div>
             ` : ''}
 
-            <div style="text-align: center; margin-top: var(--space-xl);">
-              <a href="/home" class="form-button-type" style="display: inline-block; text-decoration: none;">
+            <div style="text-align: center; margin-top: var(--space-xl); display: flex; gap: var(--space-md); justify-content: center; flex-wrap: wrap;">
+              <a href="/view-tickets?token=${this.token}" class="form-button-type" style="display: inline-block; text-decoration: none;">
+                View Tickets Now
+              </a>
+              <a href="/home" class="form-button-type" style="display: inline-block; text-decoration: none; background: transparent; color: var(--color-primary); border: 2px solid var(--color-primary);">
                 Return to Home Page
               </a>
             </div>

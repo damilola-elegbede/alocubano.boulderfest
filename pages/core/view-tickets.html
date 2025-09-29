@@ -699,15 +699,17 @@
               <div class="wallet-section">
                 <a href="/api/tickets/apple-wallet/${ticket.ticketId}"
                    class="wallet-button">
-                  <img src="/images/add-to-wallet-apple.svg"
+                  <img src="${window.location.origin}/images/add-to-wallet-apple.svg"
                        alt="Add to Apple Wallet"
-                       style="height: 40px; width: auto;">
+                       style="height: 40px; width: auto;"
+                       onerror="console.error('Failed to load Apple Wallet image')">
                 </a>
                 <a href="/api/tickets/google-wallet/${ticket.ticketId}"
                    class="wallet-button">
-                  <img src="/images/add-to-wallet-google.png"
+                  <img src="${window.location.origin}/images/add-to-wallet-google.png"
                        alt="Add to Google Pay"
-                       style="height: 40px; width: auto;">
+                       style="height: 40px; width: auto;"
+                       onerror="console.error('Failed to load Google Pay image')">
                 </a>
               </div>
             ` : `
