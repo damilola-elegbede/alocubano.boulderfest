@@ -5,6 +5,7 @@
  */
 
 import { getDatabaseClient } from '../../lib/database.js';
+import { processDatabaseResult } from '../../lib/bigint-serializer.js';
 
 export default async function handler(req, res) {
     if (req.method !== 'GET') {
@@ -48,8 +49,11 @@ export default async function handler(req, res) {
             ORDER BY display_order ASC, start_date ASC
         `);
 
+        // Process BigInt values from database before JSON serialization
+        const processedResult = processDatabaseResult(eventsResult);
+
         // Transform events for frontend consumption
-        const events = eventsResult.rows.map(event => {
+        const events = processedResult.rows.map(event => {
             // Parse config JSON if present
             let config = {};
             try {
