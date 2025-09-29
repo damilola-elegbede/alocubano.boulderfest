@@ -16,8 +16,12 @@
  *   - Handles foreign key constraints safely
  */
 
+import dotenv from 'dotenv';
 import { getDatabaseClient } from '../lib/database.js';
 import readline from 'readline';
+
+// Load environment variables from .env.vercel
+dotenv.config({ path: '.env.vercel' });
 
 // Parse command line arguments
 const args = process.argv.slice(2);
