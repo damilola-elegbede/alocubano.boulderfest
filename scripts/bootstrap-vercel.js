@@ -579,16 +579,6 @@ class BootstrapSystem {
 
 // Execute bootstrap if run directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  // Skip bootstrap for local development (vercel dev)
-  // VERCEL_ENV=development means vercel dev (local), not a real deployment
-  const isLocalVercelDev = process.env.VERCEL_ENV === 'development';
-
-  if (isLocalVercelDev) {
-    console.log('\n⚠️  Skipping bootstrap: Local development mode (vercel dev)');
-    console.log('   Bootstrap will run automatically during Preview and Production deployments');
-    process.exit(0);
-  }
-
   const bootstrap = new BootstrapSystem();
 
   // Handle interruption signals
