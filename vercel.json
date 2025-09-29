@@ -45,6 +45,10 @@
     {
       "path": "/api/cron/process-reminders",
       "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/cleanup-expired-reservations",
+      "schedule": "*/5 * * * *"
     }
   ],
   "images": {

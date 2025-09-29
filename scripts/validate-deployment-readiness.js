@@ -322,7 +322,7 @@ class DeploymentValidator {
     section('Bootstrap System Test', '🚀');
 
     // Test bootstrap script syntax
-    const bootstrapPath = join(projectRoot, 'scripts', 'bootstrap-vercel.js');
+    const bootstrapPath = join(projectRoot, 'scripts', 'bootstrap.js');
     if (existsSync(bootstrapPath)) {
       this.addResult('Bootstrap script exists', 'pass', 'Script file found');
 
@@ -350,7 +350,7 @@ class DeploymentValidator {
 
     // Test bootstrap configuration loading
     try {
-      const configPath = join(projectRoot, 'bootstrap', `${this.environment}.json`);
+      const configPath = join(projectRoot, 'config', 'bootstrap.json');
       const config = JSON.parse(readFileSync(configPath, 'utf8'));
 
       this.addResult('Bootstrap config loading', 'pass', 'Configuration loaded successfully');

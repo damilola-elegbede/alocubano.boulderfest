@@ -6,6 +6,7 @@ import { getStripePaymentHandler } from './lib/stripe-integration.js';
 import { getPaymentSelector } from './components/payment-selector.js';
 import { setSafeHTML, escapeHtml } from './utils/dom-sanitizer.js';
 import eventsService from './lib/events-service.js';
+import { getAvailabilityService } from './lib/availability-service.js';
 
 export function initializeFloatingCart(cartManager) {
     // Check if already initialized
@@ -591,6 +592,38 @@ function performCartUIUpdate(elements, cartState) {
     });
 }
 
+/**
+ * Validate cart items against current availability
+ * Shows warnings for items that are no longer available
+ */
+async function validateCartAvailability(tickets) {
+    const availabilityService = getAvailabilityService();
+    const ticketsArray = Object.values(tickets);
+
+    for (const ticket of ticketsArray) {
+        try {
+            const availabilityCheck = await availabilityService.checkAvailability(
+                ticket.ticketType,
+                ticket.quantity
+            );
+
+            // Store availability status on ticket object for UI rendering
+            ticket.availabilityStatus = availabilityCheck.status;
+            ticket.availabilityMessage = availabilityCheck.message;
+            ticket.availabilityRemaining = availabilityCheck.remaining;
+
+            // If item is no longer available, mark it
+            if (!availabilityCheck.available) {
+                ticket.unavailable = true;
+                console.warn(`Cart item unavailable: ${ticket.name}`, availabilityCheck);
+            }
+        } catch (error) {
+            console.error('Failed to check availability for cart item:', ticket.name, error);
+            // Continue with other items even if one fails
+        }
+    }
+}
+
 // Legacy function for compatibility - now redirects to optimized version
 function renderCartItems(container, tickets, donations) {
     return renderCartItemsOptimized(container, tickets, donations);
@@ -600,6 +633,9 @@ function renderCartItems(container, tickets, donations) {
 async function renderCartItemsOptimized(container, tickets, donations) {
     // Clear container first
     container.innerHTML = '';
+
+    // Validate cart items availability
+    await validateCartAvailability(tickets);
 
     // Use document fragment for batch DOM operations
     const fragment = document.createDocumentFragment();
@@ -754,6 +790,12 @@ export function createTicketItemElement(ticket) {
         item.classList.add('test-ticket');
     }
 
+    // Add unavailable indicator if item is no longer available
+    if (ticket.unavailable) {
+        item.classList.add('cart-item-unavailable');
+        item.setAttribute('data-availability-status', ticket.availabilityStatus);
+    }
+
     // Create info section
     const info = document.createElement('div');
     info.className = 'cart-item-info';
@@ -776,6 +818,15 @@ export function createTicketItemElement(ticket) {
     price.className = 'cart-item-price';
     price.textContent = `$${ticket.price.toFixed(2)} × ${ticket.quantity} = $${itemTotal.toFixed(2)}`;
     info.appendChild(price);
+
+    // Add availability warning if item is unavailable
+    if (ticket.unavailable && ticket.availabilityMessage) {
+        const warning = document.createElement('p');
+        warning.className = 'cart-item-availability-warning';
+        warning.textContent = ticket.availabilityMessage;
+        warning.setAttribute('role', 'alert');
+        info.appendChild(warning);
+    }
 
     // Create actions section
     const actions = document.createElement('div');

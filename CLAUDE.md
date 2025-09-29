@@ -253,6 +253,7 @@ GOOGLE_DRIVE_FOLDER_ID=                       # Google Drive folder ID containin
 
 # Internal APIs Security
 INTERNAL_API_KEY=                             # API key for secure internal operations (cache management)
+CRON_SECRET=                                  # Bearer token for Vercel Cron job authentication (prevents unauthorized cron triggers)
 
 # Testing (optional)
 TEST_ADMIN_PASSWORD=                          # Plain text password for admin panel E2E testing (not bcrypt hashed)
@@ -286,6 +287,54 @@ VITEST_REQUEST_TIMEOUT=                       # HTTP request timeout in ms (defa
   - Run `vercel env pull .env.vercel` to refresh local file
 - **CI/CD**: GitHub Actions uses GitHub Secrets (no .env files)
 - **Security**: `.env.vercel` is gitignored, sensitive values never committed
+
+### CRON_SECRET Configuration
+
+**Purpose**: Authenticates Vercel Cron jobs to prevent unauthorized execution of scheduled tasks.
+
+**How Vercel Cron Authentication Works**:
+
+1. **Automatic Generation**: When you configure a cron job in `vercel.json`, Vercel automatically generates a `CRON_SECRET` and adds it to your environment variables
+2. **Authorization Header**: Vercel Cron jobs automatically send `Authorization: Bearer <CRON_SECRET>` header
+3. **Validation**: Your cron handler validates the header matches the environment variable
+
+**Configuration Steps**:
+
+1. **Option A - Automatic (Recommended)**:
+   - Add cron configuration to `vercel.json`
+   - Deploy to Vercel
+   - Vercel automatically generates and sets `CRON_SECRET`
+
+2. **Option B - Manual**:
+   - Generate a secure random token (min 32 chars)
+   - Add to Vercel Dashboard: Settings → Environment Variables
+   - Set for Production environment only
+
+**Usage in Cron Handlers**:
+
+```javascript
+export default async function handler(req, res) {
+  const authHeader = req.headers.authorization;
+  const expectedAuth = `Bearer ${process.env.CRON_SECRET || ''}`;
+
+  if (authHeader !== expectedAuth && process.env.NODE_ENV === 'production') {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  // Process cron job...
+}
+```
+
+**Current Cron Jobs**:
+
+- `api/cron/cleanup-expired-reservations.js` - Uses CRON_SECRET authentication
+- `api/cron/process-reminders.js` - **Missing CRON_SECRET authentication** (security issue)
+
+**Security Notes**:
+
+- Only enforced in production (`NODE_ENV === 'production'`)
+- Skipped in development to allow local testing
+- Prevents external actors from triggering cron jobs via direct HTTP requests
 
 ## API Endpoints
 

@@ -4,11 +4,55 @@
 -- Note: Works with existing table structure (display_order, not sort_order)
 
 -- =============================================================================
--- STEP 1: Create ticket_types table (idempotent - works with existing table)
+-- STEP 1: Create ticket_types table with correct INTEGER event_id
 -- =============================================================================
 
--- Note: Table already exists with proper structure from earlier migrations
--- This migration focuses on data population and additional indexes
+-- Create ticket_types table with INTEGER event_id to match events table
+CREATE TABLE IF NOT EXISTS ticket_types (
+    id TEXT PRIMARY KEY,
+    event_id INTEGER NOT NULL,
+    stripe_price_id TEXT UNIQUE,
+    name TEXT NOT NULL,
+    description TEXT,
+    price_cents INTEGER NOT NULL,
+    currency TEXT DEFAULT 'USD',
+    status TEXT CHECK(status IN ('available', 'sold-out', 'coming-soon', 'closed', 'test')) DEFAULT 'available',
+    max_quantity INTEGER,
+    sold_count INTEGER DEFAULT 0,
+    display_order INTEGER DEFAULT 0,
+    metadata TEXT, -- JSON stored as TEXT
+    availability TEXT, -- JSON stored as TEXT
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+);
+
+-- Create bootstrap_versions table for tracking bootstrap application
+CREATE TABLE IF NOT EXISTS bootstrap_versions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    version TEXT NOT NULL,
+    applied_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    checksum TEXT NOT NULL UNIQUE,
+    status TEXT DEFAULT 'success',
+    error_message TEXT,
+    applied_by TEXT
+);
+
+-- Core indexes for ticket_types
+CREATE INDEX IF NOT EXISTS idx_ticket_types_event_status ON ticket_types(event_id, status);
+CREATE INDEX IF NOT EXISTS idx_ticket_types_stripe_price ON ticket_types(stripe_price_id);
+
+-- Indexes for bootstrap_versions
+CREATE INDEX IF NOT EXISTS idx_bootstrap_versions_checksum ON bootstrap_versions(checksum);
+CREATE INDEX IF NOT EXISTS idx_bootstrap_versions_applied_at ON bootstrap_versions(applied_at DESC);
+
+-- Triggers for updated_at timestamp
+CREATE TRIGGER IF NOT EXISTS update_ticket_types_timestamp
+AFTER UPDATE ON ticket_types
+FOR EACH ROW
+BEGIN
+    UPDATE ticket_types SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;
 
 -- =============================================================================
 -- STEP 2: Create additional performance indexes (idempotent)
@@ -27,113 +71,12 @@ CREATE INDEX IF NOT EXISTS idx_ticket_types_performance_sales
     WHERE status IN ('available', 'sold-out');
 
 -- =============================================================================
--- STEP 3: Insert bootstrap ticket types from config
+-- STEP 3: Bootstrap data population
 -- =============================================================================
 
--- November 2025 Weekender active tickets
-INSERT OR IGNORE INTO ticket_types (
-    id, event_id, name, description, price_cents, status, display_order, metadata
-) VALUES
-(
-    '2025-11-weekender-full',
-    '5',
-    'Full Pass',
-    'Full weekend access to workshops and socials',
-    6500,
-    'available',
-    1,
-    json('{"includes_workshops": true, "includes_socials": true, "pass_type": "weekend"}')
-),
-(
-    '2025-11-weekender-class',
-    '5',
-    'Single Class',
-    'Access to one workshop session',
-    2500,
-    'available',
-    2,
-    json('{"includes_workshops": true, "includes_socials": false, "pass_type": "single_class"}')
-);
-
--- Boulder Fest 2026 placeholder tickets (no prices set yet)
-INSERT OR IGNORE INTO ticket_types (
-    id, event_id, name, description, price_cents, status, display_order, metadata
-) VALUES
-(
-    '2026-early-bird-full',
-    '1',
-    'Early Bird Full Pass',
-    'Special early pricing for full festival access',
-    0,
-    'coming-soon',
-    1,
-    json('{"early_bird": true, "includes_workshops": true, "includes_socials": true, "pass_type": "full"}')
-),
-(
-    '2026-regular-full',
-    '1',
-    'Full Festival Pass',
-    'Complete 3-day festival experience',
-    0,
-    'coming-soon',
-    2,
-    json('{"includes_workshops": true, "includes_socials": true, "includes_performances": true, "pass_type": "full"}')
-),
-(
-    '2026-friday-pass',
-    '1',
-    'Friday Pass',
-    'Friday workshops and social dance',
-    0,
-    'coming-soon',
-    3,
-    json('{"includes_workshops": true, "includes_socials": true, "pass_type": "day", "day": "friday"}')
-),
-(
-    '2026-saturday-pass',
-    '1',
-    'Saturday Pass',
-    'Saturday workshops and social dance',
-    0,
-    'coming-soon',
-    4,
-    json('{"includes_workshops": true, "includes_socials": true, "pass_type": "day", "day": "saturday"}')
-),
-(
-    '2026-sunday-pass',
-    '1',
-    'Sunday Pass',
-    'Sunday workshops and social dance',
-    0,
-    'coming-soon',
-    5,
-    json('{"includes_workshops": true, "includes_socials": true, "pass_type": "day", "day": "sunday"}')
-);
-
--- Test ticket types for development
-INSERT OR IGNORE INTO ticket_types (
-    id, event_id, name, description, price_cents, status, display_order, metadata
-) VALUES
-(
-    'test-basic',
-    '-1',
-    'Test Basic Ticket',
-    'Basic test ticket for development',
-    100,
-    'test',
-    1,
-    json('{"test_mode": true, "includes_workshops": true}')
-),
-(
-    'test-premium',
-    '-2',
-    'Test Premium Ticket',
-    'Premium test ticket for development',
-    500,
-    'test',
-    1,
-    json('{"test_mode": true, "includes_workshops": true, "includes_socials": true}')
-);
+-- NOTE: Ticket types data is NOT populated by this migration.
+-- Data population happens exclusively via bootstrap-service.js reading config/bootstrap.json.
+-- This ensures single source of truth for bootstrap data and proper version tracking.
 
 -- =============================================================================
 -- VERIFICATION QUERIES (Comments for debugging)

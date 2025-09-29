@@ -4,6 +4,7 @@
  */
 
 import { ticketDataService } from './lib/ticket-data-service.js';
+import { getAvailabilityService } from './lib/availability-service.js';
 
 class TicketSelection {
     constructor() {
@@ -11,6 +12,7 @@ class TicketSelection {
         this.eventId = null;
         this.ticketData = new Map();
         this.isLoading = true;
+        this.availabilityService = getAvailabilityService();
         this.init();
     }
 
@@ -49,6 +51,17 @@ class TicketSelection {
 
             // Hide loading state
             this.hideLoadingState();
+
+            // Start availability polling for real-time updates
+            this.availabilityService.startPolling(30000); // Poll every 30 seconds
+
+            // Listen for availability updates
+            this.availabilityService.addListener((tickets) => {
+                this.handleAvailabilityUpdate(tickets);
+            });
+
+            // Initial availability update
+            await this.updateAvailabilityIndicators();
 
         } catch (error) {
             console.error('Failed to initialize ticket selection:', error);
@@ -190,7 +203,10 @@ class TicketSelection {
 
     async updateTicketCardsFromAPI() {
         // Update ticket cards with data from API
-        document.querySelectorAll('.ticket-card[data-ticket-id]').forEach(async(card) => {
+        // Only process cards marked as dynamic
+        const dynamicCards = document.querySelectorAll('.ticket-card[data-ticket-id][data-dynamic-tickets="true"]');
+
+        const updatePromises = Array.from(dynamicCards).map(async(card) => {
             const ticketId = card.dataset.ticketId;
 
             try {
@@ -201,7 +217,12 @@ class TicketSelection {
                     if (priceElement) {
                         const formattedPrice = `$${(ticketData.price_cents / 100).toFixed(0)}`;
                         priceElement.textContent = formattedPrice;
+                        priceElement.removeAttribute('data-loading');
+                        priceElement.setAttribute('data-loaded', 'true');
                     }
+
+                    // Mark card as successfully loaded
+                    card.setAttribute('data-api-loaded', 'true');
 
                     // Update any other data that should come from API
                     // (name, description, etc. could be added here if needed)
@@ -212,9 +233,17 @@ class TicketSelection {
                 const priceElement = card.querySelector('.ticket-price');
                 if (priceElement && priceElement.textContent === 'Loading...') {
                     priceElement.textContent = 'Price unavailable';
+                    priceElement.removeAttribute('data-loading');
+                    priceElement.setAttribute('data-error', 'true');
                 }
+
+                // Mark card as having an error
+                card.setAttribute('data-api-error', 'true');
             }
         });
+
+        // Wait for all updates to complete
+        await Promise.all(updatePromises);
     }
 
     async waitForCartManager() {
@@ -361,9 +390,26 @@ class TicketSelection {
         const ticketName = ticketData.name;
 
         let currentQuantity = parseInt(quantitySpan.textContent) || 0;
+        let newQuantity = currentQuantity;
 
         if (action === 'increase') {
-            currentQuantity++;
+            newQuantity = currentQuantity + 1;
+
+            // CRITICAL: Validate availability before increasing quantity
+            const availabilityCheck = await this.availabilityService.checkAvailability(ticketType, newQuantity);
+
+            if (!availabilityCheck.available) {
+                // Show error message
+                this.showAvailabilityError(card, availabilityCheck.message);
+
+                // Update card to show sold out/unavailable
+                this.markCardUnavailable(card, availabilityCheck.status, availabilityCheck.remaining);
+
+                // Prevent quantity increase
+                return;
+            }
+
+            currentQuantity = newQuantity;
         } else if (action === 'decrease' && currentQuantity > 0) {
             currentQuantity--;
         }
@@ -446,8 +492,28 @@ class TicketSelection {
         const quantitySpan = card.querySelector('.quantity');
         let currentQuantity = parseInt(quantitySpan.textContent) || 0;
 
+        // CRITICAL: Validate availability before adding to cart
+        const newQuantity = currentQuantity + 1;
+        const availabilityCheck = await this.availabilityService.checkAvailability(ticketType, newQuantity);
+
+        if (!availabilityCheck.available) {
+            // Show error message
+            this.showAvailabilityError(card, availabilityCheck.message);
+
+            // Update card to show sold out/unavailable
+            this.markCardUnavailable(card, availabilityCheck.status, availabilityCheck.remaining);
+
+            // Update button to show error state
+            btn.textContent = 'Unavailable';
+            btn.setAttribute('data-action-state', 'unavailable');
+            btn.style.backgroundColor = 'var(--color-gray-400, #9ca3af)';
+            btn.disabled = true;
+
+            return;
+        }
+
         // Add one ticket
-        currentQuantity++;
+        currentQuantity = newQuantity;
         quantitySpan.textContent = currentQuantity;
 
         // Update internal state
@@ -570,11 +636,147 @@ class TicketSelection {
             }
         });
     }
+
+    /**
+     * Update real-time availability indicators on all ticket cards
+     */
+    async updateAvailabilityIndicators() {
+        try {
+            const availabilityMap = await this.availabilityService.getAllAvailability();
+
+            document.querySelectorAll('.ticket-card').forEach((card) => {
+                const ticketType = card.dataset.ticketId;
+                if (!ticketType) return;
+
+                const availability = availabilityMap.get(ticketType);
+                if (!availability) return;
+
+                // Remove existing availability indicator
+                const existingIndicator = card.querySelector('.availability-indicator');
+                if (existingIndicator) {
+                    existingIndicator.remove();
+                }
+
+                // Determine what indicator to show
+                let indicator = null;
+
+                if (!availability.available || availability.remaining === 0) {
+                    // Sold out badge
+                    indicator = this.createAvailabilityBadge('Sold Out', 'sold-out');
+                    this.markCardUnavailable(card, 'sold_out', 0);
+                } else if (availability.remaining < 10) {
+                    // Low stock warning
+                    indicator = this.createAvailabilityBadge(`${availability.remaining} left`, 'low-stock');
+                } else if (availability.remaining < availability.maxQuantity * 0.2) {
+                    // Limited availability
+                    indicator = this.createAvailabilityBadge('Limited availability', 'limited');
+                }
+
+                // Add indicator to card if needed
+                if (indicator) {
+                    const header = card.querySelector('.ticket-header');
+                    if (header) {
+                        header.appendChild(indicator);
+                    }
+                }
+            });
+
+        } catch (error) {
+            console.error('Failed to update availability indicators:', error);
+        }
+    }
+
+    /**
+     * Create an availability badge element
+     */
+    createAvailabilityBadge(text, type) {
+        const badge = document.createElement('div');
+        badge.className = `availability-indicator availability-${type}`;
+        badge.textContent = text;
+        badge.setAttribute('role', 'status');
+        badge.setAttribute('aria-live', 'polite');
+        return badge;
+    }
+
+    /**
+     * Handle availability updates from polling
+     */
+    handleAvailabilityUpdate(tickets) {
+        console.log('✓ Availability updated:', tickets.length, 'ticket types');
+        this.updateAvailabilityIndicators();
+    }
+
+    /**
+     * Show availability error message
+     */
+    showAvailabilityError(card, message) {
+        // Create error toast
+        const errorToast = document.createElement('div');
+        errorToast.className = 'availability-error-toast';
+        errorToast.textContent = message;
+        errorToast.setAttribute('role', 'alert');
+        errorToast.setAttribute('aria-live', 'assertive');
+
+        document.body.appendChild(errorToast);
+
+        // Auto-remove after 4 seconds
+        setTimeout(() => {
+            errorToast.classList.add('fade-out');
+            setTimeout(() => errorToast.remove(), 300);
+        }, 4000);
+
+        // Also add visual feedback to the card
+        card.classList.add('availability-error');
+        setTimeout(() => card.classList.remove('availability-error'), 2000);
+    }
+
+    /**
+     * Mark a ticket card as unavailable
+     */
+    markCardUnavailable(card, status, remaining) {
+        card.classList.add('unavailable');
+        card.setAttribute('aria-disabled', 'true');
+        card.setAttribute('data-availability-status', status);
+        card.setAttribute('data-availability-remaining', remaining.toString());
+
+        // Disable quantity controls
+        const qtyButtons = card.querySelectorAll('.qty-btn');
+        qtyButtons.forEach(btn => {
+            btn.disabled = true;
+            btn.setAttribute('aria-disabled', 'true');
+        });
+
+        // Disable add to cart button
+        const addToCartBtn = card.querySelector('.add-to-cart-btn');
+        if (addToCartBtn) {
+            addToCartBtn.disabled = true;
+            addToCartBtn.textContent = remaining === 0 ? 'Sold Out' : 'Unavailable';
+            addToCartBtn.setAttribute('data-action-state', 'unavailable');
+        }
+    }
+
+    /**
+     * Cleanup on page unload
+     */
+    destroy() {
+        if (this.availabilityService) {
+            this.availabilityService.stopPolling();
+        }
+    }
 }
 
 // Initialize when DOM is loaded
+let ticketSelectionInstance = null;
+
 document.addEventListener('DOMContentLoaded', () => {
     if (document.querySelector('.ticket-selection')) {
-        new TicketSelection();
+        ticketSelectionInstance = new TicketSelection();
+    }
+});
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+    if (ticketSelectionInstance) {
+        ticketSelectionInstance.destroy();
     }
 });

@@ -276,6 +276,80 @@ async function handler(req, res) {
       }
     }
 
+    // Get all events from database
+    let events = [];
+    try {
+      const eventsQuery = `
+        SELECT
+          id,
+          name,
+          slug,
+          type,
+          status,
+          start_date,
+          end_date,
+          venue_name,
+          venue_city,
+          venue_state,
+          max_capacity,
+          is_featured,
+          is_visible,
+          display_order
+        FROM events
+        WHERE 1=1
+        ${shouldFilterTestData ? "AND status != 'test'" : ''}
+        ORDER BY display_order, start_date DESC
+      `;
+      const eventsResult = await db.execute(eventsQuery);
+      events = eventsResult.rows || [];
+    } catch (error) {
+      console.warn('Could not fetch events list:', error);
+    }
+
+    // Get ticket types with sold_count from database
+    let ticketTypes = [];
+    try {
+      const ticketTypesQuery = `
+        SELECT
+          tt.id,
+          tt.event_id,
+          tt.name,
+          tt.description,
+          tt.price_cents,
+          tt.currency,
+          tt.status,
+          tt.max_quantity,
+          tt.sold_count,
+          tt.display_order,
+          e.name as event_name,
+          e.slug as event_slug,
+          CASE
+            WHEN tt.max_quantity > 0 THEN
+              ROUND((CAST(tt.sold_count AS REAL) / CAST(tt.max_quantity AS REAL)) * 100, 2)
+            ELSE 0
+          END as availability_percentage,
+          CASE
+            WHEN tt.max_quantity > 0 THEN (tt.max_quantity - tt.sold_count)
+            ELSE NULL
+          END as remaining_quantity,
+          COALESCE(
+            (SELECT SUM(t.price_cents) FROM tickets t WHERE t.ticket_type = tt.id AND t.status = 'valid'),
+            0
+          ) as total_revenue_cents
+        FROM ticket_types tt
+        LEFT JOIN events e ON tt.event_id = e.id
+        WHERE 1=1
+        ${eventId ? 'AND tt.event_id = ?' : ''}
+        ${shouldFilterTestData ? "AND tt.status != 'test'" : ''}
+        ORDER BY tt.event_id, tt.display_order, tt.name
+      `;
+      const ticketTypesParams = eventId ? [eventId] : [];
+      const ticketTypesResult = await db.execute(ticketTypesQuery, ticketTypesParams);
+      ticketTypes = ticketTypesResult.rows || [];
+    } catch (error) {
+      console.warn('Could not fetch ticket types:', error);
+    }
+
     // Set security headers to prevent caching of admin dashboard data
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Pragma', 'no-cache');
@@ -286,6 +360,8 @@ async function handler(req, res) {
       recentRegistrations: timeUtils.enhanceApiResponse(recentRegistrations.rows || [], ['created_at']),
       ticketBreakdown: ticketBreakdown.rows || [],
       dailySales: dailySales.rows || [],
+      events: timeUtils.enhanceApiResponse(events, ['start_date', 'end_date']),
+      ticketTypes: timeUtils.enhanceApiResponse(ticketTypes, []),
       eventInfo: eventInfo ? timeUtils.enhanceApiResponse(eventInfo, ['start_date', 'end_date']) : null,
       eventId,
       hasEventFiltering: {

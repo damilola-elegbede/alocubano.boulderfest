@@ -233,6 +233,60 @@
         <h2 id="stats-heading" class="visually-hidden">Dashboard Statistics</h2>
         <div class="admin-loading">Loading statistics...</div>
       </section>
+
+      <!-- Flagged Tickets Section (Security Alert) -->
+      <div class="admin-card admin-mb-xl" id="flagged-tickets-section" style="display: none;">
+        <div class="admin-card-header" style="background: var(--color-danger-bg, #fee); border-left: 4px solid var(--color-danger, #e11d48);">
+          <h2 class="admin-card-title" style="color: var(--color-danger, #e11d48);">
+            <span style="font-size: 1.2em; margin-right: 8px;">⚠️</span>
+            Flagged Tickets - Security Review Required
+          </h2>
+          <div class="admin-card-actions">
+            <span id="flagged-tickets-count" class="admin-badge admin-badge-danger">0 flagged</span>
+          </div>
+        </div>
+        <div class="admin-card-body">
+          <div style="background: var(--color-warning-bg, #fff3cd); padding: 12px; border-radius: 4px; margin-bottom: 16px;">
+            <p style="margin: 0; color: var(--color-text-primary);">
+              <strong>Security Notice:</strong> These tickets were flagged due to suspicious webhook metadata (price tampering, invalid ticket types, etc.).
+              Review validation errors and take action.
+            </p>
+          </div>
+          <div id="flaggedTicketsTable">
+            <div class="admin-loading">Loading flagged tickets...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Events Section -->
+      <div class="admin-card admin-mb-xl" id="events-section">
+        <div class="admin-card-header">
+          <h2 class="admin-card-title">Events</h2>
+          <div class="admin-card-actions">
+            <span id="events-count" class="admin-badge">0 events</span>
+          </div>
+        </div>
+        <div class="admin-card-body">
+          <div id="eventsTable">
+            <div class="admin-loading">Loading events...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ticket Types Section -->
+      <div class="admin-card admin-mb-xl" id="ticket-types-section">
+        <div class="admin-card-header">
+          <h2 class="admin-card-title">Ticket Types & Availability</h2>
+          <div class="admin-card-actions">
+            <span id="ticket-types-count" class="admin-badge">0 types</span>
+          </div>
+        </div>
+        <div class="admin-card-body">
+          <div id="ticketTypesTable">
+            <div class="admin-loading">Loading ticket types...</div>
+          </div>
+        </div>
+      </div>
     </main>
 
     <!-- Registrations Section -->
@@ -453,6 +507,8 @@
           await fetchCSRFToken();
 
           displayStats(data.stats);
+          displayEvents(data.events || []);
+          displayTicketTypes(data.ticketTypes || []);
 
           // Remove loading states from mode toggle buttons
           const buttons = document.querySelectorAll('.mode-btn[role="radio"], .mode-option[role="radio"]');
@@ -461,6 +517,7 @@
             btn.removeAttribute('aria-busy');
           });
 
+          await loadFlaggedTickets();
           await loadRegistrations();
         } catch (error) {
           console.error("Failed to load dashboard:", error);
@@ -469,6 +526,216 @@
                 `;
         }
       }
+
+      // Load flagged tickets
+      async function loadFlaggedTickets() {
+        try {
+          const token = localStorage.getItem('adminToken');
+          if (!token) {
+            throw new Error('No authentication token found');
+          }
+
+          const response = await fetch('/api/admin/flagged-tickets?limit=50&offset=0', {
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "application/json"
+            }
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to load flagged tickets');
+          }
+
+          const data = await response.json();
+          displayFlaggedTickets(data.flaggedTickets || [], data.total || 0);
+
+        } catch (error) {
+          console.error('Failed to load flagged tickets:', error);
+          document.getElementById('flaggedTicketsTable').innerHTML = `
+            <div class="error">Failed to load flagged tickets: ${escapeHtml(error.message)}</div>
+          `;
+        }
+      }
+
+      // Display flagged tickets
+      function displayFlaggedTickets(tickets, total) {
+        const section = document.getElementById('flagged-tickets-section');
+        const table = document.getElementById('flaggedTicketsTable');
+        const countBadge = document.getElementById('flagged-tickets-count');
+
+        // Update count badge
+        countBadge.textContent = `${total} flagged`;
+
+        // Show/hide section based on whether there are flagged tickets
+        if (total === 0) {
+          section.style.display = 'none';
+          return;
+        }
+
+        section.style.display = 'block';
+
+        if (tickets.length === 0) {
+          table.innerHTML = '<p class="admin-text-center admin-p-xl">No flagged tickets to review</p>';
+          return;
+        }
+
+        // Build table
+        const rows = tickets.map(ticket => {
+          const severityClass = {
+            'critical': 'admin-badge-danger',
+            'high': 'admin-badge-warning',
+            'medium': 'admin-badge-info',
+            'low': 'admin-badge-secondary'
+          }[ticket.severity] || 'admin-badge-secondary';
+
+          const severityIcon = {
+            'critical': '🔴',
+            'high': '🟠',
+            'medium': '🟡',
+            'low': '⚪'
+          }[ticket.severity] || '⚪';
+
+          const errorsList = ticket.validation_errors && ticket.validation_errors.length > 0
+            ? ticket.validation_errors.map(err => `<li>${escapeHtml(err)}</li>`).join('')
+            : '<li>No validation errors recorded</li>';
+
+          return `
+            <tr>
+              <td>
+                <code style="background: var(--color-background-secondary); padding: 4px 8px; border-radius: 4px;">
+                  ${escapeHtml(ticket.ticket_id)}
+                </code>
+              </td>
+              <td>${escapeHtml(ticket.order_id || 'N/A')}</td>
+              <td>
+                <strong>${escapeHtml(ticket.customer_name || 'Unknown')}</strong><br>
+                <small>${escapeHtml(ticket.customer_email || 'N/A')}</small>
+              </td>
+              <td>
+                <span class="admin-badge ${severityClass}">
+                  ${severityIcon} ${escapeHtml(ticket.severity.toUpperCase())}
+                </span>
+              </td>
+              <td>
+                <button
+                  class="admin-btn admin-btn-sm admin-btn-ghost"
+                  onclick="showValidationDetails('${escapeHtml(ticket.ticket_id)}')"
+                  title="View validation errors"
+                >
+                  <span>View Details</span>
+                </button>
+                <div id="validation-details-${escapeHtml(ticket.ticket_id)}" style="display: none;">
+                  <ul style="margin: 8px 0; padding-left: 20px; font-size: 0.9em;">
+                    ${errorsList}
+                  </ul>
+                </div>
+              </td>
+              <td>${escapeHtml(ticket.created_at_display || ticket.created_at || 'N/A')}</td>
+              <td>
+                <button
+                  class="admin-btn admin-btn-sm admin-btn-success"
+                  onclick="handleFlaggedTicketAction('${escapeHtml(ticket.ticket_id)}', 'mark_safe')"
+                  title="Mark ticket as safe"
+                >
+                  <span>Mark Safe</span>
+                </button>
+                <button
+                  class="admin-btn admin-btn-sm admin-btn-danger"
+                  onclick="handleFlaggedTicketAction('${escapeHtml(ticket.ticket_id)}', 'cancel_ticket')"
+                  title="Cancel this ticket"
+                >
+                  <span>Cancel</span>
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        table.innerHTML = `
+          <div class="admin-table-responsive">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Ticket ID</th>
+                  <th>Order ID</th>
+                  <th>Customer</th>
+                  <th>Severity</th>
+                  <th>Validation Errors</th>
+                  <th>Created</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+
+      // Show validation details for a flagged ticket
+      function showValidationDetails(ticketId) {
+        const detailsDiv = document.getElementById(`validation-details-${ticketId}`);
+        if (detailsDiv) {
+          if (detailsDiv.style.display === 'none') {
+            detailsDiv.style.display = 'block';
+          } else {
+            detailsDiv.style.display = 'none';
+          }
+        }
+      }
+
+      // Handle actions on flagged tickets
+      async function handleFlaggedTicketAction(ticketId, action) {
+        const actionText = action === 'mark_safe' ? 'mark this ticket as safe' : 'cancel this ticket';
+        const confirmMessage = `Are you sure you want to ${actionText}?\n\nTicket ID: ${ticketId}`;
+
+        if (!confirm(confirmMessage)) {
+          return;
+        }
+
+        try {
+          const token = localStorage.getItem('adminToken');
+          if (!token) {
+            throw new Error('No authentication token found');
+          }
+
+          const headers = {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          };
+
+          // Add CSRF token if available
+          if (csrfToken) {
+            headers["X-CSRF-Token"] = csrfToken;
+          }
+
+          const response = await fetch(`/api/admin/flagged-tickets?ticketId=${encodeURIComponent(ticketId)}`, {
+            method: 'PUT',
+            headers: headers,
+            body: JSON.stringify({ action })
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Action failed');
+          }
+
+          const result = await response.json();
+          alert(result.message || 'Action completed successfully');
+
+          // Reload flagged tickets
+          await loadFlaggedTickets();
+
+        } catch (error) {
+          console.error('Failed to perform action on flagged ticket:', error);
+          alert(`Failed to ${actionText}: ${error.message}`);
+        }
+      }
+
+      // Make functions globally available
+      window.showValidationDetails = showValidationDetails;
+      window.handleFlaggedTicketAction = handleFlaggedTicketAction;
 
       // Make loadDashboardData available globally for event selector
       window.loadDashboardData = loadDashboardData;
@@ -543,6 +810,177 @@
                     ${isTestMode ? '<div class="test-badge">TEST</div>' : ''}
                 </div>
             `;
+      }
+
+      // Display events list
+      function displayEvents(events) {
+        const eventsTable = document.getElementById('eventsTable');
+        const eventsCount = document.getElementById('events-count');
+
+        if (!events || events.length === 0) {
+          eventsTable.innerHTML = '<div class="admin-empty-state">No events found</div>';
+          eventsCount.textContent = '0 events';
+          return;
+        }
+
+        eventsCount.textContent = `${events.length} event${events.length !== 1 ? 's' : ''}`;
+
+        // Status badge colors
+        const statusColors = {
+          'active': 'success',
+          'upcoming': 'info',
+          'completed': 'secondary',
+          'draft': 'warning',
+          'cancelled': 'danger',
+          'test': 'purple'
+        };
+
+        const rows = events.map(event => {
+          const statusColor = statusColors[event.status] || 'secondary';
+          const startDate = event.start_date ? new Date(event.start_date).toLocaleDateString() : 'TBA';
+          const endDate = event.end_date ? new Date(event.end_date).toLocaleDateString() : 'TBA';
+
+          return `
+            <tr>
+              <td><strong>${escapeHtml(event.name)}</strong></td>
+              <td>${escapeHtml(event.slug || 'N/A')}</td>
+              <td><span class="admin-badge admin-badge-${statusColor}">${escapeHtml(event.status)}</span></td>
+              <td>${escapeHtml(event.type || 'N/A')}</td>
+              <td>${startDate} - ${endDate}</td>
+              <td>${escapeHtml(event.venue_name || 'TBA')}</td>
+              <td>${event.max_capacity || 'N/A'}</td>
+            </tr>
+          `;
+        }).join('');
+
+        eventsTable.innerHTML = `
+          <div class="admin-table-responsive">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Slug</th>
+                  <th>Status</th>
+                  <th>Type</th>
+                  <th>Dates</th>
+                  <th>Venue</th>
+                  <th>Capacity</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+
+      // Display ticket types with availability
+      function displayTicketTypes(ticketTypes) {
+        const ticketTypesTable = document.getElementById('ticketTypesTable');
+        const ticketTypesCount = document.getElementById('ticket-types-count');
+
+        if (!ticketTypes || ticketTypes.length === 0) {
+          ticketTypesTable.innerHTML = '<div class="admin-empty-state">No ticket types found</div>';
+          ticketTypesCount.textContent = '0 types';
+          return;
+        }
+
+        ticketTypesCount.textContent = `${ticketTypes.length} type${ticketTypes.length !== 1 ? 's' : ''}`;
+
+        // Group by event
+        const byEvent = {};
+        ticketTypes.forEach(tt => {
+          const eventKey = tt.event_name || 'Unknown Event';
+          if (!byEvent[eventKey]) {
+            byEvent[eventKey] = [];
+          }
+          byEvent[eventKey].push(tt);
+        });
+
+        const sections = Object.entries(byEvent).map(([eventName, tickets]) => {
+          const rows = tickets.map(tt => {
+            const soldCount = tt.sold_count || 0;
+            const maxQuantity = tt.max_quantity || 0;
+            const remaining = tt.remaining_quantity || 0;
+            const percentage = tt.availability_percentage || 0;
+            const revenue = (tt.total_revenue_cents || 0) / 100;
+
+            // Determine availability color: green (>50%), yellow (25-50%), red (<25%)
+            let availabilityColor = 'success';
+            let availabilityText = 'Available';
+            if (tt.status === 'sold-out') {
+              availabilityColor = 'danger';
+              availabilityText = 'Sold Out';
+            } else if (tt.status === 'coming-soon') {
+              availabilityColor = 'info';
+              availabilityText = 'Coming Soon';
+            } else if (tt.status === 'closed') {
+              availabilityColor = 'secondary';
+              availabilityText = 'Closed';
+            } else if (tt.status === 'test') {
+              availabilityColor = 'purple';
+              availabilityText = 'Test';
+            } else if (maxQuantity > 0) {
+              if (percentage >= 75) {
+                availabilityColor = 'danger';
+                availabilityText = 'Low Stock';
+              } else if (percentage >= 50) {
+                availabilityColor = 'warning';
+                availabilityText = 'Medium Stock';
+              }
+            }
+
+            const priceDisplay = tt.price_cents ? `$${(tt.price_cents / 100).toFixed(2)}` : 'TBA';
+
+            return `
+              <tr>
+                <td><strong>${escapeHtml(tt.name)}</strong></td>
+                <td>${priceDisplay}</td>
+                <td><span class="admin-badge admin-badge-${availabilityColor}">${availabilityText}</span></td>
+                <td>${soldCount} / ${maxQuantity > 0 ? maxQuantity : '∞'}</td>
+                <td>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="flex: 1; background: #e0e0e0; height: 8px; border-radius: 4px; overflow: hidden;">
+                      <div style="width: ${percentage}%; background: ${percentage >= 75 ? '#ef4444' : percentage >= 50 ? '#f59e0b' : '#10b981'}; height: 100%;"></div>
+                    </div>
+                    <span style="min-width: 50px; text-align: right;">${percentage.toFixed(1)}%</span>
+                  </div>
+                </td>
+                <td>${maxQuantity > 0 ? remaining : 'N/A'}</td>
+                <td>$${revenue.toFixed(2)}</td>
+              </tr>
+            `;
+          }).join('');
+
+          return `
+            <div style="margin-bottom: 24px;">
+              <h3 style="margin: 16px 0 8px 0; padding: 8px 12px; background: var(--color-background-secondary); border-radius: 4px;">
+                ${escapeHtml(eventName)}
+              </h3>
+              <div class="admin-table-responsive">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Ticket Type</th>
+                      <th>Price</th>
+                      <th>Status</th>
+                      <th>Sold / Capacity</th>
+                      <th>Availability</th>
+                      <th>Remaining</th>
+                      <th>Revenue</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${rows}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        ticketTypesTable.innerHTML = sections;
       }
 
       // Switch between test and production data view

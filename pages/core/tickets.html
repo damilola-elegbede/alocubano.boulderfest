@@ -325,16 +325,17 @@
           </div>
 
           <!-- Ticket Selection Interface -->
-          <section class="ticket-selection" data-testid="ticket-options">
+          <section class="ticket-selection" data-testid="ticket-options" data-dynamic-tickets="true">
             <h2>Select Your Tickets</h2>
 
             <!-- November 2025 Weekender Tickets - Side by Side -->
+            <!-- Prices loaded dynamically from API via ticket-data-service.js -->
             <div class="ticket-options-grid">
               <!-- Full Pass Flip Card -->
               <div class="flip-card" data-testid="weekend-pass-card">
                 <div class="flip-card-inner">
                   <!-- Front of card -->
-                  <div class="flip-card-front ticket-card vertical-design" data-ticket-id="2025-11-weekender-full">
+                  <div class="flip-card-front ticket-card vertical-design" data-ticket-id="2025-11-weekender-full" data-dynamic-tickets="true">
                     <div class="ticket-header">
                       <div class="event-label">EVENT</div>
                       <div class="event-name">November 2025<br>Weekender</div>
@@ -343,7 +344,7 @@
                       <div class="ticket-type-section">
                         <div class="field-label">Ticket Type</div>
                         <div class="ticket-type">FULL PASS</div>
-                        <div class="ticket-price">Loading...</div>
+                        <div class="ticket-price" data-loading="true">Loading...</div>
                       </div>
                       <div class="ticket-details">
                         <div class="detail-row">
@@ -395,7 +396,7 @@
               <div class="flip-card" data-testid="day-pass-card">
                 <div class="flip-card-inner">
                   <!-- Front of card -->
-                  <div class="flip-card-front ticket-card vertical-design" data-ticket-id="2025-11-weekender-class">
+                  <div class="flip-card-front ticket-card vertical-design" data-ticket-id="2025-11-weekender-class" data-dynamic-tickets="true">
                     <div class="ticket-header">
                       <div class="event-label">EVENT</div>
                       <div class="event-name">November 2025<br>Weekender</div>
@@ -404,7 +405,7 @@
                       <div class="ticket-type-section">
                         <div class="field-label">Ticket Type</div>
                         <div class="ticket-type">SINGLE CLASS</div>
-                        <div class="ticket-price">Loading...</div>
+                        <div class="ticket-price" data-loading="true">Loading...</div>
                       </div>
                       <div class="ticket-details">
                         <div class="detail-row">

@@ -75,14 +75,15 @@ export async function createTestTicket(ticketData) {
   // Create the test ticket
   await client.execute(`
     INSERT INTO tickets (
-      ticket_id, transaction_id, ticket_type, event_id, price_cents,
+      ticket_id, transaction_id, ticket_type, ticket_type_id, event_id, price_cents,
       attendee_email, attendee_first_name, attendee_last_name,
       status, registration_status, is_test
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `, [
     ticketId,
     dbTransactionId,
     ticketType,
+    ticketType,  // ticket_type_id uses same value (ticket_types.id is TEXT)
     eventId,
     priceInCents,
     attendeeEmail,

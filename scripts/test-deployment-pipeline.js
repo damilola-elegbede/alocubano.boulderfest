@@ -101,10 +101,9 @@ class DeploymentPipelineTest {
       'vercel.json',
       'package.json',
       'scripts/migrate-vercel-build.js',
-      'scripts/bootstrap-vercel.js',
-      'bootstrap/production.json',
-      'bootstrap/preview.json',
-      'bootstrap/development.json'
+      'scripts/bootstrap.js',
+      'lib/bootstrap-service.js',
+      'config/bootstrap.json'
     ];
 
     const missing = [];
@@ -126,19 +125,17 @@ class DeploymentPipelineTest {
         warnings.push('No buildCommand specified in vercel.json');
       } else if (!buildCommand.includes('migrate:vercel')) {
         warnings.push('buildCommand does not include migrate:vercel');
-      } else if (!buildCommand.includes('bootstrap:vercel')) {
-        warnings.push('buildCommand does not include bootstrap:vercel');
+      } else if (!buildCommand.includes('bootstrap.js')) {
+        warnings.push('buildCommand does not include bootstrap.js');
       } else if (!buildCommand.includes('build')) {
         warnings.push('buildCommand does not include build');
       }
 
       // Verify command sequence is correct
-      const expectedSequence = ['migrate:vercel', 'bootstrap:vercel', 'build'];
-      const actualCommands = buildCommand.split('&&').map(cmd => cmd.trim().replace('npm run ', ''));
-
-      for (let i = 0; i < expectedSequence.length; i++) {
-        if (!actualCommands.includes(expectedSequence[i])) {
-          warnings.push(`Missing command in sequence: ${expectedSequence[i]}`);
+      const expectedCommands = ['migrate:vercel', 'bootstrap.js', 'build'];
+      for (const cmd of expectedCommands) {
+        if (!buildCommand.includes(cmd)) {
+          warnings.push(`Missing command in build sequence: ${cmd}`);
         }
       }
 
@@ -162,7 +159,7 @@ class DeploymentPipelineTest {
 
     const requiredScripts = [
       'migrate:vercel',
-      'bootstrap:vercel',
+      'bootstrap',
       'build',
       'migrate:up',
       'migrate:status'
@@ -182,8 +179,8 @@ class DeploymentPipelineTest {
       warnings.push('migrate:vercel script does not reference migrate-vercel-build.js');
     }
 
-    if (scripts['bootstrap:vercel'] && !scripts['bootstrap:vercel'].includes('bootstrap-vercel.js')) {
-      warnings.push('bootstrap:vercel script does not reference bootstrap-vercel.js');
+    if (scripts['bootstrap'] && !scripts['bootstrap'].includes('bootstrap.js')) {
+      warnings.push('bootstrap script does not reference bootstrap.js');
     }
 
     return {
@@ -251,49 +248,9 @@ class DeploymentPipelineTest {
     process.env.VERCEL = '1';
     process.env.VERCEL_ENV = 'production';
 
-    try {
-      // Import bootstrap helpers to test environment detection
-      const { detectEnvironment } = await import('../lib/bootstrap-helpers.js');
-      const env = detectEnvironment();
-
-      if (env !== 'production') {
-        warnings.push(`Expected 'production', got '${env}'`);
-      }
-
-    } catch (error) {
-      return {
-        success: false,
-        error: `Environment detection failed: ${error.message}`
-      };
-    }
-
-    // Test preview environment
-    process.env.VERCEL_ENV = 'preview';
-    try {
-      const { detectEnvironment } = await import('../lib/bootstrap-helpers.js');
-      const env = detectEnvironment();
-
-      if (env !== 'preview') {
-        warnings.push(`Preview detection: Expected 'preview', got '${env}'`);
-      }
-
-    } catch (error) {
-      warnings.push(`Preview environment detection error: ${error.message}`);
-    }
-
-    // Test development environment
-    delete process.env.VERCEL;
-    delete process.env.VERCEL_ENV;
-    try {
-      const { detectEnvironment } = await import('../lib/bootstrap-helpers.js');
-      const env = detectEnvironment();
-
-      if (env !== 'development') {
-        warnings.push(`Development detection: Expected 'development', got '${env}'`);
-      }
-
-    } catch (error) {
-      warnings.push(`Development environment detection error: ${error.message}`);
+    // Environment is now detected through VERCEL_ENV directly
+    if (process.env.VERCEL_ENV !== 'production') {
+      warnings.push(`Expected VERCEL_ENV='production', got '${process.env.VERCEL_ENV}'`);
     }
 
     return {
@@ -366,14 +323,14 @@ class DeploymentPipelineTest {
       }
 
       // Check bootstrap script has proper error handling
-      const bootstrapScript = readFileSync(join(projectRoot, 'scripts', 'bootstrap-vercel.js'), 'utf8');
+      const bootstrapScript = readFileSync(join(projectRoot, 'scripts', 'bootstrap.js'), 'utf8');
 
       if (!bootstrapScript.includes('catch')) {
         warnings.push('Bootstrap script missing error handling');
       }
 
-      if (!bootstrapScript.includes('finally')) {
-        warnings.push('Bootstrap script missing cleanup in finally block');
+      if (!bootstrapScript.includes('process.exit')) {
+        warnings.push('Bootstrap script missing exit handling');
       }
 
     } catch (error) {

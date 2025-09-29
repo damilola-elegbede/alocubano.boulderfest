@@ -239,9 +239,9 @@ class ProductionReadinessChecker {
     console.log('🔧 Checking Bootstrap System Files...');
 
     const bootstrapFiles = [
-      'scripts/bootstrap-vercel.js',
-      'lib/bootstrap-helpers.js',
-      'lib/bootstrap-database-helpers.js'
+      'scripts/bootstrap.js',
+      'lib/bootstrap-service.js',
+      'config/bootstrap.json'
     ];
 
     for (const file of bootstrapFiles) {
@@ -254,7 +254,7 @@ class ProductionReadinessChecker {
     }
 
     // Check if bootstrap script is executable
-    const bootstrapScript = path.join(__dirname, '../scripts/bootstrap-vercel.js');
+    const bootstrapScript = path.join(__dirname, '../scripts/bootstrap.js');
     if (this.fileExists(bootstrapScript)) {
       try {
         const stats = fs.statSync(bootstrapScript);

@@ -49,11 +49,18 @@ async function runBootstrap() {
 
   } catch (error) {
     logger.error('\n❌ Bootstrap failed!');
-    logger.error(`   Error: ${error.message}`);
 
-    if (error.stack) {
-      logger.error('\n   Stack trace:');
-      logger.error(error.stack);
+    // Check if this is a validation error and format nicely
+    if (error.message && error.message.includes('Bootstrap validation failed')) {
+      logger.error(`   ${error.message}`);
+      logger.error('\n💡 Fix the errors in config/bootstrap.json and try again.');
+    } else {
+      logger.error(`   Error: ${error.message}`);
+
+      if (error.stack && process.env.NODE_ENV !== 'production') {
+        logger.error('\n   Stack trace:');
+        logger.error(error.stack);
+      }
     }
 
     logger.log('\n' + '═'.repeat(60));
