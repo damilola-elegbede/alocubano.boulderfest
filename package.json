@@ -32,6 +32,7 @@
     "migrate:status": "node scripts/migrate.js status",
     "migrate:check": "node scripts/check-migration-status.js",
     "migrate:vercel": "node scripts/migrate-vercel-build.js",
+    "db:drop-tables": "node scripts/drop-all-tables.js",
     "bootstrap": "node scripts/bootstrap.js",
     "verify-structure": "node scripts/verify-structure.js",
     "verify-production-readiness": "node scripts/verify-production-readiness.js",
