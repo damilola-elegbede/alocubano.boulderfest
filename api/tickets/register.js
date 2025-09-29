@@ -144,18 +144,26 @@ export default async function handler(req, res) {
   try {
     const db = await getDatabaseClient();
 
-    // Fetch ticket details
+    // Fetch ticket details with event information
     const ticketResult = await db.execute({
       sql: `
         SELECT
-          ticket_id,
-          ticket_type,
-          registration_status,
-          registration_deadline,
-          transaction_id,
-          attendee_email
-        FROM tickets
-        WHERE ticket_id = ?
+          t.ticket_id,
+          t.ticket_type,
+          t.registration_status,
+          t.registration_deadline,
+          t.transaction_id,
+          t.attendee_email,
+          t.event_id,
+          e.name as event_name,
+          e.venue_name,
+          e.venue_city,
+          e.venue_state,
+          e.start_date,
+          e.end_date
+        FROM tickets t
+        LEFT JOIN events e ON t.event_id = e.id
+        WHERE t.ticket_id = ?
       `,
       args: [ticketId]
     });
@@ -307,9 +315,14 @@ export default async function handler(req, res) {
           appleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-apple.svg`,
           googleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-google.png`,
           // Event details
-          eventName: ticket.event_name || 'A Lo Cubano Boulder Fest',
-          eventDate: ticket.event_date || 'May 15-17, 2026',
-          eventLocation: ticket.event_location || 'Avalon Ballroom, Boulder, CO'
+          eventName: ticket.event_name,
+          eventDate: ticket.start_date && ticket.end_date
+            ? `${new Date(ticket.start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}-${new Date(ticket.end_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
+            : null,
+          eventLocation: `${ticket.venue_name}, ${ticket.venue_city}, ${ticket.venue_state}`,
+          venueName: ticket.venue_name,
+          venueCity: ticket.venue_city,
+          venueState: ticket.venue_state
         }
       });
 

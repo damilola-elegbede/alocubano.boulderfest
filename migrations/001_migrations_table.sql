@@ -3,7 +3,6 @@
 -- Dependencies: None (foundation table)
 
 -- Migrations tracking table for schema version control
--- Schema aligned with scripts/migrate.js to prevent column mismatch warnings
 CREATE TABLE IF NOT EXISTS migrations (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     filename TEXT NOT NULL UNIQUE,

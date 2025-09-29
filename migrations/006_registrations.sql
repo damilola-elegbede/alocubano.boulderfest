@@ -1,8 +1,8 @@
--- Migration: 004 - Registrations Table
+-- Migration: 006 - Registrations Table
 -- Purpose: User registrations table for tracking ticket holder information
--- Dependencies: 003_transactions.sql
+-- Dependencies: 004_transactions.sql
 
--- Registrations table (EXACT schema from 001_core_tables.sql)
+-- Registrations table
 CREATE TABLE IF NOT EXISTS registrations (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     ticket_id TEXT NOT NULL,

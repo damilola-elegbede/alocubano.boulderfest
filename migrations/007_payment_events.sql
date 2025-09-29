@@ -1,8 +1,8 @@
--- Migration: 005 - Payment Events Table
+-- Migration: 007 - Payment Events Table
 -- Purpose: Payment events for audit trail tracking
--- Dependencies: 003_transactions.sql
+-- Dependencies: 004_transactions.sql
 
--- Payment events for audit trail (EXACT schema from 005_payment_events.sql)
+-- Payment events for audit trail
 CREATE TABLE IF NOT EXISTS payment_events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     event_id TEXT UNIQUE NOT NULL,
@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS payment_events (
     transaction_id INTEGER REFERENCES transactions(id) ON DELETE CASCADE,
     stripe_session_id TEXT,
     stripe_payment_intent_id TEXT,
+    paypal_order_id TEXT,
+    paypal_capture_id TEXT,
     event_data TEXT NOT NULL,
     processed_at TIMESTAMP,
     processing_status TEXT DEFAULT 'pending' CHECK (
@@ -28,3 +30,5 @@ CREATE INDEX IF NOT EXISTS idx_payment_events_type ON payment_events(event_type)
 CREATE INDEX IF NOT EXISTS idx_payment_events_created_at ON payment_events(created_at);
 CREATE INDEX IF NOT EXISTS idx_payment_events_event_type_created_at ON payment_events(event_type, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_payment_events_processing_status ON payment_events(processing_status);
+CREATE INDEX IF NOT EXISTS idx_payment_events_paypal_order_id ON payment_events(paypal_order_id) WHERE paypal_order_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_payment_events_paypal_capture_id ON payment_events(paypal_capture_id) WHERE paypal_capture_id IS NOT NULL;

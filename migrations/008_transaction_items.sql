@@ -1,8 +1,8 @@
--- Migration: 006 - Transaction Items Table
+-- Migration: 008 - Transaction Items Table
 -- Purpose: Transaction line items for detailed transaction breakdown
--- Dependencies: 003_transactions.sql
+-- Dependencies: 004_transactions.sql
 
--- Transaction items (EXACT schema from 020_transaction_items.sql)
+-- Transaction items
 CREATE TABLE IF NOT EXISTS transaction_items (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     transaction_id INTEGER NOT NULL REFERENCES transactions(id) ON DELETE CASCADE,
@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS transaction_items (
         fulfillment_status IN ('pending', 'fulfilled', 'cancelled', 'refunded')
     ),
     fulfilled_at TIMESTAMP,
+    is_test INTEGER NOT NULL DEFAULT 0 CHECK (is_test IN (0, 1)),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -28,3 +29,4 @@ CREATE TABLE IF NOT EXISTS transaction_items (
 CREATE INDEX IF NOT EXISTS idx_transaction_items_transaction_id ON transaction_items(transaction_id);
 CREATE INDEX IF NOT EXISTS idx_transaction_items_type ON transaction_items(item_type);
 CREATE INDEX IF NOT EXISTS idx_transaction_items_transaction_type ON transaction_items(transaction_id, item_type);
+CREATE INDEX IF NOT EXISTS idx_transaction_items_test_mode ON transaction_items(is_test, item_type, created_at DESC);

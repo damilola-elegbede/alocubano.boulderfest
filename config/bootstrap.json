@@ -11,9 +11,16 @@
       "type": "festival",
       "status": "upcoming",
       "description": "The premier Cuban salsa festival in Boulder, featuring world-class instructors, live music, and three nights of social dancing.",
-      "venue": "Avalon Ballroom, Boulder, CO",
+      "venue_name": "Avalon Ballroom",
+      "venue_address": "6185 Arapahoe Road",
+      "venue_city": "Boulder",
+      "venue_state": "CO",
+      "venue_zip": "80303",
       "start_date": "2026-05-15",
       "end_date": "2026-05-17",
+      "max_capacity": 500,
+      "early_bird_end_date": "2026-03-01",
+      "regular_price_start_date": "2026-04-01",
       "display_order": 1,
       "is_featured": true,
       "is_visible": true
@@ -25,9 +32,16 @@
       "type": "festival",
       "status": "completed",
       "description": "The 2025 Cuban salsa festival in Boulder - featuring world-class instructors and live music.",
-      "venue": "Avalon Ballroom, Boulder, CO",
+      "venue_name": "Avalon Ballroom",
+      "venue_address": "6185 Arapahoe Road",
+      "venue_city": "Boulder",
+      "venue_state": "CO",
+      "venue_zip": "80303",
       "start_date": "2025-05-16",
       "end_date": "2025-05-18",
+      "max_capacity": 500,
+      "early_bird_end_date": "2025-03-01",
+      "regular_price_start_date": "2025-04-01",
       "display_order": 3,
       "is_featured": false,
       "is_visible": false
@@ -39,9 +53,16 @@
       "type": "weekender",
       "status": "upcoming",
       "description": "An intimate weekend of Cuban salsa workshops and social dancing in the heart of Boulder.",
-      "venue": "Boulder Theater, Boulder, CO",
+      "venue_name": "Boulder Theater",
+      "venue_address": "2032 14th Street",
+      "venue_city": "Boulder",
+      "venue_state": "CO",
+      "venue_zip": "80302",
       "start_date": "2025-11-08",
       "end_date": "2025-11-09",
+      "max_capacity": 200,
+      "early_bird_end_date": "2025-09-15",
+      "regular_price_start_date": "2025-10-01",
       "display_order": 2,
       "is_featured": true,
       "is_visible": true
@@ -53,9 +74,16 @@
       "type": "festival",
       "status": "draft",
       "description": "Test festival event for development and testing purposes only.",
-      "venue": "Test Ballroom, Boulder, CO",
+      "venue_name": "Test Ballroom",
+      "venue_address": "123 Test Street",
+      "venue_city": "Boulder",
+      "venue_state": "CO",
+      "venue_zip": "80301",
       "start_date": "2024-01-01",
       "end_date": "2024-01-03",
+      "max_capacity": 100,
+      "early_bird_end_date": "2023-12-01",
+      "regular_price_start_date": "2023-12-15",
       "display_order": 998,
       "is_featured": false,
       "is_visible": false
@@ -67,9 +95,16 @@
       "type": "weekender",
       "status": "draft",
       "description": "Test weekender event for development and testing purposes only.",
-      "venue": "Test Ballroom, Boulder, CO",
+      "venue_name": "Test Ballroom",
+      "venue_address": "123 Test Street",
+      "venue_city": "Boulder",
+      "venue_state": "CO",
+      "venue_zip": "80301",
       "start_date": "2024-01-01",
       "end_date": "2024-01-02",
+      "max_capacity": 50,
+      "early_bird_end_date": "2023-12-01",
+      "regular_price_start_date": "2023-12-15",
       "display_order": 999,
       "is_featured": false,
       "is_visible": false
@@ -84,7 +119,7 @@
       "description": "Full weekend access to workshops and socials",
       "price_cents": 6500,
       "status": "available",
-      "sort_order": 1
+      "display_order": 1
     },
     {
       "id": "2025-11-weekender-class",
@@ -93,7 +128,7 @@
       "description": "Access to one workshop session",
       "price_cents": 2500,
       "status": "available",
-      "sort_order": 2
+      "display_order": 2
     },
     {
       "id": "2026-early-bird-full",
@@ -102,7 +137,7 @@
       "description": "Special early pricing for full festival access",
       "price_cents": null,
       "status": "coming-soon",
-      "sort_order": 1
+      "display_order": 1
     },
     {
       "id": "2026-regular-full",
@@ -111,7 +146,7 @@
       "description": "Complete 3-day festival experience",
       "price_cents": null,
       "status": "coming-soon",
-      "sort_order": 2
+      "display_order": 2
     },
     {
       "id": "2026-friday-pass",
@@ -120,7 +155,7 @@
       "description": "Friday workshops and social dance",
       "price_cents": null,
       "status": "coming-soon",
-      "sort_order": 3
+      "display_order": 3
     },
     {
       "id": "2026-saturday-pass",
@@ -129,7 +164,7 @@
       "description": "Saturday workshops and social dance",
       "price_cents": null,
       "status": "coming-soon",
-      "sort_order": 4
+      "display_order": 4
     },
     {
       "id": "2026-sunday-pass",
@@ -138,7 +173,7 @@
       "description": "Sunday workshops and social dance",
       "price_cents": null,
       "status": "coming-soon",
-      "sort_order": 5
+      "display_order": 5
     },
     {
       "id": "test-basic",
@@ -147,7 +182,7 @@
       "description": "Basic test ticket for development",
       "price_cents": 100,
       "status": "test",
-      "sort_order": 1
+      "display_order": 1
     },
     {
       "id": "test-premium",
@@ -156,7 +191,7 @@
       "description": "Premium test ticket for development",
       "price_cents": 500,
       "status": "test",
-      "sort_order": 1
+      "display_order": 1
     }
   ],
 

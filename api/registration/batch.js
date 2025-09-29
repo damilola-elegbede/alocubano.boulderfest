@@ -422,8 +422,8 @@ export default async function handler(req, res) {
           email: ticket.attendee_email
         },
         registeredAt: ticket.registered_at,
-        eventName: ticket.event_name || 'A Lo Cubano Boulder Fest',
-        eventLocation: `${ticket.venue_name || 'Avalon Ballroom'}, ${ticket.venue_city || 'Boulder'}, ${ticket.venue_state || 'CO'}`
+        eventName: ticket.event_name,
+        eventLocation: `${ticket.venue_name}, ${ticket.venue_city}, ${ticket.venue_state}`
       }));
 
       return res.status(200).json({
@@ -697,7 +697,7 @@ export default async function handler(req, res) {
               lastName: task.registration.lastName,
               ticketId: task.registration.ticketId,
               ticketType: task.ticket.ticket_type,
-              orderNumber: transactionInfo ? (transactionInfo.order_number || transactionInfo.id) : 'N/A',
+              orderNumber: transactionInfo ? (transactionInfo.order_number || transactionInfo.id) : null,
               // QR code URL
               qrCodeUrl: `${baseUrl}/api/qr/generate?token=${qrToken}`,
               // Wallet pass URLs
@@ -707,16 +707,14 @@ export default async function handler(req, res) {
               appleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-apple.svg`,
               googleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-google.png`,
               // Event details
-              eventName: task.ticket.event_name || 'A Lo Cubano Boulder Fest',
+              eventName: task.ticket.event_name,
               eventDate: task.ticket.start_date && task.ticket.end_date
                 ? `${new Date(task.ticket.start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}-${new Date(task.ticket.end_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
-                : 'May 15-17, 2026',
-              eventLocation: task.ticket.venue_name && task.ticket.venue_city && task.ticket.venue_state
-                ? `${task.ticket.venue_name}, ${task.ticket.venue_city}, ${task.ticket.venue_state}`
-                : 'Avalon Ballroom, Boulder, CO',
-              venueName: task.ticket.venue_name || 'Avalon Ballroom',
-              venueCity: task.ticket.venue_city || 'Boulder',
-              venueState: task.ticket.venue_state || 'CO'
+                : null,
+              eventLocation: `${task.ticket.venue_name}, ${task.ticket.venue_city}, ${task.ticket.venue_state}`,
+              venueName: task.ticket.venue_name,
+              venueCity: task.ticket.venue_city,
+              venueState: task.ticket.venue_state
             }
           });
 
@@ -842,10 +840,10 @@ export default async function handler(req, res) {
         const ticket = processedTicketsResult.rows.find(t => t.ticket_id === result.ticketId);
         return {
           ticketId: result.ticketId,
-          ticketType: result.ticketType || ticket?.ticket_type || 'Festival Pass',
-          eventName: ticket?.event_name || 'Event',
+          ticketType: result.ticketType || ticket?.ticket_type,
+          eventName: ticket?.event_name,
           eventLocation: ticket?.venue_name && ticket?.venue_city ?
-            `${ticket.venue_name}, ${ticket.venue_city}, ${ticket.venue_state || ''}` : '',
+            `${ticket.venue_name}, ${ticket.venue_city}, ${ticket.venue_state}` : null,
           attendeeName: result.attendee?.firstName && result.attendee?.lastName ?
             `${result.attendee.firstName} ${result.attendee.lastName}` :
             (registration ? `${registration.firstName} ${registration.lastName}` : 'Name not provided'),
