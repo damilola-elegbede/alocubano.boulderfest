@@ -45,11 +45,10 @@
 
     <!-- Core Styles -->
     <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/components.css" />
     <link rel="stylesheet" href="/css/typography.css" />
-    <link rel="stylesheet" href="/css/header.css" />
-    <link rel="stylesheet" href="/css/footer.css" />
     <link rel="stylesheet" href="/css/forms.css" />
-    <link rel="stylesheet" href="/css/register.css" />
+    <link rel="stylesheet" href="/css/mobile-overrides.css" />
     <link rel="stylesheet" href="/css/theme-toggle.css" />
 
     <style>
@@ -179,42 +178,13 @@
       }
 
       .wallet-button {
-        flex: 1;
-        min-width: 200px;
-        padding: var(--space-md) var(--space-lg);
-        border-radius: 8px;
-        text-align: center;
+        display: inline-block;
         text-decoration: none;
-        font-family: var(--font-body);
-        font-size: var(--text-sm);
-        font-weight: 600;
-        transition: all 0.2s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: var(--space-sm);
+        transition: opacity 0.2s ease;
       }
 
-      .wallet-button.apple {
-        background: #000;
-        color: #fff;
-        border: 1px solid #000;
-      }
-
-      .wallet-button.apple:hover {
-        background: #333;
-        border-color: #333;
-      }
-
-      .wallet-button.google {
-        background: #4285f4;
-        color: #fff;
-        border: 1px solid #4285f4;
-      }
-
-      .wallet-button.google:hover {
-        background: #357ae8;
-        border-color: #357ae8;
+      .wallet-button:hover {
+        opacity: 0.8;
       }
 
       .loading-state {
@@ -339,40 +309,148 @@
       window.timeManager = timeManager; // Make available globally for the main script
     </script>
   </head>
-  <body>
-    <!-- Main Header -->
-    <header class="main-header">
+  <body class="typographic">
+    <!-- Skip Links for Accessibility -->
+    <a
+      href="#main-content"
+      class="skip-link"
+      style="
+        position: absolute;
+        top: -40px;
+        left: 0;
+        background: var(--color-black);
+        color: var(--color-white);
+        padding: 8px;
+        text-decoration: none;
+        z-index: 1000;
+        transition: top 0.3s;
+      "
+      >Skip to main content</a
+    >
+    <a
+      href="#navigation"
+      class="skip-link"
+      style="
+        position: absolute;
+        top: -40px;
+        left: 0;
+        background: var(--color-black);
+        color: var(--color-white);
+        padding: 8px;
+        text-decoration: none;
+        z-index: 1000;
+        transition: top 0.3s;
+      "
+      >Skip to navigation</a
+    >
+
+    <header class="header" id="navigation">
       <div class="container">
-        <div class="header-content-type">
-          <a href="/" class="logo">
-            <img
-              src="/images/logo.png"
-              alt="A Lo Cubano Boulder Fest"
-              width="120"
-              height="60"
-            />
-          </a>
-          <nav class="main-nav" id="main-nav">
-            <ul>
-              <li><a href="/">Home</a></li>
-              <li><a href="/about">About</a></li>
-              <li><a href="/artists">Artists</a></li>
-              <li><a href="/schedule">Schedule</a></li>
-              <li><a href="/tickets">Tickets</a></li>
-              <li><a href="/gallery">Gallery</a></li>
+        <div class="grid">
+          <div class="header-left">
+            <a href="/home" class="logo-link" aria-label="Go to home page">
+              <img
+                src="/images/logo.png"
+                alt="A Lo Cubano Boulder Fest Logo"
+                class="site-logo"
+                data-light-src="/images/logo.png"
+                data-dark-src="/images/logo-dark.png"
+              />
+              <div class="logo-text">
+                <span class="logo-main">A LO CUBANO</span>
+                <span class="logo-separator">|</span>
+                <span class="logo-sub">Boulder Fest</span>
+              </div>
+            </a>
+          </div>
+          <nav class="main-nav">
+            <button
+              class="menu-toggle"
+              aria-label="Toggle menu"
+              aria-expanded="false"
+              aria-controls="main-navigation"
+            >
+              <div class="menu-icon">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </button>
+            <ul class="nav-list" id="main-navigation">
+              <li>
+                <a href="/home" class="nav-link" data-text="Home">Home</a>
+              </li>
+              <li>
+                <a href="/about" class="nav-link" data-text="About">About</a>
+              </li>
+              <li class="nav-item has-dropdown">
+                <button
+                  class="nav-trigger"
+                  aria-expanded="false"
+                  aria-haspopup="true"
+                  data-dropdown="events"
+                  data-text="Events"
+                >
+                  Events
+                  <span class="dropdown-arrow" aria-hidden="true">▼</span>
+                </button>
+                <ul
+                  class="dropdown-menu"
+                  aria-hidden="true"
+                  role="menu"
+                  data-dropdown-content="events"
+                >
+                  <li class="dropdown-category" role="group">
+                    <span class="dropdown-category-title" role="presentation"
+                      >Boulder Fest</span
+                    >
+                    <ul class="dropdown-submenu">
+                      <li>
+                        <a
+                          href="/boulder-fest-2026"
+                          class="dropdown-link"
+                          role="menuitem"
+                          data-event="boulder-fest-2026"
+                          data-event-status="upcoming"
+                          >2026 Festival</a
+                        >
+                      </li>
+                      <li>
+                        <a
+                          href="/boulder-fest-2025"
+                          class="dropdown-link"
+                          role="menuitem"
+                          data-event="boulder-fest-2025"
+                          data-event-status="current"
+                          >2025 Festival</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+              <li>
+                <a href="/tickets" class="nav-link" data-text="Tickets"
+                  >Tickets</a
+                >
+              </li>
+              <li>
+                <a href="/donations" class="nav-link" data-text="Donate"
+                  >Donate</a
+                >
+              </li>
+              <li>
+                <a href="/contact" class="nav-link" data-text="Contact"
+                  >Contact</a
+                >
+              </li>
             </ul>
           </nav>
-          <button class="mobile-menu-toggle" id="mobile-menu-toggle">
-            <span></span>
-            <span></span>
-            <span></span>
-          </button>
-          <a href="/tickets" class="header-cta-type">Get Tickets</a>
         </div>
       </div>
     </header>
 
-    <main>
+    <main id="main-content">
       <div class="view-tickets-container">
         <!-- Loading State -->
         <div id="loading-state" class="loading-state">
@@ -475,16 +553,23 @@
       </div>
     </footer>
 
-    <!-- Mobile Menu Script -->
-    <script src="/js/mobile-menu.js"></script>
+    <!-- Scripts -->
+    <script src="/js/navigation.js"></script>
+    <script src="/js/main.js"></script>
+    <script src="/js/typography.js"></script>
 
-    <!-- Theme Toggle -->
+    <!-- Theme Management -->
     <script type="module">
       import { initializeThemeToggle } from '/js/theme-toggle.js';
+      import themeManager from '/js/theme-manager.js';
+
+      // Initialize theme system
       document.addEventListener('DOMContentLoaded', () => {
+        themeManager.initializeTheme();
         initializeThemeToggle('#theme-toggle-container');
       });
     </script>
+    <script src="/js/logo-switcher.js"></script>
 
     <script>
       class TicketViewer {
@@ -613,21 +698,16 @@
 
               <div class="wallet-section">
                 <a href="/api/tickets/apple-wallet/${ticket.ticketId}"
-                   class="wallet-button apple">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
-                  </svg>
-                  Add to Apple Wallet
+                   class="wallet-button">
+                  <img src="/images/add-to-wallet-apple.svg"
+                       alt="Add to Apple Wallet"
+                       style="height: 40px; width: auto;">
                 </a>
                 <a href="/api/tickets/google-wallet/${ticket.ticketId}"
-                   class="wallet-button google">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                  </svg>
-                  Add to Google Pay
+                   class="wallet-button">
+                  <img src="/images/add-to-wallet-google.png"
+                       alt="Add to Google Pay"
+                       style="height: 40px; width: auto;">
                 </a>
               </div>
             ` : `
