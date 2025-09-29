@@ -98,7 +98,7 @@ images/screenshots/
 # Public duplicates (keep root dirs)
 public/css/
 public/js/
-public/images/
+# Note: public/images/ is needed for wallet buttons and other assets
 
 # API test and debug files (reduce bundle analysis)
 api/**/*.test.js

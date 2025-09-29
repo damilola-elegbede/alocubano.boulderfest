@@ -3,7 +3,7 @@
   "framework": null,
   "cleanUrls": true,
   "trailingSlash": false,
-  "buildCommand": "(npm run migrate:vercel & npm run bootstrap:vercel) && npm run build",
+  "buildCommand": "npm run migrate:vercel && node scripts/bootstrap.js && npm run build",
   "functions": {
     "api/docs.js": {
       "maxDuration": 10

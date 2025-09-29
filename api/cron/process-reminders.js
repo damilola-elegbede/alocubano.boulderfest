@@ -1,126 +1,67 @@
 /**
  * Cron job to process and send registration reminder emails
- * Runs every 10 minutes to send reminders for unregistered tickets
+ * Runs every 10 minutes to send scheduled reminders from registration_reminders table
  */
 
-import { getDatabaseClient } from '../../lib/database.js';
+import { getReminderScheduler } from '../../lib/reminder-scheduler.js';
 import { getTicketEmailService } from '../../lib/ticket-email-service-brevo.js';
 
 export default async function handler(req, res) {
   console.log('[CRON] Starting registration reminder processing at', new Date().toISOString());
 
   try {
-    const db = await getDatabaseClient();
+    const scheduler = getReminderScheduler();
+    await scheduler.ensureInitialized();
     const emailService = getTicketEmailService();
 
-    // For testing: Get ANY pending (unregistered) tickets that need reminders
-    // This will send reminders every 10 minutes regardless of deadline timing
-    const pendingTickets = await db.execute({
-      sql: `
-        SELECT DISTINCT
-          t.ticket_id,
-          t.transaction_id,
-          t.attendee_email,
-          t.attendee_first_name,
-          t.attendee_last_name,
-          t.registration_deadline,
-          t.ticket_type,
-          tx.order_number,
-          tx.customer_email,
-          tx.customer_name,
-          tx.registration_token,
-          tx.uuid as transaction_uuid,
-          -- Calculate hours until deadline
-          CAST((julianday(t.registration_deadline) - julianday('now')) * 24 AS INTEGER) as hours_remaining
-        FROM tickets t
-        JOIN transactions tx ON t.transaction_id = tx.id
-        WHERE t.registration_status = 'pending'
-        AND t.registration_deadline > datetime('now')
-        AND tx.customer_email IS NOT NULL
-        -- Exclude tickets that got a reminder in the last 9 minutes to avoid spam
-        AND NOT EXISTS (
-          SELECT 1 FROM registration_reminders r
-          WHERE r.ticket_id = t.ticket_id
-          AND r.status = 'sent'
-          AND r.updated_at > datetime('now', '-9 minutes')
-        )
-        LIMIT 10
-      `,
-      args: []
-    });
+    // Get pending reminders that are due to be sent (scheduled_at <= now)
+    const pendingReminders = await scheduler.getPendingReminders(10); // Process 10 at a time
 
-    console.log(`[CRON] Found ${pendingTickets.rows.length} pending tickets needing reminders`);
+    console.log(`[CRON] Found ${pendingReminders.length} pending reminders to send`);
 
     let sent = 0;
     let failed = 0;
 
-    for (const ticket of pendingTickets.rows) {
+    for (const reminder of pendingReminders) {
       try {
-        console.log(`[CRON] Processing reminder for ticket ${ticket.ticket_id}`);
+        console.log(`[CRON] Processing ${reminder.reminder_type} reminder for ticket ${reminder.ticket_id}`);
 
-        // Determine reminder type based on hours remaining
-        let reminderType = 'standard';
-        if (ticket.hours_remaining <= 2) {
-          reminderType = 'final';
-        } else if (ticket.hours_remaining <= 24) {
-          reminderType = '24hr';
-        } else if (ticket.hours_remaining <= 48) {
-          reminderType = '48hr';
-        } else if (ticket.hours_remaining <= 72) {
-          reminderType = '72hr';
-        }
+        // Calculate hours until deadline for email context
+        const deadline = new Date(reminder.registration_deadline);
+        const now = new Date();
+        const hoursRemaining = Math.max(0, Math.floor((deadline - now) / (1000 * 60 * 60)));
 
-        console.log(`[CRON] Sending ${reminderType} reminder for ticket ${ticket.ticket_id} to ${ticket.customer_email}`);
+        console.log(`[CRON] Sending ${reminder.reminder_type} reminder for ticket ${reminder.ticket_id} to ${reminder.customer_email}`);
 
-        // Send the reminder email
+        // Send the reminder email using the reminder_type from the database
         await emailService.sendRegistrationReminder({
-          ticketId: ticket.ticket_id,
-          transactionId: ticket.transaction_uuid,
-          customerEmail: ticket.customer_email,
-          customerName: ticket.customer_name,
-          reminderType: reminderType,
-          registrationToken: ticket.registration_token,
-          orderNumber: ticket.order_number,
-          hoursRemaining: ticket.hours_remaining,
+          ticketId: reminder.ticket_id,
+          transactionId: reminder.transaction_id,
+          customerEmail: reminder.customer_email,
+          customerName: reminder.customer_name,
+          reminderType: reminder.reminder_type, // Use type from scheduled reminder
+          registrationToken: reminder.registration_token,
+          orderNumber: reminder.order_number || 'N/A',
+          hoursRemaining: hoursRemaining,
           ticketsRemaining: 1 // For now, sending individual reminders
         });
 
-        // Record that we sent this reminder
-        await db.execute({
-          sql: `
-            INSERT OR REPLACE INTO registration_reminders (
-              ticket_id,
-              reminder_type,
-              scheduled_at,
-              status,
-              sent_at,
-              updated_at
-            ) VALUES (?, ?, datetime('now'), 'sent', datetime('now'), datetime('now'))
-          `,
-          args: [ticket.ticket_id, reminderType]
-        });
+        // Mark reminder as sent
+        await scheduler.markReminderSent(reminder.id, true, null);
 
         sent++;
-        console.log(`[CRON] Successfully sent reminder for ticket ${ticket.ticket_id}`);
+        console.log(`[CRON] Successfully sent ${reminder.reminder_type} reminder for ticket ${reminder.ticket_id}`);
 
       } catch (error) {
-        console.error(`[CRON] Failed to send reminder for ticket ${ticket.ticket_id}:`, error);
+        console.error(`[CRON] Failed to send reminder for ticket ${reminder.ticket_id}:`, error);
         failed++;
 
-        // Record the failure
-        await db.execute({
-          sql: `
-            INSERT OR REPLACE INTO registration_reminders (
-              ticket_id,
-              reminder_type,
-              scheduled_at,
-              status,
-              error_message,
-              updated_at
-            ) VALUES (?, 'failed', datetime('now'), 'failed', ?, datetime('now'))
-          `,
-          args: [ticket.ticket_id, error.message]
-        });
+        // Mark reminder as failed
+        try {
+          await scheduler.markReminderSent(reminder.id, false, error.message);
+        } catch (markError) {
+          console.error(`[CRON] Failed to mark reminder as failed:`, markError);
+        }
       }
     }
 
