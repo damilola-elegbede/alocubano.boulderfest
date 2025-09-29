@@ -1,4 +1,4 @@
-import appleWalletService from "../../lib/apple-wallet-service.js";
+import appleWalletService from "../../../lib/apple-wallet-service.js";
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
