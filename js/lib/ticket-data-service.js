@@ -83,16 +83,16 @@ class TicketDataService {
 
             this.lastFetch = Date.now();
 
-            console.log(`✅ Loaded ${data.tickets.length} ticket types from API`);
+            // Successfully loaded ticket types from API
 
             return data.tickets;
 
-        } catch (error) {
-            console.error('❌ Failed to fetch ticket data:', error);
+        } catch {
+            // Failed to fetch ticket data - using fallback
 
             // Load fallback data for robustness
             this._loadFallbackTickets();
-            console.log('🔄 Using fallback ticket data due to API failure');
+            // Using fallback ticket data due to API failure
 
             return Array.from(this.cache.values());
         }
@@ -168,8 +168,7 @@ class TicketDataService {
         const eventId = this.ticketTypeToEventMap.get(ticketType);
 
         if (!eventId) {
-            console.error(`❌ No event mapping found for ticket type: ${ticketType}`);
-            console.error('Available ticket types:', Array.from(this.ticketTypeToEventMap.keys()));
+            // No event mapping found for ticket type
             throw new Error(`No event mapping found for ticket type: ${ticketType}`);
         }
 
@@ -236,7 +235,7 @@ class TicketDataService {
         const ticketTypesOnPage = await this.getTicketTypesOnPage();
 
         if (ticketTypesOnPage.length === 0) {
-            console.warn('No ticket types found on page, falling back to default');
+            // No ticket types found on page, using default
             return 1; // Default to boulderfest-2026 (event ID: 1)
         }
 
@@ -251,7 +250,7 @@ class TicketDataService {
                 const id = await this.getEventIdFromTicketType(ticketType);
                 eventIds.push(id);
             } catch (error) {
-                console.error(`Failed to map ticket type ${ticketType}:`, error.message);
+                // Failed to map ticket type - continuing with validation
                 throw error;
             }
         }
@@ -261,7 +260,7 @@ class TicketDataService {
             throw new Error(`Mixed events on page! Found tickets for events: ${uniqueEventIds.join(', ')}`);
         }
 
-        console.log(`✅ Detected event ID: ${eventId} from ${ticketTypesOnPage.length} ticket types`);
+        // Successfully detected event ID from page ticket types
         return eventId;
     }
 
@@ -290,7 +289,7 @@ class TicketDataService {
         this.ticketTypeToEventMap.clear();
         this.lastFetch = null;
         this.loadPromise = null;
-        console.log('🔄 Ticket data cache invalidated');
+        // Ticket data cache invalidated
     }
 
     /**

@@ -152,7 +152,7 @@ class EventsService {
 
             return this;
 
-        } catch (error) {
+        } catch {
             // Failed to initialize events service - using fallback
 
             // Fallback to hardcoded data for robustness
