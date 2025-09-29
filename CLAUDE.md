@@ -201,63 +201,82 @@ const toggle = initializeThemeToggle('#theme-toggle-container');
 
 ## Environment Variables
 
-Required in `.env.local`:
+### Single Source of Truth: Vercel Dashboard
+
+All environment variables are configured in the Vercel Dashboard and automatically pulled during development and deployment. This eliminates the need for local `.env` files and ensures consistency across all environments.
+
+### Configuration Approach
+
+- **Development**: `vercel dev` automatically pulls environment variables from Vercel Dashboard
+- **Production**: Vercel deployment uses Dashboard configuration
+- **No local .env files**: All configuration lives in Vercel Dashboard
+
+### Required Environment Variables
+
+Configure these in your Vercel Dashboard (Settings → Environment Variables):
 
 ```bash
 # Email
-BREVO_API_KEY=
-BREVO_NEWSLETTER_LIST_ID=
-BREVO_WEBHOOK_SECRET=
+BREVO_API_KEY=                                # Brevo API key for email services
+BREVO_NEWSLETTER_LIST_ID=                     # Newsletter list identifier
+BREVO_WEBHOOK_SECRET=                         # Webhook security token
 
 # Registration Email Templates
-BREVO_PURCHASER_CONFIRMATION_TEMPLATE_ID=    # Individual purchaser confirmation
-BREVO_ATTENDEE_CONFIRMATION_TEMPLATE_ID=     # Individual attendee confirmation
-BREVO_BATCH_REGISTRATION_TEMPLATE_ID=        # Comprehensive batch registration summary (optional)
+BREVO_PURCHASER_CONFIRMATION_TEMPLATE_ID=     # Individual purchaser confirmation
+BREVO_ATTENDEE_CONFIRMATION_TEMPLATE_ID=      # Individual attendee confirmation
+BREVO_BATCH_REGISTRATION_TEMPLATE_ID=         # Comprehensive batch registration summary (optional)
 
 # Payments
-STRIPE_PUBLISHABLE_KEY=
-STRIPE_SECRET_KEY=
-STRIPE_WEBHOOK_SECRET=
+STRIPE_PUBLISHABLE_KEY=                       # Stripe publishable key
+STRIPE_SECRET_KEY=                            # Stripe secret key
+STRIPE_WEBHOOK_SECRET=                        # Stripe webhook signing secret
 
 # Database
-TURSO_DATABASE_URL=      # Production only (required for E2E tests)
-TURSO_AUTH_TOKEN=        # Production only (required for E2E tests)
+TURSO_DATABASE_URL=                           # Production database URL (required for E2E tests)
+TURSO_AUTH_TOKEN=                             # Production database auth token (required for E2E tests)
 
 # Admin
-ADMIN_PASSWORD=          # bcrypt hash
-ADMIN_SECRET=            # min 32 chars
+ADMIN_PASSWORD=                               # bcrypt hash for admin authentication
+ADMIN_SECRET=                                 # JWT signing secret (min 32 chars)
 
 # Registration System
-REGISTRATION_SECRET=     # min 32 chars - JWT signing for ticket registration tokens
+REGISTRATION_SECRET=                          # JWT signing for ticket registration tokens (min 32 chars)
 
 # Wallet Passes
-APPLE_PASS_KEY=          # base64 encoded
-WALLET_AUTH_SECRET=      # JWT signing
+APPLE_PASS_KEY=                               # base64 encoded Apple Pass certificate
+WALLET_AUTH_SECRET=                           # JWT signing secret for wallet authentication
 
 # Google Drive Integration (optional)
-GOOGLE_DRIVE_API_KEY=    # Google Cloud API key with Drive API enabled
-GOOGLE_DRIVE_FOLDER_ID=  # Google Drive folder ID containing gallery images
+GOOGLE_DRIVE_API_KEY=                         # Google Cloud API key with Drive API enabled
+GOOGLE_DRIVE_FOLDER_ID=                       # Google Drive folder ID containing gallery images
 
 # Internal APIs Security
-INTERNAL_API_KEY=        # API key for secure internal operations (cache management)
+INTERNAL_API_KEY=                             # API key for secure internal operations (cache management)
 
 # Testing (optional)
-TEST_ADMIN_PASSWORD=     # Plain text password for admin panel E2E testing (not bcrypt hashed)
+TEST_ADMIN_PASSWORD=                          # Plain text password for admin panel E2E testing (not bcrypt hashed)
 
 # Timeout Configuration (optional - for CI/CD flexibility)
-E2E_STARTUP_TIMEOUT=     # Server startup timeout in ms (default: 60000)
-E2E_TEST_TIMEOUT=        # Individual test timeout in ms (default: varies by scenario)
-E2E_ACTION_TIMEOUT=      # Action timeout (clicks, inputs) in ms (default: varies by scenario)
-E2E_NAVIGATION_TIMEOUT=  # Page navigation timeout in ms (default: varies by scenario)
-E2E_WEBSERVER_TIMEOUT=   # Webserver startup timeout in ms (default: varies by scenario)
-E2E_EXPECT_TIMEOUT=      # Expect assertion timeout in ms (default: varies by scenario)
-E2E_HEALTH_CHECK_INTERVAL= # Health check interval in ms (default: 2000)
-VITEST_TEST_TIMEOUT=     # Vitest test timeout in ms (default: varies by environment)
-VITEST_HOOK_TIMEOUT=     # Vitest hook timeout in ms (default: varies by environment)
-VITEST_SETUP_TIMEOUT=    # Vitest setup timeout in ms (default: 10000)
-VITEST_CLEANUP_TIMEOUT=  # Vitest cleanup timeout in ms (default: 5000)
-VITEST_REQUEST_TIMEOUT=  # HTTP request timeout in ms (default: 30000)
+E2E_STARTUP_TIMEOUT=                          # Server startup timeout in ms (default: 60000)
+E2E_TEST_TIMEOUT=                             # Individual test timeout in ms (default: varies by scenario)
+E2E_ACTION_TIMEOUT=                           # Action timeout (clicks, inputs) in ms (default: varies by scenario)
+E2E_NAVIGATION_TIMEOUT=                       # Page navigation timeout in ms (default: varies by scenario)
+E2E_WEBSERVER_TIMEOUT=                        # Webserver startup timeout in ms (default: varies by scenario)
+E2E_EXPECT_TIMEOUT=                           # Expect assertion timeout in ms (default: varies by scenario)
+E2E_HEALTH_CHECK_INTERVAL=                    # Health check interval in ms (default: 2000)
+VITEST_TEST_TIMEOUT=                          # Vitest test timeout in ms (default: varies by environment)
+VITEST_HOOK_TIMEOUT=                          # Vitest hook timeout in ms (default: varies by environment)
+VITEST_SETUP_TIMEOUT=                         # Vitest setup timeout in ms (default: 10000)
+VITEST_CLEANUP_TIMEOUT=                       # Vitest cleanup timeout in ms (default: 5000)
+VITEST_REQUEST_TIMEOUT=                       # HTTP request timeout in ms (default: 30000)
 ```
+
+### Environment Variable Management
+
+- **Setup**: Configure variables once in Vercel Dashboard
+- **Development**: Run `vercel dev` to automatically pull configuration
+- **CI/CD**: GitHub Actions inherits variables from Vercel project
+- **Security**: Sensitive values never stored in repository
 
 ## API Endpoints
 
