@@ -64,7 +64,28 @@ CREATE TABLE IF NOT EXISTS tickets_new (
 );
 
 -- Step 2: Copy all data from old table to new table
-INSERT INTO tickets_new SELECT * FROM tickets;
+-- Handle potential validation_status values that don't match constraint
+-- Normalize any invalid validation_status to 'active' (safe default)
+INSERT INTO tickets_new
+SELECT
+    id, ticket_id, transaction_id, ticket_type, event_id, event_date,
+    price_cents, attendee_first_name, attendee_last_name, attendee_email,
+    attendee_phone, status, validation_code, cancellation_reason, qr_token,
+    qr_code_generated_at, scan_count, max_scan_count, first_scanned_at,
+    last_scanned_at, qr_access_method, wallet_source, registration_status,
+    registered_at, registration_deadline, validation_signature, qr_code_data,
+    apple_pass_serial, google_pass_id, wallet_pass_generated_at,
+    wallet_pass_updated_at, wallet_pass_revoked_at, wallet_pass_revoked_reason,
+    checked_in_at, checked_in_by, check_in_location, ticket_metadata,
+    created_at, updated_at,
+    -- Normalize validation_status: only keep valid values, default to 'active'
+    CASE
+        WHEN validation_status IN ('active', 'invalidated', 'suspicious', 'expired')
+        THEN validation_status
+        ELSE 'active'
+    END as validation_status,
+    event_end_date, is_test, ticket_type_id
+FROM tickets;
 
 -- Step 3: Drop old table
 DROP TABLE tickets;
