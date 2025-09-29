@@ -5,7 +5,7 @@
 
   "events": [
     {
-      "id": 1,
+      "id": 3,
       "name": "A Lo Cubano Boulder Fest 2026",
       "slug": "boulderfest-2026",
       "type": "festival",
@@ -19,7 +19,7 @@
       "is_visible": true
     },
     {
-      "id": 4,
+      "id": 1,
       "name": "A Lo Cubano Boulder Fest 2025",
       "slug": "boulderfest-2025",
       "type": "festival",
@@ -33,7 +33,7 @@
       "is_visible": false
     },
     {
-      "id": 5,
+      "id": 2,
       "name": "November Salsa Weekender 2025",
       "slug": "weekender-2025-11",
       "type": "weekender",
@@ -47,7 +47,7 @@
       "is_visible": true
     },
     {
-      "id": -1,
+      "id": -2,
       "name": "Test Festival",
       "slug": "test-festival",
       "type": "festival",
@@ -61,7 +61,7 @@
       "is_visible": false
     },
     {
-      "id": -2,
+      "id": -1,
       "name": "Test Weekender",
       "slug": "test-weekender",
       "type": "weekender",
@@ -79,7 +79,7 @@
   "ticket_types": [
     {
       "id": "2025-11-weekender-full",
-      "event_id": 5,
+      "event_id": 2,
       "name": "Full Pass",
       "description": "Full weekend access to workshops and socials",
       "price_cents": 6500,
@@ -88,7 +88,7 @@
     },
     {
       "id": "2025-11-weekender-class",
-      "event_id": 5,
+      "event_id": 2,
       "name": "Single Class",
       "description": "Access to one workshop session",
       "price_cents": 2500,
@@ -97,7 +97,7 @@
     },
     {
       "id": "2026-early-bird-full",
-      "event_id": 1,
+      "event_id": 3,
       "name": "Early Bird Full Pass",
       "description": "Special early pricing for full festival access",
       "price_cents": null,
@@ -106,7 +106,7 @@
     },
     {
       "id": "2026-regular-full",
-      "event_id": 1,
+      "event_id": 3,
       "name": "Full Festival Pass",
       "description": "Complete 3-day festival experience",
       "price_cents": null,
@@ -115,7 +115,7 @@
     },
     {
       "id": "2026-friday-pass",
-      "event_id": 1,
+      "event_id": 3,
       "name": "Friday Pass",
       "description": "Friday workshops and social dance",
       "price_cents": null,
@@ -124,7 +124,7 @@
     },
     {
       "id": "2026-saturday-pass",
-      "event_id": 1,
+      "event_id": 3,
       "name": "Saturday Pass",
       "description": "Saturday workshops and social dance",
       "price_cents": null,
@@ -133,7 +133,7 @@
     },
     {
       "id": "2026-sunday-pass",
-      "event_id": 1,
+      "event_id": 3,
       "name": "Sunday Pass",
       "description": "Sunday workshops and social dance",
       "price_cents": null,
@@ -142,7 +142,7 @@
     },
     {
       "id": "test-basic",
-      "event_id": -1,
+      "event_id": -2,
       "name": "Test Basic Ticket",
       "description": "Basic test ticket for development",
       "price_cents": 100,
@@ -151,7 +151,7 @@
     },
     {
       "id": "test-premium",
-      "event_id": -2,
+      "event_id": -1,
       "name": "Test Premium Ticket",
       "description": "Premium test ticket for development",
       "price_cents": 500,
