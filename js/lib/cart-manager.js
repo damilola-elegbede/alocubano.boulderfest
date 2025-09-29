@@ -3,7 +3,7 @@
  * Handles all cart operations across tickets and donations
  */
 import { getAnalyticsTracker } from './analytics-tracker.js';
-import { CartExpirationManager, CART_TIMEOUT, formatTimeRemaining } from './cart-expiration-manager.js';
+import { CartExpirationManager } from './cart-expiration-manager.js';
 import { cleanCartState } from './pure/cart-persistence.js';
 
 // Development-only logging utility

@@ -307,7 +307,7 @@ export class CartExpirationManager {
         const ticketCount = expired.expiredTickets.length;
         const donationCount = expired.expiredDonations.length;
 
-        let message = 'Some items in your cart have expired and been removed: ';
+        // Prepare notification message for UI system
         const items = [];
 
         if (ticketCount > 0) {
@@ -317,21 +317,17 @@ export class CartExpirationManager {
             items.push(`${donationCount} donation${donationCount > 1 ? 's' : ''}`);
         }
 
-        message += items.join(' and ');
-
-        // Show notification (you can customize this based on your UI)
-        if (typeof window !== 'undefined' && window.alert) {
-            // For now, use alert. In production, use a better notification system
-            console.info(message);
-        }
+        // Message format: 'Some items in your cart have expired and been removed: X tickets and Y donations'
+        // Consider implementing a toast notification system in the UI layer
     }
 
     /**
      * Show expiring items notification
      */
-    showExpiringNotification(warnings) {
-        const message = `${warnings.length} item${warnings.length > 1 ? 's' : ''} in your cart will expire soon!`;
-        console.info(message, warnings);
+    showExpiringNotification() {
+        // Message format: 'X item(s) in your cart will expire soon!'
+        // Consider implementing a toast notification system in the UI layer
+        // Expiration warnings tracked in this.expirationWarnings
     }
 
     /**
@@ -348,8 +344,8 @@ export class CartExpirationManager {
      * Show checkout warning notification
      */
     showCheckoutWarningNotification() {
-        const message = 'Your checkout session will expire in 1 minute!';
-        console.warn(message);
+        // Message: 'Your checkout session will expire in 1 minute!'
+        // Consider implementing a toast notification system in the UI layer
     }
 
     /**
