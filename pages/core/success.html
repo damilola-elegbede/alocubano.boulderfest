@@ -322,7 +322,10 @@
       /* Registration button styles removed */
 
       .loading-state {
-        display: none;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 400px;
       }
 
       .error-state {
@@ -1001,21 +1004,36 @@
           mainMessage.parentNode.insertBefore(testModeIndicator, mainMessage.nextSibling);
         }
 
-        // Clear the cart as instructed by the API
+        // Clear the cart and end checkout session as instructed by the API
         if (data.instructions?.clearCart) {
-          localStorage.removeItem("alocubano_cart");
-          // Dispatch storage event for cross-tab sync
-          window.dispatchEvent(
-            new StorageEvent("storage", {
-              key: "alocubano_cart",
-              oldValue: localStorage.getItem("alocubano_cart"),
-              newValue: null,
-              url: window.location.href,
-              storageArea: localStorage,
-            }),
-          );
-          // Dispatch custom event
-          window.dispatchEvent(new Event("cartCleared"));
+          // Use cart manager to properly end checkout session and clear cart
+          if (window.cartManager) {
+            // End checkout session (marking as completed = true)
+            window.cartManager.endCheckoutSession(true)
+              .then(() => {
+                console.log('Checkout session ended and cart cleared successfully');
+              })
+              .catch(error => {
+                console.error('Error ending checkout session:', error);
+                // Fallback to direct localStorage clear if cart manager fails
+                localStorage.removeItem("alocubano_cart");
+              });
+          } else {
+            // Fallback if cart manager is not available
+            localStorage.removeItem("alocubano_cart");
+            // Dispatch storage event for cross-tab sync
+            window.dispatchEvent(
+              new StorageEvent("storage", {
+                key: "alocubano_cart",
+                oldValue: localStorage.getItem("alocubano_cart"),
+                newValue: null,
+                url: window.location.href,
+                storageArea: localStorage,
+              }),
+            );
+            // Dispatch custom event
+            window.dispatchEvent(new Event("cartCleared"));
+          }
         }
 
       }
@@ -1135,12 +1153,18 @@
     <script type="module">
       import { initializeThemeToggle } from '/js/theme-toggle.js';
       import themeManager from '/js/theme-manager.js';
+      import { getCartManager } from '/js/lib/cart-manager.js';
 
       // Initialize theme system
       document.addEventListener('DOMContentLoaded', () => {
         themeManager.initializeTheme();
         initializeThemeToggle('#theme-toggle-container');
       });
+
+      // Make cart manager available globally for the success page script
+      window.cartManager = getCartManager();
+      // Initialize cart manager
+      window.cartManager.initialize().catch(console.error);
     </script>
     <script src="/js/logo-switcher.js"></script>
   </body>

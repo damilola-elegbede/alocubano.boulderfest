@@ -3,7 +3,20 @@
  *
  * Extracted from CartManager for unit testing.
  * These functions handle cart state serialization, deserialization, and validation.
+ *
+ * Timeout Configuration:
+ * - Cart items expire after 24 hours (1 day)
+ * - Checkout sessions expire after 15 minutes
  */
+
+/**
+ * Timeout constants
+ */
+export const CART_TIMEOUT = {
+    ITEM_EXPIRY: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
+    CHECKOUT_SESSION: 15 * 60 * 1000, // 15 minutes in milliseconds
+    EXPIRY_WARNING: 2 * 60 * 60 * 1000 // Show warning 2 hours before expiry
+};
 
 /**
  * Default cart state structure
@@ -14,7 +27,9 @@ export const DEFAULT_CART_STATE = {
     metadata: {
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        sessionId: null
+        sessionId: null,
+        checkoutStartedAt: null,
+        checkoutSessionId: null
     }
 };
 
@@ -37,7 +52,9 @@ export function createInitialCartState() {
         metadata: {
             createdAt: Date.now(),
             updatedAt: Date.now(),
-            sessionId: generateSessionId()
+            sessionId: generateSessionId(),
+            checkoutStartedAt: null,
+            checkoutSessionId: null
         }
     };
 }
@@ -167,6 +184,71 @@ export function migrateDonationFormat(cartState) {
 }
 
 /**
+ * Check if an item is expired
+ * @param {number} timestamp - Item creation or addition timestamp
+ * @param {number} timeout - Timeout duration in milliseconds
+ * @returns {boolean} True if expired
+ */
+export function isExpired(timestamp, timeout = CART_TIMEOUT.ITEM_EXPIRY) {
+    if (!timestamp || typeof timestamp !== 'number') {
+        return true; // Invalid timestamp is considered expired
+    }
+    return Date.now() - timestamp > timeout;
+}
+
+/**
+ * Check if item is near expiry (within warning period)
+ * @param {number} timestamp - Item timestamp
+ * @returns {boolean} True if near expiry
+ */
+export function isNearExpiry(timestamp) {
+    if (!timestamp || typeof timestamp !== 'number') {
+        return false;
+    }
+    const timeRemaining = CART_TIMEOUT.ITEM_EXPIRY - (Date.now() - timestamp);
+    return timeRemaining > 0 && timeRemaining <= CART_TIMEOUT.EXPIRY_WARNING;
+}
+
+/**
+ * Get time remaining before expiry
+ * @param {number} timestamp - Item timestamp
+ * @param {number} timeout - Timeout duration
+ * @returns {number} Milliseconds remaining (0 if expired)
+ */
+export function getTimeRemaining(timestamp, timeout = CART_TIMEOUT.ITEM_EXPIRY) {
+    if (!timestamp || typeof timestamp !== 'number') {
+        return 0;
+    }
+    const remaining = timeout - (Date.now() - timestamp);
+    return Math.max(0, remaining);
+}
+
+/**
+ * Format time remaining for display
+ * @param {number} milliseconds - Time in milliseconds
+ * @returns {string} Formatted time string
+ */
+export function formatTimeRemaining(milliseconds) {
+    if (milliseconds <= 0) {
+        return 'Expired';
+    }
+
+    const minutes = Math.floor(milliseconds / 60000);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (days > 0) {
+        return `${days} day${days > 1 ? 's' : ''} remaining`;
+    } else if (hours > 0) {
+        return `${hours} hour${hours > 1 ? 's' : ''} remaining`;
+    } else if (minutes > 0) {
+        return `${minutes} minute${minutes > 1 ? 's' : ''} remaining`;
+    } else {
+        return 'Less than a minute';
+    }
+}
+
+/**
  * Clean invalid data from cart state
  * @param {Object} cartState - Cart state to clean
  * @returns {Object} Cleaned cart state
@@ -177,21 +259,33 @@ export function cleanCartState(cartState) {
     }
 
     const cleaned = { ...cartState };
+    const now = Date.now();
 
-    // Clean invalid tickets
+    // Clean expired and invalid tickets
     const validTickets = {};
     Object.entries(cleaned.tickets).forEach(([ticketType, ticket]) => {
-        if (isValidTicket(ticket)) {
+        // Check if ticket is valid and not expired
+        if (isValidTicket(ticket) && !isExpired(ticket.addedAt || ticket.createdAt || cleaned.metadata.createdAt)) {
             validTickets[ticketType] = ticket;
         }
     });
     cleaned.tickets = validTickets;
 
-    // Clean invalid donations
-    cleaned.donations = cleaned.donations.filter(donation => isValidDonation(donation));
+    // Clean expired and invalid donations
+    cleaned.donations = cleaned.donations.filter(donation => {
+        return isValidDonation(donation) && !isExpired(donation.addedAt || cleaned.metadata.createdAt);
+    });
+
+    // Check checkout session expiry
+    if (cleaned.metadata.checkoutStartedAt &&
+        isExpired(cleaned.metadata.checkoutStartedAt, CART_TIMEOUT.CHECKOUT_SESSION)) {
+        // Checkout session expired, clear it
+        cleaned.metadata.checkoutStartedAt = null;
+        cleaned.metadata.checkoutSessionId = null;
+    }
 
     // Update timestamp
-    cleaned.metadata.updatedAt = Date.now();
+    cleaned.metadata.updatedAt = now;
 
     return cleaned;
 }
@@ -257,6 +351,93 @@ export function calculateCartStateSize(cartState) {
  */
 export function isWithinStorageLimits(cartState, maxSize = 5 * 1024 * 1024) {
     return calculateCartStateSize(cartState) <= maxSize;
+}
+
+/**
+ * Start checkout session
+ * @param {Object} cartState - Current cart state
+ * @returns {Object} Updated cart state with checkout session
+ */
+export function startCheckoutSession(cartState) {
+    if (!cartState || typeof cartState !== 'object') {
+        return createInitialCartState();
+    }
+
+    return {
+        ...cartState,
+        metadata: {
+            ...cartState.metadata,
+            checkoutStartedAt: Date.now(),
+            checkoutSessionId: `checkout_${Date.now()}_${Math.random().toString(36).substring(2)}`,
+            updatedAt: Date.now()
+        }
+    };
+}
+
+/**
+ * Clear checkout session
+ * @param {Object} cartState - Current cart state
+ * @returns {Object} Updated cart state without checkout session
+ */
+export function clearCheckoutSession(cartState) {
+    if (!cartState || typeof cartState !== 'object') {
+        return createInitialCartState();
+    }
+
+    return {
+        ...cartState,
+        metadata: {
+            ...cartState.metadata,
+            checkoutStartedAt: null,
+            checkoutSessionId: null,
+            updatedAt: Date.now()
+        }
+    };
+}
+
+/**
+ * Check if checkout session is active and not expired
+ * @param {Object} cartState - Cart state
+ * @returns {boolean} True if checkout session is active
+ */
+export function isCheckoutSessionActive(cartState) {
+    if (!cartState?.metadata?.checkoutStartedAt) {
+        return false;
+    }
+
+    return !isExpired(cartState.metadata.checkoutStartedAt, CART_TIMEOUT.CHECKOUT_SESSION);
+}
+
+/**
+ * Get expired items from cart
+ * @param {Object} cartState - Cart state
+ * @returns {Object} Object containing expired tickets and donations
+ */
+export function getExpiredItems(cartState) {
+    const expiredTickets = [];
+    const expiredDonations = [];
+
+    if (!cartState) {
+        return { expiredTickets, expiredDonations };
+    }
+
+    // Check tickets
+    Object.entries(cartState.tickets || {}).forEach(([ticketType, ticket]) => {
+        const timestamp = ticket.addedAt || ticket.createdAt || cartState.metadata?.createdAt;
+        if (isExpired(timestamp)) {
+            expiredTickets.push({ ticketType, ...ticket });
+        }
+    });
+
+    // Check donations
+    (cartState.donations || []).forEach(donation => {
+        const timestamp = donation.addedAt || cartState.metadata?.createdAt;
+        if (isExpired(timestamp)) {
+            expiredDonations.push(donation);
+        }
+    });
+
+    return { expiredTickets, expiredDonations };
 }
 
 /**

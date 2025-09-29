@@ -448,6 +448,9 @@ class PaymentSelector {
             throw new Error('Cart is empty');
         }
 
+        // Start checkout session timer (15 minute timeout)
+        await this.cartManager.startCheckoutSession();
+
         // Prepare cart items for checkout
         const cartItems = this.prepareCartItems(cartState);
 
@@ -465,6 +468,8 @@ class PaymentSelector {
             // Redirect to Stripe Checkout
             window.location.href = result.checkoutUrl;
         } else {
+            // End checkout session if failed
+            await this.cartManager.endCheckoutSession(false);
             throw new Error(result.error || 'Unable to create checkout session');
         }
     }
@@ -480,6 +485,9 @@ class PaymentSelector {
         }
 
         try {
+            // Start checkout session timer (15 minute timeout)
+            await this.cartManager.startCheckoutSession();
+
             // Announce PayPal processing start
             this.announceToScreenReader('Starting PayPal payment process...');
 
@@ -546,6 +554,8 @@ class PaymentSelector {
                 throw new Error('No PayPal approval URL received');
             }
         } catch (error) {
+            // End checkout session if PayPal fails
+            await this.cartManager.endCheckoutSession(false);
             throw new Error(error.message || 'PayPal checkout failed');
         }
     }

@@ -3,6 +3,8 @@
  * Handles all cart operations across tickets and donations
  */
 import { getAnalyticsTracker } from './analytics-tracker.js';
+import { CartExpirationManager, CART_TIMEOUT, formatTimeRemaining } from './cart-expiration-manager.js';
+import { cleanCartState } from './pure/cart-persistence.js';
 
 // Development-only logging utility
 const devLog = {
@@ -96,13 +98,16 @@ export class CartManager extends EventTarget {
             metadata: {
                 createdAt: Date.now(),
                 updatedAt: Date.now(),
-                sessionId: this.generateSessionId()
+                sessionId: this.generateSessionId(),
+                checkoutStartedAt: null,
+                checkoutSessionId: null
             }
         };
         this.storageKey = 'alocubano_cart';
         this.initialized = false;
         this.operationQueue = [];
         this.isExecutingQueue = false;
+        this.expirationManager = null;
         this.analytics = getAnalyticsTracker();
         this.storageCoordinator = new CartStorageCoordinator();
     }
@@ -115,6 +120,14 @@ export class CartManager extends EventTarget {
 
         // Load from localStorage
         this.loadFromStorage();
+
+        // Clean expired items on initialization
+        this.state = cleanCartState(this.state);
+        await this.saveToStorage();
+
+        // Initialize expiration manager
+        this.expirationManager = new CartExpirationManager(this);
+        this.expirationManager.initialize();
 
         // Setup event listeners
         this.setupEventListeners();
@@ -552,8 +565,62 @@ export class CartManager extends EventTarget {
         this.emit('cart:updated', this.getState());
     }
 
+    // Checkout session management
+    async startCheckoutSession() {
+        if (!this.expirationManager) {
+            throw new Error('Expiration manager not initialized');
+        }
+
+        // Track analytics
+        this.analytics.trackCartEvent('checkout_started', {
+            sessionId: this.state.metadata.sessionId,
+            itemCount: this.calculateTotals().itemCount,
+            total: this.calculateTotals().total
+        });
+
+        return this.expirationManager.startCheckoutSession();
+    }
+
+    async endCheckoutSession(completed = false) {
+        if (!this.expirationManager) {
+            throw new Error('Expiration manager not initialized');
+        }
+
+        // Track analytics
+        this.analytics.trackCartEvent('checkout_ended', {
+            sessionId: this.state.metadata.sessionId,
+            completed: completed
+        });
+
+        return this.expirationManager.endCheckoutSession(completed);
+    }
+
+    isInCheckout() {
+        if (!this.expirationManager) {
+            return false;
+        }
+        return this.expirationManager.isInCheckout();
+    }
+
+    getCheckoutTimeRemaining() {
+        if (!this.expirationManager) {
+            return 0;
+        }
+        return this.expirationManager.getCheckoutTimeRemaining();
+    }
+
+    getExpirationInfo() {
+        if (!this.expirationManager) {
+            return { tickets: {}, donations: [], checkoutSession: null };
+        }
+        return this.expirationManager.getExpirationInfo();
+    }
+
     // Debug methods
     getDebugInfo() {
+        const expirationInfo = this.expirationManager ?
+            this.expirationManager.getExpirationInfo() : null;
+
         return {
             state: this.state,
             initialized: this.initialized,
@@ -561,7 +628,8 @@ export class CartManager extends EventTarget {
             isExecutingQueue: this.isExecutingQueue,
             sessionId: this.state.metadata.sessionId,
             lastUpdated: new Date(this.state.metadata.updatedAt).toISOString(),
-            storageKey: this.storageKey
+            storageKey: this.storageKey,
+            expirationInfo: expirationInfo
         };
     }
 }
