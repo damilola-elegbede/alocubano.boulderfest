@@ -62,7 +62,11 @@ scripts/create-*.js
 scripts/start-*.js
 scripts/ci/
 # Build scripts are kept for Vercel
-config/
+# Exclude specific config files but keep config/bootstrap.json for build
+config/.eslintrc.json
+config/.prettierrc
+config/.htmlhintrc
+config/eslint.config.js
 .eslintrc.json
 .prettierrc
 .htmlhintrc
