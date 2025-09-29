@@ -68,9 +68,17 @@ CREATE TABLE IF NOT EXISTS tickets_new (
     ticket_type_id TEXT REFERENCES ticket_types(id)
 );
 
--- Step 2: Copy all data from old table to new table
--- Handle potential validation_status values that don't match constraint
--- Normalize any invalid validation_status to 'active' (safe default)
+-- Step 2: Add missing columns to old table if they don't exist
+-- This handles cases where previous migrations (024, 037, 043) haven't run yet
+ALTER TABLE tickets ADD COLUMN validation_status TEXT DEFAULT 'active' CHECK (
+    validation_status IN ('active', 'invalidated', 'suspicious', 'expired')
+);
+ALTER TABLE tickets ADD COLUMN event_end_date DATETIME;
+ALTER TABLE tickets ADD COLUMN is_test INTEGER NOT NULL DEFAULT 0 CHECK (is_test IN (0, 1));
+ALTER TABLE tickets ADD COLUMN ticket_type_id TEXT REFERENCES ticket_types(id);
+
+-- Step 3: Copy all data from old table to new table
+-- Now all columns are guaranteed to exist
 INSERT INTO tickets_new
 SELECT
     id, ticket_id, transaction_id, ticket_type, event_id, event_date,
@@ -84,21 +92,26 @@ SELECT
     checked_in_at, checked_in_by, check_in_location, ticket_metadata,
     created_at, updated_at,
     -- Normalize validation_status: only keep valid values, default to 'active'
-    CASE
-        WHEN validation_status IN ('active', 'invalidated', 'suspicious', 'expired')
-        THEN validation_status
-        ELSE 'active'
-    END as validation_status,
-    event_end_date, is_test, ticket_type_id
+    COALESCE(
+        CASE
+            WHEN validation_status IN ('active', 'invalidated', 'suspicious', 'expired')
+            THEN validation_status
+            ELSE 'active'
+        END,
+        'active'
+    ) as validation_status,
+    event_end_date,
+    COALESCE(is_test, 0) as is_test,
+    ticket_type_id
 FROM tickets;
 
--- Step 3: Drop old table
+-- Step 4: Drop old table
 DROP TABLE tickets;
 
--- Step 4: Rename new table to tickets
+-- Step 5: Rename new table to tickets
 ALTER TABLE tickets_new RENAME TO tickets;
 
--- Step 5: Recreate all indexes (from 007_tickets.sql)
+-- Step 6: Recreate all indexes (from 007_tickets.sql)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_tickets_qr_token_unique ON tickets(qr_token);
 CREATE INDEX IF NOT EXISTS idx_tickets_ticket_id_status ON tickets(ticket_id, status);
 CREATE INDEX IF NOT EXISTS idx_tickets_scan_validation ON tickets(id, scan_count, max_scan_count, status);
@@ -123,10 +136,10 @@ CREATE INDEX IF NOT EXISTS idx_tickets_wallet_analytics ON tickets(wallet_source
 CREATE INDEX IF NOT EXISTS idx_tickets_registration_status ON tickets(registration_status, registration_deadline);
 CREATE INDEX IF NOT EXISTS idx_tickets_deadline ON tickets(registration_deadline) WHERE registration_status = 'pending';
 
--- Step 6: Create index for flagged tickets (for admin review queries)
+-- Step 7: Create index for flagged tickets (for admin review queries)
 CREATE INDEX IF NOT EXISTS idx_tickets_flagged_review ON tickets(status, created_at DESC) WHERE status = 'flagged_for_review';
 
--- Step 7: Recreate triggers (from 007_tickets.sql if any exist)
+-- Step 8: Recreate triggers (from 007_tickets.sql if any exist)
 CREATE TRIGGER IF NOT EXISTS update_tickets_timestamp
 AFTER UPDATE ON tickets
 FOR EACH ROW
@@ -134,7 +147,7 @@ BEGIN
     UPDATE tickets SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;
 
--- Step 8: Recreate views that depend on tickets table
+-- Step 9: Recreate views that depend on tickets table
 CREATE VIEW IF NOT EXISTS v_data_mode_statistics AS
 SELECT
   'Transactions' as entity_type,
@@ -152,7 +165,7 @@ SELECT
   ROUND(CAST(SUM(CASE WHEN is_test = 1 THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) * 100, 2) as test_percentage
 FROM tickets;
 
--- Step 9: Recreate PayPal views (from 025_paypal_integration.sql)
+-- Step 10: Recreate PayPal views (from 025_paypal_integration.sql)
 -- These were dropped in Step 0 because they may reference is_test column
 CREATE VIEW IF NOT EXISTS v_payment_processor_summary AS
 SELECT
