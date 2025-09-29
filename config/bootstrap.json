@@ -146,7 +146,7 @@
       "name": "Test Basic Ticket",
       "description": "Basic test ticket for development",
       "price_cents": 100,
-      "status": "available",
+      "status": "test",
       "sort_order": 1
     },
     {
@@ -155,7 +155,7 @@
       "name": "Test Premium Ticket",
       "description": "Premium test ticket for development",
       "price_cents": 500,
-      "status": "available",
+      "status": "test",
       "sort_order": 1
     }
   ],
@@ -164,7 +164,7 @@
     "currency": "USD",
     "timezone": "America/Denver",
     "max_tickets_per_transaction": 100,
-    "ticket_statuses": ["available", "sold-out", "coming-soon", "closed"],
+    "ticket_statuses": ["available", "sold-out", "coming-soon", "closed", "test"],
     "event_statuses": ["draft", "upcoming", "active", "completed", "cancelled"]
   }
 }
