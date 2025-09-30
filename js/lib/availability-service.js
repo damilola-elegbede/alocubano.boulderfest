@@ -35,7 +35,7 @@ export class AvailabilityService {
             }
 
             // Check if ticket is sold out or unavailable
-            if (ticket.status === 'sold_out') {
+            if (ticket.status === 'sold_out' || ticket.status === 'sold-out') {
                 return {
                     available: false,
                     remaining: 0,
@@ -44,12 +44,14 @@ export class AvailabilityService {
                 };
             }
 
-            if (ticket.status !== 'on_sale') {
+            // Accept both 'available' (from bootstrap.json) and 'on_sale' as valid statuses
+            const validStatuses = ['on_sale', 'available'];
+            if (!validStatuses.includes(ticket.status)) {
                 return {
                     available: false,
                     remaining: 0,
                     status: ticket.status,
-                    message: `Tickets are currently ${ticket.status.replace('_', ' ')}`
+                    message: `Tickets are currently ${ticket.status.replace('_', ' ').replace('-', ' ')}`
                 };
             }
 
@@ -147,7 +149,9 @@ export class AvailabilityService {
 
             for (const ticket of tickets) {
                 const remaining = ticket.availability !== null ? ticket.availability : Infinity;
-                const isAvailable = ticket.status === 'on_sale' && remaining > 0;
+                // Accept both 'available' (from bootstrap.json) and 'on_sale' as valid statuses
+                const validStatuses = ['on_sale', 'available'];
+                const isAvailable = validStatuses.includes(ticket.status) && remaining > 0;
 
                 availabilityMap.set(ticket.ticket_type, {
                     available: isAvailable,

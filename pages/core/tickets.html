@@ -455,6 +455,310 @@
             </div>
           </section>
 
+          <!-- Test Tickets Section (Hidden in Production) -->
+          <section class="ticket-selection" id="test-tickets-section" data-test-tickets="true">
+            <h2 style="color: var(--color-warning, #fbbf24)">🧪 Test Tickets (Development Only)</h2>
+            <p style="color: var(--color-text-secondary); margin-bottom: var(--space-lg)">
+              These tickets are for testing purposes only and will not appear in production.
+            </p>
+
+            <div class="ticket-options-grid">
+              <!-- Test VIP Pass -->
+              <div class="flip-card" data-testid="test-vip-card">
+                <div class="flip-card-inner">
+                  <div class="flip-card-front ticket-card vertical-design"
+                       data-ticket-id="test-vip-pass"
+                       data-ticket-type="test-vip-pass"
+                       data-event-id="-2"
+                       data-price="150.00"
+                       data-name="[TEST] VIP Pass"
+                       data-venue="Test Ballroom">
+                    <div class="ticket-header">
+                      <div class="event-label">TEST EVENT</div>
+                      <div class="event-name">Test Festival</div>
+                    </div>
+                    <div class="ticket-body">
+                      <div class="ticket-type-section">
+                        <div class="field-label">Ticket Type</div>
+                        <div class="ticket-type">[TEST] VIP PASS</div>
+                        <div class="ticket-price">$150.00</div>
+                      </div>
+                      <div class="ticket-details">
+                        <div class="detail-row">
+                          <div class="field-label">Date</div>
+                          <div class="detail-value">Jan 1-3, 2024</div>
+                        </div>
+                      </div>
+                      <div class="ticket-footer">
+                        <div class="venue-section">
+                          <div class="field-label">Venue</div>
+                          <div class="venue-name">Test Ballroom</div>
+                        </div>
+                      </div>
+                      <div class="quantity-selector">
+                        <button class="qty-btn minus" data-action="decrease" type="button" aria-label="Decrease quantity">-</button>
+                        <span class="quantity">0</span>
+                        <button class="qty-btn plus" data-action="increase" type="button" aria-label="Increase quantity">+</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="flip-card-back">
+                    <div class="card-back-content">
+                      <h3>[TEST] VIP Pass Details</h3>
+                      <p>Full festival access with VIP perks including exclusive areas and early entry</p>
+                      <button class="flip-back-btn" aria-label="Flip back to front">← Back</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Test Weekender Pass -->
+              <div class="flip-card" data-testid="test-weekender-card">
+                <div class="flip-card-inner">
+                  <div class="flip-card-front ticket-card vertical-design"
+                       data-ticket-id="test-weekender-pass"
+                       data-ticket-type="test-weekender-pass"
+                       data-event-id="-2"
+                       data-price="75.00"
+                       data-name="[TEST] Weekender Pass"
+                       data-venue="Test Ballroom">
+                    <div class="ticket-header">
+                      <div class="event-label">TEST EVENT</div>
+                      <div class="event-name">Test Festival</div>
+                    </div>
+                    <div class="ticket-body">
+                      <div class="ticket-type-section">
+                        <div class="field-label">Ticket Type</div>
+                        <div class="ticket-type">[TEST] WEEKENDER</div>
+                        <div class="ticket-price">$75.00</div>
+                      </div>
+                      <div class="ticket-details">
+                        <div class="detail-row">
+                          <div class="field-label">Date</div>
+                          <div class="detail-value">Jan 1-3, 2024</div>
+                        </div>
+                      </div>
+                      <div class="ticket-footer">
+                        <div class="venue-section">
+                          <div class="field-label">Venue</div>
+                          <div class="venue-name">Test Ballroom</div>
+                        </div>
+                      </div>
+                      <div class="quantity-selector">
+                        <button class="qty-btn minus" data-action="decrease" type="button" aria-label="Decrease quantity">-</button>
+                        <span class="quantity">0</span>
+                        <button class="qty-btn plus" data-action="increase" type="button" aria-label="Increase quantity">+</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="flip-card-back">
+                    <div class="card-back-content">
+                      <h3>[TEST] Weekender Pass Details</h3>
+                      <p>Access to all weekend events Friday through Sunday</p>
+                      <button class="flip-back-btn" aria-label="Flip back to front">← Back</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Test Friday Pass -->
+              <div class="flip-card" data-testid="test-friday-card">
+                <div class="flip-card-inner">
+                  <div class="flip-card-front ticket-card vertical-design"
+                       data-ticket-id="test-friday-pass"
+                       data-ticket-type="test-friday-pass"
+                       data-event-id="-2"
+                       data-price="35.00"
+                       data-name="[TEST] Friday Pass"
+                       data-venue="Test Ballroom">
+                    <div class="ticket-header">
+                      <div class="event-label">TEST EVENT</div>
+                      <div class="event-name">Test Festival</div>
+                    </div>
+                    <div class="ticket-body">
+                      <div class="ticket-type-section">
+                        <div class="field-label">Ticket Type</div>
+                        <div class="ticket-type">[TEST] FRIDAY</div>
+                        <div class="ticket-price">$35.00</div>
+                      </div>
+                      <div class="ticket-details">
+                        <div class="detail-row">
+                          <div class="field-label">Date</div>
+                          <div class="detail-value">Jan 1, 2024</div>
+                        </div>
+                      </div>
+                      <div class="ticket-footer">
+                        <div class="venue-section">
+                          <div class="field-label">Venue</div>
+                          <div class="venue-name">Test Ballroom</div>
+                        </div>
+                      </div>
+                      <div class="quantity-selector">
+                        <button class="qty-btn minus" data-action="decrease" type="button" aria-label="Decrease quantity">-</button>
+                        <span class="quantity">0</span>
+                        <button class="qty-btn plus" data-action="increase" type="button" aria-label="Increase quantity">+</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="flip-card-back">
+                    <div class="card-back-content">
+                      <h3>[TEST] Friday Pass Details</h3>
+                      <p>Friday night social and performances</p>
+                      <button class="flip-back-btn" aria-label="Flip back to front">← Back</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Test Saturday Pass -->
+              <div class="flip-card" data-testid="test-saturday-card">
+                <div class="flip-card-inner">
+                  <div class="flip-card-front ticket-card vertical-design"
+                       data-ticket-id="test-saturday-pass"
+                       data-ticket-type="test-saturday-pass"
+                       data-event-id="-2"
+                       data-price="35.00"
+                       data-name="[TEST] Saturday Pass"
+                       data-venue="Test Ballroom">
+                    <div class="ticket-header">
+                      <div class="event-label">TEST EVENT</div>
+                      <div class="event-name">Test Festival</div>
+                    </div>
+                    <div class="ticket-body">
+                      <div class="ticket-type-section">
+                        <div class="field-label">Ticket Type</div>
+                        <div class="ticket-type">[TEST] SATURDAY</div>
+                        <div class="ticket-price">$35.00</div>
+                      </div>
+                      <div class="ticket-details">
+                        <div class="detail-row">
+                          <div class="field-label">Date</div>
+                          <div class="detail-value">Jan 2, 2024</div>
+                        </div>
+                      </div>
+                      <div class="ticket-footer">
+                        <div class="venue-section">
+                          <div class="field-label">Venue</div>
+                          <div class="venue-name">Test Ballroom</div>
+                        </div>
+                      </div>
+                      <div class="quantity-selector">
+                        <button class="qty-btn minus" data-action="decrease" type="button" aria-label="Decrease quantity">-</button>
+                        <span class="quantity">0</span>
+                        <button class="qty-btn plus" data-action="increase" type="button" aria-label="Increase quantity">+</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="flip-card-back">
+                    <div class="card-back-content">
+                      <h3>[TEST] Saturday Pass Details</h3>
+                      <p>Saturday workshops and evening social</p>
+                      <button class="flip-back-btn" aria-label="Flip back to front">← Back</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Test Sunday Pass -->
+              <div class="flip-card" data-testid="test-sunday-card">
+                <div class="flip-card-inner">
+                  <div class="flip-card-front ticket-card vertical-design"
+                       data-ticket-id="test-sunday-pass"
+                       data-ticket-type="test-sunday-pass"
+                       data-event-id="-2"
+                       data-price="35.00"
+                       data-name="[TEST] Sunday Pass"
+                       data-venue="Test Ballroom">
+                    <div class="ticket-header">
+                      <div class="event-label">TEST EVENT</div>
+                      <div class="event-name">Test Festival</div>
+                    </div>
+                    <div class="ticket-body">
+                      <div class="ticket-type-section">
+                        <div class="field-label">Ticket Type</div>
+                        <div class="ticket-type">[TEST] SUNDAY</div>
+                        <div class="ticket-price">$35.00</div>
+                      </div>
+                      <div class="ticket-details">
+                        <div class="detail-row">
+                          <div class="field-label">Date</div>
+                          <div class="detail-value">Jan 3, 2024</div>
+                        </div>
+                      </div>
+                      <div class="ticket-footer">
+                        <div class="venue-section">
+                          <div class="field-label">Venue</div>
+                          <div class="venue-name">Test Ballroom</div>
+                        </div>
+                      </div>
+                      <div class="quantity-selector">
+                        <button class="qty-btn minus" data-action="decrease" type="button" aria-label="Decrease quantity">-</button>
+                        <span class="quantity">0</span>
+                        <button class="qty-btn plus" data-action="increase" type="button" aria-label="Increase quantity">+</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="flip-card-back">
+                    <div class="card-back-content">
+                      <h3>[TEST] Sunday Pass Details</h3>
+                      <p>Sunday workshops and closing performance</p>
+                      <button class="flip-back-btn" aria-label="Flip back to front">← Back</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Test Donation -->
+              <div class="flip-card" data-testid="test-donation-card">
+                <div class="flip-card-inner">
+                  <div class="flip-card-front ticket-card vertical-design"
+                       data-ticket-id="test-donation"
+                       data-ticket-type="test-donation"
+                       data-event-id="-1"
+                       data-price="25.00"
+                       data-name="[TEST] Festival Donation"
+                       data-venue="Test Ballroom">
+                    <div class="ticket-header">
+                      <div class="event-label">TEST EVENT</div>
+                      <div class="event-name">Test Weekender</div>
+                    </div>
+                    <div class="ticket-body">
+                      <div class="ticket-type-section">
+                        <div class="field-label">Donation</div>
+                        <div class="ticket-type">[TEST] DONATION</div>
+                        <div class="ticket-price">$25.00</div>
+                      </div>
+                      <div class="ticket-details">
+                        <div class="detail-row">
+                          <div class="field-label">Purpose</div>
+                          <div class="detail-value">Support Test Festival</div>
+                        </div>
+                      </div>
+                      <div class="ticket-footer">
+                        <div class="venue-section">
+                          <div class="field-label">Venue</div>
+                          <div class="venue-name">Test Ballroom</div>
+                        </div>
+                      </div>
+                      <div class="quantity-selector">
+                        <button class="qty-btn minus" data-action="decrease" type="button" aria-label="Decrease quantity">-</button>
+                        <span class="quantity">0</span>
+                        <button class="qty-btn plus" data-action="increase" type="button" aria-label="Increase quantity">+</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="flip-card-back">
+                    <div class="card-back-content">
+                      <h3>[TEST] Festival Donation</h3>
+                      <p>Your donation helps us bring amazing artists to Boulder</p>
+                      <button class="flip-back-btn" aria-label="Flip back to front">← Back</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
           <!-- Policy -->
           <div
             class="policy-section"
@@ -546,6 +850,38 @@
           }
         } catch (error) {
           console.error("Error loading payment configuration:", error);
+        }
+      })();
+    </script>
+
+    <!-- Test Tickets Conditional Rendering -->
+    <script>
+      // Hide test tickets in production environment
+      (async function () {
+        try {
+          const response = await fetch("/api/config/environment");
+          if (response.ok) {
+            const data = await response.json();
+            const isProduction = data.environment === 'production' || data.vercelEnv === 'production';
+
+            if (isProduction) {
+              // Remove test tickets section in production
+              const testSection = document.getElementById('test-tickets-section');
+              if (testSection) {
+                testSection.remove();
+                console.log('Test tickets hidden in production');
+              }
+            } else {
+              console.log('Test tickets visible in non-production environment');
+            }
+          }
+        } catch (error) {
+          console.warn("Could not fetch environment config, hiding test tickets as precaution:", error);
+          // Default to hiding test tickets if we can't determine environment
+          const testSection = document.getElementById('test-tickets-section');
+          if (testSection) {
+            testSection.remove();
+          }
         }
       })();
     </script>
