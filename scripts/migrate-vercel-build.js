@@ -339,13 +339,47 @@ async function runVercelBuild() {
             log(`   Migrations table shows ${status.executed} completed`, colors.yellow);
             log(`   But critical tables are missing: ${missingTables.join(', ')}`, colors.red);
             log(`   This indicates corrupted migration tracking`, colors.red);
-            log("   Will attempt to run all pending migrations to fix", colors.yellow);
-            // Don't exit - let the migration system handle it
+            log("", colors.yellow);
+            log("🔧 Attempting automatic recovery...", colors.cyan);
+            log("   Step 1: Clearing corrupted migrations table", colors.cyan);
+
+            // Clear the migrations table to force re-run
+            await client.execute("DELETE FROM migrations");
+
+            log("   Step 2: Re-running all migrations", colors.cyan);
+
+            // Force re-run all migrations
+            const result = await globalMigrationSystem.runMigrations();
+            migrationResult = result;
+
+            log("", colors.green);
+            log("✅ Database recovery completed!", colors.green);
+            log(`   Executed: ${result.executed} migration(s)`, colors.cyan);
+            log("");
+
+            // Verify tables now exist
+            const verifyCheck = await client.execute(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('tickets', 'transactions', 'registrations', 'events') ORDER BY name"
+            );
+            const recoveredTables = verifyCheck.rows.map(r => r.name);
+            const stillMissing = expectedTables.filter(t => !recoveredTables.includes(t));
+
+            if (stillMissing.length > 0) {
+              log("❌ Recovery failed - still missing tables: " + stillMissing.join(', '), colors.red);
+              throw new Error(`Database recovery failed - missing tables: ${stillMissing.join(', ')}`);
+            }
+
+            log("✅ All critical tables verified after recovery", colors.green);
           } else {
             log("✅ Database structure verified - all critical tables exist", colors.green);
             migrationResult.skipped = status.executed;
           }
         } catch (verifyError) {
+          // If recovery failed, re-throw the error to fail the build
+          if (verifyError.message.includes('Database recovery failed')) {
+            throw verifyError;
+          }
+
           // Don't warn about CLIENT_CLOSED during verification - it's expected if migrations didn't run
           if (!verifyError.message.includes('CLIENT_CLOSED') && !verifyError.message.includes('manually closed')) {
             log("⚠️  Could not verify table existence: " + verifyError.message, colors.yellow);
