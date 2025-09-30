@@ -128,10 +128,14 @@ async function createOrderHandler(req, res) {
       const itemTotal = item.price * item.quantity;
       totalAmount += itemTotal;
 
+      // Convert cents to dollars for PayPal (prices stored in cents internally)
+      const priceInDollars = (item.price / 100).toFixed(2);
+
       // eslint-disable-next-line no-console
       console.log('PayPal: Item processed:', {
         name: item.name,
-        price: item.price,
+        priceCents: item.price,
+        priceDollars: priceInDollars,
         quantity: item.quantity,
         itemTotal,
         runningTotal: totalAmount
@@ -142,7 +146,7 @@ async function createOrderHandler(req, res) {
         name: item.name.substring(0, 127), // PayPal name limit
         unitAmount: {
           currencyCode: 'USD',
-          value: item.price.toFixed(2)
+          value: priceInDollars // PayPal expects dollars, not cents
         },
         quantity: item.quantity.toString(),
         description: item.description,
@@ -150,15 +154,18 @@ async function createOrderHandler(req, res) {
       });
     }
 
-    // Validate total amount
+    // Validate total amount (totalAmount is in cents, convert to dollars for validation)
+    const totalInDollars = totalAmount / 100;
+
     // eslint-disable-next-line no-console
     console.log('PayPal: Final total validation:', {
-      totalAmount,
-      isValid: totalAmount > 0 && totalAmount <= 10000,
+      totalAmountCents: totalAmount,
+      totalAmountDollars: totalInDollars,
+      isValid: totalAmount > 0 && totalInDollars <= 10000,
       orderItemsCount: orderItems.length
     });
 
-    if (totalAmount <= 0 || totalAmount > 10000) {
+    if (totalAmount <= 0 || totalInDollars > 10000) {
       return res.status(400).json({
         error: 'Invalid order total. Amount must be between $0.01 and $10,000'
       });
@@ -187,6 +194,7 @@ async function createOrderHandler(req, res) {
       : 'Pending PayPal User';
 
     // Create PayPal order data (use camelCase for SDK)
+    // PayPal expects amounts in dollars, not cents
     const paypalOrderData = {
       intent: 'CAPTURE',
       purchaseUnits: [
@@ -194,11 +202,11 @@ async function createOrderHandler(req, res) {
           referenceId: referenceId,
           amount: {
             currencyCode: 'USD',
-            value: totalAmount.toFixed(2),
+            value: totalInDollars.toFixed(2), // Convert cents to dollars
             breakdown: {
               itemTotal: {
                 currencyCode: 'USD',
-                value: totalAmount.toFixed(2)
+                value: totalInDollars.toFixed(2) // Convert cents to dollars
               }
             }
           },
@@ -277,7 +285,8 @@ async function createOrderHandler(req, res) {
       approvalUrl: approvalUrl,
       transactionId: transactionId,
       referenceId: referenceId,
-      totalAmount: totalAmount,
+      totalAmount: totalInDollars, // Return in dollars for consistency with PayPal
+      totalAmountCents: totalAmount, // Also include cents for reference
       testMode: isRequestTestMode
     });
 
