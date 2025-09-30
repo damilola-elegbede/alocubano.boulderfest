@@ -462,7 +462,7 @@
           </div>
 
           <div class="failure-actions">
-            <button class="failure-btn" id="try-again-btn">Try Again</button>
+            <a href="/tickets" class="failure-btn">Try Again</a>
             <a href="/home" class="failure-btn secondary">Return to Home</a>
           </div>
 
@@ -550,10 +550,7 @@
       </div>
     </footer>
 
-    <script type="module">
-      // Import cart functionality to retry checkout
-      import { getCartManager } from '/js/cart-manager.js';
-
+    <script>
       // Get parameters from URL
       const urlParams = new URLSearchParams(window.location.search);
       const sessionId = urlParams.get("session_id");
@@ -587,42 +584,6 @@
             window.location.href = "/tickets";
           }
         }, 1000);
-      }
-
-      /**
-       * Handle "Try Again" button - triggers checkout flow
-       */
-      async function handleTryAgain() {
-        try {
-          const cartManager = await getCartManager();
-          const cartState = cartManager.getState();
-
-          // Check if cart has items
-          if (cartState.isEmpty) {
-            // Redirect to tickets page to add items
-            window.location.href = '/tickets';
-            return;
-          }
-
-          // Import and initialize the floating cart to trigger checkout
-          const floatingCartModule = await import('/js/floating-cart.js');
-
-          // Wait a moment for the cart UI to initialize
-          await new Promise(resolve => setTimeout(resolve, 500));
-
-          // Find and click the checkout button programmatically
-          const checkoutBtn = document.querySelector('.cart-checkout-btn');
-          if (checkoutBtn && !checkoutBtn.disabled) {
-            checkoutBtn.click();
-          } else {
-            // Fallback: redirect to tickets page
-            window.location.href = '/tickets';
-          }
-        } catch (error) {
-          console.error('Error retrying checkout:', error);
-          // Fallback: redirect to tickets page
-          window.location.href = '/tickets';
-        }
       }
 
       /**
@@ -677,12 +638,6 @@
           // Start the countdown timer after processing
           startCountdown();
         }, 500);
-      }
-
-      // Set up Try Again button
-      const tryAgainBtn = document.getElementById('try-again-btn');
-      if (tryAgainBtn) {
-        tryAgainBtn.addEventListener('click', handleTryAgain);
       }
 
       // Process cancellation when page loads

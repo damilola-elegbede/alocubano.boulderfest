@@ -347,7 +347,7 @@
       </div>
 
       <div class="action-buttons">
-        <button class="btn" id="try-again-btn">Try Again</button>
+        <a href="/tickets" class="btn">Try Again</a>
         <a href="/" class="btn btn-secondary">Return Home</a>
         <a href="/about" class="btn btn-secondary">About Festival</a>
       </div>
@@ -358,10 +358,7 @@
       </div>
     </div>
 
-    <script type="module">
-      // Import cart functionality to retry checkout
-      import { getCartManager } from '/js/cart-manager.js';
-
+    <script>
       // Process checkout cancellation
       async function processCheckoutCancel() {
         const urlParams = new URLSearchParams(window.location.search);
@@ -462,50 +459,10 @@
         }, 2000);
       }
 
-      // Handle "Try Again" button - triggers checkout flow
-      async function handleTryAgain() {
-        try {
-          const cartManager = await getCartManager();
-          const cartState = cartManager.getState();
-
-          // Check if cart has items
-          if (cartState.isEmpty) {
-            // Redirect to tickets page to add items
-            window.location.href = '/tickets';
-            return;
-          }
-
-          // Import and initialize the floating cart to trigger checkout
-          const floatingCartModule = await import('/js/floating-cart.js');
-
-          // Wait a moment for the cart UI to initialize
-          await new Promise(resolve => setTimeout(resolve, 500));
-
-          // Find and click the checkout button programmatically
-          const checkoutBtn = document.querySelector('.cart-checkout-btn');
-          if (checkoutBtn && !checkoutBtn.disabled) {
-            checkoutBtn.click();
-          } else {
-            // Fallback: redirect to tickets page
-            window.location.href = '/tickets';
-          }
-        } catch (error) {
-          console.error('Error retrying checkout:', error);
-          // Fallback: redirect to tickets page
-          window.location.href = '/tickets';
-        }
-      }
-
       // Initialize when page loads
       document.addEventListener("DOMContentLoaded", () => {
         console.log("Checkout cancel page loaded");
         console.log("Current URL:", window.location.href);
-
-        // Set up Try Again button
-        const tryAgainBtn = document.getElementById('try-again-btn');
-        if (tryAgainBtn) {
-          tryAgainBtn.addEventListener('click', handleTryAgain);
-        }
 
         // Process the checkout cancellation
         processCheckoutCancel();
