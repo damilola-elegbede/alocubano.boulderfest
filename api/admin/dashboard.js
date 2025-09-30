@@ -297,7 +297,7 @@ async function handler(req, res) {
           display_order
         FROM events
         WHERE 1=1
-        ${shouldFilterTestData ? "AND status != 'test'" : ''}
+        -- Always show test events in admin dashboard
         ORDER BY display_order, start_date DESC
       `;
       const eventsResult = await db.execute(eventsQuery);

@@ -27,11 +27,11 @@ class TicketSelection {
 
     async init() {
         try {
-            // Show loading state
-            this.showLoadingState();
+            // Skip loading state for static tickets
+            // this.showLoadingState();
 
-            // Load ticket data from API
-            await this.loadTicketData();
+            // Skip API loading - tickets are static in HTML
+            // await this.loadTicketData();
 
             // Detect event ID from loaded data
             this.eventId = await this.detectEventId();
@@ -49,8 +49,8 @@ class TicketSelection {
 
             this.updateDisplay();
 
-            // Hide loading state
-            this.hideLoadingState();
+            // Skip hide loading state - never shown
+            // this.hideLoadingState();
 
             // Start availability polling for real-time updates
             this.availabilityService.startPolling(30000); // Poll every 30 seconds
@@ -416,16 +416,14 @@ class TicketSelection {
         const action = btn.dataset.action;
         const quantitySpan = card.querySelector('.quantity');
 
-        // Get ticket data from API cache
-        const ticketData = this.ticketData.get(ticketType);
-        if (!ticketData) {
-            console.error(`No ticket data found for type: ${ticketType}`);
+        // Read ticket data from HTML data attributes (static tickets)
+        const price = parseFloat(card.dataset.price) * 100; // Convert dollars to cents
+        const ticketName = card.dataset.name;
+
+        if (!ticketName || !price) {
+            console.error(`Missing ticket data in HTML for: ${ticketType}`);
             return;
         }
-
-        // Use API data for price and name
-        const price = ticketData.price_cents;
-        const ticketName = ticketData.name;
 
         let currentQuantity = parseInt(quantitySpan.textContent) || 0;
         let newQuantity = currentQuantity;
@@ -503,26 +501,24 @@ class TicketSelection {
             return;
         }
 
-        // Skip if still loading
+        // Skip if still loading (though we don't load anymore for static tickets)
         if (this.isLoading) {
             return;
         }
-
-        // Get ticket data from API cache
-        const ticketData = this.ticketData.get(ticketType);
-        if (!ticketData) {
-            console.error(`No ticket data found for type: ${ticketType}`);
-            return;
-        }
-
-        // Use API data for price and name
-        const price = ticketData.price_cents;
-        const ticketName = ticketData.name;
 
         // Find corresponding ticket card (regular or flip card)
         const card = document.querySelector(`[data-ticket-id="${ticketType}"]`);
         if (!card) {
             console.error('Could not find ticket card for', ticketType);
+            return;
+        }
+
+        // Read ticket data from HTML data attributes (static tickets)
+        const price = parseFloat(card.dataset.price) * 100; // Convert dollars to cents
+        const ticketName = card.dataset.name;
+
+        if (!ticketName || !price) {
+            console.error(`Missing ticket data in HTML for: ${ticketType}`);
             return;
         }
 
