@@ -97,9 +97,9 @@ export default async function handler(req, res) {
                 id, uuid, customer_email, customer_name,
                 amount_cents as total_amount, order_number
               FROM transactions
-              WHERE uuid = ? OR id = ?
+              WHERE id = ?
             `,
-            args: [email.transaction_id, email.transaction_id]
+            args: [email.transaction_id]
           });
 
           if (!transactionResult.rows || transactionResult.rows.length === 0) {
