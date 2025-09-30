@@ -43,9 +43,28 @@ async function handler(req, res) {
     const ticketsHasTestMode = await columnExists(db, 'tickets', 'is_test');
     const transactionsHasTestMode = await columnExists(db, 'transactions', 'is_test');
 
+    // If event is selected, check if it's a test-only event (all tickets are test tickets)
+    let isTestOnlyEvent = false;
+    if (eventId && ticketsHasTestMode) {
+      const eventTicketCheck = await db.execute(
+        `SELECT
+          COUNT(*) as total_tickets,
+          SUM(CASE WHEN is_test = 1 THEN 1 ELSE 0 END) as test_tickets
+         FROM tickets
+         WHERE ${ticketsHasEventId ? 'event_id = ?' : '1=1'}`,
+        ticketsHasEventId ? [eventId] : []
+      );
+      const ticketStats = eventTicketCheck.rows[0];
+      isTestOnlyEvent = ticketStats.total_tickets > 0 && ticketStats.total_tickets === ticketStats.test_tickets;
+    }
+
     // Determine if we should filter test data
-    // If includeTestData is explicitly set, use that; otherwise auto-detect based on test mode
-    const shouldFilterTestData = includeTestData === null ? !isTestMode(req) : !includeTestData;
+    // If includeTestData is explicitly set, use that
+    // Otherwise, auto-include test data for test-only events
+    // Otherwise, auto-detect based on test mode
+    const shouldFilterTestData = includeTestData === null
+      ? (isTestOnlyEvent ? false : !isTestMode(req))
+      : !includeTestData;
 
     // Build WHERE clauses based on eventId parameter and column existence
     const ticketWhereClause = eventId && ticketsHasEventId ? 'AND event_id = ?' : '';
@@ -373,6 +392,8 @@ async function handler(req, res) {
         includeTestData: includeTestData,
         hasTestModeSupport: ticketsHasTestMode && transactionsHasTestMode,
         filteringTestData: shouldFilterTestData,
+        isTestOnlyEvent: isTestOnlyEvent,
+        autoIncludedTestData: isTestOnlyEvent && includeTestData === null,
         testModeColumns: {
           tickets: ticketsHasTestMode,
           transactions: transactionsHasTestMode
