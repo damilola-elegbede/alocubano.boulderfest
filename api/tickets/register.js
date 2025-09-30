@@ -268,14 +268,15 @@ export default async function handler(req, res) {
       concurrentPrevention: concurrentPrevention
     });
 
-    // Cancel remaining reminders
+    // Cancel remaining reminders for this transaction
+    // (Reminders are per transaction, not per ticket)
     await db.execute({
       sql: `
         UPDATE registration_reminders
         SET status = 'cancelled'
-        WHERE ticket_id = ? AND status = 'scheduled'
+        WHERE transaction_id = ? AND status = 'scheduled'
       `,
-      args: [ticketId]
+      args: [ticket.transaction_id]
     });
 
     // Send confirmation email
