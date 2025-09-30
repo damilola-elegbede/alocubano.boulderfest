@@ -311,8 +311,8 @@ export default async function handler(req, res) {
           // Wallet pass URLs
           walletPassUrl: `${baseUrl}/api/tickets/apple-wallet/${ticketId}`,
           googleWalletUrl: `${baseUrl}/api/tickets/google-wallet/${ticketId}`,
-          // Wallet button image URLs
-          appleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-apple.svg`,
+          // Wallet button image URLs (PNG required for email client compatibility)
+          appleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-apple.png`,
           googleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-google.png`,
           // Event details
           eventName: ticket.event_name,
