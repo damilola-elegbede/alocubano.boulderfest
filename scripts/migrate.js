@@ -204,27 +204,6 @@ class MigrationSystem {
           SELECT COUNT(*) as total FROM migrations
         `);
         console.log(`   Migration records after cleanup: ${afterCleanup.rows[0].total}`);
-      } else if (allRecords.rows[0].total > 30) {
-        // If we have way more records than expected, something is wrong
-        console.log("   ⚠️  No duplicates found, but record count is suspiciously high!");
-        console.log("   Forcing cleanup - keeping only most recent 23 migrations");
-
-        // Nuclear option: Delete all but the most recent 23
-        const deleteOld = await client.execute(`
-          DELETE FROM migrations
-          WHERE id NOT IN (
-            SELECT id FROM migrations
-            ORDER BY id DESC
-            LIMIT 23
-          )
-        `);
-
-        console.log(`   Deleted ${deleteOld.rowsAffected || 'unknown number of'} old migration records`);
-
-        const afterCleanup = await client.execute(`
-          SELECT COUNT(*) as total FROM migrations
-        `);
-        console.log(`   Migration records after cleanup: ${afterCleanup.rows[0].total}`);
       } else {
         console.log("   No duplicate migration records found");
       }
