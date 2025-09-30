@@ -9,7 +9,6 @@
  */
 
 import { ticketTypeCache } from '../../lib/ticket-type-cache.js';
-import { bootstrapService } from '../../lib/bootstrap-service.js';
 import { setSecureCorsHeaders } from '../../lib/cors-config.js';
 import { logger } from '../../lib/logger.js';
 
@@ -33,9 +32,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Ensure bootstrap is initialized
-    await bootstrapService.initialize();
-
     const { event_id, status, include_test } = req.query;
     const startTime = Date.now();
 
