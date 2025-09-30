@@ -802,11 +802,20 @@ class TicketSelection {
 // Initialize when DOM is loaded
 let ticketSelectionInstance = null;
 
-document.addEventListener('DOMContentLoaded', () => {
+function initTicketSelection() {
     if (document.querySelector('.ticket-selection')) {
         ticketSelectionInstance = new TicketSelection();
     }
-});
+}
+
+// Handle module script timing - module scripts are deferred and may load after DOMContentLoaded
+if (document.readyState === 'loading') {
+    // DOM still loading, wait for DOMContentLoaded
+    document.addEventListener('DOMContentLoaded', initTicketSelection);
+} else {
+    // DOM already loaded (module scripts are deferred), initialize immediately
+    initTicketSelection();
+}
 
 // Cleanup on page unload
 window.addEventListener('beforeunload', () => {
