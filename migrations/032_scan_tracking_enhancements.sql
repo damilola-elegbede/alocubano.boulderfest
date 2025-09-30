@@ -35,6 +35,12 @@ CREATE TABLE IF NOT EXISTS scan_logs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Add validation_status field to tickets table if not exists
+-- This tracks the current validation state of the ticket
+ALTER TABLE tickets ADD COLUMN validation_status TEXT DEFAULT 'active' CHECK (
+    validation_status IN ('active', 'expired', 'suspended', 'revoked')
+);
+
 -- Indexes for scan_logs table for efficient querying
 -- Single-column indexes for basic lookups
 CREATE INDEX IF NOT EXISTS idx_scan_logs_ticket_id ON scan_logs(ticket_id);
@@ -63,9 +69,14 @@ CREATE INDEX IF NOT EXISTS idx_scan_logs_suspicious
     ON scan_logs(scan_status, scanned_at DESC)
     WHERE scan_status = 'suspicious';
 
--- Note: validation_status and event_end_date columns already exist in migration 005_tickets.sql
--- Index for tickets validation_status (if not already created)
+-- Index for tickets validation_status
 CREATE INDEX IF NOT EXISTS idx_tickets_validation_status ON tickets(validation_status);
+
+-- Add event_end_date to tickets table for event expiry validation
+-- NOTE: event_end_date is nullable but expiry validation requires it
+-- Application code must enforce this constraint or implement default behavior
+-- Current behavior: NULL event_end_date = event still active (no expiry check)
+ALTER TABLE tickets ADD COLUMN event_end_date DATETIME;
 
 -- Set default event end date for existing tickets (Boulder Fest 2026: May 17, 2026 23:59:59)
 -- This ensures all existing tickets have a valid expiry date
@@ -73,5 +84,9 @@ UPDATE tickets
 SET event_end_date = '2026-05-17 23:59:59'
 WHERE event_end_date IS NULL;
 
--- Index for event end date queries (expiry checks, if not already created)
+-- RECOMMENDATION: Consider adding NOT NULL constraint after backfilling
+-- ALTER TABLE tickets ADD CONSTRAINT chk_event_end_date CHECK (event_end_date IS NOT NULL);
+-- Or enforce at application layer with validation guards
+
+-- Index for event end date queries (expiry checks)
 CREATE INDEX IF NOT EXISTS idx_tickets_event_end_date ON tickets(event_end_date);
