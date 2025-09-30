@@ -144,3 +144,4 @@ deployment-check-report.json
 debug_test.js
 test_constraint.js
 .env.preview.check
+.env*.local
