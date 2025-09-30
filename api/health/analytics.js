@@ -1,4 +1,5 @@
-import { google } from '@googleapis/sheets';
+import pkg from '@googleapis/sheets';
+const { google } = pkg;
 import { HealthStatus } from "../../lib/monitoring/health-checker.js";
 
 /**

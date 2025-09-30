@@ -21,9 +21,14 @@ CREATE TABLE IF NOT EXISTS admin_sessions (
     admin_email TEXT NOT NULL,
     ip_address TEXT,
     user_agent TEXT,
+    mfa_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    mfa_verified_at DATETIME NULL,
+    requires_mfa_setup BOOLEAN NOT NULL DEFAULT FALSE,
     expires_at DATETIME NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     last_activity_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    last_accessed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
     revoked_at DATETIME,
     revoke_reason TEXT
 );
