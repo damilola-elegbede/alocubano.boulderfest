@@ -112,11 +112,11 @@
     },
     {
       "source": "/home",
-      "destination": "/pages/core/home"
+      "destination": "/pages/core/home.html"
     },
     {
       "source": "/(about|tickets|donations|contact|checkout-success|checkout-cancel|my-tickets|success|failure|register-tickets|view-tickets)",
-      "destination": "/pages/core/$1"
+      "destination": "/pages/core/$1.html"
     },
     {
       "source": "/(gallery|artists|schedule)",
