@@ -756,7 +756,7 @@
 
           // Display QR code in modal
           document.getElementById("qrCodeContainer").innerHTML = `
-            <h3>Ticket ${ticketId}</h3>
+            <h3>Ticket ${escapeHtml(ticketId)}</h3>
             <p>Show this QR code at the event entrance</p>
             <div style="background: white; padding: 20px; border-radius: 8px; border: 2px solid #ddd;">
               ${qrContainer.innerHTML}

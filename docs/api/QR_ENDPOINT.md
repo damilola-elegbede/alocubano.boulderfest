@@ -86,7 +86,7 @@ const validation = qrTokenService.validateToken(token);
 ### Web Browser
 
 ```html
-<img src="/api/qr/generate?token=<YOUR_JWT_TOKEN>"
+<img src="/api/qr/generate?token={YOUR_JWT_TOKEN}"
      alt="Ticket QR Code"
      width="300"
      height="300" />
@@ -96,7 +96,7 @@ const validation = qrTokenService.validateToken(token);
 
 ```html
 <!-- Direct image embedding -->
-<img src="https://yourdomain.com/api/qr/generate?token=<YOUR_JWT_TOKEN>"
+<img src="https://yourdomain.com/api/qr/generate?token={YOUR_JWT_TOKEN}"
      alt="Your Ticket QR Code"
      style="width: 300px; height: 300px; display: block; margin: 0 auto;" />
 ```
@@ -127,7 +127,7 @@ async function loadQRCode(token) {
 ### cURL Command
 
 ```bash
-curl -X GET "https://yourdomain.com/api/qr/generate?token=<YOUR_JWT_TOKEN>" \
+curl -X GET "https://yourdomain.com/api/qr/generate?token={YOUR_JWT_TOKEN}" \
      -H "Accept: image/png" \
      -o ticket-qr.png
 ```

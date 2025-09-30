@@ -9,33 +9,33 @@ The A Lo Cubano Boulder Fest order number system generates unique, sequential or
 ### Production Format
 
 ```
-ALCBF-YYYY-NNNNN
+ALO-YYYY-NNNN
 ```
 
 **Components**:
-- `ALCBF`: A Lo Cubano Boulder Fest prefix
+- `ALO`: A Lo Cubano prefix
 - `YYYY`: 4-digit year (e.g., 2026)
-- `NNNNN`: 5-digit zero-padded sequence number
+- `NNNN`: 4-digit zero-padded sequence number
 
 **Examples**:
-- `ALCBF-2026-00001` (First order of 2026)
-- `ALCBF-2026-00542` (542nd order of 2026)
-- `ALCBF-2027-00001` (First order of 2027)
+- `ALO-2026-0001` (First order of 2026)
+- `ALO-2026-0542` (542nd order of 2026)
+- `ALO-2027-0001` (First order of 2027)
 
 ### Test Format
 
 ```
-TEST-YYYY-NNNNN
+TEST-YYYY-NNNN
 ```
 
 **Components**:
 - `TEST`: Test transaction prefix
 - `YYYY`: 4-digit year
-- `NNNNN`: 5-digit zero-padded sequence starting at 90000
+- `NNNN`: 4-digit zero-padded sequence starting at 9000
 
 **Examples**:
-- `TEST-2026-90001` (First test order of 2026)
-- `TEST-2026-90234` (234th test order of 2026)
+- `TEST-2026-9001` (First test order of 2026)
+- `TEST-2026-9234` (234th test order of 2026)
 
 ## Technical Implementation
 
@@ -59,7 +59,7 @@ CREATE INDEX idx_order_sequences_key ON order_sequences(sequence_key);
 
 Sequence keys combine prefix and year for separate tracking:
 
-- **Production**: `ALCBF-2026`, `ALCBF-2027`, etc.
+- **Production**: `ALO-2026`, `ALO-2027`, etc.
 - **Test**: `TEST-2026`, `TEST-2027`, etc.
 
 ### Generation Logic
@@ -68,13 +68,13 @@ Sequence keys combine prefix and year for separate tracking:
 /**
  * Generate unique order ID with database sequence tracking
  * @param {boolean} isTest - Whether this is a test order
- * @returns {Promise<string>} Order ID in format PREFIX-YYYY-XXXXX
+ * @returns {Promise<string>} Order ID in format PREFIX-YYYY-XXXX
  */
 async generateOrderId(isTest = false) {
   const year = new Date().getFullYear();
-  const prefix = isTest ? 'TEST' : 'ALCBF';
+  const prefix = isTest ? 'TEST' : 'ALO';
   const sequenceKey = `${prefix}-${year}`;
-  const startNumber = isTest ? 90000 : 1;
+  const startNumber = isTest ? 9000 : 1;
 
   // Atomic increment operation
   const result = await db.execute({
@@ -97,8 +97,8 @@ async generateOrderId(isTest = false) {
     nextNumber = result.rows[0].last_number;
   }
 
-  // Format with zero-padding
-  const formattedNumber = String(nextNumber).padStart(5, '0');
+  // Format with zero-padding (4 digits)
+  const formattedNumber = String(nextNumber).padStart(4, '0');
   return `${prefix}-${year}-${formattedNumber}`;
 }
 ```
@@ -134,7 +134,7 @@ If the database table doesn't exist (pre-migration), the system uses a timestamp
 // Fallback for systems without migration
 const timestamp = Date.now();
 const random = Math.floor(Math.random() * 10000);
-const uniqueComponent = `${timestamp}${random}`.slice(-5);
+const uniqueComponent = `${timestamp}${random}`.slice(-4);
 const fallbackId = `${prefix}-${year}-${uniqueComponent}`;
 ```
 
@@ -202,8 +202,8 @@ CREATE INDEX idx_order_sequences_key ON order_sequences(sequence_key);
 -- Initialize current year sequences if needed
 INSERT OR IGNORE INTO order_sequences (sequence_key, last_number)
 VALUES
-  ('ALCBF-2026', 0),
-  ('TEST-2026', 90000);
+  ('ALO-2026', 0),
+  ('TEST-2026', 9000);
 ```
 
 ### Existing Data Migration
@@ -213,12 +213,12 @@ For systems with existing transactions, backfill order IDs:
 ```sql
 -- Backfill existing transactions with order IDs
 UPDATE transactions
-SET order_id = 'ALCBF-2026-' || printf('%05d', row_number() OVER (ORDER BY created_at))
+SET order_id = 'ALO-2026-' || printf('%04d', row_number() OVER (ORDER BY created_at))
 WHERE order_id IS NULL
   AND test_mode = 0;
 
 UPDATE transactions
-SET order_id = 'TEST-2026-' || printf('%05d', 90000 + row_number() OVER (ORDER BY created_at))
+SET order_id = 'TEST-2026-' || printf('%04d', 9000 + row_number() OVER (ORDER BY created_at))
 WHERE order_id IS NULL
   AND test_mode = 1;
 ```
@@ -234,7 +234,7 @@ WHERE order_id IS NULL
  * @returns {boolean} True if valid format
  */
 function isValidOrderIdFormat(orderId) {
-  const pattern = /^(ALCBF|TEST)-\d{4}-\d{5}$/;
+  const pattern = /^(ALO|TEST)-\d{4}-\d{4}$/;
   return pattern.test(orderId);
 }
 ```
@@ -248,11 +248,11 @@ function isValidOrderIdFormat(orderId) {
  * @returns {Object|null} Parsed components or null if invalid
  */
 function parseOrderId(orderId) {
-  const match = orderId.match(/^(ALCBF|TEST)-(\d{4})-(\d{5})$/);
+  const match = orderId.match(/^(ALO|TEST)-(\d{4})-(\d{4})$/);
   if (!match) return null;
 
   return {
-    prefix: match[1],           // 'ALCBF' or 'TEST'
+    prefix: match[1],           // 'ALO' or 'TEST'
     year: parseInt(match[2]),   // 2026
     sequence: parseInt(match[3]), // 542
     isTest: match[1] === 'TEST'
@@ -260,9 +260,9 @@ function parseOrderId(orderId) {
 }
 
 // Example usage
-const parsed = parseOrderId('ALCBF-2026-00542');
+const parsed = parseOrderId('ALO-2026-0542');
 console.log(parsed);
-// Output: { prefix: 'ALCBF', year: 2026, sequence: 542, isTest: false }
+// Output: { prefix: 'ALO', year: 2026, sequence: 542, isTest: false }
 ```
 
 ## Testing Strategy
@@ -273,13 +273,13 @@ console.log(parsed);
 describe('Order ID Generator', () => {
   test('should generate production order ID', async () => {
     const orderId = await generateOrderId(false);
-    expect(orderId).toMatch(/^ALCBF-\d{4}-\d{5}$/);
+    expect(orderId).toMatch(/^ALO-\d{4}-\d{4}$/);
     expect(orderId).toContain('2026'); // Current year
   });
 
   test('should generate test order ID', async () => {
     const orderId = await generateOrderId(true);
-    expect(orderId).toMatch(/^TEST-\d{4}-\d{5}$/);
+    expect(orderId).toMatch(/^TEST-\d{4}-\d{4}$/);
     expect(orderId).toContain('9000'); // Test prefix
   });
 
@@ -303,7 +303,7 @@ test('should create transaction with order ID', async () => {
   const transaction = await transactionService.createFromStripeSession(session);
 
   expect(transaction.orderId).toBeDefined();
-  expect(transaction.orderId).toMatch(/^ALCBF-\d{4}-\d{5}$/);
+  expect(transaction.orderId).toMatch(/^ALO-\d{4}-\d{4}$/);
 });
 ```
 
@@ -338,7 +338,7 @@ test('should handle concurrent order creation', async () => {
 ### Scalability
 
 - **Horizontal Scaling**: Database-backed sequences work across multiple instances
-- **Sequence Limits**: 99,999 orders per year per type (expandable to 6+ digits if needed)
+- **Sequence Limits**: 9,999 orders per year per type (expandable to 5+ digits if needed)
 - **Year Rollover**: Automatic new sequence creation for new years
 
 ## Monitoring and Analytics
@@ -348,7 +348,7 @@ test('should handle concurrent order creation', async () => {
 ```javascript
 // Get current sequence status
 async function getSequenceStatus(year, isTest = false) {
-  const prefix = isTest ? 'TEST' : 'ALCBF';
+  const prefix = isTest ? 'TEST' : 'ALO';
   const sequenceKey = `${prefix}-${year}`;
 
   const result = await db.execute({
@@ -359,8 +359,8 @@ async function getSequenceStatus(year, isTest = false) {
   return {
     sequenceKey,
     lastNumber: result.rows[0]?.last_number || 0,
-    capacity: isTest ? 10000 : 99999, // Max orders for the year
-    utilization: (result.rows[0]?.last_number || 0) / (isTest ? 10000 : 99999)
+    capacity: isTest ? 1000 : 9999, // Max orders for the year
+    utilization: (result.rows[0]?.last_number || 0) / (isTest ? 1000 : 9999)
   };
 }
 ```
@@ -379,8 +379,8 @@ ORDER BY sequence_key;
 -- Growth tracking
 SELECT
   substr(sequence_key, -4) as year,
-  sum(case when sequence_key like 'ALCBF%' then last_number else 0 end) as production_orders,
-  sum(case when sequence_key like 'TEST%' then last_number - 90000 else 0 end) as test_orders
+  sum(case when sequence_key like 'ALO%' then last_number else 0 end) as production_orders,
+  sum(case when sequence_key like 'TEST%' then last_number - 9000 else 0 end) as test_orders
 FROM order_sequences
 GROUP BY substr(sequence_key, -4)
 ORDER BY year;
@@ -402,7 +402,7 @@ ORDER BY year;
 
 2. **Sequence Overflow** (unlikely but handled)
    ```javascript
-   if (nextNumber > 99999) {
+   if (nextNumber > 9999) {
      throw new Error(`Order sequence overflow for ${sequenceKey}`);
    }
    ```
@@ -431,14 +431,14 @@ WHERE sequence_key = 'TEST-2026';
 SELECT
   t1.order_id,
   t2.order_id as next_order_id,
-  (substr(t2.order_id, -5) - substr(t1.order_id, -5)) as gap
+  (substr(t2.order_id, -4) - substr(t1.order_id, -4)) as gap
 FROM transactions t1
 JOIN transactions t2 ON t2.id = (
   SELECT id FROM transactions
-  WHERE id > t1.id AND order_id LIKE 'ALCBF-%'
+  WHERE id > t1.id AND order_id LIKE 'ALO-%'
   LIMIT 1
 )
-WHERE substr(t2.order_id, -5) - substr(t1.order_id, -5) > 1;
+WHERE substr(t2.order_id, -4) - substr(t1.order_id, -4) > 1;
 ```
 
 ## Security Considerations
@@ -459,7 +459,7 @@ WHERE substr(t2.order_id, -5) - substr(t1.order_id, -5) > 1;
 
 ### Planned Features
 
-1. **Custom Prefixes**: Event-specific prefixes (e.g., `SPRING-2026-00001`)
+1. **Custom Prefixes**: Event-specific prefixes (e.g., `SPRING-2026-0001`)
 2. **Sequence Pooling**: Pre-allocate sequence blocks for high-volume periods
 3. **Archive Management**: Automatic archiving of old year sequences
 4. **Analytics Dashboard**: Real-time order volume and sequence status
