@@ -294,7 +294,7 @@ class QRCacheManager {
         </div>
         <button
           class="qr-download-button"
-          data-token="\${token}"
+
           aria-label="Download QR code as PNG"
         >
           💾 Download QR Code
@@ -334,7 +334,7 @@ class QRCacheManager {
         </div>
         <button
           class="qr-retry-button"
-          data-token="\${token}"
+
         >
           🔄 Try Again
         </button>

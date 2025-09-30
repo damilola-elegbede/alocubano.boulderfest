@@ -11,21 +11,25 @@ The QR Code Generation endpoint provides secure, cacheable PNG images of QR code
 **URL**: `GET /api/qr/generate`
 
 **Parameters**:
+
 - `token` (required) - JWT token string for ticket validation
 
 **Headers**:
+
 - `Accept: image/png` (recommended)
 - `Cache-Control: no-cache` (optional, to bypass cache)
 
 ### Response
 
 **Success (200 OK)**:
+
 - **Content-Type**: `image/png`
-- **Cache-Control**: `public, max-age=86400` (24-hour cache)
+- **Cache-Control**: `public, max-age=86400` (24-hour HTTP cache)
 - **Content-Length**: Binary PNG image size
 - **Body**: Raw PNG image buffer
 
 **Error Responses**:
+
 - `400 Bad Request` - Invalid or missing token parameter
 - `405 Method Not Allowed` - Non-GET request method
 - `500 Internal Server Error` - QR code generation failure
@@ -49,11 +53,13 @@ const qrOptions = {
 ### Data Format
 
 QR codes contain URLs in the format:
-```
+
+```text
 https://domain.com/my-ticket#<jwt-token>
 ```
 
 The base URL is automatically determined:
+
 - **Production**: Uses `VERCEL_URL` environment variable
 - **Development**: Defaults to `http://localhost:8080`
 
@@ -69,6 +75,7 @@ const validation = qrTokenService.validateToken(token);
 ```
 
 **Validation checks**:
+
 - JWT signature verification
 - Token expiration (configurable TTL)
 - Token format and structure
@@ -79,7 +86,7 @@ const validation = qrTokenService.validateToken(token);
 ### Web Browser
 
 ```html
-<img src="/api/qr/generate?token=YOUR_TOKEN_HERE..."
+<img src="/api/qr/generate?token=<YOUR_JWT_TOKEN>"
      alt="Ticket QR Code"
      width="300"
      height="300" />
@@ -89,7 +96,7 @@ const validation = qrTokenService.validateToken(token);
 
 ```html
 <!-- Direct image embedding -->
-<img src="https://yourdomain.com/api/qr/generate?token=YOUR_TOKEN_HERE..."
+<img src="https://yourdomain.com/api/qr/generate?token=<YOUR_JWT_TOKEN>"
      alt="Your Ticket QR Code"
      style="width: 300px; height: 300px; display: block; margin: 0 auto;" />
 ```
@@ -120,7 +127,7 @@ async function loadQRCode(token) {
 ### cURL Command
 
 ```bash
-curl -X GET "https://yourdomain.com/api/qr/generate?token=<jwt-token>" \
+curl -X GET "https://yourdomain.com/api/qr/generate?token=<YOUR_JWT_TOKEN>" \
      -H "Accept: image/png" \
      -o ticket-qr.png
 ```
@@ -170,15 +177,24 @@ async function handleQRCodeErrors(token) {
 
 ### Caching Strategy
 
-**Browser Cache**: 24-hour cache headers enable client-side caching:
+**Dual Cache Architecture**: The QR system implements two distinct cache layers:
 
-```http
-Cache-Control: public, max-age=86400
-```
+1. **HTTP Cache (Server-Side)**: 24-hour browser cache via HTTP headers
 
-**CDN/Proxy Cache**: QR codes are cacheable by intermediate proxies
+   ```http
+   Cache-Control: public, max-age=86400
+   ```
 
-**Application Cache**: Consider implementing server-side Redis cache for high-traffic scenarios
+   - Controlled by server responses
+   - Cacheable by CDN/proxy servers
+   - Reduces server load for repeated requests
+
+2. **Client Cache (Client-Side)**: 7-day localStorage + Service Worker cache
+   - Managed by client-side JavaScript (`qr-cache-manager.js`)
+   - Provides offline access and faster loading
+   - Independent of HTTP cache headers
+
+**Important Note**: These cache layers work independently. The HTTP cache controls browser/CDN caching, while the client cache provides additional performance benefits through localStorage and Service Worker caching. See [Performance Optimization](/docs/PERFORMANCE_OPTIMIZATION.md) for details on cache invalidation and interactions.
 
 ### Performance Optimizations
 
@@ -215,7 +231,7 @@ Cache-Control: public, max-age=86400
 - **Temporary URLs**: QR data points to temporary ticket display URLs
 - **No PII**: QR codes contain no personally identifiable information
 
-**Important**: Never log JWTs or full QR URLs in any environment.
+**Important Security Note**: Never log JWT tokens or full QR URLs in any environment. Always redact sensitive authentication data in logs.
 
 ## Monitoring and Debugging
 
@@ -223,13 +239,18 @@ Cache-Control: public, max-age=86400
 
 ```javascript
 // Track successful QR generations without logging sensitive data
-console.log('Generated QR code', { env: isTest ? 'TEST' : 'PRODUCTION' });
+// SECURITY: Never log JWT tokens
+console.log('Generated QR code', {
+  env: isTest ? 'TEST' : 'PRODUCTION',
+  timestamp: Date.now()
+});
 ```
 
 ### Error Logging
 
 ```javascript
 // Server-side error logging
+// SECURITY: Never include JWT tokens in error logs
 console.error("Error generating QR code PNG:", error.message);
 
 // Development-only error details
@@ -241,6 +262,7 @@ if (process.env.NODE_ENV === "development") {
 ### Health Monitoring
 
 Monitor these metrics:
+
 - **Response Time**: P50, P95, P99 latencies
 - **Error Rate**: 4xx and 5xx response percentages
 - **Cache Hit Rate**: Browser and proxy cache effectiveness
@@ -319,14 +341,17 @@ k6 run --vus 50 --duration 30s qr-endpoint-load-test.js
 ### Common Issues
 
 **Issue**: QR code not displaying in emails
+
 - **Cause**: Email client blocks external images
 - **Solution**: Use base64 data URLs or email service image proxying
 
 **Issue**: Token validation errors
+
 - **Cause**: Expired or malformed JWT
 - **Solution**: Regenerate token, check JWT configuration
 
 **Issue**: Slow response times
+
 - **Cause**: No caching, high server load
 - **Solution**: Implement caching, optimize QR generation
 
@@ -336,7 +361,7 @@ k6 run --vus 50 --duration 30s qr-endpoint-load-test.js
 # Test endpoint directly
 curl -I "https://yourdomain.com/api/qr/generate?token=<test-token>"
 
-# Check token validity
+# Check token validity (SECURITY: Use in development only)
 node -e "console.log(require('jsonwebtoken').decode('<token>'))"
 
 # Validate image output
@@ -377,6 +402,7 @@ QR_MARGIN=2                   # Margin units
 ### API Versioning
 
 Future versions will maintain backward compatibility:
+
 - `v1`: Current implementation
 - `v2`: Enhanced features with optional parameters
 - Deprecation notices for legacy features

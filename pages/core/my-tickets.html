@@ -521,7 +521,7 @@
           displayTickets(data.tickets, token);
         } catch (error) {
           console.error("Error fetching tickets:", error);
-          displayMessage(messageContainer, error.message || 'Failed to load tickets. Please try again.', 'error');
+          displayMessage(messageContainer, escapeHtml(error.message) || 'Failed to load tickets. Please try again.', 'error');
           ticketContainer.innerHTML = "";
         }
       }
@@ -546,7 +546,7 @@
           }
 
           if (data.tickets.length === 0) {
-            displayMessage(messageContainer, `No tickets found for ${escapeHtml(email)}. Please check your email address or contact support.`, 'info');
+            displayMessage(messageContainer, 'No tickets found for ' + escapeHtml(email) + '. Please check your email address or contact support.', 'info');
             ticketContainer.innerHTML = "";
             return;
           }
@@ -558,7 +558,7 @@
           displayTickets(data.tickets);
         } catch (error) {
           console.error("Error fetching tickets:", error);
-          displayMessage(messageContainer, error.message || 'Failed to load tickets. Please try again.', 'error');
+          displayMessage(messageContainer, escapeHtml(error.message) || 'Failed to load tickets. Please try again.', 'error');
           ticketContainer.innerHTML = "";
         }
       }
@@ -695,7 +695,7 @@
 
       function showError(message) {
         const messageContainer = document.getElementById("messageContainer");
-        displayMessage(messageContainer, message, 'error', {
+        displayMessage(messageContainer, escapeHtml(message), 'error', {
           clearPrevious: true,
           autoHide: true,
           hideDelay: 5000
@@ -704,7 +704,7 @@
 
       function showSuccess(message) {
         const messageContainer = document.getElementById("messageContainer");
-        displayMessage(messageContainer, message, 'success', {
+        displayMessage(messageContainer, escapeHtml(message), 'success', {
           clearPrevious: true,
           autoHide: true,
           hideDelay: 5000
@@ -765,7 +765,7 @@
 
           openModal("qrModal");
         } catch (error) {
-          showError(`Failed to generate QR code: ${error.message}`);
+          showError('Failed to generate QR code: ' + escapeHtml(error.message));
         }
       }
 
@@ -863,7 +863,7 @@
           showSuccess("Ticket transferred successfully!");
           setTimeout(() => location.reload(), 2000);
         } catch (error) {
-          showError(`Transfer failed: ${error.message}`);
+          showError('Transfer failed: ' + escapeHtml(error.message));
         }
       }
 
@@ -908,7 +908,7 @@
           showSuccess("Ticket cancelled successfully!");
           setTimeout(() => location.reload(), 2000);
         } catch (error) {
-          showError(`Cancellation failed: ${error.message}`);
+          showError('Cancellation failed: ' + escapeHtml(error.message));
         }
       }
 

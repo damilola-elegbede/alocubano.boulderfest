@@ -14,9 +14,39 @@ CREATE TABLE IF NOT EXISTS order_sequences (
 CREATE INDEX IF NOT EXISTS idx_order_sequences_key ON order_sequences(sequence_key);
 
 -- Initialize sequences for current and upcoming years
-INSERT OR IGNORE INTO order_sequences (sequence_key, last_number) VALUES ('ALCBF-2024', 0);
-INSERT OR IGNORE INTO order_sequences (sequence_key, last_number) VALUES ('TEST-2024', 89999);
-INSERT OR IGNORE INTO order_sequences (sequence_key, last_number) VALUES ('ALCBF-2025', 0);
-INSERT OR IGNORE INTO order_sequences (sequence_key, last_number) VALUES ('TEST-2025', 89999);
-INSERT OR IGNORE INTO order_sequences (sequence_key, last_number) VALUES ('ALCBF-2026', 0);
-INSERT OR IGNORE INTO order_sequences (sequence_key, last_number) VALUES ('TEST-2026', 89999);
+-- Using NOT EXISTS pattern for maximum SQL portability (SQLite, PostgreSQL, MySQL compatibility)
+INSERT INTO order_sequences (sequence_key, last_number)
+SELECT 'ALCBF-2024', 0
+WHERE NOT EXISTS (
+  SELECT 1 FROM order_sequences WHERE sequence_key = 'ALCBF-2024'
+);
+
+INSERT INTO order_sequences (sequence_key, last_number)
+SELECT 'TEST-2024', 89999
+WHERE NOT EXISTS (
+  SELECT 1 FROM order_sequences WHERE sequence_key = 'TEST-2024'
+);
+
+INSERT INTO order_sequences (sequence_key, last_number)
+SELECT 'ALCBF-2025', 0
+WHERE NOT EXISTS (
+  SELECT 1 FROM order_sequences WHERE sequence_key = 'ALCBF-2025'
+);
+
+INSERT INTO order_sequences (sequence_key, last_number)
+SELECT 'TEST-2025', 89999
+WHERE NOT EXISTS (
+  SELECT 1 FROM order_sequences WHERE sequence_key = 'TEST-2025'
+);
+
+INSERT INTO order_sequences (sequence_key, last_number)
+SELECT 'ALCBF-2026', 0
+WHERE NOT EXISTS (
+  SELECT 1 FROM order_sequences WHERE sequence_key = 'ALCBF-2026'
+);
+
+INSERT INTO order_sequences (sequence_key, last_number)
+SELECT 'TEST-2026', 89999
+WHERE NOT EXISTS (
+  SELECT 1 FROM order_sequences WHERE sequence_key = 'TEST-2026'
+);

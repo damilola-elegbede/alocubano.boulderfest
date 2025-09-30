@@ -483,12 +483,10 @@
 
       function showError(message = "Unable to load ticket") {
         document.getElementById("loading-state").style.display = "none";
-        document.getElementById("error-state").style.display = "block";
-        // Optionally update error message if element exists
-        const errorMsg = document.getElementById("error-state");
-        if (errorMsg) {
-          errorMsg.textContent = message;
-        }
+        const errorState = document.getElementById("error-state");
+        errorState.style.display = "block";
+        // Update error message safely using textContent (XSS-safe)
+        errorState.textContent = message;
       }
 
       async function loadQRCode(token) {

@@ -115,24 +115,27 @@ class ServiceWorkerManager {
 
     handleServiceWorkerMessage(event) {
         const message = event.data;
+        
+        // Guard against non-object payloads before destructuring
         if (!message || typeof message !== 'object') {
             console.warn('Unexpected SW message payload:', message);
             return;
         }
+        
+        // Safe destructuring after validation
         const { type, data } = message;
 
         switch (type) {
         case 'CACHE_CLEANUP_COMPLETE':
-            // Fix: event.data contains cleanedCount directly, not in a data property
-            console.log(`Service Worker cache cleanup: ${event.data.cleanedCount} entries removed`);
+            console.log(`Service Worker cache cleanup: ${message.cleanedCount} entries removed`);
             break;
 
         case 'SW_METRICS':
-            console.log('Service Worker metrics:', data.metrics);
+            console.log('Service Worker metrics:', data?.metrics || data);
             break;
 
         default:
-            console.log('Unknown SW message:', event.data);
+            console.log('Unknown SW message:', message);
         }
     }
 

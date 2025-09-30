@@ -270,6 +270,7 @@ class WalletLazyLoader {
    * Show wallet error state
    */
   showWalletError(container, message) {
+    // Create error UI structure safely
     container.innerHTML = `
       <div class="wallet-error">
         <div class="wallet-error-icon">⚠️</div>
@@ -285,6 +286,8 @@ class WalletLazyLoader {
         </button>
       </div>
     `;
+
+    // Safely set error message using textContent (XSS-safe)
     const detailEl = container.querySelector('.wallet-error-detail');
     if (detailEl) {
       detailEl.textContent = message;

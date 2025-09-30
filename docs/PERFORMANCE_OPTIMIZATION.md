@@ -468,7 +468,7 @@ window.addEventListener('load', () => {
 
 ```javascript
 // Get detailed cache statistics
-function getCacheStatistics() {
+async function getCacheStatistics() {
   const qrCache = window.qrCacheManager.getCacheStats();
   const serviceWorkerCache = await caches.open('qr-cache-v1');
   const swCacheKeys = await serviceWorkerCache.keys();

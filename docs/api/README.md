@@ -57,18 +57,21 @@ export default async function handler(req, res) {
 ### Email Services
 
 #### Newsletter Subscription
+
 - **Endpoint**: `POST /api/email/subscribe`
 - **Purpose**: Subscribe users to newsletter via Brevo
 - **Request**: `{ email: string }`
 - **Response**: `{ success: boolean, message: string }`
 
 #### Newsletter Unsubscribe
+
 - **Endpoint**: `GET|POST /api/email/unsubscribe`
 - **Purpose**: Unsubscribe users with secure token
 - **Query**: `?token=<unsubscribe_token>`
 - **Response**: HTML page confirming unsubscription
 
 #### Brevo Webhook
+
 - **Endpoint**: `POST /api/email/brevo-webhook`
 - **Purpose**: Process Brevo email events
 - **Authentication**: HMAC signature validation
@@ -77,9 +80,11 @@ export default async function handler(req, res) {
 ### Payment Services
 
 #### Create Checkout Session
+
 - **Endpoint**: `POST /api/payments/create-checkout-session`
 - **Purpose**: Create Stripe checkout session for ticket purchases
 - **Request**:
+
   ```json
   {
     "items": [
@@ -91,22 +96,26 @@ export default async function handler(req, res) {
     ]
   }
   ```
+
 - **Response**:
+
   ```json
   {
     "sessionId": "string",
     "url": "string",
-    "orderId": "ALCBF-YYYY-NNNNN"
+    "orderId": "ALO-YYYY-NNNN"
   }
   ```
 
 #### Stripe Webhook
+
 - **Endpoint**: `POST /api/payments/stripe-webhook`
 - **Purpose**: Handle Stripe payment events
 - **Authentication**: Stripe signature validation
 - **Events**: payment_intent.succeeded, checkout.session.completed
 
 #### Checkout Success
+
 - **Endpoint**: `GET /api/payments/checkout-success`
 - **Purpose**: Handle post-payment redirect
 - **Query**: `?session_id=<stripe_session_id>`
@@ -115,23 +124,29 @@ export default async function handler(req, res) {
 ### QR Code Services
 
 #### Generate QR Code
+
 - **Endpoint**: `GET /api/qr/generate`
 - **Purpose**: Generate QR code PNG image for tickets
 - **Query**: `?token=<jwt_token>`
 - **Response**: Binary PNG image (300x300px)
-- **Cache**: 24-hour browser cache headers
+- **Cache**: 24-hour HTTP cache headers (server-side caching)
 - **Authentication**: JWT token validation
 - **Error Codes**:
   - `400`: Invalid or missing token
   - `405`: Method not allowed (non-GET)
+  - `429`: Rate limit exceeded
   - `500`: QR generation failure
+
+**Note**: The 24-hour HTTP cache is distinct from the client-side 7-day localStorage/Service Worker cache. See [Performance Optimization](/docs/PERFORMANCE_OPTIMIZATION.md) for details on the dual cache architecture.
 
 ### Ticket Services
 
 #### Get Ticket Details
+
 - **Endpoint**: `GET /api/tickets/[ticketId]`
 - **Purpose**: Retrieve ticket information
 - **Response**:
+
   ```json
   {
     "id": "string",
@@ -139,21 +154,25 @@ export default async function handler(req, res) {
     "purchaseDate": "ISO string",
     "qrCode": "string",
     "status": "active|used|expired",
-    "orderId": "ALCBF-YYYY-NNNNN"
+    "orderId": "ALO-YYYY-NNNN"
   }
   ```
 
 #### Validate Ticket
+
 - **Endpoint**: `POST /api/tickets/validate`
 - **Purpose**: Validate QR code at event entrance or display ticket details
 - **Request**:
+
   ```json
   {
     "token": "jwt_token_string",
     "validateOnly": true
   }
   ```
+
 - **Response**:
+
   ```json
   {
     "valid": true,
@@ -165,15 +184,18 @@ export default async function handler(req, res) {
     }
   }
   ```
+
 - **Enhanced Features**:
   - JWT token support for secure validation
   - `validateOnly` flag to prevent scan count increment
   - Batch token support for multi-ticket purchases
 
 #### Register Ticket
+
 - **Endpoint**: `POST /api/tickets/register`
 - **Purpose**: Register attendee information for ticket
 - **Request**:
+
   ```json
   {
     "ticketId": "string",
@@ -184,6 +206,7 @@ export default async function handler(req, res) {
   ```
 
 #### Apple Wallet Pass
+
 - **Endpoint**: `GET /api/tickets/apple-wallet/[ticketId]`
 - **Purpose**: Generate Apple Wallet pass file
 - **Response**: Binary `.pkpass` file
@@ -194,14 +217,17 @@ export default async function handler(req, res) {
   - QR code integration for event entry
 
 #### Google Wallet Pass
+
 - **Endpoint**: `GET /api/tickets/google-wallet/[ticketId]`
 - **Purpose**: Generate Google Wallet pass URL
 - **Response**:
+
   ```json
   {
     "url": "https://pay.google.com/gp/v/save/..."
   }
   ```
+
 - **Authentication**: JWT-based wallet authentication
 - **Features**:
   - Web-based pass delivery
@@ -211,9 +237,11 @@ export default async function handler(req, res) {
 ### Registration Services
 
 #### Get Registration Status
+
 - **Endpoint**: `GET /api/registration/[token]`
 - **Purpose**: Get registration status for all tickets in purchase
 - **Response**:
+
   ```json
   {
     "tickets": [
@@ -227,9 +255,11 @@ export default async function handler(req, res) {
   ```
 
 #### Batch Registration
+
 - **Endpoint**: `POST /api/registration/batch`
 - **Purpose**: Register multiple tickets at once
 - **Request**:
+
   ```json
   {
     "token": "string",
@@ -245,6 +275,7 @@ export default async function handler(req, res) {
   ```
 
 #### Registration Health Check
+
 - **Endpoint**: `GET /api/registration/health`
 - **Purpose**: Verify registration system status
 - **Response**: `{ status: "healthy", database: "connected" }`
@@ -252,6 +283,7 @@ export default async function handler(req, res) {
 ### Admin Services
 
 #### Admin Login
+
 - **Endpoint**: `POST /api/admin/login`
 - **Purpose**: Authenticate admin users
 - **Request**: `{ password: string }`
@@ -259,10 +291,12 @@ export default async function handler(req, res) {
 - **Authentication**: bcrypt password verification
 
 #### Admin Dashboard
+
 - **Endpoint**: `GET /api/admin/dashboard`
 - **Purpose**: Get dashboard statistics
 - **Authentication**: JWT token required
 - **Response**:
+
   ```json
   {
     "totalTickets": number,
@@ -278,6 +312,7 @@ export default async function handler(req, res) {
   ```
 
 #### Admin Registrations
+
 - **Endpoint**: `GET /api/admin/registrations`
 - **Purpose**: List all ticket registrations
 - **Authentication**: JWT token required
@@ -287,10 +322,12 @@ export default async function handler(req, res) {
 ### Gallery Services
 
 #### Get Photos
+
 - **Endpoint**: `GET /api/gallery`
 - **Purpose**: Retrieve photos from Google Drive
 - **Query**: `?year=2023&limit=50&offset=0`
 - **Response**:
+
   ```json
   {
     "photos": [
@@ -306,11 +343,13 @@ export default async function handler(req, res) {
   ```
 
 #### Get Available Years
+
 - **Endpoint**: `GET /api/gallery/years`
 - **Purpose**: Get list of years with photos
 - **Response**: `{ years: [2023, 2024, 2025] }`
 
 #### Featured Photos
+
 - **Endpoint**: `GET /api/featured-photos`
 - **Purpose**: Get curated featured photos
 - **Response**: `{ photos: array, count: number }`
@@ -318,9 +357,11 @@ export default async function handler(req, res) {
 ### Health Check Services
 
 #### General Health Check
+
 - **Endpoint**: `GET /api/health/check`
 - **Purpose**: Verify application health
 - **Response**:
+
   ```json
   {
     "status": "healthy",
@@ -336,6 +377,7 @@ export default async function handler(req, res) {
   ```
 
 #### Database Health Check
+
 - **Endpoint**: `GET /api/health/database`
 - **Purpose**: Verify database connectivity
 - **Response**: `{ status: "connected", type: "turso|sqlite" }`
@@ -354,10 +396,10 @@ The QR code generation system provides secure, cacheable PNG images:
 
 ### Order Number System
 
-Sequential order tracking with format `ALCBF-YYYY-NNNNN`:
+Sequential order tracking with format `ALO-YYYY-NNNN`:
 
-- **Production Orders**: `ALCBF-2026-00001`, `ALCBF-2026-00002`, etc.
-- **Test Orders**: `TEST-2026-90001`, `TEST-2026-90002`, etc.
+- **Production Orders**: `ALO-2026-0001`, `ALO-2026-0002`, etc.
+- **Test Orders**: `TEST-2026-9001`, `TEST-2026-9002`, etc.
 - **Database Sequences**: Thread-safe atomic increments
 - **Year Separation**: Independent sequences per year
 - **Fallback Support**: Timestamp-based IDs if database unavailable
@@ -376,7 +418,9 @@ Comprehensive mobile wallet integration:
 
 Advanced caching and loading strategies:
 
-- **QR Code Caching**: 7-day localStorage with automatic cleanup
+- **QR Code Caching**: Dual cache architecture
+  - **HTTP Cache**: 24-hour server-side browser cache
+  - **Client Cache**: 7-day localStorage + Service Worker cache
 - **Service Worker**: Background caching for offline support
 - **Lazy Loading**: Intersection Observer for wallet components
 - **Progressive Enhancement**: Skeleton UI during loading
@@ -463,10 +507,14 @@ const client = createClient({
 ### Caching Strategy
 
 - **Static responses**: 24-hour browser cache
-- **QR codes**: 24-hour browser + 7-day localStorage
+- **QR codes**: Dual-layer caching
+  - **HTTP Cache**: 24-hour browser cache (server-controlled)
+  - **Client Cache**: 7-day localStorage + Service Worker cache
 - **Dynamic content**: No caching (real-time data)
 - **Images**: CDN caching via Google Drive
 - **Database connections**: Connection pooling via Turso
+
+**Note**: See [Performance Optimization](/docs/PERFORMANCE_OPTIMIZATION.md) for detailed information on cache layer interactions and invalidation strategies.
 
 ## Monitoring
 
@@ -478,6 +526,7 @@ const client = createClient({
 - **Cache performance**: Hit rates and efficiency
 - **QR generation**: Success rates and timing
 - **Wallet adoption**: Pass generation and usage
+- **Rate limiting**: QR scan rate limits and throttling
 - **External service health**: Stripe, Brevo, Google Drive availability
 
 ### Alerting
@@ -486,7 +535,25 @@ const client = createClient({
 - **High latency**: P95 > 1000ms
 - **Database issues**: Connection failures
 - **Cache misses**: Hit rate < 80%
+- **Rate limit breaches**: Unusual QR scan patterns
 - **External service outages**: Payment or email failures
+
+### QR Scan Rate Limit Monitoring
+
+Monitor these specific metrics for QR code scanning:
+
+- **Rate limit triggers**: Track 429 responses from `/api/qr/generate`
+- **Scan patterns**: Identify unusual burst patterns
+- **User impact**: Monitor legitimate users affected by rate limits
+- **Threshold tuning**: Adjust rate limits based on usage patterns
+- **IP-based tracking**: Identify potential abuse sources
+
+**Recommended Actions**:
+
+- Set alerts for sustained 429 response rates > 5%
+- Implement progressive rate limit increases for verified users
+- Log rate limit violations for security analysis
+- Consider implementing CAPTCHA for suspicious patterns
 
 ## Development Guidelines
 

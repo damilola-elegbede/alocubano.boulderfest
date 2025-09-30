@@ -6,7 +6,7 @@
 class WalletButtons {
   constructor() {
     this.platform = this.detectPlatform();
-    WalletButtons.ensureClickTracking();
+    // Click tracking ensured via static method
   }
 
   /**
@@ -283,8 +283,11 @@ class WalletButtons {
   }
 }
 
-// Initialize static flag
+// Initialize static flag and setup click tracking once
 WalletButtons._clickTrackingRegistered = false;
+
+// Setup click tracking immediately when module loads
+WalletButtons.ensureClickTracking();
 
 // Add CSS styles for wallet buttons
 const walletStyles = `

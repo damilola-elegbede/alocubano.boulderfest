@@ -138,20 +138,25 @@ alocubano.boulderfest/
 ## 🆕 New Ticket Payment Features (2024)
 
 ### QR Code System
+
 - ✅ **Secure QR Generation**: JWT-based QR code endpoint (`/api/qr/generate`)
 - ✅ **PNG Image Format**: 300x300px optimized for email compatibility
-- ✅ **Performance Caching**: 7-day localStorage cache with automatic cleanup
+- ✅ **Dual Cache Architecture**: 24-hour HTTP cache (server) + 7-day localStorage cache (client)
 - ✅ **Progressive Loading**: Skeleton UI with retry logic and exponential backoff
 - ✅ **Email Integration**: Direct QR code embedding in confirmation emails
 
+**Note**: QR codes use dual-layer caching for optimal performance. Server-side HTTP cache (24h) is independent of client-side localStorage/Service Worker cache (7d). See [Performance Optimization](/docs/PERFORMANCE_OPTIMIZATION.md) for details.
+
 ### Order Number System
-- ✅ **Sequential Order IDs**: Format `ALCBF-YYYY-NNNNN` for production
-- ✅ **Test Order Support**: Format `TEST-YYYY-NNNNN` starting at 90000
+
+- ✅ **Sequential Order IDs**: Format `ALO-YYYY-NNNN` for production
+- ✅ **Test Order Support**: Format `TEST-YYYY-NNNN` starting at 9000
 - ✅ **Thread-Safe Generation**: Database-backed atomic sequence increments
 - ✅ **Year-Based Sequences**: Independent order numbering per year
 - ✅ **Fallback Mechanism**: Timestamp-based IDs when database unavailable
 
 ### Mobile Wallet Integration
+
 - ✅ **Apple Wallet Passes**: `.pkpass` files with certificate signing
 - ✅ **Google Wallet Support**: Web-based pass URLs with JWT authentication
 - ✅ **Dynamic Pass Generation**: Real-time ticket details in wallet passes
@@ -159,6 +164,7 @@ alocubano.boulderfest/
 - ✅ **QR Code Integration**: Seamless scanning for event entry
 
 ### Enhanced Ticket Display
+
 - ✅ **My Ticket Page**: Comprehensive ticket viewing with QR codes
 - ✅ **Wallet Download Buttons**: One-click wallet pass generation
 - ✅ **Dark Mode Support**: Theme-aware ticket display
@@ -166,19 +172,30 @@ alocubano.boulderfest/
 - ✅ **Lazy Loading**: Performance-optimized wallet button loading
 
 ### Email Service Updates
+
 - ✅ **QR Code Emails**: Direct QR image embedding in transactional emails
 - ✅ **Confirmation Summaries**: Enhanced email templates with order details
 - ✅ **Registration Reminders**: Automated follow-up email sequences
 - ✅ **Wallet Pass Links**: Direct links to add tickets to mobile wallets
 
 ### Performance Optimizations
+
 - ✅ **Service Worker**: Background caching for offline QR code access
 - ✅ **Intersection Observer**: Lazy loading for wallet components
 - ✅ **Performance Dashboard**: Real-time monitoring of QR and wallet metrics
 - ✅ **Cache Management**: Intelligent cache expiration and cleanup
+- ✅ **Dual Cache Strategy**: Server HTTP cache (24h) + client localStorage/SW cache (7d)
 - ✅ **Error Tracking**: Comprehensive error monitoring and recovery
 
+**Cache Architecture**: The system implements two independent cache layers:
+
+- **Server Cache**: 24-hour HTTP browser cache (controlled by API responses)
+- **Client Cache**: 7-day localStorage + Service Worker cache (client-side management)
+
+This dual approach provides optimal performance with fast server responses and extended offline capability.
+
 ### Enhanced Security
+
 - ✅ **JWT Validation**: Enhanced ticket validation with JWT tokens
 - ✅ **Wallet Authentication**: Secure pass generation with JWT signing
 - ✅ **Token Expiration**: Configurable TTL for security tokens
@@ -359,8 +376,8 @@ npm run migrate:status         # Check migration status
 
 ### Key Features Documentation
 
-- **QR Code System**: JWT-based QR generation with 7-day caching
-- **Order Number System**: Sequential order tracking with ALCBF-YYYY-NNNNN format
+- **QR Code System**: JWT-based QR generation with dual cache architecture (24h HTTP + 7d client)
+- **Order Number System**: Sequential order tracking with ALO-YYYY-NNNN format
 - **Mobile Wallet Passes**: Apple Wallet and Google Wallet integration
 - **Performance Optimization**: Advanced caching, lazy loading, and monitoring
 - **Registration System**: JWT-based ticket registration with 72-hour window
