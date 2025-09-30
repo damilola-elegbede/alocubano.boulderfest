@@ -133,9 +133,10 @@ async function initializeTestDashboard() {
         await cartManager.initialize();
         testDashboardState.cartManager = cartManager;
 
-        // Fetch and render test tickets
-        const tickets = await fetchTestTickets();
-        renderTestTickets(tickets);
+        // Static tickets are loaded from bootstrap.json in HTML
+        // Dynamic loading disabled - tickets are hardcoded in test-dashboard.html
+        // const tickets = await fetchTestTickets();
+        // renderTestTickets(tickets);
 
         // Attach event listeners to test buttons
         attachTestDashboardEventListeners();
