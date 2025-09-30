@@ -275,7 +275,7 @@ class WalletLazyLoader {
         <div class="wallet-error-icon">⚠️</div>
         <div class="wallet-error-message">
           Unable to load wallet options<br>
-          <small>${message}</small>
+          <small class="wallet-error-detail"></small>
         </div>
         <button
           class="wallet-retry-button"
@@ -285,6 +285,10 @@ class WalletLazyLoader {
         </button>
       </div>
     `;
+    const detailEl = container.querySelector('.wallet-error-detail');
+    if (detailEl) {
+      detailEl.textContent = message;
+    }
   }
 
   /**

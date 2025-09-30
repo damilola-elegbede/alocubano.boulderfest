@@ -35,10 +35,18 @@ export default async function handler(req, res) {
       });
     }
 
-    // Determine base URL for QR code data
-    const baseUrl = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : "http://localhost:8080";
+    // Determine base URL for QR code data from request
+    const host = process.env.VERCEL_URL ?? req.headers.host;
+    if (!host) {
+      return res
+        .status(500)
+        .json({ error: "Unable to resolve QR base URL" });
+    }
+    const protocol =
+      req.headers["x-forwarded-proto"] ??
+      (host.startsWith("localhost") || host.startsWith("127.") ? "http" : "https");
+    const normalizedHost = host.replace(/^https?:\/\//, "");
+    const baseUrl = `${protocol}://${normalizedHost}`;
 
     // Generate QR data pointing to the ticket page
     const qrData = `${baseUrl}/my-ticket#${token}`;

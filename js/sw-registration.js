@@ -114,7 +114,12 @@ class ServiceWorkerManager {
     }
 
     handleServiceWorkerMessage(event) {
-        const { type, data } = event.data;
+        const message = event.data;
+        if (!message || typeof message !== 'object') {
+            console.warn('Unexpected SW message payload:', message);
+            return;
+        }
+        const { type, data } = message;
 
         switch (type) {
         case 'CACHE_CLEANUP_COMPLETE':

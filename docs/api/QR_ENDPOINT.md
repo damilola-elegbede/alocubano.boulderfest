@@ -211,17 +211,19 @@ Cache-Control: public, max-age=86400
 
 ### Privacy Protection
 
-- **No Logging**: Token values not logged in plaintext
+- **No Logging**: Token values and QR URLs not logged in plaintext
 - **Temporary URLs**: QR data points to temporary ticket display URLs
 - **No PII**: QR codes contain no personally identifiable information
+
+**Important**: Never log JWTs or full QR URLs in any environment.
 
 ## Monitoring and Debugging
 
 ### Success Metrics
 
 ```javascript
-// Track successful QR generations
-console.log(`Generated QR code: ${qrData} (${isTest ? 'TEST' : 'PRODUCTION'})`);
+// Track successful QR generations without logging sensitive data
+console.log('Generated QR code', { env: isTest ? 'TEST' : 'PRODUCTION' });
 ```
 
 ### Error Logging

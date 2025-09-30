@@ -6,7 +6,7 @@
 class WalletButtons {
   constructor() {
     this.platform = this.detectPlatform();
-    this.setupClickTracking();
+    WalletButtons.ensureClickTracking();
   }
 
   /**
@@ -228,9 +228,14 @@ class WalletButtons {
   }
 
   /**
-   * Setup global click tracking for wallet buttons
+   * Setup global click tracking for wallet buttons (static to prevent duplicates)
    */
-  setupClickTracking() {
+  static ensureClickTracking() {
+    if (WalletButtons._clickTrackingRegistered) {
+      return;
+    }
+    WalletButtons._clickTrackingRegistered = true;
+
     // Track wallet button interactions globally
     document.addEventListener('click', (event) => {
       if (event.target.closest('.wallet-button')) {
@@ -277,6 +282,9 @@ class WalletButtons {
     return wallet.createWalletButtons(ticketId, options);
   }
 }
+
+// Initialize static flag
+WalletButtons._clickTrackingRegistered = false;
 
 // Add CSS styles for wallet buttons
 const walletStyles = `

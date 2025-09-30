@@ -124,6 +124,11 @@ class QRCacheManager {
       onProgress = null
     } = options;
 
+    // Persist token on container for retry functionality
+    if (container) {
+      container.dataset.qrContainer = token;
+    }
+
     // Start performance tracking
     const perfId = this.startPerformanceTracking('qr_load', token);
 
@@ -346,7 +351,7 @@ class QRCacheManager {
    * Retry loading QR code
    */
   async retryLoad(token) {
-    const container = document.querySelector(`[data-token="${token}"]`)?.parentElement;
+    const container = document.querySelector(`[data-qr-container="${token}"]`);
     if (!container) return;
 
     // Clear any cached error state
