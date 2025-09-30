@@ -229,6 +229,10 @@ async function createOrderHandler(req, res) {
     // Create PayPal order using service
     const paypalOrder = await createPayPalOrder(paypalOrderData, req);
 
+    // Determine event_id from cart items (use first item's eventId if valid, otherwise null)
+    const firstEventId = cartItems[0]?.eventId;
+    const eventId = (firstEventId && firstEventId > 0) ? `boulderfest_${firstEventId}` : null;
+
     // Store transaction in database BEFORE redirect
     const insertResult = await dbClient.execute({
       sql: `INSERT INTO transactions (
@@ -242,8 +246,8 @@ async function createOrderHandler(req, res) {
         transactionUuid,
         orderType,
         'pending',
-        Math.round(totalAmount * 100), // Convert to cents
-        Math.round(totalAmount * 100),
+        Math.round(totalAmount), // Already in cents, don't multiply
+        Math.round(totalAmount),
         'USD',
         paypalOrder.id,
         'paypal',
@@ -256,9 +260,10 @@ async function createOrderHandler(req, res) {
           paypal_order_id: paypalOrder.id,
           reference_id: referenceId,
           total_amount: totalAmount,
-          item_count: cartItems.length
+          item_count: cartItems.length,
+          event_id: eventId
         })),
-        'boulderfest_2026',
+        eventId, // Use dynamic event_id or null for test tickets
         'website',
         getTestModeFlag(req)
       ]
