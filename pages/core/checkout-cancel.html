@@ -74,7 +74,7 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        background: var(--color-background);
         padding: var(--space-xl);
         margin: 0;
         font-family: var(--font-sans);
@@ -83,11 +83,12 @@
 
       .cancel-container {
         max-width: 600px;
-        background: var(--color-white);
+        background: var(--color-surface);
         border-radius: 12px;
         padding: var(--space-xl);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
         animation: slideInUp 0.6s ease-out;
+        border: 1px solid var(--color-border);
       }
 
       .logo-container {
@@ -109,7 +110,7 @@
         width: 80px;
         height: 80px;
         margin: 0 auto var(--space-lg);
-        background: var(--color-warning, #fbbf24);
+        background: #fbbf24;
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -119,7 +120,7 @@
 
       .cancel-icon::after {
         content: "⏸";
-        color: var(--color-text-on-warning, white);
+        color: #000;
         font-size: 2.5rem;
         font-weight: bold;
       }
@@ -127,21 +128,21 @@
       .cancel-title {
         font-size: var(--font-size-3xl);
         font-weight: 700;
-        color: var(--color-black);
+        color: var(--color-text-primary);
         margin-bottom: var(--space-md);
         font-family: var(--font-display);
       }
 
       .cancel-message {
         font-size: var(--font-size-lg);
-        color: var(--color-black);
+        color: var(--color-text-primary);
         margin-bottom: var(--space-lg);
         line-height: 1.6;
-        opacity: 0.8;
       }
 
       .reassurance-box {
-        background: var(--color-info-light, #e3f2fd);
+        background: var(--color-info-bg, rgba(91, 107, 181, 0.1));
+        border: 2px solid var(--color-blue);
         border-radius: 8px;
         padding: var(--space-lg);
         margin: var(--space-lg) 0;
@@ -150,23 +151,27 @@
 
       .reassurance-box h3 {
         margin-top: 0;
-        color: var(--color-blue);
+        color: var(--color-text-primary);
         font-size: var(--font-size-lg);
         margin-bottom: var(--space-md);
+        font-weight: 700;
       }
 
       .reassurance-box ul {
         margin: 0;
         padding-left: var(--space-lg);
+        color: var(--color-text-primary);
       }
 
       .reassurance-box li {
         margin-bottom: var(--space-sm);
         line-height: 1.6;
+        color: var(--color-text-primary);
       }
 
       .support-info {
-        background: var(--color-surface, #f8f9fa);
+        background: var(--color-background-alt);
+        border: 1px solid var(--color-border);
         border-radius: 8px;
         padding: var(--space-lg);
         margin: var(--space-lg) 0;
@@ -175,14 +180,16 @@
 
       .support-info h3 {
         margin-top: 0;
-        color: var(--color-black);
+        color: var(--color-text-primary);
         font-size: var(--font-size-lg);
         margin-bottom: var(--space-md);
+        font-weight: 700;
       }
 
       .support-info p {
         margin-bottom: var(--space-sm);
         line-height: 1.6;
+        color: var(--color-text-primary);
       }
 
       .support-links {
@@ -200,6 +207,7 @@
 
       .support-links a:hover {
         color: var(--color-red);
+        text-decoration: underline;
       }
 
       .action-buttons {
@@ -214,36 +222,44 @@
         display: inline-block;
         padding: var(--space-md) var(--space-lg);
         background-color: var(--color-blue);
-        color: var(--color-white);
+        color: #fff;
         text-decoration: none;
         border-radius: 6px;
         font-weight: 600;
         transition: all 0.3s ease;
         border: none;
         cursor: pointer;
+        min-width: 140px;
       }
 
       .btn:hover {
         background-color: var(--color-red);
         transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       }
 
       .btn-secondary {
         background-color: transparent;
-        color: var(--color-black);
-        border: 2px solid var(--color-black);
+        color: var(--color-text-primary);
+        border: 2px solid var(--color-text-primary);
       }
 
       .btn-secondary:hover {
-        background-color: var(--color-black);
-        color: var(--color-white);
+        background-color: var(--color-text-primary);
+        color: var(--color-surface);
+        transform: translateY(-2px);
       }
 
       .countdown {
         font-size: var(--font-size-sm);
-        color: var(--color-text-secondary, #666);
+        color: var(--color-text-secondary);
         margin-top: var(--space-md);
         font-style: italic;
+      }
+
+      .countdown a {
+        color: var(--color-blue);
+        text-decoration: underline;
       }
 
       @keyframes slideInUp {
@@ -331,9 +347,9 @@
       </div>
 
       <div class="action-buttons">
-        <a href="/tickets" class="btn" id="try-again-btn">Try Again</a>
-        <a href="/" class="btn-secondary">Return Home</a>
-        <a href="/about" class="btn-secondary">About Festival</a>
+        <a href="/tickets" class="btn">Try Again</a>
+        <a href="/" class="btn btn-secondary">Return Home</a>
+        <a href="/about" class="btn btn-secondary">About Festival</a>
       </div>
 
       <div class="countdown" id="countdown">
