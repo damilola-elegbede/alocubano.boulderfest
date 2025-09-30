@@ -141,68 +141,8 @@
       <!-- Test Tickets Grid -->
       <div class="test-ticket-section">
         <h3>Add Test Tickets</h3>
-        <div class="test-ticket-grid">
-          <!-- VIP Pass -->
-          <div class="test-ticket-card">
-            <div class="ticket-badge">VIP</div>
-            <h4>VIP Pass</h4>
-            <div class="ticket-price">$150</div>
-            <p class="ticket-description">Full festival access with VIP perks including exclusive areas and early entry</p>
-            <button class="test-add-btn admin-btn admin-btn-success" data-item="test-vip-pass">
-              + Add to Cart
-            </button>
-          </div>
-
-          <!-- Weekend Pass -->
-          <div class="test-ticket-card">
-            <div class="ticket-badge popular">POPULAR</div>
-            <h4>Weekend Pass</h4>
-            <div class="ticket-price">$75</div>
-            <p class="ticket-description">Access to all weekend events Friday through Sunday</p>
-            <button class="test-add-btn admin-btn admin-btn-success" data-item="test-weekender-pass">
-              + Add to Cart
-            </button>
-          </div>
-
-          <!-- Friday Pass -->
-          <div class="test-ticket-card">
-            <h4>Friday Pass</h4>
-            <div class="ticket-price">$35</div>
-            <p class="ticket-description">Friday night social and performances</p>
-            <button class="test-add-btn admin-btn admin-btn-success" data-item="test-friday-pass">
-              + Add to Cart
-            </button>
-          </div>
-
-          <!-- Saturday Pass -->
-          <div class="test-ticket-card">
-            <h4>Saturday Pass</h4>
-            <div class="ticket-price">$35</div>
-            <p class="ticket-description">Saturday workshops and evening social</p>
-            <button class="test-add-btn admin-btn admin-btn-success" data-item="test-saturday-pass">
-              + Add to Cart
-            </button>
-          </div>
-
-          <!-- Sunday Pass -->
-          <div class="test-ticket-card">
-            <h4>Sunday Pass</h4>
-            <div class="ticket-price">$35</div>
-            <p class="ticket-description">Sunday workshops and closing performance</p>
-            <button class="test-add-btn admin-btn admin-btn-success" data-item="test-sunday-pass">
-              + Add to Cart
-            </button>
-          </div>
-
-          <!-- Donation -->
-          <div class="test-ticket-card donation-card">
-            <h4>Support the Festival</h4>
-            <div class="ticket-price">$25</div>
-            <p class="ticket-description">Your donation helps us bring amazing artists to Boulder</p>
-            <button class="test-add-btn admin-btn admin-btn-primary" data-item="test-donation">
-              + Add Donation
-            </button>
-          </div>
+        <div class="test-ticket-grid" data-dynamic-tickets="true">
+          <!-- Tickets will be loaded dynamically from API -->
         </div>
       </div>
 
@@ -254,8 +194,8 @@
 
       .test-cart-status {
         display: flex;
-        justify-content: space-between;
-        align-items: center;
+        flex-direction: column;
+        gap: var(--space-lg);
         padding: var(--space-lg);
         background: var(--color-surface);
         border-radius: var(--radius-lg);

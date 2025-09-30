@@ -23,7 +23,7 @@ export class AvailabilityService {
             const tickets = await this.fetchTicketTypes();
 
             // Find the specific ticket
-            const ticket = tickets.find(t => t.ticket_type === ticketType);
+            const ticket = tickets.find(t => t.id === ticketType);
 
             if (!ticket) {
                 return {

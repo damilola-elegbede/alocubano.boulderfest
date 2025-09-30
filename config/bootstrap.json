@@ -176,22 +176,58 @@
       "display_order": 5
     },
     {
-      "id": "test-basic",
+      "id": "test-vip-pass",
       "event_id": -2,
-      "name": "Test Basic Ticket",
-      "description": "Basic test ticket for development",
-      "price_cents": 100,
+      "name": "[TEST] VIP Pass",
+      "description": "Full festival access with VIP perks including exclusive areas and early entry",
+      "price_cents": 15000,
       "status": "test",
       "display_order": 1
     },
     {
-      "id": "test-premium",
-      "event_id": -1,
-      "name": "Test Premium Ticket",
-      "description": "Premium test ticket for development",
-      "price_cents": 500,
+      "id": "test-weekender-pass",
+      "event_id": -2,
+      "name": "[TEST] Weekender Pass",
+      "description": "Access to all weekend events Friday through Sunday",
+      "price_cents": 7500,
       "status": "test",
-      "display_order": 1
+      "display_order": 2
+    },
+    {
+      "id": "test-friday-pass",
+      "event_id": -2,
+      "name": "[TEST] Friday Pass",
+      "description": "Friday night social and performances",
+      "price_cents": 3500,
+      "status": "test",
+      "display_order": 3
+    },
+    {
+      "id": "test-saturday-pass",
+      "event_id": -2,
+      "name": "[TEST] Saturday Pass",
+      "description": "Saturday workshops and evening social",
+      "price_cents": 3500,
+      "status": "test",
+      "display_order": 4
+    },
+    {
+      "id": "test-sunday-pass",
+      "event_id": -2,
+      "name": "[TEST] Sunday Pass",
+      "description": "Sunday workshops and closing performance",
+      "price_cents": 3500,
+      "status": "test",
+      "display_order": 5
+    },
+    {
+      "id": "test-donation",
+      "event_id": -1,
+      "name": "[TEST] Festival Donation",
+      "description": "Your donation helps us bring amazing artists to Boulder",
+      "price_cents": 2500,
+      "status": "test",
+      "display_order": 6
     }
   ],
 

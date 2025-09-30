@@ -13,53 +13,11 @@ const logger = {
     debug: (...args) => console.debug('[AdminTestDashboard]', ...args)
 };
 
-// Test dashboard configuration - updated for API-driven system
-const TEST_DASHBOARD_CONFIG = {
-    testItems: {
-        'test-vip-pass': {
-            name: '[TEST] VIP Pass',
-            price: 150.00,
-            type: 'test-vip-pass',
-            description: 'Full festival access with VIP perks'
-        },
-        'test-weekender-pass': {
-            name: '[TEST] Weekender Pass',
-            price: 75.00,
-            type: 'test-weekender-pass',
-            description: 'Access to all weekend events'
-        },
-        'test-friday-pass': {
-            name: '[TEST] Friday Pass',
-            price: 35.00,
-            type: 'test-friday-pass',
-            description: 'Friday night access'
-        },
-        'test-saturday-pass': {
-            name: '[TEST] Saturday Pass',
-            price: 35.00,
-            type: 'test-saturday-pass',
-            description: 'Saturday access'
-        },
-        'test-sunday-pass': {
-            name: '[TEST] Sunday Pass',
-            price: 35.00,
-            type: 'test-sunday-pass',
-            description: 'Sunday access'
-        },
-        'test-donation': {
-            name: '[TEST] Festival Donation',
-            price: 25.00,
-            type: 'test-donation',
-            description: 'Support the festival'
-        }
-    },
-    mainSiteUrl: window.location.origin
-};
-
 // Test dashboard state - simplified for cart manager integration
 const testDashboardState = {
     initialized: false,
-    cartManager: null
+    cartManager: null,
+    testTicketsData: new Map() // Store ticket data from API
 };
 
 // HTML escaping function for security
@@ -73,6 +31,90 @@ function escapeHtml(unsafe) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
+}
+
+/**
+ * Fetch test tickets from API
+ */
+async function fetchTestTickets() {
+    try {
+        logger.log('📡 Fetching test tickets from API...');
+
+        const response = await fetch('/api/tickets/types?include_test=true&status=test');
+        if (!response.ok) {
+            throw new Error(`API returned ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        if (!result.success || !result.tickets) {
+            throw new Error('Invalid API response format');
+        }
+
+        // Store tickets in state
+        testDashboardState.testTicketsData.clear();
+        for (const ticket of result.tickets) {
+            testDashboardState.testTicketsData.set(ticket.id, ticket);
+        }
+
+        logger.log(`✅ Loaded ${result.tickets.length} test tickets`);
+        return result.tickets;
+
+    } catch (error) {
+        logger.error('Failed to fetch test tickets:', error);
+        throw error;
+    }
+}
+
+/**
+ * Render test ticket cards dynamically
+ */
+function renderTestTickets(tickets) {
+    const container = document.querySelector('.test-ticket-grid');
+    if (!container) {
+        logger.error('Test ticket grid container not found');
+        return;
+    }
+
+    // Clear existing content
+    container.innerHTML = '';
+
+    // Create ticket cards
+    for (const ticket of tickets) {
+        const card = createTestTicketCard(ticket);
+        container.appendChild(card);
+    }
+
+    logger.log(`✅ Rendered ${tickets.length} test ticket cards`);
+}
+
+/**
+ * Create a test ticket card element
+ */
+function createTestTicketCard(ticket) {
+    const card = document.createElement('div');
+    card.className = 'test-ticket-card';
+
+    // Special styling for donation tickets
+    if (ticket.id === 'test-donation') {
+        card.classList.add('donation-card');
+    }
+
+    // Format price
+    const price = (ticket.price_cents / 100).toFixed(0);
+
+    // Create card content
+    card.innerHTML = `
+        <h4>${escapeHtml(ticket.name)}</h4>
+        <div class="ticket-price">$${price}</div>
+        <p class="ticket-description">${escapeHtml(ticket.description || '')}</p>
+        <button class="test-add-btn admin-btn ${ticket.id === 'test-donation' ? 'admin-btn-primary' : 'admin-btn-success'}"
+                data-item="${escapeHtml(ticket.id)}">
+            ${ticket.id === 'test-donation' ? '+ Add Donation' : '+ Add to Cart'}
+        </button>
+    `;
+
+    return card;
 }
 
 /**
@@ -90,6 +132,10 @@ async function initializeTestDashboard() {
         const cartManager = getCartManager();
         await cartManager.initialize();
         testDashboardState.cartManager = cartManager;
+
+        // Fetch and render test tickets
+        const tickets = await fetchTestTickets();
+        renderTestTickets(tickets);
 
         // Attach event listeners to test buttons
         attachTestDashboardEventListeners();
@@ -207,7 +253,7 @@ function handleTestItemAdd(event) {
 
     const itemType = button.dataset.item;
 
-    if (!itemType || !TEST_DASHBOARD_CONFIG.testItems[itemType]) {
+    if (!itemType || !testDashboardState.testTicketsData.has(itemType)) {
         showTestDashboardMessage('Invalid test item type', 'error');
         announceToScreenReader('Error: Invalid test item type');
         return;
@@ -240,9 +286,9 @@ async function addTestItemToCart(itemType) {
         return;
     }
 
-    // Get config using simple key (without TEST- prefix)
-    const itemConfig = TEST_DASHBOARD_CONFIG.testItems[itemType];
-    if (!itemConfig) {
+    // Get ticket data from API cache
+    const ticketData = testDashboardState.testTicketsData.get(itemType);
+    if (!ticketData) {
         showTestDashboardMessage('Test item not found', 'error');
         return;
     }
@@ -250,27 +296,15 @@ async function addTestItemToCart(itemType) {
     // Add TEST- prefix for cart storage
     const testItemType = `TEST-${itemType}`;
 
-    // Determine test event details based on ticket type - simplified for API-driven system
-    let testEventId;
-    let testVenue = 'Test Ballroom';
-    let testEventDate = '2028-02-29'; // Leap year date for test
-
-    // Set event ID based on ticket type (using negative IDs for test events)
-    if (itemType.includes('weekender') || itemType.includes('friday') || itemType.includes('saturday') || itemType.includes('sunday')) {
-        testEventId = -2; // Test Weekender (negative ID for test)
-    } else {
-        testEventId = -1; // Test Festival (negative ID for test)
-    }
-
     try {
-        // Add ticket using cart manager with TEST- prefix and explicit test values
+        // Add ticket using cart manager with TEST- prefix and API data
         await testDashboardState.cartManager.addTicket({
             ticketType: testItemType,
-            price: itemConfig.price,
-            name: itemConfig.name,
-            eventId: testEventId,
-            eventDate: testEventDate,
-            venue: testVenue,
+            price: ticketData.price_cents / 100, // Convert cents to dollars
+            name: ticketData.name,
+            eventId: ticketData.event_id,
+            eventDate: ticketData.event_date,
+            venue: ticketData.event_venue || 'Test Ballroom',
             quantity: 1
         });
 
@@ -284,9 +318,9 @@ async function addTestItemToCart(itemType) {
         addCartCountAnimation();
 
         // Show success message with persistent indicator
-        showTestDashboardMessage(`Added ${escapeHtml(itemConfig.name)} to test cart`, 'success');
+        showTestDashboardMessage(`Added ${escapeHtml(ticketData.name)} to test cart`, 'success');
         showPersistentSuccessIndicator('Item added successfully');
-        announceToScreenReader(`Successfully added ${itemConfig.name} to test cart. Cart now has ${itemCount} items totaling $${totalValue.toFixed(2)}`);
+        announceToScreenReader(`Successfully added ${ticketData.name} to test cart. Cart now has ${itemCount} items totaling $${totalValue.toFixed(2)}`);
 
     } catch (error) {
         logger.error('Failed to add test item to cart:', error);
@@ -409,7 +443,7 @@ function announceToScreenReader(message) {
 function viewCartOnMainSite() {
     try {
         // Open tickets page in new tab - cart is already synced
-        const ticketsUrl = `${TEST_DASHBOARD_CONFIG.mainSiteUrl}/tickets`;
+        const ticketsUrl = `${window.location.origin}/tickets`;
         window.open(ticketsUrl, '_blank');
 
         showTestDashboardMessage('Opening tickets page with test items...', 'info');
@@ -538,8 +572,14 @@ async function generateTestData() {
         // Clear existing test tickets first
         await clearTestCart();
 
-        // Generate random test items using simple keys (without TEST- prefix)
-        const itemTypes = Object.keys(TEST_DASHBOARD_CONFIG.testItems);
+        // Generate random test items from loaded tickets
+        const itemTypes = Array.from(testDashboardState.testTicketsData.keys());
+
+        if (itemTypes.length === 0) {
+            showTestDashboardMessage('No test tickets available', 'error');
+            return;
+        }
+
         const numberOfItems = Math.floor(Math.random() * 3) + 2; // 2-4 items
         let totalItems = 0;
 
@@ -549,9 +589,9 @@ async function generateTestData() {
             // Generate random quantity
             const quantity = Math.floor(Math.random() * 3) + 1; // 1-3 quantity
 
-            // Add tickets using addTestItemToCart which handles TEST- prefix
+            // Add tickets using addTestItemToCart
             for (let j = 0; j < quantity; j++) {
-                await addTestItemToCart(randomItemType); // Uses simple key, function adds TEST- prefix
+                await addTestItemToCart(randomItemType);
                 totalItems++;
             }
         }
@@ -605,7 +645,8 @@ function getTestDashboardStatus() {
         initialized: testDashboardState.initialized,
         itemCount,
         totalValue,
-        cartManagerAvailable: !!testDashboardState.cartManager
+        cartManagerAvailable: !!testDashboardState.cartManager,
+        testTicketsLoaded: testDashboardState.testTicketsData.size
     };
 }
 
@@ -658,4 +699,4 @@ if (document.readyState === 'loading') {
 }
 
 // Enhanced loading for admin test dashboard with visual feedback
-logger.debug('🧪 Admin Test Dashboard script loaded with visual feedback enhancements');
+logger.debug('🧪 Admin Test Dashboard script loaded with dynamic ticket loading');
