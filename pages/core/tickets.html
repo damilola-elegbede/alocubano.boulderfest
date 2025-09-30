@@ -858,30 +858,44 @@
     <script>
       // Hide test tickets in production environment
       (async function () {
+        // Check hostname first - most reliable method
+        const hostname = window.location.hostname;
+        const isProductionDomain = hostname === 'alocubanoboulderfest.com' ||
+                                   hostname === 'www.alocubanoboulderfest.com';
+
+        if (isProductionDomain) {
+          // Remove test tickets in production
+          const testSection = document.getElementById('test-tickets-section');
+          if (testSection) {
+            testSection.remove();
+            console.log('Test tickets hidden in production (hostname check)');
+          }
+          return;
+        }
+
+        // For non-production domains, try API verification as secondary check
         try {
           const response = await fetch("/api/config/environment");
           if (response.ok) {
             const data = await response.json();
-            const isProduction = data.environment === 'production' || data.vercelEnv === 'production';
+            const isProduction = data.vercelEnv === 'production';
 
             if (isProduction) {
-              // Remove test tickets section in production
               const testSection = document.getElementById('test-tickets-section');
               if (testSection) {
                 testSection.remove();
-                console.log('Test tickets hidden in production');
+                console.log('Test tickets hidden in production (API check)');
               }
             } else {
-              console.log('Test tickets visible in non-production environment');
+              console.log('Test tickets visible - environment:', data.vercelEnv || data.environment);
             }
+          } else {
+            // API failed but hostname check passed - show test tickets
+            console.log('Test tickets visible (hostname check passed, API unavailable)');
           }
         } catch (error) {
-          console.warn("Could not fetch environment config, hiding test tickets as precaution:", error);
-          // Default to hiding test tickets if we can't determine environment
-          const testSection = document.getElementById('test-tickets-section');
-          if (testSection) {
-            testSection.remove();
-          }
+          // API failed but hostname check passed - show test tickets
+          console.log('Test tickets visible (hostname check passed, API error):', error.message);
         }
       })();
     </script>
