@@ -100,7 +100,7 @@ export class AvailabilityService {
         }
 
         try {
-            const response = await fetch('/api/tickets/types?include_test=false');
+            const response = await fetch('/api/tickets/types?include_test=true');
 
             if (!response.ok) {
                 throw new Error(`API returned ${response.status}`);

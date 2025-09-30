@@ -45,7 +45,7 @@ class TicketDataService {
      */
     async fetchFromAPI() {
         try {
-            const response = await fetch('/api/tickets/types?include_test=false');
+            const response = await fetch('/api/tickets/types?include_test=true');
 
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
