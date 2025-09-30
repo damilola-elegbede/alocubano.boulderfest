@@ -533,6 +533,7 @@ class PaymentSelector {
             const data = await response.json();
 
             if (!response.ok) {
+                // eslint-disable-next-line no-console
                 console.error('PayPal order creation failed:', {
                     status: response.status,
                     statusText: response.statusText,
