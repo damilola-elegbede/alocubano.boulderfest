@@ -229,9 +229,9 @@ async function createOrderHandler(req, res) {
     // Create PayPal order using service
     const paypalOrder = await createPayPalOrder(paypalOrderData, req);
 
-    // Determine event_id from cart items (use first item's eventId if valid, otherwise null)
+    // Determine event_id from cart items (use first item's eventId, including test events with negative IDs)
     const firstEventId = cartItems[0]?.eventId;
-    const eventId = (firstEventId && firstEventId > 0) ? `boulderfest_${firstEventId}` : null;
+    const eventId = firstEventId || null; // Use the numeric event ID directly (including -1, -2 for test events)
 
     // Store transaction in database BEFORE redirect
     const insertResult = await dbClient.execute({
