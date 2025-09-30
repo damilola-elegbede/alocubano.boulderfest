@@ -137,6 +137,10 @@ async function invalidateWalletPass(ticketId) {
 - Offline-first architecture
 - **Cache invalidation listeners**
 
+**Security Note:**
+
+**Bearer JWT tokens are NEVER persisted in any cache layer.** Only the rendered QR code images are cached. JWT tokens exist only in short-lived memory during the QR generation request and are immediately discarded after the image is rendered. On token revocation or security events, purge cached QR images using `qrCacheManager.remove(tokenHash)` to ensure fresh token validation.
+
 **Performance Benefits:**
 
 - Instant QR code access when cached
@@ -551,11 +555,15 @@ async function debugCacheState(ticketId) {
 
 ### QR Token Security
 
-- Tokens are cached locally only
-- No sensitive data in cached images
-- Automatic cache expiry
-- Secure token validation
-- **Immediate invalidation on revocation**
+**Critical Security Guarantee:**
+
+- **JWT tokens are NEVER cached** - Bearer tokens exist only in memory during request processing
+- **Only rendered QR images are cached** - Final PNG images with embedded validation URLs
+- **Token revocation requires image purge** - Call `qrCacheManager.remove(tokenHash)` to clear rendered QR images
+- **No sensitive data in cached images** - QR codes contain only validation URLs, not raw JWT tokens
+- **Automatic cache expiry** - Cached images expire after 7 days
+- **Secure token validation** - Each scan validates the JWT token server-side
+- **Immediate invalidation on revocation** - Clear both client and Service Worker caches
 
 ### Service Worker Security
 

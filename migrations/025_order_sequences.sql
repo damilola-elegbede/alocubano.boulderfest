@@ -10,8 +10,10 @@ CREATE TABLE IF NOT EXISTS order_sequences (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- Index for fast lookups
-CREATE INDEX IF NOT EXISTS idx_order_sequences_key ON order_sequences(sequence_key);
+-- Unique index for additional safety (redundant with PRIMARY KEY but explicit)
+-- Provides extra protection against duplicate sequence keys
+CREATE UNIQUE INDEX IF NOT EXISTS order_sequences_sequence_key_uidx
+    ON order_sequences(sequence_key);
 
 -- Initialize sequences for current and upcoming years
 -- Using NOT EXISTS pattern for maximum SQL portability (SQLite, PostgreSQL, MySQL compatibility)

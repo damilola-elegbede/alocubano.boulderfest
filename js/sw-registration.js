@@ -71,10 +71,19 @@ class ServiceWorkerManager {
     }
 
     notifyUpdate() {
-    // Simple notification - could be enhanced with UI
-        console.log('New Service Worker version available. Refresh to update.');
+        console.log('New Service Worker available. Refresh to update.');
+        const isHidden = document.visibilityState === 'hidden';
 
-        // Auto-refresh if user hasn't interacted in a while
+        // Auto-refresh only if tab is hidden to avoid interrupting user
+        if (isHidden) {
+            window.location.reload();
+            return;
+        }
+
+        // TODO: Show UI prompt for manual refresh when tab is visible
+        console.log('Update available - manual refresh recommended for latest version');
+
+        // Optional: Show user-friendly notification
         if (this.shouldAutoRefresh()) {
             setTimeout(() => {
                 window.location.reload();
@@ -83,9 +92,9 @@ class ServiceWorkerManager {
     }
 
     shouldAutoRefresh() {
-    // Only auto-refresh if user has been idle
+        // Only auto-refresh if user has been idle for extended period
         const idleTime = Date.now() - (window.lastUserActivity || Date.now());
-        return idleTime > 30000; // 30 seconds idle
+        return idleTime > 60000; // 60 seconds idle (increased from 30s)
     }
 
     setupEventListeners() {
@@ -110,6 +119,15 @@ class ServiceWorkerManager {
             window.addEventListener(name, () => {
                 window.lastUserActivity = Date.now();
             }, { passive: true });
+        });
+
+        // Pause background timers when tab is hidden (battery optimization)
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                this.pauseBackgroundTimers();
+            } else {
+                this.resumeBackgroundTimers();
+            }
         });
     }
 
@@ -141,15 +159,48 @@ class ServiceWorkerManager {
 
     // Schedule periodic cache cleanup
     schedulePeriodicCleanup() {
-    // Clean up cache every 6 hours
-        setInterval(() => {
+        // Clean up cache every 6 hours
+        this.cleanupIntervalId = setInterval(() => {
             this.requestCacheCleanup();
         }, 6 * 60 * 60 * 1000);
 
         // Initial cleanup after 1 minute
-        setTimeout(() => {
+        this.cleanupTimeoutId = setTimeout(() => {
             this.requestCacheCleanup();
         }, 60000);
+
+        this.cleanupPaused = false;
+    }
+
+    pauseBackgroundTimers() {
+        if (this.cleanupPaused) return;
+
+        console.log('Pausing background timers while tab is hidden');
+
+        if (this.cleanupIntervalId) {
+            clearInterval(this.cleanupIntervalId);
+            this.cleanupIntervalId = null;
+        }
+
+        if (this.cleanupTimeoutId) {
+            clearTimeout(this.cleanupTimeoutId);
+            this.cleanupTimeoutId = null;
+        }
+
+        this.cleanupPaused = true;
+    }
+
+    resumeBackgroundTimers() {
+        if (!this.cleanupPaused) return;
+
+        console.log('Resuming background timers as tab is visible');
+
+        // Resume periodic cleanup
+        this.cleanupIntervalId = setInterval(() => {
+            this.requestCacheCleanup();
+        }, 6 * 60 * 60 * 1000);
+
+        this.cleanupPaused = false;
     }
 
     requestCacheCleanup() {

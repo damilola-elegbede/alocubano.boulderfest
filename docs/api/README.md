@@ -152,11 +152,28 @@ export default async function handler(req, res) {
     "id": "string",
     "ticketType": "string",
     "purchaseDate": "ISO string",
-    "qrCode": "string",
-    "status": "active|used|expired",
+    "qrToken": "string",
+    "qrImageUrl": "string",
+    "status": "active|used|expired|cancelled|transferred",
+    "validation_status": "valid|invalid|expired|revoked",
     "orderId": "ALO-2026-0001"
   }
   ```
+
+**Status Fields Explained**:
+
+- **status**: User-facing ticket status (displayed to customers)
+  - `active`: Ticket is active and ready to use
+  - `used`: Ticket has been validated/scanned at event
+  - `expired`: Ticket is past the event date
+  - `cancelled`: Ticket was cancelled and refunded
+  - `transferred`: Ticket ownership was transferred
+
+- **validation_status**: Internal validation state (used for QR validation logic)
+  - `valid`: Ticket can be validated at entry
+  - `invalid`: Ticket validation is blocked
+  - `expired`: Ticket is expired (event ended)
+  - `revoked`: Ticket was revoked (security/fraud)
 
 #### Validate Ticket
 
@@ -189,6 +206,15 @@ export default async function handler(req, res) {
   - JWT token support for secure validation
   - `validateOnly` flag to prevent scan count increment
   - Batch token support for multi-ticket purchases
+
+- **Error Codes**:
+  - `400`: Malformed token or invalid input format
+  - `401`: Invalid or expired token (authentication failure)
+  - `404`: Ticket not found in database
+  - `409`: Ticket locked due to maximum scans exceeded (conflict state)
+  - `410`: Event has permanently ended (resource gone)
+  - `423`: Ticket temporarily locked (locked resource state)
+  - `429`: Rate limit exceeded (too many requests)
 
 #### Register Ticket
 
@@ -467,13 +493,26 @@ const client = createClient({
 |------|-------|
 | 200 | Success |
 | 201 | Created (new resource) |
-| 400 | Bad Request (validation error) |
-| 401 | Unauthorized |
+| 400 | Bad Request (validation error or malformed input) |
+| 401 | Unauthorized (authentication failure, expired token) |
 | 403 | Forbidden (admin only) |
-| 404 | Not Found |
+| 404 | Not Found (resource does not exist) |
 | 405 | Method Not Allowed |
-| 429 | Rate Limited |
+| 409 | Conflict (maximum scans exceeded, ticket locked) |
+| 410 | Gone (event permanently ended) |
+| 423 | Locked (resource temporarily locked) |
+| 429 | Rate Limited (too many requests) |
 | 500 | Internal Server Error |
+
+**Status Code Semantics**:
+
+- **400**: Use for malformed requests, invalid token format, or validation errors
+- **401**: Use for authentication failures, expired tokens, or invalid credentials
+- **404**: Use when a ticket or resource is not found in the database
+- **409**: Use for conflict states (e.g., ticket locked due to max scans)
+- **410**: Use when the event has permanently ended (resource is gone forever)
+- **423**: Use when a ticket is temporarily locked (may be unlocked later)
+- **429**: Use when rate limits are exceeded
 
 ## Security
 

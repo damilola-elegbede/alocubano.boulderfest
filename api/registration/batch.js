@@ -630,7 +630,8 @@ export default async function handler(req, res) {
 
     console.log('[BATCH_REG] Starting email sending phase');
 
-    // Get transaction information for order number and purchaser details (declare outside try block)
+    // Get transaction information for order number and purchaser details
+    // IMPORTANT: Declare transactionInfo BEFORE try block to ensure scope visibility
     const transactionIds = [...new Set(processedTicketsResult.rows.map(t => t.transaction_id))];
     let transactionInfo = null;
 

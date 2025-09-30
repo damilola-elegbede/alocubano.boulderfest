@@ -35,16 +35,17 @@ export default async function handler(req, res) {
       });
     }
 
-    // Determine base URL for QR code data from request
+    // Derive base URL from request headers (supports all environments)
     const host = process.env.VERCEL_URL ?? req.headers.host;
     if (!host) {
-      return res
-        .status(500)
-        .json({ error: "Unable to resolve QR base URL" });
+      return res.status(500).json({ error: "Unable to resolve QR base URL" });
     }
-    const protocol =
-      req.headers["x-forwarded-proto"] ??
+
+    // Determine protocol from headers or host
+    const protocol = req.headers["x-forwarded-proto"] ??
       (host.startsWith("localhost") || host.startsWith("127.") ? "http" : "https");
+
+    // Normalize host by removing protocol prefix if present
     const normalizedHost = host.replace(/^https?:\/\//, "");
     const baseUrl = `${protocol}://${normalizedHost}`;
 
