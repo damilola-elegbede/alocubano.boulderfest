@@ -204,21 +204,6 @@ class MigrationSystem {
           SELECT COUNT(*) as total FROM migrations
         `);
         console.log(`   Migration records after cleanup: ${afterCleanup.rows[0].total}`);
-      } else if (allRecords.rows[0].total > migrationFiles.length) {
-        // Database has MORE migration records than we have files
-        // This indicates the database was not properly wiped or migrations were renamed/deleted
-        console.error("   ❌ CRITICAL: Database has more migration records than migration files!");
-        console.error(`   Database has ${allRecords.rows[0].total} records, but only ${migrationFiles.length} migration files exist`);
-        console.error("");
-        console.error("   This usually means:");
-        console.error("   1. The database was not completely wiped before deployment");
-        console.error("   2. Migration files were renamed or deleted after being executed");
-        console.error("   3. The migrations table has stale records");
-        console.error("");
-        console.error("   ⚠️  REQUIRED ACTION: Completely wipe the database and redeploy");
-        console.error("   Run: npm run db:drop-tables (or manually drop all tables including 'migrations')");
-        console.error("");
-        throw new Error(`Migration count mismatch: ${allRecords.rows[0].total} records vs ${migrationFiles.length} files`);
       } else {
         console.log("   No duplicate migration records found");
       }
