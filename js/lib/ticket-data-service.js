@@ -9,74 +9,9 @@ class TicketDataService {
         this.eventIdToTicketsMap = new Map();
         this.ticketTypeToEventMap = new Map();
         this.lastFetch = null;
-        this.ttl = 10 * 60 * 1000; // 10 minutes cache timeout
+        this.ttl = 2 * 60 * 1000; // 2 minutes cache timeout
         this.isLoading = false;
         this.loadPromise = null;
-        this.localStorageKey = 'alocubano_ticket_types';
-
-        // Try to load from localStorage on initialization
-        this._loadFromLocalStorage();
-    }
-
-    /**
-     * Load ticket data from localStorage
-     */
-    _loadFromLocalStorage() {
-        try {
-            const cached = localStorage.getItem(this.localStorageKey);
-            if (!cached) {
-                return false;
-            }
-
-            const { tickets, timestamp } = JSON.parse(cached);
-
-            // Check if cache is still valid
-            if (Date.now() - timestamp > this.ttl) {
-                localStorage.removeItem(this.localStorageKey);
-                return false;
-            }
-
-            // Restore cache from localStorage
-            this.cache.clear();
-            this.eventIdToTicketsMap.clear();
-            this.ticketTypeToEventMap.clear();
-
-            for (const ticket of tickets) {
-                this.cache.set(ticket.id, ticket);
-
-                if (!this.eventIdToTicketsMap.has(ticket.event_id)) {
-                    this.eventIdToTicketsMap.set(ticket.event_id, []);
-                }
-                this.eventIdToTicketsMap.get(ticket.event_id).push(ticket);
-
-                this.ticketTypeToEventMap.set(ticket.id, ticket.event_id);
-            }
-
-            this.lastFetch = timestamp;
-            console.log(`✅ Loaded ${tickets.length} tickets from localStorage cache`);
-            return true;
-
-        } catch (error) {
-            console.error('Failed to load from localStorage:', error);
-            localStorage.removeItem(this.localStorageKey);
-            return false;
-        }
-    }
-
-    /**
-     * Save ticket data to localStorage
-     */
-    _saveToLocalStorage(tickets) {
-        try {
-            const cacheData = {
-                tickets,
-                timestamp: Date.now()
-            };
-            localStorage.setItem(this.localStorageKey, JSON.stringify(cacheData));
-            console.log(`✅ Saved ${tickets.length} tickets to localStorage cache`);
-        } catch (error) {
-            console.error('Failed to save to localStorage:', error);
-        }
     }
 
     /**
@@ -147,9 +82,6 @@ class TicketDataService {
             }
 
             this.lastFetch = Date.now();
-
-            // Save to localStorage for future visits
-            this._saveToLocalStorage(data.tickets);
 
             // Successfully loaded ticket types from API
 
@@ -362,14 +294,6 @@ class TicketDataService {
         this.ticketTypeToEventMap.clear();
         this.lastFetch = null;
         this.loadPromise = null;
-
-        // Clear localStorage cache
-        try {
-            localStorage.removeItem(this.localStorageKey);
-        } catch (error) {
-            console.error('Failed to clear localStorage cache:', error);
-        }
-
         // Ticket data cache invalidated
     }
 
