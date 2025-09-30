@@ -115,7 +115,7 @@
         align-items: center;
         justify-content: center;
         background: var(--color-red);
-        border: 2px solid var(--color-black);
+        border: 2px solid var(--color-border);
         border-radius: 50%;
         animation: scaleIn 0.5s ease-out;
       }
@@ -151,12 +151,12 @@
         font-size: var(--font-size-lg);
         line-height: 1.6;
         margin-bottom: var(--space-2xl);
-        color: var(--color-gray-700);
+        color: var(--color-text-primary);
       }
 
       .failure-details {
-        background: var(--color-gray-100);
-        border: 2px solid var(--color-black);
+        background: var(--color-surface);
+        border: 2px solid var(--color-border);
         padding: var(--space-xl);
         margin: var(--space-2xl) 0;
         text-align: left;
@@ -168,6 +168,7 @@
         text-transform: uppercase;
         letter-spacing: 0.05em;
         margin-bottom: var(--space-lg);
+        color: var(--color-text-primary);
       }
 
       .failure-details p {
@@ -175,6 +176,7 @@
         font-size: var(--font-size-base);
         line-height: 1.6;
         margin-bottom: var(--space-md);
+        color: var(--color-text-primary);
       }
 
       .failure-actions {
@@ -219,18 +221,18 @@
       .contact-info {
         margin-top: var(--space-xl);
         padding-top: var(--space-xl);
-        border-top: 1px solid var(--color-gray-300);
+        border-top: 1px solid var(--color-border);
       }
 
       .contact-info p {
         font-family: var(--font-sans);
         font-size: var(--font-size-base);
-        color: var(--color-gray-600);
+        color: var(--color-text-secondary);
         margin-bottom: var(--space-sm);
       }
 
       .contact-info a {
-        color: var(--color-black);
+        color: var(--color-text-primary);
         text-decoration: underline;
       }
 
@@ -242,13 +244,13 @@
         margin-top: var(--space-lg);
         font-family: var(--font-sans);
         font-size: var(--font-size-base);
-        color: var(--color-gray-600);
+        color: var(--color-text-secondary);
         text-align: center;
       }
 
       .countdown-seconds {
         font-weight: bold;
-        color: var(--color-black);
+        color: var(--color-text-primary);
       }
 
       @media (max-width: 640px) {
