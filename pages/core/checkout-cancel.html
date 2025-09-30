@@ -362,18 +362,25 @@
       // Process checkout cancellation
       async function processCheckoutCancel() {
         const urlParams = new URLSearchParams(window.location.search);
-        const sessionId = urlParams.get("session_id");
+        const sessionId = urlParams.get("session_id"); // Stripe
         const orderId = urlParams.get("order_id");
+        const token = urlParams.get("token"); // PayPal order token
 
         console.log("Processing checkout cancellation:", {
           sessionId,
           orderId,
+          token,
         });
 
         try {
           // Notify our backend about the cancellation
+          const params = new URLSearchParams();
+          if (sessionId) params.append("session_id", sessionId);
+          if (orderId) params.append("order_id", orderId);
+          if (token) params.append("token", token);
+
           const response = await fetch(
-            `/api/payments/checkout-cancel?session_id=${encodeURIComponent(sessionId || "")}&order_id=${encodeURIComponent(orderId || "")}`,
+            `/api/payments/checkout-cancel?${params}`,
           );
           const data = await response.json();
 
