@@ -43,19 +43,40 @@ async function handler(req, res) {
     const ticketsHasTestMode = await columnExists(db, 'tickets', 'is_test');
     const transactionsHasTestMode = await columnExists(db, 'transactions', 'is_test');
 
-    // If event is selected, check if it's a test-only event (all tickets are test tickets)
+    // If event is selected, check if it's a test-only event
+    // Check both ticket_types (for events without tickets yet) and tickets (for events with sales)
     let isTestOnlyEvent = false;
-    if (eventId && ticketsHasTestMode) {
-      const eventTicketCheck = await db.execute(
+    if (eventId) {
+      // First check ticket_types - if ALL ticket types are test types, it's a test-only event
+      const ticketTypeCheck = await db.execute(
         `SELECT
-          COUNT(*) as total_tickets,
-          SUM(CASE WHEN is_test = 1 THEN 1 ELSE 0 END) as test_tickets
-         FROM tickets
-         WHERE ${ticketsHasEventId ? 'event_id = ?' : '1=1'}`,
-        ticketsHasEventId ? [eventId] : []
+          COUNT(*) as total_ticket_types,
+          SUM(CASE WHEN status = 'test' THEN 1 ELSE 0 END) as test_ticket_types
+         FROM ticket_types
+         WHERE event_id = ?`,
+        [eventId]
       );
-      const ticketStats = eventTicketCheck.rows[0];
-      isTestOnlyEvent = ticketStats.total_tickets > 0 && ticketStats.total_tickets === ticketStats.test_tickets;
+      const ticketTypeStats = ticketTypeCheck.rows[0];
+
+      // If ALL ticket types are test types, it's a test-only event
+      if (ticketTypeStats.total_ticket_types > 0 &&
+          ticketTypeStats.total_ticket_types === ticketTypeStats.test_ticket_types) {
+        isTestOnlyEvent = true;
+      }
+
+      // Also check actual tickets if they exist (for backward compatibility)
+      if (!isTestOnlyEvent && ticketsHasTestMode) {
+        const eventTicketCheck = await db.execute(
+          `SELECT
+            COUNT(*) as total_tickets,
+            SUM(CASE WHEN is_test = 1 THEN 1 ELSE 0 END) as test_tickets
+           FROM tickets
+           WHERE ${ticketsHasEventId ? 'event_id = ?' : '1=1'}`,
+          ticketsHasEventId ? [eventId] : []
+        );
+        const ticketStats = eventTicketCheck.rows[0];
+        isTestOnlyEvent = ticketStats.total_tickets > 0 && ticketStats.total_tickets === ticketStats.test_tickets;
+      }
     }
 
     // Determine if we should filter test data
