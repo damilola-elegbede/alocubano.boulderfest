@@ -6,7 +6,7 @@
  * released back to the available pool.
  *
  * Schedule: Every 5 minutes (recommended)
- * Vercel Cron: */5 * * * *
+ * Vercel Cron: * /5 * * * * (every 5 minutes)
  */
 
 import { cleanupExpiredReservations } from '../../lib/ticket-availability-service.js';
