@@ -121,11 +121,11 @@ async function createOrderHandler(req, res) {
       const itemTotal = item.price * item.quantity;
       totalAmount += itemTotal;
 
-      // Prepare sanitized item for PayPal
+      // Prepare sanitized item for PayPal (use camelCase for SDK)
       orderItems.push({
         name: item.name.substring(0, 127), // PayPal name limit
-        unit_amount: {
-          currency_code: 'USD',
+        unitAmount: {
+          currencyCode: 'USD',
           value: item.price.toFixed(2)
         },
         quantity: item.quantity.toString(),
@@ -163,35 +163,35 @@ async function createOrderHandler(req, res) {
       ? `${customerInfo.firstName} ${customerInfo.lastName}`
       : 'Pending PayPal User';
 
-    // Create PayPal order data
+    // Create PayPal order data (use camelCase for SDK)
     const paypalOrderData = {
       intent: 'CAPTURE',
-      purchase_units: [
+      purchaseUnits: [
         {
-          reference_id: referenceId,
+          referenceId: referenceId,
           amount: {
-            currency_code: 'USD',
+            currencyCode: 'USD',
             value: totalAmount.toFixed(2),
             breakdown: {
-              item_total: {
-                currency_code: 'USD',
+              itemTotal: {
+                currencyCode: 'USD',
                 value: totalAmount.toFixed(2)
               }
             }
           },
           items: orderItems,
           description: 'A Lo Cubano Boulder Fest Purchase',
-          custom_id: customerEmail,
-          invoice_id: referenceId
+          customId: customerEmail,
+          invoiceId: referenceId
         }
       ],
-      application_context: {
-        brand_name: 'A Lo Cubano Boulder Fest',
-        landing_page: 'BILLING',
-        user_action: 'PAY_NOW',
-        return_url: `${baseUrl}/success?reference_id=${referenceId}&paypal=true${isRequestTestMode ? '&test_mode=true' : ''}`,
-        cancel_url: `${baseUrl}/failure?reference_id=${referenceId}&paypal=true${isRequestTestMode ? '&test_mode=true' : ''}`,
-        shipping_preference: 'NO_SHIPPING'
+      applicationContext: {
+        brandName: 'A Lo Cubano Boulder Fest',
+        landingPage: 'BILLING',
+        userAction: 'PAY_NOW',
+        returnUrl: `${baseUrl}/success?reference_id=${referenceId}&paypal=true${isRequestTestMode ? '&test_mode=true' : ''}`,
+        cancelUrl: `${baseUrl}/failure?reference_id=${referenceId}&paypal=true${isRequestTestMode ? '&test_mode=true' : ''}`,
+        shippingPreference: 'NO_SHIPPING'
       }
     };
 
