@@ -5,7 +5,6 @@
 import { getStripePaymentHandler } from './lib/stripe-integration.js';
 import { getPaymentSelector } from './components/payment-selector.js';
 import { setSafeHTML, escapeHtml } from './utils/dom-sanitizer.js';
-import eventsService from './lib/events-service.js';
 import { getAvailabilityService } from './lib/availability-service.js';
 
 export function initializeFloatingCart(cartManager) {
@@ -556,9 +555,10 @@ function performCartUIUpdate(elements, cartState) {
         });
     }
 
-    // Update total
+    // Update total (convert from cents to dollars)
     updates.push(() => {
-        elements.totalElement.textContent = `$${totals.total.toFixed(2)}`;
+        const totalInDollars = (totals.total || 0) / 100;
+        elements.totalElement.textContent = `$${totalInDollars.toFixed(2)}`;
     });
 
     // Container is always available for panel functionality - no visibility logic needed
@@ -601,6 +601,13 @@ async function validateCartAvailability(tickets) {
     const ticketsArray = Object.values(tickets);
 
     for (const ticket of ticketsArray) {
+        // Skip availability check for test tickets (not in database)
+        const isTestTicket = ticket.ticketType && ticket.ticketType.toLowerCase().includes('test');
+        if (isTestTicket) {
+            console.log('🎫 Skipping availability check for test ticket:', ticket.ticketType);
+            continue;
+        }
+
         try {
             const availabilityCheck = await availabilityService.checkAvailability(
                 ticket.ticketType,
@@ -647,28 +654,16 @@ async function renderCartItemsOptimized(container, tickets, donations) {
     const eventEntries = Object.entries(ticketsByEvent);
     for (const [eventId, eventTickets] of eventEntries) {
         if (eventTickets.length > 0) {
-            try {
-                const eventDisplayName = await getEventDisplayName(eventId);
-                const ticketsSection = createCartSection(eventDisplayName, 'tickets');
+            // Use stored event name from first ticket (all tickets in group have same event)
+            const eventDisplayName = eventTickets[0]?.eventName || `Event ${eventId}`;
+            const ticketsSection = createCartSection(eventDisplayName, 'tickets');
 
-                eventTickets.forEach((ticket) => {
-                    const itemElement = createTicketItemElement(ticket);
-                    ticketsSection.appendChild(itemElement);
-                });
+            eventTickets.forEach((ticket) => {
+                const itemElement = createTicketItemElement(ticket);
+                ticketsSection.appendChild(itemElement);
+            });
 
-                fragment.appendChild(ticketsSection);
-            } catch (error) {
-                console.error('Failed to get event display name, using fallback:', error);
-                const fallbackName = getEventDisplayNameSync(eventId);
-                const ticketsSection = createCartSection(fallbackName, 'tickets');
-
-                eventTickets.forEach((ticket) => {
-                    const itemElement = createTicketItemElement(ticket);
-                    ticketsSection.appendChild(itemElement);
-                });
-
-                fragment.appendChild(ticketsSection);
-            }
+            fragment.appendChild(ticketsSection);
         }
     }
 
@@ -714,56 +709,6 @@ function groupTicketsByEvent(tickets) {
     return grouped;
 }
 
-// Helper function to get display name for events using events service
-async function getEventDisplayName(eventId) {
-    try {
-        // Check if eventId is a number (integer ID) or string (slug/legacy)
-        if (typeof eventId === 'number' || /^-?\d+$/.test(eventId)) {
-            const numericId = typeof eventId === 'number' ? eventId : parseInt(eventId);
-            return await eventsService.getEventName(numericId);
-        } else {
-            // Handle string identifiers (slugs or legacy names)
-            const event = await eventsService.getEventBySlug(eventId);
-            if (event) {
-                return event.displayName;
-            }
-
-            // Try migration for legacy identifiers
-            const migratedId = await eventsService.migrateLegacyEventId(eventId);
-            if (migratedId) {
-                return await eventsService.getEventName(migratedId);
-            }
-        }
-
-        console.warn(`Event not found for ID: ${eventId}`);
-        return 'A Lo Cubano Tickets';
-    } catch (error) {
-        console.error('Failed to get event display name:', error);
-        return 'A Lo Cubano Tickets';
-    }
-}
-
-// Synchronous fallback for immediate use (simplified for API-driven system)
-function getEventDisplayNameSync(eventId) {
-    // Basic fallback for common event IDs while async service loads
-    const fallbackMap = {
-        1: 'Boulder Fest 2025 Tickets',
-        2: 'November 2025 Weekender Tickets',
-        3: 'Boulder Fest 2026 Tickets',
-        '-1': '[TEST] Festival Tickets',
-        '-2': '[TEST] Weekender Tickets'
-    };
-
-    // For numeric event IDs, use the fallback map
-    if (typeof eventId === 'number' || /^-?\d+$/.test(eventId)) {
-        const numericId = typeof eventId === 'number' ? eventId : parseInt(eventId);
-        return fallbackMap[numericId] || 'A Lo Cubano Tickets';
-    }
-
-    // For other identifiers, use generic fallback
-    return 'A Lo Cubano Tickets';
-}
-
 // Create a cart section element
 export function createCartSection(title, className) {
     const section = document.createElement('div');
@@ -779,7 +724,9 @@ export function createCartSection(title, className) {
 
 // Create a ticket item element
 export function createTicketItemElement(ticket) {
-    const itemTotal = ticket.price * ticket.quantity;
+    // Prices are stored in cents, convert to dollars for display
+    const priceInDollars = ticket.price / 100;
+    const itemTotal = priceInDollars * ticket.quantity;
 
     const item = document.createElement('div');
     item.className = 'cart-item';
@@ -816,7 +763,7 @@ export function createTicketItemElement(ticket) {
 
     const price = document.createElement('p');
     price.className = 'cart-item-price';
-    price.textContent = `$${ticket.price.toFixed(2)} × ${ticket.quantity} = $${itemTotal.toFixed(2)}`;
+    price.textContent = `$${priceInDollars.toFixed(2)} × ${ticket.quantity} = $${itemTotal.toFixed(2)}`;
     info.appendChild(price);
 
     // Add availability warning if item is unavailable

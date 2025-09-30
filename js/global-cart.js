@@ -120,13 +120,25 @@ function setupTicketsPageIntegration(cartManager) {
 
         try {
             if (quantity > 0) {
+                // Fetch event name using eventsService - NO FALLBACKS
+                let eventName = null;
+                try {
+                    const eventsService = (await import('./lib/events-service.js')).default;
+                    const eventData = await eventsService.getEventById(eventId);
+                    eventName = eventData?.name || null;
+                } catch (error) {
+                    console.error('Failed to fetch event name:', error);
+                    // eventName stays null - no fallback
+                }
+
                 // Use upsert operation that handles both add and update in one call
                 await cartManager.upsertTicket({
                     ticketType,
                     quantity,
                     price,
                     name,
-                    eventId
+                    eventId,
+                    eventName
                 });
             } else if (quantity === 0) {
                 // Explicitly handle quantity 0 - remove the ticket

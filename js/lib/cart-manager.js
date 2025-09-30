@@ -182,7 +182,7 @@ export class CartManager extends EventTarget {
 
     // Ticket operations
     async addTicket(ticketData) {
-        const { ticketType, price, name, eventId, eventDate, venue, quantity = 1 } = ticketData;
+        const { ticketType, price, name, eventId, eventDate, venue, eventName, quantity = 1 } = ticketData;
 
         if (!ticketType || !price || !name) {
             throw new Error('Invalid ticket data');
@@ -197,6 +197,7 @@ export class CartManager extends EventTarget {
                     price,
                     name,
                     eventId,
+                    eventName,  // Store event name - NO FALLBACK
                     eventDate,  // Store event date
                     venue,      // Store venue
                     quantity: 0,
@@ -206,7 +207,10 @@ export class CartManager extends EventTarget {
 
             this.state.tickets[ticketType].quantity += quantity;
             this.state.tickets[ticketType].updatedAt = Date.now();
-            // Update eventDate and venue if provided (in case they changed)
+            // Update eventName, eventDate and venue if provided (in case they changed)
+            if (eventName) {
+                this.state.tickets[ticketType].eventName = eventName;
+            }
             if (eventDate) {
                 this.state.tickets[ticketType].eventDate = eventDate;
             }
@@ -271,7 +275,7 @@ export class CartManager extends EventTarget {
 
     // Upsert operation that combines add and update logic
     async upsertTicket(ticketData) {
-        const { ticketType, price, name, eventId, eventDate, venue, quantity } = ticketData;
+        const { ticketType, price, name, eventId, eventName, eventDate, venue, quantity } = ticketData;
 
         // If quantity is 0 or undefined/null, remove the ticket
         if (quantity === 0 || quantity === null || quantity === undefined) {
@@ -299,6 +303,7 @@ export class CartManager extends EventTarget {
                     price,
                     name,
                     eventId,
+                    eventName,  // Store event name - NO FALLBACK
                     eventDate,  // Store event date
                     venue,      // Store venue
                     quantity: 0,
@@ -314,6 +319,9 @@ export class CartManager extends EventTarget {
                 }
                 if (eventId) {
                     this.state.tickets[ticketType].eventId = eventId;
+                }
+                if (eventName) {
+                    this.state.tickets[ticketType].eventName = eventName;
                 }
                 if (eventDate) {
                     this.state.tickets[ticketType].eventDate = eventDate;
@@ -348,11 +356,14 @@ export class CartManager extends EventTarget {
             throw new Error('Invalid donation amount');
         }
 
+        // Convert donation amount to cents to match ticket pricing
+        const amountInCents = Math.round(amount * 100);
+
         // Create new donation item
         const donationId = `donation_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
         const donation = {
             id: donationId,
-            amount: amount,
+            amount: amountInCents,
             name: 'Festival Support',
             addedAt: Date.now()
         };

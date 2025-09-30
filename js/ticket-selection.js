@@ -21,7 +21,7 @@ class TicketSelection {
             return await ticketDataService.detectEventIdFromPage();
         } catch (error) {
             console.error('Failed to detect event ID:', error);
-            return 1; // Default to boulderfest-2026 (event ID: 1)
+            return null; // No default - let it fail
         }
     }
 
@@ -49,8 +49,9 @@ class TicketSelection {
 
             this.updateDisplay();
 
-            // Skip hide loading state - never shown
-            // this.hideLoadingState();
+            // Mark as loaded - static tickets don't need loading state UI
+            this.isLoading = false;
+            console.log('🎫 [DIAGNOSTIC] Loading complete, isLoading set to false');
 
             // Start availability polling for real-time updates
             this.availabilityService.startPolling(30000); // Poll every 30 seconds
@@ -310,9 +311,17 @@ class TicketSelection {
     }
 
     bindEvents() {
+        console.log('🎫 [DIAGNOSTIC] bindEvents called');
+        const qtyButtons = document.querySelectorAll('.qty-btn');
+        console.log('🎫 [DIAGNOSTIC] Binding events to', qtyButtons.length, 'buttons');
+
     // Quantity button events
-        document.querySelectorAll('.qty-btn').forEach((btn) => {
-            btn.addEventListener('click', (e) => this.handleQuantityChange(e));
+        qtyButtons.forEach((btn, index) => {
+            console.log('🎫 [DIAGNOSTIC] Binding button', index, btn.className, btn.dataset.action);
+            btn.addEventListener('click', (e) => {
+                console.log('🎫 [DIAGNOSTIC] Button clicked!', btn.dataset.action);
+                this.handleQuantityChange(e);
+            });
         });
 
         // Add to cart button events
@@ -398,17 +407,24 @@ class TicketSelection {
     }
 
     async handleQuantityChange(event) {
+        console.log('🎫 [DIAGNOSTIC] handleQuantityChange called');
         event.stopPropagation();
         const btn = event.target;
         const card = btn.closest('.ticket-card');
 
+        console.log('🎫 [DIAGNOSTIC] Button:', btn, 'Card:', card);
+
         if (!card) {
-            console.error('Could not find ticket card for button', btn);
+            console.error('🎫 [DIAGNOSTIC] ERROR: Could not find ticket card for button', btn);
             return;
         }
 
         // Skip if ticket is unavailable or still loading
         if (card.classList.contains('unavailable') || this.isLoading) {
+            console.log('🎫 [DIAGNOSTIC] Skipping - unavailable or loading:', {
+                unavailable: card.classList.contains('unavailable'),
+                isLoading: this.isLoading
+            });
             return;
         }
 
@@ -416,12 +432,16 @@ class TicketSelection {
         const action = btn.dataset.action;
         const quantitySpan = card.querySelector('.quantity');
 
+        console.log('🎫 [DIAGNOSTIC] Ticket type:', ticketType, 'Action:', action);
+
         // Read ticket data from HTML data attributes (static tickets)
         const price = parseFloat(card.dataset.price) * 100; // Convert dollars to cents
         const ticketName = card.dataset.name;
 
+        console.log('🎫 [DIAGNOSTIC] Price:', price, 'Name:', ticketName);
+
         if (!ticketName || !price) {
-            console.error(`Missing ticket data in HTML for: ${ticketType}`);
+            console.error('🎫 [DIAGNOSTIC] ERROR: Missing ticket data in HTML for:', ticketType);
             return;
         }
 
@@ -430,19 +450,32 @@ class TicketSelection {
 
         if (action === 'increase') {
             newQuantity = currentQuantity + 1;
+            console.log('🎫 [DIAGNOSTIC] Increasing to:', newQuantity);
 
-            // CRITICAL: Validate availability before increasing quantity
-            const availabilityCheck = await this.availabilityService.checkAvailability(ticketType, newQuantity);
+            // Skip availability check for test tickets (they're not in database)
+            const isTestTicket = ticketType.toLowerCase().includes('test');
 
-            if (!availabilityCheck.available) {
-                // Show error message
-                this.showAvailabilityError(card, availabilityCheck.message);
+            if (!isTestTicket) {
+                // CRITICAL: Validate availability before increasing quantity
+                console.log('🎫 [DIAGNOSTIC] Checking availability for:', ticketType, newQuantity);
+                const availabilityCheck = await this.availabilityService.checkAvailability(ticketType, newQuantity);
+                console.log('🎫 [DIAGNOSTIC] Availability check result:', availabilityCheck);
 
-                // Update card to show sold out/unavailable
-                this.markCardUnavailable(card, availabilityCheck.status, availabilityCheck.remaining);
+                if (!availabilityCheck.available) {
+                    console.error('🎫 [DIAGNOSTIC] ERROR: Ticket not available!', availabilityCheck);
+                    // Show error message
+                    this.showAvailabilityError(card, availabilityCheck.message);
 
-                // Prevent quantity increase
-                return;
+                    // Update card to show sold out/unavailable
+                    this.markCardUnavailable(card, availabilityCheck.status, availabilityCheck.remaining);
+
+                    // Prevent quantity increase
+                    return;
+                }
+
+                console.log('🎫 [DIAGNOSTIC] Availability check passed, updating quantity');
+            } else {
+                console.log('🎫 [DIAGNOSTIC] Test ticket - skipping availability check');
             }
 
             currentQuantity = newQuantity;
@@ -475,13 +508,16 @@ class TicketSelection {
 
         this.updateDisplay();
 
+        // Read eventId from card's data attribute (each ticket may have different event)
+        const cardEventId = card.dataset.eventId ? parseInt(card.dataset.eventId) : null;
+
         // Emit event for cart system integration
         const eventDetail = {
             ticketType,
             quantity: currentQuantity,
             price,
             name: ticketName,
-            eventId: this.eventId
+            eventId: cardEventId
         };
 
         document.dispatchEvent(
@@ -526,24 +562,29 @@ class TicketSelection {
         const quantitySpan = card.querySelector('.quantity');
         let currentQuantity = parseInt(quantitySpan.textContent) || 0;
 
-        // CRITICAL: Validate availability before adding to cart
+        // Skip availability check for test tickets (they're not in database)
+        const isTestTicket = ticketType.toLowerCase().includes('test');
         const newQuantity = currentQuantity + 1;
-        const availabilityCheck = await this.availabilityService.checkAvailability(ticketType, newQuantity);
 
-        if (!availabilityCheck.available) {
-            // Show error message
-            this.showAvailabilityError(card, availabilityCheck.message);
+        if (!isTestTicket) {
+            // CRITICAL: Validate availability before adding to cart
+            const availabilityCheck = await this.availabilityService.checkAvailability(ticketType, newQuantity);
 
-            // Update card to show sold out/unavailable
-            this.markCardUnavailable(card, availabilityCheck.status, availabilityCheck.remaining);
+            if (!availabilityCheck.available) {
+                // Show error message
+                this.showAvailabilityError(card, availabilityCheck.message);
 
-            // Update button to show error state
-            btn.textContent = 'Unavailable';
-            btn.setAttribute('data-action-state', 'unavailable');
-            btn.style.backgroundColor = 'var(--color-gray-400, #9ca3af)';
-            btn.disabled = true;
+                // Update card to show sold out/unavailable
+                this.markCardUnavailable(card, availabilityCheck.status, availabilityCheck.remaining);
 
-            return;
+                // Update button to show error state
+                btn.textContent = 'Unavailable';
+                btn.setAttribute('data-action-state', 'unavailable');
+                btn.style.backgroundColor = 'var(--color-gray-400, #9ca3af)';
+                btn.disabled = true;
+
+                return;
+            }
         }
 
         // Add one ticket
@@ -565,13 +606,16 @@ class TicketSelection {
 
         this.updateDisplay();
 
+        // Read eventId from card's data attribute (each ticket may have different event)
+        const cardEventId = card.dataset.eventId ? parseInt(card.dataset.eventId) : null;
+
         // Emit event for cart system integration
         const eventDetail = {
             ticketType,
             quantity: currentQuantity,
             price,
             name: ticketName,
-            eventId: this.eventId
+            eventId: cardEventId
         };
 
         document.dispatchEvent(
@@ -803,17 +847,28 @@ class TicketSelection {
 let ticketSelectionInstance = null;
 
 function initTicketSelection() {
+    console.log('🎫 [DIAGNOSTIC] initTicketSelection called');
+    console.log('🎫 [DIAGNOSTIC] document.readyState:', document.readyState);
+    console.log('🎫 [DIAGNOSTIC] .ticket-selection exists:', !!document.querySelector('.ticket-selection'));
+    console.log('🎫 [DIAGNOSTIC] .qty-btn buttons found:', document.querySelectorAll('.qty-btn').length);
+
     if (document.querySelector('.ticket-selection')) {
         ticketSelectionInstance = new TicketSelection();
+        console.log('🎫 [DIAGNOSTIC] TicketSelection instance created:', !!ticketSelectionInstance);
+    } else {
+        console.error('🎫 [DIAGNOSTIC] ERROR: .ticket-selection element not found!');
     }
 }
 
 // Handle module script timing - module scripts are deferred and may load after DOMContentLoaded
+console.log('🎫 [DIAGNOSTIC] Module loading, readyState:', document.readyState);
 if (document.readyState === 'loading') {
     // DOM still loading, wait for DOMContentLoaded
+    console.log('🎫 [DIAGNOSTIC] Waiting for DOMContentLoaded...');
     document.addEventListener('DOMContentLoaded', initTicketSelection);
 } else {
     // DOM already loaded (module scripts are deferred), initialize immediately
+    console.log('🎫 [DIAGNOSTIC] DOM already loaded, initializing immediately');
     initTicketSelection();
 }
 

@@ -63,15 +63,15 @@ class EventsService {
     }
 
     /**
-     * Get display name for an event ID
+     * Get display name for an event ID - NO FALLBACK
      */
     async getEventName(id) {
         const event = await this.getEventById(id);
         if (!event) {
-            // Event not found for ID
-            return 'A Lo Cubano Tickets';
+            // Event not found for ID - NO FALLBACK
+            return null;
         }
-        return event.displayName;
+        return event.name;
     }
 
     /**

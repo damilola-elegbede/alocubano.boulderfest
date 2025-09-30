@@ -239,10 +239,9 @@ export default async function handler(req, res) {
           currency: 'usd',
           product_data: {
             name: item.name,
-            description:
-              item.description || `A Lo Cubano Boulder Fest - ${item.name}`
+            description: item.description
           },
-          unit_amount: Math.round(item.price * 100) // Convert to cents
+          unit_amount: Math.round(item.price) // Price already in cents from cart
         };
 
         // Add metadata for different item types
