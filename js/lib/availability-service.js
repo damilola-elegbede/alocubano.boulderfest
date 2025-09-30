@@ -18,18 +18,14 @@ export class AvailabilityService {
      * @returns {Promise<{available: boolean, remaining: number, status: string, message: string}>}
      */
     async checkAvailability(ticketType, requestedQuantity = 1) {
-        console.log('🎫 [AVAILABILITY] checkAvailability called:', { ticketType, requestedQuantity });
         try {
             // Get fresh availability data
             const tickets = await this.fetchTicketTypes();
-            console.log('🎫 [AVAILABILITY] Fetched', tickets.length, 'tickets');
 
             // Find the specific ticket
             const ticket = tickets.find(t => t.id === ticketType);
-            console.log('🎫 [AVAILABILITY] Found ticket:', ticket);
 
             if (!ticket) {
-                console.error('🎫 [AVAILABILITY] ERROR: Ticket not found!', ticketType);
                 return {
                     available: false,
                     remaining: 0,
