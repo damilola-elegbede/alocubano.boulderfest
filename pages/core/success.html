@@ -490,13 +490,13 @@
 
     <main>
       <!-- Loading State -->
-      <div class="loading-state">
+      <div class="loading-state" role="status" aria-live="polite">
         <div
           class="checkout-loading"
           style="position: relative; background: transparent"
         >
           <div class="checkout-loading-content">
-            <div class="checkout-spinner"></div>
+            <div class="checkout-spinner" aria-hidden="true"></div>
             <div class="checkout-loading-text">Verifying Payment</div>
             <div class="checkout-loading-subtext">
               Please wait while we confirm your transaction...
@@ -506,9 +506,9 @@
       </div>
 
       <!-- Success State -->
-      <section class="success-container" style="display: none">
+      <section class="success-container" style="display: none" role="status" aria-live="polite">
         <div class="success-content">
-          <div class="success-icon">
+          <div class="success-icon" aria-hidden="true">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
@@ -537,7 +537,7 @@
 
           <!-- Register Now button moved here for better visibility -->
           <div style="margin-bottom: var(--space-xl); display: none;" id="register-now-container">
-            <a href="#" id="register-now-btn" class="success-btn accent">Register Now</a>
+            <a href="#" id="register-now-btn" class="success-btn accent" aria-label="Register your tickets now to complete attendee information">Register Now</a>
           </div>
 
 
@@ -562,8 +562,8 @@
       </section>
 
       <!-- Error State -->
-      <section class="error-state">
-        <h2 class="error-title">Unable to Verify Payment</h2>
+      <section class="error-state" role="alert" aria-live="assertive">
+        <h2 class="error-title" tabindex="-1">Unable to Verify Payment</h2>
         <p>We couldn't verify your payment status. This might be temporary.</p>
         <p>
           Please check your email for confirmation or contact us at

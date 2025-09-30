@@ -289,7 +289,7 @@ class QRCacheManager {
         </div>
         <button
           class="qr-download-button"
-          onclick="qrCacheManager.downloadQRCode('${token}')"
+          data-token="\${token}"
           aria-label="Download QR code as PNG"
         >
           💾 Download QR Code
@@ -307,6 +307,12 @@ class QRCacheManager {
       qrDisplay.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
       qrDisplay.style.opacity = '1';
       qrDisplay.style.transform = 'translateY(0)';
+
+      // Attach event listener for download button (CSP compliance)
+      const downloadBtn = container.querySelector('.qr-download-button');
+      if (downloadBtn) {
+        downloadBtn.addEventListener('click', () => this.downloadQRCode(token));
+      }
     });
   }
 
@@ -323,12 +329,17 @@ class QRCacheManager {
         </div>
         <button
           class="qr-retry-button"
-          onclick="qrCacheManager.retryLoad('${token}')"
+          data-token="\${token}"
         >
           🔄 Try Again
         </button>
       </div>
     `;
+    // Attach event listener for retry button (CSP compliance)
+    const retryBtn = container.querySelector('.qr-retry-button');
+    if (retryBtn) {
+      retryBtn.addEventListener('click', () => this.retryLoad(token));
+    }
   }
 
   /**

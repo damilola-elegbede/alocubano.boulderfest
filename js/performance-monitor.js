@@ -578,6 +578,7 @@ class PerformanceMonitor {
     trackVirtualScrolling() {
         let scrollStartTime = 0;
         let isScrolling = false;
+        let scrollEndFrame = null;
 
         document.addEventListener(
             'scroll',
@@ -587,19 +588,33 @@ class PerformanceMonitor {
                     isScrolling = true;
                 }
 
-                // Debounce scroll end detection
-                clearTimeout(this.scrollEndTimer);
-                this.scrollEndTimer = setTimeout(() => {
-                    const scrollDuration = performance.now() - scrollStartTime;
-                    this.metrics.virtualScrollPerformance.renderTime = scrollDuration;
+                // Debounce scroll end detection using requestAnimationFrame
+                if (scrollEndFrame) {
+                    cancelAnimationFrame(scrollEndFrame);
+                }
+                
+                let lastScrollTime = Date.now();
+                const checkScrollEnd = () => {
+                    const now = Date.now();
+                    if (now - lastScrollTime >= 150) {
+                        // Scroll has ended
+                        const scrollDuration = performance.now() - scrollStartTime;
+                        this.metrics.virtualScrollPerformance.renderTime = scrollDuration;
 
-                    this.logEvent('virtual_scroll_performance', {
-                        duration: scrollDuration,
-                        timestamp: Date.now()
-                    });
+                        this.logEvent('virtual_scroll_performance', {
+                            duration: scrollDuration,
+                            timestamp: Date.now()
+                        });
 
-                    isScrolling = false;
-                }, 150);
+                        isScrolling = false;
+                        scrollEndFrame = null;
+                    } else {
+                        // Continue checking
+                        scrollEndFrame = requestAnimationFrame(checkScrollEnd);
+                    }
+                };
+                
+                scrollEndFrame = requestAnimationFrame(checkScrollEnd);
             },
             { passive: true }
         );

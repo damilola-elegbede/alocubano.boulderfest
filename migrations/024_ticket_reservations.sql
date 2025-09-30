@@ -58,7 +58,7 @@ SELECT
     tt.max_quantity,
     tt.sold_count,
     COALESCE(SUM(CASE
-        WHEN tr.status = 'active' AND tr.expires_at > datetime('now')
+        WHEN tr.status = 'active' AND tr.expires_at > CURRENT_TIMESTAMP
         THEN tr.quantity
         ELSE 0
     END), 0) as reserved_count,
@@ -66,7 +66,7 @@ SELECT
         WHEN tt.max_quantity IS NULL THEN NULL
         ELSE MAX(0, tt.max_quantity - tt.sold_count - COALESCE(SUM(
             CASE
-                WHEN tr.status = 'active' AND tr.expires_at > datetime('now')
+                WHEN tr.status = 'active' AND tr.expires_at > CURRENT_TIMESTAMP
                 THEN tr.quantity
                 ELSE 0
             END

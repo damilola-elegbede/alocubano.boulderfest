@@ -444,14 +444,14 @@
     <main>
       <div class="registration-container">
         <!-- Loading State -->
-        <div id="loading-state" class="loading-state">
-          <div class="spinner"></div>
+        <div id="loading-state" class="loading-state" role="status" aria-live="polite">
+          <div class="spinner" aria-hidden="true"></div>
           <h2>Loading your ticket registration...</h2>
           <p>Please wait while we fetch your ticket information.</p>
         </div>
 
         <!-- Error State -->
-        <div id="error-state" class="error-state" style="display: none;">
+        <div id="error-state" class="error-state" style="display: none;" role="alert" aria-live="assertive">
           <h2>Registration Error</h2>
           <p id="error-message">Unable to load your ticket information.</p>
           <button
@@ -459,6 +459,7 @@
             class="form-button-type"
             id="retry-button"
             style="margin-top: var(--space-md);"
+            aria-label="Retry loading ticket information"
           >
             Try Again
           </button>
@@ -478,7 +479,7 @@
           </div>
 
           <!-- Deadline Warning -->
-          <div id="deadline-warning" class="deadline-warning" style="display: none;">
+          <div id="deadline-warning" class="deadline-warning" style="display: none;" role="alert" aria-live="polite">
             <strong>⏰ Registration Deadline Alert</strong>
             <p id="deadline-message"></p>
           </div>
@@ -502,7 +503,7 @@
           </form>
 
           <!-- Success State -->
-          <div id="success-state" class="registration-summary" style="display: none;">
+          <div id="success-state" class="registration-summary" style="display: none;" role="status" aria-live="polite" aria-atomic="true">
             <!-- Content will be populated by updateSuccessMessage() -->
           </div>
 
@@ -774,8 +775,10 @@
                   maxlength="50"
                   pattern="[a-zA-Z\\s\\-']{2,50}"
                   title="First name must be 2-50 characters and contain only letters, spaces, hyphens, and apostrophes"
+                  aria-describedby="firstName-${index}-error"
+                  aria-required="true"
                 />
-                <div class="error-message" id="firstName-${index}-error"></div>
+                <div class="error-message" id="firstName-${index}-error" role="alert" aria-live="polite"></div>
               </div>
 
               <div class="form-group-type">
@@ -795,8 +798,10 @@
                   maxlength="50"
                   pattern="[a-zA-Z\\s\\-']{2,50}"
                   title="Last name must be 2-50 characters and contain only letters, spaces, hyphens, and apostrophes"
+                  aria-describedby="lastName-${index}-error"
+                  aria-required="true"
                 />
-                <div class="error-message" id="lastName-${index}-error"></div>
+                <div class="error-message" id="lastName-${index}-error" role="alert" aria-live="polite"></div>
               </div>
 
               <div class="form-group-type form-row-full">
@@ -814,8 +819,11 @@
                   required
                   maxlength="100"
                   title="Please enter a valid email address"
+                  aria-describedby="email-${index}-error"
+                  aria-required="true"
+                  autocomplete="email"
                 />
-                <div class="error-message" id="email-${index}-error"></div>
+                <div class="error-message" id="email-${index}-error" role="alert" aria-live="polite"></div>
               </div>
             </div>
           `;

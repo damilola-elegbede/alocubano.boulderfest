@@ -330,7 +330,7 @@ npm run vercel:dev
    ```javascript
    // Decode the JWT payload
    const jwt = require('jsonwebtoken');
-   const token = 'eyJhbGciOiJSUzI1NiIs...'; // From the save URL
+   const token = 'YOUR_TOKEN_HERE...'; // From the save URL
    const decoded = jwt.decode(token);
    console.log('Pass data:', decoded);
    ```

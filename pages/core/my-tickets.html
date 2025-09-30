@@ -361,11 +361,11 @@
     </div>
 
     <!-- QR Code Modal -->
-    <div id="qrModal" class="modal">
+    <div id="qrModal" class="modal" role="dialog" aria-labelledby="qrModalTitle" aria-modal="true">
       <div class="modal-content">
         <div class="modal-header">
-          <h2>Ticket QR Code</h2>
-          <button class="close" onclick="closeModal('qrModal')">&times;</button>
+          <h2 id="qrModalTitle">Ticket QR Code</h2>
+          <button class="close" onclick="closeModal('qrModal')" aria-label="Close QR code modal">&times;</button>
         </div>
         <div class="qr-code-display">
           <div id="qrCodeContainer">
@@ -382,30 +382,30 @@
     </div>
 
     <!-- Transfer Modal -->
-    <div id="transferModal" class="modal">
+    <div id="transferModal" class="modal" role="dialog" aria-labelledby="transferModalTitle" aria-modal="true">
       <div class="modal-content">
         <div class="modal-header">
-          <h2>Transfer Ticket</h2>
-          <button class="close" onclick="closeModal('transferModal')">
+          <h2 id="transferModalTitle">Transfer Ticket</h2>
+          <button class="close" onclick="closeModal('transferModal')" aria-label="Close transfer modal">
             &times;
           </button>
         </div>
         <form id="transferForm">
           <div class="form-group">
             <label for="transferEmail">New Attendee Email *</label>
-            <input type="email" id="transferEmail" required />
+            <input type="email" id="transferEmail" required aria-required="true" autocomplete="email" />
           </div>
           <div class="form-group">
             <label for="transferFirstName">First Name *</label>
-            <input type="text" id="transferFirstName" required />
+            <input type="text" id="transferFirstName" required aria-required="true" autocomplete="given-name" />
           </div>
           <div class="form-group">
             <label for="transferLastName">Last Name</label>
-            <input type="text" id="transferLastName" />
+            <input type="text" id="transferLastName" autocomplete="family-name" />
           </div>
           <div class="form-group">
             <label for="transferPhone">Phone</label>
-            <input type="tel" id="transferPhone" />
+            <input type="tel" id="transferPhone" autocomplete="tel" />
           </div>
           <div class="modal-actions">
             <button
@@ -422,11 +422,11 @@
     </div>
 
     <!-- Cancel Modal -->
-    <div id="cancelModal" class="modal">
+    <div id="cancelModal" class="modal" role="dialog" aria-labelledby="cancelModalTitle" aria-modal="true">
       <div class="modal-content">
         <div class="modal-header">
-          <h2>Cancel Ticket</h2>
-          <button class="close" onclick="closeModal('cancelModal')">
+          <h2 id="cancelModalTitle">Cancel Ticket</h2>
+          <button class="close" onclick="closeModal('cancelModal')" aria-label="Close cancel modal">
             &times;
           </button>
         </div>
@@ -437,7 +437,9 @@
             type="text"
             id="cancelReason"
             placeholder="e.g., Unable to attend"
+            aria-describedby="cancelReasonHint"
           />
+          <span id="cancelReasonHint" class="visually-hidden">Providing a reason is optional but helps us improve our service</span>
         </div>
         <div class="modal-actions">
           <button

@@ -144,26 +144,8 @@
         box-sizing: border-box;
       }
 
-      .download-qr-button {
-        margin-top: 15px;
-        padding: 8px 16px;
-        background: #ce1126;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 14px;
-        transition: background 0.2s;
-      }
 
-      .download-qr-button:hover {
-        background: #a50e1f;
-      }
 
-      .download-qr-button:disabled {
-        background: #ccc;
-        cursor: not-allowed;
-      }
 
       @media (max-width: 480px) {
         .qr-code-container img,
@@ -340,10 +322,6 @@
         border-color: #ce1126;
       }
 
-      [data-theme="dark"] .download-qr-button:disabled {
-        background: #555;
-        color: #888;
-      }
 
       @media print {
         body {
@@ -420,13 +398,13 @@
           </div>
 
           <div class="action-buttons">
-            <button class="action-button" onclick="printTicket()">
+            <button class="action-button" id="print-button">
               🖨️ Print
             </button>
-            <button class="action-button" onclick="downloadTicket()">
+            <button class="action-button" id="download-button">
               💾 Save
             </button>
-            <button class="action-button" onclick="shareTicket()">
+            <button class="action-button" id="share-button">
               📤 Share
             </button>
           </div>
@@ -666,6 +644,11 @@
         document.body.appendChild(toggleContainer);
         initializeThemeToggle('#theme-toggle-container');
       });
+
+      // Attach event listeners to action buttons (CSP compliance)
+      document.getElementById('print-button')?.addEventListener('click', printTicket);
+      document.getElementById('download-button')?.addEventListener('click', downloadTicket);
+      document.getElementById('share-button')?.addEventListener('click', shareTicket);
     </script>
 
     <!-- Optional: Include html2canvas for better download functionality -->

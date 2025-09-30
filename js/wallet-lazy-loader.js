@@ -132,6 +132,13 @@ class WalletLazyLoader {
     container.setAttribute('data-ticket-id', ticketId);
     container.setAttribute('data-wallet-options', JSON.stringify(options));
 
+    // Track in observers Map for metrics
+    this.observers.set(container, {
+      ticketId,
+      options,
+      timestamp: Date.now()
+    });
+
     // Add to observer
     if (this.observer) {
       this.observer.observe(container);
@@ -176,10 +183,11 @@ class WalletLazyLoader {
       container.classList.add('wallet-loaded');
       this.loadedComponents.add(container);
 
-      // Stop observing this element
+      // Stop observing and remove from tracking
       if (this.observer) {
         this.observer.unobserve(container);
       }
+      this.observers.delete(container);
 
       // Track performance
       const loadTime = performance.now() - startTime;

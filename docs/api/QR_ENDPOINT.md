@@ -79,7 +79,7 @@ const validation = qrTokenService.validateToken(token);
 ### Web Browser
 
 ```html
-<img src="/api/qr/generate?token=eyJhbGciOiJIUzI1NiIs..."
+<img src="/api/qr/generate?token=YOUR_TOKEN_HERE..."
      alt="Ticket QR Code"
      width="300"
      height="300" />
@@ -89,7 +89,7 @@ const validation = qrTokenService.validateToken(token);
 
 ```html
 <!-- Direct image embedding -->
-<img src="https://yourdomain.com/api/qr/generate?token=eyJhbGciOiJIUzI1NiIs..."
+<img src="https://yourdomain.com/api/qr/generate?token=YOUR_TOKEN_HERE..."
      alt="Your Ticket QR Code"
      style="width: 300px; height: 300px; display: block; margin: 0 auto;" />
 ```

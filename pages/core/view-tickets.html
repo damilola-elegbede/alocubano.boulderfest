@@ -454,16 +454,16 @@
     <main id="main-content">
       <div class="view-tickets-container">
         <!-- Loading State -->
-        <div id="loading-state" class="loading-state">
-          <div class="spinner"></div>
+        <div id="loading-state" class="loading-state" role="status" aria-live="polite">
+          <div class="spinner" aria-hidden="true"></div>
           <p>Loading your tickets...</p>
         </div>
 
         <!-- Error State -->
-        <div id="error-state" class="error-state" style="display: none;">
+        <div id="error-state" class="error-state" style="display: none;" role="alert" aria-live="assertive">
           <h2>Unable to Load Tickets</h2>
           <p id="error-message"></p>
-          <button id="retry-button" class="button-type button-type-primary">Try Again</button>
+          <button id="retry-button" class="button-type button-type-primary" aria-label="Retry loading tickets">Try Again</button>
         </div>
 
         <!-- Tickets Display -->
@@ -699,14 +699,16 @@
 
               <div class="wallet-section">
                 <a href="/api/tickets/apple-wallet/${ticket.ticketId}"
-                   class="wallet-button">
+                   class="wallet-button"
+                   aria-label="Add ticket ${ticket.ticketId} to Apple Wallet">
                   <img src="${window.location.origin}/images/add-to-wallet-apple.svg"
                        alt="Add to Apple Wallet"
                        style="height: 40px; width: auto;"
                        onerror="console.error('Failed to load Apple Wallet image')">
                 </a>
                 <a href="/api/tickets/google-wallet/${ticket.ticketId}"
-                   class="wallet-button">
+                   class="wallet-button"
+                   aria-label="Add ticket ${ticket.ticketId} to Google Pay">
                   <img src="${window.location.origin}/images/add-to-wallet-google.png"
                        alt="Add to Google Pay"
                        style="height: 40px; width: auto;"
