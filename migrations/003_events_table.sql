@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS events (
     slug TEXT NOT NULL UNIQUE,
     name TEXT NOT NULL,
     type TEXT NOT NULL CHECK(type IN ('festival', 'weekender', 'workshop', 'special')),
-    status TEXT NOT NULL DEFAULT 'draft' CHECK(status IN ('draft', 'upcoming', 'active', 'completed', 'cancelled')),
+    status TEXT NOT NULL DEFAULT 'draft' CHECK(status IN ('draft', 'upcoming', 'active', 'completed', 'cancelled', 'test')),
 
     -- Event Details
     description TEXT,
