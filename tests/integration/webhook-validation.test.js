@@ -86,7 +86,7 @@ describe('Webhook Validation Integration Tests', () => {
   test('price manipulation detection: price mismatch', async () => {
     const testStart = Date.now();
 
-    const ticketTypeId = '2025-11-weekender-full'; // Real price: 6500 cents
+    const ticketTypeId = 'weekender-2025-11-full'; // Real price: 6500 cents
     const sessionId = `cs_test_price_${Date.now()}`;
 
     const mockStripeSession = {
@@ -258,7 +258,7 @@ describe('Webhook Validation Integration Tests', () => {
               unit_amount: 6500,
               product: {
                 metadata: {
-                  ticket_type: '2025-11-weekender-full',
+                  ticket_type: 'weekender-2025-11-full',
                   event_id: '999', // Mismatch with actual ticket type
                   event_date: '2025-11-08'
                 }
@@ -321,7 +321,7 @@ describe('Webhook Validation Integration Tests', () => {
               unit_amount: 10,
               product: {
                 metadata: {
-                  ticket_type: '2025-11-weekender-full',
+                  ticket_type: 'weekender-2025-11-full',
                   event_id: '5',
                   event_date: '2025-11-08'
                 }
@@ -385,7 +385,7 @@ describe('Webhook Validation Integration Tests', () => {
               unit_amount: 6500,
               product: {
                 metadata: {
-                  ticket_type: '2025-11-weekender-full',
+                  ticket_type: 'weekender-2025-11-full',
                   event_id: '5',
                   event_date: '2025-11-08'
                 }
@@ -415,7 +415,7 @@ describe('Webhook Validation Integration Tests', () => {
 
     // Verify detailed metadata
     const details = JSON.parse(auditLog.details);
-    expect(details.ticket_type).toBe('2025-11-weekender-full');
+    expect(details.ticket_type).toBe('weekender-2025-11-full');
     expect(details.quantity).toBe(1);
     expect(details.price_cents).toBe(6500);
     expect(details.validation_errors).toEqual([]);
@@ -449,7 +449,7 @@ describe('Webhook Validation Integration Tests', () => {
               unit_amount: 6500,
               product: {
                 metadata: {
-                  ticket_type: '2025-11-weekender-full', // Belongs to event 5, not 1
+                  ticket_type: 'weekender-2025-11-full', // Belongs to event 5, not 1
                   event_id: '1',
                   event_date: '2025-11-08'
                 }

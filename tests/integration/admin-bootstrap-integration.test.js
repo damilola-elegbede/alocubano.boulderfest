@@ -63,7 +63,7 @@ describe('Admin Bootstrap Integration Tests', () => {
   test('real-time sold_count shown correctly in admin view', async () => {
     const testStart = Date.now();
 
-    const ticketTypeId = '2025-11-weekender-full';
+    const ticketTypeId = 'weekender-2025-11-full';
 
     // Get initial sold_count
     const initialResult = await db.execute({
@@ -266,7 +266,7 @@ describe('Admin Bootstrap Integration Tests', () => {
     const testStart = Date.now();
 
     // Create some test purchases
-    const ticketTypeId = '2025-11-weekender-class';
+    const ticketTypeId = 'weekender-2025-11-class';
 
     for (let i = 0; i < 3; i++) {
       const sessionId = `cs_test_stats_${Date.now()}_${i}`;
@@ -420,8 +420,8 @@ describe('Admin Bootstrap Integration Tests', () => {
 
     // Create test purchases for different events
     const purchases = [
-      { ticket_type: '2025-11-weekender-full', event_id: '5', price: 6500 },
-      { ticket_type: '2025-11-weekender-class', event_id: '5', price: 2500 }
+      { ticket_type: 'weekender-2025-11-full', event_id: '5', price: 6500 },
+      { ticket_type: 'weekender-2025-11-class', event_id: '5', price: 2500 }
     ];
 
     for (const purchase of purchases) {

@@ -113,7 +113,7 @@
 
   "ticket_types": [
     {
-      "id": "2025-11-weekender-full",
+      "id": "weekender-2025-11-full",
       "event_id": 2,
       "name": "Full Pass",
       "description": "Full weekend access to workshops and socials",
@@ -122,7 +122,7 @@
       "display_order": 1
     },
     {
-      "id": "2025-11-weekender-class",
+      "id": "weekender-2025-11-class",
       "event_id": 2,
       "name": "Single Class",
       "description": "Access to one workshop session",
@@ -131,7 +131,7 @@
       "display_order": 2
     },
     {
-      "id": "2026-early-bird-full",
+      "id": "boulderfest-2026-early-bird-full",
       "event_id": 3,
       "name": "Early Bird Full Pass",
       "description": "Special early pricing for full festival access",
@@ -140,7 +140,7 @@
       "display_order": 1
     },
     {
-      "id": "2026-regular-full",
+      "id": "boulderfest-2026-regular-full",
       "event_id": 3,
       "name": "Full Festival Pass",
       "description": "Complete 3-day festival experience",
@@ -149,7 +149,7 @@
       "display_order": 2
     },
     {
-      "id": "2026-friday-pass",
+      "id": "boulderfest-2026-friday-pass",
       "event_id": 3,
       "name": "Friday Pass",
       "description": "Friday workshops and social dance",
@@ -158,7 +158,7 @@
       "display_order": 3
     },
     {
-      "id": "2026-saturday-pass",
+      "id": "boulderfest-2026-saturday-pass",
       "event_id": 3,
       "name": "Saturday Pass",
       "description": "Saturday workshops and social dance",
@@ -167,7 +167,7 @@
       "display_order": 4
     },
     {
-      "id": "2026-sunday-pass",
+      "id": "boulderfest-2026-sunday-pass",
       "event_id": 3,
       "name": "Sunday Pass",
       "description": "Sunday workshops and social dance",

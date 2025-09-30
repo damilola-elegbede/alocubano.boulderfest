@@ -92,15 +92,15 @@ describe('Bootstrap Integration Tests', () => {
     expect(ticketTypesResult.rows.length).toBe(productionTicketTypes.length);
 
     // Verify ticket type data matches bootstrap config
-    const weekenderFull = ticketTypesResult.rows.find(tt => tt.id === '2025-11-weekender-full');
+    const weekenderFull = ticketTypesResult.rows.find(tt => tt.id === 'weekender-2025-11-full');
     expect(weekenderFull).toBeDefined();
-    expect(weekenderFull.event_id).toBe(bootstrapData.ticket_types['2025-11-weekender-full'].event_id);
-    expect(weekenderFull.name).toBe(bootstrapData.ticket_types['2025-11-weekender-full'].name);
-    expect(weekenderFull.price_cents).toBe(bootstrapData.ticket_types['2025-11-weekender-full'].price_cents);
-    expect(weekenderFull.status).toBe(bootstrapData.ticket_types['2025-11-weekender-full'].status);
+    expect(weekenderFull.event_id).toBe(bootstrapData.ticket_types['weekender-2025-11-full'].event_id);
+    expect(weekenderFull.name).toBe(bootstrapData.ticket_types['weekender-2025-11-full'].name);
+    expect(weekenderFull.price_cents).toBe(bootstrapData.ticket_types['weekender-2025-11-full'].price_cents);
+    expect(weekenderFull.status).toBe(bootstrapData.ticket_types['weekender-2025-11-full'].status);
 
     // Verify ticket_type_id FK populated correctly
-    expect(weekenderFull.id).toBe('2025-11-weekender-full');
+    expect(weekenderFull.id).toBe('weekender-2025-11-full');
 
     console.log(`✓ Bootstrap ticket_types test completed in ${Date.now() - testStart}ms`);
   });

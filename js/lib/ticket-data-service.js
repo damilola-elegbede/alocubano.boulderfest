@@ -106,7 +106,7 @@ class TicketDataService {
         const fallbackTickets = [
             {
                 id: 1,
-                ticket_type: '2026-early-bird-full',
+                ticket_type: 'boulderfest-2026-early-bird-full',
                 name: 'Early Bird Full Weekend Pass',
                 price_cents: 9900,
                 event_id: 3,
@@ -114,7 +114,7 @@ class TicketDataService {
             },
             {
                 id: 2,
-                ticket_type: '2026-regular-full',
+                ticket_type: 'boulderfest-2026-regular-full',
                 name: 'Full Weekend Pass',
                 price_cents: 12900,
                 event_id: 3,
@@ -122,7 +122,7 @@ class TicketDataService {
             },
             {
                 id: 3,
-                ticket_type: '2025-11-weekender-full',
+                ticket_type: 'weekender-2025-11-full',
                 name: 'November Weekender Full Pass',
                 price_cents: 7900,
                 event_id: 2,

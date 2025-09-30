@@ -28,7 +28,7 @@ describe('Ticket Purchase Flow Integration Tests', () => {
     const testStart = Date.now();
 
     // Step 1: Simulate cart validation (frontend)
-    const ticketTypeId = '2025-11-weekender-full'; // From bootstrap.json
+    const ticketTypeId = 'weekender-2025-11-full'; // From bootstrap.json
     const quantity = 2;
 
     // Verify ticket type exists and is available
@@ -133,7 +133,7 @@ describe('Ticket Purchase Flow Integration Tests', () => {
   test('sold_count increments after purchase via database trigger', async () => {
     const testStart = Date.now();
 
-    const ticketTypeId = '2025-11-weekender-class'; // Different ticket type
+    const ticketTypeId = 'weekender-2025-11-class'; // Different ticket type
     const quantity = 3;
 
     // Get initial sold_count
@@ -195,7 +195,7 @@ describe('Ticket Purchase Flow Integration Tests', () => {
   test('triggers fire correctly on ticket creation', async () => {
     const testStart = Date.now();
 
-    const ticketTypeId = '2025-11-weekender-full';
+    const ticketTypeId = 'weekender-2025-11-full';
     const sessionId = `cs_test_trigger_${Date.now()}`;
 
     // Get initial state
@@ -362,7 +362,7 @@ describe('Ticket Purchase Flow Integration Tests', () => {
   test('ticket_type_id foreign key populated correctly', async () => {
     const testStart = Date.now();
 
-    const ticketTypeId = '2025-11-weekender-full';
+    const ticketTypeId = 'weekender-2025-11-full';
     const sessionId = `cs_test_fk_${Date.now()}`;
 
     const mockStripeSession = {
@@ -453,7 +453,7 @@ describe('Ticket Purchase Flow Integration Tests', () => {
               unit_amount: 6500,
               product: {
                 metadata: {
-                  ticket_type: '2025-11-weekender-full',
+                  ticket_type: 'weekender-2025-11-full',
                   event_id: '5',
                   event_date: '2025-11-08'
                 }
@@ -491,7 +491,7 @@ describe('Ticket Purchase Flow Integration Tests', () => {
   test('reservation lifecycle: create → fulfill → cleanup', async () => {
     const testStart = Date.now();
 
-    const ticketTypeId = '2025-11-weekender-class';
+    const ticketTypeId = 'weekender-2025-11-class';
     const sessionId = `cs_test_reservation_${Date.now()}`;
     const quantity = 2;
 

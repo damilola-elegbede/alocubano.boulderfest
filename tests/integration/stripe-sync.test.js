@@ -89,14 +89,14 @@ describe('Stripe Price Sync Integration Tests', () => {
     // Clear stripe_price_id for test
     await db.execute({
       sql: 'UPDATE ticket_types SET stripe_price_id = NULL WHERE id = ?',
-      args: ['2025-11-weekender-full']
+      args: ['weekender-2025-11-full']
     });
 
     // Get sync status
     const status = await stripePriceSyncService.getSyncStatus();
 
     // Find the ticket type
-    const ticketType = status.ticketTypes.find(tt => tt.id === '2025-11-weekender-full');
+    const ticketType = status.ticketTypes.find(tt => tt.id === 'weekender-2025-11-full');
 
     expect(ticketType).toBeDefined();
     expect(ticketType.needsSync).toBe(true);
@@ -129,7 +129,7 @@ describe('Stripe Price Sync Integration Tests', () => {
   test('stripe_price_id population in database', async () => {
     const testStart = Date.now();
 
-    const ticketTypeId = '2025-11-weekender-full';
+    const ticketTypeId = 'weekender-2025-11-full';
 
     // Set a test stripe_price_id
     const testPriceId = 'price_test_' + Date.now();
@@ -155,24 +155,24 @@ describe('Stripe Price Sync Integration Tests', () => {
     // Set stripe_price_id for one ticket
     await db.execute({
       sql: 'UPDATE ticket_types SET stripe_price_id = ? WHERE id = ?',
-      args: ['price_synced_test', '2025-11-weekender-class']
+      args: ['price_synced_test', 'weekender-2025-11-class']
     });
 
     // Clear for another
     await db.execute({
       sql: 'UPDATE ticket_types SET stripe_price_id = NULL WHERE id = ?',
-      args: ['2025-11-weekender-full']
+      args: ['weekender-2025-11-full']
     });
 
     const status = await stripePriceSyncService.getSyncStatus();
 
     // Find synced ticket
-    const syncedTicket = status.ticketTypes.find(tt => tt.id === '2025-11-weekender-class');
+    const syncedTicket = status.ticketTypes.find(tt => tt.id === 'weekender-2025-11-class');
     expect(syncedTicket.needsSync).toBe(false);
     expect(syncedTicket.reason).toBe('Synced');
 
     // Find unsynced ticket
-    const unsyncedTicket = status.ticketTypes.find(tt => tt.id === '2025-11-weekender-full');
+    const unsyncedTicket = status.ticketTypes.find(tt => tt.id === 'weekender-2025-11-full');
     expect(unsyncedTicket.needsSync).toBe(true);
     expect(unsyncedTicket.reason).toBe('Missing stripe_price_id');
 
@@ -182,7 +182,7 @@ describe('Stripe Price Sync Integration Tests', () => {
   test('checkout flow uses stripe_price_id when available', async () => {
     const testStart = Date.now();
 
-    const ticketTypeId = '2025-11-weekender-full';
+    const ticketTypeId = 'weekender-2025-11-full';
     const stripePriceId = 'price_test_checkout_' + Date.now();
 
     // Set stripe_price_id
@@ -287,7 +287,7 @@ describe('Stripe Price Sync Integration Tests', () => {
   test('price update timestamp tracked correctly', async () => {
     const testStart = Date.now();
 
-    const ticketTypeId = '2025-11-weekender-class';
+    const ticketTypeId = 'weekender-2025-11-class';
 
     // Get initial updated_at
     const beforeResult = await db.execute({
