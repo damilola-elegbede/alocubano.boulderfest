@@ -14,7 +14,7 @@ DROP TABLE IF EXISTS email_retry_queue;
 -- Recreate with updated schema matching current implementation
 CREATE TABLE email_retry_queue (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    transaction_id TEXT NOT NULL,
+    transaction_id INTEGER NOT NULL REFERENCES transactions(id) ON DELETE CASCADE,
     email_address TEXT NOT NULL,
     email_type TEXT NOT NULL CHECK (email_type IN ('ticket_confirmation', 'registration_confirmation', 'registration_reminder')),
     status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'sent', 'failed')),

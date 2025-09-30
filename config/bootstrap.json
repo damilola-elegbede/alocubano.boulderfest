@@ -103,8 +103,8 @@
       "start_date": "2028-01-01",
       "end_date": "2028-01-02",
       "max_capacity": 50,
-      "early_bird_end_date": "2028-12-01",
-      "regular_price_start_date": "2028-12-15",
+      "early_bird_end_date": "2027-12-01",
+      "regular_price_start_date": "2027-12-15",
       "display_order": 999,
       "is_featured": false,
       "is_visible": false
