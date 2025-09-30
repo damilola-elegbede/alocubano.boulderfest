@@ -1,5 +1,5 @@
-import pkg from '@googleapis/sheets';
-const { google } = pkg;
+import { sheets } from '@googleapis/sheets';
+import { GoogleAuth } from 'google-auth-library';
 import { HealthStatus } from "../../lib/monitoring/health-checker.js";
 
 /**
@@ -26,7 +26,7 @@ async function getGoogleSheetsClient() {
         ).toString()
       );
 
-      auth = new google.auth.GoogleAuth({
+      auth = new GoogleAuth({
         credentials,
         scopes: ['https://www.googleapis.com/auth/spreadsheets']
       });
@@ -43,7 +43,7 @@ async function getGoogleSheetsClient() {
       sheetsConfig.auth = auth;
     }
 
-    return google.sheets(sheetsConfig);
+    return sheets(sheetsConfig);
   } catch (error) {
     throw new Error(
       `Failed to initialize Google Sheets client: ${error.message}`
