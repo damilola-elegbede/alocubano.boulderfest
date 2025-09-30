@@ -500,14 +500,14 @@ export default async function handler(req, res) {
           ]
         });
 
-        // Add reminder cancellation operation
+        // Add reminder cancellation operation (by transaction_id, not ticket_id)
         batchOperations.push({
           sql: `
             UPDATE registration_reminders
             SET status = 'cancelled'
-            WHERE ticket_id = ? AND status = 'scheduled'
+            WHERE transaction_id = ? AND status IN ('sent', 'scheduled')
           `,
-          args: [registration.ticketId]
+          args: [ticket.transaction_id]
         });
 
         // Determine changed fields for audit
