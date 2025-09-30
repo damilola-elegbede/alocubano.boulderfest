@@ -329,10 +329,10 @@ export default async function handler(req, res) {
       // Log email sent
       await db.execute({
         sql: `
-          INSERT INTO registration_emails (ticket_id, email_type, recipient_email, sent_at)
-          VALUES (?, ?, ?, datetime('now'))
+          INSERT INTO registration_emails (ticket_id, transaction_id, email_type, recipient_email, sent_at)
+          VALUES (?, ?, ?, ?, datetime('now'))
         `,
-        args: [ticketId, 'confirmation', cleanEmail]
+        args: [ticketId, ticket.transaction_id, 'confirmation', cleanEmail]
       });
     } catch (emailError) {
       console.error('Failed to send confirmation email:', emailError);

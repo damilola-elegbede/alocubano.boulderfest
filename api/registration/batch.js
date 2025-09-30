@@ -211,10 +211,10 @@ This is an automated confirmation email for your ticket registration.`;
   // Log plain text summary email sent
   await db.execute({
     sql: `
-      INSERT INTO registration_emails (ticket_id, email_type, recipient_email, sent_at)
-      VALUES (?, ?, ?, datetime('now'))
+      INSERT INTO registration_emails (ticket_id, transaction_id, email_type, recipient_email, sent_at)
+      VALUES (?, ?, ?, ?, datetime('now'))
     `,
-    args: [results[0]?.ticketId || 'BATCH', 'purchaser_completion', transactionInfo.customer_email]
+    args: [results[0]?.ticketId || 'BATCH', transactionInfo.id, 'purchaser_completion', transactionInfo.customer_email]
   });
 }
 
@@ -721,10 +721,10 @@ export default async function handler(req, res) {
           // Log email sent
           await db.execute({
             sql: `
-              INSERT INTO registration_emails (ticket_id, email_type, recipient_email, sent_at)
-              VALUES (?, ?, ?, datetime('now'))
+              INSERT INTO registration_emails (ticket_id, transaction_id, email_type, recipient_email, sent_at)
+              VALUES (?, ?, ?, ?, datetime('now'))
             `,
-            args: [task.registration.ticketId, 'attendee_confirmation', task.registration.email]
+            args: [task.registration.ticketId, task.ticket.transaction_id, 'attendee_confirmation', task.registration.email]
           });
 
           console.log(`[BATCH_REG] Email sent successfully for ticket ${task.registration.ticketId}`);
