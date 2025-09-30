@@ -120,15 +120,21 @@ function setupTicketsPageIntegration(cartManager) {
 
         try {
             if (quantity > 0) {
-                // Fetch event name using eventsService - NO FALLBACKS
+                // Fetch event data using eventsService - NO FALLBACKS
                 let eventName = null;
+                let eventDate = null;
+                let venue = null;
                 try {
                     const eventsService = (await import('./lib/events-service.js')).default;
                     const eventData = await eventsService.getEventById(eventId);
-                    eventName = eventData?.name || null;
+                    if (eventData) {
+                        eventName = eventData.name || null;
+                        eventDate = eventData.dates?.start || null;
+                        venue = eventData.venue?.name || null;
+                    }
                 } catch (error) {
-                    console.error('Failed to fetch event name:', error);
-                    // eventName stays null - no fallback
+                    console.error('Failed to fetch event data:', error);
+                    // All stay null - no fallback
                 }
 
                 // Use upsert operation that handles both add and update in one call
@@ -138,7 +144,9 @@ function setupTicketsPageIntegration(cartManager) {
                     price,
                     name,
                     eventId,
-                    eventName
+                    eventName,
+                    eventDate,
+                    venue
                 });
             } else if (quantity === 0) {
                 // Explicitly handle quantity 0 - remove the ticket
