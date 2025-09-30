@@ -65,6 +65,13 @@ async function createOrderHandler(req, res) {
       req.headers['x-test-mode'] === 'true' ||
       cartItems?.some(item => item.isTestItem || item.name?.startsWith('TEST'));
 
+    // eslint-disable-next-line no-console
+    console.log('PayPal: Request payload:', {
+      cartItems,
+      customerInfo,
+      testMode: isRequestTestMode
+    });
+
     logTestModeOperation('PayPal: Order creation started', {
       cartItems: cartItems?.length,
       isRequestTestMode
@@ -121,6 +128,15 @@ async function createOrderHandler(req, res) {
       const itemTotal = item.price * item.quantity;
       totalAmount += itemTotal;
 
+      // eslint-disable-next-line no-console
+      console.log('PayPal: Item processed:', {
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        itemTotal,
+        runningTotal: totalAmount
+      });
+
       // Prepare sanitized item for PayPal (use camelCase for SDK)
       orderItems.push({
         name: item.name.substring(0, 127), // PayPal name limit
@@ -135,6 +151,13 @@ async function createOrderHandler(req, res) {
     }
 
     // Validate total amount
+    // eslint-disable-next-line no-console
+    console.log('PayPal: Final total validation:', {
+      totalAmount,
+      isValid: totalAmount > 0 && totalAmount <= 10000,
+      orderItemsCount: orderItems.length
+    });
+
     if (totalAmount <= 0 || totalAmount > 10000) {
       return res.status(400).json({
         error: 'Invalid order total. Amount must be between $0.01 and $10,000'
