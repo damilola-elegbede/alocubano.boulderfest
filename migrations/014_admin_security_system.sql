@@ -220,3 +220,66 @@ CREATE INDEX IF NOT EXISTS idx_admin_mfa_attempts_type_success ON admin_mfa_atte
 CREATE INDEX IF NOT EXISTS idx_admin_mfa_rate_limits_admin_ip ON admin_mfa_rate_limits(admin_id, ip_address);
 CREATE INDEX IF NOT EXISTS idx_admin_mfa_rate_limits_locked_until ON admin_mfa_rate_limits(locked_until);
 CREATE INDEX IF NOT EXISTS idx_admin_mfa_rate_limits_updated_at ON admin_mfa_rate_limits(updated_at);
+
+-- System-wide audit logs table
+-- Comprehensive audit logging for all system activities (data changes, admin access, financial events, etc.)
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    request_id TEXT NOT NULL,
+    event_type TEXT NOT NULL,
+    action TEXT NOT NULL,
+
+    -- Target information (for data_change events)
+    target_type TEXT,
+    target_id TEXT,
+
+    -- Admin/user information
+    admin_user TEXT,
+    session_id TEXT,
+    ip_address TEXT,
+    user_agent TEXT,
+
+    -- Data change tracking (for data_change events)
+    before_value TEXT,
+    after_value TEXT,
+    changed_fields TEXT,
+
+    -- Admin access tracking (for admin_access events)
+    request_method TEXT,
+    request_url TEXT,
+    request_body TEXT,
+    response_status INTEGER,
+    response_time_ms INTEGER,
+    error_message TEXT,
+
+    -- Data processing tracking (for data_processing events - GDPR compliance)
+    data_subject_id TEXT,
+    data_type TEXT,
+    processing_purpose TEXT,
+    legal_basis TEXT,
+    retention_period TEXT,
+
+    -- Financial event tracking (for financial_event events)
+    amount_cents INTEGER,
+    currency TEXT,
+    transaction_reference TEXT,
+    payment_status TEXT,
+
+    -- Configuration change tracking (for config_change events)
+    config_key TEXT,
+    config_environment TEXT,
+
+    -- General metadata
+    metadata TEXT,
+    severity TEXT DEFAULT 'info',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for audit_logs
+CREATE INDEX IF NOT EXISTS idx_audit_logs_request_id ON audit_logs(request_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_event_type ON audit_logs(event_type);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_admin_user ON audit_logs(admin_user);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_target ON audit_logs(target_type, target_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_severity ON audit_logs(severity);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_session ON audit_logs(session_id);

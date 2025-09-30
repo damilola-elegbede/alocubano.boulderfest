@@ -1,4 +1,4 @@
-import { google } from 'googleapis';
+import { google } from '@googleapis/sheets';
 import { HealthStatus } from "../../lib/monitoring/health-checker.js";
 
 /**
