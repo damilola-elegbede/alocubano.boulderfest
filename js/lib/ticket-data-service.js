@@ -75,10 +75,10 @@ class TicketDataService {
 
                 // Build ticket type to event ID mapping
                 // API returns 'id' field as the ticket type identifier
-                const ticketType = ticket.id || ticket.ticket_type || ticket.type;
-                if (ticketType) {
-                    this.ticketTypeToEventMap.set(ticketType, ticket.event_id);
+                if (!ticket.id) {
+                    throw new Error(`Ticket missing required 'id' field: ${JSON.stringify(ticket)}`);
                 }
+                this.ticketTypeToEventMap.set(ticket.id, ticket.event_id);
             }
 
             this.lastFetch = Date.now();
@@ -102,30 +102,36 @@ class TicketDataService {
      * Load basic fallback ticket data when API fails
      */
     _loadFallbackTickets() {
-        // Basic fallback data based on common ticket types
+        // Basic fallback data matching API structure
         const fallbackTickets = [
             {
-                id: 1,
-                ticket_type: 'boulderfest-2026-early-bird-full',
+                id: 'boulderfest-2026-early-bird-full',
                 name: 'Early Bird Full Weekend Pass',
                 price_cents: 9900,
                 event_id: 3,
+                event_name: 'A Lo Cubano Boulder Fest 2026',
+                event_date: '2026-05-15',
+                event_venue: 'Avalon Ballroom',
                 status: 'available'
             },
             {
-                id: 2,
-                ticket_type: 'boulderfest-2026-regular-full',
+                id: 'boulderfest-2026-regular-full',
                 name: 'Full Weekend Pass',
                 price_cents: 12900,
                 event_id: 3,
+                event_name: 'A Lo Cubano Boulder Fest 2026',
+                event_date: '2026-05-15',
+                event_venue: 'Avalon Ballroom',
                 status: 'available'
             },
             {
-                id: 3,
-                ticket_type: 'weekender-2025-11-full',
+                id: 'weekender-2025-11-full',
                 name: 'November Weekender Full Pass',
-                price_cents: 7900,
+                price_cents: 6500,
                 event_id: 2,
+                event_name: 'November Salsa Weekender 2025',
+                event_date: '2025-11-08',
+                event_venue: 'Boulder Theater',
                 status: 'available'
             }
         ];
@@ -146,7 +152,7 @@ class TicketDataService {
             this.eventIdToTicketsMap.get(ticket.event_id).push(ticket);
 
             // Build ticket type to event ID mapping
-            this.ticketTypeToEventMap.set(ticket.ticket_type, ticket.event_id);
+            this.ticketTypeToEventMap.set(ticket.id, ticket.event_id);
         }
 
         this.lastFetch = Date.now();
@@ -182,8 +188,7 @@ class TicketDataService {
         await this.loadTicketData();
 
         for (const ticket of this.cache.values()) {
-            const apiTicketType = ticket.id || ticket.ticket_type || ticket.type;
-            if (apiTicketType === ticketType) {
+            if (ticket.id === ticketType) {
                 return ticket;
             }
         }
@@ -362,7 +367,7 @@ class TicketDataService {
             ...stats,
             tickets: Array.from(this.cache.values()).map(t => ({
                 id: t.id,
-                ticket_type: t.id || t.ticket_type || t.type,
+                ticket_type: t.id,
                 name: t.name,
                 price_cents: t.price_cents,
                 status: t.status,
@@ -373,7 +378,7 @@ class TicketDataService {
             eventGroups: Object.fromEntries(
                 Array.from(this.eventIdToTicketsMap.entries()).map(([eventId, tickets]) => [
                     eventId,
-                    tickets.map(t => t.id || t.ticket_type || t.type)
+                    tickets.map(t => t.id)
                 ])
             )
         };

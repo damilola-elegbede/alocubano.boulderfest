@@ -77,10 +77,10 @@ class TicketSelection {
             this.ticketData.clear();
             for (const ticket of tickets) {
                 // API returns 'id' field as the ticket type identifier
-                const ticketType = ticket.id || ticket.ticket_type || ticket.type;
-                if (ticketType) {
-                    this.ticketData.set(ticketType, ticket);
+                if (!ticket.id) {
+                    throw new Error(`Ticket missing required 'id' field: ${JSON.stringify(ticket)}`);
                 }
+                this.ticketData.set(ticket.id, ticket);
             }
 
             this.isLoading = false;
@@ -212,6 +212,22 @@ class TicketSelection {
             try {
                 const ticketData = await ticketDataService.getTicketById(ticketId);
                 if (ticketData) {
+                    // Update event name
+                    const eventNameElement = card.querySelector('.event-name');
+                    if (eventNameElement) {
+                        eventNameElement.textContent = ticketData.event_name || ticketData.event?.name || 'Event';
+                        eventNameElement.removeAttribute('data-loading');
+                        eventNameElement.setAttribute('data-loaded', 'true');
+                    }
+
+                    // Update ticket type/name
+                    const ticketTypeElement = card.querySelector('.ticket-type');
+                    if (ticketTypeElement) {
+                        ticketTypeElement.textContent = (ticketData.name || 'Ticket').toUpperCase();
+                        ticketTypeElement.removeAttribute('data-loading');
+                        ticketTypeElement.setAttribute('data-loaded', 'true');
+                    }
+
                     // Update price display
                     const priceElement = card.querySelector('.ticket-price');
                     if (priceElement) {
@@ -221,11 +237,33 @@ class TicketSelection {
                         priceElement.setAttribute('data-loaded', 'true');
                     }
 
+                    // Update date
+                    const dateElement = card.querySelector('.detail-value');
+                    if (dateElement) {
+                        const eventDate = ticketData.event_date || ticketData.event?.date;
+                        if (eventDate) {
+                            const date = new Date(eventDate);
+                            const formattedDate = date.toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                            });
+                            dateElement.textContent = formattedDate;
+                            dateElement.removeAttribute('data-loading');
+                            dateElement.setAttribute('data-loaded', 'true');
+                        }
+                    }
+
+                    // Update venue
+                    const venueElement = card.querySelector('.venue-name');
+                    if (venueElement) {
+                        venueElement.textContent = ticketData.event_venue || ticketData.event?.venue || 'Venue TBA';
+                        venueElement.removeAttribute('data-loading');
+                        venueElement.setAttribute('data-loaded', 'true');
+                    }
+
                     // Mark card as successfully loaded
                     card.setAttribute('data-api-loaded', 'true');
-
-                    // Update any other data that should come from API
-                    // (name, description, etc. could be added here if needed)
                 }
             } catch (error) {
                 console.error(`Failed to load data for ticket ${ticketId}:`, error);
