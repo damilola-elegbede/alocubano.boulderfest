@@ -9,8 +9,12 @@
 -- Disable foreign key checks temporarily to allow table recreation
 PRAGMA foreign_keys = OFF;
 
--- Step 1: Create new events table with updated status constraint
-CREATE TABLE IF NOT EXISTS events_new (
+-- Step 1: Rename existing events table to preserve data during migration
+-- This ensures data is not lost if migration aborts between steps
+ALTER TABLE events RENAME TO events_old;
+
+-- Step 2: Create new events table with updated status constraint
+CREATE TABLE events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     slug TEXT NOT NULL UNIQUE,
     name TEXT NOT NULL,
@@ -49,8 +53,8 @@ CREATE TABLE IF NOT EXISTS events_new (
     config TEXT -- JSON stored as TEXT for SQLite compatibility
 );
 
--- Step 2: Copy data from old table to new table (if old table exists and has data)
-INSERT INTO events_new (
+-- Step 3: Copy data from old table to new table
+INSERT INTO events (
     id, slug, name, type, status, description,
     venue_name, venue_address, venue_city, venue_state, venue_zip,
     start_date, end_date, max_capacity,
@@ -65,14 +69,10 @@ SELECT
     early_bird_end_date, regular_price_start_date,
     display_order, is_featured, is_visible,
     created_at, updated_at, created_by, config
-FROM events
-WHERE EXISTS (SELECT 1 FROM events LIMIT 1);
+FROM events_old;
 
--- Step 3: Drop old table
-DROP TABLE IF EXISTS events;
-
--- Step 4: Rename new table to original name
-ALTER TABLE events_new RENAME TO events;
+-- Step 4: Drop old table only after new table is successfully populated
+DROP TABLE events_old;
 
 -- Step 5: Recreate indexes
 CREATE INDEX IF NOT EXISTS idx_events_slug ON events(slug);
