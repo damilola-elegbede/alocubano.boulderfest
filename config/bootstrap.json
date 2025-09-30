@@ -1,0 +1,232 @@
+{
+  "version": "1.0.0",
+  "generated": "2025-01-28T00:00:00Z",
+  "description": "Bootstrap configuration for A Lo Cubano events and ticket types",
+
+  "events": [
+    {
+      "id": 3,
+      "name": "A Lo Cubano Boulder Fest 2026",
+      "slug": "boulderfest-2026",
+      "type": "festival",
+      "status": "upcoming",
+      "description": "The premier Cuban salsa festival in Boulder, featuring world-class instructors, live music, and three nights of social dancing.",
+      "venue_name": "Avalon Ballroom",
+      "venue_address": "6185 Arapahoe Road",
+      "venue_city": "Boulder",
+      "venue_state": "CO",
+      "venue_zip": "80303",
+      "start_date": "2026-05-15",
+      "end_date": "2026-05-17",
+      "max_capacity": 500,
+      "early_bird_end_date": "2026-03-01",
+      "regular_price_start_date": "2026-04-01",
+      "display_order": 1,
+      "is_featured": true,
+      "is_visible": true
+    },
+    {
+      "id": 1,
+      "name": "A Lo Cubano Boulder Fest 2025",
+      "slug": "boulderfest-2025",
+      "type": "festival",
+      "status": "completed",
+      "description": "The 2025 Cuban salsa festival in Boulder - featuring world-class instructors and live music.",
+      "venue_name": "Avalon Ballroom",
+      "venue_address": "6185 Arapahoe Road",
+      "venue_city": "Boulder",
+      "venue_state": "CO",
+      "venue_zip": "80303",
+      "start_date": "2025-05-16",
+      "end_date": "2025-05-18",
+      "max_capacity": 500,
+      "early_bird_end_date": "2025-03-01",
+      "regular_price_start_date": "2025-04-01",
+      "display_order": 3,
+      "is_featured": false,
+      "is_visible": false
+    },
+    {
+      "id": 2,
+      "name": "November Salsa Weekender 2025",
+      "slug": "weekender-2025-11",
+      "type": "weekender",
+      "status": "upcoming",
+      "description": "An intimate weekend of Cuban salsa workshops and social dancing in the heart of Boulder.",
+      "venue_name": "Boulder Theater",
+      "venue_address": "2032 14th Street",
+      "venue_city": "Boulder",
+      "venue_state": "CO",
+      "venue_zip": "80302",
+      "start_date": "2025-11-08",
+      "end_date": "2025-11-09",
+      "max_capacity": 200,
+      "early_bird_end_date": "2025-09-15",
+      "regular_price_start_date": "2025-10-01",
+      "display_order": 2,
+      "is_featured": true,
+      "is_visible": true
+    },
+    {
+      "id": -2,
+      "name": "Test Festival",
+      "slug": "test-festival",
+      "type": "festival",
+      "status": "test",
+      "description": "Test festival event for development and testing purposes only.",
+      "venue_name": "Test Ballroom",
+      "venue_address": "123 Test Street",
+      "venue_city": "Boulder",
+      "venue_state": "CO",
+      "venue_zip": "80301",
+      "start_date": "2028-01-01",
+      "end_date": "2028-01-03",
+      "max_capacity": 100,
+      "early_bird_end_date": "2027-12-01",
+      "regular_price_start_date": "2027-12-15",
+      "display_order": 998,
+      "is_featured": false,
+      "is_visible": false
+    },
+    {
+      "id": -1,
+      "name": "Test Weekender",
+      "slug": "test-weekender",
+      "type": "weekender",
+      "status": "test",
+      "description": "Test weekender event for development and testing purposes only.",
+      "venue_name": "Test Ballroom",
+      "venue_address": "123 Test Street",
+      "venue_city": "Boulder",
+      "venue_state": "CO",
+      "venue_zip": "80301",
+      "start_date": "2024-01-01",
+      "end_date": "2024-01-02",
+      "max_capacity": 50,
+      "early_bird_end_date": "2023-12-01",
+      "regular_price_start_date": "2023-12-15",
+      "display_order": 999,
+      "is_featured": false,
+      "is_visible": false
+    }
+  ],
+
+  "ticket_types": [
+    {
+      "id": "weekender-2025-11-full",
+      "event_id": 2,
+      "name": "Full Pass",
+      "description": "Full weekend access to workshops and socials",
+      "price_cents": 6500,
+      "status": "available",
+      "display_order": 1
+    },
+    {
+      "id": "weekender-2025-11-class",
+      "event_id": 2,
+      "name": "Single Class",
+      "description": "Access to one workshop session",
+      "price_cents": 2500,
+      "status": "available",
+      "display_order": 2
+    },
+    {
+      "id": "boulderfest-2026-early-bird-full",
+      "event_id": 3,
+      "name": "Early Bird Full Pass",
+      "description": "Special early pricing for full festival access",
+      "price_cents": null,
+      "status": "coming-soon",
+      "display_order": 1
+    },
+    {
+      "id": "boulderfest-2026-regular-full",
+      "event_id": 3,
+      "name": "Full Festival Pass",
+      "description": "Complete 3-day festival experience",
+      "price_cents": null,
+      "status": "coming-soon",
+      "display_order": 2
+    },
+    {
+      "id": "boulderfest-2026-friday-pass",
+      "event_id": 3,
+      "name": "Friday Pass",
+      "description": "Friday workshops and social dance",
+      "price_cents": null,
+      "status": "coming-soon",
+      "display_order": 3
+    },
+    {
+      "id": "boulderfest-2026-saturday-pass",
+      "event_id": 3,
+      "name": "Saturday Pass",
+      "description": "Saturday workshops and social dance",
+      "price_cents": null,
+      "status": "coming-soon",
+      "display_order": 4
+    },
+    {
+      "id": "boulderfest-2026-sunday-pass",
+      "event_id": 3,
+      "name": "Sunday Pass",
+      "description": "Sunday workshops and social dance",
+      "price_cents": null,
+      "status": "coming-soon",
+      "display_order": 5
+    },
+    {
+      "id": "test-vip-pass",
+      "event_id": -2,
+      "name": "[TEST] VIP Pass",
+      "description": "Full festival access with VIP perks including exclusive areas and early entry",
+      "price_cents": 15000,
+      "status": "test",
+      "display_order": 1
+    },
+    {
+      "id": "test-weekender-pass",
+      "event_id": -1,
+      "name": "[TEST] Weekender Pass",
+      "description": "Access to all weekend events Friday through Sunday",
+      "price_cents": 7500,
+      "status": "test",
+      "display_order": 2
+    },
+    {
+      "id": "test-friday-pass",
+      "event_id": -2,
+      "name": "[TEST] Friday Pass",
+      "description": "Friday night social and performances",
+      "price_cents": 3500,
+      "status": "test",
+      "display_order": 3
+    },
+    {
+      "id": "test-saturday-pass",
+      "event_id": -2,
+      "name": "[TEST] Saturday Pass",
+      "description": "Saturday workshops and evening social",
+      "price_cents": 3500,
+      "status": "test",
+      "display_order": 4
+    },
+    {
+      "id": "test-sunday-pass",
+      "event_id": -2,
+      "name": "[TEST] Sunday Pass",
+      "description": "Sunday workshops and closing performance",
+      "price_cents": 3500,
+      "status": "test",
+      "display_order": 5
+    }
+  ],
+
+  "metadata": {
+    "currency": "USD",
+    "timezone": "America/Denver",
+    "max_tickets_per_transaction": 100,
+    "ticket_statuses": ["available", "sold-out", "coming-soon", "closed", "test"],
+    "event_statuses": ["draft", "upcoming", "active", "completed", "cancelled", "test"]
+  }
+}

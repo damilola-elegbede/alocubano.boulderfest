@@ -383,6 +383,17 @@
   }
 }
 
+/* Cart Item Availability Warnings - Dark Mode */
+[data-theme="dark"] .cart-item-unavailable {
+  border-left-color: var(--color-red, #ef4444);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+[data-theme="dark"] .cart-item-availability-warning {
+  color: var(--color-red-light, #fca5a5);
+  background: rgba(239, 68, 68, 0.15);
+}
+
 /* Print Styles */
 @media print {
   [data-theme="dark"] .floating-cart-container {

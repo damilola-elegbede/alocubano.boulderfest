@@ -77,7 +77,7 @@ class CISetupManager {
   _loadEnvironment() {
     // Load environment variables based on context
     if (!process.env.VERCEL && !process.env.CI && !process.env.GITHUB_ACTIONS) {
-      const envPath = resolve(projectRoot, '.env.local');
+      const envPath = resolve(projectRoot, '.env.vercel');
       if (existsSync(envPath)) {
         config({ path: envPath });
         console.log('📄 Loaded local environment configuration');

@@ -35,12 +35,22 @@ The Google Drive service fetches images and videos from a Google Drive folder an
 
 ### 3. Environment Variables
 
-Add these variables to your `.env.local` file:
+Configure these variables in **Vercel Dashboard** (Settings → Environment Variables):
 
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `GOOGLE_DRIVE_API_KEY` | API key from Google Cloud Console | `AIza...` |
+| `GOOGLE_DRIVE_FOLDER_ID` | Google Drive folder ID | `1elqFy...` |
+| `GOOGLE_SERVICE_ACCOUNT_EMAIL` | Service account email | `service@project.iam.gserviceaccount.com` |
+| `GOOGLE_PRIVATE_KEY` | Service account private key | `-----BEGIN PRIVATE KEY-----...` |
+
+**Local Setup:**
 ```bash
-# Google Drive Integration
-GOOGLE_DRIVE_API_KEY=your_api_key_here
-GOOGLE_DRIVE_FOLDER_ID=your_folder_id_here
+# Pull environment variables from Vercel
+vercel env pull
+
+# Verify .env.local was created
+ls -la .env.local
 ```
 
 ## Image Categorization
@@ -60,11 +70,11 @@ Images are automatically categorized based on filename patterns:
 
 ### Google Drive Management
 - `GET /api/google-drive-health` - Service health and configuration status
-- `GET /api/google-drive-cache` - Cache status and metrics
-- `POST /api/google-drive-cache` - Warm up cache with fresh data (requires authentication)
-- `DELETE /api/google-drive-cache` - Clear cache (requires authentication)
+- `GET /api/cache?type=google-drive` - Cache status and metrics (requires admin authentication)
+- `POST /api/cache` - Warm up cache with fresh data (requires admin authentication, use `type=google-drive` and `action=warm`)
+- `DELETE /api/cache?type=google-drive` - Clear cache (requires admin authentication)
 
-**Note**: POST and DELETE operations on the cache management endpoint require an `X-API-Key` header with the `INTERNAL_API_KEY` value for security purposes.
+**Note**: All cache management operations require admin authentication via session token.
 
 ## Usage Examples
 
@@ -90,12 +100,38 @@ fetch('/api/google-drive-health')
   });
 ```
 
-### Clear Cache
+### Clear Google Drive Cache
 ```javascript
-fetch('/api/google-drive-cache', { method: 'DELETE' })
+fetch('/api/cache?type=google-drive', {
+  method: 'DELETE',
+  headers: {
+    'Authorization': 'Bearer <admin_token>'
+  }
+})
   .then(response => response.json())
   .then(data => {
     console.log('Cache cleared:', data.success);
+  });
+```
+
+### Warm Google Drive Cache
+```javascript
+fetch('/api/cache', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer <admin_token>',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    type: 'google-drive',
+    action: 'warm',
+    year: 2026,
+    maxResults: 100
+  })
+})
+  .then(response => response.json())
+  .then(data => {
+    console.log('Cache warmed:', data.success);
   });
 ```
 
@@ -202,10 +238,18 @@ curl http://localhost:3000/api/google-drive-health
 
 ### Manual Cache Management
 
-Clear cache manually to force fresh data:
+Clear Google Drive cache manually to force fresh data:
 
 ```bash
-curl -X DELETE http://localhost:3000/api/google-drive-cache
+curl -X DELETE http://localhost:3000/api/cache?type=google-drive \
+  -H "Authorization: Bearer <admin_token>"
+```
+
+Check Google Drive cache status:
+
+```bash
+curl http://localhost:3000/api/cache?type=google-drive \
+  -H "Authorization: Bearer <admin_token>"
 ```
 
 ## Integration with Frontend

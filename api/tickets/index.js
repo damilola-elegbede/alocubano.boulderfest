@@ -2,6 +2,7 @@ import { getDatabaseClient } from "../../lib/database.js";
 import ticketService from "../../lib/ticket-service.js";
 import tokenService from "../../lib/token-service.js";
 import { formatTicketType, TOKEN_ACTIONS } from "../../lib/ticket-config.js";
+import { processDatabaseResult } from "../../lib/bigint-serializer.js";
 
 export default async function handler(req, res) {
   let db;
@@ -59,10 +60,12 @@ export default async function handler(req, res) {
           return res.status(404).json({ error: 'Transaction not found' });
         }
 
+        // Process database result to handle BigInt values
+        const processedResult = processDatabaseResult(result);
         const tickets = await ticketService.getTransactionTickets(
-          result.rows[0].id
+          processedResult.rows[0].id
         );
-        return res.status(200).json({ tickets });
+        return res.status(200).json({ tickets: processDatabaseResult(tickets) });
       }
 
       return res

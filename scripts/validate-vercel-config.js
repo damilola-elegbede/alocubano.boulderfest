@@ -105,7 +105,7 @@ class VercelConfigValidator {
     this.checks.push('Validating environment variables');
 
     try {
-      const envPath = path.join(projectRoot, '.env.local');
+      const envPath = path.join(projectRoot, '.env.vercel');
       const content = await fs.readFile(envPath, 'utf-8');
 
       // Critical variables for E2E testing

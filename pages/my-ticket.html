@@ -38,9 +38,20 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>My Ticket - A Lo Cubano Boulder Fest</title>
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico" />
+
+    <!-- Performance optimizations -->
+    
+    <link rel="preconnect" href="https://wallet.apple.com">
+    <link rel="preconnect" href="https://pay.google.com">
 
     <!-- Theme Management - Early inclusion to prevent FOUC -->
     <script type="module" src="/js/theme-manager.js"></script>
+
+    <!-- Performance optimization system -->
+    <script type="module" src="/js/qr-cache-manager.js"></script>
+    <script type="module" src="/js/wallet-lazy-loader.js"></script>
+    <script type="module" src="/js/performance-integration.js"></script>
 
     <link rel="stylesheet" href="/css/base.css" />
     <link rel="stylesheet" href="/css/components.css" />
@@ -48,6 +59,7 @@
     <link rel="stylesheet" href="/css/floating-cart.css" />
     <link rel="stylesheet" href="/css/floating-cart-dark.css" />
     <link rel="stylesheet" href="/css/header-cart.css" />
+    <link rel="stylesheet" href="/css/theme-toggle.css" />
     <style>
       body {
         background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
@@ -96,12 +108,49 @@
       }
 
       .qr-code-container img {
-        width: 220px;
-        height: 220px;
+        width: 250px;
+        height: 250px;
         padding: 10px;
         background: white;
         border-radius: 8px;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .qr-loading {
+        width: 250px;
+        height: 250px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f0f0f0;
+        border-radius: 8px;
+        margin: 0 auto;
+      }
+
+      .qr-error {
+        width: 250px;
+        height: 250px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #ffeaea;
+        border: 2px dashed #d32f2f;
+        border-radius: 8px;
+        margin: 0 auto;
+        color: #d32f2f;
+        font-size: 14px;
+        text-align: center;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+
+      @media (max-width: 480px) {
+        .qr-code-container img,
+        .qr-loading,
+        .qr-error {
+          width: 220px;
+          height: 220px;
+        }
       }
 
       .qr-instructions {
@@ -213,9 +262,68 @@
         color: #d32f2f;
       }
 
+      /* Dark mode styles */
+      [data-theme="dark"] body {
+        background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+        color: #ffffff;
+      }
+
+      [data-theme="dark"] .ticket-container {
+        background: #2d2d2d;
+        color: #ffffff;
+      }
+
+      [data-theme="dark"] .ticket-body {
+        background: #2d2d2d;
+      }
+
+      [data-theme="dark"] .qr-code-container {
+        background: #3a3a3a;
+      }
+
+      [data-theme="dark"] .qr-loading {
+        background: #4a4a4a;
+        color: #ffffff;
+      }
+
+      [data-theme="dark"] .qr-error {
+        background: #4a2525;
+        border-color: #d32f2f;
+        color: #ff6b6b;
+      }
+
+      [data-theme="dark"] .ticket-details dt {
+        color: #ff4757;
+      }
+
+      [data-theme="dark"] .ticket-details dd {
+        color: #ffffff;
+      }
+
+      [data-theme="dark"] .wallet-section {
+        background: #3a3a3a;
+      }
+
+      [data-theme="dark"] .wallet-section h3 {
+        color: #ffffff;
+      }
+
+      [data-theme="dark"] .action-button {
+        background: #3a3a3a;
+        color: #ffffff;
+        border-color: #555;
+      }
+
+      [data-theme="dark"] .action-button:hover {
+        background: #4a4a4a;
+        border-color: #ce1126;
+      }
+
+
       @media print {
         body {
-          background: white;
+          background: white !important;
+          color: black !important;
         }
 
         .wallet-section,
@@ -227,10 +335,20 @@
           box-shadow: none;
           border: 2px solid #000;
           max-width: 100%;
+          background: white !important;
+          color: black !important;
         }
 
         .qr-code-container {
-          background: white;
+          background: white !important;
+        }
+
+        .ticket-details dt {
+          color: #ce1126 !important;
+        }
+
+        .ticket-details dd {
+          color: #333 !important;
         }
       }
     </style>
@@ -250,11 +368,8 @@
         </div>
 
         <div class="ticket-body">
-          <div class="qr-code-container">
-            <img id="qr-code" src="" alt="Ticket QR Code" />
-            <div class="qr-instructions">
-              Show this code at the event entrance
-            </div>
+          <div class="qr-code-container" id="qr-container">
+            <!-- QR code will be loaded by cache manager -->
           </div>
 
           <dl class="ticket-details" data-testid="ticket-details">
@@ -276,34 +391,17 @@
 
           <div class="wallet-section" data-testid="wallet-options">
             <h3>Add to Phone Wallet</h3>
-            <div class="wallet-buttons">
-              <a
-                href="#"
-                id="apple-wallet-link"
-                class="wallet-button apple"
-                data-testid="add-to-apple-wallet"
-              >
-                <span>📱 Add to Apple Wallet</span>
-              </a>
-              <a
-                href="#"
-                id="google-wallet-link"
-                class="wallet-button google"
-                data-testid="add-to-google-wallet"
-              >
-                <span>📱 Add to Google Wallet</span>
-              </a>
-            </div>
+            <div id="wallet-buttons-lazy-container" class="wallet-lazy-container"></div>
           </div>
 
           <div class="action-buttons">
-            <button class="action-button" onclick="printTicket()">
+            <button class="action-button" id="print-button">
               🖨️ Print
             </button>
-            <button class="action-button" onclick="downloadTicket()">
+            <button class="action-button" id="download-button">
               💾 Save
             </button>
-            <button class="action-button" onclick="shareTicket()">
+            <button class="action-button" id="share-button">
               📤 Share
             </button>
           </div>
@@ -355,16 +453,21 @@
           document.getElementById("attendee-name").textContent =
             data.ticket.attendeeName;
 
-          // Generate QR code image URL with token parameter
-          const qrImageUrl = `/api/tickets/qr-image?token=${encodeURIComponent(token)}`;
-          document.getElementById("qr-code").src = qrImageUrl;
-
-          // Update wallet links
+          // Create wallet buttons immediately
           const ticketId = data.ticket.id;
-          document.getElementById("apple-wallet-link").href =
-            `/api/tickets/apple-wallet/${ticketId}`;
-          document.getElementById("google-wallet-link").href =
-            `/api/tickets/google-wallet/${ticketId}`;
+          createWalletButtons(ticketId);
+
+          // Load QR code with caching
+          await loadQRCode(token);
+
+          // Preload QR codes for other tickets if this is part of a batch
+          if (data.ticket.batchTokens && data.ticket.batchTokens.length > 0) {
+            data.ticket.batchTokens.forEach(batchToken => {
+              if (batchToken !== token) {
+                window.qrCacheManager.preloadQRCode(batchToken);
+              }
+            });
+          }
 
           // Show ticket content
           document.getElementById("loading-state").style.display = "none";
@@ -377,11 +480,93 @@
 
       function showError(message = "Unable to load ticket") {
         document.getElementById("loading-state").style.display = "none";
-        document.getElementById("error-state").style.display = "block";
-        // Optionally update error message if element exists
-        const errorMsg = document.querySelector("#error-state p");
-        if (errorMsg) {
-          errorMsg.textContent = message;
+        const errorState = document.getElementById("error-state");
+        errorState.style.display = "block";
+        // Update error message safely using textContent (XSS-safe)
+        errorState.textContent = message;
+      }
+
+      async function loadQRCode(token) {
+        try {
+          const container = document.getElementById('qr-container');
+          if (!container) {
+            throw new Error('QR container not found');
+          }
+
+          // Use the optimized QR cache manager
+          await window.qrCacheManager.loadQRCode(token, container, {
+            showSkeleton: true,
+            retryOnError: true,
+            onProgress: (progress) => {
+              console.log('QR load progress:', progress);
+            }
+          });
+
+        } catch (error) {
+          console.error('Error loading QR code:', error);
+          // Error handling is done by the cache manager
+        }
+      }
+
+      async function downloadQRCode() {
+        const qrImgEl = document.getElementById("qr-code");
+        const ticketId = document.getElementById("ticket-id").textContent || "ticket";
+
+        if (!qrImgEl.src) {
+          alert("QR code not loaded yet. Please wait and try again.");
+          return;
+        }
+
+        try {
+          // Create a canvas to ensure we get a clean PNG
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+
+          // Wait for image to be ready
+          const img = new Image();
+          img.crossOrigin = "anonymous"; // Enable CORS for the image
+
+          await new Promise((resolve, reject) => {
+            img.onload = resolve;
+            img.onerror = reject;
+            img.src = qrImgEl.src;
+          });
+
+          // Set canvas size to match QR code
+          canvas.width = img.naturalWidth || 300;
+          canvas.height = img.naturalHeight || 300;
+
+          // Draw the image on canvas with white background
+          ctx.fillStyle = "white";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0);
+
+          // Convert to blob and download
+          canvas.toBlob((blob) => {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.download = `ticket-qr-${ticketId}.png`;
+            link.href = url;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+          }, "image/png");
+
+        } catch (error) {
+          console.error("Error downloading QR code:", error);
+          // Fallback: try direct download of the image
+          try {
+            const link = document.createElement("a");
+            link.download = `ticket-qr-${ticketId}.png`;
+            link.href = qrImgEl.src;
+            link.target = "_blank";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          } catch (fallbackError) {
+            alert("Unable to download QR code. Please try right-clicking the QR code and selecting 'Save Image As'.");
+          }
         }
       }
 
@@ -410,6 +595,19 @@
         }
       }
 
+      function createWalletButtons(ticketId) {
+        const container = document.getElementById('wallet-buttons-lazy-container');
+        if (container) {
+          // Use lazy loader for optimal performance
+          window.walletLazyLoader.observeWalletContainer(container, ticketId, {
+            title: 'Add to Phone Wallet',
+            size: 'default',
+            showBothOnDesktop: true,
+            className: 'wallet-buttons-my-ticket'
+          });
+        }
+      }
+
       function shareTicket() {
         const shareData = {
           title: "My A Lo Cubano Boulder Fest Ticket",
@@ -428,6 +626,24 @@
 
       // Load ticket on page load
       loadTicket();
+    </script>
+
+    <!-- Theme Toggle -->
+    <script type="module">
+      import { initializeThemeToggle } from '/js/theme-toggle.js';
+      document.addEventListener('DOMContentLoaded', () => {
+        // Add floating theme toggle for special page
+        const toggleContainer = document.createElement('div');
+        toggleContainer.id = 'theme-toggle-container';
+        toggleContainer.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 1000;';
+        document.body.appendChild(toggleContainer);
+        initializeThemeToggle('#theme-toggle-container');
+      });
+
+      // Attach event listeners to action buttons (CSP compliance)
+      document.getElementById('print-button')?.addEventListener('click', printTicket);
+      document.getElementById('download-button')?.addEventListener('click', downloadTicket);
+      document.getElementById('share-button')?.addEventListener('click', shareTicket);
     </script>
 
     <!-- Optional: Include html2canvas for better download functionality -->

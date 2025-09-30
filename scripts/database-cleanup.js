@@ -26,7 +26,7 @@ import { config } from 'dotenv';
 import { cleanTestData, cleanAllData, getCleanupStats } from '../tests/e2e/helpers/database-cleanup.js';
 
 // Load environment variables
-config({ path: '.env.local' });
+config({ path: '.env.vercel' });
 
 function showHelp() {
   console.log(`

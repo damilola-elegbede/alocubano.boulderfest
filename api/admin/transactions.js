@@ -4,6 +4,7 @@ import { getDatabaseClient } from "../../lib/database.js";
 import { getValidationService } from "../../lib/validation-service.js";
 import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
 import { withHighSecurityAudit } from "../../lib/admin-audit-middleware.js";
+import { processDatabaseResult } from "../../lib/bigint-serializer.js";
 
 async function handler(req, res) {
   let db;
@@ -71,13 +72,15 @@ async function handler(req, res) {
 
       const countResult = await db.execute({ sql: countSql, args: countArgs });
 
-      res.status(200).json({
+      const responseData = {
         transactions: result.rows,
         total: countResult.rows[0].total,
         limit: sanitized.limit,
         offset: sanitized.offset,
         hasMore: sanitized.offset + sanitized.limit < countResult.rows[0].total
-      });
+      };
+
+      res.status(200).json(processDatabaseResult(responseData));
     } else if (req.method === 'POST') {
       // Manual transaction creation (for testing)
       // Verify CSRF token for POST requests

@@ -5,6 +5,8 @@
 
 import Stripe from 'stripe';
 import { setSecureCorsHeaders } from '../../lib/cors-config.js';
+import { validateTicketAvailability, reserveTickets, releaseReservation } from '../../lib/ticket-availability-service.js';
+import { logger } from '../../lib/logger.js';
 
 // Check if we're in test mode
 const isTestMode = process.env.NODE_ENV === 'test' || process.env.INTEGRATION_TEST_MODE === 'true';
@@ -100,6 +102,101 @@ export default async function handler(req, res) {
       }
     }
 
+    // Validate ticket availability BEFORE creating Stripe session
+    // This prevents creating payment sessions for tickets that are sold out or unavailable
+    // Note: This implements graceful degradation - if validation fails due to database issues,
+    // the purchase is allowed to prevent blocking checkout. This is a deliberate trade-off.
+    try {
+      const availabilityResult = await validateTicketAvailability(cartItems);
+
+      // Log warnings but allow purchase to continue
+      if (availabilityResult.warnings && availabilityResult.warnings.length > 0) {
+        console.warn('Ticket availability warnings:', availabilityResult.warnings);
+      }
+
+      // Block purchase only if there are critical validation errors
+      if (!availabilityResult.valid && availabilityResult.errors && availabilityResult.errors.length > 0) {
+        const firstError = availabilityResult.errors[0];
+
+        // Return detailed error for the first validation failure
+        return res.status(400).json({
+          error: 'Ticket unavailable',
+          message: firstError.reason,
+          details: {
+            ticketId: firstError.ticketId,
+            ticketName: firstError.ticketName,
+            requested: firstError.requested,
+            available: firstError.available,
+            allErrors: availabilityResult.errors.map(err => ({
+              ticketName: err.ticketName,
+              reason: err.reason,
+              requested: err.requested,
+              available: err.available
+            }))
+          }
+        });
+      }
+
+      // Log successful validation (with graceful degradation flag if applicable)
+      if (availabilityResult.gracefulDegradation) {
+        console.log('Ticket availability validation bypassed (graceful degradation) - allowing purchase');
+      } else {
+        console.log('Ticket availability validated successfully');
+      }
+
+    } catch (validationError) {
+      // CRITICAL: This catch block should never be reached because validateTicketAvailability()
+      // has its own error handling with graceful degradation. But if it does happen,
+      // log the error and allow purchase to continue.
+      console.error('Unexpected error in ticket availability validation:', validationError);
+      console.log('Allowing purchase to continue despite validation error (graceful degradation)');
+    }
+
+    // Generate order ID for tracking (needed before Stripe session creation)
+    const orderIdPrefix = isRequestTestMode ? 'test_order' : 'order';
+    const orderId = `${orderIdPrefix}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+
+    console.log(`Creating ${isRequestTestMode ? 'TEST' : ''} checkout session for order:`, orderId);
+
+    // CRITICAL: Reserve tickets atomically BEFORE creating Stripe session
+    // This prevents race condition overselling by locking the quantities
+    // Generate a temporary session ID for reservation (will be replaced with Stripe session ID)
+    const tempSessionId = `temp_${orderId}`;
+
+    try {
+      const reservationResult = await reserveTickets(cartItems, tempSessionId);
+
+      if (!reservationResult.success) {
+        // Reservation failed - return error to user
+        const firstError = reservationResult.errors[0];
+        console.error('Ticket reservation failed:', reservationResult.errors);
+
+        return res.status(400).json({
+          error: 'Ticket unavailable',
+          message: firstError.reason,
+          details: {
+            ticketId: firstError.ticketId,
+            ticketName: firstError.ticketName,
+            requested: firstError.requested,
+            available: firstError.available,
+            allErrors: reservationResult.errors.map(err => ({
+              ticketName: err.ticketName,
+              reason: err.reason,
+              requested: err.requested,
+              available: err.available
+            }))
+          }
+        });
+      }
+
+      console.log(`Successfully reserved ${reservationResult.reservationIds.length} ticket(s) for session: ${tempSessionId}`);
+
+    } catch (reservationError) {
+      // CRITICAL: Reservation system failure - this should be rare
+      // Log the error but allow purchase to continue (graceful degradation)
+      console.error('Reservation system error (allowing purchase):', reservationError);
+    }
+
     // Calculate total and create line items for Stripe
     let totalAmount = 0;
     const lineItems = [];
@@ -129,40 +226,58 @@ export default async function handler(req, res) {
 
       // Create Stripe line item
       const lineItem = {
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: item.name,
-            description:
-              item.description || `A Lo Cubano Boulder Fest - ${item.name}`
-          },
-          unit_amount: Math.round(item.price * 100) // Convert to cents
-        },
         quantity: item.quantity
       };
 
-      // Add metadata for different item types
-      if (item.type === 'ticket') {
-        lineItem.price_data.product_data.metadata = {
-          type: 'ticket',
-          ticket_type: item.ticketType || 'general',
-          event_date: item.eventDate || '2026-05-15'
+      // Use stripe_price_id if available (preferred method)
+      if (item.stripePriceId) {
+        lineItem.price = item.stripePriceId;
+        logger.log(`Using Stripe Price ID for ${item.name}: ${item.stripePriceId}`);
+      } else {
+        // Fall back to dynamic price_data if stripe_price_id not available
+        lineItem.price_data = {
+          currency: 'usd',
+          product_data: {
+            name: item.name,
+            description: item.description
+          },
+          unit_amount: Math.round(item.price) // Price already in cents from cart
         };
-      } else if (item.type === 'donation') {
-        lineItem.price_data.product_data.metadata = {
-          type: 'donation',
-          donation_category: item.category || 'general'
-        };
+
+        // Add metadata for different item types
+        if (item.type === 'ticket') {
+          // Validate ticket type is present - NO DEFAULTS
+          if (!item.ticketType) {
+            return res.status(400).json({
+              error: `Missing ticket type for ticket: ${item.name || 'Unknown'}. This is a critical error - please contact support.`
+            });
+          }
+
+          // Validate event date is present
+          if (!item.eventDate) {
+            return res.status(400).json({
+              error: `Missing event date for ticket: ${item.name || 'Unknown'}. This is a critical error - please contact support.`
+            });
+          }
+
+          // Set event metadata for tickets - no defaults
+          lineItem.price_data.product_data.metadata = {
+            type: 'ticket',
+            ticket_type: item.ticketType,  // No default - must be explicit
+            event_date: item.eventDate,     // No default - must be explicit
+            event_id: item.eventId || '',   // Pass event ID through if present
+            venue: item.venue || ''          // Pass venue through if present
+          };
+        } else if (item.type === 'donation') {
+          lineItem.price_data.product_data.metadata = {
+            type: 'donation',
+            donation_category: item.category || 'general'  // Donations can have a default category
+          };
+        }
       }
 
       lineItems.push(lineItem);
     }
-
-    // Generate order ID for tracking (no database storage)
-    const orderIdPrefix = isRequestTestMode ? 'test_order' : 'order';
-    const orderId = `${orderIdPrefix}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-
-    console.log(`Creating ${isRequestTestMode ? 'TEST' : ''} checkout session for order:`, orderId);
 
     // Determine origin from request headers
     const origin =
@@ -221,7 +336,8 @@ export default async function handler(req, res) {
             : 'Pending',
         environment: process.env.NODE_ENV || 'development',
         testMode: isRequestTestMode.toString(),
-        testTransaction: isRequestTestMode ? 'true' : 'false'
+        testTransaction: isRequestTestMode ? 'true' : 'false',
+        tempSessionId: tempSessionId  // Store temp session ID for reservation update
       },
       // Collect billing address for tax compliance
       billing_address_collection: 'required',
@@ -249,6 +365,17 @@ export default async function handler(req, res) {
       testMode: isRequestTestMode
     });
   } catch (error) {
+    // CRITICAL: Release orphaned reservation if it was created
+    // This prevents tickets from being locked for 15 minutes when Stripe session creation fails
+    if (typeof tempSessionId !== 'undefined') {
+      try {
+        await releaseReservation(tempSessionId);
+        console.log(`Released orphaned reservation for tempSessionId: ${tempSessionId}`);
+      } catch (releaseError) {
+        console.error('Failed to release orphaned reservation (non-critical):', releaseError);
+      }
+    }
+
     // Checkout session creation failed
     console.error('Checkout session error:', error);
 

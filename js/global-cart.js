@@ -120,13 +120,41 @@ function setupTicketsPageIntegration(cartManager) {
 
         try {
             if (quantity > 0) {
+                // Fetch event data - try localStorage cache first (instant), then API
+                let eventName = null;
+                let eventDate = null;
+                let venue = null;
+                try {
+                    const eventsService = (await import('./lib/events-service.js')).default;
+
+                    // Try localStorage cache first (fast, no API call)
+                    let eventData = eventsService.getFromLocalStorageCache(eventId);
+
+                    // Fallback to API if cache miss
+                    if (!eventData) {
+                        eventData = await eventsService.getEventById(eventId);
+                    }
+
+                    if (eventData) {
+                        eventName = eventData.name || null;
+                        eventDate = eventData.dates?.start || null;
+                        venue = eventData.venue?.name || null;
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch event data:', error);
+                    // All stay null - no fallback
+                }
+
                 // Use upsert operation that handles both add and update in one call
                 await cartManager.upsertTicket({
                     ticketType,
                     quantity,
                     price,
                     name,
-                    eventId
+                    eventId,
+                    eventName,
+                    eventDate,
+                    venue
                 });
             } else if (quantity === 0) {
                 // Explicitly handle quantity 0 - remove the ticket

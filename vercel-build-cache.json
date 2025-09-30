@@ -1,0 +1,10 @@
+{
+  "buildCache": {
+    "key": "v1-${VERCEL_GIT_COMMIT_SHA}",
+    "paths": [
+      "node_modules",
+      ".vercel/output",
+      "lib/**/*.js"
+    ]
+  }
+}

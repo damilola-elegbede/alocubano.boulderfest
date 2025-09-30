@@ -2559,6 +2559,107 @@
   opacity: 0.3;
 }
 
+/* Availability Indicators */
+.availability-indicator {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-family: var(--font-code);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  animation: slideIn 0.3s ease-out;
+}
+
+.availability-indicator.availability-sold-out {
+  background: var(--color-red, #ef4444);
+  color: white;
+}
+
+.availability-indicator.availability-low-stock {
+  background: var(--color-yellow, #f59e0b);
+  color: var(--color-gray-900, #1f2937);
+}
+
+.availability-indicator.availability-limited {
+  background: var(--color-blue, #3b82f6);
+  color: white;
+}
+
+/* Availability Error Toast */
+.availability-error-toast {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-red, #ef4444);
+  color: white;
+  padding: 16px 24px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
+  z-index: 10000;
+  max-width: 90%;
+  text-align: center;
+  animation: slideInUp 0.3s ease-out;
+}
+
+.availability-error-toast.fade-out {
+  animation: slideOutDown 0.3s ease-out;
+}
+
+/* Ticket Card Error State */
+.ticket-card.availability-error {
+  animation: shake 0.5s ease-in-out;
+  border-color: var(--color-red, #ef4444);
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@keyframes slideOutDown {
+  from {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, 20px);
+  }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
 /* Diagonal banner overlay for coming soon items */
 .coming-soon-banner {
   position: absolute;
@@ -3193,6 +3294,24 @@
 
 [data-theme="dark"] .ticket-card.vertical-design .field-label {
   color: var(--color-text-secondary);
+}
+
+/* Dark mode availability indicators */
+[data-theme="dark"] .availability-indicator.availability-sold-out {
+  background: var(--color-red, #ef4444);
+}
+
+[data-theme="dark"] .availability-indicator.availability-low-stock {
+  background: var(--color-yellow, #f59e0b);
+  color: var(--color-gray-900, #1f2937);
+}
+
+[data-theme="dark"] .availability-indicator.availability-limited {
+  background: var(--color-blue-light, #60a5fa);
+}
+
+[data-theme="dark"] .availability-error-toast {
+  background: var(--color-red, #ef4444);
 }
 
 /* Dark mode schedule item titles */

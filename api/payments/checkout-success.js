@@ -1,5 +1,7 @@
 import { setSecureCorsHeaders } from '../../lib/cors-config.js';
 import { warmDatabaseInBackground } from '../../lib/database-warmer.js';
+import timeUtils from '../../lib/time-utils.js';
+import { processDatabaseResult } from '../../lib/bigint-serializer.js';
 
 /**
  * Checkout Success API Endpoint
@@ -89,10 +91,10 @@ export default async function handler(req, res) {
       result = await createOrRetrieveTickets(fullSession);
 
       transaction = result.transaction;
-      hasTickets = result.tickets && result.tickets.length > 0;
+      hasTickets = result.ticketCount > 0;
 
       console.log(`Transaction ${result.created ? 'created' : 'retrieved'}: ${transaction.uuid}`);
-      console.log(`${result.tickets.length} tickets ${result.created ? 'created' : 'found'}`);
+      console.log(`${result.ticketCount} tickets ${result.created ? 'created' : 'found'}`);
 
       // Ensure order number exists
       if (!transaction.order_number) {
@@ -101,10 +103,12 @@ export default async function handler(req, res) {
         console.log(`Generated order number: ${transaction.order_number}`);
 
         const db = await getDatabaseClient();
-        await db.execute({
+        const updateResult = await db.execute({
           sql: 'UPDATE transactions SET order_number = ? WHERE id = ?',
           args: [transaction.order_number, transaction.id]
         });
+        // Process update result for consistency
+        processDatabaseResult(updateResult);
       }
 
       // Get or generate registration token
@@ -120,10 +124,12 @@ export default async function handler(req, res) {
 
           // Update transaction with token
           const db = await getDatabaseClient();
-          await db.execute({
+          const tokenUpdateResult = await db.execute({
             sql: 'UPDATE transactions SET registration_token = ? WHERE id = ?',
             args: [registrationToken, transaction.id]
           });
+          // Process update result for consistency
+          processDatabaseResult(tokenUpdateResult);
         } catch (tokenError) {
           console.error('Failed to generate registration token:', tokenError.message);
           // Continue without token - not critical for success response
@@ -155,13 +161,18 @@ export default async function handler(req, res) {
       },
       hasTickets,
       // Include transaction details for better frontend integration (without exposing internal IDs)
-      transaction: transaction ? {
+      transaction: transaction ? timeUtils.enhanceApiResponse(processDatabaseResult({
         orderNumber: transaction.order_number,
         status: transaction.status,
-        totalAmount: Number(transaction.total_amount || transaction.amount_cents), // Convert BigInt to Number
+        totalAmount: transaction.total_amount || transaction.amount_cents, // Will be processed by BigInt serializer
         customerEmail: transaction.customer_email,
-        customerName: transaction.customer_name
-      } : null
+        customerName: transaction.customer_name,
+        created_at: transaction.created_at,
+        updated_at: transaction.updated_at
+      }), ['created_at', 'updated_at'], { includeDeadline: true, deadlineHours: 24 }) : null,
+      // Add Mountain Time information
+      timezone: 'America/Denver',
+      currentTime: timeUtils.getCurrentTime()
     };
 
     // Add registration information if token exists

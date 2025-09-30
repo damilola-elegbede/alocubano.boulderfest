@@ -38,15 +38,26 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Tickets - A Lo Cubano Boulder Fest</title>
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico" />
     <link rel="stylesheet" href="/css/base.css" />
     <link rel="stylesheet" href="/css/typography.css" />
     <link rel="stylesheet" href="/css/components.css" />
     <link rel="stylesheet" href="/css/navigation.css" />
     <link rel="stylesheet" href="/css/forms.css" />
     <link rel="stylesheet" href="/css/admin-overrides.css" />
+    <script src="/js/admin-auth-guard.js"></script>
     <script type="module" src="/js/theme-manager.js"></script>
+    <script type="module" src="/js/time-manager.js"></script>
   </head>
   <body class="admin-container">
+    <!-- Auth Loading State -->
+    <div id="auth-loading" class="auth-loading" style="display: none;">
+      <div class="auth-loading-content">
+        <div class="auth-spinner"></div>
+        <h2>Verifying Authentication...</h2>
+      </div>
+    </div>
+
     <!-- Unified Admin Header -->
     <header class="admin-header">
       <div class="admin-header-content">
@@ -78,11 +89,6 @@
         <li class="admin-nav-item">
           <a href="/admin/tickets" class="admin-nav-link active">
             <span>Tickets</span>
-          </a>
-        </li>
-        <li class="admin-nav-item">
-          <a href="/admin/test-dashboard" class="admin-nav-link">
-            <span>Test Dashboard</span>
           </a>
         </li>
         <li class="admin-nav-item">
@@ -192,6 +198,12 @@
       const pageSize = 50;
       let authToken = null;
       let csrfToken = null;
+      let timeManager = null;
+
+      // Import timeManager
+      import('/js/time-manager.js').then(module => {
+        timeManager = module.default;
+      });
       
       // AbortController for canceling stale fetches during rapid searches
       let searchAbortController = null;
@@ -231,22 +243,10 @@
 
       // Check authentication on load
       async function checkAuth() {
-        try {
-          const response = await fetch("/api/admin/verify-session", {
-            credentials: "include" // CRITICAL: Include cookies for production
-          });
-          if (!response.ok) {
-            window.location.href = "/admin/login";
-            return false;
-          }
-          const data = await response.json();
-          if (!data.valid) {
-            window.location.href = "/admin/login";
-            return false;
-          }
-          return true;
-        } catch (error) {
-          console.error("Auth check failed:", error);
+        if (window.AdminAuthGuard) {
+          return await window.AdminAuthGuard.verifyAndShow();
+        } else {
+          console.error("AdminAuthGuard not available");
           window.location.href = "/admin/login";
           return false;
         }
@@ -521,7 +521,8 @@
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement("a");
           a.href = url;
-          a.download = `tickets-${new Date().toISOString().split("T")[0]}.csv`;
+          const timestamp = timeManager ? timeManager.formatDate(new Date()).replace(/\s/g, '-') : new Date().toISOString().split("T")[0];
+          a.download = `tickets-${timestamp}.csv`;
           a.click();
         } catch (error) {
           alert(`Export failed: ${escapeHtml(error.message)}`);

@@ -201,58 +201,140 @@ const toggle = initializeThemeToggle('#theme-toggle-container');
 
 ## Environment Variables
 
-Required in `.env.local`:
+### Single Source of Truth: Vercel Dashboard
+
+All environment variables are configured in the Vercel Dashboard and automatically pulled during development and deployment. This eliminates the need for local `.env` files and ensures consistency across all environments.
+
+### Configuration Approach
+
+- **Running the app**: `vercel dev` automatically pulls environment variables from Vercel Dashboard
+- **Running tests/scripts locally**: `vercel link` creates `.env.vercel` file with all Dashboard variables
+- **Production**: Vercel deployment uses Dashboard configuration directly
+- **CI/CD**: GitHub Actions uses GitHub Secrets (synced from Vercel Dashboard)
+
+### Required Environment Variables
+
+Configure these in your Vercel Dashboard (Settings → Environment Variables):
 
 ```bash
 # Email
-BREVO_API_KEY=
-BREVO_NEWSLETTER_LIST_ID=
-BREVO_WEBHOOK_SECRET=
+BREVO_API_KEY=                                # Brevo API key for email services
+BREVO_NEWSLETTER_LIST_ID=                     # Newsletter list identifier
+BREVO_WEBHOOK_SECRET=                         # Webhook security token
+
+# Registration Email Templates
+BREVO_PURCHASER_CONFIRMATION_TEMPLATE_ID=     # Individual purchaser confirmation
+BREVO_ATTENDEE_CONFIRMATION_TEMPLATE_ID=      # Individual attendee confirmation
+BREVO_BATCH_REGISTRATION_TEMPLATE_ID=         # Comprehensive batch registration summary (optional)
 
 # Payments
-STRIPE_PUBLISHABLE_KEY=
-STRIPE_SECRET_KEY=
-STRIPE_WEBHOOK_SECRET=
+STRIPE_PUBLISHABLE_KEY=                       # Stripe publishable key
+STRIPE_SECRET_KEY=                            # Stripe secret key
+STRIPE_WEBHOOK_SECRET=                        # Stripe webhook signing secret
 
 # Database
-TURSO_DATABASE_URL=      # Production only (required for E2E tests)
-TURSO_AUTH_TOKEN=        # Production only (required for E2E tests)
+TURSO_DATABASE_URL=                           # Production database URL (required for E2E tests)
+TURSO_AUTH_TOKEN=                             # Production database auth token (required for E2E tests)
 
 # Admin
-ADMIN_PASSWORD=          # bcrypt hash
-ADMIN_SECRET=            # min 32 chars
+ADMIN_PASSWORD=                               # bcrypt hash for admin authentication
+ADMIN_SECRET=                                 # JWT signing secret (min 32 chars)
 
 # Registration System
-REGISTRATION_SECRET=     # min 32 chars - JWT signing for ticket registration tokens
+REGISTRATION_SECRET=                          # JWT signing for ticket registration tokens (min 32 chars)
 
 # Wallet Passes
-APPLE_PASS_KEY=          # base64 encoded
-WALLET_AUTH_SECRET=      # JWT signing
+APPLE_PASS_KEY=                               # base64 encoded Apple Pass certificate
+WALLET_AUTH_SECRET=                           # JWT signing secret for wallet authentication
 
 # Google Drive Integration (optional)
-GOOGLE_DRIVE_API_KEY=    # Google Cloud API key with Drive API enabled
-GOOGLE_DRIVE_FOLDER_ID=  # Google Drive folder ID containing gallery images
+GOOGLE_DRIVE_API_KEY=                         # Google Cloud API key with Drive API enabled
+GOOGLE_DRIVE_FOLDER_ID=                       # Google Drive folder ID containing gallery images
 
 # Internal APIs Security
-INTERNAL_API_KEY=        # API key for secure internal operations (cache management)
+INTERNAL_API_KEY=                             # API key for secure internal operations (cache management)
+CRON_SECRET=                                  # Bearer token for Vercel Cron job authentication (prevents unauthorized cron triggers)
 
 # Testing (optional)
-TEST_ADMIN_PASSWORD=     # Plain text password for admin panel E2E testing (not bcrypt hashed)
+TEST_ADMIN_PASSWORD=                          # Plain text password for admin panel E2E testing (not bcrypt hashed)
 
 # Timeout Configuration (optional - for CI/CD flexibility)
-E2E_STARTUP_TIMEOUT=     # Server startup timeout in ms (default: 60000)
-E2E_TEST_TIMEOUT=        # Individual test timeout in ms (default: varies by scenario)
-E2E_ACTION_TIMEOUT=      # Action timeout (clicks, inputs) in ms (default: varies by scenario)
-E2E_NAVIGATION_TIMEOUT=  # Page navigation timeout in ms (default: varies by scenario)
-E2E_WEBSERVER_TIMEOUT=   # Webserver startup timeout in ms (default: varies by scenario)
-E2E_EXPECT_TIMEOUT=      # Expect assertion timeout in ms (default: varies by scenario)
-E2E_HEALTH_CHECK_INTERVAL= # Health check interval in ms (default: 2000)
-VITEST_TEST_TIMEOUT=     # Vitest test timeout in ms (default: varies by environment)
-VITEST_HOOK_TIMEOUT=     # Vitest hook timeout in ms (default: varies by environment)
-VITEST_SETUP_TIMEOUT=    # Vitest setup timeout in ms (default: 10000)
-VITEST_CLEANUP_TIMEOUT=  # Vitest cleanup timeout in ms (default: 5000)
-VITEST_REQUEST_TIMEOUT=  # HTTP request timeout in ms (default: 30000)
+E2E_STARTUP_TIMEOUT=                          # Server startup timeout in ms (default: 60000)
+E2E_TEST_TIMEOUT=                             # Individual test timeout in ms (default: varies by scenario)
+E2E_ACTION_TIMEOUT=                           # Action timeout (clicks, inputs) in ms (default: varies by scenario)
+E2E_NAVIGATION_TIMEOUT=                       # Page navigation timeout in ms (default: varies by scenario)
+E2E_WEBSERVER_TIMEOUT=                        # Webserver startup timeout in ms (default: varies by scenario)
+E2E_EXPECT_TIMEOUT=                           # Expect assertion timeout in ms (default: varies by scenario)
+E2E_HEALTH_CHECK_INTERVAL=                    # Health check interval in ms (default: 2000)
+VITEST_TEST_TIMEOUT=                          # Vitest test timeout in ms (default: varies by environment)
+VITEST_HOOK_TIMEOUT=                          # Vitest hook timeout in ms (default: varies by environment)
+VITEST_SETUP_TIMEOUT=                         # Vitest setup timeout in ms (default: 10000)
+VITEST_CLEANUP_TIMEOUT=                       # Vitest cleanup timeout in ms (default: 5000)
+VITEST_REQUEST_TIMEOUT=                       # HTTP request timeout in ms (default: 30000)
 ```
+
+### Environment Variable Management
+
+- **Initial Setup**:
+  1. Configure variables in Vercel Dashboard (Settings → Environment Variables)
+  2. Run `vercel link` to link your local project
+  3. This creates `.env.vercel` with all Dashboard variables
+
+- **Running the app**: `vercel dev` (no .env file needed - pulls directly from Dashboard)
+- **Running tests/scripts**: Uses `.env.vercel` file (created by `vercel link`)
+- **Updating variables**:
+  - Change in Vercel Dashboard
+  - Run `vercel env pull .env.vercel` to refresh local file
+- **CI/CD**: GitHub Actions uses GitHub Secrets (no .env files)
+- **Security**: `.env.vercel` is gitignored, sensitive values never committed
+
+### CRON_SECRET Configuration
+
+**Purpose**: Authenticates Vercel Cron jobs to prevent unauthorized execution of scheduled tasks.
+
+**How Vercel Cron Authentication Works**:
+
+1. **Automatic Generation**: When you configure a cron job in `vercel.json`, Vercel automatically generates a `CRON_SECRET` and adds it to your environment variables
+2. **Authorization Header**: Vercel Cron jobs automatically send `Authorization: Bearer <CRON_SECRET>` header
+3. **Validation**: Your cron handler validates the header matches the environment variable
+
+**Configuration Steps**:
+
+1. **Option A - Automatic (Recommended)**:
+   - Add cron configuration to `vercel.json`
+   - Deploy to Vercel
+   - Vercel automatically generates and sets `CRON_SECRET`
+
+2. **Option B - Manual**:
+   - Generate a secure random token (min 32 chars)
+   - Add to Vercel Dashboard: Settings → Environment Variables
+   - Set for Production environment only
+
+**Usage in Cron Handlers**:
+
+```javascript
+export default async function handler(req, res) {
+  const authHeader = req.headers.authorization;
+  const expectedAuth = `Bearer ${process.env.CRON_SECRET || ''}`;
+
+  if (authHeader !== expectedAuth && process.env.NODE_ENV === 'production') {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  // Process cron job...
+}
+```
+
+**Current Cron Jobs**:
+
+- `api/cron/cleanup-expired-reservations.js` - Uses CRON_SECRET authentication
+- `api/cron/process-reminders.js` - **Missing CRON_SECRET authentication** (security issue)
+
+**Security Notes**:
+
+- Only enforced in production (`NODE_ENV === 'production'`)
+- Skipped in development to allow local testing
+- Prevents external actors from triggering cron jobs via direct HTTP requests
 
 ## API Endpoints
 
@@ -294,16 +376,37 @@ VITEST_REQUEST_TIMEOUT=  # HTTP request timeout in ms (default: 30000)
 - `GET /api/gallery/years` - Available years
 - `GET /api/featured-photos` - Featured photos
 
+### Cache Management
+
+- `GET /api/cache` - Get cache statistics and metrics (supports `?type=google-drive`)
+- `POST /api/cache` - Perform cache operations (warm/clear)
+- `DELETE /api/cache` - Clear cache (shorthand for POST with action=clear)
+
 ### Google Drive Integration
 
 - `GET /api/google-drive-health` - Google Drive service health and configuration status
-- `GET /api/google-drive-cache` - Google Drive cache status and metrics
-- `POST /api/google-drive-cache` - Warm up Google Drive cache with fresh data
-- `DELETE /api/google-drive-cache` - Clear Google Drive cache
 
 ### Performance & Media (Phase 3)
 
-- `POST /api/performance-metrics` - Performance data collection
+- `POST /api/performance-metrics` - Unified performance data collection endpoint
+  - Supports multiple metric types via `?type=` query parameter:
+    - `standard`: Core Web Vitals and standard metrics (default)
+    - `analytics`: General analytics data
+    - `critical`: Critical performance alerts
+    - `final`: Final page unload metrics
+- `GET /api/performance/monitoring-dashboard` - Unified performance monitoring and reporting
+  - Supports multiple report types via `?type=` query parameter:
+    - `summary`: Quick performance summary (default)
+    - `detailed`: Comprehensive performance report
+    - `health`: Service health status
+    - `alerts`: Recent performance alerts
+    - `recommendations`: Optimization recommendations
+    - `slow-queries`: Slow query analysis
+    - `categories`: Query category breakdown
+    - `export`: Exportable metrics data (JSON or CSV via `?format=csv`)
+    - `optimize`: Trigger manual optimization
+    - `status`: System status
+    - `dashboard`: Complete dashboard data
 - `GET /api/image-proxy/[fileId]` - Image optimization and format conversion
 - `GET /api/hero-image/[pageId]` - Page-specific hero images
 

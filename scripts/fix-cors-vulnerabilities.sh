@@ -21,7 +21,6 @@ FILES=(
   "api/performance.js"
   "api/google-drive-health.js"
   "api/featured-photos.js"
-  "api/example-cached-endpoint.js"
   "api/performance-critical.js"
   "api/email/unsubscribe.js"
 )

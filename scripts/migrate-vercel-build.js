@@ -110,6 +110,9 @@ import { execSync } from "child_process";
 // Debug mode - set DEBUG_MIGRATION=true for verbose logging
 const DEBUG = process.env.DEBUG_MIGRATION === 'true';
 
+// Quiet mode - suppress verbose output in production/CI (only show critical messages)
+const QUIET_MODE = process.env.CI === 'true' || process.env.VERCEL_ENV === 'production';
+
 // Color codes for console output
 const colors = {
   reset: "\x1b[0m",
@@ -123,21 +126,28 @@ const colors = {
 };
 
 function log(message, color = colors.reset) {
-  console.log(`${color}${message}${colors.reset}`);
+  // In quiet mode, only show critical messages (✅, ❌, ⚠️, 🚀)
+  if (!QUIET_MODE || message.includes('✅') || message.includes('❌') || message.includes('⚠️') || message.includes('🚀')) {
+    console.log(`${color}${message}${colors.reset}`);
+  }
 }
 
 function debugLog(message, color = colors.reset) {
-  if (DEBUG) {
+  // Debug logs never show in quiet mode
+  if (DEBUG && !QUIET_MODE) {
     console.log(`${color}${message}${colors.reset}`);
   }
 }
 
 function logSection(title, emoji = "📦") {
-  console.log("");
-  console.log(`${colors.bright}${colors.cyan}${"=".repeat(60)}${colors.reset}`);
-  console.log(`${colors.bright}${emoji} ${title}${colors.reset}`);
-  console.log(`${colors.cyan}${"=".repeat(60)}${colors.reset}`);
-  console.log("");
+  // Skip section headers in quiet mode
+  if (!QUIET_MODE) {
+    console.log("");
+    console.log(`${colors.bright}${colors.cyan}${"=".repeat(60)}${colors.reset}`);
+    console.log(`${colors.bright}${emoji} ${title}${colors.reset}`);
+    console.log(`${colors.cyan}${"=".repeat(60)}${colors.reset}`);
+    console.log("");
+  }
 }
 
 /**
@@ -329,13 +339,47 @@ async function runVercelBuild() {
             log(`   Migrations table shows ${status.executed} completed`, colors.yellow);
             log(`   But critical tables are missing: ${missingTables.join(', ')}`, colors.red);
             log(`   This indicates corrupted migration tracking`, colors.red);
-            log("   Will attempt to run all pending migrations to fix", colors.yellow);
-            // Don't exit - let the migration system handle it
+            log("", colors.yellow);
+            log("🔧 Attempting automatic recovery...", colors.cyan);
+            log("   Step 1: Clearing corrupted migrations table", colors.cyan);
+
+            // Clear the migrations table to force re-run
+            await client.execute("DELETE FROM migrations");
+
+            log("   Step 2: Re-running all migrations", colors.cyan);
+
+            // Force re-run all migrations
+            const result = await globalMigrationSystem.runMigrations();
+            migrationResult = result;
+
+            log("", colors.green);
+            log("✅ Database recovery completed!", colors.green);
+            log(`   Executed: ${result.executed} migration(s)`, colors.cyan);
+            log("");
+
+            // Verify tables now exist
+            const verifyCheck = await client.execute(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('tickets', 'transactions', 'registrations', 'events') ORDER BY name"
+            );
+            const recoveredTables = verifyCheck.rows.map(r => r.name);
+            const stillMissing = expectedTables.filter(t => !recoveredTables.includes(t));
+
+            if (stillMissing.length > 0) {
+              log("❌ Recovery failed - still missing tables: " + stillMissing.join(', '), colors.red);
+              throw new Error(`Database recovery failed - missing tables: ${stillMissing.join(', ')}`);
+            }
+
+            log("✅ All critical tables verified after recovery", colors.green);
           } else {
             log("✅ Database structure verified - all critical tables exist", colors.green);
             migrationResult.skipped = status.executed;
           }
         } catch (verifyError) {
+          // If recovery failed, re-throw the error to fail the build
+          if (verifyError.message.includes('Database recovery failed')) {
+            throw verifyError;
+          }
+
           // Don't warn about CLIENT_CLOSED during verification - it's expected if migrations didn't run
           if (!verifyError.message.includes('CLIENT_CLOSED') && !verifyError.message.includes('manually closed')) {
             log("⚠️  Could not verify table existence: " + verifyError.message, colors.yellow);

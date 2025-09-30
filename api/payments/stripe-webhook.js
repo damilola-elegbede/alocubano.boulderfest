@@ -23,6 +23,7 @@ import ticketService from "../../lib/ticket-service.js";
 import { getDatabaseClient } from "../../lib/database.js";
 import auditService from "../../lib/audit-service.js";
 import { createOrRetrieveTickets } from "../../lib/ticket-creation-service.js";
+import { fulfillReservation, releaseReservation } from "../../lib/ticket-availability-service.js";
 
 // Initialize Stripe with strict error handling
 if (!process.env.STRIPE_SECRET_KEY) {
@@ -138,13 +139,28 @@ export default async function handler(req, res) {
           const transaction = result.transaction;
 
           console.log(`Webhook: Transaction ${result.created ? 'created' : 'already exists'}: ${transaction.uuid}`);
-          console.log(`Webhook: ${result.tickets.length} tickets ${result.created ? 'created' : 'found'}`);
+          console.log(`Webhook: ${result.ticketCount} tickets ${result.created ? 'created' : 'found'}`);
 
           // Update the payment event with transaction ID
           await paymentEventLogger.updateEventTransactionId(
             event.id,
             transaction.id
           );
+
+          // Fulfill reservation - mark as completed
+          // Try both actual session ID and temp session ID (from metadata)
+          try {
+            await fulfillReservation(session.id, transaction.id);
+
+            // Also try temp session ID if it exists in metadata
+            const tempSessionId = fullSession.metadata?.tempSessionId;
+            if (tempSessionId) {
+              await fulfillReservation(tempSessionId, transaction.id);
+            }
+          } catch (fulfillError) {
+            // Non-critical - tickets are already created
+            console.warn('Failed to fulfill reservation (non-critical):', fulfillError.message);
+          }
 
           // Log financial audit for successful payment
           await logFinancialAudit({
@@ -169,7 +185,7 @@ export default async function handler(req, res) {
               test_mode: isTestTransaction,
               test_transaction: isTestTransaction,
               tickets_created: result.created,
-              ticket_count: result.tickets.length
+              ticket_count: result.ticketCount
             },
             severity: isTestTransaction ? 'debug' : 'info'
           });
@@ -214,7 +230,7 @@ export default async function handler(req, res) {
           const transaction = result.transaction;
 
           console.log(`Async payment: Transaction ${result.created ? 'created' : 'already exists'}: ${transaction.uuid}`);
-          console.log(`Async payment: ${result.tickets.length} tickets ${result.created ? 'created' : 'found'}`);
+          console.log(`Async payment: ${result.ticketCount} tickets ${result.created ? 'created' : 'found'}`);
 
           // Log financial audit for async payment success
           await logFinancialAudit({
@@ -238,7 +254,7 @@ export default async function handler(req, res) {
               test_mode: isTestTransaction,
               test_transaction: isTestTransaction,
               tickets_created: result.created,
-              ticket_count: result.tickets.length
+              ticket_count: result.ticketCount
             },
             severity: isTestTransaction ? 'debug' : 'info'
           });
@@ -301,6 +317,20 @@ export default async function handler(req, res) {
     case 'checkout.session.expired': {
       const session = event.data.object;
       console.log(`Checkout session expired: ${session.id}`);
+
+      // Release reservation - tickets are no longer held
+      try {
+        await releaseReservation(session.id);
+
+        // Also release temp session ID if it exists in metadata
+        const tempSessionId = session.metadata?.tempSessionId;
+        if (tempSessionId) {
+          await releaseReservation(tempSessionId);
+        }
+      } catch (releaseError) {
+        // Non-critical - log but continue
+        console.warn('Failed to release reservation (non-critical):', releaseError.message);
+      }
 
       // Update transaction status if it exists
       try {

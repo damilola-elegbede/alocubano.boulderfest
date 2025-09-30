@@ -422,8 +422,8 @@ CACHE_MAX_MEMORY_MB=500
 
 ### Monitoring Setup
 
-1. **Health Checks**: `/api/cache/health`
-2. **Metrics Dashboard**: `/api/cache/stats`
+1. **Health Checks**: `/api/health/check`
+2. **Metrics Dashboard**: `/api/cache` (GET)
 3. **Alerts**: Configure on high eviction rates
 4. **Logging**: Structured cache operation logs
 

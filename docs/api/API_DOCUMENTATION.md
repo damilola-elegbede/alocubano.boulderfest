@@ -1341,7 +1341,7 @@ Returns a curated selection of featured photos optimized for homepage display an
     "total": 156,
     "count": 12,
     "hasMore": true,
-    "nextCursor": "eyJpZCI6IjFhYmMxMjMiLCJ0aW1lIjoiMjAyNS0wNS0xNlQxMDoxNTowMFoifQ"
+    "nextCursor": "YOUR_TOKEN_HERE"
   },
   "filters": {
     "year": "2025",

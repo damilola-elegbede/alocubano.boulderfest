@@ -1,35 +1,32 @@
--- Migration: 020 - Performance Monitoring System
--- Purpose: Health checks, error logs, performance metrics, and admin tools
--- Dependencies: 019_multi_event_architecture.sql
+-- Migration: 020 - Performance Monitoring
+-- Purpose: Performance metrics and health monitoring
+-- Dependencies: 002_schema_migrations.sql
 
--- Performance metrics table for web vitals tracking (EXACT from 001_core_tables.sql)
+-- Performance metrics
 CREATE TABLE IF NOT EXISTS performance_metrics (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    session_id TEXT NOT NULL,
     metric_name TEXT NOT NULL,
     metric_value REAL NOT NULL,
-    page_url TEXT NOT NULL,
-    device_type TEXT,
-    connection_type TEXT,
-    browser_info TEXT,
-    recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Admin audit log for tracking administrative actions (EXACT from 001_core_tables.sql)
-CREATE TABLE IF NOT EXISTS admin_audit_log (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    admin_user TEXT NOT NULL,
-    action TEXT NOT NULL,
-    target_type TEXT,
-    target_id TEXT,
-    old_value TEXT,
-    new_value TEXT,
-    ip_address TEXT,
+    metric_type TEXT NOT NULL,
+    endpoint TEXT,
+    request_id TEXT,
     user_agent TEXT,
-    performed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    recorded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    metadata TEXT
 );
 
--- Check-in sessions for event management (EXACT from 001_core_tables.sql)
+-- Health checks
+CREATE TABLE IF NOT EXISTS health_checks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    check_name TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('healthy', 'degraded', 'unhealthy')),
+    response_time_ms INTEGER,
+    error_message TEXT,
+    checked_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    metadata TEXT
+);
+
+-- Check-in sessions for event management (from backup 020_performance_monitoring.sql)
 CREATE TABLE IF NOT EXISTS checkin_sessions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     session_id TEXT UNIQUE NOT NULL,
@@ -41,18 +38,7 @@ CREATE TABLE IF NOT EXISTS checkin_sessions (
     location TEXT
 );
 
--- Health check status tracking (EXACT from 001_core_tables.sql)
-CREATE TABLE IF NOT EXISTS health_checks (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    service_name TEXT NOT NULL,
-    status TEXT NOT NULL CHECK (status IN ('healthy', 'degraded', 'unhealthy')),
-    response_time_ms INTEGER,
-    error_message TEXT,
-    metadata TEXT,
-    checked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Error tracking for system monitoring (EXACT from 001_core_tables.sql)
+-- Error tracking for system monitoring (from backup 020_performance_monitoring.sql)
 CREATE TABLE IF NOT EXISTS error_logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     error_id TEXT UNIQUE NOT NULL,
@@ -69,8 +55,10 @@ CREATE TABLE IF NOT EXISTS error_logs (
     occurred_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Basic indexes for performance monitoring tables
-CREATE INDEX IF NOT EXISTS idx_performance_session ON performance_metrics(session_id);
-CREATE INDEX IF NOT EXISTS idx_performance_page ON performance_metrics(page_url);
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_performance_metrics_name ON performance_metrics(metric_name);
+CREATE INDEX IF NOT EXISTS idx_performance_metrics_recorded_at ON performance_metrics(recorded_at DESC);
+CREATE INDEX IF NOT EXISTS idx_health_checks_name ON health_checks(check_name);
+CREATE INDEX IF NOT EXISTS idx_health_checks_checked_at ON health_checks(checked_at DESC);
 CREATE INDEX IF NOT EXISTS idx_error_logs_severity ON error_logs(severity);
 CREATE INDEX IF NOT EXISTS idx_error_logs_resolved ON error_logs(resolved);

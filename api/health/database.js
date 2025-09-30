@@ -1,5 +1,6 @@
 import { HealthStatus } from "../../lib/monitoring/health-checker.js";
 import { getDatabaseClient } from "../../lib/database.js";
+import { processDatabaseResult } from "../../lib/bigint-serializer.js";
 
 /**
  * Validate database schema integrity
@@ -13,7 +14,9 @@ async function validateSchema(dbService) {
       ORDER BY name
     `);
 
-    const tableNames = tablesResult.rows.map((row) => row[0]);
+    // Process database result to handle BigInt values
+    const processedTablesResult = processDatabaseResult(tablesResult);
+    const tableNames = processedTablesResult.rows.map((row) => row.name);
 
     // In test environment, be more flexible with table requirements
     const isTestEnvironment =
@@ -58,7 +61,9 @@ async function validateSchema(dbService) {
         PRAGMA table_info(tickets)
       `);
 
-      const columnNames = ticketColumnsResult.rows.map((row) => row[1]); // column name is second field in PRAGMA table_info
+      // Process database result to handle BigInt values
+      const processedTicketColumnsResult = processDatabaseResult(ticketColumnsResult);
+      const columnNames = processedTicketColumnsResult.rows.map((row) => row.name); // column name property in PRAGMA table_info
       const requiredColumns = ['id', 'ticket_id', 'created_at'];
       const missingColumns = requiredColumns.filter(
         (c) => !columnNames.includes(c)
@@ -90,7 +95,9 @@ async function getDatabaseStats(dbService) {
     const tablesResult = await dbService.execute(`
       SELECT name FROM sqlite_master WHERE type='table'
     `);
-    const tableNames = tablesResult.rows.map((row) => row[0]);
+    // Process database result to handle BigInt values
+    const processedTablesResult = processDatabaseResult(tablesResult);
+    const tableNames = processedTablesResult.rows.map((row) => row.name);
 
     let ticketCount = 0;
     let subscriberCount = 0;
@@ -100,7 +107,9 @@ async function getDatabaseStats(dbService) {
       const ticketCountResult = await dbService.execute(`
         SELECT COUNT(*) as count FROM tickets
       `);
-      ticketCount = ticketCountResult.rows[0][0];
+      // Process database result to handle BigInt values
+      const processedTicketCountResult = processDatabaseResult(ticketCountResult);
+      ticketCount = Number(processedTicketCountResult.rows[0].count);
     }
 
     // Get subscriber count if email_subscribers table exists
@@ -108,25 +117,33 @@ async function getDatabaseStats(dbService) {
       const subscriberCountResult = await dbService.execute(`
         SELECT COUNT(*) as count FROM email_subscribers
       `);
-      subscriberCount = subscriberCountResult.rows[0][0];
+      // Process database result to handle BigInt values
+      const processedSubscriberCountResult = processDatabaseResult(subscriberCountResult);
+      subscriberCount = Number(processedSubscriberCountResult.rows[0].count);
     } else if (tableNames.includes('subscribers')) {
       // Fallback to legacy subscribers table if it exists
       const subscriberCountResult = await dbService.execute(`
         SELECT COUNT(*) as count FROM subscribers
       `);
-      subscriberCount = subscriberCountResult.rows[0][0];
+      // Process database result to handle BigInt values
+      const processedSubscriberCountResult = processDatabaseResult(subscriberCountResult);
+      subscriberCount = Number(processedSubscriberCountResult.rows[0].count);
     }
 
     // Get database file size (approximation)
     const pageCountResult = await dbService.execute(`
       PRAGMA page_count
     `);
-    const pageCountVal = pageCountResult.rows[0][0] || 0;
+    // Process database result to handle BigInt values
+    const processedPageCountResult = processDatabaseResult(pageCountResult);
+    const pageCountVal = Number(processedPageCountResult.rows[0].page_count) || 0;
 
     const pageSizeResult = await dbService.execute(`
       PRAGMA page_size
     `);
-    const pageSizeVal = pageSizeResult.rows[0][0] || 0;
+    // Process database result to handle BigInt values
+    const processedPageSizeResult = processDatabaseResult(pageSizeResult);
+    const pageSizeVal = Number(processedPageSizeResult.rows[0].page_size) || 0;
 
     // Guard against NaN when computing DB size
     const dbSize =
@@ -142,7 +159,9 @@ async function getDatabaseStats(dbService) {
         FROM tickets
         WHERE created_at > datetime('now', '-1 hour')
       `);
-      recentTickets = recentTicketsResult.rows[0][0];
+      // Process database result to handle BigInt values
+      const processedRecentTicketsResult = processDatabaseResult(recentTicketsResult);
+      recentTickets = Number(processedRecentTicketsResult.rows[0].count);
     }
 
     return {
@@ -169,7 +188,9 @@ async function getMigrationStatus(dbService) {
       WHERE type='table' AND name='migrations'
     `);
 
-    if (migrationTableResult.rows.length === 0) {
+    // Process database result to handle BigInt values
+    const processedMigrationTableResult = processDatabaseResult(migrationTableResult);
+    if (processedMigrationTableResult.rows.length === 0) {
       return {
         migrations_applied: 0,
         latest_migration: 'none'
@@ -188,16 +209,20 @@ async function getMigrationStatus(dbService) {
       SELECT COUNT(*) as count FROM migrations
     `);
 
+    // Process database results to handle BigInt values
+    const processedLatestMigrationResult = processDatabaseResult(latestMigrationResult);
+    const processedTotalMigrationsResult = processDatabaseResult(totalMigrationsResult);
+
     const latestMigration =
-      latestMigrationResult.rows.length > 0
-        ? latestMigrationResult.rows[0]
+      processedLatestMigrationResult.rows.length > 0
+        ? processedLatestMigrationResult.rows[0]
         : null;
-    const totalMigrations = totalMigrationsResult.rows[0][0];
+    const totalMigrations = Number(processedTotalMigrationsResult.rows[0].count);
 
     return {
       migrations_applied: totalMigrations,
-      latest_migration: latestMigration ? latestMigration[1] : 'none', // name column
-      latest_applied_at: latestMigration ? latestMigration[2] : null // applied_at column
+      latest_migration: latestMigration ? latestMigration.filename : 'none',
+      latest_applied_at: latestMigration ? latestMigration.executed_at : null
     };
   } catch (error) {
     return {
@@ -278,9 +303,11 @@ export const checkDatabaseHealth = async() => {
       throw new Error(`Database execute failed: ${executeError.message}`);
     }
 
-    if (!testResult || !testResult.rows || testResult.rows.length === 0) {
+    // Process database result to handle BigInt values
+    const processedTestResult = processDatabaseResult(testResult);
+    if (!processedTestResult || !processedTestResult.rows || processedTestResult.rows.length === 0) {
       throw new Error(
-        `Database query test failed - no results returned. testResult: ${JSON.stringify(testResult)}`
+        `Database query test failed - no results returned. testResult: ${JSON.stringify(processedTestResult)}`
       );
     }
 

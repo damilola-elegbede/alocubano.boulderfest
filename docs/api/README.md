@@ -23,13 +23,13 @@ class AsyncService {
     if (this.initialized && this.instance) {
       return this.instance; // Fast path
     }
-    
+
     if (this.initializationPromise) {
       return this.initializationPromise; // Wait for existing
     }
-    
+
     this.initializationPromise = this._performInitialization();
-    
+
     try {
       return await this.initializationPromise;
     } catch (error) {
@@ -57,18 +57,21 @@ export default async function handler(req, res) {
 ### Email Services
 
 #### Newsletter Subscription
+
 - **Endpoint**: `POST /api/email/subscribe`
 - **Purpose**: Subscribe users to newsletter via Brevo
 - **Request**: `{ email: string }`
 - **Response**: `{ success: boolean, message: string }`
 
 #### Newsletter Unsubscribe
+
 - **Endpoint**: `GET|POST /api/email/unsubscribe`
 - **Purpose**: Unsubscribe users with secure token
 - **Query**: `?token=<unsubscribe_token>`
 - **Response**: HTML page confirming unsubscription
 
 #### Brevo Webhook
+
 - **Endpoint**: `POST /api/email/brevo-webhook`
 - **Purpose**: Process Brevo email events
 - **Authentication**: HMAC signature validation
@@ -77,9 +80,11 @@ export default async function handler(req, res) {
 ### Payment Services
 
 #### Create Checkout Session
+
 - **Endpoint**: `POST /api/payments/create-checkout-session`
 - **Purpose**: Create Stripe checkout session for ticket purchases
-- **Request**: 
+- **Request**:
+
   ```json
   {
     "items": [
@@ -91,46 +96,132 @@ export default async function handler(req, res) {
     ]
   }
   ```
-- **Response**: `{ sessionId: string, url: string }`
+
+- **Response**:
+
+  ```json
+  {
+    "sessionId": "string",
+    "url": "string",
+    "orderId": "ALO-2026-0001"
+  }
+  ```
 
 #### Stripe Webhook
+
 - **Endpoint**: `POST /api/payments/stripe-webhook`
 - **Purpose**: Handle Stripe payment events
 - **Authentication**: Stripe signature validation
 - **Events**: payment_intent.succeeded, checkout.session.completed
 
 #### Checkout Success
+
 - **Endpoint**: `GET /api/payments/checkout-success`
 - **Purpose**: Handle post-payment redirect
 - **Query**: `?session_id=<stripe_session_id>`
 - **Response**: HTML success page with ticket details
 
+### QR Code Services
+
+#### Generate QR Code
+
+- **Endpoint**: `GET /api/qr/generate`
+- **Purpose**: Generate QR code PNG image for tickets
+- **Query**: `?token=<jwt_token>`
+- **Response**: Binary PNG image (300x300px)
+- **Cache**: 24-hour HTTP cache headers (server-side caching)
+- **Authentication**: JWT token validation
+- **Error Codes**:
+  - `400`: Invalid or missing token
+  - `405`: Method not allowed (non-GET)
+  - `429`: Rate limit exceeded
+  - `500`: QR generation failure
+
+**Note**: The 24-hour HTTP cache is distinct from the client-side 7-day localStorage/Service Worker cache. See [Performance Optimization](/docs/PERFORMANCE_OPTIMIZATION.md) for details on the dual cache architecture.
+
 ### Ticket Services
 
 #### Get Ticket Details
+
 - **Endpoint**: `GET /api/tickets/[ticketId]`
 - **Purpose**: Retrieve ticket information
-- **Response**: 
+- **Response**:
+
   ```json
   {
     "id": "string",
     "ticketType": "string",
     "purchaseDate": "ISO string",
-    "qrCode": "string",
-    "status": "active|used|expired"
+    "qrToken": "string",
+    "qrImageUrl": "string",
+    "status": "active|used|expired|cancelled|transferred",
+    "validation_status": "valid|invalid|expired|revoked",
+    "orderId": "ALO-2026-0001"
   }
   ```
 
+**Status Fields Explained**:
+
+- **status**: User-facing ticket status (displayed to customers)
+  - `active`: Ticket is active and ready to use
+  - `used`: Ticket has been validated/scanned at event
+  - `expired`: Ticket is past the event date
+  - `cancelled`: Ticket was cancelled and refunded
+  - `transferred`: Ticket ownership was transferred
+
+- **validation_status**: Internal validation state (used for QR validation logic)
+  - `valid`: Ticket can be validated at entry
+  - `invalid`: Ticket validation is blocked
+  - `expired`: Ticket is expired (event ended)
+  - `revoked`: Ticket was revoked (security/fraud)
+
 #### Validate Ticket
+
 - **Endpoint**: `POST /api/tickets/validate`
-- **Purpose**: Validate QR code at event entrance
-- **Request**: `{ qrCode: string }`
-- **Response**: `{ valid: boolean, ticket: object }`
+- **Purpose**: Validate QR code at event entrance or display ticket details
+- **Request**:
+
+  ```json
+  {
+    "token": "jwt_token_string",
+    "validateOnly": true
+  }
+  ```
+
+- **Response**:
+
+  ```json
+  {
+    "valid": true,
+    "ticket": {
+      "id": "string",
+      "type": "string",
+      "attendeeName": "string",
+      "batchTokens": ["array_of_related_tokens"]
+    }
+  }
+  ```
+
+- **Enhanced Features**:
+  - JWT token support for secure validation
+  - `validateOnly` flag to prevent scan count increment
+  - Batch token support for multi-ticket purchases
+
+- **Error Codes**:
+  - `400`: Malformed token or invalid input format
+  - `401`: Invalid or expired token (authentication failure)
+  - `404`: Ticket not found in database
+  - `409`: Ticket locked due to maximum scans exceeded (conflict state)
+  - `410`: Event has permanently ended (resource gone)
+  - `423`: Ticket temporarily locked (locked resource state)
+  - `429`: Rate limit exceeded (too many requests)
 
 #### Register Ticket
+
 - **Endpoint**: `POST /api/tickets/register`
 - **Purpose**: Register attendee information for ticket
-- **Request**: 
+- **Request**:
+
   ```json
   {
     "ticketId": "string",
@@ -141,21 +232,42 @@ export default async function handler(req, res) {
   ```
 
 #### Apple Wallet Pass
+
 - **Endpoint**: `GET /api/tickets/apple-wallet/[ticketId]`
 - **Purpose**: Generate Apple Wallet pass file
 - **Response**: Binary `.pkpass` file
+- **Authentication**: JWT-based wallet authentication
+- **Features**:
+  - Dynamic pass generation with ticket details
+  - Branding images and festival colors
+  - QR code integration for event entry
 
 #### Google Wallet Pass
+
 - **Endpoint**: `GET /api/tickets/google-wallet/[ticketId]`
 - **Purpose**: Generate Google Wallet pass URL
-- **Response**: `{ url: string }`
+- **Response**:
+
+  ```json
+  {
+    "url": "https://pay.google.com/gp/v/save/..."
+  }
+  ```
+
+- **Authentication**: JWT-based wallet authentication
+- **Features**:
+  - Web-based pass delivery
+  - Real-time pass updates
+  - Cross-platform compatibility
 
 ### Registration Services
 
 #### Get Registration Status
+
 - **Endpoint**: `GET /api/registration/[token]`
 - **Purpose**: Get registration status for all tickets in purchase
-- **Response**: 
+- **Response**:
+
   ```json
   {
     "tickets": [
@@ -169,9 +281,11 @@ export default async function handler(req, res) {
   ```
 
 #### Batch Registration
+
 - **Endpoint**: `POST /api/registration/batch`
 - **Purpose**: Register multiple tickets at once
-- **Request**: 
+- **Request**:
+
   ```json
   {
     "token": "string",
@@ -187,6 +301,7 @@ export default async function handler(req, res) {
   ```
 
 #### Registration Health Check
+
 - **Endpoint**: `GET /api/registration/health`
 - **Purpose**: Verify registration system status
 - **Response**: `{ status: "healthy", database: "connected" }`
@@ -194,6 +309,7 @@ export default async function handler(req, res) {
 ### Admin Services
 
 #### Admin Login
+
 - **Endpoint**: `POST /api/admin/login`
 - **Purpose**: Authenticate admin users
 - **Request**: `{ password: string }`
@@ -201,20 +317,28 @@ export default async function handler(req, res) {
 - **Authentication**: bcrypt password verification
 
 #### Admin Dashboard
+
 - **Endpoint**: `GET /api/admin/dashboard`
 - **Purpose**: Get dashboard statistics
 - **Authentication**: JWT token required
-- **Response**: 
+- **Response**:
+
   ```json
   {
     "totalTickets": number,
     "totalRevenue": number,
     "registrationRate": number,
-    "recentActivity": array
+    "recentActivity": array,
+    "orderMetrics": {
+      "totalOrders": number,
+      "averageOrderValue": number,
+      "ordersByType": object
+    }
   }
   ```
 
 #### Admin Registrations
+
 - **Endpoint**: `GET /api/admin/registrations`
 - **Purpose**: List all ticket registrations
 - **Authentication**: JWT token required
@@ -224,10 +348,12 @@ export default async function handler(req, res) {
 ### Gallery Services
 
 #### Get Photos
+
 - **Endpoint**: `GET /api/gallery`
 - **Purpose**: Retrieve photos from Google Drive
 - **Query**: `?year=2023&limit=50&offset=0`
-- **Response**: 
+- **Response**:
+
   ```json
   {
     "photos": [
@@ -243,11 +369,13 @@ export default async function handler(req, res) {
   ```
 
 #### Get Available Years
+
 - **Endpoint**: `GET /api/gallery/years`
 - **Purpose**: Get list of years with photos
 - **Response**: `{ years: [2023, 2024, 2025] }`
 
 #### Featured Photos
+
 - **Endpoint**: `GET /api/featured-photos`
 - **Purpose**: Get curated featured photos
 - **Response**: `{ photos: array, count: number }`
@@ -255,9 +383,11 @@ export default async function handler(req, res) {
 ### Health Check Services
 
 #### General Health Check
+
 - **Endpoint**: `GET /api/health/check`
 - **Purpose**: Verify application health
-- **Response**: 
+- **Response**:
+
   ```json
   {
     "status": "healthy",
@@ -265,15 +395,62 @@ export default async function handler(req, res) {
     "services": {
       "database": "connected",
       "email": "configured",
-      "payments": "configured"
+      "payments": "configured",
+      "qrGeneration": "operational",
+      "walletPasses": "configured"
     }
   }
   ```
 
 #### Database Health Check
+
 - **Endpoint**: `GET /api/health/database`
 - **Purpose**: Verify database connectivity
 - **Response**: `{ status: "connected", type: "turso|sqlite" }`
+
+## New Features Documentation
+
+### QR Code Generation
+
+The QR code generation system provides secure, cacheable PNG images:
+
+- **JWT Authentication**: Secure token-based validation
+- **High Performance**: 300x300px optimized PNG images
+- **Cache Headers**: 24-hour browser caching
+- **Error Correction**: Medium level (15%) for reliability
+- **Email Compatible**: Direct embedding in email templates
+
+### Order Number System
+
+Sequential order tracking with format `ALO-YYYY-NNNN`:
+
+- **Production Orders**: `ALO-2026-0001`, `ALO-2026-0002`, etc.
+- **Test Orders**: `TEST-2026-9001`, `TEST-2026-9002`, etc.
+- **Database Sequences**: Thread-safe atomic increments
+- **Year Separation**: Independent sequences per year
+- **Fallback Support**: Timestamp-based IDs if database unavailable
+
+### Enhanced Wallet Passes
+
+Comprehensive mobile wallet integration:
+
+- **Apple Wallet**: `.pkpass` files with certificate signing
+- **Google Wallet**: Web-based pass URLs with JWT authentication
+- **Dynamic Generation**: Real-time pass creation with ticket details
+- **Branding Integration**: Festival colors and logos
+- **QR Code Integration**: Seamless event entry validation
+
+### Performance Optimizations
+
+Advanced caching and loading strategies:
+
+- **QR Code Caching**: Dual cache architecture
+  - **HTTP Cache**: 24-hour server-side browser cache
+  - **Client Cache**: 7-day localStorage + Service Worker cache
+- **Service Worker**: Background caching for offline support
+- **Lazy Loading**: Intersection Observer for wallet components
+- **Progressive Enhancement**: Skeleton UI during loading
+- **Retry Logic**: Exponential backoff for network failures
 
 ## Database Configuration
 
@@ -316,12 +493,26 @@ const client = createClient({
 |------|-------|
 | 200 | Success |
 | 201 | Created (new resource) |
-| 400 | Bad Request (validation error) |
-| 401 | Unauthorized |
+| 400 | Bad Request (validation error or malformed input) |
+| 401 | Unauthorized (authentication failure, expired token) |
 | 403 | Forbidden (admin only) |
-| 404 | Not Found |
-| 429 | Rate Limited |
+| 404 | Not Found (resource does not exist) |
+| 405 | Method Not Allowed |
+| 409 | Conflict (maximum scans exceeded, ticket locked) |
+| 410 | Gone (event permanently ended) |
+| 423 | Locked (resource temporarily locked) |
+| 429 | Rate Limited (too many requests) |
 | 500 | Internal Server Error |
+
+**Status Code Semantics**:
+
+- **400**: Use for malformed requests, invalid token format, or validation errors
+- **401**: Use for authentication failures, expired tokens, or invalid credentials
+- **404**: Use when a ticket or resource is not found in the database
+- **409**: Use for conflict states (e.g., ticket locked due to max scans)
+- **410**: Use when the event has permanently ended (resource is gone forever)
+- **423**: Use when a ticket is temporarily locked (may be unlocked later)
+- **429**: Use when rate limits are exceeded
 
 ## Security
 
@@ -330,6 +521,7 @@ const client = createClient({
 - **Admin endpoints**: JWT tokens with bcrypt password verification
 - **Webhook endpoints**: HMAC signature validation
 - **Wallet passes**: JWT authentication for secure pass generation
+- **QR codes**: JWT token validation for image generation
 
 ### Input Validation
 
@@ -347,14 +539,38 @@ const client = createClient({
 | Health checks | < 50ms | ~20ms |
 | Database reads | < 100ms | ~50ms |
 | Database writes | < 200ms | ~100ms |
+| QR generation | < 150ms | ~75ms |
+| Wallet passes | < 300ms | ~200ms |
 | External API calls | < 1000ms | ~500ms |
 
 ### Caching Strategy
 
-- **Static responses**: 24-hour browser cache
+**QR Code Dual Cache Architecture:**
+
+The system implements two independent cache layers for QR codes:
+
+1. **HTTP Cache (Server-Side)**: 24-hour browser cache
+
+   - Controlled by API response headers: `Cache-Control: public, max-age=86400`
+   - Cacheable by CDN and proxy servers
+   - Reduces server load for repeated requests
+   - Applies to direct API endpoint calls
+
+2. **Client Cache (Client-Side)**: 7-day localStorage + Service Worker cache
+   - Managed by `qr-cache-manager.js` client-side service
+   - Provides offline access and faster loading
+   - Independent of HTTP cache expiration
+   - Requires manual invalidation or cache clearing
+
+**Important Note**: These cache layers work independently. The HTTP cache controls browser and CDN caching for 24 hours, while the client cache provides additional performance benefits through localStorage and Service Worker caching for 7 days. To force a fresh QR code, use the `Cache-Control: no-cache` request header to bypass HTTP cache, or clear client-side cache via `qrCacheManager.clearCache()`.
+
+**Other Caching:**
+
 - **Dynamic content**: No caching (real-time data)
 - **Images**: CDN caching via Google Drive
 - **Database connections**: Connection pooling via Turso
+
+**Note**: See [Performance Optimization](/docs/PERFORMANCE_OPTIMIZATION.md) for detailed information on cache layer interactions and invalidation strategies.
 
 ## Monitoring
 
@@ -363,6 +579,10 @@ const client = createClient({
 - **Response times**: P50, P95, P99 latencies
 - **Error rates**: 4xx and 5xx response percentages
 - **Database performance**: Query execution times
+- **Cache performance**: Hit rates and efficiency
+- **QR generation**: Success rates and timing
+- **Wallet adoption**: Pass generation and usage
+- **Rate limiting**: QR scan rate limits and throttling
 - **External service health**: Stripe, Brevo, Google Drive availability
 
 ### Alerting
@@ -370,7 +590,26 @@ const client = createClient({
 - **Critical errors**: 5xx responses > 1%
 - **High latency**: P95 > 1000ms
 - **Database issues**: Connection failures
+- **Cache misses**: Hit rate < 80%
+- **Rate limit breaches**: Unusual QR scan patterns
 - **External service outages**: Payment or email failures
+
+### QR Scan Rate Limit Monitoring
+
+Monitor these specific metrics for QR code scanning:
+
+- **Rate limit triggers**: Track 429 responses from `/api/qr/generate`
+- **Scan patterns**: Identify unusual burst patterns
+- **User impact**: Monitor legitimate users affected by rate limits
+- **Threshold tuning**: Adjust rate limits based on usage patterns
+- **IP-based tracking**: Identify potential abuse sources
+
+**Recommended Actions**:
+
+- Set alerts for sustained 429 response rates > 5%
+- Implement progressive rate limit increases for verified users
+- Log rate limit violations for security analysis
+- Consider implementing CAPTCHA for suspicious patterns
 
 ## Development Guidelines
 
@@ -381,12 +620,70 @@ const client = createClient({
 3. **Add input validation**: Sanitize all inputs
 4. **Write tests**: Unit tests for logic, E2E for integration
 5. **Document endpoint**: Update this README
+6. **Consider caching**: Implement appropriate cache headers
+7. **Add monitoring**: Include performance tracking
 
 ### Database Migrations
 
 1. **Create migration file**: `/migrations/XXX_description.sql`
 2. **Test locally**: Run migration on development database
 3. **Deploy**: Migrations run automatically on deployment
+4. **Document rollback**: Add rollback procedures for critical migrations
+
+#### Migration 037 Rollback Strategy
+
+Migration 037 introduced the transaction-based reminder system. If rollback is required:
+
+**Rollback SQL**:
+
+```sql
+-- Drop reminder tracking tables
+DROP TABLE IF EXISTS reminder_execution_log;
+DROP TABLE IF EXISTS reminder_schedule;
+
+-- Remove transaction reminder columns
+ALTER TABLE transactions DROP COLUMN IF EXISTS reminder_sent_count;
+ALTER TABLE transactions DROP COLUMN IF EXISTS last_reminder_sent_at;
+ALTER TABLE transactions DROP COLUMN IF EXISTS next_reminder_at;
+
+-- Remove registration_completed_at if added by migration
+ALTER TABLE transactions DROP COLUMN IF EXISTS registration_completed_at;
+```
+
+**Rollback Procedure**:
+
+1. **Backup Database**: Create full backup before rollback
+   ```bash
+   # For Turso production database
+   turso db dump <database-name> > backup-before-037-rollback.sql
+   ```
+
+2. **Execute Rollback SQL**: Run the rollback script above against the database
+
+3. **Verify Schema**: Confirm tables and columns are removed
+   ```sql
+   -- Verify tables are gone
+   SELECT name FROM sqlite_master WHERE type='table' AND name IN ('reminder_schedule', 'reminder_execution_log');
+
+   -- Verify transaction columns are removed
+   PRAGMA table_info(transactions);
+   ```
+
+4. **Update Migration Status**: Mark migration 037 as rolled back in `migrations` table
+   ```sql
+   DELETE FROM migrations WHERE filename = '037_add_transaction_reminder_system.sql';
+   ```
+
+5. **Disable Reminder Cron**: Comment out or remove reminder cron job from `vercel.json`
+
+6. **Restart Services**: Restart application to clear any cached schema information
+
+**Data Considerations**:
+
+- Rollback will delete all reminder scheduling data
+- No impact on ticket or transaction data
+- Email sending history is preserved in Brevo
+- Consider exporting reminder logs before rollback for analysis
 
 ### Security Checklist
 
@@ -396,6 +693,8 @@ const client = createClient({
 - [ ] Rate limiting configured
 - [ ] Sensitive data encrypted
 - [ ] Error messages don't leak information
+- [ ] JWT tokens properly validated
+- [ ] Cache headers appropriate for content sensitivity
 
 ## Deployment
 
@@ -413,4 +712,11 @@ All required environment variables are documented in CLAUDE.md.
 
 - **Automatic rollback**: On deployment failure
 - **Manual rollback**: Via Vercel dashboard
-- **Database rollback**: Manual migration rollback if needed
+- **Database rollback**: Manual migration rollback if needed (see procedures above)
+
+## Related Documentation
+
+- [QR Code Generation Endpoint](QR_ENDPOINT.md) - Detailed QR API documentation
+- [Order Number System](../ORDER_NUMBERS.md) - Order ID format and generation
+- [Wallet Pass Setup](../WALLET_SETUP.md) - Mobile wallet configuration
+- [Performance Optimization](../PERFORMANCE_OPTIMIZATION.md) - Caching and optimization features

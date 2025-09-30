@@ -14,11 +14,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Load environment variables with graceful fallback
-const envPath = join(__dirname, "..", ".env.local");
+const envPath = join(__dirname, "..", ".env.vercel");
 if (existsSync(envPath)) {
   dotenv.config({ path: envPath });
 } else {
-  // Silently continue without .env.local - service may use defaults or .env
+  // Silently continue without .env.vercel - service may use defaults or .env
   dotenv.config();
 }
 

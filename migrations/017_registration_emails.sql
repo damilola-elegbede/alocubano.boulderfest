@@ -1,37 +1,25 @@
--- Migration: 017 - Registration Emails Table
--- Purpose: Registration email audit trail
--- Dependencies: 007_tickets.sql
+-- Migration: 017 - Registration Emails
+-- Purpose: Track ticket registration confirmation emails
+-- Dependencies: 004_transactions.sql, 005_tickets.sql
 
--- Registration emails audit table (EXACT schema from 017_create_registration_emails.sql)
+-- Registration emails
 CREATE TABLE IF NOT EXISTS registration_emails (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     ticket_id TEXT NOT NULL,
-    transaction_id TEXT,
-    email_type TEXT NOT NULL CHECK (email_type IN (
-        'registration_invitation',
-        'reminder_72hr',
-        'reminder_48hr',
-        'reminder_24hr',
-        'reminder_final',
-        'attendee_confirmation',
-        'purchaser_completion'
-    )),
+    transaction_id INTEGER NOT NULL REFERENCES transactions(id),
+    email_type TEXT NOT NULL CHECK (email_type IN ('confirmation', 'reminder', 'update')),
     recipient_email TEXT NOT NULL,
-    recipient_name TEXT,
-    sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     brevo_message_id TEXT,
-    opened_at DATETIME,
-    clicked_at DATETIME,
-    bounced_at DATETIME,
-    FOREIGN KEY (ticket_id) REFERENCES tickets(ticket_id) ON DELETE CASCADE
+    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'sent', 'delivered', 'failed')),
+    sent_at DATETIME,
+    delivered_at DATETIME,
+    error_message TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    metadata TEXT
 );
 
--- Indexes for performance (EXACT from 017_create_registration_emails.sql)
-CREATE INDEX IF NOT EXISTS idx_registration_emails_ticket
-  ON registration_emails(ticket_id);
-
-CREATE INDEX IF NOT EXISTS idx_registration_emails_type
-  ON registration_emails(email_type, sent_at);
-
-CREATE INDEX IF NOT EXISTS idx_registration_emails_brevo
-  ON registration_emails(brevo_message_id);
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_registration_emails_ticket ON registration_emails(ticket_id);
+CREATE INDEX IF NOT EXISTS idx_registration_emails_transaction ON registration_emails(transaction_id);
+CREATE INDEX IF NOT EXISTS idx_registration_emails_status ON registration_emails(status);
+CREATE INDEX IF NOT EXISTS idx_registration_emails_created_at ON registration_emails(created_at DESC);

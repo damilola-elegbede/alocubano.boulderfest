@@ -3,19 +3,59 @@
   "framework": null,
   "cleanUrls": true,
   "trailingSlash": false,
-  "buildCommand": "npm run migrate:vercel && npm run bootstrap:vercel && npm run build",
+  "buildCommand": "node scripts/parallel-build.js",
   "functions": {
     "api/docs.js": {
-      "maxDuration": 10
+      "maxDuration": 10,
+      "includeFiles": "api/embedded-docs.js"
     },
-    "api/admin/*.js": {
-      "maxDuration": 15
+    "api/admin/**/*.js": {
+      "maxDuration": 15,
+      "includeFiles": "lib/{database,auth,session-manager,audit-logger,logger,crypto-utils}.js"
     },
-    "api/payments/*.js": {
-      "maxDuration": 30
+    "api/payments/**/*.js": {
+      "maxDuration": 30,
+      "includeFiles": "lib/{database,stripe-service,email-service,ticket-service,logger}.js"
     },
-    "api/tickets/*.js": {
-      "maxDuration": 20
+    "api/tickets/**/*.js": {
+      "maxDuration": 20,
+      "includeFiles": "lib/{database,ticket-service,qr-service,logger,wallet-service}.js"
+    },
+    "api/registration/**/*.js": {
+      "maxDuration": 20,
+      "includeFiles": "lib/{database,registration-service,email-service,logger}.js"
+    },
+    "api/health/**/*.js": {
+      "maxDuration": 5,
+      "includeFiles": "lib/database.js"
+    },
+    "api/wallet/[ticketId].js": {
+      "maxDuration": 20,
+      "includeFiles": "lib/{database,wallet-service,ticket-service,logger}.js"
+    },
+    "api/email/**/*.js": {
+      "maxDuration": 20,
+      "includeFiles": "lib/{database,email-service,logger}.js"
+    },
+    "api/gallery/**/*.js": {
+      "maxDuration": 10,
+      "includeFiles": "lib/{google-drive-service,logger}.js"
+    },
+    "api/sheets/**/*.js": {
+      "maxDuration": 30,
+      "includeFiles": "lib/{database,google-sheets-service,logger}.js"
+    },
+    "api/cron/**/*.js": {
+      "maxDuration": 60,
+      "includeFiles": "lib/{database,logger}.js"
+    },
+    "api/performance-metrics.js": {
+      "maxDuration": 10,
+      "includeFiles": "lib/{database,logger}.js"
+    },
+    "api/cache.js": {
+      "maxDuration": 30,
+      "includeFiles": "lib/{database,cache-service,google-drive-service,auth,session-manager,logger}.js"
     }
   },
   "crons": [
@@ -25,6 +65,14 @@
     },
     {
       "path": "/api/email/process-retry-queue",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/process-reminders",
+      "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/cleanup-expired-reservations",
       "schedule": "*/5 * * * *"
     }
   ],
@@ -67,44 +115,40 @@
       "destination": "/pages/core/home"
     },
     {
-      "source": "/(about|tickets|donations|contact|checkout-success|checkout-cancel|my-tickets|success|failure)",
+      "source": "/(about|tickets|donations|contact|checkout-success|checkout-cancel|my-tickets|success|failure|register-tickets|view-tickets)",
       "destination": "/pages/core/$1"
     },
     {
       "source": "/(gallery|artists|schedule)",
-      "destination": "/pages/events/2026-boulder/$1"
+      "destination": "/pages/events/boulder-fest-2026/$1"
     },
     {
       "source": "/registration",
       "destination": "/pages/core/tickets"
     },
     {
-      "source": "/register-tickets",
-      "destination": "/pages/core/register-tickets"
-    },
-    {
       "source": "/boulder-fest-2025",
-      "destination": "/pages/events/2025-boulder/index"
+      "destination": "/pages/events/boulder-fest-2025/index"
     },
     {
       "source": "/boulder-fest-2025/(artists|schedule|gallery)",
-      "destination": "/pages/events/2025-boulder/$1"
+      "destination": "/pages/events/boulder-fest-2025/$1"
     },
     {
       "source": "/boulder-fest-2026",
-      "destination": "/pages/events/2026-boulder/index"
+      "destination": "/pages/events/boulder-fest-2026/index"
     },
     {
       "source": "/boulder-fest-2026/(artists|schedule|gallery)",
-      "destination": "/pages/events/2026-boulder/$1"
+      "destination": "/pages/events/boulder-fest-2026/$1"
     },
     {
-      "source": "/2025-11-weekender",
-      "destination": "/pages/events/2025-11-weekender/index"
+      "source": "/weekender-2025-11",
+      "destination": "/pages/events/weekender-2025-11/index"
     },
     {
-      "source": "/2025-11-weekender/(artists|schedule|gallery)",
-      "destination": "/pages/events/2025-11-weekender/$1"
+      "source": "/weekender-2025-11-(artists|schedule|gallery)",
+      "destination": "/pages/events/weekender-2025-11/$1"
     },
     {
       "source": "/admin",
@@ -157,42 +201,12 @@
       "permanent": true
     },
     {
-      "source": "/2025-nov-artists",
-      "destination": "/2025-11-weekender/artists",
-      "permanent": true
-    },
-    {
-      "source": "/2025-nov-schedule",
-      "destination": "/2025-11-weekender/schedule",
-      "permanent": true
-    },
-    {
-      "source": "/2025-nov-gallery",
-      "destination": "/2025-11-weekender/gallery",
-      "permanent": true
-    },
-    {
-      "source": "/weekender-2025-11",
-      "destination": "/2025-11-weekender",
-      "permanent": true
-    },
-    {
-      "source": "/weekender-2025-11/(artists|schedule|gallery)",
-      "destination": "/2025-11-weekender/$1",
-      "permanent": true
-    },
-    {
       "source": "/boulder-fest-2025/tickets",
       "destination": "/tickets",
       "permanent": true
     },
     {
       "source": "/boulder-fest-2026/tickets",
-      "destination": "/tickets",
-      "permanent": true
-    },
-    {
-      "source": "/2025-11-weekender/tickets",
       "destination": "/tickets",
       "permanent": true
     },
@@ -281,6 +295,20 @@
     {
       "source": "/js/sw.js",
       "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        },
+        { "key": "Service-Worker-Allowed", "value": "/" }
+      ]
+    },
+    {
+      "source": "/sw-qr-cache.js",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/javascript"
+        },
         {
           "key": "Cache-Control",
           "value": "public, max-age=0, must-revalidate"

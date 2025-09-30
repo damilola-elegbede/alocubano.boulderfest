@@ -100,7 +100,7 @@ function checkEnvironmentVariables() {
 
   if (!allRequired && requiredVars.length > 0) {
     console.error('\nRequired environment variables missing.');
-    console.error('Please check your .env.local file or environment setup.');
+    console.error('Please check your .env.vercel file or environment setup.');
   } else if (requiredVars.length === 0) {
     console.log('ℹ️  No strict requirements - using fallback configurations where needed');
   }

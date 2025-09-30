@@ -77,8 +77,13 @@
     <link rel="dns-prefetch" href="//fonts.googleapis.com" />
     <link rel="dns-prefetch" href="//fonts.gstatic.com" />
 
+    <!-- Performance optimizations -->
+
     <!-- Theme Management - Early inclusion to prevent FOUC -->
     <script type="module" src="/js/theme-manager.js"></script>
+
+    <!-- Performance optimization system -->
+    <script type="module" src="/js/performance-integration.js"></script>
 
     <link rel="stylesheet" href="/css/base.css" />
     <link rel="stylesheet" href="/css/components.css" />
@@ -114,7 +119,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: var(--color-black);
+        background: var(--color-success);
         border-radius: 50%;
         animation: scaleIn 0.5s ease-out;
       }
@@ -317,7 +322,10 @@
       /* Registration button styles removed */
 
       .loading-state {
-        display: none;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 400px;
       }
 
       .error-state {
@@ -482,13 +490,13 @@
 
     <main>
       <!-- Loading State -->
-      <div class="loading-state">
+      <div class="loading-state" role="status" aria-live="polite">
         <div
           class="checkout-loading"
           style="position: relative; background: transparent"
         >
           <div class="checkout-loading-content">
-            <div class="checkout-spinner"></div>
+            <div class="checkout-spinner" aria-hidden="true"></div>
             <div class="checkout-loading-text">Verifying Payment</div>
             <div class="checkout-loading-subtext">
               Please wait while we confirm your transaction...
@@ -498,9 +506,9 @@
       </div>
 
       <!-- Success State -->
-      <section class="success-container" style="display: none">
+      <section class="success-container" style="display: none" role="status" aria-live="polite">
         <div class="success-content">
-          <div class="success-icon">
+          <div class="success-icon" aria-hidden="true">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
@@ -529,8 +537,9 @@
 
           <!-- Register Now button moved here for better visibility -->
           <div style="margin-bottom: var(--space-xl); display: none;" id="register-now-container">
-            <a href="#" id="register-now-btn" class="success-btn accent">Register Now</a>
+            <a href="#" id="register-now-btn" class="success-btn accent" aria-label="Register your tickets now to complete attendee information">Register Now</a>
           </div>
+
 
 
           <div class="success-details" id="order-details" style="display: none">
@@ -540,14 +549,6 @@
             <p><strong>Email:</strong> <span id="order-email"></span></p>
           </div>
 
-          <div class="success-details" id="next-steps">
-            <h3>Next Steps</h3>
-            <div id="steps-content">
-              <p>• Check your email for order confirmation</p>
-              <p>• Save your order confirmation number</p>
-              <p>• Contact us if you have any questions</p>
-            </div>
-          </div>
 
           <!-- Registration will be handled on separate page -->
 
@@ -561,8 +562,8 @@
       </section>
 
       <!-- Error State -->
-      <section class="error-state">
-        <h2 class="error-title">Unable to Verify Payment</h2>
+      <section class="error-state" role="alert" aria-live="assertive">
+        <h2 class="error-title" tabindex="-1">Unable to Verify Payment</h2>
         <p>We couldn't verify your payment status. This might be temporary.</p>
         <p>
           Please check your email for confirmation or contact us at
@@ -656,8 +657,6 @@
       const orderId = document.getElementById("order-id");
       const orderAmount = document.getElementById("order-amount");
       const orderEmail = document.getElementById("order-email");
-      const nextSteps = document.getElementById("next-steps");
-      const stepsContent = document.getElementById("steps-content");
       const countdownTimer = document.getElementById("countdown-timer");
       const countdownSeconds = document.getElementById("countdown-seconds");
       const registerNowBtn = document.getElementById("register-now-btn");
@@ -945,6 +944,7 @@
                                 data.registrationUrl ||
                                 data.registrationToken;
 
+
         // Debug logging for ticket purchase detection
         console.log('Ticket purchase detection:', {
           isTicketPurchase,
@@ -977,43 +977,9 @@
             registerNowBtn.addEventListener('click', handleRegisterNow);
           }
 
-          // Update next steps for ticket purchases
-          stepsContent.textContent = "";
-          const steps = [
-            "• Complete your festival registration using the link below",
-            "• Check your email for order confirmation",
-            "• Save your confirmation number for check-in",
-            "• Join our WhatsApp group for updates",
-          ];
-          steps.forEach((step) => {
-            const p = document.createElement("p");
-            p.textContent = step;
-            stepsContent.appendChild(p);
-          });
 
-          // Start countdown timer - now always starts for ticket purchases
+          // Start countdown timer for ticket purchases
           startCountdown();
-        } else if (data.instructions?.nextSteps) {
-          // Handle normal next steps without immediate registration
-          stepsContent.textContent = "";
-          data.instructions.nextSteps.forEach((step) => {
-            const p = document.createElement("p");
-            p.textContent = `• ${step}`;
-            stepsContent.appendChild(p);
-          });
-        } else {
-          // Default steps for all other purchases
-          stepsContent.textContent = "";
-          const steps = [
-            "• Check your email for order confirmation",
-            "• Save your confirmation number for your records",
-            "• Contact us if you have any questions",
-          ];
-          steps.forEach((step) => {
-            const p = document.createElement("p");
-            p.textContent = step;
-            stepsContent.appendChild(p);
-          });
         }
 
         // Show test mode indicator if applicable
@@ -1038,21 +1004,36 @@
           mainMessage.parentNode.insertBefore(testModeIndicator, mainMessage.nextSibling);
         }
 
-        // Clear the cart as instructed by the API
+        // Clear the cart and end checkout session as instructed by the API
         if (data.instructions?.clearCart) {
-          localStorage.removeItem("alocubano_cart");
-          // Dispatch storage event for cross-tab sync
-          window.dispatchEvent(
-            new StorageEvent("storage", {
-              key: "alocubano_cart",
-              oldValue: localStorage.getItem("alocubano_cart"),
-              newValue: null,
-              url: window.location.href,
-              storageArea: localStorage,
-            }),
-          );
-          // Dispatch custom event
-          window.dispatchEvent(new Event("cartCleared"));
+          // Use cart manager to properly end checkout session and clear cart
+          if (window.cartManager) {
+            // End checkout session (marking as completed = true)
+            window.cartManager.endCheckoutSession(true)
+              .then(() => {
+                console.log('Checkout session ended and cart cleared successfully');
+              })
+              .catch(error => {
+                console.error('Error ending checkout session:', error);
+                // Fallback to direct localStorage clear if cart manager fails
+                localStorage.removeItem("alocubano_cart");
+              });
+          } else {
+            // Fallback if cart manager is not available
+            localStorage.removeItem("alocubano_cart");
+            // Dispatch storage event for cross-tab sync
+            window.dispatchEvent(
+              new StorageEvent("storage", {
+                key: "alocubano_cart",
+                oldValue: localStorage.getItem("alocubano_cart"),
+                newValue: null,
+                url: window.location.href,
+                storageArea: localStorage,
+              }),
+            );
+            // Dispatch custom event
+            window.dispatchEvent(new Event("cartCleared"));
+          }
         }
 
       }
@@ -1128,6 +1109,7 @@
         announcer.textContent = message;
       }
 
+
       // Start verification when page loads
       verifyPayment();
 
@@ -1171,12 +1153,18 @@
     <script type="module">
       import { initializeThemeToggle } from '/js/theme-toggle.js';
       import themeManager from '/js/theme-manager.js';
+      import { getCartManager } from '/js/lib/cart-manager.js';
 
       // Initialize theme system
       document.addEventListener('DOMContentLoaded', () => {
         themeManager.initializeTheme();
         initializeThemeToggle('#theme-toggle-container');
       });
+
+      // Make cart manager available globally for the success page script
+      window.cartManager = getCartManager();
+      // Initialize cart manager
+      window.cartManager.initialize().catch(console.error);
     </script>
     <script src="/js/logo-switcher.js"></script>
   </body>

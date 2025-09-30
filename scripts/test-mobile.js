@@ -58,7 +58,7 @@ async function testMobileCheckin() {
       "1. Database connection not configured (expected for local testing)",
     );
     console.log(
-      "   Set TURSO_DATABASE_URL in .env.local to test with real data\n",
+      "   Set TURSO_DATABASE_URL in .env.vercel to test with real data\n",
     );
   }
 

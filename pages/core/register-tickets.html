@@ -77,8 +77,18 @@
     <link rel="dns-prefetch" href="//fonts.googleapis.com" />
     <link rel="dns-prefetch" href="//fonts.gstatic.com" />
 
+    <!-- Performance optimizations -->
+    
+    <link rel="preconnect" href="https://wallet.apple.com">
+    <link rel="preconnect" href="https://pay.google.com">
+
     <!-- Theme Management - Early inclusion to prevent FOUC -->
     <script type="module" src="/js/theme-manager.js"></script>
+
+    <!-- Performance optimization system -->
+    <script type="module" src="/js/qr-cache-manager.js"></script>
+    <script type="module" src="/js/wallet-lazy-loader.js"></script>
+    <script type="module" src="/js/performance-integration.js"></script>
 
     <link rel="stylesheet" href="/css/base.css" />
     <link rel="stylesheet" href="/css/components.css" />
@@ -434,21 +444,22 @@
     <main>
       <div class="registration-container">
         <!-- Loading State -->
-        <div id="loading-state" class="loading-state">
-          <div class="spinner"></div>
+        <div id="loading-state" class="loading-state" role="status" aria-live="polite">
+          <div class="spinner" aria-hidden="true"></div>
           <h2>Loading your ticket registration...</h2>
           <p>Please wait while we fetch your ticket information.</p>
         </div>
 
         <!-- Error State -->
-        <div id="error-state" class="error-state" style="display: none;">
+        <div id="error-state" class="error-state" style="display: none;" role="alert" aria-live="assertive">
           <h2>Registration Error</h2>
           <p id="error-message">Unable to load your ticket information.</p>
           <button
             type="button"
             class="form-button-type"
-            onclick="window.location.reload()"
+            id="retry-button"
             style="margin-top: var(--space-md);"
+            aria-label="Retry loading ticket information"
           >
             Try Again
           </button>
@@ -458,18 +469,17 @@
         <div id="registration-content" style="display: none;">
           <div class="registration-header">
             <h1>Register Your Festival Tickets</h1>
-            <p>Complete the attendee information for your A Lo Cubano Boulder Fest 2026 tickets.</p>
+            <p>Complete the attendee information for your event tickets.</p>
           </div>
 
           <div class="registration-info">
             <h3>Registration Information</h3>
-            <p><strong>Purchaser:</strong> <span id="purchaser-email"></span></p>
             <p><strong>Total Tickets:</strong> <span id="ticket-count"></span></p>
             <p><strong>Registration Deadline:</strong> <span id="registration-deadline"></span></p>
           </div>
 
           <!-- Deadline Warning -->
-          <div id="deadline-warning" class="deadline-warning" style="display: none;">
+          <div id="deadline-warning" class="deadline-warning" style="display: none;" role="alert" aria-live="polite">
             <strong>⏰ Registration Deadline Alert</strong>
             <p id="deadline-message"></p>
           </div>
@@ -493,29 +503,18 @@
           </form>
 
           <!-- Success State -->
-          <div id="success-state" class="registration-summary" style="display: none;">
-            <h2>🎉 Registration Complete!</h2>
-            <p>Your tickets have been successfully registered. You should receive confirmation emails shortly.</p>
+          <div id="success-state" class="registration-summary" style="display: none;" role="status" aria-live="polite" aria-atomic="true">
+            <!-- Content will be populated by updateSuccessMessage() -->
+          </div>
 
-            <div class="next-steps">
-              <h3>What's Next?</h3>
-              <ul>
-                <li>📧 Check your email for confirmation and digital wallet passes</li>
-                <li>📱 Add your tickets to Apple Wallet or Google Pay</li>
-                <li>📅 Mark May 15-17, 2026 on your calendar</li>
-                <li>🎺 Follow us on Instagram @alocubano.boulderfest for updates</li>
-                <li>💃 Get ready to dance!</li>
-              </ul>
-            </div>
           </div>
         </div>
-      </div>
     </main>
 
     <footer class="footer-typographic">
       <div class="container">
         <p class="footer-credits">
-          MAY 15-17, 2026 •
+          MAY 15-17, 2026 (MT) •
           <a
             href="mailto:alocubanoboulderfest@gmail.com?subject=A Lo Cubano Boulder Fest Inquiry"
             style="color: inherit; text-decoration: underline"
@@ -578,15 +577,20 @@
     <script src="/js/navigation.js"></script>
     <script src="/js/main.js"></script>
     <script src="/js/typography.js"></script>
+    <!-- Wallet buttons loaded lazily via wallet-lazy-loader -->
 
     <!-- Theme Management -->
     <script type="module">
       import { initializeThemeToggle } from '/js/theme-toggle.js';
-      import themeManager from '/js/theme-manager.js';
+      import { initializeTheme } from '/js/theme-manager.js';
+      import timeManager from '/js/time-manager.js';
+
+      // Make timeManager available globally for the main script
+      window.timeManager = timeManager;
 
       // Initialize theme system
       document.addEventListener('DOMContentLoaded', () => {
-        themeManager.initializeTheme();
+        initializeTheme();
         initializeThemeToggle('#theme-toggle-container');
       });
     </script>
@@ -629,10 +633,13 @@
         }
 
         async loadRegistrationData() {
+          console.log('[FRONTEND] Loading registration data with token:', this.token?.substring(0, 20) + '...');
+
           const response = await fetch(`/api/registration?token=${this.token}`);
 
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
+            console.error('[FRONTEND] Registration API error:', response.status, errorData);
             if (response.status === 401) {
               throw new Error('Invalid or expired registration token. Please check your email for the correct link.');
             } else if (response.status === 404) {
@@ -643,18 +650,42 @@
           }
 
           this.registrationData = await response.json();
+
+          console.log('[FRONTEND] Loaded registration data:', {
+            transactionId: this.registrationData.transactionId,
+            purchaserEmail: this.registrationData.purchaserEmail,
+            ticketCount: this.registrationData.tickets.length,
+            tickets: this.registrationData.tickets.map(t => ({
+              id: t.ticketId,
+              type: t.ticketType,
+              status: t.status,
+              hasAttendee: !!t.attendee,
+              attendeeName: t.attendee ? `${t.attendee.firstName} ${t.attendee.lastName}` : 'NONE'
+            }))
+          });
         }
 
         renderRegistrationForm() {
           // Hide loading, show content
           document.getElementById('loading-state').style.display = 'none';
+
+          // Check if all tickets are already completed
+          const completedTickets = this.registrationData.tickets.filter(t => t.status === 'completed');
+          const allCompleted = completedTickets.length === this.registrationData.tickets.length;
+
+          if (allCompleted) {
+            // All tickets are registered - redirect to view page
+            console.log('[FRONTEND] All tickets already registered, redirecting to view page');
+            window.location.href = `/view-tickets?token=${this.token}`;
+            return;
+          }
+
           document.getElementById('registration-content').style.display = 'block';
 
           // Populate header info
-          document.getElementById('purchaser-email').textContent = this.registrationData.purchaserEmail;
           document.getElementById('ticket-count').textContent = this.registrationData.tickets.length;
           document.getElementById('registration-deadline').textContent =
-            new Date(this.registrationData.deadline).toLocaleString();
+            window.timeManager.formatDateTime(this.registrationData.deadline, true) + ' (Mountain Time)';
 
           // Check deadline status
           this.checkDeadlineStatus();
@@ -680,7 +711,7 @@
           } else if (hoursRemaining <= 24) {
             // Warning - less than 24 hours
             warningDiv.style.display = 'block';
-            messageDiv.innerHTML = `⏰ Only ${hoursRemaining} hour${hoursRemaining !== 1 ? 's' : ''} remaining to complete registration!`;
+            messageDiv.innerHTML = `⏰ Only ${hoursRemaining} hour${hoursRemaining !== 1 ? 's' : ''} remaining to complete registration! (Mountain Time)`;
           }
         }
 
@@ -694,6 +725,13 @@
         }
 
         createTicketSection(ticket, index) {
+          console.log(`[FRONTEND] Creating section for ticket ${index}:`, {
+            id: ticket.ticketId,
+            status: ticket.status,
+            attendee: ticket.attendee,
+            type: ticket.ticketType
+          });
+
           const section = document.createElement('div');
           section.className = `ticket-section ${ticket.status === 'completed' || ticket.status === 'expired' ? 'disabled-ticket' : ''}`;
 
@@ -701,6 +739,12 @@
                              ticket.status === 'completed' ? 'completed' : 'expired';
 
           const isDisabled = ticket.status === 'completed' || ticket.status === 'expired';
+
+          console.log(`[FRONTEND] Ticket ${ticket.ticketId} display settings:`, {
+            statusClass,
+            isDisabled,
+            willShowAsCompleted: ticket.status === 'completed'
+          });
 
           section.innerHTML = `
             <div class="ticket-header">
@@ -731,8 +775,10 @@
                   maxlength="50"
                   pattern="[a-zA-Z\\s\\-']{2,50}"
                   title="First name must be 2-50 characters and contain only letters, spaces, hyphens, and apostrophes"
+                  aria-describedby="firstName-${index}-error"
+                  aria-required="true"
                 />
-                <div class="error-message" id="firstName-${index}-error"></div>
+                <div class="error-message" id="firstName-${index}-error" role="alert" aria-live="polite"></div>
               </div>
 
               <div class="form-group-type">
@@ -752,8 +798,10 @@
                   maxlength="50"
                   pattern="[a-zA-Z\\s\\-']{2,50}"
                   title="Last name must be 2-50 characters and contain only letters, spaces, hyphens, and apostrophes"
+                  aria-describedby="lastName-${index}-error"
+                  aria-required="true"
                 />
-                <div class="error-message" id="lastName-${index}-error"></div>
+                <div class="error-message" id="lastName-${index}-error" role="alert" aria-live="polite"></div>
               </div>
 
               <div class="form-group-type form-row-full">
@@ -771,8 +819,11 @@
                   required
                   maxlength="100"
                   title="Please enter a valid email address"
+                  aria-describedby="email-${index}-error"
+                  aria-required="true"
+                  autocomplete="email"
                 />
-                <div class="error-message" id="email-${index}-error"></div>
+                <div class="error-message" id="email-${index}-error" role="alert" aria-live="polite"></div>
               </div>
             </div>
           `;
@@ -848,10 +899,12 @@
         }
 
         validateForm() {
+          console.log('[FRONTEND] Validating form for submission');
           let isValid = true;
           const registrations = [];
 
           this.registrationData.tickets.forEach((ticket, index) => {
+            console.log(`[FRONTEND] Checking ticket ${ticket.ticketId}: status=${ticket.status}`);
             if (ticket.status === 'pending') {
               const firstName = document.getElementById(`firstName-${index}`).value.trim();
               const lastName = document.getElementById(`lastName-${index}`).value.trim();
@@ -901,6 +954,8 @@
           submitButton.disabled = true;
           submitButton.textContent = 'Registering...';
 
+          console.log('[FRONTEND] Submitting registrations:', validation.registrations);
+
           try {
             const response = await fetch('/api/registration/batch', {
               method: 'POST',
@@ -913,6 +968,24 @@
             });
 
             const result = await response.json();
+
+            console.log('[FRONTEND] Registration response:', {
+              status: response.status,
+              ok: response.ok,
+              result: result
+            });
+
+            // Log the actual result details
+            console.log('[FRONTEND] Full registration result:', result);
+            if (result.results) {
+              result.results.forEach((r, i) => {
+                console.log(`[FRONTEND] Ticket ${i} result:`, {
+                  ticketId: r.ticketId,
+                  status: r.status,
+                  attendee: r.attendee
+                });
+              });
+            }
 
             if (response.ok) {
               this.showSuccess(result);
@@ -946,16 +1019,132 @@
           }
         }
 
+        // Removed showAlreadyRegisteredState function - now redirecting to view-tickets page
+
         showSuccess(result) {
           // Hide form, show success
           document.getElementById('registration-form').style.display = 'none';
+
+          // Update success message with order details
+          this.updateSuccessMessage(result);
+
           document.getElementById('success-state').style.display = 'block';
+
+          // Start 20-second countdown timer
+          this.startCountdownTimer();
 
           // Scroll to success message
           document.getElementById('success-state').scrollIntoView({
             behavior: 'smooth'
           });
         }
+
+        startCountdownTimer() {
+          let secondsRemaining = 20;
+          const countdownElement = document.getElementById('countdown-timer');
+
+          // Update countdown every second
+          const countdownInterval = setInterval(() => {
+            secondsRemaining--;
+            if (countdownElement) {
+              countdownElement.textContent = secondsRemaining;
+            }
+
+            if (secondsRemaining <= 0) {
+              clearInterval(countdownInterval);
+              window.location.href = `/view-tickets?token=${this.token}`;
+            }
+          }, 1000);
+
+          // Store interval ID so it can be cleared if user navigates manually
+          this.countdownInterval = countdownInterval;
+        }
+
+        updateSuccessMessage(result) {
+          const successState = document.getElementById('success-state');
+
+          // Create enhanced success content
+          const totalTickets = result.summary?.totalRegistered || result.registrations?.length || 0;
+
+          // Process ticket information properly - use registeredTickets from backend
+          let registeredTicketsInfo = [];
+
+          if (result.registeredTickets && Array.isArray(result.registeredTickets)) {
+            registeredTicketsInfo = result.registeredTickets.map(ticket => {
+              // Extract firstName and lastName from attendeeName if individual fields aren't available
+              let firstName = '', lastName = '';
+              if (ticket.attendeeName && ticket.attendeeName !== 'Name not provided') {
+                const nameParts = ticket.attendeeName.split(' ');
+                firstName = nameParts[0] || '';
+                lastName = nameParts.slice(1).join(' ') || '';
+              }
+
+              // Clean up ticket type - remove TEST- prefix and format
+              let cleanTicketType = ticket.ticketType || 'Festival Pass';
+              if (cleanTicketType.startsWith('TEST-')) {
+                cleanTicketType = cleanTicketType.substring(5);
+              }
+              // Capitalize first letter and convert underscores to spaces
+              if (cleanTicketType) {
+                cleanTicketType = cleanTicketType.charAt(0).toUpperCase() + cleanTicketType.slice(1);
+                cleanTicketType = cleanTicketType.replace(/_/g, ' ');
+              }
+
+              return {
+                firstName: firstName,
+                lastName: lastName,
+                email: ticket.attendeeEmail || 'Email not provided',
+                ticketId: ticket.ticketId,
+                ticketType: cleanTicketType,
+                eventName: ticket.eventName || 'Event',
+                eventLocation: ticket.eventLocation || ''
+              };
+            });
+          }
+
+          // Update the success content with order information
+          successState.innerHTML = `
+            <h2>Registration Complete</h2>
+
+            <p style="margin: var(--space-lg) 0;">Your tickets have been successfully registered.</p>
+            <p style="margin: var(--space-lg) 0; color: rgba(255, 255, 255, 0.9);">
+              Redirecting to your tickets in <span id="countdown-timer" style="font-weight: 700; color: #ffffff; font-size: 1.2em;">20</span> seconds...
+            </p>
+
+            <!-- Registered Attendees Summary -->
+            ${registeredTicketsInfo.length > 0 ? `
+              <div style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 8px; padding: var(--space-lg); margin: var(--space-lg) 0;">
+                <h3 style="color: var(--color-primary); margin-top: 0;">Registered Attendees</h3>
+                ${registeredTicketsInfo.map((ticket, index) => {
+                  const eventDisplay = ticket.eventLocation ?
+                    `${ticket.eventName} • ${ticket.eventLocation}` :
+                    ticket.eventName;
+                  return `
+                    <div style="padding: var(--space-md) 0; border-bottom: 1px solid var(--color-border-light); ${index === registeredTicketsInfo.length - 1 ? 'border-bottom: none;' : ''}">
+                      <p style="margin: 0; font-weight: 600;">${ticket.firstName} ${ticket.lastName}</p>
+                      <p style="margin: 0; color: var(--color-text-secondary); font-size: var(--font-size-sm);">
+                        ${ticket.email}
+                      </p>
+                      <p style="margin: 0; color: var(--color-text-secondary); font-size: var(--font-size-sm);">
+                        ${eventDisplay} • ${ticket.ticketType} • Ticket ID: ${ticket.ticketId}
+                      </p>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            ` : ''}
+
+            <div style="text-align: center; margin-top: var(--space-xl); display: flex; gap: var(--space-md); justify-content: center; flex-wrap: wrap;">
+              <a href="/view-tickets?token=${this.token}" class="form-button-type" style="display: inline-block; text-decoration: none;">
+                View Tickets Now
+              </a>
+              <a href="/home" class="form-button-type" style="display: inline-block; text-decoration: none; background: transparent; color: var(--color-primary); border: 2px solid var(--color-primary);">
+                Return to Home Page
+              </a>
+            </div>
+          `;
+        }
+
 
         showError(message) {
           document.getElementById('loading-state').style.display = 'none';
@@ -968,6 +1157,12 @@
       // Initialize registration when DOM is loaded
       document.addEventListener('DOMContentLoaded', () => {
         new TicketRegistration();
+
+        // Add event listener for retry button (CSP compliance)
+        const retryBtn = document.getElementById('retry-button');
+        if (retryBtn) {
+          retryBtn.addEventListener('click', () => window.location.reload());
+        }
       });
     </script>
   </body>

@@ -79,6 +79,8 @@ k6-report.html
 .env
 .env.local
 .env.*.local
+.env.vercel
+.env.production
 
 # Apple private keys - NEVER commit these!
 *.p8
@@ -141,3 +143,5 @@ deployment-check-report.json
 # Debug and test scripts (should be in proper directories)
 debug_test.js
 test_constraint.js
+.env.preview.check
+.env*.local

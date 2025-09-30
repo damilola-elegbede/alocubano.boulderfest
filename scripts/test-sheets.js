@@ -16,7 +16,7 @@ async function testSheets() {
   if (missingVars.length > 0) {
     console.error("❌ Missing required environment variables:");
     missingVars.forEach((v) => console.error(`   - ${v}`));
-    console.log("\nPlease add these to your .env.local file");
+    console.log("\nPlease add these to your .env.vercel file");
     process.exit(1);
   }
 

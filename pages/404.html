@@ -196,6 +196,7 @@
     <link rel="stylesheet" href="/css/floating-cart.css" />
     <link rel="stylesheet" href="/css/floating-cart-dark.css" />
     <link rel="stylesheet" href="/css/header-cart.css" />
+    <link rel="stylesheet" href="/css/theme-toggle.css" />
     <style>
       body {
         min-height: 100vh;
@@ -382,6 +383,19 @@
         .catch((error) => {
           console.error("API debug endpoint failed:", error);
         });
+    </script>
+
+    <!-- Theme Toggle -->
+    <script type="module">
+      import { initializeThemeToggle } from '/js/theme-toggle.js';
+      document.addEventListener('DOMContentLoaded', () => {
+        // Add floating theme toggle for special page
+        const toggleContainer = document.createElement('div');
+        toggleContainer.id = 'theme-toggle-container';
+        toggleContainer.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 1000;';
+        document.body.appendChild(toggleContainer);
+        initializeThemeToggle('#theme-toggle-container');
+      });
     </script>
   </body>
 </html>

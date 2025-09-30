@@ -35,9 +35,49 @@
       })();
     </script>
 
+    <!-- Pre-render auth check to prevent content flash -->
+    <script>
+      // Hide content immediately to prevent flash
+      document.documentElement.style.visibility = 'hidden';
+      document.documentElement.style.opacity = '0';
+      document.documentElement.style.transition = 'opacity 0.2s ease-in';
+
+      // Quick token validation to prevent flash with invalid tokens
+      (async function() {
+        if (!window.location.pathname.includes('/admin/login')) {
+          const token = localStorage.getItem('adminToken');
+          if (!token) {
+            // No token - redirect immediately
+            window.location.replace('/admin/login');
+            return;
+          }
+
+          // Quick validation - check if token is expired client-side
+          try {
+            // Parse JWT to check expiration (basic check)
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            if (payload.exp && payload.exp * 1000 < Date.now()) {
+              // Token expired - clear and redirect
+              localStorage.removeItem('adminToken');
+              window.location.replace('/admin/login');
+              return;
+            }
+          } catch (e) {
+            // Invalid token format - clear and redirect
+            localStorage.removeItem('adminToken');
+            window.location.replace('/admin/login');
+            return;
+          }
+          // Valid token format - wait for server verification
+        }
+      })();
+    </script>
+
+
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Portal - A Lo Cubano Boulder Fest</title>
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico" />
 
     <!-- Main Site CSS System -->
     <link rel="stylesheet" href="/css/base.css" />
@@ -606,6 +646,14 @@
     <script type="module" src="/js/theme-manager.js"></script>
   </head>
   <body class="admin-container">
+    <!-- Auth Loading State -->
+    <div id="auth-loading" class="auth-loading" style="display: none;">
+      <div class="auth-loading-content">
+        <div class="auth-spinner"></div>
+        <h2>Verifying Authentication...</h2>
+      </div>
+    </div>
+
     <!-- Unified Admin Header -->
     <header class="admin-header">
       <div class="admin-header-content">
@@ -641,11 +689,6 @@
         <li class="admin-nav-item">
           <a href="/admin/tickets" class="admin-nav-link">
             <span>Tickets</span>
-          </a>
-        </li>
-        <li class="admin-nav-item">
-          <a href="/admin/test-dashboard" class="admin-nav-link">
-            <span>Test Dashboard</span>
           </a>
         </li>
         <li class="admin-nav-item">
@@ -902,39 +945,6 @@
                   <div class="detail-section">
                     <h4>Request Body</h4>
                     <pre class="request-preview">{"username": "admin", "password": "***"}</pre>
-                  </div>
-                </div>
-              </div>
-
-              <div class="endpoint-item interactive" data-method="POST" data-endpoint="/api/admin/mobile-login" data-description="Mobile-optimized admin authentication">
-                <div class="endpoint-content">
-                  <div class="endpoint-header">
-                    <span class="method method-post">POST</span>
-                    <code class="endpoint-path">/api/admin/mobile-login</code>
-                    <div class="endpoint-status">
-                      <span class="status-indicator status-untested" title="Not tested"></span>
-                    </div>
-                  </div>
-                  <p class="endpoint-description">Mobile-optimized admin authentication</p>
-                  <div class="endpoint-actions">
-                    <button class="endpoint-btn test-btn" onclick="testEndpoint('/api/admin/mobile-login', 'POST', this)">
-                      <span class="btn-icon">▶</span>
-                      Test
-                    </button>
-                    <button class="endpoint-btn details-btn" onclick="toggleEndpointDetails(this)">
-                      <span class="btn-icon">📋</span>
-                      Details
-                    </button>
-                  </div>
-                </div>
-                <div class="endpoint-details hidden">
-                  <div class="detail-section">
-                    <h4>Mobile Features</h4>
-                    <ul class="feature-list">
-                      <li>Touch-optimized interface</li>
-                      <li>Biometric authentication support</li>
-                      <li>Offline token caching</li>
-                    </ul>
                   </div>
                 </div>
               </div>
@@ -1314,7 +1324,13 @@
       // Enhanced Endpoint System JavaScript
 
       // Toggle category sections
-      document.addEventListener('DOMContentLoaded', function() {
+      document.addEventListener('DOMContentLoaded', async function() {
+        // CRITICAL: Check auth first before any initialization
+        const isAuthenticated = await checkAuth();
+        if (!isAuthenticated) {
+          return; // Stop if not authenticated
+        }
+
         const categoryToggles = document.querySelectorAll('.category-toggle');
 
         categoryToggles.forEach(toggle => {
@@ -1504,7 +1520,9 @@
           if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
             try {
               const csrfResponse = await fetch('/api/admin/csrf-token', {
-                credentials: 'same-origin'
+                headers: {
+                  'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                }
               });
               if (csrfResponse.ok) {
                 const csrfData = await csrfResponse.json();
@@ -1670,25 +1688,47 @@
     </div>
 
     <script>
-      // Check authentication on load using verify-session endpoint
+      // Use the AdminAuthGuard for authentication
       async function checkAuth() {
         try {
-          const response = await fetch("/api/admin/verify-session", {
-            credentials: "include" // CRITICAL: Include cookies for production
-          });
-          if (!response.ok) {
-            window.location.href = "/admin/login";
+          // Get token from localStorage
+          const token = localStorage.getItem('adminToken');
+          if (!token) {
+            window.location.replace("/admin/login");
             return false;
           }
+
+          const response = await fetch("/api/admin/verify-session", {
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "Cache-Control": "no-cache"
+            }
+          });
+
+          if (!response.ok) {
+            // Clear invalid token and redirect
+            localStorage.removeItem('adminToken');
+            window.location.replace("/admin/login");
+            return false;
+          }
+
+          // Success - verify the session is valid
           const data = await response.json();
           if (!data.valid) {
-            window.location.href = "/admin/login";
+            localStorage.removeItem('adminToken');
+            window.location.replace("/admin/login");
             return false;
           }
+
+          // Session is valid - show the content with smooth transition
+          document.documentElement.style.visibility = 'visible';
+          document.documentElement.style.opacity = '1';
+          document.body.style.visibility = 'visible';
+
           return true;
         } catch (error) {
           console.error("Auth check failed:", error);
-          window.location.href = "/admin/login";
+          window.location.replace("/admin/login");
           return false;
         }
       }
@@ -1701,9 +1741,10 @@
           // Get CSRF token for state-changing operation
           const headers = { "Content-Type": "application/json" };
           try {
+            const token = localStorage.getItem('adminToken');
             const csrfResponse = await fetch("/api/admin/csrf-token", {
-              credentials: "same-origin", // Use same-origin for better compatibility
               headers: {
+                "Authorization": `Bearer ${token}`,
                 "Accept": "application/json"
               }
             });
@@ -1722,10 +1763,11 @@
             return;
           }
 
+          const token = localStorage.getItem('adminToken');
+          headers["Authorization"] = `Bearer ${token}`;
           const response = await fetch("/api/sheets/sync", {
             method: "POST",
             headers: headers,
-            credentials: "same-origin" // Use same-origin for better compatibility
           });
 
           if (response.ok) {
@@ -1830,11 +1872,13 @@
             console.warn("Could not fetch CSRF token:", error);
           }
 
-          const response = await fetch("/api/admin/mobile-login", {
+          const response = await fetch("/api/admin/login", {
             method: "POST",
             headers: headers,
             body: JSON.stringify({
+              username: "admin",
               password,
+              mode: "mobile",
               csrfToken: csrfToken,
             }),
           });
@@ -1950,10 +1994,18 @@
         try {
           const headers = {};
 
+          // Add token for secure logout
+          const token = localStorage.getItem('adminToken');
+          if (token) {
+            headers["Authorization"] = `Bearer ${token}`;
+          }
+
           // Add CSRF token for secure logout
           try {
             const csrfResponse = await fetch("/api/admin/csrf-token", {
-              credentials: "same-origin"
+              headers: {
+                "Authorization": `Bearer ${token}`
+              }
             });
             if (csrfResponse.ok) {
               const csrfData = await csrfResponse.json();
@@ -1965,8 +2017,7 @@
 
           await fetch("/api/admin/login", {
             method: "DELETE",
-            headers: headers,
-            credentials: "same-origin"
+            headers: headers
           });
         } finally {
           // Clear client storage
@@ -2495,9 +2546,8 @@ Full API docs: /docs/api/README.md
       // Initialize history panel
       responseHistory.updateHistoryPanel();
 
-      // Initialize
-      checkAuth();
-      // Note: DB Health button now always visible as it uses production-safe endpoint
+      // Note: Auth check is now handled in DOMContentLoaded with AdminAuthGuard
+      // DB Health button now always visible as it uses production-safe endpoint
     </script>
 
     <!-- Response Modal -->

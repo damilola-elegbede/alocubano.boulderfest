@@ -2,6 +2,7 @@ import { getDatabaseClient } from "../../lib/database.js";
 import { getBrevoClient } from "../../lib/brevo-client.js";
 import rateLimit from "../../lib/rate-limit-middleware.js";
 import auditService from "../../lib/audit-service.js";
+import { processDatabaseResult } from "../../lib/bigint-serializer.js";
 
 // Input validation regex patterns
 const NAME_REGEX = /^[a-zA-Z\s\-']{2,50}$/;
@@ -143,27 +144,37 @@ export default async function handler(req, res) {
   try {
     const db = await getDatabaseClient();
 
-    // Fetch ticket details
+    // Fetch ticket details with event information
     const ticketResult = await db.execute({
       sql: `
         SELECT
-          ticket_id,
-          ticket_type,
-          registration_status,
-          registration_deadline,
-          transaction_id,
-          attendee_email
-        FROM tickets
-        WHERE ticket_id = ?
+          t.ticket_id,
+          t.ticket_type,
+          t.registration_status,
+          t.registration_deadline,
+          t.transaction_id,
+          t.attendee_email,
+          t.event_id,
+          e.name as event_name,
+          e.venue_name,
+          e.venue_city,
+          e.venue_state,
+          e.start_date,
+          e.end_date
+        FROM tickets t
+        LEFT JOIN events e ON t.event_id = e.id
+        WHERE t.ticket_id = ?
       `,
       args: [ticketId]
     });
 
-    if (!ticketResult.rows || ticketResult.rows.length === 0) {
+    // Process database result to handle BigInt values
+    const processedTicketResult = processDatabaseResult(ticketResult);
+    if (!processedTicketResult.rows || processedTicketResult.rows.length === 0) {
       return res.status(404).json({ error: 'Ticket not found' });
     }
 
-    const ticket = ticketResult.rows[0];
+    const ticket = processedTicketResult.rows[0];
 
     // Capture before state for audit
     const beforeState = {
@@ -257,42 +268,72 @@ export default async function handler(req, res) {
       concurrentPrevention: concurrentPrevention
     });
 
-    // Cancel remaining reminders
+    // Cancel remaining reminders for this transaction
+    // (Reminders are per transaction, not per ticket)
     await db.execute({
       sql: `
         UPDATE registration_reminders
         SET status = 'cancelled'
-        WHERE ticket_id = ? AND status = 'scheduled'
+        WHERE transaction_id = ? AND status = 'scheduled'
       `,
-      args: [ticketId]
+      args: [ticket.transaction_id]
     });
 
     // Send confirmation email
     try {
       const brevo = await getBrevoClient();
-      const isPurchaser = cleanEmail.toLowerCase() === ticket.attendee_email?.toLowerCase();
+
+      // Determine base URL for email links
+      let baseUrl;
+      if (process.env.VERCEL_ENV === 'production') {
+        baseUrl = "https://www.alocubanoboulderfest.org";
+      } else if (process.env.VERCEL_URL) {
+        baseUrl = `https://${process.env.VERCEL_URL}`;
+      } else {
+        baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://alocubanoboulderfest.org";
+      }
+
+      // Generate QR token for the ticket
+      const { getQRTokenService } = await import('../../lib/qr-token-service.js');
+      const qrService = getQRTokenService();
+      const qrToken = await qrService.getOrCreateToken(ticketId);
 
       await brevo.sendTransactionalEmail({
         to: [{ email: cleanEmail, name: `${cleanFirstName} ${cleanLastName}` }],
-        templateId: isPurchaser ?
-          parseInt(process.env.BREVO_PURCHASER_CONFIRMATION_TEMPLATE_ID) :
-          parseInt(process.env.BREVO_ATTENDEE_CONFIRMATION_TEMPLATE_ID),
+        templateId: parseInt(process.env.BREVO_ATTENDEE_CONFIRMATION_TEMPLATE_ID),
         params: {
           firstName: cleanFirstName,
           lastName: cleanLastName,
           ticketId: ticketId,
           ticketType: ticket.ticket_type,
-          walletPassUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/api/tickets/apple-wallet/${ticketId}`
+          orderNumber: 'N/A', // Individual registrations don't have order context
+          // QR code URL
+          qrCodeUrl: `${baseUrl}/api/qr/generate?token=${qrToken}`,
+          // Wallet pass URLs
+          walletPassUrl: `${baseUrl}/api/tickets/apple-wallet/${ticketId}`,
+          googleWalletUrl: `${baseUrl}/api/tickets/google-wallet/${ticketId}`,
+          // Wallet button image URLs (PNG required for email client compatibility)
+          appleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-apple.png`,
+          googleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-google.png`,
+          // Event details
+          eventName: ticket.event_name,
+          eventDate: ticket.start_date && ticket.end_date
+            ? `${new Date(ticket.start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}-${new Date(ticket.end_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
+            : null,
+          eventLocation: `${ticket.venue_name}, ${ticket.venue_city}, ${ticket.venue_state}`,
+          venueName: ticket.venue_name,
+          venueCity: ticket.venue_city,
+          venueState: ticket.venue_state
         }
       });
 
       // Log email sent
       await db.execute({
         sql: `
-          INSERT INTO registration_emails (ticket_id, email_type, recipient_email, sent_at)
-          VALUES (?, ?, ?, datetime('now'))
+          INSERT INTO registration_emails (ticket_id, transaction_id, email_type, recipient_email, sent_at)
+          VALUES (?, ?, ?, ?, datetime('now'))
         `,
-        args: [ticketId, 'confirmation', cleanEmail]
+        args: [ticketId, ticket.transaction_id, 'confirmation', cleanEmail]
       });
     } catch (emailError) {
       console.error('Failed to send confirmation email:', emailError);
@@ -310,7 +351,9 @@ export default async function handler(req, res) {
       args: [ticket.transaction_id]
     });
 
-    const allRegistered = transactionTickets.rows[0].total === transactionTickets.rows[0].completed;
+    // Process database result to handle BigInt values
+    const processedTransactionTickets = processDatabaseResult(transactionTickets);
+    const allRegistered = processedTransactionTickets.rows[0].total === processedTransactionTickets.rows[0].completed;
 
     res.status(200).json({
       success: true,

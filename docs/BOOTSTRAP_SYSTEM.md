@@ -852,11 +852,14 @@ node --prof-process isolate-*.log > bootstrap-profile.txt
 
 1. **Environment Setup**:
    ```bash
-   # Copy environment template
-   cp .env.example .env.local
+   # Link to Vercel project
+   vercel link
 
-   # Configure for development
-   echo "NODE_ENV=development" >> .env.local
+   # Pull environment variables from Vercel Dashboard
+   vercel env pull
+
+   # Verify .env.local was created
+   ls -la .env.local
    ```
 
 2. **Testing Changes**:

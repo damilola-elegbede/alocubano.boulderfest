@@ -119,10 +119,10 @@ async function testHealthEndpoint() {
 }
 
 async function testApiHealthSimple() {
-  const response = await fetch(`${BASE_URL}/api/health/simple`);
+  const response = await fetch(`${BASE_URL}/api/health/check?mode=simple`);
 
   if (!response.ok) {
-    throw new Error(`API health/simple returned ${response.status}`);
+    throw new Error(`API health/check?mode=simple returned ${response.status}`);
   }
 
   const data = await response.json();
@@ -169,7 +169,7 @@ async function runTests() {
 
     // Run tests
     await runTest('Health endpoint', testHealthEndpoint);
-    await runTest('API health/simple endpoint', testApiHealthSimple);
+    await runTest('API health/check?mode=simple endpoint', testApiHealthSimple);
     await runTest('404 handling', test404Handling);
     await runTest('Static files', testStaticFiles);
 

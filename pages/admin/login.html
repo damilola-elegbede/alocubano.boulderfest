@@ -38,6 +38,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Login - A Lo Cubano Boulder Fest</title>
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico" />
 
     <!-- Main Site CSS System -->
     <link rel="stylesheet" href="/css/base.css" />
@@ -424,10 +425,20 @@
       // Check if already authenticated
       async function checkExistingAuth() {
         try {
-          const response = await fetch("/api/admin/dashboard");
+          const token = localStorage.getItem('adminToken');
+          if (!token) {
+            // No token, stay on login page
+            return;
+          }
+
+          const response = await fetch("/api/admin/dashboard", {
+            headers: {
+              "Authorization": `Bearer ${token}`
+            }
+          });
           if (response.ok) {
-            // Already authenticated, redirect to admin portal
-            window.location.href = "/admin";
+            // Already authenticated, redirect to dashboard
+            window.location.href = "/admin/dashboard";
           }
         } catch (error) {
           // Not authenticated, stay on login page
@@ -459,8 +470,12 @@
           const data = await response.json();
 
           if (response.ok) {
-            // Success - redirect to admin portal
-            window.location.href = "/admin";
+            // Save token to localStorage
+            if (data.token) {
+              localStorage.setItem('adminToken', data.token);
+            }
+            // Success - redirect to dashboard
+            window.location.href = "/admin/dashboard";
           } else {
             // Show error - use textContent for safe display
             errorDiv.textContent = data.error;

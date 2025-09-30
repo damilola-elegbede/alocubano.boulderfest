@@ -17,7 +17,7 @@ const __dirname = dirname(__filename);
 const projectRoot = join(__dirname, "..");
 
 // Load environment variables
-dotenv.config({ path: join(projectRoot, ".env.local") });
+dotenv.config({ path: join(projectRoot, ".env.vercel") });
 dotenv.config({ path: join(projectRoot, ".env") });
 
 // Color codes for terminal output
@@ -295,7 +295,7 @@ async function createEnvTemplate() {
   print("\n📝 Creating Environment Template...", "cyan");
 
   const template = `# Monitoring Configuration Template
-# Copy this to .env.local and fill in your values
+# Copy this to .env.vercel and fill in your values
 
 # Sentry Error Tracking (Optional but recommended)
 SENTRY_DSN=

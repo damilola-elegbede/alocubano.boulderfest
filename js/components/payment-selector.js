@@ -16,7 +16,7 @@ class PaymentSelector {
         this.cartManager = null;
         this.cssLoaded = false;
         this.eventListeners = new Map(); // Track event listeners for cleanup
-        this.eventDate = '2026-05-15'; // Default event date
+        this.eventDate = null; // No default - must be explicitly set
     }
 
     /**
@@ -448,6 +448,9 @@ class PaymentSelector {
             throw new Error('Cart is empty');
         }
 
+        // Start checkout session timer (15 minute timeout)
+        await this.cartManager.startCheckoutSession();
+
         // Prepare cart items for checkout
         const cartItems = this.prepareCartItems(cartState);
 
@@ -465,6 +468,8 @@ class PaymentSelector {
             // Redirect to Stripe Checkout
             window.location.href = result.checkoutUrl;
         } else {
+            // End checkout session if failed
+            await this.cartManager.endCheckoutSession(false);
             throw new Error(result.error || 'Unable to create checkout session');
         }
     }
@@ -480,6 +485,9 @@ class PaymentSelector {
         }
 
         try {
+            // Start checkout session timer (15 minute timeout)
+            await this.cartManager.startCheckoutSession();
+
             // Announce PayPal processing start
             this.announceToScreenReader('Starting PayPal payment process...');
 
@@ -546,6 +554,8 @@ class PaymentSelector {
                 throw new Error('No PayPal approval URL received');
             }
         } catch (error) {
+            // End checkout session if PayPal fails
+            await this.cartManager.endCheckoutSession(false);
             throw new Error(error.message || 'PayPal checkout failed');
         }
     }
@@ -578,13 +588,20 @@ class PaymentSelector {
 
         // Add tickets
         Object.values(cartState.tickets).forEach((ticket) => {
+            // Require eventDate to be set explicitly - no defaults
+            if (!ticket.eventDate && !this.eventDate) {
+                throw new Error(`Event date is required for ticket: ${ticket.name}`);
+            }
+
             cartItems.push({
                 type: 'ticket',
                 ticketType: ticket.ticketType,
                 name: ticket.name,
                 price: ticket.price,
                 quantity: ticket.quantity,
-                eventDate: this.eventDate
+                eventDate: ticket.eventDate || this.eventDate,  // Use ticket-specific date or fallback
+                eventId: ticket.eventId || this.eventId,        // Include event ID
+                venue: ticket.venue || this.venue                // Include venue
             });
         });
 

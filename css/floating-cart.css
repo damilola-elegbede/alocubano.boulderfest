@@ -221,6 +221,24 @@
   margin: 0;
 }
 
+/* Cart Item Availability Warnings */
+.cart-item-unavailable {
+  border-left: 3px solid var(--color-red, #ef4444);
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.cart-item-availability-warning {
+  color: var(--color-red, #ef4444);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font-code);
+  margin: 4px 0 0 0;
+  padding: 4px 8px;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 4px;
+  display: inline-block;
+}
+
 .cart-item-actions {
   display: flex;
   align-items: center;

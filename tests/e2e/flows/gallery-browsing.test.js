@@ -157,7 +157,7 @@ test.describe('Gallery Performance & Functionality', () => {
       }
 
       console.log('📋 Step 3: Navigating to gallery page...');
-      await page.goto('/2025-gallery');
+      await page.goto('/boulder-fest-2025/gallery');
       console.log('🌐 Navigation completed. Current URL:', page.url());
 
       console.log('📋 Step 4: Waiting for page to load...');
@@ -178,7 +178,7 @@ test.describe('Gallery Performance & Functionality', () => {
 
       // Still navigate to the page even if config checks fail
       try {
-        await page.goto('/2025-gallery');
+        await page.goto('/boulder-fest-2025/gallery');
         await page.waitForLoadState('domcontentloaded');
         console.log('✅ Successfully navigated to gallery page despite config issues');
       } catch (navError) {
@@ -319,7 +319,7 @@ test.describe('Gallery Performance & Functionality', () => {
 
     // Navigate away and back to test caching
     await page.goto('/tickets');
-    await page.goto('/2025-gallery');
+    await page.goto('/boulder-fest-2025/gallery');
 
     await page.waitForLoadState('networkidle', { timeout: test.info().timeout * 0.33 });
 

@@ -31,10 +31,13 @@ The official website for **A Lo Cubano Boulder Fest**, Boulder's premier Cuban s
 3. **Environment setup**
 
    ```bash
-   # Copy environment template
-   cp .env.example .env.local
+   # Link to Vercel project (one-time setup)
+   vercel link
 
-   # Edit .env.local with your configuration
+   # Pull environment variables from Vercel Dashboard
+   vercel env pull
+
+   # This creates .env.local with all configured variables
    # See INSTALLATION.md for detailed setup instructions
    ```
 
@@ -114,7 +117,7 @@ alocubano.boulderfest/
 - **Tickets**: Pricing tiers and registration with floating cart system
 - **Donations**: Support the festival with floating cart integration
 
-### Technical
+### Technical Features
 
 - ✅ Typographic design system
 - ✅ Mobile-responsive layouts with slide-in navigation
@@ -131,6 +134,72 @@ alocubano.boulderfest/
 - ✅ Floating cart system with intelligent page-specific visibility
 - ✅ Stripe Checkout Sessions for secure, streamlined payments
 - ✅ PCI-compliant payment processing with built-in fraud protection
+
+## 🆕 New Ticket Payment Features (2024)
+
+### QR Code System
+
+- ✅ **Secure QR Generation**: JWT-based QR code endpoint (`/api/qr/generate`)
+- ✅ **PNG Image Format**: 300x300px optimized for email compatibility
+- ✅ **Dual Cache Architecture**: 24-hour HTTP cache (server) + 7-day localStorage cache (client)
+- ✅ **Progressive Loading**: Skeleton UI with retry logic and exponential backoff
+- ✅ **Email Integration**: Direct QR code embedding in confirmation emails
+
+**Note**: QR codes use dual-layer caching for optimal performance. Server-side HTTP cache (24h) is independent of client-side localStorage/Service Worker cache (7d). See [Performance Optimization](/docs/PERFORMANCE_OPTIMIZATION.md) for details.
+
+### Order Number System
+
+- ✅ **Sequential Order IDs**: Format `ALO-YYYY-NNNN` for production
+- ✅ **Test Order Support**: Format `TEST-YYYY-NNNN` starting at 9000
+- ✅ **Thread-Safe Generation**: Database-backed atomic sequence increments
+- ✅ **Year-Based Sequences**: Independent order numbering per year
+- ✅ **Fallback Mechanism**: Timestamp-based IDs when database unavailable
+
+### Mobile Wallet Integration
+
+- ✅ **Apple Wallet Passes**: `.pkpass` files with certificate signing
+- ✅ **Google Wallet Support**: Web-based pass URLs with JWT authentication
+- ✅ **Dynamic Pass Generation**: Real-time ticket details in wallet passes
+- ✅ **Branding Integration**: Festival colors, logos, and visual identity
+- ✅ **QR Code Integration**: Seamless scanning for event entry
+
+### Enhanced Ticket Display
+
+- ✅ **My Ticket Page**: Comprehensive ticket viewing with QR codes
+- ✅ **Wallet Download Buttons**: One-click wallet pass generation
+- ✅ **Dark Mode Support**: Theme-aware ticket display
+- ✅ **Print & Share Options**: Multiple ticket sharing methods
+- ✅ **Lazy Loading**: Performance-optimized wallet button loading
+
+### Email Service Updates
+
+- ✅ **QR Code Emails**: Direct QR image embedding in transactional emails
+- ✅ **Confirmation Summaries**: Enhanced email templates with order details
+- ✅ **Registration Reminders**: Automated follow-up email sequences
+- ✅ **Wallet Pass Links**: Direct links to add tickets to mobile wallets
+
+### Performance Optimizations
+
+- ✅ **Service Worker**: Background caching for offline QR code access
+- ✅ **Intersection Observer**: Lazy loading for wallet components
+- ✅ **Performance Dashboard**: Real-time monitoring of QR and wallet metrics
+- ✅ **Cache Management**: Intelligent cache expiration and cleanup
+- ✅ **Dual Cache Strategy**: Server HTTP cache (24h) + client localStorage/SW cache (7d)
+- ✅ **Error Tracking**: Comprehensive error monitoring and recovery
+
+**Cache Architecture**: The system implements two independent cache layers:
+
+- **Server Cache**: 24-hour HTTP browser cache (controlled by API responses)
+- **Client Cache**: 7-day localStorage + Service Worker cache (client-side management)
+
+This dual approach provides optimal performance with fast server responses and extended offline capability.
+
+### Enhanced Security
+
+- ✅ **JWT Validation**: Enhanced ticket validation with JWT tokens
+- ✅ **Wallet Authentication**: Secure pass generation with JWT signing
+- ✅ **Token Expiration**: Configurable TTL for security tokens
+- ✅ **Scan Prevention**: `validateOnly` flag to prevent accidental scans
 
 ## 👥 Board of Directors
 
@@ -289,8 +358,15 @@ npm run migrate:status         # Check migration status
 
 ### API Documentation
 
-- [Main API Documentation](/docs/api/README.md) - Gallery, performance, and core APIs
+- [Main API Documentation](/docs/api/README.md) - Complete API reference with new endpoints
+- [QR Code Generation](/docs/api/QR_ENDPOINT.md) - QR code API specification
 - [Registration API](/docs/api/REGISTRATION_API.md) - Ticket registration system endpoints
+
+### New Features Documentation
+
+- [Order Number System](/docs/ORDER_NUMBERS.md) - Order ID format and generation
+- [Wallet Pass Setup](/docs/WALLET_SETUP.md) - Mobile wallet configuration guide
+- [Performance Optimization](/docs/PERFORMANCE_OPTIMIZATION.md) - Caching and optimization features
 
 ### Setup Documentation
 
@@ -300,13 +376,70 @@ npm run migrate:status         # Check migration status
 
 ### Key Features Documentation
 
+- **QR Code System**: JWT-based QR generation with dual cache architecture (24h HTTP + 7d client)
+- **Order Number System**: Sequential order tracking with ALO-YYYY-NNNN format
+- **Mobile Wallet Passes**: Apple Wallet and Google Wallet integration
+- **Performance Optimization**: Advanced caching, lazy loading, and monitoring
 - **Registration System**: JWT-based ticket registration with 72-hour window
-- **Email Integration**: Brevo/SendinBlue for transactional emails
-- **Payment Processing**: Stripe Checkout with webhook handling
-- **Wallet Passes**: Apple Wallet and Google Wallet integration
+- **Email Integration**: Brevo/SendinBlue for transactional emails with QR codes
+- **Payment Processing**: Stripe Checkout with webhook handling and order numbers
 - **Gallery System**: Google Drive integration with AVIF/WebP optimization
 - **E2E Testing**: Comprehensive browser automation with Vercel Preview Deployments
 - **Admin Panel**: Complete administration dashboard with security features
+
+## Environment Variables
+
+All environment variables are managed through the **Vercel Dashboard**. To configure:
+
+1. Go to [vercel.com/dashboard](https://vercel.com/dashboard)
+2. Select your project
+3. Navigate to **Settings → Environment Variables**
+4. Add required variables (see INSTALLATION.md for complete list)
+5. Pull variables locally: `vercel env pull`
+
+### Key Required Variables
+
+- `TURSO_DATABASE_URL` - Production database URL
+- `TURSO_AUTH_TOKEN` - Database authentication
+- `ADMIN_PASSWORD` - Admin panel access (bcrypt hashed)
+- `ADMIN_SECRET` - Session secret (minimum 32 characters, 256-bit random recommended)
+- `REGISTRATION_SECRET` - JWT signing for tickets (minimum 32 characters, 256-bit random recommended)
+- `WALLET_AUTH_SECRET` - JWT signing for wallet passes (minimum 32 characters, 256-bit random recommended)
+
+**Security Best Practices for JWT Secrets:**
+
+Generate cryptographically secure random secrets with sufficient entropy:
+
+```bash
+# Generate 256-bit (32-byte) random secret (recommended)
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+
+# Or using OpenSSL
+openssl rand -base64 32
+```
+
+**Minimum Requirements:**
+
+- **Length**: At least 32 characters (256 bits recommended for production)
+- **Entropy**: Use cryptographically secure random generation (not simple passwords)
+- **Uniqueness**: Use different secrets for `REGISTRATION_SECRET`, `WALLET_AUTH_SECRET`, and `ADMIN_SECRET`
+- **Storage**: Never commit secrets to version control; manage via Vercel Dashboard only
+
+**Why 256-bit secrets?**
+
+- Provides sufficient entropy to resist brute-force attacks
+- Meets NIST SP 800-131A recommendations for key strength
+- Compatible with HS256 JWT signing algorithm
+- Industry standard for production JWT applications
+
+### Optional Service Variables
+
+- **Email**: `BREVO_API_KEY`, `BREVO_NEWSLETTER_LIST_ID`
+- **Payments**: `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`
+- **Gallery**: `GOOGLE_DRIVE_FOLDER_ID`, `GOOGLE_SERVICE_ACCOUNT_EMAIL`
+- **Wallet Passes**: `APPLE_PASS_TYPE_ID`, `GOOGLE_WALLET_ISSUER_ID`
+
+See [INSTALLATION.md](INSTALLATION.md) for complete environment variable documentation.
 
 ## Streamlined Development Experience
 

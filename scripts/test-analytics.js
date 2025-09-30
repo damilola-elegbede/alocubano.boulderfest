@@ -15,7 +15,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Load environment variables
-dotenv.config({ path: join(__dirname, "..", ".env.local") });
+dotenv.config({ path: join(__dirname, "..", ".env.vercel") });
 
 const BASE_URL = process.env.VERCEL_URL || "http://localhost:3000";
 const ADMIN_PASSWORD = "admin123"; // Use the plaintext password for testing

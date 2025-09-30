@@ -33,9 +33,8 @@ npm install
 # Install Vercel CLI for E2E testing
 npm i -g vercel
 
-# Environment setup
-cp .env.example .env.local
-# Edit .env.local with your configuration
+# Link to Vercel project (creates .env.vercel with all Dashboard variables)
+vercel link
 
 # Database initialization
 npm run migrate:up
@@ -78,51 +77,85 @@ vercel --version  # Should show Vercel CLI version
 
 ### 3. Environment Configuration
 
-#### Create Environment File
+#### Link to Vercel Project
+
+Link your local repository to the Vercel project (one-time setup):
 
 ```bash
-# Copy the example environment file
-cp .env.example .env.local
+# Link to Vercel project
+vercel link
 ```
 
-#### Essential Environment Variables
+This will:
+1. Prompt you to select your Vercel scope (personal or team)
+2. Confirm or create a new project
+3. Link to existing project or set up a new one
+4. **Automatically create `.env.vercel`** with all Dashboard variables
 
-Edit `.env.local` with the following minimum configuration:
+The `.env.vercel` file contains all environment variables configured in your Vercel Dashboard. This file is used by:
+- Local test suites (E2E, integration)
+- Utility scripts (migrations, database checks, etc.)
+- Development tooling
+
+**Note:** `vercel dev` does NOT use `.env.vercel` - it pulls variables directly from the Dashboard in real-time.
+
+#### Configure Environment Variables in Vercel Dashboard
+
+If you haven't set up environment variables yet, configure them in the Vercel Dashboard:
+
+1. Go to [vercel.com/dashboard](https://vercel.com/dashboard)
+2. Select your project
+3. Navigate to **Settings → Environment Variables**
+4. Add the following variables:
+
+**Required for Local Development:**
+
+- `TURSO_DATABASE_URL` - Required for E2E tests and production
+- `TURSO_AUTH_TOKEN` - Required for E2E tests and production
+- `ADMIN_PASSWORD` - Generate with bcrypt hashing
+- `ADMIN_SECRET` - Secure session secret (min 32 chars)
+
+**Optional for Extended Functionality:**
+
+- `BREVO_API_KEY` - Email service integration
+- `BREVO_NEWSLETTER_LIST_ID` - Newsletter list ID
+- `BREVO_WEBHOOK_SECRET` - Webhook validation
+- `BREVO_PURCHASER_CONFIRMATION_TEMPLATE_ID` - Purchaser email template
+- `BREVO_ATTENDEE_CONFIRMATION_TEMPLATE_ID` - Attendee email template
+- `STRIPE_PUBLISHABLE_KEY` - Stripe public key
+- `STRIPE_SECRET_KEY` - Stripe secret key
+- `STRIPE_WEBHOOK_SECRET` - Stripe webhook validation
+- `GOOGLE_DRIVE_FOLDER_ID` - Gallery folder ID
+- `GOOGLE_SERVICE_ACCOUNT_EMAIL` - Service account email
+- `GOOGLE_PRIVATE_KEY` - Service account private key
+- `REGISTRATION_SECRET` - JWT signing for ticket registration
+- `WALLET_AUTH_SECRET` - JWT signing for wallet passes
+- `INTERNAL_API_KEY` - API key for internal operations
+- `NODE_ENV` - Set to "development" for local development
+
+**Environment Scopes:**
+
+For each variable, select the appropriate environments:
+- **Development** - For local development (`vercel dev`)
+- **Preview** - For preview deployments
+- **Production** - For production deployment
+
+After adding variables in Vercel Dashboard, refresh your local file:
 
 ```bash
-# ================================================
-# REQUIRED FOR LOCAL DEVELOPMENT
-# ================================================
-
-# Database Configuration
-# Local development uses SQLite automatically
-TURSO_DATABASE_URL=         # Required for E2E tests and production
-TURSO_AUTH_TOKEN=          # Required for E2E tests and production
-
-# Admin Access
-ADMIN_PASSWORD=            # Generate with bcrypt hashing
-ADMIN_SECRET=your-secure-session-secret-min-32-chars
-
-# ================================================
-# OPTIONAL FOR EXTENDED FUNCTIONALITY
-# ================================================
-
-# Email Service (Brevo/SendinBlue)
-BREVO_API_KEY=your-brevo-api-key
-BREVO_NEWSLETTER_LIST_ID=1
-
-# Payment Processing (Stripe)
-STRIPE_PUBLISHABLE_KEY=pk_test_your-key
-STRIPE_SECRET_KEY=sk_test_your-key
-
-# Google Drive Gallery Integration
-GOOGLE_DRIVE_FOLDER_ID=your-folder-id
-GOOGLE_SERVICE_ACCOUNT_EMAIL=your-service-account@project.iam.gserviceaccount.com
-GOOGLE_PRIVATE_KEY="your-private-key"
-
-# Environment
-NODE_ENV=development
+# Refresh .env.vercel with latest Dashboard values
+vercel env pull .env.vercel
 ```
+
+#### Best Practices
+
+- **Use Vercel Dashboard** as the single source of truth for all environment variables
+- **Refresh when needed**: Run `vercel env pull .env.vercel` after Dashboard changes
+- **Set correct scopes** when adding variables (Development, Preview, Production)
+- **Never commit** `.env.vercel` or any environment files (already gitignored)
+- **Two workflows**:
+  - Running app: `vercel dev` (pulls from Dashboard in real-time)
+  - Running tests/scripts: Uses `.env.vercel` file (created by `vercel link`)
 
 ### 4. Database Setup
 
@@ -165,12 +198,15 @@ turso db tokens create alocubano-boulderfest-dev
 
 ##### 3. Configure Environment Variables
 
-Add to your `.env.local`:
+Add these to your Vercel Dashboard (Settings → Environment Variables):
+
+- `TURSO_DATABASE_URL` - Set to `libsql://your-database-name.turso.io`
+- `TURSO_AUTH_TOKEN` - Set to your generated auth token
+
+Then pull the updated configuration:
 
 ```bash
-# Turso Configuration for E2E Tests
-TURSO_DATABASE_URL=libsql://your-database-name.turso.io
-TURSO_AUTH_TOKEN=your-auth-token-here
+vercel env pull
 ```
 
 ##### 4. Initialize Turso Database
@@ -221,12 +257,14 @@ npm test && npm run test:integration && npm run test:e2e
 2. **Get API key** from Settings → API Keys
 3. **Create contact list** for newsletter
 4. **Set up webhook** for email events
+5. **Configure in Vercel Dashboard** (Settings → Environment Variables):
+   - `BREVO_API_KEY` - Your API key
+   - `BREVO_NEWSLETTER_LIST_ID` - Your list ID
+   - `BREVO_WEBHOOK_SECRET` - Your webhook secret
+6. **Pull environment variables locally**:
 
 ```bash
-# Add to .env.local
-BREVO_API_KEY=your-api-key
-BREVO_NEWSLETTER_LIST_ID=your-list-id
-BREVO_WEBHOOK_SECRET=your-webhook-secret
+vercel env pull
 ```
 
 ### Payment Processing (Stripe)
@@ -234,12 +272,14 @@ BREVO_WEBHOOK_SECRET=your-webhook-secret
 1. **Sign up** at [stripe.com](https://stripe.com)
 2. **Get test API keys** from Dashboard → Developers → API keys
 3. **Set up webhooks** for payment events
+4. **Configure in Vercel Dashboard** (Settings → Environment Variables):
+   - `STRIPE_PUBLISHABLE_KEY` - Your test publishable key (pk_test_...)
+   - `STRIPE_SECRET_KEY` - Your test secret key (sk_test_...)
+   - `STRIPE_WEBHOOK_SECRET` - Your webhook secret (whsec_...)
+5. **Pull environment variables locally**:
 
 ```bash
-# Add to .env.local
-STRIPE_PUBLISHABLE_KEY=pk_test_your-publishable-key
-STRIPE_SECRET_KEY=sk_test_your-secret-key
-STRIPE_WEBHOOK_SECRET=whsec_your-webhook-secret
+vercel env pull
 ```
 
 ### Google Drive Gallery
@@ -248,13 +288,15 @@ STRIPE_WEBHOOK_SECRET=whsec_your-webhook-secret
 2. **Enable Google Drive API**
 3. **Create Service Account** and download JSON credentials
 4. **Share target folder** with service account email
+5. **Configure in Vercel Dashboard** (Settings → Environment Variables):
+   - `GOOGLE_DRIVE_FOLDER_ID` - Your folder ID
+   - `GOOGLE_SERVICE_ACCOUNT_EMAIL` - Your service account email
+   - `GOOGLE_PROJECT_ID` - Your project ID
+   - `GOOGLE_PRIVATE_KEY` - Your private key (with newlines)
+6. **Pull environment variables locally**:
 
 ```bash
-# Add to .env.local
-GOOGLE_DRIVE_FOLDER_ID=your-folder-id
-GOOGLE_SERVICE_ACCOUNT_EMAIL=your-service-account@project.iam.gserviceaccount.com
-GOOGLE_PROJECT_ID=your-project-id
-GOOGLE_PRIVATE_KEY="your-private-key-with-newlines"
+vercel env pull
 ```
 
 ## Development Commands
@@ -562,9 +604,8 @@ Common Turso connection problems and solutions:
 echo $TURSO_DATABASE_URL
 echo $TURSO_AUTH_TOKEN
 
-# Set in .env.local (development)
-TURSO_DATABASE_URL=libsql://your-database.turso.io
-TURSO_AUTH_TOKEN=your-token-here
+# Configure in Vercel Dashboard, then pull locally
+vercel env pull
 ```
 
 **Issue**: Authentication failed
@@ -609,8 +650,14 @@ PORT=3001 npm run vercel:dev
 # Verify environment file exists
 ls -la .env.local
 
-# Check environment loading
-node -e "require('dotenv').config({ path: '.env.local' }); console.log(process.env.NODE_ENV);"
+# If missing, pull from Vercel
+vercel env pull
+
+# Verify Vercel link
+vercel link --confirm
+
+# Pull latest environment variables
+vercel env pull --force
 ```
 
 #### Performance Issues
@@ -674,14 +721,31 @@ npm run vercel:preview
 
 ### Environment Variables for Production
 
-Set these in Vercel dashboard:
+Configure these in Vercel Dashboard (Settings → Environment Variables):
 
-- `TURSO_DATABASE_URL` - Production database
-- `TURSO_AUTH_TOKEN` - Database authentication
+**Required Variables:**
+- `TURSO_DATABASE_URL` - Production database URL
+- `TURSO_AUTH_TOKEN` - Database authentication token
+- `ADMIN_PASSWORD` - Admin access (bcrypt hashed)
+- `ADMIN_SECRET` - JWT signing secret (min 32 chars)
+
+**Service Integrations:**
 - `BREVO_API_KEY` - Email service
-- `STRIPE_SECRET_KEY` - Payment processing
-- `ADMIN_PASSWORD` - Admin access
-- All other service credentials
+- `BREVO_NEWSLETTER_LIST_ID` - Newsletter list
+- `BREVO_WEBHOOK_SECRET` - Email webhook validation
+- `STRIPE_PUBLISHABLE_KEY` - Payment processing (public key)
+- `STRIPE_SECRET_KEY` - Payment processing (secret key)
+- `STRIPE_WEBHOOK_SECRET` - Payment webhook validation
+- `REGISTRATION_SECRET` - Ticket registration JWT signing
+- `WALLET_AUTH_SECRET` - Wallet pass JWT signing
+- `INTERNAL_API_KEY` - Internal operations security
+
+**Optional Services:**
+- `GOOGLE_DRIVE_FOLDER_ID` - Gallery integration
+- `GOOGLE_SERVICE_ACCOUNT_EMAIL` - Google Drive service account
+- `GOOGLE_PRIVATE_KEY` - Service account private key
+
+**Important:** Make sure to set the correct environment scope (Production) for each variable.
 
 ### CI/CD for Production
 

@@ -129,7 +129,7 @@ async function createOrderHandler(req, res) {
           value: item.price.toFixed(2)
         },
         quantity: item.quantity.toString(),
-        description: item.description || `A Lo Cubano Boulder Fest - ${item.name}`,
+        description: item.description,
         category: item.type === 'ticket' ? 'DIGITAL_GOODS' : 'DONATION'
       });
     }

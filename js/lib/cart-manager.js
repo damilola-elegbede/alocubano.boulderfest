@@ -3,6 +3,8 @@
  * Handles all cart operations across tickets and donations
  */
 import { getAnalyticsTracker } from './analytics-tracker.js';
+import { CartExpirationManager } from './cart-expiration-manager.js';
+import { cleanCartState } from './pure/cart-persistence.js';
 
 // Development-only logging utility
 const devLog = {
@@ -96,13 +98,16 @@ export class CartManager extends EventTarget {
             metadata: {
                 createdAt: Date.now(),
                 updatedAt: Date.now(),
-                sessionId: this.generateSessionId()
+                sessionId: this.generateSessionId(),
+                checkoutStartedAt: null,
+                checkoutSessionId: null
             }
         };
         this.storageKey = 'alocubano_cart';
         this.initialized = false;
         this.operationQueue = [];
         this.isExecutingQueue = false;
+        this.expirationManager = null;
         this.analytics = getAnalyticsTracker();
         this.storageCoordinator = new CartStorageCoordinator();
     }
@@ -115,6 +120,14 @@ export class CartManager extends EventTarget {
 
         // Load from localStorage
         this.loadFromStorage();
+
+        // Clean expired items on initialization
+        this.state = cleanCartState(this.state);
+        await this.saveToStorage();
+
+        // Initialize expiration manager
+        this.expirationManager = new CartExpirationManager(this);
+        this.expirationManager.initialize();
 
         // Setup event listeners
         this.setupEventListeners();
@@ -169,7 +182,7 @@ export class CartManager extends EventTarget {
 
     // Ticket operations
     async addTicket(ticketData) {
-        const { ticketType, price, name, eventId, quantity = 1 } = ticketData;
+        const { ticketType, price, name, eventId, eventDate, venue, eventName, quantity = 1 } = ticketData;
 
         if (!ticketType || !price || !name) {
             throw new Error('Invalid ticket data');
@@ -184,6 +197,9 @@ export class CartManager extends EventTarget {
                     price,
                     name,
                     eventId,
+                    eventName,  // Store event name - NO FALLBACK
+                    eventDate,  // Store event date
+                    venue,      // Store venue
                     quantity: 0,
                     addedAt: Date.now()
                 };
@@ -191,6 +207,16 @@ export class CartManager extends EventTarget {
 
             this.state.tickets[ticketType].quantity += quantity;
             this.state.tickets[ticketType].updatedAt = Date.now();
+            // Update eventName, eventDate and venue if provided (in case they changed)
+            if (eventName) {
+                this.state.tickets[ticketType].eventName = eventName;
+            }
+            if (eventDate) {
+                this.state.tickets[ticketType].eventDate = eventDate;
+            }
+            if (venue) {
+                this.state.tickets[ticketType].venue = venue;
+            }
 
             // Use coordinated storage write
             await this.saveToStorage();
@@ -249,7 +275,7 @@ export class CartManager extends EventTarget {
 
     // Upsert operation that combines add and update logic
     async upsertTicket(ticketData) {
-        const { ticketType, price, name, eventId, quantity } = ticketData;
+        const { ticketType, price, name, eventId, eventName, eventDate, venue, quantity } = ticketData;
 
         // If quantity is 0 or undefined/null, remove the ticket
         if (quantity === 0 || quantity === null || quantity === undefined) {
@@ -277,6 +303,9 @@ export class CartManager extends EventTarget {
                     price,
                     name,
                     eventId,
+                    eventName,  // Store event name - NO FALLBACK
+                    eventDate,  // Store event date
+                    venue,      // Store venue
                     quantity: 0,
                     addedAt: Date.now()
                 };
@@ -290,6 +319,15 @@ export class CartManager extends EventTarget {
                 }
                 if (eventId) {
                     this.state.tickets[ticketType].eventId = eventId;
+                }
+                if (eventName) {
+                    this.state.tickets[ticketType].eventName = eventName;
+                }
+                if (eventDate) {
+                    this.state.tickets[ticketType].eventDate = eventDate;
+                }
+                if (venue) {
+                    this.state.tickets[ticketType].venue = venue;
                 }
             }
 
@@ -318,11 +356,14 @@ export class CartManager extends EventTarget {
             throw new Error('Invalid donation amount');
         }
 
+        // Convert donation amount to cents to match ticket pricing
+        const amountInCents = Math.round(amount * 100);
+
         // Create new donation item
         const donationId = `donation_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
         const donation = {
             id: donationId,
-            amount: amount,
+            amount: amountInCents,
             name: 'Festival Support',
             addedAt: Date.now()
         };
@@ -535,8 +576,62 @@ export class CartManager extends EventTarget {
         this.emit('cart:updated', this.getState());
     }
 
+    // Checkout session management
+    async startCheckoutSession() {
+        if (!this.expirationManager) {
+            throw new Error('Expiration manager not initialized');
+        }
+
+        // Track analytics
+        this.analytics.trackCartEvent('checkout_started', {
+            sessionId: this.state.metadata.sessionId,
+            itemCount: this.calculateTotals().itemCount,
+            total: this.calculateTotals().total
+        });
+
+        return this.expirationManager.startCheckoutSession();
+    }
+
+    async endCheckoutSession(completed = false) {
+        if (!this.expirationManager) {
+            throw new Error('Expiration manager not initialized');
+        }
+
+        // Track analytics
+        this.analytics.trackCartEvent('checkout_ended', {
+            sessionId: this.state.metadata.sessionId,
+            completed: completed
+        });
+
+        return this.expirationManager.endCheckoutSession(completed);
+    }
+
+    isInCheckout() {
+        if (!this.expirationManager) {
+            return false;
+        }
+        return this.expirationManager.isInCheckout();
+    }
+
+    getCheckoutTimeRemaining() {
+        if (!this.expirationManager) {
+            return 0;
+        }
+        return this.expirationManager.getCheckoutTimeRemaining();
+    }
+
+    getExpirationInfo() {
+        if (!this.expirationManager) {
+            return { tickets: {}, donations: [], checkoutSession: null };
+        }
+        return this.expirationManager.getExpirationInfo();
+    }
+
     // Debug methods
     getDebugInfo() {
+        const expirationInfo = this.expirationManager ?
+            this.expirationManager.getExpirationInfo() : null;
+
         return {
             state: this.state,
             initialized: this.initialized,
@@ -544,7 +639,8 @@ export class CartManager extends EventTarget {
             isExecutingQueue: this.isExecutingQueue,
             sessionId: this.state.metadata.sessionId,
             lastUpdated: new Date(this.state.metadata.updatedAt).toISOString(),
-            storageKey: this.storageKey
+            storageKey: this.storageKey,
+            expirationInfo: expirationInfo
         };
     }
 }

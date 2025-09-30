@@ -4,12 +4,21 @@ import { getRateLimitService } from "../../lib/rate-limit-service.js";
 import { withSecurityHeaders } from "../../lib/security-headers.js";
 import auditService from "../../lib/audit-service.js";
 import { isTestMode, getTestModeFlag } from "../../lib/test-mode-utils.js";
+import { getQRTokenService } from "../../lib/qr-token-service.js";
+import { processDatabaseResult } from "../../lib/bigint-serializer.js";
 
 // Enhanced rate limiting configuration
 const TICKET_RATE_LIMIT = {
   window: 60000, // 1 minute
   maxAttempts: 50, // Reduced from 100 for better security
   lockoutDuration: 300000 // 5 minutes lockout after exceeding limit
+};
+
+// Per-ticket rate limiting (max 10 scans per hour per ticket)
+const PER_TICKET_RATE_LIMIT = {
+  window: 3600000, // 1 hour
+  maxAttempts: 10,
+  lockoutDuration: 1800000 // 30 minutes lockout after exceeding limit
 };
 
 /**
@@ -126,76 +135,128 @@ async function checkEnhancedRateLimit(clientIP) {
 }
 
 /**
- * Extract validation code from token with enhanced security
+ * Extract validation code from token with enhanced security using QRTokenService
  * @param {string} token - JWT token or raw validation code
  * @returns {Object} - Extraction result with security validation
  */
 function extractValidationCode(token) {
-  // Validate QR_SECRET_KEY exists
-  if (!process.env.QR_SECRET_KEY) {
-    console.error('QR_SECRET_KEY not configured - security vulnerability');
-    throw new Error('Token validation service unavailable');
-  }
+  const qrTokenService = getQRTokenService();
 
-  // Validate secret key strength (minimum 32 characters)
-  if (process.env.QR_SECRET_KEY.length < 32) {
-    console.error('QR_SECRET_KEY too short - security vulnerability');
-    throw new Error('Token validation service misconfigured');
-  }
-
-  try {
-    // Attempt JWT decoding with strict verification
-    const decoded = jwt.verify(token, process.env.QR_SECRET_KEY, {
-      algorithms: ['HS256'], // Specify allowed algorithm to prevent algorithm confusion attacks
-      maxAge: '7d', // Tokens expire after 7 days max
-      clockTolerance: 60 // Allow 60 second clock skew
-    });
-
-    // Validate JWT payload structure
-    if (!decoded || typeof decoded !== 'object') {
-      throw new Error('Invalid token payload structure');
-    }
-
-    const validationCode = decoded.tid || decoded.validation_code;
-
-    if (!validationCode || typeof validationCode !== 'string') {
-      throw new Error('Invalid validation code in token');
+  // First try with QRTokenService for JWT validation
+  const jwtValidation = qrTokenService.validateToken(token);
+  if (jwtValidation.valid) {
+    // Successfully validated as JWT - extract ticket ID
+    const ticketId = jwtValidation.payload.tid;
+    if (!ticketId || typeof ticketId !== 'string') {
+      throw new Error('Invalid ticket ID in JWT token');
     }
 
     return {
       isJWT: true,
-      validationCode: validationCode,
-      issueTime: decoded.iat,
-      expirationTime: decoded.exp
+      validationCode: ticketId, // For JWT tokens, we use ticket_id as validation code
+      issueTime: jwtValidation.payload.iat,
+      expirationTime: jwtValidation.payload.exp,
+      tokenPayload: jwtValidation.payload
     };
+  }
 
-  } catch (jwtError) {
-    // For non-JWT tokens, treat as direct validation code with additional security checks
-    if (jwtError.name === 'JsonWebTokenError' ||
-        jwtError.name === 'TokenExpiredError' ||
-        jwtError.name === 'NotBeforeError') {
+  // JWT validation failed - handle as legacy validation_code
+  if (jwtValidation.error?.includes('expired')) {
+    throw new Error('Token has expired');
+  }
 
-      // Log JWT-specific errors for monitoring
-      console.warn('JWT token validation failed, treating as direct validation code:', {
-        error: jwtError.name,
-        tokenPrefix: token.substring(0, 10)
-      });
+  // Fallback to treating as direct validation code (legacy format)
+  console.warn('JWT token validation failed, treating as direct validation code:', {
+    error: jwtValidation.error,
+    tokenPrefix: token.substring(0, 10)
+  });
 
-      // Additional validation for direct validation codes
-      if (!/^[A-Za-z0-9\-_]{8,64}$/.test(token)) {
-        throw new Error('Invalid direct validation code format');
-      }
+  // Additional validation for direct validation codes
+  if (!/^[A-Za-z0-9\-_]{8,64}$/.test(token)) {
+    throw new Error('Invalid direct validation code format');
+  }
 
-      return {
-        isJWT: false,
-        validationCode: token,
-        issueTime: null,
-        expirationTime: null
-      };
-    }
+  return {
+    isJWT: false,
+    validationCode: token,
+    issueTime: null,
+    expirationTime: null,
+    tokenPayload: null
+  };
+}
 
-    // Re-throw configuration errors
-    throw jwtError;
+/**
+ * Check per-ticket rate limiting to prevent abuse
+ * @param {string} ticketId - Ticket ID to check
+ * @returns {Promise<Object>} Rate limit status
+ */
+async function checkPerTicketRateLimit(ticketId) {
+  if (!ticketId) {
+    return { isAllowed: true, remaining: PER_TICKET_RATE_LIMIT.maxAttempts };
+  }
+
+  const rateLimitService = getRateLimitService();
+  const result = await rateLimitService.checkLimit(`ticket:${ticketId}`, 'ticket_validation_per_ticket', {
+    maxAttempts: PER_TICKET_RATE_LIMIT.maxAttempts,
+    windowMs: PER_TICKET_RATE_LIMIT.window
+  });
+
+  return {
+    isAllowed: result.allowed,
+    remaining: result.remaining,
+    retryAfter: result.retryAfter
+  };
+}
+
+/**
+ * Check if event has ended
+ * @param {Object} ticket - Ticket object with event_end_date
+ * @returns {boolean} True if event has ended
+ */
+function isEventEnded(ticket) {
+  if (!ticket.event_end_date) {
+    // If no end date set, assume event is still active
+    return false;
+  }
+
+  const eventEndDate = new Date(ticket.event_end_date);
+  const now = new Date();
+  return now > eventEndDate;
+}
+
+/**
+ * Log comprehensive scan attempt to scan_logs table
+ * @param {Object} db - Database client
+ * @param {Object} scanData - Scan data to log
+ */
+async function logScanAttempt(db, scanData) {
+  try {
+    await db.execute({
+      sql: `
+        INSERT INTO scan_logs (
+          ticket_id, scan_status, scan_location, device_info, ip_address,
+          user_agent, validation_source, token_type, failure_reason,
+          request_id, scan_duration_ms, security_flags
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+      args: [
+        scanData.ticketId,
+        scanData.scanStatus,
+        scanData.scanLocation || null,
+        scanData.deviceInfo || null,
+        scanData.ipAddress,
+        scanData.userAgent || null,
+        scanData.validationSource,
+        scanData.tokenType,
+        scanData.failureReason || null,
+        scanData.requestId,
+        scanData.scanDurationMs || null,
+        scanData.securityFlags ? JSON.stringify(scanData.securityFlags) : null
+      ]
+    });
+  } catch (error) {
+    // Non-blocking: log error but don't fail the operation
+    console.error('Failed to log scan attempt (non-blocking):', error.message);
   }
 }
 
@@ -241,44 +302,78 @@ function detectSource(req, clientIP) {
 }
 
 /**
- * Validate ticket and update scan count atomically
+ * Validate ticket and update scan count atomically with enhanced JWT support
  * @param {object} db - Database instance
- * @param {string} validationCode - Validation code from QR code
+ * @param {string} validationCode - Validation code (ticket_id for JWT, validation_code for legacy)
  * @param {string} source - Validation source
+ * @param {boolean} isJWT - Whether this is a JWT token validation
  * @returns {object} - Validation result
  */
-async function validateTicket(db, validationCode, source) {
+async function validateTicket(db, validationCode, source, isJWT = false) {
   // Start transaction for atomic operations
   const tx = await db.transaction();
 
   try {
-    // Get ticket by validation_code (QR codes contain validation_code, not ticket_id)
-    const result = await tx.execute({
-      sql: `
-        SELECT t.*,
-               'A Lo Cubano Boulder Fest' as event_name,
-               t.event_date
-        FROM tickets t
-        WHERE t.validation_code = ?
-      `,
-      args: [validationCode]
-    });
+    let ticket;
 
-    const ticket = result.rows[0];
+    if (isJWT) {
+      // For JWT tokens, validationCode is actually the ticket_id
+      const result = await tx.execute({
+        sql: `
+          SELECT t.*,
+                 'A Lo Cubano Boulder Fest' as event_name,
+                 t.event_date
+          FROM tickets t
+          WHERE t.ticket_id = ?
+        `,
+        args: [validationCode]
+      });
+      // Process database result to handle BigInt values
+      const processedResult = processDatabaseResult(result);
+      ticket = processedResult.rows[0];
+    } else {
+      // Legacy validation - use validation_code
+      const result = await tx.execute({
+        sql: `
+          SELECT t.*,
+                 'A Lo Cubano Boulder Fest' as event_name,
+                 t.event_date
+          FROM tickets t
+          WHERE t.validation_code = ?
+        `,
+        args: [validationCode]
+      });
+      // Process database result to handle BigInt values
+      const processedResult = processDatabaseResult(result);
+      ticket = processedResult.rows[0];
+    }
 
     if (!ticket) {
       throw new Error('Ticket not found');
     }
 
+    // Check ticket status
     if (ticket.status !== 'valid') {
       throw new Error(`Ticket is ${ticket.status}`);
     }
 
+    // Check validation status
+    if (ticket.validation_status !== 'active') {
+      throw new Error(`Ticket validation is ${ticket.validation_status}`);
+    }
+
+    // Check if event has ended
+    if (isEventEnded(ticket)) {
+      throw new Error('Event has ended');
+    }
+
+    // Check scan limits
     if (ticket.scan_count >= ticket.max_scan_count) {
       throw new Error('Maximum scans exceeded');
     }
 
     // Atomic update with condition check (prevents race condition)
+    const updateField = isJWT ? 'ticket_id' : 'validation_code';
     const updateResult = await tx.execute({
       sql: `
         UPDATE tickets
@@ -286,9 +381,10 @@ async function validateTicket(db, validationCode, source) {
             qr_access_method = ?,
             first_scanned_at = COALESCE(first_scanned_at, CURRENT_TIMESTAMP),
             last_scanned_at = CURRENT_TIMESTAMP
-        WHERE validation_code = ?
+        WHERE ${updateField} = ?
           AND scan_count < max_scan_count
           AND status = 'valid'
+          AND validation_status = 'active'
       `,
       args: [source, validationCode]
     });
@@ -296,7 +392,7 @@ async function validateTicket(db, validationCode, source) {
     // Use portable rows changed check for different database implementations
     const rowsChanged = updateResult.rowsAffected ?? updateResult.changes ?? 0;
     if (rowsChanged === 0) {
-      throw new Error('Validation failed - ticket may have reached scan limit');
+      throw new Error('Validation failed - ticket may have reached scan limit or status changed');
     }
 
     // Commit transaction
@@ -637,26 +733,82 @@ async function handler(req, res) {
 
   const source = detectSource(req, clientIP);
   let db;
+  let extractionResult;
+  let ticketId;
 
   try {
     db = await getDatabaseClient();
-    const extractionResult = extractValidationCode(token);
+    extractionResult = extractValidationCode(token);
     const validationCode = extractionResult.validationCode;
+
+    // For JWT tokens, validationCode is the ticket_id
+    ticketId = extractionResult.isJWT ? validationCode : null;
+
+    // Per-ticket rate limiting (only if we have a ticket ID)
+    if (ticketId && process.env.NODE_ENV !== 'test') {
+      const ticketRateLimit = await checkPerTicketRateLimit(ticketId);
+      if (!ticketRateLimit.isAllowed) {
+        // Log rate limit exceeded
+        await logScanAttempt(db, {
+          ticketId: ticketId,
+          scanStatus: 'rate_limited',
+          ipAddress: clientIP,
+          userAgent: userAgent,
+          validationSource: source,
+          tokenType: extractionResult.isJWT ? 'JWT' : 'direct',
+          failureReason: 'Per-ticket rate limit exceeded',
+          requestId: requestId,
+          scanDurationMs: Date.now() - startTime,
+          securityFlags: { rate_limited: true, per_ticket: true }
+        });
+
+        return res.status(429).json({
+          valid: false,
+          error: 'Too many validation attempts for this ticket. Please try again later.',
+          validation: {
+            status: 'rate_limited',
+            message: 'Rate limit exceeded for this ticket'
+          },
+          retryAfter: ticketRateLimit.retryAfter
+        });
+      }
+    }
 
     if (validateOnly) {
       // For preview only - no updates
-      const result = await db.execute({
-        sql: `
-          SELECT t.*,
-                 'A Lo Cubano Boulder Fest' as event_name,
-                 t.event_date
-          FROM tickets t
-          WHERE t.validation_code = ?
-        `,
-        args: [validationCode]
-      });
+      let ticket;
 
-      const ticket = result.rows[0];
+      if (extractionResult.isJWT) {
+        // For JWT tokens, validationCode is ticket_id
+        const result = await db.execute({
+          sql: `
+            SELECT t.*,
+                   'A Lo Cubano Boulder Fest' as event_name,
+                   t.event_date
+            FROM tickets t
+            WHERE t.ticket_id = ?
+          `,
+          args: [validationCode]
+        });
+        // Process database result to handle BigInt values
+        const processedResult = processDatabaseResult(result);
+        ticket = processedResult.rows[0];
+      } else {
+        // Legacy validation - use validation_code
+        const result = await db.execute({
+          sql: `
+            SELECT t.*,
+                   'A Lo Cubano Boulder Fest' as event_name,
+                   t.event_date
+            FROM tickets t
+            WHERE t.validation_code = ?
+          `,
+          args: [validationCode]
+        });
+        // Process database result to handle BigInt values
+        const processedResult = processDatabaseResult(result);
+        ticket = processedResult.rows[0];
+      }
 
       if (!ticket) {
         throw new Error('Ticket not found');
@@ -664,6 +816,14 @@ async function handler(req, res) {
 
       if (ticket.status !== 'valid') {
         throw new Error(`Ticket is ${ticket.status}`);
+      }
+
+      if (ticket.validation_status !== 'active') {
+        throw new Error(`Ticket validation is ${ticket.validation_status}`);
+      }
+
+      if (isEventEnded(ticket)) {
+        throw new Error('Event has ended');
       }
 
       // Detect test mode for response
@@ -675,26 +835,41 @@ async function handler(req, res) {
         ticket: {
           id: ticket.ticket_id,
           type: ticket.ticket_type,
-          eventName: ticket.event_name,
-          eventDate: ticket.event_date,
-          attendeeName:
-            `${ticket.attendee_first_name} ${ticket.attendee_last_name}`.trim(),
-          scanCount: ticket.scan_count,
-          maxScans: ticket.max_scan_count,
-          source: source,
-          isTest: ticketIsTest,
-          testModeIndicator: testModeIndicator
+          attendee: `${ticket.attendee_first_name} ${ticket.attendee_last_name}`.trim(),
+          event: ticket.event_name
         },
-        message: ticketIsTest ? `${testModeIndicator} - Test ticket verified` : 'Ticket verified'
+        validation: {
+          status: 'valid',
+          scan_count: ticket.scan_count,
+          last_scanned: ticket.last_scanned_at,
+          message: ticketIsTest ? `${testModeIndicator} - Test ticket verified` : 'Ticket verified for preview'
+        }
       });
     }
 
     // Actual validation with scan count update
-    const validationResult = await validateTicket(db, validationCode, source);
+    const validationResult = await validateTicket(db, validationCode, source, extractionResult.isJWT);
     const ticket = validationResult.ticket;
     const validationTimeMs = Date.now() - startTime;
 
-    // Log successful validation (legacy format)
+    // Log successful scan to new scan_logs table
+    await logScanAttempt(db, {
+      ticketId: ticket.ticket_id,
+      scanStatus: 'valid',
+      ipAddress: clientIP,
+      userAgent: userAgent,
+      validationSource: source,
+      tokenType: extractionResult.isJWT ? 'JWT' : 'direct',
+      requestId: requestId,
+      scanDurationMs: validationTimeMs,
+      securityFlags: {
+        rate_limited: false,
+        suspicious_pattern: tokenValidation.securityRisk || false,
+        jwt_token: extractionResult.isJWT
+      }
+    });
+
+    // Log successful validation (legacy format for compatibility)
     await logValidation(db, {
       ticketId: ticket.ticket_id,
       token: token.substring(0, 10) + '...', // Don't log full token
@@ -732,7 +907,8 @@ async function handler(req, res) {
       deviceInfo: userAgent.substring(0, 200), // Truncate for storage
       securityFlags: {
         rate_limited: false,
-        suspicious_pattern: tokenValidation.securityRisk || false
+        suspicious_pattern: tokenValidation.securityRisk || false,
+        jwt_token: extractionResult.isJWT
       }
     });
 
@@ -740,36 +916,44 @@ async function handler(req, res) {
     const ticketIsTest = isTestTicket(ticket);
     const testModeIndicator = getTestModeValidationIndicator(ticketIsTest);
 
+    // Return enhanced response format as specified
     res.status(200).json({
       valid: true,
       ticket: {
         id: ticket.ticket_id,
         type: ticket.ticket_type,
-        eventName: ticket.event_name,
-        eventDate: ticket.event_date,
-        attendeeName:
-          `${ticket.attendee_first_name} ${ticket.attendee_last_name}`.trim(),
-        scanCount: ticket.scan_count,
-        maxScans: ticket.max_scan_count,
-        source: source,
-        isTest: ticketIsTest,
-        testModeIndicator: testModeIndicator
+        attendee: `${ticket.attendee_first_name} ${ticket.attendee_last_name}`.trim(),
+        event: ticket.event_name
       },
-      message: ticketIsTest ?
-        `${testModeIndicator} - Welcome ${ticket.attendee_first_name}! (Test Mode)` :
-        `Welcome ${ticket.attendee_first_name}!`
+      validation: {
+        status: 'valid',
+        scan_count: ticket.scan_count,
+        last_scanned: new Date().toISOString(),
+        message: ticketIsTest ?
+          `${testModeIndicator} - Welcome ${ticket.attendee_first_name}! (Test Mode)` :
+          `Welcome ${ticket.attendee_first_name}! Ticket validated successfully`
+      }
     });
   } catch (error) {
     // Handle initialization errors
     if (error.message.includes('Failed to initialize database client')) {
       return res.status(503).json({
         valid: false,
-        error: 'Service temporarily unavailable. Please try again.'
+        error: 'Service temporarily unavailable. Please try again.',
+        validation: {
+          status: 'service_unavailable',
+          message: 'Database service temporarily unavailable'
+        }
       });
     }
 
+    const validationTimeMs = Date.now() - startTime;
+
     // Enhanced error handling with security considerations
     let safeErrorMessage = 'Ticket validation failed';
+    let validationStatus = 'invalid';
+    let httpStatusCode = 400;
+
     const logDetails = {
       message: error.message || 'Unknown validation error',
       timestamp: new Date().toISOString(),
@@ -777,61 +961,120 @@ async function handler(req, res) {
       source: source
     };
 
-    // Categorize errors for appropriate responses
+    // Categorize errors for appropriate responses and HTTP status codes
     if (error.message.includes('Token validation service')) {
       // Configuration errors - don't expose details to client
       safeErrorMessage = 'Service temporarily unavailable';
+      validationStatus = 'service_unavailable';
+      httpStatusCode = 503;
       logDetails.category = 'configuration_error';
       console.error('Token validation service error:', logDetails);
     } else if (error.message.includes('Invalid token') ||
                error.message.includes('Token expired') ||
+               error.message.includes('has expired') ||
                error.message.includes('Invalid validation code') ||
                error.message.includes('malformed') ||
                error.message.includes('Invalid format') ||
                !token || token.length < 10) {
-      // Token-related errors - safe to show generic message
-      safeErrorMessage = 'Invalid or expired ticket';
+      // Token-related errors
+      if (error.message.includes('expired')) {
+        safeErrorMessage = 'Token has expired';
+        validationStatus = 'expired';
+        httpStatusCode = 401;
+      } else {
+        safeErrorMessage = 'Invalid token format';
+        validationStatus = 'invalid';
+        httpStatusCode = 400;
+      }
       logDetails.category = 'token_error';
-    } else if (error.message.includes('Ticket not found') ||
-               error.message.includes('Maximum scans exceeded') ||
-               error.message.includes('Ticket is')) {
+    } else if (error.message.includes('Ticket not found')) {
+      safeErrorMessage = 'Ticket not found';
+      validationStatus = 'invalid';
+      httpStatusCode = 404;
+      logDetails.category = 'ticket_not_found';
+    } else if (error.message.includes('Maximum scans exceeded')) {
+      safeErrorMessage = 'Maximum scans exceeded';
+      validationStatus = 'already_scanned';
+      httpStatusCode = 410;
+      logDetails.category = 'scan_limit_exceeded';
+    } else if (error.message.includes('Event has ended')) {
+      safeErrorMessage = 'Event has ended';
+      validationStatus = 'expired';
+      httpStatusCode = 410;
+      logDetails.category = 'event_ended';
+    } else if (error.message.includes('Ticket is') ||
+               error.message.includes('Ticket validation is')) {
       // Ticket status errors - safe to show to user
       safeErrorMessage = error.message;
+      validationStatus = error.message.includes('cancelled') ? 'cancelled' :
+                        error.message.includes('refunded') ? 'refunded' :
+                        error.message.includes('suspended') ? 'suspended' : 'invalid';
+      httpStatusCode = 400;
       logDetails.category = 'ticket_status';
     } else {
       // Unknown errors - assume invalid token for security
-      // Default to "invalid" message which matches test expectations
       safeErrorMessage = 'Invalid ticket format';
+      validationStatus = 'invalid';
+      httpStatusCode = 400;
       logDetails.category = 'unknown_error';
       console.error('Unknown validation error:', logDetails);
     }
 
-    // Log failed validation (only if db is available)
+    // Log failed scan to new scan_logs table
     try {
-      await logValidation(db, {
-        token: token ? token.substring(0, 10) + '...' : 'invalid',
-        result: 'failed',
-        failureReason: safeErrorMessage,
-        source: source,
-        ip: clientIP
-      });
+      if (db) {
+        await logScanAttempt(db, {
+          ticketId: ticketId || 'unknown',
+          scanStatus: validationStatus,
+          ipAddress: clientIP,
+          userAgent: userAgent,
+          validationSource: source,
+          tokenType: extractionResult?.isJWT ? 'JWT' : (token ? 'direct' : 'invalid'),
+          failureReason: safeErrorMessage,
+          requestId: requestId,
+          scanDurationMs: validationTimeMs,
+          securityFlags: {
+            rate_limited: error.message?.includes('Rate limit') || false,
+            suspicious_pattern: tokenValidation?.securityRisk || false,
+            configuration_error: logDetails.category === 'configuration_error',
+            token_error: logDetails.category === 'token_error',
+            ticket_status_error: logDetails.category === 'ticket_status',
+            jwt_token: extractionResult?.isJWT || false
+          }
+        });
+      }
+    } catch (logError) {
+      console.error('Failed to log scan attempt (non-blocking):', logError.message);
+    }
+
+    // Log failed validation (legacy format for compatibility)
+    try {
+      if (db) {
+        await logValidation(db, {
+          ticketId: ticketId || null,
+          token: token ? token.substring(0, 10) + '...' : 'invalid',
+          result: 'failed',
+          failureReason: safeErrorMessage,
+          source: source,
+          ip: clientIP
+        });
+      }
     } catch (logError) {
       console.error('Failed to log validation error:', logError.message);
     }
 
     // Enhanced audit logging for failed validation (non-blocking)
-    const validationTimeMs = Date.now() - startTime;
     auditValidationAttempt({
       requestId: requestId,
       success: false,
-      ticketId: logDetails.ticketId || null,
+      ticketId: ticketId || null,
       beforeState: null,
       afterState: null,
       changedFields: [],
       ipAddress: clientIP,
       userAgent: userAgent,
       source: source,
-      tokenType: token ? (token.includes('.') ? 'JWT' : 'direct') : 'invalid',
+      tokenType: extractionResult?.isJWT ? 'JWT' : (token ? 'direct' : 'invalid'),
       scanCountBefore: null,
       scanCountAfter: null,
       maxScanCount: null,
@@ -843,13 +1086,19 @@ async function handler(req, res) {
         suspicious_pattern: tokenValidation?.securityRisk || false,
         configuration_error: logDetails.category === 'configuration_error',
         token_error: logDetails.category === 'token_error',
-        ticket_status_error: logDetails.category === 'ticket_status'
+        ticket_status_error: logDetails.category === 'ticket_status',
+        jwt_token: extractionResult?.isJWT || false
       }
     });
 
-    res.status(400).json({
+    // Return enhanced error response format
+    res.status(httpStatusCode).json({
       valid: false,
       error: safeErrorMessage,
+      validation: {
+        status: validationStatus,
+        message: safeErrorMessage
+      },
       // Only include error details in development
       ...(process.env.NODE_ENV === 'development' && {
         details: error.message,

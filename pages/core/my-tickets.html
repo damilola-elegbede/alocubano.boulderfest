@@ -38,9 +38,23 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>My Tickets - A Lo Cubano Boulder Fest</title>
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico" />
+
+    <!-- Performance optimizations -->
+    
+    <link rel="preconnect" href="https://wallet.apple.com">
+    <link rel="preconnect" href="https://pay.google.com">
 
     <!-- Theme Management - Early inclusion to prevent FOUC -->
     <script type="module" src="/js/theme-manager.js"></script>
+
+    <!-- Time Management - Mountain Time support -->
+    <script type="module" src="/js/time-manager.js"></script>
+
+    <!-- Performance optimization system -->
+    <script type="module" src="/js/qr-cache-manager.js"></script>
+    <script type="module" src="/js/wallet-lazy-loader.js"></script>
+    <script type="module" src="/js/performance-integration.js"></script>
 
     <link rel="stylesheet" href="/css/base.css" />
     <link rel="stylesheet" href="/css/components.css" />
@@ -347,11 +361,11 @@
     </div>
 
     <!-- QR Code Modal -->
-    <div id="qrModal" class="modal">
+    <div id="qrModal" class="modal" role="dialog" aria-labelledby="qrModalTitle" aria-modal="true">
       <div class="modal-content">
         <div class="modal-header">
-          <h2>Ticket QR Code</h2>
-          <button class="close" onclick="closeModal('qrModal')">&times;</button>
+          <h2 id="qrModalTitle">Ticket QR Code</h2>
+          <button class="close" onclick="closeModal('qrModal')" aria-label="Close QR code modal">&times;</button>
         </div>
         <div class="qr-code-display">
           <div id="qrCodeContainer">
@@ -368,30 +382,30 @@
     </div>
 
     <!-- Transfer Modal -->
-    <div id="transferModal" class="modal">
+    <div id="transferModal" class="modal" role="dialog" aria-labelledby="transferModalTitle" aria-modal="true">
       <div class="modal-content">
         <div class="modal-header">
-          <h2>Transfer Ticket</h2>
-          <button class="close" onclick="closeModal('transferModal')">
+          <h2 id="transferModalTitle">Transfer Ticket</h2>
+          <button class="close" onclick="closeModal('transferModal')" aria-label="Close transfer modal">
             &times;
           </button>
         </div>
         <form id="transferForm">
           <div class="form-group">
             <label for="transferEmail">New Attendee Email *</label>
-            <input type="email" id="transferEmail" required />
+            <input type="email" id="transferEmail" required aria-required="true" autocomplete="email" />
           </div>
           <div class="form-group">
             <label for="transferFirstName">First Name *</label>
-            <input type="text" id="transferFirstName" required />
+            <input type="text" id="transferFirstName" required aria-required="true" autocomplete="given-name" />
           </div>
           <div class="form-group">
             <label for="transferLastName">Last Name</label>
-            <input type="text" id="transferLastName" />
+            <input type="text" id="transferLastName" autocomplete="family-name" />
           </div>
           <div class="form-group">
             <label for="transferPhone">Phone</label>
-            <input type="tel" id="transferPhone" />
+            <input type="tel" id="transferPhone" autocomplete="tel" />
           </div>
           <div class="modal-actions">
             <button
@@ -408,11 +422,11 @@
     </div>
 
     <!-- Cancel Modal -->
-    <div id="cancelModal" class="modal">
+    <div id="cancelModal" class="modal" role="dialog" aria-labelledby="cancelModalTitle" aria-modal="true">
       <div class="modal-content">
         <div class="modal-header">
-          <h2>Cancel Ticket</h2>
-          <button class="close" onclick="closeModal('cancelModal')">
+          <h2 id="cancelModalTitle">Cancel Ticket</h2>
+          <button class="close" onclick="closeModal('cancelModal')" aria-label="Close cancel modal">
             &times;
           </button>
         </div>
@@ -423,7 +437,9 @@
             type="text"
             id="cancelReason"
             placeholder="e.g., Unable to attend"
+            aria-describedby="cancelReasonHint"
           />
+          <span id="cancelReasonHint" class="visually-hidden">Providing a reason is optional but helps us improve our service</span>
         </div>
         <div class="modal-actions">
           <button
@@ -442,6 +458,7 @@
 
     <script type="module">
       import { setSafeTextContent, displayMessage, createElementWithContent, escapeHtml } from '/js/lib/dom-security.js';
+      import timeManager from '/js/time-manager.js';
 
       // Check for token or email in URL parameters
       const urlParams = new URLSearchParams(window.location.search);
@@ -504,11 +521,7 @@
           displayTickets(data.tickets, token);
         } catch (error) {
           console.error("Error fetching tickets:", error);
-          messageContainer.innerHTML = `
-                    <div class="message error">
-                        ${error.message || "Failed to load tickets. Please try again."}
-                    </div>
-                `;
+          displayMessage(messageContainer, escapeHtml(error.message) || 'Failed to load tickets. Please try again.', 'error');
           ticketContainer.innerHTML = "";
         }
       }
@@ -533,12 +546,7 @@
           }
 
           if (data.tickets.length === 0) {
-            messageContainer.innerHTML = `
-                        <div class="message info">
-                            No tickets found for ${email}. 
-                            Please check your email address or contact support.
-                        </div>
-                    `;
+            displayMessage(messageContainer, 'No tickets found for ' + escapeHtml(email) + '. Please check your email address or contact support.', 'info');
             ticketContainer.innerHTML = "";
             return;
           }
@@ -550,11 +558,7 @@
           displayTickets(data.tickets);
         } catch (error) {
           console.error("Error fetching tickets:", error);
-          messageContainer.innerHTML = `
-                    <div class="message error">
-                        ${error.message || "Failed to load tickets. Please try again."}
-                    </div>
-                `;
+          displayMessage(messageContainer, escapeHtml(error.message) || 'Failed to load tickets. Please try again.', 'error');
           ticketContainer.innerHTML = "";
         }
       }
@@ -564,55 +568,50 @@
 
         const ticketsHtml = tickets
           .map((ticket) => {
+            // Escape all user-controlled values
+            const ticketId = escapeHtml(ticket.ticket_id || '');
+            const ticketType = escapeHtml(ticket.formatted_type || formatTicketType(ticket.ticket_type || ''));
+            const ticketStatus = escapeHtml(ticket.status || '');
+            const attendeeFirstName = escapeHtml(ticket.attendee_first_name || '');
+            const attendeeLastName = escapeHtml(ticket.attendee_last_name || '');
+            const formattedDate = escapeHtml(ticket.formatted_date || timeManager.formatDate(ticket.event_date, true) || '');
+            const orderNumber = escapeHtml(ticket.order_number || 'N/A');
+            const escapedAccessToken = escapeHtml(accessToken || '');
+
             const actionsHtml = accessToken
               ? `
                     <div class="ticket-actions" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
-                        <button class="btn-small" onclick="generateQRCode('${ticket.ticket_id}', '${accessToken}')">Generate QR Code</button>
-                        <button class="btn-small btn-warning" onclick="initiateTransfer('${ticket.ticket_id}')">Transfer</button>
-                        <button class="btn-small btn-danger" onclick="initiateCancel('${ticket.ticket_id}')">Cancel</button>
+                        <button class="btn-small" onclick="generateQRCode('${ticketId}', '${escapedAccessToken}')">Generate QR Code</button>
+                        <button class="btn-small btn-warning" onclick="initiateTransfer('${ticketId}')">Transfer</button>
+                        <button class="btn-small btn-danger" onclick="initiateCancel('${ticketId}')">Cancel</button>
                     </div>
                 `
               : "";
 
             return `
-                    <div class="ticket-card" id="ticket-${ticket.ticket_id}">
-                        <h3>${ticket.formatted_type || formatTicketType(ticket.ticket_type)}</h3>
-                        <span class="status-badge status-${ticket.status}">${ticket.status}</span>
+                    <div class="ticket-card" id="ticket-${ticketId}">
+                        <h3>${ticketType}</h3>
+                        <span class="status-badge status-${ticketStatus}">${ticketStatus}</span>
                         
                         <dl class="ticket-details">
                             <dt>Ticket ID:</dt>
-                            <dd><span class="ticket-id">${ticket.ticket_id}</span></dd>
+                            <dd><span class="ticket-id">${ticketId}</span></dd>
                             
                             <dt>Attendee:</dt>
-                            <dd>${ticket.attendee_first_name || ""} ${ticket.attendee_last_name || ""}</dd>
+                            <dd>${attendeeFirstName} ${attendeeLastName}</dd>
                             
                             <dt>Event:</dt>
                             <dd>A Lo Cubano Boulder Fest 2026</dd>
                             
                             <dt>Date:</dt>
-                            <dd>${ticket.formatted_date || formatDate(ticket.event_date)}</dd>
+                            <dd>${formattedDate}</dd>
                             
                             <dt>Order:</dt>
-                            <dd>${ticket.order_number || "N/A"}</dd>
+                            <dd>${orderNumber}</dd>
                         </dl>
                         
-                        <!-- Add wallet buttons -->
-                        <div style="margin-top: 20px; text-align: center;">
-                            <a href="/api/tickets/apple-wallet/${ticket.ticket_id}" 
-                               class="wallet-button apple-wallet"
-                               style="display: inline-block; margin: 5px; padding: 10px 20px; 
-                                      background: #000; color: white; text-decoration: none; 
-                                      border-radius: 5px;">
-                              📱 Apple Wallet
-                            </a>
-                            <a href="/api/tickets/google-wallet/${ticket.ticket_id}" 
-                               class="wallet-button google-wallet"
-                               style="display: inline-block; margin: 5px; padding: 10px 20px; 
-                                      background: #4285f4; color: white; text-decoration: none; 
-                                      border-radius: 5px;">
-                              📱 Google Wallet
-                            </a>
-                        </div>
+                        <!-- Lazy-loaded wallet buttons -->
+                        <div class="wallet-lazy-container" data-ticket-id="${ticketId}" data-lazy-wallet="true"></div>
                         
                         ${actionsHtml}
                     </div>
@@ -626,10 +625,34 @@
 
         ticketContainer.innerHTML = `
                 <div class="ticket-list">
-                    <h2>${headerText}</h2>
+                    <h2>${escapeHtml(headerText)}</h2>
                     ${ticketsHtml}
                 </div>
             `;
+
+        // Initialize lazy-loaded wallet buttons
+        requestAnimationFrame(() => {
+          const walletContainers = document.querySelectorAll('.wallet-lazy-container[data-ticket-id]');
+          walletContainers.forEach(container => {
+            const ticketId = container.getAttribute('data-ticket-id');
+            if (ticketId) {
+              window.walletLazyLoader.observeWalletContainer(container, ticketId, {
+                title: 'Add to Wallet',
+                size: 'small',
+                showBothOnDesktop: true,
+                className: 'wallet-buttons-ticket-list'
+              });
+            }
+          });
+
+          // Preload QR codes for first few tickets
+          const firstFewTickets = tickets.slice(0, 3);
+          firstFewTickets.forEach(ticket => {
+            if (ticket.qr_token) {
+              window.qrCacheManager.preloadQRCode(ticket.qr_token);
+            }
+          });
+        });
       }
 
       function formatTicketType(type) {
@@ -672,26 +695,20 @@
 
       function showError(message) {
         const messageContainer = document.getElementById("messageContainer");
-        messageContainer.innerHTML = `
-                <div class="message error">
-                    ${message}
-                </div>
-            `;
-        setTimeout(() => {
-          messageContainer.innerHTML = "";
-        }, 5000);
+        displayMessage(messageContainer, escapeHtml(message), 'error', {
+          clearPrevious: true,
+          autoHide: true,
+          hideDelay: 5000
+        });
       }
 
       function showSuccess(message) {
         const messageContainer = document.getElementById("messageContainer");
-        messageContainer.innerHTML = `
-                <div class="message" style="background: #d4edda; color: #155724;">
-                    ${message}
-                </div>
-            `;
-        setTimeout(() => {
-          messageContainer.innerHTML = "";
-        }, 5000);
+        displayMessage(messageContainer, escapeHtml(message), 'success', {
+          clearPrevious: true,
+          autoHide: true,
+          hideDelay: 5000
+        });
       }
 
       function openModal(modalId) {
@@ -721,7 +738,40 @@
       // Enhanced ticket management functions
       async function generateQRCode(ticketId, accessToken) {
         try {
-          const response = await fetch("/api/tickets/qr-code", {
+          // Get QR token for this ticket
+          const qrToken = await getQRTokenForTicket(ticketId, accessToken);
+
+          if (!qrToken) {
+            throw new Error('Unable to get QR token for ticket');
+          }
+
+          // Create a container for the QR code
+          const qrContainer = document.createElement('div');
+
+          // Load QR code using cache manager
+          await window.qrCacheManager.loadQRCode(qrToken, qrContainer, {
+            showSkeleton: true,
+            retryOnError: true
+          });
+
+          // Display QR code in modal
+          document.getElementById("qrCodeContainer").innerHTML = `
+            <h3>Ticket ${escapeHtml(ticketId)}</h3>
+            <p>Show this QR code at the event entrance</p>
+            <div style="background: white; padding: 20px; border-radius: 8px; border: 2px solid #ddd;">
+              ${qrContainer.innerHTML}
+            </div>
+          `;
+
+          openModal("qrModal");
+        } catch (error) {
+          showError('Failed to generate QR code: ' + escapeHtml(error.message));
+        }
+      }
+
+      async function getQRTokenForTicket(ticketId, accessToken) {
+        try {
+          const response = await fetch("/api/tickets/qr-token", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ ticketId, accessToken }),
@@ -730,22 +780,13 @@
           const data = await response.json();
 
           if (!response.ok) {
-            throw new Error(data.error);
+            throw new Error(data.error || 'Failed to get QR token');
           }
 
-          // Display QR code in modal
-          document.getElementById("qrCodeContainer").innerHTML = `
-                    <h3>Ticket ${ticketId}</h3>
-                    <p>Show this QR code at the event entrance</p>
-                    <div style="background: white; padding: 20px; border-radius: 8px; border: 2px solid #ddd;">
-                        <p style="font-size: 18px; margin: 0;">📱 QR Code Generated</p>
-                        <p style="font-size: 14px; color: #666; margin: 5px 0 0 0;">Ready for scanning</p>
-                    </div>
-                `;
-          document.getElementById("qrCodeData").textContent = data.qrData;
-          openModal("qrModal");
+          return data.qrToken;
         } catch (error) {
-          showError(`Failed to generate QR code: ${error.message}`);
+          console.error('Error getting QR token:', error);
+          return null;
         }
       }
 
@@ -822,7 +863,7 @@
           showSuccess("Ticket transferred successfully!");
           setTimeout(() => location.reload(), 2000);
         } catch (error) {
-          showError(`Transfer failed: ${error.message}`);
+          showError('Transfer failed: ' + escapeHtml(error.message));
         }
       }
 
@@ -867,19 +908,13 @@
           showSuccess("Ticket cancelled successfully!");
           setTimeout(() => location.reload(), 2000);
         } catch (error) {
-          showError(`Cancellation failed: ${error.message}`);
+          showError('Cancellation failed: ' + escapeHtml(error.message));
         }
       }
 
       function formatDate(dateStr) {
-        if (!dateStr) return "May 15-17, 2026";
-        const date = new Date(dateStr + "T00:00:00");
-        return date.toLocaleDateString("en-US", {
-          weekday: "long",
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        });
+        if (!dateStr) return "May 15-17, 2026 (Mountain Time)";
+        return timeManager.formatDate(dateStr, true) + " (Mountain Time)";
       }
     </script>
     
@@ -891,7 +926,12 @@
       // Initialize theme system
       document.addEventListener('DOMContentLoaded', () => {
         themeManager.initializeTheme();
-        // Note: my-tickets doesn't have standard header, so we handle theme without toggle UI
+        // Add floating theme toggle for special page
+        const toggleContainer = document.createElement('div');
+        toggleContainer.id = 'theme-toggle-container';
+        toggleContainer.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 1000;';
+        document.body.appendChild(toggleContainer);
+        initializeThemeToggle('#theme-toggle-container');
       });
     </script>
   </body>

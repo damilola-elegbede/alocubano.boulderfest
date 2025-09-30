@@ -5,6 +5,7 @@
 import { getStripePaymentHandler } from './lib/stripe-integration.js';
 import { getPaymentSelector } from './components/payment-selector.js';
 import { setSafeHTML, escapeHtml } from './utils/dom-sanitizer.js';
+import { getAvailabilityService } from './lib/availability-service.js';
 
 export function initializeFloatingCart(cartManager) {
     // Check if already initialized
@@ -541,7 +542,7 @@ function performCartUIUpdate(elements, cartState) {
             }
         });
     } else {
-        updates.push(() => {
+        updates.push(async () => {
             elements.emptyMessage.style.display = 'none';
             elements.itemsContainer.style.display = 'block';
             elements.checkoutButton.disabled = false;
@@ -549,14 +550,15 @@ function performCartUIUpdate(elements, cartState) {
                 elements.clearButton.style.display = 'block';
             }
 
-            // Render items (optimized)
-            renderCartItemsOptimized(elements.itemsContainer, tickets, donations);
+            // Render items (optimized) - now async
+            await renderCartItemsOptimized(elements.itemsContainer, tickets, donations);
         });
     }
 
-    // Update total
+    // Update total (convert from cents to dollars)
     updates.push(() => {
-        elements.totalElement.textContent = `$${totals.total.toFixed(2)}`;
+        const totalInDollars = (totals.total || 0) / 100;
+        elements.totalElement.textContent = `$${totalInDollars.toFixed(2)}`;
     });
 
     // Container is always available for panel functionality - no visibility logic needed
@@ -580,7 +582,53 @@ function performCartUIUpdate(elements, cartState) {
     });
 
     // Execute all updates in a single animation frame
-    updates.forEach(update => update());
+    // Handle async updates properly
+    updates.forEach(async (update) => {
+        try {
+            await update();
+        } catch (error) {
+            console.error('Error executing cart UI update:', error);
+        }
+    });
+}
+
+/**
+ * Validate cart items against current availability
+ * Shows warnings for items that are no longer available
+ */
+async function validateCartAvailability(tickets) {
+    const availabilityService = getAvailabilityService();
+    const ticketsArray = Object.values(tickets);
+
+    for (const ticket of ticketsArray) {
+        // Skip availability check for test tickets (not in database)
+        const isTestTicket = ticket.ticketType && ticket.ticketType.toLowerCase().includes('test');
+        if (isTestTicket) {
+            console.log('🎫 Skipping availability check for test ticket:', ticket.ticketType);
+            continue;
+        }
+
+        try {
+            const availabilityCheck = await availabilityService.checkAvailability(
+                ticket.ticketType,
+                ticket.quantity
+            );
+
+            // Store availability status on ticket object for UI rendering
+            ticket.availabilityStatus = availabilityCheck.status;
+            ticket.availabilityMessage = availabilityCheck.message;
+            ticket.availabilityRemaining = availabilityCheck.remaining;
+
+            // If item is no longer available, mark it
+            if (!availabilityCheck.available) {
+                ticket.unavailable = true;
+                console.warn(`Cart item unavailable: ${ticket.name}`, availabilityCheck);
+            }
+        } catch (error) {
+            console.error('Failed to check availability for cart item:', ticket.name, error);
+            // Continue with other items even if one fails
+        }
+    }
 }
 
 // Legacy function for compatibility - now redirects to optimized version
@@ -589,9 +637,12 @@ function renderCartItems(container, tickets, donations) {
 }
 
 // Optimized cart rendering with virtual scrolling for large carts
-function renderCartItemsOptimized(container, tickets, donations) {
+async function renderCartItemsOptimized(container, tickets, donations) {
     // Clear container first
     container.innerHTML = '';
+
+    // Validate cart items availability
+    await validateCartAvailability(tickets);
 
     // Use document fragment for batch DOM operations
     const fragment = document.createDocumentFragment();
@@ -600,9 +651,11 @@ function renderCartItemsOptimized(container, tickets, donations) {
     const ticketsByEvent = groupTicketsByEvent(Object.values(tickets));
 
     // Render each event's tickets with proper banner
-    Object.entries(ticketsByEvent).forEach(([eventId, eventTickets]) => {
+    const eventEntries = Object.entries(ticketsByEvent);
+    for (const [eventId, eventTickets] of eventEntries) {
         if (eventTickets.length > 0) {
-            const eventDisplayName = getEventDisplayName(eventId);
+            // Use stored event name from first ticket (all tickets in group have same event)
+            const eventDisplayName = eventTickets[0]?.eventName || `Event ${eventId}`;
             const ticketsSection = createCartSection(eventDisplayName, 'tickets');
 
             eventTickets.forEach((ticket) => {
@@ -612,7 +665,7 @@ function renderCartItemsOptimized(container, tickets, donations) {
 
             fragment.appendChild(ticketsSection);
         }
-    });
+    }
 
     // Render donations category
     if (donations && donations.length > 0) {
@@ -637,21 +690,9 @@ function groupTicketsByEvent(tickets) {
     tickets.forEach(ticket => {
         let eventId = ticket.eventId;
 
-        // If no eventId, try to derive it from ticket type
-        if (!eventId && ticket.type) {
-            try {
-                // Import the mapping function - assuming it's available globally
-                if (typeof TicketSelection !== 'undefined' && TicketSelection.getEventIdFromTicketType) {
-                    eventId = TicketSelection.getEventIdFromTicketType(ticket.type);
-                } else {
-                    console.error(`❌ TicketSelection.getEventIdFromTicketType not available for ticket type: ${ticket.type}`);
-                    console.error('Ticket details:', ticket);
-                    throw new Error(`Cannot determine event ID for ticket type: ${ticket.type}. TicketSelection mapping not available.`);
-                }
-            } catch (error) {
-                console.error(`❌ Failed to determine event ID for ticket:`, ticket);
-                throw new Error(`Cannot group tickets: ${error.message}`);
-            }
+        // If no eventId, use the one provided in ticket data (API-driven system)
+        if (!eventId && ticket.eventId) {
+            eventId = ticket.eventId;
         }
 
         if (!eventId) {
@@ -666,20 +707,6 @@ function groupTicketsByEvent(tickets) {
     });
 
     return grouped;
-}
-
-// Helper function to get display name for events
-function getEventDisplayName(eventId) {
-    const eventDisplayMap = {
-        'weekender-2025-11': 'November 2025 Weekender Tickets',
-        'boulderfest-2026': 'Boulder Fest 2026 Tickets',
-        'boulderfest-2025': 'Boulder Fest 2025 Tickets',
-        // Legacy fallbacks
-        'alocubano-boulderfest-2026': 'Boulder Fest 2026 Tickets',
-        'november-2025-weekender': 'November 2025 Weekender Tickets'
-    };
-
-    return eventDisplayMap[eventId] || 'A Lo Cubano Tickets';
 }
 
 // Create a cart section element
@@ -697,7 +724,9 @@ export function createCartSection(title, className) {
 
 // Create a ticket item element
 export function createTicketItemElement(ticket) {
-    const itemTotal = ticket.price * ticket.quantity;
+    // Prices are stored in cents, convert to dollars for display
+    const priceInDollars = ticket.price / 100;
+    const itemTotal = priceInDollars * ticket.quantity;
 
     const item = document.createElement('div');
     item.className = 'cart-item';
@@ -706,6 +735,12 @@ export function createTicketItemElement(ticket) {
     // Check if this is a test ticket and add visual indicators
     if (ticket.ticketType && ticket.ticketType.startsWith('TEST-')) {
         item.classList.add('test-ticket');
+    }
+
+    // Add unavailable indicator if item is no longer available
+    if (ticket.unavailable) {
+        item.classList.add('cart-item-unavailable');
+        item.setAttribute('data-availability-status', ticket.availabilityStatus);
     }
 
     // Create info section
@@ -728,8 +763,17 @@ export function createTicketItemElement(ticket) {
 
     const price = document.createElement('p');
     price.className = 'cart-item-price';
-    price.textContent = `$${ticket.price.toFixed(2)} × ${ticket.quantity} = $${itemTotal.toFixed(2)}`;
+    price.textContent = `$${priceInDollars.toFixed(2)} × ${ticket.quantity} = $${itemTotal.toFixed(2)}`;
     info.appendChild(price);
+
+    // Add availability warning if item is unavailable
+    if (ticket.unavailable && ticket.availabilityMessage) {
+        const warning = document.createElement('p');
+        warning.className = 'cart-item-availability-warning';
+        warning.textContent = ticket.availabilityMessage;
+        warning.setAttribute('role', 'alert');
+        info.appendChild(warning);
+    }
 
     // Create actions section
     const actions = document.createElement('div');

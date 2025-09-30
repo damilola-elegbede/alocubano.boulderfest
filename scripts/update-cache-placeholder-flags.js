@@ -143,7 +143,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   // Load environment variables
   try {
     const dotenv = await import('dotenv');
-    dotenv.config({ path: '.env.local' });
+    dotenv.config({ path: '.env.vercel' });
   } catch (error) {
     console.log('Note: dotenv not available, using system environment variables');
   }

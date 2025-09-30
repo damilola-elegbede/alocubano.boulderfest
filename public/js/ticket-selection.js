@@ -158,7 +158,7 @@ class TicketSelection {
             return;
         }
 
-        const ticketType = card.dataset.ticketType;
+        const ticketType = card.dataset.ticketId;
         const price = parseInt(card.dataset.price);
         const action = btn.dataset.action;
         const quantitySpan = card.querySelector('.quantity');
@@ -212,7 +212,7 @@ class TicketSelection {
     handleAddToCartClick(event) {
         event.stopPropagation();
         const btn = event.target;
-        const ticketType = btn.dataset.ticketType;
+        const ticketType = btn.dataset.ticketId;
         const price = parseInt(btn.dataset.price);
 
         if (!ticketType || !price) {
@@ -221,7 +221,7 @@ class TicketSelection {
         }
 
         // Find corresponding ticket card
-        const card = document.querySelector(`[data-ticket-type="${ticketType}"]`);
+        const card = document.querySelector(`[data-ticket-id="${ticketType}"]`);
         if (!card) {
             console.error('Could not find ticket card for', ticketType);
             return;
@@ -318,7 +318,7 @@ class TicketSelection {
 
         // Reset all ticket cards first
         document.querySelectorAll('.ticket-card').forEach((card) => {
-            const ticketType = card.dataset.ticketType;
+            const ticketType = card.dataset.ticketId;
             const quantitySpan = card.querySelector('.quantity');
 
             if (quantitySpan) {

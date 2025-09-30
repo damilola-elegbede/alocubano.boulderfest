@@ -17,7 +17,7 @@ import { getDbClient } from '../../setup-integration.js';
 // Load environment variables
 import { config } from 'dotenv';
 import { join } from 'path';
-config({ path: join(process.cwd(), '.env.local') });
+config({ path: join(process.cwd(), '.env.vercel') });
 
 describe('Payment Integration Tests - Final Implementation', () => {
   let db;

@@ -15,7 +15,7 @@ import { config } from 'dotenv';
 import { initializeSecretValidation } from './secret-validator.js';
 
 // Load secrets from environment
-config({ path: '.env.local' });
+config({ path: '.env.vercel' });
 
 console.log('🔐 Secret Validator Demo');
 console.log('='.repeat(50));
@@ -39,7 +39,7 @@ try {
     console.log('❌ Demo completed with validation failures.');
     console.log('\nTo fix:');
     console.log('1. Review the missing required secrets above');
-    console.log('2. Add them to your .env.local file');
+    console.log('2. Add them to your .env.vercel file (created by `vercel link`)');
     console.log('3. Run this demo again to verify');
 
     process.exit(1);

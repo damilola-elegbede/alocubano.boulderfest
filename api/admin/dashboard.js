@@ -4,6 +4,8 @@ import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
 import { columnExists, safeParseInt } from "../../lib/db-utils.js";
 import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
 import { isTestMode, createTestModeFilter } from "../../lib/test-mode-utils.js";
+import timeUtils from "../../lib/time-utils.js";
+import { processDatabaseResult } from "../../lib/bigint-serializer.js";
 
 async function handler(req, res) {
   let db;
@@ -41,9 +43,49 @@ async function handler(req, res) {
     const ticketsHasTestMode = await columnExists(db, 'tickets', 'is_test');
     const transactionsHasTestMode = await columnExists(db, 'transactions', 'is_test');
 
+    // If event is selected, check if it's a test-only event
+    // Check both ticket_types (for events without tickets yet) and tickets (for events with sales)
+    let isTestOnlyEvent = false;
+    if (eventId) {
+      // First check ticket_types - if ALL ticket types are test types, it's a test-only event
+      const ticketTypeCheck = await db.execute(
+        `SELECT
+          COUNT(*) as total_ticket_types,
+          SUM(CASE WHEN status = 'test' THEN 1 ELSE 0 END) as test_ticket_types
+         FROM ticket_types
+         WHERE event_id = ?`,
+        [eventId]
+      );
+      const ticketTypeStats = ticketTypeCheck.rows[0];
+
+      // If ALL ticket types are test types, it's a test-only event
+      if (ticketTypeStats.total_ticket_types > 0 &&
+          ticketTypeStats.total_ticket_types === ticketTypeStats.test_ticket_types) {
+        isTestOnlyEvent = true;
+      }
+
+      // Also check actual tickets if they exist (for backward compatibility)
+      if (!isTestOnlyEvent && ticketsHasTestMode) {
+        const eventTicketCheck = await db.execute(
+          `SELECT
+            COUNT(*) as total_tickets,
+            SUM(CASE WHEN is_test = 1 THEN 1 ELSE 0 END) as test_tickets
+           FROM tickets
+           WHERE ${ticketsHasEventId ? 'event_id = ?' : '1=1'}`,
+          ticketsHasEventId ? [eventId] : []
+        );
+        const ticketStats = eventTicketCheck.rows[0];
+        isTestOnlyEvent = ticketStats.total_tickets > 0 && ticketStats.total_tickets === ticketStats.test_tickets;
+      }
+    }
+
     // Determine if we should filter test data
-    // If includeTestData is explicitly set, use that; otherwise auto-detect based on test mode
-    const shouldFilterTestData = includeTestData === null ? !isTestMode(req) : !includeTestData;
+    // If includeTestData is explicitly set, use that
+    // Otherwise, auto-include test data for test-only events
+    // Otherwise, auto-detect based on test mode
+    const shouldFilterTestData = includeTestData === null
+      ? (isTestOnlyEvent ? false : !isTestMode(req))
+      : !includeTestData;
 
     // Build WHERE clauses based on eventId parameter and column existence
     const ticketWhereClause = eventId && ticketsHasEventId ? 'AND event_id = ?' : '';
@@ -274,17 +316,93 @@ async function handler(req, res) {
       }
     }
 
+    // Get all events from database
+    let events = [];
+    try {
+      const eventsQuery = `
+        SELECT
+          id,
+          name,
+          slug,
+          type,
+          status,
+          start_date,
+          end_date,
+          venue_name,
+          venue_city,
+          venue_state,
+          max_capacity,
+          is_featured,
+          is_visible,
+          display_order
+        FROM events
+        WHERE 1=1
+        -- Always show test events in admin dashboard
+        ORDER BY display_order, start_date DESC
+      `;
+      const eventsResult = await db.execute(eventsQuery);
+      events = eventsResult.rows || [];
+    } catch (error) {
+      console.warn('Could not fetch events list:', error);
+    }
+
+    // Get ticket types with sold_count from database
+    let ticketTypes = [];
+    try {
+      const ticketTypesQuery = `
+        SELECT
+          tt.id,
+          tt.event_id,
+          tt.name,
+          tt.description,
+          tt.price_cents,
+          tt.currency,
+          tt.status,
+          tt.max_quantity,
+          tt.sold_count,
+          tt.display_order,
+          e.name as event_name,
+          e.slug as event_slug,
+          CASE
+            WHEN tt.max_quantity > 0 THEN
+              ROUND((CAST(tt.sold_count AS REAL) / CAST(tt.max_quantity AS REAL)) * 100, 2)
+            ELSE 0
+          END as availability_percentage,
+          CASE
+            WHEN tt.max_quantity > 0 THEN (tt.max_quantity - tt.sold_count)
+            ELSE NULL
+          END as remaining_quantity,
+          COALESCE(
+            (SELECT SUM(t.price_cents) FROM tickets t WHERE t.ticket_type = tt.id AND t.status = 'valid'),
+            0
+          ) as total_revenue_cents
+        FROM ticket_types tt
+        LEFT JOIN events e ON tt.event_id = e.id
+        WHERE 1=1
+        ${eventId ? 'AND tt.event_id = ?' : ''}
+        ${shouldFilterTestData ? "AND tt.status != 'test'" : ''}
+        ORDER BY tt.event_id, tt.display_order, tt.name
+      `;
+      const ticketTypesParams = eventId ? [eventId] : [];
+      const ticketTypesResult = await db.execute(ticketTypesQuery, ticketTypesParams);
+      ticketTypes = ticketTypesResult.rows || [];
+    } catch (error) {
+      console.warn('Could not fetch ticket types:', error);
+    }
+
     // Set security headers to prevent caching of admin dashboard data
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
 
-    res.status(200).json({
+    const responseData = {
       stats: stats,
-      recentRegistrations: recentRegistrations.rows || [],
+      recentRegistrations: timeUtils.enhanceApiResponse(recentRegistrations.rows || [], ['created_at']),
       ticketBreakdown: ticketBreakdown.rows || [],
       dailySales: dailySales.rows || [],
-      eventInfo,
+      events: timeUtils.enhanceApiResponse(events, ['start_date', 'end_date']),
+      ticketTypes: timeUtils.enhanceApiResponse(ticketTypes, []),
+      eventInfo: eventInfo ? timeUtils.enhanceApiResponse(eventInfo, ['start_date', 'end_date']) : null,
       eventId,
       hasEventFiltering: {
         tickets: ticketsHasEventId,
@@ -295,13 +413,20 @@ async function handler(req, res) {
         includeTestData: includeTestData,
         hasTestModeSupport: ticketsHasTestMode && transactionsHasTestMode,
         filteringTestData: shouldFilterTestData,
+        isTestOnlyEvent: isTestOnlyEvent,
+        autoIncludedTestData: isTestOnlyEvent && includeTestData === null,
         testModeColumns: {
           tickets: ticketsHasTestMode,
           transactions: transactionsHasTestMode
         }
       },
-      timestamp: new Date().toISOString()
-    });
+      timezone: 'America/Denver',
+      currentTime: timeUtils.getCurrentTime(),
+      timestamp: new Date().toISOString(),
+      timestamp_mt: timeUtils.toMountainTime(new Date())
+    };
+
+    res.status(200).json(processDatabaseResult(responseData));
   } catch (error) {
     console.error('Dashboard API error:', error);
 

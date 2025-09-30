@@ -81,8 +81,8 @@ async function detectServerPort() {
 async function isPortActive(port) {
   const healthEndpoints = [
     '/api/health/check',
-    '/api/health/simple',
-    '/api/health/ping',
+    '/api/health/check?mode=simple',
+    '/api/health/check?mode=ping',
     '/health',
     '/'
   ];

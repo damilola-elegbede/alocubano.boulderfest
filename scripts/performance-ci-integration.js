@@ -28,7 +28,7 @@ const __dirname = dirname(__filename);
 const projectRoot = join(__dirname, "..");
 
 // Load environment variables
-dotenv.config({ path: join(projectRoot, ".env.local") });
+dotenv.config({ path: join(projectRoot, ".env.vercel") });
 dotenv.config({ path: join(projectRoot, ".env") });
 
 /**

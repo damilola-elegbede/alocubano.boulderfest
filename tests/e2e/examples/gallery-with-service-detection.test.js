@@ -18,7 +18,7 @@ test.describe('Gallery with Service Detection', () => {
   });
 
   test.beforeEach(async ({ page }) => {
-    await page.goto('/2025-gallery');
+    await page.goto('/boulder-fest-2025/gallery');
     await page.waitForLoadState('domcontentloaded');
   });
 

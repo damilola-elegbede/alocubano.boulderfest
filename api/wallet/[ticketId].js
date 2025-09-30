@@ -1,6 +1,7 @@
 import appleWalletService from "../../lib/apple-wallet-service.js";
 import googleWalletService from "../../lib/google-wallet-service.js";
 import { getCorsConfig, isOriginAllowed } from "../../lib/cors-config.js";
+import timeUtils from "../../lib/time-utils.js";
 
 export default async function handler(req, res) {
   const corsConfig = getCorsConfig(); const origin = req.headers.origin; if (origin && isOriginAllowed(origin, corsConfig)) { res.setHeader("Access-Control-Allow-Origin", origin); } res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS"); res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -27,7 +28,11 @@ export default async function handler(req, res) {
         google: {
           available: googleWalletService.isConfigured(),
           saveUrl: null
-        }
+        },
+        // Add Mountain Time information
+        timezone: 'America/Denver',
+        current_time: timeUtils.getCurrentTime(),
+        generated_at: timeUtils.toMountainTime(new Date())
       };
 
       // Generate Apple Wallet pass if requested or if no specific type requested
@@ -36,7 +41,7 @@ export default async function handler(req, res) {
         appleWalletService.isConfigured()
       ) {
         try {
-          response.apple.downloadUrl = `/api/wallet/apple/${ticketId}`;
+          response.apple.downloadUrl = `/api/tickets/apple-wallet/${ticketId}`;
         } catch (error) {
           console.error('Apple Wallet generation failed:', error);
           response.apple.error = 'Failed to generate Apple Wallet pass';

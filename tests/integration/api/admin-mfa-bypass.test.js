@@ -216,16 +216,17 @@ describe('Admin MFA Bypass Integration', () => {
     }
   });
 
-  test('simple-login endpoint works in test environments', async () => {
+  test('simple-login mode works in test environments', async () => {
     // Set test environment (NODE_ENV=test)
     process.env.NODE_ENV = 'test';
 
     const loginData = {
       username: 'admin',
-      password: adminPassword
+      password: adminPassword,
+      mode: 'simple'
     };
 
-    const response = await testRequest('POST', '/api/admin/simple-login', loginData);
+    const response = await testRequest('POST', '/api/admin/login', loginData);
 
     // Skip if service unavailable
     if (response.status === 0) {
@@ -245,7 +246,7 @@ describe('Admin MFA Bypass Integration', () => {
     expect(typeof response.data.expiresIn).toBe('number');
   });
 
-  test('simple-login works with SKIP_MFA=true', async () => {
+  test('simple-login mode works with SKIP_MFA=true', async () => {
     // Set SKIP_MFA=true (should enable simple-login)
     process.env.SKIP_MFA = 'true';
     delete process.env.NODE_ENV;
@@ -254,10 +255,11 @@ describe('Admin MFA Bypass Integration', () => {
 
     const loginData = {
       username: 'admin',
-      password: adminPassword
+      password: adminPassword,
+      mode: 'simple'
     };
 
-    const response = await testRequest('POST', '/api/admin/simple-login', loginData);
+    const response = await testRequest('POST', '/api/admin/login', loginData);
 
     // Skip if service unavailable
     if (response.status === 0) {
@@ -271,7 +273,7 @@ describe('Admin MFA Bypass Integration', () => {
     expect(response.data).toHaveProperty('adminId', 'admin');
   });
 
-  test('simple-login works in CI environment', async () => {
+  test('simple-login mode works in CI environment', async () => {
     // Set CI=true
     process.env.CI = 'true';
     delete process.env.NODE_ENV;
@@ -280,10 +282,11 @@ describe('Admin MFA Bypass Integration', () => {
 
     const loginData = {
       username: 'admin',
-      password: adminPassword
+      password: adminPassword,
+      mode: 'simple'
     };
 
-    const response = await testRequest('POST', '/api/admin/simple-login', loginData);
+    const response = await testRequest('POST', '/api/admin/login', loginData);
 
     // Skip if service unavailable
     if (response.status === 0) {
@@ -297,7 +300,7 @@ describe('Admin MFA Bypass Integration', () => {
     expect(response.data).toHaveProperty('adminId', 'admin');
   });
 
-  test('simple-login works in preview environment', async () => {
+  test('simple-login mode works in preview environment', async () => {
     // Set VERCEL_ENV=preview
     process.env.VERCEL_ENV = 'preview';
     delete process.env.NODE_ENV;
@@ -306,10 +309,11 @@ describe('Admin MFA Bypass Integration', () => {
 
     const loginData = {
       username: 'admin',
-      password: adminPassword
+      password: adminPassword,
+      mode: 'simple'
     };
 
-    const response = await testRequest('POST', '/api/admin/simple-login', loginData);
+    const response = await testRequest('POST', '/api/admin/login', loginData);
 
     // Skip if service unavailable
     if (response.status === 0) {
@@ -323,7 +327,7 @@ describe('Admin MFA Bypass Integration', () => {
     expect(response.data).toHaveProperty('adminId', 'admin');
   });
 
-  test('simple-login returns 404 in production-like environments', async () => {
+  test('simple-login mode returns 404 in production-like environments', async () => {
     // Set production-like environment (no test flags)
     delete process.env.NODE_ENV;
     delete process.env.CI;
@@ -336,10 +340,11 @@ describe('Admin MFA Bypass Integration', () => {
 
     const loginData = {
       username: 'admin',
-      password: adminPassword
+      password: adminPassword,
+      mode: 'simple'
     };
 
-    const response = await testRequest('POST', '/api/admin/simple-login', loginData);
+    const response = await testRequest('POST', '/api/admin/login', loginData);
 
     // Skip if service unavailable
     if (response.status === 0) {
@@ -353,16 +358,17 @@ describe('Admin MFA Bypass Integration', () => {
     expect(response.data.error).toContain('Not found');
   });
 
-  test('simple-login rejects invalid credentials even in test environments', async () => {
+  test('simple-login mode rejects invalid credentials even in test environments', async () => {
     // Set test environment
     process.env.NODE_ENV = 'test';
 
     const loginData = {
       username: 'admin',
-      password: 'wrongpassword123'
+      password: 'wrongpassword123',
+      mode: 'simple'
     };
 
-    const response = await testRequest('POST', '/api/admin/simple-login', loginData);
+    const response = await testRequest('POST', '/api/admin/login', loginData);
 
     // Skip if service unavailable
     if (response.status === 0) {
@@ -376,16 +382,17 @@ describe('Admin MFA Bypass Integration', () => {
     expect(response.data.error).toContain('Invalid credentials');
   });
 
-  test('simple-login validates username field', async () => {
+  test('simple-login mode validates username field', async () => {
     // Set test environment
     process.env.NODE_ENV = 'test';
 
     // Test missing username
     const loginDataMissingUsername = {
-      password: adminPassword
+      password: adminPassword,
+      mode: 'simple'
     };
 
-    const responseMissingUsername = await testRequest('POST', '/api/admin/simple-login', loginDataMissingUsername);
+    const responseMissingUsername = await testRequest('POST', '/api/admin/login', loginDataMissingUsername);
 
     if (responseMissingUsername.status !== 0) {
       expect(responseMissingUsername.status).toBe(HTTP_STATUS.BAD_REQUEST);
@@ -396,10 +403,11 @@ describe('Admin MFA Bypass Integration', () => {
     // Test wrong username
     const loginDataWrongUsername = {
       username: 'wronguser',
-      password: adminPassword
+      password: adminPassword,
+      mode: 'simple'
     };
 
-    const responseWrongUsername = await testRequest('POST', '/api/admin/simple-login', loginDataWrongUsername);
+    const responseWrongUsername = await testRequest('POST', '/api/admin/login', loginDataWrongUsername);
 
     if (responseWrongUsername.status !== 0) {
       expect(responseWrongUsername.status).toBe(HTTP_STATUS.UNAUTHORIZED);
@@ -408,21 +416,22 @@ describe('Admin MFA Bypass Integration', () => {
     }
   });
 
-  test('simple-login only accepts POST method', async () => {
+  test('simple-login mode only accepts POST method', async () => {
     // Set test environment
     process.env.NODE_ENV = 'test';
 
     // Test GET method (should be rejected)
-    const getResponse = await testRequest('GET', '/api/admin/simple-login');
+    const getResponse = await testRequest('GET', '/api/admin/login', { mode: 'simple' });
 
     if (getResponse.status !== 0) {
       expect(getResponse.status).toBe(405); // Method Not Allowed
     }
 
     // Test PUT method (should be rejected)
-    const putResponse = await testRequest('PUT', '/api/admin/simple-login', {
+    const putResponse = await testRequest('PUT', '/api/admin/login', {
       username: 'admin',
-      password: adminPassword
+      password: adminPassword,
+      mode: 'simple'
     });
 
     if (putResponse.status !== 0) {

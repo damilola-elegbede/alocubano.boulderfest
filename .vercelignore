@@ -62,7 +62,11 @@ scripts/create-*.js
 scripts/start-*.js
 scripts/ci/
 # Build scripts are kept for Vercel
-config/
+# Exclude specific config files but keep config/bootstrap.json for build
+config/.eslintrc.json
+config/.prettierrc
+config/.htmlhintrc
+config/eslint.config.js
 .eslintrc.json
 .prettierrc
 .htmlhintrc
@@ -98,11 +102,17 @@ images/screenshots/
 # Public duplicates (keep root dirs)
 public/css/
 public/js/
-public/images/
+# Note: public/images/ is needed for wallet buttons and other assets
 
-# API test files
+# API test and debug files (reduce bundle analysis)
 api/**/*.test.js
 api/**/*.spec.js
+api/**/test-*.js
+api/admin/test-*.js
+api/admin/debug-*.js
+api/monitoring/*.js
+api/security/audit-*.js
+api/performance/*.js
 
 # Lib test files  
 lib/**/*.test.js

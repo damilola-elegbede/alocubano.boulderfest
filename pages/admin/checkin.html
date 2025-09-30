@@ -47,11 +47,16 @@
     />
     <meta name="theme-color" content="#5b6bb5" />
     <title>Check-in Scanner - A Lo Cubano</title>
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico" />
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/images/icons/icon-192x192.png" />
 
+    <!-- Admin Auth Guard - loaded early for security -->
+    <script src="/js/admin-auth-guard.js"></script>
+
     <!-- Theme Manager - loaded early to prevent FOUC -->
     <script type="module" src="/js/theme-manager.js"></script>
+    <script type="module" src="/js/time-manager.js"></script>
 
     <!-- CSS System -->
     <link rel="stylesheet" href="/css/base.css" />
@@ -60,7 +65,6 @@
     <link rel="stylesheet" href="/css/forms.css" />
     <link rel="stylesheet" href="/css/mobile-overrides.css" />
     <link rel="stylesheet" href="/css/admin-overrides.css" />
-    <link rel="stylesheet" href="/css/admin-test-dashboard.css" />
     <!-- Scanner-specific styles -->
     <style>
       /* QR Scanner specific overrides */
@@ -1322,6 +1326,12 @@
       let scanner = null;
       let sessionCount = 0;
       let isScanning = false;
+      let timeManager = null;
+
+      // Import timeManager
+      import('/js/time-manager.js').then(module => {
+        timeManager = module.default;
+      });
 
       // Statistics
       const stats = {
@@ -3258,7 +3268,7 @@
 
           if (data.stats) {
             // Get today's check-ins from the daily_checkins array if available
-            const today = new Date().toISOString().split('T')[0];
+            const today = timeManager ? timeManager.formatDate(new Date()).replace(/\s/g, '-') : new Date().toISOString().split('T')[0];
             const todayCheckins = data.stats.daily_checkins?.find(d => d.date === today);
 
             stats.today = todayCheckins?.count || data.stats.today_checkins || 0;
@@ -3324,14 +3334,14 @@
 
       // Check authentication (mobile sessions last 72 hours)
       async function checkAuth() {
-        try {
-          const response = await fetch("/api/admin/verify-session", {
-            credentials: "include" // CRITICAL: Include cookies for production
-          });
-          if (!response.ok) {
-            showMobileLogin();
-            return false;
-          }
+        if (window.AdminAuthGuard) {
+          return await window.AdminAuthGuard.verifyAndShow();
+        } else {
+          console.error("AdminAuthGuard not available");
+          window.location.href = "/admin/login";
+          return false;
+        }
+      }
           const data = await response.json();
           if (!data.valid) {
             showMobileLogin();
@@ -3430,15 +3440,17 @@
           });
           const csrfData = await csrfResponse.json();
 
-          // Attempt login with mobile endpoint
-          const response = await fetch("/api/admin/mobile-login", {
+          // Attempt login with mobile mode
+          const response = await fetch("/api/admin/login", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
               "X-CSRF-Token": csrfData.token,
             },
             body: JSON.stringify({
+              username: "admin",
               password: password,
+              mode: "mobile",
               csrfToken: csrfData.token,
             }),
             credentials: "include"
@@ -3597,7 +3609,7 @@
             session: getPerformanceMetrics(),
             deviceInfo: deviceInfo,
             userAgent: navigator.userAgent,
-            timestamp: new Date().toISOString()
+            timestamp: timeManager ? timeManager.formatDateTime(new Date()) : new Date().toISOString()
           };
           console.log('Performance metrics:', JSON.stringify(metrics, null, 2));
           return metrics;

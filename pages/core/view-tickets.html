@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- Inline theme detection to prevent FOUC -->
+    <script>
+      (function() {
+        // Detect admin pages
+        const path = window.location.pathname.toLowerCase();
+        const isAdmin = path.includes('/admin') || path.includes('pages/admin');
+
+        if (isAdmin) {
+          // Admin pages always use dark theme
+          document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+          // Main site: check user preference
+          let stored = null;
+          try {
+            stored = localStorage.getItem('theme-preference');
+          } catch {
+            // localStorage might be disabled
+          }
+
+          const preference = stored || 'system';
+          let theme = preference;
+
+          if (preference === 'system') {
+            // Detect system preference
+            theme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+              ? 'dark'
+              : 'light';
+          }
+
+          document.documentElement.setAttribute('data-theme', theme);
+        }
+      })();
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Your Tickets - A Lo Cubano Boulder Fest</title>
+    <meta
+      name="description"
+      content="View your registered tickets for A Lo Cubano Boulder Fest 2026"
+    />
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico" />
+
+    <!-- Core Styles -->
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/components.css" />
+    <link rel="stylesheet" href="/css/typography.css" />
+    <link rel="stylesheet" href="/css/forms.css" />
+    <link rel="stylesheet" href="/css/mobile-overrides.css" />
+    <link rel="stylesheet" href="/css/theme-toggle.css" />
+
+    <style>
+      .view-tickets-container {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: var(--space-2xl) var(--space-lg);
+      }
+
+      .tickets-header {
+        text-align: center;
+        margin-bottom: var(--space-2xl);
+        padding-bottom: var(--space-xl);
+        border-bottom: 2px solid var(--color-border);
+      }
+
+      .tickets-header h1 {
+        font-family: var(--font-display);
+        font-size: var(--text-4xl);
+        color: var(--color-primary);
+        margin-bottom: var(--space-md);
+      }
+
+      .event-info {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: var(--space-lg);
+        margin-top: var(--space-lg);
+        font-family: var(--font-mono);
+        font-size: var(--text-sm);
+        color: var(--color-text-secondary);
+      }
+
+      .event-info span {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+      }
+
+      .ticket-card {
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: 12px;
+        padding: var(--space-xl);
+        margin-bottom: var(--space-xl);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .ticket-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: var(--color-success);
+      }
+
+      .ticket-header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: var(--space-lg);
+      }
+
+      .ticket-type {
+        font-family: var(--font-display);
+        font-size: var(--text-2xl);
+        color: var(--color-text-primary);
+      }
+
+      .ticket-id {
+        font-family: var(--font-mono);
+        font-size: var(--text-xs);
+        color: var(--color-text-secondary);
+        margin-top: var(--space-xs);
+      }
+
+      .ticket-status-badge {
+        padding: var(--space-xs) var(--space-md);
+        border-radius: 20px;
+        font-family: var(--font-mono);
+        font-size: var(--text-xs);
+        font-weight: 600;
+        text-transform: uppercase;
+        background: var(--color-success-light);
+        color: var(--color-success-700);
+        border: 1px solid var(--color-success);
+      }
+
+      .attendee-info {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: var(--space-lg);
+        margin-bottom: var(--space-xl);
+      }
+
+      .info-group {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+      }
+
+      .info-label {
+        font-family: var(--font-mono);
+        font-size: var(--text-xs);
+        color: var(--color-text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .info-value {
+        font-family: var(--font-body);
+        font-size: var(--text-base);
+        color: var(--color-text-primary);
+        font-weight: 500;
+      }
+
+      .wallet-section {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-md);
+        padding-top: var(--space-lg);
+        border-top: 1px solid var(--color-border);
+        justify-content: center;
+      }
+
+      .wallet-button {
+        display: inline-block;
+        text-decoration: none;
+        transition: opacity 0.2s ease;
+      }
+
+      .wallet-button:hover {
+        opacity: 0.8;
+      }
+
+      .loading-state {
+        text-align: center;
+        padding: var(--space-3xl);
+      }
+
+      .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid var(--color-border-light);
+        border-top: 4px solid var(--color-primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto var(--space-md);
+      }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      .error-state {
+        background: var(--color-error-light);
+        border: 1px solid var(--color-error);
+        border-radius: 8px;
+        padding: var(--space-xl);
+        text-align: center;
+        color: var(--color-error);
+        margin: var(--space-2xl) 0;
+      }
+
+      .action-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-md);
+        justify-content: center;
+        margin-top: var(--space-2xl);
+        padding-top: var(--space-xl);
+        border-top: 2px solid var(--color-border);
+      }
+
+      .button-type {
+        padding: var(--space-md) var(--space-xl);
+        border-radius: 8px;
+        font-family: var(--font-body);
+        font-size: var(--text-base);
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        border: 2px solid transparent;
+      }
+
+      .button-type-primary {
+        background: var(--color-primary);
+        color: var(--color-white);
+      }
+
+      .button-type-primary:hover {
+        background: var(--color-primary-dark);
+        transform: translateY(-2px);
+      }
+
+      .button-type-secondary {
+        background: transparent;
+        color: var(--color-primary);
+        border-color: var(--color-primary);
+      }
+
+      .button-type-secondary:hover {
+        background: var(--color-primary);
+        color: var(--color-white);
+      }
+
+      /* Dark mode adjustments */
+      [data-theme="dark"] .ticket-card {
+        background: var(--color-surface-dark);
+        border-color: var(--color-border-dark);
+      }
+
+      [data-theme="dark"] .ticket-status-badge {
+        background: var(--color-success-dark);
+        color: var(--color-white);
+        border-color: var(--color-success);
+      }
+
+      /* Mobile responsiveness */
+      @media (max-width: 768px) {
+        .view-tickets-container {
+          padding: var(--space-lg) var(--space-md);
+        }
+
+        .tickets-header h1 {
+          font-size: var(--text-3xl);
+        }
+
+        .event-info {
+          flex-direction: column;
+          align-items: center;
+        }
+
+        .ticket-header-row {
+          flex-direction: column;
+          gap: var(--space-md);
+        }
+
+        .wallet-section {
+          flex-direction: column;
+        }
+
+        .wallet-button {
+          min-width: 100%;
+        }
+      }
+    </style>
+
+    <!-- Theme Manager -->
+    <script src="/js/theme-manager.js"></script>
+    <script type="module">
+      import timeManager from '/js/time-manager.js';
+      window.timeManager = timeManager; // Make available globally for the main script
+    </script>
+  </head>
+  <body class="typographic">
+    <!-- Skip Links for Accessibility -->
+    <a
+      href="#main-content"
+      class="skip-link"
+      style="
+        position: absolute;
+        top: -40px;
+        left: 0;
+        background: var(--color-black);
+        color: var(--color-white);
+        padding: 8px;
+        text-decoration: none;
+        z-index: 1000;
+        transition: top 0.3s;
+      "
+      >Skip to main content</a
+    >
+    <a
+      href="#navigation"
+      class="skip-link"
+      style="
+        position: absolute;
+        top: -40px;
+        left: 0;
+        background: var(--color-black);
+        color: var(--color-white);
+        padding: 8px;
+        text-decoration: none;
+        z-index: 1000;
+        transition: top 0.3s;
+      "
+      >Skip to navigation</a
+    >
+
+    <header class="header" id="navigation">
+      <div class="container">
+        <div class="grid">
+          <div class="header-left">
+            <a href="/home" class="logo-link" aria-label="Go to home page">
+              <img
+                src="/images/logo.png"
+                alt="A Lo Cubano Boulder Fest Logo"
+                class="site-logo"
+                data-light-src="/images/logo.png"
+                data-dark-src="/images/logo-dark.png"
+              />
+              <div class="logo-text">
+                <span class="logo-main">A LO CUBANO</span>
+                <span class="logo-separator">|</span>
+                <span class="logo-sub">Boulder Fest</span>
+              </div>
+            </a>
+          </div>
+          <nav class="main-nav">
+            <button
+              class="menu-toggle"
+              aria-label="Toggle menu"
+              aria-expanded="false"
+              aria-controls="main-navigation"
+            >
+              <div class="menu-icon">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </button>
+            <ul class="nav-list" id="main-navigation">
+              <li>
+                <a href="/home" class="nav-link" data-text="Home">Home</a>
+              </li>
+              <li>
+                <a href="/about" class="nav-link" data-text="About">About</a>
+              </li>
+              <li class="nav-item has-dropdown">
+                <button
+                  class="nav-trigger"
+                  aria-expanded="false"
+                  aria-haspopup="true"
+                  data-dropdown="events"
+                  data-text="Events"
+                >
+                  Events
+                  <span class="dropdown-arrow" aria-hidden="true">▼</span>
+                </button>
+                <ul
+                  class="dropdown-menu"
+                  aria-hidden="true"
+                  role="menu"
+                  data-dropdown-content="events"
+                >
+                  <li class="dropdown-category" role="group">
+                    <span class="dropdown-category-title" role="presentation"
+                      >Boulder Fest</span
+                    >
+                    <ul class="dropdown-submenu">
+                      <li>
+                        <a
+                          href="/boulder-fest-2026"
+                          class="dropdown-link"
+                          role="menuitem"
+                          data-event="boulder-fest-2026"
+                          data-event-status="upcoming"
+                          >2026 Festival</a
+                        >
+                      </li>
+                      <li>
+                        <a
+                          href="/boulder-fest-2025"
+                          class="dropdown-link"
+                          role="menuitem"
+                          data-event="boulder-fest-2025"
+                          data-event-status="current"
+                          >2025 Festival</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+              <li>
+                <a href="/tickets" class="nav-link" data-text="Tickets"
+                  >Tickets</a
+                >
+              </li>
+              <li>
+                <a href="/donations" class="nav-link" data-text="Donate"
+                  >Donate</a
+                >
+              </li>
+              <li>
+                <a href="/contact" class="nav-link" data-text="Contact"
+                  >Contact</a
+                >
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <main id="main-content">
+      <div class="view-tickets-container">
+        <!-- Loading State -->
+        <div id="loading-state" class="loading-state" role="status" aria-live="polite">
+          <div class="spinner" aria-hidden="true"></div>
+          <p>Loading your tickets...</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="error-state" class="error-state" style="display: none;" role="alert" aria-live="assertive">
+          <h2>Unable to Load Tickets</h2>
+          <p id="error-message"></p>
+          <button id="retry-button" class="button-type button-type-primary" aria-label="Retry loading tickets">Try Again</button>
+        </div>
+
+        <!-- Tickets Display -->
+        <div id="tickets-content" style="display: none;">
+          <div class="tickets-header">
+            <h1>Your Tickets</h1>
+            <p>All tickets for A Lo Cubano Boulder Fest 2026</p>
+            <div class="event-info">
+              <span>📅 May 15-17, 2026 (Mountain Time)</span>
+              <span>📍 Avalon Ballroom, Boulder, CO</span>
+              <span>🎟️ <span id="total-tickets">0</span> Tickets</span>
+            </div>
+          </div>
+
+          <div id="tickets-list">
+            <!-- Tickets will be dynamically inserted here -->
+          </div>
+
+          <div class="action-buttons">
+            <a href="/" class="button-type button-type-primary">Return to Home</a>
+            <a href="/tickets" class="button-type button-type-secondary">Purchase More Tickets</a>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer-typographic">
+      <div class="container">
+        <p class="footer-credits">
+          MAY 15-17, 2026 (MT) •
+          <a
+            href="mailto:alocubanoboulderfest@gmail.com?subject=A Lo Cubano Boulder Fest Inquiry"
+            style="color: inherit; text-decoration: underline"
+            >alocubanoboulderfest@gmail.com</a
+          >
+        </p>
+        <div class="footer-social">
+          <a
+            href="https://www.instagram.com/alocubano.boulderfest/"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="social-link-type"
+            aria-label="Follow us on Instagram"
+          >
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+              <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+            </svg>
+          </a>
+          <a
+            href="https://chat.whatsapp.com/KadIVdb24RWKdIKGtipnLH"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="social-link-type"
+            aria-label="Join us on WhatsApp"
+          >
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M21 11.5a8.5 8.5 0 1 1-17 0 8.5 8.5 0 0 1 17 0z"
+              ></path>
+              <path
+                d="M12.5 11.5c0 1.66-1.34 3-3 3-.83 0-1.58-.34-2.12-.88L3 21l2.37-4.38C4.83 15.58 4.5 14.33 4.5 13c0-3.31 2.69-6 6-6s6 2.69 6 6c0 1.66-.67 3.16-1.76 4.24l.76 1.26"
+              ></path>
+            </svg>
+          </a>
+        </div>
+        <div id="theme-toggle-container" class="footer-theme-toggle"></div>
+      </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="/js/navigation.js"></script>
+    <script src="/js/main.js"></script>
+    <script src="/js/typography.js"></script>
+
+    <!-- Theme Management -->
+    <script type="module">
+      import { initializeThemeToggle } from '/js/theme-toggle.js';
+      import themeManager from '/js/theme-manager.js';
+
+      // Initialize theme system
+      document.addEventListener('DOMContentLoaded', () => {
+        themeManager.initializeTheme();
+        initializeThemeToggle('#theme-toggle-container');
+      });
+    </script>
+    <script src="/js/logo-switcher.js"></script>
+
+    <script>
+      class TicketViewer {
+        constructor() {
+          this.token = this.getTokenFromURL();
+          this.tickets = [];
+          this.init();
+        }
+
+        getTokenFromURL() {
+          const urlParams = new URLSearchParams(window.location.search);
+          return urlParams.get('token');
+        }
+
+        async init() {
+          if (!this.token) {
+            this.showError('No ticket access token provided. Please use the link from your email.');
+            return;
+          }
+
+          try {
+            await this.loadTickets();
+            this.renderTickets();
+          } catch (error) {
+            console.error('Failed to load tickets:', error);
+            this.showError(error.message || 'Failed to load tickets. Please try again.');
+          }
+        }
+
+        async loadTickets() {
+          console.log('[VIEW] Loading tickets with token:', this.token?.substring(0, 20) + '...');
+
+          const response = await fetch(`/api/registration?token=${this.token}`);
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('[VIEW] API error:', response.status, errorData);
+
+            if (response.status === 401) {
+              throw new Error('Invalid or expired token. Please check your email for the correct link.');
+            } else if (response.status === 404) {
+              throw new Error('No tickets found for this link.');
+            } else {
+              throw new Error(errorData.error || `Failed to load tickets (Error ${response.status})`);
+            }
+          }
+
+          const data = await response.json();
+          this.tickets = data.tickets || [];
+          this.purchaserEmail = data.purchaserEmail;
+          this.transactionId = data.transactionId;
+
+          console.log('[VIEW] Loaded tickets:', this.tickets.map(t => ({
+            id: t.ticketId,
+            status: t.status,
+            attendee: t.attendee ? `${t.attendee.firstName} ${t.attendee.lastName}` : 'Not registered'
+          })));
+        }
+
+        renderTickets() {
+          // Hide loading, show content
+          document.getElementById('loading-state').style.display = 'none';
+          document.getElementById('tickets-content').style.display = 'block';
+
+          // Update ticket count
+          document.getElementById('total-tickets').textContent = this.tickets.length;
+
+          // Render each ticket
+          const ticketsList = document.getElementById('tickets-list');
+          ticketsList.innerHTML = '';
+
+          this.tickets.forEach(ticket => {
+            const ticketCard = this.createTicketCard(ticket);
+            ticketsList.appendChild(ticketCard);
+          });
+        }
+
+        createTicketCard(ticket) {
+          const card = document.createElement('div');
+          card.className = 'ticket-card';
+
+          // Clean up ticket type display
+          let displayType = ticket.ticketType || 'Festival Pass';
+          if (displayType.startsWith('TEST-')) {
+            displayType = displayType.substring(5);
+          }
+          displayType = displayType.charAt(0).toUpperCase() + displayType.slice(1).replace(/_/g, ' ');
+
+          // Format registration date in Mountain Time
+          let registrationDate = 'Not registered';
+          if (ticket.registeredAt) {
+            registrationDate = window.timeManager.formatDateTime(ticket.registeredAt, true) + ' (Mountain Time)';
+          }
+
+          // Determine status display
+          const statusBadge = ticket.status === 'completed' ?
+            '<span class="ticket-status-badge">✓ Registered</span>' :
+            ticket.status === 'expired' ?
+            '<span class="ticket-status-badge" style="background: var(--color-error-light); color: var(--color-error); border-color: var(--color-error);">Expired</span>' :
+            '<span class="ticket-status-badge" style="background: var(--color-warning-light); color: var(--color-warning-700); border-color: var(--color-warning);">Pending Registration</span>';
+
+          card.innerHTML = `
+            <div class="ticket-header-row">
+              <div>
+                <div class="ticket-type">${displayType}</div>
+                <div class="ticket-id">Ticket ID: ${ticket.ticketId}</div>
+              </div>
+              ${statusBadge}
+            </div>
+
+            ${ticket.attendee ? `
+              <div class="attendee-info">
+                <div class="info-group">
+                  <span class="info-label">Attendee Name</span>
+                  <span class="info-value">${ticket.attendee.firstName} ${ticket.attendee.lastName}</span>
+                </div>
+                <div class="info-group">
+                  <span class="info-label">Email</span>
+                  <span class="info-value">${ticket.attendee.email}</span>
+                </div>
+                <div class="info-group">
+                  <span class="info-label">Registered</span>
+                  <span class="info-value">${registrationDate}</span>
+                </div>
+              </div>
+
+              <div class="wallet-section">
+                <a href="/api/tickets/apple-wallet/${ticket.ticketId}"
+                   class="wallet-button"
+                   aria-label="Add ticket ${ticket.ticketId} to Apple Wallet">
+                  <img src="${window.location.origin}/images/add-to-wallet-apple.svg"
+                       alt="Add to Apple Wallet"
+                       style="height: 40px; width: auto;"
+                       onerror="console.error('Failed to load Apple Wallet image')">
+                </a>
+                <a href="/api/tickets/google-wallet/${ticket.ticketId}"
+                   class="wallet-button"
+                   aria-label="Add ticket ${ticket.ticketId} to Google Pay">
+                  <img src="${window.location.origin}/images/add-to-wallet-google.png"
+                       alt="Add to Google Pay"
+                       style="height: 40px; width: auto;"
+                       onerror="console.error('Failed to load Google Pay image')">
+                </a>
+              </div>
+            ` : `
+              <div class="attendee-info">
+                <p style="color: var(--color-text-secondary); font-style: italic;">
+                  This ticket has not been registered yet.
+                  ${ticket.status === 'pending' ? `<br><a href="/register-tickets?token=${this.token}" style="color: var(--color-primary);">Click here to complete registration</a>` : ''}
+                </p>
+              </div>
+            `}
+          `;
+
+          return card;
+        }
+
+        showError(message) {
+          document.getElementById('loading-state').style.display = 'none';
+          document.getElementById('tickets-content').style.display = 'none';
+          document.getElementById('error-message').textContent = message;
+          document.getElementById('error-state').style.display = 'block';
+        }
+      }
+
+      // Initialize when DOM is ready
+      document.addEventListener('DOMContentLoaded', () => {
+        new TicketViewer();
+
+        // Add retry button handler
+        const retryBtn = document.getElementById('retry-button');
+        if (retryBtn) {
+          retryBtn.addEventListener('click', () => window.location.reload());
+        }
+      });
+    </script>
+  </body>
+</html>

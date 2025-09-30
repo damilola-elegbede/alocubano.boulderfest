@@ -38,6 +38,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>API Endpoints - Admin Portal - A Lo Cubano Boulder Fest</title>
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico" />
 
     <!-- Main Site CSS System -->
     <link rel="stylesheet" href="/css/base.css" />
@@ -46,6 +47,9 @@
     <link rel="stylesheet" href="/css/navigation.css" />
     <link rel="stylesheet" href="/css/admin-overrides.css" />
     <link rel="stylesheet" href="/css/admin-api-endpoints.css" />
+
+    <!-- Admin Auth Guard -->
+    <script src="/js/admin-auth-guard.js"></script>
 
     <style>
       /* Admin Portal Specific Styles */
@@ -839,6 +843,14 @@
     <script type="module" src="/js/admin-api-endpoints.js"></script>
   </head>
   <body class="admin-container">
+    <!-- Auth Loading State -->
+    <div id="auth-loading" class="auth-loading" style="display: none;">
+      <div class="auth-loading-content">
+        <div class="auth-spinner"></div>
+        <h2>Verifying Authentication...</h2>
+      </div>
+    </div>
+
     <!-- Unified Admin Header -->
     <header class="admin-header">
       <div class="admin-header-content">
@@ -877,11 +889,6 @@
         <li class="admin-nav-item">
           <a href="/admin/tickets" class="admin-nav-link">
             <span>Tickets</span>
-          </a>
-        </li>
-        <li class="admin-nav-item">
-          <a href="/admin/test-dashboard" class="admin-nav-link">
-            <span>Test Dashboard</span>
           </a>
         </li>
         <li class="admin-nav-item">
@@ -993,14 +1000,7 @@
           method: 'POST',
           path: '/api/admin/login',
           category: 'Admin',
-          description: 'Authenticate admin user with password and establish session',
-          requiresAuth: false
-        },
-        {
-          method: 'POST',
-          path: '/api/admin/mobile-login',
-          category: 'Admin',
-          description: 'Mobile-optimized admin authentication with enhanced security',
+          description: 'Unified admin authentication - supports standard, simple (test only), and mobile modes via "mode" parameter',
           requiresAuth: false
         },
         {
@@ -1202,22 +1202,10 @@
 
       // Authentication check
       async function checkAuth() {
-        try {
-          const response = await fetch("/api/admin/verify-session", {
-            credentials: "include"
-          });
-          if (!response.ok) {
-            window.location.href = "/admin/login";
-            return false;
-          }
-          const data = await response.json();
-          if (!data.valid) {
-            window.location.href = "/admin/login";
-            return false;
-          }
-          return true;
-        } catch (error) {
-          console.error("Auth check failed:", error);
+        if (window.AdminAuthGuard) {
+          return await window.AdminAuthGuard.verifyAndShow();
+        } else {
+          console.error("AdminAuthGuard not available");
           window.location.href = "/admin/login";
           return false;
         }
@@ -1418,9 +1406,6 @@
                 const csrfData = await csrfResponse.json();
                 requestOptions.headers['X-CSRF-Token'] = csrfData.token;
               }
-            } catch (error) {
-              console.warn('Could not fetch CSRF token:', error);
-            }
           }
 
           const response = await fetch(path, requestOptions);
@@ -1458,19 +1443,6 @@
             responseTime: responseTime
           });
 
-        } catch (error) {
-          const endTime = performance.now();
-          const responseTime = Math.round(endTime - startTime);
-
-          card.classList.remove('loading');
-          card.classList.add('error');
-          setTimeout(() => card.classList.remove('error'), 2000);
-
-          timeElement.textContent = `${responseTime}ms`;
-          showToast('error', 'Request Failed', `Network error: ${error.message}`);
-
-          console.error('Endpoint test failed:', error);
-        }
       }
 
       // Show response modal
@@ -1551,9 +1523,6 @@
               content.innerHTML = `<div class="headers-list">${headersHTML}</div>`;
               break;
           }
-        } catch (error) {
-          content.innerHTML = `<div class="error-message">Error displaying content: ${escapeHtml(error.message)}</div>`;
-        }
       }
 
       // Enhanced JSON formatter with syntax highlighting
@@ -1810,9 +1779,6 @@
               const csrfData = await csrfResponse.json();
               headers["X-CSRF-Token"] = csrfData.token || csrfData.csrfToken;
             }
-          } catch (error) {
-            console.warn("Could not fetch CSRF token for logout:", error);
-          }
 
           await fetch("/api/admin/login", {
             method: "DELETE",
