@@ -186,7 +186,7 @@
     },
     {
       "id": "test-weekender-pass",
-      "event_id": -2,
+      "event_id": -1,
       "name": "[TEST] Weekender Pass",
       "description": "Access to all weekend events Friday through Sunday",
       "price_cents": 7500,
@@ -219,15 +219,6 @@
       "price_cents": 3500,
       "status": "test",
       "display_order": 5
-    },
-    {
-      "id": "test-donation",
-      "event_id": -1,
-      "name": "[TEST] Festival Donation",
-      "description": "Your donation helps us bring amazing artists to Boulder",
-      "price_cents": 2500,
-      "status": "test",
-      "display_order": 6
     }
   ],
 
