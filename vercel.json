@@ -53,10 +53,6 @@
       "maxDuration": 10,
       "includeFiles": "lib/{database,logger}.js"
     },
-    "api/performance/**/*.js": {
-      "maxDuration": 15,
-      "includeFiles": "lib/{database,logger}.js"
-    },
     "api/cache.js": {
       "maxDuration": 30,
       "includeFiles": "lib/{database,cache-service,google-drive-service,auth,session-manager,logger}.js"
