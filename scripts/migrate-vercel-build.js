@@ -110,6 +110,9 @@ import { execSync } from "child_process";
 // Debug mode - set DEBUG_MIGRATION=true for verbose logging
 const DEBUG = process.env.DEBUG_MIGRATION === 'true';
 
+// Quiet mode - suppress verbose output in production/CI (only show critical messages)
+const QUIET_MODE = process.env.CI === 'true' || process.env.VERCEL_ENV === 'production';
+
 // Color codes for console output
 const colors = {
   reset: "\x1b[0m",
@@ -123,21 +126,28 @@ const colors = {
 };
 
 function log(message, color = colors.reset) {
-  console.log(`${color}${message}${colors.reset}`);
+  // In quiet mode, only show critical messages (✅, ❌, ⚠️, 🚀)
+  if (!QUIET_MODE || message.includes('✅') || message.includes('❌') || message.includes('⚠️') || message.includes('🚀')) {
+    console.log(`${color}${message}${colors.reset}`);
+  }
 }
 
 function debugLog(message, color = colors.reset) {
-  if (DEBUG) {
+  // Debug logs never show in quiet mode
+  if (DEBUG && !QUIET_MODE) {
     console.log(`${color}${message}${colors.reset}`);
   }
 }
 
 function logSection(title, emoji = "📦") {
-  console.log("");
-  console.log(`${colors.bright}${colors.cyan}${"=".repeat(60)}${colors.reset}`);
-  console.log(`${colors.bright}${emoji} ${title}${colors.reset}`);
-  console.log(`${colors.cyan}${"=".repeat(60)}${colors.reset}`);
-  console.log("");
+  // Skip section headers in quiet mode
+  if (!QUIET_MODE) {
+    console.log("");
+    console.log(`${colors.bright}${colors.cyan}${"=".repeat(60)}${colors.reset}`);
+    console.log(`${colors.bright}${emoji} ${title}${colors.reset}`);
+    console.log(`${colors.cyan}${"=".repeat(60)}${colors.reset}`);
+    console.log("");
+  }
 }
 
 /**

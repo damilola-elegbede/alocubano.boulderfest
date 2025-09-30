@@ -3,26 +3,27 @@
   "framework": null,
   "cleanUrls": true,
   "trailingSlash": false,
-  "buildCommand": "npm run migrate:vercel && node scripts/bootstrap.js && npm run build",
+  "buildCommand": "node scripts/parallel-build.js",
   "functions": {
     "api/docs.js": {
-      "maxDuration": 10
+      "maxDuration": 10,
+      "includeFiles": "api/embedded-docs.js"
     },
     "api/admin/**/*.js": {
       "maxDuration": 15,
-      "includeFiles": "lib/**"
+      "includeFiles": "lib/{database,auth,session-manager,audit-logger,logger,crypto-utils}.js"
     },
     "api/payments/**/*.js": {
       "maxDuration": 30,
-      "includeFiles": "lib/**"
+      "includeFiles": "lib/{database,stripe-service,email-service,ticket-service,logger}.js"
     },
     "api/tickets/**/*.js": {
       "maxDuration": 20,
-      "includeFiles": "lib/**"
+      "includeFiles": "lib/{database,ticket-service,qr-service,logger,wallet-service}.js"
     },
     "api/registration/**/*.js": {
       "maxDuration": 20,
-      "includeFiles": "lib/**"
+      "includeFiles": "lib/{database,registration-service,email-service,logger}.js"
     },
     "api/health/**/*.js": {
       "maxDuration": 5,
@@ -30,7 +31,23 @@
     },
     "api/wallet/**/*.js": {
       "maxDuration": 20,
-      "includeFiles": "lib/**"
+      "includeFiles": "lib/{database,wallet-service,ticket-service,logger}.js"
+    },
+    "api/email/**/*.js": {
+      "maxDuration": 20,
+      "includeFiles": "lib/{database,email-service,logger}.js"
+    },
+    "api/gallery/**/*.js": {
+      "maxDuration": 10,
+      "includeFiles": "lib/{google-drive-service,logger}.js"
+    },
+    "api/sheets/**/*.js": {
+      "maxDuration": 30,
+      "includeFiles": "lib/{database,google-sheets-service,logger}.js"
+    },
+    "api/cron/**/*.js": {
+      "maxDuration": 60,
+      "includeFiles": "lib/{database,logger}.js"
     }
   },
   "crons": [

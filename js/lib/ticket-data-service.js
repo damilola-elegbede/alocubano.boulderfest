@@ -74,8 +74,8 @@ class TicketDataService {
                 this.eventIdToTicketsMap.get(ticket.event_id).push(ticket);
 
                 // Build ticket type to event ID mapping
-                // Use ticket_type field from API (not 'type')
-                const ticketType = ticket.ticket_type || ticket.type;
+                // API returns 'id' field as the ticket type identifier
+                const ticketType = ticket.id || ticket.ticket_type || ticket.type;
                 if (ticketType) {
                     this.ticketTypeToEventMap.set(ticketType, ticket.event_id);
                 }
@@ -182,7 +182,7 @@ class TicketDataService {
         await this.loadTicketData();
 
         for (const ticket of this.cache.values()) {
-            const apiTicketType = ticket.ticket_type || ticket.type;
+            const apiTicketType = ticket.id || ticket.ticket_type || ticket.type;
             if (apiTicketType === ticketType) {
                 return ticket;
             }
@@ -362,7 +362,7 @@ class TicketDataService {
             ...stats,
             tickets: Array.from(this.cache.values()).map(t => ({
                 id: t.id,
-                ticket_type: t.ticket_type || t.type,
+                ticket_type: t.id || t.ticket_type || t.type,
                 name: t.name,
                 price_cents: t.price_cents,
                 status: t.status,
@@ -373,7 +373,7 @@ class TicketDataService {
             eventGroups: Object.fromEntries(
                 Array.from(this.eventIdToTicketsMap.entries()).map(([eventId, tickets]) => [
                     eventId,
-                    tickets.map(t => t.ticket_type || t.type)
+                    tickets.map(t => t.id || t.ticket_type || t.type)
                 ])
             )
         };

@@ -76,8 +76,8 @@ class TicketSelection {
             // Cache ticket data for quick lookup
             this.ticketData.clear();
             for (const ticket of tickets) {
-                // Use ticket_type field from API, fallback to type field
-                const ticketType = ticket.ticket_type || ticket.type;
+                // API returns 'id' field as the ticket type identifier
+                const ticketType = ticket.id || ticket.ticket_type || ticket.type;
                 if (ticketType) {
                     this.ticketData.set(ticketType, ticket);
                 }

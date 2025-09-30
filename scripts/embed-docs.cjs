@@ -3,10 +3,13 @@
 /**
  * Embeds documentation content into a JavaScript module for Vercel deployment
  * This ensures docs are available at runtime without file system access
+ *
+ * Optimization: Uses checksum-based caching to skip embedding if files haven't changed
  */
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 // Documentation files to embed
 const docsToEmbed = [
@@ -21,6 +24,74 @@ const docsToEmbed = [
   'docs/architecture/MULTI_EVENT_IMPLEMENTATION_PLAN.md',
   'docs/architecture/TEST_ISOLATION_ARCHITECTURE.md'
 ];
+
+const cacheDir = path.join(process.cwd(), '.tmp');
+const cacheFile = path.join(cacheDir, 'docs-cache.json');
+const outputPath = path.join(process.cwd(), 'api', 'embedded-docs.js');
+
+/**
+ * Generate checksum for all documentation files
+ */
+function generateChecksum() {
+  const hash = crypto.createHash('sha256');
+
+  for (const docPath of docsToEmbed) {
+    try {
+      const fullPath = path.join(process.cwd(), docPath);
+      const content = fs.readFileSync(fullPath, 'utf-8');
+      hash.update(content);
+    } catch (error) {
+      // If file doesn't exist, include that in the hash
+      hash.update(`MISSING:${docPath}`);
+    }
+  }
+
+  return hash.digest('hex');
+}
+
+/**
+ * Check if cache is valid
+ */
+function isCacheValid() {
+  try {
+    if (!fs.existsSync(cacheFile) || !fs.existsSync(outputPath)) {
+      return false;
+    }
+
+    const cache = JSON.parse(fs.readFileSync(cacheFile, 'utf-8'));
+    const currentChecksum = generateChecksum();
+
+    return cache.checksum === currentChecksum;
+  } catch (error) {
+    return false;
+  }
+}
+
+/**
+ * Save cache metadata
+ */
+function saveCache(checksum) {
+  if (!fs.existsSync(cacheDir)) {
+    fs.mkdirSync(cacheDir, { recursive: true });
+  }
+
+  const cache = {
+    checksum,
+    timestamp: new Date().toISOString(),
+    files: docsToEmbed
+  };
+
+  fs.writeFileSync(cacheFile, JSON.stringify(cache, null, 2));
+}
+
+// Check cache validity
+if (isCacheValid()) {
+  console.log('✅ Documentation cache is valid - skipping embedding');
+  console.log('📚 Using cached embedded docs');
+  process.exit(0);
+}
+
+console.log('🔄 Documentation changed - regenerating embedded docs...');
 
 // Read all documentation files
 const docsContent = {};
@@ -51,8 +122,12 @@ console.log('📚 Embedded docs loaded:', Object.keys(embeddedDocs).length, 'fil
 `;
 
 // Write to api directory
-const outputPath = path.join(process.cwd(), 'api', 'embedded-docs.js');
 fs.writeFileSync(outputPath, moduleContent);
+
+// Save cache
+const checksum = generateChecksum();
+saveCache(checksum);
 
 console.log(`\n✅ Generated ${outputPath}`);
 console.log(`📚 Embedded ${Object.keys(docsContent).length} documentation files`);
+console.log(`🗂️  Cache saved: ${cacheFile}`);
