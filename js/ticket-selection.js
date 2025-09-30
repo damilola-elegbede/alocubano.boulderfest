@@ -45,14 +45,24 @@ class TicketSelection {
 
             this.bindEvents();
 
-            // Wait for cart manager only for write operations
-            await this.waitForCartManager();
+            // Mark as loaded immediately - enable user interaction right away
+            this.isLoading = false;
+            console.log('🎫 [DIAGNOSTIC] Loading complete, isLoading set to false - buttons enabled');
 
             this.updateDisplay();
 
-            // Mark as loaded - static tickets don't need loading state UI
-            this.isLoading = false;
-            console.log('🎫 [DIAGNOSTIC] Loading complete, isLoading set to false');
+            // Background tasks (non-blocking) - cart operations will queue until ready
+            Promise.all([
+                this.waitForCartManager(),
+                this.updateAvailabilityIndicators(),
+                eventsService.preloadAndCache().catch(() => {
+                    // Non-critical - cart will fall back to API if cache fails
+                })
+            ]).then(() => {
+                console.log('🎫 [DIAGNOSTIC] All background tasks complete');
+            }).catch(error => {
+                console.error('Background task error (non-critical):', error);
+            });
 
             // Start availability polling for real-time updates
             this.availabilityService.startPolling(30000); // Poll every 30 seconds
@@ -60,14 +70,6 @@ class TicketSelection {
             // Listen for availability updates
             this.availabilityService.addListener((tickets) => {
                 this.handleAvailabilityUpdate(tickets);
-            });
-
-            // Initial availability update
-            await this.updateAvailabilityIndicators();
-
-            // Preload events in background for fast cart operations (non-blocking)
-            eventsService.preloadAndCache().catch(() => {
-                // Non-critical - cart will fall back to API if cache fails
             });
 
         } catch (error) {
