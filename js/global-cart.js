@@ -120,13 +120,21 @@ function setupTicketsPageIntegration(cartManager) {
 
         try {
             if (quantity > 0) {
-                // Fetch event data using eventsService - NO FALLBACKS
+                // Fetch event data - try localStorage cache first (instant), then API
                 let eventName = null;
                 let eventDate = null;
                 let venue = null;
                 try {
                     const eventsService = (await import('./lib/events-service.js')).default;
-                    const eventData = await eventsService.getEventById(eventId);
+
+                    // Try localStorage cache first (fast, no API call)
+                    let eventData = eventsService.getFromLocalStorageCache(eventId);
+
+                    // Fallback to API if cache miss
+                    if (!eventData) {
+                        eventData = await eventsService.getEventById(eventId);
+                    }
+
                     if (eventData) {
                         eventName = eventData.name || null;
                         eventDate = eventData.dates?.start || null;

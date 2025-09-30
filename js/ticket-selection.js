@@ -5,6 +5,7 @@
 
 import { ticketDataService } from './lib/ticket-data-service.js';
 import { getAvailabilityService } from './lib/availability-service.js';
+import eventsService from './lib/events-service.js';
 
 class TicketSelection {
     constructor() {
@@ -63,6 +64,11 @@ class TicketSelection {
 
             // Initial availability update
             await this.updateAvailabilityIndicators();
+
+            // Preload events in background for fast cart operations (non-blocking)
+            eventsService.preloadAndCache().catch(() => {
+                // Non-critical - cart will fall back to API if cache fails
+            });
 
         } catch (error) {
             console.error('Failed to initialize ticket selection:', error);

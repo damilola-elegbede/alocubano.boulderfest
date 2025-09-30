@@ -12,6 +12,61 @@ class EventsService {
         this.initializationPromise = null;
         this.lastFetchTime = null;
         this.cacheTimeout = 5 * 60 * 1000; // 5 minutes cache timeout
+        this.LOCALSTORAGE_KEY = 'events_cache';
+        this.LOCALSTORAGE_EXPIRY = 5 * 60 * 1000; // 5 minutes
+    }
+
+    /**
+     * Preload all events and cache in localStorage (for fast cart operations)
+     * Call this on tickets page load to warm the cache
+     */
+    async preloadAndCache() {
+        try {
+            await this.ensureInitialized();
+            const events = Array.from(this.events.values());
+
+            // Store in localStorage with timestamp
+            const cache = {
+                events: events,
+                timestamp: Date.now()
+            };
+
+            localStorage.setItem(this.LOCALSTORAGE_KEY, JSON.stringify(cache));
+
+            return events;
+        } catch {
+            // Failed to preload events - non-critical
+            return [];
+        }
+    }
+
+    /**
+     * Get event from localStorage cache (fast, no API call)
+     * Returns null if not cached or expired
+     */
+    getFromLocalStorageCache(eventId) {
+        try {
+            const cached = localStorage.getItem(this.LOCALSTORAGE_KEY);
+            if (!cached) {
+                return null;
+            }
+
+            const cache = JSON.parse(cached);
+            const age = Date.now() - cache.timestamp;
+
+            // Check expiry
+            if (age > this.LOCALSTORAGE_EXPIRY) {
+                localStorage.removeItem(this.LOCALSTORAGE_KEY);
+                return null;
+            }
+
+            // Find event by ID
+            const event = cache.events.find(e => e.id === eventId);
+            return event || null;
+        } catch {
+            // Cache read error - return null, fall back to API
+            return null;
+        }
     }
 
     /**
