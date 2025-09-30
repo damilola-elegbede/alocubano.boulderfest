@@ -14,7 +14,7 @@ import { setTimeout } from 'timers/promises';
 const DEFAULT_PORT = 3000;
 const DEFAULT_TIMEOUT = 60000; // 60 seconds
 const CHECK_INTERVAL = 1000; // 1 second
-const HEALTH_ENDPOINTS = ['/api/health/ping', '/api/health/check'];
+const HEALTH_ENDPOINTS = ['/api/health/check?mode=ping', '/api/health/check'];
 
 /**
  * Check if server responds on a specific endpoint
@@ -129,7 +129,7 @@ async function waitForReady(options = {}) {
     console.log(`🔧 Try these commands:`);
     console.log(`   npm run dev:doctor        # Check for issues`);
     console.log(`   npm run start:clean       # Clear cache and restart`);
-    console.log(`   curl http://localhost:${port}/api/health/ping  # Test manually`);
+    console.log(`   curl http://localhost:${port}/api/health/check?mode=ping  # Test manually`);
   }
 
   return {

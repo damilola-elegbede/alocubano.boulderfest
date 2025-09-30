@@ -748,20 +748,21 @@ class PerformanceMonitor {
     sendCriticalMetrics(event) {
         try {
             const criticalData = {
-                type: 'critical_event',
-                severity: event,
-                metrics: this.getBasicMetrics(),
-                timestamp: Date.now()
+                type: 'critical',
+                severity: event.data?.severity || 'high',
+                timestamp: Date.now(),
+                url: window.location.href,
+                metrics: this.getBasicMetrics()
             };
 
             if ('sendBeacon' in navigator) {
                 navigator.sendBeacon(
-                    '/api/performance-critical',
+                    '/api/performance-metrics?type=critical',
                     JSON.stringify(criticalData)
                 );
             } else {
                 // Fallback for browsers without sendBeacon
-                fetch('/api/performance-critical', {
+                fetch('/api/performance-metrics?type=critical', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(criticalData),
@@ -813,11 +814,12 @@ class PerformanceMonitor {
     sendFinalReport() {
         try {
             const finalReport = this.generateComprehensiveReport();
+            finalReport.type = 'final'; // Add type for unified endpoint
 
             // Use sendBeacon for reliable unload reporting
             if ('sendBeacon' in navigator) {
                 const success = navigator.sendBeacon(
-                    '/api/performance-final',
+                    '/api/performance-metrics?type=final',
                     JSON.stringify(finalReport)
                 );
 
@@ -843,7 +845,7 @@ class PerformanceMonitor {
         // Synchronous XHR as last resort (deprecated but works for unload)
         try {
             const xhr = new XMLHttpRequest();
-            xhr.open('POST', '/api/performance-final', false); // synchronous
+            xhr.open('POST', '/api/performance-metrics?type=final', false); // synchronous
             xhr.setRequestHeader('Content-Type', 'application/json');
             xhr.send(JSON.stringify(reportData));
         } catch (error) {
@@ -1058,8 +1060,9 @@ class PerformanceMonitor {
                 });
             }
 
-            // Send to custom analytics endpoint
-            const analyticsEndpoint = window.ANALYTICS_ENDPOINT || '/api/performance';
+            // Send to unified analytics endpoint
+            const analyticsEndpoint = '/api/performance-metrics';
+            report.type = 'analytics'; // Add type for unified endpoint
 
             // Use sendBeacon for better reliability during page transitions
             if ('sendBeacon' in navigator) {

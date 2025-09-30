@@ -338,7 +338,6 @@ class PerformanceMonitor {
             const node = source.node;
             return (
                 node &&
-                node.classList &&
         (node.classList.contains('gallery-image') ||
           node.classList.contains('gallery-container') ||
           node.closest('.gallery-container') !== null)
@@ -900,20 +899,21 @@ class PerformanceMonitor {
     sendCriticalMetrics(event) {
         try {
             const criticalData = {
-                type: 'critical_event',
-                severity: event,
-                metrics: this.getBasicMetrics(),
-                timestamp: Date.now()
+                type: 'critical',
+                severity: event.data?.severity || 'high',
+                timestamp: Date.now(),
+                url: window.location.href,
+                metrics: this.getBasicMetrics()
             };
 
             if ('sendBeacon' in navigator) {
                 navigator.sendBeacon(
-                    '/api/performance-critical',
+                    '/api/performance-metrics?type=critical',
                     JSON.stringify(criticalData)
                 );
             } else {
                 // Fallback for browsers without sendBeacon
-                fetch('/api/performance-critical', {
+                fetch('/api/performance-metrics?type=critical', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(criticalData),
@@ -965,11 +965,12 @@ class PerformanceMonitor {
     sendFinalReport() {
         try {
             const finalReport = this.generateComprehensiveReport();
+            finalReport.type = 'final'; // Add type for unified endpoint
 
             // Use sendBeacon for reliable unload reporting
             if ('sendBeacon' in navigator) {
                 const success = navigator.sendBeacon(
-                    '/api/performance-final',
+                    '/api/performance-metrics?type=final',
                     JSON.stringify(finalReport)
                 );
 
@@ -995,7 +996,7 @@ class PerformanceMonitor {
     // Synchronous XHR as last resort (deprecated but works for unload)
         try {
             const xhr = new XMLHttpRequest();
-            xhr.open('POST', '/api/performance-final', false); // synchronous
+            xhr.open('POST', '/api/performance-metrics?type=final', false); // synchronous
             xhr.setRequestHeader('Content-Type', 'application/json');
             xhr.send(JSON.stringify(reportData));
         } catch (error) {
@@ -1210,8 +1211,9 @@ class PerformanceMonitor {
                 });
             }
 
-            // Send to custom analytics endpoint
-            const analyticsEndpoint = window.ANALYTICS_ENDPOINT || '/api/performance';
+            // Send to unified analytics endpoint
+            const analyticsEndpoint = '/api/performance-metrics';
+            report.type = 'analytics'; // Add type for unified endpoint
 
             // Use sendBeacon for better reliability during page transitions
             if ('sendBeacon' in navigator) {
@@ -1378,13 +1380,9 @@ class PerformanceMonitor {
 
 // Initialize global performance monitor instance
 if (typeof window !== 'undefined' && !window.performanceMonitor) {
-    // Export the class constructor for direct instantiation
-    window.PerformanceMonitor = PerformanceMonitor;
-
-    // Create singleton instance
     window.performanceMonitor = new PerformanceMonitor();
 
-    // Expose public API to global scope for convenience
+    // Expose public API to global scope
     window.PerfMonitor = {
         getMetrics: () => window.performanceMonitor.getMetrics(),
         getCoreWebVitals: () => window.performanceMonitor.getCoreWebVitals(),
@@ -1400,5 +1398,7 @@ if (typeof window !== 'undefined' && !window.performanceMonitor) {
     };
 }
 
-// Browser-compatible exports only - no ES modules to avoid syntax errors
-// Use window.PerformanceMonitor or window.performanceMonitor instance
+// CommonJS export removed to avoid conflicts with ES6 modules
+
+// Export for ES6 modules (handled by bundlers)
+export default PerformanceMonitor;

@@ -41,7 +41,7 @@ export default async function handler(req, res) {
         appleWalletService.isConfigured()
       ) {
         try {
-          response.apple.downloadUrl = `/api/wallet/apple/${ticketId}`;
+          response.apple.downloadUrl = `/api/tickets/apple-wallet/${ticketId}`;
         } catch (error) {
           console.error('Apple Wallet generation failed:', error);
           response.apple.error = 'Failed to generate Apple Wallet pass';

@@ -376,16 +376,37 @@ export default async function handler(req, res) {
 - `GET /api/gallery/years` - Available years
 - `GET /api/featured-photos` - Featured photos
 
+### Cache Management
+
+- `GET /api/cache` - Get cache statistics and metrics (supports `?type=google-drive`)
+- `POST /api/cache` - Perform cache operations (warm/clear)
+- `DELETE /api/cache` - Clear cache (shorthand for POST with action=clear)
+
 ### Google Drive Integration
 
 - `GET /api/google-drive-health` - Google Drive service health and configuration status
-- `GET /api/google-drive-cache` - Google Drive cache status and metrics
-- `POST /api/google-drive-cache` - Warm up Google Drive cache with fresh data
-- `DELETE /api/google-drive-cache` - Clear Google Drive cache
 
 ### Performance & Media (Phase 3)
 
-- `POST /api/performance-metrics` - Performance data collection
+- `POST /api/performance-metrics` - Unified performance data collection endpoint
+  - Supports multiple metric types via `?type=` query parameter:
+    - `standard`: Core Web Vitals and standard metrics (default)
+    - `analytics`: General analytics data
+    - `critical`: Critical performance alerts
+    - `final`: Final page unload metrics
+- `GET /api/performance/monitoring-dashboard` - Unified performance monitoring and reporting
+  - Supports multiple report types via `?type=` query parameter:
+    - `summary`: Quick performance summary (default)
+    - `detailed`: Comprehensive performance report
+    - `health`: Service health status
+    - `alerts`: Recent performance alerts
+    - `recommendations`: Optimization recommendations
+    - `slow-queries`: Slow query analysis
+    - `categories`: Query category breakdown
+    - `export`: Exportable metrics data (JSON or CSV via `?format=csv`)
+    - `optimize`: Trigger manual optimization
+    - `status`: System status
+    - `dashboard`: Complete dashboard data
 - `GET /api/image-proxy/[fileId]` - Image optimization and format conversion
 - `GET /api/hero-image/[pageId]` - Page-specific hero images
 

@@ -143,3 +143,4 @@ deployment-check-report.json
 # Debug and test scripts (should be in proper directories)
 debug_test.js
 test_constraint.js
+.env.preview.check

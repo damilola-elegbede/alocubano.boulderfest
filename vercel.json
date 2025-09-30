@@ -29,7 +29,7 @@
       "maxDuration": 5,
       "includeFiles": "lib/database.js"
     },
-    "api/wallet/**/*.js": {
+    "api/wallet/[ticketId].js": {
       "maxDuration": 20,
       "includeFiles": "lib/{database,wallet-service,ticket-service,logger}.js"
     },
@@ -48,6 +48,18 @@
     "api/cron/**/*.js": {
       "maxDuration": 60,
       "includeFiles": "lib/{database,logger}.js"
+    },
+    "api/performance-metrics.js": {
+      "maxDuration": 10,
+      "includeFiles": "lib/{database,logger}.js"
+    },
+    "api/performance/monitoring-dashboard.js": {
+      "maxDuration": 15,
+      "includeFiles": "lib/{database,logger}.js"
+    },
+    "api/cache.js": {
+      "maxDuration": 30,
+      "includeFiles": "lib/{database,cache-service,google-drive-service,auth,session-manager,logger}.js"
     }
   },
   "crons": [

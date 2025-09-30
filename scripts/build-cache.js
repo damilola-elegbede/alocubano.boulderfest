@@ -21,7 +21,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.join(__dirname, '..');
 
-const CACHE_DIR = path.join(rootDir, '.tmp');
+// Use .vercel/cache for persistence across builds (Vercel preserves this directory)
+// Fallback to .tmp if .vercel/cache doesn't exist (local development)
+const VERCEL_CACHE_DIR = path.join(rootDir, '.vercel', 'cache');
+const LOCAL_CACHE_DIR = path.join(rootDir, '.tmp');
+const CACHE_DIR = existsSync(VERCEL_CACHE_DIR) ? VERCEL_CACHE_DIR : LOCAL_CACHE_DIR;
 const CACHE_FILE = path.join(CACHE_DIR, 'build-cache.json');
 
 /**

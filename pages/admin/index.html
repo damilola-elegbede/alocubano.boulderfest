@@ -953,39 +953,6 @@
                 </div>
               </div>
 
-              <div class="endpoint-item interactive" data-method="POST" data-endpoint="/api/admin/mobile-login" data-description="Mobile-optimized admin authentication">
-                <div class="endpoint-content">
-                  <div class="endpoint-header">
-                    <span class="method method-post">POST</span>
-                    <code class="endpoint-path">/api/admin/mobile-login</code>
-                    <div class="endpoint-status">
-                      <span class="status-indicator status-untested" title="Not tested"></span>
-                    </div>
-                  </div>
-                  <p class="endpoint-description">Mobile-optimized admin authentication</p>
-                  <div class="endpoint-actions">
-                    <button class="endpoint-btn test-btn" onclick="testEndpoint('/api/admin/mobile-login', 'POST', this)">
-                      <span class="btn-icon">▶</span>
-                      Test
-                    </button>
-                    <button class="endpoint-btn details-btn" onclick="toggleEndpointDetails(this)">
-                      <span class="btn-icon">📋</span>
-                      Details
-                    </button>
-                  </div>
-                </div>
-                <div class="endpoint-details hidden">
-                  <div class="detail-section">
-                    <h4>Mobile Features</h4>
-                    <ul class="feature-list">
-                      <li>Touch-optimized interface</li>
-                      <li>Biometric authentication support</li>
-                      <li>Offline token caching</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
               <div class="endpoint-item interactive" data-method="GET" data-endpoint="/api/admin/registrations" data-description="Fetch all registration records">
                 <div class="endpoint-content">
                   <div class="endpoint-header">
@@ -1909,11 +1876,13 @@
             console.warn("Could not fetch CSRF token:", error);
           }
 
-          const response = await fetch("/api/admin/mobile-login", {
+          const response = await fetch("/api/admin/login", {
             method: "POST",
             headers: headers,
             body: JSON.stringify({
+              username: "admin",
               password,
+              mode: "mobile",
               csrfToken: csrfToken,
             }),
           });

@@ -1004,14 +1004,7 @@
           method: 'POST',
           path: '/api/admin/login',
           category: 'Admin',
-          description: 'Authenticate admin user with password and establish session',
-          requiresAuth: false
-        },
-        {
-          method: 'POST',
-          path: '/api/admin/mobile-login',
-          category: 'Admin',
-          description: 'Mobile-optimized admin authentication with enhanced security',
+          description: 'Unified admin authentication - supports standard, simple (test only), and mobile modes via "mode" parameter',
           requiresAuth: false
         },
         {

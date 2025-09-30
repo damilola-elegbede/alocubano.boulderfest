@@ -26,6 +26,7 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Simple mode for health check with query parameter support
 app.get('/api/health/simple', (req, res) => {
   res.json({
     status: 'healthy',

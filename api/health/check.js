@@ -172,12 +172,119 @@ function getHealthRecommendations(health) {
 }
 
 /**
- * Main health check handler
+ * Handle ping mode - minimal synchronous health check
+ */
+function handlePingMode(req, res) {
+  const now = new Date().toISOString();
+
+  return res.status(200).json({
+    status: 'healthy',
+    service: 'a-lo-cubano-boulder-fest',
+    timestamp: now,
+    uptime: process.uptime(),
+    version: process.env.npm_package_version || 'unknown',
+    environment: process.env.NODE_ENV || 'development',
+    message: 'Server is running and responsive'
+  });
+}
+
+/**
+ * Handle minimal mode - basic health status with configuration info
+ */
+function handleMinimalMode(req, res) {
+  const health = {
+    status: 'healthy',
+    service: 'a-lo-cubano-boulder-fest',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    version: process.env.npm_package_version || 'unknown',
+    environment: {
+      node_env: process.env.NODE_ENV || 'production',
+      vercel: process.env.VERCEL || 'false',
+      vercel_env: process.env.VERCEL_ENV || 'unknown',
+      vercel_region: process.env.VERCEL_REGION || 'unknown'
+    },
+    database: {
+      turso_configured: !!process.env.TURSO_DATABASE_URL,
+      auth_token_configured: !!process.env.TURSO_AUTH_TOKEN
+    },
+    memory: {
+      heap_used: `${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB`,
+      heap_total: `${Math.round(process.memoryUsage().heapTotal / 1024 / 1024)}MB`
+    },
+    message: 'Minimal health check - API is responsive'
+  };
+
+  // Set cache headers to prevent caching
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Content-Type', 'application/json');
+
+  return res.status(200).json(health);
+}
+
+/**
+ * Handle edge mode - ultra-minimal response optimized for edge runtime
+ */
+function handleEdgeMode(req, res) {
+  return res.status(200).json({
+    status: 'ok',
+    timestamp: Date.now()
+  });
+}
+
+/**
+ * Handle simple mode - basic health check without external dependencies
+ */
+function handleSimpleMode(req, res) {
+  const health = {
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    environment: {
+      node_version: process.version,
+      has_turso_url: !!process.env.TURSO_DATABASE_URL,
+      has_turso_token: !!process.env.TURSO_AUTH_TOKEN,
+      has_stripe_key: !!process.env.STRIPE_SECRET_KEY,
+      has_brevo_key: !!process.env.BREVO_API_KEY
+    },
+    system: {
+      uptime: process.uptime(),
+      memory: {
+        used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+        total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024)
+      }
+    }
+  };
+
+  return res.status(200).json(health);
+}
+
+/**
+ * Main health check handler with mode support
  */
 export default async function handler(req, res) {
   // Only allow GET requests
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // Check mode parameter for different health check modes
+  const mode = req.query?.mode;
+
+  // Handle different modes
+  if (mode === 'ping') {
+    return handlePingMode(req, res);
+  }
+
+  if (mode === 'minimal') {
+    return handleMinimalMode(req, res);
+  }
+
+  if (mode === 'edge') {
+    return handleEdgeMode(req, res);
+  }
+
+  if (mode === 'simple') {
+    return handleSimpleMode(req, res);
   }
 
   // Quick non-blocking health check option - handle this first before test mode

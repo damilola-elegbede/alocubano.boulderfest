@@ -1,42 +1,67 @@
 import { setSecureCorsHeaders } from '../lib/cors-config.js';
+import crypto from 'crypto';
 
 /**
- * Performance Metrics API Endpoint
- * Collects, processes, and stores performance metrics from client applications
+ * Unified Performance Metrics API Endpoint
+ * Consolidates all performance data collection into a single endpoint
+ *
+ * Handles:
+ * - General performance analytics (from /api/performance.js)
+ * - Final page unload metrics (from /api/performance-final.js)
+ * - Critical performance alerts (from /api/performance-critical.js)
+ * - Core Web Vitals and custom metrics
  *
  * POST /api/performance-metrics
- * Accepts performance metrics data and processes it for analytics
+ * - Accepts performance metrics data via request body or query parameters
+ * - Supports different metric types via 'type' parameter
+ * - Processes and stores metrics for analytics
  */
-
-import crypto from 'crypto';
 
 /**
  * Validates the structure of incoming metrics data
  * @param {Object} metrics - The metrics object to validate
+ * @param {string} metricType - The type of metric being submitted
  * @returns {Object} - { isValid: boolean, error?: string }
  */
-function validateMetrics(metrics) {
+function validateMetrics(metrics, metricType) {
   if (!metrics || typeof metrics !== 'object') {
     return { isValid: false, error: 'Metrics must be an object' };
   }
 
-  const requiredFields = ['timestamp', 'page', 'metrics'];
-  for (const field of requiredFields) {
-    if (!metrics[field]) {
-      return { isValid: false, error: `Missing required field: ${field}` };
+  // Basic validation for all types
+  if (metricType === 'standard') {
+    const requiredFields = ['timestamp', 'page', 'metrics'];
+    for (const field of requiredFields) {
+      if (!metrics[field]) {
+        return { isValid: false, error: `Missing required field: ${field}` };
+      }
+    }
+
+    if (typeof metrics.timestamp !== 'number') {
+      return { isValid: false, error: 'Timestamp must be a number' };
+    }
+
+    if (typeof metrics.page !== 'string') {
+      return { isValid: false, error: 'Page must be a string' };
+    }
+
+    if (!metrics.metrics || typeof metrics.metrics !== 'object') {
+      return { isValid: false, error: 'Metrics.metrics must be an object' };
     }
   }
 
-  if (typeof metrics.timestamp !== 'number') {
-    return { isValid: false, error: 'Timestamp must be a number' };
+  // Validation for critical metrics
+  if (metricType === 'critical') {
+    if (!metrics.metrics || !metrics.timestamp || !metrics.severity) {
+      return { isValid: false, error: 'Missing required fields: metrics, timestamp, severity' };
+    }
   }
 
-  if (typeof metrics.page !== 'string') {
-    return { isValid: false, error: 'Page must be a string' };
-  }
-
-  if (!metrics.metrics || typeof metrics.metrics !== 'object') {
-    return { isValid: false, error: 'Metrics.metrics must be an object' };
+  // Validation for final metrics (less strict, handles sendBeacon)
+  if (metricType === 'final') {
+    if (!metrics.sessionId && !metrics.metrics) {
+      return { isValid: false, error: 'Final metrics must include sessionId or metrics' };
+    }
   }
 
   return { isValid: true };
@@ -77,7 +102,7 @@ function processMetrics(metricsList) {
 
     aggregated[metricName] = {
       count: values.length,
-      avg: Math.round((sum / values.length) * 100) / 100, // Round to 2 decimal places
+      avg: Math.round((sum / values.length) * 100) / 100,
       min: sorted[0],
       max: sorted[sorted.length - 1],
       p95: calculatePercentile(sorted, 95)
@@ -128,8 +153,10 @@ function checkAlerts(aggregatedMetrics) {
   // Alert thresholds
   const thresholds = {
     LCP: 2500, // 2.5 seconds in milliseconds
+    FCP: 1800, // 1.8 seconds for First Contentful Paint
     errorRate: 95, // 95% success rate threshold
-    memoryUsage: 80 // 80% memory usage threshold
+    memoryUsage: 80, // 80% memory usage threshold
+    fps: 30 // 30 fps minimum
   };
 
   // Check LCP (Largest Contentful Paint)
@@ -141,6 +168,42 @@ function checkAlerts(aggregatedMetrics) {
       value: aggregatedMetrics.LCP.p95,
       severity: 'high',
       message: `LCP P95 (${aggregatedMetrics.LCP.p95}ms) exceeds threshold (${thresholds.LCP}ms)`
+    });
+  }
+
+  // Check lcp (lowercase variant from Core Web Vitals)
+  if (aggregatedMetrics.lcp && aggregatedMetrics.lcp.p95 > thresholds.LCP) {
+    alerts.push({
+      type: 'performance',
+      metric: 'lcp',
+      threshold: thresholds.LCP,
+      value: aggregatedMetrics.lcp.p95,
+      severity: 'high',
+      message: `Core Web Vitals LCP P95 (${aggregatedMetrics.lcp.p95}ms) exceeds threshold (${thresholds.LCP}ms)`
+    });
+  }
+
+  // Check FID (First Input Delay)
+  if (aggregatedMetrics.fid && aggregatedMetrics.fid.p95 > 100) {
+    alerts.push({
+      type: 'performance',
+      metric: 'fid',
+      threshold: 100,
+      value: aggregatedMetrics.fid.p95,
+      severity: 'high',
+      message: `FID P95 (${aggregatedMetrics.fid.p95}ms) exceeds threshold (100ms)`
+    });
+  }
+
+  // Check CLS (Cumulative Layout Shift)
+  if (aggregatedMetrics.cls && aggregatedMetrics.cls.p95 > 0.1) {
+    alerts.push({
+      type: 'performance',
+      metric: 'cls',
+      threshold: 0.1,
+      value: aggregatedMetrics.cls.p95,
+      severity: 'medium',
+      message: `CLS P95 (${aggregatedMetrics.cls.p95}) exceeds threshold (0.1)`
     });
   }
 
@@ -180,6 +243,18 @@ function checkAlerts(aggregatedMetrics) {
     });
   }
 
+  // Check FPS
+  if (aggregatedMetrics.fps && aggregatedMetrics.fps.avg < thresholds.fps) {
+    alerts.push({
+      type: 'performance',
+      metric: 'fps',
+      threshold: thresholds.fps,
+      value: aggregatedMetrics.fps.avg,
+      severity: 'medium',
+      message: `Average FPS (${aggregatedMetrics.fps.avg}) below threshold (${thresholds.fps})`
+    });
+  }
+
   return alerts;
 }
 
@@ -199,6 +274,90 @@ function generateSessionId(userAgent, timestamp) {
 }
 
 /**
+ * Generates basic performance insights from metrics data
+ * @param {Object} data - The metrics data
+ * @returns {Array} - Array of insight objects
+ */
+function generatePerformanceInsights(data) {
+  const insights = [];
+
+  try {
+    // Core Web Vitals insights
+    if (data.coreWebVitals) {
+      const { lcp, fid, cls } = data.coreWebVitals;
+
+      if (lcp && lcp < 1200) {
+        insights.push({
+          type: 'positive',
+          message: 'Excellent Largest Contentful Paint'
+        });
+      } else if (lcp && lcp > 2500) {
+        insights.push({
+          type: 'warning',
+          message: 'LCP optimization needed - consider image optimization'
+        });
+      }
+
+      if (fid && fid < 50) {
+        insights.push({
+          type: 'positive',
+          message: 'Excellent First Input Delay'
+        });
+      } else if (fid && fid > 100) {
+        insights.push({
+          type: 'warning',
+          message: 'FID optimization needed - reduce JavaScript execution time'
+        });
+      }
+
+      if (cls && cls < 0.05) {
+        insights.push({
+          type: 'positive',
+          message: 'Excellent Cumulative Layout Shift'
+        });
+      } else if (cls && cls > 0.1) {
+        insights.push({
+          type: 'warning',
+          message: 'CLS optimization needed - avoid layout shifts'
+        });
+      }
+    }
+
+    // Memory insights
+    if (data.memory && data.memory.utilization) {
+      if (data.memory.utilization < 50) {
+        insights.push({ type: 'positive', message: 'Healthy memory usage' });
+      } else if (data.memory.utilization > 80) {
+        insights.push({
+          type: 'warning',
+          message: 'High memory usage - consider optimizing'
+        });
+      }
+    }
+
+    // Network insights
+    if (data.network && data.network.cacheHitRate) {
+      const hitRate = parseFloat(data.network.cacheHitRate);
+      if (hitRate > 85) {
+        insights.push({
+          type: 'positive',
+          message: 'Excellent cache performance'
+        });
+      } else if (hitRate < 60) {
+        insights.push({
+          type: 'warning',
+          message: 'Cache optimization opportunity'
+        });
+      }
+    }
+  } catch (error) {
+    console.warn('[Performance Metrics] Insights generation error:', error.message);
+  }
+
+  return insights;
+}
+
+/**
  * Stores metrics data (currently logs to console, ready for database integration)
  * @param {Object} processedData - The processed metrics data to store
  */
@@ -207,14 +366,22 @@ async function storeMetrics(processedData) {
   // For now, log to console for debugging and development
 
   console.log('=== Performance Metrics Stored ===');
+  console.log('Type:', processedData.metricType);
   console.log('Timestamp:', new Date(processedData.timestamp).toISOString());
-  console.log('Page:', processedData.page);
+  console.log('Page:', processedData.page || processedData.url || 'unknown');
   console.log('Session ID:', processedData.sessionId);
-  console.log('User Agent:', processedData.userAgent);
-  console.log(
-    'Aggregated Metrics:',
-    JSON.stringify(processedData.aggregatedMetrics, null, 2)
-  );
+  console.log('User Agent:', processedData.userAgent?.substring(0, 50) + '...');
+
+  if (processedData.aggregatedMetrics) {
+    console.log(
+      'Aggregated Metrics:',
+      JSON.stringify(processedData.aggregatedMetrics, null, 2)
+    );
+  }
+
+  if (processedData.insights && processedData.insights.length > 0) {
+    console.log('Insights:', processedData.insights);
+  }
 
   if (processedData.alerts && processedData.alerts.length > 0) {
     console.log('🚨 ALERTS TRIGGERED:');
@@ -239,7 +406,7 @@ export default async function handler(req, res) {
   // Set CORS headers
   setSecureCorsHeaders(req, res);
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   // Handle preflight OPTIONS request
   if (req.method === 'OPTIONS') {
@@ -256,10 +423,26 @@ export default async function handler(req, res) {
   }
 
   try {
-    const metricsData = req.body;
+    // Determine metric type from query parameter or body
+    const metricType = req.query.type || req.body?.type || 'standard';
 
-    // Validate request data
-    const validation = validateMetrics(metricsData);
+    // Parse metrics data (handle sendBeacon string bodies)
+    let metricsData = req.body;
+    if (typeof metricsData === 'string') {
+      try {
+        metricsData = JSON.parse(metricsData);
+      } catch (parseError) {
+        console.error('[Performance Metrics] Failed to parse JSON body:', parseError);
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid JSON',
+          message: 'Request body must be valid JSON'
+        });
+      }
+    }
+
+    // Validate request data based on type
+    const validation = validateMetrics(metricsData, metricType);
     if (!validation.isValid) {
       return res.status(400).json({
         success: false,
@@ -272,30 +455,106 @@ export default async function handler(req, res) {
     const userAgent = req.headers['user-agent'] || '';
     const clientIP =
       req.headers['x-forwarded-for'] || req.connection?.remoteAddress || '';
-    const timestamp = metricsData.timestamp;
+    const timestamp = metricsData.timestamp || Date.now();
 
     // Generate session ID
-    const sessionId = generateSessionId(userAgent, timestamp);
+    const sessionId = metricsData.sessionId || generateSessionId(userAgent, timestamp);
 
-    // Process metrics (for now, just process the single metrics object)
-    // In a real implementation, you might batch multiple metrics
-    const aggregatedMetrics = processMetrics([metricsData]);
-
-    // Check for alerts
-    const alerts = checkAlerts(aggregatedMetrics);
-
-    // Prepare data for storage
-    const processedData = {
+    // Process based on metric type
+    let processedData = {
+      metricType,
       timestamp,
-      page: metricsData.page,
       sessionId,
       userAgent,
       clientIP,
-      rawMetrics: metricsData.metrics,
-      aggregatedMetrics,
-      alerts,
       receivedAt: Date.now()
     };
+
+    if (metricType === 'standard') {
+      // Standard performance metrics processing
+      const aggregatedMetrics = processMetrics([metricsData]);
+      const alerts = checkAlerts(aggregatedMetrics);
+
+      processedData = {
+        ...processedData,
+        page: metricsData.page,
+        rawMetrics: metricsData.metrics,
+        aggregatedMetrics,
+        alerts
+      };
+    } else if (metricType === 'analytics' || metricType === 'general') {
+      // General analytics processing
+      const insights = generatePerformanceInsights(metricsData);
+
+      processedData = {
+        ...processedData,
+        url: metricsData.url,
+        coreWebVitals: metricsData.coreWebVitals,
+        customMetrics: metricsData.customMetrics,
+        resourceTiming: metricsData.resourceTiming,
+        memory: metricsData.memory,
+        network: metricsData.network,
+        insights
+      };
+    } else if (metricType === 'critical') {
+      // Critical metrics processing
+      processedData = {
+        ...processedData,
+        url: metricsData.url,
+        severity: metricsData.severity,
+        metrics: metricsData.metrics,
+        alerts: [{
+          type: 'critical',
+          severity: metricsData.severity || 'high',
+          message: 'Critical performance event detected',
+          timestamp
+        }]
+      };
+
+      // Log critical memory issues
+      if (metricsData.metrics?.memory && metricsData.metrics.memory.utilization > 90) {
+        console.warn('[MEMORY WARNING] High memory utilization detected:', {
+          utilization: `${metricsData.metrics.memory.utilization.toFixed(2)}%`,
+          used: `${(metricsData.metrics.memory.used / 1024 / 1024).toFixed(2)}MB`,
+          total: `${(metricsData.metrics.memory.total / 1024 / 1024).toFixed(2)}MB`,
+          url: metricsData.url
+        });
+      }
+
+      // Log FPS issues
+      if (metricsData.metrics?.fps && metricsData.metrics.fps < 30) {
+        console.warn('[PERFORMANCE WARNING] Low frame rate detected:', {
+          fps: metricsData.metrics.fps,
+          url: metricsData.url,
+          timestamp: new Date(timestamp).toISOString()
+        });
+      }
+    } else if (metricType === 'final') {
+      // Final report processing (page unload)
+      processedData = {
+        ...processedData,
+        sessionId: metricsData.sessionId,
+        totalEvents: metricsData.events?.length || 0,
+        metrics: metricsData.metrics,
+        coreWebVitals: {
+          lcp: metricsData.metrics?.lcp?.value,
+          fid: metricsData.metrics?.fid?.value,
+          cls: metricsData.metrics?.cls?.value
+        },
+        galleryMetrics: {
+          totalImagesLoaded: metricsData.metrics?.totalImagesLoaded,
+          cacheHitRatio: metricsData.metrics?.cacheHitRatio
+        }
+      };
+
+      console.log('[Performance Metrics] Received final metrics:', {
+        timestamp: new Date().toISOString(),
+        sessionId: metricsData.sessionId,
+        totalEvents: metricsData.events?.length || 0,
+        coreWebVitals: processedData.coreWebVitals,
+        galleryMetrics: processedData.galleryMetrics
+      });
+    }
 
     // Store the metrics
     await storeMetrics(processedData);
@@ -303,13 +562,15 @@ export default async function handler(req, res) {
     // Return success response
     return res.status(200).json({
       success: true,
-      message: 'Metrics processed successfully',
+      message: `${metricType} metrics processed successfully`,
       data: {
         sessionId,
+        metricType,
         processedAt: new Date().toISOString(),
-        metricsCount: Object.keys(metricsData.metrics).length,
-        alertsTriggered: alerts.length,
-        alerts: alerts.length > 0 ? alerts : undefined
+        metricsCount: metricsData.metrics ? Object.keys(metricsData.metrics).length : 0,
+        alertsTriggered: processedData.alerts?.length || 0,
+        alerts: processedData.alerts && processedData.alerts.length > 0 ? processedData.alerts : undefined,
+        insights: processedData.insights && processedData.insights.length > 0 ? processedData.insights : undefined
       }
     });
   } catch (error) {

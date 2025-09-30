@@ -3440,15 +3440,17 @@
           });
           const csrfData = await csrfResponse.json();
 
-          // Attempt login with mobile endpoint
-          const response = await fetch("/api/admin/mobile-login", {
+          // Attempt login with mobile mode
+          const response = await fetch("/api/admin/login", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
               "X-CSRF-Token": csrfData.token,
             },
             body: JSON.stringify({
+              username: "admin",
               password: password,
+              mode: "mobile",
               csrfToken: csrfData.token,
             }),
             credentials: "include"

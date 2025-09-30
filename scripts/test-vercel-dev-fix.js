@@ -164,7 +164,7 @@ class VercelDevTester {
 
     const testUrls = [
       'http://localhost:3000/api/health/check',
-      'http://localhost:3000/api/health/ping'
+      'http://localhost:3000/api/health/check?mode=ping'
     ];
 
     for (const url of testUrls) {
