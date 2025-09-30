@@ -287,8 +287,10 @@ export default async function handler(req, res) {
 
     // Create Stripe Checkout Session with automatic receipt configuration
     const session = await stripe.checkout.sessions.create({
-      // Enable all available payment methods including Apple Pay and Google Pay
-      payment_method_types: ['card', 'link'],
+      // Enable all available payment methods automatically (card, Apple Pay, Google Pay, etc.)
+      automatic_payment_methods: {
+        enabled: true,
+      },
       line_items: lineItems,
       mode: 'payment',
       success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}${isRequestTestMode ? '&test_mode=true' : ''}`,
