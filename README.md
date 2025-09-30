@@ -402,9 +402,35 @@ All environment variables are managed through the **Vercel Dashboard**. To confi
 - `TURSO_DATABASE_URL` - Production database URL
 - `TURSO_AUTH_TOKEN` - Database authentication
 - `ADMIN_PASSWORD` - Admin panel access (bcrypt hashed)
-- `ADMIN_SECRET` - Session secret (32+ chars)
-- `REGISTRATION_SECRET` - JWT signing for tickets (32+ chars)
-- `WALLET_AUTH_SECRET` - JWT signing for wallet passes (32+ chars)
+- `ADMIN_SECRET` - Session secret (minimum 32 characters, 256-bit random recommended)
+- `REGISTRATION_SECRET` - JWT signing for tickets (minimum 32 characters, 256-bit random recommended)
+- `WALLET_AUTH_SECRET` - JWT signing for wallet passes (minimum 32 characters, 256-bit random recommended)
+
+**Security Best Practices for JWT Secrets:**
+
+Generate cryptographically secure random secrets with sufficient entropy:
+
+```bash
+# Generate 256-bit (32-byte) random secret (recommended)
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+
+# Or using OpenSSL
+openssl rand -base64 32
+```
+
+**Minimum Requirements:**
+
+- **Length**: At least 32 characters (256 bits recommended for production)
+- **Entropy**: Use cryptographically secure random generation (not simple passwords)
+- **Uniqueness**: Use different secrets for `REGISTRATION_SECRET`, `WALLET_AUTH_SECRET`, and `ADMIN_SECRET`
+- **Storage**: Never commit secrets to version control; manage via Vercel Dashboard only
+
+**Why 256-bit secrets?**
+
+- Provides sufficient entropy to resist brute-force attacks
+- Meets NIST SP 800-131A recommendations for key strength
+- Compatible with HS256 JWT signing algorithm
+- Industry standard for production JWT applications
 
 ### Optional Service Variables
 

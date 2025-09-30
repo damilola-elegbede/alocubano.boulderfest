@@ -631,7 +631,7 @@
             `;
 
         // Initialize lazy-loaded wallet buttons
-        setTimeout(() => {
+        requestAnimationFrame(() => {
           const walletContainers = document.querySelectorAll('.wallet-lazy-container[data-ticket-id]');
           walletContainers.forEach(container => {
             const ticketId = container.getAttribute('data-ticket-id');
@@ -652,7 +652,7 @@
               window.qrCacheManager.preloadQRCode(ticket.qr_token);
             }
           });
-        }, 100);
+        });
       }
 
       function formatTicketType(type) {

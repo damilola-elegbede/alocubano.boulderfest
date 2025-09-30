@@ -103,7 +103,7 @@ export default async function handler(req, res) {
   {
     "sessionId": "string",
     "url": "string",
-    "orderId": "ALO-YYYY-NNNN"
+    "orderId": "ALO-2026-0001"
   }
   ```
 
@@ -154,7 +154,7 @@ export default async function handler(req, res) {
     "purchaseDate": "ISO string",
     "qrCode": "string",
     "status": "active|used|expired",
-    "orderId": "ALO-YYYY-NNNN"
+    "orderId": "ALO-2026-0001"
   }
   ```
 
@@ -506,10 +506,27 @@ const client = createClient({
 
 ### Caching Strategy
 
-- **Static responses**: 24-hour browser cache
-- **QR codes**: Dual-layer caching
-  - **HTTP Cache**: 24-hour browser cache (server-controlled)
-  - **Client Cache**: 7-day localStorage + Service Worker cache
+**QR Code Dual Cache Architecture:**
+
+The system implements two independent cache layers for QR codes:
+
+1. **HTTP Cache (Server-Side)**: 24-hour browser cache
+
+   - Controlled by API response headers: `Cache-Control: public, max-age=86400`
+   - Cacheable by CDN and proxy servers
+   - Reduces server load for repeated requests
+   - Applies to direct API endpoint calls
+
+2. **Client Cache (Client-Side)**: 7-day localStorage + Service Worker cache
+   - Managed by `qr-cache-manager.js` client-side service
+   - Provides offline access and faster loading
+   - Independent of HTTP cache expiration
+   - Requires manual invalidation or cache clearing
+
+**Important Note**: These cache layers work independently. The HTTP cache controls browser and CDN caching for 24 hours, while the client cache provides additional performance benefits through localStorage and Service Worker caching for 7 days. To force a fresh QR code, use the `Cache-Control: no-cache` request header to bypass HTTP cache, or clear client-side cache via `qrCacheManager.clearCache()`.
+
+**Other Caching:**
+
 - **Dynamic content**: No caching (real-time data)
 - **Images**: CDN caching via Google Drive
 - **Database connections**: Connection pooling via Turso
@@ -572,6 +589,62 @@ Monitor these specific metrics for QR code scanning:
 1. **Create migration file**: `/migrations/XXX_description.sql`
 2. **Test locally**: Run migration on development database
 3. **Deploy**: Migrations run automatically on deployment
+4. **Document rollback**: Add rollback procedures for critical migrations
+
+#### Migration 037 Rollback Strategy
+
+Migration 037 introduced the transaction-based reminder system. If rollback is required:
+
+**Rollback SQL**:
+
+```sql
+-- Drop reminder tracking tables
+DROP TABLE IF EXISTS reminder_execution_log;
+DROP TABLE IF EXISTS reminder_schedule;
+
+-- Remove transaction reminder columns
+ALTER TABLE transactions DROP COLUMN IF EXISTS reminder_sent_count;
+ALTER TABLE transactions DROP COLUMN IF EXISTS last_reminder_sent_at;
+ALTER TABLE transactions DROP COLUMN IF EXISTS next_reminder_at;
+
+-- Remove registration_completed_at if added by migration
+ALTER TABLE transactions DROP COLUMN IF EXISTS registration_completed_at;
+```
+
+**Rollback Procedure**:
+
+1. **Backup Database**: Create full backup before rollback
+   ```bash
+   # For Turso production database
+   turso db dump <database-name> > backup-before-037-rollback.sql
+   ```
+
+2. **Execute Rollback SQL**: Run the rollback script above against the database
+
+3. **Verify Schema**: Confirm tables and columns are removed
+   ```sql
+   -- Verify tables are gone
+   SELECT name FROM sqlite_master WHERE type='table' AND name IN ('reminder_schedule', 'reminder_execution_log');
+
+   -- Verify transaction columns are removed
+   PRAGMA table_info(transactions);
+   ```
+
+4. **Update Migration Status**: Mark migration 037 as rolled back in `migrations` table
+   ```sql
+   DELETE FROM migrations WHERE filename = '037_add_transaction_reminder_system.sql';
+   ```
+
+5. **Disable Reminder Cron**: Comment out or remove reminder cron job from `vercel.json`
+
+6. **Restart Services**: Restart application to clear any cached schema information
+
+**Data Considerations**:
+
+- Rollback will delete all reminder scheduling data
+- No impact on ticket or transaction data
+- Email sending history is preserved in Brevo
+- Consider exporting reminder logs before rollback for analysis
 
 ### Security Checklist
 
@@ -600,7 +673,7 @@ All required environment variables are documented in CLAUDE.md.
 
 - **Automatic rollback**: On deployment failure
 - **Manual rollback**: Via Vercel dashboard
-- **Database rollback**: Manual migration rollback if needed
+- **Database rollback**: Manual migration rollback if needed (see procedures above)
 
 ## Related Documentation
 

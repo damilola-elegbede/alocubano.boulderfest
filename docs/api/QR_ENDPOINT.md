@@ -17,7 +17,7 @@ The QR Code Generation endpoint provides secure, cacheable PNG images of QR code
 **Headers**:
 
 - `Accept: image/png` (recommended)
-- `Cache-Control: no-cache` (optional, to bypass cache)
+- `Cache-Control: no-cache` (optional, to bypass HTTP cache and force server revalidation)
 
 ### Response
 
@@ -177,7 +177,7 @@ async function handleQRCodeErrors(token) {
 
 ### Caching Strategy
 
-**Dual Cache Architecture**: The QR system implements two distinct cache layers:
+**Dual Cache Architecture**: The QR system implements two distinct, independent cache layers:
 
 1. **HTTP Cache (Server-Side)**: 24-hour browser cache via HTTP headers
 
@@ -185,16 +185,32 @@ async function handleQRCodeErrors(token) {
    Cache-Control: public, max-age=86400
    ```
 
-   - Controlled by server responses
-   - Cacheable by CDN/proxy servers
-   - Reduces server load for repeated requests
+   - **Scope**: Endpoint response caching
+   - **Duration**: 24 hours
+   - **Controlled by**: Server API response headers
+   - **Cacheable by**: Browser cache, CDN, proxy servers
+   - **Purpose**: Reduces server load for repeated requests
+   - **Revalidation**: Use `Cache-Control: no-cache` request header to force server revalidation
 
 2. **Client Cache (Client-Side)**: 7-day localStorage + Service Worker cache
-   - Managed by client-side JavaScript (`qr-cache-manager.js`)
-   - Provides offline access and faster loading
-   - Independent of HTTP cache headers
 
-**Important Note**: These cache layers work independently. The HTTP cache controls browser/CDN caching, while the client cache provides additional performance benefits through localStorage and Service Worker caching. See [Performance Optimization](/docs/PERFORMANCE_OPTIMIZATION.md) for details on cache invalidation and interactions.
+   - **Scope**: Client-side application caching
+   - **Duration**: 7 days
+   - **Managed by**: `qr-cache-manager.js` client-side JavaScript
+   - **Storage**: localStorage + Service Worker cache API
+   - **Purpose**: Offline access and faster loading
+   - **Invalidation**: Manual via `qrCacheManager.clearCache()` or automatic on cache expiry
+
+**Important Cache Behavior Notes**:
+
+- **Independence**: These cache layers operate independently. An expired HTTP cache does NOT automatically invalidate the client cache, and vice versa.
+- **Cache Priority**: Client cache checks localStorage first, then falls back to HTTP request (which may hit HTTP cache or server).
+- **Force Fresh QR**: To guarantee a fresh QR from server:
+  1. Clear client cache: `qrCacheManager.clearTicketCache(ticketId)`
+  2. Add revalidation header: `Cache-Control: no-cache` in fetch request
+- **Typical Flow**: First request hits server → HTTP cache (24h) + client cache (7d) → Subsequent requests served from client cache until expiry
+
+See [Performance Optimization](/docs/PERFORMANCE_OPTIMIZATION.md) for comprehensive documentation on cache interactions, invalidation strategies, and performance tuning.
 
 ### Performance Optimizations
 
