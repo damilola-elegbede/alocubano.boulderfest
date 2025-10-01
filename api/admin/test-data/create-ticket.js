@@ -197,11 +197,20 @@ export default async function handler(req, res) {
     const transactionId = transactionResult.rows[0].id;
     console.log('Transaction ID:', transactionId);
 
-    // Generate registration token
+    // Generate registration token with expiry matching registration deadline
+    // Critical: Token expiry must match or exceed registration deadline to prevent premature expiration
     const tokenService = new RegistrationTokenService();
     await tokenService.ensureInitialized();
+
+    // Set token expiry to match registration deadline (7 days = 604800 seconds)
+    const tokenExpirySeconds = Math.max(
+      60, // Minimum 1 minute
+      Math.floor((registrationDeadline.getTime() - now.getTime()) / 1000)
+    );
+    tokenService.tokenExpiry = tokenExpirySeconds;
+
     const registrationToken = await tokenService.createToken(transactionId);
-    console.log('Registration token generated');
+    console.log('Registration token generated with expiry:', tokenExpirySeconds, 'seconds');
 
     // Schedule test reminders (every 5 minutes for 30 minutes)
     const reminderCount = await scheduleRegistrationReminders(
@@ -213,6 +222,7 @@ export default async function handler(req, res) {
 
     // Format response with Mountain Time formatting
     const deadlineMT = timeUtils.formatDateTime(registrationDeadline);
+    const currentTimestampMT = timeUtils.formatDateTime(new Date());
 
     return res.status(200).json({
       success: true,
@@ -237,7 +247,8 @@ export default async function handler(req, res) {
           price_cents: ticketDetails.price_cents
         }
       },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      timestamp_mt: currentTimestampMT
     });
 
   } catch (error) {
