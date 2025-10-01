@@ -250,9 +250,10 @@ async function captureOrderHandler(req, res) {
         args: [transactionId]
       });
 
-      console.log('Existing ticket count:', existingTickets.rows[0].count);
+      const existingCount = Number(existingTickets.rows[0].count);
+      console.log('Existing ticket count:', existingCount);
 
-      if (existingTickets.rows[0].count === 0) {
+      if (existingCount === 0) {
         // Create tickets
         const ticketItems = cartData.filter(item => item.type === 'ticket');
         console.log('Creating tickets for items:', ticketItems);
@@ -287,7 +288,7 @@ async function captureOrderHandler(req, res) {
         }
         console.log(`Created ${ticketCount} tickets for PayPal order ${paypalOrderId}`);
       } else {
-        ticketCount = existingTickets.rows[0].count;
+        ticketCount = existingCount;
         console.log(`Found existing ${ticketCount} tickets for PayPal order ${paypalOrderId}`);
       }
     } else {
