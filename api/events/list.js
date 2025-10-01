@@ -6,6 +6,7 @@
 
 import { getDatabaseClient } from '../../lib/database.js';
 import { processDatabaseResult } from '../../lib/bigint-serializer.js';
+import { getTestEvents as getSharedTestEvents } from '../../lib/test-events.js';
 
 export default async function handler(req, res) {
     if (req.method !== 'GET') {
@@ -107,7 +108,7 @@ export default async function handler(req, res) {
         });
 
         // Add test events for development/testing
-        const testEvents = getTestEvents();
+        const testEvents = getSharedTestEvents();
         const allEvents = [...testEvents, ...events];
 
         return res.status(200).json({
@@ -161,90 +162,3 @@ function generateDisplayName(event) {
     return `${event.name} Tickets`;
 }
 
-/**
- * Get test events for development and testing
- */
-function getTestEvents() {
-    return [
-        {
-            id: -1,
-            slug: 'test-weekender',
-            name: 'Test Weekender',
-            displayName: '[TEST] Weekender Tickets',
-            type: 'weekender',
-            status: 'active',
-            description: 'Test event for development and testing purposes',
-            venue: {
-                name: 'Test Venue',
-                address: 'Test Address',
-                city: 'Boulder',
-                state: 'CO',
-                zip: '80303'
-            },
-            dates: {
-                start: '2024-12-01',
-                end: '2024-12-03',
-                year: 2024
-            },
-            capacity: {
-                max: 10,
-                earlyBirdEnd: '2024-11-01',
-                regularPriceStart: '2024-11-15'
-            },
-            display: {
-                order: 999,
-                featured: false,
-                visible: true
-            },
-            timestamps: {
-                created: new Date().toISOString(),
-                updated: new Date().toISOString()
-            },
-            config: {
-                ticket_types: ['test-weekender-pass'],
-                features: { testing: true },
-                is_test: true
-            }
-        },
-        {
-            id: -2,
-            slug: 'test-festival',
-            name: 'Test Festival',
-            displayName: '[TEST] Festival Tickets',
-            type: 'festival',
-            status: 'active',
-            description: 'Test festival event for development and testing purposes',
-            venue: {
-                name: 'Test Venue',
-                address: 'Test Address',
-                city: 'Boulder',
-                state: 'CO',
-                zip: '80303'
-            },
-            dates: {
-                start: '2024-12-15',
-                end: '2024-12-17',
-                year: 2024
-            },
-            capacity: {
-                max: 20,
-                earlyBirdEnd: '2024-11-15',
-                regularPriceStart: '2024-12-01'
-            },
-            display: {
-                order: 999,
-                featured: false,
-                visible: true
-            },
-            timestamps: {
-                created: new Date().toISOString(),
-                updated: new Date().toISOString()
-            },
-            config: {
-                ticket_types: ['test-festival-pass'],
-                features: { testing: true },
-                is_test: true
-            }
-        }
-    ];
-}

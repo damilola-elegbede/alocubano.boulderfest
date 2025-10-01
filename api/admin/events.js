@@ -3,6 +3,7 @@ import { getDatabaseClient } from "../../lib/database.js";
 import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
 import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
 import { processDatabaseResult } from "../../lib/bigint-serializer.js";
+import { getAdminTestEvents } from "../../lib/test-events.js";
 
 /**
  * Mock events data for development when events table doesn't exist yet
@@ -56,6 +57,10 @@ async function handler(req, res) {
 
       // Process database results to handle BigInt values
       events = processDatabaseResult(result.rows);
+
+      // Add test events for admin event selector (for development/testing)
+      const testEvents = getAdminTestEvents();
+      events = [...testEvents, ...events];
     } catch (error) {
       // If events table doesn't exist yet, return mock data
       if (error.message.includes('no such table: events') ||

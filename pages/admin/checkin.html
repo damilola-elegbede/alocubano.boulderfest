@@ -3342,18 +3342,6 @@
           return false;
         }
       }
-          const data = await response.json();
-          if (!data.valid) {
-            showMobileLogin();
-            return false;
-          }
-          return true;
-        } catch (error) {
-          console.error("Auth check failed:", error);
-          showMobileLogin();
-          return false;
-        }
-      }
 
       // Show mobile login UI
       function showMobileLogin() {

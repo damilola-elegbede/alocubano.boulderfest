@@ -95,6 +95,10 @@
   },
   "rewrites": [
     {
+      "source": "/images/:path*",
+      "destination": "/images/:path*"
+    },
+    {
       "source": "/api/:path*",
       "destination": "/api/:path*"
     },

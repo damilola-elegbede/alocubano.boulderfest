@@ -215,25 +215,47 @@
     </header>
 
     <!-- Unified Admin Navigation -->
-    <nav class="admin-nav">
-      <div class="admin-nav-container">
-        <a href="/admin/dashboard" class="admin-nav-item">
-          <span class="admin-nav-icon">📊</span>
-          <span class="admin-nav-label">Dashboard</span>
-        </a>
-        <a href="/admin/checkin" class="admin-nav-item">
-          <span class="admin-nav-icon">✓</span>
-          <span class="admin-nav-label">Check-in</span>
-        </a>
-        <a href="/admin/analytics" class="admin-nav-item">
-          <span class="admin-nav-icon">📈</span>
-          <span class="admin-nav-label">Analytics</span>
-        </a>
-        <a href="/admin/test" class="admin-nav-item admin-nav-item-active">
-          <span class="admin-nav-icon">🧪</span>
-          <span class="admin-nav-label">Test</span>
-        </a>
-      </div>
+    <nav class="admin-navigation">
+      <ul class="admin-nav-list">
+        <li class="admin-nav-item">
+          <a href="/admin" class="admin-nav-link">
+            <span>Portal</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/dashboard" class="admin-nav-link">
+            <span>Dashboard</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/tickets" class="admin-nav-link">
+            <span>Tickets</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/analytics" class="admin-nav-link">
+            <span>Analytics</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/checkin" class="admin-nav-link">
+            <span>Check-in Scanner</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/test" class="admin-nav-link active">
+            <span>🧪 Test</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/api-endpoints" class="admin-nav-link">
+            <span>API Endpoints</span>
+          </a>
+        </li>
+      </ul>
+
+      <!-- Event Selector -->
+      <div id="event-selector-container"></div>
     </nav>
 
     <!-- Main Content -->
@@ -322,6 +344,11 @@
           btn.innerHTML = '<span>⏳</span><span>Adding tickets...</span>';
           resultDiv.className = 'test-result';
 
+          // CRITICAL FIX: Wait for cart manager to be initialized
+          if (!window.cartManager) {
+            throw new Error('Cart manager not initialized. Please refresh the page.');
+          }
+
           // Define test tickets based on bootstrap.json
           const testTickets = [
             { ticketId: 'test-vip-pass', eventId: -2, price: 150.00, name: '[TEST] VIP Pass', quantity: 1 },
@@ -329,22 +356,18 @@
             { ticketId: 'test-saturday-pass', eventId: -2, price: 35.00, name: '[TEST] Saturday Pass', quantity: 1 }
           ];
 
-          // Add each ticket to cart by dispatching cart events
+          // CRITICAL FIX: Use CartManager API directly instead of events
           for (const ticket of testTickets) {
-            const event = new CustomEvent('ticket-quantity-changed', {
-              detail: {
-                ticketType: ticket.ticketId,
-                quantity: ticket.quantity,
-                price: ticket.price,
-                name: ticket.name,
-                eventId: ticket.eventId
-              },
-              bubbles: true
+            await window.cartManager.upsertTicket({
+              ticketType: ticket.ticketId,
+              quantity: ticket.quantity,
+              price: Math.round(ticket.price * 100), // CRITICAL: Convert dollars to cents
+              name: ticket.name,
+              eventId: ticket.eventId
             });
-            document.dispatchEvent(event);
           }
 
-          // Wait a moment for cart to update
+          // Wait a moment for cart UI to update
           await new Promise(resolve => setTimeout(resolve, 500));
 
           resultDiv.className = 'test-result success';
@@ -446,7 +469,10 @@
       }
     </script>
 
-    <!-- Global Cart System -->
-    <script type="module" src="/js/global-cart.js"></script>
+    <!-- Import cart manager for test utilities -->
+    <script type="module">
+      import { CartManager } from '/js/cart.js';
+      window.cartManager = await CartManager.getInstance();
+    </script>
   </body>
 </html>
