@@ -7,6 +7,7 @@
 import { getDatabaseClient } from '../../lib/database.js';
 import { processDatabaseResult } from '../../lib/bigint-serializer.js';
 import { getTestEvents as getSharedTestEvents } from '../../lib/test-events.js';
+import timeUtils from '../../lib/time-utils.js';
 
 export default async function handler(req, res) {
     if (req.method !== 'GET') {
@@ -53,8 +54,14 @@ export default async function handler(req, res) {
         // Process BigInt values from database before JSON serialization
         const processedResult = processDatabaseResult(eventsResult);
 
+        // Enhance events with Mountain Time fields
+        const enhancedEvents = timeUtils.enhanceApiResponse(processedResult.rows,
+            ['created_at', 'updated_at', 'start_date', 'end_date', 'early_bird_end_date', 'regular_price_start_date'],
+            { includeDeadline: false }
+        );
+
         // Transform events for frontend consumption
-        const events = processedResult.rows.map(event => {
+        const events = enhancedEvents.map(event => {
             // Parse config JSON if present
             let config = {};
             try {
@@ -87,12 +94,18 @@ export default async function handler(req, res) {
                 dates: {
                     start: event.start_date,
                     end: event.end_date,
-                    year: event.year
+                    year: event.year,
+                    // Mountain Time formatted dates
+                    start_mt: event.start_date_mt,
+                    end_mt: event.end_date_mt
                 },
                 capacity: {
                     max: event.max_capacity,
                     earlyBirdEnd: event.early_bird_end_date,
-                    regularPriceStart: event.regular_price_start_date
+                    regularPriceStart: event.regular_price_start_date,
+                    // Mountain Time formatted dates
+                    earlyBirdEnd_mt: event.early_bird_end_date_mt,
+                    regularPriceStart_mt: event.regular_price_start_date_mt
                 },
                 display: {
                     order: event.display_order,
@@ -101,8 +114,12 @@ export default async function handler(req, res) {
                 },
                 timestamps: {
                     created: event.created_at,
-                    updated: event.updated_at
+                    updated: event.updated_at,
+                    // Mountain Time formatted timestamps
+                    created_mt: event.created_at_mt,
+                    updated_mt: event.updated_at_mt
                 },
+                timezone: event.timezone || 'America/Denver',
                 config
             };
         });

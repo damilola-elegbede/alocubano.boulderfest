@@ -5,6 +5,7 @@ import { getValidationService } from "../../lib/validation-service.js";
 import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
 import { withHighSecurityAudit } from "../../lib/admin-audit-middleware.js";
 import { processDatabaseResult } from "../../lib/bigint-serializer.js";
+import timeUtils from "../../lib/time-utils.js";
 
 async function handler(req, res) {
   let db;
@@ -72,8 +73,15 @@ async function handler(req, res) {
 
       const countResult = await db.execute({ sql: countSql, args: countArgs });
 
+      // Enhance transactions with Mountain Time fields
+      const processedTransactions = processDatabaseResult(result.rows);
+      const enhancedTransactions = timeUtils.enhanceApiResponse(processedTransactions,
+        ['created_at', 'updated_at'],
+        { includeDeadline: false }
+      );
+
       const responseData = {
-        transactions: result.rows,
+        transactions: enhancedTransactions,
         total: countResult.rows[0].total,
         limit: sanitized.limit,
         offset: sanitized.offset,

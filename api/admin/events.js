@@ -4,6 +4,7 @@ import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
 import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
 import { processDatabaseResult } from "../../lib/bigint-serializer.js";
 import { getAdminTestEvents } from "../../lib/test-events.js";
+import timeUtils from "../../lib/time-utils.js";
 
 /**
  * Mock events data for development when events table doesn't exist yet
@@ -57,6 +58,12 @@ async function handler(req, res) {
 
       // Process database results to handle BigInt values
       events = processDatabaseResult(result.rows);
+
+      // Enhance with Mountain Time fields
+      events = timeUtils.enhanceApiResponse(events,
+        ['start_date', 'end_date'],
+        { includeDeadline: false }
+      );
 
       // Add test events for admin event selector (for development/testing)
       const testEvents = process.env.NODE_ENV !== 'production' ? getAdminTestEvents() : [];

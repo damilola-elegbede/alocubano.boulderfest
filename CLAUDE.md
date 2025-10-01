@@ -623,6 +623,100 @@ npm run migrate:status          # Check migration status
 - [Theme System Guide](docs/THEME_SYSTEM.md)
 - [API Documentation](/docs/api/README.md)
 
+## Timezone Handling - Mountain Time (America/Denver)
+
+**CRITICAL**: All user-facing times MUST be displayed in Mountain Time, not UTC or browser timezone.
+
+### Architecture
+
+- **Database**: Stores all timestamps in UTC (via SQLite's CURRENT_TIMESTAMP) ✅
+- **Backend**: Uses `lib/time-utils.js` for Mountain Time formatting
+- **Frontend**: Uses `js/time-manager.js` (mirrors backend functionality)
+- **APIs**: Return both UTC timestamps AND `_mt` suffixed Mountain Time formatted fields
+
+### Backend API Pattern
+
+```javascript
+import timeUtils from '../lib/time-utils.js';
+
+export default async function handler(req, res) {
+  const tickets = await getTicketsFromDatabase();
+
+  // ✅ REQUIRED: Enhance with Mountain Time fields
+  const enhanced = timeUtils.enhanceApiResponse(tickets,
+    ['created_at', 'updated_at', 'event_date', 'registered_at', 'registration_deadline'],
+    { includeDeadline: false }
+  );
+
+  res.json({ tickets: enhanced });
+}
+```
+
+**Result**: Each timestamp field gets a corresponding `_mt` field:
+```json
+{
+  "created_at": "2026-01-15T10:30:00Z",
+  "created_at_mt": "Jan 15, 2026, 3:30 AM MST",
+  "timezone": "America/Denver"
+}
+```
+
+### Frontend Display Pattern
+
+```javascript
+// ✅ CORRECT: Use timeManager with fallback
+const displayTime = timeManager
+  ? timeManager.formatDateTime(ticket.created_at)
+  : 'Loading...';
+
+// ❌ INCORRECT: Browser timezone (varies by user location)
+const displayTime = new Date(ticket.created_at).toLocaleString();
+```
+
+### Email Templates
+
+```javascript
+// In lib/ticket-email-service-brevo.js
+import timeUtils from './time-utils.js';
+
+formatEventDate(date) {
+  return timeUtils.formatEventTime(date, {
+    includeTime: false,
+    includeTimezone: false,
+    longFormat: true
+  });
+}
+```
+
+### Available Time Utilities
+
+**Backend** (`lib/time-utils.js`):
+- `toMountainTime(date)` - Full datetime with timezone
+- `formatDate(date)` - Date only (e.g., "Jan 15, 2026")
+- `formatDateTime(date)` - Date + time (e.g., "Jan 15, 2026, 3:30 PM MST")
+- `formatEventTime(date, options)` - Flexible formatting
+- `enhanceApiResponse(data, fields, options)` - Auto-add `_mt` fields
+
+**Frontend** (`js/time-manager.js`):
+- Same methods as backend for consistency
+- Automatically handles DST transitions
+- Falls back gracefully if module not loaded
+
+### Testing Checklist
+
+- [ ] All API responses include `_mt` fields for timestamps
+- [ ] Frontend displays show "(MT)" or "(Mountain Time)" indicator
+- [ ] Admin panels use `timeManager.formatDateTime()`
+- [ ] Email templates format dates via `timeUtils`
+- [ ] Countdown timers use `js/countdown.js` with proper timezone
+
+### Common Mistakes to Avoid
+
+❌ `new Date().toLocaleDateString()` - Uses browser timezone
+❌ `new Date().toLocaleString()` - Uses browser timezone
+✅ `timeManager.formatDate(date)` - Uses Mountain Time
+✅ `timeUtils.formatDateTime(date)` - Uses Mountain Time
+
 ## Important Instruction Reminders
 
 Do what has been asked; nothing more, nothing less.
