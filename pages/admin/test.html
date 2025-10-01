@@ -345,10 +345,32 @@
           resultDiv.className = 'test-result';
 
           // Define test tickets based on bootstrap.json
+          // Include eventName so cart can display proper event names instead of IDs
           const testTickets = [
-            { ticketType: 'test-vip-pass', eventId: -2, price: 150.00, name: '[TEST] VIP Pass', quantity: 1 },
-            { ticketType: 'test-weekender-pass', eventId: -1, price: 75.00, name: '[TEST] Weekender Pass', quantity: 1 },
-            { ticketType: 'test-saturday-pass', eventId: -2, price: 35.00, name: '[TEST] Saturday Pass', quantity: 1 }
+            {
+              ticketType: 'test-vip-pass',
+              eventId: -2,
+              eventName: 'Test Festival',
+              price: 150.00,
+              name: '[TEST] VIP Pass',
+              quantity: 1
+            },
+            {
+              ticketType: 'test-weekender-pass',
+              eventId: -1,
+              eventName: 'Test Weekender',
+              price: 75.00,
+              name: '[TEST] Weekender Pass',
+              quantity: 1
+            },
+            {
+              ticketType: 'test-saturday-pass',
+              eventId: -2,
+              eventName: 'Test Festival',
+              price: 35.00,
+              name: '[TEST] Saturday Pass',
+              quantity: 1
+            }
           ];
 
           // Get existing cart or create new one (use correct storage key)
@@ -382,7 +404,8 @@
               quantity: ticket.quantity,
               price: Math.round(ticket.price * 100), // Convert dollars to cents
               name: ticket.name,
-              eventId: ticket.eventId
+              eventId: ticket.eventId,
+              eventName: ticket.eventName // Required for cart to display proper event names
             };
           }
 
