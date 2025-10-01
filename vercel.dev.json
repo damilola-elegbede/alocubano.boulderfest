@@ -1,0 +1,304 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "functions": {
+    "api/docs.js": {
+      "maxDuration": 10,
+      "includeFiles": "api/embedded-docs.js"
+    },
+    "api/admin/**/*.js": {
+      "maxDuration": 15,
+      "includeFiles": "lib/{database,auth,session-manager,audit-logger,logger,crypto-utils,test-data-cleanup,test-mode-utils,cors-config}.js"
+    },
+    "api/payments/**/*.js": {
+      "maxDuration": 30,
+      "includeFiles": "lib/{database,stripe-service,email-service,ticket-service,logger}.js"
+    },
+    "api/tickets/**/*.js": {
+      "maxDuration": 20,
+      "includeFiles": "lib/{database,ticket-service,qr-service,logger,wallet-service}.js"
+    },
+    "api/registration/**/*.js": {
+      "maxDuration": 20,
+      "includeFiles": "lib/{database,registration-service,email-service,logger}.js"
+    },
+    "api/health/**/*.js": {
+      "maxDuration": 5,
+      "includeFiles": "lib/database.js"
+    },
+    "api/wallet/[ticketId].js": {
+      "maxDuration": 20,
+      "includeFiles": "lib/{database,wallet-service,ticket-service,logger}.js"
+    },
+    "api/email/**/*.js": {
+      "maxDuration": 20,
+      "includeFiles": "lib/{database,email-service,logger}.js"
+    },
+    "api/gallery/**/*.js": {
+      "maxDuration": 10,
+      "includeFiles": "lib/{google-drive-service,logger}.js"
+    },
+    "api/sheets/**/*.js": {
+      "maxDuration": 30,
+      "includeFiles": "lib/{database,google-sheets-service,logger}.js"
+    },
+    "api/cron/**/*.js": {
+      "maxDuration": 60,
+      "includeFiles": "lib/{database,logger}.js"
+    },
+    "api/performance-metrics.js": {
+      "maxDuration": 10,
+      "includeFiles": "lib/{database,logger}.js"
+    },
+    "api/cache.js": {
+      "maxDuration": 30,
+      "includeFiles": "lib/{database,cache-service,google-drive-service,auth,session-manager,logger}.js"
+    }
+  },
+  "images": {
+    "sizes": [16, 32, 48, 64, 96, 128, 256, 384],
+    "remotePatterns": [
+      {
+        "protocol": "https",
+        "hostname": "*.vercel.app"
+      },
+      {
+        "protocol": "https",
+        "hostname": "drive.google.com"
+      },
+      {
+        "protocol": "https",
+        "hostname": "*.googleusercontent.com"
+      }
+    ]
+  },
+  "rewrites": [
+    {
+      "source": "/images/:path*",
+      "destination": "/images/:path*"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "/api/:path*"
+    },
+    {
+      "source": "/favicon.ico",
+      "destination": "/images/favicon.ico"
+    },
+    {
+      "source": "/gallery-data/:path*",
+      "destination": "/gallery-data/:path*"
+    },
+    {
+      "source": "/featured-photos.json",
+      "destination": "/featured-photos.json"
+    },
+    {
+      "source": "/home",
+      "destination": "/pages/core/home"
+    },
+    {
+      "source": "/(about|tickets|donations|contact|checkout-success|checkout-cancel|my-tickets|success|failure|register-tickets|view-tickets)",
+      "destination": "/pages/core/$1"
+    },
+    {
+      "source": "/(gallery|artists|schedule)",
+      "destination": "/pages/events/boulder-fest-2026/$1"
+    },
+    {
+      "source": "/registration",
+      "destination": "/pages/core/tickets"
+    },
+    {
+      "source": "/boulder-fest-2025",
+      "destination": "/pages/events/boulder-fest-2025/index"
+    },
+    {
+      "source": "/boulder-fest-2025/(artists|schedule|gallery)",
+      "destination": "/pages/events/boulder-fest-2025/$1"
+    },
+    {
+      "source": "/boulder-fest-2026",
+      "destination": "/pages/events/boulder-fest-2026/index"
+    },
+    {
+      "source": "/boulder-fest-2026/(artists|schedule|gallery)",
+      "destination": "/pages/events/boulder-fest-2026/$1"
+    },
+    {
+      "source": "/weekender-2025-11",
+      "destination": "/pages/events/weekender-2025-11/index"
+    },
+    {
+      "source": "/weekender-2025-11-(artists|schedule|gallery)",
+      "destination": "/pages/events/weekender-2025-11/$1"
+    },
+    {
+      "source": "/admin",
+      "destination": "/pages/admin/index"
+    },
+    {
+      "source": "/admin/(login|dashboard|checkin|analytics|mfa-settings|registrations|tickets|api-endpoints|test-dashboard|test)",
+      "destination": "/pages/admin/$1"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/about-festival",
+      "destination": "/about",
+      "permanent": true
+    },
+    {
+      "source": "/2025-artists",
+      "destination": "/boulder-fest-2025/artists",
+      "permanent": true
+    },
+    {
+      "source": "/2025-schedule",
+      "destination": "/boulder-fest-2025/schedule",
+      "permanent": true
+    },
+    {
+      "source": "/2025-gallery",
+      "destination": "/boulder-fest-2025/gallery",
+      "permanent": true
+    },
+    {
+      "source": "/gallery-2025",
+      "destination": "/boulder-fest-2025/gallery",
+      "permanent": true
+    },
+    {
+      "source": "/2026-artists",
+      "destination": "/boulder-fest-2026/artists",
+      "permanent": true
+    },
+    {
+      "source": "/2026-schedule",
+      "destination": "/boulder-fest-2026/schedule",
+      "permanent": true
+    },
+    {
+      "source": "/2026-gallery",
+      "destination": "/boulder-fest-2026/gallery",
+      "permanent": true
+    },
+    {
+      "source": "/boulder-fest-2025/tickets",
+      "destination": "/tickets",
+      "permanent": true
+    },
+    {
+      "source": "/boulder-fest-2026/tickets",
+      "destination": "/tickets",
+      "permanent": true
+    },
+    {
+      "source": "/boulder-fest-2026/home",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/boulder-fest-2026/about",
+      "destination": "/about",
+      "permanent": true
+    },
+    {
+      "source": "/boulder-fest-2026/donations",
+      "destination": "/donations",
+      "permanent": true
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Link",
+          "value": "<https://fonts.googleapis.com>; rel=dns-prefetch"
+        },
+        { "key": "Link", "value": "<https://instagram.com>; rel=dns-prefetch" },
+        {
+          "key": "Link",
+          "value": "<https://drive.google.com>; rel=preconnect; crossorigin"
+        },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains; preload" },
+        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.stripe.com https://www.paypal.com https://www.sandbox.paypal.com https://www.googletagmanager.com https://www.google-analytics.com https://vercel.live; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://vercel.com; font-src 'self' data: https://fonts.gstatic.com https://vercel.live; img-src 'self' data: https: https://drive.google.com https://*.googleusercontent.com https://vercel.com; connect-src 'self' https://api.stripe.com https://m.stripe.com https://m.stripe.network https://api.paypal.com https://api-m.paypal.com https://api-m.sandbox.paypal.com https://www.paypal.com https://www.sandbox.paypal.com https://api.brevo.com https://www.google-analytics.com https://vercel.live https://*.pusher.com wss://*.pusher.com; frame-src https://js.stripe.com https://hooks.stripe.com https://www.paypal.com https://www.sandbox.paypal.com https://vercel.live; media-src 'self' https://drive.google.com https://*.googleusercontent.com; object-src 'none'; base-uri 'self'; form-action 'self' https://checkout.stripe.com https://www.paypal.com https://www.sandbox.paypal.com; manifest-src 'self'" },
+        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), interest-cohort=(), browsing-topics=()" }
+      ]
+    },
+    {
+      "source": "/(.*)\\.(jpg|jpeg|png|gif|svg|webp)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        },
+        { "key": "Vary", "value": "Accept" }
+      ]
+    },
+    {
+      "source": "/(.*)\\.(css|js)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
+        },
+        { "key": "Vary", "value": "Accept-Encoding" }
+      ]
+    },
+    {
+      "source": "/(.*)\\.(json)",
+      "headers": [
+        { "key": "Content-Type", "value": "application/json" },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, stale-while-revalidate=86400"
+        }
+      ]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "s-maxage=3600, stale-while-revalidate=86400"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS, PUT, DELETE" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, X-CSRF-Token, Authorization" }
+      ]
+    },
+    {
+      "source": "/js/sw.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        },
+        { "key": "Service-Worker-Allowed", "value": "/" }
+      ]
+    },
+    {
+      "source": "/sw-qr-cache.js",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/javascript"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        },
+        { "key": "Service-Worker-Allowed", "value": "/" }
+      ]
+    }
+  ]
+}
