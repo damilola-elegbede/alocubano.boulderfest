@@ -65,8 +65,8 @@ async function handler(req, res) {
         { includeDeadline: false }
       );
 
-      // Add test events for admin event selector (for development/testing)
-      const testEvents = process.env.NODE_ENV !== 'production' ? getAdminTestEvents() : [];
+      // Add test events for admin event selector (always available)
+      const testEvents = getAdminTestEvents();
       events = [...testEvents, ...events];
     } catch (error) {
       // If events table doesn't exist yet, return mock data
