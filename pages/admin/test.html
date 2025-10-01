@@ -315,9 +315,26 @@
     </main>
 
     <script>
-      // Show page content after auth check
-      document.documentElement.style.visibility = 'visible';
-      document.documentElement.style.opacity = '1';
+      // Show page content after server-side auth verification
+      async function showAfterAuth() {
+        try {
+          // Use existing AdminAuthGuard for server-side verification
+          const isAuthenticated = await (window.AdminAuthGuard?.verifyAndShow?.() ?? false);
+          if (!isAuthenticated) {
+            localStorage.removeItem('adminToken');
+            window.location.replace('/admin/login');
+            return;
+          }
+          // Only show page after successful server verification
+          document.documentElement.style.visibility = 'visible';
+          document.documentElement.style.opacity = '1';
+        } catch (error) {
+          console.error('Auth verification failed:', error);
+          localStorage.removeItem('adminToken');
+          window.location.replace('/admin/login');
+        }
+      }
+      showAfterAuth();
 
       // Add test tickets to cart (writes directly to localStorage)
       function addTestTicketsToCart() {
