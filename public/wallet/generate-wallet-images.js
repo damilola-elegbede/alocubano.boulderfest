@@ -6,8 +6,9 @@ import fs from 'fs/promises';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Source logo path
+// Source logo paths
 const SOURCE_LOGO = join(__dirname, '../images/logo.png');
+const SOURCE_LOGO_DARK = join(__dirname, '../images/logo-dark.png');
 
 // Output directory
 const OUTPUT_DIR = __dirname;
@@ -90,29 +91,29 @@ async function generateIcon(width, height, filename) {
 
 /**
  * Generate background image with centered logo watermark
- * White background with logo at 5% opacity
+ * Black background with white logo at 5% opacity
  * Background won't block QR code (unlike strip images)
  */
 async function generateBackground(width, height, logoSize, filename) {
   const outputPath = join(OUTPUT_DIR, filename);
 
-  // Create white background
+  // Create black background
   const background = await sharp({
     create: {
       width,
       height,
       channels: 4,
-      background: { r: 255, g: 255, b: 255, alpha: 1 }
+      background: { r: 0, g: 0, b: 0, alpha: 1 }
     }
   })
   .png()
   .toBuffer();
 
-  // Resize logo and reduce opacity to 5%
-  const resizedLogo = await sharp(SOURCE_LOGO)
+  // Resize white logo and reduce opacity to 5%
+  const resizedLogo = await sharp(SOURCE_LOGO_DARK)
     .resize(logoSize, logoSize, {
       fit: 'contain',
-      background: { r: 255, g: 255, b: 255, alpha: 0 }
+      background: { r: 0, g: 0, b: 0, alpha: 0 }
     })
     .ensureAlpha()
     .raw()
