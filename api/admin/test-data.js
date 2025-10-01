@@ -3,6 +3,7 @@ import { getDatabaseClient } from "../../lib/database.js";
 import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
 import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
 import { isTestMode, createTestModeMetadata } from "../../lib/test-mode-utils.js";
+import { processDatabaseResult } from "../../lib/bigint-serializer.js";
 
 /**
  * Test Data Management API
@@ -221,7 +222,7 @@ async function handleGetTestDataStats(db, req, res) {
       timestamp: new Date().toISOString()
     };
 
-    return res.status(200).json(response);
+    return res.status(200).json(processDatabaseResult(response));
 
   } catch (error) {
     console.error('Error fetching test data statistics:', error);

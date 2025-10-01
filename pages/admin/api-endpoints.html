@@ -1411,6 +1411,9 @@
                 const csrfData = await csrfResponse.json();
                 requestOptions.headers['X-CSRF-Token'] = csrfData.token;
               }
+            } catch (error) {
+              console.warn('Could not fetch CSRF token:', error);
+            }
           }
 
           const response = await fetch(path, requestOptions);
@@ -1448,6 +1451,13 @@
             responseTime: responseTime
           });
 
+        } catch (error) {
+          card.classList.remove('loading');
+          card.classList.add('error');
+          setTimeout(() => card.classList.remove('error'), 2000);
+          showToast('error', 'Request Failed', `${method} ${path}: ${error.message}`);
+          console.error('Endpoint test error:', error);
+        }
       }
 
       // Show response modal
@@ -1528,6 +1538,10 @@
               content.innerHTML = `<div class="headers-list">${headersHTML}</div>`;
               break;
           }
+        } catch (error) {
+          console.error('Error switching tab:', error);
+          content.innerHTML = `<div class="error-message">Error displaying response: ${escapeHtml(error.message)}</div>`;
+        }
       }
 
       // Enhanced JSON formatter with syntax highlighting
@@ -1784,6 +1798,9 @@
               const csrfData = await csrfResponse.json();
               headers["X-CSRF-Token"] = csrfData.token || csrfData.csrfToken;
             }
+          } catch (error) {
+            console.warn('Could not fetch CSRF token:', error);
+          }
 
           await fetch("/api/admin/login", {
             method: "DELETE",
