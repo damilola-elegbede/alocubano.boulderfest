@@ -188,9 +188,16 @@ async function captureOrderHandler(req, res) {
         try {
           cartData = JSON.parse(transaction.cart_data);
           hasTickets = cartData.some(item => item.type === 'ticket');
+          console.log('Parsed cart data:', {
+            itemCount: cartData.length,
+            hasTickets,
+            items: cartData.map(item => ({ type: item.type, name: item.name }))
+          });
         } catch (e) {
           console.error('Failed to parse cart data from transaction:', e);
         }
+      } else {
+        console.warn('No cart_data found in transaction:', transactionId);
       }
 
       // Update transaction status and order_number
@@ -234,6 +241,8 @@ async function captureOrderHandler(req, res) {
 
     // Create tickets if this is a ticket purchase and they don't exist yet
     let ticketCount = 0;
+    console.log('Ticket creation check:', { hasTickets, cartDataLength: cartData.length });
+
     if (hasTickets) {
       // Check if tickets already exist
       const existingTickets = await db.execute({
@@ -241,10 +250,22 @@ async function captureOrderHandler(req, res) {
         args: [transactionId]
       });
 
+      console.log('Existing ticket count:', existingTickets.rows[0].count);
+
       if (existingTickets.rows[0].count === 0) {
         // Create tickets
-        for (const ticket of cartData.filter(item => item.type === 'ticket')) {
+        const ticketItems = cartData.filter(item => item.type === 'ticket');
+        console.log('Creating tickets for items:', ticketItems);
+
+        for (const ticket of ticketItems) {
           const quantity = ticket.quantity || 1;
+          console.log('Creating ticket:', {
+            name: ticket.name,
+            quantity,
+            price: ticket.price,
+            price_cents: ticket.price_cents
+          });
+
           for (let i = 0; i < quantity; i++) {
             const ticketUuid = crypto.randomUUID();
             await db.execute({
@@ -269,6 +290,8 @@ async function captureOrderHandler(req, res) {
         ticketCount = existingTickets.rows[0].count;
         console.log(`Found existing ${ticketCount} tickets for PayPal order ${paypalOrderId}`);
       }
+    } else {
+      console.log('No tickets to create - hasTickets is false');
     }
 
     // Generate registration token
