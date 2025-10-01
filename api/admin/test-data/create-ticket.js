@@ -83,11 +83,12 @@ export default async function handler(req, res) {
     // Get database client
     const db = await getDatabaseClient();
 
-    // Test ticket details
+    // Test ticket details - unregistered ticket (no attendee information)
     const ticketDetails = {
-      attendee_first_name: 'John',
-      attendee_last_name: 'Doe',
-      attendee_email: 'damilola.elegbede@gmail.com',
+      attendee_first_name: null,
+      attendee_last_name: null,
+      attendee_email: null, // Unregistered - reminder goes to purchaser
+      purchaser_email: 'damilola.elegbede@gmail.com', // Transaction purchaser
       ticket_type: 'test-weekender-pass',
       event_id: -1, // Test Weekender
       event_date: '2024-12-01',
@@ -142,8 +143,8 @@ export default async function handler(req, res) {
         orderData,
         ticketDetails.price_cents,
         'USD',
-        ticketDetails.attendee_email,
-        `${ticketDetails.attendee_first_name} ${ticketDetails.attendee_last_name}`,
+        ticketDetails.purchaser_email,
+        'Test Customer', // Generic name since ticket is unregistered
         'completed',
         now.toISOString(),
         1, // is_test
@@ -236,9 +237,9 @@ export default async function handler(req, res) {
         registration_token: registrationToken,
         reminders_scheduled: reminderCount,
         attendee: {
-          first_name: ticketDetails.attendee_first_name,
-          last_name: ticketDetails.attendee_last_name,
-          email: ticketDetails.attendee_email
+          first_name: ticketDetails.attendee_first_name || 'Unregistered',
+          last_name: ticketDetails.attendee_last_name || 'Ticket',
+          email: ticketDetails.attendee_email || ticketDetails.purchaser_email
         },
         ticket_details: {
           type: ticketDetails.ticket_type,
