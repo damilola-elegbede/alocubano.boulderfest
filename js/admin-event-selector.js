@@ -39,7 +39,7 @@ class EventSelector {
 
       // If no event is selected or selected event doesn't exist, select the first active event
       if (this.selectedEventId === 'all' || !this.events.find(e => e.id === this.selectedEventId)) {
-        const activeEvent = this.events.find(e => e.status === 'active' || e.status === 'upcoming');
+        const activeEvent = this.events.find(e => e.status === 'active' || e.status === 'upcoming' || e.status === 'test');
         if (activeEvent) {
           this.selectedEventId = activeEvent.id.toString();
           localStorage.setItem('selectedEventId', this.selectedEventId);

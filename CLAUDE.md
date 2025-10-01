@@ -100,17 +100,20 @@ npm run verify-structure        # Verify project structure (via build)
 ### Theme System
 
 **Hybrid Architecture:**
+
 - **Admin pages**: Always dark theme (non-configurable)
 - **Main site**: User-controlled themes (System/Light/Dark)
 - **Performance optimized**: Cached DOM queries, debounced operations
 - **FOUC prevention**: Synchronous theme application on page load
 
 **Key Components:**
+
 - `js/theme-manager.js`: Core theme management and detection
 - `js/theme-toggle.js`: Three-state toggle component with accessibility
 - `css/base.css`: CSS variable system with dark mode overrides
 
 **Usage Guidelines:**
+
 - Use semantic CSS variables (`--color-text-primary`) over direct colors
 - Test components in both light and dark themes
 - Include theme-manager.js early to prevent FOUC
@@ -136,6 +139,23 @@ npm run verify-structure        # Verify project structure (via build)
 - **E2E tests**: 12 comprehensive flows with Vercel Preview Deployments (`npm run test:e2e`)
 - **Simple execution**: Direct API testing with minimal mocking
 - **Zero abstractions**: Every test readable by any JavaScript developer
+
+## Vercel Configuration
+
+### Static Asset Routing (vercel.json)
+
+**Identity Rewrite for Manifest Icons:**
+
+The manifest file references static images like `/images/icon-144x144.png`, but Vercel's default SPA routing redirects `/images/` paths to `index.html`, causing browsers to receive HTML instead of the actual PNG files. This produces "Failed to fetch" console errors when browsers try to load manifest icons.
+
+```json
+{
+  "source": "/images/:path*",
+  "destination": "/images/:path*"
+}
+```
+
+This identity rewrite forces Vercel to serve actual static files from the `/images/` directory instead of applying SPA routing rules. Required for any static assets that must bypass Vercel's default HTML fallback behavior.
 
 ## Key API Patterns
 
@@ -604,6 +624,7 @@ npm run migrate:status          # Check migration status
 - [API Documentation](/docs/api/README.md)
 
 ## Important Instruction Reminders
+
 Do what has been asked; nothing more, nothing less.
 NEVER create files unless they're absolutely necessary for achieving your goal.
 ALWAYS prefer editing an existing file to creating a new one.
