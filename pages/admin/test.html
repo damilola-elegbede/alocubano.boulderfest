@@ -351,10 +351,10 @@
             { ticketType: 'test-saturday-pass', eventId: -2, price: 35.00, name: '[TEST] Saturday Pass', quantity: 1 }
           ];
 
-          // Get existing cart or create new one
+          // Get existing cart or create new one (use correct storage key)
           let cart;
           try {
-            const cartData = localStorage.getItem('cart');
+            const cartData = localStorage.getItem('alocubano_cart');
             cart = cartData ? JSON.parse(cartData) : null;
           } catch (e) {
             cart = null;
@@ -389,8 +389,8 @@
           // Update metadata
           cart.metadata.updatedAt = Date.now();
 
-          // Save to localStorage
-          localStorage.setItem('cart', JSON.stringify(cart));
+          // Save to localStorage (use correct storage key)
+          localStorage.setItem('alocubano_cart', JSON.stringify(cart));
 
           resultDiv.className = 'test-result success';
           resultDiv.innerHTML = `
