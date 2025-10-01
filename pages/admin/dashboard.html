@@ -142,36 +142,6 @@
           <p class="admin-header-subtitle">A Lo Cubano Boulder Fest - Festival Management & Analytics</p>
         </div>
         <div class="admin-header-actions">
-          <!-- Event Selector in Header -->
-          <div id="header-event-selector-container"></div>
-
-          <!-- Compact Data Mode Toggle -->
-          <div class="compact-mode-toggle" role="group" aria-labelledby="header-data-mode-heading">
-            <span class="mode-toggle-label" id="header-data-mode-heading">Data Mode</span>
-            <div class="mode-switch" role="radiogroup" aria-labelledby="header-data-mode-heading">
-              <button class="mode-option production-mode active"
-                      onclick="switchDataMode(false)"
-                      data-testid="header-production-mode-btn"
-                      role="radio"
-                      aria-checked="true"
-                      aria-label="Production data view">
-                <span class="mode-icon">🎯</span>
-                <span>Production</span>
-                <div class="mode-status-dot"></div>
-              </button>
-              <button class="mode-option test-mode"
-                      onclick="switchDataMode(true)"
-                      data-testid="header-test-mode-btn"
-                      role="radio"
-                      aria-checked="false"
-                      aria-label="Test data view">
-                <span class="mode-icon">🧪</span>
-                <span>Test</span>
-                <div class="mode-status-dot"></div>
-              </button>
-            </div>
-          </div>
-
           <button class="admin-btn admin-btn-success" onclick="syncToSheets()">
             <span>Sync to Sheets</span>
           </button>
@@ -208,6 +178,11 @@
         <li class="admin-nav-item">
           <a href="/admin/checkin" class="admin-nav-link">
             <span>Check-in Scanner</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/test" class="admin-nav-link">
+            <span>🧪 Test</span>
           </a>
         </li>
         <li class="admin-nav-item">
@@ -474,11 +449,6 @@
             url.searchParams.set('eventId', eventId);
           }
 
-          // Add test mode parameter if in test mode view
-          if (window.testModeView) {
-            url.searchParams.set('includeTestData', 'true');
-          }
-
           const token = localStorage.getItem('adminToken');
           if (!token) {
             throw new Error('No authentication token found');
@@ -504,13 +474,6 @@
           displayStats(data.stats);
           displayEvents(data.events || []);
           displayTicketTypes(data.ticketTypes || []);
-
-          // Remove loading states from mode toggle buttons
-          const buttons = document.querySelectorAll('.mode-btn[role="radio"], .mode-option[role="radio"]');
-          buttons.forEach(btn => {
-            btn.classList.remove('test-mode-loading');
-            btn.removeAttribute('aria-busy');
-          });
 
           await loadFlaggedTickets();
           await loadRegistrations();
@@ -744,65 +707,47 @@
           ? Math.round((stats.checked_in / stats.total_tickets) * 100)
           : 0;
 
-        // Check if we're in test mode view
-        const isTestMode = window.testModeView || false;
-        const dataTypeLabel = isTestMode ? "Test" : "Production";
-        const dataTypeClass = isTestMode ? "test-data" : "production-data";
-        const modeIcon = isTestMode ? "🧪" : "🎯";
-
-        // Add global test mode indicator to page
-        updateGlobalTestModeIndicator(isTestMode);
-
         statsGrid.innerHTML = `
-                <div class="admin-stat-card ${dataTypeClass}">
-                    <h3 class="stat-label">${modeIcon} Total Tickets</h3>
+                <div class="admin-stat-card">
+                    <h3 class="stat-label">Total Tickets</h3>
                     <div class="stat-number">${stats.total_tickets || 0}</div>
-                    ${isTestMode ? '<div class="test-badge">TEST</div>' : ''}
                 </div>
-                <div class="admin-stat-card ${dataTypeClass}">
-                    <h3 class="stat-label">${modeIcon} Checked In</h3>
+                <div class="admin-stat-card">
+                    <h3 class="stat-label">Checked In</h3>
                     <div class="stat-number">${stats.checked_in || 0}</div>
                     <div class="stat-label admin-mt-sm">${checkinPercentage}%</div>
-                    ${isTestMode ? '<div class="test-badge">TEST</div>' : ''}
                 </div>
-                <div class="admin-stat-card ${dataTypeClass}">
-                    <h3 class="stat-label">${modeIcon} Revenue</h3>
+                <div class="admin-stat-card">
+                    <h3 class="stat-label">Revenue</h3>
                     <div class="stat-number">$${(stats.total_revenue || 0).toFixed(2)}</div>
-                    ${isTestMode ? '<div class="test-badge">TEST</div>' : ''}
                 </div>
-                <div class="admin-stat-card ${dataTypeClass}">
-                    <h3 class="stat-label">${modeIcon} Orders</h3>
+                <div class="admin-stat-card">
+                    <h3 class="stat-label">Orders</h3>
                     <div class="stat-number">${stats.total_orders || 0}</div>
-                    ${isTestMode ? '<div class="test-badge">TEST</div>' : ''}
                 </div>
-                <div class="admin-stat-card ${dataTypeClass}">
-                    <h3 class="stat-label">${modeIcon} Workshop Tickets</h3>
+                <div class="admin-stat-card">
+                    <h3 class="stat-label">Workshop Tickets</h3>
                     <div class="stat-number">${stats.workshop_tickets || 0}</div>
-                    ${isTestMode ? '<div class="test-badge">TEST</div>' : ''}
                 </div>
-                <div class="admin-stat-card ${dataTypeClass}">
-                    <h3 class="stat-label">${modeIcon} VIP Tickets</h3>
+                <div class="admin-stat-card">
+                    <h3 class="stat-label">VIP Tickets</h3>
                     <div class="stat-number">${stats.vip_tickets || 0}</div>
-                    ${isTestMode ? '<div class="test-badge">TEST</div>' : ''}
                 </div>
                 <!-- Wallet Statistics -->
-                <div class="admin-stat-card ${dataTypeClass}">
-                    <h3 class="stat-label">${modeIcon} Apple Wallet</h3>
+                <div class="admin-stat-card">
+                    <h3 class="stat-label">Apple Wallet</h3>
                     <div class="stat-number">${stats.apple_wallet_users || 0}</div>
                     <div class="stat-label admin-mt-sm">${stats.total_tickets ? Math.round((stats.apple_wallet_users / stats.total_tickets) * 100) : 0}% adoption</div>
-                    ${isTestMode ? '<div class="test-badge">TEST</div>' : ''}
                 </div>
-                <div class="admin-stat-card ${dataTypeClass}">
-                    <h3 class="stat-label">${modeIcon} Google Wallet</h3>
+                <div class="admin-stat-card">
+                    <h3 class="stat-label">Google Wallet</h3>
                     <div class="stat-number">${stats.google_wallet_users || 0}</div>
                     <div class="stat-label admin-mt-sm">${stats.total_tickets ? Math.round((stats.google_wallet_users / stats.total_tickets) * 100) : 0}% adoption</div>
-                    ${isTestMode ? '<div class="test-badge">TEST</div>' : ''}
                 </div>
-                <div class="admin-stat-card ${dataTypeClass}">
-                    <h3 class="stat-label">${modeIcon} QR Generated</h3>
+                <div class="admin-stat-card">
+                    <h3 class="stat-label">QR Generated</h3>
                     <div class="stat-number">${stats.qr_generated || 0}</div>
                     <div class="stat-label admin-mt-sm">${stats.total_tickets ? Math.round((stats.qr_generated / stats.total_tickets) * 100) : 0}% ready</div>
-                    ${isTestMode ? '<div class="test-badge">TEST</div>' : ''}
                 </div>
             `;
       }
@@ -978,93 +923,6 @@
         ticketTypesTable.innerHTML = sections;
       }
 
-      // Switch between test and production data view
-      function switchDataMode(isTestMode) {
-        window.testModeView = isTestMode;
-
-        // Update ARIA states for radio buttons (both old and new toggles)
-        const buttons = document.querySelectorAll('.mode-btn[role="radio"], .mode-option[role="radio"]');
-        buttons.forEach(btn => {
-          const isTestButton = btn.classList.contains('test-mode-btn') || btn.classList.contains('test-mode');
-          const isActive = (isTestMode && isTestButton) || (!isTestMode && !isTestButton);
-
-          btn.setAttribute('aria-checked', isActive.toString());
-
-          // Update active class for new compact toggle
-          if (btn.classList.contains('mode-option')) {
-            btn.classList.toggle('active', isActive);
-          }
-
-          // Add loading state
-          btn.classList.add('test-mode-loading');
-          btn.setAttribute('aria-busy', 'true');
-        });
-
-        // Update mode switch visual state
-        const modeSwitches = document.querySelectorAll('.mode-switch');
-        modeSwitches.forEach(switchEl => {
-          switchEl.classList.toggle('test-mode', isTestMode);
-        });
-
-        // Announce mode switch to screen readers
-        const modeType = isTestMode ? 'test data' : 'production data';
-        const announcer = document.getElementById('test-mode-announcer') || createScreenReaderAnnouncer();
-        setTimeout(() => {
-          announcer.textContent = `Switched to ${modeType} view. Loading dashboard statistics...`;
-        }, 100);
-
-        const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
-        loadDashboardData(selectedEventId);
-      }
-
-      // Helper function to create screen reader announcer
-      function createScreenReaderAnnouncer() {
-        const announcer = document.createElement('div');
-        announcer.id = 'test-mode-announcer';
-        announcer.setAttribute('aria-live', 'polite');
-        announcer.setAttribute('aria-atomic', 'true');
-        announcer.className = 'visually-hidden';
-        document.body.appendChild(announcer);
-        return announcer;
-      }
-
-      // Update global test mode indicator
-      function updateGlobalTestModeIndicator(isTestMode) {
-        const headerTitle = document.querySelector('.admin-header-title');
-        const headerSubtitle = document.querySelector('.admin-header-subtitle');
-
-        if (isTestMode) {
-          // Add test mode indicator to header
-          if (!headerTitle.querySelector('.global-test-indicator')) {
-            const testIndicator = document.createElement('span');
-            testIndicator.className = 'global-test-indicator';
-            testIndicator.innerHTML = '<span class="test-badge">TEST MODE</span>';
-            headerTitle.appendChild(testIndicator);
-          }
-
-          // Update subtitle to show test mode
-          if (headerSubtitle) {
-            headerSubtitle.innerHTML = 'A Lo Cubano Boulder Fest - <span style="color: var(--color-warning); font-weight: 700;">TEST DATA VIEW</span>';
-          }
-
-          // Add test mode class to body
-          document.body.classList.add('admin-test-mode-active');
-        } else {
-          // Remove test mode indicator
-          const testIndicator = headerTitle.querySelector('.global-test-indicator');
-          if (testIndicator) {
-            testIndicator.remove();
-          }
-
-          // Reset subtitle
-          if (headerSubtitle) {
-            headerSubtitle.textContent = 'A Lo Cubano Boulder Fest - Festival Management & Analytics';
-          }
-
-          // Remove test mode class from body
-          document.body.classList.remove('admin-test-mode-active');
-        }
-      }
 
       // Load registrations
       async function loadRegistrations(page = 0) {
@@ -1087,7 +945,6 @@
           ...(checkedIn && { checkedIn }),
           ...(paymentMethod && { paymentMethod }),
           ...(selectedEventId && { eventId: selectedEventId }),
-          ...(window.testModeView && { includeTestData: 'true' }),
         });
 
         try {
@@ -1151,8 +1008,6 @@
                 `;
           return;
         }
-
-        const isTestModeView = window.testModeView || false;
 
         const tableHTML = `
                 <table class="admin-table">
@@ -1351,7 +1206,6 @@
           ...(checkedIn && { checkedIn }),
           ...(paymentMethod && { paymentMethod }),
           ...(selectedEventId && { eventId: selectedEventId }),
-          ...(window.testModeView && { includeTestData: 'true' }),
         });
 
         try {
@@ -1372,14 +1226,13 @@
           // Convert to CSV
           const csv = convertToCSV(data.registrations);
 
-          // Download with test mode prefix
+          // Download CSV
           const blob = new Blob([csv], { type: "text/csv" });
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement("a");
           a.href = url;
-          const modePrefix = window.testModeView ? 'test-data-' : 'production-data-';
           const timestamp = timeManager ? timeManager.formatDate(new Date()).replace(/\s/g, '-') : new Date().toISOString().split("T")[0];
-          a.download = `${modePrefix}registrations-${timestamp}.csv`;
+          a.download = `registrations-${timestamp}.csv`;
           a.click();
         } catch (error) {
           alert(`Export failed: ${escapeHtml(error.message)}`);
@@ -1528,25 +1381,6 @@
           }
         });
 
-      // Initialize header toggle state
-      function initializeHeaderToggleState() {
-        const isTestMode = window.testModeView || false;
-        const headerButtons = document.querySelectorAll('.admin-header-actions .mode-option[role="radio"]');
-
-        headerButtons.forEach(btn => {
-          const isTestButton = btn.classList.contains('test-mode');
-          const isActive = (isTestMode && isTestButton) || (!isTestMode && !isTestButton);
-
-          btn.setAttribute('aria-checked', isActive.toString());
-          btn.classList.toggle('active', isActive);
-        });
-
-        // Update mode switch visual state
-        const headerModeSwitch = document.querySelector('.admin-header-actions .mode-switch');
-        if (headerModeSwitch) {
-          headerModeSwitch.classList.toggle('test-mode', isTestMode);
-        }
-      }
 
       // Global auth promise to prevent race conditions
       let authPromise = null;
@@ -1568,13 +1402,11 @@
         }
 
         // Only proceed with initialization if authenticated
-        initializeHeaderToggleState();
         if (window.eventSelector) {
           await window.eventSelector.init();
 
-          // Render event selector in both navigation and header
+          // Render event selector in navigation
           window.eventSelector.render('event-selector-container');
-          window.eventSelector.render('header-event-selector-container');
 
           // Load dashboard with selected event
           const selectedEventId = window.eventSelector.getSelectedEventId();

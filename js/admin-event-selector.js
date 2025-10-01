@@ -99,7 +99,10 @@ class EventSelector {
       option.selected = this.selectedEventId === event.id.toString();
 
       // SECURITY: Use textContent for user data to prevent XSS injection
-      const displayText = `${this.escapeText(event.name)} (${this.escapeText(event.type)}) - ${this.escapeText(event.status)}`;
+      // Add test indicator for test events (event_id < 0 or status === 'test')
+      const isTestEvent = event.id < 0 || event.status === 'test';
+      const testPrefix = isTestEvent ? '🧪 ' : '';
+      const displayText = `${testPrefix}${this.escapeText(event.name)} (${this.escapeText(event.type)}) - ${this.escapeText(event.status)}`;
       option.textContent = displayText;
 
       select.appendChild(option);
