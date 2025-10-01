@@ -271,19 +271,39 @@ async function captureOrderHandler(req, res) {
             const ticketId = crypto.randomUUID();
             const eventId = ticket.eventId || 1; // Use eventId from cart or default to 1
             const priceCents = ticket.price_cents || ticket.price || 0;
+            const eventDate = ticket.eventDate || null;
+
+            // Calculate registration deadline: 7 days before event date, or 24 hours from now
+            let registrationDeadline;
+            const now = new Date();
+
+            if (eventDate) {
+              const eventDateObj = new Date(eventDate);
+              registrationDeadline = new Date(eventDateObj.getTime() - (7 * 24 * 60 * 60 * 1000));
+
+              // If deadline is in the past, use 24 hours from now
+              if (registrationDeadline <= now) {
+                registrationDeadline = new Date(now.getTime() + (24 * 60 * 60 * 1000));
+              }
+            } else {
+              // No event date, use 24 hours from now
+              registrationDeadline = new Date(now.getTime() + (24 * 60 * 60 * 1000));
+            }
 
             await db.execute({
               sql: `INSERT INTO tickets
-                    (ticket_id, transaction_id, ticket_type, event_id, price_cents,
-                     registration_status, status, created_at, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    (ticket_id, transaction_id, ticket_type, event_id, event_date, price_cents,
+                     registration_status, registration_deadline, status, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
               args: [
                 ticketId,
                 transactionId,
                 ticket.name || 'General Admission',
                 eventId,
+                eventDate,
                 priceCents,
                 'pending',
+                registrationDeadline.toISOString(),
                 'valid',
                 new Date().toISOString(),
                 new Date().toISOString()
