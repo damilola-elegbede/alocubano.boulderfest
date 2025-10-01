@@ -333,8 +333,8 @@
       document.documentElement.style.visibility = 'visible';
       document.documentElement.style.opacity = '1';
 
-      // Add test tickets to cart
-      async function addTestTicketsToCart() {
+      // Add test tickets to cart (writes directly to localStorage)
+      function addTestTicketsToCart() {
         const btn = document.getElementById('add-test-tickets-btn');
         const resultDiv = document.getElementById('add-tickets-result');
         const originalText = btn.innerHTML;
@@ -344,31 +344,53 @@
           btn.innerHTML = '<span>⏳</span><span>Adding tickets...</span>';
           resultDiv.className = 'test-result';
 
-          // CRITICAL FIX: Wait for cart manager to be initialized
-          if (!window.cartManager) {
-            throw new Error('Cart manager not initialized. Please refresh the page.');
-          }
-
           // Define test tickets based on bootstrap.json
           const testTickets = [
-            { ticketId: 'test-vip-pass', eventId: -2, price: 150.00, name: '[TEST] VIP Pass', quantity: 1 },
-            { ticketId: 'test-weekender-pass', eventId: -1, price: 75.00, name: '[TEST] Weekender Pass', quantity: 1 },
-            { ticketId: 'test-saturday-pass', eventId: -2, price: 35.00, name: '[TEST] Saturday Pass', quantity: 1 }
+            { ticketType: 'test-vip-pass', eventId: -2, price: 150.00, name: '[TEST] VIP Pass', quantity: 1 },
+            { ticketType: 'test-weekender-pass', eventId: -1, price: 75.00, name: '[TEST] Weekender Pass', quantity: 1 },
+            { ticketType: 'test-saturday-pass', eventId: -2, price: 35.00, name: '[TEST] Saturday Pass', quantity: 1 }
           ];
 
-          // CRITICAL FIX: Use CartManager API directly instead of events
-          for (const ticket of testTickets) {
-            await window.cartManager.upsertTicket({
-              ticketType: ticket.ticketId,
-              quantity: ticket.quantity,
-              price: Math.round(ticket.price * 100), // CRITICAL: Convert dollars to cents
-              name: ticket.name,
-              eventId: ticket.eventId
-            });
+          // Get existing cart or create new one
+          let cart;
+          try {
+            const cartData = localStorage.getItem('cart');
+            cart = cartData ? JSON.parse(cartData) : null;
+          } catch (e) {
+            cart = null;
           }
 
-          // Wait a moment for cart UI to update
-          await new Promise(resolve => setTimeout(resolve, 500));
+          // Initialize cart structure if needed
+          if (!cart || typeof cart !== 'object' || !cart.tickets) {
+            cart = {
+              tickets: {},
+              donations: [],
+              metadata: {
+                createdAt: Date.now(),
+                updatedAt: Date.now(),
+                sessionId: `session_${Date.now()}_${Math.random().toString(36).substring(2)}`,
+                checkoutStartedAt: null,
+                checkoutSessionId: null
+              }
+            };
+          }
+
+          // Add tickets to cart
+          for (const ticket of testTickets) {
+            cart.tickets[ticket.ticketType] = {
+              ticketType: ticket.ticketType,
+              quantity: ticket.quantity,
+              price: Math.round(ticket.price * 100), // Convert dollars to cents
+              name: ticket.name,
+              eventId: ticket.eventId
+            };
+          }
+
+          // Update metadata
+          cart.metadata.updatedAt = Date.now();
+
+          // Save to localStorage
+          localStorage.setItem('cart', JSON.stringify(cart));
 
           resultDiv.className = 'test-result success';
           resultDiv.innerHTML = `
@@ -379,6 +401,7 @@
               <li>1× [TEST] Saturday Pass ($35.00)</li>
             </ul>
             <p style="margin-top: 0.5rem;">Total: $260.00</p>
+            <p style="margin-top: 0.5rem;"><strong>Click "View Customer Cart" to see the items on /tickets page</strong></p>
           `;
 
         } catch (error) {
@@ -467,12 +490,6 @@
         div.textContent = text;
         return div.innerHTML;
       }
-    </script>
-
-    <!-- Import cart manager for test utilities -->
-    <script type="module">
-      import { CartManager } from '/js/cart.js';
-      window.cartManager = await CartManager.getInstance();
     </script>
   </body>
 </html>
