@@ -809,12 +809,17 @@
           const captureData = await captureResponse.json();
 
           if (captureResponse.ok && captureData.success) {
-            // Transform PayPal data to unified format
+            // Transform PayPal data to unified format (matching Stripe structure)
             const unifiedData = {
               success: true,
               paymentMethod: 'paypal',
+              orderNumber: captureData.orderNumber,
+              transaction: captureData.transaction,
+              hasTickets: captureData.hasTickets,
+              registrationToken: captureData.registrationToken,
+              registrationUrl: captureData.registrationUrl,
               order: {
-                id: captureData.orderId,
+                id: captureData.orderNumber || captureData.orderId,
                 totalAmount: captureData.amount,
                 customerEmail: captureData.payer?.email
               },

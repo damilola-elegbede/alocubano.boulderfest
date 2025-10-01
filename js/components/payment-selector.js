@@ -533,6 +533,13 @@ class PaymentSelector {
             const data = await response.json();
 
             if (!response.ok) {
+                // eslint-disable-next-line no-console
+                console.error('PayPal order creation failed:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    error: data.error,
+                    data: data
+                });
                 // Mobile-friendly error handling
                 if (data.fallbackUrl && this.isMobileDevice()) {
                     this.showMobileFallbackOptions(data);

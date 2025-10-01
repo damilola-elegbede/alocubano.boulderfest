@@ -65,6 +65,13 @@ async function createOrderHandler(req, res) {
       req.headers['x-test-mode'] === 'true' ||
       cartItems?.some(item => item.isTestItem || item.name?.startsWith('TEST'));
 
+    // eslint-disable-next-line no-console
+    console.log('PayPal: Request payload:', {
+      cartItems,
+      customerInfo,
+      testMode: isRequestTestMode
+    });
+
     logTestModeOperation('PayPal: Order creation started', {
       cartItems: cartItems?.length,
       isRequestTestMode
@@ -121,12 +128,25 @@ async function createOrderHandler(req, res) {
       const itemTotal = item.price * item.quantity;
       totalAmount += itemTotal;
 
-      // Prepare sanitized item for PayPal
+      // Convert cents to dollars for PayPal (prices stored in cents internally)
+      const priceInDollars = (item.price / 100).toFixed(2);
+
+      // eslint-disable-next-line no-console
+      console.log('PayPal: Item processed:', {
+        name: item.name,
+        priceCents: item.price,
+        priceDollars: priceInDollars,
+        quantity: item.quantity,
+        itemTotal,
+        runningTotal: totalAmount
+      });
+
+      // Prepare sanitized item for PayPal (use camelCase for SDK)
       orderItems.push({
         name: item.name.substring(0, 127), // PayPal name limit
-        unit_amount: {
-          currency_code: 'USD',
-          value: item.price.toFixed(2)
+        unitAmount: {
+          currencyCode: 'USD',
+          value: priceInDollars // PayPal expects dollars, not cents
         },
         quantity: item.quantity.toString(),
         description: item.description,
@@ -134,8 +154,18 @@ async function createOrderHandler(req, res) {
       });
     }
 
-    // Validate total amount
-    if (totalAmount <= 0 || totalAmount > 10000) {
+    // Validate total amount (totalAmount is in cents, convert to dollars for validation)
+    const totalInDollars = totalAmount / 100;
+
+    // eslint-disable-next-line no-console
+    console.log('PayPal: Final total validation:', {
+      totalAmountCents: totalAmount,
+      totalAmountDollars: totalInDollars,
+      isValid: totalAmount > 0 && totalInDollars <= 10000,
+      orderItemsCount: orderItems.length
+    });
+
+    if (totalAmount <= 0 || totalInDollars > 10000) {
       return res.status(400).json({
         error: 'Invalid order total. Amount must be between $0.01 and $10,000'
       });
@@ -163,40 +193,45 @@ async function createOrderHandler(req, res) {
       ? `${customerInfo.firstName} ${customerInfo.lastName}`
       : 'Pending PayPal User';
 
-    // Create PayPal order data
+    // Create PayPal order data (use camelCase for SDK)
+    // PayPal expects amounts in dollars, not cents
     const paypalOrderData = {
       intent: 'CAPTURE',
-      purchase_units: [
+      purchaseUnits: [
         {
-          reference_id: referenceId,
+          referenceId: referenceId,
           amount: {
-            currency_code: 'USD',
-            value: totalAmount.toFixed(2),
+            currencyCode: 'USD',
+            value: totalInDollars.toFixed(2), // Convert cents to dollars
             breakdown: {
-              item_total: {
-                currency_code: 'USD',
-                value: totalAmount.toFixed(2)
+              itemTotal: {
+                currencyCode: 'USD',
+                value: totalInDollars.toFixed(2) // Convert cents to dollars
               }
             }
           },
           items: orderItems,
           description: 'A Lo Cubano Boulder Fest Purchase',
-          custom_id: customerEmail,
-          invoice_id: referenceId
+          customId: customerEmail,
+          invoiceId: referenceId
         }
       ],
-      application_context: {
-        brand_name: 'A Lo Cubano Boulder Fest',
-        landing_page: 'BILLING',
-        user_action: 'PAY_NOW',
-        return_url: `${baseUrl}/success?reference_id=${referenceId}&paypal=true${isRequestTestMode ? '&test_mode=true' : ''}`,
-        cancel_url: `${baseUrl}/failure?reference_id=${referenceId}&paypal=true${isRequestTestMode ? '&test_mode=true' : ''}`,
-        shipping_preference: 'NO_SHIPPING'
+      applicationContext: {
+        brandName: 'A Lo Cubano Boulder Fest',
+        landingPage: 'BILLING',
+        userAction: 'PAY_NOW',
+        returnUrl: `${baseUrl}/success?reference_id=${referenceId}&paypal=true${isRequestTestMode ? '&test_mode=true' : ''}`,
+        cancelUrl: `${baseUrl}/failure?reference_id=${referenceId}&paypal=true${isRequestTestMode ? '&test_mode=true' : ''}`,
+        shippingPreference: 'NO_SHIPPING'
       }
     };
 
     // Create PayPal order using service
     const paypalOrder = await createPayPalOrder(paypalOrderData, req);
+
+    // Determine event_id from cart items (use first item's eventId, including test events with negative IDs)
+    const firstEventId = cartItems[0]?.eventId;
+    const eventId = firstEventId || null; // Use the numeric event ID directly (including -1, -2 for test events)
 
     // Store transaction in database BEFORE redirect
     const insertResult = await dbClient.execute({
@@ -211,8 +246,8 @@ async function createOrderHandler(req, res) {
         transactionUuid,
         orderType,
         'pending',
-        Math.round(totalAmount * 100), // Convert to cents
-        Math.round(totalAmount * 100),
+        Math.round(totalAmount), // Already in cents, don't multiply
+        Math.round(totalAmount),
         'USD',
         paypalOrder.id,
         'paypal',
@@ -225,9 +260,10 @@ async function createOrderHandler(req, res) {
           paypal_order_id: paypalOrder.id,
           reference_id: referenceId,
           total_amount: totalAmount,
-          item_count: cartItems.length
+          item_count: cartItems.length,
+          event_id: eventId
         })),
-        'boulderfest_2026',
+        eventId, // Use dynamic event_id or null for test tickets
         'website',
         getTestModeFlag(req)
       ]
@@ -254,7 +290,8 @@ async function createOrderHandler(req, res) {
       approvalUrl: approvalUrl,
       transactionId: transactionId,
       referenceId: referenceId,
-      totalAmount: totalAmount,
+      totalAmount: totalInDollars, // Return in dollars for consistency with PayPal
+      totalAmountCents: totalAmount, // Also include cents for reference
       testMode: isRequestTestMode
     });
 

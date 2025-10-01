@@ -553,8 +553,9 @@
     <script>
       // Get parameters from URL
       const urlParams = new URLSearchParams(window.location.search);
-      const sessionId = urlParams.get("session_id");
+      const sessionId = urlParams.get("session_id"); // Stripe
       const orderId = urlParams.get("order_id");
+      const token = urlParams.get("token"); // PayPal order token
 
       // Elements
       const loadingState = document.querySelector(".loading-state");
@@ -588,18 +589,19 @@
 
       /**
        * Processes payment cancellation by calling the API and updating UI
-       * Handles both session_id and order_id parameters from URL
+       * Handles both Stripe (session_id, order_id) and PayPal (token) parameters from URL
        */
       async function processCancellation() {
         // Show loading briefly
         loadingState.style.display = "block";
 
-        if (sessionId || orderId) {
+        if (sessionId || orderId || token) {
           try {
             // Call the checkout-cancel API to update order status
             const params = new URLSearchParams();
             if (sessionId) params.append("session_id", sessionId);
             if (orderId) params.append("order_id", orderId);
+            if (token) params.append("token", token); // PayPal order token
 
             const response = await fetch(
               `/api/payments/checkout-cancel?${params}`,

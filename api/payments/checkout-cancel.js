@@ -2,7 +2,7 @@ import { setSecureCorsHeaders } from '../../lib/cors-config.js';
 
 /**
  * Checkout Cancel API Endpoint
- * Handles cancelled Stripe Checkout returns
+ * Handles cancelled Stripe and PayPal checkout returns
  */
 
 export default async function handler(req, res) {
@@ -21,11 +21,12 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { session_id, order_id } = req.query;
+    const { session_id, order_id, token } = req.query;
 
     console.log('Checkout cancelled:', {
       sessionId: session_id,
       orderId: order_id,
+      paypalToken: token,
       timestamp: new Date().toISOString()
     });
 
