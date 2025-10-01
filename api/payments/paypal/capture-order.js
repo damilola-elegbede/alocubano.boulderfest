@@ -1,10 +1,16 @@
 /**
  * PayPal Capture Order API Endpoint
  * Handles PayPal order capture after user approval
+ * Creates tickets and registration tokens like Stripe flow
  */
 
 import { setCorsHeaders } from '../../utils/cors.js';
 import { withRateLimit } from '../../utils/rate-limiter.js';
+import { getDatabaseClient } from '../../../lib/database.js';
+import { RegistrationTokenService } from '../../../lib/registration-token-service.js';
+import { generateOrderId } from '../../../lib/order-id-generator.js';
+import { processDatabaseResult } from '../../../lib/bigint-serializer.js';
+import timeUtils from '../../../lib/time-utils.js';
 
 // PayPal API base URL configuration
 const PAYPAL_API_URL =
@@ -143,15 +149,165 @@ async function captureOrderHandler(req, res) {
       throw new Error('No capture details found in response');
     }
 
+    // Get database connection
+    const db = await getDatabaseClient();
+    const paypalOrderId = captureResult.id;
+    const amountCents = Math.round(parseFloat(capture.amount.value) * 100);
+    const customerEmail = captureResult.payer?.email_address;
+    const customerName = captureResult.payer?.name
+      ? `${captureResult.payer.name.given_name || ''} ${captureResult.payer.name.surname || ''}`.trim()
+      : null;
+
+    // Find existing transaction by PayPal order ID
+    const existingTransaction = await db.execute({
+      sql: 'SELECT * FROM transactions WHERE paypal_order_id = ? LIMIT 1',
+      args: [paypalOrderId]
+    });
+
+    let transactionId;
+    let orderNumber;
+    let cartData = [];
+    let hasTickets = false;
+
+    if (existingTransaction.rows && existingTransaction.rows.length > 0) {
+      // Update existing transaction
+      const transaction = existingTransaction.rows[0];
+      transactionId = transaction.id;
+      orderNumber = transaction.order_number;
+
+      // Parse cart data from transaction
+      if (transaction.cart_data) {
+        try {
+          cartData = JSON.parse(transaction.cart_data);
+          hasTickets = cartData.some(item => item.type === 'ticket');
+        } catch (e) {
+          console.error('Failed to parse cart data from transaction:', e);
+        }
+      }
+
+      // Update transaction status
+      await db.execute({
+        sql: `UPDATE transactions
+              SET status = ?, customer_email = ?, customer_name = ?, updated_at = ?
+              WHERE id = ?`,
+        args: ['completed', customerEmail, customerName, new Date().toISOString(), transactionId]
+      });
+
+      console.log('Updated existing transaction:', transactionId);
+    } else {
+      // Create new transaction (fallback if not found)
+      console.warn('PayPal transaction not found in database, creating new record');
+
+      const isTestMode = PAYPAL_API_URL.includes('sandbox');
+      orderNumber = await generateOrderId(isTestMode);
+
+      const transactionResult = await db.execute({
+        sql: `INSERT INTO transactions
+              (uuid, order_number, stripe_session_id, status, amount_cents, total_amount,
+               customer_email, customer_name, payment_method, created_at, updated_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [
+          crypto.randomUUID(),
+          orderNumber,
+          paypalOrderId, // Store PayPal order ID in stripe_session_id for compatibility
+          'completed',
+          amountCents,
+          amountCents,
+          customerEmail,
+          customerName,
+          'paypal',
+          new Date().toISOString(),
+          new Date().toISOString()
+        ]
+      });
+
+      transactionId = transactionResult.lastInsertRowid;
+    }
+
+    // Create tickets if this is a ticket purchase and they don't exist yet
+    let ticketCount = 0;
+    if (hasTickets) {
+      // Check if tickets already exist
+      const existingTickets = await db.execute({
+        sql: 'SELECT COUNT(*) as count FROM tickets WHERE transaction_id = ?',
+        args: [transactionId]
+      });
+
+      if (existingTickets.rows[0].count === 0) {
+        // Create tickets
+        for (const ticket of cartData.filter(item => item.type === 'ticket')) {
+          const quantity = ticket.quantity || 1;
+          for (let i = 0; i < quantity; i++) {
+            const ticketUuid = crypto.randomUUID();
+            await db.execute({
+              sql: `INSERT INTO tickets
+                    (uuid, transaction_id, ticket_type, price_cents, status, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)`,
+              args: [
+                ticketUuid,
+                transactionId,
+                ticket.name || 'General Admission',
+                ticket.price_cents || Math.round(ticket.price * 100),
+                'active',
+                new Date().toISOString(),
+                new Date().toISOString()
+              ]
+            });
+            ticketCount++;
+          }
+        }
+        console.log(`Created ${ticketCount} tickets for PayPal order ${paypalOrderId}`);
+      } else {
+        ticketCount = existingTickets.rows[0].count;
+        console.log(`Found existing ${ticketCount} tickets for PayPal order ${paypalOrderId}`);
+      }
+    }
+
+    // Generate registration token
+    let registrationToken = null;
+    let registrationUrl = null;
+
+    if (hasTickets) {
+      try {
+        const tokenService = new RegistrationTokenService();
+        await tokenService.ensureInitialized();
+        registrationToken = await tokenService.createToken(transactionId);
+
+        // Update transaction with token
+        await db.execute({
+          sql: 'UPDATE transactions SET registration_token = ? WHERE id = ?',
+          args: [registrationToken, transactionId]
+        });
+
+        registrationUrl = `/pages/core/register-tickets.html?token=${registrationToken}`;
+        console.log(`Generated registration token for PayPal order ${paypalOrderId}`);
+      } catch (tokenError) {
+        console.error('Failed to generate registration token:', tokenError);
+      }
+    }
+
     // Prepare success response with transaction details
     const response = {
       success: true,
       paymentMethod: 'paypal',
+      orderNumber: orderNumber,
       orderId: captureResult.id,
       captureId: capture.id,
       status: 'COMPLETED',
       amount: parseFloat(capture.amount.value),
       currency: capture.amount.currency_code,
+      hasTickets,
+      registrationToken,
+      registrationUrl,
+      transaction: timeUtils.enhanceApiResponse(processDatabaseResult({
+        orderNumber: orderNumber,
+        status: 'completed',
+        totalAmount: amountCents,
+        customerEmail: customerEmail,
+        customerName: customerName,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }), ['created_at', 'updated_at'], { includeDeadline: true, deadlineHours: 24 }),
       payer: {
         payerId: captureResult.payer?.payer_id,
         email: captureResult.payer?.email_address,
@@ -175,15 +331,20 @@ async function captureOrderHandler(req, res) {
         ]
       },
       message: 'Payment successful! Thank you for your purchase.',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      timezone: 'America/Denver',
+      currentTime: timeUtils.getCurrentTime()
     };
 
     // Log successful capture for monitoring
     console.log('PayPal order captured successfully:', {
       orderId: captureResult.id,
+      orderNumber: orderNumber,
       captureId: capture.id,
       amount: capture.amount.value,
       currency: capture.amount.currency_code,
+      ticketCount,
+      hasRegistration: !!registrationToken
     });
 
     return res.status(200).json(response);
