@@ -287,25 +287,11 @@
               <span>➕</span>
               <span>Add Test Tickets</span>
             </button>
-          </div>
-          <div id="add-tickets-result" class="test-result"></div>
-        </div>
-
-        <!-- View Cart Card -->
-        <div class="test-card">
-          <div class="test-card-header">
-            <span class="test-card-icon">🛒</span>
-            <h2 class="test-card-title">View Customer Cart</h2>
-          </div>
-          <p class="test-card-description">
-            Navigate to the tickets page to view and manage your cart. This will open the customer-facing tickets page where you can see your added test tickets.
-          </p>
-          <div class="test-actions">
-            <button class="test-btn test-btn-success" onclick="viewCart()">
-              <span>👁️</span>
+            <button class="test-btn test-btn-danger" onclick="viewCart()" style="background: var(--color-red); color: white; border-color: var(--color-red);">
               <span>View Cart</span>
             </button>
           </div>
+          <div id="add-tickets-result" class="test-result"></div>
         </div>
 
         <!-- Clear Test Data Card -->
