@@ -294,6 +294,26 @@
           <div id="add-tickets-result" class="test-result"></div>
         </div>
 
+        <!-- Create Unregistered Test Ticket Card -->
+        <div class="test-card">
+          <div class="test-card-header">
+            <span class="test-card-icon">📝</span>
+            <h2 class="test-card-title">Create Unregistered Test Ticket</h2>
+          </div>
+          <p class="test-card-description">
+            Create a single test ticket with pending registration status to test the registration deadline and reminder system.
+            The ticket will have a registration deadline of <strong>7 days from creation</strong>, and test reminders will be sent
+            <strong>every 5 minutes</strong> (6 total reminders over 30 minutes).
+          </p>
+          <div class="test-actions">
+            <button class="test-btn test-btn-success" id="create-test-ticket-btn" onclick="createUnregisteredTestTicket()">
+              <span>➕</span>
+              <span>Create Test Ticket</span>
+            </button>
+          </div>
+          <div id="create-ticket-result" class="test-result"></div>
+        </div>
+
         <!-- Clear Test Data Card -->
         <div class="test-card">
           <div class="test-card-header">
@@ -443,6 +463,66 @@
       // View cart
       function viewCart() {
         window.location.href = '/tickets';
+      }
+
+      // Create unregistered test ticket
+      async function createUnregisteredTestTicket() {
+        const btn = document.getElementById('create-test-ticket-btn');
+        const resultDiv = document.getElementById('create-ticket-result');
+        const originalText = btn.innerHTML;
+
+        try {
+          btn.disabled = true;
+          btn.innerHTML = '<span>⏳</span><span>Creating test ticket...</span>';
+          resultDiv.className = 'test-result';
+
+          const token = localStorage.getItem('adminToken');
+          if (!token) {
+            throw new Error('No authentication token found');
+          }
+
+          const response = await fetch('/api/admin/test-data/create-ticket', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to create test ticket');
+          }
+
+          const data = await response.json();
+          const ticketData = data.data;
+
+          resultDiv.className = 'test-result success';
+          resultDiv.innerHTML = `
+            <strong>✅ Success!</strong> Test ticket created successfully:
+            <ul style="margin-top: 0.5rem; margin-left: 1.5rem;">
+              <li><strong>Ticket ID:</strong> <a href="/admin/tickets?search=${escapeHtml(ticketData.ticket_id)}" style="color: var(--color-blue); text-decoration: underline;">${escapeHtml(ticketData.ticket_id)}</a></li>
+              <li><strong>Order Number:</strong> ${escapeHtml(ticketData.order_number)}</li>
+              <li><strong>Attendee:</strong> ${escapeHtml(ticketData.attendee.first_name)} ${escapeHtml(ticketData.attendee.last_name)}</li>
+              <li><strong>Email:</strong> ${escapeHtml(ticketData.attendee.email)}</li>
+              <li><strong>Registration Deadline:</strong> ${escapeHtml(ticketData.registration_deadline_mt)}</li>
+              <li><strong>Reminders Scheduled:</strong> ${ticketData.reminders_scheduled} (every 5 minutes)</li>
+            </ul>
+            <p style="margin-top: 0.75rem; padding: 0.5rem; background: rgba(59, 130, 246, 0.1); border: 1px solid var(--color-blue); border-radius: 4px;">
+              <strong>📧 Next Steps:</strong> Check ${escapeHtml(ticketData.attendee.email)} for reminder emails starting in 5 minutes.
+              <br/>
+              <strong>🔗 Registration Link:</strong> <a href="/registration/${escapeHtml(ticketData.registration_token)}" style="color: var(--color-blue); text-decoration: underline;" target="_blank">Open Registration Page</a>
+            </p>
+          `;
+
+        } catch (error) {
+          console.error('Failed to create test ticket:', error);
+          resultDiv.className = 'test-result error';
+          resultDiv.innerHTML = `<strong>❌ Error:</strong> ${escapeHtml(error.message)}`;
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+        }
       }
 
       // Clear test data
