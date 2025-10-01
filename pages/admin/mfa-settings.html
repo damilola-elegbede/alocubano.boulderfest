@@ -452,7 +452,7 @@
         const statusIcon = isEnabled ? "✅" : "❌";
         const statusTitle = isEnabled ? "MFA is Enabled" : "MFA is Disabled";
         const statusDesc = isEnabled
-          ? `Enabled on ${new Date(mfaStatus.enabledAt).toLocaleDateString()}`
+          ? `Enabled on ${window.timeManager ? window.timeManager.formatDate(mfaStatus.enabledAt) : new Date(mfaStatus.enabledAt).toLocaleDateString()}`
           : "Your account is not protected by multi-factor authentication";
 
         container.innerHTML = `
@@ -833,7 +833,7 @@
       // Download backup codes
       function downloadBackupCodes(codes) {
         const content = `A Lo Cubano Boulder Fest - Admin MFA Backup Codes
-Generated: ${new Date().toLocaleString()}
+Generated: ${window.timeManager ? window.timeManager.formatDateTime(new Date()) : new Date().toLocaleString()} (Mountain Time)
 
 IMPORTANT: Store these codes safely. Each can only be used once.
 

@@ -3,6 +3,7 @@ import ticketService from "../../lib/ticket-service.js";
 import tokenService from "../../lib/token-service.js";
 import { formatTicketType, TOKEN_ACTIONS } from "../../lib/ticket-config.js";
 import { processDatabaseResult } from "../../lib/bigint-serializer.js";
+import timeUtils from "../../lib/time-utils.js";
 
 export default async function handler(req, res) {
   let db;
@@ -20,15 +21,26 @@ export default async function handler(req, res) {
           return res.status(404).json({ error: 'Ticket not found' });
         }
 
-        return res.status(200).json({ ticket });
+        // Enhance with Mountain Time fields
+        const enhancedTicket = timeUtils.enhanceApiResponse(ticket,
+          ['created_at', 'updated_at', 'event_date', 'registered_at', 'registration_deadline', 'checked_in_at'],
+          { includeDeadline: false }
+        );
+
+        return res.status(200).json({ ticket: enhancedTicket });
       }
 
       if (token) {
         // Get tickets by access token (secure method)
         try {
           const tickets = await ticketService.getTicketsByAccessToken(token);
+          // Enhance with Mountain Time fields
+          const enhancedTickets = timeUtils.enhanceApiResponse(tickets,
+            ['created_at', 'updated_at', 'event_date', 'registered_at', 'registration_deadline', 'checked_in_at'],
+            { includeDeadline: false }
+          );
           return res.status(200).json({
-            tickets: tickets.map((ticket) => ({
+            tickets: enhancedTickets.map((ticket) => ({
               ...ticket,
               formatted_type: formatTicketType(ticket.ticket_type)
             }))
@@ -41,8 +53,13 @@ export default async function handler(req, res) {
       if (email) {
         // Get tickets by email (legacy method - consider deprecating)
         const tickets = await ticketService.getTicketsByEmail(email);
+        // Enhance with Mountain Time fields
+        const enhancedTickets = timeUtils.enhanceApiResponse(tickets,
+          ['created_at', 'updated_at', 'event_date', 'registered_at', 'registration_deadline', 'checked_in_at'],
+          { includeDeadline: false }
+        );
         return res.status(200).json({
-          tickets: tickets.map((ticket) => ({
+          tickets: enhancedTickets.map((ticket) => ({
             ...ticket,
             formatted_type: formatTicketType(ticket.ticket_type)
           }))
@@ -65,7 +82,13 @@ export default async function handler(req, res) {
         const tickets = await ticketService.getTransactionTickets(
           processedResult.rows[0].id
         );
-        return res.status(200).json({ tickets: processDatabaseResult(tickets) });
+        // Enhance with Mountain Time fields
+        const processedTickets = processDatabaseResult(tickets);
+        const enhancedTickets = timeUtils.enhanceApiResponse(processedTickets,
+          ['created_at', 'updated_at', 'event_date', 'registered_at', 'registration_deadline', 'checked_in_at'],
+          { includeDeadline: false }
+        );
+        return res.status(200).json({ tickets: enhancedTickets });
       }
 
       return res

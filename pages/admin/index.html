@@ -1480,7 +1480,7 @@
                 </div>
               </div>
               <div class="history-entry-time">
-                ${new Date(entry.timestamp).toLocaleString()}
+                ${window.timeManager ? window.timeManager.formatDateTime(entry.timestamp) : new Date(entry.timestamp).toLocaleString()}
                 ${entry.response.timing ? ` • ${entry.response.timing}ms` : ''}
               </div>
             </div>
@@ -1910,7 +1910,7 @@
           });
           const data = await response.json();
           alert(
-            `CSRF Token Info:\n\nToken: ${data.csrfToken.substring(0, 20)}...\nExpires: ${new Date(Date.now() + 3600000).toLocaleString()}`,
+            `CSRF Token Info:\n\nToken: ${data.csrfToken.substring(0, 20)}...\nExpires: ${window.timeManager ? window.timeManager.formatDateTime(new Date(Date.now() + 3600000)) : new Date(Date.now() + 3600000).toLocaleString()} (MT)`,
           );
         } catch (error) {
           alert("Failed to fetch CSRF token");
