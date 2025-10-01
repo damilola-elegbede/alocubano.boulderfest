@@ -1,6 +1,7 @@
 import sharp from 'sharp';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { existsSync } from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -11,8 +12,19 @@ const OUTPUT_DIR = __dirname;
 async function resizeWalletLogo() {
   console.log('🎨 Resizing wallet-logo.png...\n');
 
+  // Validate source file exists
+  if (!existsSync(SOURCE)) {
+    throw new Error(`Source file not found: ${SOURCE}. Please run create-banner-logo.js first.`);
+  }
+
   // Get original dimensions
   const metadata = await sharp(SOURCE).metadata();
+
+  // Validate metadata
+  if (!metadata.width || !metadata.height || !Number.isFinite(metadata.width) || !Number.isFinite(metadata.height)) {
+    throw new Error(`Invalid image metadata: width=${metadata.width}, height=${metadata.height}`);
+  }
+
   console.log(`Source: ${metadata.width}x${metadata.height}px`);
 
   // Generate @2x (2x size)
