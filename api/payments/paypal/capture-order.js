@@ -268,17 +268,23 @@ async function captureOrderHandler(req, res) {
           });
 
           for (let i = 0; i < quantity; i++) {
-            const ticketUuid = crypto.randomUUID();
+            const ticketId = crypto.randomUUID();
+            const eventId = ticket.eventId || 1; // Use eventId from cart or default to 1
+            const priceCents = ticket.price_cents || ticket.price || 0;
+
             await db.execute({
               sql: `INSERT INTO tickets
-                    (uuid, transaction_id, ticket_type, price_cents, status, created_at, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                    (ticket_id, transaction_id, ticket_type, event_id, price_cents,
+                     registration_status, status, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
               args: [
-                ticketUuid,
+                ticketId,
                 transactionId,
                 ticket.name || 'General Admission',
-                ticket.price_cents || Math.round(ticket.price * 100),
-                'active',
+                eventId,
+                priceCents,
+                'pending',
+                'valid',
                 new Date().toISOString(),
                 new Date().toISOString()
               ]
