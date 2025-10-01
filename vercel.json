@@ -11,7 +11,7 @@
     },
     "api/admin/**/*.js": {
       "maxDuration": 15,
-      "includeFiles": "lib/{database,auth,session-manager,audit-logger,logger,crypto-utils,test-data-cleanup,test-mode-utils,cors-config}.js"
+      "includeFiles": "lib/{database,auth,session-manager,audit-logger,logger,crypto-utils,test-data-cleanup,test-mode-utils,cors-config,ticket-id-generator,order-number-generator,registration-token-service,reminder-scheduler,time-utils}.js"
     },
     "api/payments/**/*.js": {
       "maxDuration": 30,
