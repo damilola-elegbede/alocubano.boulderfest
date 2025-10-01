@@ -11,6 +11,7 @@ import { RegistrationTokenService } from '../../../lib/registration-token-servic
 import { generateOrderId } from '../../../lib/order-id-generator.js';
 import { processDatabaseResult } from '../../../lib/bigint-serializer.js';
 import timeUtils from '../../../lib/time-utils.js';
+import { getTicketEmailService } from '../../../lib/ticket-email-service.js';
 
 // PayPal API base URL configuration
 const PAYPAL_API_URL =
@@ -175,6 +176,13 @@ async function captureOrderHandler(req, res) {
       transactionId = transaction.id;
       orderNumber = transaction.order_number;
 
+      // Generate order_number if it doesn't exist
+      if (!orderNumber) {
+        const isTestMode = PAYPAL_API_URL.includes('sandbox') || transaction.is_test;
+        orderNumber = await generateOrderId(isTestMode);
+        console.log(`Generated order number for PayPal transaction: ${orderNumber}`);
+      }
+
       // Parse cart data from transaction
       if (transaction.cart_data) {
         try {
@@ -185,12 +193,12 @@ async function captureOrderHandler(req, res) {
         }
       }
 
-      // Update transaction status
+      // Update transaction status and order_number
       await db.execute({
         sql: `UPDATE transactions
-              SET status = ?, customer_email = ?, customer_name = ?, updated_at = ?
+              SET status = ?, order_number = ?, customer_email = ?, customer_name = ?, updated_at = ?
               WHERE id = ?`,
-        args: ['completed', customerEmail, customerName, new Date().toISOString(), transactionId]
+        args: ['completed', orderNumber, customerEmail, customerName, new Date().toISOString(), transactionId]
       });
 
       console.log('Updated existing transaction:', transactionId);
@@ -283,6 +291,31 @@ async function captureOrderHandler(req, res) {
         console.log(`Generated registration token for PayPal order ${paypalOrderId}`);
       } catch (tokenError) {
         console.error('Failed to generate registration token:', tokenError);
+      }
+    }
+
+    // Send ticket confirmation email (same as Stripe flow)
+    if (hasTickets && ticketCount > 0) {
+      try {
+        // Fetch complete transaction with tickets for email
+        const transactionForEmail = await db.execute({
+          sql: `SELECT t.*,
+                COUNT(tk.id) as ticket_count
+                FROM transactions t
+                LEFT JOIN tickets tk ON tk.transaction_id = t.id
+                WHERE t.id = ?
+                GROUP BY t.id`,
+          args: [transactionId]
+        });
+
+        if (transactionForEmail.rows && transactionForEmail.rows.length > 0) {
+          const ticketEmailService = getTicketEmailService();
+          await ticketEmailService.sendTicketConfirmation(transactionForEmail.rows[0]);
+          console.log(`Sent ticket confirmation email for PayPal order ${paypalOrderId}`);
+        }
+      } catch (emailError) {
+        // Don't fail the capture if email fails - log and continue
+        console.error('Failed to send confirmation email:', emailError);
       }
     }
 
