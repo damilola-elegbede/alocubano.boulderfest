@@ -91,7 +91,7 @@ async function generateIcon(width, height, filename) {
 
 /**
  * Generate background image with centered logo watermark
- * Black background with white logo at 5% opacity
+ * Black background with white logo at 20% opacity
  * Background won't block QR code (unlike strip images)
  */
 async function generateBackground(width, height, logoSize, filename) {
@@ -119,13 +119,13 @@ async function generateBackground(width, height, logoSize, filename) {
     .raw()
     .toBuffer({ resolveWithObject: true });
 
-  // Manually reduce alpha channel to 5% opacity
+  // Manually reduce alpha channel to 20% opacity
   const { data, info } = resizedLogo;
   const pixels = new Uint8Array(data);
 
   // RGBA format: every 4th byte is alpha
   for (let i = 3; i < pixels.length; i += 4) {
-    pixels[i] = Math.floor(pixels[i] * 0.05); // Reduce alpha to 5%
+    pixels[i] = Math.floor(pixels[i] * 0.20); // Reduce alpha to 20%
   }
 
   // Create PNG from modified raw data
@@ -154,7 +154,7 @@ async function generateBackground(width, height, logoSize, filename) {
     .png()
     .toFile(outputPath);
 
-  console.log(`  ✓ ${filename} (${width}x${height}, ${logoSize}x${logoSize} logo @ 5% opacity)`);
+  console.log(`  ✓ ${filename} (${width}x${height}, ${logoSize}x${logoSize} logo @ 20% opacity)`);
 }
 
 // Run the generator
