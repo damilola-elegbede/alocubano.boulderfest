@@ -109,15 +109,34 @@ async function generateBackground(width, height, logoSize, filename) {
   .toBuffer();
 
   // Resize logo and reduce opacity to 5%
-  const logo = await sharp(SOURCE_LOGO)
+  const resizedLogo = await sharp(SOURCE_LOGO)
     .resize(logoSize, logoSize, {
       fit: 'contain',
       background: { r: 255, g: 255, b: 255, alpha: 0 }
     })
     .ensureAlpha()
-    .linear(1, -(255 * 0.95)) // Reduce opacity to 5% (multiply alpha by 0.05)
-    .png()
-    .toBuffer();
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  // Manually reduce alpha channel to 5% opacity
+  const { data, info } = resizedLogo;
+  const pixels = new Uint8Array(data);
+
+  // RGBA format: every 4th byte is alpha
+  for (let i = 3; i < pixels.length; i += 4) {
+    pixels[i] = Math.floor(pixels[i] * 0.05); // Reduce alpha to 5%
+  }
+
+  // Create PNG from modified raw data
+  const logo = await sharp(pixels, {
+    raw: {
+      width: info.width,
+      height: info.height,
+      channels: 4
+    }
+  })
+  .png()
+  .toBuffer();
 
   // Composite logo on background
   // Position: center
