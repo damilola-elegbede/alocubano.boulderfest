@@ -11,7 +11,7 @@ import { RegistrationTokenService } from '../../../lib/registration-token-servic
 import { generateOrderId } from '../../../lib/order-id-generator.js';
 import { processDatabaseResult } from '../../../lib/bigint-serializer.js';
 import timeUtils from '../../../lib/time-utils.js';
-import { getTicketEmailService } from '../../../lib/ticket-email-service.js';
+import { getTicketEmailService } from '../../../lib/ticket-email-service-brevo.js';
 
 // PayPal API base URL configuration
 const PAYPAL_API_URL =
