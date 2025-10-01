@@ -37,9 +37,9 @@ async function generateWalletImages() {
     await generateIcon(58, 58, 'icon@2x.png');
     await generateIcon(87, 87, 'icon@3x.png');
 
-    // 3. Generate Strip Images with Watermark
-    // Strip goes behind primary fields, won't block QR code
-    console.log('\n🎨 Generating strip images with watermark...');
+    // 3. Generate Strip Images with Logo
+    // Strip displays logo at 100% opacity, goes behind secondary fields
+    console.log('\n🎨 Generating strip images with logo...');
     await generateStrip(375, 98, 80, 'strip.png');
     await generateStrip(750, 196, 160, 'strip@2x.png');
     await generateStrip(1125, 294, 240, 'strip@3x.png');
@@ -89,9 +89,9 @@ async function generateIcon(width, height, filename) {
 }
 
 /**
- * Generate strip image with centered watermark
- * White background with logo at 5% opacity
- * Strip goes behind primary fields, won't block QR code
+ * Generate strip image with centered logo
+ * White background with logo at 100% opacity (fully visible)
+ * Strip goes behind secondary fields, won't block QR code
  */
 async function generateStrip(width, height, logoSize, filename) {
   const outputPath = join(OUTPUT_DIR, filename);
@@ -108,42 +108,23 @@ async function generateStrip(width, height, logoSize, filename) {
   .png()
   .toBuffer();
 
-  // Resize logo for watermark
-  const watermarkResized = await sharp(SOURCE_LOGO)
+  // Resize logo (100% opacity - fully visible)
+  const logo = await sharp(SOURCE_LOGO)
     .resize(logoSize, logoSize, {
       fit: 'contain',
       background: { r: 255, g: 255, b: 255, alpha: 0 }
     })
-    .ensureAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
+    .png()
+    .toBuffer();
 
-  // Apply 5% opacity to watermark by reducing alpha channel
-  const { data, info } = watermarkResized;
-  for (let i = 0; i < data.length; i += 4) {
-    // Reduce alpha channel to 5% of original
-    data[i + 3] = Math.floor(data[i + 3] * 0.05);
-  }
-
-  // Convert back to PNG buffer
-  const watermark = await sharp(data, {
-    raw: {
-      width: info.width,
-      height: info.height,
-      channels: 4
-    }
-  })
-  .png()
-  .toBuffer();
-
-  // Composite watermark on strip
+  // Composite logo on strip
   // Position: center
   const centerX = Math.floor((width - logoSize) / 2);
   const centerY = Math.floor((height - logoSize) / 2);
 
   await sharp(background)
     .composite([{
-      input: watermark,
+      input: logo,
       top: centerY,
       left: centerX,
       blend: 'over'
@@ -151,7 +132,7 @@ async function generateStrip(width, height, logoSize, filename) {
     .png()
     .toFile(outputPath);
 
-  console.log(`  ✓ ${filename} (${width}x${height}, ${logoSize}x${logoSize} logo @ 5% opacity)`);
+  console.log(`  ✓ ${filename} (${width}x${height}, ${logoSize}x${logoSize} logo @ 100% opacity)`);
 }
 
 // Run the generator
