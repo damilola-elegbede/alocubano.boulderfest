@@ -25,11 +25,11 @@ async function generateWalletImages() {
     console.log(`✓ Source logo found: ${SOURCE_LOGO}`);
 
     // 1. Generate Logo Images (horizontal header logo)
-    // Aspect ratio: 160x50 = 3.2:1
+    // Smaller, narrower logos for cleaner appearance (3:1 aspect ratio)
     console.log('\n📸 Generating logo images...');
-    await generateLogo(160, 50, 'logo.png');
-    await generateLogo(320, 100, 'logo@2x.png');
-    await generateLogo(480, 150, 'logo@3x.png');
+    await generateLogo(120, 40, 'logo.png');
+    await generateLogo(240, 80, 'logo@2x.png');
+    await generateLogo(360, 120, 'logo@3x.png');
 
     // 2. Generate Icon Images (square icon)
     console.log('\n🔲 Generating icon images...');
@@ -37,11 +37,12 @@ async function generateWalletImages() {
     await generateIcon(58, 58, 'icon@2x.png');
     await generateIcon(87, 87, 'icon@3x.png');
 
-    // 3. Generate Background Images with Watermark
-    console.log('\n🖼️  Generating background images with watermark...');
-    await generateBackground(180, 220, 150, 'background.png');
-    await generateBackground(360, 440, 300, 'background@2x.png');
-    await generateBackground(540, 660, 450, 'background@3x.png');
+    // 3. Generate Strip Images with Watermark
+    // Strip goes behind primary fields, won't block QR code
+    console.log('\n🎨 Generating strip images with watermark...');
+    await generateStrip(375, 98, 80, 'strip.png');
+    await generateStrip(750, 196, 160, 'strip@2x.png');
+    await generateStrip(1125, 294, 240, 'strip@3x.png');
 
     console.log('\n✅ All wallet images generated successfully!');
     console.log(`\nImages saved to: ${OUTPUT_DIR}`);
@@ -88,10 +89,11 @@ async function generateIcon(width, height, filename) {
 }
 
 /**
- * Generate background image with centered watermark
+ * Generate strip image with centered watermark
  * White background with logo at 5% opacity
+ * Strip goes behind primary fields, won't block QR code
  */
-async function generateBackground(width, height, logoSize, filename) {
+async function generateStrip(width, height, logoSize, filename) {
   const outputPath = join(OUTPUT_DIR, filename);
 
   // Create white background
@@ -134,7 +136,7 @@ async function generateBackground(width, height, logoSize, filename) {
   .png()
   .toBuffer();
 
-  // Composite watermark on background
+  // Composite watermark on strip
   // Position: center
   const centerX = Math.floor((width - logoSize) / 2);
   const centerY = Math.floor((height - logoSize) / 2);
