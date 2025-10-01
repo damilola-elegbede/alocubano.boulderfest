@@ -96,7 +96,8 @@ export default async function handler(req, res) {
     const cleanupCriteria = {
       event_ids: [-1, -2],
       create_backup: false,
-      verify_checksums: true
+      verify_checksums: true,
+      force: true
     };
 
     console.log('Starting test data cleanup with criteria:', cleanupCriteria);
