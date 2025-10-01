@@ -1411,6 +1411,9 @@
                 const csrfData = await csrfResponse.json();
                 requestOptions.headers['X-CSRF-Token'] = csrfData.token;
               }
+            } catch (error) {
+              console.warn('Could not fetch CSRF token:', error);
+            }
           }
 
           const response = await fetch(path, requestOptions);
