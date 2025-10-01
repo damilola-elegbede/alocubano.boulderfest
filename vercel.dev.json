@@ -270,7 +270,7 @@
         },
         {
           "key": "Access-Control-Allow-Origin",
-          "value": "https://www.alocubanoboulderfest.org"
+          "value": "*"
         },
         { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS, PUT, DELETE" },
         { "key": "Access-Control-Allow-Headers", "value": "Content-Type, X-CSRF-Token, Authorization" }

@@ -48,10 +48,14 @@ log('📦', 'Pulling environment variables from Vercel...', colors.cyan);
 try {
   const token = process.env.VERCEL_TOKEN;
   if (token) {
-    execSync(`./node_modules/.bin/vercel env pull .env.local --token ${token} --yes`, {
-      cwd: rootDir,
-      stdio: 'pipe'
-    });
+    execSync(
+      './node_modules/.bin/vercel env pull .env.local --yes',
+      {
+        cwd: rootDir,
+        stdio: 'pipe',
+        env: { ...process.env, VERCEL_TOKEN: token }
+      }
+    );
     log('✅', 'Environment variables pulled successfully', colors.green);
   } else {
     log('⚠️', 'VERCEL_TOKEN not found in environment, skipping env pull', colors.yellow);
@@ -71,8 +75,19 @@ if (existsSync(path.join(rootDir, '.env.local'))) {
 }
 
 // Step 3: Load vercel.json configuration
-const vercelConfig = JSON.parse(readFileSync(path.join(rootDir, 'vercel.json'), 'utf-8'));
-log('✅', 'Loaded vercel.json configuration', colors.green);
+let vercelConfig;
+try {
+  const configPath = path.join(rootDir, 'vercel.json');
+  if (!existsSync(configPath)) {
+    log('❌', 'vercel.json not found', colors.red);
+    process.exit(1);
+  }
+  vercelConfig = JSON.parse(readFileSync(configPath, 'utf-8'));
+  log('✅', 'Loaded vercel.json configuration', colors.green);
+} catch (error) {
+  log('❌', `Failed to load vercel.json: ${error.message}`, colors.red);
+  process.exit(1);
+}
 
 // Step 4: Create Express app
 const app = express();
@@ -150,13 +165,28 @@ rewrites.forEach(rewrite => {
     // Serve the destination file
     let filePath = path.join(rootDir, destination);
 
-    // Add .html extension if not present
-    if (!filePath.endsWith('.html') && !existsSync(filePath)) {
-      filePath += '.html';
+    // Prevent path traversal
+    const resolvedPath = path.resolve(filePath);
+    if (!resolvedPath.startsWith(rootDir)) {
+      log('⚠️', `Blocked path traversal attempt: ${destination}`, colors.yellow);
+      res.status(403).send('Forbidden');
+      return;
     }
 
-    if (existsSync(filePath)) {
-      res.sendFile(filePath);
+    // Add .html extension if not present
+    if (!filePath.endsWith('.html') && !existsSync(resolvedPath)) {
+      filePath += '.html';
+      const newResolvedPath = path.resolve(filePath);
+      if (!newResolvedPath.startsWith(rootDir)) {
+        log('⚠️', `Blocked path traversal attempt: ${destination}`, colors.yellow);
+        res.status(403).send('Forbidden');
+        return;
+      }
+    }
+
+    const finalPath = path.resolve(filePath);
+    if (existsSync(finalPath)) {
+      res.sendFile(finalPath);
     } else {
       res.status(404).send('Not Found');
     }
@@ -187,10 +217,6 @@ function proxyToVercelDev(req, res) {
     res.status(502).send('Bad Gateway: Vercel dev not available');
   });
 
-  if (req.body) {
-    proxyReq.write(JSON.stringify(req.body));
-  }
-
   req.pipe(proxyReq, { end: true });
 }
 
@@ -215,19 +241,27 @@ const vercelArgs = [
   '--yes',
   '--local-config', 'vercel.dev.json'
 ];
-if (token) {
-  vercelArgs.push('--token', token);
-}
 
 const vercelDev = spawn('./node_modules/.bin/vercel', vercelArgs, {
   cwd: rootDir,
   stdio: 'inherit',
-  env: { ...process.env }
+  detached: true,
+  env: {
+    ...process.env,
+    VERCEL_TOKEN: token || process.env.VERCEL_TOKEN
+  }
 });
 
 vercelDev.on('error', (error) => {
   log('❌', `Failed to start Vercel dev: ${error.message}`, colors.red);
   process.exit(1);
+});
+
+vercelDev.on('exit', (code) => {
+  if (code && code !== 0) {
+    log('⚠️', `Vercel dev exited unexpectedly (code ${code})`, colors.yellow);
+    process.exit(code);
+  }
 });
 
 // Wait for Vercel dev to be ready (with timeout)
@@ -291,11 +325,21 @@ app.listen(DEV_PORT, () => {
 process.on('SIGINT', () => {
   console.log('');
   log('🛑', 'Shutting down...', colors.yellow);
-  vercelDev.kill();
+  // Kill the entire process group
+  try {
+    process.kill(-vercelDev.pid);
+  } catch (error) {
+    // Fallback to regular kill if process group kill fails
+    vercelDev.kill();
+  }
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
-  vercelDev.kill();
+  try {
+    process.kill(-vercelDev.pid);
+  } catch (error) {
+    vercelDev.kill();
+  }
   process.exit(0);
 });
