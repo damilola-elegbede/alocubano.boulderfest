@@ -30,7 +30,7 @@ function verifyAdminAuth(req) {
       algorithms: ['HS256'],
       clockTolerance: 5
     });
-    if (!decoded.isAdmin) {
+    if (decoded.role !== 'admin') {
       throw new Error('Not an admin user');
     }
     return decoded;
