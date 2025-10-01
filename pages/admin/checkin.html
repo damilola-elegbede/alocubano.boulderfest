@@ -1140,9 +1140,6 @@
         </button>
       </div>
 
-      <!-- Event Selector -->
-      <div id="event-selector-container"></div>
-
       <div class="admin-alert error offline-indicator" id="offlineIndicator">
         <div class="alert-title">📵 Offline Mode</div>
         <div class="alert-content">Check-ins will sync when connected</div>
@@ -1150,16 +1147,6 @@
 
       <div class="scanner-container" data-testid="scanner-container">
         <!-- Test Mode Indicator for Scanner -->
-        <div class="scanner-test-mode-indicator"
-             id="scannerTestModeIndicator"
-             style="display: none;"
-             role="status"
-             aria-live="polite"
-             aria-label="Scanner test mode status">
-          <span aria-hidden="true">🧪</span>
-          <span>TEST MODE ACTIVE</span>
-          <span class="visually-hidden">Scanner is currently in test mode. Test tickets will be processed differently than production tickets.</span>
-        </div>
 
         <div class="stats-bar" id="statsBar">
           <div class="admin-stat-card">
@@ -3339,18 +3326,6 @@
         } else {
           console.error("AdminAuthGuard not available");
           window.location.href = "/admin/login";
-          return false;
-        }
-      }
-          const data = await response.json();
-          if (!data.valid) {
-            showMobileLogin();
-            return false;
-          }
-          return true;
-        } catch (error) {
-          console.error("Auth check failed:", error);
-          showMobileLogin();
           return false;
         }
       }

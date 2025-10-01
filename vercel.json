@@ -11,7 +11,7 @@
     },
     "api/admin/**/*.js": {
       "maxDuration": 15,
-      "includeFiles": "lib/{database,auth,session-manager,audit-logger,logger,crypto-utils}.js"
+      "includeFiles": "lib/{database,auth,session-manager,audit-logger,logger,crypto-utils,test-data-cleanup,test-mode-utils,cors-config}.js"
     },
     "api/payments/**/*.js": {
       "maxDuration": 30,
@@ -95,6 +95,10 @@
   },
   "rewrites": [
     {
+      "source": "/images/:path*",
+      "destination": "/images/:path*"
+    },
+    {
       "source": "/api/:path*",
       "destination": "/api/:path*"
     },
@@ -155,7 +159,7 @@
       "destination": "/pages/admin/index"
     },
     {
-      "source": "/admin/(login|dashboard|checkin|analytics|mfa-settings|registrations|tickets|api-endpoints|test-dashboard)",
+      "source": "/admin/(login|dashboard|checkin|analytics|mfa-settings|registrations|tickets|api-endpoints|test-dashboard|test)",
       "destination": "/pages/admin/$1"
     }
   ],

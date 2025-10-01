@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <!-- Inline theme detection to prevent FOUC -->
+    <script>
+      (function() {
+        // Admin pages always use dark theme
+        document.documentElement.setAttribute('data-theme', 'dark');
+      })();
+    </script>
+
+    <!-- Pre-render auth check to prevent content flash -->
+    <script>
+      // Hide content immediately to prevent flash
+      document.documentElement.style.visibility = 'hidden';
+      document.documentElement.style.opacity = '0';
+      document.documentElement.style.transition = 'opacity 0.2s ease-in';
+
+      // Quick token validation
+      (async function() {
+        const token = localStorage.getItem('adminToken');
+        if (!token) {
+          window.location.replace('/admin/login');
+          return;
+        }
+
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          if (payload.exp && payload.exp * 1000 < Date.now()) {
+            localStorage.removeItem('adminToken');
+            window.location.replace('/admin/login');
+            return;
+          }
+        } catch (e) {
+          localStorage.removeItem('adminToken');
+          window.location.replace('/admin/login');
+          return;
+        }
+      })();
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test Utilities - Admin Portal</title>
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico" />
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/typography.css" />
+    <link rel="stylesheet" href="/css/components.css" />
+    <link rel="stylesheet" href="/css/navigation.css" />
+    <link rel="stylesheet" href="/css/forms.css" />
+    <link rel="stylesheet" href="/css/admin-overrides.css" />
+    <script type="module" src="/js/theme-manager.js"></script>
+    <script src="/js/admin-auth-guard.js"></script>
+
+    <style>
+      .test-utilities-container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: var(--space-xl);
+      }
+
+      .test-card {
+        background: var(--color-surface-elevated);
+        border-radius: var(--radius-lg);
+        padding: var(--space-2xl);
+        margin-bottom: var(--space-xl);
+        border: 2px solid var(--color-border);
+      }
+
+      .test-card-header {
+        display: flex;
+        align-items: center;
+        gap: var(--space-md);
+        margin-bottom: var(--space-lg);
+      }
+
+      .test-card-icon {
+        font-size: 2rem;
+      }
+
+      .test-card-title {
+        font-family: var(--font-display);
+        font-size: var(--font-size-xl);
+        font-weight: 700;
+        color: var(--color-text-primary);
+        margin: 0;
+      }
+
+      .test-card-description {
+        color: var(--color-text-secondary);
+        margin-bottom: var(--space-xl);
+        line-height: var(--line-height-relaxed);
+      }
+
+      .test-actions {
+        display: flex;
+        gap: var(--space-md);
+        flex-wrap: wrap;
+      }
+
+      .test-btn {
+        padding: var(--space-md) var(--space-xl);
+        border-radius: var(--radius-md);
+        border: none;
+        font-family: var(--font-sans);
+        font-size: var(--font-size-base);
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+      }
+
+      .test-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .test-btn-primary {
+        background: var(--color-blue);
+        color: var(--color-white);
+      }
+
+      .test-btn-primary:hover:not(:disabled) {
+        background: var(--color-blue-dark);
+      }
+
+      .test-btn-success {
+        background: var(--color-success);
+        color: var(--color-white);
+      }
+
+      .test-btn-success:hover:not(:disabled) {
+        background: var(--color-success-dark, #059669);
+      }
+
+      .test-btn-danger {
+        background: var(--color-error);
+        color: var(--color-white);
+      }
+
+      .test-btn-danger:hover:not(:disabled) {
+        background: var(--color-error-dark, #dc2626);
+      }
+
+      .test-result {
+        margin-top: var(--space-lg);
+        padding: var(--space-md);
+        border-radius: var(--radius-md);
+        display: none;
+      }
+
+      .test-result.success {
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid var(--color-success);
+        color: var(--color-success);
+        display: block;
+      }
+
+      .test-result.error {
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid var(--color-error);
+        color: var(--color-error);
+        display: block;
+      }
+
+      .warning-banner {
+        background: rgba(245, 158, 11, 0.1);
+        border: 2px solid var(--color-warning);
+        border-radius: var(--radius-md);
+        padding: var(--space-lg);
+        margin-bottom: var(--space-2xl);
+        display: flex;
+        align-items: flex-start;
+        gap: var(--space-md);
+      }
+
+      .warning-banner-icon {
+        font-size: 1.5rem;
+        flex-shrink: 0;
+      }
+
+      .warning-banner-content {
+        flex: 1;
+      }
+
+      .warning-banner-title {
+        font-weight: 700;
+        color: var(--color-warning);
+        margin-bottom: var(--space-xs);
+      }
+
+      .warning-banner-text {
+        color: var(--color-text-secondary);
+        line-height: var(--line-height-relaxed);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Admin Header -->
+    <header class="admin-header">
+      <div class="admin-header-content">
+        <div>
+          <h1 class="admin-header-title">Test Utilities</h1>
+          <p class="admin-header-subtitle">Development & Testing Tools</p>
+        </div>
+        <div class="admin-header-actions">
+          <button class="admin-btn admin-btn-primary" onclick="logout()">
+            <span>Logout</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Unified Admin Navigation -->
+    <nav class="admin-navigation">
+      <ul class="admin-nav-list">
+        <li class="admin-nav-item">
+          <a href="/admin" class="admin-nav-link">
+            <span>Portal</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/dashboard" class="admin-nav-link">
+            <span>Dashboard</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/tickets" class="admin-nav-link">
+            <span>Tickets</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/analytics" class="admin-nav-link">
+            <span>Analytics</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/checkin" class="admin-nav-link">
+            <span>Check-in Scanner</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/test" class="admin-nav-link active">
+            <span>Test</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/api-endpoints" class="admin-nav-link">
+            <span>API Endpoints</span>
+          </a>
+        </li>
+      </ul>
+
+      <!-- Event Selector -->
+      <div id="event-selector-container"></div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="admin-main">
+      <div class="test-utilities-container">
+        <!-- Warning Banner -->
+        <div class="warning-banner">
+          <span class="warning-banner-icon">⚠️</span>
+          <div class="warning-banner-content">
+            <div class="warning-banner-title">Development Environment Only</div>
+            <div class="warning-banner-text">
+              These utilities are for testing purposes only. Test tickets will have event IDs of -1 (Test Weekender) or -2 (Test Festival) and will be clearly marked throughout the system.
+            </div>
+          </div>
+        </div>
+
+        <!-- Add Test Tickets Card -->
+        <div class="test-card">
+          <div class="test-card-header">
+            <span class="test-card-icon">🎫</span>
+            <h2 class="test-card-title">Add Test Tickets to Cart</h2>
+          </div>
+          <p class="test-card-description">
+            Quickly add test tickets to your cart for testing the checkout flow. This will add one of each test ticket type:
+            <strong>VIP Pass ($150)</strong>, <strong>Weekender Pass ($75)</strong>, and <strong>Saturday Pass ($35)</strong>.
+          </p>
+          <div class="test-actions">
+            <button class="test-btn test-btn-primary" id="add-test-tickets-btn" onclick="addTestTicketsToCart()">
+              <span>➕</span>
+              <span>Add Test Tickets</span>
+            </button>
+            <button class="test-btn test-btn-danger" onclick="viewCart()" style="background: var(--color-red); color: white; border-color: var(--color-red);">
+              <span>View Cart</span>
+            </button>
+          </div>
+          <div id="add-tickets-result" class="test-result"></div>
+        </div>
+
+        <!-- Clear Test Data Card -->
+        <div class="test-card">
+          <div class="test-card-header">
+            <span class="test-card-icon">🗑️</span>
+            <h2 class="test-card-title">Clear Test Tickets</h2>
+          </div>
+          <p class="test-card-description">
+            Remove all test tickets from the database. This will permanently delete all tickets with event IDs -1 or -2, including transactions, registrations, and related data. <strong>This action cannot be undone.</strong>
+          </p>
+          <div class="test-actions">
+            <button class="test-btn test-btn-danger" id="clear-test-data-btn" onclick="clearTestData()">
+              <span>🗑️</span>
+              <span>Clear All Test Tickets</span>
+            </button>
+          </div>
+          <div id="clear-result" class="test-result"></div>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      // Show page content after server-side auth verification
+      async function showAfterAuth() {
+        try {
+          // Use existing AdminAuthGuard for server-side verification
+          const isAuthenticated = await (window.AdminAuthGuard?.verifyAndShow?.() ?? false);
+          if (!isAuthenticated) {
+            localStorage.removeItem('adminToken');
+            window.location.replace('/admin/login');
+            return;
+          }
+          // Only show page after successful server verification
+          document.documentElement.style.visibility = 'visible';
+          document.documentElement.style.opacity = '1';
+        } catch (error) {
+          console.error('Auth verification failed:', error);
+          localStorage.removeItem('adminToken');
+          window.location.replace('/admin/login');
+        }
+      }
+      showAfterAuth();
+
+      // Add test tickets to cart (writes directly to localStorage)
+      function addTestTicketsToCart() {
+        const btn = document.getElementById('add-test-tickets-btn');
+        const resultDiv = document.getElementById('add-tickets-result');
+        const originalText = btn.innerHTML;
+
+        try {
+          btn.disabled = true;
+          btn.innerHTML = '<span>⏳</span><span>Adding tickets...</span>';
+          resultDiv.className = 'test-result';
+
+          // Define test tickets based on bootstrap.json
+          // Include eventName so cart can display proper event names instead of IDs
+          const testTickets = [
+            {
+              ticketType: 'test-vip-pass',
+              eventId: -2,
+              eventName: 'Test Festival',
+              price: 150.00,
+              name: '[TEST] VIP Pass',
+              quantity: 1
+            },
+            {
+              ticketType: 'test-weekender-pass',
+              eventId: -1,
+              eventName: 'Test Weekender',
+              price: 75.00,
+              name: '[TEST] Weekender Pass',
+              quantity: 1
+            },
+            {
+              ticketType: 'test-saturday-pass',
+              eventId: -2,
+              eventName: 'Test Festival',
+              price: 35.00,
+              name: '[TEST] Saturday Pass',
+              quantity: 1
+            }
+          ];
+
+          // Get existing cart or create new one (use correct storage key)
+          let cart;
+          try {
+            const cartData = localStorage.getItem('alocubano_cart');
+            cart = cartData ? JSON.parse(cartData) : null;
+          } catch (e) {
+            cart = null;
+          }
+
+          // Initialize cart structure if needed
+          if (!cart || typeof cart !== 'object' || !cart.tickets) {
+            cart = {
+              tickets: {},
+              donations: [],
+              metadata: {
+                createdAt: Date.now(),
+                updatedAt: Date.now(),
+                sessionId: `session_${Date.now()}_${Math.random().toString(36).substring(2)}`,
+                checkoutStartedAt: null,
+                checkoutSessionId: null
+              }
+            };
+          }
+
+          // Add tickets to cart
+          for (const ticket of testTickets) {
+            cart.tickets[ticket.ticketType] = {
+              ticketType: ticket.ticketType,
+              quantity: ticket.quantity,
+              price: Math.round(ticket.price * 100), // Convert dollars to cents
+              name: ticket.name,
+              eventId: ticket.eventId,
+              eventName: ticket.eventName // Required for cart to display proper event names
+            };
+          }
+
+          // Update metadata
+          cart.metadata.updatedAt = Date.now();
+
+          // Save to localStorage (use correct storage key)
+          localStorage.setItem('alocubano_cart', JSON.stringify(cart));
+
+          resultDiv.className = 'test-result success';
+          resultDiv.innerHTML = `
+            <strong>✅ Success!</strong> Added 3 test tickets to cart:
+            <ul style="margin-top: 0.5rem; margin-left: 1.5rem;">
+              <li>1× [TEST] VIP Pass ($150.00)</li>
+              <li>1× [TEST] Weekender Pass ($75.00)</li>
+              <li>1× [TEST] Saturday Pass ($35.00)</li>
+            </ul>
+            <p style="margin-top: 0.5rem;">Total: $260.00</p>
+            <p style="margin-top: 0.5rem;"><strong>Click "View Customer Cart" to see the items on /tickets page</strong></p>
+          `;
+
+        } catch (error) {
+          console.error('Failed to add test tickets:', error);
+          resultDiv.className = 'test-result error';
+          resultDiv.innerHTML = `<strong>❌ Error:</strong> ${escapeHtml(error.message)}`;
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+        }
+      }
+
+      // View cart
+      function viewCart() {
+        window.location.href = '/tickets';
+      }
+
+      // Clear test data
+      async function clearTestData() {
+        const btn = document.getElementById('clear-test-data-btn');
+        const resultDiv = document.getElementById('clear-result');
+        const originalText = btn.innerHTML;
+
+        // Confirm action
+        if (!confirm('⚠️ Are you sure you want to clear ALL test tickets from the database? This action cannot be undone.')) {
+          return;
+        }
+
+        try {
+          btn.disabled = true;
+          btn.innerHTML = '<span>⏳</span><span>Clearing test data...</span>';
+          resultDiv.className = 'test-result';
+
+          const token = localStorage.getItem('adminToken');
+          if (!token) {
+            throw new Error('No authentication token found');
+          }
+
+          const response = await fetch('/api/admin/test-data/clear', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to clear test data');
+          }
+
+          const data = await response.json();
+
+          resultDiv.className = 'test-result success';
+          resultDiv.innerHTML = `
+            <strong>✅ Success!</strong> Test data cleared successfully:
+            <ul style="margin-top: 0.5rem; margin-left: 1.5rem;">
+              <li>Tickets deleted: ${data.data.tickets_deleted}</li>
+              <li>Transactions deleted: ${data.data.transactions_deleted}</li>
+              <li>Total records deleted: ${data.data.total_records_deleted}</li>
+            </ul>
+            <p style="margin-top: 0.5rem; font-size: 0.875rem; opacity: 0.8;">
+              Completed in ${data.data.duration_ms}ms
+            </p>
+          `;
+
+        } catch (error) {
+          console.error('Failed to clear test data:', error);
+          resultDiv.className = 'test-result error';
+          resultDiv.innerHTML = `<strong>❌ Error:</strong> ${escapeHtml(error.message)}`;
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+        }
+      }
+
+      // Logout function
+      function logout() {
+        localStorage.removeItem('adminToken');
+        window.location.href = '/admin/login';
+      }
+
+      // HTML escape helper
+      function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      }
+    </script>
+  </body>
+</html>

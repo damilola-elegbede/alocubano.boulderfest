@@ -241,6 +241,11 @@
           </a>
         </li>
         <li class="admin-nav-item">
+          <a href="/admin/test" class="admin-nav-link">
+            <span>Test</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
           <a href="/admin/api-endpoints" class="admin-nav-link">
             <span>API Endpoints</span>
           </a>
@@ -632,6 +637,18 @@
           updateTopCustomers();
           updateRecommendations();
           updateLastUpdated();
+        } catch (error) {
+          console.error("Failed to load analytics:", error);
+          // Display error message to user
+          const container = document.querySelector('.analytics-container');
+          if (container) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-banner';
+            errorDiv.style.cssText = 'background: var(--color-error-bg); color: var(--color-error-text); padding: 1rem; margin: 1rem; border-radius: 8px; text-align: center;';
+            errorDiv.textContent = 'Failed to load analytics data. Please refresh the page.';
+            container.insertBefore(errorDiv, container.firstChild);
+          }
+        }
       }
 
       // Update metrics cards
@@ -1193,6 +1210,7 @@
 
         try {
           const headers = {};
+
           // Add CSRF token if available
           try {
             const csrfResponse = await fetch('/api/admin/csrf-token', {
@@ -1202,17 +1220,22 @@
               const csrfData = await csrfResponse.json();
               headers['X-CSRF-Token'] = csrfData.token || csrfData.csrfToken;
             }
+          } catch (csrfError) {
+            // Log CSRF fetch error but continue with logout
+            console.warn("Failed to fetch CSRF token:", csrfError);
+          }
 
           await fetch("/api/admin/login", {
             method: "DELETE",
             headers: headers,
             credentials: "same-origin"
           });
+        } catch (error) {
+          console.error("Logout request failed:", error);
         } finally {
-          // Clear client storage
+          // Always clear client storage and redirect regardless of logout API result
           localStorage.removeItem('adminToken');
           sessionStorage.clear();
-          // Redirect
           window.location.href = '/admin/login';
         }
       }
