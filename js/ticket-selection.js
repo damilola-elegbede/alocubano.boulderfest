@@ -519,13 +519,24 @@ class TicketSelection {
         // Read eventId from card's data attribute (each ticket may have different event)
         const cardEventId = card.dataset.eventId ? parseInt(card.dataset.eventId) : null;
 
+        // Look up event name from events service
+        let eventName = null;
+        if (cardEventId) {
+            try {
+                eventName = await eventsService.getEventName(cardEventId);
+            } catch (error) {
+                console.warn(`Failed to get event name for ID ${cardEventId}:`, error);
+            }
+        }
+
         // Emit event for cart system integration
         const eventDetail = {
             ticketType,
             quantity: currentQuantity,
             price,
             name: ticketName,
-            eventId: cardEventId
+            eventId: cardEventId,
+            eventName: eventName
         };
 
         document.dispatchEvent(
@@ -617,13 +628,24 @@ class TicketSelection {
         // Read eventId from card's data attribute (each ticket may have different event)
         const cardEventId = card.dataset.eventId ? parseInt(card.dataset.eventId) : null;
 
+        // Look up event name from events service
+        let eventName = null;
+        if (cardEventId) {
+            try {
+                eventName = await eventsService.getEventName(cardEventId);
+            } catch (error) {
+                console.warn(`Failed to get event name for ID ${cardEventId}:`, error);
+            }
+        }
+
         // Emit event for cart system integration
         const eventDetail = {
             ticketType,
             quantity: currentQuantity,
             price,
             name: ticketName,
-            eventId: cardEventId
+            eventId: cardEventId,
+            eventName: eventName
         };
 
         document.dispatchEvent(
