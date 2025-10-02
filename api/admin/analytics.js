@@ -31,7 +31,7 @@ async function handler(req, res) {
   let { type, eventId = 'boulder-fest-2026', days = 30 } = req.query;
 
   // Convert numeric eventId to slug (supports event selector returning IDs)
-  if (eventId && /^-?\d+$/.test(eventId)) {
+  if (eventId && /^\d+$/.test(eventId)) {
     try {
       const db = await getDatabaseClient();
       const eventResult = await db.execute({
