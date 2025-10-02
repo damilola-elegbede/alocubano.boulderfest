@@ -73,17 +73,55 @@ async function handler(req, res) {
     });
   }
 
+  // Convert slug back to numeric ID for analytics service
+  let numericEventId;
+
+  // Handle special cases
+  if (validEventId === '-1' || validEventId === 'all') {
+    // Return error for unsupported "all events" selection
+    return res.status(400).json({
+      error: 'Event selection required. Please select a specific event.',
+      hint: 'eventId=-1 or "all" is not supported. Please select an event from the dropdown.'
+    });
+  }
+
+  // Convert slug to numeric ID
+  if (validEventId && !/^\d+$/.test(validEventId)) {
+    try {
+      const db = await getDatabaseClient();
+      const eventResult = await db.execute({
+        sql: 'SELECT id FROM events WHERE slug = ?',
+        args: [validEventId]
+      });
+
+      if (!eventResult.rows || eventResult.rows.length === 0) {
+        return res.status(404).json({
+          error: `Event not found: ${validEventId}`
+        });
+      }
+
+      numericEventId = eventResult.rows[0].id;
+    } catch (error) {
+      console.error('Failed to lookup event by slug:', error);
+      return res.status(500).json({
+        error: 'Failed to lookup event'
+      });
+    }
+  } else {
+    numericEventId = parseInt(validEventId, 10);
+  }
+
   try {
     let data;
 
     switch (type) {
     case 'summary': {
-      data = await analyticsService.generateExecutiveSummary(validEventId);
+      data = await analyticsService.generateExecutiveSummary(numericEventId);
       break;
     }
 
     case 'statistics': {
-      data = await analyticsService.getEventStatistics(validEventId);
+      data = await analyticsService.getEventStatistics(numericEventId);
       break;
     }
 
@@ -94,27 +132,27 @@ async function handler(req, res) {
           error: 'Days parameter must be between 1 and 365'
         });
       }
-      data = await analyticsService.getSalesTrend(trendDays, validEventId);
+      data = await analyticsService.getSalesTrend(trendDays, numericEventId);
       break;
     }
 
     case 'hourly': {
-      data = await analyticsService.getHourlySalesPattern(validEventId);
+      data = await analyticsService.getHourlySalesPattern(numericEventId);
       break;
     }
 
     case 'customers': {
-      data = await analyticsService.getCustomerAnalytics(validEventId);
+      data = await analyticsService.getCustomerAnalytics(numericEventId);
       break;
     }
 
     case 'checkins': {
-      data = await analyticsService.getCheckinAnalytics(validEventId);
+      data = await analyticsService.getCheckinAnalytics(numericEventId);
       break;
     }
 
     case 'revenue': {
-      data = await analyticsService.getRevenueBreakdown(validEventId);
+      data = await analyticsService.getRevenueBreakdown(numericEventId);
       break;
     }
 
@@ -127,13 +165,13 @@ async function handler(req, res) {
       }
       data = await analyticsService.getConversionFunnel(
         funnelDays,
-        validEventId
+        numericEventId
       );
       break;
     }
 
     case 'wallet': {
-      data = await analyticsService.getWalletAnalytics(validEventId);
+      data = await analyticsService.getWalletAnalytics(numericEventId);
       break;
     }
 
@@ -157,7 +195,8 @@ async function handler(req, res) {
 
     res.status(200).json({
       type,
-      eventId: validEventId,
+      eventId: numericEventId,
+      eventSlug: validEventId,
       generatedAt: new Date().toISOString(),
       data
     });
