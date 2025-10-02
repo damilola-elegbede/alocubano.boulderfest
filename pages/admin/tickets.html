@@ -342,21 +342,7 @@
                                 <td><code class="admin-p-xs" style="background: var(--color-background-secondary); border-radius: var(--radius-sm);">${escapeHtml(ticket.ticket_id)}</code></td>
                                 <td>${escapeHtml(ticket.attendee_first_name)} ${escapeHtml(ticket.attendee_last_name)}</td>
                                 <td>${escapeHtml(ticket.attendee_email)}</td>
-                                <td>
-                                    <div style="display: flex; flex-direction: column; gap: 4px;">
-                                        <span>${escapeHtml(formatTicketType(ticket.ticket_type))}</span>
-                                        ${ticket.color_rgb ? `
-                                        <div style="display: flex; align-items: center; gap: 6px;">
-                                            <span class="ticket-color-circle"
-                                                  style="display: inline-block; width: 12px; height: 12px;
-                                                         border-radius: 50%; background: ${ticket.color_rgb};"></span>
-                                            <span style="font-size: 0.75em; color: var(--color-text-secondary);">
-                                                ${escapeHtml(ticket.color_name)}
-                                            </span>
-                                        </div>
-                                        ` : ''}
-                                    </div>
-                                </td>
+                                <td>${escapeHtml(formatTicketType(ticket.ticket_type))}</td>
                                 <td>
                                     <span class="status-badge ${ticket.checked_in_at ? "success" : ticket.status === "valid" ? "info" : "warning"}">
                                         ${ticket.checked_in_at ? "Checked In" : escapeHtml(ticket.status)}
