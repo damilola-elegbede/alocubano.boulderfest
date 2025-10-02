@@ -2,6 +2,7 @@ import { getDatabaseClient } from "../../lib/database.js";
 import { setSecureCorsHeaders } from "../../lib/cors-config.js";
 import timeUtils from "../../lib/time-utils.js";
 import { processDatabaseResult } from "../../lib/bigint-serializer.js";
+import { getTicketColorService } from "../../lib/ticket-color-service.js";
 
 /**
  * Ticket Details API Endpoint
@@ -73,6 +74,10 @@ export default async function handler(req, res) {
     // Process database result to handle BigInt values
     const processedResult = processDatabaseResult(result);
     const ticket = processedResult.rows[0];
+
+    // Get color for ticket type
+    const colorService = getTicketColorService();
+    const ticketColor = await colorService.getColorForTicketType(ticket.ticket_type_id);
 
     // Calculate registration deadline (24 hours from ticket creation)
     const registrationDeadlineHours = 24;
@@ -155,6 +160,10 @@ export default async function handler(req, res) {
     // Add calculated fields
     const response = {
       ...enhancedTicket,
+
+      // Ticket color information
+      color_name: ticketColor.name,
+      color_rgb: ticketColor.rgb,
 
       // Calculated status information
       is_registered: ticket.registration_status === 'completed',
