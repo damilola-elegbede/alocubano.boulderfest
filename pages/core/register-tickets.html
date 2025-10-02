@@ -1113,7 +1113,7 @@
 
             <!-- Registered Attendees Summary -->
             ${registeredTicketsInfo.length > 0 ? `
-              <div style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 8px; padding: var(--space-lg); margin: var(--space-lg) 0;">
+              <div style="background: transparent; border: 2px solid var(--color-success); border-radius: 8px; padding: var(--space-lg); margin: var(--space-lg) 0;">
                 <h3 style="color: var(--color-primary); margin-top: 0;">Registered Attendees</h3>
                 ${registeredTicketsInfo.map((ticket, index) => {
                   const eventDisplay = ticket.eventLocation ?
