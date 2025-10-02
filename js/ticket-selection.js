@@ -26,6 +26,23 @@ class TicketSelection {
         }
     }
 
+    /**
+     * Get event name for a ticket card
+     * @param {HTMLElement} card - Ticket card element
+     * @returns {Promise<string|null>} Event name or null if not found
+     */
+    async getEventNameForCard(card) {
+        const cardEventId = card.dataset.eventId ? parseInt(card.dataset.eventId) : null;
+        if (!cardEventId) return null;
+
+        try {
+            return await eventsService.getEventName(cardEventId);
+        } catch (error) {
+            console.warn(`Failed to get event name for ID ${cardEventId}:`, error);
+            return null;
+        }
+    }
+
     async init() {
         try {
             // Skip loading state for static tickets
@@ -520,14 +537,7 @@ class TicketSelection {
         const cardEventId = card.dataset.eventId ? parseInt(card.dataset.eventId) : null;
 
         // Look up event name from events service
-        let eventName = null;
-        if (cardEventId) {
-            try {
-                eventName = await eventsService.getEventName(cardEventId);
-            } catch (error) {
-                console.warn(`Failed to get event name for ID ${cardEventId}:`, error);
-            }
-        }
+        const eventName = await this.getEventNameForCard(card);
 
         // Emit event for cart system integration
         const eventDetail = {
@@ -629,14 +639,7 @@ class TicketSelection {
         const cardEventId = card.dataset.eventId ? parseInt(card.dataset.eventId) : null;
 
         // Look up event name from events service
-        let eventName = null;
-        if (cardEventId) {
-            try {
-                eventName = await eventsService.getEventName(cardEventId);
-            } catch (error) {
-                console.warn(`Failed to get event name for ID ${cardEventId}:`, error);
-            }
-        }
+        const eventName = await this.getEventNameForCard(card);
 
         // Emit event for cart system integration
         const eventDetail = {
