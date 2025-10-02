@@ -1,5 +1,5 @@
 import { getDatabaseClient } from "../../lib/database.js";
-import { getBrevoClient } from "../../lib/brevo-client.js";
+import { getBrevoService } from "../../lib/brevo-service.js";
 import rateLimit from "../../lib/rate-limit-middleware.js";
 import auditService from "../../lib/audit-service.js";
 import { processDatabaseResult } from "../../lib/bigint-serializer.js";
@@ -638,8 +638,8 @@ export default async function handler(req, res) {
     console.log('[BATCH_REG] Transaction IDs involved:', transactionIds);
 
     try {
-      const brevo = await getBrevoClient();
-      console.log('[BATCH_REG] Brevo client initialized');
+      const brevo = getBrevoService();
+      console.log('[BATCH_REG] Brevo service initialized');
 
       if (transactionIds.length === 1) {
         // Single transaction - get order details for summary email
@@ -700,13 +700,30 @@ export default async function handler(req, res) {
             googleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-google.png`
           });
 
-          await brevo.sendTransactionalEmail({
-            to: [{
-              email: task.registration.email,
-              name: `${task.registration.firstName} ${task.registration.lastName}`
-            }],
-            subject: '[ALCBF] Your Ticket is Ready',
-            htmlContent: htmlContent
+          // Send email using Brevo API with custom HTML
+          await brevo.makeRequest('/smtp/email', {
+            method: 'POST',
+            body: JSON.stringify({
+              sender: {
+                email: process.env.BREVO_SENDER_EMAIL || 'noreply@alocubano.com',
+                name: 'A Lo Cubano Boulder Fest'
+              },
+              replyTo: {
+                email: process.env.BREVO_REPLY_TO || 'alocubanoboulderfest@gmail.com',
+                name: 'A Lo Cubano Boulder Fest'
+              },
+              to: [{
+                email: task.registration.email,
+                name: `${task.registration.firstName} ${task.registration.lastName}`
+              }],
+              subject: '[ALCBF] Your Ticket is Ready',
+              htmlContent: htmlContent,
+              headers: {
+                'X-Mailin-Tag': 'attendee-confirmation',
+                'X-Ticket-ID': task.registration.ticketId,
+                'X-Transaction-ID': String(task.ticket.transaction_id)
+              }
+            })
           });
 
           // Log email sent
