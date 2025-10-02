@@ -463,19 +463,21 @@
             : data.ticket?.attendeeName || "—";
 
           const attendeeNameElement = document.getElementById("attendee-name");
-          attendeeNameElement.textContent = attendeeName;
+          if (attendeeNameElement) {
+            attendeeNameElement.textContent = attendeeName;
 
-          // Add colored circle as inline element
-          if (data.color_rgb) {
-            const colorCircle = document.createElement('span');
-            colorCircle.style.display = 'inline-block';
-            colorCircle.style.width = '12px';
-            colorCircle.style.height = '12px';
-            colorCircle.style.borderRadius = '50%';
-            colorCircle.style.background = data.color_rgb;
-            colorCircle.style.marginLeft = '8px';
-            colorCircle.style.verticalAlign = 'middle';
-            attendeeNameElement.appendChild(colorCircle);
+            // Add colored circle as inline element
+            if (data.color_rgb) {
+              const colorCircle = document.createElement('span');
+              colorCircle.style.display = 'inline-block';
+              colorCircle.style.width = '12px';
+              colorCircle.style.height = '12px';
+              colorCircle.style.borderRadius = '50%';
+              colorCircle.style.background = data.color_rgb;
+              colorCircle.style.marginLeft = '8px';
+              colorCircle.style.verticalAlign = 'middle';
+              attendeeNameElement.appendChild(colorCircle);
+            }
           }
 
           // Populate email

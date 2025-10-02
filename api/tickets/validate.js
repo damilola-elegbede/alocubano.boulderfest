@@ -834,7 +834,13 @@ async function handler(req, res) {
 
       // Get color for ticket type (for view-ticket page display)
       const colorService = getTicketColorService();
-      const ticketColor = await colorService.getColorForTicketType(ticket.ticket_type);
+      let ticketColor;
+      try {
+        ticketColor = await colorService.getColorForTicketType(ticket.ticket_type);
+      } catch (error) {
+        console.error('[Validation] Failed to fetch ticket color, using default:', error);
+        ticketColor = { name: 'Default', rgb: 'rgb(255, 255, 255)', emoji: '⬤' };
+      }
 
       // Prepare base response with all ticket details
       const baseResponse = {
@@ -878,7 +884,7 @@ async function handler(req, res) {
       // Enhance with Mountain Time formatted timestamps
       const enhancedResponse = timeUtils.enhanceApiResponse(
         baseResponse,
-        ['registered_at'],
+        ['registered_at', 'last_scanned_at'],
         { includeDeadline: false }
       );
 

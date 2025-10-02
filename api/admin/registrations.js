@@ -162,7 +162,7 @@ async function handler(req, res) {
 
       // Enrich tickets with color data
       const colorService = getTicketColorService();
-      const enrichedRegistrations = await Promise.all(
+      const enrichmentResults = await Promise.allSettled(
         result.rows.map(async (ticket) => {
           const color = await colorService.getColorForTicketType(ticket.ticket_type);
           return {
@@ -172,6 +172,21 @@ async function handler(req, res) {
           };
         })
       );
+
+      // Handle enrichment results gracefully
+      const enrichedRegistrations = enrichmentResults.map((enrichmentResult, index) => {
+        if (enrichmentResult.status === 'fulfilled') {
+          return enrichmentResult.value;
+        } else {
+          const originalTicket = result.rows[index];
+          console.error(`[Admin] Failed to enrich ticket ${originalTicket?.ticket_id}:`, enrichmentResult.reason);
+          return {
+            ...originalTicket,
+            color_name: 'Default',
+            color_rgb: 'rgb(255, 255, 255)'
+          };
+        }
+      });
 
       const responseData = {
         registrations: timeUtils.enhanceApiResponse(enrichedRegistrations, ['created_at', 'updated_at', 'checked_in_at', 'registered_at', 'registration_deadline']),
