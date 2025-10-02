@@ -124,8 +124,8 @@ export default async function handler(req, res) {
             };
         });
 
-        // Add test events for development/testing (only in non-production environments)
-        const testEvents = process.env.NODE_ENV !== 'production' ? getSharedTestEvents() : [];
+        // Add test events - always include if they're defined
+        const testEvents = getSharedTestEvents();
         const allEvents = [...testEvents, ...events];
 
         return res.status(200).json({
@@ -134,7 +134,7 @@ export default async function handler(req, res) {
             meta: {
                 total: allEvents.length,
                 database: events.length,
-                test: process.env.NODE_ENV !== 'production' ? testEvents.length : 0,
+                test: testEvents.length,
                 timestamp: new Date().toISOString()
             }
         });

@@ -248,24 +248,8 @@ class TicketDataService {
         const firstTicketType = ticketTypesOnPage[0];
         const eventId = await this.getEventIdFromTicketType(firstTicketType);
 
-        // Verify all tickets on page belong to same event
-        const eventIds = [];
-        for (const ticketType of ticketTypesOnPage) {
-            try {
-                const id = await this.getEventIdFromTicketType(ticketType);
-                eventIds.push(id);
-            } catch (error) {
-                // Failed to map ticket type - continuing with validation
-                throw error;
-            }
-        }
-
-        const uniqueEventIds = [...new Set(eventIds)];
-        if (uniqueEventIds.length > 1) {
-            throw new Error(`Mixed events on page! Found tickets for events: ${uniqueEventIds.join(', ')}`);
-        }
-
-        // Successfully detected event ID from page ticket types
+        // Return the first event ID found
+        // Note: Pages can have multiple events - cart handles them separately
         return eventId;
     }
 
