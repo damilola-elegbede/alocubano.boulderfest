@@ -382,6 +382,12 @@
             <dt>ATTENDEE NAME</dt>
             <dd id="attendee-name" data-testid="customer-name">—</dd>
 
+            <dt>EMAIL</dt>
+            <dd id="attendee-email" data-testid="attendee-email">—</dd>
+
+            <dt>REGISTERED</dt>
+            <dd id="registered-date" data-testid="registered-date">—</dd>
+
             <dt>Event Dates</dt>
             <dd>May 15-17, 2026</dd>
 
@@ -463,6 +469,12 @@
             : data.ticket?.attendeeName || "—";
 
           document.getElementById("attendee-name").textContent = `${attendeeName} ${colorEmoji}`;
+
+          // Populate email
+          document.getElementById("attendee-email").textContent = data.attendee_email || "—";
+
+          // Populate registered date (use Mountain Time formatted date)
+          document.getElementById("registered-date").textContent = data.registered_at_mt || "—";
 
           // Create wallet buttons immediately
           const ticketId = data.ticket.id;
