@@ -615,15 +615,17 @@
             params.set('days', currentTimeRange);
           }
           
+          // Add required type parameter
+          params.set('type', 'summary');
+
           // Add event filter
           const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
           if (selectedEventId && selectedEventId !== 'all') {
             params.set('eventId', selectedEventId);
           }
-          
-          const queryString = params.toString();
-          const url = queryString ? `/api/admin/analytics?${queryString}` : '/api/admin/analytics';
-          
+
+          const url = `/api/admin/analytics?${params.toString()}`;
+
           const response = await fetch(url, {
             credentials: "include"
           });

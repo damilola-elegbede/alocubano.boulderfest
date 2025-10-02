@@ -28,7 +28,22 @@ async function handler(req, res) {
   }
 
   // Input validation and sanitization
-  const { type, eventId = 'boulder-fest-2026', days = 30 } = req.query;
+  let { type, eventId = 'boulder-fest-2026', days = 30 } = req.query;
+
+  // Convert numeric eventId to slug (supports event selector returning IDs)
+  if (eventId && /^-?\d+$/.test(eventId)) {
+    try {
+      const db = await getDatabaseClient();
+      const eventResult = await db.execute({
+        sql: 'SELECT slug FROM events WHERE id = ?',
+        args: [parseInt(eventId, 10)]
+      });
+      eventId = eventResult.rows?.[0]?.slug || 'boulder-fest-2026';
+    } catch (error) {
+      console.warn('Failed to convert eventId to slug:', error);
+      eventId = 'boulder-fest-2026';
+    }
+  }
 
   // Validate eventId to prevent injection
   const validEventId = /^[a-zA-Z0-9-_]+$/.test(eventId)

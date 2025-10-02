@@ -104,7 +104,7 @@ async function handler(req, res) {
         (SELECT COUNT(*) FROM tickets WHERE status = 'valid' ${ticketWhereClause} ${ticketTestFilter}) as total_tickets,
         (SELECT COUNT(*) FROM tickets WHERE checked_in_at IS NOT NULL ${ticketWhereClause} ${ticketTestFilter}) as checked_in,
         (SELECT COUNT(DISTINCT transaction_id) FROM tickets WHERE 1=1 ${ticketWhereClause} ${ticketTestFilter}) as total_orders,
-        (SELECT SUM(amount_cents) / 100.0 FROM transactions WHERE status = 'completed' ${transactionWhereClause} ${transactionTestFilter}) as total_revenue,
+        (SELECT COALESCE(SUM(amount_cents), 0) / 100.0 FROM transactions WHERE status = 'completed' ${transactionWhereClause} ${transactionTestFilter}) as total_revenue,
         (SELECT COUNT(*) FROM tickets WHERE ticket_type LIKE '%workshop%' ${ticketWhereClause} ${ticketTestFilter}) as workshop_tickets,
         (SELECT COUNT(*) FROM tickets WHERE ticket_type LIKE '%vip%' ${ticketWhereClause} ${ticketTestFilter}) as vip_tickets,
         (SELECT COUNT(*) FROM tickets WHERE date(created_at) = date('now') ${ticketWhereClause} ${ticketTestFilter}) as today_sales,
@@ -117,7 +117,7 @@ async function handler(req, res) {
         -- Test mode statistics (only if test mode columns exist)
         (SELECT COUNT(*) FROM tickets WHERE is_test = 1 ${ticketWhereClause}) as test_tickets,
         (SELECT COUNT(*) FROM transactions WHERE is_test = 1 ${transactionWhereClause}) as test_transactions,
-        (SELECT SUM(amount_cents) / 100.0 FROM transactions WHERE is_test = 1 AND status = 'completed' ${transactionWhereClause}) as test_revenue
+        (SELECT COALESCE(SUM(amount_cents), 0) / 100.0 FROM transactions WHERE is_test = 1 AND status = 'completed' ${transactionWhereClause}) as test_revenue
         ` : ''}
     `;
 
@@ -379,11 +379,10 @@ async function handler(req, res) {
         FROM ticket_types tt
         LEFT JOIN events e ON tt.event_id = e.id
         WHERE 1=1
-        ${eventId ? 'AND tt.event_id = ?' : ''}
         ${shouldFilterTestData ? "AND tt.status != 'test'" : ''}
         ORDER BY tt.event_id, tt.display_order, tt.name
       `;
-      const ticketTypesParams = eventId ? [eventId] : [];
+      const ticketTypesParams = [];
       const ticketTypesResult = await db.execute(ticketTypesQuery, ticketTypesParams);
       ticketTypes = ticketTypesResult.rows || [];
     } catch (error) {
