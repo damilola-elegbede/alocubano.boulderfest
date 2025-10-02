@@ -125,17 +125,44 @@ export default async function handler(req, res) {
       console.log(`Processing ${isTestTransaction ? 'TEST ' : ''}checkout.session.completed for ${session.id}`);
 
       try {
-        // Expand the session to get line items
+        // Expand the session to get line items and payment method details
         const fullSession = await stripe.checkout.sessions.retrieve(
           session.id,
           {
-            expand: ['line_items', 'line_items.data.price.product']
+            expand: [
+              'line_items',
+              'line_items.data.price.product',
+              'payment_intent',
+              'payment_intent.payment_method'
+            ]
           }
         );
 
+        // Extract payment method details for receipt
+        let paymentMethodData = {
+          card_brand: null,
+          card_last4: null,
+          payment_wallet: null
+        };
+
+        if (fullSession.payment_intent) {
+          const paymentIntent = fullSession.payment_intent;
+          const paymentMethod = typeof paymentIntent === 'string'
+            ? null
+            : paymentIntent.payment_method;
+
+          if (paymentMethod && typeof paymentMethod === 'object' && paymentMethod.card) {
+            paymentMethodData.card_brand = paymentMethod.card.brand;
+            paymentMethodData.card_last4 = paymentMethod.card.last4;
+            paymentMethodData.payment_wallet = paymentMethod.card.wallet?.type || null;
+          }
+
+          console.log('Payment method details:', paymentMethodData);
+        }
+
         // Use centralized ticket creation service for idempotency
         try {
-          const result = await createOrRetrieveTickets(fullSession);
+          const result = await createOrRetrieveTickets(fullSession, paymentMethodData);
           const transaction = result.transaction;
 
           console.log(`Webhook: Transaction ${result.created ? 'created' : 'already exists'}: ${transaction.uuid}`);

@@ -200,12 +200,12 @@ async function captureOrderHandler(req, res) {
         console.warn('No cart_data found in transaction:', transactionId);
       }
 
-      // Update transaction status and order_number
+      // Update transaction status, order_number, and payment processor
       await db.execute({
         sql: `UPDATE transactions
-              SET status = ?, order_number = ?, customer_email = ?, customer_name = ?, updated_at = ?
+              SET status = ?, order_number = ?, customer_email = ?, customer_name = ?, payment_processor = ?, updated_at = ?
               WHERE id = ?`,
-        args: ['completed', orderNumber, customerEmail, customerName, new Date().toISOString(), transactionId]
+        args: ['completed', orderNumber, customerEmail, customerName, 'paypal', new Date().toISOString(), transactionId]
       });
 
       console.log('Updated existing transaction:', transactionId);
@@ -219,8 +219,8 @@ async function captureOrderHandler(req, res) {
       const transactionResult = await db.execute({
         sql: `INSERT INTO transactions
               (uuid, order_number, stripe_session_id, status, amount_cents, total_amount,
-               customer_email, customer_name, payment_method, created_at, updated_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+               customer_email, customer_name, payment_method, payment_processor, created_at, updated_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
           crypto.randomUUID(),
           orderNumber,
@@ -231,6 +231,7 @@ async function captureOrderHandler(req, res) {
           customerEmail,
           customerName,
           'paypal',
+          'paypal', // Payment processor
           new Date().toISOString(),
           new Date().toISOString()
         ]
