@@ -109,23 +109,24 @@ async function generateBackground(width, height, logoSize, filename) {
   .png()
   .toBuffer();
 
-  // Resize white logo and reduce opacity to 5%
+  // Resize white logo, sharpen for crisp edges, and reduce opacity to 10%
   const resizedLogo = await sharp(SOURCE_LOGO_DARK)
     .resize(logoSize, logoSize, {
       fit: 'contain',
       background: { r: 0, g: 0, b: 0, alpha: 0 }
     })
+    .sharpen({ sigma: 1.5 })  // Restore edge crispness after resize
     .ensureAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true });
 
-  // Manually reduce alpha channel to 20% opacity
+  // Manually reduce alpha channel to 10% opacity
   const { data, info } = resizedLogo;
   const pixels = new Uint8Array(data);
 
   // RGBA format: every 4th byte is alpha
   for (let i = 3; i < pixels.length; i += 4) {
-    pixels[i] = Math.floor(pixels[i] * 0.20); // Reduce alpha to 20%
+    pixels[i] = Math.floor(pixels[i] * 0.10); // Reduce alpha to 10%
   }
 
   // Create PNG from modified raw data
@@ -154,7 +155,7 @@ async function generateBackground(width, height, logoSize, filename) {
     .png()
     .toFile(outputPath);
 
-  console.log(`  ✓ ${filename} (${width}x${height}, ${logoSize}x${logoSize} logo @ 20% opacity)`);
+  console.log(`  ✓ ${filename} (${width}x${height}, ${logoSize}x${logoSize} logo @ 10% opacity)`);
 }
 
 // Run the generator
