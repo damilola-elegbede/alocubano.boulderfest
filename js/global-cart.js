@@ -105,12 +105,11 @@ function setupPageIntegrations(cartManager) {
     currentPath.includes('tickets.html')
     ) {
         setupTicketsPageIntegration(cartManager);
-    } else if (
-        currentPath.includes('/donations') ||
-    currentPath.includes('donations.html')
-    ) {
-        setupDonationsPageIntegration(cartManager);
     }
+
+    // Always register donation listener (global functionality)
+    // This ensures test donation buttons and any donation functionality works on all pages
+    setupDonationsPageIntegration(cartManager);
 }
 
 function setupTicketsPageIntegration(cartManager) {
