@@ -378,15 +378,8 @@
 
             <dt>Ticket Type</dt>
             <dd id="ticket-type" data-testid="ticket-type">
-              <div style="display: flex; flex-direction: column; gap: 4px;">
-                <span id="ticket-type-name">—</span>
-                <div id="ticket-color-indicator" style="display: none; align-items: center; gap: 8px; margin-top: 4px;">
-                  <span class="ticket-color-circle"
-                        style="display: inline-block; width: 14px; height: 14px;
-                               border-radius: 50%;"></span>
-                  <span id="ticket-color-name" style="font-size: 0.85em; opacity: 0.7;"></span>
-                </div>
-              </div>
+              <span id="ticket-type-name">—</span>
+              <span id="ticket-color-circle" class="ticket-color-circle" style="display: none; margin-left: 8px; width: 14px; height: 14px; border-radius: 50%;"></span>
             </dd>
 
             <dt>Attendee Name</dt>
@@ -461,15 +454,11 @@
           document.getElementById("ticket-id").textContent = data.ticket_id || data.ticket.id;
           document.getElementById("ticket-type-name").textContent = data.ticket_type || data.ticket.type;
 
-          // Update color indicator if color data is available
-          if (data.color_rgb && data.color_name) {
-            const colorIndicator = document.getElementById("ticket-color-indicator");
-            const colorCircle = colorIndicator.querySelector(".ticket-color-circle");
-            const colorName = document.getElementById("ticket-color-name");
-
+          // Update color circle if color data is available
+          if (data.color_rgb) {
+            const colorCircle = document.getElementById("ticket-color-circle");
             colorCircle.style.background = data.color_rgb;
-            colorName.textContent = data.color_name;
-            colorIndicator.style.display = "flex";
+            colorCircle.style.display = "inline-block";
           }
 
           document.getElementById("attendee-name").textContent =
