@@ -68,6 +68,16 @@ async function getRawBody(req) {
   return Buffer.concat(chunks);
 }
 
+/**
+ * Handle Stripe webhook POST requests and process payment-, refund-, dispute-, and payout-related events.
+ *
+ * Verifies the Stripe signature, ensures required services are initialized, logs the raw Stripe event (idempotently),
+ * and dispatches event-specific processing such as ticket creation, transaction status updates, reservation fulfillment/release,
+ * and non-blocking financial audit logging. Responds with HTTP 200 when the event is acknowledged or 400 on verification/processing errors.
+ *
+ * @param {import('express').Request} req - Incoming HTTP request (expects raw body and `stripe-signature` header).
+ * @param {import('express').Response} res - HTTP response used to acknowledge the webhook and send status codes.
+ */
 export default async function handler(req, res) {
   // Ensure all services are initialized to prevent race conditions
   if (auditService.ensureInitialized) {
