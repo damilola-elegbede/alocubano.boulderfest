@@ -662,16 +662,6 @@ export default async function handler(req, res) {
         try {
           console.log(`[BATCH_REG] Sending email for ticket ${task.registration.ticketId} to ${task.registration.email}`);
 
-          // Validate attendee template ID (simplified - single template for all)
-          const attendeeTemplateId = parseInt(process.env.BREVO_ATTENDEE_CONFIRMATION_TEMPLATE_ID);
-
-          if (isNaN(attendeeTemplateId)) {
-            console.error('[BATCH_REG] Invalid Brevo attendee template ID in environment variables');
-            throw new Error('Email configuration error');
-          }
-
-          console.log('[BATCH_REG] Using Brevo template ID:', attendeeTemplateId);
-
           // Determine base URL for email links
           let baseUrl;
           if (process.env.VERCEL_ENV === 'production') {
@@ -687,36 +677,36 @@ export default async function handler(req, res) {
           const qrService = getQRTokenService();
           const qrToken = await qrService.getOrCreateToken(task.registration.ticketId);
 
+          // Format event date
+          const eventDate = task.ticket.start_date && task.ticket.end_date
+            ? `${new Date(task.ticket.start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}-${new Date(task.ticket.end_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
+            : 'May 15-17, 2026';
+
+          // Generate HTML email using template
+          const { generateAttendeeConfirmationEmail } = await import('../../lib/email-templates/attendee-confirmation.js');
+          const htmlContent = generateAttendeeConfirmationEmail({
+            firstName: task.registration.firstName,
+            lastName: task.registration.lastName,
+            ticketId: task.registration.ticketId,
+            ticketType: task.ticket.ticket_type,
+            orderNumber: transactionInfo ? (transactionInfo.order_number || transactionInfo.id) : 'N/A',
+            eventName: task.ticket.event_name,
+            eventLocation: `${task.ticket.venue_name}, ${task.ticket.venue_city}, ${task.ticket.venue_state}`,
+            eventDate: eventDate,
+            qrCodeUrl: `${baseUrl}/api/qr/generate?token=${qrToken}`,
+            walletPassUrl: `${baseUrl}/api/tickets/apple-wallet/${task.registration.ticketId}`,
+            googleWalletUrl: `${baseUrl}/api/tickets/google-wallet/${task.registration.ticketId}`,
+            appleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-apple.png`,
+            googleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-google.png`
+          });
+
           await brevo.sendTransactionalEmail({
             to: [{
               email: task.registration.email,
               name: `${task.registration.firstName} ${task.registration.lastName}`
             }],
-            templateId: attendeeTemplateId,
-            params: {
-              firstName: task.registration.firstName,
-              lastName: task.registration.lastName,
-              ticketId: task.registration.ticketId,
-              ticketType: task.ticket.ticket_type,
-              orderNumber: transactionInfo ? (transactionInfo.order_number || transactionInfo.id) : null,
-              // QR code URL
-              qrCodeUrl: `${baseUrl}/api/qr/generate?token=${qrToken}`,
-              // Wallet pass URLs
-              walletPassUrl: `${baseUrl}/api/tickets/apple-wallet/${task.registration.ticketId}`,
-              googleWalletUrl: `${baseUrl}/api/tickets/google-wallet/${task.registration.ticketId}`,
-              // Wallet button image URLs (PNG required for email client compatibility)
-              appleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-apple.png`,
-              googleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-google.png`,
-              // Event details
-              eventName: task.ticket.event_name,
-              eventDate: task.ticket.start_date && task.ticket.end_date
-                ? `${new Date(task.ticket.start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}-${new Date(task.ticket.end_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
-                : null,
-              eventLocation: `${task.ticket.venue_name}, ${task.ticket.venue_city}, ${task.ticket.venue_state}`,
-              venueName: task.ticket.venue_name,
-              venueCity: task.ticket.venue_city,
-              venueState: task.ticket.venue_state
-            }
+            subject: '[ALCBF] Your Ticket is Ready',
+            htmlContent: htmlContent
           });
 
           // Log email sent
