@@ -304,7 +304,7 @@
     </style>
 
     <!-- Theme Manager -->
-    <script src="/js/theme-manager.js"></script>
+    <script type="module" src="/js/theme-manager.js"></script>
     <script type="module">
       import timeManager from '/js/time-manager.js';
       window.timeManager = timeManager; // Make available globally for the main script
@@ -662,7 +662,7 @@
           // Format registration date in Mountain Time
           let registrationDate = 'Not registered';
           if (ticket.registeredAt) {
-            registrationDate = window.timeManager.formatDateTime(ticket.registeredAt, true) + ' (Mountain Time)';
+            registrationDate = window.timeManager.formatDateTime(ticket.registeredAt, true);
           }
 
           // Determine status display
