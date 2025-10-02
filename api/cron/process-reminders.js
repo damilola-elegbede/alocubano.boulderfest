@@ -70,6 +70,7 @@ export default async function handler(req, res) {
           customerName: reminder.customer_name,
           reminderType: reminder.reminder_type,
           registrationToken: reminder.registration_token,
+          registrationDeadline: reminder.registration_deadline,
           orderNumber: reminder.order_number || 'N/A',
           hoursRemaining: hoursRemaining,
           ticketsRemaining: reminder.pending_tickets,
