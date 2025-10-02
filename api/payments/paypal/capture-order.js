@@ -24,6 +24,14 @@ const RATE_LIMIT_CONFIG = {
   message: 'Too many capture attempts. Please wait before trying again.'
 };
 
+/**
+ * Handles a PayPal order capture request, finalizes payment processing, creates or updates the corresponding transaction and tickets, generates a registration token if applicable, sends confirmation email(s), and responds with a detailed success or error payload.
+ *
+ * Processes a POST request containing a PayPal order ID: authenticates with PayPal, verifies the order is APPROVED, captures the order, records or updates the transaction in the database (setting payment_processor to "paypal"), creates tickets when cart data includes ticket items (calculating registration deadlines), issues a registration token if tickets exist, sends ticket confirmation emails when tickets were created, and returns a JSON response describing the result. On error, responds with appropriate HTTP status codes and machine-readable error codes (e.g., INVALID_ORDER_ID, PAYPAL_UNAVAILABLE, ORDER_NOT_APPROVED, CAPTURE_FAILED).
+ *
+ * @param {import('http').IncomingMessage & { method?: string, body?: any }} req - HTTP request object (POST expected with `{ orderId: string }` in body).
+ * @param {import('http').ServerResponse & { status: function(number): any, json: function(any): any, end: function(): any }} res - HTTP response object used to send JSON responses and status codes.
+ */
 async function captureOrderHandler(req, res) {
   // Set CORS headers
   setCorsHeaders(req, res, {
