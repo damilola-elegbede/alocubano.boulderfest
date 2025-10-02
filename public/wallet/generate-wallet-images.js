@@ -66,7 +66,11 @@ async function generateLogo(width, height, filename) {
       fit: 'contain',
       background: { r: 0, g: 0, b: 0, alpha: 0 } // Transparent background
     })
-    .png()
+    .png({
+      compressionLevel: 9,   // Maximum compression for smaller files
+      quality: 100,          // Lossless quality
+      palette: false         // Full RGB+Alpha fidelity
+    })
     .toFile(outputPath);
 
   console.log(`  ✓ ${filename} (${width}x${height})`);
@@ -83,7 +87,11 @@ async function generateIcon(width, height, filename) {
     .resize(width, height, {
       fit: 'cover'
     })
-    .png()
+    .png({
+      compressionLevel: 9,   // Maximum compression for smaller files
+      quality: 100,          // Lossless quality
+      palette: false         // Full RGB+Alpha fidelity
+    })
     .toFile(outputPath);
 
   console.log(`  ✓ ${filename} (${width}x${height})`);
@@ -137,7 +145,11 @@ async function generateBackground(width, height, logoSize, filename) {
       channels: 4
     }
   })
-  .png()
+  .png({
+    compressionLevel: 9,   // Maximum compression
+    quality: 100,          // Lossless quality
+    palette: false         // Full RGB+Alpha fidelity
+  })
   .toBuffer();
 
   // Composite logo on background
@@ -152,7 +164,12 @@ async function generateBackground(width, height, logoSize, filename) {
       left: centerX,
       blend: 'over'
     }])
-    .png()
+    .png({
+      compressionLevel: 9,   // Maximum compression for smaller files
+      quality: 100,          // Lossless quality
+      palette: false,        // Full RGB+Alpha fidelity
+      effort: 10            // Maximum effort for best quality
+    })
     .toFile(outputPath);
 
   console.log(`  ✓ ${filename} (${width}x${height}, ${logoSize}x${logoSize} logo @ 10% opacity)`);
