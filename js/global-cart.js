@@ -181,12 +181,12 @@ function setupTicketsPageIntegration(cartManager) {
 function setupDonationsPageIntegration(cartManager) {
     // Listen for donation amount additions to cart
     document.addEventListener('donation-amount-changed', async(event) => {
-        const { amount } = event.detail;
+        const { amount, isTest = false } = event.detail;
 
         // Only add to cart if amount is greater than 0
         if (amount > 0) {
             try {
-                await cartManager.addDonation(amount);
+                await cartManager.addDonation(amount, isTest);
             } catch (error) {
                 console.error('Failed to add donation:', error);
             }

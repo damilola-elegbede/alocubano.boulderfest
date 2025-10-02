@@ -900,7 +900,7 @@
           testDonationButton.addEventListener('click', function() {
             // Dispatch the donation-amount-changed event that global-cart.js listens to
             const event = new CustomEvent('donation-amount-changed', {
-              detail: { amount: 25 },
+              detail: { amount: 25, isTest: true },
               bubbles: true
             });
             document.dispatchEvent(event);

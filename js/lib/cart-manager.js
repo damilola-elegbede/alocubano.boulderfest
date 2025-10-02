@@ -351,7 +351,7 @@ export class CartManager extends EventTarget {
     }
 
     // Donation operations
-    async addDonation(amount) {
+    async addDonation(amount, isTest = false) {
         if (amount <= 0) {
             throw new Error('Invalid donation amount');
         }
@@ -365,7 +365,8 @@ export class CartManager extends EventTarget {
             id: donationId,
             amount: donationAmount,
             name: 'Festival Support',
-            addedAt: Date.now()
+            addedAt: Date.now(),
+            isTest: isTest  // Track whether this is a test donation
         };
 
         this.state.donations.push(donation);
