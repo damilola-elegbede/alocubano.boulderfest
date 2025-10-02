@@ -454,8 +454,8 @@
           const data = await response.json();
 
           // Update UI with ticket details
-          document.getElementById("ticket-id").textContent = data.ticket_id || data.ticket.id;
-          document.getElementById("ticket-type").textContent = data.ticket_type || data.ticket.type;
+          document.getElementById("ticket-id").textContent = data.ticket_id || data.ticket?.id || "—";
+          document.getElementById("ticket-type").textContent = data.ticket_type || data.ticket?.type || "—";
 
           // Add colored circle using actual RGB color from API
           const attendeeName = data.attendee_first_name && data.attendee_last_name

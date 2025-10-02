@@ -688,6 +688,24 @@
           });
         }
 
+        sanitizeColor(color) {
+          if (!color || typeof color !== 'string') {
+            return null;
+          }
+          
+          // Allow rgb(...) format with values 0-255
+          const rgbPattern = /^rgb\(\s*(?:[01]?\d?\d|2[0-4]\d|25[0-5])\s*,\s*(?:[01]?\d?\d|2[0-4]\d|25[0-5])\s*,\s*(?:[01]?\d?\d|2[0-4]\d|25[0-5])\s*\)$/i;
+          
+          // Allow hex format #RRGGBB (6 digits only)
+          const hexPattern = /^#(?:[0-9a-f]{6})$/i;
+          
+          if (rgbPattern.test(color) || hexPattern.test(color)) {
+            return color;
+          }
+          
+          return null;
+        }
+
         createTicketCard(ticket) {
           const card = document.createElement('div');
           card.className = 'ticket-card';
@@ -700,8 +718,9 @@
           displayType = displayType.charAt(0).toUpperCase() + displayType.slice(1).replace(/_/g, ' ');
 
           // Create colored circle HTML if color data exists (36px diameter)
-          const colorCircle = ticket.color_rgb
-            ? `<span style="display: inline-block; width: 36px; height: 36px; border-radius: 50%; background: ${ticket.color_rgb};"></span>`
+          const sanitizedColor = this.sanitizeColor(ticket.color_rgb);
+          const colorCircle = sanitizedColor
+            ? `<span aria-hidden="true" style="display: inline-block; width: 36px; height: 36px; border-radius: 50%; background: ${sanitizedColor};"></span>`
             : '';
 
           // Format registration date in Mountain Time

@@ -164,12 +164,21 @@ async function handler(req, res) {
       const colorService = getTicketColorService();
       const enrichmentResults = await Promise.allSettled(
         result.rows.map(async (ticket) => {
-          const color = await colorService.getColorForTicketType(ticket.ticket_type);
-          return {
-            ...ticket,
-            color_name: color.name,
-            color_rgb: color.rgb
-          };
+          try {
+            const color = await colorService.getColorForTicketType(ticket.ticket_type);
+            return {
+              ...ticket,
+              color_name: color.name,
+              color_rgb: color.rgb
+            };
+          } catch (error) {
+            console.error(`[Admin] Failed to get color for ticket ${ticket.ticket_id}:`, error);
+            return {
+              ...ticket,
+              color_name: 'Default',
+              color_rgb: 'rgb(255, 255, 255)'
+            };
+          }
         })
       );
 

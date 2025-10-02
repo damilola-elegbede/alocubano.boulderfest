@@ -838,7 +838,7 @@ async function handler(req, res) {
       try {
         ticketColor = await colorService.getColorForTicketType(ticket.ticket_type);
       } catch (error) {
-        console.error('[Validation] Failed to fetch ticket color, using default:', error);
+        console.error('[Validation] Failed to get ticket color:', error);
         ticketColor = { name: 'Default', rgb: 'rgb(255, 255, 255)', emoji: '⬤' };
       }
 
