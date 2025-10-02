@@ -373,7 +373,7 @@ async function handler(req, res) {
             ELSE NULL
           END as remaining_quantity,
           COALESCE(
-            (SELECT SUM(t.price_cents) FROM tickets t WHERE t.ticket_type_id = tt.id AND t.status = 'valid'),
+            (SELECT SUM(t.price_cents) FROM tickets t WHERE t.event_id = tt.event_id AND t.status = 'valid'),
             0
           ) as total_revenue_cents
         FROM ticket_types tt
