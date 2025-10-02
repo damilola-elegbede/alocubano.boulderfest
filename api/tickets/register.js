@@ -298,33 +298,33 @@ export default async function handler(req, res) {
       const qrService = getQRTokenService();
       const qrToken = await qrService.getOrCreateToken(ticketId);
 
+      // Format event date
+      const eventDate = ticket.start_date && ticket.end_date
+        ? `${new Date(ticket.start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}-${new Date(ticket.end_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
+        : 'May 15-17, 2026';
+
+      // Generate HTML email using template
+      const { generateAttendeeConfirmationEmail } = await import('../../lib/email-templates/attendee-confirmation.js');
+      const htmlContent = generateAttendeeConfirmationEmail({
+        firstName: cleanFirstName,
+        lastName: cleanLastName,
+        ticketId: ticketId,
+        ticketType: ticket.ticket_type,
+        orderNumber: 'N/A', // Individual registrations don't have order context
+        eventName: ticket.event_name,
+        eventLocation: `${ticket.venue_name}, ${ticket.venue_city}, ${ticket.venue_state}`,
+        eventDate: eventDate,
+        qrCodeUrl: `${baseUrl}/api/qr/generate?token=${qrToken}`,
+        walletPassUrl: `${baseUrl}/api/tickets/apple-wallet/${ticketId}`,
+        googleWalletUrl: `${baseUrl}/api/tickets/google-wallet/${ticketId}`,
+        appleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-apple.png`,
+        googleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-google.png`
+      });
+
       await brevo.sendTransactionalEmail({
         to: [{ email: cleanEmail, name: `${cleanFirstName} ${cleanLastName}` }],
-        templateId: parseInt(process.env.BREVO_ATTENDEE_CONFIRMATION_TEMPLATE_ID),
-        params: {
-          firstName: cleanFirstName,
-          lastName: cleanLastName,
-          ticketId: ticketId,
-          ticketType: ticket.ticket_type,
-          orderNumber: 'N/A', // Individual registrations don't have order context
-          // QR code URL
-          qrCodeUrl: `${baseUrl}/api/qr/generate?token=${qrToken}`,
-          // Wallet pass URLs
-          walletPassUrl: `${baseUrl}/api/tickets/apple-wallet/${ticketId}`,
-          googleWalletUrl: `${baseUrl}/api/tickets/google-wallet/${ticketId}`,
-          // Wallet button image URLs (PNG required for email client compatibility)
-          appleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-apple.png`,
-          googleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-google.png`,
-          // Event details
-          eventName: ticket.event_name,
-          eventDate: ticket.start_date && ticket.end_date
-            ? `${new Date(ticket.start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}-${new Date(ticket.end_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
-            : null,
-          eventLocation: `${ticket.venue_name}, ${ticket.venue_city}, ${ticket.venue_state}`,
-          venueName: ticket.venue_name,
-          venueCity: ticket.venue_city,
-          venueState: ticket.venue_state
-        }
+        subject: '[ALCBF] Your Ticket is Ready',
+        htmlContent: htmlContent
       });
 
       // Log email sent
