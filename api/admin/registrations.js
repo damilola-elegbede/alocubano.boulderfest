@@ -164,7 +164,7 @@ async function handler(req, res) {
       const colorService = getTicketColorService();
       const enrichedRegistrations = await Promise.all(
         result.rows.map(async (ticket) => {
-          const color = await colorService.getColorForTicketType(ticket.ticket_type_id);
+          const color = await colorService.getColorForTicketType(ticket.ticket_type);
           return {
             ...ticket,
             color_name: color.name,

@@ -77,7 +77,7 @@ export default async function handler(req, res) {
 
     // Get color for ticket type
     const colorService = getTicketColorService();
-    const ticketColor = await colorService.getColorForTicketType(ticket.ticket_type_id);
+    const ticketColor = await colorService.getColorForTicketType(ticket.ticket_type);
 
     // Calculate registration deadline (24 hours from ticket creation)
     const registrationDeadlineHours = 24;
