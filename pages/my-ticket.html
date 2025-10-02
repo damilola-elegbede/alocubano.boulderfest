@@ -373,16 +373,13 @@
           </div>
 
           <dl class="ticket-details" data-testid="ticket-details">
-            <dt>Ticket ID</dt>
+            <dt>TICKET ID</dt>
             <dd id="ticket-id" data-testid="ticket-id">—</dd>
 
-            <dt>Ticket Type</dt>
-            <dd id="ticket-type" data-testid="ticket-type">
-              <span id="ticket-type-name">—</span>
-              <span id="ticket-color-circle" class="ticket-color-circle" style="display: none; margin-left: 8px; width: 14px; height: 14px; border-radius: 50%;"></span>
-            </dd>
+            <dt>TICKET TYPE</dt>
+            <dd id="ticket-type" data-testid="ticket-type">—</dd>
 
-            <dt>Attendee Name</dt>
+            <dt>ATTENDEE NAME</dt>
             <dd id="attendee-name" data-testid="customer-name">—</dd>
 
             <dt>Event Dates</dt>
@@ -452,19 +449,20 @@
 
           // Update UI with ticket details
           document.getElementById("ticket-id").textContent = data.ticket_id || data.ticket.id;
-          document.getElementById("ticket-type-name").textContent = data.ticket_type || data.ticket.type;
+          document.getElementById("ticket-type").textContent = data.ticket_type || data.ticket.type;
 
-          // Update color circle if color data is available
-          if (data.color_rgb) {
-            const colorCircle = document.getElementById("ticket-color-circle");
-            colorCircle.style.background = data.color_rgb;
-            colorCircle.style.display = "inline-block";
+          // Map ticket color to emoji (matching Apple Wallet logic)
+          let colorEmoji = '⬤'; // Default white circle
+          if (data.color_name === 'Test') {
+            colorEmoji = '\u{1F7E3}'; // 🟣 Purple Circle
           }
 
-          document.getElementById("attendee-name").textContent =
-            data.attendee_first_name && data.attendee_last_name
-              ? `${data.attendee_first_name} ${data.attendee_last_name}`
-              : data.ticket?.attendeeName || "—";
+          // Add emoji to attendee name
+          const attendeeName = data.attendee_first_name && data.attendee_last_name
+            ? `${data.attendee_first_name} ${data.attendee_last_name}`
+            : data.ticket?.attendeeName || "—";
+
+          document.getElementById("attendee-name").textContent = `${attendeeName} ${colorEmoji}`;
 
           // Create wallet buttons immediately
           const ticketId = data.ticket.id;
