@@ -8,6 +8,7 @@ import csrfService from "../../lib/csrf-service.js";
 import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
 import timeUtils from "../../lib/time-utils.js";
 import { processDatabaseResult } from "../../lib/bigint-serializer.js";
+import { getTicketColorService } from "../../lib/ticket-color-service.js";
 
 async function handler(req, res) {
   let db;
@@ -159,8 +160,45 @@ async function handler(req, res) {
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
 
+      // Enrich tickets with color data
+      const colorService = getTicketColorService();
+      const enrichmentResults = await Promise.allSettled(
+        result.rows.map(async (ticket) => {
+          try {
+            const color = await colorService.getColorForTicketType(ticket.ticket_type);
+            return {
+              ...ticket,
+              color_name: color.name,
+              color_rgb: color.rgb
+            };
+          } catch (error) {
+            console.error(`[Admin] Failed to get color for ticket ${ticket.ticket_id}:`, error);
+            return {
+              ...ticket,
+              color_name: 'Default',
+              color_rgb: 'rgb(255, 255, 255)'
+            };
+          }
+        })
+      );
+
+      // Handle enrichment results gracefully
+      const enrichedRegistrations = enrichmentResults.map((enrichmentResult, index) => {
+        if (enrichmentResult.status === 'fulfilled') {
+          return enrichmentResult.value;
+        } else {
+          const originalTicket = result.rows[index];
+          console.error(`[Admin] Failed to enrich ticket ${originalTicket?.ticket_id}:`, enrichmentResult.reason);
+          return {
+            ...originalTicket,
+            color_name: 'Default',
+            color_rgb: 'rgb(255, 255, 255)'
+          };
+        }
+      });
+
       const responseData = {
-        registrations: timeUtils.enhanceApiResponse(result.rows, ['created_at', 'updated_at', 'checked_in_at', 'registered_at', 'registration_deadline']),
+        registrations: timeUtils.enhanceApiResponse(enrichedRegistrations, ['created_at', 'updated_at', 'checked_in_at', 'registered_at', 'registration_deadline']),
         total: countResult.rows[0].total,
         limit: sanitized.limit,
         offset: sanitized.offset,

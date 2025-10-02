@@ -373,14 +373,20 @@
           </div>
 
           <dl class="ticket-details" data-testid="ticket-details">
-            <dt>Ticket ID</dt>
+            <dt>TICKET ID</dt>
             <dd id="ticket-id" data-testid="ticket-id">—</dd>
 
-            <dt>Ticket Type</dt>
+            <dt>TICKET TYPE</dt>
             <dd id="ticket-type" data-testid="ticket-type">—</dd>
 
-            <dt>Attendee Name</dt>
+            <dt>ATTENDEE NAME</dt>
             <dd id="attendee-name" data-testid="customer-name">—</dd>
+
+            <dt>EMAIL</dt>
+            <dd id="attendee-email" data-testid="attendee-email">—</dd>
+
+            <dt>REGISTERED</dt>
+            <dd id="registered-date" data-testid="registered-date">—</dd>
 
             <dt>Event Dates</dt>
             <dd>May 15-17, 2026</dd>
@@ -448,10 +454,37 @@
           const data = await response.json();
 
           // Update UI with ticket details
-          document.getElementById("ticket-id").textContent = data.ticket.id;
-          document.getElementById("ticket-type").textContent = data.ticket.type;
-          document.getElementById("attendee-name").textContent =
-            data.ticket.attendeeName;
+          document.getElementById("ticket-id").textContent = data.ticket_id || data.ticket?.id || "—";
+          document.getElementById("ticket-type").textContent = data.ticket_type || data.ticket?.type || "—";
+
+          // Add colored circle using actual RGB color from API
+          const attendeeName = data.attendee_first_name && data.attendee_last_name
+            ? `${data.attendee_first_name} ${data.attendee_last_name}`
+            : data.ticket?.attendeeName || "—";
+
+          const attendeeNameElement = document.getElementById("attendee-name");
+          if (attendeeNameElement) {
+            attendeeNameElement.textContent = attendeeName;
+
+            // Add colored circle as inline element
+            if (data.color_rgb) {
+              const colorCircle = document.createElement('span');
+              colorCircle.style.display = 'inline-block';
+              colorCircle.style.width = '12px';
+              colorCircle.style.height = '12px';
+              colorCircle.style.borderRadius = '50%';
+              colorCircle.style.background = data.color_rgb;
+              colorCircle.style.marginLeft = '8px';
+              colorCircle.style.verticalAlign = 'middle';
+              attendeeNameElement.appendChild(colorCircle);
+            }
+          }
+
+          // Populate email
+          document.getElementById("attendee-email").textContent = data.attendee_email || "—";
+
+          // Populate registered date (use Mountain Time formatted date)
+          document.getElementById("registered-date").textContent = data.registered_at_mt || "—";
 
           // Create wallet buttons immediately
           const ticketId = data.ticket.id;

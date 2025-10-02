@@ -67,9 +67,11 @@
 
       .tickets-header h1 {
         font-family: var(--font-display);
-        font-size: var(--text-4xl);
+        font-size: 5rem;
         color: var(--color-primary);
-        margin-bottom: var(--space-md);
+        margin-bottom: var(--space-lg);
+        text-transform: uppercase;
+        letter-spacing: 2px;
       }
 
       .event-info {
@@ -79,7 +81,7 @@
         gap: var(--space-lg);
         margin-top: var(--space-lg);
         font-family: var(--font-mono);
-        font-size: var(--text-sm);
+        font-size: var(--text-base);
         color: var(--color-text-secondary);
       }
 
@@ -110,10 +112,30 @@
       }
 
       .ticket-header-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: center;
+        gap: var(--space-lg);
         margin-bottom: var(--space-lg);
+      }
+
+      .ticket-header-left {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-md);
+        align-items: flex-start;
+      }
+
+      .ticket-header-center {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .ticket-header-right {
+        display: flex;
+        justify-content: flex-end;
+        align-items: flex-start;
       }
 
       .ticket-type {
@@ -143,7 +165,7 @@
 
       .attendee-info {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        grid-template-columns: 1fr 1fr 1fr;
         gap: var(--space-lg);
         margin-bottom: var(--space-xl);
       }
@@ -154,10 +176,22 @@
         gap: var(--space-xs);
       }
 
+      .info-group.left-align {
+        text-align: left;
+      }
+
+      .info-group.center-align {
+        text-align: center;
+      }
+
+      .info-group.right-align {
+        text-align: right;
+      }
+
       .info-label {
         font-family: var(--font-mono);
         font-size: var(--text-xs);
-        color: var(--color-text-secondary);
+        color: var(--color-primary);
         text-transform: uppercase;
         letter-spacing: 0.05em;
       }
@@ -280,7 +314,7 @@
         }
 
         .tickets-header h1 {
-          font-size: var(--text-3xl);
+          font-size: 3rem;
         }
 
         .event-info {
@@ -289,8 +323,17 @@
         }
 
         .ticket-header-row {
-          flex-direction: column;
+          grid-template-columns: 1fr;
           gap: var(--space-md);
+        }
+
+        .ticket-header-center,
+        .ticket-header-right {
+          justify-content: center;
+        }
+
+        .attendee-info {
+          grid-template-columns: 1fr;
         }
 
         .wallet-section {
@@ -304,7 +347,7 @@
     </style>
 
     <!-- Theme Manager -->
-    <script src="/js/theme-manager.js"></script>
+    <script type="module" src="/js/theme-manager.js"></script>
     <script type="module">
       import timeManager from '/js/time-manager.js';
       window.timeManager = timeManager; // Make available globally for the main script
@@ -470,11 +513,8 @@
         <div id="tickets-content" style="display: none;">
           <div class="tickets-header">
             <h1>Your Tickets</h1>
-            <p>All tickets for A Lo Cubano Boulder Fest 2026</p>
             <div class="event-info">
-              <span>📅 May 15-17, 2026 (Mountain Time)</span>
-              <span>📍 Avalon Ballroom, Boulder, CO</span>
-              <span>🎟️ <span id="total-tickets">0</span> Tickets</span>
+              <span>🎟️ Number of tickets: <span id="total-tickets">0</span></span>
             </div>
           </div>
 
@@ -648,6 +688,24 @@
           });
         }
 
+        sanitizeColor(color) {
+          if (!color || typeof color !== 'string') {
+            return null;
+          }
+          
+          // Allow rgb(...) format with values 0-255
+          const rgbPattern = /^rgb\(\s*(?:[01]?\d?\d|2[0-4]\d|25[0-5])\s*,\s*(?:[01]?\d?\d|2[0-4]\d|25[0-5])\s*,\s*(?:[01]?\d?\d|2[0-4]\d|25[0-5])\s*\)$/i;
+          
+          // Allow hex format #RRGGBB (6 digits only)
+          const hexPattern = /^#(?:[0-9a-f]{6})$/i;
+          
+          if (rgbPattern.test(color) || hexPattern.test(color)) {
+            return color;
+          }
+          
+          return null;
+        }
+
         createTicketCard(ticket) {
           const card = document.createElement('div');
           card.className = 'ticket-card';
@@ -659,10 +717,16 @@
           }
           displayType = displayType.charAt(0).toUpperCase() + displayType.slice(1).replace(/_/g, ' ');
 
+          // Create colored circle HTML if color data exists (36px diameter)
+          const sanitizedColor = this.sanitizeColor(ticket.color_rgb);
+          const colorCircle = sanitizedColor
+            ? `<span aria-hidden="true" style="display: inline-block; width: 36px; height: 36px; border-radius: 50%; background: ${sanitizedColor};"></span>`
+            : '';
+
           // Format registration date in Mountain Time
           let registrationDate = 'Not registered';
           if (ticket.registeredAt) {
-            registrationDate = window.timeManager.formatDateTime(ticket.registeredAt, true) + ' (Mountain Time)';
+            registrationDate = window.timeManager.formatDateTime(ticket.registeredAt, true);
           }
 
           // Determine status display
@@ -674,24 +738,35 @@
 
           card.innerHTML = `
             <div class="ticket-header-row">
-              <div>
-                <div class="ticket-type">${displayType}</div>
-                <div class="ticket-id">Ticket ID: ${ticket.ticketId}</div>
+              <div class="ticket-header-left">
+                <div class="info-group left-align">
+                  <span class="info-label">TICKET TYPE</span>
+                  <span class="info-value">${displayType}</span>
+                </div>
+                <div class="info-group left-align">
+                  <span class="info-label">TICKET ID</span>
+                  <span class="info-value">${ticket.ticketId}</span>
+                </div>
               </div>
-              ${statusBadge}
+              <div class="ticket-header-center">
+                ${colorCircle}
+              </div>
+              <div class="ticket-header-right">
+                ${statusBadge}
+              </div>
             </div>
 
             ${ticket.attendee ? `
               <div class="attendee-info">
-                <div class="info-group">
+                <div class="info-group left-align">
                   <span class="info-label">Attendee Name</span>
                   <span class="info-value">${ticket.attendee.firstName} ${ticket.attendee.lastName}</span>
                 </div>
-                <div class="info-group">
+                <div class="info-group center-align">
                   <span class="info-label">Email</span>
                   <span class="info-value">${ticket.attendee.email}</span>
                 </div>
-                <div class="info-group">
+                <div class="info-group right-align">
                   <span class="info-label">Registered</span>
                   <span class="info-value">${registrationDate}</span>
                 </div>

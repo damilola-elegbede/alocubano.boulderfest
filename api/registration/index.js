@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import { getDatabaseClient } from "../../lib/database.js";
 import timeUtils from "../../lib/time-utils.js";
 import { processDatabaseResult } from "../../lib/bigint-serializer.js";
+import { getTicketColorService } from "../../lib/ticket-color-service.js";
 
 export default async function handler(req, res) {
   // Only allow GET requests
@@ -112,11 +113,17 @@ export default async function handler(req, res) {
       });
     }
 
-    // Format response with Mountain Time information
-    const enhancedTickets = processedTickets.rows.map(ticket => {
+    // Format response with Mountain Time information and color data
+    const colorService = getTicketColorService();
+    const enhancedTickets = await Promise.all(processedTickets.rows.map(async (ticket) => {
+      // Get color for this ticket type
+      const ticketColor = await colorService.getColorForTicketType(ticket.ticket_type);
+
       const baseTicket = {
         ticketId: ticket.ticket_id,
         ticketType: ticket.ticket_type,
+        color_name: ticketColor.name,
+        color_rgb: ticketColor.rgb,
         status: ticket.current_status,
         registeredAt: ticket.registered_at,
         hoursRemaining: Math.max(0, Number(ticket.hours_remaining || 0)),
@@ -130,7 +137,7 @@ export default async function handler(req, res) {
 
       // Add Mountain Time fields
       return timeUtils.enhanceApiResponse(baseTicket, ['registeredAt', 'registration_deadline']);
-    });
+    }));
 
     const response = {
       transactionId: transactionId,
