@@ -6,6 +6,8 @@ import auditService from "../../lib/audit-service.js";
 import { isTestMode, getTestModeFlag } from "../../lib/test-mode-utils.js";
 import { getQRTokenService } from "../../lib/qr-token-service.js";
 import { processDatabaseResult } from "../../lib/bigint-serializer.js";
+import { getTicketColorService } from "../../lib/ticket-color-service.js";
+import timeUtils from "../../lib/time-utils.js";
 
 // Enhanced rate limiting configuration
 const TICKET_RATE_LIMIT = {
@@ -830,21 +832,57 @@ async function handler(req, res) {
       const ticketIsTest = isTestTicket(ticket);
       const testModeIndicator = getTestModeValidationIndicator(ticketIsTest);
 
-      return res.status(200).json({
+      // Get color for ticket type (for view-ticket page display)
+      const colorService = getTicketColorService();
+      const ticketColor = await colorService.getColorForTicketType(ticket.ticket_type);
+
+      // Prepare base response with all ticket details
+      const baseResponse = {
         valid: true,
+
+        // Top-level fields (expected by my-ticket.html)
+        ticket_id: ticket.ticket_id,
+        ticket_type: ticket.ticket_type,
+        ticket_type_name: ticket.ticket_type_name,
+
+        // Attendee information
+        attendee_first_name: ticket.attendee_first_name,
+        attendee_last_name: ticket.attendee_last_name,
+        attendee_email: ticket.attendee_email,
+
+        // Registration information
+        registration_status: ticket.registration_status,
+        registered_at: ticket.registered_at,
+
+        // Color information (for colored circles)
+        color_name: ticketColor.name,
+        color_rgb: ticketColor.rgb,
+
+        // Nested ticket object (for backward compatibility)
         ticket: {
           id: ticket.ticket_id,
           type: ticket.ticket_type,
           attendee: `${ticket.attendee_first_name} ${ticket.attendee_last_name}`.trim(),
           event: ticket.event_name
         },
+
+        // Validation status
         validation: {
           status: 'valid',
           scan_count: ticket.scan_count,
           last_scanned: ticket.last_scanned_at,
           message: ticketIsTest ? `${testModeIndicator} - Test ticket verified` : 'Ticket verified for preview'
         }
-      });
+      };
+
+      // Enhance with Mountain Time formatted timestamps
+      const enhancedResponse = timeUtils.enhanceApiResponse(
+        baseResponse,
+        ['registered_at'],
+        { includeDeadline: false }
+      );
+
+      return res.status(200).json(enhancedResponse);
     }
 
     // Actual validation with scan count update
