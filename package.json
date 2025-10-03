@@ -47,7 +47,8 @@
     "enterprise:migrate": "node scripts/migrate-to-enterprise.js",
     "enterprise:health": "node scripts/deployment-health-check.js",
     "enterprise:tools": "node scripts/platform-tools.js",
-    "drift:check": "node scripts/detect-package-drift.js"
+    "drift:check": "node scripts/detect-package-drift.js",
+    "generate-email-templates": "node scripts/generate-email-templates.js"
   },
   "dependencies": {
     "@googleapis/drive": "^17.0.0",
@@ -95,6 +96,7 @@
     "markdownlint-cli": "^0.45.0",
     "ngrok": "^5.0.0-beta.2",
     "nodemon": "^3.1.10",
+    "prettier": "^3.6.2",
     "vercel": "^48.1.6",
     "vitest": "^3.2.4"
   },
