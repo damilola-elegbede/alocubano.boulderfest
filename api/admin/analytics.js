@@ -42,10 +42,12 @@ function transformSummaryForFrontend(summary) {
       digitalShare: Number(summary.wallet.revenue_share || 0)
     },
     comparison: {
-      // Calculate comparison from trends data
-      tickets: Number(summary.trends.last_7_days || 0),
-      revenue: 0, // Not available in current data structure
-      customers: 0 // Not available in current data structure
+      // TODO: Implement proper period-over-period percentage calculations
+      // These should compare current period metrics to previous period (e.g., last 7 days vs previous 7 days)
+      // Current limitation: trends.last_7_days is an absolute count, not a percentage change
+      tickets: 0, // Requires previous period comparison
+      revenue: 0, // Requires previous period comparison
+      customers: 0 // Requires previous period comparison
     },
     // Performance metrics (for future use)
     performance: {
@@ -162,17 +164,48 @@ async function handler(req, res) {
   }
 
   try {
+    // Determine if this is a test event (negative ID or status = 'test')
+    // Test events should include test data in analytics
+    let isTestEvent = false;
+    let includeTestData = null;
+
+    if (numericEventId < 0) {
+      // Negative event IDs are test events
+      isTestEvent = true;
+      includeTestData = true;
+    } else {
+      // Check if event has status = 'test'
+      try {
+        const db = await getDatabaseClient();
+        const eventCheck = await db.execute({
+          sql: 'SELECT status FROM events WHERE id = ?',
+          args: [numericEventId]
+        });
+
+        if (eventCheck.rows && eventCheck.rows.length > 0) {
+          const eventStatus = eventCheck.rows[0].status;
+          if (eventStatus === 'test') {
+            isTestEvent = true;
+            includeTestData = true;
+          }
+        }
+      } catch (error) {
+        console.error('Failed to check event status:', error);
+        // Continue with default behavior (exclude test data)
+      }
+    }
+
     let data;
 
     switch (type) {
     case 'summary': {
-      const summary = await analyticsService.generateExecutiveSummary(numericEventId);
+      const summary = await analyticsService.generateTestAwareExecutiveSummary(numericEventId, includeTestData, req);
       data = transformSummaryForFrontend(summary);
       break;
     }
 
     case 'statistics': {
-      data = await analyticsService.getEventStatistics(numericEventId);
+      data = await analyticsService.getEventStatistics(numericEventId, includeTestData, req);
       break;
     }
 
@@ -183,27 +216,27 @@ async function handler(req, res) {
           error: 'Days parameter must be between 1 and 365'
         });
       }
-      data = await analyticsService.getSalesTrend(trendDays, numericEventId);
+      data = await analyticsService.getSalesTrend(trendDays, numericEventId, includeTestData, req);
       break;
     }
 
     case 'hourly': {
-      data = await analyticsService.getHourlySalesPattern(numericEventId);
+      data = await analyticsService.getHourlySalesPattern(numericEventId, includeTestData, req);
       break;
     }
 
     case 'customers': {
-      data = await analyticsService.getCustomerAnalytics(numericEventId);
+      data = await analyticsService.getCustomerAnalytics(numericEventId, includeTestData, req);
       break;
     }
 
     case 'checkins': {
-      data = await analyticsService.getCheckinAnalytics(numericEventId);
+      data = await analyticsService.getCheckinAnalytics(numericEventId, includeTestData, req);
       break;
     }
 
     case 'revenue': {
-      data = await analyticsService.getRevenueBreakdown(numericEventId);
+      data = await analyticsService.getRevenueBreakdown(numericEventId, includeTestData, req);
       break;
     }
 
@@ -216,13 +249,15 @@ async function handler(req, res) {
       }
       data = await analyticsService.getConversionFunnel(
         funnelDays,
-        numericEventId
+        numericEventId,
+        includeTestData,
+        req
       );
       break;
     }
 
     case 'wallet': {
-      data = await analyticsService.getWalletAnalytics(numericEventId);
+      data = await analyticsService.getWalletAnalytics(numericEventId, includeTestData, req);
       break;
     }
 
@@ -252,7 +287,7 @@ async function handler(req, res) {
       res.status(200).json(processDatabaseResult({
         type,
         eventId: numericEventId,
-        eventSlug: validEventId,
+        eventSlug: eventId,
         generatedAt: new Date().toISOString(),
         data
       }));
