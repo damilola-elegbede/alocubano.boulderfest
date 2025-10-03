@@ -153,7 +153,7 @@ class DonationSelection {
         // Add donation to cart
         document.dispatchEvent(
             new CustomEvent('donation-amount-changed', {
-                detail: { amount: amount }
+                detail: { amount: amount, isTest: false }
             })
         );
 

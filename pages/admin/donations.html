@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <!-- Inline theme detection to prevent FOUC -->
+    <script>
+      (function() {
+        // Detect admin pages
+        const path = window.location.pathname.toLowerCase();
+        const isAdmin = path.includes('/admin') || path.includes('pages/admin');
+
+        if (isAdmin) {
+          // Admin pages always use dark theme
+          document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+          // Main site: check user preference
+          let stored = null;
+          try {
+            stored = localStorage.getItem('theme-preference');
+          } catch {
+            // localStorage might be disabled
+          }
+
+          const preference = stored || 'system';
+          let theme = preference;
+
+          if (preference === 'system') {
+            // Detect system preference
+            theme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+              ? 'dark'
+              : 'light';
+          }
+
+          document.documentElement.setAttribute('data-theme', theme);
+        }
+      })();
+    </script>
+
+    <!-- Pre-render auth check to prevent content flash -->
+    <script>
+      // Hide content immediately to prevent flash
+      document.documentElement.style.visibility = 'hidden';
+      document.documentElement.style.opacity = '0';
+      document.documentElement.style.transition = 'opacity 0.2s ease-in';
+
+      // Quick token validation to prevent flash with invalid tokens
+      (async function() {
+        if (!window.location.pathname.includes('/admin/login')) {
+          const token = localStorage.getItem('adminToken');
+          if (!token) {
+            // No token - redirect immediately
+            window.location.replace('/admin/login');
+            return;
+          }
+
+          // Quick validation - check if token is expired client-side
+          try {
+            // Parse JWT to check expiration (basic check)
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            if (payload.exp && payload.exp * 1000 < Date.now()) {
+              // Token expired - clear and redirect
+              localStorage.removeItem('adminToken');
+              window.location.replace('/admin/login');
+              return;
+            }
+          } catch (e) {
+            // Invalid token format - clear and redirect
+            localStorage.removeItem('adminToken');
+            window.location.replace('/admin/login');
+            return;
+          }
+          // Valid token format - wait for server verification
+        }
+      })();
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Donations - A Lo Cubano Boulder Fest Admin</title>
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico" />
+
+    <!-- Main Site CSS System -->
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/typography.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/navigation.css">
+    <link rel="stylesheet" href="/css/admin-overrides.css">
+
+    <style>
+      /* Admin Portal Specific Styles */
+      body {
+        background: linear-gradient(
+          135deg,
+          var(--color-blue) 0%,
+          var(--color-red) 100%
+        );
+        min-height: 100vh;
+        padding: var(--space-lg);
+      }
+
+      .admin-filters-wrapper {
+        display: flex;
+        gap: var(--space-md);
+        align-items: center;
+      }
+
+      .admin-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: var(--font-size-sm);
+      }
+
+      .admin-table th {
+        text-align: left;
+        padding: var(--space-md);
+        background: var(--color-surface-elevated);
+        border-bottom: 2px solid var(--color-border);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: var(--font-size-xs);
+        letter-spacing: 0.5px;
+      }
+
+      .admin-table td {
+        padding: var(--space-md);
+        border-bottom: 1px solid var(--color-border);
+      }
+
+      .admin-table tr:hover {
+        background: var(--color-surface-elevated);
+      }
+
+      .status-badge {
+        display: inline-block;
+        padding: var(--space-xs) var(--space-sm);
+        border-radius: var(--radius-sm);
+        font-size: var(--font-size-xs);
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+
+      .status-badge.completed {
+        background: var(--color-success-subtle, rgba(16, 185, 129, 0.2));
+        color: var(--color-success);
+      }
+
+      .status-badge.pending {
+        background: var(--color-warning-subtle, rgba(245, 158, 11, 0.2));
+        color: var(--color-warning);
+      }
+
+      .status-badge.failed {
+        background: var(--color-error-subtle, rgba(239, 68, 68, 0.2));
+        color: var(--color-error);
+      }
+
+      .test-badge {
+        display: inline-block;
+        padding: var(--space-xs) var(--space-sm);
+        border-radius: var(--radius-sm);
+        font-size: var(--font-size-xs);
+        font-weight: 600;
+        background: var(--color-warning-subtle, rgba(245, 158, 11, 0.2));
+        color: var(--color-warning);
+      }
+
+      .real-badge {
+        display: inline-block;
+        padding: var(--space-xs) var(--space-sm);
+        border-radius: var(--radius-sm);
+        font-size: var(--font-size-xs);
+        font-weight: 600;
+        background: var(--color-success-subtle, rgba(16, 185, 129, 0.2));
+        color: var(--color-success);
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- Header -->
+    <header class="admin-header">
+      <div class="admin-header-content">
+        <div class="admin-header-left">
+          <h1>Donations Dashboard</h1>
+          <div class="admin-header-meta">
+            <span>Last updated: <span id="update-time">--</span></span>
+          </div>
+          <button class="admin-btn admin-btn-ghost" onclick="location.href='/admin'">
+            <span>Portal</span>
+          </button>
+          <button class="admin-btn admin-btn-ghost" onclick="location.href='/admin/dashboard'">
+            <span>Dashboard</span>
+          </button>
+          <button class="admin-btn admin-btn-primary" onclick="logout()">
+            <span>Logout</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Unified Admin Navigation -->
+    <nav class="admin-navigation">
+      <ul class="admin-nav-list">
+        <li class="admin-nav-item">
+          <a href="/admin" class="admin-nav-link">
+            <span>Portal</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/dashboard" class="admin-nav-link">
+            <span>Dashboard</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/tickets" class="admin-nav-link">
+            <span>Tickets</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/analytics" class="admin-nav-link">
+            <span>Analytics</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/donations" class="admin-nav-link active">
+            <span>Donations</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/checkin" class="admin-nav-link">
+            <span>Check-in Scanner</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/test" class="admin-nav-link">
+            <span>Test</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/api-endpoints" class="admin-nav-link">
+            <span>API Endpoints</span>
+          </a>
+        </li>
+      </ul>
+
+      <!-- Event Selector & Test Mode Filter -->
+      <div class="admin-filters-wrapper">
+        <div id="event-selector-container"></div>
+        <select id="test-mode-filter" class="admin-select">
+          <option value="all">All Donations</option>
+          <option value="real">Real Only</option>
+          <option value="test">Test Only</option>
+        </select>
+      </div>
+    </nav>
+
+    <!-- Controls Bar -->
+    <div class="admin-card">
+      <div class="admin-card-body">
+        <div class="admin-flex admin-justify-between admin-items-center admin-flex-wrap admin-gap-lg">
+          <div class="admin-flex admin-gap-sm">
+            <button class="admin-btn admin-btn-sm time-range-btn" data-days="7">
+              <span>7 Days</span>
+            </button>
+            <button class="admin-btn admin-btn-sm time-range-btn active" data-days="30">
+              <span>30 Days</span>
+            </button>
+            <button class="admin-btn admin-btn-sm time-range-btn" data-days="90">
+              <span>90 Days</span>
+            </button>
+            <button class="admin-btn admin-btn-sm time-range-btn" data-days="all">
+              <span>All Time</span>
+            </button>
+          </div>
+          <div class="admin-flex admin-gap-sm">
+            <button class="admin-btn admin-btn-sm admin-btn-success" onclick="exportJSON()">
+              <span>Export JSON</span>
+            </button>
+            <button class="admin-btn admin-btn-sm admin-btn-success" onclick="exportCSV()">
+              <span>Export CSV</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Metrics Grid -->
+    <div class="admin-grid auto-fit" id="metrics-grid">
+      <div class="admin-stat-card">
+        <div class="stat-label">Total Donations</div>
+        <div class="stat-number" id="total-donations">--</div>
+        <div class="stat-change positive" id="donations-change">--</div>
+      </div>
+
+      <div class="admin-stat-card">
+        <div class="stat-label">Donation Revenue</div>
+        <div class="stat-number" id="donation-revenue">--</div>
+        <div class="stat-change positive" id="revenue-change">--</div>
+      </div>
+
+      <div class="admin-stat-card">
+        <div class="stat-label">Transactions with Donations</div>
+        <div class="stat-number" id="transactions-with-donations">--</div>
+        <div class="stat-change" id="transactions-change">--</div>
+      </div>
+
+      <div class="admin-stat-card">
+        <div class="stat-label">Average Donation</div>
+        <div class="stat-number" id="average-donation">--</div>
+        <div class="stat-change" id="average-change">--</div>
+      </div>
+    </div>
+
+    <!-- Donations Table -->
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <h2 class="admin-card-title">Recent Donations</h2>
+      </div>
+      <div class="admin-card-body">
+        <table class="admin-table" id="donations-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Transaction ID</th>
+              <th>Amount</th>
+              <th>Customer</th>
+              <th>Event</th>
+              <th>Status</th>
+              <th>Type</th>
+            </tr>
+          </thead>
+          <tbody id="donations-tbody">
+            <tr>
+              <td colspan="7" style="text-align: center; padding: var(--space-xl);">
+                Loading donations data...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/js/admin-auth-manager.js"></script>
+    <script src="/js/admin-event-selector.js"></script>
+    <script src="/js/admin-donations.js"></script>
+
+    <script>
+      // Logout function
+      function logout() {
+        localStorage.removeItem('adminToken');
+        window.location.href = '/admin/login';
+      }
+
+      // Update time display
+      function updateTime() {
+        const now = new Date();
+        document.getElementById('update-time').textContent =
+          now.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+          });
+      }
+      updateTime();
+      setInterval(updateTime, 1000);
+    </script>
+  </body>
+</html>

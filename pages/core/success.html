@@ -535,6 +535,16 @@
             Redirecting to registration in <span class="countdown-seconds" id="countdown-seconds">20</span> seconds...
           </div>
 
+          <!-- Thank you for donation message -->
+          <div id="donation-thank-you" style="display: none; margin: var(--space-lg) 0; padding: var(--space-lg); background: transparent; border-radius: var(--radius-md); border: 2px solid var(--color-success, #10b981);">
+            <p style="margin: 0; font-size: var(--font-size-lg); font-weight: 600; color: var(--color-text-primary);">
+              🥳 🎉 Thank you for your generous donation! 🎉 🥳
+            </p>
+            <p style="margin: var(--space-sm) 0 0 0; color: var(--color-text-secondary);">
+              Your support helps us bring authentic Cuban culture to Boulder and keep our community thriving.
+            </p>
+          </div>
+
           <!-- Register Now button moved here for better visibility -->
           <div style="margin-bottom: var(--space-xl); display: none;" id="register-now-container">
             <a href="#" id="register-now-btn" class="success-btn accent" aria-label="Register your tickets now to complete attendee information">Register Now</a>
@@ -646,7 +656,6 @@
       const sessionId = urlParams.get("session_id"); // Stripe
       const token = urlParams.get("token"); // PayPal
       const payerId = urlParams.get("PayerID"); // PayPal
-      const testMode = urlParams.get("test_mode") === "true";
 
       // Elements
       const loadingState = document.querySelector(".loading-state");
@@ -761,6 +770,7 @@
               transaction: data.transaction,    // Pass through transaction data
               session: data.session,
               hasTickets: data.hasTickets,  // CRITICAL: Pass through for registration
+              hasDonations: data.hasDonations,  // CRITICAL: Pass through for donation thank you
               registrationToken: data.registrationToken,  // CRITICAL: Pass through for registration
               registrationUrl: data.registrationUrl,  // CRITICAL: Pass through for registration
               order: {
@@ -777,8 +787,7 @@
                   'Join our WhatsApp group for updates'
                 ]
               },
-              message: 'Payment successful! Thank you for your purchase.',
-              testMode: testMode
+              message: 'Payment successful! Thank you for your purchase.'
             };
 
             showSuccess(unifiedData);
@@ -816,6 +825,7 @@
               orderNumber: captureData.orderNumber,
               transaction: captureData.transaction,
               hasTickets: captureData.hasTickets,
+              hasDonations: captureData.hasDonations,
               registrationToken: captureData.registrationToken,
               registrationUrl: captureData.registrationUrl,
               order: {
@@ -829,8 +839,7 @@
                 payer: captureData.payer
               },
               instructions: captureData.instructions,
-              message: captureData.message,
-              testMode: captureData.testMode || testMode
+              message: captureData.message
             };
 
             showSuccess(unifiedData);
@@ -960,6 +969,14 @@
           hasRegistrationToken: !!data.registrationToken
         });
 
+        // Show donation thank you message if donations are included
+        if (Boolean(data.hasDonations)) {
+          const donationThankYou = document.getElementById('donation-thank-you');
+          if (donationThankYou) {
+            donationThankYou.style.display = 'block';
+          }
+        }
+
         // Handle registration for ticket purchases
         if (isTicketPurchase) {
           // Set registration URL - use provided URL or fallback to registration page
@@ -985,28 +1002,6 @@
 
           // Start countdown timer for ticket purchases
           startCountdown();
-        }
-
-        // Show test mode indicator if applicable
-        if (data.testMode) {
-          const testModeIndicator = document.createElement("div");
-          testModeIndicator.className = "test-mode-indicator";
-          testModeIndicator.style.cssText = `
-            background: var(--color-danger, #ff6b6b);
-            color: var(--color-text-on-danger, white);
-            padding: 8px 16px;
-            border-radius: 4px;
-            margin: 16px 0;
-            font-weight: bold;
-            text-align: center;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-size: 14px;
-          `;
-          testModeIndicator.textContent = "🧪 TEST MODE - This was a test transaction";
-
-          // Insert after main message
-          mainMessage.parentNode.insertBefore(testModeIndicator, mainMessage.nextSibling);
         }
 
         // Clear the cart and end checkout session as instructed by the API
@@ -1149,7 +1144,7 @@
 
           // Only load SDK if needed for enhanced PayPal integration features
           // For basic capture, we don't need the SDK as we're using server-side capture
-          console.log('PayPal payment detected, test mode:', isTestMode);
+          console.log('PayPal payment detected');
         }
       })();
     </script>

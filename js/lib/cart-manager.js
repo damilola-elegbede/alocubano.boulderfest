@@ -351,21 +351,22 @@ export class CartManager extends EventTarget {
     }
 
     // Donation operations
-    async addDonation(amount) {
+    async addDonation(amount, isTest = false) {
         if (amount <= 0) {
             throw new Error('Invalid donation amount');
         }
 
-        // Convert donation amount to cents to match ticket pricing
-        const amountInCents = Math.round(amount * 100);
+        // Store donation amount in dollars (same as ticket prices)
+        const donationAmount = Math.round(amount * 100) / 100; // Round to 2 decimal places
 
         // Create new donation item
         const donationId = `donation_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
         const donation = {
             id: donationId,
-            amount: amountInCents,
+            amount: donationAmount,
             name: 'Festival Support',
-            addedAt: Date.now()
+            addedAt: Date.now(),
+            isTest: isTest  // Track whether this is a test donation
         };
 
         this.state.donations.push(donation);

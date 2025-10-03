@@ -105,12 +105,11 @@ function setupPageIntegrations(cartManager) {
     currentPath.includes('tickets.html')
     ) {
         setupTicketsPageIntegration(cartManager);
-    } else if (
-        currentPath.includes('/donations') ||
-    currentPath.includes('donations.html')
-    ) {
-        setupDonationsPageIntegration(cartManager);
     }
+
+    // Always register donation listener (global functionality)
+    // This ensures test donation buttons and any donation functionality works on all pages
+    setupDonationsPageIntegration(cartManager);
 }
 
 function setupTicketsPageIntegration(cartManager) {
@@ -182,12 +181,12 @@ function setupTicketsPageIntegration(cartManager) {
 function setupDonationsPageIntegration(cartManager) {
     // Listen for donation amount additions to cart
     document.addEventListener('donation-amount-changed', async(event) => {
-        const { amount } = event.detail;
+        const { amount, isTest = false } = event.detail;
 
         // Only add to cart if amount is greater than 0
         if (amount > 0) {
             try {
-                await cartManager.addDonation(amount);
+                await cartManager.addDonation(amount, isTest);
             } catch (error) {
                 console.error('Failed to add donation:', error);
             }

@@ -620,7 +620,8 @@ class PaymentSelector {
                     name: donation.name || 'A Lo Cubano Boulder Fest Donation',
                     price: donation.amount,
                     quantity: 1,
-                    category: 'general'
+                    category: 'general',
+                    isTestItem: donation.isTest || false
                 });
             });
         }

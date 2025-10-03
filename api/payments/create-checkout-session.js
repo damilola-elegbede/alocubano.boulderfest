@@ -68,13 +68,7 @@ export default async function handler(req, res) {
   // Stripe initialization check is no longer needed since we fail immediately at module level
 
   try {
-    const { cartItems, customerInfo, testMode = false } = req.body;
-
-    // Detect test mode from various sources
-    const isRequestTestMode = testMode ||
-      req.headers['x-test-mode'] === 'true' ||
-      req.headers['x-admin-test'] === 'true' ||
-      cartItems?.some(item => item.isTestItem || item.name?.startsWith('TEST'));
+    const { cartItems, customerInfo } = req.body;
 
     // Log incoming request in development
     if (process.env.NODE_ENV !== 'production') {
@@ -83,8 +77,7 @@ export default async function handler(req, res) {
         customerInfo: customerInfo,
         hasCartItems: !!cartItems,
         isArray: Array.isArray(cartItems),
-        itemCount: cartItems?.length,
-        testMode: isRequestTestMode
+        itemCount: cartItems?.length
       });
     }
 
@@ -153,10 +146,10 @@ export default async function handler(req, res) {
     }
 
     // Generate order ID for tracking (needed before Stripe session creation)
-    const orderIdPrefix = isRequestTestMode ? 'test_order' : 'order';
+    const orderIdPrefix = 'order';
     const orderId = `${orderIdPrefix}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
-    console.log(`Creating ${isRequestTestMode ? 'TEST' : ''} checkout session for order:`, orderId);
+    console.log(`Creating checkout session for order:`, orderId);
 
     // CRITICAL: Reserve tickets atomically BEFORE creating Stripe session
     // This prevents race condition overselling by locking the quantities
@@ -224,6 +217,14 @@ export default async function handler(req, res) {
       const itemTotal = item.price * item.quantity;
       totalAmount += itemTotal;
 
+      // Validate item type before pricing
+      const validTypes = ['ticket', 'donation'];
+      if (!item.type || !validTypes.includes(item.type)) {
+        return res.status(400).json({
+          error: `Invalid item type: ${item.type || 'undefined'} for item: ${item.name}`
+        });
+      }
+
       // Create Stripe line item
       const lineItem = {
         quantity: item.quantity
@@ -241,7 +242,10 @@ export default async function handler(req, res) {
             name: item.name,
             description: item.description
           },
-          unit_amount: Math.round(item.price) // Price already in cents from cart
+          // Donations are stored in dollars, tickets in cents
+          unit_amount: item.type === 'donation'
+            ? Math.round(item.price * 100)  // Convert dollars to cents
+            : Math.round(item.price)         // Already in cents
         };
 
         // Add metadata for different item types
@@ -292,8 +296,8 @@ export default async function handler(req, res) {
       payment_method_types: ['card', 'link'],
       line_items: lineItems,
       mode: 'payment',
-      success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}${isRequestTestMode ? '&test_mode=true' : ''}`,
-      cancel_url: `${origin}/failure?session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}${isRequestTestMode ? '&test_mode=true' : ''}`,
+      success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/failure?session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}`,
 
       // Customer configuration for automatic receipts
       // If we have an email, use it. Otherwise, let Stripe collect it
@@ -336,25 +340,22 @@ export default async function handler(req, res) {
             ? `${customerInfo.firstName} ${customerInfo.lastName}`
             : 'Pending',
         environment: process.env.NODE_ENV || 'development',
-        testMode: isRequestTestMode.toString(),
-        testTransaction: isRequestTestMode ? 'true' : 'false',
         tempSessionId: tempSessionId  // Store temp session ID for reservation update
       },
       // Collect billing address for tax compliance
       billing_address_collection: 'required',
-      // Set session expiration (24 hours for production, 2 hours for test)
-      expires_at: Math.floor(Date.now() / 1000) + (isRequestTestMode ? 2 * 60 * 60 : 24 * 60 * 60)
+      // Set session expiration (24 hours)
+      expires_at: Math.floor(Date.now() / 1000) + (24 * 60 * 60)
     });
 
     // Log session creation for debugging
-    console.log(`${isRequestTestMode ? 'TEST ' : ''}Stripe checkout session created:`, {
+    console.log(`Stripe checkout session created:`, {
       sessionId: session.id,
       orderId: orderId,
       totalAmount: totalAmount,
       customerEmail: customerInfo?.email || 'Will be collected by Stripe',
       customerCreation: 'always (automatic receipts enabled)',
-      invoiceCreation: 'enabled (backup receipts)',
-      testMode: isRequestTestMode
+      invoiceCreation: 'enabled (backup receipts)'
     });
 
     // Return checkout URL for redirect
@@ -362,8 +363,7 @@ export default async function handler(req, res) {
       checkoutUrl: session.url,
       sessionId: session.id,
       orderId: orderId,
-      totalAmount: totalAmount,
-      testMode: isRequestTestMode
+      totalAmount: totalAmount
     });
   } catch (error) {
     // CRITICAL: Release orphaned reservation if it was created
