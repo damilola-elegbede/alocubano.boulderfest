@@ -85,6 +85,7 @@ npm run verify-structure        # Verify project structure (via build)
 - **Typography-forward design** with Bebas Neue, Playfair Display, Space Mono
 - **Virtual gallery** with Google Drive integration and lazy loading
 - **Floating cart** with intelligent page-specific visibility rules
+- **Donations system** with cart integration and admin tracking
 - **Mobile-first** with slide-in navigation and 44px touch targets
 - **Hybrid theme system** with user-controlled themes on main site and fixed dark theme on admin pages
 
@@ -389,6 +390,7 @@ export default async function handler(req, res) {
 - `POST /api/admin/login` - Admin authentication
 - `GET /api/admin/dashboard` - Dashboard data
 - `GET /api/admin/registrations` - Registration list
+- `GET /api/admin/donations` - Donations dashboard with filtering and analytics
 
 ### Gallery
 
@@ -446,6 +448,42 @@ Features:
 - Handles comments and multi-line statements
 - Tracks status in `migrations` table
 
+## Bootstrap System
+
+**Production Data Bootstrap**: Automated initialization of production-ready data.
+
+The bootstrap system (`scripts/bootstrap.js`) automatically runs during deployment to populate essential production data:
+
+- **Event information**: Festival dates, location, pricing, and ticket types
+- **Admin users**: Initial admin accounts and permissions
+- **Configuration data**: System settings and feature flags
+
+**Key Features:**
+
+- Idempotent execution (safe to run multiple times)
+- Automatic execution on `npm run build`
+- Configuration via JSON files in `/config/bootstrap/`
+- See [Bootstrap System Documentation](docs/BOOTSTRAP_SYSTEM.md) for details
+
+## Donations System
+
+**Support the Festival**: Integrated donation collection with full tracking.
+
+**Features:**
+
+- **Cart Integration**: Add donations alongside ticket purchases
+- **Flexible Amounts**: Preset ($5, $10, $20, $50) or custom amounts
+- **Admin Dashboard**: Track donations by date, amount, status (`/admin/donations`)
+- **Email Receipts**: Donation acknowledgments in order confirmation emails
+- **Analytics**: Total donations, average amounts, donor counts
+
+**Implementation:**
+
+- Frontend: `js/donation-selection.js` - Donation UI component
+- Backend: `api/admin/donations.js` - Donations analytics API
+- Database: `donations` table tracks all donations with transaction linking
+- Service: `lib/transaction-service.js` - Handles donation recording
+
 ## CI/CD Configuration
 
 ### GitHub Actions
@@ -493,13 +531,25 @@ Features:
 - **Simple execution**: No complex test builders, managers, or abstractions
 - **Real API testing**: Tests interact with actual endpoints via Vercel preview deployments
 
-## Floating Cart Visibility
+## Floating Cart & Donations
+
+### Cart Visibility
 
 Managed by `determineCartVisibility()` in `floating-cart.js`:
 
 - **Always visible**: `/tickets`, `/donations`
 - **Visible with items**: `/about`, `/artists`, `/schedule`, `/gallery`
 - **Never visible**: `/404`, `/index.html`
+
+### Donation Integration
+
+The donations page (`/pages/core/donations.html`) integrates with the floating cart:
+
+- Add donations as cart items alongside tickets
+- Supports fixed preset amounts ($5, $10, $20, $50)
+- Custom amount input with validation
+- Donations appear in cart with "Donation" label
+- Process through same Stripe checkout as tickets
 
 ## Performance Targets
 
@@ -543,14 +593,20 @@ console.log("Theme performance:", getPerformanceMetrics());
 │   └── health/         # Health check endpoints
 ├── lib/                # Shared services (async singletons)
 ├── pages/              # HTML pages
+│   ├── core/          # Main site pages (tickets, donations, etc.)
+│   └── admin/         # Admin panel pages
 ├── js/                 # Frontend JavaScript
-│   ├── theme-manager.js    # Core theme management system
-│   └── theme-toggle.js     # Theme toggle component
+│   ├── theme-manager.js        # Core theme management system
+│   ├── theme-toggle.js         # Theme toggle component
+│   ├── donation-selection.js   # Donation UI component
+│   └── admin-donations.js      # Admin donations dashboard
 ├── css/                # Stylesheets
 │   └── base.css           # CSS variable system with theme support
 ├── docs/               # Documentation
-│   ├── THEME_SYSTEM.md    # Complete theme system documentation
-│   └── api/               # API documentation
+│   ├── THEME_SYSTEM.md       # Complete theme system documentation
+│   ├── BOOTSTRAP_SYSTEM.md   # Bootstrap data initialization
+│   ├── guides/               # Feature implementation guides
+│   └── api/                  # API documentation
 ├── tests/
 │   ├── unit/           # Unit test files
 │   ├── integration/    # Integration test structure

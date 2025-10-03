@@ -115,7 +115,7 @@ alocubano.boulderfest/
 - **Schedule**: 3-day workshop and social schedule
 - **Gallery**: Dynamic media gallery with Google Drive integration, festival photos/videos
 - **Tickets**: Pricing tiers and registration with floating cart system
-- **Donations**: Support the festival with floating cart integration
+- **Donations**: Support the festival with preset/custom amounts, cart integration, and admin tracking
 
 ### Technical Features
 
@@ -132,7 +132,8 @@ alocubano.boulderfest/
 - ✅ Lightbox viewer for photos and videos
 - ✅ Serverless functions on Vercel
 - ✅ Floating cart system with intelligent page-specific visibility
-- ✅ Stripe Checkout Sessions for secure, streamlined payments
+- ✅ Donations system with preset/custom amounts and admin analytics
+- ✅ Stripe Checkout Sessions for secure, streamlined payments (tickets + donations)
 - ✅ PCI-compliant payment processing with built-in fraud protection
 
 ## 🆕 New Ticket Payment Features (2024)
@@ -385,7 +386,7 @@ npm run migrate:status         # Check migration status
 - **Payment Processing**: Stripe Checkout with webhook handling and order numbers
 - **Gallery System**: Google Drive integration with AVIF/WebP optimization
 - **E2E Testing**: Comprehensive browser automation with Vercel Preview Deployments
-- **Admin Panel**: Complete administration dashboard with security features
+- **Admin Panel**: Complete administration dashboard with donations tracking, registrations, and analytics
 
 ## Environment Variables
 
