@@ -96,34 +96,7 @@ async function handler(req, res) {
   }
 
   // Input validation and sanitization
-  let { type, eventId = 'boulder-fest-2026', days = 30 } = req.query;
-
-  // Convert numeric eventId to slug (supports event selector returning IDs)
-  // Accept negative IDs for test events (e.g., -1, -2)
-  if (eventId && /^-?\d+$/.test(eventId)) {
-    try {
-      const db = await getDatabaseClient();
-      const eventResult = await db.execute({
-        sql: 'SELECT slug FROM events WHERE id = ?',
-        args: [parseInt(eventId, 10)]
-      });
-      eventId = eventResult.rows?.[0]?.slug || 'boulder-fest-2026';
-    } catch (error) {
-      console.warn('Failed to convert eventId to slug:', error);
-      eventId = 'boulder-fest-2026';
-    }
-  }
-
-  // Validate eventId to prevent injection
-  const validEventId = /^[a-zA-Z0-9-_]+$/.test(eventId)
-    ? eventId
-    : 'boulder-fest-2026';
-  if (validEventId !== eventId) {
-    return res.status(400).json({
-      error:
-        'Invalid eventId format. Only alphanumeric characters, hyphens and underscores allowed.'
-    });
-  }
+  let { type, eventId, days = 30 } = req.query;
 
   if (!type) {
     return res.status(400).json({
@@ -142,30 +115,40 @@ async function handler(req, res) {
     });
   }
 
-  // Convert slug back to numeric ID for analytics service
-  let numericEventId;
-
-  // Handle special cases
-  if (validEventId === '-1' || validEventId === 'all') {
-    // Return error for unsupported "all events" selection
+  // Handle special cases - reject invalid selections
+  if (eventId === '-1' || eventId === 'all') {
     return res.status(400).json({
       error: 'Event selection required. Please select a specific event.',
       hint: 'eventId=-1 or "all" is not supported. Please select an event from the dropdown.'
     });
   }
 
-  // Convert slug to numeric ID
-  if (validEventId && !/^\d+$/.test(validEventId)) {
+  // Convert eventId to numeric ID (matches dashboard API behavior)
+  let numericEventId;
+
+  if (!eventId) {
+    // No event specified - return error instead of dangerous fallback
+    return res.status(400).json({
+      error: 'Event selection required',
+      hint: 'Please select an event from the dropdown.'
+    });
+  }
+
+  // If it's already numeric, use it directly
+  if (/^-?\d+$/.test(eventId)) {
+    numericEventId = parseInt(eventId, 10);
+  } else {
+    // It's a slug - convert to numeric ID
     try {
       const db = await getDatabaseClient();
       const eventResult = await db.execute({
         sql: 'SELECT id FROM events WHERE slug = ?',
-        args: [validEventId]
+        args: [eventId]
       });
 
       if (!eventResult.rows || eventResult.rows.length === 0) {
         return res.status(404).json({
-          error: `Event not found: ${validEventId}`
+          error: `Event not found: ${eventId}`
         });
       }
 
@@ -176,8 +159,6 @@ async function handler(req, res) {
         error: 'Failed to lookup event'
       });
     }
-  } else {
-    numericEventId = parseInt(validEventId, 10);
   }
 
   try {

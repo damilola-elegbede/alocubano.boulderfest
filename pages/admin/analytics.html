@@ -1083,7 +1083,7 @@
             return `
                     <div class="recommendation-item ${typeClass}">
                         <div class="recommendation-content">
-                            <div class="recommendation-title">${escapeHtml(rec.title)}</div>
+                            <div class="recommendation-title">${escapeHtml(rec.title || rec.message.split('.')[0])}</div>
                             <div class="recommendation-text">${escapeHtml(rec.message)}</div>
                         </div>
                     </div>
