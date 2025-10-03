@@ -256,11 +256,11 @@ class EventsService {
                 status: 'upcoming',
                 description: 'An intimate weekend of Cuban salsa workshops',
                 venue: {
-                    name: 'Boulder Theater',
-                    address: '2032 14th Street',
+                    name: 'Avalon Ballroom',
+                    address: '6185 Arapahoe Road',
                     city: 'Boulder',
                     state: 'CO',
-                    zip: '80302'
+                    zip: '80301'
                 },
                 dates: {
                     start: '2025-11-08',

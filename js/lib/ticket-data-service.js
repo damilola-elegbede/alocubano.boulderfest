@@ -131,7 +131,7 @@ class TicketDataService {
                 event_id: 2,
                 event_name: 'November Salsa Weekender 2025',
                 event_date: '2025-11-08',
-                event_venue: 'Boulder Theater',
+                event_venue: 'Avalon Ballroom',
                 status: 'available'
             }
         ];

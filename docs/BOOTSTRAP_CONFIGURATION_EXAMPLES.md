@@ -103,11 +103,11 @@ Quick reference and examples for the A Lo Cubano Boulder Fest bootstrap system c
   "status": "upcoming",
   "description": "An intimate weekend of Cuban salsa workshops and social dancing in the heart of Boulder.",
   "venue": {
-    "name": "Boulder Theater",
-    "address": "2032 14th Street",
+    "name": "Avalon Ballroom",
+    "address": "6185 Arapahoe Road",
     "city": "Boulder",
     "state": "CO",
-    "zip": "80302"
+    "zip": "80301"
   },
   "dates": {
     "start": "2025-11-08",
