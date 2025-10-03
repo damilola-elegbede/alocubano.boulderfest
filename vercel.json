@@ -38,7 +38,7 @@
     },
     "api/wallet/hero/[ticketType].js": {
       "maxDuration": 15,
-      "includeFiles": "lib/{google-wallet-hero-generator,ticket-color-service,database}.js"
+      "includeFiles": "lib/{google-wallet-hero-generator,ticket-color-service,database}.js,public/wallet/background*.png"
     },
     "api/email/**/*.js": {
       "maxDuration": 20,
