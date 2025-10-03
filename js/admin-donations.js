@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       currentFilters.eventId = selectedEventId || 'all';
 
       // Listen for event changes
-      window.eventSelector.on('change', async (eventId) => {
+      window.eventSelector.onChange(async (eventId) => {
         currentFilters.eventId = eventId;
         await loadDonations();
       });

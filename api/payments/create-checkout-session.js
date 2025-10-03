@@ -217,6 +217,14 @@ export default async function handler(req, res) {
       const itemTotal = item.price * item.quantity;
       totalAmount += itemTotal;
 
+      // Validate item type before pricing
+      const validTypes = ['ticket', 'donation'];
+      if (!item.type || !validTypes.includes(item.type)) {
+        return res.status(400).json({
+          error: `Invalid item type: ${item.type || 'undefined'} for item: ${item.name}`
+        });
+      }
+
       // Create Stripe line item
       const lineItem = {
         quantity: item.quantity

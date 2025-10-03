@@ -970,7 +970,7 @@
         });
 
         // Show donation thank you message if donations are included
-        if (data.hasDonations) {
+        if (Boolean(data.hasDonations)) {
           const donationThankYou = document.getElementById('donation-thank-you');
           if (donationThankYou) {
             donationThankYou.style.display = 'block';

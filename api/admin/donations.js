@@ -38,8 +38,12 @@ async function handler(req, res) {
     }
 
     if (eventId !== 'all') {
+      const parsedEventId = Number.parseInt(eventId, 10);
+      if (Number.isNaN(parsedEventId)) {
+        return res.status(400).json({ error: 'Invalid eventId parameter' });
+      }
       whereConditions.push('t.event_id = ?');
-      queryArgs.push(parseInt(eventId, 10));
+      queryArgs.push(parsedEventId);
     }
 
     if (dateFilter) {
