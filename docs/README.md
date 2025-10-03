@@ -287,5 +287,5 @@ See [CHANGELOG.md](../CHANGELOG.md) for complete update history.
 
 ---
 
-**Last Updated**: January 2026
+**Last Updated**: October 2025
 **Documentation Version**: 2.0
