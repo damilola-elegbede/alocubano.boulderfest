@@ -31,7 +31,7 @@ export default async function handler(req, res) {
     const heroBuffer = await heroGenerator.generateHeroImage(ticketType, {
       eventName: "A LO CUBANO",
       eventSubtitle: "BOULDER FEST",
-      circlePosition: "top-right",
+      circlePosition: "center",
     });
 
     // Set caching headers (24 hours - hero images are static per ticket type)
