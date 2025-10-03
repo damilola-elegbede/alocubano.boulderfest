@@ -243,13 +243,19 @@ async function handler(req, res) {
     }
     }
 
-    res.status(200).json(processDatabaseResult({
-      type,
-      eventId: numericEventId,
-      eventSlug: validEventId,
-      generatedAt: new Date().toISOString(),
-      data
-    }));
+    // For summary type, return transformed data directly (frontend expects unwrapped)
+    // For other types, include metadata wrapper
+    if (type === 'summary') {
+      res.status(200).json(processDatabaseResult(data));
+    } else {
+      res.status(200).json(processDatabaseResult({
+        type,
+        eventId: numericEventId,
+        eventSlug: validEventId,
+        generatedAt: new Date().toISOString(),
+        data
+      }));
+    }
   } catch (error) {
     console.error(`Analytics ${type} error:`, error);
     res.status(500).json({
