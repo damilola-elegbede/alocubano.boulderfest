@@ -115,7 +115,7 @@ alocubano.boulderfest/
 - **Schedule**: 3-day workshop and social schedule
 - **Gallery**: Dynamic media gallery with Google Drive integration, festival photos/videos
 - **Tickets**: Pricing tiers and registration with floating cart system
-- **Donations**: Support the festival with floating cart integration
+- **Donations**: Support the festival with preset/custom amounts, cart integration, and admin tracking
 
 ### Technical Features
 
@@ -132,7 +132,8 @@ alocubano.boulderfest/
 - ✅ Lightbox viewer for photos and videos
 - ✅ Serverless functions on Vercel
 - ✅ Floating cart system with intelligent page-specific visibility
-- ✅ Stripe Checkout Sessions for secure, streamlined payments
+- ✅ Donations system with preset/custom amounts and admin analytics
+- ✅ Stripe Checkout Sessions for secure, streamlined payments (tickets + donations)
 - ✅ PCI-compliant payment processing with built-in fraud protection
 
 ## 🆕 New Ticket Payment Features (2024)
@@ -364,6 +365,7 @@ npm run migrate:status         # Check migration status
 
 ### New Features Documentation
 
+- [Donations System](/docs/DONATIONS_SYSTEM.md) - Complete donations architecture and admin dashboard
 - [Order Number System](/docs/ORDER_NUMBERS.md) - Order ID format and generation
 - [Wallet Pass Setup](/docs/WALLET_SETUP.md) - Mobile wallet configuration guide
 - [Performance Optimization](/docs/PERFORMANCE_OPTIMIZATION.md) - Caching and optimization features
@@ -376,16 +378,17 @@ npm run migrate:status         # Check migration status
 
 ### Key Features Documentation
 
+- **Donations System**: Preset/custom amounts, cart integration, admin tracking, and analytics
 - **QR Code System**: JWT-based QR generation with dual cache architecture (24h HTTP + 7d client)
 - **Order Number System**: Sequential order tracking with ALO-YYYY-NNNN format
 - **Mobile Wallet Passes**: Apple Wallet and Google Wallet integration
 - **Performance Optimization**: Advanced caching, lazy loading, and monitoring
 - **Registration System**: JWT-based ticket registration with 72-hour window
-- **Email Integration**: Brevo/SendinBlue for transactional emails with QR codes
-- **Payment Processing**: Stripe Checkout with webhook handling and order numbers
+- **Email Integration**: Brevo/SendinBlue for transactional emails with QR codes and donation acknowledgments
+- **Payment Processing**: Stripe Checkout with webhook handling for tickets and donations
 - **Gallery System**: Google Drive integration with AVIF/WebP optimization
 - **E2E Testing**: Comprehensive browser automation with Vercel Preview Deployments
-- **Admin Panel**: Complete administration dashboard with security features
+- **Admin Panel**: Complete administration dashboard with donations tracking, registrations, and analytics
 
 ## Environment Variables
 
