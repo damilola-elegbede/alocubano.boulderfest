@@ -241,7 +241,10 @@ export default async function handler(req, res) {
             name: item.name,
             description: item.description
           },
-          unit_amount: Math.round(item.price) // Price already in cents from cart
+          // Donations are stored in dollars, tickets in cents
+          unit_amount: item.type === 'donation'
+            ? Math.round(item.price * 100)  // Convert dollars to cents
+            : Math.round(item.price)         // Already in cents
         };
 
         // Add metadata for different item types
