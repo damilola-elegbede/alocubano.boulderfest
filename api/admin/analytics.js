@@ -4,6 +4,7 @@ import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
 import { getRateLimitService } from "../../lib/rate-limit-service.js";
 import { getDatabaseClient } from "../../lib/database.js";
 import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
+import { processDatabaseResult } from "../../lib/bigint-serializer.js";
 
 async function handler(req, res) {
   // Initialize database client
@@ -194,13 +195,13 @@ async function handler(req, res) {
     }
     }
 
-    res.status(200).json({
+    res.status(200).json(processDatabaseResult({
       type,
       eventId: numericEventId,
       eventSlug: validEventId,
       generatedAt: new Date().toISOString(),
       data
-    });
+    }));
   } catch (error) {
     console.error(`Analytics ${type} error:`, error);
     res.status(500).json({
