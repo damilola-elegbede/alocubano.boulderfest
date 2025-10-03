@@ -18,8 +18,8 @@
       "includeFiles": "lib/{database,stripe-service,email-service,ticket-service,logger}.js"
     },
     "api/tickets/**/*.js": {
-      "maxDuration": 20,
-      "includeFiles": "lib/{database,ticket-service,qr-service,logger,wallet-service}.js"
+      "maxDuration": 30,
+      "includeFiles": "lib/{database,ticket-service,qr-service,qr-token-service,logger,wallet-service,apple-wallet-service,google-wallet-service,google-wallet-hero-generator,ticket-color-service,test-mode-utils}.js"
     },
     "api/registration/**/*.js": {
       "maxDuration": 20,
@@ -39,14 +39,6 @@
     "api/wallet/hero/[ticketType].js": {
       "maxDuration": 15,
       "includeFiles": "lib/{google-wallet-hero-generator,ticket-color-service,database}.js"
-    },
-    "api/tickets/google-wallet/[ticketId].js": {
-      "maxDuration": 30,
-      "includeFiles": "lib/{database,google-wallet-service,qr-token-service,test-mode-utils,ticket-color-service,google-wallet-hero-generator}.js"
-    },
-    "api/tickets/apple-wallet/[ticketId].js": {
-      "maxDuration": 30,
-      "includeFiles": "lib/{database,apple-wallet-service,qr-token-service,test-mode-utils,ticket-color-service}.js"
     },
     "api/email/**/*.js": {
       "maxDuration": 20,
