@@ -6,6 +6,53 @@ import { getDatabaseClient } from "../../lib/database.js";
 import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
 import { processDatabaseResult } from "../../lib/bigint-serializer.js";
 
+/**
+ * Transform executive summary to match frontend expectations
+ * Converts backend structure (overview, performance, trends, wallet, recommendations)
+ * to frontend expected structure (metrics, comparison)
+ */
+function transformSummaryForFrontend(summary) {
+  return {
+    // Frontend-expected structure with camelCase properties
+    metrics: {
+      totalTickets: Number(summary.overview.tickets_sold || 0),
+      grossRevenue: Number(summary.overview.gross_revenue || 0),
+      uniqueCustomers: Number(summary.overview.unique_customers || 0),
+      checkinRate: Number(summary.overview.check_in_rate || 0),
+      daysUntilEvent: Number(summary.overview.days_until_event || 0)
+    },
+    comparison: {
+      // Calculate comparison from trends data
+      tickets: Number(summary.trends.last_7_days || 0),
+      revenue: 0, // Not available in current data structure
+      customers: 0 // Not available in current data structure
+    },
+    // Performance metrics
+    performance: {
+      dailyAverage: parseFloat(summary.performance.daily_average || 0),
+      projectedTotal: Number(summary.performance.projected_total || 0),
+      topTicketType: summary.performance.top_ticket_type || 'N/A',
+      conversionRate: Number(summary.performance.conversion_rate || 0)
+    },
+    // Trends data
+    trends: {
+      last7Days: Number(summary.trends.last_7_days || 0),
+      last30Days: Number(summary.trends.last_30_days || 0),
+      today: Number(summary.trends.today || 0)
+    },
+    // Wallet analytics
+    wallet: {
+      adoptionRate: Number(summary.wallet.adoption_rate || 0),
+      totalUsers: Number(summary.wallet.total_users || 0),
+      revenueShare: Number(summary.wallet.revenue_share || 0)
+    },
+    // Recommendations
+    recommendations: summary.recommendations || [],
+    // Preserve full backend data for future enhancements
+    _details: summary
+  };
+}
+
 async function handler(req, res) {
   // Initialize database client
   await getDatabaseClient();
@@ -118,7 +165,8 @@ async function handler(req, res) {
 
     switch (type) {
     case 'summary': {
-      data = await analyticsService.generateExecutiveSummary(numericEventId);
+      const summary = await analyticsService.generateExecutiveSummary(numericEventId);
+      data = transformSummaryForFrontend(summary);
       break;
     }
 
