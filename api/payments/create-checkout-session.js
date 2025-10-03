@@ -283,6 +283,28 @@ export default async function handler(req, res) {
       lineItems.push(lineItem);
     }
 
+    // Determine event_id from cart items
+    // All tickets in a cart should belong to the same event
+    // Extract event_id from first ticket item, fallback to default if not present
+    const determineEventId = (items) => {
+      const ticketItems = items.filter(item => item.type === 'ticket');
+      if (ticketItems.length === 0) {
+        // No tickets in cart (donations only)
+        return process.env.DEFAULT_EVENT_ID || 'boulder-fest-2026';
+      }
+
+      // Get event_id from first ticket item
+      const eventIds = ticketItems
+        .map(item => item.eventId)
+        .filter(id => id != null && id !== '');
+
+      return eventIds.length > 0
+        ? eventIds[0]
+        : process.env.DEFAULT_EVENT_ID || 'boulder-fest-2026';
+    };
+
+    const eventId = determineEventId(cartItems);
+
     // Determine origin from request headers
     const origin =
       req.headers.origin ||
@@ -335,6 +357,7 @@ export default async function handler(req, res) {
       metadata: {
         orderId: orderId,
         orderType: orderType,
+        event_id: eventId,  // CRITICAL: Add event_id for transaction attribution
         customerName:
           customerInfo?.firstName && customerInfo?.lastName
             ? `${customerInfo.firstName} ${customerInfo.lastName}`
