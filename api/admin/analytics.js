@@ -115,11 +115,11 @@ async function handler(req, res) {
     });
   }
 
-  // Handle special cases - reject invalid selections
-  if (eventId === '-1' || eventId === 'all') {
+  // Handle special cases - reject only the 'all' string (negative IDs are valid test events)
+  if (eventId === 'all') {
     return res.status(400).json({
       error: 'Event selection required. Please select a specific event.',
-      hint: 'eventId=-1 or "all" is not supported. Please select an event from the dropdown.'
+      hint: 'Please select an event from the dropdown.'
     });
   }
 
