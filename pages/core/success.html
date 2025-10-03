@@ -535,6 +535,16 @@
             Redirecting to registration in <span class="countdown-seconds" id="countdown-seconds">20</span> seconds...
           </div>
 
+          <!-- Thank you for donation message -->
+          <div id="donation-thank-you" style="display: none; margin: var(--space-lg) 0; padding: var(--space-lg); background: var(--color-success-subtle, rgba(16, 185, 129, 0.1)); border-radius: var(--radius-md); border-left: 4px solid var(--color-success, #10b981);">
+            <p style="margin: 0; font-size: var(--font-size-lg); font-weight: 600; color: var(--color-text-primary);">
+              🥳 🎉 Thank you for your generous donation! 🎉 🥳
+            </p>
+            <p style="margin: var(--space-sm) 0 0 0; color: var(--color-text-secondary);">
+              Your support helps us bring authentic Cuban culture to Boulder and keep our community thriving.
+            </p>
+          </div>
+
           <!-- Register Now button moved here for better visibility -->
           <div style="margin-bottom: var(--space-xl); display: none;" id="register-now-container">
             <a href="#" id="register-now-btn" class="success-btn accent" aria-label="Register your tickets now to complete attendee information">Register Now</a>
@@ -816,6 +826,7 @@
               orderNumber: captureData.orderNumber,
               transaction: captureData.transaction,
               hasTickets: captureData.hasTickets,
+              hasDonations: captureData.hasDonations,
               registrationToken: captureData.registrationToken,
               registrationUrl: captureData.registrationUrl,
               order: {
@@ -959,6 +970,14 @@
           hasRegistrationUrl: !!data.registrationUrl,
           hasRegistrationToken: !!data.registrationToken
         });
+
+        // Show donation thank you message if donations are included
+        if (data.hasDonations) {
+          const donationThankYou = document.getElementById('donation-thank-you');
+          if (donationThankYou) {
+            donationThankYou.style.display = 'block';
+          }
+        }
 
         // Handle registration for ticket purchases
         if (isTicketPurchase) {

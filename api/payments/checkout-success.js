@@ -85,6 +85,14 @@ export default async function handler(req, res) {
     let registrationToken = null;
     let transaction = null;
     let hasTickets = false;
+    let hasDonations = false;
+
+    // Check if session includes donations
+    const lineItems = fullSession.line_items?.data || [];
+    hasDonations = lineItems.some(item => {
+      const meta = item.price?.product?.metadata || {};
+      return meta.type === 'donation' || meta.donation_category;
+    });
 
     try {
       // This will create or retrieve transaction and tickets atomically
@@ -95,6 +103,7 @@ export default async function handler(req, res) {
 
       console.log(`Transaction ${result.created ? 'created' : 'retrieved'}: ${transaction.uuid}`);
       console.log(`${result.ticketCount} tickets ${result.created ? 'created' : 'found'}`);
+      console.log(`Has donations: ${hasDonations}`);
 
       // Ensure order number exists
       if (!transaction.order_number) {
@@ -160,6 +169,7 @@ export default async function handler(req, res) {
         metadata: fullSession.metadata
       },
       hasTickets,
+      hasDonations,
       // Include transaction details for better frontend integration (without exposing internal IDs)
       transaction: transaction ? timeUtils.enhanceApiResponse(processDatabaseResult({
         orderNumber: transaction.order_number,
