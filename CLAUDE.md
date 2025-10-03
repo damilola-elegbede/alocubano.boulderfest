@@ -85,6 +85,7 @@ npm run verify-structure        # Verify project structure (via build)
 - **Typography-forward design** with Bebas Neue, Playfair Display, Space Mono
 - **Virtual gallery** with Google Drive integration and lazy loading
 - **Floating cart** with intelligent page-specific visibility rules
+- **Donations system** with preset/custom amounts and cart integration
 - **Mobile-first** with slide-in navigation and 44px touch targets
 - **Hybrid theme system** with user-controlled themes on main site and fixed dark theme on admin pages
 
@@ -92,10 +93,11 @@ npm run verify-structure        # Verify project structure (via build)
 
 - **SQLite database** with Turso for production
 - **Async services** using Promise-Based Lazy Singleton pattern
-- **Email** via Brevo (SendinBlue) with webhook processing
-- **Payments** via Stripe Checkout with webhook handling
+- **Email** via Brevo (SendinBlue) with webhook processing and donation acknowledgments
+- **Payments** via Stripe Checkout with webhook handling (tickets + donations)
+- **Donations tracking** with database recording and admin analytics
 - **Wallet passes** for Apple/Google with JWT authentication
-- **Admin panel** with bcrypt auth and JWT sessions
+- **Admin panel** with bcrypt auth, JWT sessions, and donations dashboard
 
 ### Theme System
 
@@ -387,8 +389,9 @@ export default async function handler(req, res) {
 ### Admin
 
 - `POST /api/admin/login` - Admin authentication
-- `GET /api/admin/dashboard` - Dashboard data
+- `GET /api/admin/dashboard` - Dashboard data including donation metrics
 - `GET /api/admin/registrations` - Registration list
+- `GET /api/admin/donations` - Donations dashboard with filtering and analytics
 
 ### Gallery
 
@@ -621,6 +624,8 @@ npm run migrate:status          # Check migration status
 - [Security Policy](SECURITY.md)
 - [Changelog](CHANGELOG.md)
 - [Theme System Guide](docs/THEME_SYSTEM.md)
+- [Donations System](docs/DONATIONS_SYSTEM.md)
+- [Bootstrap System](docs/BOOTSTRAP_SYSTEM.md)
 - [API Documentation](/docs/api/README.md)
 
 ## Timezone Handling - Mountain Time (America/Denver)

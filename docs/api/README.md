@@ -56,6 +56,13 @@ export default async function handler(req, res) {
 
 ### Email Services
 
+**Email Confirmation Features**:
+
+- **Order confirmations**: Sent for all completed purchases
+- **Donation acknowledgment**: Includes donation count, total amount, and tiered thank you messages
+- **Registration reminders**: Automated reminders for incomplete ticket registrations
+- **Newsletter subscriptions**: Opt-in via Brevo integration
+
 #### Newsletter Subscription
 
 - **Endpoint**: `POST /api/email/subscribe`
@@ -82,16 +89,18 @@ export default async function handler(req, res) {
 #### Create Checkout Session
 
 - **Endpoint**: `POST /api/payments/create-checkout-session`
-- **Purpose**: Create Stripe checkout session for ticket purchases
+- **Purpose**: Create Stripe checkout session for ticket purchases and/or donations
 - **Request**:
 
   ```json
   {
     "items": [
       {
-        "ticketType": "full-pass|friday|saturday|sunday",
+        "ticketType": "full-pass|friday|saturday|sunday|donation",
         "quantity": number,
-        "price": number
+        "price": number,
+        "isDonation": boolean,
+        "type": "ticket|donation"
       }
     ]
   }
@@ -106,6 +115,12 @@ export default async function handler(req, res) {
     "orderId": "ALO-2026-0001"
   }
   ```
+
+- **Features**:
+  - **Mixed orders**: Can include both tickets and donations in single checkout
+  - **Donation support**: Items with `isDonation: true` are tracked as donations
+  - **Order tracking**: Order number includes both tickets and donations
+  - **Email confirmation**: Includes donation acknowledgment for orders with donations
 
 #### Stripe Webhook
 
@@ -344,6 +359,115 @@ export default async function handler(req, res) {
 - **Authentication**: JWT token required
 - **Query**: `?page=1&limit=50`
 - **Response**: `{ registrations: array, total: number }`
+
+#### Admin Donations Dashboard
+
+- **Endpoint**: `GET /api/admin/donations`
+- **Purpose**: Retrieve all donations with filtering and analytics
+- **Authentication**: Admin JWT session required
+- **Query Parameters**:
+
+  ```javascript
+  {
+    startDate?: string,    // ISO date format (YYYY-MM-DD)
+    endDate?: string,      // ISO date format (YYYY-MM-DD)
+    minAmount?: number,    // Minimum donation amount filter
+    maxAmount?: number,    // Maximum donation amount filter
+    status?: string        // completed|pending|refunded
+  }
+  ```
+
+- **Response**:
+
+  ```json
+  {
+    "donations": [
+      {
+        "id": number,
+        "transaction_id": number,
+        "order_number": "string",
+        "amount": number,
+        "donor_email": "string",
+        "donor_name": "string",
+        "created_at": "ISO string",
+        "created_at_mt": "Mountain Time formatted string",
+        "status": "completed|pending|refunded",
+        "payment_method": "string",
+        "stripe_payment_intent": "string"
+      }
+    ],
+    "summary": {
+      "total_amount": number,
+      "count": number,
+      "average_amount": number,
+      "largest_donation": number,
+      "smallest_donation": number
+    },
+    "timezone": "America/Denver"
+  }
+  ```
+
+- **Error Codes**:
+  - `401`: Unauthorized (no valid admin session)
+  - `403`: Forbidden (invalid admin session)
+  - `500`: Server error
+
+### Donations Services
+
+#### Donation Processing
+
+Donations are processed through the payment flow with the following characteristics:
+
+**Donation Item Structure**:
+
+```json
+{
+  "ticketType": "donation",
+  "quantity": 1,
+  "price": number,
+  "isDonation": true,
+  "type": "donation"
+}
+```
+
+**Key Features**:
+
+- **Flexible amounts**: Donors can choose any amount
+- **Combined orders**: Donations can be included with ticket purchases
+- **Email notifications**: Donors receive confirmation emails with donation acknowledgment
+- **Thank you messages**: Customized by donation amount tier:
+  - `< $50`: Standard thank you
+  - `$50-$99`: Enhanced appreciation
+  - `≥ $100`: Premium recognition with community impact message
+
+**Order Processing**:
+
+1. Donations are included in the Stripe checkout session
+2. Payment webhook creates donation records in database
+3. Email confirmation includes donation details and thank you message
+4. Admin dashboard displays donation analytics
+
+**Database Schema**:
+
+Donations are stored in the `donations` table with the following structure:
+
+```sql
+CREATE TABLE donations (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  transaction_id INTEGER NOT NULL,
+  amount DECIMAL(10, 2) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  status TEXT DEFAULT 'completed',
+  FOREIGN KEY (transaction_id) REFERENCES transactions(id)
+);
+```
+
+**Integration Points**:
+
+- **Payment Flow**: `POST /api/payments/create-checkout-session` accepts donation items
+- **Webhook Processing**: `POST /api/payments/stripe-webhook` creates donation records
+- **Email Service**: Confirmation emails include donation count and total
+- **Admin Dashboard**: `GET /api/admin/donations` provides donation analytics
 
 ### Gallery Services
 
@@ -584,6 +708,7 @@ The system implements two independent cache layers for QR codes:
 - **Wallet adoption**: Pass generation and usage
 - **Rate limiting**: QR scan rate limits and throttling
 - **External service health**: Stripe, Brevo, Google Drive availability
+- **Donation metrics**: Total donations, average amount, donor conversion rates
 
 ### Alerting
 
