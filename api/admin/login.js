@@ -554,10 +554,11 @@ async function handlePasswordStep(req, res, username, password, clientIP) {
     if (updateResult.meta?.changes === 0) {
       await db.execute({
         sql: `INSERT INTO admin_sessions
-              (session_token, ip_address, user_agent, mfa_verified, requires_mfa_setup, expires_at)
-              VALUES (?, ?, ?, FALSE, FALSE, ?)`,
+              (session_token, admin_email, ip_address, user_agent, mfa_verified, requires_mfa_setup, expires_at)
+              VALUES (?, ?, ?, ?, FALSE, FALSE, ?)`,
         args: [
           tempToken,
+          'admin', // Default admin email
           clientIP,
           getSafeUserAgent(req), // Use safe user agent extraction
           new Date(Date.now() + authService.sessionDuration).toISOString()
@@ -710,10 +711,11 @@ async function completeLogin(
     try {
       await db.execute({
         sql: `INSERT INTO admin_sessions
-              (session_token, ip_address, user_agent, mfa_verified, expires_at)
-              VALUES (?, ?, ?, ?, ?)`,
+              (session_token, admin_email, ip_address, user_agent, mfa_verified, expires_at)
+              VALUES (?, ?, ?, ?, ?, ?)`,
         args: [
           token,
+          'admin', // Default admin email
           clientIP,
           getSafeUserAgent(req), // Use safe user agent extraction
           mfaUsed,
