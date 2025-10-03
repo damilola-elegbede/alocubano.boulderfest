@@ -25,11 +25,27 @@ export default async function handler(req, res) {
       });
     }
 
-    // Validate RGB format
-    const rgbPattern = /^rgb\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*\)$/i;
-    if (!rgbPattern.test(rgb)) {
+    // Validate RGB format and component range
+    const rgbPattern = /^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/i;
+    const match = rgb.match(rgbPattern);
+
+    if (!match) {
       return res.status(400).json({
         error: "Invalid RGB format",
+        expected: "rgb(r,g,b) where r,g,b are 0-255",
+        received: rgb,
+      });
+    }
+
+    // Validate each RGB component is 0-255
+    const [, r, g, b] = match;
+    const rVal = parseInt(r, 10);
+    const gVal = parseInt(g, 10);
+    const bVal = parseInt(b, 10);
+
+    if (rVal < 0 || rVal > 255 || gVal < 0 || gVal > 255 || bVal < 0 || bVal > 255) {
+      return res.status(400).json({
+        error: "RGB components must be between 0 and 255",
         expected: "rgb(r,g,b) where r,g,b are 0-255",
         received: rgb,
       });
