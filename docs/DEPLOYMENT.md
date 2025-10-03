@@ -139,10 +139,10 @@ Bootstrap data is defined in JSON configuration files:
       "description": "Event description",
       "venue": {
         "name": "Venue Name",
-        "address": "Street Address",
+        "address": "6185 Arapahoe Road",
         "city": "Boulder",
         "state": "CO",
-        "zip": "80302"
+        "zip": "80301"
       },
       "dates": {
         "start": "2025-05-15",
