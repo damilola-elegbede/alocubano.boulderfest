@@ -325,37 +325,6 @@ async function handler(req, res) {
   }
 
   try {
-    // Determine if this is a test event (negative ID or status = 'test')
-    // Test events should include test data in analytics
-    let isTestEvent = false;
-    let includeTestData = null;
-
-    if (numericEventId < 0) {
-      // Negative event IDs are test events
-      isTestEvent = true;
-      includeTestData = true;
-    } else {
-      // Check if event has status = 'test'
-      try {
-        const db = await getDatabaseClient();
-        const eventCheck = await db.execute({
-          sql: 'SELECT status FROM events WHERE id = ?',
-          args: [numericEventId]
-        });
-
-        if (eventCheck.rows && eventCheck.rows.length > 0) {
-          const eventStatus = eventCheck.rows[0].status;
-          if (eventStatus === 'test') {
-            isTestEvent = true;
-            includeTestData = true;
-          }
-        }
-      } catch (error) {
-        console.error('Failed to check event status:', error);
-        // Continue with default behavior (exclude test data)
-      }
-    }
-
     let data;
 
     switch (type) {
@@ -364,13 +333,13 @@ async function handler(req, res) {
       const trendDays = parseInt(days) || 30;
 
       const [summary, trend, hourly, customers, checkins, revenue, wallet] = await Promise.all([
-        analyticsService.generateTestAwareExecutiveSummary(numericEventId, includeTestData, req),
-        analyticsService.getSalesTrend(trendDays, numericEventId, includeTestData, req),
-        analyticsService.getHourlySalesPattern(numericEventId, includeTestData, req),
-        analyticsService.getCustomerAnalytics(numericEventId, includeTestData, req),
-        analyticsService.getCheckinAnalytics(numericEventId, includeTestData, req),
-        analyticsService.getRevenueBreakdown(numericEventId, includeTestData, req),
-        analyticsService.getWalletAnalytics(numericEventId, includeTestData, req)
+        analyticsService.generateTestAwareExecutiveSummary(numericEventId),
+        analyticsService.getSalesTrend(trendDays, numericEventId),
+        analyticsService.getHourlySalesPattern(numericEventId),
+        analyticsService.getCustomerAnalytics(numericEventId),
+        analyticsService.getCheckinAnalytics(numericEventId),
+        analyticsService.getRevenueBreakdown(numericEventId),
+        analyticsService.getWalletAnalytics(numericEventId)
       ]);
 
       // Transform summary with trend data for smart comparison calculation
@@ -391,13 +360,13 @@ async function handler(req, res) {
     }
 
     case 'summary': {
-      const summary = await analyticsService.generateTestAwareExecutiveSummary(numericEventId, includeTestData, req);
+      const summary = await analyticsService.generateTestAwareExecutiveSummary(numericEventId);
       data = transformSummaryForFrontend(summary);
       break;
     }
 
     case 'statistics': {
-      data = await analyticsService.getEventStatistics(numericEventId, includeTestData, req);
+      data = await analyticsService.getEventStatistics(numericEventId);
       break;
     }
 
@@ -408,27 +377,27 @@ async function handler(req, res) {
           error: 'Days parameter must be between 1 and 365'
         });
       }
-      data = await analyticsService.getSalesTrend(trendDays, numericEventId, includeTestData, req);
+      data = await analyticsService.getSalesTrend(trendDays, numericEventId);
       break;
     }
 
     case 'hourly': {
-      data = await analyticsService.getHourlySalesPattern(numericEventId, includeTestData, req);
+      data = await analyticsService.getHourlySalesPattern(numericEventId);
       break;
     }
 
     case 'customers': {
-      data = await analyticsService.getCustomerAnalytics(numericEventId, includeTestData, req);
+      data = await analyticsService.getCustomerAnalytics(numericEventId);
       break;
     }
 
     case 'checkins': {
-      data = await analyticsService.getCheckinAnalytics(numericEventId, includeTestData, req);
+      data = await analyticsService.getCheckinAnalytics(numericEventId);
       break;
     }
 
     case 'revenue': {
-      data = await analyticsService.getRevenueBreakdown(numericEventId, includeTestData, req);
+      data = await analyticsService.getRevenueBreakdown(numericEventId);
       break;
     }
 
@@ -441,15 +410,13 @@ async function handler(req, res) {
       }
       data = await analyticsService.getConversionFunnel(
         funnelDays,
-        numericEventId,
-        includeTestData,
-        req
+        numericEventId
       );
       break;
     }
 
     case 'wallet': {
-      data = await analyticsService.getWalletAnalytics(numericEventId, includeTestData, req);
+      data = await analyticsService.getWalletAnalytics(numericEventId);
       break;
     }
 
