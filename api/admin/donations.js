@@ -129,5 +129,5 @@ async function handler(req, res) {
 }
 
 export default withSecurityHeaders(
-  withHighSecurityAudit(authService.requireAdmin(handler))
+  authService.requireAuth(withHighSecurityAudit(handler))
 );
