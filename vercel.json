@@ -106,10 +106,6 @@
       "destination": "/images/:path*"
     },
     {
-      "source": "/wallet/:path*",
-      "destination": "/wallet/:path*"
-    },
-    {
       "source": "/api/:path*",
       "destination": "/api/:path*"
     },
