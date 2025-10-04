@@ -94,6 +94,25 @@ function transformWalletTrendData(walletData) {
 }
 
 /**
+ * Transform top customers data from backend to frontend format
+ * Backend returns: customer_name, customer_email, tickets_purchased, total_spent, last_purchase
+ * Frontend expects: name, email, ticketCount, totalSpent, lastPurchase
+ */
+function transformTopCustomers(customersArray) {
+  if (!customersArray || !Array.isArray(customersArray)) {
+    return [];
+  }
+
+  return customersArray.map(customer => ({
+    name: customer.customer_name || 'N/A',
+    email: customer.customer_email || '',
+    ticketCount: Number(customer.tickets_purchased || 0),
+    totalSpent: Number(customer.total_spent || 0),
+    lastPurchase: customer.last_purchase || ''
+  }));
+}
+
+/**
  * Calculate period-over-period percentage change
  * @param {number} current - Current period value
  * @param {number} previous - Previous period value
@@ -365,7 +384,7 @@ async function handler(req, res) {
         hourlySales: transformHourlyData(hourly),
         checkinByType: transformCheckinData(checkins),
         walletTrend: transformWalletTrendData(wallet),
-        topCustomers: customers.topCustomers || [],
+        topCustomers: transformTopCustomers(customers.topCustomers || []),
         recommendations: summary.recommendations || []
       };
       break;

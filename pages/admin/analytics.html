@@ -1308,7 +1308,13 @@
 
       // Utility functions
       function escapeHtml(unsafe) {
-        return unsafe
+        // Handle null, undefined, or non-string values
+        if (unsafe === null || unsafe === undefined) {
+          return '';
+        }
+        // Convert to string if not already
+        const str = String(unsafe);
+        return str
           .replace(/&/g, "&amp;")
           .replace(/</g, "&lt;")
           .replace(/>/g, "&gt;")
