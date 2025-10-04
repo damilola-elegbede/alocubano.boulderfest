@@ -245,10 +245,13 @@
 
       <!-- Donation Type Filter -->
       <div class="admin-filters-wrapper">
-        <select id="donation-type-filter" class="admin-select">
-          <option value="real" selected>Real Donations</option>
-          <option value="test">Test Donations</option>
-        </select>
+        <div class="event-selector-wrapper">
+          <label for="donation-type-filter" class="event-selector-label">Donation Type:</label>
+          <select id="donation-type-filter" class="admin-select event-selector">
+            <option value="real" selected>Real Donations</option>
+            <option value="test">Test Donations</option>
+          </select>
+        </div>
       </div>
     </nav>
 
