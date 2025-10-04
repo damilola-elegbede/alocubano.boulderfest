@@ -63,7 +63,8 @@ function transformHourlyData(hourlyData) {
  * Transform checkin analytics for Chart.js bar format
  */
 function transformCheckinData(checkinData) {
-  if (!checkinData || !checkinData.by_ticket_type || !Array.isArray(checkinData.by_ticket_type)) {
+  const rates = checkinData?.rates;
+  if (!rates || !Array.isArray(rates) || rates.length === 0) {
     return {
       types: [],
       rates: []
@@ -71,8 +72,8 @@ function transformCheckinData(checkinData) {
   }
 
   return {
-    types: checkinData.by_ticket_type.map(t => t.ticket_type || 'Unknown'),
-    rates: checkinData.by_ticket_type.map(t => Number(t.checkin_rate || 0))
+    types: rates.map(t => t.ticket_type || 'Unknown'),
+    rates: rates.map(t => Number(t.checkin_rate || 0))
   };
 }
 
@@ -80,7 +81,8 @@ function transformCheckinData(checkinData) {
  * Transform wallet analytics for trend chart
  */
 function transformWalletTrendData(walletData) {
-  if (!walletData || !walletData.timeline || !Array.isArray(walletData.timeline)) {
+  const timeline = walletData?.timeline;
+  if (!timeline || !Array.isArray(timeline) || timeline.length === 0) {
     return {
       dates: [],
       adoption: []
@@ -88,8 +90,8 @@ function transformWalletTrendData(walletData) {
   }
 
   return {
-    dates: walletData.timeline.map(t => t.date || ''),
-    adoption: walletData.timeline.map(t => Number(t.adoption_rate || 0))
+    dates: timeline.map(t => t.checkin_date || ''),
+    adoption: timeline.map(t => Number(t.wallet_adoption_rate || 0))
   };
 }
 
@@ -187,7 +189,17 @@ function transformSummaryForFrontend(summary, trendData = null) {
   };
 
   // Calculate smart comparison if trend data is available
-  const comparison = calculateSmartComparison(trendData, summary);
+  // Seed with all required fields (including those consumed by metrics cards)
+  const comparison = {
+    tickets: 0,
+    revenue: 0,
+    customers: 0,
+    checkinRate: 0,
+    conversionRate: 0,
+    walletAdoption: 0,
+    digitalShare: 0,
+    ...calculateSmartComparison(trendData, summary)
+  };
 
   return {
     // Frontend-expected structure with camelCase properties
@@ -330,7 +342,18 @@ async function handler(req, res) {
     switch (type) {
     case 'dashboard': {
       // Comprehensive analytics for dashboard page - single request with all data
-      const trendDays = parseInt(days) || 30;
+      // Handle "All Time" explicitly - treat missing/null/"all" as null (no date filter)
+      let trendDays = null;
+      if (days && days !== 'all' && days !== '') {
+        const parsed = parseInt(days, 10);
+        if (!isNaN(parsed) && parsed > 0) {
+          trendDays = parsed;
+        }
+      }
+      // Default to 30 days only if explicitly zero or invalid non-all values
+      if (trendDays === null && days && days !== 'all' && days !== '') {
+        trendDays = 30;
+      }
 
       const [summary, trend, hourly, customers, checkins, revenue, wallet] = await Promise.all([
         analyticsService.generateTestAwareExecutiveSummary(numericEventId),

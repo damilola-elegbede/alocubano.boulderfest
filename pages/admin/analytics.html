@@ -664,6 +664,10 @@
           analyticsData = await response.json();
           console.log('[Analytics] Response received:', analyticsData);
 
+          // Clear any existing error banner after successful fetch
+          const activeBanner = document.querySelector('.analytics-error-banner');
+          if (activeBanner) activeBanner.remove();
+
           // Update all components
           updateMetrics();
           updateCharts();

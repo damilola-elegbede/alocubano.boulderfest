@@ -18,12 +18,12 @@ CREATE VIEW IF NOT EXISTS v_test_data_cleanup_candidates AS
 SELECT
     'transaction' as record_type,
     t.id as record_id,
-    julianday('now') - julianday(t.created_at) as age_days,
+    EXTRACT(EPOCH FROM (NOW() - t.created_at)) / 86400.0 AS age_days,
     t.amount_cents,
     CASE
-        WHEN julianday('now') - julianday(t.created_at) > 90 THEN 'immediate'
-        WHEN julianday('now') - julianday(t.created_at) > 30 THEN 'priority'
-        WHEN julianday('now') - julianday(t.created_at) > 7 THEN 'scheduled'
+        WHEN EXTRACT(EPOCH FROM (NOW() - t.created_at)) / 86400.0 > 90 THEN 'immediate'
+        WHEN EXTRACT(EPOCH FROM (NOW() - t.created_at)) / 86400.0 > 30 THEN 'priority'
+        WHEN EXTRACT(EPOCH FROM (NOW() - t.created_at)) / 86400.0 > 7 THEN 'scheduled'
         ELSE 'retain'
     END as cleanup_priority,
     t.status,
@@ -37,12 +37,12 @@ UNION ALL
 SELECT
     'ticket' as record_type,
     t.id as record_id,
-    julianday('now') - julianday(t.created_at) as age_days,
+    EXTRACT(EPOCH FROM (NOW() - t.created_at)) / 86400.0 AS age_days,
     t.price_cents as amount_cents,
     CASE
-        WHEN julianday('now') - julianday(t.created_at) > 90 THEN 'immediate'
-        WHEN julianday('now') - julianday(t.created_at) > 30 THEN 'priority'
-        WHEN julianday('now') - julianday(t.created_at) > 7 THEN 'scheduled'
+        WHEN EXTRACT(EPOCH FROM (NOW() - t.created_at)) / 86400.0 > 90 THEN 'immediate'
+        WHEN EXTRACT(EPOCH FROM (NOW() - t.created_at)) / 86400.0 > 30 THEN 'priority'
+        WHEN EXTRACT(EPOCH FROM (NOW() - t.created_at)) / 86400.0 > 7 THEN 'scheduled'
         ELSE 'retain'
     END as cleanup_priority,
     t.status,
@@ -56,12 +56,12 @@ UNION ALL
 SELECT
     'transaction_item' as record_type,
     ti.id as record_id,
-    julianday('now') - julianday(ti.created_at) as age_days,
+    EXTRACT(EPOCH FROM (NOW() - ti.created_at)) / 86400.0 AS age_days,
     ti.total_price_cents as amount_cents,
     CASE
-        WHEN julianday('now') - julianday(ti.created_at) > 90 THEN 'immediate'
-        WHEN julianday('now') - julianday(ti.created_at) > 30 THEN 'priority'
-        WHEN julianday('now') - julianday(ti.created_at) > 7 THEN 'scheduled'
+        WHEN EXTRACT(EPOCH FROM (NOW() - ti.created_at)) / 86400.0 > 90 THEN 'immediate'
+        WHEN EXTRACT(EPOCH FROM (NOW() - ti.created_at)) / 86400.0 > 30 THEN 'priority'
+        WHEN EXTRACT(EPOCH FROM (NOW() - ti.created_at)) / 86400.0 > 7 THEN 'scheduled'
         ELSE 'retain'
     END as cleanup_priority,
     'active' as status,
