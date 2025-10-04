@@ -101,6 +101,7 @@
         display: flex;
         gap: var(--space-md);
         align-items: center;
+        justify-content: center;
       }
 
       .admin-table {
@@ -242,14 +243,15 @@
         </li>
       </ul>
 
-      <!-- Event Selector & Test Mode Filter -->
+      <!-- Donation Type Filter -->
       <div class="admin-filters-wrapper">
-        <div id="event-selector-container"></div>
-        <select id="test-mode-filter" class="admin-select">
-          <option value="all">All Donations</option>
-          <option value="real">Real Only</option>
-          <option value="test">Test Only</option>
-        </select>
+        <div class="event-selector-wrapper">
+          <label for="donation-type-filter" class="event-selector-label">Donation Type:</label>
+          <select id="donation-type-filter" class="admin-select event-selector">
+            <option value="real" selected>Real Donations</option>
+            <option value="test">Test Donations</option>
+          </select>
+        </div>
       </div>
     </nav>
 
@@ -341,7 +343,6 @@
 
     <!-- Scripts -->
     <script src="/js/admin-auth-manager.js"></script>
-    <script src="/js/admin-event-selector.js"></script>
     <script src="/js/admin-donations.js"></script>
 
     <script>

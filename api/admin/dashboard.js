@@ -3,7 +3,7 @@ import { getDatabaseClient } from "../../lib/database.js";
 import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
 import { columnExists, safeParseInt } from "../../lib/db-utils.js";
 import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
-import { isTestMode, createTestModeFilter } from "../../lib/test-mode-utils.js";
+import { isTestMode } from "../../lib/test-mode-utils.js";
 import timeUtils from "../../lib/time-utils.js";
 import { processDatabaseResult } from "../../lib/bigint-serializer.js";
 
@@ -20,130 +20,52 @@ async function handler(req, res) {
 
     // Get query parameters with proper NaN handling
     const eventId = safeParseInt(req.query?.eventId);
-    
-    // Support both testMode and includeTestData parameters for backward compatibility
-    const rawIncludeTestData = req.query?.includeTestData;
-    const rawTestMode = req.query?.testMode;
-    
-    // Normalize parameters - prefer includeTestData if both exist
-    let includeTestData;
-    if (rawIncludeTestData !== undefined) {
-      includeTestData = rawIncludeTestData === 'true' ? true : 
-                       rawIncludeTestData === 'false' ? false : null;
-    } else if (rawTestMode !== undefined) {
-      includeTestData = rawTestMode === 'true' ? true : 
-                       rawTestMode === 'false' ? false : null;
-    } else {
-      includeTestData = null;
-    }
 
-    // Check if event_id and is_test columns exist
+    // Check if event_id column exists
     const ticketsHasEventId = await columnExists(db, 'tickets', 'event_id');
     const transactionsHasEventId = await columnExists(db, 'transactions', 'event_id');
-    const ticketsHasTestMode = await columnExists(db, 'tickets', 'is_test');
-    const transactionsHasTestMode = await columnExists(db, 'transactions', 'is_test');
-
-    // If event is selected, check if it's a test-only event
-    // Check both ticket_types (for events without tickets yet) and tickets (for events with sales)
-    let isTestOnlyEvent = false;
-    if (eventId) {
-      // First check ticket_types - if ALL ticket types are test types, it's a test-only event
-      const ticketTypeCheck = await db.execute(
-        `SELECT
-          COUNT(*) as total_ticket_types,
-          SUM(CASE WHEN status = 'test' THEN 1 ELSE 0 END) as test_ticket_types
-         FROM ticket_types
-         WHERE event_id = ?`,
-        [eventId]
-      );
-      const ticketTypeStats = ticketTypeCheck.rows[0];
-
-      // If ALL ticket types are test types, it's a test-only event
-      if (ticketTypeStats.total_ticket_types > 0 &&
-          ticketTypeStats.total_ticket_types === ticketTypeStats.test_ticket_types) {
-        isTestOnlyEvent = true;
-      }
-
-      // Also check actual tickets if they exist (for backward compatibility)
-      if (!isTestOnlyEvent && ticketsHasTestMode) {
-        const eventTicketCheck = await db.execute(
-          `SELECT
-            COUNT(*) as total_tickets,
-            SUM(CASE WHEN is_test = 1 THEN 1 ELSE 0 END) as test_tickets
-           FROM tickets
-           WHERE ${ticketsHasEventId ? 'event_id = ?' : '1=1'}`,
-          ticketsHasEventId ? [eventId] : []
-        );
-        const ticketStats = eventTicketCheck.rows[0];
-        isTestOnlyEvent = ticketStats.total_tickets > 0 && ticketStats.total_tickets === ticketStats.test_tickets;
-      }
-    }
-
-    // Determine if we should filter test data
-    // If includeTestData is explicitly set, use that
-    // Otherwise, auto-include test data for test-only events
-    // Otherwise, auto-detect based on test mode
-    const shouldFilterTestData = includeTestData === null
-      ? (isTestOnlyEvent ? false : !isTestMode(req))
-      : !includeTestData;
 
     // Build WHERE clauses based on eventId parameter and column existence
     const ticketWhereClause = eventId && ticketsHasEventId ? 'AND event_id = ?' : '';
     const transactionWhereClause = eventId && transactionsHasEventId ? 'AND event_id = ?' : '';
 
-    // Add test mode filtering
-    const ticketTestFilter = shouldFilterTestData && ticketsHasTestMode ? 'AND is_test = 0' : '';
-    const transactionTestFilter = shouldFilterTestData && transactionsHasTestMode ? 'AND is_test = 0' : '';
-
     // Parameters for the stats query
     const statsParams = [];
 
-    // Build the stats query dynamically with test mode awareness
+    // Build the stats query dynamically
     const statsQuery = `
       SELECT
-        (SELECT COUNT(*) FROM tickets WHERE status = 'valid' ${ticketWhereClause} ${ticketTestFilter}) as total_tickets,
-        (SELECT COUNT(*) FROM tickets WHERE checked_in_at IS NOT NULL ${ticketWhereClause} ${ticketTestFilter}) as checked_in,
-        (SELECT COUNT(DISTINCT transaction_id) FROM tickets WHERE 1=1 ${ticketWhereClause} ${ticketTestFilter}) as total_orders,
-        (SELECT COALESCE(SUM(amount_cents), 0) / 100.0 FROM transactions WHERE status = 'completed' ${transactionWhereClause} ${transactionTestFilter}) as total_revenue,
-        (SELECT COUNT(*) FROM tickets WHERE ticket_type LIKE '%workshop%' ${ticketWhereClause} ${ticketTestFilter}) as workshop_tickets,
-        (SELECT COUNT(*) FROM tickets WHERE ticket_type LIKE '%vip%' ${ticketWhereClause} ${ticketTestFilter}) as vip_tickets,
-        (SELECT COUNT(*) FROM tickets WHERE date(created_at) = date('now') ${ticketWhereClause} ${ticketTestFilter}) as today_sales,
+        (SELECT COUNT(*) FROM tickets WHERE status = 'valid' ${ticketWhereClause}) as total_tickets,
+        (SELECT COUNT(*) FROM tickets WHERE checked_in_at IS NOT NULL ${ticketWhereClause}) as checked_in,
+        (SELECT COUNT(DISTINCT transaction_id) FROM tickets WHERE 1=1 ${ticketWhereClause}) as total_orders,
+        (SELECT COALESCE(SUM(amount_cents), 0) / 100.0 FROM transactions WHERE status = 'completed' ${transactionWhereClause}) as total_revenue,
+        (SELECT COUNT(*) FROM tickets WHERE ticket_type LIKE '%workshop%' ${ticketWhereClause}) as workshop_tickets,
+        (SELECT COUNT(*) FROM tickets WHERE ticket_type LIKE '%vip%' ${ticketWhereClause}) as vip_tickets,
+        (SELECT COUNT(*) FROM tickets WHERE date(created_at) = date('now') ${ticketWhereClause}) as today_sales,
         -- Wallet statistics
-        (SELECT COUNT(*) FROM tickets WHERE qr_token IS NOT NULL ${ticketWhereClause} ${ticketTestFilter}) as qr_generated,
-        (SELECT COUNT(*) FROM tickets WHERE qr_access_method = 'apple_wallet' ${ticketWhereClause} ${ticketTestFilter}) as apple_wallet_users,
-        (SELECT COUNT(*) FROM tickets WHERE qr_access_method = 'google_wallet' ${ticketWhereClause} ${ticketTestFilter}) as google_wallet_users,
-        (SELECT COUNT(*) FROM tickets WHERE qr_access_method = 'web' ${ticketWhereClause} ${ticketTestFilter}) as web_only_users
-        ${ticketsHasTestMode && transactionsHasTestMode ? `,
-        -- Test mode statistics (only if test mode columns exist)
+        (SELECT COUNT(*) FROM tickets WHERE qr_token IS NOT NULL ${ticketWhereClause}) as qr_generated,
+        (SELECT COUNT(*) FROM tickets WHERE qr_access_method = 'apple_wallet' ${ticketWhereClause}) as apple_wallet_users,
+        (SELECT COUNT(*) FROM tickets WHERE qr_access_method = 'google_wallet' ${ticketWhereClause}) as google_wallet_users,
+        (SELECT COUNT(*) FROM tickets WHERE qr_access_method = 'web' ${ticketWhereClause}) as web_only_users,
+        -- Test mode statistics
         (SELECT COUNT(*) FROM tickets WHERE is_test = 1 ${ticketWhereClause}) as test_tickets,
         (SELECT COUNT(*) FROM transactions WHERE is_test = 1 ${transactionWhereClause}) as test_transactions,
         (SELECT COALESCE(SUM(amount_cents), 0) / 100.0 FROM transactions WHERE is_test = 1 AND status = 'completed' ${transactionWhereClause}) as test_revenue
-        ` : ''}
     `;
 
     // Add parameters for each subquery that uses event_id filtering
     if (eventId && ticketsHasEventId) {
       // Count the subqueries using tickets table:
       // total_tickets, checked_in, total_orders, workshop_tickets, vip_tickets, today_sales,
-      // qr_generated, apple_wallet_users, google_wallet_users, web_only_users = 10 subqueries
-      for (let i = 0; i < 10; i++) {
-        statsParams.push(eventId);
-      }
-
-      // Add parameters for test mode subqueries if they exist and use event_id
-      if (ticketsHasTestMode && transactionsHasTestMode) {
-        // test_tickets subquery uses tickets table
+      // qr_generated, apple_wallet_users, google_wallet_users, web_only_users, test_tickets = 11 subqueries
+      for (let i = 0; i < 11; i++) {
         statsParams.push(eventId);
       }
     }
     if (eventId && transactionsHasEventId) {
-      // 1 subquery uses transactions table with event_id filtering (total_revenue)
-      statsParams.push(eventId);
-
-      // Add parameters for test mode subqueries if they exist and use event_id
-      if (ticketsHasTestMode && transactionsHasTestMode) {
-        // test_transactions and test_revenue subqueries use transactions table
-        statsParams.push(eventId);
+      // 3 subqueries use transactions table with event_id filtering:
+      // total_revenue, test_transactions, test_revenue
+      for (let i = 0; i < 3; i++) {
         statsParams.push(eventId);
       }
     }
@@ -169,7 +91,7 @@ async function handler(req, res) {
       test_revenue: 0
     };
 
-    // Get recent registrations with event filtering and test mode filtering
+    // Get recent registrations with event filtering
     let recentRegistrationsQuery = `
       SELECT
         t.ticket_id,
@@ -182,8 +104,8 @@ async function handler(req, res) {
         tr.stripe_session_id,
         tr.paypal_order_id,
         tr.paypal_capture_id,
-        ${ticketsHasTestMode ? 't.is_test,' : '0 as is_test,'}
-        ${transactionsHasTestMode ? 'tr.is_test as transaction_is_test' : '0 as transaction_is_test'}
+        t.is_test,
+        tr.is_test as transaction_is_test
       FROM tickets t
       JOIN transactions tr ON t.transaction_id = tr.id
     `;
@@ -197,11 +119,6 @@ async function handler(req, res) {
       recentRegistrationsParams.push(eventId);
     }
 
-    // Add test mode filtering if in production
-    if (shouldFilterTestData && ticketsHasTestMode) {
-      whereConditions.push('t.is_test = 0');
-    }
-
     if (whereConditions.length > 0) {
       recentRegistrationsQuery += ' WHERE ' + whereConditions.join(' AND ');
     }
@@ -213,18 +130,7 @@ async function handler(req, res) {
 
     const recentRegistrations = await db.execute(recentRegistrationsQuery, recentRegistrationsParams);
 
-    // Get ticket type breakdown with event filtering and test mode filtering
-    let ticketBreakdownQuery = `
-      SELECT
-        ticket_type,
-        COUNT(*) as count,
-        SUM(price_cents) / 100.0 as revenue,
-        ${ticketsHasTestMode ? 'SUM(CASE WHEN is_test = 1 THEN 1 ELSE 0 END) as test_count,' : '0 as test_count,'}
-        ${ticketsHasTestMode ? 'SUM(CASE WHEN is_test = 0 THEN 1 ELSE 0 END) as production_count' : 'COUNT(*) as production_count'}
-      FROM tickets
-      WHERE status = 'valid'
-    `;
-
+    // Get ticket type breakdown with event filtering
     const ticketBreakdownParams = [];
     const breakdownConditions = ['status = \'valid\''];
 
@@ -234,41 +140,22 @@ async function handler(req, res) {
       ticketBreakdownParams.push(eventId);
     }
 
-    // Add test mode filtering if in production
-    if (shouldFilterTestData && ticketsHasTestMode) {
-      breakdownConditions.push('is_test = 0');
-    }
-
-    ticketBreakdownQuery = `
+    const ticketBreakdownQuery = `
       SELECT
         ticket_type,
         COUNT(*) as count,
         SUM(price_cents) / 100.0 as revenue,
-        ${ticketsHasTestMode ? 'SUM(CASE WHEN is_test = 1 THEN 1 ELSE 0 END) as test_count,' : '0 as test_count,'}
-        ${ticketsHasTestMode ? 'SUM(CASE WHEN is_test = 0 THEN 1 ELSE 0 END) as production_count' : 'COUNT(*) as production_count'}
+        SUM(CASE WHEN is_test = 1 THEN 1 ELSE 0 END) as test_count,
+        SUM(CASE WHEN is_test = 0 THEN 1 ELSE 0 END) as production_count
       FROM tickets
       WHERE ${breakdownConditions.join(' AND ')}
-    `;
-
-    ticketBreakdownQuery += `
       GROUP BY ticket_type
       ORDER BY count DESC
     `;
 
     const ticketBreakdown = await db.execute(ticketBreakdownQuery, ticketBreakdownParams);
 
-    // Get daily sales for the last 7 days with event filtering and test mode filtering
-    let dailySalesQuery = `
-      SELECT
-        date(created_at) as date,
-        COUNT(*) as tickets_sold,
-        SUM(price_cents) / 100.0 as revenue,
-        ${ticketsHasTestMode ? 'SUM(CASE WHEN is_test = 1 THEN 1 ELSE 0 END) as test_tickets_sold,' : '0 as test_tickets_sold,'}
-        ${ticketsHasTestMode ? 'SUM(CASE WHEN is_test = 0 THEN 1 ELSE 0 END) as production_tickets_sold' : 'COUNT(*) as production_tickets_sold'}
-      FROM tickets
-      WHERE created_at >= date('now', '-7 days')
-    `;
-
+    // Get daily sales for the last 7 days with event filtering
     const dailySalesParams = [];
     const dailySalesConditions = ['created_at >= date(\'now\', \'-7 days\')'];
 
@@ -278,23 +165,15 @@ async function handler(req, res) {
       dailySalesParams.push(eventId);
     }
 
-    // Add test mode filtering if in production
-    if (shouldFilterTestData && ticketsHasTestMode) {
-      dailySalesConditions.push('is_test = 0');
-    }
-
-    dailySalesQuery = `
+    const dailySalesQuery = `
       SELECT
         date(created_at) as date,
         COUNT(*) as tickets_sold,
         SUM(price_cents) / 100.0 as revenue,
-        ${ticketsHasTestMode ? 'SUM(CASE WHEN is_test = 1 THEN 1 ELSE 0 END) as test_tickets_sold,' : '0 as test_tickets_sold,'}
-        ${ticketsHasTestMode ? 'SUM(CASE WHEN is_test = 0 THEN 1 ELSE 0 END) as production_tickets_sold' : 'COUNT(*) as production_tickets_sold'}
+        SUM(CASE WHEN is_test = 1 THEN 1 ELSE 0 END) as test_tickets_sold,
+        SUM(CASE WHEN is_test = 0 THEN 1 ELSE 0 END) as production_tickets_sold
       FROM tickets
       WHERE ${dailySalesConditions.join(' AND ')}
-    `;
-
-    dailySalesQuery += `
       GROUP BY date(created_at)
       ORDER BY date DESC
     `;
@@ -379,7 +258,6 @@ async function handler(req, res) {
         FROM ticket_types tt
         LEFT JOIN events e ON tt.event_id = e.id
         WHERE 1=1
-        ${shouldFilterTestData ? "AND tt.status != 'test'" : ''}
         ORDER BY tt.event_id, tt.display_order, tt.name
       `;
       const ticketTypesParams = [];
@@ -406,18 +284,6 @@ async function handler(req, res) {
       hasEventFiltering: {
         tickets: ticketsHasEventId,
         transactions: transactionsHasEventId
-      },
-      testModeInfo: {
-        isTestMode: isTestMode(req),
-        includeTestData: includeTestData,
-        hasTestModeSupport: ticketsHasTestMode && transactionsHasTestMode,
-        filteringTestData: shouldFilterTestData,
-        isTestOnlyEvent: isTestOnlyEvent,
-        autoIncludedTestData: isTestOnlyEvent && includeTestData === null,
-        testModeColumns: {
-          tickets: ticketsHasTestMode,
-          transactions: transactionsHasTestMode
-        }
       },
       timezone: 'America/Denver',
       currentTime: timeUtils.getCurrentTime(),

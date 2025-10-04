@@ -292,12 +292,17 @@
     </div>
 
       <!-- Metrics Grid -->
-      <div class="admin-grid auto-fit" id="metrics-grid">
-        <div class="admin-stat-card">
-          <div class="stat-label">Total Tickets Sold</div>
-          <div class="stat-number" id="total-tickets">--</div>
-          <div class="stat-change positive" id="tickets-change">--</div>
+      <div class="admin-card admin-mb-xl">
+        <div class="admin-card-header">
+          <h2 class="admin-card-title">Key Metrics</h2>
         </div>
+        <div class="admin-card-body">
+          <div class="admin-grid auto-fit" id="metrics-grid">
+            <div class="admin-stat-card">
+              <div class="stat-label">Total Tickets Sold</div>
+              <div class="stat-number" id="total-tickets">--</div>
+              <div class="stat-change positive" id="tickets-change">--</div>
+            </div>
         <div class="admin-stat-card">
           <div class="stat-label">Gross Revenue</div>
           <div class="stat-number" id="gross-revenue">--</div>
@@ -339,10 +344,17 @@
           <div class="stat-number" id="digital-share">--</div>
           <div class="stat-change" id="digital-change">--</div>
         </div>
+          </div>
+        </div>
       </div>
 
       <!-- Charts Section -->
-      <div class="charts-section">
+      <div class="admin-card admin-mb-xl">
+        <div class="admin-card-header">
+          <h2 class="admin-card-title">Analytics Charts</h2>
+        </div>
+        <div class="admin-card-body">
+          <div class="charts-section">
         <!-- Sales Trend Chart -->
         <div class="chart-container">
           <h3>Sales Trend</h3>
@@ -386,6 +398,8 @@
             <div class="chart-wrapper">
               <canvas id="wallet-trend-chart"></canvas>
             </div>
+          </div>
+        </div>
           </div>
         </div>
       </div>
@@ -606,6 +620,8 @@
             // Update time range and reload
             const days = btn.dataset.days;
             currentTimeRange = days === "all" ? "all" : parseInt(days);
+
+            console.log(`[Analytics] Time range changed to: ${currentTimeRange}`);
             loadAnalytics();
           });
         });
@@ -614,19 +630,24 @@
       // Load analytics data
       async function loadAnalytics() {
         try {
-          const params = new URLSearchParams();
-          
-          if (currentTimeRange !== "all") {
-            params.set('days', currentTimeRange);
-          }
-          
-          // Add required type parameter
-          params.set('type', 'summary');
+          console.log('[Analytics] Loading with timeRange:', currentTimeRange);
 
-          // Add event filter
+          const params = new URLSearchParams();
+
+          // Get selected event ID
           const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
+          console.log('[Analytics] Selected event:', selectedEventId);
+
           if (selectedEventId && selectedEventId !== 'all') {
             params.set('eventId', selectedEventId);
+          }
+
+          // Use new dashboard type instead of summary
+          params.set('type', 'dashboard');
+
+          // Include time range
+          if (currentTimeRange !== "all") {
+            params.set('days', currentTimeRange);
           }
 
           const url = `/api/admin/analytics?${params.toString()}`;
@@ -634,9 +655,18 @@
           const response = await fetch(url, {
             credentials: "include"
           });
-          if (!response.ok) throw new Error("Failed to load analytics");
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+            throw new Error(errorData.error || `HTTP ${response.status}`);
+          }
 
           analyticsData = await response.json();
+          console.log('[Analytics] Response received:', analyticsData);
+
+          // Clear any existing error banner after successful fetch
+          const activeBanner = document.querySelector('.analytics-error-banner');
+          if (activeBanner) activeBanner.remove();
 
           // Update all components
           updateMetrics();
@@ -646,15 +676,27 @@
           updateLastUpdated();
         } catch (error) {
           console.error("Failed to load analytics:", error);
-          // Display error message to user
-          const container = document.querySelector('.analytics-container');
-          if (container) {
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'error-banner';
-            errorDiv.style.cssText = 'background: var(--color-error-bg); color: var(--color-error-text); padding: 1rem; margin: 1rem; border-radius: 8px; text-align: center;';
-            errorDiv.textContent = 'Failed to load analytics data. Please refresh the page.';
-            container.insertBefore(errorDiv, container.firstChild);
-          }
+          showErrorBanner(error.message);
+        }
+      }
+
+      // Show error banner
+      function showErrorBanner(message) {
+        // Remove existing error banner
+        const existing = document.querySelector('.analytics-error-banner');
+        if (existing) existing.remove();
+
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'analytics-error-banner admin-card';
+        errorDiv.style.cssText = 'background: var(--color-error-bg, #fee); color: var(--color-error-text, #c00); padding: 1rem; margin: 1rem 0; border-radius: 8px; border-left: 4px solid var(--color-error, #e11d48);';
+        errorDiv.innerHTML = `
+          <strong>⚠️ Failed to load analytics data</strong><br>
+          <small>${escapeHtml(message)}</small>
+        `;
+
+        const container = document.querySelector('.charts-section');
+        if (container) {
+          container.insertBefore(errorDiv, container.firstChild);
         }
       }
 
@@ -721,6 +763,27 @@
         element.textContent = `${isPositive ? "↑" : "↓"} ${Math.abs(change).toFixed(1)}%`;
       }
 
+      // Show chart placeholder when data is missing
+      function showChartPlaceholder(canvas, message) {
+        if (!canvas) return;
+
+        const container = canvas.parentElement;
+        if (!container) return;
+
+        // Remove existing placeholder
+        const existingPlaceholder = container.querySelector('.chart-placeholder');
+        if (existingPlaceholder) existingPlaceholder.remove();
+
+        const placeholder = document.createElement('div');
+        placeholder.className = 'chart-placeholder';
+        placeholder.style.cssText = 'display: flex; align-items: center; justify-content: center; height: 300px; color: var(--color-text-tertiary); font-style: italic;';
+        placeholder.textContent = message;
+
+        // Hide canvas, show placeholder
+        canvas.style.display = 'none';
+        container.appendChild(placeholder);
+      }
+
       // Update charts
       function updateCharts() {
         if (!analyticsData) return;
@@ -744,17 +807,32 @@
       // Sales Trend Chart
       function updateSalesTrendChart() {
         const canvas = document.getElementById("sales-trend-chart");
-        if (!canvas) return; // Guard against missing element
+        if (!canvas) return;
+
+        // Validate data exists
+        if (!analyticsData || !analyticsData.salesTrend) {
+          console.warn('Sales trend data not available');
+          showChartPlaceholder(canvas, 'Sales trend data is loading...');
+          return;
+        }
 
         const ctx = canvas.getContext("2d");
         const { salesTrend } = analyticsData;
 
-        if (!salesTrend) return; // Guard against missing data
+        // Validate data structure
+        if (!salesTrend.dates || !salesTrend.daily || !salesTrend.cumulative) {
+          console.error('Invalid sales trend data structure', salesTrend);
+          showChartPlaceholder(canvas, 'Invalid data format');
+          return;
+        }
+
+        // Show canvas if it was hidden
+        canvas.style.display = 'block';
 
         // Destroy existing chart if it exists
         if (charts.salesTrend) {
           charts.salesTrend.destroy();
-          charts.salesTrend = null; // Clear reference
+          charts.salesTrend = null;
         }
 
         const colors = getThemeColors();
@@ -824,16 +902,31 @@
       // Revenue Breakdown Chart
       function updateRevenueBreakdownChart() {
         const canvas = document.getElementById("revenue-breakdown-chart");
-        if (!canvas) return; // Guard against missing element
+        if (!canvas) return;
+
+        // Validate data exists
+        if (!analyticsData || !analyticsData.revenueByType) {
+          console.warn('Revenue breakdown data not available');
+          showChartPlaceholder(canvas, 'Revenue data is loading...');
+          return;
+        }
 
         const ctx = canvas.getContext("2d");
         const { revenueByType } = analyticsData;
 
-        if (!revenueByType) return; // Guard against missing data
+        // Validate data structure
+        if (!revenueByType.labels || !revenueByType.values) {
+          console.error('Invalid revenue breakdown data structure', revenueByType);
+          showChartPlaceholder(canvas, 'Invalid data format');
+          return;
+        }
+
+        // Show canvas if it was hidden
+        canvas.style.display = 'block';
 
         if (charts.revenueBreakdown) {
           charts.revenueBreakdown.destroy();
-          charts.revenueBreakdown = null; // Clear reference
+          charts.revenueBreakdown = null;
         }
 
         const colors = getThemeColors();
@@ -877,16 +970,31 @@
       // Hourly Sales Chart
       function updateHourlySalesChart() {
         const canvas = document.getElementById("hourly-sales-chart");
-        if (!canvas) return; // Guard against missing element
+        if (!canvas) return;
+
+        // Validate data exists
+        if (!analyticsData || !analyticsData.hourlySales) {
+          console.warn('Hourly sales data not available');
+          showChartPlaceholder(canvas, 'Hourly sales data is loading...');
+          return;
+        }
 
         const ctx = canvas.getContext("2d");
         const { hourlySales } = analyticsData;
 
-        if (!hourlySales) return; // Guard against missing data
+        // Validate data structure
+        if (!hourlySales.hours || !hourlySales.sales) {
+          console.error('Invalid hourly sales data structure', hourlySales);
+          showChartPlaceholder(canvas, 'Invalid data format');
+          return;
+        }
+
+        // Show canvas if it was hidden
+        canvas.style.display = 'block';
 
         if (charts.hourlySales) {
           charts.hourlySales.destroy();
-          charts.hourlySales = null; // Clear reference
+          charts.hourlySales = null;
         }
 
         const colors = getThemeColors();
@@ -928,16 +1036,31 @@
       // Check-in by Type Chart
       function updateCheckinByTypeChart() {
         const canvas = document.getElementById("checkin-by-type-chart");
-        if (!canvas) return; // Guard against missing element
+        if (!canvas) return;
+
+        // Validate data exists
+        if (!analyticsData || !analyticsData.checkinByType) {
+          console.warn('Check-in data not available');
+          showChartPlaceholder(canvas, 'Check-in data is loading...');
+          return;
+        }
 
         const ctx = canvas.getContext("2d");
         const { checkinByType } = analyticsData;
 
-        if (!checkinByType) return; // Guard against missing data
+        // Validate data structure
+        if (!checkinByType.types || !checkinByType.rates) {
+          console.error('Invalid check-in data structure', checkinByType);
+          showChartPlaceholder(canvas, 'Invalid data format');
+          return;
+        }
+
+        // Show canvas if it was hidden
+        canvas.style.display = 'block';
 
         if (charts.checkinByType) {
           charts.checkinByType.destroy();
-          charts.checkinByType = null; // Clear reference
+          charts.checkinByType = null;
         }
 
         const colors = getThemeColors();
@@ -974,16 +1097,31 @@
       // Wallet Trend Chart
       function updateWalletTrendChart() {
         const canvas = document.getElementById("wallet-trend-chart");
-        if (!canvas) return; // Guard against missing element
+        if (!canvas) return;
+
+        // Validate data exists
+        if (!analyticsData || !analyticsData.walletTrend) {
+          console.warn('Wallet trend data not available');
+          showChartPlaceholder(canvas, 'Wallet adoption data is loading...');
+          return;
+        }
 
         const ctx = canvas.getContext("2d");
         const { walletTrend } = analyticsData;
 
-        if (!walletTrend) return; // Guard against missing data
+        // Validate data structure
+        if (!walletTrend.dates || !walletTrend.adoption) {
+          console.error('Invalid wallet trend data structure', walletTrend);
+          showChartPlaceholder(canvas, 'Invalid data format');
+          return;
+        }
+
+        // Show canvas if it was hidden
+        canvas.style.display = 'block';
 
         if (charts.walletTrend) {
           charts.walletTrend.destroy();
-          charts.walletTrend = null; // Clear reference
+          charts.walletTrend = null;
         }
 
         const colors = getThemeColors();
@@ -1100,7 +1238,13 @@
       // Export functions
       async function exportJSON() {
         if (!analyticsData) {
-          alert("No data to export");
+          alert("No data to export. Please wait for analytics to load.");
+          return;
+        }
+
+        // Check if data is valid
+        if (!analyticsData.metrics || !analyticsData.salesTrend) {
+          alert("Analytics data is incomplete. Please refresh the page.");
           return;
         }
 
@@ -1118,7 +1262,13 @@
 
       async function exportCSV() {
         if (!analyticsData) {
-          alert("No data to export");
+          alert("No data to export. Please wait for analytics to load.");
+          return;
+        }
+
+        // Validate topCustomers exists
+        if (!analyticsData.topCustomers || analyticsData.topCustomers.length === 0) {
+          alert("No customer data available to export.");
           return;
         }
 
@@ -1162,7 +1312,13 @@
 
       // Utility functions
       function escapeHtml(unsafe) {
-        return unsafe
+        // Handle null, undefined, or non-string values
+        if (unsafe === null || unsafe === undefined) {
+          return '';
+        }
+        // Convert to string if not already
+        const str = String(unsafe);
+        return str
           .replace(/&/g, "&amp;")
           .replace(/</g, "&lt;")
           .replace(/>/g, "&gt;")

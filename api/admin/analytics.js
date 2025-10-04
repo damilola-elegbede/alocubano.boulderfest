@@ -7,11 +7,177 @@ import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
 import { processDatabaseResult } from "../../lib/bigint-serializer.js";
 
 /**
+ * Transform sales trend data for Chart.js format
+ */
+function transformTrendData(trendArray) {
+  if (!trendArray || !Array.isArray(trendArray) || trendArray.length === 0) {
+    return {
+      dates: [],
+      daily: [],
+      cumulative: []
+    };
+  }
+
+  return {
+    dates: trendArray.map(d => d.sale_date || d.date || ''),
+    daily: trendArray.map(d => Number(d.tickets_sold || 0)),
+    cumulative: trendArray.map(d => Number(d.cumulative_tickets || 0))
+  };
+}
+
+/**
+ * Transform revenue breakdown for Chart.js doughnut format
+ */
+function transformRevenueData(revenueArray) {
+  if (!revenueArray || !Array.isArray(revenueArray) || revenueArray.length === 0) {
+    return {
+      labels: [],
+      values: []
+    };
+  }
+
+  return {
+    labels: revenueArray.map(r => r.ticket_type || 'Unknown'),
+    values: revenueArray.map(r => Number(r.total_revenue || 0))
+  };
+}
+
+/**
+ * Transform hourly sales pattern for Chart.js bar format
+ */
+function transformHourlyData(hourlyData) {
+  if (!hourlyData || !Array.isArray(hourlyData) || hourlyData.length === 0) {
+    return {
+      hours: [],
+      sales: []
+    };
+  }
+
+  return {
+    hours: hourlyData.map(h => `${h.hour || '00'}:00`),
+    sales: hourlyData.map(h => Number(h.tickets_sold || 0))
+  };
+}
+
+/**
+ * Transform checkin analytics for Chart.js bar format
+ */
+function transformCheckinData(checkinData) {
+  const rates = checkinData?.rates;
+  if (!rates || !Array.isArray(rates) || rates.length === 0) {
+    return {
+      types: [],
+      rates: []
+    };
+  }
+
+  return {
+    types: rates.map(t => t.ticket_type || 'Unknown'),
+    rates: rates.map(t => Number(t.checkin_rate || 0))
+  };
+}
+
+/**
+ * Transform wallet analytics for trend chart
+ */
+function transformWalletTrendData(walletData) {
+  const timeline = walletData?.timeline;
+  if (!timeline || !Array.isArray(timeline) || timeline.length === 0) {
+    return {
+      dates: [],
+      adoption: []
+    };
+  }
+
+  return {
+    dates: timeline.map(t => t.checkin_date || ''),
+    adoption: timeline.map(t => Number(t.wallet_adoption_rate || 0))
+  };
+}
+
+/**
+ * Transform top customers data from backend to frontend format
+ * Backend returns: customer_name, customer_email, tickets_purchased, total_spent, last_purchase
+ * Frontend expects: name, email, ticketCount, totalSpent, lastPurchase
+ */
+function transformTopCustomers(customersArray) {
+  if (!customersArray || !Array.isArray(customersArray)) {
+    return [];
+  }
+
+  return customersArray.map(customer => ({
+    name: customer.customer_name || 'N/A',
+    email: customer.customer_email || '',
+    ticketCount: Number(customer.tickets_purchased || 0),
+    totalSpent: Number(customer.total_spent || 0),
+    lastPurchase: customer.last_purchase || ''
+  }));
+}
+
+/**
+ * Calculate period-over-period percentage change
+ * @param {number} current - Current period value
+ * @param {number} previous - Previous period value
+ * @returns {number} Percentage change (e.g., 15.5 for 15.5% increase)
+ */
+function calculatePercentageChange(current, previous) {
+  if (!previous || previous === 0) return 0;
+  if (!current) current = 0;
+  return ((current - previous) / previous) * 100;
+}
+
+/**
+ * Calculate smart period-over-period comparison from trend data
+ * Uses available trend data to compute actual deltas
+ * @param {Array} trendData - Trend data from getSalesTrend
+ * @param {Object} summary - Summary object with customer data
+ * @returns {Object} Comparison object with percentage changes
+ */
+function calculateSmartComparison(trendData, summary) {
+  if (!trendData || !Array.isArray(trendData) || trendData.length === 0) {
+    return {
+      tickets: 0,
+      revenue: 0,
+      customers: 0
+    };
+  }
+
+  // Split trend data into two halves for comparison
+  const midpoint = Math.floor(trendData.length / 2);
+  const firstHalf = trendData.slice(0, midpoint);
+  const secondHalf = trendData.slice(midpoint);
+
+  // Calculate totals for each period
+  const firstHalfTickets = firstHalf.reduce((sum, day) => sum + Number(day.tickets_sold || 0), 0);
+  const secondHalfTickets = secondHalf.reduce((sum, day) => sum + Number(day.tickets_sold || 0), 0);
+
+  const firstHalfRevenue = firstHalf.reduce((sum, day) => sum + Number(day.revenue || 0), 0);
+  const secondHalfRevenue = secondHalf.reduce((sum, day) => sum + Number(day.revenue || 0), 0);
+
+  // Calculate percentage changes
+  const ticketsChange = calculatePercentageChange(secondHalfTickets, firstHalfTickets);
+  const revenueChange = calculatePercentageChange(secondHalfRevenue, firstHalfRevenue);
+
+  // For customers, use summary data if available
+  let customersChange = 0;
+  if (summary && summary.overview) {
+    // Estimate customer change based on ticket change (reasonable approximation)
+    customersChange = ticketsChange;
+  }
+
+  return {
+    tickets: Number(ticketsChange.toFixed(1)),
+    revenue: Number(revenueChange.toFixed(1)),
+    customers: Number(customersChange.toFixed(1))
+  };
+}
+
+/**
  * Transform executive summary to match frontend expectations
  * Converts backend structure (overview, performance, trends, wallet, recommendations)
  * to frontend expected structure (metrics, comparison)
  */
-function transformSummaryForFrontend(summary) {
+function transformSummaryForFrontend(summary, trendData = null) {
   // Extract top ticket type with proper structure
   const topTicket = summary.revenue_breakdown?.[0];
   const topTicketType = topTicket ? {
@@ -20,6 +186,19 @@ function transformSummaryForFrontend(summary) {
   } : {
     name: 'N/A',
     count: 0
+  };
+
+  // Calculate smart comparison if trend data is available
+  // Seed with all required fields (including those consumed by metrics cards)
+  const comparison = {
+    tickets: 0,
+    revenue: 0,
+    customers: 0,
+    checkinRate: 0,
+    conversionRate: 0,
+    walletAdoption: 0,
+    digitalShare: 0,
+    ...calculateSmartComparison(trendData, summary)
   };
 
   return {
@@ -41,14 +220,7 @@ function transformSummaryForFrontend(summary) {
       walletAdoption: Number(summary.wallet.adoption_rate || 0),
       digitalShare: Number(summary.wallet.revenue_share || 0)
     },
-    comparison: {
-      // TODO: Implement proper period-over-period percentage calculations
-      // These should compare current period metrics to previous period (e.g., last 7 days vs previous 7 days)
-      // Current limitation: trends.last_7_days is an absolute count, not a percentage change
-      tickets: 0, // Requires previous period comparison
-      revenue: 0, // Requires previous period comparison
-      customers: 0 // Requires previous period comparison
-    },
+    comparison: comparison,
     // Performance metrics (for future use)
     performance: {
       dailyAverage: parseFloat(summary.performance.daily_average || 0),
@@ -104,6 +276,7 @@ async function handler(req, res) {
     return res.status(400).json({
       error: 'Missing required parameter: type',
       allowedTypes: [
+        'dashboard',
         'summary',
         'statistics',
         'trend',
@@ -164,48 +337,59 @@ async function handler(req, res) {
   }
 
   try {
-    // Determine if this is a test event (negative ID or status = 'test')
-    // Test events should include test data in analytics
-    let isTestEvent = false;
-    let includeTestData = null;
-
-    if (numericEventId < 0) {
-      // Negative event IDs are test events
-      isTestEvent = true;
-      includeTestData = true;
-    } else {
-      // Check if event has status = 'test'
-      try {
-        const db = await getDatabaseClient();
-        const eventCheck = await db.execute({
-          sql: 'SELECT status FROM events WHERE id = ?',
-          args: [numericEventId]
-        });
-
-        if (eventCheck.rows && eventCheck.rows.length > 0) {
-          const eventStatus = eventCheck.rows[0].status;
-          if (eventStatus === 'test') {
-            isTestEvent = true;
-            includeTestData = true;
-          }
-        }
-      } catch (error) {
-        console.error('Failed to check event status:', error);
-        // Continue with default behavior (exclude test data)
-      }
-    }
-
     let data;
 
     switch (type) {
+    case 'dashboard': {
+      // Comprehensive analytics for dashboard page - single request with all data
+      // Handle "All Time" explicitly - treat missing/null/"all" as null (no date filter)
+      let trendDays = null;
+      if (days && days !== 'all' && days !== '') {
+        const parsed = parseInt(days, 10);
+        if (!isNaN(parsed) && parsed > 0) {
+          trendDays = parsed;
+        }
+      }
+      // Default to 30 days only if explicitly zero or invalid non-all values
+      if (trendDays === null && days && days !== 'all' && days !== '') {
+        trendDays = 30;
+      }
+
+      const [summary, trend, hourly, customers, checkins, revenue, wallet] = await Promise.all([
+        analyticsService.generateTestAwareExecutiveSummary(numericEventId),
+        analyticsService.getSalesTrend(trendDays, numericEventId),
+        analyticsService.getHourlySalesPattern(numericEventId),
+        analyticsService.getCustomerAnalytics(numericEventId),
+        analyticsService.getCheckinAnalytics(numericEventId),
+        analyticsService.getRevenueBreakdown(numericEventId),
+        analyticsService.getWalletAnalytics(numericEventId)
+      ]);
+
+      // Transform summary with trend data for smart comparison calculation
+      const transformedSummary = transformSummaryForFrontend(summary, trend);
+
+      data = {
+        metrics: transformedSummary.metrics,
+        comparison: transformedSummary.comparison,
+        salesTrend: transformTrendData(trend),
+        revenueByType: transformRevenueData(revenue),
+        hourlySales: transformHourlyData(hourly),
+        checkinByType: transformCheckinData(checkins),
+        walletTrend: transformWalletTrendData(wallet),
+        topCustomers: transformTopCustomers(customers.topCustomers || []),
+        recommendations: summary.recommendations || []
+      };
+      break;
+    }
+
     case 'summary': {
-      const summary = await analyticsService.generateTestAwareExecutiveSummary(numericEventId, includeTestData, req);
+      const summary = await analyticsService.generateTestAwareExecutiveSummary(numericEventId);
       data = transformSummaryForFrontend(summary);
       break;
     }
 
     case 'statistics': {
-      data = await analyticsService.getEventStatistics(numericEventId, includeTestData, req);
+      data = await analyticsService.getEventStatistics(numericEventId);
       break;
     }
 
@@ -216,27 +400,27 @@ async function handler(req, res) {
           error: 'Days parameter must be between 1 and 365'
         });
       }
-      data = await analyticsService.getSalesTrend(trendDays, numericEventId, includeTestData, req);
+      data = await analyticsService.getSalesTrend(trendDays, numericEventId);
       break;
     }
 
     case 'hourly': {
-      data = await analyticsService.getHourlySalesPattern(numericEventId, includeTestData, req);
+      data = await analyticsService.getHourlySalesPattern(numericEventId);
       break;
     }
 
     case 'customers': {
-      data = await analyticsService.getCustomerAnalytics(numericEventId, includeTestData, req);
+      data = await analyticsService.getCustomerAnalytics(numericEventId);
       break;
     }
 
     case 'checkins': {
-      data = await analyticsService.getCheckinAnalytics(numericEventId, includeTestData, req);
+      data = await analyticsService.getCheckinAnalytics(numericEventId);
       break;
     }
 
     case 'revenue': {
-      data = await analyticsService.getRevenueBreakdown(numericEventId, includeTestData, req);
+      data = await analyticsService.getRevenueBreakdown(numericEventId);
       break;
     }
 
@@ -249,15 +433,13 @@ async function handler(req, res) {
       }
       data = await analyticsService.getConversionFunnel(
         funnelDays,
-        numericEventId,
-        includeTestData,
-        req
+        numericEventId
       );
       break;
     }
 
     case 'wallet': {
-      data = await analyticsService.getWalletAnalytics(numericEventId, includeTestData, req);
+      data = await analyticsService.getWalletAnalytics(numericEventId);
       break;
     }
 
@@ -265,6 +447,7 @@ async function handler(req, res) {
       return res.status(400).json({
         error: `Unknown analytics type: ${type}`,
         allowedTypes: [
+          'dashboard',
           'summary',
           'statistics',
           'trend',
@@ -279,9 +462,9 @@ async function handler(req, res) {
     }
     }
 
-    // For summary type, return transformed data directly (frontend expects unwrapped)
+    // For summary and dashboard types, return transformed data directly (frontend expects unwrapped)
     // For other types, include metadata wrapper
-    if (type === 'summary') {
+    if (type === 'summary' || type === 'dashboard') {
       res.status(200).json(processDatabaseResult(data));
     } else {
       res.status(200).json(processDatabaseResult({
