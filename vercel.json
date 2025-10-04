@@ -159,7 +159,7 @@
       "destination": "/pages/admin/index"
     },
     {
-      "source": "/admin/(login|dashboard|checkin|analytics|mfa-settings|registrations|tickets|api-endpoints|test-dashboard|test)",
+      "source": "/admin/(login|dashboard|checkin|analytics|donations|mfa-settings|registrations|tickets|api-endpoints|test-dashboard|test)",
       "destination": "/pages/admin/$1"
     }
   ],
