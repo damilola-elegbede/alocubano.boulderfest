@@ -323,7 +323,7 @@ export default async function handler(req, res) {
 
       await brevo.sendTransactionalEmail({
         to: [{ email: cleanEmail, name: `${cleanFirstName} ${cleanLastName}` }],
-        subject: `Your ticket is ready for ${ticket.event_name}!`,
+        subject: `Your ticket is ready for ${ticket.event_name || 'A Lo Cubano Boulder Fest'}!`,
         htmlContent: htmlContent
       });
 

@@ -716,7 +716,7 @@ export default async function handler(req, res) {
                 email: task.registration.email,
                 name: `${task.registration.firstName} ${task.registration.lastName}`
               }],
-              subject: `Your ticket is ready for ${task.ticket.event_name}!`,
+              subject: `Your ticket is ready for ${task.ticket.event_name || 'A Lo Cubano Boulder Fest'}!`,
               htmlContent: htmlContent,
               headers: {
                 'X-Mailin-Tag': 'attendee-confirmation',
