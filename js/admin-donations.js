@@ -5,8 +5,7 @@
 
 // State management
 let currentFilters = {
-  eventId: 'all',
-  testMode: 'all',
+  donationType: 'real',  // Default to real donations
   days: 30
 };
 
@@ -17,27 +16,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   console.log('📊 Initializing Donations Dashboard...');
 
   try {
-    // Initialize event selector
-    if (window.eventSelector) {
-      await window.eventSelector.init();
-      window.eventSelector.render('event-selector-container');
-
-      // Get selected event ID
-      const selectedEventId = window.eventSelector.getSelectedEventId();
-      currentFilters.eventId = selectedEventId || 'all';
-
-      // Listen for event changes
-      window.eventSelector.onChange(async (eventId) => {
-        currentFilters.eventId = eventId;
-        await loadDonations();
-      });
-    }
-
-    // Setup test mode filter
-    const testModeFilter = document.getElementById('test-mode-filter');
-    if (testModeFilter) {
-      testModeFilter.addEventListener('change', async (e) => {
-        currentFilters.testMode = e.target.value;
+    // Setup donation type filter
+    const donationTypeFilter = document.getElementById('donation-type-filter');
+    if (donationTypeFilter) {
+      donationTypeFilter.addEventListener('change', async (e) => {
+        currentFilters.donationType = e.target.value;
         await loadDonations();
       });
     }
@@ -89,8 +72,7 @@ async function loadDonations() {
     console.log('🔄 Loading donations data with filters:', currentFilters);
 
     const params = new URLSearchParams({
-      eventId: currentFilters.eventId,
-      testMode: currentFilters.testMode,
+      donationType: currentFilters.donationType,
       days: currentFilters.days
     });
 

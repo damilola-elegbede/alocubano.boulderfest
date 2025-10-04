@@ -17,8 +17,7 @@ async function handler(req, res) {
     }
 
     const {
-      eventId = 'all',
-      testMode = 'all',  // 'all' | 'real' | 'test'
+      donationType = 'real',  // 'real' | 'test' - default to real donations
       days = '30'
     } = req.query;
 
@@ -31,19 +30,11 @@ async function handler(req, res) {
     const whereConditions = ['ti.item_type = ?'];
     const queryArgs = ['donation'];
 
-    if (testMode === 'real') {
+    // Filter by donation type (real vs test)
+    if (donationType === 'real') {
       whereConditions.push('ti.is_test = 0');
-    } else if (testMode === 'test') {
+    } else if (donationType === 'test') {
       whereConditions.push('ti.is_test = 1');
-    }
-
-    if (eventId !== 'all') {
-      const parsedEventId = Number.parseInt(eventId, 10);
-      if (Number.isNaN(parsedEventId)) {
-        return res.status(400).json({ error: 'Invalid eventId parameter' });
-      }
-      whereConditions.push('t.event_id = ?');
-      queryArgs.push(parsedEventId);
     }
 
     if (dateFilter) {
@@ -82,12 +73,9 @@ async function handler(req, res) {
         t.transaction_id,
         t.customer_email,
         t.customer_name,
-        t.status,
-        t.event_id,
-        e.name as event_name
+        t.status
       FROM transaction_items ti
       JOIN transactions t ON ti.transaction_id = t.id
-      LEFT JOIN events e ON t.event_id = e.id
       WHERE ${whereClause}
       ORDER BY ti.created_at DESC
       LIMIT 100
@@ -126,8 +114,7 @@ async function handler(req, res) {
       metrics: processedMetrics,
       donations: donationsWithDollars,
       filters: {
-        eventId,
-        testMode,
+        donationType,
         days
       }
     });

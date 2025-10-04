@@ -242,13 +242,11 @@
         </li>
       </ul>
 
-      <!-- Event Selector & Test Mode Filter -->
+      <!-- Donation Type Filter -->
       <div class="admin-filters-wrapper">
-        <div id="event-selector-container"></div>
-        <select id="test-mode-filter" class="admin-select">
-          <option value="all">All Donations</option>
-          <option value="real">Real Only</option>
-          <option value="test">Test Only</option>
+        <select id="donation-type-filter" class="admin-select">
+          <option value="real" selected>Real Donations</option>
+          <option value="test">Test Donations</option>
         </select>
       </div>
     </nav>
@@ -341,7 +339,6 @@
 
     <!-- Scripts -->
     <script src="/js/admin-auth-manager.js"></script>
-    <script src="/js/admin-event-selector.js"></script>
     <script src="/js/admin-donations.js"></script>
 
     <script>
