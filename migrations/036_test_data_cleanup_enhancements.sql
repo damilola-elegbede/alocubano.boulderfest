@@ -13,17 +13,31 @@ ALTER TABLE test_data_cleanup_log ADD COLUMN metadata TEXT;
 
 -- Create view for test data cleanup candidates
 -- This view identifies test records that are candidates for cleanup based on age
+-- Uses cross-database compatible date arithmetic (Postgres EXTRACT + SQLite julianday)
 CREATE VIEW IF NOT EXISTS v_test_data_cleanup_candidates AS
 -- Transactions
 SELECT
     'transaction' as record_type,
     t.id as record_id,
-    EXTRACT(EPOCH FROM (NOW() - t.created_at)) / 86400.0 AS age_days,
+    -- Cross-database age calculation (Postgres uses EXTRACT, SQLite uses julianday)
+    COALESCE(
+        EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - t.created_at)) / 86400.0,
+        julianday('now') - julianday(t.created_at)
+    ) AS age_days,
     t.amount_cents,
     CASE
-        WHEN EXTRACT(EPOCH FROM (NOW() - t.created_at)) / 86400.0 > 90 THEN 'immediate'
-        WHEN EXTRACT(EPOCH FROM (NOW() - t.created_at)) / 86400.0 > 30 THEN 'priority'
-        WHEN EXTRACT(EPOCH FROM (NOW() - t.created_at)) / 86400.0 > 7 THEN 'scheduled'
+        WHEN COALESCE(
+            EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - t.created_at)) / 86400.0,
+            julianday('now') - julianday(t.created_at)
+        ) > 90 THEN 'immediate'
+        WHEN COALESCE(
+            EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - t.created_at)) / 86400.0,
+            julianday('now') - julianday(t.created_at)
+        ) > 30 THEN 'priority'
+        WHEN COALESCE(
+            EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - t.created_at)) / 86400.0,
+            julianday('now') - julianday(t.created_at)
+        ) > 7 THEN 'scheduled'
         ELSE 'retain'
     END as cleanup_priority,
     t.status,
@@ -37,12 +51,24 @@ UNION ALL
 SELECT
     'ticket' as record_type,
     t.id as record_id,
-    EXTRACT(EPOCH FROM (NOW() - t.created_at)) / 86400.0 AS age_days,
+    COALESCE(
+        EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - t.created_at)) / 86400.0,
+        julianday('now') - julianday(t.created_at)
+    ) AS age_days,
     t.price_cents as amount_cents,
     CASE
-        WHEN EXTRACT(EPOCH FROM (NOW() - t.created_at)) / 86400.0 > 90 THEN 'immediate'
-        WHEN EXTRACT(EPOCH FROM (NOW() - t.created_at)) / 86400.0 > 30 THEN 'priority'
-        WHEN EXTRACT(EPOCH FROM (NOW() - t.created_at)) / 86400.0 > 7 THEN 'scheduled'
+        WHEN COALESCE(
+            EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - t.created_at)) / 86400.0,
+            julianday('now') - julianday(t.created_at)
+        ) > 90 THEN 'immediate'
+        WHEN COALESCE(
+            EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - t.created_at)) / 86400.0,
+            julianday('now') - julianday(t.created_at)
+        ) > 30 THEN 'priority'
+        WHEN COALESCE(
+            EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - t.created_at)) / 86400.0,
+            julianday('now') - julianday(t.created_at)
+        ) > 7 THEN 'scheduled'
         ELSE 'retain'
     END as cleanup_priority,
     t.status,
@@ -56,12 +82,24 @@ UNION ALL
 SELECT
     'transaction_item' as record_type,
     ti.id as record_id,
-    EXTRACT(EPOCH FROM (NOW() - ti.created_at)) / 86400.0 AS age_days,
+    COALESCE(
+        EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - ti.created_at)) / 86400.0,
+        julianday('now') - julianday(ti.created_at)
+    ) AS age_days,
     ti.total_price_cents as amount_cents,
     CASE
-        WHEN EXTRACT(EPOCH FROM (NOW() - ti.created_at)) / 86400.0 > 90 THEN 'immediate'
-        WHEN EXTRACT(EPOCH FROM (NOW() - ti.created_at)) / 86400.0 > 30 THEN 'priority'
-        WHEN EXTRACT(EPOCH FROM (NOW() - ti.created_at)) / 86400.0 > 7 THEN 'scheduled'
+        WHEN COALESCE(
+            EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - ti.created_at)) / 86400.0,
+            julianday('now') - julianday(ti.created_at)
+        ) > 90 THEN 'immediate'
+        WHEN COALESCE(
+            EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - ti.created_at)) / 86400.0,
+            julianday('now') - julianday(ti.created_at)
+        ) > 30 THEN 'priority'
+        WHEN COALESCE(
+            EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - ti.created_at)) / 86400.0,
+            julianday('now') - julianday(ti.created_at)
+        ) > 7 THEN 'scheduled'
         ELSE 'retain'
     END as cleanup_priority,
     'active' as status,
