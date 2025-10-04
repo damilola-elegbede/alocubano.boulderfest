@@ -308,7 +308,7 @@ export default async function handler(req, res) {
       const htmlContent = generateAttendeeConfirmationEmail({
         firstName: cleanFirstName,
         lastName: cleanLastName,
-        ticketId: ticketId,
+        ticketId: ticket.ticket_id,
         ticketType: ticket.ticket_type,
         orderNumber: 'N/A', // Individual registrations don't have order context
         eventName: ticket.event_name,
@@ -323,7 +323,7 @@ export default async function handler(req, res) {
 
       await brevo.sendTransactionalEmail({
         to: [{ email: cleanEmail, name: `${cleanFirstName} ${cleanLastName}` }],
-        subject: '[ALCBF] Your Ticket is Ready',
+        subject: `Your ticket is ready for ${ticket.event_name || 'A Lo Cubano Boulder Fest'}!`,
         htmlContent: htmlContent
       });
 

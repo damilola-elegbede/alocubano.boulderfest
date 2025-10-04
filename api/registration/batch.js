@@ -687,7 +687,7 @@ export default async function handler(req, res) {
           const htmlContent = generateAttendeeConfirmationEmail({
             firstName: task.registration.firstName,
             lastName: task.registration.lastName,
-            ticketId: task.registration.ticketId,
+            ticketId: task.ticket.ticket_id,
             ticketType: task.ticket.ticket_type,
             orderNumber: transactionInfo ? (transactionInfo.order_number || transactionInfo.id) : 'N/A',
             eventName: task.ticket.event_name,
@@ -716,7 +716,7 @@ export default async function handler(req, res) {
                 email: task.registration.email,
                 name: `${task.registration.firstName} ${task.registration.lastName}`
               }],
-              subject: '[ALCBF] Your Ticket is Ready',
+              subject: `Your ticket is ready for ${task.ticket.event_name || 'A Lo Cubano Boulder Fest'}!`,
               htmlContent: htmlContent,
               headers: {
                 'X-Mailin-Tag': 'attendee-confirmation',

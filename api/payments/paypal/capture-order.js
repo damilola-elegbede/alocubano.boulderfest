@@ -186,9 +186,18 @@ async function captureOrderHandler(req, res) {
 
       // Generate order_number if it doesn't exist
       if (!orderNumber) {
-        const isTestMode = PAYPAL_API_URL.includes('sandbox') || transaction.is_test;
-        orderNumber = await generateOrderId(isTestMode);
-        console.log(`Generated order number for PayPal transaction: ${orderNumber}`);
+        console.warn('⚠️ FALLBACK ORDER NUMBER GENERATION TRIGGERED (PayPal)', {
+          reason: 'PayPal transaction created without order_number',
+          orderId: orderId,
+          transactionId: transaction.id,
+          transactionUuid: transaction.uuid,
+          paypalApiUrl: PAYPAL_API_URL,
+          recommendation: 'Investigate why PayPal transaction was created without order_number. Normal flow should use order-number-generator.js (ALO-YYYY-NNNN format)',
+          timestamp: new Date().toISOString()
+        });
+
+        orderNumber = await generateOrderId();
+        console.log(`Generated fallback order number for PayPal transaction: ${orderNumber}`);
       }
 
       // Parse cart data from transaction
@@ -219,10 +228,15 @@ async function captureOrderHandler(req, res) {
       console.log('Updated existing transaction:', transactionId);
     } else {
       // Create new transaction (fallback if not found)
-      console.warn('PayPal transaction not found in database, creating new record');
+      console.warn('⚠️ FALLBACK ORDER NUMBER GENERATION TRIGGERED (PayPal - New Transaction)', {
+        reason: 'PayPal transaction not found in database, creating new transaction',
+        orderId: orderId,
+        paypalApiUrl: PAYPAL_API_URL,
+        recommendation: 'Investigate why PayPal transaction was not created during order creation. This should be rare.',
+        timestamp: new Date().toISOString()
+      });
 
-      const isTestMode = PAYPAL_API_URL.includes('sandbox');
-      orderNumber = await generateOrderId(isTestMode);
+      orderNumber = await generateOrderId();
 
       const transactionResult = await db.execute({
         sql: `INSERT INTO transactions

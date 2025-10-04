@@ -858,7 +858,7 @@ router.post('/api/tickets', async (req, res) => {
   // 201: Success
   const ticket = await db.createTicket(req.body);
   res.status(201)
-    .setHeader('Location', `/api/tickets/${ticket.id}`)
+    .setHeader('Location', `/api/tickets/${ticket.ticket_id}`)
     .json({ ticket });
 });
 ```

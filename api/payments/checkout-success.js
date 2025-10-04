@@ -107,9 +107,18 @@ export default async function handler(req, res) {
 
       // Ensure order number exists
       if (!transaction.order_number) {
-        const isTestTransaction = fullSession.mode === 'test' || fullSession.livemode === false;
-        transaction.order_number = await generateOrderId(isTestTransaction);
-        console.log(`Generated order number: ${transaction.order_number}`);
+        console.warn('⚠️ FALLBACK ORDER NUMBER GENERATION TRIGGERED', {
+          reason: 'Transaction created without order_number',
+          sessionId: fullSession.id,
+          transactionId: transaction.id,
+          transactionUuid: transaction.uuid,
+          stripeMode: fullSession.mode,
+          recommendation: 'Investigate why transaction was created without order_number. Normal flow should use order-number-generator.js (ALO-YYYY-NNNN format)',
+          timestamp: new Date().toISOString()
+        });
+
+        transaction.order_number = await generateOrderId();
+        console.log(`Generated fallback order number: ${transaction.order_number}`);
 
         const db = await getDatabaseClient();
         const updateResult = await db.execute({

@@ -37,7 +37,10 @@ function isTestTicket(ticket) {
   }
 
   // Fallback: check patterns in ticket ID
-  const ticketId = ticket.ticket_id || ticket.id || '';
+  const ticketId = ticket.ticket_id || '';
+  if (!ticket.ticket_id) {
+    console.error('[TicketValidate] Missing ticket_id field, cannot detect test ticket reliably', { ticket });
+  }
   return /test[_-]?ticket|^TEST[_-]|[_-]TEST$/i.test(ticketId);
 }
 
