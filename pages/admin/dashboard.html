@@ -1019,8 +1019,6 @@
                     <thead>
                         <tr>
                             <th>Ticket ID</th>
-                            <th>Name</th>
-                            <th>Email</th>
                             <th>Type</th>
                             <th>Status</th>
                             <th>Order</th>
@@ -1045,11 +1043,16 @@
                               return `
                             <tr class="${rowClass}">
                                 <td>
-                                    <code class="admin-p-xs" style="background: var(--color-background-secondary); border-radius: var(--radius-sm);">${escapeHtml(reg.ticket_id)}</code>
+                                    <a href="/admin/ticket-detail?ticketId=${escapeHtml(reg.ticket_id)}"
+                                       target="_blank"
+                                       rel="noopener noreferrer"
+                                       class="detail-link"
+                                       title="View admin ticket details"
+                                       style="text-decoration: none;">
+                                      <code class="admin-p-xs" style="background: var(--color-background-secondary); border-radius: var(--radius-sm); cursor: pointer;">${escapeHtml(reg.ticket_id)}</code>
+                                    </a>
                                     ${testBadge}
                                 </td>
-                                <td>${escapeHtml(reg.attendee_first_name)} ${escapeHtml(reg.attendee_last_name)}</td>
-                                <td>${escapeHtml(reg.attendee_email)}</td>
                                 <td>
                                     ${escapeHtml(formatTicketType(reg.ticket_type))}
                                     ${isTestTicket ? '<small class="test-indicator">🧪 Test</small>' : ''}
