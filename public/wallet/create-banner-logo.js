@@ -28,14 +28,14 @@ async function createBannerLogo() {
   await sharp(SOURCE_LOGO)
     .resize(640, 100, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 0 } })
     .png()
-    .toFile(join(OUTPUT_DIR, 'wallet-logo@2x.png'));
-  console.log('  ✓ wallet-logo@2x.png (640x100) - PLACEHOLDER');
+    .toFile(join(OUTPUT_DIR, 'wallet-logo-2x.png'));
+  console.log('  ✓ wallet-logo-2x.png (640x100) - PLACEHOLDER');
 
   await sharp(SOURCE_LOGO)
     .resize(960, 150, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 0 } })
     .png()
-    .toFile(join(OUTPUT_DIR, 'wallet-logo@3x.png'));
-  console.log('  ✓ wallet-logo@3x.png (960x150) - PLACEHOLDER');
+    .toFile(join(OUTPUT_DIR, 'wallet-logo-3x.png'));
+  console.log('  ✓ wallet-logo-3x.png (960x150) - PLACEHOLDER');
 
   console.log('\n⚠️  ACTION REQUIRED:');
   console.log('Replace the files above with your actual banner:');
