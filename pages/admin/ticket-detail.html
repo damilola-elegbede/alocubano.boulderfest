@@ -489,16 +489,23 @@
         // Ticket status badge
         const statusBadge = document.getElementById('ticket-status-badge');
         let statusClass = 'status-valid';
-        let statusText = ticket.status;
+        let statusText = ticket.status || 'valid';
+        let statusIcon = '✓';
 
         if (ticket.is_checked_in) {
           statusClass = 'status-checked-in';
           statusText = 'Checked In';
+          statusIcon = '✓';
         } else if (ticket.status === 'cancelled') {
           statusClass = 'status-cancelled';
+          statusText = 'Cancelled';
+          statusIcon = '✕';
+        } else if (ticket.status === 'valid') {
+          statusText = 'Valid';
+          statusIcon = '✓';
         }
 
-        statusBadge.innerHTML = `<span class="status-indicator ${statusClass}">${escapeHtml(statusText)}</span>`;
+        statusBadge.innerHTML = `<span class="status-indicator ${statusClass}">${statusIcon} ${escapeHtml(statusText.toUpperCase())}</span>`;
 
         // Ticket Information Grid
         const ticketInfoGrid = document.getElementById('ticket-info-grid');
@@ -513,11 +520,19 @@
           </div>
           <div class="detail-item">
             <div class="detail-label">Status</div>
-            <div class="detail-value">${escapeHtml(ticket.status)}</div>
+            <div class="detail-value">
+              <span class="status-indicator ${ticket.status === 'valid' ? 'status-valid' : ticket.status === 'cancelled' ? 'status-cancelled' : 'status-valid'}">
+                ${ticket.status === 'cancelled' ? '✕' : '✓'} ${escapeHtml((ticket.status || 'valid').toUpperCase())}
+              </span>
+            </div>
           </div>
           <div class="detail-item">
             <div class="detail-label">Validation Status</div>
-            <div class="detail-value">${escapeHtml(ticket.validation_status || 'N/A')}</div>
+            <div class="detail-value">
+              <span class="status-indicator ${ticket.validation_status === 'active' ? 'status-valid' : 'status-cancelled'}">
+                ${ticket.validation_status === 'active' ? '✓' : '✕'} ${escapeHtml((ticket.validation_status || 'N/A').toUpperCase())}
+              </span>
+            </div>
           </div>
           <div class="detail-item">
             <div class="detail-label">Price</div>
