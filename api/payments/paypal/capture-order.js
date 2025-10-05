@@ -8,7 +8,7 @@ import { setCorsHeaders } from '../../utils/cors.js';
 import { withRateLimit } from '../../utils/rate-limiter.js';
 import { getDatabaseClient } from '../../../lib/database.js';
 import { RegistrationTokenService } from '../../../lib/registration-token-service.js';
-import { generateOrderId } from '../../../lib/order-id-generator.js';
+import { generateOrderNumber } from '../../../lib/order-number-generator.js';
 import { processDatabaseResult } from '../../../lib/bigint-serializer.js';
 import timeUtils from '../../../lib/time-utils.js';
 import { getTicketEmailService } from '../../../lib/ticket-email-service-brevo.js';
@@ -192,11 +192,11 @@ async function captureOrderHandler(req, res) {
           transactionId: transaction.id,
           transactionUuid: transaction.uuid,
           paypalApiUrl: PAYPAL_API_URL,
-          recommendation: 'Investigate why PayPal transaction was created without order_number. Normal flow should use order-number-generator.js (ALO-YYYY-NNNN format)',
+          recommendation: 'This should not happen after fix. Investigate if seen.',
           timestamp: new Date().toISOString()
         });
 
-        orderNumber = await generateOrderId();
+        orderNumber = await generateOrderNumber();
         console.log(`Generated fallback order number for PayPal transaction: ${orderNumber}`);
       }
 
@@ -236,7 +236,7 @@ async function captureOrderHandler(req, res) {
         timestamp: new Date().toISOString()
       });
 
-      orderNumber = await generateOrderId();
+      orderNumber = await generateOrderNumber();
 
       const transactionResult = await db.execute({
         sql: `INSERT INTO transactions
@@ -290,11 +290,39 @@ async function captureOrderHandler(req, res) {
             price_cents: ticket.price_cents
           });
 
+          // Validate required fields - NO SILENT DEFAULTS
+          if (!ticket.ticketType) {
+            console.error('CRITICAL: No ticket type found in cart data:', {
+              ticket: ticket,
+              paypalOrderId: paypalOrderId,
+              transactionId: transactionId
+            });
+            throw new Error(`Ticket type missing from cart data for item: ${ticket.name || 'Unknown'}`);
+          }
+
+          if (!ticket.eventId) {
+            console.error('CRITICAL: No event ID found in cart data:', {
+              ticket: ticket,
+              paypalOrderId: paypalOrderId,
+              transactionId: transactionId
+            });
+            throw new Error(`Event ID missing from cart data for item: ${ticket.name || 'Unknown'}`);
+          }
+
+          if (!ticket.eventDate) {
+            console.error('CRITICAL: No event date found in cart data:', {
+              ticket: ticket,
+              paypalOrderId: paypalOrderId,
+              transactionId: transactionId
+            });
+            throw new Error(`Event date missing from cart data for item: ${ticket.name || 'Unknown'}`);
+          }
+
           for (let i = 0; i < quantity; i++) {
             const ticketId = crypto.randomUUID();
-            const eventId = ticket.eventId || 1; // Use eventId from cart or default to 1
+            const eventId = ticket.eventId;
             const priceCents = ticket.price_cents || ticket.price || 0;
-            const eventDate = ticket.eventDate || null;
+            const eventDate = ticket.eventDate;
 
             // Calculate registration deadline: 7 days before event date, or 24 hours from now
             let registrationDeadline;
@@ -321,7 +349,7 @@ async function captureOrderHandler(req, res) {
               args: [
                 ticketId,
                 transactionId,
-                ticket.name || 'General Admission',
+                ticket.ticketType,
                 eventId,
                 eventDate,
                 priceCents,

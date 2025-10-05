@@ -15,6 +15,7 @@ import {
   logTestModeOperation
 } from '../../../lib/test-mode-utils.js';
 import { v4 as uuidv4 } from 'uuid';
+import { generateOrderNumber } from '../../../lib/order-number-generator.js';
 
 // Maximum request body size (100KB)
 const MAX_BODY_SIZE = 100 * 1024;
@@ -233,14 +234,18 @@ async function createOrderHandler(req, res) {
     const firstEventId = cartItems[0]?.eventId;
     const eventId = firstEventId || null; // Use the numeric event ID directly (including -1, -2 for test events)
 
+    // Generate order number BEFORE transaction creation (same as Stripe flow)
+    const orderNumber = await generateOrderNumber();
+    console.log(`Generated order number for PayPal: ${orderNumber}`);
+
     // Store transaction in database BEFORE redirect
     const insertResult = await dbClient.execute({
       sql: `INSERT INTO transactions (
         transaction_id, uuid, type, status, amount_cents, total_amount, currency,
         paypal_order_id, payment_processor, reference_id, cart_data,
         customer_email, customer_name, order_data, metadata,
-        event_id, source, is_test, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+        event_id, source, is_test, order_number, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
       args: [
         transactionId,
         transactionUuid,
@@ -265,7 +270,8 @@ async function createOrderHandler(req, res) {
         })),
         eventId, // Use dynamic event_id or null for test tickets
         'website',
-        getTestModeFlag(req)
+        getTestModeFlag(req),
+        orderNumber  // User-friendly order number (ALO-YYYY-NNNN)
       ]
     });
 
