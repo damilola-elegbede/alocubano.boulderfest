@@ -125,17 +125,66 @@
         text-align: center;
       }
 
-      .deadline-warning {
-        background: var(--color-warning-light);
-        border: 1px solid var(--color-warning);
+      .deadline-status {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--space-md);
         border-radius: 8px;
-        padding: var(--space-md);
+        padding: var(--space-lg);
         margin-bottom: var(--space-xl);
-        text-align: center;
+        border: 2px solid;
+      }
+
+      .deadline-icon {
+        font-size: 2em;
+        flex-shrink: 0;
+        line-height: 1;
+      }
+
+      .deadline-content {
+        flex: 1;
+      }
+
+      .deadline-content strong {
+        display: block;
+        margin-bottom: var(--space-xs);
+        font-size: var(--font-size-lg);
+      }
+
+      .deadline-content p {
+        margin: 0;
+      }
+
+      /* Plenty of time - calm green */
+      .deadline-status.plenty {
+        background: #f0f9f4;
+        border-color: #10b981;
+        color: #065f46;
+      }
+
+      /* Getting close - informational blue */
+      .deadline-status.close {
+        background: #eff6ff;
+        border-color: #3b82f6;
+        color: #1e3a8a;
+      }
+
+      /* Urgent - warning yellow */
+      .deadline-status.urgent {
+        background: var(--color-warning-light);
+        border-color: var(--color-warning);
         color: var(--color-warning-700);
       }
 
-      .deadline-warning.expired {
+      /* Just purchased - informational */
+      .deadline-status.new {
+        background: #f3f4f6;
+        border-color: #6b7280;
+        color: #1f2937;
+      }
+
+      /* Expired - error red */
+      .deadline-status.expired {
         background: var(--color-error-light);
         border-color: var(--color-error);
         color: var(--color-error);
@@ -287,12 +336,31 @@
         color: var(--color-white);
       }
 
-      [data-theme="dark"] .deadline-warning {
+      /* Dark mode adjustments for deadline status */
+      [data-theme="dark"] .deadline-status.plenty {
+        background: #064e3b;
+        border-color: #10b981;
+        color: #d1fae5;
+      }
+
+      [data-theme="dark"] .deadline-status.close {
+        background: #1e3a8a;
+        border-color: #3b82f6;
+        color: #dbeafe;
+      }
+
+      [data-theme="dark"] .deadline-status.urgent {
         background: var(--color-warning-dark);
         color: var(--color-white);
       }
 
-      [data-theme="dark"] .deadline-warning.expired {
+      [data-theme="dark"] .deadline-status.new {
+        background: #374151;
+        border-color: #9ca3af;
+        color: #f3f4f6;
+      }
+
+      [data-theme="dark"] .deadline-status.expired {
         background: var(--color-error);
         color: var(--color-white);
       }
@@ -475,13 +543,15 @@
           <div class="registration-info">
             <h3>Registration Information</h3>
             <p><strong>Total Tickets:</strong> <span id="ticket-count"></span></p>
-            <p><strong>Registration Deadline:</strong> <span id="registration-deadline"></span></p>
           </div>
 
-          <!-- Deadline Warning -->
-          <div id="deadline-warning" class="deadline-warning" style="display: none;" role="alert" aria-live="polite">
-            <strong>⏰ Registration Deadline Alert</strong>
-            <p id="deadline-message"></p>
+          <!-- Dynamic Deadline Status -->
+          <div id="deadline-status" class="deadline-status" style="display: none;" role="alert" aria-live="polite">
+            <div class="deadline-icon" id="deadline-icon"></div>
+            <div class="deadline-content">
+              <strong id="deadline-title"></strong>
+              <p id="deadline-message"></p>
+            </div>
           </div>
 
           <!-- Registration Form -->
@@ -684,35 +754,70 @@
 
           // Populate header info
           document.getElementById('ticket-count').textContent = this.registrationData.tickets.length;
-          document.getElementById('registration-deadline').textContent =
-            window.timeManager.formatDateTime(this.registrationData.deadline, true) + ' (Mountain Time)';
 
-          // Check deadline status
-          this.checkDeadlineStatus();
+          // Show intelligent deadline status
+          this.showDeadlineStatus();
 
           // Render ticket forms
           this.renderTicketForms();
         }
 
-        checkDeadlineStatus() {
+        showDeadlineStatus() {
           const deadline = new Date(this.registrationData.deadline);
+          const purchaseDate = new Date(this.registrationData.purchaseDate);
           const now = new Date();
-          const hoursRemaining = Math.max(0, Math.floor((deadline - now) / (1000 * 60 * 60)));
 
-          const warningDiv = document.getElementById('deadline-warning');
+          const hoursRemaining = Math.max(0, (deadline - now) / (1000 * 60 * 60));
+          const hoursSincePurchase = Math.max(0, (now - purchaseDate) / (1000 * 60 * 60));
+
+          const statusDiv = document.getElementById('deadline-status');
+          const iconDiv = document.getElementById('deadline-icon');
+          const titleDiv = document.getElementById('deadline-title');
           const messageDiv = document.getElementById('deadline-message');
+
+          // Clear previous classes
+          statusDiv.className = 'deadline-status';
+
+          let icon, title, message, statusClass;
 
           if (now >= deadline) {
             // Expired
-            warningDiv.classList.add('expired');
-            warningDiv.style.display = 'block';
-            messageDiv.innerHTML = '⚠️ The registration deadline has passed. You can no longer register these tickets.';
+            statusClass = 'expired';
+            icon = '❌';
+            title = 'Registration Deadline Passed';
+            message = `The registration deadline was ${window.timeManager.formatDateTime(this.registrationData.deadline)} (Mountain Time). Unregistered tickets cannot be used for festival entry.<br><br>Need help? Contact us at <a href="mailto:alocubanoboulderfest@gmail.com" style="color: inherit; text-decoration: underline;">alocubanoboulderfest@gmail.com</a>`;
             document.getElementById('submit-button').disabled = true;
-          } else if (hoursRemaining <= 24) {
-            // Warning - less than 24 hours
-            warningDiv.style.display = 'block';
-            messageDiv.innerHTML = `⏰ Only ${hoursRemaining} hour${hoursRemaining !== 1 ? 's' : ''} remaining to complete registration! (Mountain Time)`;
+          } else if (hoursRemaining > 48) {
+            // Plenty of time
+            statusClass = 'plenty';
+            icon = '✓';
+            title = 'No Rush - Plenty of Time';
+            message = `Register by ${window.timeManager.formatDateTime(this.registrationData.deadline)} (Mountain Time). You have ${Math.floor(hoursRemaining)} hours remaining.`;
+          } else if (hoursRemaining > 24) {
+            // Getting close
+            statusClass = 'close';
+            icon = '⏰';
+            title = 'Registration Closes Soon';
+            message = `Register by ${window.timeManager.formatDateTime(this.registrationData.deadline)} (Mountain Time) • ${Math.floor(hoursRemaining)} hours remaining`;
+          } else if (hoursSincePurchase > 6) {
+            // Urgent - purchased a while ago, deadline soon
+            statusClass = 'urgent';
+            icon = '🚨';
+            title = 'URGENT: Registration Deadline Approaching';
+            message = `Only ${Math.floor(hoursRemaining)} hour${Math.floor(hoursRemaining) !== 1 ? 's' : ''} left to register! Register now to ensure your tickets are valid for festival entry.`;
+          } else {
+            // Just purchased - short deadline but recently bought
+            statusClass = 'new';
+            icon = '📋';
+            title = 'Complete Registration';
+            message = `Please register by ${window.timeManager.formatDateTime(this.registrationData.deadline)} (Mountain Time) to ensure your tickets are valid for festival entry. You have ${Math.floor(hoursRemaining)} hours remaining.`;
           }
+
+          statusDiv.classList.add(statusClass);
+          iconDiv.textContent = icon;
+          titleDiv.textContent = title;
+          messageDiv.innerHTML = message;
+          statusDiv.style.display = 'flex';
         }
 
         renderTicketForms() {
