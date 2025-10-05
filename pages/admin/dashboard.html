@@ -1045,7 +1045,7 @@
                               return `
                             <tr class="${rowClass}">
                                 <td>
-                                    <a href="/admin/ticket-detail?ticketId=${escapeHtml(reg.ticket_id)}"
+                                    <a href="/admin/ticket-detail?ticketId=${encodeURIComponent(reg.ticket_id)}"
                                        target="_blank"
                                        rel="noopener noreferrer"
                                        class="detail-link"

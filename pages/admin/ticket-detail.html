@@ -469,7 +469,17 @@
         }
 
         try {
-          const response = await fetch(`/api/tickets/${encodeURIComponent(ticketId)}`);
+          const token = localStorage.getItem('adminToken');
+          if (!token) {
+            throw new Error('No authentication token found');
+          }
+
+          const response = await fetch(`/api/tickets/${encodeURIComponent(ticketId)}`, {
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "Cache-Control": "no-cache"
+            }
+          });
 
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));

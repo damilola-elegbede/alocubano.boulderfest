@@ -343,7 +343,7 @@
                             (ticket) => `
                             <tr>
                                 <td>
-                                    <a href="/admin/ticket-detail?ticketId=${escapeHtml(ticket.ticket_id)}"
+                                    <a href="/admin/ticket-detail?ticketId=${encodeURIComponent(ticket.ticket_id)}"
                                        target="_blank"
                                        rel="noopener noreferrer"
                                        class="detail-link"
