@@ -565,15 +565,18 @@
           return `
             <tr>
               <td>
-                <code style="background: var(--color-background-secondary); padding: 4px 8px; border-radius: 4px;">
-                  ${escapeHtml(ticket.ticket_id)}
-                </code>
+                <a href="/admin/ticket-detail?ticketId=${escapeHtml(ticket.ticket_id)}"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   class="detail-link"
+                   title="View admin ticket details"
+                   style="text-decoration: none;">
+                  <code style="background: var(--color-background-secondary); padding: 4px 8px; border-radius: 4px; cursor: pointer;">
+                    ${escapeHtml(ticket.ticket_id)}
+                  </code>
+                </a>
               </td>
               <td>${escapeHtml(ticket.order_id || 'N/A')}</td>
-              <td>
-                <strong>${escapeHtml(ticket.customer_name || 'Unknown')}</strong><br>
-                <small>${escapeHtml(ticket.customer_email || 'N/A')}</small>
-              </td>
               <td>
                 <span class="admin-badge ${severityClass}">
                   ${severityIcon} ${escapeHtml(ticket.severity.toUpperCase())}
@@ -621,7 +624,6 @@
                 <tr>
                   <th>Ticket ID</th>
                   <th>Order ID</th>
-                  <th>Customer</th>
                   <th>Severity</th>
                   <th>Validation Errors</th>
                   <th>Created</th>
