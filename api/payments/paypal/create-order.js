@@ -151,7 +151,7 @@ async function createOrderHandler(req, res) {
         },
         quantity: item.quantity.toString(),
         description: item.description,
-        category: item.type === 'ticket' ? 'DIGITAL_GOODS' : 'DONATION'
+        category: hasTickets ? 'DIGITAL_GOODS' : 'DONATION'
       });
     }
 
