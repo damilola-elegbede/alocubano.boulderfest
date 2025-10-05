@@ -180,10 +180,9 @@ async function createOrderHandler(req, res) {
       baseUrl = origin;
     }
 
-    // Generate transaction ID and reference ID
+    // Generate transaction ID
     const transactionUuid = uuidv4();
     transactionId = generateTestAwareTransactionId(`paypal_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`, req);
-    const referenceId = `ALCBF-${Date.now()}`;
 
     // Initialize database connection
     dbClient = await getDatabaseClient();
@@ -194,13 +193,17 @@ async function createOrderHandler(req, res) {
       ? `${customerInfo.firstName} ${customerInfo.lastName}`
       : 'Pending PayPal User';
 
+    // Generate order number BEFORE PayPal order creation
+    const orderNumber = await generateOrderNumber();
+    console.log(`Generated order number for PayPal: ${orderNumber}`);
+
     // Create PayPal order data (use camelCase for SDK)
     // PayPal expects amounts in dollars, not cents
     const paypalOrderData = {
       intent: 'CAPTURE',
       purchaseUnits: [
         {
-          referenceId: referenceId,
+          referenceId: orderNumber,
           amount: {
             currencyCode: 'USD',
             value: totalInDollars.toFixed(2), // Convert cents to dollars
@@ -214,15 +217,15 @@ async function createOrderHandler(req, res) {
           items: orderItems,
           description: 'A Lo Cubano Boulder Fest Purchase',
           customId: customerEmail,
-          invoiceId: referenceId
+          invoiceId: orderNumber
         }
       ],
       applicationContext: {
         brandName: 'A Lo Cubano Boulder Fest',
         landingPage: 'BILLING',
         userAction: 'PAY_NOW',
-        returnUrl: `${baseUrl}/success?reference_id=${referenceId}&paypal=true${isRequestTestMode ? '&test_mode=true' : ''}`,
-        cancelUrl: `${baseUrl}/failure?reference_id=${referenceId}&paypal=true${isRequestTestMode ? '&test_mode=true' : ''}`,
+        returnUrl: `${baseUrl}/success?reference_id=${orderNumber}&paypal=true${isRequestTestMode ? '&test_mode=true' : ''}`,
+        cancelUrl: `${baseUrl}/failure?reference_id=${orderNumber}&paypal=true${isRequestTestMode ? '&test_mode=true' : ''}`,
         shippingPreference: 'NO_SHIPPING'
       }
     };
@@ -233,10 +236,6 @@ async function createOrderHandler(req, res) {
     // Determine event_id from cart items (use first item's eventId, including test events with negative IDs)
     const firstEventId = cartItems[0]?.eventId;
     const eventId = firstEventId || null; // Use the numeric event ID directly (including -1, -2 for test events)
-
-    // Generate order number BEFORE transaction creation (same as Stripe flow)
-    const orderNumber = await generateOrderNumber();
-    console.log(`Generated order number for PayPal: ${orderNumber}`);
 
     // Store transaction in database BEFORE redirect
     const insertResult = await dbClient.execute({
@@ -256,14 +255,14 @@ async function createOrderHandler(req, res) {
         'USD',
         paypalOrder.id,
         'paypal',
-        referenceId,
+        orderNumber,
         JSON.stringify(cartItems),
         customerEmail,
         customerName,
         JSON.stringify(paypalOrderData),
         JSON.stringify(createTestModeMetadata(req, {
           paypal_order_id: paypalOrder.id,
-          reference_id: referenceId,
+          reference_id: orderNumber,
           total_amount: totalAmount,
           item_count: cartItems.length,
           event_id: eventId
@@ -278,7 +277,7 @@ async function createOrderHandler(req, res) {
     console.log(`${isRequestTestMode ? 'TEST ' : ''}PayPal order created and stored:`, {
       transactionId,
       paypalOrderId: paypalOrder.id,
-      referenceId,
+      orderNumber,
       totalAmount,
       testMode: isRequestTestMode
     });
@@ -295,7 +294,7 @@ async function createOrderHandler(req, res) {
       orderId: paypalOrder.id,
       approvalUrl: approvalUrl,
       transactionId: transactionId,
-      referenceId: referenceId,
+      orderNumber: orderNumber,
       totalAmount: totalInDollars, // Return in dollars for consistency with PayPal
       totalAmountCents: totalAmount, // Also include cents for reference
       testMode: isRequestTestMode
