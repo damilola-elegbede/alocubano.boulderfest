@@ -1,0 +1,760 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <!-- Inline theme detection to prevent FOUC -->
+    <script>
+      (function() {
+        // Detect admin pages
+        const path = window.location.pathname.toLowerCase();
+        const isAdmin = path.includes('/admin') || path.includes('pages/admin');
+
+        if (isAdmin) {
+          // Admin pages always use dark theme
+          document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+          // Main site: check user preference
+          let stored = null;
+          try {
+            stored = localStorage.getItem('theme-preference');
+          } catch {
+            // localStorage might be disabled
+          }
+
+          const preference = stored || 'system';
+          let theme = preference;
+
+          if (preference === 'system') {
+            // Detect system preference
+            theme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+              ? 'dark'
+              : 'light';
+          }
+
+          document.documentElement.setAttribute('data-theme', theme);
+        }
+      })();
+    </script>
+
+    <!-- Pre-render auth check to prevent content flash -->
+    <script>
+      // Hide content immediately to prevent flash
+      document.documentElement.style.visibility = 'hidden';
+      document.documentElement.style.opacity = '0';
+      document.documentElement.style.transition = 'opacity 0.2s ease-in';
+
+      // Quick token validation to prevent flash with invalid tokens
+      (async function() {
+        if (!window.location.pathname.includes('/admin/login')) {
+          const token = localStorage.getItem('adminToken');
+          if (!token) {
+            // No token - redirect immediately
+            window.location.replace('/admin/login');
+            return;
+          }
+
+          // Quick validation - check if token is expired client-side
+          try {
+            // Parse JWT to check expiration (basic check)
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            if (payload.exp && payload.exp * 1000 < Date.now()) {
+              // Token expired - clear and redirect
+              localStorage.removeItem('adminToken');
+              window.location.replace('/admin/login');
+              return;
+            }
+          } catch (e) {
+            // Invalid token format - clear and redirect
+            localStorage.removeItem('adminToken');
+            window.location.replace('/admin/login');
+            return;
+          }
+          // Valid token format - wait for server verification
+        }
+      })();
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ticket Details - A Lo Cubano Boulder Fest</title>
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico" />
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/typography.css" />
+    <link rel="stylesheet" href="/css/components.css" />
+    <link rel="stylesheet" href="/css/navigation.css" />
+    <link rel="stylesheet" href="/css/forms.css" />
+    <link rel="stylesheet" href="/css/admin-overrides.css" />
+    <script type="module" src="/js/theme-manager.js"></script>
+    <script type="module" src="/js/time-manager.js"></script>
+
+    <style>
+      /* Auth loading overlay */
+      .auth-loading {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: var(--color-background-dark, #1a1a1a);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+      }
+
+      .auth-loading-content {
+        text-align: center;
+        color: var(--color-text-primary);
+      }
+
+      .auth-spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid rgba(255, 255, 255, 0.1);
+        border-top-color: var(--color-primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
+      }
+
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+
+      .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: var(--space-lg);
+        margin-bottom: var(--space-xl);
+      }
+
+      .detail-item {
+        padding: var(--space-md);
+        background: var(--color-background-secondary);
+        border-radius: 4px;
+      }
+
+      .detail-label {
+        font-family: var(--font-mono);
+        font-size: var(--font-size-xs);
+        color: var(--color-primary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: var(--space-xs);
+      }
+
+      .detail-value {
+        font-family: var(--font-body);
+        font-size: var(--font-size-base);
+        color: var(--color-text-primary);
+        font-weight: 500;
+      }
+
+      .detail-value code {
+        background: var(--color-background);
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-family: var(--font-mono);
+      }
+
+      .qr-section {
+        background: var(--color-background-secondary);
+        border: 1px solid var(--color-border);
+        border-radius: 8px;
+        padding: var(--space-xl);
+        margin: var(--space-xl) 0;
+      }
+
+      .qr-container {
+        display: none;
+        text-align: center;
+        margin-top: var(--space-md);
+      }
+
+      .qr-container.visible {
+        display: block;
+      }
+
+      .qr-warning {
+        background: var(--color-warning-bg);
+        color: var(--color-warning-700);
+        padding: var(--space-sm);
+        border-radius: 4px;
+        margin-bottom: var(--space-md);
+        font-weight: 600;
+      }
+
+      .qr-image {
+        display: inline-block;
+        padding: var(--space-md);
+        background: white;
+        border-radius: 8px;
+      }
+
+      .scan-history {
+        margin-top: var(--space-lg);
+        padding-top: var(--space-lg);
+        border-top: 1px solid var(--color-border);
+      }
+
+      .status-indicator {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 8px 16px;
+        min-width: fit-content;
+        border-radius: 20px;
+        font-family: var(--font-mono);
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: uppercase;
+        white-space: nowrap;
+        line-height: 1;
+      }
+
+      .status-valid {
+        background: var(--color-success-light);
+        color: var(--color-success-700);
+        border: 1px solid var(--color-success);
+      }
+
+      .status-cancelled {
+        background: var(--color-error-light);
+        color: var(--color-error);
+        border: 1px solid var(--color-error);
+      }
+
+      .status-checked-in {
+        background: var(--color-info-light);
+        color: var(--color-info-700);
+        border: 1px solid var(--color-info);
+      }
+    </style>
+  </head>
+  <body class="admin-container" style="visibility: hidden;">
+    <!-- Auth Loading State (hidden by default, shown only during auth check) -->
+    <div id="auth-loading" class="auth-loading" style="display: none;">
+      <div class="auth-loading-content">
+        <div class="auth-spinner"></div>
+        <h2>Verifying Authentication...</h2>
+      </div>
+    </div>
+
+    <!-- Skip Links for Accessibility -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <!-- Unified Admin Header -->
+    <header class="admin-header">
+      <div class="admin-header-content">
+        <div>
+          <h1 class="admin-header-title">Ticket Details</h1>
+          <p class="admin-header-subtitle">A Lo Cubano Boulder Fest - Comprehensive Ticket Information</p>
+        </div>
+        <div class="admin-header-actions">
+          <button class="admin-btn admin-btn-secondary" onclick="window.close()">
+            <span>Close</span>
+          </button>
+          <button class="admin-btn admin-btn-primary" onclick="logout()">
+            <span>Logout</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Unified Admin Navigation -->
+    <nav class="admin-navigation">
+      <ul class="admin-nav-list">
+        <li class="admin-nav-item">
+          <a href="/admin" class="admin-nav-link">
+            <span>Portal</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/dashboard" class="admin-nav-link">
+            <span>Dashboard</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/tickets" class="admin-nav-link">
+            <span>Tickets</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/analytics" class="admin-nav-link">
+            <span>Analytics</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/donations" class="admin-nav-link">
+            <span>Donations</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/checkin" class="admin-nav-link">
+            <span>Check-in Scanner</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main id="main-content">
+      <!-- Loading State -->
+      <div id="loading-state" class="admin-loading" style="display: block;">
+        Loading ticket details...
+      </div>
+
+      <!-- Error State -->
+      <div id="error-state" class="admin-card" style="display: none;">
+        <div class="admin-card-body">
+          <div class="error" id="error-message"></div>
+        </div>
+      </div>
+
+      <!-- Ticket Details Content -->
+      <div id="ticket-content" style="display: none;">
+
+        <!-- Ticket Information -->
+        <div class="admin-card admin-mb-xl">
+          <div class="admin-card-header">
+            <h2 class="admin-card-title">Ticket Information</h2>
+            <div class="admin-card-actions" id="ticket-status-badge"></div>
+          </div>
+          <div class="admin-card-body">
+            <div class="detail-grid" id="ticket-info-grid"></div>
+          </div>
+        </div>
+
+        <!-- Attendee Information -->
+        <div class="admin-card admin-mb-xl" id="attendee-section">
+          <div class="admin-card-header">
+            <h2 class="admin-card-title">Attendee Information</h2>
+          </div>
+          <div class="admin-card-body">
+            <div class="detail-grid" id="attendee-info-grid"></div>
+          </div>
+        </div>
+
+        <!-- QR Code Section -->
+        <div class="admin-card admin-mb-xl">
+          <div class="admin-card-header">
+            <h2 class="admin-card-title">QR Code & Scanning</h2>
+          </div>
+          <div class="admin-card-body">
+            <div class="detail-grid" id="qr-info-grid"></div>
+
+            <div class="qr-section">
+              <button id="reveal-qr" class="admin-btn admin-btn-primary" onclick="revealQR()">
+                <span>Show QR Code</span>
+              </button>
+
+              <div id="qr-container" class="qr-container">
+                <div class="qr-warning">
+                  ⚠️ ADMIN ONLY - Do not share this QR code
+                </div>
+                <div class="qr-image">
+                  <img id="qr-image" src="" alt="Ticket QR Code" style="width: 200px; height: 200px;">
+                </div>
+                <p style="margin-top: var(--space-md); font-family: var(--font-mono); font-size: var(--font-size-sm);" id="qr-token-display"></p>
+              </div>
+
+              <div class="scan-history" id="scan-history"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Check-in Information -->
+        <div class="admin-card admin-mb-xl" id="checkin-section">
+          <div class="admin-card-header">
+            <h2 class="admin-card-title">Check-in Status</h2>
+          </div>
+          <div class="admin-card-body">
+            <div class="detail-grid" id="checkin-info-grid"></div>
+          </div>
+        </div>
+
+        <!-- Transaction Information -->
+        <div class="admin-card admin-mb-xl">
+          <div class="admin-card-header">
+            <h2 class="admin-card-title">Transaction Details</h2>
+          </div>
+          <div class="admin-card-body">
+            <div class="detail-grid" id="transaction-info-grid"></div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+    <script>
+      let csrfToken = null;
+      let timeManager = null;
+
+      // Import timeManager
+      import('/js/time-manager.js').then(module => {
+        timeManager = module.default;
+      });
+
+      // HTML escaping function to prevent XSS attacks
+      function escapeHtml(unsafe) {
+        if (unsafe == null) return "";
+        return String(unsafe)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      // Get ticket ID from URL
+      function getTicketId() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('ticketId');
+      }
+
+      // Check authentication
+      async function checkAuth() {
+        try {
+          const token = localStorage.getItem('adminToken');
+          if (!token) {
+            window.location.replace("/admin/login");
+            return false;
+          }
+
+          const response = await fetch("/api/admin/verify-session", {
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "Cache-Control": "no-cache"
+            }
+          });
+
+          if (!response.ok) {
+            localStorage.removeItem('adminToken');
+            window.location.replace("/admin/login");
+            return false;
+          }
+
+          const data = await response.json();
+          if (!data.valid) {
+            localStorage.removeItem('adminToken');
+            window.location.replace("/admin/login");
+            return false;
+          }
+
+          // Session is valid - show the content with smooth transition
+          document.documentElement.style.visibility = 'visible';
+          document.documentElement.style.opacity = '1';
+          document.body.style.visibility = 'visible';
+
+          const loadingOverlay = document.getElementById('auth-loading');
+          if (loadingOverlay) {
+            loadingOverlay.style.display = 'none';
+          }
+
+          return true;
+        } catch (error) {
+          console.error("Auth check failed:", error);
+          window.location.replace("/admin/login");
+          return false;
+        }
+      }
+
+      // Load ticket details
+      async function loadTicketDetails() {
+        const ticketId = getTicketId();
+
+        if (!ticketId) {
+          showError('No ticket ID provided');
+          return;
+        }
+
+        try {
+          const token = localStorage.getItem('adminToken');
+          if (!token) {
+            throw new Error('No authentication token found');
+          }
+
+          const response = await fetch(`/api/tickets/${encodeURIComponent(ticketId)}`, {
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "Cache-Control": "no-cache"
+            }
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || errorData.message || 'Failed to load ticket');
+          }
+
+          const ticket = await response.json();
+          displayTicketDetails(ticket);
+
+        } catch (error) {
+          console.error('Failed to load ticket details:', error);
+          showError(error.message || 'Failed to load ticket details');
+        }
+      }
+
+      // Display ticket details
+      function displayTicketDetails(ticket) {
+        document.getElementById('loading-state').style.display = 'none';
+        document.getElementById('ticket-content').style.display = 'block';
+
+        // Ticket status badge
+        const statusBadge = document.getElementById('ticket-status-badge');
+        let statusClass = 'status-valid';
+        let statusText = ticket.status || 'valid';
+        let statusIcon = '✓';
+
+        if (ticket.is_checked_in) {
+          statusClass = 'status-checked-in';
+          statusText = 'Checked In';
+          statusIcon = '✓';
+        } else if (ticket.status === 'cancelled') {
+          statusClass = 'status-cancelled';
+          statusText = 'Cancelled';
+          statusIcon = '✕';
+        } else if (ticket.status === 'valid') {
+          statusText = 'Valid';
+          statusIcon = '✓';
+        }
+
+        statusBadge.innerHTML = `<span class="status-indicator ${statusClass}">${statusIcon} ${escapeHtml(statusText.toUpperCase())}</span>`;
+
+        // Ticket Information Grid
+        const ticketInfoGrid = document.getElementById('ticket-info-grid');
+        ticketInfoGrid.innerHTML = `
+          <div class="detail-item">
+            <div class="detail-label">Ticket ID</div>
+            <div class="detail-value"><code>${escapeHtml(ticket.ticket_id)}</code></div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Ticket Type</div>
+            <div class="detail-value">${escapeHtml(formatTicketType(ticket.ticket_type))}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Status</div>
+            <div class="detail-value">
+              <span class="status-indicator ${ticket.status === 'valid' ? 'status-valid' : ticket.status === 'cancelled' ? 'status-cancelled' : 'status-valid'}">
+                ${ticket.status === 'cancelled' ? '✕' : '✓'} ${escapeHtml((ticket.status || 'valid').toUpperCase())}
+              </span>
+            </div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Validation Status</div>
+            <div class="detail-value">
+              <span class="status-indicator ${ticket.validation_status === 'active' ? 'status-valid' : 'status-cancelled'}">
+                ${ticket.validation_status === 'active' ? '✓' : '✕'} ${escapeHtml((ticket.validation_status || 'N/A').toUpperCase())}
+              </span>
+            </div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Price</div>
+            <div class="detail-value">${escapeHtml(ticket.price_display || 'N/A')}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Created</div>
+            <div class="detail-value">${escapeHtml(ticket.created_at_mt || ticket.created_at)}</div>
+          </div>
+        `;
+
+        // Attendee Information
+        const attendeeInfoGrid = document.getElementById('attendee-info-grid');
+        if (ticket.is_registered && ticket.attendee_first_name) {
+          attendeeInfoGrid.innerHTML = `
+            <div class="detail-item">
+              <div class="detail-label">First Name</div>
+              <div class="detail-value">${escapeHtml(ticket.attendee_first_name)}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Last Name</div>
+              <div class="detail-value">${escapeHtml(ticket.attendee_last_name)}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Email</div>
+              <div class="detail-value">${escapeHtml(ticket.attendee_email)}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Registration Status</div>
+              <div class="detail-value">${escapeHtml(ticket.registration_status)}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Registered At</div>
+              <div class="detail-value">${escapeHtml(ticket.registered_at_mt || 'N/A')}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Registration Deadline</div>
+              <div class="detail-value">${escapeHtml(ticket.registration_deadline_mt || 'N/A')}</div>
+            </div>
+          `;
+        } else {
+          attendeeInfoGrid.innerHTML = '<p style="color: var(--color-text-secondary); font-style: italic;">This ticket has not been registered yet.</p>';
+        }
+
+        // QR Code Information
+        const qrInfoGrid = document.getElementById('qr-info-grid');
+        qrInfoGrid.innerHTML = `
+          <div class="detail-item">
+            <div class="detail-label">QR Access Method</div>
+            <div class="detail-value">${escapeHtml(ticket.qr_access_method || 'N/A')}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Scan Count</div>
+            <div class="detail-value">${ticket.scan_count || 0} / ${ticket.max_scan_count || 10}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Scans Remaining</div>
+            <div class="detail-value">${ticket.scans_remaining || 0}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Can Scan</div>
+            <div class="detail-value">${ticket.can_scan ? '✅ Yes' : '❌ No'}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">First Scanned</div>
+            <div class="detail-value">${escapeHtml(ticket.first_scanned_at_mt || 'Never')}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Last Scanned</div>
+            <div class="detail-value">${escapeHtml(ticket.last_scanned_at_mt || 'Never')}</div>
+          </div>
+        `;
+
+        // Store QR token for reveal
+        window.ticketQRToken = ticket.qr_token;
+        window.ticketId = ticket.ticket_id;
+
+        // Check-in Information
+        const checkinInfoGrid = document.getElementById('checkin-info-grid');
+        if (ticket.is_checked_in) {
+          checkinInfoGrid.innerHTML = `
+            <div class="detail-item">
+              <div class="detail-label">Checked In At</div>
+              <div class="detail-value">${escapeHtml(ticket.checked_in_at_mt || ticket.checked_in_at)}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Checked In By</div>
+              <div class="detail-value">${escapeHtml(ticket.checked_in_by || 'System')}</div>
+            </div>
+          `;
+        } else {
+          checkinInfoGrid.innerHTML = '<p style="color: var(--color-text-secondary); font-style: italic;">This ticket has not been checked in yet.</p>';
+        }
+
+        // Transaction Information
+        const transactionInfoGrid = document.getElementById('transaction-info-grid');
+        if (ticket.transaction) {
+          transactionInfoGrid.innerHTML = `
+            <div class="detail-item">
+              <div class="detail-label">Order Number</div>
+              <div class="detail-value"><code>${escapeHtml(ticket.transaction.order_number || 'N/A')}</code></div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Transaction Status</div>
+              <div class="detail-value">${escapeHtml(ticket.transaction.status || 'N/A')}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Payment Processor</div>
+              <div class="detail-value">${escapeHtml(ticket.transaction.payment_processor || 'N/A')}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Transaction Amount</div>
+              <div class="detail-value">$${((ticket.transaction.amount_cents || 0) / 100).toFixed(2)}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Purchaser Name</div>
+              <div class="detail-value">${escapeHtml(ticket.transaction.purchaser_name || 'N/A')}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Purchaser Email</div>
+              <div class="detail-value">${escapeHtml(ticket.transaction.purchaser_email || 'N/A')}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Transaction Created</div>
+              <div class="detail-value">${escapeHtml(ticket.transaction.created_at_mt || ticket.transaction.created_at || 'N/A')}</div>
+            </div>
+          `;
+        } else {
+          transactionInfoGrid.innerHTML = '<p style="color: var(--color-text-secondary); font-style: italic;">No transaction information available.</p>';
+        }
+      }
+
+      // Reveal QR code
+      function revealQR() {
+        const container = document.getElementById('qr-container');
+        const button = document.getElementById('reveal-qr');
+        const qrImage = document.getElementById('qr-image');
+        const qrTokenDisplay = document.getElementById('qr-token-display');
+
+        if (container.classList.contains('visible')) {
+          // Hide QR
+          container.classList.remove('visible');
+          button.innerHTML = '<span>Show QR Code</span>';
+        } else {
+          // Show QR
+          qrImage.src = `/api/tickets/qr-image?ticketId=${encodeURIComponent(window.ticketId)}`;
+          qrTokenDisplay.textContent = `QR Token: ${window.ticketQRToken || 'N/A'}`;
+          container.classList.add('visible');
+          button.innerHTML = '<span>Hide QR Code</span>';
+        }
+      }
+
+      // Make revealQR globally available
+      window.revealQR = revealQR;
+
+      // Show error
+      function showError(message) {
+        document.getElementById('loading-state').style.display = 'none';
+        document.getElementById('ticket-content').style.display = 'none';
+        document.getElementById('error-message').textContent = message;
+        document.getElementById('error-state').style.display = 'block';
+      }
+
+      // Format ticket type
+      function formatTicketType(type) {
+        const typeMap = {
+          "vip-pass": "VIP Pass",
+          "weekend-pass": "Weekend Pass",
+          "friday-pass": "Friday",
+          "saturday-pass": "Saturday",
+          "sunday-pass": "Sunday",
+          workshop: "Workshop",
+          "general-admission": "General",
+        };
+        return typeMap[type] || type;
+      }
+
+      // Logout
+      async function logout() {
+        try {
+          const headers = {};
+          if (csrfToken) {
+            headers["X-CSRF-Token"] = csrfToken;
+          }
+
+          const token = localStorage.getItem('adminToken');
+          if (token) {
+            headers["Authorization"] = `Bearer ${token}`;
+          }
+          await fetch("/api/admin/login", {
+            method: "DELETE",
+            headers: headers,
+          });
+        } finally {
+          localStorage.removeItem('adminToken');
+          sessionStorage.clear();
+          window.location.href = '/admin/login';
+        }
+      }
+
+      // Initialize page
+      async function initializePage() {
+        if (!(await checkAuth())) return;
+        await loadTicketDetails();
+      }
+
+      // Start initialization
+      initializePage();
+    </script>
+  </body>
+</html>
