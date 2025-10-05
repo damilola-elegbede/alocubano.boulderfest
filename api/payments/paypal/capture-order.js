@@ -9,6 +9,7 @@ import { withRateLimit } from '../../utils/rate-limiter.js';
 import { getDatabaseClient } from '../../../lib/database.js';
 import { RegistrationTokenService } from '../../../lib/registration-token-service.js';
 import { generateOrderNumber } from '../../../lib/order-number-generator.js';
+import { generateTicketId } from '../../../lib/ticket-id-generator.js';
 import { processDatabaseResult } from '../../../lib/bigint-serializer.js';
 import timeUtils from '../../../lib/time-utils.js';
 import { getTicketEmailService } from '../../../lib/ticket-email-service-brevo.js';
@@ -319,7 +320,7 @@ async function captureOrderHandler(req, res) {
           }
 
           for (let i = 0; i < quantity; i++) {
-            const ticketId = crypto.randomUUID();
+            const ticketId = await generateTicketId();
             const eventId = ticket.eventId;
             const priceCents = ticket.price_cents || ticket.price || 0;
             const eventDate = ticket.eventDate;
