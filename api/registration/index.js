@@ -52,26 +52,29 @@ export default async function handler(req, res) {
 
     const db = await getDatabaseClient();
 
-    // Fetch all tickets for the transaction
+    // Fetch all tickets for the transaction along with purchase timestamp
     const tickets = await db.execute({
       sql: `
         SELECT
-          ticket_id,
-          ticket_type,
-          attendee_first_name,
-          attendee_last_name,
-          attendee_email,
-          registration_status,
-          registered_at,
-          registration_deadline,
+          t.ticket_id,
+          t.ticket_type,
+          t.attendee_first_name,
+          t.attendee_last_name,
+          t.attendee_email,
+          t.registration_status,
+          t.registered_at,
+          t.registration_deadline,
+          t.created_at as ticket_created_at,
+          tx.created_at as purchase_date,
           CASE
-            WHEN registration_status = 'completed' THEN 'completed'
-            WHEN datetime('now') > registration_deadline THEN 'expired'
-            ELSE registration_status
+            WHEN t.registration_status = 'completed' THEN 'completed'
+            WHEN datetime('now') > t.registration_deadline THEN 'expired'
+            ELSE t.registration_status
           END as current_status,
-          CAST((julianday(registration_deadline) - julianday('now')) * 24 AS INTEGER) as hours_remaining
-        FROM tickets
-        WHERE transaction_id = ?
+          CAST((julianday(t.registration_deadline) - julianday('now')) * 24 AS INTEGER) as hours_remaining
+        FROM tickets t
+        LEFT JOIN transactions tx ON t.transaction_id = tx.id
+        WHERE t.transaction_id = ?
       `,
       args: [transactionId]
     });
@@ -142,6 +145,8 @@ export default async function handler(req, res) {
     const response = {
       transactionId: transactionId,
       purchaserEmail: decoded.purchaserEmail,
+      purchaseDate: processedTickets.rows[0].purchase_date,
+      purchaseDate_mt: timeUtils.toMountainTime(processedTickets.rows[0].purchase_date),
       deadline: processedTickets.rows[0].registration_deadline,
       deadline_mt: timeUtils.toMountainTime(processedTickets.rows[0].registration_deadline),
       tickets: enhancedTickets,
