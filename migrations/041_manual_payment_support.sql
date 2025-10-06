@@ -88,10 +88,64 @@ CREATE TABLE transactions_new (
 );
 
 -- ============================================================================
+-- STEP 2.5: Ensure source table exists (handle corrupted preview DB)
+-- ============================================================================
+-- Create transactions table if it doesn't exist (will be empty)
+-- This handles the case where preview DB is corrupted from failed migrations
+-- In production, this table already exists with data (no-op)
+-- In preview with corruption, this creates empty table so INSERT succeeds
+CREATE TABLE IF NOT EXISTS transactions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    transaction_id TEXT UNIQUE NOT NULL,
+    uuid TEXT,
+    type TEXT NOT NULL CHECK (type IN ('tickets', 'donation', 'merchandise')),
+    status TEXT DEFAULT 'pending' CHECK (
+        status IN ('pending', 'completed', 'failed', 'cancelled', 'refunded', 'partially_refunded')
+    ),
+    amount_cents INTEGER NOT NULL,
+    total_amount INTEGER,
+    currency TEXT DEFAULT 'USD',
+    stripe_session_id TEXT UNIQUE,
+    stripe_payment_intent_id TEXT,
+    stripe_charge_id TEXT,
+    payment_method_type TEXT,
+    paypal_order_id TEXT,
+    paypal_capture_id TEXT,
+    paypal_payer_id TEXT,
+    payment_processor TEXT DEFAULT 'stripe' CHECK (
+        payment_processor IN ('stripe', 'paypal')
+    ),
+    reference_id TEXT,
+    cart_data TEXT,
+    customer_email TEXT NOT NULL,
+    customer_name TEXT,
+    billing_address TEXT,
+    order_data TEXT NOT NULL,
+    order_number TEXT,
+    session_metadata TEXT,
+    metadata TEXT,
+    event_id INTEGER REFERENCES events(id),
+    source TEXT DEFAULT 'website',
+    registration_token TEXT,
+    registration_token_expires DATETIME,
+    registration_initiated_at DATETIME,
+    registration_completed_at DATETIME,
+    all_tickets_registered INTEGER NOT NULL DEFAULT 0 CHECK (all_tickets_registered IN (0, 1)),
+    is_test INTEGER NOT NULL DEFAULT 0 CHECK (is_test IN (0, 1)),
+    card_brand TEXT,
+    card_last4 TEXT,
+    payment_wallet TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP
+);
+
+-- ============================================================================
 -- STEP 3: Copy existing data (works for both empty and populated databases)
 -- ============================================================================
--- If transactions table exists and has data, this copies all rows
--- If transactions table doesn't exist or is empty, this copies 0 rows
+-- Step 2.5 ensures transactions table exists (even if empty)
+-- Preview with corruption: Copies 0 rows from empty table
+-- Production: Copies all existing data - NO DATA LOSS
 INSERT INTO transactions_new (
     id, transaction_id, uuid, type, status, amount_cents, total_amount, currency,
     stripe_session_id, stripe_payment_intent_id, stripe_charge_id, payment_method_type,
@@ -122,8 +176,7 @@ SELECT
     NULL as manual_entry_id, -- New column, NULL for existing records
     NULL as cash_shift_id,    -- New column, NULL for existing records
     created_at, updated_at, completed_at
-FROM transactions
-WHERE EXISTS (SELECT 1 FROM sqlite_master WHERE type='table' AND name='transactions');
+FROM transactions;
 
 -- ============================================================================
 -- STEP 4: Drop all triggers before dropping transactions table
