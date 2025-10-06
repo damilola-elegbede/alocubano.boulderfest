@@ -113,8 +113,17 @@ async function dropAllTables() {
       args: []
     });
 
-    if (tables.rows.length === 0) {
-      console.log('\n✅ No tables found. Database is already empty.');
+    // Get all view names
+    const views = await db.execute({
+      sql: `SELECT name FROM sqlite_master
+            WHERE type='view'
+            AND name NOT LIKE 'sqlite_%'
+            ORDER BY name`,
+      args: []
+    });
+
+    if (tables.rows.length === 0 && views.rows.length === 0) {
+      console.log('\n✅ No tables or views found. Database is already empty.');
       return;
     }
 
@@ -126,16 +135,28 @@ async function dropAllTables() {
       return table.name !== 'migrations';
     });
 
-    if (tablesToDrop.length === 0) {
-      console.log('\n✅ No tables to drop (only migrations table exists).');
+    // All views will be dropped (no filtering needed)
+    const viewsToDrop = views.rows;
+
+    if (tablesToDrop.length === 0 && viewsToDrop.length === 0) {
+      console.log('\n✅ No tables or views to drop (only migrations table exists).');
       return;
     }
 
-    // Display tables that will be dropped
-    console.log(`\n📋 Found ${tablesToDrop.length} table(s) to drop:`);
-    tablesToDrop.forEach((table, index) => {
-      console.log(`   ${index + 1}. ${table.name}`);
-    });
+    // Display tables and views that will be dropped
+    if (tablesToDrop.length > 0) {
+      console.log(`\n📋 Found ${tablesToDrop.length} table(s) to drop:`);
+      tablesToDrop.forEach((table, index) => {
+        console.log(`   ${index + 1}. ${table.name}`);
+      });
+    }
+
+    if (viewsToDrop.length > 0) {
+      console.log(`\n👁️  Found ${viewsToDrop.length} view(s) to drop:`);
+      viewsToDrop.forEach((view, index) => {
+        console.log(`   ${index + 1}. ${view.name}`);
+      });
+    }
 
     if (!flags.dropMigrations && tables.rows.some(t => t.name === 'migrations')) {
       console.log('\n💡 The "migrations" table will be preserved.');
@@ -148,8 +169,13 @@ async function dropAllTables() {
       console.log('⚠️  WARNING: PERMANENT DESTRUCTIVE OPERATION');
       console.log('⚠️  ========================================');
       console.log('\n❗ YOU ARE ABOUT TO:');
-      console.log(`   • Drop ${tablesToDrop.length} table(s) from the database`);
-      console.log(`   • Delete ALL data and schema in these tables`);
+      if (tablesToDrop.length > 0) {
+        console.log(`   • Drop ${tablesToDrop.length} table(s) from the database`);
+      }
+      if (viewsToDrop.length > 0) {
+        console.log(`   • Drop ${viewsToDrop.length} view(s) from the database`);
+      }
+      console.log(`   • Delete ALL data and schema`);
       console.log(`   • This action CANNOT be reversed or undone`);
 
       // Show database info again for emphasis
@@ -165,10 +191,19 @@ async function dropAllTables() {
         console.log(`   ${databaseUrl}`);
       }
 
-      console.log('\n📋 Tables to be dropped:');
-      tablesToDrop.forEach((table, index) => {
-        console.log(`   ${index + 1}. ${table.name}`);
-      });
+      if (tablesToDrop.length > 0) {
+        console.log('\n📋 Tables to be dropped:');
+        tablesToDrop.forEach((table, index) => {
+          console.log(`   ${index + 1}. ${table.name}`);
+        });
+      }
+
+      if (viewsToDrop.length > 0) {
+        console.log('\n👁️  Views to be dropped:');
+        viewsToDrop.forEach((view, index) => {
+          console.log(`   ${index + 1}. ${view.name}`);
+        });
+      }
 
       const answer = await askConfirmation('\nDo you understand the consequences? (yes/no): ');
 
@@ -195,33 +230,55 @@ async function dropAllTables() {
       }
     }
 
-    console.log('\n🔧 Dropping tables...\n');
+    console.log('\n🔧 Dropping database objects...\n');
 
     // Disable foreign key checks to avoid constraint issues
     console.log('   Disabling foreign key constraints...');
     await db.execute({ sql: 'PRAGMA foreign_keys = OFF', args: [] });
 
-    // Drop each table
-    let droppedCount = 0;
-    for (const table of tablesToDrop) {
-      const tableName = table.name;
-      try {
-        console.log(`   ✓ Dropping: ${tableName}`);
-        await db.execute({
-          sql: `DROP TABLE IF EXISTS ${tableName}`,
-          args: []
-        });
-        droppedCount++;
-      } catch (error) {
-        console.error(`   ✗ Failed to drop ${tableName}:`, error.message);
+    // Drop views first (views may depend on tables)
+    let viewsDroppedCount = 0;
+    if (viewsToDrop.length > 0) {
+      console.log('\n   📝 Dropping views...');
+      for (const view of viewsToDrop) {
+        const viewName = view.name;
+        try {
+          console.log(`   ✓ Dropping view: ${viewName}`);
+          await db.execute({
+            sql: `DROP VIEW IF EXISTS ${viewName}`,
+            args: []
+          });
+          viewsDroppedCount++;
+        } catch (error) {
+          console.error(`   ✗ Failed to drop view ${viewName}:`, error.message);
+        }
+      }
+    }
+
+    // Drop tables
+    let tablesDroppedCount = 0;
+    if (tablesToDrop.length > 0) {
+      console.log('\n   📋 Dropping tables...');
+      for (const table of tablesToDrop) {
+        const tableName = table.name;
+        try {
+          console.log(`   ✓ Dropping table: ${tableName}`);
+          await db.execute({
+            sql: `DROP TABLE IF EXISTS ${tableName}`,
+            args: []
+          });
+          tablesDroppedCount++;
+        } catch (error) {
+          console.error(`   ✗ Failed to drop table ${tableName}:`, error.message);
+        }
       }
     }
 
     // Re-enable foreign key checks
-    console.log('   Re-enabling foreign key constraints...');
+    console.log('\n   Re-enabling foreign key constraints...');
     await db.execute({ sql: 'PRAGMA foreign_keys = ON', args: [] });
 
-    console.log(`\n✅ Successfully dropped ${droppedCount} table(s)!`);
+    console.log(`\n✅ Successfully dropped ${viewsDroppedCount} view(s) and ${tablesDroppedCount} table(s)!`);
 
     if (!flags.dropMigrations) {
       console.log('\n💡 Next steps:');

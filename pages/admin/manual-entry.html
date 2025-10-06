@@ -1,0 +1,786 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <!-- Inline theme detection to prevent FOUC -->
+    <script>
+      (function() {
+        // Admin pages always use dark theme
+        document.documentElement.setAttribute('data-theme', 'dark');
+      })();
+    </script>
+
+    <!-- Pre-render auth check to prevent content flash -->
+    <script>
+      // Hide content immediately to prevent flash
+      document.documentElement.style.visibility = 'hidden';
+      document.documentElement.style.opacity = '0';
+      document.documentElement.style.transition = 'opacity 0.2s ease-in';
+
+      // Quick token validation to prevent flash with invalid tokens
+      (async function() {
+        if (!window.location.pathname.includes('/admin/login')) {
+          const token = localStorage.getItem('adminToken');
+          if (!token) {
+            // No token - redirect immediately
+            window.location.replace('/admin/login');
+            return;
+          }
+
+          // Quick validation - check if token is expired client-side
+          try {
+            // Parse JWT to check expiration (basic check)
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            if (payload.exp && payload.exp * 1000 < Date.now()) {
+              // Token expired - clear and redirect
+              localStorage.removeItem('adminToken');
+              window.location.replace('/admin/login');
+              return;
+            }
+          } catch (e) {
+            // Invalid token format - clear and redirect
+            localStorage.removeItem('adminToken');
+            window.location.replace('/admin/login');
+            return;
+          }
+          // Valid token format - wait for server verification
+        }
+      })();
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manual Ticket Entry - A Lo Cubano Boulder Fest</title>
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico" />
+
+    <!-- Main Site CSS System -->
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/typography.css" />
+    <link rel="stylesheet" href="/css/components.css" />
+    <link rel="stylesheet" href="/css/forms.css" />
+    <link rel="stylesheet" href="/css/navigation.css" />
+    <link rel="stylesheet" href="/css/admin-overrides.css" />
+
+    <style>
+      /* Manual Entry Specific Styles */
+      body {
+        background: linear-gradient(
+          135deg,
+          var(--color-blue) 0%,
+          var(--color-red) 100%
+        );
+        min-height: 100vh;
+        padding: var(--space-lg);
+      }
+
+      .manual-entry-container {
+        max-width: 800px;
+        margin: 0 auto;
+      }
+
+      .ticket-items-container {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-md);
+      }
+
+      .ticket-item {
+        background: var(--color-background-secondary);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        padding: var(--space-md);
+        position: relative;
+      }
+
+      .ticket-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--space-sm);
+      }
+
+      .ticket-item-number {
+        font-weight: 600;
+        color: var(--color-text-secondary);
+      }
+
+      .remove-ticket-btn {
+        background: transparent !important;
+        border: none !important;
+        color: var(--color-error) !important;
+        padding: var(--space-xs) !important;
+        font-size: var(--font-size-lg);
+        cursor: pointer;
+        min-width: auto !important;
+        min-height: auto !important;
+      }
+
+      .remove-ticket-btn:hover {
+        color: var(--color-error-hover) !important;
+        background: rgba(204, 41, 54, 0.1) !important;
+      }
+
+      .form-row {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: var(--space-md);
+      }
+
+      .add-ticket-btn {
+        width: 100%;
+        background: var(--color-surface) !important;
+        border: 2px dashed var(--color-border) !important;
+        color: var(--color-text-secondary) !important;
+      }
+
+      .add-ticket-btn:hover {
+        border-color: var(--color-blue) !important;
+        color: var(--color-blue) !important;
+      }
+
+      .summary-section {
+        background: var(--color-surface-elevated);
+        border: 2px solid var(--color-blue);
+        border-radius: var(--radius-lg);
+        padding: var(--space-lg);
+        margin-top: var(--space-lg);
+      }
+
+      .summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: var(--space-sm) 0;
+        border-bottom: 1px solid var(--color-border);
+      }
+
+      .summary-row:last-child {
+        border-bottom: none;
+        font-size: var(--font-size-lg);
+        font-weight: 700;
+        padding-top: var(--space-md);
+      }
+
+      .form-section {
+        background: var(--color-surface);
+        border-radius: var(--radius-lg);
+        padding: var(--space-lg);
+        margin-bottom: var(--space-lg);
+      }
+
+      .section-title {
+        font-size: var(--font-size-lg);
+        font-weight: 600;
+        margin-bottom: var(--space-md);
+        color: var(--color-text-primary);
+      }
+
+      .cash-shift-info {
+        background: rgba(91, 107, 181, 0.1);
+        border: 1px solid rgba(91, 107, 181, 0.3);
+        border-radius: var(--radius-md);
+        padding: var(--space-md);
+        margin-top: var(--space-sm);
+        font-size: var(--font-size-sm);
+      }
+
+      .alert {
+        padding: var(--space-md);
+        border-radius: var(--radius-md);
+        margin-bottom: var(--space-md);
+        font-size: var(--font-size-sm);
+      }
+
+      .alert-error {
+        background: rgba(204, 41, 54, 0.1);
+        border: 1px solid rgba(204, 41, 54, 0.3);
+        color: var(--color-error);
+      }
+
+      .alert-success {
+        background: rgba(34, 197, 94, 0.1);
+        border: 1px solid rgba(34, 197, 94, 0.3);
+        color: var(--color-success);
+      }
+
+      .alert-warning {
+        background: rgba(245, 158, 11, 0.1);
+        border: 1px solid rgba(245, 158, 11, 0.3);
+        color: var(--color-warning, #f59e0b);
+      }
+
+      .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+      }
+
+      .loading-overlay.show {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .loading-content {
+        background: var(--color-surface);
+        border-radius: var(--radius-lg);
+        padding: var(--space-xl);
+        text-align: center;
+        min-width: 300px;
+      }
+
+      .spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid var(--color-border);
+        border-top-color: var(--color-blue);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto var(--space-md);
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      @media (max-width: 768px) {
+        body {
+          padding: var(--space-md);
+        }
+
+        .form-row {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+
+    <!-- Theme Manager -->
+    <script type="module" src="/js/theme-manager.js"></script>
+  </head>
+  <body class="admin-container">
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+      <div class="loading-content">
+        <div class="spinner"></div>
+        <p>Processing ticket entry...</p>
+      </div>
+    </div>
+
+    <!-- Unified Admin Header -->
+    <header class="admin-header">
+      <div class="admin-header-content">
+        <div>
+          <h1 class="admin-header-title">Manual Ticket Entry</h1>
+          <p class="admin-header-subtitle">At-Door Purchase Entry System</p>
+        </div>
+        <div class="admin-header-actions">
+          <button class="admin-btn admin-btn-secondary" onclick="window.location.href='/admin'">
+            <span>← Back</span>
+          </button>
+          <button class="admin-btn admin-btn-primary" onclick="logout()">
+            <span>Logout</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Unified Admin Navigation -->
+    <nav class="admin-navigation">
+      <ul class="admin-nav-list">
+        <li class="admin-nav-item">
+          <a href="/admin" class="admin-nav-link">
+            <span>Portal</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/dashboard" class="admin-nav-link">
+            <span>Dashboard</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/manual-entry" class="admin-nav-link active">
+            <span>Manual Entry</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/tickets" class="admin-nav-link">
+            <span>Tickets</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/checkin" class="admin-nav-link">
+            <span>Check-in Scanner</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+
+    <div class="manual-entry-container">
+      <!-- Alert Messages -->
+      <div id="alert-container"></div>
+
+      <!-- Manual Entry Form -->
+      <form id="manual-entry-form" class="admin-card">
+        <!-- Customer Information -->
+        <div class="form-section">
+          <h2 class="section-title">Customer Information</h2>
+
+          <div class="admin-form-group">
+            <label for="customer-name" class="admin-form-label">
+              Full Name <span style="color: var(--color-error);">*</span>
+            </label>
+            <input
+              type="text"
+              id="customer-name"
+              name="customerName"
+              class="admin-form-input"
+              required
+              placeholder="John Doe"
+            />
+          </div>
+
+          <div class="admin-form-group">
+            <label for="customer-email" class="admin-form-label">
+              Email Address <span style="color: var(--color-error);">*</span>
+            </label>
+            <input
+              type="email"
+              id="customer-email"
+              name="customerEmail"
+              class="admin-form-input"
+              required
+              placeholder="john@example.com"
+            />
+          </div>
+
+          <div class="admin-form-group">
+            <label for="customer-phone" class="admin-form-label">
+              Phone Number (Optional)
+            </label>
+            <input
+              type="tel"
+              id="customer-phone"
+              name="customerPhone"
+              class="admin-form-input"
+              placeholder="+1 (303) 555-0123"
+            />
+          </div>
+        </div>
+
+        <!-- Payment Information -->
+        <div class="form-section">
+          <h2 class="section-title">Payment Information</h2>
+
+          <div class="admin-form-group">
+            <label for="payment-method" class="admin-form-label">
+              Payment Method <span style="color: var(--color-error);">*</span>
+            </label>
+            <select
+              id="payment-method"
+              name="paymentMethod"
+              class="admin-form-select"
+              required
+            >
+              <option value="">Select payment method...</option>
+              <option value="cash">Cash</option>
+              <option value="card_terminal">Card Terminal</option>
+              <option value="venmo">Venmo</option>
+              <option value="comp">Comp (Free)</option>
+            </select>
+          </div>
+
+          <!-- Cash Shift Info (only shown for cash payments) -->
+          <div id="cash-shift-container" style="display: none;">
+            <div class="cash-shift-info">
+              <p><strong>Cash Shift Required</strong></p>
+              <p>A cash shift must be open to process cash payments. If no shift is open, please open one from the admin dashboard.</p>
+              <div id="cash-shift-select-container" style="margin-top: var(--space-sm);">
+                <label for="cash-shift-id" class="admin-form-label">Active Cash Shift</label>
+                <select id="cash-shift-id" name="cashShiftId" class="admin-form-select">
+                  <option value="">Loading cash shifts...</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ticket Items -->
+        <div class="form-section">
+          <h2 class="section-title">Ticket Selection</h2>
+
+          <div id="ticket-items-container" class="ticket-items-container">
+            <!-- Ticket items will be added dynamically -->
+          </div>
+
+          <button type="button" id="add-ticket-btn" class="admin-btn add-ticket-btn">
+            <span>+ Add Ticket Type</span>
+          </button>
+        </div>
+
+        <!-- Order Summary -->
+        <div class="summary-section">
+          <h2 class="section-title">Order Summary</h2>
+          <div id="order-summary">
+            <div class="summary-row">
+              <span>Total Tickets:</span>
+              <span id="total-tickets">0</span>
+            </div>
+            <div class="summary-row">
+              <span>Total Amount:</span>
+              <span id="total-amount">$0.00</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="admin-btn admin-btn-primary" style="width: 100%; margin-top: var(--space-lg);">
+          <span>Process Purchase</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- Admin Auth Guard -->
+    <script src="/js/admin-auth-guard.js"></script>
+
+    <!-- Manual Entry Logic -->
+    <script type="module">
+      import csrfService from '/js/csrf-service.js';
+
+      // State
+      let ticketTypes = [];
+      let ticketItemCounter = 0;
+      let cashShifts = [];
+
+      // HTML escaping function to prevent XSS attacks
+      // CRITICAL: Use this for ALL user-provided data displayed in innerHTML
+      function escapeHtml(unsafe) {
+        if (unsafe == null) return "";
+        return String(unsafe)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      // Initialize
+      document.addEventListener('DOMContentLoaded', async () => {
+        await loadTicketTypes();
+        await loadCashShifts();
+        addTicketItem(); // Add first ticket item
+        setupEventListeners();
+
+        // Show content after initialization
+        document.documentElement.style.visibility = 'visible';
+        document.documentElement.style.opacity = '1';
+      });
+
+      // Load available ticket types
+      async function loadTicketTypes() {
+        try {
+          const token = localStorage.getItem('adminToken');
+          const response = await fetch('/api/admin/dashboard', {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to load ticket types');
+          }
+
+          const data = await response.json();
+          ticketTypes = data.ticketTypes || [];
+        } catch (error) {
+          console.error('Error loading ticket types:', error);
+          showAlert('Failed to load ticket types', 'error');
+        }
+      }
+
+      // Load active cash shifts
+      async function loadCashShifts() {
+        // TODO: Implement when cash shift API is ready
+        // For now, we'll use a placeholder
+        cashShifts = [];
+      }
+
+      // Add a new ticket item row
+      function addTicketItem() {
+        ticketItemCounter++;
+        const container = document.getElementById('ticket-items-container');
+
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'ticket-item';
+        itemDiv.dataset.itemId = ticketItemCounter;
+
+        // Group tickets by event - include both available and test tickets
+        const availableTickets = ticketTypes.filter(tt => tt.status === 'available' || tt.status === 'test');
+        const ticketsByEvent = {};
+
+        availableTickets.forEach(tt => {
+          const eventName = tt.event_name || 'Unknown Event';
+          if (!ticketsByEvent[eventName]) {
+            ticketsByEvent[eventName] = [];
+          }
+          ticketsByEvent[eventName].push(tt);
+        });
+
+        // Build optgroups for each event
+        let optionsHtml = '<option value="">Select ticket type...</option>';
+
+        Object.keys(ticketsByEvent).sort().forEach(eventName => {
+          optionsHtml += `<optgroup label="${escapeHtml(eventName)}">`;
+          ticketsByEvent[eventName].forEach(tt => {
+            const remaining = tt.max_quantity > 0 ? ` (${tt.max_quantity - tt.sold_count} remaining)` : '';
+            const testLabel = tt.status === 'test' ? ' [TEST]' : '';
+            optionsHtml += `
+              <option value="${escapeHtml(tt.id)}" data-price="${escapeHtml(tt.price_cents)}">
+                ${escapeHtml(tt.name)} - $${(tt.price_cents / 100).toFixed(2)}${remaining}${testLabel}
+              </option>
+            `;
+          });
+          optionsHtml += '</optgroup>';
+        });
+
+        itemDiv.innerHTML = `
+          <div class="ticket-item-header">
+            <span class="ticket-item-number">Ticket Type #${ticketItemCounter}</span>
+            <button type="button" class="remove-ticket-btn" onclick="removeTicketItem(${ticketItemCounter})">×</button>
+          </div>
+          <div class="form-row">
+            <div class="admin-form-group">
+              <label class="admin-form-label">Ticket Type</label>
+              <select class="admin-form-select ticket-type-select" required data-item-id="${ticketItemCounter}">
+                ${optionsHtml}
+              </select>
+            </div>
+            <div class="admin-form-group">
+              <label class="admin-form-label">Quantity</label>
+              <input type="number" class="admin-form-input quantity-input" min="1" max="50" value="1" required data-item-id="${ticketItemCounter}" />
+            </div>
+          </div>
+        `;
+
+        container.appendChild(itemDiv);
+        updateSummary();
+      }
+
+      // Remove a ticket item row
+      window.removeTicketItem = function(itemId) {
+        const item = document.querySelector(`[data-item-id="${itemId}"]`).closest('.ticket-item');
+        item.remove();
+        updateSummary();
+
+        // Ensure at least one ticket item exists
+        const remainingItems = document.querySelectorAll('.ticket-item');
+        if (remainingItems.length === 0) {
+          addTicketItem();
+        }
+      };
+
+      // Update order summary
+      function updateSummary() {
+        let totalTickets = 0;
+        let totalAmount = 0;
+
+        document.querySelectorAll('.ticket-item').forEach(item => {
+          const select = item.querySelector('.ticket-type-select');
+          const quantityInput = item.querySelector('.quantity-input');
+
+          if (select.value && quantityInput.value) {
+            const quantity = parseInt(quantityInput.value) || 0;
+            const selectedOption = select.options[select.selectedIndex];
+            const price = parseInt(selectedOption.dataset.price) || 0;
+
+            totalTickets += quantity;
+            totalAmount += price * quantity;
+          }
+        });
+
+        document.getElementById('total-tickets').textContent = totalTickets;
+        document.getElementById('total-amount').textContent = `$${(totalAmount / 100).toFixed(2)}`;
+      }
+
+      // Setup event listeners
+      function setupEventListeners() {
+        // Add ticket button
+        document.getElementById('add-ticket-btn').addEventListener('click', addTicketItem);
+
+        // Payment method change
+        document.getElementById('payment-method').addEventListener('change', (e) => {
+          const cashContainer = document.getElementById('cash-shift-container');
+          if (e.target.value === 'cash') {
+            cashContainer.style.display = 'block';
+          } else {
+            cashContainer.style.display = 'none';
+          }
+        });
+
+        // Update summary on changes
+        document.addEventListener('change', (e) => {
+          if (e.target.classList.contains('ticket-type-select') ||
+              e.target.classList.contains('quantity-input')) {
+            updateSummary();
+          }
+        });
+
+        // Form submission
+        document.getElementById('manual-entry-form').addEventListener('submit', handleFormSubmit);
+      }
+
+      // Handle form submission
+      async function handleFormSubmit(e) {
+        e.preventDefault();
+
+        // Show loading overlay
+        document.getElementById('loading-overlay').classList.add('show');
+
+        try {
+          // Gather form data
+          const formData = new FormData(e.target);
+          const paymentMethod = formData.get('paymentMethod');
+          const customerName = formData.get('customerName');
+          const customerEmail = formData.get('customerEmail');
+          const customerPhone = formData.get('customerPhone');
+          const cashShiftId = formData.get('cashShiftId');
+
+          // Validate required fields
+          if (!customerName || !customerEmail || !paymentMethod) {
+            throw new Error('Please fill in all required fields');
+          }
+
+          // Validate cash shift for cash payments
+          if (paymentMethod === 'cash' && !cashShiftId) {
+            throw new Error('Please select an active cash shift for cash payments');
+          }
+
+          // Gather ticket items
+          const ticketItems = [];
+          document.querySelectorAll('.ticket-item').forEach(item => {
+            const select = item.querySelector('.ticket-type-select');
+            const quantityInput = item.querySelector('.quantity-input');
+
+            if (select.value && quantityInput.value) {
+              ticketItems.push({
+                ticketTypeId: select.value,
+                quantity: parseInt(quantityInput.value)
+              });
+            }
+          });
+
+          if (ticketItems.length === 0) {
+            throw new Error('Please add at least one ticket');
+          }
+
+          // Generate UUID for idempotency
+          const manualEntryId = crypto.randomUUID();
+
+          // Get CSRF token
+          const token = localStorage.getItem('adminToken');
+          const csrfToken = await csrfService.getCSRFToken();
+
+          // Submit to API
+          const response = await fetch('/api/admin/manual-ticket-entry', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+              'X-CSRF-Token': csrfToken
+            },
+            body: JSON.stringify({
+              manualEntryId,
+              ticketItems,
+              paymentMethod,
+              customerEmail,
+              customerName,
+              customerPhone: customerPhone || null,
+              cashShiftId: cashShiftId || null,
+              isTest: false
+            })
+          });
+
+          const result = await response.json();
+
+          if (!response.ok) {
+            throw new Error(result.error || 'Failed to process ticket entry');
+          }
+
+          // Show success message
+          showAlert(
+            `Success! Order #${result.transaction.order_number} created with ${result.ticketCount} ticket(s).
+            Confirmation email sent to ${customerEmail}.`,
+            'success'
+          );
+
+          // Show fraud alert if triggered
+          if (result.fraudCheck?.alert) {
+            showAlert(
+              `Warning: Fraud alert triggered (${result.fraudCheck.recentTickets} tickets in last 15 minutes).
+              Admin has been notified.`,
+              'warning'
+            );
+          }
+
+          // Reset form
+          e.target.reset();
+          document.getElementById('ticket-items-container').innerHTML = '';
+          ticketItemCounter = 0;
+          addTicketItem();
+          updateSummary();
+
+        } catch (error) {
+          console.error('Error processing manual entry:', error);
+          showAlert(error.message || 'Failed to process ticket entry', 'error');
+        } finally {
+          // Hide loading overlay
+          document.getElementById('loading-overlay').classList.remove('show');
+        }
+      }
+
+      // Show alert message
+      function showAlert(message, type) {
+        const container = document.getElementById('alert-container');
+        const alert = document.createElement('div');
+        alert.className = `alert alert-${type}`;
+        alert.textContent = message;
+
+        container.appendChild(alert);
+
+        // Auto-dismiss after 8 seconds
+        setTimeout(() => {
+          alert.remove();
+        }, 8000);
+
+        // Scroll to top to show alert
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      // Logout
+      window.logout = async function() {
+        try {
+          const token = localStorage.getItem('adminToken');
+          await fetch('/api/admin/login', {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+        } catch (error) {
+          console.error('Logout error:', error);
+        } finally {
+          localStorage.removeItem('adminToken');
+          window.location.href = '/admin/login';
+        }
+      };
+    </script>
+  </body>
+</html>

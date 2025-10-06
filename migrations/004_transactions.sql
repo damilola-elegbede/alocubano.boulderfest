@@ -94,8 +94,11 @@ CREATE INDEX IF NOT EXISTS idx_transactions_order_lookup ON transactions(order_n
 CREATE INDEX IF NOT EXISTS idx_transactions_test_mode ON transactions(is_test, status, created_at DESC);
 
 -- Triggers
+-- Prevent infinite recursion by only updating when updated_at hasn't changed
 CREATE TRIGGER IF NOT EXISTS update_transactions_timestamp
 AFTER UPDATE ON transactions
+FOR EACH ROW
+WHEN NEW.updated_at = OLD.updated_at
 BEGIN
     UPDATE transactions SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;

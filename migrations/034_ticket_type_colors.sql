@@ -33,9 +33,11 @@ CREATE INDEX IF NOT EXISTS idx_ticket_type_colors_pattern ON ticket_type_colors(
 CREATE INDEX IF NOT EXISTS idx_ticket_type_colors_display_order ON ticket_type_colors(display_order);
 
 -- Trigger for updated_at timestamp
+-- Prevent infinite recursion by only updating when updated_at hasn't changed
 CREATE TRIGGER IF NOT EXISTS update_ticket_type_colors_timestamp
 AFTER UPDATE ON ticket_type_colors
 FOR EACH ROW
+WHEN NEW.updated_at = OLD.updated_at
 BEGIN
     UPDATE ticket_type_colors SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;

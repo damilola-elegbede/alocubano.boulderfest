@@ -47,8 +47,11 @@ CREATE INDEX IF NOT EXISTS idx_audit_user ON event_audit_log(user_email);
 CREATE INDEX IF NOT EXISTS idx_audit_created ON event_audit_log(created_at);
 
 -- Trigger for event_settings updated timestamp
+-- Prevent infinite recursion by only updating when updated_at hasn't changed
 CREATE TRIGGER IF NOT EXISTS update_event_settings_timestamp
 AFTER UPDATE ON event_settings
+FOR EACH ROW
+WHEN NEW.updated_at = OLD.updated_at
 BEGIN
     UPDATE event_settings SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;

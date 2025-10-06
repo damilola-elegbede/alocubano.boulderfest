@@ -101,9 +101,11 @@ CREATE INDEX IF NOT EXISTS idx_tickets_event_type ON tickets(event_id, ticket_ty
 CREATE INDEX IF NOT EXISTS idx_tickets_test_mode ON tickets(is_test, status, created_at DESC);
 
 -- Trigger
+-- Prevent infinite recursion by only updating when updated_at hasn't changed
 CREATE TRIGGER IF NOT EXISTS update_tickets_timestamp
 AFTER UPDATE ON tickets
 FOR EACH ROW
+WHEN NEW.updated_at = OLD.updated_at
 BEGIN
     UPDATE tickets SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;
