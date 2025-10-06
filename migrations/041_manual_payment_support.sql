@@ -125,6 +125,17 @@ SELECT
 FROM transactions;
 
 -- ============================================================================
+-- STEP 3.5: Drop views that reference transactions table
+-- ============================================================================
+-- Views must be dropped before table manipulation to avoid validation errors
+-- They will be recreated in STEP 8.5 after rename completes
+DROP VIEW IF EXISTS v_data_mode_statistics;
+DROP VIEW IF EXISTS v_payment_processor_summary;
+DROP VIEW IF EXISTS v_paypal_transaction_reconciliation;
+DROP VIEW IF EXISTS v_paypal_health_metrics;
+DROP VIEW IF EXISTS v_test_data_cleanup_candidates;
+
+-- ============================================================================
 -- STEP 4: Drop all triggers before dropping transactions table
 -- ============================================================================
 DROP TRIGGER IF EXISTS update_transactions_timestamp;
@@ -249,6 +260,168 @@ BEGIN
     )
     WHERE id = NEW.id;
 END;
+
+-- ============================================================================
+-- STEP 8.5: Recreate views that reference transactions
+-- ============================================================================
+-- Recreate views that were dropped in STEP 3.5
+-- Copied from original migrations: 028, 029, 038
+
+-- From migration 028: v_data_mode_statistics
+CREATE VIEW IF NOT EXISTS v_data_mode_statistics AS
+SELECT
+    'transactions' as table_name,
+    SUM(CASE WHEN is_test = 0 THEN 1 ELSE 0 END) as production_count,
+    SUM(CASE WHEN is_test = 1 THEN 1 ELSE 0 END) as test_count,
+    COUNT(*) as total_count,
+    ROUND(SUM(CASE WHEN is_test = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) as test_percentage,
+    SUM(CASE WHEN is_test = 0 THEN amount_cents ELSE 0 END) as production_amount_cents,
+    SUM(CASE WHEN is_test = 1 THEN amount_cents ELSE 0 END) as test_amount_cents
+FROM transactions
+UNION ALL
+SELECT
+    'tickets' as table_name,
+    SUM(CASE WHEN is_test = 0 THEN 1 ELSE 0 END) as production_count,
+    SUM(CASE WHEN is_test = 1 THEN 1 ELSE 0 END) as test_count,
+    COUNT(*) as total_count,
+    ROUND(SUM(CASE WHEN is_test = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) as test_percentage,
+    SUM(CASE WHEN is_test = 0 THEN price_cents ELSE 0 END) as production_amount_cents,
+    SUM(CASE WHEN is_test = 1 THEN price_cents ELSE 0 END) as test_amount_cents
+FROM tickets;
+
+-- From migration 029: v_payment_processor_summary
+CREATE VIEW IF NOT EXISTS v_payment_processor_summary AS
+SELECT
+    payment_processor,
+    status,
+    is_test,
+    COUNT(*) as transaction_count,
+    SUM(amount_cents) as total_amount_cents,
+    AVG(amount_cents) as avg_amount_cents,
+    MIN(amount_cents) as min_amount_cents,
+    MAX(amount_cents) as max_amount_cents,
+    MIN(created_at) as first_transaction,
+    MAX(created_at) as last_transaction
+FROM transactions
+GROUP BY payment_processor, status, is_test;
+
+-- From migration 029: v_paypal_transaction_reconciliation
+CREATE VIEW IF NOT EXISTS v_paypal_transaction_reconciliation AS
+SELECT
+    t.id as transaction_id,
+    t.transaction_id as business_transaction_id,
+    t.paypal_order_id,
+    t.paypal_capture_id,
+    t.status as transaction_status,
+    t.amount_cents,
+    t.created_at as transaction_created,
+    pwe.id as webhook_event_id,
+    pwe.event_type,
+    pwe.processing_status,
+    pwe.verification_status,
+    pwe.created_at as webhook_created,
+    pwe.processed_at as webhook_processed,
+    CASE
+        WHEN pwe.id IS NULL THEN 'missing_webhook'
+        WHEN pwe.processing_status = 'failed' THEN 'webhook_failed'
+        WHEN pwe.verification_status != 'verified' THEN 'verification_failed'
+        WHEN t.status = 'completed' AND pwe.processing_status = 'processed' THEN 'reconciled'
+        ELSE 'pending'
+    END as reconciliation_status
+FROM transactions t
+LEFT JOIN paypal_webhook_events pwe ON t.paypal_order_id = pwe.paypal_order_id
+WHERE t.payment_processor = 'paypal';
+
+-- From migration 029: v_paypal_health_metrics
+CREATE VIEW IF NOT EXISTS v_paypal_health_metrics AS
+SELECT
+    'paypal_transactions_today' as metric_name,
+    COUNT(*) as metric_value,
+    'count' as metric_type,
+    DATE('now') as metric_date
+FROM transactions
+WHERE payment_processor = 'paypal'
+  AND DATE(created_at) = DATE('now')
+  AND is_test = 0
+UNION ALL
+SELECT
+    'paypal_webhook_events_today' as metric_name,
+    COUNT(*) as metric_value,
+    'count' as metric_type,
+    DATE('now') as metric_date
+FROM paypal_webhook_events
+WHERE DATE(created_at) = DATE('now')
+  AND is_test = 0
+UNION ALL
+SELECT
+    'paypal_failed_webhooks_24h' as metric_name,
+    COUNT(*) as metric_value,
+    'count' as metric_type,
+    DATE('now') as metric_date
+FROM paypal_webhook_events
+WHERE processing_status = 'failed'
+  AND created_at >= datetime('now', '-24 hours')
+  AND is_test = 0
+UNION ALL
+SELECT
+    'paypal_verification_failures_24h' as metric_name,
+    COUNT(*) as metric_value,
+    'count' as metric_type,
+    DATE('now') as metric_date
+FROM paypal_webhook_events
+WHERE verification_status IN ('failed', 'invalid_signature')
+  AND created_at >= datetime('now', '-24 hours')
+  AND is_test = 0;
+
+-- From migration 038: v_test_data_cleanup_candidates
+CREATE VIEW IF NOT EXISTS v_test_data_cleanup_candidates AS
+SELECT
+    'transaction' as record_type,
+    t.id as record_id,
+    julianday('now') - julianday(t.created_at) as age_days,
+    t.amount_cents,
+    CASE
+        WHEN julianday('now') - julianday(t.created_at) > 90 THEN 'immediate'
+        WHEN julianday('now') - julianday(t.created_at) > 30 THEN 'priority'
+        WHEN julianday('now') - julianday(t.created_at) > 7 THEN 'scheduled'
+        ELSE 'retain'
+    END as cleanup_priority,
+    t.status,
+    t.created_at
+FROM transactions t
+WHERE t.is_test = 1
+UNION ALL
+SELECT
+    'ticket' as record_type,
+    t.id as record_id,
+    julianday('now') - julianday(t.created_at) as age_days,
+    t.price_cents as amount_cents,
+    CASE
+        WHEN julianday('now') - julianday(t.created_at) > 90 THEN 'immediate'
+        WHEN julianday('now') - julianday(t.created_at) > 30 THEN 'priority'
+        WHEN julianday('now') - julianday(t.created_at) > 7 THEN 'scheduled'
+        ELSE 'retain'
+    END as cleanup_priority,
+    t.status,
+    t.created_at
+FROM tickets t
+WHERE t.is_test = 1
+UNION ALL
+SELECT
+    'transaction_item' as record_type,
+    ti.id as record_id,
+    julianday('now') - julianday(ti.created_at) as age_days,
+    ti.total_price_cents as amount_cents,
+    CASE
+        WHEN julianday('now') - julianday(ti.created_at) > 90 THEN 'immediate'
+        WHEN julianday('now') - julianday(ti.created_at) > 30 THEN 'priority'
+        WHEN julianday('now') - julianday(ti.created_at) > 7 THEN 'scheduled'
+        ELSE 'retain'
+    END as cleanup_priority,
+    'active' as status,
+    ti.created_at
+FROM transaction_items ti
+WHERE ti.is_test = 1;
 
 -- ============================================================================
 -- STEP 9: Create cash_shifts table
