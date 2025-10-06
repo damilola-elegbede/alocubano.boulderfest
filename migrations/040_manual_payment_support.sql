@@ -2,6 +2,9 @@
 -- Purpose: Enable manual at-door ticket entries with cash/card/venmo/comp
 -- Dependencies: 004_transactions.sql, 035_add_payment_method_details.sql
 
+-- Disable foreign key constraints to allow table recreation
+PRAGMA foreign_keys = OFF;
+
 BEGIN TRANSACTION;
 
 -- ============================================================================
@@ -255,3 +258,6 @@ SELECT CASE
 END as migration_status;
 
 COMMIT;
+
+-- Re-enable foreign key constraints
+PRAGMA foreign_keys = ON;
