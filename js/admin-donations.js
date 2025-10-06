@@ -3,6 +3,9 @@
  * Manages donation analytics and reporting
  */
 
+// Import time manager for Mountain Time formatting
+import timeManager from './time-manager.js';
+
 // State management
 let currentFilters = {
   donationType: 'real',  // Default to real donations
@@ -150,7 +153,7 @@ function renderDonationsTable(donations) {
   }
 
   tbody.innerHTML = donations.map(donation => {
-    const date = donation.created_at_mt || new Date(donation.created_at).toLocaleDateString();
+    const date = donation.created_at_mt || timeManager.formatDate(donation.created_at);
     const amount = `$${Number(donation.amount).toFixed(2)}`;
     const customer = donation.customer_name || donation.customer_email || 'N/A';
     const event = donation.event_name || 'N/A';
@@ -222,7 +225,7 @@ function exportCSV() {
   // CSV rows
   const rows = donationsData.donations.map(donation => {
     return [
-      donation.created_at_mt || new Date(donation.created_at).toLocaleDateString(),
+      donation.created_at_mt || timeManager.formatDate(donation.created_at),
       donation.transaction_id || 'N/A',
       Number(donation.amount).toFixed(2),
       donation.customer_name || donation.customer_email || 'N/A',

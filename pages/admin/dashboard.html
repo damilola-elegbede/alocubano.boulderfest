@@ -784,8 +784,8 @@
 
         const rows = events.map(event => {
           const statusColor = statusColors[event.status] || 'secondary';
-          const startDate = event.start_date ? (timeManager ? timeManager.formatDate(event.start_date) : new Date(event.start_date).toLocaleDateString()) : 'TBA';
-          const endDate = event.end_date ? (timeManager ? timeManager.formatDate(event.end_date) : new Date(event.end_date).toLocaleDateString()) : 'TBA';
+          const startDate = event.start_date ? (timeManager ? timeManager.formatDate(event.start_date) : new Date(event.start_date).toLocaleDateString('en-US', { timeZone: 'America/Denver' })) : 'TBA';
+          const endDate = event.end_date ? (timeManager ? timeManager.formatDate(event.end_date) : new Date(event.end_date).toLocaleDateString('en-US', { timeZone: 'America/Denver' })) : 'TBA';
 
           return `
             <tr>

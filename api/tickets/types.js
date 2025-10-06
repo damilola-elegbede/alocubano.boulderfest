@@ -66,7 +66,9 @@ export default async function handler(req, res) {
       event: {
         id: ticket.event_id,
         name: ticket.event_name,
-        date: ticket.event_date,
+        date: ticket.event_date,           // Ticket type's valid from date
+        time: ticket.event_time,           // Ticket type's valid from time
+        start_date: ticket.event_start_date, // Event's overall start date
         venue: ticket.event_venue,
         status: ticket.event_status
       }

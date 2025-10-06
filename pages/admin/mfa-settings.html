@@ -452,7 +452,7 @@
         const statusIcon = isEnabled ? "✅" : "❌";
         const statusTitle = isEnabled ? "MFA is Enabled" : "MFA is Disabled";
         const statusDesc = isEnabled
-          ? `Enabled on ${window.timeManager ? window.timeManager.formatDate(mfaStatus.enabledAt) : new Date(mfaStatus.enabledAt).toLocaleDateString()}`
+          ? `Enabled on ${window.timeManager ? window.timeManager.formatDate(mfaStatus.enabledAt) : new Date(mfaStatus.enabledAt).toLocaleDateString('en-US', { timeZone: 'America/Denver' })}`
           : "Your account is not protected by multi-factor authentication";
 
         container.innerHTML = `

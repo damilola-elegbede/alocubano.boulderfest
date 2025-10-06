@@ -250,7 +250,7 @@ class EndpointManager {
             <span class="history-status">${statusIcon}</span>
           </div>
           <div class="history-details">
-            <span class="history-time">${new Date(req.timestamp).toLocaleTimeString()}</span>
+            <span class="history-time">${new Date(req.timestamp).toLocaleTimeString('en-US', { timeZone: 'America/Denver' })}</span>
             <span class="history-duration">${Math.round(req.duration)}ms</span>
             ${req.status ? `<span class="history-http-status">${req.status}</span>` : ''}
           </div>

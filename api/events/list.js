@@ -167,7 +167,8 @@ function generateDisplayName(event) {
     if (event.type === 'weekender') {
         const monthYear = new Date(event.start_date).toLocaleDateString('en-US', {
             month: 'long',
-            year: 'numeric'
+            year: 'numeric',
+            timeZone: 'America/Denver'
         });
         return `${monthYear} ${typeDisplay} Tickets`;
     }

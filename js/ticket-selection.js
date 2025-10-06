@@ -6,6 +6,7 @@
 import { ticketDataService } from './lib/ticket-data-service.js';
 import { getAvailabilityService } from './lib/availability-service.js';
 import eventsService from './lib/events-service.js';
+import timeManager from './time-manager.js';
 
 class TicketSelection {
     constructor() {
@@ -268,12 +269,14 @@ class TicketSelection {
                     if (dateElement) {
                         const eventDate = ticketData.event_date || ticketData.event?.date;
                         if (eventDate) {
-                            const date = new Date(eventDate);
-                            const formattedDate = date.toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric'
-                            });
+                            const formattedDate = timeManager
+                                ? timeManager.formatDate(eventDate)
+                                : new Date(eventDate).toLocaleDateString('en-US', {
+                                      year: 'numeric',
+                                      month: 'long',
+                                      day: 'numeric',
+                                      timeZone: 'America/Denver'
+                                  });
                             dateElement.textContent = formattedDate;
                             dateElement.removeAttribute('data-loading');
                             dateElement.setAttribute('data-loaded', 'true');
