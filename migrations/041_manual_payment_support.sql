@@ -88,47 +88,10 @@ CREATE TABLE transactions_new (
 );
 
 -- ============================================================================
--- STEP 3: Copy existing data from transactions table
+-- STEP 3: Drop views that reference transactions table
 -- ============================================================================
--- transactions table exists from migration 004_transactions.sql
--- Copy all existing data to new schema with NULL for new columns
-INSERT INTO transactions_new (
-    id, transaction_id, uuid, type, status, amount_cents, total_amount, currency,
-    stripe_session_id, stripe_payment_intent_id, stripe_charge_id, payment_method_type,
-    paypal_order_id, paypal_capture_id, paypal_payer_id, payment_processor,
-    reference_id, cart_data,
-    customer_email, customer_name, billing_address,
-    order_data, order_number, session_metadata, metadata,
-    event_id,
-    source, registration_token, registration_token_expires,
-    registration_initiated_at, registration_completed_at, all_tickets_registered,
-    is_test,
-    card_brand, card_last4, payment_wallet,
-    manual_entry_id, cash_shift_id,
-    created_at, updated_at, completed_at
-)
-SELECT
-    id, transaction_id, uuid, type, status, amount_cents, total_amount, currency,
-    stripe_session_id, stripe_payment_intent_id, stripe_charge_id, payment_method_type,
-    paypal_order_id, paypal_capture_id, paypal_payer_id, payment_processor,
-    reference_id, cart_data,
-    customer_email, customer_name, billing_address,
-    order_data, order_number, session_metadata, metadata,
-    event_id,
-    source, registration_token, registration_token_expires,
-    registration_initiated_at, registration_completed_at, all_tickets_registered,
-    is_test,
-    card_brand, card_last4, payment_wallet,
-    NULL as manual_entry_id, -- New column, NULL for existing records
-    NULL as cash_shift_id,    -- New column, NULL for existing records
-    created_at, updated_at, completed_at
-FROM transactions;
-
--- ============================================================================
--- STEP 3.5: Drop views that reference transactions table
--- ============================================================================
--- Views must be dropped before table manipulation to avoid validation errors
--- They will be recreated in STEP 8.5 after rename completes
+-- For wiped database: Drop any existing views before table creation
+-- They will be recreated in STEP 7.5 after table is ready
 DROP VIEW IF EXISTS v_data_mode_statistics;
 DROP VIEW IF EXISTS v_payment_processor_summary;
 DROP VIEW IF EXISTS v_paypal_transaction_reconciliation;
@@ -147,7 +110,7 @@ DROP TRIGGER IF EXISTS trg_transactions_paypal_reference_id;
 DROP TRIGGER IF EXISTS trg_paypal_webhook_link_transaction;
 
 -- ============================================================================
--- STEP 5: Drop old table (safe - data already copied to transactions_new)
+-- STEP 5: Drop old transactions table (if exists from previous failed migration)
 -- ============================================================================
 DROP TABLE IF EXISTS transactions;
 
@@ -264,7 +227,7 @@ END;
 -- ============================================================================
 -- STEP 8.5: Recreate views that reference transactions
 -- ============================================================================
--- Recreate views that were dropped in STEP 3.5
+-- Recreate views that were dropped in STEP 3
 -- Copied from original migrations: 028, 029, 038
 
 -- From migration 028: v_data_mode_statistics
