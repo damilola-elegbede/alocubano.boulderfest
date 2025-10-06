@@ -15,6 +15,7 @@ import {
   logTestModeOperation
 } from '../../../lib/test-mode-utils.js';
 import { v4 as uuidv4 } from 'uuid';
+import { generateOrderNumber } from '../../../lib/order-number-generator.js';
 
 // Maximum request body size (100KB)
 const MAX_BODY_SIZE = 100 * 1024;
@@ -150,7 +151,7 @@ async function createOrderHandler(req, res) {
         },
         quantity: item.quantity.toString(),
         description: item.description,
-        category: item.type === 'ticket' ? 'DIGITAL_GOODS' : 'DONATION'
+        category: hasTickets ? 'DIGITAL_GOODS' : 'DONATION'
       });
     }
 
@@ -179,10 +180,9 @@ async function createOrderHandler(req, res) {
       baseUrl = origin;
     }
 
-    // Generate transaction ID and reference ID
+    // Generate transaction ID
     const transactionUuid = uuidv4();
     transactionId = generateTestAwareTransactionId(`paypal_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`, req);
-    const referenceId = `ALCBF-${Date.now()}`;
 
     // Initialize database connection
     dbClient = await getDatabaseClient();
@@ -193,13 +193,17 @@ async function createOrderHandler(req, res) {
       ? `${customerInfo.firstName} ${customerInfo.lastName}`
       : 'Pending PayPal User';
 
+    // Generate order number BEFORE PayPal order creation
+    const orderNumber = await generateOrderNumber();
+    console.log(`Generated order number for PayPal: ${orderNumber}`);
+
     // Create PayPal order data (use camelCase for SDK)
     // PayPal expects amounts in dollars, not cents
     const paypalOrderData = {
       intent: 'CAPTURE',
       purchaseUnits: [
         {
-          referenceId: referenceId,
+          referenceId: orderNumber,
           amount: {
             currencyCode: 'USD',
             value: totalInDollars.toFixed(2), // Convert cents to dollars
@@ -213,15 +217,15 @@ async function createOrderHandler(req, res) {
           items: orderItems,
           description: 'A Lo Cubano Boulder Fest Purchase',
           customId: customerEmail,
-          invoiceId: referenceId
+          invoiceId: orderNumber
         }
       ],
       applicationContext: {
         brandName: 'A Lo Cubano Boulder Fest',
         landingPage: 'BILLING',
         userAction: 'PAY_NOW',
-        returnUrl: `${baseUrl}/success?reference_id=${referenceId}&paypal=true${isRequestTestMode ? '&test_mode=true' : ''}`,
-        cancelUrl: `${baseUrl}/failure?reference_id=${referenceId}&paypal=true${isRequestTestMode ? '&test_mode=true' : ''}`,
+        returnUrl: `${baseUrl}/success?reference_id=${orderNumber}&paypal=true${isRequestTestMode ? '&test_mode=true' : ''}`,
+        cancelUrl: `${baseUrl}/failure?reference_id=${orderNumber}&paypal=true${isRequestTestMode ? '&test_mode=true' : ''}`,
         shippingPreference: 'NO_SHIPPING'
       }
     };
@@ -239,8 +243,8 @@ async function createOrderHandler(req, res) {
         transaction_id, uuid, type, status, amount_cents, total_amount, currency,
         paypal_order_id, payment_processor, reference_id, cart_data,
         customer_email, customer_name, order_data, metadata,
-        event_id, source, is_test, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+        event_id, source, is_test, order_number, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
       args: [
         transactionId,
         transactionUuid,
@@ -251,28 +255,29 @@ async function createOrderHandler(req, res) {
         'USD',
         paypalOrder.id,
         'paypal',
-        referenceId,
+        orderNumber,
         JSON.stringify(cartItems),
         customerEmail,
         customerName,
         JSON.stringify(paypalOrderData),
         JSON.stringify(createTestModeMetadata(req, {
           paypal_order_id: paypalOrder.id,
-          reference_id: referenceId,
+          reference_id: orderNumber,
           total_amount: totalAmount,
           item_count: cartItems.length,
           event_id: eventId
         })),
         eventId, // Use dynamic event_id or null for test tickets
         'website',
-        getTestModeFlag(req)
+        getTestModeFlag(req),
+        orderNumber  // User-friendly order number (ALO-YYYY-NNNN)
       ]
     });
 
     console.log(`${isRequestTestMode ? 'TEST ' : ''}PayPal order created and stored:`, {
       transactionId,
       paypalOrderId: paypalOrder.id,
-      referenceId,
+      orderNumber,
       totalAmount,
       testMode: isRequestTestMode
     });
@@ -289,7 +294,7 @@ async function createOrderHandler(req, res) {
       orderId: paypalOrder.id,
       approvalUrl: approvalUrl,
       transactionId: transactionId,
-      referenceId: referenceId,
+      orderNumber: orderNumber,
       totalAmount: totalInDollars, // Return in dollars for consistency with PayPal
       totalAmountCents: totalAmount, // Also include cents for reference
       testMode: isRequestTestMode

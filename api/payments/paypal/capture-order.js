@@ -8,7 +8,8 @@ import { setCorsHeaders } from '../../utils/cors.js';
 import { withRateLimit } from '../../utils/rate-limiter.js';
 import { getDatabaseClient } from '../../../lib/database.js';
 import { RegistrationTokenService } from '../../../lib/registration-token-service.js';
-import { generateOrderId } from '../../../lib/order-id-generator.js';
+import { generateOrderNumber } from '../../../lib/order-number-generator.js';
+import { generateTicketId } from '../../../lib/ticket-id-generator.js';
 import { processDatabaseResult } from '../../../lib/bigint-serializer.js';
 import timeUtils from '../../../lib/time-utils.js';
 import { getTicketEmailService } from '../../../lib/ticket-email-service-brevo.js';
@@ -192,11 +193,11 @@ async function captureOrderHandler(req, res) {
           transactionId: transaction.id,
           transactionUuid: transaction.uuid,
           paypalApiUrl: PAYPAL_API_URL,
-          recommendation: 'Investigate why PayPal transaction was created without order_number. Normal flow should use order-number-generator.js (ALO-YYYY-NNNN format)',
+          recommendation: 'This should not happen after fix. Investigate if seen.',
           timestamp: new Date().toISOString()
         });
 
-        orderNumber = await generateOrderId();
+        orderNumber = await generateOrderNumber();
         console.log(`Generated fallback order number for PayPal transaction: ${orderNumber}`);
       }
 
@@ -217,12 +218,29 @@ async function captureOrderHandler(req, res) {
         console.warn('No cart_data found in transaction:', transactionId);
       }
 
-      // Update transaction status, order_number, and payment processor
+      // Extract PayPal capture details
+      const captureId = capture.id;
+      const payerId = captureResult.payer?.payer_id || null;
+
+      // Update transaction with capture details, status, and customer info
       await db.execute({
         sql: `UPDATE transactions
-              SET status = ?, order_number = ?, customer_email = ?, customer_name = ?, payment_processor = ?, updated_at = ?
+              SET status = ?, order_number = ?, customer_email = ?, customer_name = ?,
+                  payment_processor = ?, paypal_capture_id = ?, paypal_payer_id = ?,
+                  completed_at = ?, updated_at = ?
               WHERE id = ?`,
-        args: ['completed', orderNumber, customerEmail, customerName, 'paypal', new Date().toISOString(), transactionId]
+        args: [
+          'completed',
+          orderNumber,
+          customerEmail,
+          customerName,
+          'paypal',
+          captureId,
+          payerId,
+          new Date().toISOString(), // completed_at
+          new Date().toISOString(), // updated_at
+          transactionId
+        ]
       });
 
       console.log('Updated existing transaction:', transactionId);
@@ -236,26 +254,56 @@ async function captureOrderHandler(req, res) {
         timestamp: new Date().toISOString()
       });
 
-      orderNumber = await generateOrderId();
+      orderNumber = await generateOrderNumber();
+
+      // Extract additional PayPal details
+      const captureId = capture.id;
+      const payerId = captureResult.payer?.payer_id || null;
+      const billingAddress = captureResult.payer?.address ? JSON.stringify(captureResult.payer.address) : null;
+
+      // Determine transaction type
+      const transactionType = hasTickets ? 'tickets' : 'donation';
+
+      // Build order data
+      const orderData = JSON.stringify({
+        paypal_order_id: paypalOrderId,
+        capture_id: captureId,
+        payer: captureResult.payer,
+        purchase_units: captureResult.purchase_units
+      });
+
+      const transactionUuid = crypto.randomUUID();
 
       const transactionResult = await db.execute({
         sql: `INSERT INTO transactions
-              (uuid, order_number, stripe_session_id, status, amount_cents, total_amount,
-               customer_email, customer_name, payment_method, payment_processor, created_at, updated_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              (transaction_id, uuid, type, order_data, cart_data, amount_cents, total_amount, currency,
+               paypal_order_id, paypal_capture_id, paypal_payer_id, payment_processor,
+               reference_id, payment_method_type,
+               customer_email, customer_name, billing_address,
+               status, completed_at, is_test, order_number)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
-          crypto.randomUUID(),
-          orderNumber,
-          paypalOrderId, // Store PayPal order ID in stripe_session_id for compatibility
-          'completed',
-          amountCents,
-          amountCents,
-          customerEmail,
-          customerName,
-          'paypal',
-          'paypal', // Payment processor
-          new Date().toISOString(),
-          new Date().toISOString()
+          transactionUuid, // transaction_id
+          transactionUuid, // uuid
+          transactionType, // type
+          orderData, // order_data
+          JSON.stringify(cartData), // cart_data
+          amountCents, // amount_cents
+          amountCents, // total_amount
+          'USD', // currency
+          paypalOrderId, // paypal_order_id
+          captureId, // paypal_capture_id
+          payerId, // paypal_payer_id
+          'paypal', // payment_processor
+          orderNumber, // reference_id
+          'paypal', // payment_method_type
+          customerEmail, // customer_email
+          customerName, // customer_name
+          billingAddress, // billing_address
+          'completed', // status
+          new Date().toISOString(), // completed_at
+          0, // is_test (should be detected from cart data, defaulting to 0 for now)
+          orderNumber // order_number
         ]
       });
 
@@ -290,11 +338,40 @@ async function captureOrderHandler(req, res) {
             price_cents: ticket.price_cents
           });
 
+          // Validate required fields - NO SILENT DEFAULTS
+          if (!ticket.ticketType) {
+            console.error('CRITICAL: No ticket type found in cart data:', {
+              ticket: ticket,
+              paypalOrderId: paypalOrderId,
+              transactionId: transactionId
+            });
+            throw new Error(`Ticket type missing from cart data for item: ${ticket.name || 'Unknown'}`);
+          }
+
+          if (!ticket.eventId) {
+            console.error('CRITICAL: No event ID found in cart data:', {
+              ticket: ticket,
+              paypalOrderId: paypalOrderId,
+              transactionId: transactionId
+            });
+            throw new Error(`Event ID missing from cart data for item: ${ticket.name || 'Unknown'}`);
+          }
+
+          if (!ticket.eventDate) {
+            console.error('CRITICAL: No event date found in cart data:', {
+              ticket: ticket,
+              paypalOrderId: paypalOrderId,
+              transactionId: transactionId
+            });
+            throw new Error(`Event date missing from cart data for item: ${ticket.name || 'Unknown'}`);
+          }
+
           for (let i = 0; i < quantity; i++) {
-            const ticketId = crypto.randomUUID();
-            const eventId = ticket.eventId || 1; // Use eventId from cart or default to 1
+            const ticketId = await generateTicketId();
+            const eventId = ticket.eventId;
             const priceCents = ticket.price_cents || ticket.price || 0;
-            const eventDate = ticket.eventDate || null;
+            const eventDate = ticket.eventDate;
+            const ticketType = ticket.ticketType;
 
             // Calculate registration deadline: 7 days before event date, or 24 hours from now
             let registrationDeadline;
@@ -313,23 +390,48 @@ async function captureOrderHandler(req, res) {
               registrationDeadline = new Date(now.getTime() + (24 * 60 * 60 * 1000));
             }
 
+            // Detect test mode from cart item
+            const isTestTicket = ticket.isTestItem || ticket.name?.includes('TEST') || false;
+
+            // Parse customer name for default attendee info
+            const firstName = customerName ? customerName.split(' ')[0] : 'Guest';
+            const lastName = customerName ? customerName.split(' ').slice(1).join(' ') || '' : 'Attendee';
+
+            // Build ticket metadata
+            const ticketMetadata = JSON.stringify({
+              validation: {
+                passed: true,
+                errors: [],
+                timestamp: now.toISOString(),
+                paypal_order_id: paypalOrderId
+              },
+              source: 'paypal'
+            });
+
             await db.execute({
               sql: `INSERT INTO tickets
-                    (ticket_id, transaction_id, ticket_type, event_id, event_date, price_cents,
-                     registration_status, registration_deadline, status, created_at, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    (ticket_id, transaction_id, ticket_type, ticket_type_id, event_id,
+                     event_date, price_cents,
+                     attendee_first_name, attendee_last_name,
+                     registration_status, registration_deadline,
+                     status, created_at, is_test, ticket_metadata)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
               args: [
                 ticketId,
                 transactionId,
-                ticket.name || 'General Admission',
+                ticketType,
+                ticketType, // ticket_type_id uses same value (ticket_types.id is TEXT)
                 eventId,
                 eventDate,
                 priceCents,
-                'pending',
+                isTestTicket ? `TEST-${firstName}` : firstName, // attendee_first_name
+                isTestTicket ? `TEST-${lastName}` : lastName, // attendee_last_name
+                'pending', // registration_status
                 registrationDeadline.toISOString(),
-                'valid',
-                new Date().toISOString(),
-                new Date().toISOString()
+                'valid', // status
+                now.toISOString(),
+                isTestTicket ? 1 : 0, // is_test
+                ticketMetadata
               ]
             });
             ticketCount++;
