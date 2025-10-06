@@ -48,6 +48,7 @@ try {
 
   // Load the pulled environment variables
   const envContent = fs.readFileSync('.env.production', 'utf8');
+  // biome-ignore lint/nursery/noControlCharactersInRegex: Environment file parsing requires literal newline splitting
   envContent.split('\n').forEach(line => {
     const [key, ...valueParts] = line.split('=');
     if (key && valueParts.length > 0) {

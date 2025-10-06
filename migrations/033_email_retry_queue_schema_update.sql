@@ -35,9 +35,11 @@ CREATE INDEX idx_email_retry_queue_email_address ON email_retry_queue(email_addr
 CREATE INDEX idx_email_retry_queue_email_type ON email_retry_queue(email_type);
 
 -- Trigger to update updated_at timestamp
+-- Prevent infinite recursion by only updating when updated_at hasn't changed
 CREATE TRIGGER update_email_retry_queue_timestamp
 AFTER UPDATE ON email_retry_queue
 FOR EACH ROW
+WHEN NEW.updated_at = OLD.updated_at
 BEGIN
     UPDATE email_retry_queue SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;

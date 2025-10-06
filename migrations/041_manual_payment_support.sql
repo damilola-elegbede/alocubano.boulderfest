@@ -57,7 +57,7 @@ CREATE TABLE transactions_new (
     metadata TEXT,
 
     -- Event Reference
-    event_id INTEGER REFERENCES events(id),
+    event_id INTEGER,
 
     -- Source and Registration
     source TEXT DEFAULT 'website',
@@ -77,12 +77,16 @@ CREATE TABLE transactions_new (
 
     -- NEW: Manual entry support
     manual_entry_id TEXT UNIQUE, -- Client-generated UUID for idempotency
-    cash_shift_id INTEGER, -- Link to cash_shifts table (added later)
+    cash_shift_id INTEGER, -- Link to cash_shifts table
 
     -- Timestamps
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    completed_at TIMESTAMP
+    completed_at TIMESTAMP,
+
+    -- Foreign key constraints
+    FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (cash_shift_id) REFERENCES cash_shifts(id) ON DELETE SET NULL ON UPDATE CASCADE
 );
 
 -- ============================================================================
@@ -152,8 +156,11 @@ CREATE INDEX IF NOT EXISTS idx_transactions_cash_shift ON transactions(cash_shif
 -- ============================================================================
 -- STEP 8: Recreate all triggers
 -- ============================================================================
+-- Prevent infinite recursion by only updating when updated_at hasn't changed
 CREATE TRIGGER IF NOT EXISTS update_transactions_timestamp
 AFTER UPDATE ON transactions
+FOR EACH ROW
+WHEN NEW.updated_at = OLD.updated_at
 BEGIN
     UPDATE transactions SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;
@@ -385,8 +392,10 @@ FROM transaction_items ti
 WHERE ti.is_test = 1;
 
 -- ============================================================================
--- STEP 9: Create cash_shifts table
+-- STEP 9: Create cash_shifts table (referenced by transactions.cash_shift_id)
 -- ============================================================================
+-- Note: This table is created AFTER transactions table, but the FK constraint
+-- is validated when PRAGMA foreign_keys = ON is executed at migration end.
 CREATE TABLE IF NOT EXISTS cash_shifts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
 
@@ -418,17 +427,21 @@ CREATE INDEX IF NOT EXISTS idx_cash_shifts_status ON cash_shifts(status);
 CREATE INDEX IF NOT EXISTS idx_cash_shifts_opened_at ON cash_shifts(opened_at);
 
 -- Trigger for updated_at
+-- Prevent infinite recursion by only updating when updated_at hasn't changed
 CREATE TRIGGER IF NOT EXISTS update_cash_shifts_timestamp
 AFTER UPDATE ON cash_shifts
+FOR EACH ROW
+WHEN NEW.updated_at = OLD.updated_at
 BEGIN
     UPDATE cash_shifts SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;
 
 -- ============================================================================
--- STEP 10: Add foreign key reference from transactions to cash_shifts
+-- STEP 10: Add index for cash_shift foreign key queries
 -- ============================================================================
--- Note: FK constraint already added in table creation above
--- Creating index to improve query performance
+-- Foreign key constraint (transactions.cash_shift_id → cash_shifts.id) is
+-- defined in transactions table creation (line 88) with ON DELETE SET NULL.
+-- This index improves query performance for shift-based reporting.
 CREATE INDEX IF NOT EXISTS idx_transactions_cash_shift_lookup
 ON transactions(cash_shift_id, payment_processor, created_at)
 WHERE cash_shift_id IS NOT NULL;

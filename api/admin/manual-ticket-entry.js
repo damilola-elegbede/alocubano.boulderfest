@@ -7,9 +7,10 @@ import authService from "../../lib/auth-service.js";
 import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
 import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
 import csrfService from "../../lib/csrf-service.js";
-import { FraudDetectionService } from "../../lib/fraud-detection-service.js";
+import fraudDetectionService from "../../lib/fraud-detection-service.js";
 import { createManualTickets } from "../../lib/manual-ticket-creation-service.js";
 import { processDatabaseResult } from "../../lib/bigint-serializer.js";
+import timeUtils from "../../lib/time-utils.js";
 
 /**
  * Input validation schemas
@@ -213,8 +214,7 @@ async function handler(req, res) {
     // ========================================================================
     // STEP 2: Fraud Detection Check
     // ========================================================================
-    const fraudDetection = new FraudDetectionService();
-    const fraudCheck = await fraudDetection.checkManualTicketRateLimit();
+    const fraudCheck = await fraudDetectionService.checkManualTicketRateLimit();
 
     if (fraudCheck.alert) {
       console.warn(`🚨 Fraud alert triggered: ${fraudCheck.message}`);
@@ -240,29 +240,48 @@ async function handler(req, res) {
     });
 
     // ========================================================================
-    // STEP 4: Return Success Response
+    // STEP 4: Return Success Response with Mountain Time Fields
     // ========================================================================
+    // Enhance transaction with Mountain Time fields
+    const enhancedTransaction = timeUtils.enhanceApiResponse(
+      {
+        id: result.transaction.id,
+        transaction_id: result.transaction.transaction_id,
+        uuid: result.transaction.uuid,
+        order_number: result.transaction.order_number,
+        amount_cents: result.transaction.amount_cents,
+        currency: result.transaction.currency,
+        payment_processor: result.transaction.payment_processor,
+        status: result.transaction.status,
+        customer_email: result.transaction.customer_email,
+        customer_name: result.transaction.customer_name,
+        created_at: result.transaction.created_at,
+        completed_at: result.transaction.completed_at
+      },
+      ['created_at', 'completed_at'],
+      { includeDeadline: false }
+    );
+
+    // Enhance tickets with Mountain Time fields
+    const enhancedTickets = result.tickets.map(ticket =>
+      timeUtils.enhanceApiResponse(
+        {
+          ticket_id: ticket.ticket_id,
+          type: ticket.type,
+          created_at: ticket.created_at,
+          registration_deadline: ticket.registration_deadline
+        },
+        ['created_at', 'registration_deadline'],
+        { includeDeadline: false }
+      )
+    );
+
     return res.status(result.created ? 201 : 200).json(
       processDatabaseResult({
         success: true,
         created: result.created,
-        transaction: {
-          id: result.transaction.id,
-          transaction_id: result.transaction.transaction_id,
-          uuid: result.transaction.uuid,
-          order_number: result.transaction.order_number,
-          amount_cents: result.transaction.amount_cents,
-          currency: result.transaction.currency,
-          payment_processor: result.transaction.payment_processor,
-          status: result.transaction.status,
-          customer_email: result.transaction.customer_email,
-          customer_name: result.transaction.customer_name,
-          created_at: result.transaction.created_at
-        },
-        tickets: result.tickets.map(ticket => ({
-          ticket_id: ticket.ticket_id,
-          type: ticket.type
-        })),
+        transaction: enhancedTransaction,
+        tickets: enhancedTickets,
         ticketCount: result.ticketCount,
         fraudCheck: {
           recentTickets: fraudCheck.count,

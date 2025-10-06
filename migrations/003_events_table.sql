@@ -53,8 +53,11 @@ CREATE INDEX IF NOT EXISTS idx_events_slug_status ON events(slug, status);
 CREATE INDEX IF NOT EXISTS idx_events_type_status ON events(type, status);
 
 -- Trigger for updated timestamp
+-- Prevent infinite recursion by only updating when updated_at hasn't changed
 CREATE TRIGGER IF NOT EXISTS update_events_timestamp
 AFTER UPDATE ON events
+FOR EACH ROW
+WHEN NEW.updated_at = OLD.updated_at
 BEGIN
     UPDATE events SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;

@@ -460,6 +460,18 @@
       let ticketItemCounter = 0;
       let cashShifts = [];
 
+      // HTML escaping function to prevent XSS attacks
+      // CRITICAL: Use this for ALL user-provided data displayed in innerHTML
+      function escapeHtml(unsafe) {
+        if (unsafe == null) return "";
+        return String(unsafe)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
       // Initialize
       document.addEventListener('DOMContentLoaded', async () => {
         await loadTicketTypes();
@@ -526,13 +538,13 @@
         let optionsHtml = '<option value="">Select ticket type...</option>';
 
         Object.keys(ticketsByEvent).sort().forEach(eventName => {
-          optionsHtml += `<optgroup label="${eventName}">`;
+          optionsHtml += `<optgroup label="${escapeHtml(eventName)}">`;
           ticketsByEvent[eventName].forEach(tt => {
             const remaining = tt.max_quantity > 0 ? ` (${tt.max_quantity - tt.sold_count} remaining)` : '';
             const testLabel = tt.status === 'test' ? ' [TEST]' : '';
             optionsHtml += `
-              <option value="${tt.id}" data-price="${tt.price_cents}">
-                ${tt.name} - $${(tt.price_cents / 100).toFixed(2)}${remaining}${testLabel}
+              <option value="${escapeHtml(tt.id)}" data-price="${escapeHtml(tt.price_cents)}">
+                ${escapeHtml(tt.name)} - $${(tt.price_cents / 100).toFixed(2)}${remaining}${testLabel}
               </option>
             `;
           });

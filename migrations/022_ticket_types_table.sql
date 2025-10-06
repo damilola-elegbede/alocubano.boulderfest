@@ -46,9 +46,11 @@ CREATE INDEX IF NOT EXISTS idx_bootstrap_versions_checksum ON bootstrap_versions
 CREATE INDEX IF NOT EXISTS idx_bootstrap_versions_applied_at ON bootstrap_versions(applied_at DESC);
 
 -- Trigger for updated_at timestamp
+-- Prevent infinite recursion by only updating when updated_at hasn't changed
 CREATE TRIGGER IF NOT EXISTS update_ticket_types_timestamp
 AFTER UPDATE ON ticket_types
 FOR EACH ROW
+WHEN NEW.updated_at = OLD.updated_at
 BEGIN
     UPDATE ticket_types SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;

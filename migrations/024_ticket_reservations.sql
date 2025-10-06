@@ -40,9 +40,11 @@ CREATE INDEX IF NOT EXISTS idx_reservations_session_id ON ticket_reservations(se
 CREATE INDEX IF NOT EXISTS idx_reservations_transaction_id ON ticket_reservations(transaction_id);
 
 -- Trigger for updated_at timestamp
+-- Prevent infinite recursion by only updating when updated_at hasn't changed
 CREATE TRIGGER IF NOT EXISTS update_reservations_timestamp
 AFTER UPDATE ON ticket_reservations
 FOR EACH ROW
+WHEN NEW.updated_at = OLD.updated_at
 BEGIN
     UPDATE ticket_reservations
     SET updated_at = CURRENT_TIMESTAMP
