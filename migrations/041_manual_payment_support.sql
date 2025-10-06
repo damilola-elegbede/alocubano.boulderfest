@@ -145,7 +145,6 @@ CREATE INDEX IF NOT EXISTS idx_transactions_reference_id ON transactions(referen
 CREATE UNIQUE INDEX IF NOT EXISTS idx_transactions_unique_paypal_order_id ON transactions(paypal_order_id) WHERE paypal_order_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_transactions_processor_test_mode ON transactions(payment_processor, is_test, status, created_at DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_transactions_order_number ON transactions(order_number) WHERE order_number IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_transactions_order_lookup ON transactions(order_number) WHERE order_number IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_transactions_test_mode ON transactions(is_test, status, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_transactions_card_last4 ON transactions(card_last4);
 

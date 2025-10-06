@@ -7,7 +7,7 @@ import authService from "../../lib/auth-service.js";
 import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
 import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
 import csrfService from "../../lib/csrf-service.js";
-import fraudDetectionService from "../../lib/fraud-detection-service.js";
+import { getFraudDetectionService } from "../../lib/fraud-detection-service.js";
 import { createManualTickets } from "../../lib/manual-ticket-creation-service.js";
 import { processDatabaseResult } from "../../lib/bigint-serializer.js";
 import timeUtils from "../../lib/time-utils.js";
@@ -120,7 +120,7 @@ function validateField(value, field, rules) {
     /insert\s+into/i,
     /delete\s+from/i,
     /drop\s+table/i,
-    /\x00|\x08|\x0B|\x0C/
+    new RegExp('[\\x00\\x08\\x0B\\x0C]')
   ];
 
   for (const pattern of dangerousPatterns) {
@@ -214,6 +214,8 @@ async function handler(req, res) {
     // ========================================================================
     // STEP 2: Fraud Detection Check
     // ========================================================================
+    const fraudDetectionService = getFraudDetectionService();
+    await fraudDetectionService.ensureInitialized();
     const fraudCheck = await fraudDetectionService.checkManualTicketRateLimit();
 
     if (fraudCheck.alert) {
