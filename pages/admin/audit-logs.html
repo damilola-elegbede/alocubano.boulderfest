@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit Logs - Admin Panel</title>
+    <link rel="stylesheet" href="/css/admin-base.css">
+    <style>
+        .audit-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .audit-header {
+            margin-bottom: 2rem;
+        }
+
+        .audit-header h1 {
+            margin: 0 0 0.5rem 0;
+            font-size: 2rem;
+        }
+
+        .audit-header p {
+            margin: 0;
+            color: var(--color-text-secondary);
+        }
+
+        .filters-container {
+            background: var(--color-background-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .filter-group label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--color-text-secondary);
+        }
+
+        .filter-group select,
+        .filter-group input {
+            padding: 0.5rem;
+            border: 1px solid var(--color-border);
+            border-radius: 4px;
+            background: var(--color-background);
+            color: var(--color-text-primary);
+            font-size: 0.875rem;
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: flex-end;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--color-primary-dark);
+        }
+
+        .btn-secondary {
+            background: var(--color-background-secondary);
+            color: var(--color-text-primary);
+            border: 1px solid var(--color-border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--color-background-tertiary);
+        }
+
+        .audit-table-container {
+            background: var(--color-background-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .audit-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .audit-table th,
+        .audit-table td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .audit-table th {
+            background: var(--color-background-tertiary);
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .audit-table td {
+            font-size: 0.875rem;
+        }
+
+        .audit-table tbody tr:hover {
+            background: var(--color-background-tertiary);
+        }
+
+        .severity-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .severity-critical {
+            background: #ef4444;
+            color: white;
+        }
+
+        .severity-error {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .severity-warning {
+            background: #eab308;
+            color: #1f2937;
+        }
+
+        .severity-info {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .severity-debug {
+            background: #6b7280;
+            color: white;
+        }
+
+        .event-type-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            background: var(--color-background-tertiary);
+            color: var(--color-text-secondary);
+        }
+
+        .details-btn {
+            background: none;
+            border: 1px solid var(--color-border);
+            color: var(--color-text-primary);
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .details-btn:hover {
+            background: var(--color-primary);
+            border-color: var(--color-primary);
+            color: white;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: var(--color-background-secondary);
+            border-top: 1px solid var(--color-border);
+        }
+
+        .page-info {
+            font-size: 0.875rem;
+            color: var(--color-text-secondary);
+        }
+
+        .pagination-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+            color: var(--color-text-secondary);
+        }
+
+        .loading-spinner.active {
+            display: block;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--color-text-secondary);
+        }
+
+        .empty-state h3 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1.25rem;
+        }
+
+        .empty-state p {
+            margin: 0;
+            font-size: 0.875rem;
+        }
+
+        .stats-bar {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: var(--color-background-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+        }
+
+        .stat-item {
+            flex: 1;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-top: 0.25rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--color-background);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 2rem;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--color-text-secondary);
+        }
+
+        .close-btn:hover {
+            color: var(--color-text-primary);
+        }
+
+        .detail-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .detail-section h3 {
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--color-text-secondary);
+            margin: 0 0 0.75rem 0;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .detail-item {
+            background: var(--color-background-secondary);
+            padding: 0.75rem;
+            border-radius: 4px;
+        }
+
+        .detail-label {
+            font-size: 0.75rem;
+            color: var(--color-text-secondary);
+            margin-bottom: 0.25rem;
+        }
+
+        .detail-value {
+            font-size: 0.875rem;
+            font-family: 'Space Mono', monospace;
+            word-break: break-all;
+        }
+
+        .json-viewer {
+            background: var(--color-background-tertiary);
+            border: 1px solid var(--color-border);
+            border-radius: 4px;
+            padding: 1rem;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.75rem;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <nav class="admin-nav">
+        <div class="nav-brand">Admin Panel</div>
+        <div class="nav-links">
+            <a href="/admin/dashboard">Dashboard</a>
+            <a href="/admin/registrations">Registrations</a>
+            <a href="/admin/donations">Donations</a>
+            <a href="/admin/audit-logs" class="active">Audit Logs</a>
+            <a href="/admin/mfa-settings">Security</a>
+        </div>
+    </nav>
+
+    <div class="audit-container">
+        <div class="audit-header">
+            <h1>Audit Logs</h1>
+            <p>Security and activity monitoring for admin operations</p>
+        </div>
+
+        <div class="stats-bar" id="stats-bar">
+            <div class="stat-item">
+                <div class="stat-label">Total Logs (Query)</div>
+                <div class="stat-value" id="stat-total">-</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Last 24 Hours</div>
+                <div class="stat-value" id="stat-24h">-</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Critical Events</div>
+                <div class="stat-value" id="stat-critical">-</div>
+            </div>
+        </div>
+
+        <div class="filters-container">
+            <div class="filters-grid">
+                <div class="filter-group">
+                    <label for="event-type-filter">Event Type</label>
+                    <select id="event-type-filter">
+                        <option value="">All Types</option>
+                        <option value="admin_access">Admin Access</option>
+                        <option value="data_change">Data Changes</option>
+                        <option value="financial_event">Financial Events</option>
+                        <option value="data_processing">Data Processing</option>
+                        <option value="config_change">Config Changes</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="severity-filter">Severity</label>
+                    <select id="severity-filter">
+                        <option value="">All Severities</option>
+                        <option value="critical">Critical</option>
+                        <option value="error">Error</option>
+                        <option value="warning">Warning</option>
+                        <option value="info">Info</option>
+                        <option value="debug">Debug</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="admin-user-filter">Admin User</label>
+                    <input type="text" id="admin-user-filter" placeholder="Filter by admin user">
+                </div>
+
+                <div class="filter-group">
+                    <label for="action-filter">Action</label>
+                    <input type="text" id="action-filter" placeholder="Filter by action">
+                </div>
+
+                <div class="filter-group">
+                    <label for="start-date-filter">Start Date</label>
+                    <input type="date" id="start-date-filter">
+                </div>
+
+                <div class="filter-group">
+                    <label for="end-date-filter">End Date</label>
+                    <input type="date" id="end-date-filter">
+                </div>
+            </div>
+
+            <div class="filter-actions">
+                <button class="btn btn-secondary" id="clear-filters-btn">Clear Filters</button>
+                <button class="btn btn-primary" id="apply-filters-btn">Apply Filters</button>
+            </div>
+        </div>
+
+        <div class="audit-table-container">
+            <div class="loading-spinner" id="loading-spinner">
+                <p>Loading audit logs...</p>
+            </div>
+
+            <table class="audit-table" id="audit-table" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>Timestamp (MT)</th>
+                        <th>Event Type</th>
+                        <th>Action</th>
+                        <th>Admin User</th>
+                        <th>IP Address</th>
+                        <th>Severity</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody id="audit-logs-body">
+                    <!-- Populated by JavaScript -->
+                </tbody>
+            </table>
+
+            <div class="empty-state" id="empty-state" style="display: none;">
+                <h3>No Audit Logs Found</h3>
+                <p>Try adjusting your filters or date range</p>
+            </div>
+
+            <div class="pagination" id="pagination" style="display: none;">
+                <div class="page-info" id="page-info">-</div>
+                <div class="pagination-controls">
+                    <button class="btn btn-secondary" id="prev-page-btn" disabled>Previous</button>
+                    <button class="btn btn-secondary" id="next-page-btn" disabled>Next</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Details Modal -->
+    <div class="modal" id="details-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Audit Log Details</h2>
+                <button class="close-btn" id="close-modal-btn">&times;</button>
+            </div>
+            <div id="modal-body">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/js/admin-audit-logs.js"></script>
+</body>
+</html>

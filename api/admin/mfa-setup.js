@@ -12,6 +12,7 @@ import {
   decryptSecret
 } from "../../lib/encryption-utils.js";
 import { withHighSecurityAudit } from "../../lib/admin-audit-middleware.js";
+import auditService from "../../lib/audit-service.js";
 
 /**
  * MFA Setup and Management Endpoint
@@ -261,6 +262,22 @@ async function handleVerifySetup(req, res) {
       deviceName: deviceName || 'Authenticator App'
     });
 
+    // Log MFA enabled to audit service (non-blocking)
+    const clientIP = req.headers['x-forwarded-for'] || req.connection?.remoteAddress;
+    const sessionToken = authService.getSessionFromRequest(req);
+    auditService.logConfigChange({
+      action: 'MFA_ENABLED',
+      configKey: 'mfa_status',
+      beforeValue: { enabled: false },
+      afterValue: { enabled: true, deviceName: deviceName || 'Authenticator App' },
+      adminUser: adminId,
+      sessionId: sessionToken,
+      ipAddress: clientIP,
+      userAgent: req.headers['user-agent'],
+      severity: 'warning', // MFA changes are security-sensitive
+      metadata: { backupCodesGenerated: backupCodes.length }
+    }).catch(err => console.error('[MFA] Audit logging failed:', err));
+
     // Set security headers to prevent caching of backup codes
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Pragma', 'no-cache');
@@ -372,6 +389,22 @@ async function handleDisableMfa(req, res) {
     // Log MFA disabled
     await logMfaEvent(adminId, 'mfa_disabled', req);
 
+    // Log MFA disabled to audit service (non-blocking)
+    const clientIP = req.headers['x-forwarded-for'] || req.connection?.remoteAddress;
+    const sessionToken = authService.getSessionFromRequest(req);
+    auditService.logConfigChange({
+      action: 'MFA_DISABLED',
+      configKey: 'mfa_status',
+      beforeValue: { enabled: true },
+      afterValue: { enabled: false },
+      adminUser: adminId,
+      sessionId: sessionToken,
+      ipAddress: clientIP,
+      userAgent: req.headers['user-agent'],
+      severity: 'critical', // Disabling MFA is highly security-sensitive
+      metadata: { confirmationCodeUsed: true }
+    }).catch(err => console.error('[MFA] Audit logging failed:', err));
+
     res.status(200).json({
       success: true,
       message: 'MFA has been disabled successfully'
@@ -418,6 +451,22 @@ async function handleResetMfa(req, res) {
 
     // Log emergency MFA reset
     await logMfaEvent(adminId, 'mfa_emergency_reset', req);
+
+    // Log MFA emergency reset to audit service (non-blocking)
+    const clientIP = req.headers['x-forwarded-for'] || req.connection?.remoteAddress;
+    const sessionToken = authService.getSessionFromRequest(req);
+    auditService.logConfigChange({
+      action: 'MFA_EMERGENCY_RESET',
+      configKey: 'mfa_status',
+      beforeValue: { enabled: true, hasBackupCodes: true },
+      afterValue: { enabled: false, hasBackupCodes: false, rateLimitsCleared: true },
+      adminUser: adminId,
+      sessionId: sessionToken,
+      ipAddress: clientIP,
+      userAgent: req.headers['user-agent'],
+      severity: 'critical', // Emergency resets are critical security events
+      metadata: { resetType: 'emergency', requiresResetup: true }
+    }).catch(err => console.error('[MFA] Audit logging failed:', err));
 
     res.status(200).json({
       success: true,

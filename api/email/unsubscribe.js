@@ -5,6 +5,7 @@
 
 import { getEmailSubscriberService } from "../../lib/email-subscriber-service.js";
 import { setSecureCorsHeaders } from '../../lib/cors-config.js';
+import auditService from '../../lib/audit-service.js';
 
 // HTML escape function to prevent XSS attacks
 function escapeHtml(unsafe) {
@@ -231,6 +232,29 @@ export default async function handler(req, res) {
       email,
       'user_request'
     );
+
+    // GDPR Article 17 - Right to Erasure audit logging
+    const clientIP = getClientIp(req);
+    auditService.logDataProcessing({
+      action: 'EMAIL_UNSUBSCRIBE',
+      dataSubjectId: email,
+      dataType: 'email_subscription',
+      processingPurpose: 'gdpr_article_17_erasure',
+      legalBasis: 'user_request',
+      retentionPeriod: '3_years',
+      adminUser: 'system',
+      ipAddress: clientIP,
+      userAgent: req.headers['user-agent'],
+      severity: 'info',
+      metadata: {
+        unsubscribeMethod: req.method,
+        tokenValidated: true,
+        reason: 'user_request',
+        subscriptionId: result.id || null,
+        previousStatus: result.previousStatus || 'subscribed',
+        gdprCompliance: 'article_17_right_to_erasure'
+      }
+    }).catch(err => console.error('[Unsubscribe] GDPR audit logging failed:', err));
 
     // For GET requests, return HTML page
     if (req.method === 'GET') {

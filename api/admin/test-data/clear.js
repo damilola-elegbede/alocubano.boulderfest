@@ -7,6 +7,7 @@
 import jwt from 'jsonwebtoken';
 import { setSecureCorsHeaders } from '../../../lib/cors-config.js';
 import { TestDataCleanupService } from '../../../lib/test-data-cleanup.js';
+import auditService from '../../../lib/audit-service.js';
 
 /**
  * Verify admin authentication
@@ -110,6 +111,31 @@ export default async function handler(req, res) {
       transactionsDeleted: result.transactions_deleted || 0,
       totalRecords: result.records_deleted || 0
     });
+
+    // Log bulk deletion to audit service (non-blocking)
+    const clientIP = req.headers['x-forwarded-for'] || req.connection?.remoteAddress;
+    auditService.logDataChange({
+      action: 'BULK_DELETE_TEST_DATA',
+      targetType: 'test_data',
+      targetId: 'all',
+      beforeValue: {
+        ticketsCount: result.tickets_deleted || 0,
+        transactionsCount: result.transactions_deleted || 0,
+        totalRecords: result.records_deleted || 0
+      },
+      afterValue: { recordCount: 0 },
+      adminUser: adminUser.username || adminUser.email || 'admin',
+      ipAddress: clientIP,
+      userAgent: req.headers['user-agent'],
+      severity: 'warning', // Bulk operations are risky
+      metadata: {
+        eventIds: cleanupCriteria.event_ids,
+        transactionItemsDeleted: result.transaction_items_deleted || 0,
+        relatedRecordsDeleted: result.related_records_deleted || 0,
+        durationMs: result.metadata?.duration_ms || 0,
+        verificationChecksum: result.verification_checksum
+      }
+    }).catch(err => console.error('[TestDataClear] Audit logging failed:', err));
 
     return res.status(200).json({
       success: true,
