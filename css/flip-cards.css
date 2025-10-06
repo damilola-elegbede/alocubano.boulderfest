@@ -277,3 +277,174 @@
 .flip-card:nth-child(2) {
   z-index: 9;
 }
+
+/* ========================================
+   Event Section Headers (Dynamic Tickets)
+   ======================================== */
+
+.event-section {
+  margin: var(--space-3xl, 3rem) 0 var(--space-xl, 2rem) 0;
+}
+
+/* First event section - reduce top margin */
+.event-section:first-child {
+  margin-top: var(--space-lg, 1.5rem);
+}
+
+.event-section-header {
+  text-align: center;
+  padding: var(--space-lg, 1.5rem) 0;
+  border-bottom: 2px solid var(--color-red, #e53e3e);
+  margin-bottom: var(--space-2xl, 2.5rem);
+}
+
+.event-title {
+  font-family: var(--font-display, 'Bebas Neue', sans-serif);
+  font-size: var(--font-size-3xl, 2.5rem);
+  color: var(--color-red, #e53e3e);
+  margin-bottom: var(--space-sm, 0.5rem);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  line-height: 1.1;
+}
+
+.event-details {
+  font-family: var(--font-mono, 'Space Mono', monospace);
+  font-size: var(--font-size-lg, 1.125rem);
+  color: var(--color-text-secondary, #6b7280);
+  margin: 0;
+  font-weight: 400;
+}
+
+/* Mobile responsive for event headers */
+@media (max-width: 768px) {
+  .event-title {
+    font-size: var(--font-size-2xl, 2rem);
+  }
+
+  .event-details {
+    font-size: var(--font-size-base, 1rem);
+  }
+
+  .event-section {
+    margin: var(--space-2xl, 2.5rem) 0 var(--space-lg, 1.5rem) 0;
+  }
+}
+
+/* ========================================
+   Ticket Status Banners
+   ======================================== */
+
+.ticket-status-banner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  padding: var(--space-sm, 0.5rem);
+  text-align: center;
+  font-family: var(--font-display, 'Bebas Neue', sans-serif);
+  font-size: var(--font-size-lg, 1.125rem);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-radius: 12px 12px 0 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.ticket-status-banner.coming-soon {
+  background: #dc2626;  /* Red background */
+  color: #ffffff;       /* White text */
+}
+
+.ticket-status-banner.sold-out {
+  background: #6b7280;  /* Gray background */
+  color: #ffffff;       /* White text */
+}
+
+/* ========================================
+   Disabled Ticket Styling
+   ======================================== */
+
+.ticket-disabled {
+  opacity: 0.6;
+  filter: grayscale(40%);
+  cursor: not-allowed;
+}
+
+.ticket-disabled .flip-card-inner {
+  pointer-events: none !important;
+  cursor: not-allowed;
+}
+
+.ticket-disabled .qty-btn {
+  display: none; /* Hide quantity selectors for unavailable tickets */
+}
+
+/* Remove hover effects for disabled tickets */
+.flip-card.ticket-disabled:hover .flip-card-front {
+  transform: none;
+  box-shadow: 0 4px 12px var(--shadow-sm);
+}
+
+/* Adjust ticket body padding when banner is present */
+.ticket-status-banner + .flip-card-inner .ticket-card {
+  padding-top: var(--space-xl, 2rem);
+}
+
+/* ========================================
+   Dynamic Ticket Container
+   ======================================== */
+
+.dynamic-tickets {
+  width: 100%;
+}
+
+/* Loading and error states */
+.loading-state,
+.error-state,
+.no-tickets-state {
+  text-align: center;
+  padding: var(--space-4xl, 3rem) var(--space-lg, 1.5rem);
+  font-family: var(--font-mono, 'Space Mono', monospace);
+  font-size: var(--font-size-lg, 1.125rem);
+}
+
+.loading-state {
+  color: var(--color-text-secondary, #6b7280);
+}
+
+.error-state {
+  color: var(--color-error, #dc2626);
+}
+
+.no-tickets-state {
+  color: var(--color-text-secondary, #6b7280);
+}
+
+/* Dark theme adjustments for status banners */
+[data-theme="dark"] .ticket-status-banner.coming-soon {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .ticket-status-banner.sold-out {
+  background: #4b5563;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .event-section-header {
+  border-bottom-color: var(--color-red-dark, #dc2626);
+}
+
+[data-theme="dark"] .event-title {
+  color: var(--color-red-light, #f87171);
+}
+
+/* Responsive adjustments for status banners */
+@media (max-width: 768px) {
+  .ticket-status-banner {
+    font-size: var(--font-size-base, 1rem);
+    padding: var(--space-xs, 0.375rem);
+  }
+}

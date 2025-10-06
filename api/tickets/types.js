@@ -74,6 +74,64 @@ export default async function handler(req, res) {
       }
     }));
 
+    // Group tickets by event for the frontend
+    const eventMap = new Map();
+    enrichedTickets.forEach(ticket => {
+      const eventId = ticket.event_id;
+
+      if (!eventMap.has(eventId)) {
+        eventMap.set(eventId, {
+          event_id: eventId,
+          event_name: ticket.event_name,
+          event_slug: ticket.event_slug,
+          event_type: ticket.event_type,
+          start_date: ticket.event_start_date,
+          end_date: ticket.event_end_date,
+          venue_name: ticket.event_venue,
+          venue_address: ticket.event_venue_address,
+          venue_city: ticket.event_venue_city,
+          venue_state: ticket.event_venue_state,
+          event_status: ticket.event_status,
+          display_order: ticket.event_display_order,
+          ticket_types: []
+        });
+      }
+
+      // Add ticket type to event
+      eventMap.get(eventId).ticket_types.push({
+        id: ticket.id,
+        name: ticket.name,
+        description: ticket.description,
+        price_cents: ticket.price_cents,
+        currency: ticket.currency,
+        status: ticket.status,
+        availability: ticket.availability,
+        max_quantity: ticket.max_quantity,
+        sold_count: ticket.sold_count,
+        display_order: ticket.display_order,
+        event_date: ticket.event_date,
+        event_time: ticket.event_time
+      });
+    });
+
+    // Convert map to array and sort by event start date (chronological order)
+    const events = Array.from(eventMap.values())
+      .sort((a, b) => {
+        // Sort by start_date first (chronological - nearest event first)
+        const dateA = new Date(a.start_date || '9999-12-31');
+        const dateB = new Date(b.start_date || '9999-12-31');
+        if (dateA.getTime() !== dateB.getTime()) {
+          return dateA.getTime() - dateB.getTime();
+        }
+        // Then by display_order
+        return (a.display_order || 0) - (b.display_order || 0);
+      });
+
+    // Sort ticket types within each event by display_order
+    events.forEach(event => {
+      event.ticket_types.sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+    });
+
     // Set appropriate cache headers for CDN
     const cacheMaxAge = event_id ? 300 : 600; // 5 min for specific event, 10 min for all
     res.setHeader('Cache-Control', `public, max-age=${cacheMaxAge}, s-maxage=${cacheMaxAge}`);
@@ -85,12 +143,14 @@ export default async function handler(req, res) {
     // Build response in the requested format
     const response = {
       success: true,
-      tickets: enrichedTickets,
+      tickets: enrichedTickets, // Legacy format for backward compatibility
+      events: events,            // New grouped format for dynamic ticket generator
       cached: wasFromCache,
       timestamp: new Date().toISOString(),
       // Additional metadata for debugging and monitoring
       metadata: {
         total_tickets: enrichedTickets.length,
+        total_events: events.length,
         filtered_by_event: !!event_id,
         filtered_by_status: !!status,
         include_test_tickets: include_test === 'true',
