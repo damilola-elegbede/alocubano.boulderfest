@@ -510,8 +510,8 @@
         itemDiv.className = 'ticket-item';
         itemDiv.dataset.itemId = ticketItemCounter;
 
-        // Group tickets by event
-        const availableTickets = ticketTypes.filter(tt => tt.status === 'available');
+        // Group tickets by event - include both available and test tickets
+        const availableTickets = ticketTypes.filter(tt => tt.status === 'available' || tt.status === 'test');
         const ticketsByEvent = {};
 
         availableTickets.forEach(tt => {
@@ -529,9 +529,10 @@
           optionsHtml += `<optgroup label="${eventName}">`;
           ticketsByEvent[eventName].forEach(tt => {
             const remaining = tt.max_quantity > 0 ? ` (${tt.max_quantity - tt.sold_count} remaining)` : '';
+            const testLabel = tt.status === 'test' ? ' [TEST]' : '';
             optionsHtml += `
               <option value="${tt.id}" data-price="${tt.price_cents}">
-                ${tt.name} - $${(tt.price_cents / 100).toFixed(2)}${remaining}
+                ${tt.name} - $${(tt.price_cents / 100).toFixed(2)}${remaining}${testLabel}
               </option>
             `;
           });
