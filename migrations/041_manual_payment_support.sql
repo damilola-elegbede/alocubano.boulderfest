@@ -12,6 +12,9 @@ BEGIN TRANSACTION;
 -- ============================================================================
 -- SQLite doesn't support ALTER CONSTRAINT, so we recreate the table
 
+-- Clean up any partial migration attempts
+DROP TABLE IF EXISTS transactions_new;
+
 CREATE TABLE transactions_new (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     transaction_id TEXT UNIQUE NOT NULL,
