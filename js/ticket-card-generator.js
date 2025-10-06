@@ -4,6 +4,27 @@
  * Groups tickets by event and orders chronologically
  */
 
+import timeManager from './time-manager.js';
+
+/**
+ * Escape HTML to prevent XSS attacks
+ * @param {string} str - String to escape
+ * @returns {string} Escaped string safe for HTML injection
+ */
+function escapeHtml(str) {
+  if (typeof str !== 'string') return '';
+  
+  const escapeMap = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  };
+  
+  return str.replace(/[&<>"']/g, (char) => escapeMap[char]);
+}
+
 /**
  * Fetch tickets grouped by event from API
  */
@@ -22,24 +43,40 @@ async function fetchTicketsByEvent() {
 }
 
 /**
- * Format date range for display
+ * Format date range for display using timeManager (Mountain Time)
  */
 function formatDateRange(startDate, endDate) {
+  if (!timeManager) {
+    console.warn('timeManager not available, falling back to basic formatting');
+    return `${startDate} - ${endDate}`;
+  }
+
   const start = new Date(startDate + 'T00:00:00');
   const end = new Date(endDate + 'T00:00:00');
 
-  const options = { month: 'short', day: 'numeric' };
-  const year = start.getFullYear();
+  // Format individual dates using Mountain Time
+  const startFormatted = timeManager.formatDate(start);
+  const endFormatted = timeManager.formatDate(end);
 
   if (start.toDateString() === end.toDateString()) {
-    // Single day event
-    return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
-  } else if (start.getMonth() === end.getMonth()) {
-    // Same month
-    return `${start.toLocaleDateString('en-US', { month: 'short' })} ${start.getDate()}-${end.getDate()}, ${year}`;
+    // Single day event - include year
+    return timeManager.formatDate(start, false); // short format with year
+  } else if (start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()) {
+    // Same month and year - show "May 15-17, 2026" format
+    const monthDay = startFormatted.split(',')[0]; // "May 15"
+    const endDay = end.getDate();
+    const year = start.getFullYear();
+    const month = monthDay.split(' ')[0]; // "May"
+    const startDay = start.getDate();
+    
+    return `${month} ${startDay}-${endDay}, ${year}`;
   } else {
-    // Different months
-    return `${start.toLocaleDateString('en-US', options)} - ${end.toLocaleDateString('en-US', options)}, ${year}`;
+    // Different months - show full range
+    const startParts = startFormatted.split(','); // ["May 15", " 2026"]
+    const endParts = endFormatted.split(','); // ["May 17", " 2026"]
+    const year = start.getFullYear();
+    
+    return `${startParts[0]} - ${endParts[0]}, ${year}`;
   }
 }
 
@@ -48,11 +85,14 @@ function formatDateRange(startDate, endDate) {
  */
 function generateEventHeader(event) {
   const dateRange = formatDateRange(event.start_date, event.end_date);
+  const eventName = escapeHtml(event.event_name);
+  const venueName = escapeHtml(event.venue_name);
+  
   return `
     <div class="event-section-header" data-event-id="${event.event_id}">
-      <h2 class="event-title">${event.event_name}</h2>
+      <h2 class="event-title">${eventName}</h2>
       <p class="event-details">
-        ${dateRange} • ${event.venue_name}
+        ${dateRange} • ${venueName}
       </p>
     </div>
   `;
@@ -140,6 +180,12 @@ function generateTicketCard(ticketType, event) {
   const ticketColor = getTicketColor(ticketType.id);
   const dateRange = formatDateRange(event.start_date, event.end_date);
 
+  // Escape user-controlled data to prevent XSS
+  const ticketName = escapeHtml(ticketType.name);
+  const ticketDescription = escapeHtml(ticketType.description || 'Details coming soon');
+  const eventName = escapeHtml(event.event_name);
+  const venueName = escapeHtml(event.venue_name);
+
   return `
     <div class="flip-card ${disabledClass}" data-ticket-status="${ticketType.status}">
       ${statusBanner}
@@ -150,18 +196,18 @@ function generateTicketCard(ticketType, event) {
              data-ticket-type="${ticketType.id}"
              data-event-id="${event.event_id}"
              data-price="${ticketType.price_cents ? (ticketType.price_cents / 100).toFixed(2) : '0.00'}"
-             data-name="${ticketType.name}"
-             data-venue="${event.venue_name}">
+             data-name="${escapeHtml(ticketType.name)}"
+             data-venue="${escapeHtml(event.venue_name)}">
 
           <div class="ticket-header">
             <div class="event-label">EVENT</div>
-            <div class="event-name">${event.event_name}</div>
+            <div class="event-name">${eventName}</div>
           </div>
 
           <div class="ticket-body">
             <div class="ticket-type-section">
               <div class="field-label">Ticket Type</div>
-              <div class="ticket-type">${ticketType.name.toUpperCase()}</div>
+              <div class="ticket-type">${ticketName.toUpperCase()}</div>
               <div class="ticket-color-indicator" style="display: flex; justify-content: center; margin: 6px 0;">
                 <span class="ticket-color-circle" style="display: inline-block; width: 18px; height: 18px; border-radius: 50%; background: ${ticketColor};"></span>
               </div>
@@ -178,7 +224,7 @@ function generateTicketCard(ticketType, event) {
             <div class="ticket-footer">
               <div class="venue-section">
                 <div class="field-label">Venue</div>
-                <div class="venue-name">${event.venue_name}</div>
+                <div class="venue-name">${venueName}</div>
               </div>
             </div>
 
@@ -189,8 +235,8 @@ function generateTicketCard(ticketType, event) {
         <!-- Back of card -->
         <div class="flip-card-back">
           <div class="card-back-content">
-            <h3>${ticketType.name} Details</h3>
-            <p>${ticketType.description || 'Details coming soon'}</p>
+            <h3>${ticketName} Details</h3>
+            <p>${ticketDescription}</p>
             ${isAvailable ? '<button class="flip-back-btn" aria-label="Flip back to front">← Back</button>' : ''}
           </div>
         </div>
@@ -307,6 +353,7 @@ if (typeof module !== 'undefined' && module.exports) {
     fetchTicketsByEvent,
     generateTicketCard,
     renderTicketsByEvent,
-    initializeTicketCardGenerator
+    initializeTicketCardGenerator,
+    escapeHtml
   };
 }

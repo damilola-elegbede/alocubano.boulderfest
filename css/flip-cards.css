@@ -353,13 +353,13 @@
 }
 
 .ticket-status-banner.coming-soon {
-  background: #dc2626;  /* Red background */
-  color: #ffffff;       /* White text */
+  background: var(--color-error, #dc2626);
+  color: var(--color-white, #ffffff);
 }
 
 .ticket-status-banner.sold-out {
-  background: #6b7280;  /* Gray background */
-  color: #ffffff;       /* White text */
+  background: var(--color-text-secondary, #6b7280);
+  color: var(--color-white, #ffffff);
 }
 
 /* ========================================
@@ -424,13 +424,13 @@
 
 /* Dark theme adjustments for status banners */
 [data-theme="dark"] .ticket-status-banner.coming-soon {
-  background: #dc2626;
-  color: #ffffff;
+  background: var(--color-error, #dc2626);
+  color: var(--color-white, #ffffff);
 }
 
 [data-theme="dark"] .ticket-status-banner.sold-out {
-  background: #4b5563;
-  color: #ffffff;
+  background: var(--color-text-muted, #4b5563);
+  color: var(--color-white, #ffffff);
 }
 
 [data-theme="dark"] .event-section-header {

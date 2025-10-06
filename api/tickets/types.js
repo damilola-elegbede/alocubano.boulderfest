@@ -11,6 +11,7 @@
 import { ticketTypeCache } from '../../lib/ticket-type-cache.js';
 import { setSecureCorsHeaders } from '../../lib/cors-config.js';
 import { logger } from '../../lib/logger.js';
+import timeUtils from '../../lib/time-utils.js';
 
 export default async function handler(req, res) {
   // Set CORS headers
@@ -130,6 +131,16 @@ export default async function handler(req, res) {
     // Sort ticket types within each event by display_order
     events.forEach(event => {
       event.ticket_types.sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+    });
+
+    // Add Mountain Time (_mt) fields for start_date and end_date
+    events.forEach(event => {
+      if (event.start_date) {
+        event.start_date_mt = timeUtils.formatDate(new Date(event.start_date));
+      }
+      if (event.end_date) {
+        event.end_date_mt = timeUtils.formatDate(new Date(event.end_date));
+      }
     });
 
     // Set appropriate cache headers for CDN
