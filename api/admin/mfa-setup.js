@@ -263,7 +263,6 @@ async function handleVerifySetup(req, res) {
     });
 
     // Log MFA enabled to audit service (non-blocking)
-    const clientIP = req.headers['x-forwarded-for'] || req.connection?.remoteAddress;
     const sessionToken = authService.getSessionFromRequest(req);
     auditService.logConfigChange({
       action: 'MFA_ENABLED',

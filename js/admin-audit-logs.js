@@ -67,15 +67,52 @@ function renderAuditLogs(data) {
   data.logs.forEach(log => {
     const row = document.createElement('tr');
     row.className = `severity-${log.severity}`;
-    row.innerHTML = `
-      <td>${log.created_at_mt || 'N/A'}</td>
-      <td><span class="event-type-badge">${log.event_type}</span></td>
-      <td>${log.action}</td>
-      <td>${log.admin_user || 'System'}</td>
-      <td>${log.ip_address || 'N/A'}</td>
-      <td><span class="severity-badge severity-${log.severity}">${log.severity}</span></td>
-      <td><button class="details-btn" data-log-id="${log.id}">View</button></td>
-    `;
+
+    // Created At cell
+    const createdAtCell = document.createElement('td');
+    createdAtCell.textContent = log.created_at_mt || 'N/A';
+    row.appendChild(createdAtCell);
+
+    // Event Type cell with badge
+    const eventTypeCell = document.createElement('td');
+    const eventTypeBadge = document.createElement('span');
+    eventTypeBadge.className = 'event-type-badge';
+    eventTypeBadge.textContent = log.event_type;
+    eventTypeCell.appendChild(eventTypeBadge);
+    row.appendChild(eventTypeCell);
+
+    // Action cell
+    const actionCell = document.createElement('td');
+    actionCell.textContent = log.action;
+    row.appendChild(actionCell);
+
+    // Admin User cell
+    const adminUserCell = document.createElement('td');
+    adminUserCell.textContent = log.admin_user || 'System';
+    row.appendChild(adminUserCell);
+
+    // IP Address cell
+    const ipAddressCell = document.createElement('td');
+    ipAddressCell.textContent = log.ip_address || 'N/A';
+    row.appendChild(ipAddressCell);
+
+    // Severity cell with badge
+    const severityCell = document.createElement('td');
+    const severityBadge = document.createElement('span');
+    severityBadge.className = `severity-badge severity-${log.severity}`;
+    severityBadge.textContent = log.severity;
+    severityCell.appendChild(severityBadge);
+    row.appendChild(severityCell);
+
+    // Details button cell
+    const detailsCell = document.createElement('td');
+    const detailsBtn = document.createElement('button');
+    detailsBtn.className = 'details-btn';
+    detailsBtn.dataset.logId = log.id;
+    detailsBtn.textContent = 'View';
+    detailsCell.appendChild(detailsBtn);
+    row.appendChild(detailsCell);
+
     tbody.appendChild(row);
   });
 
@@ -128,6 +165,25 @@ function updateStats(data) {
   // Count critical events in current query
   const criticalCount = data.logs.filter(log => log.severity === 'critical').length;
   document.getElementById('stat-critical').textContent = criticalCount;
+}
+
+/**
+ * Safely parse and pretty-print JSON or return raw string
+ * @param {string|null|undefined} value - Value to parse
+ * @returns {string|null} - Pretty-printed JSON or raw string
+ */
+function safePrettyPrint(value) {
+  if (!value) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+    return JSON.stringify(parsed, null, 2);
+  } catch (error) {
+    console.warn('Failed to parse JSON value, displaying as raw string:', error.message);
+    return value;
+  }
 }
 
 /**
@@ -232,19 +288,19 @@ function showLogDetails(log) {
       ${log.before_value ? `
       <div style="margin-bottom: 1rem;">
         <div class="detail-label">Before</div>
-        <pre class="json-viewer">${JSON.stringify(JSON.parse(log.before_value), null, 2)}</pre>
+        <pre class="json-viewer">${safePrettyPrint(log.before_value)}</pre>
       </div>` : ''}
       ${log.after_value ? `
       <div>
         <div class="detail-label">After</div>
-        <pre class="json-viewer">${JSON.stringify(JSON.parse(log.after_value), null, 2)}</pre>
+        <pre class="json-viewer">${safePrettyPrint(log.after_value)}</pre>
       </div>` : ''}
     </div>` : ''}
 
     ${log.metadata ? `
     <div class="detail-section">
       <h3>Metadata</h3>
-      <pre class="json-viewer">${JSON.stringify(JSON.parse(log.metadata), null, 2)}</pre>
+      <pre class="json-viewer">${safePrettyPrint(log.metadata)}</pre>
     </div>` : ''}
 
     ${log.error_message ? `

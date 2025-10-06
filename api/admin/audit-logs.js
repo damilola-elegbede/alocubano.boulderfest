@@ -35,9 +35,19 @@ async function handler(req, res) {
       orderDirection = 'DESC'
     } = req.query;
 
-    // Parse pagination parameters
-    const parsedLimit = Math.min(parseInt(limit, 10) || 50, 1000); // Max 1000 records
-    const parsedOffset = parseInt(offset, 10) || 0;
+    // Parse and validate pagination parameters
+    const rawLimit = parseInt(limit, 10);
+    const rawOffset = parseInt(offset, 10);
+    
+    // Validate and clamp limit (1-1000, default 50)
+    const parsedLimit = Number.isFinite(rawLimit) && rawLimit > 0
+      ? Math.min(rawLimit, 1000)
+      : 50;
+    
+    // Validate and clamp offset (>= 0, default 0)
+    const parsedOffset = Number.isFinite(rawOffset) && rawOffset >= 0
+      ? rawOffset
+      : 0;
 
     // Build query filters
     const filters = {
