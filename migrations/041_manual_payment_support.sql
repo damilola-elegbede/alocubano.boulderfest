@@ -105,6 +105,15 @@ INSERT INTO transactions_new SELECT
     created_at, updated_at, completed_at
 FROM transactions;
 
+-- Drop all triggers that reference transactions table to prevent orphaned references
+DROP TRIGGER IF EXISTS update_transactions_timestamp;
+DROP TRIGGER IF EXISTS trg_transactions_token_ins_chk;
+DROP TRIGGER IF EXISTS trg_transactions_token_upd_chk;
+DROP TRIGGER IF EXISTS trg_transactions_paypal_validation;
+DROP TRIGGER IF EXISTS trg_transactions_paypal_validation_update;
+DROP TRIGGER IF EXISTS trg_transactions_paypal_reference_id;
+DROP TRIGGER IF EXISTS trg_paypal_webhook_link_transaction;
+
 -- Drop old table
 DROP TABLE transactions;
 
@@ -198,6 +207,21 @@ WHEN NEW.payment_processor = 'paypal'
 BEGIN
     UPDATE transactions
     SET reference_id = NEW.paypal_order_id
+    WHERE id = NEW.id;
+END;
+
+-- Recreate PayPal webhook trigger (from migration 021)
+CREATE TRIGGER IF NOT EXISTS trg_paypal_webhook_link_transaction
+AFTER INSERT ON paypal_webhook_events
+FOR EACH ROW
+WHEN NEW.paypal_order_id IS NOT NULL AND NEW.transaction_id IS NULL
+BEGIN
+    UPDATE paypal_webhook_events
+    SET transaction_id = (
+        SELECT id FROM transactions
+        WHERE paypal_order_id = NEW.paypal_order_id
+        LIMIT 1
+    )
     WHERE id = NEW.id;
 END;
 
