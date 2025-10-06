@@ -190,8 +190,17 @@ async function dropAllTablesProduction() {
       args: []
     });
 
-    if (tables.rows.length === 0) {
-      console.log('\n✅ No tables found. Database is already empty.');
+    // Get all view names
+    const views = await db.execute({
+      sql: `SELECT name FROM sqlite_master
+            WHERE type='view'
+            AND name NOT LIKE 'sqlite_%'
+            ORDER BY name`,
+      args: []
+    });
+
+    if (tables.rows.length === 0 && views.rows.length === 0) {
+      console.log('\n✅ No tables or views found. Database is already empty.');
       return;
     }
 
@@ -203,16 +212,28 @@ async function dropAllTablesProduction() {
       return table.name !== 'migrations';
     });
 
-    if (tablesToDrop.length === 0) {
-      console.log('\n✅ No tables to drop (only migrations table exists).');
+    // All views will be dropped (no filtering needed)
+    const viewsToDrop = views.rows;
+
+    if (tablesToDrop.length === 0 && viewsToDrop.length === 0) {
+      console.log('\n✅ No tables or views to drop (only migrations table exists).');
       return;
     }
 
-    // Display tables that will be dropped
-    console.log(`\n📋 Found ${tablesToDrop.length} table(s) to drop:`);
-    tablesToDrop.forEach((table, index) => {
-      console.log(`   ${index + 1}. ${table.name}`);
-    });
+    // Display tables and views that will be dropped
+    if (tablesToDrop.length > 0) {
+      console.log(`\n📋 Found ${tablesToDrop.length} table(s) to drop:`);
+      tablesToDrop.forEach((table, index) => {
+        console.log(`   ${index + 1}. ${table.name}`);
+      });
+    }
+
+    if (viewsToDrop.length > 0) {
+      console.log(`\n👁️  Found ${viewsToDrop.length} view(s) to drop:`);
+      viewsToDrop.forEach((view, index) => {
+        console.log(`   ${index + 1}. ${view.name}`);
+      });
+    }
 
     if (!flags.dropMigrations && tables.rows.some(t => t.name === 'migrations')) {
       console.log('\n💡 The "migrations" table will be preserved.');
@@ -226,8 +247,13 @@ async function dropAllTablesProduction() {
     console.log('🔒 CONFIRMATION LEVEL 1 of 7: Understanding Consequences');
     console.log('═'.repeat(70));
     console.log('\n⚠️  YOU ARE ABOUT TO:');
-    console.log(`   • Drop ${tablesToDrop.length} table(s) from the PRODUCTION database`);
-    console.log(`   • Delete ALL production data and schema in these tables`);
+    if (tablesToDrop.length > 0) {
+      console.log(`   • Drop ${tablesToDrop.length} table(s) from the PRODUCTION database`);
+    }
+    if (viewsToDrop.length > 0) {
+      console.log(`   • Drop ${viewsToDrop.length} view(s) from the PRODUCTION database`);
+    }
+    console.log(`   • Delete ALL production data and schema`);
     console.log(`   • This will affect ALL users and customers`);
     console.log(`   • This action is PERMANENT and CANNOT be reversed`);
     console.log(`   • There is NO backup recovery unless you have external backups`);
@@ -352,28 +378,50 @@ async function dropAllTablesProduction() {
     console.log('   Disabling foreign key constraints...');
     await db.execute({ sql: 'PRAGMA foreign_keys = OFF', args: [] });
 
-    // Drop each table
-    let droppedCount = 0;
-    for (const table of tablesToDrop) {
-      const tableName = table.name;
-      try {
-        console.log(`   ✓ Dropping: ${tableName}`);
-        await db.execute({
-          sql: `DROP TABLE IF EXISTS ${tableName}`,
-          args: []
-        });
-        droppedCount++;
-      } catch (error) {
-        console.error(`   ✗ Failed to drop ${tableName}:`, error.message);
+    // Drop views first (views may depend on tables)
+    let viewsDroppedCount = 0;
+    if (viewsToDrop.length > 0) {
+      console.log('\n   📝 Dropping views...');
+      for (const view of viewsToDrop) {
+        const viewName = view.name;
+        try {
+          console.log(`   ✓ Dropping view: ${viewName}`);
+          await db.execute({
+            sql: `DROP VIEW IF EXISTS ${viewName}`,
+            args: []
+          });
+          viewsDroppedCount++;
+        } catch (error) {
+          console.error(`   ✗ Failed to drop view ${viewName}:`, error.message);
+        }
+      }
+    }
+
+    // Drop tables
+    let tablesDroppedCount = 0;
+    if (tablesToDrop.length > 0) {
+      console.log('\n   📋 Dropping tables...');
+      for (const table of tablesToDrop) {
+        const tableName = table.name;
+        try {
+          console.log(`   ✓ Dropping table: ${tableName}`);
+          await db.execute({
+            sql: `DROP TABLE IF EXISTS ${tableName}`,
+            args: []
+          });
+          tablesDroppedCount++;
+        } catch (error) {
+          console.error(`   ✗ Failed to drop table ${tableName}:`, error.message);
+        }
       }
     }
 
     // Re-enable foreign key checks
-    console.log('   Re-enabling foreign key constraints...');
+    console.log('\n   Re-enabling foreign key constraints...');
     await db.execute({ sql: 'PRAGMA foreign_keys = ON', args: [] });
 
     console.log('\n' + '═'.repeat(70));
-    console.log(`✅ Successfully dropped ${droppedCount} table(s) from PRODUCTION!`);
+    console.log(`✅ Successfully dropped ${viewsDroppedCount} view(s) and ${tablesDroppedCount} table(s) from PRODUCTION!`);
     console.log('═'.repeat(70));
 
     if (!flags.dropMigrations) {
