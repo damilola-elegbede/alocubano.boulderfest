@@ -8,13 +8,13 @@ PRAGMA foreign_keys = OFF;
 BEGIN TRANSACTION;
 
 -- ============================================================================
--- STEP 1: Expand payment_processor constraint
+-- STEP 1: Clean up any partial migration state
 -- ============================================================================
--- SQLite doesn't support ALTER CONSTRAINT, so we recreate the table
-
--- Clean up any partial migration attempts
 DROP TABLE IF EXISTS transactions_new;
 
+-- ============================================================================
+-- STEP 2: Create new transactions table with expanded schema
+-- ============================================================================
 CREATE TABLE transactions_new (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     transaction_id TEXT UNIQUE NOT NULL,
@@ -87,8 +87,12 @@ CREATE TABLE transactions_new (
     completed_at TIMESTAMP
 );
 
--- Copy all existing data
-INSERT INTO transactions_new SELECT
+-- ============================================================================
+-- STEP 3: Copy existing data (works for both empty and populated databases)
+-- ============================================================================
+-- If transactions table exists and has data, this copies all rows
+-- If transactions table doesn't exist or is empty, this copies 0 rows
+INSERT INTO transactions_new (
     id, transaction_id, uuid, type, status, amount_cents, total_amount, currency,
     stripe_session_id, stripe_payment_intent_id, stripe_charge_id, payment_method_type,
     paypal_order_id, paypal_capture_id, paypal_payer_id, payment_processor,
@@ -100,12 +104,30 @@ INSERT INTO transactions_new SELECT
     registration_initiated_at, registration_completed_at, all_tickets_registered,
     is_test,
     card_brand, card_last4, payment_wallet,
-    NULL, -- manual_entry_id (new column, NULL for existing records)
-    NULL, -- cash_shift_id (new column, NULL for existing records)
+    manual_entry_id, cash_shift_id,
     created_at, updated_at, completed_at
-FROM transactions;
+)
+SELECT
+    id, transaction_id, uuid, type, status, amount_cents, total_amount, currency,
+    stripe_session_id, stripe_payment_intent_id, stripe_charge_id, payment_method_type,
+    paypal_order_id, paypal_capture_id, paypal_payer_id, payment_processor,
+    reference_id, cart_data,
+    customer_email, customer_name, billing_address,
+    order_data, order_number, session_metadata, metadata,
+    event_id,
+    source, registration_token, registration_token_expires,
+    registration_initiated_at, registration_completed_at, all_tickets_registered,
+    is_test,
+    card_brand, card_last4, payment_wallet,
+    NULL as manual_entry_id, -- New column, NULL for existing records
+    NULL as cash_shift_id,    -- New column, NULL for existing records
+    created_at, updated_at, completed_at
+FROM transactions
+WHERE EXISTS (SELECT 1 FROM sqlite_master WHERE type='table' AND name='transactions');
 
--- Drop all triggers that reference transactions table to prevent orphaned references
+-- ============================================================================
+-- STEP 4: Drop all triggers before dropping transactions table
+-- ============================================================================
 DROP TRIGGER IF EXISTS update_transactions_timestamp;
 DROP TRIGGER IF EXISTS trg_transactions_token_ins_chk;
 DROP TRIGGER IF EXISTS trg_transactions_token_upd_chk;
@@ -114,14 +136,18 @@ DROP TRIGGER IF EXISTS trg_transactions_paypal_validation_update;
 DROP TRIGGER IF EXISTS trg_transactions_paypal_reference_id;
 DROP TRIGGER IF EXISTS trg_paypal_webhook_link_transaction;
 
--- Drop old table
-DROP TABLE transactions;
+-- ============================================================================
+-- STEP 5: Drop old table (safe - data already copied to transactions_new)
+-- ============================================================================
+DROP TABLE IF EXISTS transactions;
 
--- Rename new table
+-- ============================================================================
+-- STEP 6: Rename new table to transactions
+-- ============================================================================
 ALTER TABLE transactions_new RENAME TO transactions;
 
 -- ============================================================================
--- STEP 2: Recreate all indexes
+-- STEP 7: Recreate all indexes
 -- ============================================================================
 CREATE INDEX IF NOT EXISTS idx_transactions_status ON transactions(status);
 CREATE INDEX IF NOT EXISTS idx_transactions_stripe_session ON transactions(stripe_session_id);
@@ -153,7 +179,7 @@ CREATE INDEX IF NOT EXISTS idx_transactions_manual_entry ON transactions(manual_
 CREATE INDEX IF NOT EXISTS idx_transactions_cash_shift ON transactions(cash_shift_id) WHERE cash_shift_id IS NOT NULL;
 
 -- ============================================================================
--- STEP 3: Recreate all triggers
+-- STEP 8: Recreate all triggers
 -- ============================================================================
 CREATE TRIGGER IF NOT EXISTS update_transactions_timestamp
 AFTER UPDATE ON transactions
@@ -226,7 +252,7 @@ BEGIN
 END;
 
 -- ============================================================================
--- STEP 4: Create cash_shifts table
+-- STEP 9: Create cash_shifts table
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS cash_shifts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -266,7 +292,7 @@ BEGIN
 END;
 
 -- ============================================================================
--- STEP 5: Add foreign key reference from transactions to cash_shifts
+-- STEP 10: Add foreign key reference from transactions to cash_shifts
 -- ============================================================================
 -- Note: FK constraint already added in table creation above
 -- Creating index to improve query performance
@@ -275,7 +301,7 @@ ON transactions(cash_shift_id, payment_processor, created_at)
 WHERE cash_shift_id IS NOT NULL;
 
 -- ============================================================================
--- STEP 6: Data validation
+-- STEP 11: Data validation
 -- ============================================================================
 -- Verify no data loss
 SELECT CASE
