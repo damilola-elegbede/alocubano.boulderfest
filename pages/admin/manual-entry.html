@@ -510,6 +510,34 @@
         itemDiv.className = 'ticket-item';
         itemDiv.dataset.itemId = ticketItemCounter;
 
+        // Group tickets by event
+        const availableTickets = ticketTypes.filter(tt => tt.status === 'available');
+        const ticketsByEvent = {};
+
+        availableTickets.forEach(tt => {
+          const eventName = tt.event_name || 'Unknown Event';
+          if (!ticketsByEvent[eventName]) {
+            ticketsByEvent[eventName] = [];
+          }
+          ticketsByEvent[eventName].push(tt);
+        });
+
+        // Build optgroups for each event
+        let optionsHtml = '<option value="">Select ticket type...</option>';
+
+        Object.keys(ticketsByEvent).sort().forEach(eventName => {
+          optionsHtml += `<optgroup label="${eventName}">`;
+          ticketsByEvent[eventName].forEach(tt => {
+            const remaining = tt.max_quantity > 0 ? ` (${tt.max_quantity - tt.sold_count} remaining)` : '';
+            optionsHtml += `
+              <option value="${tt.id}" data-price="${tt.price_cents}">
+                ${tt.name} - $${(tt.price_cents / 100).toFixed(2)}${remaining}
+              </option>
+            `;
+          });
+          optionsHtml += '</optgroup>';
+        });
+
         itemDiv.innerHTML = `
           <div class="ticket-item-header">
             <span class="ticket-item-number">Ticket Type #${ticketItemCounter}</span>
@@ -519,13 +547,7 @@
             <div class="admin-form-group">
               <label class="admin-form-label">Ticket Type</label>
               <select class="admin-form-select ticket-type-select" required data-item-id="${ticketItemCounter}">
-                <option value="">Select ticket type...</option>
-                ${ticketTypes.filter(tt => tt.status === 'available').map(tt => `
-                  <option value="${tt.id}" data-price="${tt.price_cents}">
-                    ${tt.name} - $${(tt.price_cents / 100).toFixed(2)}
-                    ${tt.max_quantity > 0 ? ` (${tt.max_quantity - tt.sold_count} remaining)` : ''}
-                  </option>
-                `).join('')}
+                ${optionsHtml}
               </select>
             </div>
             <div class="admin-form-group">
