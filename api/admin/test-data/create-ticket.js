@@ -13,6 +13,7 @@ import { generateOrderNumber } from '../../../lib/order-number-generator.js';
 import { RegistrationTokenService } from '../../../lib/registration-token-service.js';
 import { scheduleRegistrationReminders } from '../../../lib/reminder-scheduler.js';
 import timeUtils from '../../../lib/time-utils.js';
+import auditService from '../../../lib/audit-service.js';
 
 /**
  * Verify admin authentication
@@ -220,6 +221,32 @@ export default async function handler(req, res) {
       true // isTestTransaction
     );
     console.log(`Scheduled ${reminderCount} test reminders`);
+
+    // Log test ticket creation to audit service (non-blocking)
+    const clientIP = req.headers['x-forwarded-for'] || req.connection?.remoteAddress;
+    auditService.logDataChange({
+      action: 'CREATE_TEST_TICKET',
+      targetType: 'ticket',
+      targetId: ticketId,
+      afterValue: {
+        ticketType: ticketDetails.ticket_type,
+        eventId: ticketDetails.event_id,
+        orderNumber: orderNumber,
+        registrationDeadline: registrationDeadline.toISOString(),
+        remindersScheduled: reminderCount
+      },
+      adminUser: adminUser.username || adminUser.email || 'admin',
+      ipAddress: clientIP,
+      userAgent: req.headers['user-agent'],
+      severity: 'info',
+      metadata: {
+        transactionUuid: transactionUuid,
+        registrationToken: registrationToken.substring(0, 20) + '...',
+        priceCents: ticketDetails.price_cents,
+        purchaserEmail: ticketDetails.purchaser_email,
+        isUnregistered: !ticketDetails.attendee_email
+      }
+    }).catch(err => console.error('[TestTicketCreate] Audit logging failed:', err));
 
     // Format response with Mountain Time formatting
     const deadlineMT = timeUtils.formatDateTime(registrationDeadline);

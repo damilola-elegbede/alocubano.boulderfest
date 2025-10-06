@@ -5,6 +5,7 @@ import { getMfaRateLimitService } from "../../lib/mfa-rate-limit-service.js";
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { withHighSecurityAudit } from "../../lib/admin-audit-middleware.js";
+import auditService from "../../lib/audit-service.js";
 
 /**
  * MFA Recovery Endpoint
@@ -203,6 +204,34 @@ async function handleVerifyBackupCode(req, res) {
 
     // Log successful recovery
     await logRecoveryAttempt(adminId, 'backup_code', true, req);
+
+    // Count remaining backup codes
+    const remainingCodesResult = await db.execute({
+      sql: `SELECT COUNT(*) as remaining FROM admin_mfa_backup_codes
+            WHERE admin_id = ? AND is_used = FALSE`,
+      args: [adminId]
+    });
+    const remainingCodes = remainingCodesResult.rows[0]?.remaining || 0;
+
+    // Log backup code usage to audit service (non-blocking)
+    const sessionToken = authService.getSessionFromRequest(req);
+    auditService.logDataChange({
+      action: 'MFA_BACKUP_CODE_USED',
+      targetType: 'mfa_backup_code',
+      targetId: codeId.toString(),
+      beforeValue: { codesRemaining: remainingCodes + 1, used: false },
+      afterValue: { codesRemaining: remainingCodes, used: true },
+      adminUser: adminId,
+      sessionId: sessionToken,
+      ipAddress: clientIP,
+      userAgent: req.headers['user-agent'],
+      severity: 'warning', // Backup code usage is important for security tracking
+      metadata: {
+        codeId: codeId,
+        remainingBackupCodes: remainingCodes,
+        recoveryTokenGenerated: true
+      }
+    }).catch(err => console.error('[MFARecovery] Audit logging failed:', err));
 
     // Set security headers to prevent caching of recovery tokens
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');

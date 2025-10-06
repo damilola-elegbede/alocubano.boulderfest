@@ -25,6 +25,7 @@ import { getDatabasePerformanceService } from "../../lib/performance/database-pe
 import authService from "../../lib/auth-service.js";
 import { withSecurityHeaders } from "../../lib/security-headers.js";
 import { getRateLimitService } from "../../lib/rate-limit-service.js";
+import auditService from "../../lib/audit-service.js";
 
 async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -134,6 +135,29 @@ async function handler(req, res) {
 
         // If CSV format requested
         if (format === 'csv') {
+          // GDPR Article 15 - Right to Access audit logging for performance data exports
+          const clientIP = req.headers['x-forwarded-for'] || req.connection?.remoteAddress;
+          auditService.logDataProcessing({
+            action: 'PERFORMANCE_DATA_EXPORT',
+            dataSubjectId: req.admin?.username || req.admin?.email || 'admin',
+            dataType: 'performance_metrics',
+            processingPurpose: 'gdpr_article_15_access',
+            legalBasis: 'legitimate_interest',
+            retentionPeriod: '1_year',
+            adminUser: req.admin?.username || req.admin?.email || 'admin',
+            sessionId: req.sessionId || null,
+            ipAddress: clientIP,
+            userAgent: req.headers['user-agent'],
+            severity: 'info',
+            metadata: {
+              reportType: 'performance_export',
+              exportFormat: 'csv',
+              metricsIncluded: Object.keys(data || {}).length,
+              gdprCompliance: 'article_15_right_to_access',
+              technicalData: true
+            }
+          }).catch(err => console.error('[PerformanceMonitoring] GDPR audit logging failed:', err));
+
           const csv = convertMetricsToCSV(data);
           contentType = 'text/csv';
           res.setHeader(

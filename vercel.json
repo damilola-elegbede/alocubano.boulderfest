@@ -85,6 +85,10 @@
     {
       "path": "/api/cron/update-event-status",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/audit-retention",
+      "schedule": "0 3 * * 0"
     }
   ],
   "images": {

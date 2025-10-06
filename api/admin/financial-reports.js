@@ -147,6 +147,33 @@ async function handler(req, res) {
 
     // Handle different response formats
     if (format === 'csv' && responseData.data) {
+      // GDPR Article 15 - Right to Access audit logging for data exports
+      const clientIP = req.headers['x-forwarded-for'] || req.connection?.remoteAddress;
+      auditService.logDataProcessing({
+        action: 'FINANCIAL_DATA_EXPORT',
+        dataSubjectId: req.admin?.username || req.admin?.email || 'admin',
+        dataType: `financial_report_${type}`,
+        processingPurpose: 'gdpr_article_15_access',
+        legalBasis: 'legitimate_interest',
+        retentionPeriod: '7_years',
+        adminUser: req.admin?.username || req.admin?.email || 'admin',
+        sessionId: req.sessionId || null,
+        ipAddress: clientIP,
+        userAgent: req.headers['user-agent'],
+        severity: 'info',
+        metadata: {
+          reportType: type,
+          exportFormat: 'csv',
+          recordCount: responseData.data?.length || 0,
+          dateRange: {
+            startDate: req.query.startDate,
+            endDate: req.query.endDate
+          },
+          gdprCompliance: 'article_15_right_to_access',
+          financialData: true
+        }
+      }).catch(err => console.error('[FinancialReports] GDPR audit logging failed:', err));
+
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', `attachment; filename="${type}-${Date.now()}.csv"`);
       res.status(responseData.status || 200).send(convertToCSV(responseData.data));
