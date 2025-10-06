@@ -1,4 +1,5 @@
 import { setSecureCorsHeaders } from '../../lib/cors-config.js';
+import { JWT } from 'google-auth-library';
 
 /**
  * Gallery Years API Endpoint
@@ -237,7 +238,7 @@ async function getYearStatistics(drive, year, config) {
 }
 
 /**
- * Create Google Drive authentication
+ * Create Google Drive authentication using JWT (new recommended approach)
  */
 async function createGoogleAuth() {
   try {
@@ -253,19 +254,14 @@ async function createGoogleAuth() {
       throw new Error('❌ FATAL: GOOGLE_PRIVATE_KEY secret not configured');
     }
 
-    // Create credentials object for service account
-    const credentials = {
-      type: 'service_account',
-      client_email: serviceAccountEmail,
-      private_key: privateKey.replace(/\\n/g, '\n') // Handle escaped newlines
-    };
-
-    const auth = new google.auth.GoogleAuth({
-      credentials,
+    // Create JWT client for service account authentication
+    const auth = new JWT({
+      email: serviceAccountEmail,
+      key: privateKey.replace(/\\n/g, '\n'), // Handle escaped newlines
       scopes: ['https://www.googleapis.com/auth/drive.readonly']
     });
 
-    return auth.getClient();
+    return auth;
   } catch (error) {
     console.error('Google auth error:', error);
     throw new Error('Failed to authenticate with Google Drive');
