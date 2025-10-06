@@ -1,6 +1,6 @@
--- Migration: 040 - Manual Payment Processor Support
+-- Migration: 041 - Manual Payment Processor Support
 -- Purpose: Enable manual at-door ticket entries with cash/card/venmo/comp
--- Dependencies: 004_transactions.sql, 035_add_payment_method_details.sql
+-- Dependencies: 004_transactions.sql, 035_add_payment_method_details.sql, 040_audit_retention_policy.sql
 
 -- Disable foreign key constraints to allow table recreation
 PRAGMA foreign_keys = OFF;
