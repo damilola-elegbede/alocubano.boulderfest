@@ -1,4 +1,5 @@
 import { google } from 'googleapis';
+import { JWT } from 'google-auth-library';
 import { setSecureCorsHeaders } from '../../lib/cors-config.js';
 import {
   processImage,
@@ -113,14 +114,11 @@ export default async function handler(req, res) {
       hasCredentials: !!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL
     });
 
-    // Configure Google Drive API client
-    const auth = new google.auth.GoogleAuth({
-      credentials: {
-        client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-        // Handle private key newlines properly (Vercel replaces \n with \\n)
-        private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-        project_id: process.env.GOOGLE_PROJECT_ID
-      },
+    // Configure Google Drive API client with JWT (new recommended approach)
+    const auth = new JWT({
+      email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      // Handle private key newlines properly (Vercel replaces \n with \\n)
+      key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
       scopes: ['https://www.googleapis.com/auth/drive.readonly']
     });
 
