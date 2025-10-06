@@ -319,7 +319,7 @@
               <td>${escapeHtml(reg.email || '')}</td>
               <td>${escapeHtml(reg.ticketType || '')}</td>
               <td>${escapeHtml(reg.registrationStatus || '')}</td>
-              <td>${reg.registeredAt ? (timeManager ? timeManager.formatDateTime(reg.registeredAt) : new Date(reg.registeredAt).toLocaleDateString()) : 'N/A'}</td>
+              <td>${reg.registeredAt ? (timeManager ? timeManager.formatDateTime(reg.registeredAt) : new Date(reg.registeredAt).toLocaleDateString('en-US', { timeZone: 'America/Denver' })) : 'N/A'}</td>
               <td>${reg.checkedIn ? 'Yes' : 'No'}</td>
               <td>${reg.purchaserEmail || ''}</td>
             </tr>

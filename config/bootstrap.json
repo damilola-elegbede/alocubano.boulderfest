@@ -79,8 +79,8 @@
       "venue_city": "Boulder",
       "venue_state": "CO",
       "venue_zip": "80301",
-      "start_date": "2028-01-01",
-      "end_date": "2028-01-03",
+      "start_date": "2028-01-07",
+      "end_date": "2028-01-09",
       "max_capacity": 100,
       "early_bird_end_date": "2027-12-01",
       "regular_price_start_date": "2027-12-15",
@@ -100,8 +100,8 @@
       "venue_city": "Boulder",
       "venue_state": "CO",
       "venue_zip": "80301",
-      "start_date": "2028-01-01",
-      "end_date": "2028-01-02",
+      "start_date": "2028-01-07",
+      "end_date": "2028-01-08",
       "max_capacity": 50,
       "early_bird_end_date": "2027-12-01",
       "regular_price_start_date": "2027-12-15",
@@ -117,6 +117,8 @@
       "event_id": 2,
       "name": "Full Pass",
       "description": "Full weekend access to workshops and socials",
+      "event_date": "2025-11-08",
+      "event_time": "13:00",
       "price_cents": 6500,
       "status": "available",
       "display_order": 1
@@ -126,6 +128,8 @@
       "event_id": 2,
       "name": "Single Class",
       "description": "Access to one workshop session",
+      "event_date": "2025-11-08",
+      "event_time": "13:00",
       "price_cents": 2500,
       "status": "available",
       "display_order": 2
@@ -135,6 +139,8 @@
       "event_id": 3,
       "name": "Early Bird Full Pass",
       "description": "Special early pricing for full festival access",
+      "event_date": "2026-05-15",
+      "event_time": "18:00",
       "price_cents": null,
       "status": "coming-soon",
       "display_order": 1
@@ -144,6 +150,8 @@
       "event_id": 3,
       "name": "Full Festival Pass",
       "description": "Complete 3-day festival experience",
+      "event_date": "2026-05-15",
+      "event_time": "18:00",
       "price_cents": null,
       "status": "coming-soon",
       "display_order": 2
@@ -153,6 +161,8 @@
       "event_id": 3,
       "name": "Friday Pass",
       "description": "Friday workshops and social dance",
+      "event_date": "2026-05-15",
+      "event_time": "16:00",
       "price_cents": null,
       "status": "coming-soon",
       "display_order": 3
@@ -162,6 +172,8 @@
       "event_id": 3,
       "name": "Saturday Pass",
       "description": "Saturday workshops and social dance",
+      "event_date": "2026-05-16",
+      "event_time": "11:00",
       "price_cents": null,
       "status": "coming-soon",
       "display_order": 4
@@ -171,6 +183,8 @@
       "event_id": 3,
       "name": "Sunday Pass",
       "description": "Sunday workshops and social dance",
+      "event_date": "2026-05-17",
+      "event_time": "11:00",
       "price_cents": null,
       "status": "coming-soon",
       "display_order": 5
@@ -180,6 +194,8 @@
       "event_id": -2,
       "name": "[TEST] VIP Pass",
       "description": "Full festival access with VIP perks including exclusive areas and early entry",
+      "event_date": "2028-01-07",
+      "event_time": "12:00",
       "price_cents": 15000,
       "status": "test",
       "display_order": 1
@@ -189,6 +205,8 @@
       "event_id": -1,
       "name": "[TEST] Weekender Pass",
       "description": "Access to all weekend events Friday through Sunday",
+      "event_date": "2028-01-07",
+      "event_time": "12:00",
       "price_cents": 7500,
       "status": "test",
       "display_order": 2
@@ -198,6 +216,8 @@
       "event_id": -2,
       "name": "[TEST] Friday Pass",
       "description": "Friday night social and performances",
+      "event_date": "2028-01-07",
+      "event_time": "12:00",
       "price_cents": 3500,
       "status": "test",
       "display_order": 3
@@ -207,6 +227,8 @@
       "event_id": -2,
       "name": "[TEST] Saturday Pass",
       "description": "Saturday workshops and evening social",
+      "event_date": "2028-01-08",
+      "event_time": "12:00",
       "price_cents": 3500,
       "status": "test",
       "display_order": 4
@@ -216,6 +238,8 @@
       "event_id": -2,
       "name": "[TEST] Sunday Pass",
       "description": "Sunday workshops and closing performance",
+      "event_date": "2028-01-09",
+      "event_time": "12:00",
       "price_cents": 3500,
       "status": "test",
       "display_order": 5

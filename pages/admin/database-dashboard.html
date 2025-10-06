@@ -884,7 +884,7 @@
 
         function updateLastUpdatedTime() {
             const lastUpdated = document.getElementById('lastUpdated');
-            lastUpdated.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+            lastUpdated.textContent = `Last updated: ${new Date().toLocaleTimeString('en-US', { timeZone: 'America/Denver' })}`;
         }
 
         // Refresh functions for individual components

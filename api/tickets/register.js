@@ -300,7 +300,7 @@ export default async function handler(req, res) {
 
       // Format event date
       const eventDate = ticket.start_date && ticket.end_date
-        ? `${new Date(ticket.start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}-${new Date(ticket.end_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
+        ? `${new Date(ticket.start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'America/Denver' })}-${new Date(ticket.end_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/Denver' })}`
         : 'May 15-17, 2026';
 
       // Generate HTML email using template

@@ -103,7 +103,8 @@ Registration Date: ${new Date().toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
-    day: 'numeric'
+    day: 'numeric',
+    timeZone: 'America/Denver'
   })}
 Total Tickets Registered: ${results.length}
 
@@ -142,7 +143,8 @@ This is an automated confirmation email for your ticket registration.`;
           weekday: 'long',
           year: 'numeric',
           month: 'long',
-          day: 'numeric'
+          day: 'numeric',
+          timeZone: 'America/Denver'
         })}</p>
         <p><strong>Total Tickets Registered:</strong> ${results.length}</p>
       </div>
@@ -679,7 +681,7 @@ export default async function handler(req, res) {
 
           // Format event date
           const eventDate = task.ticket.start_date && task.ticket.end_date
-            ? `${new Date(task.ticket.start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}-${new Date(task.ticket.end_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
+            ? `${new Date(task.ticket.start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'America/Denver' })}-${new Date(task.ticket.end_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/Denver' })}`
             : 'May 15-17, 2026';
 
           // Generate HTML email using template

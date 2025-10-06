@@ -272,7 +272,8 @@ class TicketSelection {
                             const formattedDate = date.toLocaleDateString('en-US', {
                                 year: 'numeric',
                                 month: 'long',
-                                day: 'numeric'
+                                day: 'numeric',
+                                timeZone: 'America/Denver'
                             });
                             dateElement.textContent = formattedDate;
                             dateElement.removeAttribute('data-loading');
