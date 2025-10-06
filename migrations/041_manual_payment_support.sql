@@ -5,8 +5,6 @@
 -- Disable foreign key constraints to allow table recreation
 PRAGMA foreign_keys = OFF;
 
-BEGIN TRANSACTION;
-
 -- ============================================================================
 -- STEP 1: Clean up any partial migration state
 -- ============================================================================
@@ -444,8 +442,6 @@ SELECT CASE
   THEN 'Migration successful - ' || (SELECT COUNT(*) FROM transactions) || ' transactions preserved'
   ELSE 'Warning: No transactions found (this may be expected for new installations)'
 END as migration_status;
-
-COMMIT;
 
 -- Re-enable foreign key constraints
 PRAGMA foreign_keys = ON;
