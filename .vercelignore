@@ -98,6 +98,7 @@ database.sqlite
 images/dev/
 images/test/
 images/screenshots/
+images/hero/  # Unoptimized originals (use hero-optimized/ instead)
 
 # Public duplicates (keep root dirs)
 public/css/

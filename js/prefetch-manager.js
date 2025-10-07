@@ -372,8 +372,9 @@ class IntelligentPrefetchManager {
         return new IntersectionObserver((entries) => {
             entries.forEach((entry) => {
                 const priority = this.calculateViewportPriority(entry);
-                if (priority && entry.target.dataset.src) {
-                    this.addToPriorityQueue(entry.target.dataset.src, priority, {
+                const imageUrl = this.getImageUrl(entry.target);
+                if (priority && imageUrl) {
+                    this.addToPriorityQueue(imageUrl, priority, {
                         element: entry.target,
                         intersectionRatio: entry.intersectionRatio,
                         boundingRect: entry.boundingClientRect
@@ -435,6 +436,24 @@ class IntelligentPrefetchManager {
     }
 
     addToPriorityQueue(resourceUrl, priority, metadata = {}) {
+        // Skip Vercel Blob Storage URLs - they're already CDN-optimized and fast
+        // Prefetching them causes CORS preflight failures and wastes bandwidth
+        try {
+            const url = new URL(resourceUrl);
+            if (
+                url.hostname.endsWith('.blob.vercel-storage.com') ||
+                url.hostname === 'blob.vercel-storage.com'
+            ) {
+                console.log(
+                    '[IntelligentPrefetch] Skipping Blob Storage URL (already CDN-optimized):',
+                    resourceUrl
+                );
+                return;
+            }
+        } catch (e) {
+            // Invalid URL, continue with prefetch attempt
+        }
+
         if (!this.priorityQueue.has(priority)) {
             console.warn('[IntelligentPrefetch] Invalid priority level:', priority);
             priority = 'low';
@@ -697,6 +716,7 @@ class IntelligentPrefetchManager {
     }
 
     categorizeResource(url) {
+        if (!url) return 'unknown';
         if (url.includes('gallery-2025')) {
             return 'gallery-2025';
         }
@@ -716,6 +736,31 @@ class IntelligentPrefetchManager {
             return 'large-image';
         }
         return 'unknown';
+    }
+
+    /**
+     * Helper method to get image URL from element
+     * Supports both lazy-loaded (data-src) and eager-loaded (src) images
+     */
+    getImageUrl(element) {
+        if (!element) return null;
+
+        // Try data-src first (lazy-loaded images)
+        if (element.dataset && element.dataset.src) {
+            return element.dataset.src;
+        }
+
+        // Try data-thumbnail (set in eager-loaded gallery images)
+        if (element.dataset && element.dataset.thumbnail) {
+            return element.dataset.thumbnail;
+        }
+
+        // Fall back to src attribute (eager-loaded images)
+        if (element.src) {
+            return element.src;
+        }
+
+        return null;
     }
 
     getTimeOfDayFactor() {
@@ -841,28 +886,30 @@ class IntelligentPrefetchManager {
 
     handleMouseMovement(event) {
         const target = event.target.closest('.gallery-image, [data-src]');
-        if (target && target.dataset.src) {
+        const imageUrl = this.getImageUrl(target);
+        if (target && imageUrl) {
             // User is hovering near an image, increase its priority
-            this.addToPriorityQueue(target.dataset.src, 'high', {
+            this.addToPriorityQueue(imageUrl, 'high', {
                 reason: 'mouse-hover',
                 element: target
             });
 
             // Track hover patterns
-            this.userInteractions.hoverEvents[target.dataset.src] =
-        (this.userInteractions.hoverEvents[target.dataset.src] || 0) + 1;
+            this.userInteractions.hoverEvents[imageUrl] =
+        (this.userInteractions.hoverEvents[imageUrl] || 0) + 1;
         }
     }
 
     handleUserClick(event) {
         const target = event.target.closest('.gallery-image, [data-src]');
-        if (target) {
+        const imageUrl = this.getImageUrl(target);
+        if (target && imageUrl) {
             // Track click patterns for prediction
-            this.userInteractions.clickPatterns[target.dataset.src] = Date.now();
+            this.userInteractions.clickPatterns[imageUrl] = Date.now();
             this.userInteractions.sessionData.totalInteractions++;
 
             // Prefetch similar images based on this click
-            this.prefetchSimilarImages(target.dataset.src);
+            this.prefetchSimilarImages(imageUrl);
 
             this.saveInteractionData();
         }
@@ -881,12 +928,13 @@ class IntelligentPrefetchManager {
     }
 
     findSimilarImages(category) {
-        const galleryImages = document.querySelectorAll('[data-src]');
+        const galleryImages = document.querySelectorAll('.gallery-image, [data-src]');
         const similarImages = [];
 
         galleryImages.forEach((img) => {
-            if (this.categorizeResource(img.dataset.src) === category) {
-                similarImages.push(img.dataset.src);
+            const imageUrl = this.getImageUrl(img);
+            if (imageUrl && this.categorizeResource(imageUrl) === category) {
+                similarImages.push(imageUrl);
             }
         });
 
@@ -895,7 +943,7 @@ class IntelligentPrefetchManager {
 
     addNearbyImagesToPrefetch(priority = 'low') {
         const visibleImages = this.getVisibleImages();
-        const allImages = document.querySelectorAll('[data-src]');
+        const allImages = document.querySelectorAll('.gallery-image, [data-src]');
         const imageArray = Array.from(allImages);
 
         visibleImages.forEach((visibleImg) => {
@@ -904,8 +952,9 @@ class IntelligentPrefetchManager {
             // Prefetch next few images
             for (let i = 1; i <= this.resourceBudget.prefetchDistance; i++) {
                 const nextImg = imageArray[index + i];
-                if (nextImg && nextImg.dataset.src) {
-                    this.addToPriorityQueue(nextImg.dataset.src, priority, {
+                const imageUrl = this.getImageUrl(nextImg);
+                if (nextImg && imageUrl) {
+                    this.addToPriorityQueue(imageUrl, priority, {
                         reason: 'nearby-scroll'
                     });
                 }
@@ -914,7 +963,7 @@ class IntelligentPrefetchManager {
     }
 
     getVisibleImages() {
-        const images = document.querySelectorAll('[data-src]');
+        const images = document.querySelectorAll('.gallery-image, [data-src]');
         return Array.from(images).filter((img) => this.isElementVisible(img));
     }
 

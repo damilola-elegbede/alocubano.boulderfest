@@ -400,19 +400,12 @@
         );
         items.forEach((item) => {
             setupGalleryItemHandlers(item, { categories: categorizedItems });
-            // Note: NOT setting data-loaded="true" yet - lazy loading needs to happen first
+            // Eager loading enabled - images already have src set
+            item.setAttribute('data-handler-loaded', 'true');
         });
 
-        // Now observe lazy items (they still have data-loaded="false")
-        observeLazyItems();
-
-        // Wait a brief moment for lazy loading to initialize, then mark as loaded for tracking
-        setTimeout(() => {
-            items.forEach((item) => {
-                // Only mark as loaded for tracking purposes, but don't interfere with lazy loading
-                item.setAttribute('data-handler-loaded', 'true');
-            });
-        }, 100);
+        // Lazy loading disabled - thumbnails load eagerly
+        // observeLazyItems();
 
         // Restore lightbox state
         state.lightboxItems = state.displayOrder;
@@ -425,6 +418,11 @@
             const year = getYearFromPage();
             setupInfiniteScroll(year, loadingEl, contentEl, staticEl);
         }
+
+        // Aggressively preload first 10 full images after restoration
+        setTimeout(() => {
+            preloadInitialFullImages(10);
+        }, 100);
 
         // After DOM is restored, check for failed images and retry them
         // Filter out images that were already successfully loaded
@@ -450,22 +448,8 @@
                 } else {
                     console.warn('LazyLoader retry functionality not available');
 
-                    // Fallback: manually trigger loading for failed images
-                    imagesToRetry.forEach((imageSrc) => {
-                        const imgElements = document.querySelectorAll(
-                            `img[data-src="${imageSrc}"]`
-                        );
-                        imgElements.forEach((img) => {
-                            // Mark as not loaded to trigger lazy loading again
-                            const container = img.closest('.lazy-item');
-                            if (container) {
-                                container.setAttribute('data-loaded', 'false');
-                            }
-                        });
-                    });
-
-                    // Re-observe to trigger loading
-                    observeLazyItems();
+                    // Eager loading: images load immediately, no need to retry via lazy loading
+                    // Failed images will show broken image icon and can be retried via browser reload
                 }
             }, 500); // Small delay to ensure LazyLoader is ready
         }
@@ -689,11 +673,30 @@
             setupIntersectionPreloading(); // Mobile/scroll preloading
         }, 500);
 
-        // Clear any stale session storage that might interfere with workshop photos
+        // Only clear sessionStorage if state is stale (> 30 minutes) or corrupted
+        // Previous unconditional clear broke infinite scroll pagination
         const event = getEventFromPage();
         const stateKey = `gallery_${event}_state`;
-        const hadStaleData = !!sessionStorage.getItem(stateKey);
-        sessionStorage.removeItem(stateKey);
+        const savedState = sessionStorage.getItem(stateKey);
+
+        if (savedState) {
+            try {
+                const parsed = JSON.parse(savedState);
+                const stateAge = Date.now() - (parsed.timestamp || 0);
+                const STATE_FRESHNESS_THRESHOLD = 30 * 60 * 1000; // 30 minutes
+
+                if (stateAge > STATE_FRESHNESS_THRESHOLD) {
+                    console.log('🧹 Clearing stale sessionStorage (age > 30 mins)');
+                    sessionStorage.removeItem(stateKey);
+                } else {
+                    console.log(`💾 Keeping fresh sessionStorage (age: ${Math.round(stateAge / 60000)} mins)`);
+                }
+            } catch (e) {
+                // Corrupted state - clear it
+                console.log('🧹 Clearing corrupted sessionStorage:', e.message);
+                sessionStorage.removeItem(stateKey);
+            }
+        }
 
         // Initialize performance optimization modules
         initPerformanceModules();
@@ -740,8 +743,9 @@
         });
         console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-        // Initialize lazy loading observer
-        initLazyLoading();
+        // Lazy loading disabled - using eager loading for thumbnails
+        // Full images still preload via intersection observer
+        // initLazyLoading();
 
         // Check for saved state FIRST - this is the key change
         const stateRestored = restoreState();
@@ -1277,25 +1281,66 @@
                         ? displayOrderItem.displayIndex
                         : state.displayOrder.length - 1;
 
-                    return `
-          <div class="gallery-item lazy-item gallery-image-container" data-index="${globalIndex}" data-category="${categoryName}" data-loaded="false">
+                    // Build picture element with format fallbacks
+                    const thumbnailUrl = item.thumbnailUrl;
+                    const thumbnailUrl_webp = item.thumbnailUrl_webp || null;
+                    const usingBlob = item.usingBlob || false;
+
+
+                    // Critical: When using blob storage, ensure WebP fallback exists
+                    // AVIF in <source> is fine, but <img src> MUST use WebP or JPEG/PNG
+                    // Otherwise non-AVIF browsers (older Safari, Firefox) get broken images
+                    if (usingBlob && !thumbnailUrl_webp) {
+                        console.warn(
+                            `[Gallery] Incomplete blob data for item ${item.id}: missing WebP fallback. ` +
+                            `AVIF-only URLs will break in non-AVIF browsers.`
+                        );
+                    }
+
+                    // Fallback hierarchy: WebP (best compatibility) → original URL
+                    const fallbackUrl = thumbnailUrl_webp || thumbnailUrl;
+
+                    let pictureHtml = `
+          <div class="gallery-item lazy-item gallery-image-container" data-index="${globalIndex}" data-category="${categoryName}" data-loaded="true" data-using-blob="${usingBlob}">
             <div class="gallery-item-media">
-              <div class="lazy-placeholder">
+              <div class="lazy-placeholder" style="display: none;">
                 <div class="loading-spinner">📸</div>
               </div>
-              <img data-src="${item.thumbnailUrl}"
-                   data-thumbnail="${item.thumbnailUrl}"
-                   data-dominant-color="#f0f0f0"
-                   data-width="400"
-                   data-height="300"
-                   data-progressive="true"
-                   data-image-id="${item.id || globalIndex}"
-                   alt="${title}"
-                   class="lazy-image gallery-image"
-                   style="display: none;">
+              <picture>`;
+
+                    // Add AVIF source ONLY if WebP fallback exists (critical browser compatibility)
+                    // Non-AVIF browsers will skip <source> and use <img src> (must be WebP/JPEG/PNG)
+                    if (usingBlob && thumbnailUrl && thumbnailUrl_webp) {
+                      pictureHtml += `
+                <source type="image/avif" srcset="${thumbnailUrl}">`;
+                    }
+
+                    // Add WebP source if available - eager loading
+                    if (thumbnailUrl_webp) {
+                      pictureHtml += `
+                <source type="image/webp" srcset="${thumbnailUrl_webp}">`;
+                    }
+
+                    // Fallback img tag - uses WebP for better browser support when using blob
+                    pictureHtml += `
+                <img src="${fallbackUrl}"
+                     data-thumbnail="${fallbackUrl}"
+                     data-dominant-color="#f0f0f0"
+                     data-width="400"
+                     data-height="300"
+                     data-progressive="true"
+                     data-image-id="${item.id || globalIndex}"
+                     alt="${title}"
+                     class="lazy-image gallery-image"
+                     loading="eager"
+                     decoding="async"
+                     style="display: block; opacity: 1;">
+              </picture>
             </div>
           </div>
         `;
+
+                    return pictureHtml;
                 })
                 .join('');
 
@@ -1313,6 +1358,41 @@
                 await new Promise((resolve) => requestAnimationFrame(resolve));
             }
         }
+
+        // Add preload link tags for full images (first batch gets high priority)
+        const isFirstBatch = categoryOffset === 0 && categoryName === 'workshops';
+        if (isFirstBatch) {
+            addPreloadLinks(uniqueItems.slice(0, 10), 'high');
+        } else {
+            addPreloadLinks(uniqueItems.slice(0, 5), 'auto');
+        }
+    }
+
+    // Add <link rel="preload"> tags for full images
+    function addPreloadLinks(items, priority = 'auto') {
+        items.forEach(item => {
+            if (item.viewUrl && !state.preloadedImages.has(item.viewUrl)) {
+                const link = document.createElement('link');
+                link.rel = 'preload';
+                link.as = 'image';
+                link.href = item.viewUrl;
+                if (priority === 'high') {
+                    link.fetchPriority = 'high';
+                }
+                // Add to head to trigger browser preload
+                document.head.appendChild(link);
+
+                // Remove link after 5 seconds to prevent "unused preload" warnings
+                setTimeout(() => {
+                    if (link.parentNode) {
+                        link.parentNode.removeChild(link);
+                    }
+                }, 5000);
+
+                // Mark as preloaded
+                state.preloadedImages.add(item.viewUrl);
+            }
+        });
     }
 
     // Display gallery data with lazy loading and append mode
@@ -1425,9 +1505,9 @@
             }
 
             // Add click handlers for lightbox (only for new items if appending)
-            const selector = appendMode
-                ? '.gallery-item[data-loaded="false"]:not([data-handler-loaded="true"])'
-                : '.gallery-item:not([data-handler-loaded="true"])';
+            // Note: data-handler-loaded is the authoritative flag for tracking click handlers
+            // data-loaded refers to image loading state and is not relevant for handler attachment
+            const selector = '.gallery-item:not([data-handler-loaded="true"])';
             const items = contentEl.querySelectorAll(selector);
             console.log(
                 `🎯 Attaching click handlers to ${items.length} items (appendMode: ${appendMode})`
@@ -1448,21 +1528,22 @@
             }
             items.forEach((item) => {
                 setupGalleryItemHandlers(item, data);
-                // Don't set data-loaded="true" immediately - let lazy loading happen first
+                // Eager loading enabled - images already have src set
+                item.setAttribute('data-handler-loaded', 'true');
             });
 
-            // Observe new lazy items AFTER handlers are attached
-            observeLazyItems();
+            // Lazy loading disabled - thumbnails load eagerly
+            // observeLazyItems();
 
-            // Mark items as handler-loaded for tracking without interfering with lazy loading
-            setTimeout(() => {
-                items.forEach((item) => {
-                    item.setAttribute('data-handler-loaded', 'true');
-                });
+            // Re-initialize intersection preloading for full images
+            setupIntersectionPreloading();
 
-                // Re-initialize intersection preloading for new items
-                setupIntersectionPreloading();
-            }, 100);
+            // Aggressively preload first 10 full images on initial load
+            if (!appendMode) {
+                setTimeout(() => {
+                    preloadInitialFullImages(10);
+                }, 100); // Small delay to let thumbnails finish loading first
+            }
         }
 
         // Store all items for lightbox (flatten categories)
@@ -1538,6 +1619,7 @@
             selector: '.lazy-item[data-loaded="false"]',
             rootMargin: CONFIG.LAZY_LOAD_THRESHOLD,
             threshold: 0.1,
+            skipInitialObserve: true, // Gallery items don't exist yet - observeLazyItems() will handle observation
             onError: (element, error, info) => {
                 // Update failed images state immediately when an error occurs
                 if (info?.src && !state.failedImages.includes(info.src)) {
@@ -1705,8 +1787,11 @@
         });
     }
 
+    // Keep references to preloaded images to prevent browser cancellation
+    const preloadedImageRefs = new Map();
+
     // Preload image utility
-    function preloadImage(url) {
+    function preloadImage(url, priority = 'auto') {
         if (!url || state.preloadedImages.has(url)) {
             return; // Already preloaded or invalid URL
         }
@@ -1714,12 +1799,41 @@
         const img = new Image();
         img.onload = () => {
             state.preloadedImages.add(url);
-            // Silent success - no console spam
+            // Keep reference for at least 30 seconds to prevent cancellation
+            preloadedImageRefs.set(url, img);
+            setTimeout(() => {
+                preloadedImageRefs.delete(url);
+            }, 30000);
         };
         img.onerror = () => {
             // Silent failure - browser will try again if needed
+            preloadedImageRefs.delete(url);
         };
+
+        // For high priority images, use fetchpriority attribute
+        if (priority === 'high') {
+            img.fetchPriority = 'high';
+        }
+
         img.src = url;
+        // Keep immediate reference to prevent garbage collection
+        preloadedImageRefs.set(url, img);
+    }
+
+    // Aggressively preload first N full images immediately
+    function preloadInitialFullImages(count = 10) {
+        console.log(`🚀 Aggressively preloading first ${count} full images...`);
+
+        let preloaded = 0;
+        for (let i = 0; i < Math.min(count, state.displayOrder.length); i++) {
+            const item = state.displayOrder[i];
+            if (item && item.viewUrl) {
+                preloadImage(item.viewUrl, 'high');
+                preloaded++;
+            }
+        }
+
+        console.log(`✅ Queued ${preloaded} full images for immediate preload`);
     }
 
     // Preload adjacent images for smooth lightbox navigation
@@ -1771,22 +1885,22 @@
                         if (item.viewUrl) {
                             // Preload this image's full version
                             preloadImage(item.viewUrl);
-                            // On mobile, also preload nearby images
-                            if ('ontouchstart' in window) {
-                                preloadAdjacentImages(index);
-                            }
+                            // Also preload nearby images for smooth navigation
+                            preloadAdjacentImages(index);
                         }
                     }
                 }
             });
         }, {
-            rootMargin: '100px' // Start preloading when 100px away from viewport
+            rootMargin: '500px' // Aggressively preload when 500px away from viewport
         });
 
         // Observe all gallery items
         document.querySelectorAll('.gallery-item').forEach(item => {
             preloadObserver.observe(item);
         });
+
+        console.log(`📡 Intersection observer setup with 500px rootMargin for ${document.querySelectorAll('.gallery-item').length} items`);
 
         return preloadObserver;
     }

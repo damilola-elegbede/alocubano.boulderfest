@@ -46,7 +46,11 @@ if (typeof LazyLoader === 'undefined') {
             }
 
             this.createObserver();
-            this.observeElements();
+
+            // Only observe elements initially if skipInitialObserve is false
+            if (!this.config.skipInitialObserve) {
+                this.observeElements();
+            }
         }
 
         /**
@@ -415,14 +419,34 @@ if (typeof LazyLoader === 'undefined') {
             const spinner = item.querySelector('.loading-spinner');
 
             if (lazyImage) {
-                const src = lazyImage.getAttribute('data-src');
+                let src = lazyImage.getAttribute('data-src');
+                const existingSrc = lazyImage.getAttribute('src');
+
+                // Handle picture element with source tags
+                const picture = lazyImage.closest('picture');
+                if (picture) {
+                    const sources = picture.querySelectorAll('source[data-srcset]');
+                    sources.forEach(source => {
+                        const srcset = source.getAttribute('data-srcset');
+                        if (srcset) {
+                            source.srcset = srcset;
+                            source.removeAttribute('data-srcset');
+                        }
+                    });
+                }
+
+                // If no new data-src but a src is already present, reuse it
+                if (!src && existingSrc) {
+                    src = existingSrc;
+                }
+
                 if (src) {
                     // Show loading state
                     if (spinner) {
                         spinner.style.display = 'block';
                     }
 
-                    lazyImage.onload = () => {
+                    const handleLoadSuccess = () => {
                         // Hide placeholder and spinner
                         if (placeholder) {
                             placeholder.style.display = 'none';
@@ -439,6 +463,8 @@ if (typeof LazyLoader === 'undefined') {
                         item.classList.add(this.config.loadedClass);
                         item.setAttribute('data-loaded', 'true');
                     };
+
+                    lazyImage.onload = handleLoadSuccess;
 
                     lazyImage.onerror = () => {
                         // Check if we already have retry info for this item
@@ -512,8 +538,19 @@ if (typeof LazyLoader === 'undefined') {
                         }
                     };
 
-                    // Start loading
-                    lazyImage.src = src;
+                    // Check if image is already complete
+                    if (lazyImage.complete) {
+                        if (lazyImage.naturalWidth > 0) {
+                            // Image already loaded successfully
+                            handleLoadSuccess();
+                        } else {
+                            // Image failed to load
+                            lazyImage.onerror();
+                        }
+                    } else if (lazyImage.getAttribute('src') !== src) {
+                        // Only set src if it's different to avoid triggering reload
+                        lazyImage.src = src;
+                    }
                     lazyImage.removeAttribute('data-src');
                 }
             }
@@ -591,7 +628,8 @@ if (typeof LazyLoader === 'undefined') {
                 advanced: true,
                 responsive: false,
                 advancedSelector: options.selector || '.lazy-item[data-loaded="false"]',
-                rootMargin: options.rootMargin || '100px 0px'
+                rootMargin: options.rootMargin || '100px 0px',
+                skipInitialObserve: options.skipInitialObserve || false
             });
         }
 

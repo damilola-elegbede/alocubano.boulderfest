@@ -152,6 +152,23 @@ if (typeof FormValidator === 'undefined') {
 // Service Worker Registration
 function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
+        // Listen for Service Worker messages
+        navigator.serviceWorker.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'SW_ACTIVATED') {
+                const newVersion = event.data.version;
+                console.log(`[SW] New Service Worker activated: ${newVersion}`);
+
+                // Auto-reload if user has been idle or tab is hidden
+                const isHidden = document.visibilityState === 'hidden';
+                const idleTime = Date.now() - (window.lastUserActivity || Date.now());
+
+                if (isHidden || idleTime > 30000) {
+                    console.log(`[SW] Auto-reloading to activate ${newVersion}`);
+                    window.location.reload();
+                }
+            }
+        });
+
         navigator.serviceWorker
             .register('/js/sw.js', {
                 scope: '/',
@@ -160,26 +177,43 @@ function registerServiceWorker() {
             .then((registration) => {
                 console.log('[SW] Service Worker registered:', registration.scope);
 
+                // Check for updates every 60 seconds
+                setInterval(() => {
+                    registration.update();
+                }, 60000);
+
                 // Handle updates
                 registration.addEventListener('updatefound', () => {
                     const newWorker = registration.installing;
+                    console.log('[SW] New Service Worker installing...');
+
                     newWorker.addEventListener('statechange', () => {
                         if (
                             newWorker.state === 'installed' &&
               navigator.serviceWorker.controller
                         ) {
-                            // New version available, prompt user to refresh
-                            console.log('[SW] New version available');
-                            if (confirm('A new version is available. Refresh to update?')) {
-                                window.location.reload();
-                            }
+                            // New version available
+                            console.log('[SW] New version installed and ready');
+
+                            // Send SKIP_WAITING message to activate immediately
+                            newWorker.postMessage({ type: 'SKIP_WAITING' });
                         }
                     });
                 });
+
+                // Force immediate check for updates on registration
+                registration.update();
             })
             .catch((error) => {
                 console.warn('[SW] Service Worker registration failed:', error);
             });
+
+        // Track user activity for auto-reload decisions
+        ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'].forEach(name => {
+            window.addEventListener(name, () => {
+                window.lastUserActivity = Date.now();
+            }, { passive: true });
+        });
     }
 }
 
