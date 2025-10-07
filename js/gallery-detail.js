@@ -1564,6 +1564,7 @@
             selector: '.lazy-item[data-loaded="false"]',
             rootMargin: CONFIG.LAZY_LOAD_THRESHOLD,
             threshold: 0.1,
+            skipInitialObserve: true, // Gallery items don't exist yet - observeLazyItems() will handle observation
             onError: (element, error, info) => {
                 // Update failed images state immediately when an error occurs
                 if (info?.src && !state.failedImages.includes(info.src)) {

@@ -46,7 +46,11 @@ if (typeof LazyLoader === 'undefined') {
             }
 
             this.createObserver();
-            this.observeElements();
+
+            // Only observe elements initially if skipInitialObserve is false
+            if (!this.config.skipInitialObserve) {
+                this.observeElements();
+            }
         }
 
         /**
@@ -621,7 +625,8 @@ if (typeof LazyLoader === 'undefined') {
                 advanced: true,
                 responsive: false,
                 advancedSelector: options.selector || '.lazy-item[data-loaded="false"]',
-                rootMargin: options.rootMargin || '100px 0px'
+                rootMargin: options.rootMargin || '100px 0px',
+                skipInitialObserve: options.skipInitialObserve || false
             });
         }
 
