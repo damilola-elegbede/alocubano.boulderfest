@@ -29,6 +29,9 @@ PRAGMA foreign_keys = OFF;
 -- Clean up any orphaned temporary tables from previous failed migration attempts
 DROP TABLE IF EXISTS ticket_types_new;
 
+-- Drop views that depend on ticket_types before table recreation
+DROP VIEW IF EXISTS ticket_availability_view;
+
 -- Create new ticket_types table with CHECK constraints
 CREATE TABLE ticket_types_new (
     id TEXT PRIMARY KEY,
@@ -92,8 +95,6 @@ END;
 -- STEP 5: Recreate views that depend on ticket_types
 -- ============================================================================
 -- Recreate ticket_availability_view (from migration 024)
-DROP VIEW IF EXISTS ticket_availability_view;
-
 CREATE VIEW IF NOT EXISTS ticket_availability_view AS
 SELECT
     tt.id,

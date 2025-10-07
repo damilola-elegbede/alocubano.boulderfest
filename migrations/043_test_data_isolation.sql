@@ -18,6 +18,10 @@ PRAGMA foreign_keys = OFF;
 -- Clean up any orphaned temporary tables from previous failed migration attempts
 DROP TABLE IF EXISTS ticket_types_new;
 
+-- Drop views that depend on ticket_types before table recreation
+DROP VIEW IF EXISTS ticket_availability_view;
+DROP VIEW IF EXISTS test_ticket_sales_view;
+
 -- Create new ticket_types table with test_sold_count column
 CREATE TABLE ticket_types_new (
     id TEXT PRIMARY KEY,
@@ -88,8 +92,6 @@ END;
 -- STEP 4: Recreate availability view with test data exclusion
 -- ============================================================================
 -- Update ticket_availability_view to exclude test sales from production counts
-DROP VIEW IF EXISTS ticket_availability_view;
-
 CREATE VIEW IF NOT EXISTS ticket_availability_view AS
 SELECT
     tt.id,
