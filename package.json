@@ -48,6 +48,9 @@
     "enterprise:health": "node scripts/deployment-health-check.js",
     "enterprise:tools": "node scripts/platform-tools.js",
     "drift:check": "node scripts/detect-package-drift.js",
+    "sync-gallery": "node scripts/sync-gallery-images.js",
+    "sync-gallery:force": "node scripts/sync-gallery-images.js --force",
+    "sync-gallery:dry-run": "node scripts/sync-gallery-images.js --dry-run",
     "generate-email-templates": "node scripts/generate-email-templates.js"
   },
   "dependencies": {
@@ -59,6 +62,7 @@
     "@sentry/node": "^7.120.4",
     "@stripe/stripe-js": "^7.9.0",
     "@types/node": "^20.19.0",
+    "@vercel/blob": "^2.0.0",
     "bcryptjs": "^3.0.2",
     "cookie": "^1.0.2",
     "dotenv": "^17.2.2",

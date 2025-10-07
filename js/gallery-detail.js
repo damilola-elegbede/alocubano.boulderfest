@@ -1277,25 +1277,51 @@
                         ? displayOrderItem.displayIndex
                         : state.displayOrder.length - 1;
 
-                    return `
-          <div class="gallery-item lazy-item gallery-image-container" data-index="${globalIndex}" data-category="${categoryName}" data-loaded="false">
+                    // Build picture element with format fallbacks
+                    const thumbnailUrl = item.thumbnailUrl;
+                    const thumbnailUrl_webp = item.thumbnailUrl_webp || null;
+                    const usingBlob = item.usingBlob || false;
+
+                    let pictureHtml = `
+          <div class="gallery-item lazy-item gallery-image-container" data-index="${globalIndex}" data-category="${categoryName}" data-loaded="false" data-using-blob="${usingBlob}">
             <div class="gallery-item-media">
               <div class="lazy-placeholder">
                 <div class="loading-spinner">📸</div>
               </div>
-              <img data-src="${item.thumbnailUrl}"
-                   data-thumbnail="${item.thumbnailUrl}"
-                   data-dominant-color="#f0f0f0"
-                   data-width="400"
-                   data-height="300"
-                   data-progressive="true"
-                   data-image-id="${item.id || globalIndex}"
-                   alt="${title}"
-                   class="lazy-image gallery-image"
-                   style="display: none;">
+              <picture>`;
+
+                    // Add AVIF source if using Blob (already AVIF)
+                    if (usingBlob && thumbnailUrl) {
+                      pictureHtml += `
+                <source type="image/avif" data-srcset="${thumbnailUrl}">`;
+                    }
+
+                    // Add WebP source if available
+                    if (thumbnailUrl_webp) {
+                      pictureHtml += `
+                <source type="image/webp" data-srcset="${thumbnailUrl_webp}">`;
+                    }
+
+                    // Fallback img tag
+                    pictureHtml += `
+                <img data-src="${thumbnailUrl}"
+                     data-thumbnail="${thumbnailUrl}"
+                     data-dominant-color="#f0f0f0"
+                     data-width="400"
+                     data-height="300"
+                     data-progressive="true"
+                     data-image-id="${item.id || globalIndex}"
+                     alt="${title}"
+                     class="lazy-image gallery-image"
+                     loading="lazy"
+                     decoding="async"
+                     style="display: none;">
+              </picture>
             </div>
           </div>
         `;
+
+                    return pictureHtml;
                 })
                 .join('');
 

@@ -33,6 +33,11 @@ test-*.db
 test-output.json
 test-result.json
 
+# Local development databases
+*.db
+local.db
+dev.db
+
 # Playwright test artifacts
 playwright-report/
 playwright-report-local/
@@ -102,6 +107,10 @@ certificates/
 deployment-check-report.json
 :memory:
 .tmp/
+
+# Test and debug API endpoints
+api/test-*.js
+api/debug-*.js
 
 # ngrok files and logs
 .ngrok2/
