@@ -137,9 +137,9 @@
       })();
     </script>
 
-    <!-- DNS prefetch for external resources -->
-    <link rel="dns-prefetch" href="//fonts.googleapis.com" />
-    <link rel="dns-prefetch" href="//fonts.gstatic.com" />
+    <!-- Preconnect for faster font loading -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
     <!-- Theme Management - Early inclusion to prevent FOUC -->
     <script type="module" src="/js/theme-manager.js"></script>
@@ -296,7 +296,7 @@
         <div class="hero-image-container">
           <img
             id="hero-splash-image"
-            src=""
+            src="/images/hero/tickets.jpg"
             alt="Excited festival attendees enjoying A Lo Cubano Boulder Fest events, highlighting the experience visitors can expect"
             class="hero-splash-img"
             style="object-position: top center !important"

@@ -1,0 +1,15 @@
+PLACEHOLDER - Replace this file with the actual domain association file from PayPal Dashboard
+
+Instructions:
+1. Log into https://developer.paypal.com with your live PayPal account
+2. Switch to "Live" environment (toggle in top right)
+3. Go to "Apps & Credentials"
+4. Select your live app
+5. Scroll to "Features" section
+6. Check the "Apple Pay" checkbox
+7. Click "Save"
+8. Download the domain association file
+9. Replace this file with the downloaded file (keep the same filename)
+10. Deploy to production
+
+The file should contain Apple's merchant ID domain association certificate.

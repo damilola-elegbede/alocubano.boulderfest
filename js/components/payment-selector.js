@@ -91,6 +91,9 @@ class PaymentSelector {
             this.modal.remove();
         }
 
+        // Detect production environment
+        const isProduction = window.location.hostname === 'alocubanoboulderfest.org';
+
         const modalHTML = `
             <div class="payment-selector-modal" role="dialog" aria-modal="true" aria-labelledby="payment-selector-title" aria-describedby="payment-selector-description">
                 <div class="payment-selector-backdrop"></div>
@@ -114,9 +117,11 @@ class PaymentSelector {
                     <div class="payment-methods" role="group" aria-labelledby="payment-selector-title">
                         <!-- Credit Cards & Digital Wallets Option -->
                         <!-- Payment logos sourced from: https://github.com/payrexx/payment-logos -->
-                        <button class="payment-method-option"
+                        <button class="payment-method-option ${isProduction ? 'disabled' : ''}"
                                 data-method="stripe"
-                                aria-label="Pay with credit card, Apple Pay, or Google Pay - opens Stripe secure checkout"
+                                ${isProduction ? 'disabled' : ''}
+                                ${isProduction ? 'aria-disabled="true"' : ''}
+                                aria-label="Pay with credit card, Apple Pay, or Google Pay - ${isProduction ? 'temporarily unavailable' : 'opens Stripe secure checkout'}"
                                 aria-describedby="stripe-description">
                             <div class="payment-card-icons">
                                 <img src="/images/payment-icons/card_visa.svg" alt="Visa" class="card-icon visa-icon">
@@ -124,7 +129,8 @@ class PaymentSelector {
                                 <img src="/images/payment-icons/apple-pay.svg" alt="Apple Pay" class="card-icon apple-pay-icon">
                                 <img src="/images/payment-icons/card_google-pay.svg" alt="Google Pay" class="card-icon google-pay-icon">
                             </div>
-                            <span id="stripe-description" class="sr-only">Secure payment processing with Stripe. Supports all major credit cards, Apple Pay, and Google Pay.</span>
+                            ${isProduction ? '<div class="payment-method-status" data-status="unavailable" style="display: block;"><span class="status-text">Temporarily Unavailable</span></div>' : ''}
+                            <span id="stripe-description" class="sr-only">Secure payment processing with Stripe. Supports all major credit cards, Apple Pay, and Google Pay. ${isProduction ? 'Currently temporarily unavailable.' : ''}</span>
                         </button>
 
                         <!-- PayPal Option -->

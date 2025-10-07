@@ -110,6 +110,10 @@
   },
   "rewrites": [
     {
+      "source": "/.well-known/:path*",
+      "destination": "/public/.well-known/:path*"
+    },
+    {
       "source": "/images/:path*",
       "destination": "/images/:path*"
     },
@@ -285,7 +289,7 @@
       "headers": [
         {
           "key": "Cache-Control",
-          "value": "public, max-age=86400, stale-while-revalidate=604800"
+          "value": "public, max-age=3600, must-revalidate"
         },
         { "key": "Vary", "value": "Accept-Encoding" }
       ]
@@ -337,6 +341,19 @@
           "value": "public, max-age=0, must-revalidate"
         },
         { "key": "Service-Worker-Allowed", "value": "/" }
+      ]
+    },
+    {
+      "source": "/.well-known/apple-developer-merchantid-domain-association",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/octet-stream"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400"
+        }
       ]
     }
   ]
