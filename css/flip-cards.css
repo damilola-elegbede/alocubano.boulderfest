@@ -355,14 +355,14 @@
 /* Coming Soon Ribbon - Diagonal corner badge */
 .ticket-status-banner.coming-soon {
   position: absolute;
-  top: 0;
-  left: 0;
+  top: 2px;    /* Offset by border width to stay inside white border */
+  left: 2px;   /* Offset by border width to stay inside white border */
   width: 150px;
   height: 150px;
   overflow: hidden;
   z-index: 20;
   background: transparent;
-  border-radius: 12px 0 0 0; /* Match card corner to stay within border */
+  border-radius: 10px 0 0 0; /* Inner border radius (12px - 2px border) to clip at white line */
   padding: 0;
   box-shadow: none;
 }

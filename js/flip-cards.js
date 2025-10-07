@@ -15,6 +15,12 @@ class FlipCardManager {
     bindEvents() {
         // Handle flip card clicks
         document.querySelectorAll('.flip-card').forEach(card => {
+            // Skip event binding for disabled tickets (coming soon, sold out)
+            if (card.classList.contains('ticket-disabled')) {
+                console.log('Skipping flip binding for disabled ticket:', card.dataset.ticketType);
+                return;
+            }
+
             // Click on card (but not quantity buttons) to flip
             card.addEventListener('click', (e) => {
                 // Don't flip if clicking on quantity buttons or other interactive elements
@@ -40,6 +46,13 @@ class FlipCardManager {
 
         // Handle keyboard accessibility
         document.querySelectorAll('.flip-card').forEach(card => {
+            // Skip keyboard binding for disabled tickets
+            if (card.classList.contains('ticket-disabled')) {
+                // Remove tabindex from disabled cards so they're not keyboard-navigable
+                card.removeAttribute('tabindex');
+                return;
+            }
+
             card.setAttribute('tabindex', '0');
             card.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
