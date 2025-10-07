@@ -165,10 +165,11 @@ function generateTicketCard(ticketType, event) {
     `;
   }
 
-  // Disable styling for non-available tickets
-  const disabledClass = !isAvailable ? 'ticket-disabled' : '';
-  const pointerEvents = !isAvailable ? 'pointer-events: none;' : '';
-  const ariaDisabled = !isAvailable ? 'aria-disabled="true"' : '';
+  // Disable styling ONLY for coming-soon tickets
+  // Sold-out tickets can still flip to show details (just can't purchase)
+  const disabledClass = isComingSoon ? 'ticket-disabled' : '';
+  const pointerEvents = isComingSoon ? 'pointer-events: none;' : '';
+  const ariaDisabled = isComingSoon ? 'aria-disabled="true"' : '';
 
   const ticketColor = getTicketColor(ticketType);
   const dateRange = formatDateRange(event.start_date, event.end_date);
@@ -186,7 +187,6 @@ function generateTicketCard(ticketType, event) {
 
   return `
     <div class="flip-card ${disabledClass}" data-ticket-status="${ticketType.status}" ${ariaDisabled}>
-      ${statusBanner}
       <div class="flip-card-inner" style="${pointerEvents}">
         <!-- Front of card -->
         <div class="flip-card-front ticket-card vertical-design"
@@ -196,6 +196,8 @@ function generateTicketCard(ticketType, event) {
              data-price="${ticketType.price_cents ? (ticketType.price_cents / 100).toFixed(2) : '0.00'}"
              data-name="${escapeHtml(ticketType.name)}"
              data-venue="${escapeHtml(event.venue_name)}">
+
+          ${statusBanner}
 
           <div class="ticket-header">
             <div class="event-label">EVENT</div>
