@@ -1,6 +1,7 @@
 /**
  * Flip Card Functionality for Tickets
  * Handles click-to-flip animation and interaction
+ * Uses event delegation to support dynamically generated cards
  */
 
 class FlipCardManager {
@@ -13,46 +14,114 @@ class FlipCardManager {
     }
 
     bindEvents() {
-        // Handle flip card clicks
-        document.querySelectorAll('.flip-card').forEach(card => {
-            // Click on card (but not quantity buttons) to flip
-            card.addEventListener('click', (e) => {
-                // Don't flip if clicking on quantity buttons or other interactive elements
-                if (this.shouldPreventFlip(e.target)) {
-                    console.log('Flip prevented for interactive element:', e.target);
-                    return;
-                }
+        // Use event delegation on the container for dynamically added cards
+        const container = document.querySelector('.tickets-container') || 
+                         document.querySelector('#dynamic-ticket-container') || 
+                         document.body;
 
-                const ticketType = card.dataset.ticketType || 'unknown';
-                console.log(`Click detected on card: ${ticketType}`, e.target);
-                this.flipCard(card);
-            });
+        console.log('FlipCardManager: Binding events with delegation on', container);
 
-            // Handle flip back button
-            const flipBackBtn = card.querySelector('.flip-back-btn');
-            if (flipBackBtn) {
-                flipBackBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    this.flipCard(card, false); // Flip back to front
-                });
+        // Click event delegation for flip functionality
+        container.addEventListener('click', (e) => {
+            const card = e.target.closest('.flip-card');
+            if (!card) return;
+
+            // Skip disabled tickets (coming soon, sold out)
+            if (card.classList.contains('ticket-disabled')) {
+                return;
+            }
+
+            // Don't flip if clicking on interactive elements
+            if (this.shouldPreventFlip(e.target)) {
+                return;
+            }
+
+            const ticketType = card.dataset.ticketType || 'unknown';
+            console.log(`Click detected on card: ${ticketType}`, e.target);
+            this.flipCard(card);
+        });
+
+        // Handle flip back button with delegation
+        container.addEventListener('click', (e) => {
+            const flipBackBtn = e.target.closest('.flip-back-btn');
+            if (!flipBackBtn) return;
+
+            e.stopPropagation();
+            const card = flipBackBtn.closest('.flip-card');
+            if (card) {
+                this.flipCard(card, false); // Flip back to front
             }
         });
 
-        // Handle keyboard accessibility
-        document.querySelectorAll('.flip-card').forEach(card => {
-            card.setAttribute('tabindex', '0');
-            card.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    if (!this.shouldPreventFlip(e.target)) {
-                        e.preventDefault();
-                        this.flipCard(card);
-                    }
+        // Keyboard accessibility - needs to be handled at document level
+        document.addEventListener('keydown', (e) => {
+            const card = e.target.closest('.flip-card');
+            if (!card) return;
+
+            // Skip disabled tickets
+            if (card.classList.contains('ticket-disabled')) {
+                return;
+            }
+
+            if (e.key === 'Enter' || e.key === ' ') {
+                if (!this.shouldPreventFlip(e.target)) {
+                    e.preventDefault();
+                    this.flipCard(card);
                 }
-                if (e.key === 'Escape') {
-                    this.flipCard(card, false); // Flip back to front
-                }
-            });
+            }
+            if (e.key === 'Escape') {
+                this.flipCard(card, false); // Flip back to front
+            }
         });
+
+        // Set tabindex on existing cards and observe for new cards
+        this.updateCardTabindex();
+        this.observeNewCards(container);
+    }
+
+    updateCardTabindex() {
+        document.querySelectorAll('.flip-card').forEach(card => {
+            if (card.classList.contains('ticket-disabled')) {
+                card.removeAttribute('tabindex');
+                card.setAttribute('aria-disabled', 'true');
+            } else {
+                card.setAttribute('tabindex', '0');
+                card.removeAttribute('aria-disabled');
+            }
+        });
+    }
+
+    observeNewCards(container) {
+        // Use MutationObserver to handle dynamically added cards
+        const observer = new MutationObserver((mutations) => {
+            let hasNewCards = false;
+            mutations.forEach((mutation) => {
+                mutation.addedNodes.forEach((node) => {
+                    if (node.nodeType === 1) { // Element node
+                        if (node.matches && node.matches('.flip-card')) {
+                            hasNewCards = true;
+                        } else if (node.querySelector) {
+                            const cards = node.querySelectorAll('.flip-card');
+                            if (cards.length > 0) {
+                                hasNewCards = true;
+                            }
+                        }
+                    }
+                });
+            });
+
+            if (hasNewCards) {
+                this.updateCardTabindex();
+                console.log('New flip cards detected and configured');
+            }
+        });
+
+        observer.observe(container, {
+            childList: true,
+            subtree: true
+        });
+
+        this.observer = observer;
     }
 
     shouldPreventFlip(target) {
@@ -121,14 +190,34 @@ class FlipCardManager {
     isCardFlipped(card) {
         return card.classList.contains('flipped');
     }
+
+    // Cleanup method
+    destroy() {
+        if (this.observer) {
+            this.observer.disconnect();
+        }
+    }
 }
 
 // Initialize flip card manager when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    if (document.querySelector('.flip-card')) {
+    if (document.querySelector('.flip-card') || 
+        document.querySelector('#dynamic-ticket-container') ||
+        document.querySelector('.tickets-container')) {
         window.flipCardManager = new FlipCardManager();
+        console.log('FlipCardManager initialized with event delegation');
     }
 });
+
+// Export function for dynamic card generation
+// With event delegation, this is a no-op since new cards are automatically supported
+window.initFlipCards = () => {
+    console.log('initFlipCards called - using event delegation, new cards automatically supported');
+    // Force tabindex update for any new cards
+    if (window.flipCardManager) {
+        window.flipCardManager.updateCardTabindex();
+    }
+};
 
 // Export for potential external use
 if (typeof module !== 'undefined' && module.exports) {

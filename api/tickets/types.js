@@ -11,6 +11,8 @@
 import { ticketTypeCache } from '../../lib/ticket-type-cache.js';
 import { setSecureCorsHeaders } from '../../lib/cors-config.js';
 import { logger } from '../../lib/logger.js';
+import timeUtils from '../../lib/time-utils.js';
+import ticketColorService from '../../lib/ticket-color-service.js';
 
 export default async function handler(req, res) {
   // Set CORS headers
@@ -55,14 +57,58 @@ export default async function handler(req, res) {
       ticketTypes = ticketTypes.filter(t => t.status !== 'test');
     }
 
-    // Enrich tickets with availability calculation
-    const enrichedTickets = ticketTypes.map(ticket => ({
-      ...ticket,
-      // Calculate availability (max_quantity - sold_count)
+    // Get color mappings for all ticket types
+    const colorPromises = ticketTypes.map(ticket =>
+      ticketColorService.getColorForTicketType(ticket.id)
+    );
+    const colors = await Promise.all(colorPromises);
+
+    // Enrich tickets with availability calculation and color
+    // NOTE: Explicitly select fields to avoid BigInt serialization errors
+    const enrichedTickets = ticketTypes.map((ticket, index) => ({
+      // Core ticket fields (already converted by cache)
+      id: ticket.id,
+      event_id: ticket.event_id,
+      name: ticket.name,
+      slug: ticket.slug,
+      description: ticket.description,
+      price_cents: ticket.price_cents,
+      currency: ticket.currency,
+      status: ticket.status,
+      max_quantity: ticket.max_quantity,
+      sold_count: ticket.sold_count,
+      display_order: ticket.display_order,
+      stripe_price_id: ticket.stripe_price_id,
+      // Calculated fields
       availability: ticket.max_quantity ?
         Math.max(0, ticket.max_quantity - (ticket.sold_count || 0)) :
         null,
-      // Event information is already joined in the cache
+      available_quantity: ticket.available_quantity,
+      is_available: ticket.is_available,
+      is_sold_out: ticket.is_sold_out,
+      is_coming_soon: ticket.is_coming_soon,
+      price_display: ticket.price_display,
+      can_purchase: ticket.can_purchase,
+      // Metadata fields (already parsed by cache)
+      metadata: ticket.metadata,
+      // Color information from ticket-color-service
+      color_name: colors[index].name,
+      color_rgb: colors[index].rgb,
+      color_emoji: colors[index].emoji,
+      // Event information (already joined in the cache)
+      event_name: ticket.event_name,
+      event_slug: ticket.event_slug,
+      event_type: ticket.event_type,
+      event_date: ticket.event_date,
+      event_time: ticket.event_time,
+      event_start_date: ticket.event_start_date,
+      event_end_date: ticket.event_end_date,
+      event_venue: ticket.event_venue,
+      event_venue_address: ticket.event_venue_address,
+      event_venue_city: ticket.event_venue_city,
+      event_venue_state: ticket.event_venue_state,
+      event_status: ticket.event_status,
+      // Event object for backward compatibility
       event: {
         id: ticket.event_id,
         name: ticket.event_name,
@@ -73,6 +119,80 @@ export default async function handler(req, res) {
         status: ticket.event_status
       }
     }));
+
+    // Group tickets by event for the frontend
+    const eventMap = new Map();
+    enrichedTickets.forEach(ticket => {
+      const eventId = ticket.event_id;
+
+      if (!eventMap.has(eventId)) {
+        eventMap.set(eventId, {
+          event_id: eventId,
+          event_name: ticket.event_name,
+          event_slug: ticket.event_slug,
+          event_type: ticket.event_type,
+          start_date: ticket.event_start_date,
+          end_date: ticket.event_end_date,
+          venue_name: ticket.event_venue,
+          venue_address: ticket.event_venue_address,
+          venue_city: ticket.event_venue_city,
+          venue_state: ticket.event_venue_state,
+          event_status: ticket.event_status,
+          display_order: typeof ticket.event_display_order === 'bigint'
+            ? Number(ticket.event_display_order)
+            : (ticket.event_display_order || 0),
+          ticket_types: []
+        });
+      }
+
+      // Add ticket type to event
+      eventMap.get(eventId).ticket_types.push({
+        id: ticket.id,
+        name: ticket.name,
+        description: ticket.description,
+        price_cents: ticket.price_cents,
+        currency: ticket.currency,
+        status: ticket.status,
+        availability: ticket.availability,
+        max_quantity: ticket.max_quantity,
+        sold_count: ticket.sold_count,
+        display_order: ticket.display_order,
+        event_date: ticket.event_date,
+        event_time: ticket.event_time,
+        // Color information
+        color_name: ticket.color_name,
+        color_rgb: ticket.color_rgb,
+        color_emoji: ticket.color_emoji
+      });
+    });
+
+    // Convert map to array and sort by event start date (chronological order)
+    const events = Array.from(eventMap.values())
+      .sort((a, b) => {
+        // Sort by start_date first (chronological - nearest event first)
+        const dateA = new Date(a.start_date || '9999-12-31');
+        const dateB = new Date(b.start_date || '9999-12-31');
+        if (dateA.getTime() !== dateB.getTime()) {
+          return dateA.getTime() - dateB.getTime();
+        }
+        // Then by display_order
+        return (a.display_order || 0) - (b.display_order || 0);
+      });
+
+    // Sort ticket types within each event by display_order
+    events.forEach(event => {
+      event.ticket_types.sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+    });
+
+    // Add Mountain Time (_mt) fields for start_date and end_date
+    events.forEach(event => {
+      if (event.start_date) {
+        event.start_date_mt = timeUtils.formatDate(new Date(event.start_date));
+      }
+      if (event.end_date) {
+        event.end_date_mt = timeUtils.formatDate(new Date(event.end_date));
+      }
+    });
 
     // Set appropriate cache headers for CDN
     const cacheMaxAge = event_id ? 300 : 600; // 5 min for specific event, 10 min for all
@@ -85,12 +205,14 @@ export default async function handler(req, res) {
     // Build response in the requested format
     const response = {
       success: true,
-      tickets: enrichedTickets,
+      tickets: enrichedTickets, // Legacy format for backward compatibility
+      events: events,            // New grouped format for dynamic ticket generator
       cached: wasFromCache,
       timestamp: new Date().toISOString(),
       // Additional metadata for debugging and monitoring
       metadata: {
         total_tickets: enrichedTickets.length,
+        total_events: events.length,
         filtered_by_event: !!event_id,
         filtered_by_status: !!status,
         include_test_tickets: include_test === 'true',
