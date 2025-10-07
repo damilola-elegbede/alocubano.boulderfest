@@ -17,6 +17,10 @@
  *   npm run sync-gallery -- --force   # Force re-sync all
  */
 
+// Load environment variables from .env.local for local development
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
+
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
