@@ -12,6 +12,7 @@ import { ticketTypeCache } from '../../lib/ticket-type-cache.js';
 import { setSecureCorsHeaders } from '../../lib/cors-config.js';
 import { logger } from '../../lib/logger.js';
 import timeUtils from '../../lib/time-utils.js';
+import ticketColorService from '../../lib/ticket-color-service.js';
 
 export default async function handler(req, res) {
   // Set CORS headers
@@ -56,9 +57,15 @@ export default async function handler(req, res) {
       ticketTypes = ticketTypes.filter(t => t.status !== 'test');
     }
 
-    // Enrich tickets with availability calculation
+    // Get color mappings for all ticket types
+    const colorPromises = ticketTypes.map(ticket =>
+      ticketColorService.getColorForTicketType(ticket.id)
+    );
+    const colors = await Promise.all(colorPromises);
+
+    // Enrich tickets with availability calculation and color
     // NOTE: Explicitly select fields to avoid BigInt serialization errors
-    const enrichedTickets = ticketTypes.map(ticket => ({
+    const enrichedTickets = ticketTypes.map((ticket, index) => ({
       // Core ticket fields (already converted by cache)
       id: ticket.id,
       event_id: ticket.event_id,
@@ -84,6 +91,10 @@ export default async function handler(req, res) {
       can_purchase: ticket.can_purchase,
       // Metadata fields (already parsed by cache)
       metadata: ticket.metadata,
+      // Color information from ticket-color-service
+      color_name: colors[index].name,
+      color_rgb: colors[index].rgb,
+      color_emoji: colors[index].emoji,
       // Event information (already joined in the cache)
       event_name: ticket.event_name,
       event_slug: ticket.event_slug,
@@ -147,7 +158,11 @@ export default async function handler(req, res) {
         sold_count: ticket.sold_count,
         display_order: ticket.display_order,
         event_date: ticket.event_date,
-        event_time: ticket.event_time
+        event_time: ticket.event_time,
+        // Color information
+        color_name: ticket.color_name,
+        color_rgb: ticket.color_rgb,
+        color_emoji: ticket.color_emoji
       });
     });
 

@@ -127,21 +127,13 @@ function generateQuantitySelector() {
 }
 
 /**
- * Get ticket color based on ticket type
+ * Get ticket color from API response
+ * Uses color_rgb field provided by ticket-color-service pattern matching
  */
-function getTicketColor(ticketTypeId) {
-  // Map ticket types to colors (matching existing cards)
-  const colorMap = {
-    'weekender-2025-11-full': 'rgb(169, 169, 169)', // Gray
-    'weekender-2025-11-class': 'rgb(255, 255, 255)', // White
-    'test-vip-pass': 'rgb(255, 20, 147)', // Deep pink
-    'test-weekender-pass': 'rgb(255, 20, 147)',
-    'test-friday-pass': 'rgb(255, 20, 147)',
-    'test-saturday-pass': 'rgb(255, 20, 147)',
-    'test-sunday-pass': 'rgb(255, 20, 147)'
-  };
-
-  return colorMap[ticketTypeId] || 'rgb(169, 169, 169)'; // Default gray
+function getTicketColor(ticketType) {
+  // Use color from API response (provided by ticket-color-service)
+  // Falls back to gray if color not provided
+  return ticketType.color_rgb || 'rgb(169, 169, 169)';
 }
 
 /**
@@ -177,7 +169,7 @@ function generateTicketCard(ticketType, event) {
   const disabledClass = !isAvailable ? 'ticket-disabled' : '';
   const pointerEvents = !isAvailable ? 'pointer-events: none;' : '';
 
-  const ticketColor = getTicketColor(ticketType.id);
+  const ticketColor = getTicketColor(ticketType);
   const dateRange = formatDateRange(event.start_date, event.end_date);
 
   // Escape user-controlled data to prevent XSS
