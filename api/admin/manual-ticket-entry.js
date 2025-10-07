@@ -204,11 +204,29 @@ async function handler(req, res) {
     }
 
     // Validate cash shift requirement for cash payments
-    if (paymentMethod === 'cash' && !cashShiftId) {
-      return res.status(400).json({
-        error: 'cashShiftId is required for cash payments',
-        details: 'Please ensure a cash shift is open before processing cash payments'
+    if (paymentMethod === 'cash') {
+      if (!cashShiftId) {
+        return res.status(400).json({
+          error: 'cashShiftId is required for cash payments',
+          details: 'Please ensure a cash shift is open before processing cash payments'
+        });
+      }
+
+      // Migration 044: Validate shift exists and is open (FK constraint protection)
+      const { getDatabaseClient } = await import('../../lib/database.js');
+      const db = await getDatabaseClient();
+
+      const shiftResult = await db.execute({
+        sql: 'SELECT id, status FROM cash_shifts WHERE id = ? AND status = ?',
+        args: [parseInt(cashShiftId, 10), 'open']
       });
+
+      if (!shiftResult.rows || shiftResult.rows.length === 0) {
+        return res.status(400).json({
+          error: 'Invalid or closed cash shift',
+          details: 'Cash shift must be open to accept payments. Please open a cash shift first.'
+        });
+      }
     }
 
     // ========================================================================

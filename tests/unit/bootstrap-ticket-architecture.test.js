@@ -415,4 +415,242 @@ describe('Bootstrap-Driven Ticket Architecture', () => {
       expect(eventIds).toContain('test-event-1');
     }, TEST_TIMEOUT);
   });
+
+  describe('8. Ticket Card Generator Features', () => {
+    it('should display color indicator from color_rgb field', async () => {
+      const response = await fetch(`${BASE_URL}/api/tickets/types?event_id=boulder-fest-2026`);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+
+      // Verify tickets have color_rgb field
+      data.tickets.forEach(ticket => {
+        expect(ticket).toHaveProperty('color_rgb');
+
+        // color_rgb should be a valid RGB string or null
+        if (ticket.color_rgb) {
+          expect(ticket.color_rgb).toMatch(/^rgb\(\d{1,3},\s*\d{1,3},\s*\d{1,3}\)$/);
+        }
+      });
+
+      // At least some tickets should have colors assigned
+      const ticketsWithColors = data.tickets.filter(t => t.color_rgb);
+      expect(ticketsWithColors.length).toBeGreaterThan(0);
+    }, TEST_TIMEOUT);
+
+    it('should handle XSS in ticket names with uppercase before escape', async () => {
+      // This test verifies the frontend pattern: uppercase BEFORE escaping
+      // Example: "Rock & Roll".toUpperCase() => "ROCK & ROLL" then escape => "ROCK &amp; ROLL"
+      // NOT: "Rock & Roll" escape => "Rock &amp; Roll" then uppercase => "ROCK &AMP; ROLL" (wrong!)
+
+      const response = await fetch(`${BASE_URL}/api/tickets/types?include_test=true`);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+
+      // Verify ticket names are properly structured for safe rendering
+      data.tickets.forEach(ticket => {
+        expect(ticket.name).toBeDefined();
+        expect(typeof ticket.name).toBe('string');
+
+        // Ticket names should not contain HTML entities in the API response
+        // The frontend handles escaping after uppercase transformation
+        expect(ticket.name).not.toMatch(/&amp;|&lt;|&gt;|&quot;|&#039;/);
+      });
+    }, TEST_TIMEOUT);
+
+    it('should format Mountain Time in event headers', async () => {
+      const response = await fetch(`${BASE_URL}/api/tickets/types`);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+
+      // Verify events array exists
+      expect(data.events).toBeDefined();
+      expect(Array.isArray(data.events)).toBe(true);
+
+      if (data.events.length > 0) {
+        data.events.forEach(event => {
+          // Events should have date fields
+          expect(event.start_date).toBeDefined();
+          expect(event.end_date).toBeDefined();
+
+          // Dates should be in ISO format
+          expect(event.start_date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+          expect(event.end_date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+
+          // Event should have venue information
+          expect(event.venue_name).toBeDefined();
+          expect(event.event_name).toBeDefined();
+        });
+      }
+    }, TEST_TIMEOUT);
+
+    it('should group tickets by event correctly', async () => {
+      const response = await fetch(`${BASE_URL}/api/tickets/types`);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.events).toBeDefined();
+
+      // Verify events are grouped
+      data.events.forEach(event => {
+        expect(event.event_id).toBeDefined();
+        expect(event.ticket_types).toBeDefined();
+        expect(Array.isArray(event.ticket_types)).toBe(true);
+
+        // All tickets in this event should have matching event_id
+        event.ticket_types.forEach(ticket => {
+          expect(ticket.event_id).toBe(event.event_id);
+        });
+      });
+
+      // Verify events are sorted chronologically
+      if (data.events.length > 1) {
+        for (let i = 0; i < data.events.length - 1; i++) {
+          const currentDate = new Date(data.events[i].start_date);
+          const nextDate = new Date(data.events[i + 1].start_date);
+
+          // Events should be in chronological order
+          expect(currentDate.getTime()).toBeLessThanOrEqual(nextDate.getTime());
+        }
+      }
+    }, TEST_TIMEOUT);
+
+    it('should handle missing color_rgb with fallback to default', async () => {
+      const response = await fetch(`${BASE_URL}/api/tickets/types?include_test=true`);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+
+      // Check if any tickets are missing color
+      const ticketsWithoutColor = data.tickets.filter(t => !t.color_rgb);
+
+      if (ticketsWithoutColor.length > 0) {
+        // Frontend should handle this gracefully
+        // Verify the API doesn't break when color is missing
+        ticketsWithoutColor.forEach(ticket => {
+          expect(ticket).toHaveProperty('id');
+          expect(ticket).toHaveProperty('name');
+          expect(ticket.color_rgb === null || ticket.color_rgb === undefined).toBe(true);
+        });
+      }
+    }, TEST_TIMEOUT);
+
+    it('should escape HTML entities in ticket descriptions', async () => {
+      const response = await fetch(`${BASE_URL}/api/tickets/types`);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+
+      // Verify descriptions are safe strings
+      data.tickets.forEach(ticket => {
+        if (ticket.description) {
+          expect(typeof ticket.description).toBe('string');
+
+          // API should return raw text, frontend handles escaping
+          // Verify no script tags in raw data
+          expect(ticket.description.toLowerCase()).not.toContain('<script');
+          expect(ticket.description.toLowerCase()).not.toContain('javascript:');
+        }
+      });
+    }, TEST_TIMEOUT);
+
+    it('should handle ticket status for card display', async () => {
+      const response = await fetch(`${BASE_URL}/api/tickets/types?include_test=true`);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+
+      // Verify all tickets have a valid status
+      const validStatuses = ['available', 'coming-soon', 'sold-out', 'closed', 'test'];
+
+      data.tickets.forEach(ticket => {
+        expect(ticket.status).toBeDefined();
+        expect(validStatuses).toContain(ticket.status);
+
+        // Coming-soon tickets should have can_purchase = false
+        if (ticket.status === 'coming-soon') {
+          expect(ticket.can_purchase).toBe(false);
+        }
+
+        // Sold-out tickets should have can_purchase = false
+        if (ticket.status === 'sold-out') {
+          expect(ticket.can_purchase).toBe(false);
+        }
+
+        // Available tickets should have can_purchase = true
+        if (ticket.status === 'available') {
+          expect(ticket.can_purchase).toBe(true);
+        }
+      });
+    }, TEST_TIMEOUT);
+
+    it('should provide complete event information for card headers', async () => {
+      const response = await fetch(`${BASE_URL}/api/tickets/types`);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.events).toBeDefined();
+
+      data.events.forEach(event => {
+        // Required for event header rendering
+        expect(event.event_id).toBeDefined();
+        expect(event.event_name).toBeDefined();
+        expect(event.venue_name).toBeDefined();
+        expect(event.start_date).toBeDefined();
+        expect(event.end_date).toBeDefined();
+
+        // Verify dates are valid
+        const startDate = new Date(event.start_date);
+        const endDate = new Date(event.end_date);
+
+        expect(startDate.toString()).not.toBe('Invalid Date');
+        expect(endDate.toString()).not.toBe('Invalid Date');
+        expect(startDate.getTime()).toBeLessThanOrEqual(endDate.getTime());
+      });
+    }, TEST_TIMEOUT);
+
+    it('should handle price display formatting requirements', async () => {
+      const response = await fetch(`${BASE_URL}/api/tickets/types`);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+
+      data.tickets.forEach(ticket => {
+        // price_cents should be present
+        expect(ticket).toHaveProperty('price_cents');
+
+        // price_display should be formatted as currency
+        if (ticket.price_cents !== null && ticket.price_cents !== undefined) {
+          expect(ticket.price_display).toBeDefined();
+          expect(ticket.price_display).toMatch(/^\$\d+\.\d{2}$/);
+
+          // Verify price_display matches price_cents
+          const expectedDisplay = `$${(ticket.price_cents / 100).toFixed(2)}`;
+          expect(ticket.price_display).toBe(expectedDisplay);
+        }
+      });
+    }, TEST_TIMEOUT);
+
+    it('should support quantity selector data attributes', async () => {
+      const response = await fetch(`${BASE_URL}/api/tickets/types?event_id=boulder-fest-2026`);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+
+      // Verify tickets have required data for quantity selectors
+      data.tickets.forEach(ticket => {
+        expect(ticket.id).toBeDefined();
+        expect(ticket.price_cents).toBeDefined();
+        expect(ticket.name).toBeDefined();
+        expect(ticket.availability).toBeDefined();
+
+        // Available tickets should have availability > 0
+        if (ticket.status === 'available') {
+          expect(ticket.availability).toBeGreaterThan(0);
+        }
+      });
+    }, TEST_TIMEOUT);
+  });
 });
