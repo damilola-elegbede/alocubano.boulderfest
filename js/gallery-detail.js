@@ -1493,9 +1493,9 @@
             }
 
             // Add click handlers for lightbox (only for new items if appending)
-            const selector = appendMode
-                ? '.gallery-item[data-loaded="false"]:not([data-handler-loaded="true"])'
-                : '.gallery-item:not([data-handler-loaded="true"])';
+            // Note: data-handler-loaded is the authoritative flag for tracking click handlers
+            // data-loaded refers to image loading state and is not relevant for handler attachment
+            const selector = '.gallery-item:not([data-handler-loaded="true"])';
             const items = contentEl.querySelectorAll(selector);
             console.log(
                 `🎯 Attaching click handlers to ${items.length} items (appendMode: ${appendMode})`
