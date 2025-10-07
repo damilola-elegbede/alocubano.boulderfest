@@ -33,7 +33,8 @@ const __dirname = path.dirname(__filename);
 
 // Configuration
 const MANIFEST_PATH = path.join(__dirname, '../.gallery-sync-cache.json');
-const GOOGLE_DRIVE_FOLDER_ID = process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID;
+const GOOGLE_DRIVE_FOLDER_ID =
+  process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID || process.env.GOOGLE_DRIVE_FOLDER_ID;
 
 // Parse CLI arguments
 const args = process.argv.slice(2);
@@ -129,7 +130,7 @@ function validateEnvironment() {
   }
 
   if (!GOOGLE_DRIVE_FOLDER_ID) {
-    errors.push('Missing GOOGLE_DRIVE_GALLERY_FOLDER_ID environment variable');
+    errors.push('Missing GOOGLE_DRIVE_GALLERY_FOLDER_ID (or legacy GOOGLE_DRIVE_FOLDER_ID) environment variable');
   }
 
   if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {

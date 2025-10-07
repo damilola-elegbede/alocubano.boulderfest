@@ -419,8 +419,8 @@ if (typeof LazyLoader === 'undefined') {
             const spinner = item.querySelector('.loading-spinner');
 
             if (lazyImage) {
-                const src = lazyImage.getAttribute('data-src');
-                const existingSrc = lazyImage.src;
+                let src = lazyImage.getAttribute('data-src');
+                const existingSrc = lazyImage.getAttribute('src');
 
                 // Handle picture element with source tags
                 const picture = lazyImage.closest('picture');
@@ -435,19 +435,9 @@ if (typeof LazyLoader === 'undefined') {
                     });
                 }
 
-                // If src already set (by progressive loader), just mark as loaded
-                if (existingSrc && !src) {
-                    if (placeholder) {
-                        placeholder.style.display = 'none';
-                    }
-                    if (spinner) {
-                        spinner.style.display = 'none';
-                    }
-                    lazyImage.style.display = 'block';
-                    lazyImage.style.opacity = '1';
-                    item.classList.add(this.config.loadedClass);
-                    item.setAttribute('data-loaded', 'true');
-                    return;
+                // If no new data-src but a src is already present, reuse it
+                if (!src && existingSrc) {
+                    src = existingSrc;
                 }
 
                 if (src) {
@@ -456,7 +446,7 @@ if (typeof LazyLoader === 'undefined') {
                         spinner.style.display = 'block';
                     }
 
-                    lazyImage.onload = () => {
+                    const handleLoadSuccess = () => {
                         // Hide placeholder and spinner
                         if (placeholder) {
                             placeholder.style.display = 'none';
@@ -473,6 +463,8 @@ if (typeof LazyLoader === 'undefined') {
                         item.classList.add(this.config.loadedClass);
                         item.setAttribute('data-loaded', 'true');
                     };
+
+                    lazyImage.onload = handleLoadSuccess;
 
                     lazyImage.onerror = () => {
                         // Check if we already have retry info for this item
@@ -546,8 +538,19 @@ if (typeof LazyLoader === 'undefined') {
                         }
                     };
 
-                    // Start loading
-                    lazyImage.src = src;
+                    // Check if image is already complete
+                    if (lazyImage.complete) {
+                        if (lazyImage.naturalWidth > 0) {
+                            // Image already loaded successfully
+                            handleLoadSuccess();
+                        } else {
+                            // Image failed to load
+                            lazyImage.onerror();
+                        }
+                    } else if (lazyImage.getAttribute('src') !== src) {
+                        // Only set src if it's different to avoid triggering reload
+                        lazyImage.src = src;
+                    }
                     lazyImage.removeAttribute('data-src');
                 }
             }

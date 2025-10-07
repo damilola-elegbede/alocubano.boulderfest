@@ -1267,6 +1267,9 @@
                     const thumbnailUrl_webp = item.thumbnailUrl_webp || null;
                     const usingBlob = item.usingBlob || false;
 
+                    // Determine fallback URL for <img> - use WebP for better browser support
+                    const fallbackUrl = usingBlob && thumbnailUrl_webp ? thumbnailUrl_webp : thumbnailUrl;
+
                     let pictureHtml = `
           <div class="gallery-item lazy-item gallery-image-container" data-index="${globalIndex}" data-category="${categoryName}" data-loaded="true" data-using-blob="${usingBlob}">
             <div class="gallery-item-media">
@@ -1275,7 +1278,7 @@
               </div>
               <picture>`;
 
-                    // Add AVIF source if using Blob (already AVIF) - eager loading
+                    // Add AVIF source if using Blob (dedicated AVIF URL) - eager loading
                     if (usingBlob && thumbnailUrl) {
                       pictureHtml += `
                 <source type="image/avif" srcset="${thumbnailUrl}">`;
@@ -1287,10 +1290,10 @@
                 <source type="image/webp" srcset="${thumbnailUrl_webp}">`;
                     }
 
-                    // Fallback img tag - eager loading (src instead of data-src)
+                    // Fallback img tag - uses WebP for better browser support when using blob
                     pictureHtml += `
-                <img src="${thumbnailUrl}"
-                     data-thumbnail="${thumbnailUrl}"
+                <img src="${fallbackUrl}"
+                     data-thumbnail="${fallbackUrl}"
                      data-dominant-color="#f0f0f0"
                      data-width="400"
                      data-height="300"

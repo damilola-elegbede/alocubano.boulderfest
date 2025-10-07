@@ -99,7 +99,7 @@ async function processVariant(inputBuffer, targetWidth, formats) {
   const basePipeline = sharp(inputBuffer, {
     limitInputPixels: 268402689, // Max 16384x16384
     sequentialRead: true
-  }).resize(targetWidth, null, {
+  }).rotate().resize(targetWidth, null, {
     fit: 'inside',
     withoutEnlargement: true,
     fastShrinkOnLoad: true // 3x faster for large images
