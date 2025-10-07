@@ -170,7 +170,7 @@
       "destination": "/pages/events/weekender-2025-11/index"
     },
     {
-      "source": "/weekender-2025-11-(artists|schedule|gallery)",
+      "source": "/weekender-2025-11/(artists|schedule|gallery)",
       "destination": "/pages/events/weekender-2025-11/$1"
     },
     {
