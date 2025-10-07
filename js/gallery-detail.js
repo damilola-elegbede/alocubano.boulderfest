@@ -400,19 +400,12 @@
         );
         items.forEach((item) => {
             setupGalleryItemHandlers(item, { categories: categorizedItems });
-            // Note: NOT setting data-loaded="true" yet - lazy loading needs to happen first
+            // Eager loading enabled - images already have src set
+            item.setAttribute('data-handler-loaded', 'true');
         });
 
-        // Now observe lazy items (they still have data-loaded="false")
-        observeLazyItems();
-
-        // Wait a brief moment for lazy loading to initialize, then mark as loaded for tracking
-        setTimeout(() => {
-            items.forEach((item) => {
-                // Only mark as loaded for tracking purposes, but don't interfere with lazy loading
-                item.setAttribute('data-handler-loaded', 'true');
-            });
-        }, 100);
+        // Lazy loading disabled - thumbnails load eagerly
+        // observeLazyItems();
 
         // Restore lightbox state
         state.lightboxItems = state.displayOrder;
@@ -450,22 +443,8 @@
                 } else {
                     console.warn('LazyLoader retry functionality not available');
 
-                    // Fallback: manually trigger loading for failed images
-                    imagesToRetry.forEach((imageSrc) => {
-                        const imgElements = document.querySelectorAll(
-                            `img[data-src="${imageSrc}"]`
-                        );
-                        imgElements.forEach((img) => {
-                            // Mark as not loaded to trigger lazy loading again
-                            const container = img.closest('.lazy-item');
-                            if (container) {
-                                container.setAttribute('data-loaded', 'false');
-                            }
-                        });
-                    });
-
-                    // Re-observe to trigger loading
-                    observeLazyItems();
+                    // Eager loading: images load immediately, no need to retry via lazy loading
+                    // Failed images will show broken image icon and can be retried via browser reload
                 }
             }, 500); // Small delay to ensure LazyLoader is ready
         }
@@ -740,8 +719,9 @@
         });
         console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-        // Initialize lazy loading observer
-        initLazyLoading();
+        // Lazy loading disabled - using eager loading for thumbnails
+        // Full images still preload via intersection observer
+        // initLazyLoading();
 
         // Check for saved state FIRST - this is the key change
         const stateRestored = restoreState();
@@ -1283,28 +1263,28 @@
                     const usingBlob = item.usingBlob || false;
 
                     let pictureHtml = `
-          <div class="gallery-item lazy-item gallery-image-container" data-index="${globalIndex}" data-category="${categoryName}" data-loaded="false" data-using-blob="${usingBlob}">
+          <div class="gallery-item lazy-item gallery-image-container" data-index="${globalIndex}" data-category="${categoryName}" data-loaded="true" data-using-blob="${usingBlob}">
             <div class="gallery-item-media">
-              <div class="lazy-placeholder">
+              <div class="lazy-placeholder" style="display: none;">
                 <div class="loading-spinner">📸</div>
               </div>
               <picture>`;
 
-                    // Add AVIF source if using Blob (already AVIF)
+                    // Add AVIF source if using Blob (already AVIF) - eager loading
                     if (usingBlob && thumbnailUrl) {
                       pictureHtml += `
-                <source type="image/avif" data-srcset="${thumbnailUrl}">`;
+                <source type="image/avif" srcset="${thumbnailUrl}">`;
                     }
 
-                    // Add WebP source if available
+                    // Add WebP source if available - eager loading
                     if (thumbnailUrl_webp) {
                       pictureHtml += `
-                <source type="image/webp" data-srcset="${thumbnailUrl_webp}">`;
+                <source type="image/webp" srcset="${thumbnailUrl_webp}">`;
                     }
 
-                    // Fallback img tag
+                    // Fallback img tag - eager loading (src instead of data-src)
                     pictureHtml += `
-                <img data-src="${thumbnailUrl}"
+                <img src="${thumbnailUrl}"
                      data-thumbnail="${thumbnailUrl}"
                      data-dominant-color="#f0f0f0"
                      data-width="400"
@@ -1313,9 +1293,9 @@
                      data-image-id="${item.id || globalIndex}"
                      alt="${title}"
                      class="lazy-image gallery-image"
-                     loading="lazy"
+                     loading="eager"
                      decoding="async"
-                     style="display: none;">
+                     style="display: block; opacity: 1;">
               </picture>
             </div>
           </div>
@@ -1474,21 +1454,15 @@
             }
             items.forEach((item) => {
                 setupGalleryItemHandlers(item, data);
-                // Don't set data-loaded="true" immediately - let lazy loading happen first
+                // Eager loading enabled - images already have src set
+                item.setAttribute('data-handler-loaded', 'true');
             });
 
-            // Observe new lazy items AFTER handlers are attached
-            observeLazyItems();
+            // Lazy loading disabled - thumbnails load eagerly
+            // observeLazyItems();
 
-            // Mark items as handler-loaded for tracking without interfering with lazy loading
-            setTimeout(() => {
-                items.forEach((item) => {
-                    item.setAttribute('data-handler-loaded', 'true');
-                });
-
-                // Re-initialize intersection preloading for new items
-                setupIntersectionPreloading();
-            }, 100);
+            // Re-initialize intersection preloading for full images
+            setupIntersectionPreloading();
         }
 
         // Store all items for lightbox (flatten categories)
