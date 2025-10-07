@@ -5,6 +5,7 @@
 
 import { test, expect } from '@playwright/test';
 import { warnIfOptionalSecretsUnavailable } from '../helpers/test-setup.js';
+import { getTestTimeout } from '../helpers/playwright-utils.js';
 
 test.describe('Payment Processing Flow', () => {
   // Check for payment service secrets - tests can run with mocks if missing
@@ -79,7 +80,7 @@ test.describe('Payment Processing Flow', () => {
     await expect(paypalPaymentMethod).toBeEnabled();
   });
 
-  test('should initiate Stripe checkout session', async ({ page }) => {
+  test('should initiate Stripe checkout session', async ({ page }, testInfo) => {
     // Use the proper add to cart button with data-testid
     const addButton = page.locator('[data-testid="weekend-pass-add"]');
     await expect(addButton).toBeVisible({ timeout: 10000 });
@@ -108,7 +109,9 @@ test.describe('Payment Processing Flow', () => {
     await expect(checkoutButton).toBeEnabled();
 
     // Set up request monitoring before clicking checkout
-    const stripeRequestPromise = page.waitForRequest('**/create-checkout-session', { timeout: 10000 });
+    const stripeRequestPromise = page.waitForRequest('**/create-checkout-session', {
+      timeout: getTestTimeout(testInfo, 'api')
+    });
 
     await checkoutButton.click();
 
@@ -124,8 +127,29 @@ test.describe('Payment Processing Flow', () => {
       const request = await stripeRequestPromise;
       expect(request.method()).toBe('POST');
 
-      // Should redirect to Stripe or show processing state
-      await page.waitForLoadState('domcontentloaded', { timeout: 3000 });
+      // Wait for Stripe redirect or processing state with flexible timeout and polling
+      await Promise.race([
+        // Option 1: Wait for URL change to Stripe
+        page.waitForURL(/checkout\.stripe\.com/, {
+          timeout: getTestTimeout(testInfo, 'navigation'),
+          waitUntil: 'domcontentloaded'
+        }).catch(() => null),
+        // Option 2: Wait for Stripe iframe to appear
+        page.waitForSelector('iframe[src*="stripe"]', {
+          timeout: getTestTimeout(testInfo, 'normal'),
+          state: 'visible'
+        }).catch(() => null),
+        // Option 3: Wait for processing overlay
+        page.waitForSelector('.payment-processing-overlay', {
+          timeout: getTestTimeout(testInfo, 'quick'),
+          state: 'visible'
+        }).catch(() => null),
+        // Option 4: Just wait for DOM to load
+        page.waitForLoadState('domcontentloaded', {
+          timeout: getTestTimeout(testInfo, 'normal')
+        }).catch(() => null)
+      ]);
+
       const currentUrl = page.url();
 
       expect(
@@ -142,7 +166,7 @@ test.describe('Payment Processing Flow', () => {
     }
   });
 
-  test('should handle payment form validation', async ({ page }) => {
+  test('should handle payment form validation', async ({ page }, testInfo) => {
     // Add ticket to cart first using proper selector
     const addButton = page.locator('[data-testid="weekend-pass-add"]');
     await expect(addButton).toBeVisible();
@@ -173,9 +197,16 @@ test.describe('Payment Processing Flow', () => {
     await expect(stripePaymentMethod).toBeVisible();
     await stripePaymentMethod.click();
 
-    // Wait for Stripe redirect or form - in real scenarios this would redirect to Stripe
-    // For testing, we mainly verify the flow works up to the redirect
-    await page.waitForLoadState('domcontentloaded', { timeout: 2000 });
+    // Wait for Stripe redirect or form with flexible polling
+    await Promise.race([
+      page.waitForURL(/checkout\.stripe\.com/, {
+        timeout: getTestTimeout(testInfo, 'navigation'),
+        waitUntil: 'domcontentloaded'
+      }).catch(() => null),
+      page.waitForLoadState('domcontentloaded', {
+        timeout: getTestTimeout(testInfo, 'quick')
+      }).catch(() => null)
+    ]);
 
     // Verify we either redirected to Stripe or got some form of checkout page
     const currentUrl = page.url();
@@ -190,7 +221,7 @@ test.describe('Payment Processing Flow', () => {
     ).toBeTruthy();
   });
 
-  test('should process test payment successfully', async ({ page }) => {
+  test('should process test payment successfully', async ({ page }, testInfo) => {
     // Add ticket using proper selector
     const addButton = page.locator('[data-testid="weekend-pass-add"]');
     await expect(addButton).toBeVisible();
@@ -221,8 +252,16 @@ test.describe('Payment Processing Flow', () => {
     await expect(stripePaymentMethod).toBeVisible();
     await stripePaymentMethod.click();
 
-    // In test mode, we should get redirected to Stripe or see processing state
-    await page.waitForLoadState('domcontentloaded', { timeout: 3000 });
+    // Wait for Stripe redirect or processing state with flexible polling
+    await Promise.race([
+      page.waitForURL(/checkout\.stripe\.com/, {
+        timeout: getTestTimeout(testInfo, 'navigation'),
+        waitUntil: 'domcontentloaded'
+      }).catch(() => null),
+      page.waitForLoadState('domcontentloaded', {
+        timeout: getTestTimeout(testInfo, 'normal')
+      }).catch(() => null)
+    ]);
 
     const currentUrl = page.url();
     const hasStripeRedirect = currentUrl.includes('stripe.com');
@@ -480,7 +519,7 @@ test.describe('Payment Processing Flow', () => {
     expect(true).toBeTruthy();
   });
 
-  test('should initiate PayPal checkout flow', async ({ page }) => {
+  test('should initiate PayPal checkout flow', async ({ page }, testInfo) => {
     // Add ticket to cart
     const addButton = page.locator('[data-testid="weekend-pass-add"]');
     await expect(addButton).toBeVisible({ timeout: 10000 });
@@ -506,7 +545,9 @@ test.describe('Payment Processing Flow', () => {
     await expect(checkoutButton).toBeEnabled();
 
     // Monitor PayPal order creation request
-    const paypalRequestPromise = page.waitForRequest('**/paypal/create-order', { timeout: 10000 });
+    const paypalRequestPromise = page.waitForRequest('**/paypal/create-order', {
+      timeout: getTestTimeout(testInfo, 'api')
+    });
 
     await checkoutButton.click();
 
@@ -522,8 +563,29 @@ test.describe('Payment Processing Flow', () => {
       const request = await paypalRequestPromise;
       expect(request.method()).toBe('POST');
 
-      // Should redirect to PayPal or show processing state
-      await page.waitForLoadState('domcontentloaded', { timeout: 3000 });
+      // Wait for PayPal redirect or processing state with flexible polling
+      await Promise.race([
+        // Option 1: Wait for URL change to PayPal
+        page.waitForURL(/paypal\.com/, {
+          timeout: getTestTimeout(testInfo, 'navigation'),
+          waitUntil: 'domcontentloaded'
+        }).catch(() => null),
+        // Option 2: Wait for PayPal iframe to appear
+        page.waitForSelector('iframe[src*="paypal"]', {
+          timeout: getTestTimeout(testInfo, 'normal'),
+          state: 'visible'
+        }).catch(() => null),
+        // Option 3: Wait for processing overlay
+        page.waitForSelector('.paypal-processing-overlay', {
+          timeout: getTestTimeout(testInfo, 'quick'),
+          state: 'visible'
+        }).catch(() => null),
+        // Option 4: Just wait for DOM to load
+        page.waitForLoadState('domcontentloaded', {
+          timeout: getTestTimeout(testInfo, 'normal')
+        }).catch(() => null)
+      ]);
+
       const currentUrl = page.url();
 
       expect(

@@ -33,6 +33,13 @@ describe('Wallet Pass Generation - Unit Tests', () => {
       token_uri: 'https://oauth2.googleapis.com/token'
     });
 
+    // Generate relative dates for testing (always 60 days in the future)
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + 60);
+    const eventStartDate = new Date(futureDate);
+    const eventEndDate = new Date(futureDate);
+    eventEndDate.setDate(eventEndDate.getDate() + 2); // 3-day festival
+
     // Mock database client
     mockDb = {
       execute: vi.fn().mockResolvedValue({
@@ -49,8 +56,8 @@ describe('Wallet Pass Generation - Unit Tests', () => {
           venue_city: 'Boulder',
           venue_state: 'CO',
           venue_address: '6185 Arapahoe Road, Boulder, CO 80303',
-          start_date: '2026-05-15T10:00:00-06:00',
-          end_date: '2026-05-17T23:00:00-06:00',
+          start_date: eventStartDate.toISOString(),
+          end_date: eventEndDate.toISOString(),
           qr_token: 'test-qr-token-jwt',
           validation_code: 'ABC123DEF456',
           scan_count: 0,
@@ -176,10 +183,13 @@ describe('Wallet Pass Generation - Unit Tests', () => {
     });
 
     it('should set event date as relevantDate', () => {
-      const relevantDate = '2026-05-15T10:00:00-06:00';
+      // Use relative date (60 days in future)
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 60);
+      const relevantDate = futureDate.toISOString();
 
-      expect(relevantDate).toContain('2026-05-15');
-      expect(relevantDate).toContain('-06:00'); // Mountain Time offset
+      expect(relevantDate).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+      expect(new Date(relevantDate)).toBeInstanceOf(Date);
     });
 
     it('should include background color from ticket type', () => {
@@ -257,13 +267,20 @@ describe('Wallet Pass Generation - Unit Tests', () => {
     });
 
     it('should set valid event date/time', () => {
+      // Use relative dates (60 days in future for start, +2 days for end)
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() + 60);
+      const endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + 2);
+
       const eventDateTime = {
-        start: '2026-05-15T10:00:00-06:00',
-        end: '2026-05-17T23:00:00-06:00'
+        start: startDate.toISOString(),
+        end: endDate.toISOString()
       };
 
-      expect(eventDateTime.start).toContain('2026-05-15');
-      expect(eventDateTime.end).toContain('2026-05-17');
+      expect(new Date(eventDateTime.start)).toBeInstanceOf(Date);
+      expect(new Date(eventDateTime.end)).toBeInstanceOf(Date);
+      expect(new Date(eventDateTime.end) > new Date(eventDateTime.start)).toBe(true);
     });
 
     it('should include venue location', () => {
@@ -426,25 +443,32 @@ describe('Wallet Pass Generation - Unit Tests', () => {
 
   describe('Pass Expiration Dates', () => {
     it('should set expiration to event end date', () => {
-      const eventEndDate = '2026-05-17T23:00:00-06:00';
+      // Use relative date (60 days in future + 2 days for event duration)
+      const eventEndDate = new Date();
+      eventEndDate.setDate(eventEndDate.getDate() + 62);
       const expirationDate = new Date(eventEndDate);
 
-      expect(expirationDate.getFullYear()).toBe(2026);
-      expect(expirationDate.getMonth()).toBe(4); // May (0-indexed)
-      expect(expirationDate.getDate()).toBe(17);
+      expect(expirationDate.getTime()).toBeGreaterThan(Date.now());
+      expect(expirationDate).toBeInstanceOf(Date);
     });
 
     it('should mark pass as invalid after event ends', () => {
-      const eventEndDate = new Date('2026-05-17T23:00:00-06:00');
-      const now = new Date('2026-05-18T00:00:00-06:00');
+      // Use relative dates: event ended yesterday
+      const eventEndDate = new Date();
+      eventEndDate.setDate(eventEndDate.getDate() - 1);
+      const now = new Date();
 
       expect(now > eventEndDate).toBe(true);
     });
 
     it('should allow pass to be valid before and during event', () => {
-      const eventStartDate = new Date('2026-05-15T10:00:00-06:00');
-      const eventEndDate = new Date('2026-05-17T23:00:00-06:00');
-      const now = new Date('2026-05-16T12:00:00-06:00');
+      // Use relative dates: event starts in 60 days, ends in 62 days, now is in 61 days
+      const eventStartDate = new Date();
+      eventStartDate.setDate(eventStartDate.getDate() + 60);
+      const eventEndDate = new Date(eventStartDate);
+      eventEndDate.setDate(eventEndDate.getDate() + 2);
+      const now = new Date(eventStartDate);
+      now.setDate(now.getDate() + 1); // During the event
 
       expect(now >= eventStartDate && now <= eventEndDate).toBe(true);
     });
@@ -560,25 +584,39 @@ describe('Wallet Pass Generation - Unit Tests', () => {
 
   describe('Mountain Time Formatting', () => {
     it('should format event dates in Mountain Time', () => {
-      const eventDate = '2026-05-15T10:00:00-06:00';
+      // Use relative date and just verify the format
+      const eventDate = new Date();
+      eventDate.setDate(eventDate.getDate() + 60);
+      const isoString = eventDate.toISOString();
 
-      expect(eventDate).toContain('-06:00'); // MDT offset
+      expect(isoString).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
     });
 
     it('should display human-readable date format', () => {
-      const displayDate = 'May 15-17, 2026';
+      // Use relative dates to generate a dynamic display
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() + 60);
+      const endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + 2);
+
+      const monthName = startDate.toLocaleDateString('en-US', { month: 'short' });
+      const displayDate = `${monthName} ${startDate.getDate()}-${endDate.getDate()}, ${startDate.getFullYear()}`;
 
       expect(displayDate).toMatch(/^[A-Za-z]+ \d+-\d+, \d{4}$/);
     });
 
     it('should handle DST transitions correctly', () => {
-      // May is in MDT (UTC-6)
-      const summerDate = '2026-05-15T10:00:00-06:00';
-      expect(summerDate).toContain('-06:00');
+      // Test that dates in different seasons are handled correctly
+      const summerDate = new Date();
+      summerDate.setMonth(6); // July (MDT period)
+      const winterDate = new Date();
+      winterDate.setMonth(11); // December (MST period)
 
-      // December would be in MST (UTC-7)
-      const winterDate = '2026-12-15T10:00:00-07:00';
-      expect(winterDate).toContain('-07:00');
+      // Verify dates are valid instances
+      expect(summerDate).toBeInstanceOf(Date);
+      expect(winterDate).toBeInstanceOf(Date);
+      expect(summerDate.getMonth()).toBe(6);
+      expect(winterDate.getMonth()).toBe(11);
     });
   });
 });

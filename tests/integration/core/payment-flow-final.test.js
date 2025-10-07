@@ -94,7 +94,14 @@ describe('Payment Integration Tests - Final Implementation', () => {
         event_id: 'boulder-fest-2026'
       });
 
-      // 3. Create the actual ticket record
+      // 3. Get ticket count before creation for database state verification
+      const beforeTickets = await db.execute(
+        'SELECT COUNT(*) as count FROM tickets WHERE transaction_id = ?',
+        [transactionId]
+      );
+      const initialTicketCount = beforeTickets.rows[0].count;
+
+      // Create the actual ticket record
       await createTicket(transactionId, {
         ticket_id: 'TICKET-VIP-' + Date.now(),
         ticket_type: 'vip',
@@ -103,6 +110,13 @@ describe('Payment Integration Tests - Final Implementation', () => {
         attendee_last_name: 'Customer',
         registration_status: 'pending'
       });
+
+      // Verify database state: ticket count incremented
+      const afterCreation = await db.execute(
+        'SELECT COUNT(*) as count FROM tickets WHERE transaction_id = ?',
+        [transactionId]
+      );
+      expect(afterCreation.rows[0].count).toBe(initialTicketCount + 1);
 
       // 4. Create payment event for successful checkout
       const eventId = await createPaymentEvent({
@@ -187,12 +201,26 @@ describe('Payment Integration Tests - Final Implementation', () => {
         donation_category: 'artist-support'
       });
 
+      // Get ticket count before creation for database state verification
+      const beforeTickets = await db.execute(
+        'SELECT COUNT(*) as count FROM tickets WHERE transaction_id = ?',
+        [transactionId]
+      );
+      const initialTicketCount = beforeTickets.rows[0].count;
+
       // Create ticket for the weekend pass only
       await createTicket(transactionId, {
         ticket_id: 'TICKET-WE-' + Date.now(),
         ticket_type: 'weekend-pass',
         price_cents: 15000
       });
+
+      // Verify database state: ticket count incremented by 1 (not for donation)
+      const afterTickets = await db.execute(
+        'SELECT COUNT(*) as count FROM tickets WHERE transaction_id = ?',
+        [transactionId]
+      );
+      expect(afterTickets.rows[0].count).toBe(initialTicketCount + 1);
 
       // Verify mixed transaction
       const items = await db.execute(
@@ -237,6 +265,13 @@ describe('Payment Integration Tests - Final Implementation', () => {
         ticket_type: 'general'
       });
 
+      // Get ticket count before creation for database state verification
+      const beforeTickets = await db.execute(
+        'SELECT COUNT(*) as count FROM tickets WHERE transaction_id = ?',
+        [transactionId]
+      );
+      const initialTicketCount = beforeTickets.rows[0].count;
+
       // Create 2 individual ticket records
       await createTicket(transactionId, {
         ticket_id: 'TICKET-GA1-' + Date.now(),
@@ -272,6 +307,13 @@ describe('Payment Integration Tests - Final Implementation', () => {
       expect(tickets.rows).toHaveLength(2);
       expect(tickets.rows[0].attendee_first_name).toBe('First');
       expect(tickets.rows[1].attendee_first_name).toBe('Second');
+
+      // Database state verification: confirm ticket count incremented correctly
+      const afterTickets = await db.execute(
+        'SELECT COUNT(*) as count FROM tickets WHERE transaction_id = ?',
+        [transactionId]
+      );
+      expect(afterTickets.rows[0].count).toBe(initialTicketCount + 2);
     });
 
     test('should handle donation-only transaction', async () => {

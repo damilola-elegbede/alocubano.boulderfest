@@ -130,13 +130,17 @@ describe('RegistrationTokenService - Unit Tests', () => {
   describe('Token Validation', () => {
     it('should validate token with correct signature successfully', async () => {
       const transactionId = 789;
+      const tokenId = crypto.randomUUID();
+      const currentTime = Math.floor(Date.now() / 1000);
+      const expiryTime = currentTime + 3600;
+
       const token = jwt.sign(
         {
-          tid: crypto.randomUUID(),
+          tid: tokenId,
           txn: String(transactionId),
           type: 'registration',
-          iat: Math.floor(Date.now() / 1000),
-          exp: Math.floor(Date.now() / 1000) + 3600
+          iat: currentTime,
+          exp: expiryTime
         },
         TEST_SECRET,
         { algorithm: 'HS256' }
@@ -147,7 +151,7 @@ describe('RegistrationTokenService - Unit Tests', () => {
           id: transactionId,
           customer_email: 'test@example.com',
           registration_token: token,
-          registration_token_expires: new Date(Date.now() + 3600000).toISOString(),
+          registration_token_expires: new Date(expiryTime * 1000).toISOString(),
           all_tickets_registered: false
         }]
       });
@@ -156,6 +160,18 @@ describe('RegistrationTokenService - Unit Tests', () => {
 
       expect(result).toHaveProperty('transactionId', transactionId);
       expect(result).toHaveProperty('customerId', 'test@example.com');
+
+      // Verify JWT signature
+      expect(() => jwt.verify(token, TEST_SECRET)).not.toThrow();
+
+      // Decode and verify payload claims
+      const payload = jwt.decode(token);
+      expect(payload.tid).toBe(tokenId);
+      expect(payload.txn).toBe(String(transactionId));
+      expect(payload.type).toBe('registration');
+      expect(payload.exp).toBeGreaterThan(Date.now() / 1000);
+      expect(payload.iat).toBeLessThanOrEqual(Date.now() / 1000);
+      expect(payload.exp - payload.iat).toBe(3600); // 1 hour validity
     });
 
     it('should reject token with invalid signature', async () => {

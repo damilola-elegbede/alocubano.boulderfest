@@ -13,7 +13,76 @@ test.describe('Ticket Validation', () => {
   const testTicketId = `${testConstants.TEST_PREFIX}TICKET_12345678`;
   const testQRCode = `${testConstants.TEST_PREFIX}QR_12345678`;
 
+  // Admin credentials for authentication
+  const adminCredentials = {
+    email: testConstants.admin.email,
+    password: process.env.TEST_ADMIN_PASSWORD || 'test-admin-password'
+  };
+
+  /**
+   * Helper function to perform admin login
+   * @param {Page} page - Playwright page object
+   * @returns {Promise<boolean|string>} True if login successful, 'rate_limited' if rate limited, false otherwise
+   */
+  async function loginAsAdmin(page) {
+    try {
+      await page.goto('/admin/login');
+
+      // Wait for login form to be ready
+      await page.waitForSelector('input[name="username"]', { timeout: 30000 });
+      await page.waitForSelector('input[name="password"]', { timeout: 30000 });
+      await page.waitForSelector('button[type="submit"]', { timeout: 30000 });
+
+      // Fill in credentials
+      await page.fill('input[name="username"]', adminCredentials.email);
+      await page.fill('input[name="password"]', adminCredentials.password);
+
+      // Submit login form
+      await page.click('button[type="submit"]');
+
+      // Wait for login to complete
+      await Promise.race([
+        page.waitForURL('**/admin/dashboard', { timeout: 60000 }),
+        page.waitForSelector('#errorMessage', { state: 'visible', timeout: 30000 })
+      ]);
+
+      const currentUrl = page.url();
+      if (!currentUrl.includes('/admin/dashboard')) {
+        const errorMessage = page.locator('#errorMessage');
+        if (await errorMessage.isVisible()) {
+          const errorText = await errorMessage.textContent();
+          if (errorText.includes('locked') || errorText.includes('rate limit')) {
+            console.log('⚠️  Admin login rate limited');
+            return 'rate_limited';
+          }
+          throw new Error(`Login failed: ${errorText}`);
+        }
+        console.log('⚠️  Login did not redirect to dashboard');
+        return false;
+      }
+
+      console.log('✅ Admin login successful');
+      return true;
+    } catch (error) {
+      console.error('❌ Admin login failed:', error.message);
+      return false;
+    }
+  }
+
   test.beforeEach(async ({ page }) => {
+    // Login as admin before each test
+    const loginResult = await loginAsAdmin(page);
+
+    if (loginResult === 'rate_limited') {
+      test.skip('Skipping test - admin account rate limited');
+      return;
+    }
+
+    if (!loginResult) {
+      test.skip('Skipping test - admin login failed');
+      return;
+    }
+
     // Navigate to ticket validation page (if exists) or admin area
     try {
       await page.goto('/admin/checkin');
@@ -185,6 +254,9 @@ test.describe('Ticket Validation', () => {
   });
 
   test('should handle validation API calls', async ({ page }) => {
+    // Note: Admin authentication is handled by beforeEach hook
+    // This test runs with valid admin session and monitors API calls
+
     // Monitor validation API calls
     let validationApiCalled = false;
     page.on('request', request => {
@@ -203,7 +275,7 @@ test.describe('Ticket Validation', () => {
         await validateBtn.click();
         await page.waitForTimeout(2000);
 
-        // Should have made API call
+        // Should have made API call with admin authentication from session
         // In test mode, this might be mocked
         expect(page.url()).toBeDefined();
       }

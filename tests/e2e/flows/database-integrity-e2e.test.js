@@ -254,13 +254,14 @@ test.describe('Database Integrity E2E', () => {
           await page.selectOption('[name="paymentMethod"]', 'card_terminal');
           await page.click('button:has-text("Complete Purchase")');
 
-          // Should fail with availability error
-          const hasError = await page.locator('.error-message, .alert-error').count() > 0;
-          if (hasError) {
-            await expect(page.locator('.error-message')).toContainText(
-              /not available|insufficient|sold out/i
-            );
-          }
+          // Must fail with availability error and must not show success
+          await expect(page.locator('.success-message')).toHaveCount(0, {
+            timeout: getTestTimeout(test.info(), 'expect')
+          });
+          await expect(page.locator('.error-message, .alert-error')).toContainText(
+            /not available|insufficient|sold out/i,
+            { timeout: getTestTimeout(test.info(), 'expect') }
+          );
         }
       } else {
         console.log('No limited-quantity tickets available for overselling test');
@@ -362,10 +363,9 @@ test.describe('Database Integrity E2E', () => {
         await searchBox.fill('rollback-');
         await page.keyboard.press('Enter');
 
-        // Should not find partial transaction
-        const results = await page.locator('.transaction-row, tr').count();
-        // Either no results or clearly marked as failed
-        expect(results >= 0).toBeTruthy();
+        // Should not find any transaction rows matching our email
+        const matching = page.locator('.transaction-row:has-text("rollback-"), tr:has-text("rollback-")');
+        await expect(matching).toHaveCount(0, { timeout: getTestTimeout(test.info(), 'expect') });
       }
     });
   });

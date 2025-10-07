@@ -380,7 +380,7 @@ test.describe('Cash Shift Management E2E', () => {
 
       const errorShown = await page.locator('.error-message, .alert-error').count() > 0;
       // Should either prevent duplicate or show error
-      expect(errorShown || true).toBeTruthy();
+      expect(errorShown).toBeTruthy();
     });
 
     test('should prevent closing already closed shift', async ({ page }) => {

@@ -67,21 +67,61 @@ describe('Ticket Email Service Integration', () => {
       0
     );
 
+    // Create event first (required for tickets foreign key)
+    const eventResult = await dbClient.execute({
+      sql: `INSERT INTO events (
+        slug, name, type, start_date, end_date, venue_name, status, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+      args: [
+        'boulder-fest-2026',
+        'A Lo Cubano Boulder Fest 2026',
+        'festival',
+        '2026-05-15',
+        '2026-05-17',
+        'Avalon Ballroom',
+        'active'
+      ]
+    }).catch(() => {
+      // Event might already exist, that's okay
+      return { lastInsertRowid: null };
+    });
+
+    // Get event ID
+    const eventLookup = await dbClient.execute({
+      sql: 'SELECT id FROM events WHERE slug = ?',
+      args: ['boulder-fest-2026']
+    });
+    const eventDbId = eventLookup.rows[0]?.id;
+
     // Create transaction
+    const registrationToken = `reg-token-${Date.now()}`;
+    const registrationTokenExpires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(); // 30 days from now
+    const transactionExternalId = `txn-${Date.now()}-${Math.random()}`;
+    const orderData = JSON.stringify({
+      tickets: tickets.map(t => ({ type: t.ticket_type, price: t.price_cents })),
+      donations: donations.map(d => ({ name: d.item_name, amount: d.amount_cents }))
+    });
+
     const transactionResult = await dbClient.execute({
       sql: `INSERT INTO transactions (
-        uuid, customer_email, customer_name, total_amount, status,
-        stripe_session_id, order_number, registration_token, is_test, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+        transaction_id, uuid, type, amount_cents, order_data, customer_email, customer_name,
+        total_amount, status, stripe_session_id, order_number, registration_token,
+        registration_token_expires, is_test, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
       args: [
-        `txn-${Date.now()}-${Math.random()}`,
+        transactionExternalId,
+        `uuid-${Date.now()}-${Math.random()}`,
+        tickets.length > 0 ? 'tickets' : 'donation',
+        totalAmount,
+        orderData,
         customerEmail,
         customerName,
         totalAmount,
         'completed',
         `cs_test_${Date.now()}`,
         `ALO-2026-${Date.now()}`,
-        `reg-token-${Date.now()}`,
+        registrationToken,
+        registrationTokenExpires,
         isTest ? 1 : 0
       ]
     });
@@ -99,7 +139,7 @@ describe('Ticket Email Service Integration', () => {
           `ticket-${Date.now()}-${Math.random()}`,
           transactionId,
           ticket.ticket_type || 'Weekend Pass',
-          'boulder-fest-2026',
+          eventDbId,
           ticket.price_cents || 12500,
           `qr-${Date.now()}-${Math.random()}`,
           isTest ? 1 : 0
@@ -109,16 +149,18 @@ describe('Ticket Email Service Integration', () => {
 
     // Create donations as transaction items
     for (const donation of donations) {
+      const donationAmount = donation.amount_cents || 5000;
       await dbClient.execute({
         sql: `INSERT INTO transaction_items (
-          transaction_id, item_type, item_name, total_price_cents,
+          transaction_id, item_type, item_name, unit_price_cents, total_price_cents,
           is_test, created_at
-        ) VALUES (?, ?, ?, ?, ?, datetime('now'))`,
+        ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`,
         args: [
           transactionId,
           'donation',
           donation.item_name || 'Festival Support',
-          donation.amount_cents || 5000,
+          donationAmount,
+          donationAmount,
           isTest ? 1 : 0
         ]
       });
@@ -528,6 +570,171 @@ describe('Ticket Email Service Integration', () => {
 
       const emailData = mockEmailResponses[0].data;
       expect(emailData.htmlContent).toContain('/register-tickets?token=');
+    });
+  });
+
+  describe('Template Variable Interpolation', () => {
+    test('should correctly interpolate all template variables', async () => {
+      const transaction = await createTestTransaction({
+        customerName: 'Jane Smith',
+        customerEmail: testEmail,
+        tickets: [
+          { ticket_type: 'Weekend Pass', price_cents: 12500 },
+          { ticket_type: 'VIP Package', price_cents: 25000 }
+        ],
+        donations: [
+          { item_name: 'Artist Fund', amount_cents: 5000 }
+        ]
+      });
+
+      await emailService.sendTicketConfirmation(transaction);
+
+      expect(mockEmailResponses).toHaveLength(1);
+      const emailData = mockEmailResponses[0].data;
+      const htmlContent = emailData.htmlContent;
+
+      // Verify customer details interpolation
+      expect(htmlContent).toContain('Jane Smith');
+      expect(htmlContent).toContain(testEmail);
+
+      // Verify order details interpolation
+      expect(htmlContent).toContain(transaction.order_number);
+
+      // Verify ticket details interpolation
+      expect(htmlContent).toContain('Weekend Pass');
+      expect(htmlContent).toContain('VIP Package');
+      expect(htmlContent).toContain('$125.00');
+      expect(htmlContent).toContain('$250.00');
+
+      // Verify donation details interpolation
+      expect(htmlContent).toContain('Artist Fund');
+      expect(htmlContent).toContain('$50.00');
+
+      // Verify total amount interpolation
+      expect(htmlContent).toContain('$425.00');
+
+      // Verify registration token interpolation
+      expect(htmlContent).toContain(transaction.registration_token);
+    });
+
+    test('should interpolate special characters correctly', async () => {
+      const transaction = await createTestTransaction({
+        customerName: "O'Connor & Associates",
+        tickets: [{ ticket_type: 'Weekend Pass', price_cents: 12500 }]
+      });
+
+      await emailService.sendTicketConfirmation(transaction);
+
+      const emailData = mockEmailResponses[0].data;
+      const htmlContent = emailData.htmlContent;
+
+      // Verify special characters are preserved
+      expect(htmlContent).toContain("O'Connor & Associates");
+    });
+
+    test('should interpolate numeric values with proper formatting', async () => {
+      const transaction = await createTestTransaction({
+        tickets: [
+          { ticket_type: 'Weekend Pass', price_cents: 12500 },
+          { ticket_type: 'Single Day', price_cents: 5000 }
+        ]
+      });
+
+      await emailService.sendTicketConfirmation(transaction);
+
+      const emailData = mockEmailResponses[0].data;
+      const htmlContent = emailData.htmlContent;
+
+      // Verify currency formatting
+      expect(htmlContent).toContain('$125.00');
+      expect(htmlContent).toContain('$50.00');
+      expect(htmlContent).toContain('$175.00'); // Total
+
+      // Should NOT contain unformatted cents values
+      expect(htmlContent).not.toContain('12500');
+      expect(htmlContent).not.toContain('5000');
+    });
+
+    test('should interpolate dates in Mountain Time format', async () => {
+      const transaction = await createTestTransaction({
+        tickets: [{ ticket_type: 'Weekend Pass', price_cents: 12500 }]
+      });
+
+      await emailService.sendTicketConfirmation(transaction);
+
+      const emailData = mockEmailResponses[0].data;
+      const htmlContent = emailData.htmlContent;
+
+      // Verify Mountain Time timezone is present
+      expect(htmlContent).toMatch(/MST|MDT|MT/);
+
+      // Verify date format is human-readable
+      expect(htmlContent).toMatch(/\w+\s+\d{1,2},\s+\d{4}/); // e.g., "Jan 15, 2026"
+    });
+
+    test('should interpolate empty or missing optional fields gracefully', async () => {
+      const transaction = await createTestTransaction({
+        customerName: 'Test User',
+        tickets: [{ ticket_type: 'Weekend Pass', price_cents: 12500 }]
+      });
+
+      // Remove card details (optional fields)
+      await dbClient.execute({
+        sql: `UPDATE transactions
+              SET card_brand = NULL, card_last4 = NULL, payment_wallet = NULL
+              WHERE id = ?`,
+        args: [transaction.id]
+      });
+
+      const updatedTxn = await dbClient.execute({
+        sql: 'SELECT * FROM transactions WHERE id = ?',
+        args: [transaction.id]
+      });
+
+      await emailService.sendTicketConfirmation(updatedTxn.rows[0]);
+
+      const emailData = mockEmailResponses[0].data;
+      const htmlContent = emailData.htmlContent;
+
+      // Email should still be valid without optional fields
+      expect(htmlContent).toBeDefined();
+      expect(htmlContent).toContain('Test User');
+      expect(htmlContent).toContain('Weekend Pass');
+
+      // Should not contain undefined or null text
+      expect(htmlContent).not.toContain('undefined');
+      expect(htmlContent).not.toContain('null');
+    });
+
+    test('should interpolate multiple items with correct sequential numbering', async () => {
+      const transaction = await createTestTransaction({
+        tickets: [
+          { ticket_type: 'Ticket A', price_cents: 10000 },
+          { ticket_type: 'Ticket B', price_cents: 20000 },
+          { ticket_type: 'Ticket C', price_cents: 30000 }
+        ],
+        donations: [
+          { item_name: 'Donation X', amount_cents: 5000 },
+          { item_name: 'Donation Y', amount_cents: 7500 }
+        ]
+      });
+
+      await emailService.sendTicketConfirmation(transaction);
+
+      const emailData = mockEmailResponses[0].data;
+      const htmlContent = emailData.htmlContent;
+
+      // Verify all items are present
+      expect(htmlContent).toContain('Ticket A');
+      expect(htmlContent).toContain('Ticket B');
+      expect(htmlContent).toContain('Ticket C');
+      expect(htmlContent).toContain('Donation X');
+      expect(htmlContent).toContain('Donation Y');
+
+      // Verify sequential numbering (1-5)
+      for (let i = 1; i <= 5; i++) {
+        expect(htmlContent).toContain(`>${i}<`);
+      }
     });
   });
 
