@@ -100,6 +100,14 @@ test.describe('Registration Process', () => {
           const errorElements = page.locator('.error, .invalid-feedback, .required-error');
           if (await errorElements.count() > 0) {
             await expect(errorElements.first()).toBeVisible();
+
+            // Verify validation error message appears
+            const validationMessage = page.locator('.error-message, .validation-error, .field-error, .form-error');
+            if (await validationMessage.count() > 0) {
+              await expect(validationMessage.first()).toContainText(
+                /required|cannot be empty|invalid|must be|please (enter|provide|fill)/i
+              );
+            }
           }
         }
       }

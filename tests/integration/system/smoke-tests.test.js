@@ -64,3 +64,27 @@ test('security and operations readiness', async () => {
     expect([HTTP_STATUS.BAD_REQUEST, HTTP_STATUS.NOT_FOUND, HTTP_STATUS.UNAUTHORIZED, HTTP_STATUS.INTERNAL_SERVER_ERROR].includes(ticketResponse.status)).toBe(true);
   }
 });
+
+test('critical API endpoints are accessible', async () => {
+  const criticalEndpoints = [
+    { path: '/api/health/check', method: 'GET' },
+    { path: '/api/gallery', method: 'GET' },
+    { path: '/api/payments/checkout-success', method: 'GET' }
+  ];
+
+  for (const endpoint of criticalEndpoints) {
+    const response = await testRequest(endpoint.method, endpoint.path);
+
+    // Skip if service is unavailable (status 0 indicates network/service issue)
+    if (response.status === 0) {
+      console.warn(`⚠️ ${endpoint.path} unavailable - skipping endpoint check`);
+      continue;
+    }
+
+    // Endpoint should be responsive (not a 5xx server error)
+    expect(response.status).toBeLessThan(500);
+
+    // Should return OK or expected client errors (4xx), but not server errors
+    expect(response.status < 500).toBeTruthy();
+  }
+});

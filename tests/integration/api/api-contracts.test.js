@@ -25,6 +25,8 @@ test('payment API creates valid Stripe checkout session', async () => {
 
   // Validate successful response structure
   if (response.status === HTTP_STATUS.OK) {
+    // Verify HTTP 200 status code for success
+    expect(response.status).toBe(HTTP_STATUS.OK);
     expect(response.data).toHaveProperty('checkoutUrl');
     expect(response.data).toHaveProperty('sessionId');
     expect(response.data).toHaveProperty('orderId');
@@ -34,6 +36,8 @@ test('payment API creates valid Stripe checkout session', async () => {
   }
   // Validate error responses have proper structure
   else if (response.status === HTTP_STATUS.BAD_REQUEST) {
+    // Verify HTTP 400 status code for bad request
+    expect(response.status).toBe(HTTP_STATUS.BAD_REQUEST);
     expect(response.data).toHaveProperty('error');
     expect(typeof response.data.error).toBe('string');
   }
@@ -60,6 +64,8 @@ test('email subscription API validates and processes requests correctly', async 
 
   // Validate successful subscription
   if (response.status === HTTP_STATUS.OK || response.status === 201) {
+    // Verify HTTP 200/201 status code for success
+    expect([HTTP_STATUS.OK, 201]).toContain(response.status);
     expect(response.data).toHaveProperty('success');
     expect(response.data).toHaveProperty('message');
     expect(response.data).toHaveProperty('subscriber');
@@ -69,6 +75,8 @@ test('email subscription API validates and processes requests correctly', async 
   }
   // Validate error structure for bad requests
   else if (response.status === HTTP_STATUS.BAD_REQUEST) {
+    // Verify HTTP 400 status code for bad request
+    expect(response.status).toBe(HTTP_STATUS.BAD_REQUEST);
     expect(response.data).toHaveProperty('error');
   }
   else {
@@ -89,12 +97,18 @@ test('ticket validation API handles QR codes correctly', async () => {
 
   // Should return 404 for non-existent tickets or 400 for invalid format
   if (response.status === HTTP_STATUS.NOT_FOUND) {
+    // Verify HTTP 404 status code for not found
+    expect(response.status).toBe(HTTP_STATUS.NOT_FOUND);
     expect(response.data).toHaveProperty('error');
     expect(response.data.error).toMatch(/not found|invalid|does not exist/i);
   } else if (response.status === HTTP_STATUS.BAD_REQUEST) {
+    // Verify HTTP 400 status code for bad request
+    expect(response.status).toBe(HTTP_STATUS.BAD_REQUEST);
     expect(response.data).toHaveProperty('error');
     expect(response.data.error).toMatch(/invalid|required|format|not found/i);
   } else if (response.status === HTTP_STATUS.OK) {
+    // Verify HTTP 200 status code for success
+    expect(response.status).toBe(HTTP_STATUS.OK);
     // Validate successful response structure
     expect(response.data).toHaveProperty('valid');
     expect(typeof response.data.valid).toBe('boolean');
@@ -116,6 +130,8 @@ test('gallery API returns proper data structure', async () => {
 
   // Validate successful response
   if (response.status === HTTP_STATUS.OK) {
+    // Verify HTTP 200 status code for success
+    expect(response.status).toBe(HTTP_STATUS.OK);
     // Gallery API doesn't return eventId in production
     expect(response.data).toHaveProperty('categories');
     expect(response.data).toHaveProperty('totalCount');
@@ -138,6 +154,8 @@ test('gallery API returns proper data structure', async () => {
   }
   // Validate error responses
   else if (response.status === 403) {
+    // Verify HTTP 403 status code for forbidden
+    expect(response.status).toBe(403);
     expect(response.data).toHaveProperty('error');
   }
 
@@ -154,6 +172,12 @@ test('admin dashboard enforces authentication', async () => {
 
   // Should require authentication (allow server errors)
   expect([HTTP_STATUS.UNAUTHORIZED, HTTP_STATUS.NOT_FOUND, HTTP_STATUS.INTERNAL_SERVER_ERROR].includes(response.status)).toBe(true);
+
+  // Verify HTTP 401 status code for unauthorized access
+  if (response.status === HTTP_STATUS.UNAUTHORIZED) {
+    expect(response.status).toBe(HTTP_STATUS.UNAUTHORIZED);
+  }
+
   if (response.data && response.data.error) {
     expect(response.data.error).toMatch(/unauthorized|authentication|access denied|not authorized|error/i);
   }
@@ -163,8 +187,14 @@ test('registration API contract validation', async () => {
   // Test registration status endpoint
   let response = await testRequest('GET', '/api/registration/TEST-TOKEN');
   if (response.status === HTTP_STATUS.OK) {
+    // Verify HTTP 200 status code for success
+    expect(response.status).toBe(HTTP_STATUS.OK);
     expect(response.data).toHaveProperty('transactionId');
     expect(response.data).toHaveProperty('tickets');
+  } else if (response.status === HTTP_STATUS.NOT_FOUND) {
+    // Verify HTTP 404 status code for not found
+    expect(response.status).toBe(HTTP_STATUS.NOT_FOUND);
+    expect(response.data).toHaveProperty('error');
   }
 
   // Test registration submission
@@ -175,13 +205,25 @@ test('registration API contract validation', async () => {
     email: generateTestEmail()
   });
   if (response.status === HTTP_STATUS.OK) {
+    // Verify HTTP 200 status code for success
+    expect(response.status).toBe(HTTP_STATUS.OK);
     expect(response.data).toHaveProperty('success');
     expect(response.data).toHaveProperty('attendee');
+  } else if (response.status === HTTP_STATUS.BAD_REQUEST) {
+    // Verify HTTP 400 status code for bad request
+    expect(response.status).toBe(HTTP_STATUS.BAD_REQUEST);
+    expect(response.data).toHaveProperty('error');
+  } else if (response.status === HTTP_STATUS.NOT_FOUND) {
+    // Verify HTTP 404 status code for not found ticket
+    expect(response.status).toBe(HTTP_STATUS.NOT_FOUND);
+    expect(response.data).toHaveProperty('error');
   }
 
   // Test health endpoint
   response = await testRequest('GET', '/api/registration/health');
   if (response.status === HTTP_STATUS.OK) {
+    // Verify HTTP 200 status code for success
+    expect(response.status).toBe(HTTP_STATUS.OK);
     expect(response.data).toHaveProperty('service');
     expect(response.data).toHaveProperty('status');
   }

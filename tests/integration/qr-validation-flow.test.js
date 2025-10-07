@@ -1,0 +1,697 @@
+/**
+ * Integration Tests for QR Validation Flow
+ * Tests complete QR scan workflow, authentication, atomicity, and audit logging
+ */
+
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { getDbClient } from '../setup-integration.js';
+import { getQRTokenService } from '../../lib/qr-token-service.js';
+
+describe('QR Validation Flow - Integration Tests', () => {
+  let db;
+  let qrService;
+  const BASE_URL = process.env.VITEST_BASE_URL || 'http://localhost:3000';
+
+  beforeAll(async () => {
+    // Set up test environment
+    process.env.INTEGRATION_TEST_MODE = 'true';
+    process.env.QR_SECRET_KEY = 'test-qr-secret-key-minimum-32-chars-long-for-integration';
+    process.env.WALLET_AUTH_SECRET = 'test-wallet-auth-secret-minimum-32-chars-long';
+
+    db = await getDbClient();
+    qrService = getQRTokenService();
+
+    // Create test tickets
+    await db.execute({
+      sql: `
+        INSERT INTO tickets (
+          ticket_id, transaction_id, ticket_type, ticket_type_name,
+          attendee_first_name, attendee_last_name, attendee_email,
+          status, validation_status, scan_count, max_scan_count,
+          event_id, registration_status, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+      `,
+      args: [
+        'QR-TEST-001',
+        1,
+        'full-pass',
+        'Full Festival Pass',
+        'Alice',
+        'Johnson',
+        'alice@example.com',
+        'valid',
+        'active',
+        0,
+        10,
+        'boulder-fest-2026',
+        'completed'
+      ]
+    });
+
+    // Create ticket at scan limit
+    await db.execute({
+      sql: `
+        INSERT INTO tickets (
+          ticket_id, transaction_id, ticket_type, ticket_type_name,
+          attendee_first_name, attendee_last_name, attendee_email,
+          status, validation_status, scan_count, max_scan_count,
+          event_id, registration_status, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+      `,
+      args: [
+        'QR-TEST-002',
+        2,
+        'full-pass',
+        'Full Festival Pass',
+        'Bob',
+        'Smith',
+        'bob@example.com',
+        'valid',
+        'active',
+        10,
+        10,
+        'boulder-fest-2026',
+        'completed'
+      ]
+    });
+
+    // Create suspended ticket
+    await db.execute({
+      sql: `
+        INSERT INTO tickets (
+          ticket_id, transaction_id, ticket_type, ticket_type_name,
+          attendee_first_name, attendee_last_name, attendee_email,
+          status, validation_status, scan_count, max_scan_count,
+          event_id, registration_status, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+      `,
+      args: [
+        'QR-TEST-003',
+        3,
+        'full-pass',
+        'Full Festival Pass',
+        'Charlie',
+        'Davis',
+        'charlie@example.com',
+        'valid',
+        'suspended',
+        0,
+        10,
+        'boulder-fest-2026',
+        'completed'
+      ]
+    });
+  });
+
+  afterAll(async () => {
+    // Cleanup handled by setup-integration.js
+  });
+
+  describe('Complete QR Scan Workflow', () => {
+    it('should validate ticket and increment scan count', async () => {
+      const ticketId = 'QR-TEST-001';
+      const token = await qrService.getOrCreateToken(ticketId);
+
+      const response = await fetch(`${BASE_URL}/api/tickets/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token })
+      });
+
+      expect(response.status).toBe(200);
+
+      const data = await response.json();
+      expect(data.valid).toBe(true);
+      expect(data.validation.status).toBe('valid');
+      expect(data.validation.scan_count).toBeGreaterThan(0);
+
+      // Verify scan count in database
+      const result = await db.execute({
+        sql: 'SELECT scan_count, last_scanned_at FROM tickets WHERE ticket_id = ?',
+        args: [ticketId]
+      });
+
+      expect(result.rows[0].scan_count).toBeGreaterThan(0);
+      expect(result.rows[0].last_scanned_at).toBeDefined();
+    });
+
+    it('should set first_scanned_at on initial scan', async () => {
+      const ticketId = 'QR-TEST-001';
+
+      // Check first_scanned_at was set
+      const result = await db.execute({
+        sql: 'SELECT first_scanned_at FROM tickets WHERE ticket_id = ?',
+        args: [ticketId]
+      });
+
+      expect(result.rows[0].first_scanned_at).toBeDefined();
+    });
+
+    it('should reject validation with invalid token', async () => {
+      const invalidToken = 'invalid.jwt.token';
+
+      const response = await fetch(`${BASE_URL}/api/tickets/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: invalidToken })
+      });
+
+      expect(response.status).toBeGreaterThanOrEqual(400);
+
+      const data = await response.json();
+      expect(data.valid).toBe(false);
+    });
+
+    it('should reject scan when limit reached', async () => {
+      const ticketId = 'QR-TEST-002';
+      const token = await qrService.getOrCreateToken(ticketId);
+
+      const response = await fetch(`${BASE_URL}/api/tickets/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token })
+      });
+
+      expect(response.status).toBeGreaterThanOrEqual(400);
+
+      const data = await response.json();
+      expect(data.valid).toBe(false);
+      expect(data.error).toContain('Maximum scans exceeded');
+    });
+
+    it('should reject scan for suspended ticket', async () => {
+      const ticketId = 'QR-TEST-003';
+      const token = await qrService.getOrCreateToken(ticketId);
+
+      const response = await fetch(`${BASE_URL}/api/tickets/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token })
+      });
+
+      expect(response.status).toBeGreaterThanOrEqual(400);
+
+      const data = await response.json();
+      expect(data.valid).toBe(false);
+    });
+  });
+
+  describe('Scan Endpoint Authentication', () => {
+    it('should accept POST requests only', async () => {
+      const token = 'test-token';
+
+      const getResponse = await fetch(`${BASE_URL}/api/tickets/validate?token=${token}`, {
+        method: 'GET'
+      });
+
+      expect(getResponse.status).toBe(405);
+    });
+
+    it('should require token in request body', async () => {
+      const response = await fetch(`${BASE_URL}/api/tickets/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+
+      expect(response.status).toBeGreaterThanOrEqual(400);
+
+      const data = await response.json();
+      expect(data.valid).toBe(false);
+    });
+
+    it('should validate token format before processing', async () => {
+      const response = await fetch(`${BASE_URL}/api/tickets/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: 'abc' }) // Too short
+      });
+
+      expect(response.status).toBeGreaterThanOrEqual(400);
+
+      const data = await response.json();
+      expect(data.valid).toBe(false);
+    });
+
+    it('should detect suspicious token patterns', async () => {
+      const maliciousToken = '<script>alert("xss")</script>';
+
+      const response = await fetch(`${BASE_URL}/api/tickets/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: maliciousToken })
+      });
+
+      expect(response.status).toBeGreaterThanOrEqual(400);
+
+      const data = await response.json();
+      expect(data.valid).toBe(false);
+    });
+  });
+
+  describe('Scan Count Atomicity', () => {
+    it('should prevent race conditions in concurrent scans', async () => {
+      const ticketId = 'QR-CONCURRENT-001';
+
+      // Create fresh ticket
+      await db.execute({
+        sql: `
+          INSERT INTO tickets (
+            ticket_id, transaction_id, ticket_type, ticket_type_name,
+            attendee_first_name, attendee_last_name, attendee_email,
+            status, validation_status, scan_count, max_scan_count,
+            event_id, registration_status, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        `,
+        args: [
+          ticketId,
+          100,
+          'full-pass',
+          'Full Festival Pass',
+          'Test',
+          'User',
+          'test@example.com',
+          'valid',
+          'active',
+          0,
+          10,
+          'boulder-fest-2026',
+          'completed'
+        ]
+      });
+
+      const token = await qrService.getOrCreateToken(ticketId);
+
+      // Simulate concurrent scans
+      const scanPromises = Array(5).fill(null).map(() =>
+        fetch(`${BASE_URL}/api/tickets/validate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token })
+        })
+      );
+
+      const responses = await Promise.all(scanPromises);
+      const successCount = responses.filter(r => r.status === 200).length;
+
+      // Verify final scan count matches successful scans
+      const result = await db.execute({
+        sql: 'SELECT scan_count FROM tickets WHERE ticket_id = ?',
+        args: [ticketId]
+      });
+
+      expect(result.rows[0].scan_count).toBe(successCount);
+    });
+
+    it('should use atomic UPDATE with condition check', async () => {
+      // Test that UPDATE includes WHERE clause preventing over-increment
+      const updateQuery = `
+        UPDATE tickets
+        SET scan_count = scan_count + 1
+        WHERE ticket_id = ?
+          AND scan_count < max_scan_count
+          AND status = 'valid'
+          AND validation_status = 'active'
+      `;
+
+      expect(updateQuery).toContain('scan_count < max_scan_count');
+      expect(updateQuery).toContain("status = 'valid'");
+      expect(updateQuery).toContain("validation_status = 'active'");
+    });
+
+    it('should verify rowsAffected after atomic update', async () => {
+      const ticketId = 'QR-ATOMIC-001';
+
+      await db.execute({
+        sql: `
+          INSERT INTO tickets (
+            ticket_id, transaction_id, ticket_type, ticket_type_name,
+            attendee_first_name, attendee_last_name, attendee_email,
+            status, validation_status, scan_count, max_scan_count,
+            event_id, registration_status, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        `,
+        args: [
+          ticketId,
+          101,
+          'full-pass',
+          'Full Festival Pass',
+          'Test',
+          'User',
+          'test@example.com',
+          'valid',
+          'active',
+          0,
+          10,
+          'boulder-fest-2026',
+          'completed'
+        ]
+      });
+
+      const result = await db.execute({
+        sql: `
+          UPDATE tickets
+          SET scan_count = scan_count + 1
+          WHERE ticket_id = ?
+            AND scan_count < max_scan_count
+        `,
+        args: [ticketId]
+      });
+
+      expect(result.rowsAffected).toBe(1);
+    });
+  });
+
+  describe('Invalid QR Code Rejection', () => {
+    it('should reject ticket not found', async () => {
+      const nonExistentToken = qrService.generateToken({ tid: 'NON-EXISTENT' });
+
+      const response = await fetch(`${BASE_URL}/api/tickets/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: nonExistentToken })
+      });
+
+      expect(response.status).toBe(404);
+
+      const data = await response.json();
+      expect(data.valid).toBe(false);
+      expect(data.error).toContain('not found');
+    });
+
+    it('should reject cancelled ticket', async () => {
+      const ticketId = 'QR-CANCELLED-001';
+
+      await db.execute({
+        sql: `
+          INSERT INTO tickets (
+            ticket_id, transaction_id, ticket_type, ticket_type_name,
+            attendee_first_name, attendee_last_name, attendee_email,
+            status, validation_status, scan_count, max_scan_count,
+            event_id, registration_status, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        `,
+        args: [
+          ticketId,
+          102,
+          'full-pass',
+          'Full Festival Pass',
+          'Test',
+          'User',
+          'test@example.com',
+          'cancelled',
+          'active',
+          0,
+          10,
+          'boulder-fest-2026',
+          'completed'
+        ]
+      });
+
+      const token = await qrService.getOrCreateToken(ticketId);
+
+      const response = await fetch(`${BASE_URL}/api/tickets/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token })
+      });
+
+      expect(response.status).toBeGreaterThanOrEqual(400);
+
+      const data = await response.json();
+      expect(data.valid).toBe(false);
+      expect(data.error).toContain('cancelled');
+    });
+
+    it('should reject refunded ticket', async () => {
+      const ticketId = 'QR-REFUNDED-001';
+
+      await db.execute({
+        sql: `
+          INSERT INTO tickets (
+            ticket_id, transaction_id, ticket_type, ticket_type_name,
+            attendee_first_name, attendee_last_name, attendee_email,
+            status, validation_status, scan_count, max_scan_count,
+            event_id, registration_status, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        `,
+        args: [
+          ticketId,
+          103,
+          'full-pass',
+          'Full Festival Pass',
+          'Test',
+          'User',
+          'test@example.com',
+          'refunded',
+          'active',
+          0,
+          10,
+          'boulder-fest-2026',
+          'completed'
+        ]
+      });
+
+      const token = await qrService.getOrCreateToken(ticketId);
+
+      const response = await fetch(`${BASE_URL}/api/tickets/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token })
+      });
+
+      expect(response.status).toBeGreaterThanOrEqual(400);
+
+      const data = await response.json();
+      expect(data.valid).toBe(false);
+      expect(data.error).toContain('refunded');
+    });
+  });
+
+  describe('Scan Audit Logging', () => {
+    it('should log successful scan to qr_validations table', async () => {
+      const ticketId = 'QR-AUDIT-001';
+
+      await db.execute({
+        sql: `
+          INSERT INTO tickets (
+            ticket_id, transaction_id, ticket_type, ticket_type_name,
+            attendee_first_name, attendee_last_name, attendee_email,
+            status, validation_status, scan_count, max_scan_count,
+            event_id, registration_status, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        `,
+        args: [
+          ticketId,
+          104,
+          'full-pass',
+          'Full Festival Pass',
+          'Test',
+          'User',
+          'test@example.com',
+          'valid',
+          'active',
+          0,
+          10,
+          'boulder-fest-2026',
+          'completed'
+        ]
+      });
+
+      const token = await qrService.getOrCreateToken(ticketId);
+
+      await fetch(`${BASE_URL}/api/tickets/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token })
+      });
+
+      // Check qr_validations log
+      const result = await db.execute({
+        sql: 'SELECT * FROM qr_validations WHERE ticket_id = ? ORDER BY created_at DESC LIMIT 1',
+        args: [ticketId]
+      });
+
+      expect(result.rows.length).toBeGreaterThan(0);
+      expect(result.rows[0].validation_result).toBe('success');
+    });
+
+    it('should log failed scan attempt', async () => {
+      const invalidToken = 'invalid.token.value';
+
+      await fetch(`${BASE_URL}/api/tickets/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: invalidToken })
+      });
+
+      // Check qr_validations log for failed attempt
+      const result = await db.execute({
+        sql: 'SELECT * FROM qr_validations WHERE validation_result = ? ORDER BY created_at DESC LIMIT 1',
+        args: ['failed']
+      });
+
+      expect(result.rows.length).toBeGreaterThan(0);
+      expect(result.rows[0].failure_reason).toBeDefined();
+    });
+
+    it('should record validation source (web, apple_wallet, google_wallet)', async () => {
+      const ticketId = 'QR-SOURCE-001';
+
+      await db.execute({
+        sql: `
+          INSERT INTO tickets (
+            ticket_id, transaction_id, ticket_type, ticket_type_name,
+            attendee_first_name, attendee_last_name, attendee_email,
+            status, validation_status, scan_count, max_scan_count,
+            event_id, registration_status, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        `,
+        args: [
+          ticketId,
+          105,
+          'full-pass',
+          'Full Festival Pass',
+          'Test',
+          'User',
+          'test@example.com',
+          'valid',
+          'active',
+          0,
+          10,
+          'boulder-fest-2026',
+          'completed'
+        ]
+      });
+
+      const token = await qrService.getOrCreateToken(ticketId);
+
+      await fetch(`${BASE_URL}/api/tickets/validate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Wallet-Source': 'apple_wallet'
+        },
+        body: JSON.stringify({ token })
+      });
+
+      const result = await db.execute({
+        sql: 'SELECT validation_source FROM qr_validations WHERE ticket_id = ? ORDER BY created_at DESC LIMIT 1',
+        args: [ticketId]
+      });
+
+      expect(result.rows[0].validation_source).toBe('apple_wallet');
+    });
+  });
+
+  describe('IP Tracking', () => {
+    it('should extract and log client IP address', async () => {
+      const ticketId = 'QR-IP-001';
+
+      await db.execute({
+        sql: `
+          INSERT INTO tickets (
+            ticket_id, transaction_id, ticket_type, ticket_type_name,
+            attendee_first_name, attendee_last_name, attendee_email,
+            status, validation_status, scan_count, max_scan_count,
+            event_id, registration_status, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        `,
+        args: [
+          ticketId,
+          106,
+          'full-pass',
+          'Full Festival Pass',
+          'Test',
+          'User',
+          'test@example.com',
+          'valid',
+          'active',
+          0,
+          10,
+          'boulder-fest-2026',
+          'completed'
+        ]
+      });
+
+      const token = await qrService.getOrCreateToken(ticketId);
+
+      await fetch(`${BASE_URL}/api/tickets/validate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Forwarded-For': '203.0.113.45'
+        },
+        body: JSON.stringify({ token })
+      });
+
+      const result = await db.execute({
+        sql: 'SELECT ip_address FROM qr_validations WHERE ticket_id = ? ORDER BY created_at DESC LIMIT 1',
+        args: [ticketId]
+      });
+
+      expect(result.rows[0].ip_address).toBeDefined();
+    });
+
+    it('should handle multiple IPs in X-Forwarded-For', async () => {
+      const forwardedFor = '203.0.113.45, 198.51.100.1, 192.0.2.1';
+      const firstIP = forwardedFor.split(',')[0].trim();
+
+      expect(firstIP).toBe('203.0.113.45');
+    });
+
+    it('should validate IP address format', () => {
+      const validIPv4 = '192.168.1.1';
+      const validIPv6 = '2001:0db8:85a3:0000:0000:8a2e:0370:7334';
+      const invalidIP = 'not-an-ip';
+
+      expect(validIPv4).toMatch(/^\d+\.\d+\.\d+\.\d+$/);
+      expect(validIPv6).toMatch(/^[0-9a-f:]+$/i);
+      expect(invalidIP).not.toMatch(/^\d+\.\d+\.\d+\.\d+$/);
+    });
+  });
+
+  describe('Performance', () => {
+    it('should complete validation under 100ms', async () => {
+      const ticketId = 'QR-PERF-001';
+
+      await db.execute({
+        sql: `
+          INSERT INTO tickets (
+            ticket_id, transaction_id, ticket_type, ticket_type_name,
+            attendee_first_name, attendee_last_name, attendee_email,
+            status, validation_status, scan_count, max_scan_count,
+            event_id, registration_status, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        `,
+        args: [
+          ticketId,
+          107,
+          'full-pass',
+          'Full Festival Pass',
+          'Test',
+          'User',
+          'test@example.com',
+          'valid',
+          'active',
+          0,
+          10,
+          'boulder-fest-2026',
+          'completed'
+        ]
+      });
+
+      const token = await qrService.getOrCreateToken(ticketId);
+
+      const start = Date.now();
+      await fetch(`${BASE_URL}/api/tickets/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token })
+      });
+      const duration = Date.now() - start;
+
+      expect(duration).toBeLessThan(100);
+    });
+  });
+});

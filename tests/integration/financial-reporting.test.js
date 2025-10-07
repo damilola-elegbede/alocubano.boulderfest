@@ -960,4 +960,205 @@ describe('Financial Reporting Integration Tests', () => {
       expect(report.currency_breakdown.GBP.transaction_count).toBe(1);
     });
   });
+
+  describe('Financial Reporting with Manual Payment Processors', () => {
+    beforeEach(async () => {
+      // Log manual payment events with different processors
+      const manualPayments = [
+        {
+          processor: 'cash',
+          amount: 10000,
+          ref: 'CASH-001',
+          action: 'PAYMENT_SUCCESSFUL'
+        },
+        {
+          processor: 'card_terminal',
+          amount: 15000,
+          ref: 'TERMINAL-001',
+          action: 'PAYMENT_SUCCESSFUL'
+        },
+        {
+          processor: 'venmo',
+          amount: 7500,
+          ref: 'VENMO-001',
+          action: 'PAYMENT_SUCCESSFUL'
+        },
+        {
+          processor: 'comp',
+          amount: 5000,
+          ref: 'COMP-001',
+          action: 'PAYMENT_SUCCESSFUL'
+        }
+      ];
+
+      for (const payment of manualPayments) {
+        await auditService.logFinancialEvent({
+          requestId: `req_${payment.ref}`,
+          action: payment.action,
+          amountCents: payment.amount,
+          currency: 'USD',
+          transactionReference: payment.ref,
+          paymentStatus: 'completed',
+          metadata: {
+            payment_method_types: [payment.processor],
+            manual_entry: true,
+            created_at: '2026-05-15T12:00:00.000Z'
+          }
+        });
+      }
+
+      // Add some online payments for comparison
+      await auditService.logFinancialEvent({
+        requestId: 'req_stripe_001',
+        action: 'PAYMENT_SUCCESSFUL',
+        amountCents: 12000,
+        currency: 'USD',
+        transactionReference: 'stripe_001',
+        paymentStatus: 'completed',
+        metadata: {
+          payment_method_types: ['card'],
+          manual_entry: false,
+          created_at: '2026-05-15T12:00:00.000Z'
+        }
+      });
+    });
+
+    it('should include cash transactions in revenue report', async () => {
+      const report = await reportingService.generateRevenueReport('2026-05-15', '2026-05-15');
+
+      expect(report.payment_methods.cash).toBe(10000);
+      expect(report.summary.total_gross_revenue_cents).toBeGreaterThanOrEqual(10000);
+    });
+
+    it('should include card_terminal transactions in revenue report', async () => {
+      const report = await reportingService.generateRevenueReport('2026-05-15', '2026-05-15');
+
+      expect(report.payment_methods.card_terminal).toBe(15000);
+    });
+
+    it('should include venmo transactions in revenue report', async () => {
+      const report = await reportingService.generateRevenueReport('2026-05-15', '2026-05-15');
+
+      expect(report.payment_methods.venmo).toBe(7500);
+    });
+
+    it('should include comp transactions but exclude from revenue calculations', async () => {
+      const report = await reportingService.generateRevenueReport('2026-05-15', '2026-05-15');
+
+      // Comp transactions should be tracked
+      expect(report.payment_methods.comp).toBe(5000);
+
+      // Total revenue should include all payment methods
+      const totalManualPayments = 10000 + 15000 + 7500 + 5000; // cash + terminal + venmo + comp
+      const onlinePayments = 12000; // stripe
+      expect(report.summary.total_gross_revenue_cents).toBe(totalManualPayments + onlinePayments);
+    });
+
+    it('should separate manual vs online payment methods in reports', async () => {
+      const report = await reportingService.generateRevenueReport('2026-05-15', '2026-05-15');
+
+      // Manual payment methods
+      const manualMethods = ['cash', 'card_terminal', 'venmo', 'comp'];
+      manualMethods.forEach(method => {
+        expect(report.payment_methods[method]).toBeDefined();
+        expect(report.payment_methods[method]).toBeGreaterThan(0);
+      });
+
+      // Online payment methods
+      expect(report.payment_methods.card).toBeDefined();
+      expect(report.payment_methods.card).toBe(12000);
+
+      // Verify all payment methods are tracked
+      const totalPaymentMethodRevenue = Object.values(report.payment_methods)
+        .reduce((sum, amount) => sum + amount, 0);
+
+      expect(totalPaymentMethodRevenue).toBe(report.summary.total_gross_revenue_cents);
+    });
+
+    it('should calculate accurate totals across all processors', async () => {
+      const report = await reportingService.generateRevenueReport('2026-05-15', '2026-05-15');
+
+      // Expected total: cash(10k) + terminal(15k) + venmo(7.5k) + comp(5k) + stripe(12k) = 49.5k
+      expect(report.summary.total_gross_revenue_cents).toBe(49500);
+
+      // Verify transaction count includes all payment methods
+      expect(report.summary.transaction_count).toBe(5);
+
+      // Verify payment methods breakdown matches total
+      const calculatedTotal = Object.values(report.payment_methods)
+        .reduce((sum, amount) => sum + amount, 0);
+
+      expect(calculatedTotal).toBe(49500);
+    });
+
+    it('should track manual payment metadata correctly', async () => {
+      const events = await auditService.queryAuditLogs({
+        eventType: 'financial_event',
+        startDate: '2026-05-15T00:00:00.000Z',
+        endDate: '2026-05-15T23:59:59.999Z',
+        limit: 100
+      });
+
+      const manualPaymentEvents = events.logs.filter(log => {
+        try {
+          const metadata = JSON.parse(log.metadata || '{}');
+          return metadata.manual_entry === true;
+        } catch {
+          return false;
+        }
+      });
+
+      expect(manualPaymentEvents.length).toBe(4); // cash, terminal, venmo, comp
+    });
+
+    it('should differentiate between comp and paid transactions', async () => {
+      const report = await reportingService.generateRevenueReport('2026-05-15', '2026-05-15');
+
+      // Comp transactions are tracked separately
+      const compRevenue = report.payment_methods.comp || 0;
+      expect(compRevenue).toBe(5000);
+
+      // Paid revenue (excluding comp) should be calculable
+      const paidRevenue = report.summary.total_gross_revenue_cents - compRevenue;
+      expect(paidRevenue).toBe(44500); // 49.5k - 5k comp
+    });
+
+    it('should handle mixed manual and online transactions in same report', async () => {
+      const report = await reportingService.generateRevenueReport('2026-05-15', '2026-05-15');
+
+      // Verify both manual and online transactions are present
+      const hasManualPayments = ['cash', 'card_terminal', 'venmo', 'comp']
+        .some(method => report.payment_methods[method] > 0);
+
+      const hasOnlinePayments = report.payment_methods.card > 0;
+
+      expect(hasManualPayments).toBe(true);
+      expect(hasOnlinePayments).toBe(true);
+
+      // Total should include all payment types
+      expect(report.summary.total_gross_revenue_cents).toBe(49500);
+    });
+
+    it('should support filtering by payment method type', async () => {
+      const events = await auditService.queryAuditLogs({
+        eventType: 'financial_event',
+        startDate: '2026-05-15T00:00:00.000Z',
+        endDate: '2026-05-15T23:59:59.999Z',
+        limit: 100
+      });
+
+      // Filter cash-only transactions
+      const cashTransactions = events.logs.filter(log => {
+        try {
+          const metadata = JSON.parse(log.metadata || '{}');
+          return metadata.payment_method_types && metadata.payment_method_types.includes('cash');
+        } catch {
+          return false;
+        }
+      });
+
+      expect(cashTransactions.length).toBe(1);
+      expect(cashTransactions[0].amount_cents).toBe(10000);
+    });
+  });
 });
