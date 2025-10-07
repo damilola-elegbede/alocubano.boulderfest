@@ -327,45 +327,114 @@
         </div>
       </section>
 
-      <!-- Typographic Festival Info -->
+      <!-- Get Tickets CTA - Prominent Placement -->
+      <section class="section-typographic" style="padding: var(--space-lg) 0; text-align: center;">
+        <div class="container">
+          <a
+            href="/tickets"
+            class="btn-primary"
+            style="
+              display: inline-block;
+              padding: var(--space-lg) var(--space-3xl);
+              background: var(--color-primary);
+              color: white;
+              text-decoration: none;
+              font-family: var(--font-display);
+              font-size: var(--font-size-2xl);
+              font-weight: 700;
+              border-radius: 4px;
+              transition: all var(--transition-base);
+              box-shadow: 0 4px 12px rgba(220, 20, 60, 0.3);
+            "
+            onmouseover="this.style.background='var(--color-primary-dark, #8B0000)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(220, 20, 60, 0.4)'"
+            onmouseout="this.style.background='var(--color-primary)'; this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(220, 20, 60, 0.3)'"
+          >
+            GET TICKETS NOW!
+          </a>
+        </div>
+      </section>
+
+      <!-- Event Title with Featured Artist -->
       <section class="section-typographic" style="padding: var(--space-xl) 0">
         <div class="container">
-          <div class="text-composition">
-            <div class="text-block-large">
-              <h1 class="hero__title text-mask">
-                A Lo Cubano Weekender November 2025!
-              </h1>
-              <h2 class="hero__subtitle">
-                A weekend of Cuban salsa workshops and social dancing
-              </h2>
+          <h1 class="hero__title text-mask" style="text-align: left;">
+            A Lo Cubano Weekender November 2025 Featuring <span style="background: linear-gradient(135deg, #C9A961 0%, #D4AF37 50%, #F4E5C2 75%, #D4AF37 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Steven Messina</span>!
+          </h1>
+        </div>
+      </section>
+
+      <!-- Guest Artist Section -->
+      <section class="section-typographic" style="padding: var(--space-xl) 0; background: var(--color-surface);">
+        <div class="container">
+          <!-- Two Card Layout -->
+          <div style="display: flex; justify-content: center; align-items: flex-start; gap: var(--space-xl); flex-wrap: wrap; margin-bottom: var(--space-xl);">
+            <!-- Image Card -->
+            <div style="width: 300px; overflow: hidden; border-radius: 8px; flex-shrink: 0;">
+              <img src="/images/artists/steven-messina.jpg" alt="Steven Messina - Guest Instructor" style="width: 100%; height: 100%; object-fit: cover; display: block;">
             </div>
-            <div class="text-block-mono">
-              // NOVEMBER 8, 2025<br />
-              // BOULDER, COLORADO<br />
-              // SATURDAY WORKSHOPS<br />
-              // FRIDAY SOCIAL
+
+            <!-- Text Card -->
+            <div style="flex: 0 1 400px; display: flex; flex-direction: column; justify-content: flex-start; padding: var(--space-lg); background: var(--color-background); border-radius: 8px;">
+              <h3 style="font-family: var(--font-display); font-size: var(--font-size-2xl); margin: 0 0 var(--space-md); color: var(--color-red);">Guest Instructor</h3>
+              <p style="font-size: var(--font-size-lg); line-height: 1.6; margin: 0; color: var(--color-text-primary);">
+                We're excited to bring Steven Messina back to Boulder! Join us for workshops in Body Movement, Casino, and Rueda de Casino.
+              </p>
             </div>
+          </div>
+
+          <!-- Centered More Info Button -->
+          <div style="text-align: center;">
+            <a
+              href="/weekender-2025-11/artists"
+              style="
+                display: inline-block;
+                padding: var(--space-sm) var(--space-xl);
+                background: transparent;
+                color: var(--color-primary);
+                border: 2px solid var(--color-primary);
+                text-decoration: none;
+                font-family: var(--font-display);
+                font-size: var(--font-size-lg);
+                font-weight: 700;
+                border-radius: 4px;
+                transition: all var(--transition-base);
+              "
+              onmouseover="this.style.background='var(--color-primary)'; this.style.color='white'"
+              onmouseout="this.style.background='transparent'; this.style.color='var(--color-primary)'"
+            >
+              MORE INFO
+            </a>
           </div>
         </div>
       </section>
 
-      <!-- What To Expect Typography -->
+      <!-- When and Where -->
       <section class="section-typographic" style="padding: var(--space-xl) 0">
         <div class="container">
-          <h2 class="text-mask">WHAT TO EXPECT</h2>
+          <h2 class="text-mask">WHEN AND WHERE</h2>
+          <p style="text-align: center; font-size: var(--font-size-lg); color: var(--color-text-secondary); margin: var(--space-md) 0 var(--space-xl); font-style: italic;">
+            A weekend of workshops and social dancing
+          </p>
           <div class="expectations">
-            <div class="expectations__item">
-              <h3 class="expectations__item-title">Workshops</h3>
-              <p class="expectations__item-description">
-                Body Movement, Casino, and Rueda de Casino
-              </p>
-            </div>
+            <a href="/weekender-2025-11/schedule" style="text-decoration: none; color: inherit; display: block; transition: transform var(--transition-base);" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+              <div class="expectations__item" style="cursor: pointer;">
+                <h3 class="expectations__item-title">Saturday Workshops</h3>
+                <p class="expectations__item-description">
+                  <strong>Date:</strong> November 8, 2025<br />
+                  <strong>Time:</strong> 1:00 PM - 4:00 PM<br />
+                  <strong>Venue:</strong> Avalon Ballroom<br />
+                  6185 Arapahoe Rd, Boulder, CO
+                </p>
+              </div>
+            </a>
 
             <div class="expectations__item">
-              <h3 class="expectations__item-title">Social</h3>
+              <h3 class="expectations__item-title">Friday Social</h3>
               <p class="expectations__item-description">
-                Friday night social at the Junkyard. Join us for an evening of Cuban salsa dancing.
-                Facebook event link coming soon.
+                <strong>Date:</strong> November 7, 2025<br />
+                <strong>Time:</strong> Evening<br />
+                <strong>Venue:</strong> Junkyard Social Club<br />
+                2525 Frontier Ave, Boulder, CO
               </p>
             </div>
           </div>
@@ -568,7 +637,7 @@
     <footer class="footer-typographic">
       <div class="container">
         <p class="footer-credits">
-          NOVEMBER 2025 WEEKENDER • BOULDER, COLORADO •
+          NOVEMBER 2025 WEEKENDER •
           <a
             href="mailto:alocubanoboulderfest@gmail.com?subject=A Lo Cubano Boulder Fest Inquiry"
             style="color: inherit; text-decoration: underline"
