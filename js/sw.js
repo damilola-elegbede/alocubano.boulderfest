@@ -11,7 +11,7 @@
  * - Offline fallbacks with SVG placeholders
  */
 
-const CACHE_VERSION = 'v2.0.0';
+const CACHE_VERSION = 'v2.1.0';
 const STATIC_CACHE = `alocubano-static-${CACHE_VERSION}`;
 const IMAGE_CACHE = `alocubano-images-${CACHE_VERSION}`;
 const API_CACHE = `alocubano-api-${CACHE_VERSION}`;
@@ -97,6 +97,13 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const request = event.request;
     const url = new URL(request.url);
+
+    // Bypass Service Worker for Vercel Blob Storage URLs
+    // These are already optimized (AVIF/WebP) and CDN-cached
+    // Service Worker caching causes CORS preflight failures
+    if (url.hostname.includes('.blob.vercel-storage.com')) {
+        return; // Let browser fetch directly from CDN
+    }
 
     // Handle QR validation requests for offline check-ins
     if (
