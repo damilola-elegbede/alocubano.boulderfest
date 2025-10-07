@@ -144,8 +144,8 @@ function generateTicketCard(ticketType, event) {
   const isSoldOut = ticketType.status === 'sold-out';
   const isAvailable = ticketType.status === 'available';
 
-  // Price display
-  const priceDisplay = ticketType.price_cents
+  // Price display - use explicit null/undefined check to handle $0.00 tickets
+  const priceDisplay = (ticketType.price_cents !== null && ticketType.price_cents !== undefined)
     ? `$${(ticketType.price_cents / 100).toFixed(2)}`
     : 'TBA';
 
@@ -171,7 +171,9 @@ function generateTicketCard(ticketType, event) {
   const dateRange = formatDateRange(event.start_date, event.end_date);
 
   // Escape user-controlled data to prevent XSS
+  // Note: Uppercase BEFORE escaping to avoid corrupting HTML entities
   const ticketName = escapeHtml(ticketType.name);
+  const ticketNameUpper = escapeHtml(ticketType.name.toUpperCase());
   const ticketDescription = escapeHtml(ticketType.description || 'Details coming soon');
   const eventName = escapeHtml(event.event_name);
   const venueName = escapeHtml(event.venue_name);
@@ -197,7 +199,7 @@ function generateTicketCard(ticketType, event) {
           <div class="ticket-body">
             <div class="ticket-type-section">
               <div class="field-label">Ticket Type</div>
-              <div class="ticket-type">${ticketName.toUpperCase()}</div>
+              <div class="ticket-type">${ticketNameUpper}</div>
               <div class="ticket-color-indicator" style="display: flex; justify-content: center; margin: 6px 0;">
                 <span class="ticket-color-circle" style="display: inline-block; width: 18px; height: 18px; border-radius: 50%; background: ${ticketColor};"></span>
               </div>

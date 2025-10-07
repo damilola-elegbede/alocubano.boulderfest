@@ -86,7 +86,7 @@
   border-radius: 12px;
   box-shadow: 0 4px 12px var(--shadow-sm);
   transition: all 0.3s ease;
-  /* Use normal overflow to prevent cropping */
+  /* Use visible overflow to allow ribbon, but card background clips via border-radius */
   overflow: visible;
   /* Ensure consistent box model */
   box-sizing: border-box;
@@ -380,7 +380,8 @@
   font-weight: 800;
   letter-spacing: 0.1em;
   transform: rotate(-45deg);
-  top: 25px;
+  /* Positioned to stay within 12px border-radius at top-left corner */
+  top: 32px;
   left: -50px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
@@ -485,7 +486,8 @@
     width: 170px;
     line-height: 32px;
     font-size: 11px;
-    top: 20px;
+    /* Adjusted to stay within border-radius on mobile */
+    top: 24px;
     left: -45px;
   }
 }
