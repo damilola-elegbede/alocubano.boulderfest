@@ -1,5 +1,1455 @@
 {
   "version": "1.0",
-  "lastSync": null,
-  "files": {}
+  "lastSync": "2025-10-07T03:54:38.215Z",
+  "files": {
+    "1aoY5n3dKlFQCCPV1dd2T8GUrdRIax2DY": {
+      "name": "AloCubanoSocial 05.17.25 - 026.jpg",
+      "googleModified": "2025-05-25T22:48:32.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1aoY5n3dKlFQCCPV1dd2T8GUrdRIax2DY/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1aoY5n3dKlFQCCPV1dd2T8GUrdRIax2DY/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1aoY5n3dKlFQCCPV1dd2T8GUrdRIax2DY/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1aoY5n3dKlFQCCPV1dd2T8GUrdRIax2DY/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3705161
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:50:16.447Z",
+      "originalSize": 3705161,
+      "optimizedSize": 482019,
+      "savings": "87.0"
+    },
+    "11PMvQWHDKkf96G3VZnI09oX-32pOIwZk": {
+      "name": "AloCubanoSocial 05.17.25 - 008.jpg",
+      "googleModified": "2025-05-25T22:41:57.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/11PMvQWHDKkf96G3VZnI09oX-32pOIwZk/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/11PMvQWHDKkf96G3VZnI09oX-32pOIwZk/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/11PMvQWHDKkf96G3VZnI09oX-32pOIwZk/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/11PMvQWHDKkf96G3VZnI09oX-32pOIwZk/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3670847
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:50:20.565Z",
+      "originalSize": 3670847,
+      "optimizedSize": 608625,
+      "savings": "83.4"
+    },
+    "1Dq_pJkXXxEkbsQ1IXYVV71yso2Lsl4Pn": {
+      "name": "AloCubanoSocial 05.17.25 - 324.jpg",
+      "googleModified": "2025-05-25T22:32:57.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1Dq_pJkXXxEkbsQ1IXYVV71yso2Lsl4Pn/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1Dq_pJkXXxEkbsQ1IXYVV71yso2Lsl4Pn/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1Dq_pJkXXxEkbsQ1IXYVV71yso2Lsl4Pn/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1Dq_pJkXXxEkbsQ1IXYVV71yso2Lsl4Pn/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3379981
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:50:23.967Z",
+      "originalSize": 3379981,
+      "optimizedSize": 530999,
+      "savings": "84.3"
+    },
+    "1XTsUTOE2xynU43bxpxFxz58a0H6ZSrnb": {
+      "name": "AloCubanoSocial 05.17.25 - 330.jpg",
+      "googleModified": "2025-05-25T22:36:30.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1XTsUTOE2xynU43bxpxFxz58a0H6ZSrnb/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1XTsUTOE2xynU43bxpxFxz58a0H6ZSrnb/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1XTsUTOE2xynU43bxpxFxz58a0H6ZSrnb/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1XTsUTOE2xynU43bxpxFxz58a0H6ZSrnb/full.webp"
+      },
+      "metadata": {
+        "width": 2996,
+        "height": 3600,
+        "format": "jpeg",
+        "size": 5607008
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:50:31.139Z",
+      "originalSize": 5607008,
+      "optimizedSize": 2070331,
+      "savings": "63.1"
+    },
+    "19n_L7J0nnQw_Q8xr4ofIvEVJ7XpkmdS1": {
+      "name": "AloCubanoSocial 05.17.25 - 327.jpg",
+      "googleModified": "2025-05-25T22:34:38.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/19n_L7J0nnQw_Q8xr4ofIvEVJ7XpkmdS1/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/19n_L7J0nnQw_Q8xr4ofIvEVJ7XpkmdS1/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/19n_L7J0nnQw_Q8xr4ofIvEVJ7XpkmdS1/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/19n_L7J0nnQw_Q8xr4ofIvEVJ7XpkmdS1/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3871503
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:50:35.638Z",
+      "originalSize": 3871503,
+      "optimizedSize": 691100,
+      "savings": "82.1"
+    },
+    "1E_sMcxhy-_f52y0wdSRQP_LFyNUr9shq": {
+      "name": "AloCubanoSocial 05.17.25 - 294.jpg",
+      "googleModified": "2025-05-25T22:22:59.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1E_sMcxhy-_f52y0wdSRQP_LFyNUr9shq/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1E_sMcxhy-_f52y0wdSRQP_LFyNUr9shq/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1E_sMcxhy-_f52y0wdSRQP_LFyNUr9shq/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1E_sMcxhy-_f52y0wdSRQP_LFyNUr9shq/full.webp"
+      },
+      "metadata": {
+        "width": 2400,
+        "height": 3600,
+        "format": "jpeg",
+        "size": 4122308
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:50:40.940Z",
+      "originalSize": 4122308,
+      "optimizedSize": 1884317,
+      "savings": "54.3"
+    },
+    "1iBYmYGUO3ItgmHgZldxkBD_qXBPdoKiP": {
+      "name": "AloCubanoSocial 05.17.25 - 257.jpg",
+      "googleModified": "2025-05-25T22:09:44.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1iBYmYGUO3ItgmHgZldxkBD_qXBPdoKiP/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1iBYmYGUO3ItgmHgZldxkBD_qXBPdoKiP/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1iBYmYGUO3ItgmHgZldxkBD_qXBPdoKiP/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1iBYmYGUO3ItgmHgZldxkBD_qXBPdoKiP/full.webp"
+      },
+      "metadata": {
+        "width": 2400,
+        "height": 3600,
+        "format": "jpeg",
+        "size": 2694438
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:50:46.026Z",
+      "originalSize": 2694438,
+      "optimizedSize": 1042744,
+      "savings": "61.3"
+    },
+    "10FKz1_y1dCZ5-s3d_xZS-BtdJohbOO13": {
+      "name": "AloCubanoSocial 05.17.25 - 296.jpg",
+      "googleModified": "2025-05-25T22:24:40.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/10FKz1_y1dCZ5-s3d_xZS-BtdJohbOO13/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/10FKz1_y1dCZ5-s3d_xZS-BtdJohbOO13/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/10FKz1_y1dCZ5-s3d_xZS-BtdJohbOO13/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/10FKz1_y1dCZ5-s3d_xZS-BtdJohbOO13/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3482587
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:50:49.458Z",
+      "originalSize": 3482587,
+      "optimizedSize": 575779,
+      "savings": "83.5"
+    },
+    "1DxAULQwqwGpMFCoRb7w5O2fwiFCDtMfF": {
+      "name": "AloCubanoSocial 05.17.25 - 265.jpg",
+      "googleModified": "2025-05-25T22:11:53.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1DxAULQwqwGpMFCoRb7w5O2fwiFCDtMfF/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1DxAULQwqwGpMFCoRb7w5O2fwiFCDtMfF/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1DxAULQwqwGpMFCoRb7w5O2fwiFCDtMfF/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1DxAULQwqwGpMFCoRb7w5O2fwiFCDtMfF/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3440417
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:50:53.099Z",
+      "originalSize": 3440417,
+      "optimizedSize": 497682,
+      "savings": "85.5"
+    },
+    "116M5Uh6f-AJmlQMznJT0N2hP5Pmn3ovD": {
+      "name": "AloCubanoSocial 05.17.25 - 313.jpg",
+      "googleModified": "2025-05-25T22:30:25.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/116M5Uh6f-AJmlQMznJT0N2hP5Pmn3ovD/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/116M5Uh6f-AJmlQMznJT0N2hP5Pmn3ovD/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/116M5Uh6f-AJmlQMznJT0N2hP5Pmn3ovD/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/116M5Uh6f-AJmlQMznJT0N2hP5Pmn3ovD/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 4059009
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:50:56.413Z",
+      "originalSize": 4059009,
+      "optimizedSize": 691094,
+      "savings": "83.0"
+    },
+    "1zPaFA5Ax_AtpHh1ypY6rLZ_8q1APbNpw": {
+      "name": "AloCubanoSocial 05.17.25 - 273.jpg",
+      "googleModified": "2025-05-25T22:15:22.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1zPaFA5Ax_AtpHh1ypY6rLZ_8q1APbNpw/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1zPaFA5Ax_AtpHh1ypY6rLZ_8q1APbNpw/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1zPaFA5Ax_AtpHh1ypY6rLZ_8q1APbNpw/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1zPaFA5Ax_AtpHh1ypY6rLZ_8q1APbNpw/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 3600,
+        "format": "jpeg",
+        "size": 5849808
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:51:02.113Z",
+      "originalSize": 5849808,
+      "optimizedSize": 1113190,
+      "savings": "81.0"
+    },
+    "1mzDL1g5ykEqXyc-waRwLOfCmJVxipAtV": {
+      "name": "AloCubanoSocial 05.17.25 - 266.jpg",
+      "googleModified": "2025-05-25T22:13:08.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1mzDL1g5ykEqXyc-waRwLOfCmJVxipAtV/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1mzDL1g5ykEqXyc-waRwLOfCmJVxipAtV/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1mzDL1g5ykEqXyc-waRwLOfCmJVxipAtV/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1mzDL1g5ykEqXyc-waRwLOfCmJVxipAtV/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3909587
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:51:05.884Z",
+      "originalSize": 3909587,
+      "optimizedSize": 682994,
+      "savings": "82.5"
+    },
+    "1HQybdLlPwZS-B67B5OdHyn-6YUl53_7b": {
+      "name": "AloCubanoSocial 05.17.25 - 263.jpg",
+      "googleModified": "2025-05-25T22:09:30.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1HQybdLlPwZS-B67B5OdHyn-6YUl53_7b/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1HQybdLlPwZS-B67B5OdHyn-6YUl53_7b/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1HQybdLlPwZS-B67B5OdHyn-6YUl53_7b/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1HQybdLlPwZS-B67B5OdHyn-6YUl53_7b/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 4158788
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:51:10.154Z",
+      "originalSize": 4158788,
+      "optimizedSize": 936877,
+      "savings": "77.5"
+    },
+    "1WicARBvjhIdjk6_mEhLFrLxjycFqcKfz": {
+      "name": "AloCubanoSocial 05.17.25 - 301.jpg",
+      "googleModified": "2025-05-25T22:26:03.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1WicARBvjhIdjk6_mEhLFrLxjycFqcKfz/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1WicARBvjhIdjk6_mEhLFrLxjycFqcKfz/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1WicARBvjhIdjk6_mEhLFrLxjycFqcKfz/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1WicARBvjhIdjk6_mEhLFrLxjycFqcKfz/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3626283
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:51:13.796Z",
+      "originalSize": 3626283,
+      "optimizedSize": 618363,
+      "savings": "82.9"
+    },
+    "1MSvZmAgVtYbLgaIZ279N4F57xXXrq3o6": {
+      "name": "AloCubanoSocial 05.17.25 - 275.jpg",
+      "googleModified": "2025-05-25T22:17:26.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1MSvZmAgVtYbLgaIZ279N4F57xXXrq3o6/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1MSvZmAgVtYbLgaIZ279N4F57xXXrq3o6/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1MSvZmAgVtYbLgaIZ279N4F57xXXrq3o6/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1MSvZmAgVtYbLgaIZ279N4F57xXXrq3o6/full.webp"
+      },
+      "metadata": {
+        "width": 2400,
+        "height": 3600,
+        "format": "jpeg",
+        "size": 3098913
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:51:17.795Z",
+      "originalSize": 3098913,
+      "optimizedSize": 1319080,
+      "savings": "57.4"
+    },
+    "1KOjYxJvCennG4QP_cTroi9rW6OW6BOBm": {
+      "name": "AloCubanoSocial 05.17.25 - 362.jpg",
+      "googleModified": "2025-05-25T22:40:07.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1KOjYxJvCennG4QP_cTroi9rW6OW6BOBm/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1KOjYxJvCennG4QP_cTroi9rW6OW6BOBm/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1KOjYxJvCennG4QP_cTroi9rW6OW6BOBm/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1KOjYxJvCennG4QP_cTroi9rW6OW6BOBm/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3022751
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:51:20.648Z",
+      "originalSize": 3022751,
+      "optimizedSize": 375238,
+      "savings": "87.6"
+    },
+    "11omZ27egfZ_jVyb4kVyFIl_JTdQeYlsd": {
+      "name": "AloCubanoClasses 05.17.25 - 500.jpg",
+      "googleModified": "2025-05-21T04:35:45.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/11omZ27egfZ_jVyb4kVyFIl_JTdQeYlsd/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/11omZ27egfZ_jVyb4kVyFIl_JTdQeYlsd/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/11omZ27egfZ_jVyb4kVyFIl_JTdQeYlsd/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/11omZ27egfZ_jVyb4kVyFIl_JTdQeYlsd/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3125244
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:51:24.631Z",
+      "originalSize": 3125244,
+      "optimizedSize": 381948,
+      "savings": "87.8"
+    },
+    "1YVeE-91IPnLbPXaSgzNBjCGbmDnHKwB2": {
+      "name": "AloCubanoClasses 05.17.25 - 272.jpg",
+      "googleModified": "2025-05-21T04:14:57.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1YVeE-91IPnLbPXaSgzNBjCGbmDnHKwB2/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1YVeE-91IPnLbPXaSgzNBjCGbmDnHKwB2/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1YVeE-91IPnLbPXaSgzNBjCGbmDnHKwB2/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1YVeE-91IPnLbPXaSgzNBjCGbmDnHKwB2/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3070633
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:51:27.585Z",
+      "originalSize": 3070633,
+      "optimizedSize": 235081,
+      "savings": "92.3"
+    },
+    "1M_Vre7UFAD_VRYBbmJ35Kb7375aRvOlQ": {
+      "name": "AloCubanoClasses 05.17.25 - 064.jpg",
+      "googleModified": "2025-05-21T04:01:08.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1M_Vre7UFAD_VRYBbmJ35Kb7375aRvOlQ/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1M_Vre7UFAD_VRYBbmJ35Kb7375aRvOlQ/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1M_Vre7UFAD_VRYBbmJ35Kb7375aRvOlQ/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1M_Vre7UFAD_VRYBbmJ35Kb7375aRvOlQ/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3766683
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:51:31.094Z",
+      "originalSize": 3766683,
+      "optimizedSize": 645305,
+      "savings": "82.9"
+    },
+    "1BvWzF1aMMWV23Z4B16PghNQcN3Sug07T": {
+      "name": "AloCubanoClasses 05.17.25 - 925.jpg",
+      "googleModified": "2025-05-22T03:14:25.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1BvWzF1aMMWV23Z4B16PghNQcN3Sug07T/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1BvWzF1aMMWV23Z4B16PghNQcN3Sug07T/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1BvWzF1aMMWV23Z4B16PghNQcN3Sug07T/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1BvWzF1aMMWV23Z4B16PghNQcN3Sug07T/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3911143
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:51:34.841Z",
+      "originalSize": 3911143,
+      "optimizedSize": 511026,
+      "savings": "86.9"
+    },
+    "143qUl4h2HISpi9dp2AgnTaJupw-c6C3X": {
+      "name": "AloCubanoClasses 05.17.25 - 1005.jpg",
+      "googleModified": "2025-05-22T03:36:39.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/143qUl4h2HISpi9dp2AgnTaJupw-c6C3X/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/143qUl4h2HISpi9dp2AgnTaJupw-c6C3X/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/143qUl4h2HISpi9dp2AgnTaJupw-c6C3X/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/143qUl4h2HISpi9dp2AgnTaJupw-c6C3X/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3388982
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:51:37.994Z",
+      "originalSize": 3388982,
+      "optimizedSize": 477701,
+      "savings": "85.9"
+    },
+    "1GF0xIgLuo1CJCbgl6MZ04slotxQdkBIQ": {
+      "name": "AloCubanoClasses 05.17.25 - 313.jpg",
+      "googleModified": "2025-05-21T04:16:07.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1GF0xIgLuo1CJCbgl6MZ04slotxQdkBIQ/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1GF0xIgLuo1CJCbgl6MZ04slotxQdkBIQ/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1GF0xIgLuo1CJCbgl6MZ04slotxQdkBIQ/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1GF0xIgLuo1CJCbgl6MZ04slotxQdkBIQ/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3949021
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:51:41.727Z",
+      "originalSize": 3949021,
+      "optimizedSize": 530601,
+      "savings": "86.6"
+    },
+    "1P0i17Z5Tn3K2Pi6Lkb5fCBK8jjbYPrHV": {
+      "name": "AloCubanoClasses 05.17.25 - 1238.jpg",
+      "googleModified": "2025-05-22T04:01:26.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1P0i17Z5Tn3K2Pi6Lkb5fCBK8jjbYPrHV/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1P0i17Z5Tn3K2Pi6Lkb5fCBK8jjbYPrHV/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1P0i17Z5Tn3K2Pi6Lkb5fCBK8jjbYPrHV/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1P0i17Z5Tn3K2Pi6Lkb5fCBK8jjbYPrHV/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 3010,
+        "format": "jpeg",
+        "size": 5557486
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:51:45.503Z",
+      "originalSize": 5557486,
+      "optimizedSize": 1016851,
+      "savings": "81.7"
+    },
+    "1jHtfoxBbP2YTbRR3_EfWaduNUH-_y-SL": {
+      "name": "AloCubanoClasses 05.17.25 - 260.jpg",
+      "googleModified": "2025-05-21T04:13:50.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1jHtfoxBbP2YTbRR3_EfWaduNUH-_y-SL/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1jHtfoxBbP2YTbRR3_EfWaduNUH-_y-SL/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1jHtfoxBbP2YTbRR3_EfWaduNUH-_y-SL/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1jHtfoxBbP2YTbRR3_EfWaduNUH-_y-SL/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3253785
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:51:48.771Z",
+      "originalSize": 3253785,
+      "optimizedSize": 480645,
+      "savings": "85.2"
+    },
+    "1lmqtsi4IZr18PLi5Pa7IHY-FEhhQD3Hp": {
+      "name": "AloCubanoClasses 05.17.25 - 894.jpg",
+      "googleModified": "2025-05-22T02:44:03.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1lmqtsi4IZr18PLi5Pa7IHY-FEhhQD3Hp/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1lmqtsi4IZr18PLi5Pa7IHY-FEhhQD3Hp/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1lmqtsi4IZr18PLi5Pa7IHY-FEhhQD3Hp/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1lmqtsi4IZr18PLi5Pa7IHY-FEhhQD3Hp/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3627865
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:51:52.198Z",
+      "originalSize": 3627865,
+      "optimizedSize": 341125,
+      "savings": "90.6"
+    },
+    "1I-hFWP9FTccFKp2CtWdUAIRca8f9DMh3": {
+      "name": "AloCubanoClasses 05.17.25 - 921.jpg",
+      "googleModified": "2025-05-22T03:11:53.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1I-hFWP9FTccFKp2CtWdUAIRca8f9DMh3/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1I-hFWP9FTccFKp2CtWdUAIRca8f9DMh3/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1I-hFWP9FTccFKp2CtWdUAIRca8f9DMh3/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1I-hFWP9FTccFKp2CtWdUAIRca8f9DMh3/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 4013871
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:51:56.626Z",
+      "originalSize": 4013871,
+      "optimizedSize": 558624,
+      "savings": "86.1"
+    },
+    "1wwB6KuQPPsDFFIrDIkoOJn_7WHPEyCn4": {
+      "name": "AloCubanoClasses 05.17.25 - 1259.jpg",
+      "googleModified": "2025-05-22T03:59:52.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1wwB6KuQPPsDFFIrDIkoOJn_7WHPEyCn4/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1wwB6KuQPPsDFFIrDIkoOJn_7WHPEyCn4/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1wwB6KuQPPsDFFIrDIkoOJn_7WHPEyCn4/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1wwB6KuQPPsDFFIrDIkoOJn_7WHPEyCn4/full.webp"
+      },
+      "metadata": {
+        "width": 2400,
+        "height": 3600,
+        "format": "jpeg",
+        "size": 4159927
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:52:01.987Z",
+      "originalSize": 4159927,
+      "optimizedSize": 1909156,
+      "savings": "54.1"
+    },
+    "1XEa3pXWsw0oS_gtVuGTqKk2Ty6zmT7o_": {
+      "name": "AloCubanoClasses 05.17.25 - 947.jpg",
+      "googleModified": "2025-05-22T03:18:54.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1XEa3pXWsw0oS_gtVuGTqKk2Ty6zmT7o_/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1XEa3pXWsw0oS_gtVuGTqKk2Ty6zmT7o_/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1XEa3pXWsw0oS_gtVuGTqKk2Ty6zmT7o_/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1XEa3pXWsw0oS_gtVuGTqKk2Ty6zmT7o_/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3794410
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:52:06.033Z",
+      "originalSize": 3794410,
+      "optimizedSize": 472595,
+      "savings": "87.5"
+    },
+    "1RUumVGGBbA-K9sXgkIVa2vXup2S2t0uq": {
+      "name": "AloCubanoClasses 05.17.25 - 038.jpg",
+      "googleModified": "2025-05-21T04:01:30.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1RUumVGGBbA-K9sXgkIVa2vXup2S2t0uq/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1RUumVGGBbA-K9sXgkIVa2vXup2S2t0uq/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1RUumVGGBbA-K9sXgkIVa2vXup2S2t0uq/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1RUumVGGBbA-K9sXgkIVa2vXup2S2t0uq/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3264304
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:52:09.327Z",
+      "originalSize": 3264304,
+      "optimizedSize": 351503,
+      "savings": "89.2"
+    },
+    "1hXsRFPjHLJG9pWrnbfaoSASzh8PI8z0n": {
+      "name": "AloCubanoClasses 05.17.25 - 602.jpg",
+      "googleModified": "2025-05-21T20:49:00.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1hXsRFPjHLJG9pWrnbfaoSASzh8PI8z0n/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1hXsRFPjHLJG9pWrnbfaoSASzh8PI8z0n/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1hXsRFPjHLJG9pWrnbfaoSASzh8PI8z0n/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1hXsRFPjHLJG9pWrnbfaoSASzh8PI8z0n/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3634275
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:52:12.691Z",
+      "originalSize": 3634275,
+      "optimizedSize": 440341,
+      "savings": "87.9"
+    },
+    "17V7-93DE40HvrAaTbBWczUgUG5ZLqOFr": {
+      "name": "AloCubanoClasses 05.17.25 - 1299.jpg",
+      "googleModified": "2025-05-22T04:08:08.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/17V7-93DE40HvrAaTbBWczUgUG5ZLqOFr/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/17V7-93DE40HvrAaTbBWczUgUG5ZLqOFr/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/17V7-93DE40HvrAaTbBWczUgUG5ZLqOFr/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/17V7-93DE40HvrAaTbBWczUgUG5ZLqOFr/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 3299,
+        "format": "jpeg",
+        "size": 4270917
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:52:16.958Z",
+      "originalSize": 4270917,
+      "optimizedSize": 690391,
+      "savings": "83.8"
+    },
+    "1xUvCf8vxfJbpTp_XEbVdvvUX3DeWbsF_": {
+      "name": "AloCubanoClasses 05.17.25 - 993.jpg",
+      "googleModified": "2025-05-22T03:34:33.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1xUvCf8vxfJbpTp_XEbVdvvUX3DeWbsF_/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1xUvCf8vxfJbpTp_XEbVdvvUX3DeWbsF_/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1xUvCf8vxfJbpTp_XEbVdvvUX3DeWbsF_/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1xUvCf8vxfJbpTp_XEbVdvvUX3DeWbsF_/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 4054360
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:52:20.424Z",
+      "originalSize": 4054360,
+      "optimizedSize": 603839,
+      "savings": "85.1"
+    },
+    "1YbgseiNkhxF-gXWyEKlPeWWnjk79gpuY": {
+      "name": "AloCubanoClasses 05.17.25 - 1138.jpg",
+      "googleModified": "2025-05-22T03:53:19.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1YbgseiNkhxF-gXWyEKlPeWWnjk79gpuY/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1YbgseiNkhxF-gXWyEKlPeWWnjk79gpuY/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1YbgseiNkhxF-gXWyEKlPeWWnjk79gpuY/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1YbgseiNkhxF-gXWyEKlPeWWnjk79gpuY/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 4072296
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:52:24.155Z",
+      "originalSize": 4072296,
+      "optimizedSize": 858338,
+      "savings": "78.9"
+    },
+    "1TvwBSQAkqNoUUU1PW9no-tZKuix706WA": {
+      "name": "AloCubanoClasses 05.17.25 - 1061.jpg",
+      "googleModified": "2025-05-22T03:41:16.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1TvwBSQAkqNoUUU1PW9no-tZKuix706WA/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1TvwBSQAkqNoUUU1PW9no-tZKuix706WA/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1TvwBSQAkqNoUUU1PW9no-tZKuix706WA/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1TvwBSQAkqNoUUU1PW9no-tZKuix706WA/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 4253591
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:52:27.678Z",
+      "originalSize": 4253591,
+      "optimizedSize": 742610,
+      "savings": "82.5"
+    },
+    "1qDB7eNWNGBDrmXHEbspia2Uw59DgJKHX": {
+      "name": "AloCubanoClasses 05.17.25 - 570.jpg",
+      "googleModified": "2025-05-21T20:46:39.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1qDB7eNWNGBDrmXHEbspia2Uw59DgJKHX/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1qDB7eNWNGBDrmXHEbspia2Uw59DgJKHX/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1qDB7eNWNGBDrmXHEbspia2Uw59DgJKHX/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1qDB7eNWNGBDrmXHEbspia2Uw59DgJKHX/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 4518433
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:52:31.656Z",
+      "originalSize": 4518433,
+      "optimizedSize": 890651,
+      "savings": "80.3"
+    },
+    "1arZ11Q2yfMHg7RCZK6enkTQoz9If4nWW": {
+      "name": "AloCubanoClasses 05.17.25 - 758.jpg",
+      "googleModified": "2025-05-21T20:54:42.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1arZ11Q2yfMHg7RCZK6enkTQoz9If4nWW/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1arZ11Q2yfMHg7RCZK6enkTQoz9If4nWW/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1arZ11Q2yfMHg7RCZK6enkTQoz9If4nWW/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1arZ11Q2yfMHg7RCZK6enkTQoz9If4nWW/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 4116560
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:52:35.077Z",
+      "originalSize": 4116560,
+      "optimizedSize": 673483,
+      "savings": "83.6"
+    },
+    "1LjH6eP1hltF_BpOhIMx6Eu1M-vX14xfO": {
+      "name": "AloCubanoClasses 05.17.25 - 836.jpg",
+      "googleModified": "2025-05-22T02:43:08.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1LjH6eP1hltF_BpOhIMx6Eu1M-vX14xfO/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1LjH6eP1hltF_BpOhIMx6Eu1M-vX14xfO/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1LjH6eP1hltF_BpOhIMx6Eu1M-vX14xfO/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1LjH6eP1hltF_BpOhIMx6Eu1M-vX14xfO/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3516463
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:52:37.990Z",
+      "originalSize": 3516463,
+      "optimizedSize": 367154,
+      "savings": "89.6"
+    },
+    "1LyK25cz27MHtlK6RhaMgiXwYdJyHxUB2": {
+      "name": "AloCubanoClasses 05.17.25 - 215.jpg",
+      "googleModified": "2025-05-21T04:09:49.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1LyK25cz27MHtlK6RhaMgiXwYdJyHxUB2/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1LyK25cz27MHtlK6RhaMgiXwYdJyHxUB2/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1LyK25cz27MHtlK6RhaMgiXwYdJyHxUB2/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1LyK25cz27MHtlK6RhaMgiXwYdJyHxUB2/full.webp"
+      },
+      "metadata": {
+        "width": 2400,
+        "height": 3600,
+        "format": "jpeg",
+        "size": 2739546
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:52:42.167Z",
+      "originalSize": 2739546,
+      "optimizedSize": 894730,
+      "savings": "67.3"
+    },
+    "1lOuiYkcRRzVBLrdJjNs1Zjqi6QiBs3x-": {
+      "name": "AloCubanoClasses 05.17.25 - 807.jpg",
+      "googleModified": "2025-05-22T02:43:02.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1lOuiYkcRRzVBLrdJjNs1Zjqi6QiBs3x-/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1lOuiYkcRRzVBLrdJjNs1Zjqi6QiBs3x-/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1lOuiYkcRRzVBLrdJjNs1Zjqi6QiBs3x-/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1lOuiYkcRRzVBLrdJjNs1Zjqi6QiBs3x-/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3632740
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:52:45.534Z",
+      "originalSize": 3632740,
+      "optimizedSize": 557919,
+      "savings": "84.6"
+    },
+    "1k25fSs5yCNnxP2fljJj0Tr9RmmLBVcez": {
+      "name": "AloCubanoClasses 05.17.25 - 345.jpg",
+      "googleModified": "2025-05-21T04:17:54.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1k25fSs5yCNnxP2fljJj0Tr9RmmLBVcez/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1k25fSs5yCNnxP2fljJj0Tr9RmmLBVcez/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1k25fSs5yCNnxP2fljJj0Tr9RmmLBVcez/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1k25fSs5yCNnxP2fljJj0Tr9RmmLBVcez/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3815770
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:52:49.515Z",
+      "originalSize": 3815770,
+      "optimizedSize": 512616,
+      "savings": "86.6"
+    },
+    "1WSjcMVNzb7OHHo6QTG6jY7b0G6Ikq_30": {
+      "name": "AloCubanoClasses 05.17.25 - 1278.jpg",
+      "googleModified": "2025-05-22T04:03:30.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1WSjcMVNzb7OHHo6QTG6jY7b0G6Ikq_30/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1WSjcMVNzb7OHHo6QTG6jY7b0G6Ikq_30/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1WSjcMVNzb7OHHo6QTG6jY7b0G6Ikq_30/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1WSjcMVNzb7OHHo6QTG6jY7b0G6Ikq_30/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3448475
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:52:52.548Z",
+      "originalSize": 3448475,
+      "optimizedSize": 415316,
+      "savings": "88.0"
+    },
+    "1dHpBlprx3IGK7jU8o_Sje7e21AvD1iIi": {
+      "name": "AloCubanoClasses 05.17.25 - 1118.jpg",
+      "googleModified": "2025-05-22T03:49:43.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1dHpBlprx3IGK7jU8o_Sje7e21AvD1iIi/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1dHpBlprx3IGK7jU8o_Sje7e21AvD1iIi/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1dHpBlprx3IGK7jU8o_Sje7e21AvD1iIi/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1dHpBlprx3IGK7jU8o_Sje7e21AvD1iIi/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 4388475
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:52:56.389Z",
+      "originalSize": 4388475,
+      "optimizedSize": 789176,
+      "savings": "82.0"
+    },
+    "1wYz-Uh-D4CWrQyxrwM__RGMVOS043IbJ": {
+      "name": "AloCubanoClasses 05.17.25 - 810.jpg",
+      "googleModified": "2025-05-22T02:43:04.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1wYz-Uh-D4CWrQyxrwM__RGMVOS043IbJ/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1wYz-Uh-D4CWrQyxrwM__RGMVOS043IbJ/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1wYz-Uh-D4CWrQyxrwM__RGMVOS043IbJ/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1wYz-Uh-D4CWrQyxrwM__RGMVOS043IbJ/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3681856
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:52:59.644Z",
+      "originalSize": 3681856,
+      "optimizedSize": 431844,
+      "savings": "88.3"
+    },
+    "1H2DctarnEh2RcxJDfSo3pGJNNiuAff7p": {
+      "name": "AloCubanoClasses 05.17.25 - 385.jpg",
+      "googleModified": "2025-05-21T04:22:59.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1H2DctarnEh2RcxJDfSo3pGJNNiuAff7p/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1H2DctarnEh2RcxJDfSo3pGJNNiuAff7p/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1H2DctarnEh2RcxJDfSo3pGJNNiuAff7p/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1H2DctarnEh2RcxJDfSo3pGJNNiuAff7p/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3404036
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:53:03.189Z",
+      "originalSize": 3404036,
+      "optimizedSize": 416818,
+      "savings": "87.8"
+    },
+    "1TAGvmPdM8UQdW8dNaqfARhtgUsfHccft": {
+      "name": "AloCubanoClasses 05.17.25 - 408.jpg",
+      "googleModified": "2025-05-21T04:27:32.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1TAGvmPdM8UQdW8dNaqfARhtgUsfHccft/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1TAGvmPdM8UQdW8dNaqfARhtgUsfHccft/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1TAGvmPdM8UQdW8dNaqfARhtgUsfHccft/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1TAGvmPdM8UQdW8dNaqfARhtgUsfHccft/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3566849
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:53:06.486Z",
+      "originalSize": 3566849,
+      "optimizedSize": 500615,
+      "savings": "86.0"
+    },
+    "10c361fwPYwZ8NO_B9aK-EQUxxkWe2zPg": {
+      "name": "AloCubanoClasses 05.17.25 - 805.jpg",
+      "googleModified": "2025-05-21T20:59:45.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/10c361fwPYwZ8NO_B9aK-EQUxxkWe2zPg/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/10c361fwPYwZ8NO_B9aK-EQUxxkWe2zPg/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/10c361fwPYwZ8NO_B9aK-EQUxxkWe2zPg/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/10c361fwPYwZ8NO_B9aK-EQUxxkWe2zPg/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3844268
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:53:09.792Z",
+      "originalSize": 3844268,
+      "optimizedSize": 512136,
+      "savings": "86.7"
+    },
+    "1a6twkhSzYIwPpN0HKBN53c-dCCoRfTvQ": {
+      "name": "AloCubanoClasses 05.17.25 - 144.jpg",
+      "googleModified": "2025-05-21T04:05:28.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1a6twkhSzYIwPpN0HKBN53c-dCCoRfTvQ/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1a6twkhSzYIwPpN0HKBN53c-dCCoRfTvQ/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1a6twkhSzYIwPpN0HKBN53c-dCCoRfTvQ/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1a6twkhSzYIwPpN0HKBN53c-dCCoRfTvQ/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 4399285
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:53:13.646Z",
+      "originalSize": 4399285,
+      "optimizedSize": 840307,
+      "savings": "80.9"
+    },
+    "1jbuXiIAjHqb1jLFSb-oNTd4EkI6cuhap": {
+      "name": "AloCubanoClasses 05.17.25 - 583.jpg",
+      "googleModified": "2025-05-21T20:47:36.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1jbuXiIAjHqb1jLFSb-oNTd4EkI6cuhap/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1jbuXiIAjHqb1jLFSb-oNTd4EkI6cuhap/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1jbuXiIAjHqb1jLFSb-oNTd4EkI6cuhap/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1jbuXiIAjHqb1jLFSb-oNTd4EkI6cuhap/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 4569781
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:53:18.122Z",
+      "originalSize": 4569781,
+      "optimizedSize": 910923,
+      "savings": "80.1"
+    },
+    "1CmNWn2BQKCpt9rEW5QvpKiwsg61CUt3G": {
+      "name": "AloCubanoClasses 05.17.25 - 222.jpg",
+      "googleModified": "2025-05-21T04:11:34.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1CmNWn2BQKCpt9rEW5QvpKiwsg61CUt3G/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1CmNWn2BQKCpt9rEW5QvpKiwsg61CUt3G/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1CmNWn2BQKCpt9rEW5QvpKiwsg61CUt3G/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1CmNWn2BQKCpt9rEW5QvpKiwsg61CUt3G/full.webp"
+      },
+      "metadata": {
+        "width": 2400,
+        "height": 3600,
+        "format": "jpeg",
+        "size": 2965073
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:53:22.591Z",
+      "originalSize": 2965073,
+      "optimizedSize": 909428,
+      "savings": "69.3"
+    },
+    "1Z1BuOSET8jAwlYnA9IDwmg1bJLpRmGNI": {
+      "name": "AloCubanoClasses 05.17.25 - 791.jpg",
+      "googleModified": "2025-05-21T20:57:53.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1Z1BuOSET8jAwlYnA9IDwmg1bJLpRmGNI/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1Z1BuOSET8jAwlYnA9IDwmg1bJLpRmGNI/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1Z1BuOSET8jAwlYnA9IDwmg1bJLpRmGNI/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1Z1BuOSET8jAwlYnA9IDwmg1bJLpRmGNI/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3885750
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:53:27.216Z",
+      "originalSize": 3885750,
+      "optimizedSize": 685753,
+      "savings": "82.4"
+    },
+    "1u_e0Ba3owN5twzWwPWC3dsmx-8Ud7gA3": {
+      "name": "AloCubanoClasses 05.17.25 - 1294.jpg",
+      "googleModified": "2025-05-22T04:05:21.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1u_e0Ba3owN5twzWwPWC3dsmx-8Ud7gA3/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1u_e0Ba3owN5twzWwPWC3dsmx-8Ud7gA3/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1u_e0Ba3owN5twzWwPWC3dsmx-8Ud7gA3/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1u_e0Ba3owN5twzWwPWC3dsmx-8Ud7gA3/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 3103,
+        "format": "jpeg",
+        "size": 4369700
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:53:31.254Z",
+      "originalSize": 4369700,
+      "optimizedSize": 710907,
+      "savings": "83.7"
+    },
+    "12ODHZ2F0XvahFVZOqavpmcLIbVkxEw0g": {
+      "name": "AloCubanoClasses 05.17.25 - 380.jpg",
+      "googleModified": "2025-05-21T04:20:06.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/12ODHZ2F0XvahFVZOqavpmcLIbVkxEw0g/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/12ODHZ2F0XvahFVZOqavpmcLIbVkxEw0g/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/12ODHZ2F0XvahFVZOqavpmcLIbVkxEw0g/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/12ODHZ2F0XvahFVZOqavpmcLIbVkxEw0g/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2640,
+        "format": "jpeg",
+        "size": 4731304
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:53:36.006Z",
+      "originalSize": 4731304,
+      "optimizedSize": 864630,
+      "savings": "81.7"
+    },
+    "1zaOrDGQzc7TLPEOwpfoDeUXRhm7I_vCy": {
+      "name": "AloCubanoClasses 05.17.25 - 196.jpg",
+      "googleModified": "2025-05-21T04:07:55.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1zaOrDGQzc7TLPEOwpfoDeUXRhm7I_vCy/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1zaOrDGQzc7TLPEOwpfoDeUXRhm7I_vCy/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1zaOrDGQzc7TLPEOwpfoDeUXRhm7I_vCy/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1zaOrDGQzc7TLPEOwpfoDeUXRhm7I_vCy/full.webp"
+      },
+      "metadata": {
+        "width": 2400,
+        "height": 3600,
+        "format": "jpeg",
+        "size": 3189051
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:53:40.386Z",
+      "originalSize": 3189051,
+      "optimizedSize": 1120976,
+      "savings": "64.8"
+    },
+    "1JH8GMWweQP1-5ffAl0xXcFmGm4d_DSNZ": {
+      "name": "AloCubanoClasses 05.17.25 - 747.jpg",
+      "googleModified": "2025-05-21T20:56:46.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1JH8GMWweQP1-5ffAl0xXcFmGm4d_DSNZ/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1JH8GMWweQP1-5ffAl0xXcFmGm4d_DSNZ/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1JH8GMWweQP1-5ffAl0xXcFmGm4d_DSNZ/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1JH8GMWweQP1-5ffAl0xXcFmGm4d_DSNZ/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 4230173
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:53:44.188Z",
+      "originalSize": 4230173,
+      "optimizedSize": 709319,
+      "savings": "83.2"
+    },
+    "1Mho2TALp6esDbUaatvtvHiK-3ilVOFdN": {
+      "name": "AloCubanoClasses 05.17.25 - 035.jpg",
+      "googleModified": "2025-05-21T03:50:49.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1Mho2TALp6esDbUaatvtvHiK-3ilVOFdN/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1Mho2TALp6esDbUaatvtvHiK-3ilVOFdN/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1Mho2TALp6esDbUaatvtvHiK-3ilVOFdN/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1Mho2TALp6esDbUaatvtvHiK-3ilVOFdN/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3125526
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:53:47.209Z",
+      "originalSize": 3125526,
+      "optimizedSize": 378255,
+      "savings": "87.9"
+    },
+    "13nhGpIBxd8JNQzfTQivuaIEbW8so9QRi": {
+      "name": "AloCubanoClasses 05.17.25 - 1108.jpg",
+      "googleModified": "2025-05-22T03:45:22.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/13nhGpIBxd8JNQzfTQivuaIEbW8so9QRi/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/13nhGpIBxd8JNQzfTQivuaIEbW8so9QRi/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/13nhGpIBxd8JNQzfTQivuaIEbW8so9QRi/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/13nhGpIBxd8JNQzfTQivuaIEbW8so9QRi/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3774473
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:53:50.341Z",
+      "originalSize": 3774473,
+      "optimizedSize": 682108,
+      "savings": "81.9"
+    },
+    "12mYAgNkPkML8xMGfKxKBSahHCowhReQS": {
+      "name": "AloCubanoClasses 05.17.25 - 816.jpg",
+      "googleModified": "2025-05-22T02:43:06.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/12mYAgNkPkML8xMGfKxKBSahHCowhReQS/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/12mYAgNkPkML8xMGfKxKBSahHCowhReQS/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/12mYAgNkPkML8xMGfKxKBSahHCowhReQS/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/12mYAgNkPkML8xMGfKxKBSahHCowhReQS/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3908224
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:53:54.400Z",
+      "originalSize": 3908224,
+      "optimizedSize": 532915,
+      "savings": "86.4"
+    },
+    "1Cy27v5VLYF798JS7SWxUUO4Sr2sKNWnI": {
+      "name": "AloCubanoClasses 05.17.25 - 963.jpg",
+      "googleModified": "2025-05-22T03:30:11.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1Cy27v5VLYF798JS7SWxUUO4Sr2sKNWnI/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1Cy27v5VLYF798JS7SWxUUO4Sr2sKNWnI/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1Cy27v5VLYF798JS7SWxUUO4Sr2sKNWnI/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1Cy27v5VLYF798JS7SWxUUO4Sr2sKNWnI/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 4122913
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:53:58.108Z",
+      "originalSize": 4122913,
+      "optimizedSize": 655434,
+      "savings": "84.1"
+    },
+    "1pHp-9auA0gRB7LV1ym773SNfTl2hjWPi": {
+      "name": "AloCubanoClasses 05.17.25 - 657.jpg",
+      "googleModified": "2025-05-21T20:55:02.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1pHp-9auA0gRB7LV1ym773SNfTl2hjWPi/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1pHp-9auA0gRB7LV1ym773SNfTl2hjWPi/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1pHp-9auA0gRB7LV1ym773SNfTl2hjWPi/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1pHp-9auA0gRB7LV1ym773SNfTl2hjWPi/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3671763
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:54:01.468Z",
+      "originalSize": 3671763,
+      "optimizedSize": 458128,
+      "savings": "87.5"
+    },
+    "12n3AR4RVYg0yvhq6UbBdjf89od63Y7te": {
+      "name": "AloCubanoClasses 05.17.25 - 497.jpg",
+      "googleModified": "2025-05-21T04:30:56.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/12n3AR4RVYg0yvhq6UbBdjf89od63Y7te/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/12n3AR4RVYg0yvhq6UbBdjf89od63Y7te/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/12n3AR4RVYg0yvhq6UbBdjf89od63Y7te/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/12n3AR4RVYg0yvhq6UbBdjf89od63Y7te/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3173180
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:54:05.370Z",
+      "originalSize": 3173180,
+      "optimizedSize": 399117,
+      "savings": "87.4"
+    },
+    "1URJYsNoqUaCzTneCYg0WINW49nN_AVas": {
+      "name": "AloCubanoClasses 05.17.25 - 871.jpg",
+      "googleModified": "2025-05-22T02:43:11.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1URJYsNoqUaCzTneCYg0WINW49nN_AVas/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1URJYsNoqUaCzTneCYg0WINW49nN_AVas/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1URJYsNoqUaCzTneCYg0WINW49nN_AVas/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1URJYsNoqUaCzTneCYg0WINW49nN_AVas/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3384441
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:54:08.659Z",
+      "originalSize": 3384441,
+      "optimizedSize": 301454,
+      "savings": "91.1"
+    },
+    "14N1xsGUk_9iThK1AO2EwJ3fLBdvlrzw4": {
+      "name": "AloCubanoClasses 05.17.25 - 905.jpg",
+      "googleModified": "2025-05-22T03:08:59.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/14N1xsGUk_9iThK1AO2EwJ3fLBdvlrzw4/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/14N1xsGUk_9iThK1AO2EwJ3fLBdvlrzw4/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/14N1xsGUk_9iThK1AO2EwJ3fLBdvlrzw4/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/14N1xsGUk_9iThK1AO2EwJ3fLBdvlrzw4/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3908869
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:54:11.979Z",
+      "originalSize": 3908869,
+      "optimizedSize": 605826,
+      "savings": "84.5"
+    },
+    "1X7tet7Qn0f42L_BrXxaNpAyO5AnkD5wM": {
+      "name": "AloCubanoClasses 05.17.25 - 697.jpg",
+      "googleModified": "2025-05-21T20:54:47.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1X7tet7Qn0f42L_BrXxaNpAyO5AnkD5wM/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1X7tet7Qn0f42L_BrXxaNpAyO5AnkD5wM/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1X7tet7Qn0f42L_BrXxaNpAyO5AnkD5wM/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1X7tet7Qn0f42L_BrXxaNpAyO5AnkD5wM/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3764180
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:54:16.631Z",
+      "originalSize": 3764180,
+      "optimizedSize": 531874,
+      "savings": "85.9"
+    },
+    "1v9OHdTsoYJ17kKhkBbWeUlPm-U19jmoy": {
+      "name": "AloCubanoClasses 05.17.25 - 047.jpg",
+      "googleModified": "2025-05-21T03:58:36.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1v9OHdTsoYJ17kKhkBbWeUlPm-U19jmoy/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1v9OHdTsoYJ17kKhkBbWeUlPm-U19jmoy/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1v9OHdTsoYJ17kKhkBbWeUlPm-U19jmoy/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1v9OHdTsoYJ17kKhkBbWeUlPm-U19jmoy/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3886662
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:54:20.458Z",
+      "originalSize": 3886662,
+      "optimizedSize": 554789,
+      "savings": "85.7"
+    },
+    "1UA7fjNmZZpARwISHO7xe2CZ9Dkbmp7-G": {
+      "name": "AloCubanoClasses 05.17.25 - 1191.jpg",
+      "googleModified": "2025-05-22T03:57:09.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1UA7fjNmZZpARwISHO7xe2CZ9Dkbmp7-G/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1UA7fjNmZZpARwISHO7xe2CZ9Dkbmp7-G/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1UA7fjNmZZpARwISHO7xe2CZ9Dkbmp7-G/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1UA7fjNmZZpARwISHO7xe2CZ9Dkbmp7-G/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 4133358
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:54:24.641Z",
+      "originalSize": 4133358,
+      "optimizedSize": 599690,
+      "savings": "85.5"
+    },
+    "18GxTPkVME_Cg9Ajdu-OpAqAnl07wSxzC": {
+      "name": "AloCubanoClasses 05.17.25 - 537.jpg",
+      "googleModified": "2025-05-21T04:38:27.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/18GxTPkVME_Cg9Ajdu-OpAqAnl07wSxzC/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/18GxTPkVME_Cg9Ajdu-OpAqAnl07wSxzC/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/18GxTPkVME_Cg9Ajdu-OpAqAnl07wSxzC/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/18GxTPkVME_Cg9Ajdu-OpAqAnl07wSxzC/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3274961
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:54:27.785Z",
+      "originalSize": 3274961,
+      "optimizedSize": 396139,
+      "savings": "87.9"
+    },
+    "1WYlq5TOybDB9kwZZDHj_P2r-zlREHGYW": {
+      "name": "AloCubanoClasses 05.17.25 - 068.jpg",
+      "googleModified": "2025-05-21T04:03:05.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1WYlq5TOybDB9kwZZDHj_P2r-zlREHGYW/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1WYlq5TOybDB9kwZZDHj_P2r-zlREHGYW/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1WYlq5TOybDB9kwZZDHj_P2r-zlREHGYW/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1WYlq5TOybDB9kwZZDHj_P2r-zlREHGYW/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 4013190
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:54:31.393Z",
+      "originalSize": 4013190,
+      "optimizedSize": 595951,
+      "savings": "85.2"
+    },
+    "1n23PsunSAn_p2_HoqtPfEbNwCgpFhWgC": {
+      "name": "AloCubanoClasses 05.17.25 - 901.jpg",
+      "googleModified": "2025-05-22T03:05:41.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1n23PsunSAn_p2_HoqtPfEbNwCgpFhWgC/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1n23PsunSAn_p2_HoqtPfEbNwCgpFhWgC/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1n23PsunSAn_p2_HoqtPfEbNwCgpFhWgC/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/1n23PsunSAn_p2_HoqtPfEbNwCgpFhWgC/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 3556458
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:54:35.131Z",
+      "originalSize": 3556458,
+      "optimizedSize": 479688,
+      "savings": "86.5"
+    },
+    "13oZ7VRWms_jkOrZwOos1ONvLkcjMR6rA": {
+      "name": "AloCubanoClasses 05.17.25 - 647.jpg",
+      "googleModified": "2025-05-21T20:55:22.000Z",
+      "blobUrls": {
+        "thumb_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/13oZ7VRWms_jkOrZwOos1ONvLkcjMR6rA/thumb.avif",
+        "thumb_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/13oZ7VRWms_jkOrZwOos1ONvLkcjMR6rA/thumb.webp",
+        "full_avif": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/13oZ7VRWms_jkOrZwOos1ONvLkcjMR6rA/full.avif",
+        "full_webp": "https://mikya8vluytqhmff.public.blob.vercel-storage.com/gallery/13oZ7VRWms_jkOrZwOos1ONvLkcjMR6rA/full.webp"
+      },
+      "metadata": {
+        "width": 3600,
+        "height": 2400,
+        "format": "jpeg",
+        "size": 2500027
+      },
+      "synced": true,
+      "syncedAt": "2025-10-07T03:54:38.215Z",
+      "originalSize": 2500027,
+      "optimizedSize": 265923,
+      "savings": "89.4"
+    }
+  }
 }
