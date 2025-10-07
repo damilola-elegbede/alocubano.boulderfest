@@ -153,9 +153,7 @@ function generateTicketCard(ticketType, event) {
   let statusBanner = '';
   if (isComingSoon) {
     statusBanner = `
-      <div class="ticket-status-banner coming-soon">
-        COMING SOON
-      </div>
+      <div class="ticket-status-banner coming-soon"></div>
     `;
   } else if (isSoldOut) {
     statusBanner = `

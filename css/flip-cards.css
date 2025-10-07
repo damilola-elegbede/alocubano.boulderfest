@@ -362,7 +362,7 @@
   overflow: hidden;
   z-index: 20;
   background: transparent;
-  border-radius: 0;
+  border-radius: 12px 0 0 0; /* Match card corner to stay within border */
   padding: 0;
   box-shadow: none;
 }
