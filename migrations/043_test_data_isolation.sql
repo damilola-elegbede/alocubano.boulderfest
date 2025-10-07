@@ -1,10 +1,13 @@
 -- Migration: 043 - Test Data Isolation for Sold Count
 -- Purpose: Separate test ticket sales from production sold_count tracking
--- Dependencies: 022_ticket_types_table.sql, 042_race_condition_fix.sql
+-- Dependencies: 041a_recovery_ticket_types.sql, 042_race_condition_fix.sql, 022_ticket_types_table.sql
 -- Issue: Test ticket purchases increment the production sold_count, contaminating
 --        availability calculations and causing false "sold out" states during testing.
 -- Solution: Add test_sold_count column to track test sales separately. Update
 --          availability views to exclude test sales from production counts.
+--
+-- NOTE: Migration 041a ensures ticket_types exists before this migration runs.
+--       Migration 042 adds CHECK constraints to sold_count.
 
 -- ============================================================================
 -- STEP 1: Add test_sold_count column to ticket_types

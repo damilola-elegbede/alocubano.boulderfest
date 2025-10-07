@@ -1,11 +1,14 @@
 -- Migration: 042 - Fix sold_count Race Condition
 -- Purpose: Remove trigger-based sold_count updates in favor of explicit updates
--- Dependencies: 023_ticket_type_id_fk.sql, 022_ticket_types_table.sql
+-- Dependencies: 041a_recovery_ticket_types.sql, 023_ticket_type_id_fk.sql, 022_ticket_types_table.sql
 -- Issue: Triggers in migration 023 cause double-counting when webhooks and manual
 --        entry both update sold_count. Manual entry explicitly updates sold_count,
 --        while Stripe/PayPal webhooks rely on triggers, leading to race conditions.
 -- Solution: Drop triggers and use explicit sold_count updates in all code paths.
 --          Add CHECK constraints to prevent invalid sold_count values.
+--
+-- NOTE: Migration 041a ensures ticket_types exists before this migration runs.
+--       This prevents "no such table" errors from previous failed migration attempts.
 
 -- ============================================================================
 -- STEP 1: Drop problematic triggers from migration 023
