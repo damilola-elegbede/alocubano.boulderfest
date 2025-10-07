@@ -58,26 +58,26 @@ const STATIC_RESOURCES = [
  * Precaches critical static resources
  */
 self.addEventListener('install', (event) => {
-    console.log('[SW v2.0.0] Installing advanced service worker...');
+    console.log(`[SW ${CACHE_VERSION}] Installing advanced service worker...`);
 
     event.waitUntil(
         precacheStaticResources()
             .then(() => {
-                console.log('[SW] Static resources precached successfully');
-                return self.skipWaiting();
+                console.log(`[SW ${CACHE_VERSION}] Static resources precached successfully`);
+                return self.skipWaiting(); // Force immediate activation
             })
             .catch((error) => {
-                console.error('[SW] Failed to precache resources:', error);
+                console.error(`[SW ${CACHE_VERSION}] Failed to precache resources:`, error);
             })
     );
 });
 
 /**
  * Service Worker Activation
- * Cleans up old caches and claims clients
+ * Cleans up old caches, claims clients, and reloads pages to ensure new SW is running
  */
 self.addEventListener('activate', (event) => {
-    console.log('[SW v2.0.0] Activating advanced service worker...');
+    console.log(`[SW ${CACHE_VERSION}] Activating advanced service worker...`);
 
     event.waitUntil(
         Promise.all([
@@ -85,7 +85,17 @@ self.addEventListener('activate', (event) => {
             self.clients.claim(),
             loadOfflineQueue()
         ]).then(() => {
-            console.log('[SW] Service worker activated and ready');
+            console.log(`[SW ${CACHE_VERSION}] Service worker activated and ready`);
+
+            // Notify all clients that new SW is active
+            return self.clients.matchAll({ type: 'window' });
+        }).then((clients) => {
+            clients.forEach((client) => {
+                client.postMessage({
+                    type: 'SW_ACTIVATED',
+                    version: CACHE_VERSION
+                });
+            });
         })
     );
 });
