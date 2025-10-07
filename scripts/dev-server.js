@@ -260,7 +260,9 @@ vercelDev.on('error', (error) => {
 vercelDev.on('exit', (code) => {
   if (code && code !== 0) {
     log('⚠️', `Vercel dev exited unexpectedly (code ${code})`, colors.yellow);
-    process.exit(code);
+    log('💡', 'Express server will continue running for static files', colors.blue);
+    log('💡', 'API routes will not be available until Vercel dev is restarted', colors.blue);
+    // Don't exit the process - let Express continue serving static files
   }
 });
 
