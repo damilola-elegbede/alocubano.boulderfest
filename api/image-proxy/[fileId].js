@@ -38,7 +38,7 @@ export default async function handler(req, res) {
     });
   }
 
-  const { fileId, w, q = 75, format } = req.query;
+  const { fileId, w, q = 75, format, type } = req.query;
 
   // Validate required parameters
   if (!fileId) {
@@ -51,8 +51,17 @@ export default async function handler(req, res) {
   // Validate quality parameter
   const quality = Math.min(100, Math.max(1, parseInt(q) || 75));
 
+  // Validate type parameter (thumb or full)
+  const imageType = type && ['thumb', 'full'].includes(type.toLowerCase()) ? type.toLowerCase() : null;
+
+  // Determine width based on type if not explicitly provided
+  let targetWidth = w ? parseInt(w) : null;
+  if (!targetWidth && imageType === 'thumb') {
+    targetWidth = 400; // Default thumbnail width
+  }
+
   // Validate width parameter
-  if (w && (isNaN(parseInt(w)) || parseInt(w) <= 0)) {
+  if (targetWidth && (isNaN(targetWidth) || targetWidth <= 0)) {
     return res.status(400).json({
       error: 'Bad Request',
       message: 'Width parameter must be a positive integer'
@@ -162,13 +171,14 @@ export default async function handler(req, res) {
     const acceptHeader = req.headers.accept || '';
     const userAgent = req.headers['user-agent'] || '';
     let targetFormat = format || detectOptimalFormat(acceptHeader, userAgent);
-    const width = w ? parseInt(w) : null;
+    const width = targetWidth; // Use targetWidth determined earlier based on type or w parameter
 
-    // Generate enhanced cache key including format and size
+    // Generate enhanced cache key including format, size, and type
     const cacheKey = generateCacheKey(fileId, {
       width,
       format: targetFormat,
-      quality
+      quality,
+      type: imageType
     });
 
     // Handle conditional requests (304 Not Modified) with enhanced ETag
