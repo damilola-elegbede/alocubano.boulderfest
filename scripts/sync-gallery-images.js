@@ -33,7 +33,7 @@ const __dirname = path.dirname(__filename);
 
 // Configuration
 const MANIFEST_PATH = path.join(__dirname, '../.gallery-sync-cache.json');
-const GOOGLE_DRIVE_FOLDER_ID = process.env.GOOGLE_DRIVE_FOLDER_ID;
+const GOOGLE_DRIVE_FOLDER_ID = process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID;
 
 // Parse CLI arguments
 const args = process.argv.slice(2);
@@ -129,7 +129,7 @@ function validateEnvironment() {
   }
 
   if (!GOOGLE_DRIVE_FOLDER_ID) {
-    errors.push('Missing GOOGLE_DRIVE_FOLDER_ID environment variable');
+    errors.push('Missing GOOGLE_DRIVE_GALLERY_FOLDER_ID environment variable');
   }
 
   if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
@@ -159,26 +159,67 @@ async function initializeGoogleDrive() {
 }
 
 /**
- * Fetch all gallery images from Google Drive
+ * Fetch all gallery images from Google Drive folder hierarchy
+ * Navigates: root folder → event folder → category folders → images
+ * Matches the logic in lib/google-drive-service.js for consistency
  */
 async function fetchGalleryFiles(drive, eventFilter = null) {
-  const query = [
-    `'${GOOGLE_DRIVE_FOLDER_ID}' in parents`,
-    `mimeType contains 'image/'`,
-    `trashed = false`
-  ];
+  // Determine target event folder (default to current year)
+  const year = new Date().getFullYear();
+  const targetFolder = eventFilter || `boulder-fest-${year}`;
 
-  if (eventFilter) {
-    query.push(`name contains '${eventFilter}'`);
-  }
+  console.log(`📂 Searching for event folder: "${targetFolder}"`);
 
-  const response = await drive.files.list({
-    q: query.join(' and '),
-    fields: 'files(id, name, mimeType, modifiedTime, size, thumbnailLink, imageMediaMetadata)',
-    pageSize: 1000
+  // Step 1: Find event folder within root gallery folder
+  const eventFolders = await drive.files.list({
+    q: `'${GOOGLE_DRIVE_FOLDER_ID}' in parents and mimeType = 'application/vnd.google-apps.folder' and name = '${targetFolder}' and trashed = false`,
+    fields: 'files(id, name)',
   });
 
-  return response.data.files || [];
+  if (!eventFolders.data.files || eventFolders.data.files.length === 0) {
+    console.warn(`⚠️  No event folder found: "${targetFolder}"`);
+    console.warn(`   Searched in root folder: ${GOOGLE_DRIVE_FOLDER_ID}`);
+    console.warn(`   Make sure the folder exists and is named exactly "${targetFolder}"`);
+    return [];
+  }
+
+  const eventFolder = eventFolders.data.files[0];
+  const eventFolderId = eventFolder.id;
+  console.log(`✅ Found event folder: "${eventFolder.name}" (${eventFolderId})`);
+
+  // Step 2: Get category folders within the event folder
+  const categoryFolders = await drive.files.list({
+    q: `'${eventFolderId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
+    fields: 'files(id, name)',
+    orderBy: 'name',
+  });
+
+  if (!categoryFolders.data.files || categoryFolders.data.files.length === 0) {
+    console.warn(`⚠️  No category folders found in "${eventFolder.name}"`);
+    console.warn(`   Expected folders like: workshops, socials, performances`);
+    return [];
+  }
+
+  console.log(`📁 Found ${categoryFolders.data.files.length} category folders`);
+
+  // Step 3: Fetch images from all category folders
+  const allFiles = [];
+  for (const folder of categoryFolders.data.files) {
+    console.log(`   Scanning: ${folder.name}`);
+
+    const filesResponse = await drive.files.list({
+      q: `'${folder.id}' in parents and mimeType contains 'image/' and trashed = false`,
+      fields: 'files(id, name, mimeType, modifiedTime, size, thumbnailLink, imageMediaMetadata)',
+      pageSize: 1000,
+      orderBy: 'createdTime desc'
+    });
+
+    const files = filesResponse.data.files || [];
+    allFiles.push(...files);
+    console.log(`      Found ${files.length} images`);
+  }
+
+  return allFiles;
 }
 
 /**
