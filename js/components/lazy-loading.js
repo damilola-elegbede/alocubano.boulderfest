@@ -416,6 +416,36 @@ if (typeof LazyLoader === 'undefined') {
 
             if (lazyImage) {
                 const src = lazyImage.getAttribute('data-src');
+                const existingSrc = lazyImage.src;
+
+                // Handle picture element with source tags
+                const picture = lazyImage.closest('picture');
+                if (picture) {
+                    const sources = picture.querySelectorAll('source[data-srcset]');
+                    sources.forEach(source => {
+                        const srcset = source.getAttribute('data-srcset');
+                        if (srcset) {
+                            source.srcset = srcset;
+                            source.removeAttribute('data-srcset');
+                        }
+                    });
+                }
+
+                // If src already set (by progressive loader), just mark as loaded
+                if (existingSrc && !src) {
+                    if (placeholder) {
+                        placeholder.style.display = 'none';
+                    }
+                    if (spinner) {
+                        spinner.style.display = 'none';
+                    }
+                    lazyImage.style.display = 'block';
+                    lazyImage.style.opacity = '1';
+                    item.classList.add(this.config.loadedClass);
+                    item.setAttribute('data-loaded', 'true');
+                    return;
+                }
+
                 if (src) {
                     // Show loading state
                     if (spinner) {
