@@ -203,21 +203,36 @@ async function fetchGalleryFiles(drive, eventFilter = null) {
 
   console.log(`📁 Found ${categoryFolders.data.files.length} category folders`);
 
-  // Step 3: Fetch images from all category folders
+  // Step 3: Fetch images from all category folders with pagination
   const allFiles = [];
   for (const folder of categoryFolders.data.files) {
     console.log(`   Scanning: ${folder.name}`);
 
-    const filesResponse = await drive.files.list({
-      q: `'${folder.id}' in parents and mimeType contains 'image/' and trashed = false`,
-      fields: 'files(id, name, mimeType, modifiedTime, size, thumbnailLink, imageMediaMetadata)',
-      pageSize: 1000,
-      orderBy: 'createdTime desc'
-    });
+    // Implement pagination to handle folders with >1000 images
+    let pageToken = null;
+    let folderFileCount = 0;
+    
+    do {
+      const filesResponse = await drive.files.list({
+        q: `'${folder.id}' in parents and mimeType contains 'image/' and trashed = false`,
+        fields: 'nextPageToken, files(id, name, mimeType, modifiedTime, size, thumbnailLink, imageMediaMetadata)',
+        pageSize: 1000,
+        orderBy: 'createdTime desc',
+        pageToken: pageToken || undefined
+      });
 
-    const files = filesResponse.data.files || [];
-    allFiles.push(...files);
-    console.log(`      Found ${files.length} images`);
+      const files = filesResponse.data.files || [];
+      allFiles.push(...files);
+      folderFileCount += files.length;
+      
+      pageToken = filesResponse.data.nextPageToken;
+      
+      if (pageToken) {
+        console.log(`      Found ${files.length} images (fetching more...)`);
+      }
+    } while (pageToken);
+    
+    console.log(`      Found ${folderFileCount} images total`);
   }
 
   return allFiles;

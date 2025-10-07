@@ -13,14 +13,16 @@ export const VARIANTS = {
     width: 400,
     formats: {
       avif: { quality: 70, effort: 4 },
-      webp: { quality: 75, effort: 4 }
+      webp: { quality: 75, effort: 4 },
+      jpeg: { quality: 85 }
     }
   },
   full: {
     width: 1920,
     formats: {
       avif: { quality: 75, effort: 4 },
-      webp: { quality: 80, effort: 4 }
+      webp: { quality: 80, effort: 4 },
+      jpeg: { quality: 90 }
     }
   }
 };

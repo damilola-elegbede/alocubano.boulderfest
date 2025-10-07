@@ -35,11 +35,29 @@ export default async function handler(req, res) {
     });
   }
 
-  // Validate that it's a Google Drive URL
-  const isGoogleDriveUrl =
-    url.includes('drive.google.com') ||
-    url.includes('googleusercontent.com') ||
-    url.includes('lh3.googleusercontent.com');
+  // Validate that it's a Google Drive URL - SECURITY FIX
+  // Parse URL and validate hostname explicitly to prevent open-proxy bypass
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(url);
+  } catch {
+    return res.status(400).json({
+      error: 'Bad Request',
+      message: 'Invalid URL format'
+    });
+  }
+
+  // Allowed hostnames for Google Drive URLs
+  const allowedHosts = [
+    'drive.google.com',
+    'lh3.googleusercontent.com'
+  ];
+
+  const hostname = parsedUrl.hostname.toLowerCase();
+  
+  // Check exact hostname match or subdomain of googleusercontent.com
+  const isGoogleDriveUrl = allowedHosts.includes(hostname) || 
+                           hostname.endsWith('.googleusercontent.com');
 
   if (!isGoogleDriveUrl) {
     return res.status(400).json({

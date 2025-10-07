@@ -1286,8 +1286,19 @@
                     const thumbnailUrl_webp = item.thumbnailUrl_webp || null;
                     const usingBlob = item.usingBlob || false;
 
-                    // Determine fallback URL for <img> - use WebP for better browser support
-                    const fallbackUrl = usingBlob && thumbnailUrl_webp ? thumbnailUrl_webp : thumbnailUrl;
+
+                    // Critical: When using blob storage, ensure WebP fallback exists
+                    // AVIF in <source> is fine, but <img src> MUST use WebP or JPEG/PNG
+                    // Otherwise non-AVIF browsers (older Safari, Firefox) get broken images
+                    if (usingBlob && !thumbnailUrl_webp) {
+                        console.warn(
+                            `[Gallery] Incomplete blob data for item ${item.id}: missing WebP fallback. ` +
+                            `AVIF-only URLs will break in non-AVIF browsers.`
+                        );
+                    }
+
+                    // Fallback hierarchy: WebP (best compatibility) → original URL
+                    const fallbackUrl = thumbnailUrl_webp || thumbnailUrl;
 
                     let pictureHtml = `
           <div class="gallery-item lazy-item gallery-image-container" data-index="${globalIndex}" data-category="${categoryName}" data-loaded="true" data-using-blob="${usingBlob}">
@@ -1297,8 +1308,9 @@
               </div>
               <picture>`;
 
-                    // Add AVIF source if using Blob (dedicated AVIF URL) - eager loading
-                    if (usingBlob && thumbnailUrl) {
+                    // Add AVIF source ONLY if WebP fallback exists (critical browser compatibility)
+                    // Non-AVIF browsers will skip <source> and use <img src> (must be WebP/JPEG/PNG)
+                    if (usingBlob && thumbnailUrl && thumbnailUrl_webp) {
                       pictureHtml += `
                 <source type="image/avif" srcset="${thumbnailUrl}">`;
                     }

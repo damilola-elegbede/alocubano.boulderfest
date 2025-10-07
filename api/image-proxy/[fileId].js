@@ -40,6 +40,9 @@ export default async function handler(req, res) {
 
   const { fileId, w, q = 75, format, type } = req.query;
 
+  // Normalize format parameter: "jpg" -> "jpeg" (Sharp requires "jpeg")
+  const normalizedFormat = format?.toLowerCase() === 'jpg' ? 'jpeg' : format?.toLowerCase();
+
   // Validate required parameters
   if (!fileId) {
     return res.status(400).json({
@@ -54,10 +57,18 @@ export default async function handler(req, res) {
   // Validate type parameter (thumb or full)
   const imageType = type && ['thumb', 'full'].includes(type.toLowerCase()) ? type.toLowerCase() : null;
 
-  // Determine width based on type if not explicitly provided
-  let targetWidth = w ? parseInt(w) : null;
-  if (!targetWidth && imageType === 'thumb') {
-    targetWidth = 400; // Default thumbnail width
+
+  // Normalize width parameter and set defaults
+  let targetWidth = w ? parseInt(w, 10) : null;
+  if (Number.isNaN(targetWidth)) {
+    targetWidth = null;
+  }
+  if (!targetWidth) {
+    if (imageType === 'thumb') {
+      targetWidth = 400;
+    } else if (imageType === 'full') {
+      targetWidth = 1920;
+    }
   }
 
   // Validate width parameter
@@ -170,7 +181,7 @@ export default async function handler(req, res) {
     // Determine optimal format based on browser capabilities and request
     const acceptHeader = req.headers.accept || '';
     const userAgent = req.headers['user-agent'] || '';
-    let targetFormat = format || detectOptimalFormat(acceptHeader, userAgent);
+    let targetFormat = normalizedFormat || detectOptimalFormat(acceptHeader, userAgent);
     const width = targetWidth; // Use targetWidth determined earlier based on type or w parameter
 
     // Generate enhanced cache key including format, size, and type
