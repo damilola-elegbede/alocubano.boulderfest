@@ -57,13 +57,47 @@ export default async function handler(req, res) {
     }
 
     // Enrich tickets with availability calculation
+    // NOTE: Explicitly select fields to avoid BigInt serialization errors
     const enrichedTickets = ticketTypes.map(ticket => ({
-      ...ticket,
-      // Calculate availability (max_quantity - sold_count)
+      // Core ticket fields (already converted by cache)
+      id: ticket.id,
+      event_id: ticket.event_id,
+      name: ticket.name,
+      slug: ticket.slug,
+      description: ticket.description,
+      price_cents: ticket.price_cents,
+      currency: ticket.currency,
+      status: ticket.status,
+      max_quantity: ticket.max_quantity,
+      sold_count: ticket.sold_count,
+      display_order: ticket.display_order,
+      stripe_price_id: ticket.stripe_price_id,
+      // Calculated fields
       availability: ticket.max_quantity ?
         Math.max(0, ticket.max_quantity - (ticket.sold_count || 0)) :
         null,
-      // Event information is already joined in the cache
+      available_quantity: ticket.available_quantity,
+      is_available: ticket.is_available,
+      is_sold_out: ticket.is_sold_out,
+      is_coming_soon: ticket.is_coming_soon,
+      price_display: ticket.price_display,
+      can_purchase: ticket.can_purchase,
+      // Metadata fields (already parsed by cache)
+      metadata: ticket.metadata,
+      // Event information (already joined in the cache)
+      event_name: ticket.event_name,
+      event_slug: ticket.event_slug,
+      event_type: ticket.event_type,
+      event_date: ticket.event_date,
+      event_time: ticket.event_time,
+      event_start_date: ticket.event_start_date,
+      event_end_date: ticket.event_end_date,
+      event_venue: ticket.event_venue,
+      event_venue_address: ticket.event_venue_address,
+      event_venue_city: ticket.event_venue_city,
+      event_venue_state: ticket.event_venue_state,
+      event_status: ticket.event_status,
+      // Event object for backward compatibility
       event: {
         id: ticket.event_id,
         name: ticket.event_name,
