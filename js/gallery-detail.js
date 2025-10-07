@@ -1351,6 +1351,13 @@
                 // Add to head to trigger browser preload
                 document.head.appendChild(link);
 
+                // Remove link after 5 seconds to prevent "unused preload" warnings
+                setTimeout(() => {
+                    if (link.parentNode) {
+                        link.parentNode.removeChild(link);
+                    }
+                }, 5000);
+
                 // Mark as preloaded
                 state.preloadedImages.add(item.viewUrl);
             }
@@ -1749,6 +1756,9 @@
         });
     }
 
+    // Keep references to preloaded images to prevent browser cancellation
+    const preloadedImageRefs = new Map();
+
     // Preload image utility
     function preloadImage(url, priority = 'auto') {
         if (!url || state.preloadedImages.has(url)) {
@@ -1758,10 +1768,15 @@
         const img = new Image();
         img.onload = () => {
             state.preloadedImages.add(url);
-            // Silent success - no console spam
+            // Keep reference for at least 30 seconds to prevent cancellation
+            preloadedImageRefs.set(url, img);
+            setTimeout(() => {
+                preloadedImageRefs.delete(url);
+            }, 30000);
         };
         img.onerror = () => {
             // Silent failure - browser will try again if needed
+            preloadedImageRefs.delete(url);
         };
 
         // For high priority images, use fetchpriority attribute
@@ -1770,6 +1785,8 @@
         }
 
         img.src = url;
+        // Keep immediate reference to prevent garbage collection
+        preloadedImageRefs.set(url, img);
     }
 
     // Aggressively preload first N full images immediately
