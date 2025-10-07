@@ -381,8 +381,8 @@
   letter-spacing: 0.1em;
   transform: rotate(-45deg);
   /* Positioned to stay completely within white card border */
-  top: 35px;
-  left: -48px;
+  top: 32px;
+  left: -52px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
@@ -487,7 +487,7 @@
     line-height: 32px;
     font-size: 11px;
     /* Adjusted to stay completely within white card border on mobile */
-    top: 28px;
-    left: -42px;
+    top: 26px;
+    left: -44px;
   }
 }
