@@ -673,11 +673,30 @@
             setupIntersectionPreloading(); // Mobile/scroll preloading
         }, 500);
 
-        // Clear any stale session storage that might interfere with workshop photos
+        // Only clear sessionStorage if state is stale (> 30 minutes) or corrupted
+        // Previous unconditional clear broke infinite scroll pagination
         const event = getEventFromPage();
         const stateKey = `gallery_${event}_state`;
-        const hadStaleData = !!sessionStorage.getItem(stateKey);
-        sessionStorage.removeItem(stateKey);
+        const savedState = sessionStorage.getItem(stateKey);
+
+        if (savedState) {
+            try {
+                const parsed = JSON.parse(savedState);
+                const stateAge = Date.now() - (parsed.timestamp || 0);
+                const STATE_FRESHNESS_THRESHOLD = 30 * 60 * 1000; // 30 minutes
+
+                if (stateAge > STATE_FRESHNESS_THRESHOLD) {
+                    console.log('🧹 Clearing stale sessionStorage (age > 30 mins)');
+                    sessionStorage.removeItem(stateKey);
+                } else {
+                    console.log(`💾 Keeping fresh sessionStorage (age: ${Math.round(stateAge / 60000)} mins)`);
+                }
+            } catch (e) {
+                // Corrupted state - clear it
+                console.log('🧹 Clearing corrupted sessionStorage:', e.message);
+                sessionStorage.removeItem(stateKey);
+            }
+        }
 
         // Initialize performance optimization modules
         initPerformanceModules();
