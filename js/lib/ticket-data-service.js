@@ -103,6 +103,7 @@ class TicketDataService {
      */
     _loadFallbackTickets() {
         // Basic fallback data matching API structure
+        // IMPORTANT: Includes test tickets to prevent event ID detection errors
         const fallbackTickets = [
             {
                 id: 'boulderfest-2026-early-bird-full',
@@ -133,6 +134,57 @@ class TicketDataService {
                 event_date: '2025-11-08',
                 event_venue: 'Avalon Ballroom',
                 status: 'available'
+            },
+            // Test tickets (prevent detection errors when hardcoded test tickets are on page)
+            {
+                id: 'test-vip-pass',
+                name: '[TEST] VIP Pass',
+                price_cents: 15000,
+                event_id: -2,
+                event_name: 'Test Festival',
+                event_date: '2028-01-07',
+                event_venue: 'Test Ballroom',
+                status: 'test'
+            },
+            {
+                id: 'test-weekender-pass',
+                name: '[TEST] Weekender Pass',
+                price_cents: 7500,
+                event_id: -1,
+                event_name: 'Test Weekender',
+                event_date: '2028-01-07',
+                event_venue: 'Test Ballroom',
+                status: 'test'
+            },
+            {
+                id: 'test-friday-pass',
+                name: '[TEST] Friday Pass',
+                price_cents: 3500,
+                event_id: -2,
+                event_name: 'Test Festival',
+                event_date: '2028-01-07',
+                event_venue: 'Test Ballroom',
+                status: 'test'
+            },
+            {
+                id: 'test-saturday-pass',
+                name: '[TEST] Saturday Pass',
+                price_cents: 3500,
+                event_id: -2,
+                event_name: 'Test Festival',
+                event_date: '2028-01-08',
+                event_venue: 'Test Ballroom',
+                status: 'test'
+            },
+            {
+                id: 'test-sunday-pass',
+                name: '[TEST] Sunday Pass',
+                price_cents: 3500,
+                event_id: -2,
+                event_name: 'Test Festival',
+                event_date: '2028-01-09',
+                event_venue: 'Test Ballroom',
+                status: 'test'
             }
         ];
 
