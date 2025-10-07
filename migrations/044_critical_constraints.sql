@@ -21,6 +21,7 @@ DROP TABLE IF EXISTS tickets_new;
 -- Drop views that depend on tickets table
 DROP VIEW IF EXISTS v_data_mode_statistics;
 DROP VIEW IF EXISTS v_test_data_cleanup_candidates;
+DROP VIEW IF EXISTS test_ticket_sales_view;
 
 -- Create new tickets table with FK constraint
 CREATE TABLE tickets_new (
