@@ -44,14 +44,20 @@ CREATE TABLE ticket_types_new (
     display_order INTEGER DEFAULT 0,
     metadata TEXT,
     availability TEXT,
+    event_date DATE NOT NULL DEFAULT '2026-01-01',
+    event_time TIME NOT NULL DEFAULT '00:00',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
 );
 
--- Copy data from old table
+-- Copy data from old table (explicit column list to handle schema evolution)
 INSERT INTO ticket_types_new
-SELECT * FROM ticket_types;
+SELECT
+    id, event_id, stripe_price_id, name, description, price_cents, currency,
+    status, max_quantity, sold_count, display_order, metadata, availability,
+    event_date, event_time, created_at, updated_at
+FROM ticket_types;
 
 -- Drop old table
 DROP TABLE ticket_types;
