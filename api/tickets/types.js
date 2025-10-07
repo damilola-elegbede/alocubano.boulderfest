@@ -93,7 +93,9 @@ export default async function handler(req, res) {
           venue_city: ticket.event_venue_city,
           venue_state: ticket.event_venue_state,
           event_status: ticket.event_status,
-          display_order: ticket.event_display_order,
+          display_order: typeof ticket.event_display_order === 'bigint'
+            ? Number(ticket.event_display_order)
+            : (ticket.event_display_order || 0),
           ticket_types: []
         });
       }
