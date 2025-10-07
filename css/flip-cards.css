@@ -380,9 +380,9 @@
   font-weight: 800;
   letter-spacing: 0.1em;
   transform: rotate(-45deg);
-  /* Positioned to stay within 12px border-radius at top-left corner */
-  top: 32px;
-  left: -50px;
+  /* Positioned to stay completely within white card border */
+  top: 35px;
+  left: -48px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
@@ -486,8 +486,8 @@
     width: 170px;
     line-height: 32px;
     font-size: 11px;
-    /* Adjusted to stay within border-radius on mobile */
-    top: 24px;
-    left: -45px;
+    /* Adjusted to stay completely within white card border on mobile */
+    top: 28px;
+    left: -42px;
   }
 }
