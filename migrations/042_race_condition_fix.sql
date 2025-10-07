@@ -26,6 +26,9 @@ DROP TRIGGER IF EXISTS decrement_ticket_sold_count;
 -- Disable foreign key constraints during table recreation
 PRAGMA foreign_keys = OFF;
 
+-- Clean up any orphaned temporary tables from previous failed migration attempts
+DROP TABLE IF EXISTS ticket_types_new;
+
 -- Create new ticket_types table with CHECK constraints
 CREATE TABLE ticket_types_new (
     id TEXT PRIMARY KEY,

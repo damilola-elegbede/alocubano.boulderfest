@@ -15,6 +15,9 @@
 -- Disable foreign key constraints during table recreation
 PRAGMA foreign_keys = OFF;
 
+-- Clean up any orphaned temporary tables from previous failed migration attempts
+DROP TABLE IF EXISTS ticket_types_new;
+
 -- Create new ticket_types table with test_sold_count column
 CREATE TABLE ticket_types_new (
     id TEXT PRIMARY KEY,
