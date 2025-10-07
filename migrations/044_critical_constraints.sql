@@ -15,6 +15,9 @@
 
 PRAGMA foreign_keys = OFF;
 
+-- Clean up any orphaned temporary tables from previous failed migration attempts
+DROP TABLE IF EXISTS tickets_new;
+
 -- Drop views that depend on tickets table
 DROP VIEW IF EXISTS v_data_mode_statistics;
 DROP VIEW IF EXISTS v_test_data_cleanup_candidates;
