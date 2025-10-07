@@ -419,6 +419,11 @@
             setupInfiniteScroll(year, loadingEl, contentEl, staticEl);
         }
 
+        // Aggressively preload first 10 full images after restoration
+        setTimeout(() => {
+            preloadInitialFullImages(10);
+        }, 100);
+
         // After DOM is restored, check for failed images and retry them
         // Filter out images that were already successfully loaded
         const imagesToRetry = state.failedImages.filter(
@@ -1319,6 +1324,34 @@
                 await new Promise((resolve) => requestAnimationFrame(resolve));
             }
         }
+
+        // Add preload link tags for full images (first batch gets high priority)
+        const isFirstBatch = categoryOffset === 0 && categoryName === 'workshops';
+        if (isFirstBatch) {
+            addPreloadLinks(uniqueItems.slice(0, 10), 'high');
+        } else {
+            addPreloadLinks(uniqueItems.slice(0, 5), 'auto');
+        }
+    }
+
+    // Add <link rel="preload"> tags for full images
+    function addPreloadLinks(items, priority = 'auto') {
+        items.forEach(item => {
+            if (item.viewUrl && !state.preloadedImages.has(item.viewUrl)) {
+                const link = document.createElement('link');
+                link.rel = 'preload';
+                link.as = 'image';
+                link.href = item.viewUrl;
+                if (priority === 'high') {
+                    link.fetchPriority = 'high';
+                }
+                // Add to head to trigger browser preload
+                document.head.appendChild(link);
+
+                // Mark as preloaded
+                state.preloadedImages.add(item.viewUrl);
+            }
+        });
     }
 
     // Display gallery data with lazy loading and append mode
@@ -1463,6 +1496,13 @@
 
             // Re-initialize intersection preloading for full images
             setupIntersectionPreloading();
+
+            // Aggressively preload first 10 full images on initial load
+            if (!appendMode) {
+                setTimeout(() => {
+                    preloadInitialFullImages(10);
+                }, 100); // Small delay to let thumbnails finish loading first
+            }
         }
 
         // Store all items for lightbox (flatten categories)
@@ -1707,7 +1747,7 @@
     }
 
     // Preload image utility
-    function preloadImage(url) {
+    function preloadImage(url, priority = 'auto') {
         if (!url || state.preloadedImages.has(url)) {
             return; // Already preloaded or invalid URL
         }
@@ -1720,7 +1760,29 @@
         img.onerror = () => {
             // Silent failure - browser will try again if needed
         };
+
+        // For high priority images, use fetchpriority attribute
+        if (priority === 'high') {
+            img.fetchPriority = 'high';
+        }
+
         img.src = url;
+    }
+
+    // Aggressively preload first N full images immediately
+    function preloadInitialFullImages(count = 10) {
+        console.log(`🚀 Aggressively preloading first ${count} full images...`);
+
+        let preloaded = 0;
+        for (let i = 0; i < Math.min(count, state.displayOrder.length); i++) {
+            const item = state.displayOrder[i];
+            if (item && item.viewUrl) {
+                preloadImage(item.viewUrl, 'high');
+                preloaded++;
+            }
+        }
+
+        console.log(`✅ Queued ${preloaded} full images for immediate preload`);
     }
 
     // Preload adjacent images for smooth lightbox navigation
@@ -1772,22 +1834,22 @@
                         if (item.viewUrl) {
                             // Preload this image's full version
                             preloadImage(item.viewUrl);
-                            // On mobile, also preload nearby images
-                            if ('ontouchstart' in window) {
-                                preloadAdjacentImages(index);
-                            }
+                            // Also preload nearby images for smooth navigation
+                            preloadAdjacentImages(index);
                         }
                     }
                 }
             });
         }, {
-            rootMargin: '100px' // Start preloading when 100px away from viewport
+            rootMargin: '500px' // Aggressively preload when 500px away from viewport
         });
 
         // Observe all gallery items
         document.querySelectorAll('.gallery-item').forEach(item => {
             preloadObserver.observe(item);
         });
+
+        console.log(`📡 Intersection observer setup with 500px rootMargin for ${document.querySelectorAll('.gallery-item').length} items`);
 
         return preloadObserver;
     }
