@@ -153,7 +153,9 @@ function generateTicketCard(ticketType, event) {
   let statusBanner = '';
   if (isComingSoon) {
     statusBanner = `
-      <div class="ticket-status-banner coming-soon"></div>
+      <div class="ticket-status-banner coming-soon">
+        <span class="sr-only">COMING SOON</span>
+      </div>
     `;
   } else if (isSoldOut) {
     statusBanner = `
@@ -166,20 +168,24 @@ function generateTicketCard(ticketType, event) {
   // Disable styling for non-available tickets
   const disabledClass = !isAvailable ? 'ticket-disabled' : '';
   const pointerEvents = !isAvailable ? 'pointer-events: none;' : '';
+  const ariaDisabled = !isAvailable ? 'aria-disabled="true"' : '';
 
   const ticketColor = getTicketColor(ticketType);
   const dateRange = formatDateRange(event.start_date, event.end_date);
 
   // Escape user-controlled data to prevent XSS
-  // Note: Uppercase BEFORE escaping to avoid corrupting HTML entities
-  const ticketName = escapeHtml(ticketType.name);
-  const ticketNameUpper = escapeHtml(ticketType.name.toUpperCase());
+  // CRITICAL: Always uppercase BEFORE escaping to prevent HTML entity corruption
+  // Example: escapeHtml("Rock & Roll").toUpperCase() => "ROCK &AMP; ROLL" (wrong!)
+  //          escapeHtml("Rock & Roll".toUpperCase()) => "ROCK & ROLL" (correct!)
+  const rawTicketName = ticketType.name || '';
+  const ticketName = escapeHtml(rawTicketName);
+  const ticketNameUpper = escapeHtml(rawTicketName.toUpperCase());
   const ticketDescription = escapeHtml(ticketType.description || 'Details coming soon');
   const eventName = escapeHtml(event.event_name);
   const venueName = escapeHtml(event.venue_name);
 
   return `
-    <div class="flip-card ${disabledClass}" data-ticket-status="${ticketType.status}">
+    <div class="flip-card ${disabledClass}" data-ticket-status="${ticketType.status}" ${ariaDisabled}>
       ${statusBanner}
       <div class="flip-card-inner" style="${pointerEvents}">
         <!-- Front of card -->
