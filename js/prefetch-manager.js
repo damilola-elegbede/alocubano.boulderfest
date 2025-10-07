@@ -436,6 +436,13 @@ class IntelligentPrefetchManager {
     }
 
     addToPriorityQueue(resourceUrl, priority, metadata = {}) {
+        // Skip Vercel Blob Storage URLs - they're already CDN-optimized and fast
+        // Prefetching them causes CORS preflight failures and wastes bandwidth
+        if (resourceUrl.includes('.blob.vercel-storage.com')) {
+            console.log('[IntelligentPrefetch] Skipping Blob Storage URL (already CDN-optimized):', resourceUrl);
+            return;
+        }
+
         if (!this.priorityQueue.has(priority)) {
             console.warn('[IntelligentPrefetch] Invalid priority level:', priority);
             priority = 'low';
