@@ -168,12 +168,16 @@ CREATE TABLE transaction_items_new (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Copy data, converting TEXT event_id to INTEGER (NULL if invalid)
-INSERT INTO transaction_items_new
+-- Copy data (event_id excluded - was removed in migration 037, will default to NULL)
+INSERT INTO transaction_items_new (
+    id, transaction_id, item_type, item_name, item_description,
+    unit_price_cents, quantity, total_price_cents, ticket_type,
+    donation_category, sku, product_metadata, fulfillment_status,
+    fulfilled_at, is_test, created_at
+)
 SELECT
     id, transaction_id, item_type, item_name, item_description,
     unit_price_cents, quantity, total_price_cents, ticket_type,
-    CAST(event_id AS INTEGER) as event_id,
     donation_category, sku, product_metadata, fulfillment_status,
     fulfilled_at, is_test, created_at
 FROM transaction_items;
