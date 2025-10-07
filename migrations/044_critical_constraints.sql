@@ -28,6 +28,7 @@ CREATE TABLE tickets_new (
     ticket_type_id TEXT REFERENCES ticket_types(id) ON DELETE SET NULL,
     event_id INTEGER NOT NULL REFERENCES events(id),
     event_date DATE,
+    event_time TIME NOT NULL DEFAULT '00:00',
     event_end_date DATETIME,
     price_cents INTEGER NOT NULL,
 
