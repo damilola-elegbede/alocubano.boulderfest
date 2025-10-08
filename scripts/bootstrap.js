@@ -36,33 +36,61 @@ async function runBootstrap() {
       logger.log(`   Checksum: ${result.checksum.substring(0, 12)}...`);
     }
 
-    // Get and display status
+    // CRITICAL: Verify database state after bootstrap
     const status = await bootstrapService.getStatus();
-    logger.log('\n📊 Bootstrap Status:');
+    logger.log('\n📊 Bootstrap Verification:');
     logger.log(`   Events in database: ${status.eventCount}`);
     logger.log(`   Ticket types in database: ${status.ticketTypeCount}`);
 
+    // FAIL if ticket_types table is empty (critical error)
+    if (status.ticketTypeCount === 0) {
+      logger.error('\n❌ BOOTSTRAP VERIFICATION FAILED!');
+      logger.error('   Ticket types table is EMPTY after bootstrap.');
+      logger.error('   This is a critical error that will cause runtime failures.');
+      logger.error('\n💡 Possible causes:');
+      logger.error('   - Foreign key constraint failure');
+      logger.error('   - Events table empty (FK dependency)');
+      logger.error('   - Silent INSERT failure');
+      logger.error('   - Database connection issue');
+      logger.log('\n' + '═'.repeat(60));
+      process.exit(1);
+    }
+
+    // Warn if events table is empty
+    if (status.eventCount === 0) {
+      logger.warn('\n⚠️ WARNING: Events table is empty!');
+      logger.warn('   This may cause ticket_types foreign key constraints to fail.');
+    }
+
     logger.log('\n' + '═'.repeat(60));
-    logger.log('✨ Bootstrap complete\n');
+    logger.log('✨ Bootstrap complete and verified\n');
 
     process.exit(0);
 
   } catch (error) {
-    logger.error('\n❌ Bootstrap failed!');
+    logger.error('\n❌ BOOTSTRAP FAILED - BUILD WILL FAIL');
+    logger.error('═'.repeat(60));
 
     // Check if this is a validation error and format nicely
     if (error.message && error.message.includes('Bootstrap validation failed')) {
-      logger.error(`   ${error.message}`);
+      logger.error(`\n   ${error.message}`);
       logger.error('\n💡 Fix the errors in config/bootstrap.json and try again.');
+    } else if (error.message && error.message.includes('CRITICAL')) {
+      // Critical errors get special formatting
+      logger.error(`\n   ${error.message}`);
+      logger.error('\n💡 This is a critical bootstrap failure.');
+      logger.error('   Check the error logs above for detailed diagnostic information.');
     } else {
-      logger.error(`   Error: ${error.message}`);
+      logger.error(`\n   Error: ${error.message}`);
 
       if (error.stack && process.env.NODE_ENV !== 'production') {
-        logger.error('\n   Stack trace:');
-        logger.error(error.stack);
+        logger.error('\n📋 Stack trace:');
+        error.stack.split('\n').forEach(line => logger.error(`   ${line}`));
       }
     }
 
+    logger.error('\n🚨 Build cannot continue without valid bootstrap data.');
+    logger.error('   The application will fail at runtime if bootstrap data is missing.');
     logger.log('\n' + '═'.repeat(60));
     process.exit(1);
   }
