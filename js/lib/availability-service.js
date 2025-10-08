@@ -102,7 +102,8 @@ export class AvailabilityService {
         }
 
         try {
-            const response = await fetch('/api/tickets/types?include_test=true');
+            // Note: Test tickets are automatically visible in non-production environments
+            const response = await fetch('/api/tickets/types');
 
             if (!response.ok) {
                 throw new Error(`API returned ${response.status}`);

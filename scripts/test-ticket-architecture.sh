@@ -136,8 +136,9 @@ main() {
     # Test 4: Filter by status
     make_request "$BASE_URL/api/tickets/types?status=available,coming-soon" "GET" "Filter by Status"
 
-    # Test 5: Include test tickets
-    make_request "$BASE_URL/api/tickets/types?include_test=true" "GET" "Include Test Tickets"
+    # Test 5: Test tickets visibility (environment-based)
+    # Note: Test tickets are automatically visible in non-production environments
+    make_request "$BASE_URL/api/tickets/types" "GET" "Test Tickets Visibility (environment-based)"
 
     # Test 6: Combined filters
     make_request "$BASE_URL/api/tickets/types?event_id=boulder-fest-2026&status=available" "GET" "Combined Filters"

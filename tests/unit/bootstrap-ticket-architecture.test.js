@@ -92,30 +92,39 @@ describe('Bootstrap-Driven Ticket Architecture', () => {
       expect(data.metadata.filtered_by_status).toBe(true);
     }, TEST_TIMEOUT);
 
-    it('should exclude test tickets by default', async () => {
+    it('should exclude test tickets in production environment', async () => {
       const response = await fetch(`${BASE_URL}/api/tickets/types`);
       const data = await response.json();
 
       expect(response.status).toBe(200);
 
-      // Should not contain test tickets
-      data.tickets.forEach(ticket => {
-        expect(ticket.status).not.toBe('test');
-      });
+      // Test tickets visibility depends on environment
+      const isProduction = data.metadata.environment === 'production';
+      expect(data.metadata.test_tickets_visible).toBe(!isProduction);
 
-      expect(data.metadata.include_test_tickets).toBe(false);
+      if (isProduction) {
+        // Production should not contain test tickets
+        data.tickets.forEach(ticket => {
+          expect(ticket.status).not.toBe('test');
+        });
+      }
     }, TEST_TIMEOUT);
 
-    it('should include test tickets when explicitly requested', async () => {
-      const response = await fetch(`${BASE_URL}/api/tickets/types?include_test=true`);
+    it('should include test tickets in non-production environments', async () => {
+      const response = await fetch(`${BASE_URL}/api/tickets/types`);
       const data = await response.json();
 
       expect(response.status).toBe(200);
-      expect(data.metadata.include_test_tickets).toBe(true);
 
-      // Should contain some test tickets
-      const testTickets = data.tickets.filter(ticket => ticket.status === 'test');
-      expect(testTickets.length).toBeGreaterThan(0);
+      // Test tickets visibility is environment-based (not query parameter based)
+      const isProduction = data.metadata.environment === 'production';
+      expect(data.metadata.test_tickets_visible).toBe(!isProduction);
+
+      // In non-production environments, should contain some test tickets
+      if (!isProduction) {
+        const testTickets = data.tickets.filter(ticket => ticket.status === 'test');
+        expect(testTickets.length).toBeGreaterThan(0);
+      }
     }, TEST_TIMEOUT);
 
     it('should return appropriate cache headers', async () => {
@@ -153,7 +162,7 @@ describe('Bootstrap-Driven Ticket Architecture', () => {
 
   describe('2. Database Verification', () => {
     it('should verify bootstrap data is loaded correctly', async () => {
-      const response = await fetch(`${BASE_URL}/api/tickets/types?include_test=true`);
+      const response = await fetch(`${BASE_URL}/api/tickets/types`);
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -163,7 +172,11 @@ describe('Bootstrap-Driven Ticket Architecture', () => {
       const ticketIds = data.tickets.map(t => t.id);
       expect(ticketIds).toContain('boulder-fest-2026-full-pass');
       expect(ticketIds).toContain('weekender-2025-11-full');
-      expect(ticketIds).toContain('test-ticket-basic');
+
+      // Test tickets are only visible in non-production environments
+      if (data.metadata.test_tickets_visible) {
+        expect(ticketIds).toContain('test-ticket-basic');
+      }
 
       // Verify pricing matches bootstrap.json
       const fullPass = data.tickets.find(t => t.id === 'boulder-fest-2026-full-pass');
@@ -275,13 +288,14 @@ describe('Bootstrap-Driven Ticket Architecture', () => {
     }, TEST_TIMEOUT);
 
     it('should handle malformed query parameters', async () => {
-      const response = await fetch(`${BASE_URL}/api/tickets/types?include_test=maybe&status=`);
+      const response = await fetch(`${BASE_URL}/api/tickets/types?status=`);
       const data = await response.json();
 
       expect(response.status).toBe(200);
       expect(data.success).toBe(true);
-      // Should treat include_test=maybe as false
-      expect(data.metadata.include_test_tickets).toBe(false);
+      // Test ticket visibility is environment-based
+      const isProduction = data.metadata.environment === 'production';
+      expect(data.metadata.test_tickets_visible).toBe(!isProduction);
     }, TEST_TIMEOUT);
   });
 
@@ -317,7 +331,7 @@ describe('Bootstrap-Driven Ticket Architecture', () => {
     }, TEST_TIMEOUT);
 
     it('should verify different ticket statuses work correctly', async () => {
-      const response = await fetch(`${BASE_URL}/api/tickets/types?include_test=true`);
+      const response = await fetch(`${BASE_URL}/api/tickets/types`);
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -339,9 +353,12 @@ describe('Bootstrap-Driven Ticket Architecture', () => {
         expect(ticket.is_available).toBe(false);
       });
 
-      testTickets.forEach(ticket => {
-        expect(ticket.status).toBe('test');
-      });
+      // Test tickets only available in non-production
+      if (data.metadata.test_tickets_visible) {
+        testTickets.forEach(ticket => {
+          expect(ticket.status).toBe('test');
+        });
+      }
 
       closedTickets.forEach(ticket => {
         expect(ticket.can_purchase).toBe(false);
@@ -402,17 +419,21 @@ describe('Bootstrap-Driven Ticket Architecture', () => {
     it('should verify bootstrap service status', async () => {
       // This would require an admin endpoint or direct database access
       // For now, we verify by checking if bootstrap data is present
-      const response = await fetch(`${BASE_URL}/api/tickets/types?include_test=true`);
+      const response = await fetch(`${BASE_URL}/api/tickets/types`);
       const data = await response.json();
 
       expect(response.status).toBe(200);
 
-      // Should have tickets from all events in bootstrap.json
+      // Should have tickets from production events in bootstrap.json
       const eventIds = [...new Set(data.tickets.map(t => t.event_id))];
       expect(eventIds).toContain('boulder-fest-2026');
       expect(eventIds).toContain('weekender-2025-11');
       expect(eventIds).toContain('boulder-fest-2025');
-      expect(eventIds).toContain('test-event-1');
+
+      // Test events only visible in non-production
+      if (data.metadata.test_tickets_visible) {
+        expect(eventIds).toContain('test-event-1');
+      }
     }, TEST_TIMEOUT);
   });
 
@@ -443,7 +464,7 @@ describe('Bootstrap-Driven Ticket Architecture', () => {
       // Example: "Rock & Roll".toUpperCase() => "ROCK & ROLL" then escape => "ROCK &amp; ROLL"
       // NOT: "Rock & Roll" escape => "Rock &amp; Roll" then uppercase => "ROCK &AMP; ROLL" (wrong!)
 
-      const response = await fetch(`${BASE_URL}/api/tickets/types?include_test=true`);
+      const response = await fetch(`${BASE_URL}/api/tickets/types`);
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -518,7 +539,7 @@ describe('Bootstrap-Driven Ticket Architecture', () => {
     }, TEST_TIMEOUT);
 
     it('should handle missing color_rgb with fallback to default', async () => {
-      const response = await fetch(`${BASE_URL}/api/tickets/types?include_test=true`);
+      const response = await fetch(`${BASE_URL}/api/tickets/types`);
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -557,7 +578,7 @@ describe('Bootstrap-Driven Ticket Architecture', () => {
     }, TEST_TIMEOUT);
 
     it('should handle ticket status for card display', async () => {
-      const response = await fetch(`${BASE_URL}/api/tickets/types?include_test=true`);
+      const response = await fetch(`${BASE_URL}/api/tickets/types`);
       const data = await response.json();
 
       expect(response.status).toBe(200);

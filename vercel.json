@@ -399,7 +399,7 @@
       "headers": [
         {
           "key": "Content-Type",
-          "value": "application/octet-stream"
+          "value": "text/plain"
         },
         {
           "key": "Cache-Control",

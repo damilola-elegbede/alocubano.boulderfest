@@ -42,10 +42,11 @@ class TicketDataService {
 
     /**
      * Fetch ticket data from API
+     * Note: Test tickets are automatically visible in non-production environments
      */
     async fetchFromAPI() {
         try {
-            const response = await fetch('/api/tickets/types?include_test=true');
+            const response = await fetch('/api/tickets/types');
 
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
