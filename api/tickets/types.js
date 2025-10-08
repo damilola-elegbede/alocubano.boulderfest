@@ -55,10 +55,12 @@ export default async function handler(req, res) {
       ticketTypes = ticketTypes.filter(t => statuses.includes(t.status));
     }
 
-    // Filter out test tickets in production only
+    // Filter out test and coming-soon tickets in production only
     const isProduction = process.env.VERCEL_ENV === 'production';
     if (isProduction) {
-      ticketTypes = ticketTypes.filter(t => t.status !== 'test');
+      ticketTypes = ticketTypes.filter(t =>
+        t.status !== 'test' && t.status !== 'coming-soon'
+      );
     }
 
     // Get color mappings for all ticket types
