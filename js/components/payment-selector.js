@@ -72,14 +72,13 @@ class PaymentSelector {
    * @returns {Promise} Resolves with selected payment method
    */
     async show(onSelect) {
-        return new Promise(async(resolve) => {
+        // Load CSS and create modal first
+        this.loadCSS();
+        await this.createModal();
+
+        // Return a promise that resolves when payment method is selected
+        return new Promise((resolve) => {
             this.onSelectCallback = onSelect || resolve;
-
-            // Ensure CSS is loaded
-            this.loadCSS();
-
-            // Always show the modal to give users choice
-            await this.createModal();
             this.openModal();
         });
     }
