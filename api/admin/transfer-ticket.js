@@ -233,71 +233,85 @@ async function handler(req, res) {
     }
 
     // ========================================================================
-    // STEP 5: Perform Transfer - Update Ticket
     // ========================================================================
-    const updateResult = await db.execute({
-      sql: `UPDATE tickets
-            SET attendee_first_name = ?,
-                attendee_last_name = ?,
-                attendee_email = ?,
-                attendee_phone = ?,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE ticket_id = ?`,
-      args: [
-        sanitizedNewFirstName,
-        sanitizedNewLastName,
-        sanitizedNewEmail,
-        sanitizedNewPhone,
-        ticketId
-      ]
-    });
+    // STEP 5 & 6: Perform Transfer - Update Ticket & Record History (ATOMIC)
+    // ========================================================================
+    // Wrap UPDATE and INSERT in explicit transaction for atomicity
+    const tx = await db.transaction();
+    
+    try {
+      // Update ticket ownership
+      const updateResult = await tx.execute(
+        `UPDATE tickets
+         SET attendee_first_name = ?,
+             attendee_last_name = ?,
+             attendee_email = ?,
+             attendee_phone = ?,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE ticket_id = ?`,
+        [
+          sanitizedNewFirstName,
+          sanitizedNewLastName,
+          sanitizedNewEmail,
+          sanitizedNewPhone,
+          ticketId
+        ]
+      );
 
-    if (!updateResult || updateResult.rowsAffected === 0) {
-      return res.status(500).json({
-        error: 'Failed to update ticket',
-        details: 'Ticket update operation did not affect any rows'
-      });
+      if (!updateResult || updateResult.rowsAffected === 0) {
+        await tx.rollback();
+        return res.status(500).json({
+          error: 'Failed to update ticket',
+          details: 'Ticket update operation did not affect any rows'
+        });
+      }
+
+      // Record transfer history
+      await tx.execute(
+        `INSERT INTO ticket_transfers (
+           ticket_id,
+           transaction_id,
+           from_email,
+           from_first_name,
+           from_last_name,
+           from_phone,
+           to_email,
+           to_first_name,
+           to_last_name,
+           to_phone,
+           transferred_by,
+           transfer_reason,
+           transfer_method,
+           is_test,
+           transferred_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+        [
+          ticketId,
+          ticket.transaction_id,
+          ticket.attendee_email || ticket.transaction_email || 'unknown@system',
+          ticket.attendee_first_name || '',
+          ticket.attendee_last_name || '',
+          ticket.attendee_phone || null,
+          sanitizedNewEmail,
+          sanitizedNewFirstName,
+          sanitizedNewLastName,
+          sanitizedNewPhone,
+          adminEmail,
+          sanitizedTransferReason,
+          'admin_manual',
+          ticket.is_test ? 1 : 0
+        ]
+      );
+
+      // Commit transaction - both operations succeed together
+      await tx.commit();
+      
+    } catch (error) {
+      // Rollback on any error
+      await tx.rollback();
+      console.error('Transaction rollback due to error:', error);
+      throw error;
     }
-
-    // ========================================================================
-    // STEP 6: Record Transfer History
-    // ========================================================================
-    await db.execute({
-      sql: `INSERT INTO ticket_transfers (
-              ticket_id,
-              transaction_id,
-              from_email,
-              from_first_name,
-              from_last_name,
-              from_phone,
-              to_email,
-              to_first_name,
-              to_last_name,
-              to_phone,
-              transferred_by,
-              transfer_reason,
-              transfer_method,
-              is_test,
-              transferred_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
-      args: [
-        ticketId,
-        ticket.transaction_id,
-        ticket.attendee_email || ticket.transaction_email || 'unknown@system',
-        ticket.attendee_first_name || '',
-        ticket.attendee_last_name || '',
-        ticket.attendee_phone || null,
-        sanitizedNewEmail,
-        sanitizedNewFirstName,
-        sanitizedNewLastName,
-        sanitizedNewPhone,
-        adminEmail,
-        sanitizedTransferReason,
-        'admin_manual',
-        ticket.is_test ? 1 : 0
-      ]
-    });
-
     console.log(`Ticket ${ticketId} transferred from ${ticket.attendee_email || 'unassigned'} to ${sanitizedNewEmail} by ${adminEmail}`);
 
     // ========================================================================

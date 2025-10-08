@@ -31,8 +31,8 @@ CREATE TABLE IF NOT EXISTS ticket_transfers (
     is_test INTEGER NOT NULL DEFAULT 0 CHECK (is_test IN (0, 1)),
 
     -- Timestamps
-    transferred_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    transferred_at TIMESTAMP NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    created_at TIMESTAMP NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
 
     -- Foreign key constraint
     FOREIGN KEY (ticket_id) REFERENCES tickets(ticket_id) ON DELETE CASCADE

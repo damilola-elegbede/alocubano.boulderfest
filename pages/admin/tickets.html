@@ -821,18 +821,25 @@
         modal.classList.remove('show');
       }
 
-      // Update transfer summary as user types
-      const newEmailInput = document.getElementById('new-email');
-      if (newEmailInput) {
-        newEmailInput.addEventListener('input', (e) => {
-          document.getElementById('transfer-to-email').textContent = e.target.value || '-';
-        });
-      }
 
-      // Close modal when clicking outside
-      document.getElementById('transfer-modal')?.addEventListener('click', (e) => {
-        if (e.target.id === 'transfer-modal') {
-          closeTransferModal();
+      // Defer modal listeners until DOM is ready
+      document.addEventListener('DOMContentLoaded', () => {
+        // Update transfer summary as user types
+        const newEmailInput = document.getElementById('new-email');
+        if (newEmailInput) {
+          newEmailInput.addEventListener('input', (e) => {
+            document.getElementById('transfer-to-email').textContent = e.target.value || '-';
+          });
+        }
+
+        // Close modal when clicking outside
+        const transferModal = document.getElementById('transfer-modal');
+        if (transferModal) {
+          transferModal.addEventListener('click', (e) => {
+            if (e.target.id === 'transfer-modal') {
+              closeTransferModal();
+            }
+          });
         }
       });
 

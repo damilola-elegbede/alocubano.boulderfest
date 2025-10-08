@@ -465,7 +465,7 @@ describe('Admin Ticket Transfer - Integration Tests', () => {
 
       // Verify all 3 transfers were recorded
       const historyResult = await testDb.execute({
-        sql: 'SELECT * FROM ticket_transfers WHERE ticket_id = ? ORDER BY transferred_at DESC',
+        sql: 'SELECT * FROM ticket_transfers WHERE ticket_id = ? ORDER BY transferred_at DESC, id DESC',
         args: [ticketId]
       });
 

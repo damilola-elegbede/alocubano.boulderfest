@@ -85,13 +85,12 @@ test.describe('Admin Ticket Transfer UI', () => {
     const detailLink = page.locator('a.detail-link').first();
     const ticketId = await detailLink.textContent();
 
-    await detailLink.click();
 
-    // Wait for ticket detail page to load in new tab
-    const pagePromise = page.context().waitForEvent('page');
-    await detailLink.click({ modifiers: ['Meta'] }); // Command+click for macOS or Ctrl+click
-    const detailPage = await pagePromise;
-
+    // Wait for ticket detail page to load in new tab - synchronized click
+    const [detailPage] = await Promise.all([
+      page.context().waitForEvent('page'),
+      detailLink.click({ modifiers: ['Meta'] }) // Command+click for macOS or Ctrl+click
+    ]);
     await detailPage.waitForLoadState('networkidle');
 
     // Verify transfer section exists
