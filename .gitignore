@@ -155,3 +155,5 @@ test_constraint.js
 .env.preview.check
 .env*.local
 data/boulderfest.db
+# Generated at build time by scripts/generate-ticket-html.js
+public/generated/tickets.html
