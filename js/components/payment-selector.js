@@ -17,6 +17,8 @@ class PaymentSelector {
         this.cssLoaded = false;
         this.eventListeners = new Map(); // Track event listeners for cleanup
         this.eventDate = null; // No default - must be explicitly set
+        this.environmentChecked = false; // Track if environment has been checked
+        this.isProduction = false; // Cache production status
     }
 
     /**
@@ -69,15 +71,15 @@ class PaymentSelector {
    * @param {Function} onSelect - Callback when payment method is selected
    * @returns {Promise} Resolves with selected payment method
    */
-    show(onSelect) {
-        return new Promise((resolve) => {
+    async show(onSelect) {
+        return new Promise(async(resolve) => {
             this.onSelectCallback = onSelect || resolve;
 
             // Ensure CSS is loaded
             this.loadCSS();
 
             // Always show the modal to give users choice
-            this.createModal();
+            await this.createModal();
             this.openModal();
         });
     }
@@ -85,14 +87,14 @@ class PaymentSelector {
     /**
    * Create the payment selector modal
    */
-    createModal() {
+    async createModal() {
     // Remove existing modal if present
         if (this.modal) {
             this.modal.remove();
         }
 
-        // Detect production environment
-        const isProduction = window.location.hostname === 'alocubanoboulderfest.org';
+        // Check environment from API (uses VERCEL_ENV)
+        const isProduction = await this.checkEnvironment();
 
         const modalHTML = `
             <div class="payment-selector-modal" role="dialog" aria-modal="true" aria-labelledby="payment-selector-title" aria-describedby="payment-selector-description">
@@ -266,6 +268,41 @@ class PaymentSelector {
             }
         });
         this.eventListeners.clear();
+    }
+
+    /**
+   * Check environment from API to determine if we're in production
+   * Uses VERCEL_ENV for reliable environment detection
+   */
+    async checkEnvironment() {
+        // Return cached result if already checked
+        if (this.environmentChecked) {
+            return this.isProduction;
+        }
+
+        try {
+            const response = await fetch('/api/config/environment');
+            if (response.ok) {
+                const data = await response.json();
+                this.isProduction = data.vercelEnv === 'production';
+                this.environmentChecked = true;
+                return this.isProduction;
+            } else {
+                // API failed - assume non-production for safety (allow all payment methods)
+                // eslint-disable-next-line no-console
+                console.warn('Environment check failed - assuming non-production');
+                this.isProduction = false;
+                this.environmentChecked = true;
+                return false;
+            }
+        } catch (error) {
+            // Error occurred - assume non-production for safety
+            // eslint-disable-next-line no-console
+            console.warn('Environment check error:', error.message);
+            this.isProduction = false;
+            this.environmentChecked = true;
+            return false;
+        }
     }
 
     /**
