@@ -7,7 +7,7 @@
  * Execution flow:
  * 1. Check build cache to determine if rebuild is needed
  * 2. Run migrations (sequential, required)
- * 3. Run bootstrap + embed-docs in parallel
+ * 3. Run bootstrap + embed-docs + ticket generation in parallel
  * 4. Run structure verification (local only)
  * 5. Save build cache
  */
@@ -87,14 +87,15 @@ async function build() {
     console.log('📋 Step 1: Running migrations...');
     await execCommand('node', ['scripts/migrate-vercel-build.js'], 'Migrations');
 
-    // Step 2: Run bootstrap and embed-docs in parallel
+    // Step 2: Run bootstrap, embed-docs, and ticket generation in parallel
     console.log('');
     console.log('📋 Step 2: Running parallel tasks...');
     const parallelStartTime = Date.now();
 
     await Promise.all([
       execCommand('node', ['scripts/bootstrap.js'], 'Bootstrap'),
-      execCommand('node', ['scripts/embed-docs.cjs'], 'Embed Documentation')
+      execCommand('node', ['scripts/embed-docs.cjs'], 'Embed Documentation'),
+      execCommand('node', ['scripts/generate-ticket-html.js'], 'Ticket Generation')
     ]);
 
     const parallelDuration = Date.now() - parallelStartTime;
