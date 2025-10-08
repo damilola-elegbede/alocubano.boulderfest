@@ -141,7 +141,8 @@ function generateQuantitySelector() {
 function generateTicketCard(ticketType, event) {
   const isComingSoon = ticketType.status === 'coming-soon';
   const isSoldOut = ticketType.status === 'sold-out';
-  const isAvailable = ticketType.status === 'available';
+  const isTest = ticketType.status === 'test';
+  const isAvailable = ticketType.status === 'available' || isTest;
 
   // Price display - handle null/undefined for $0.00 tickets
   const priceDisplay = (ticketType.price_cents !== null && ticketType.price_cents !== undefined)
