@@ -133,6 +133,10 @@ If you haven't set up environment variables yet, configure them in the Vercel Da
 - `INTERNAL_API_KEY` - API key for internal operations
 - `NODE_ENV` - Set to "development" for local development
 
+**Database Backup Configuration:**
+
+- `BLOB_READ_WRITE_TOKEN` - Vercel Blob storage access for database backups (production environment only)
+
 **Environment Scopes:**
 
 For each variable, select the appropriate environments:
@@ -145,6 +149,38 @@ After adding variables in Vercel Dashboard, refresh your local file:
 ```bash
 # Refresh .env.vercel with latest Dashboard values
 vercel env pull .env.vercel
+```
+
+#### GitHub Repository Configuration
+
+For automated database backups via GitHub Actions, configure these repository variables:
+
+1. Go to your GitHub repository
+2. Navigate to **Settings → Secrets and variables → Actions**
+3. Click **Variables** tab
+4. Add the following repository variables:
+
+**Required GitHub Repository Variables:**
+
+- `TURSO_PROD_DB_NAME` - Production database name (e.g., `alocubano-boulderfest-prod`)
+- `TURSO_DEV_DB_NAME` - Development database name (e.g., `alocubano-boulderfest-dev`)
+
+**Required GitHub Secrets (if not already configured):**
+
+- `TURSO_AUTH_TOKEN` - Turso CLI authentication token for backup operations
+- `BLOB_READ_WRITE_TOKEN` - Vercel Blob storage token for uploading backups
+
+**How to get these values:**
+
+```bash
+# Turso database names
+turso db list  # Shows all your Turso databases
+
+# Turso auth token (if needed)
+turso auth token
+
+# Blob token
+# Get from Vercel Dashboard → Settings → Environment Variables
 ```
 
 #### Best Practices
@@ -299,6 +335,30 @@ vercel env pull
 vercel env pull
 ```
 
+### Vercel Blob Storage (Database Backups)
+
+1. **Enable Blob Storage** in Vercel Dashboard:
+   - Go to Storage → Create Database
+   - Select "Blob" storage type
+   - Name it (e.g., "database-backups")
+2. **Get Access Token**:
+   - Automatically created when you enable Blob
+   - Found in Storage → Your Blob Store → Settings
+3. **Configure in Vercel Dashboard** (Settings → Environment Variables):
+   - `BLOB_READ_WRITE_TOKEN` - Your Blob access token
+   - Set scope to **Production** only (backups run in production environment)
+4. **Verify configuration**:
+
+```bash
+# Manually trigger a backup to test
+gh workflow run database-backup-daily.yml -f database=dev
+
+# Check workflow run status
+gh run list --workflow=database-backup-daily.yml
+```
+
+**Note**: Blob storage is only needed for automated database backups. Local development and testing do not require it.
+
 ## Development Commands
 
 ### Streamlined Script Set
@@ -352,10 +412,23 @@ BREVO_API_KEY             # Email service integration
 ADMIN_PASSWORD            # Admin panel testing (bcrypt hashed)
 ADMIN_SECRET              # JWT signing secret (32+ characters)
 
+# Database Backup Configuration
+BLOB_READ_WRITE_TOKEN     # Vercel Blob storage access for automated backups
+
 # Optional Services
 GOOGLE_DRIVE_FOLDER_ID    # Gallery integration
 GOOGLE_SERVICE_ACCOUNT_EMAIL # Google Drive service account
 GOOGLE_PRIVATE_KEY        # Google service account private key (base64 encoded)
+```
+
+**Required Variables:**
+
+Configure these in Settings → Secrets and variables → Actions → Variables:
+
+```bash
+# Database Names
+TURSO_PROD_DB_NAME        # Production database name (e.g., alocubano-boulderfest-prod)
+TURSO_DEV_DB_NAME         # Development database name (e.g., alocubano-boulderfest-dev)
 ```
 
 #### 2. Workflow Files
@@ -674,6 +747,32 @@ npm install
 npm run vercel:dev
 ```
 
+#### Backup Workflow Issues
+
+**Issue**: Daily backup fails
+
+```bash
+# Check GitHub Actions logs
+gh run list --workflow=database-backup-daily.yml
+gh run view [run-id]
+
+# Verify environment variables are set
+# Check: Settings → Secrets and variables → Actions
+
+# Test manual trigger
+gh workflow run database-backup-daily.yml -f database=dev
+```
+
+**Issue**: Cannot access Vercel Blob
+
+```bash
+# Verify BLOB_READ_WRITE_TOKEN is configured
+# Check: Vercel Dashboard → Settings → Environment Variables
+
+# Verify token has correct permissions
+# Token should be set for Production environment only
+```
+
 ## IDE Setup
 
 ### VS Code Extensions
@@ -739,6 +838,9 @@ Configure these in Vercel Dashboard (Settings → Environment Variables):
 - `REGISTRATION_SECRET` - Ticket registration JWT signing
 - `WALLET_AUTH_SECRET` - Wallet pass JWT signing
 - `INTERNAL_API_KEY` - Internal operations security
+
+**Database Backups:**
+- `BLOB_READ_WRITE_TOKEN` - Vercel Blob storage access (production only)
 
 **Optional Services:**
 - `GOOGLE_DRIVE_FOLDER_ID` - Gallery integration
@@ -815,5 +917,10 @@ npm run migrate:status         # Check migration status
 - [SQLite Documentation](https://sqlite.org/docs.html)
 - [Turso CLI Guide](https://docs.turso.tech/reference/turso-cli)
 - [LibSQL Documentation](https://docs.turso.tech/libsql)
+
+### Operations Resources
+
+- [Disaster Recovery Runbook](/docs/DISASTER_RECOVERY.md) - Complete database backup and recovery procedures
+- [Vercel Blob Documentation](https://vercel.com/docs/storage/vercel-blob) - Blob storage for database backups
 
 This installation guide provides everything needed to set up a complete development environment with streamlined commands, comprehensive database configuration, **Vercel Preview Deployments** for E2E testing, and CI/CD integration.
