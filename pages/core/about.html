@@ -300,8 +300,42 @@
         </div>
       </section>
 
+      <!-- About Sub Navigation -->
+      <section class="event-subnav">
+        <div class="container">
+          <nav class="event-nav" aria-label="About Navigation">
+            <ul class="event-nav-list">
+              <li>
+                <a
+                  href="#the-beginning"
+                  class="event-nav-link"
+                  data-text="The Beginning"
+                  >The Beginning</a
+                >
+              </li>
+              <li>
+                <a
+                  href="#the-team"
+                  class="event-nav-link"
+                  data-text="The Team"
+                  >The Team</a
+                >
+              </li>
+              <li>
+                <a
+                  href="#join-our-team"
+                  class="event-nav-link"
+                  data-text="Join Our Team"
+                  >Join Our Team</a
+                >
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </section>
+
       <!-- Story Opening Typography -->
-      <section class="section-typographic" style="padding: var(--space-xl) 0">
+      <section id="the-beginning" class="section-typographic" style="padding: var(--space-xl) 0">
         <div class="container">
           <h2 class="text-mask">THE BEGINNING</h2>
           <div class="text-composition">
@@ -423,73 +457,60 @@
       </section>
 
       <!-- Team Typography -->
-      <section class="section-typographic" style="padding: var(--space-xl) 0">
+      <section id="the-team" class="section-typographic" style="padding: var(--space-xl) 0">
         <div class="container">
           <h2 class="text-mask">THE TEAM</h2>
 
           <div class="text-composition" style="margin-bottom: var(--space-xl)">
             <div class="text-block-large font-serif">
-              Officers & Board of Directors
+              Officers and Board Members
             </div>
           </div>
-          <div class="gallery-typographic">
-            <div class="gallery-item-type" data-number="01">
-              <h3 class="gallery-type-title font-display">MARCELA<br />LAY</h3>
+          <div class="gallery-typographic team-grid">
+            <div class="gallery-item-type team-member-card">
+              <img src="/images/team/marcela.jpg" alt="Marcela Lay" class="team-member-photo" />
+              <h3 class="gallery-type-title font-display">MARCELA LAY</h3>
               <p class="gallery-type-meta">PRESIDENT & FOUNDER</p>
               <p class="gallery-type-description">
-                Visionary who brought Cuba to Boulder<br />
-                Started the festival in 2023<br />
-                The heart and soul of our mission
+                Visionary who brought Cuba to Boulder. Started the festival in 2023. The heart and soul of our mission.
               </p>
             </div>
-            <div class="gallery-item-type" data-number="02">
+            <div class="gallery-item-type team-member-card">
+              <img src="/images/team/damilola.jpeg" alt="Damilola Elegbede" class="team-member-photo" />
               <h3 class="gallery-type-title font-display">
-                DAMILOLA<br />ELEGBEDE
+                DAMILOLA ELEGBEDE
               </h3>
               <p class="gallery-type-meta">VICE PRESIDENT & TREASURER</p>
               <p class="gallery-type-description">
-                Strategic leadership and financial stewardship<br />
-                Ensuring sustainable growth<br />
-                Building our future with precision
+                Strategic leadership and financial stewardship. Ensuring sustainable growth. Building our future with precision.
               </p>
             </div>
-            <div class="gallery-item-type" data-number="03">
+            <div class="gallery-item-type team-member-card">
+              <img src="/images/team/analis.jpeg" alt="Analis Ledesma" class="team-member-photo" />
               <h3 class="gallery-type-title font-display">
-                ANALIS<br />LEDESMA
+                ANALIS LEDESMA
               </h3>
               <p class="gallery-type-meta">SECRETARY</p>
               <p class="gallery-type-description">
-                Keeper of our stories and records<br />
-                Community connector<br />
-                The voice of our collective journey<br />
-                Analis also manages much of our social media presence, helping
-                to build and engage our community online.
+                Keeper of our stories and records. Community connector. The voice of our collective journey. Analis also manages much of our social media presence, helping to build and engage our community online.
               </p>
             </div>
-            <div class="gallery-item-type" data-number="04">
-              <h3 class="gallery-type-title font-display">DONAL<br />SOLICK</h3>
+            <div class="gallery-item-type team-member-card">
+              <img src="/images/team/donal.png" alt="Donal Solick" class="team-member-photo" />
+              <h3 class="gallery-type-title font-display">DONAL SOLICK</h3>
               <p class="gallery-type-meta">BOARD MEMBER</p>
               <p class="gallery-type-description">
-                Cultural advocate and advisor<br />
-                Bridging communities<br />
-                Expanding our reach and impact<br />
-                Donal is an experienced dancer who brings valuable insight into
-                how our events are run, ensuring they meet the needs of dancers
-                at all levels.
+                Cultural advocate and advisor. Bridging communities. Expanding our reach and impact. Donal is an experienced dancer who brings valuable insight into how our events are run, ensuring they meet the needs of dancers at all levels.
               </p>
             </div>
-            <div class="gallery-item-type" data-number="05">
+            <div class="gallery-item-type team-member-card">
+              <img src="/images/team/yolanda.jpeg" alt="Yolanda Meiler" class="team-member-photo" />
               <h3 class="gallery-type-title font-display">
-                YOLANDA<br />MEILER
+                YOLANDA MEILER
               </h3>
               <p class="gallery-type-meta">BOARD MEMBER</p>
               <p class="gallery-type-description">
-                Arts champion and supporter<br />
-                Festival experience architect<br />
-                Creating unforgettable moments<br />
-                Yolanda is an accomplished DJ who has been active in the Boulder
-                dance community and has contributed her musical expertise to our
-                past events.
+                Arts champion and supporter. Festival experience architect. Creating unforgettable moments. Yolanda is an accomplished DJ who has been active in the Boulder dance community and has contributed her musical expertise to our past events.
               </p>
             </div>
           </div>
@@ -529,6 +550,7 @@
 
       <!-- Volunteer Section -->
       <section
+        id="join-our-team"
         class="section-typographic volunteer-section"
         style="padding: var(--space-xl) 0; padding-bottom: 50px"
       >
