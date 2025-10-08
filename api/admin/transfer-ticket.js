@@ -166,10 +166,17 @@ async function handler(req, res) {
     const sanitizedTransferReason = transferReason ? transferReason.trim() : null;
 
     // ========================================================================
+    // ========================================================================
     // STEP 2: Get Admin Info (from JWT token)
     // ========================================================================
-    // The adminEmail is available in the request context after auth middleware
-    const adminEmail = req.user?.email || 'admin@system';
+    // Validate admin email exists in authentication context
+    if (!req.user?.email) {
+      return res.status(401).json({
+        error: 'Authentication required',
+        details: 'Admin email not found in authentication context'
+      });
+    }
+    const adminEmail = req.user.email;
 
     // ========================================================================
     // STEP 3: Get Current Ticket Info
@@ -266,6 +273,14 @@ async function handler(req, res) {
         });
       }
 
+
+      // Validate from_email for audit trail integrity
+      const fromEmail = ticket.attendee_email || ticket.transaction_email;
+      if (!fromEmail) {
+        console.warn(`Transfer ${ticketId}: no reliable from_email available (attendee_email and transaction_email both null), using fallback`);
+      }
+      const auditFromEmail = fromEmail || 'unknown@system';
+
       // Record transfer history
       await tx.execute(
         `INSERT INTO ticket_transfers (
@@ -288,7 +303,7 @@ async function handler(req, res) {
         [
           ticketId,
           ticket.transaction_id,
-          ticket.attendee_email || ticket.transaction_email || 'unknown@system',
+          auditFromEmail,
           ticket.attendee_first_name || '',
           ticket.attendee_last_name || '',
           ticket.attendee_phone || null,
