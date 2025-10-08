@@ -5,7 +5,10 @@
  * Query parameters:
  * - event_id: Filter by specific event
  * - status: Filter by availability status (comma-separated)
- * - include_test: Include test tickets (default false)
+ *
+ * Test ticket visibility:
+ * - Production (VERCEL_ENV=production): Test tickets hidden
+ * - All other environments: Test tickets visible
  */
 
 import { ticketTypeCache } from '../../lib/ticket-type-cache.js';
@@ -34,7 +37,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { event_id, status, include_test } = req.query;
+    const { event_id, status } = req.query;
     const startTime = Date.now();
 
     // Get all ticket types from cache
@@ -52,8 +55,9 @@ export default async function handler(req, res) {
       ticketTypes = ticketTypes.filter(t => statuses.includes(t.status));
     }
 
-    // Filter out test tickets unless explicitly requested
-    if (include_test !== 'true') {
+    // Filter out test tickets in production only
+    const isProduction = process.env.VERCEL_ENV === 'production';
+    if (isProduction) {
       ticketTypes = ticketTypes.filter(t => t.status !== 'test');
     }
 
@@ -200,7 +204,7 @@ export default async function handler(req, res) {
     res.setHeader('ETag', `"tickets-${Date.now()}"`);
 
     // Add Vary header to handle different query parameters
-    res.setHeader('Vary', 'event_id, status, include_test');
+    res.setHeader('Vary', 'event_id, status');
 
     // Build response in the requested format
     const response = {
@@ -215,7 +219,8 @@ export default async function handler(req, res) {
         total_events: events.length,
         filtered_by_event: !!event_id,
         filtered_by_status: !!status,
-        include_test_tickets: include_test === 'true',
+        test_tickets_visible: !isProduction,
+        environment: process.env.VERCEL_ENV || 'development',
         cache_hit: wasFromCache,
         response_time_ms: Date.now() - startTime
       }

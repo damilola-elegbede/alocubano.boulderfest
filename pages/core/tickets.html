@@ -416,24 +416,8 @@
 
     <!-- Test Tickets Conditional Rendering -->
     <script>
-      // Hide test tickets in production environment
+      // Hide test tickets in production environment only
       (async function () {
-        // Check hostname first - most reliable method
-        const hostname = window.location.hostname;
-        const isProductionDomain = hostname === 'alocubanoboulderfest.com' ||
-                                   hostname === 'www.alocubanoboulderfest.com';
-
-        if (isProductionDomain) {
-          // Remove test tickets in production
-          const testSection = document.getElementById('test-tickets-section');
-          if (testSection) {
-            testSection.remove();
-            console.log('Test tickets hidden in production (hostname check)');
-          }
-          return;
-        }
-
-        // For non-production domains, try API verification as secondary check
         try {
           const response = await fetch("/api/config/environment");
           if (response.ok) {
@@ -444,18 +428,18 @@
               const testSection = document.getElementById('test-tickets-section');
               if (testSection) {
                 testSection.remove();
-                console.log('Test tickets hidden in production (API check)');
+                console.log('Test tickets hidden (production environment)');
               }
             } else {
-              console.log('Test tickets visible - environment:', data.vercelEnv || data.environment);
+              console.log('Test tickets visible - environment:', data.vercelEnv || 'development');
             }
           } else {
-            // API failed but hostname check passed - show test tickets
-            console.log('Test tickets visible (hostname check passed, API unavailable)');
+            // API failed - assume non-production, show test tickets
+            console.log('Test tickets visible (environment check failed - assuming non-production)');
           }
         } catch (error) {
-          // API failed but hostname check passed - show test tickets
-          console.log('Test tickets visible (hostname check passed, API error):', error.message);
+          // Error occurred - assume non-production, show test tickets
+          console.log('Test tickets visible (environment check error):', error.message);
         }
       })();
     </script>

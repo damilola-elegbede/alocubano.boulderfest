@@ -246,6 +246,89 @@
     }
   ],
 
+  "ticket_type_colors": [
+    {
+      "pattern": "test-",
+      "color_name": "Test",
+      "color_rgb": "rgb(255, 20, 147)",
+      "circle_emoji": "⬤",
+      "display_order": 1,
+      "description": "Deep pink for test tickets"
+    },
+    {
+      "pattern": "test_",
+      "color_name": "Test",
+      "color_rgb": "rgb(255, 20, 147)",
+      "circle_emoji": "⬤",
+      "display_order": 2,
+      "description": "Deep pink for test tickets (underscore variant)"
+    },
+    {
+      "pattern": "full",
+      "color_name": "Full Pass",
+      "color_rgb": "rgb(169, 169, 169)",
+      "circle_emoji": "⬤",
+      "display_order": 3,
+      "description": "Silver for full festival passes"
+    },
+    {
+      "pattern": "early-bird",
+      "color_name": "Full Pass",
+      "color_rgb": "rgb(169, 169, 169)",
+      "circle_emoji": "⬤",
+      "display_order": 4,
+      "description": "Silver for early bird full passes"
+    },
+    {
+      "pattern": "friday",
+      "color_name": "Friday",
+      "color_rgb": "rgb(255, 140, 0)",
+      "circle_emoji": "⬤",
+      "display_order": 5,
+      "description": "Orange for Friday passes"
+    },
+    {
+      "pattern": "saturday",
+      "color_name": "Saturday",
+      "color_rgb": "rgb(255, 215, 0)",
+      "circle_emoji": "⬤",
+      "display_order": 6,
+      "description": "Gold for Saturday passes"
+    },
+    {
+      "pattern": "sunday",
+      "color_name": "Sunday",
+      "color_rgb": "rgb(30, 144, 255)",
+      "circle_emoji": "⬤",
+      "display_order": 7,
+      "description": "Dodger blue for Sunday passes"
+    },
+    {
+      "pattern": "class",
+      "color_name": "Single Class",
+      "color_rgb": "rgb(34, 139, 34)",
+      "circle_emoji": "⬤",
+      "display_order": 8,
+      "description": "Forest green for single class tickets"
+    },
+    {
+      "pattern": "weekender",
+      "color_name": "Weekender",
+      "color_rgb": "rgb(255, 255, 255)",
+      "circle_emoji": "⬤",
+      "display_order": 9,
+      "description": "White for weekender passes"
+    },
+    {
+      "pattern": "weekend",
+      "color_name": "Weekend",
+      "color_rgb": "rgb(255, 255, 255)",
+      "circle_emoji": "⬤",
+      "display_order": 10,
+      "description": "White for weekend passes"
+    }
+  ],
+
   "metadata": {
     "currency": "USD",
     "timezone": "America/Denver",
