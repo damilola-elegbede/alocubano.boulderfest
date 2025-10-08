@@ -48,6 +48,117 @@
     <script src="/js/admin-auth-guard.js"></script>
     <script type="module" src="/js/theme-manager.js"></script>
     <script type="module" src="/js/time-manager.js"></script>
+    <style>
+      /* Transfer Modal Styles */
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+      }
+
+      .modal-overlay.show {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .modal-content {
+        background: var(--color-surface);
+        border-radius: var(--radius-lg);
+        padding: var(--space-xl);
+        max-width: 600px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--space-lg);
+        padding-bottom: var(--space-md);
+        border-bottom: 2px solid var(--color-border);
+      }
+
+      .modal-title {
+        font-size: var(--font-size-xl);
+        font-weight: 700;
+        color: var(--color-text-primary);
+      }
+
+      .modal-close {
+        background: transparent !important;
+        border: none !important;
+        color: var(--color-text-secondary) !important;
+        font-size: var(--font-size-xl);
+        cursor: pointer;
+        min-width: auto !important;
+        min-height: auto !important;
+        padding: var(--space-xs) !important;
+      }
+
+      .modal-close:hover {
+        color: var(--color-text-primary) !important;
+      }
+
+      .alert {
+        padding: var(--space-md);
+        border-radius: var(--radius-md);
+        margin-bottom: var(--space-md);
+        font-size: var(--font-size-sm);
+      }
+
+      .alert-error {
+        background: rgba(204, 41, 54, 0.1);
+        border: 1px solid rgba(204, 41, 54, 0.3);
+        color: var(--color-error);
+      }
+
+      .alert-success {
+        background: rgba(34, 197, 94, 0.1);
+        border: 1px solid rgba(34, 197, 94, 0.3);
+        color: var(--color-success);
+      }
+
+      .alert-info {
+        background: rgba(91, 107, 181, 0.1);
+        border: 1px solid rgba(91, 107, 181, 0.3);
+        color: var(--color-blue);
+      }
+
+      .transfer-summary {
+        background: var(--color-background-secondary);
+        border-radius: var(--radius-md);
+        padding: var(--space-md);
+        margin: var(--space-md) 0;
+      }
+
+      .transfer-summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: var(--space-sm) 0;
+      }
+
+      .transfer-summary-label {
+        font-weight: 600;
+        color: var(--color-text-secondary);
+      }
+
+      .transfer-summary-value {
+        color: var(--color-text-primary);
+        font-family: var(--font-mono);
+      }
+    </style>
   </head>
   <body class="admin-container">
     <!-- Auth Loading State -->
@@ -364,12 +475,13 @@
                                     </span>
                                 </td>
                                 <td>${escapeHtml(ticket.order_number)}</td>
-                                <td>
+                                <td style="white-space: nowrap;">
                                     ${
                                       ticket.checked_in_at
                                         ? `<button class="admin-btn admin-btn-sm admin-btn-secondary" data-action="undo" data-ticket-id="${escapeHtml(ticket.ticket_id)}" data-testid="checkin-ticket_${escapeHtml(ticket.ticket_id)}"><span>Undo</span></button>`
                                         : `<button class="admin-btn admin-btn-sm admin-btn-success" data-action="checkin" data-ticket-id="${escapeHtml(ticket.ticket_id)}" data-testid="checkin-ticket_${escapeHtml(ticket.ticket_id)}"><span>Check In</span></button>`
                                     }
+                                    <button class="admin-btn admin-btn-sm admin-btn-primary" data-action="transfer" data-ticket-id="${escapeHtml(ticket.ticket_id)}" data-ticket-email="${escapeHtml(ticket.attendee_email || '')}" data-ticket-firstname="${escapeHtml(ticket.attendee_first_name || '')}" data-ticket-lastname="${escapeHtml(ticket.attendee_last_name || '')}" style="margin-left: var(--space-xs);"><span>Transfer</span></button>
                                 </td>
                             </tr>
                         `,
@@ -624,14 +736,14 @@
         }
       }
 
-      // Add event delegation for check-in buttons
+      // Add event delegation for check-in and transfer buttons
       document
         .getElementById("ticketsTable")
         .addEventListener("click", function (event) {
-          if (event.target.matches(".admin-btn[data-action]") || 
+          if (event.target.matches(".admin-btn[data-action]") ||
               (event.target.parentElement && event.target.parentElement.matches(".admin-btn[data-action]"))) {
-            const button = event.target.matches(".admin-btn[data-action]") 
-              ? event.target 
+            const button = event.target.matches(".admin-btn[data-action]")
+              ? event.target
               : event.target.parentElement;
             const action = button.getAttribute("data-action");
             const ticketId = button.getAttribute("data-ticket-id");
@@ -640,6 +752,11 @@
               checkinTicket(ticketId);
             } else if (action === "undo") {
               undoCheckin(ticketId);
+            } else if (action === "transfer") {
+              const ticketEmail = button.getAttribute("data-ticket-email");
+              const ticketFirstName = button.getAttribute("data-ticket-firstname");
+              const ticketLastName = button.getAttribute("data-ticket-lastname");
+              openTransferModal(ticketId, ticketEmail, ticketFirstName, ticketLastName);
             }
           }
         });
@@ -665,9 +782,280 @@
         await loadTickets(selectedEventId);
       }
 
+      // Transfer Modal Functions
+      let currentTransferTicket = null;
+
+      function openTransferModal(ticketId, currentEmail, currentFirstName, currentLastName) {
+        const modal = document.getElementById('transfer-modal');
+        const currentOwnerInfo = document.getElementById('current-owner-info');
+        const transferTicketId = document.getElementById('transfer-ticket-id');
+        const transferFromEmail = document.getElementById('transfer-from-email');
+
+        // Update current owner info
+        const ownerName = currentFirstName && currentLastName ? `${currentFirstName} ${currentLastName}` : (currentFirstName || 'Not registered');
+        currentOwnerInfo.textContent = `${ownerName} (${currentEmail || 'No email'})`;
+
+        // Update transfer summary
+        transferTicketId.textContent = ticketId;
+        transferFromEmail.textContent = currentEmail || 'Not set';
+
+        // Store current ticket data
+        currentTransferTicket = {
+          ticketId: ticketId,
+          currentEmail: currentEmail
+        };
+
+        // Clear form
+        document.getElementById('transfer-form').reset();
+        document.getElementById('transfer-to-email').textContent = '-';
+
+        // Clear any previous alerts
+        document.getElementById('transfer-alert-container').innerHTML = '';
+
+        // Show modal
+        modal.classList.add('show');
+      }
+
+      function closeTransferModal() {
+        const modal = document.getElementById('transfer-modal');
+        modal.classList.remove('show');
+      }
+
+
+      // Defer modal listeners until DOM is ready
+      document.addEventListener('DOMContentLoaded', () => {
+        // Update transfer summary as user types
+        const newEmailInput = document.getElementById('new-email');
+        if (newEmailInput) {
+          newEmailInput.addEventListener('input', (e) => {
+            document.getElementById('transfer-to-email').textContent = e.target.value || '-';
+          });
+        }
+
+        // Close modal when clicking outside
+        const transferModal = document.getElementById('transfer-modal');
+        if (transferModal) {
+          transferModal.addEventListener('click', (e) => {
+            if (e.target.id === 'transfer-modal') {
+              closeTransferModal();
+            }
+          });
+        }
+      });
+
+      async function handleTransferSubmit(event) {
+        event.preventDefault();
+
+        const submitBtn = document.getElementById('transfer-submit-btn');
+        const alertContainer = document.getElementById('transfer-alert-container');
+
+        // Clear previous alerts
+        alertContainer.innerHTML = '';
+
+        // Get form data
+        const formData = new FormData(event.target);
+        const newFirstName = formData.get('newFirstName');
+        const newLastName = formData.get('newLastName');
+        const newEmail = formData.get('newEmail');
+        const newPhone = formData.get('newPhone');
+        const transferReason = formData.get('transferReason');
+
+        // Disable submit button
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span>Transferring...</span>';
+
+        try {
+          const token = localStorage.getItem('adminToken');
+          if (!token) {
+            throw new Error('No authentication token found');
+          }
+
+          // Import CSRF service
+          const csrfModule = await import('/js/csrf-service.js');
+          const csrfService = csrfModule.default;
+          const csrfToken = await csrfService.getCSRFToken();
+
+          // Submit transfer request
+          const response = await fetch('/api/admin/transfer-ticket', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+              'X-CSRF-Token': csrfToken
+            },
+            body: JSON.stringify({
+              ticketId: currentTransferTicket.ticketId,
+              newEmail: newEmail.trim(),
+              newFirstName: newFirstName.trim(),
+              newLastName: newLastName ? newLastName.trim() : '',
+              newPhone: newPhone ? newPhone.trim() : null,
+              transferReason: transferReason ? transferReason.trim() : null
+            })
+          });
+
+          const result = await response.json();
+
+          if (!response.ok) {
+            throw new Error(result.error || 'Failed to transfer ticket');
+          }
+
+          // Show success message
+          alertContainer.innerHTML = `
+            <div class="alert alert-success">
+              <strong>Success!</strong> Ticket transferred successfully.<br>
+              From: ${escapeHtml(result.transfer.from.email)}<br>
+              To: ${escapeHtml(result.transfer.to.email)}
+            </div>
+          `;
+
+          // Reload tickets list after 2 seconds
+          setTimeout(() => {
+            closeTransferModal();
+            // Reload current page
+            const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
+            loadTickets(selectedEventId, currentPage);
+          }, 2000);
+
+        } catch (error) {
+          console.error('Transfer error:', error);
+
+          // Show error message
+          alertContainer.innerHTML = `
+            <div class="alert alert-error">
+              <strong>Error:</strong> ${escapeHtml(error.message || 'Failed to transfer ticket')}
+            </div>
+          `;
+
+          // Re-enable submit button
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<span>Confirm Transfer</span>';
+        }
+      }
+
       // Initialize page immediately
       initializePage();
     </script>
+
+    <!-- Transfer Modal -->
+    <div id="transfer-modal" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">Transfer Ticket</h2>
+          <button class="modal-close" onclick="closeTransferModal()">&times;</button>
+        </div>
+
+        <!-- Alert Container -->
+        <div id="transfer-alert-container"></div>
+
+        <!-- Current Owner Info -->
+        <div class="alert alert-info">
+          <strong>Current Owner:</strong><br>
+          <span id="current-owner-info">Loading...</span>
+        </div>
+
+        <!-- Transfer Form -->
+        <form id="transfer-form" onsubmit="handleTransferSubmit(event)">
+          <div class="admin-form-group">
+            <label for="new-first-name" class="admin-form-label">
+              New First Name <span style="color: var(--color-error);">*</span>
+            </label>
+            <input
+              type="text"
+              id="new-first-name"
+              name="newFirstName"
+              class="admin-form-input"
+              required
+              maxlength="100"
+              placeholder="John"
+            />
+          </div>
+
+          <div class="admin-form-group">
+            <label for="new-last-name" class="admin-form-label">
+              New Last Name
+            </label>
+            <input
+              type="text"
+              id="new-last-name"
+              name="newLastName"
+              class="admin-form-input"
+              maxlength="100"
+              placeholder="Doe"
+            />
+          </div>
+
+          <div class="admin-form-group">
+            <label for="new-email" class="admin-form-label">
+              New Email <span style="color: var(--color-error);">*</span>
+            </label>
+            <input
+              type="email"
+              id="new-email"
+              name="newEmail"
+              class="admin-form-input"
+              required
+              maxlength="255"
+              placeholder="john@example.com"
+            />
+          </div>
+
+          <div class="admin-form-group">
+            <label for="new-phone" class="admin-form-label">
+              New Phone (Optional)
+            </label>
+            <input
+              type="tel"
+              id="new-phone"
+              name="newPhone"
+              class="admin-form-input"
+              maxlength="50"
+              placeholder="+1 (303) 555-0123"
+            />
+          </div>
+
+          <div class="admin-form-group">
+            <label for="transfer-reason" class="admin-form-label">
+              Transfer Reason (Optional)
+            </label>
+            <textarea
+              id="transfer-reason"
+              name="transferReason"
+              class="admin-form-input"
+              maxlength="500"
+              rows="3"
+              placeholder="Reason for transfer (optional)"
+            ></textarea>
+          </div>
+
+          <!-- Transfer Summary -->
+          <div class="transfer-summary">
+            <h3 style="margin-bottom: var(--space-md); color: var(--color-text-primary);">Transfer Summary</h3>
+            <div class="transfer-summary-row">
+              <span class="transfer-summary-label">Ticket ID:</span>
+              <span class="transfer-summary-value" id="transfer-ticket-id">-</span>
+            </div>
+            <div class="transfer-summary-row">
+              <span class="transfer-summary-label">From:</span>
+              <span class="transfer-summary-value" id="transfer-from-email">-</span>
+            </div>
+            <div class="transfer-summary-row">
+              <span class="transfer-summary-label">To:</span>
+              <span class="transfer-summary-value" id="transfer-to-email">-</span>
+            </div>
+          </div>
+
+          <!-- Submit Buttons -->
+          <div style="display: flex; gap: var(--space-md); margin-top: var(--space-lg);">
+            <button type="submit" class="admin-btn admin-btn-primary" style="flex: 1;" id="transfer-submit-btn">
+              <span>Confirm Transfer</span>
+            </button>
+            <button type="button" class="admin-btn admin-btn-secondary" style="flex: 1;" onclick="closeTransferModal()">
+              <span>Cancel</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
 
     <!-- Event Selector Script -->
     <script src="/js/admin-event-selector.js"></script>
