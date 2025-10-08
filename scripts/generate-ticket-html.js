@@ -242,12 +242,45 @@ function generateTicketCard(ticketType, event) {
 }
 
 /**
+ * Generate test donation button HTML
+ */
+function generateTestDonationButton() {
+  return `
+  <!-- Test Donation Button -->
+  <div class="test-donation-button-container" data-testid="test-donation-button" style="text-align: center; margin: 2rem 0;">
+    <h3 style="color: var(--color-warning, #fbbf24); margin-bottom: 1rem;">
+      🧪 Test Donation
+    </h3>
+    <p style="margin-bottom: 1rem; color: var(--color-text-secondary);">
+      Add a $25 test donation to your cart for development testing
+    </p>
+    <button
+      id="test-donation-button"
+      class="cta-button"
+      type="button"
+      aria-label="Add $25 test donation to cart"
+      style="background: var(--color-accent, #d97706); padding: 1rem 2rem; font-size: 1.1rem; border-radius: 8px; border: none; cursor: pointer; color: white; font-weight: 600; transition: all 0.3s ease;">
+      ADD $25 TEST DONATION
+    </button>
+  </div>
+  `;
+}
+
+/**
  * Main ticket generation logic
  */
 try {
   console.log('🎫 Generating static ticket HTML...');
 
   const bootstrapPath = path.join(__dirname, '../config/bootstrap.json');
+
+  // Detect environment
+  const environment = process.env.VERCEL_ENV || process.env.NODE_ENV || 'development';
+  const isProduction = environment === 'production';
+  const includeTestTickets = !isProduction;
+
+  console.log(`  Environment: ${environment}`);
+  console.log(`  Include test tickets: ${includeTestTickets}`);
 
   // Validate bootstrap file exists
   if (!fs.existsSync(bootstrapPath)) {
@@ -273,18 +306,30 @@ try {
     throw new Error('Invalid bootstrap.json: missing or invalid "ticket_types" array');
   }
 
-  // Filter visible events (is_visible !== false AND status !== 'test')
-  const visibleEvents = bootstrap.events.filter(e =>
-    e.is_visible !== false && e.status !== 'test'
-  );
+  // Filter events based on environment
+  const visibleEvents = bootstrap.events.filter(e => {
+    // In production: exclude test events and hidden events
+    if (isProduction) {
+      if (e.status === 'test') return false;
+      if (e.is_visible === false) return false;
+      return true;
+    }
+    // In development/preview: include test events even if hidden, exclude non-test hidden events
+    if (e.status === 'test') return true; // Always include test events in dev
+    if (e.is_visible === false) return false; // Still exclude non-test hidden events
+    return true;
+  });
 
   console.log(`  Found ${visibleEvents.length} visible events (filtered from ${bootstrap.events.length} total)`);
 
-  // Group tickets by event (only non-test tickets)
+  // Group tickets by event based on environment
   const eventTickets = new Map();
-  const nonTestTickets = bootstrap.ticket_types.filter(t => t.status !== 'test');
+  const filteredTickets = bootstrap.ticket_types.filter(t => {
+    if (isProduction && t.status === 'test') return false;
+    return true;
+  });
 
-  nonTestTickets.forEach(ticket => {
+  filteredTickets.forEach(ticket => {
     const event = visibleEvents.find(e => e.id === ticket.event_id);
     if (event) {
       if (!eventTickets.has(event.id)) {
@@ -297,7 +342,7 @@ try {
     }
   });
 
-  console.log(`  Grouped ${nonTestTickets.length} tickets for ${eventTickets.size} events`);
+  console.log(`  Grouped ${filteredTickets.length} tickets for ${eventTickets.size} events`);
 
   // Validate we have tickets to generate
   if (eventTickets.size === 0) {
@@ -314,7 +359,12 @@ try {
     return dateA.getTime() - dateB.getTime();
   });
 
-  sortedEvents.forEach(({ event, tickets }) => {
+  // Separate production and test events
+  const productionEvents = sortedEvents.filter(({ event }) => event.status !== 'test');
+  const testEvents = sortedEvents.filter(({ event }) => event.status === 'test');
+
+  // Generate production tickets
+  productionEvents.forEach(({ event, tickets }) => {
     // Event section container
     html += `\n  <div class="event-section">\n`;
     html += generateEventHeader(event);
@@ -334,6 +384,38 @@ try {
     html += `    </div>\n`;
     html += `  </div>\n`;
   });
+
+  // Generate test tickets section if in development/preview
+  if (testEvents.length > 0 && includeTestTickets) {
+    html += `
+  <!-- Test Tickets Section (Development/Preview Only) -->
+  <section class="ticket-selection" id="test-tickets-section" data-test-tickets="true">
+    <h2 style="color: var(--color-warning, #fbbf24)">🧪 Test Tickets (Development Only)</h2>
+    <p style="color: var(--color-text-secondary); margin-bottom: var(--space-lg)">
+      These tickets are for testing purposes only and will not appear in production.
+    </p>
+
+    <div class="ticket-options-grid">
+`;
+
+    testEvents.forEach(({ event, tickets }) => {
+      // Sort tickets by display_order
+      const sortedTickets = tickets.sort((a, b) =>
+        (a.display_order || 0) - (b.display_order || 0)
+      );
+
+      sortedTickets.forEach(ticket => {
+        html += generateTicketCard(ticket, event);
+      });
+    });
+
+    html += `    </div>\n`;
+
+    // Add test donation button
+    html += generateTestDonationButton();
+
+    html += `  </section>\n`;
+  }
 
   // Validate generated HTML is not empty
   if (!html.trim()) {
@@ -387,13 +469,20 @@ try {
   fs.writeFileSync(ticketsPagePath, ticketsPageContent, 'utf8');
 
   const fileSizeKB = (html.length / 1024).toFixed(2);
+  const productionTicketCount = productionEvents.reduce((sum, { tickets }) => sum + tickets.length, 0);
+  const testTicketCount = testEvents.reduce((sum, { tickets }) => sum + tickets.length, 0);
 
   console.log('✅ Static tickets generated successfully');
   console.log(`  Static file: ${outputPath}`);
   console.log(`  Injected into: ${ticketsPagePath}`);
   console.log(`  Size: ${fileSizeKB} KB`);
-  console.log(`  Events: ${sortedEvents.length}`);
-  console.log(`  Total tickets: ${nonTestTickets.length}`);
+  console.log(`  Production events: ${productionEvents.length}`);
+  console.log(`  Production tickets: ${productionTicketCount}`);
+  if (testEvents.length > 0) {
+    console.log(`  Test events: ${testEvents.length}`);
+    console.log(`  Test tickets: ${testTicketCount}`);
+  }
+  console.log(`  Total: ${sortedEvents.length} events, ${filteredTickets.length} tickets`);
 
   // Explicit success exit
   process.exit(0);
