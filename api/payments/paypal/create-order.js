@@ -66,7 +66,7 @@ async function createOrderHandler(req, res) {
       req.headers['x-test-mode'] === 'true' ||
       cartItems?.some(item => item.isTestItem || item.name?.startsWith('TEST'));
 
-    // eslint-disable-next-line no-console
+     
     console.log('PayPal: Request payload:', {
       cartItems,
       customerInfo,
@@ -132,7 +132,7 @@ async function createOrderHandler(req, res) {
       // Convert cents to dollars for PayPal (prices stored in cents internally)
       const priceInDollars = (item.price / 100).toFixed(2);
 
-      // eslint-disable-next-line no-console
+       
       console.log('PayPal: Item processed:', {
         name: item.name,
         priceCents: item.price,
@@ -158,7 +158,7 @@ async function createOrderHandler(req, res) {
     // Validate total amount (totalAmount is in cents, convert to dollars for validation)
     const totalInDollars = totalAmount / 100;
 
-    // eslint-disable-next-line no-console
+     
     console.log('PayPal: Final total validation:', {
       totalAmountCents: totalAmount,
       totalAmountDollars: totalInDollars,
@@ -174,9 +174,9 @@ async function createOrderHandler(req, res) {
 
     // Validate and determine return URLs
     const origin = req.headers.origin;
-    let baseUrl = 'https://alocubano.boulderfest.com';
+    let baseUrl = 'https://alocubanoboulderfest.org';
 
-    if (origin && (origin.includes('localhost') || origin.includes('vercel.app') || origin.includes('alocubano.boulderfest.com'))) {
+    if (origin && (origin.includes('localhost') || origin.includes('vercel.app') || origin.includes('alocubanoboulderfest.org'))) {
       baseUrl = origin;
     }
 

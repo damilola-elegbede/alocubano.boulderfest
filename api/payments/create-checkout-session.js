@@ -309,7 +309,7 @@ export default async function handler(req, res) {
     const origin =
       req.headers.origin ||
       `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}` ||
-      'https://alocubano.boulderfest.com';
+      'https://alocubanoboulderfest.org';
 
     // Create Stripe Checkout Session with automatic receipt configuration
     const session = await stripe.checkout.sessions.create({

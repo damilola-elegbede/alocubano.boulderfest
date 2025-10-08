@@ -58,7 +58,7 @@ test_endpoint() {
 test_endpoint "$BASE_URL/api/tickets/types" "All ticket types"
 test_endpoint "$BASE_URL/api/tickets/types?event_id=1" "Filter by event ID"
 test_endpoint "$BASE_URL/api/tickets/types?status=available" "Filter by status"
-test_endpoint "$BASE_URL/api/tickets/types?include_test=true" "Include test tickets"
+# Note: Test tickets are automatically visible in non-production environments (no query param needed)
 test_endpoint "$BASE_URL/api/tickets/types" "OPTIONS request" "200"
 
 # Test error cases

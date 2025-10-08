@@ -7,9 +7,10 @@
  * Execution flow:
  * 1. Check build cache to determine if rebuild is needed
  * 2. Run migrations (sequential, required)
- * 3. Run bootstrap + embed-docs in parallel
- * 4. Run structure verification (local only)
- * 5. Save build cache
+ * 3. Run bootstrap + embed-docs in parallel (independent tasks)
+ * 4. Run ticket generation (depends on bootstrap.json from step 3)
+ * 5. Run structure verification (local only)
+ * 6. Save build cache
  */
 
 import { spawn } from 'child_process';
@@ -87,9 +88,9 @@ async function build() {
     console.log('📋 Step 1: Running migrations...');
     await execCommand('node', ['scripts/migrate-vercel-build.js'], 'Migrations');
 
-    // Step 2: Run bootstrap and embed-docs in parallel
+    // Step 2: Run bootstrap and embed-docs in parallel (independent tasks)
     console.log('');
-    console.log('📋 Step 2: Running parallel tasks...');
+    console.log('📋 Step 2: Running parallel tasks (bootstrap + documentation)...');
     const parallelStartTime = Date.now();
 
     await Promise.all([
@@ -100,7 +101,12 @@ async function build() {
     const parallelDuration = Date.now() - parallelStartTime;
     console.log(`✅ Parallel tasks completed (${parallelDuration}ms)`);
 
-    // Step 3: Vercel optimization message or structure verification
+    // Step 3: Run ticket generation (depends on bootstrap.json from Step 2)
+    console.log('');
+    console.log('📋 Step 3: Running ticket generation...');
+    await execCommand('node', ['scripts/generate-ticket-html.js'], 'Ticket Generation');
+
+    // Step 4: Vercel optimization message or structure verification
     console.log('');
     if (isVercel) {
       console.log('🏗️  Vercel processing build outputs...');
@@ -109,7 +115,7 @@ async function build() {
       console.log('🔧 Progress: Applying Vercel-specific optimizations');
       console.log('🚀 Progress: Preparing deployment package');
     } else {
-      console.log('📋 Step 3: Running structure verification...');
+      console.log('📋 Step 4: Running structure verification...');
       await execCommand('npm', ['run', 'verify-structure'], 'Structure Verification');
     }
 
@@ -117,7 +123,7 @@ async function build() {
     console.log('');
     console.log(`✅ Build script completed in ${totalDuration}ms`);
 
-    // Step 4: Save build cache for next run
+    // Step 5: Save build cache for next run
     if (!SKIP_CACHE) {
       console.log('');
       console.log('💾 Saving build cache...');

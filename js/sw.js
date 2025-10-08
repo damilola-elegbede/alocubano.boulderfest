@@ -11,7 +11,7 @@
  * - Offline fallbacks with SVG placeholders
  */
 
-const CACHE_VERSION = 'v2.1.0';
+const CACHE_VERSION = 'v2.2.0';
 const STATIC_CACHE = `alocubano-static-${CACHE_VERSION}`;
 const IMAGE_CACHE = `alocubano-images-${CACHE_VERSION}`;
 const API_CACHE = `alocubano-api-${CACHE_VERSION}`;
@@ -29,7 +29,7 @@ const CACHE_CONFIG = {
     // TTL settings (in milliseconds)
     imageTTL: 24 * 60 * 60 * 1000, // 24 hours
     apiTTL: 30 * 60 * 1000, // 30 minutes
-    staticTTL: 7 * 24 * 60 * 60 * 1000, // 7 days
+    staticTTL: 60 * 60 * 1000, // 1 hour (reduced from 7 days for faster CSS updates)
 
     // Update intervals
     backgroundUpdateInterval: 5 * 60 * 1000 // 5 minutes

@@ -92,7 +92,16 @@
     }
   ],
   "images": {
-    "sizes": [16, 32, 48, 64, 96, 128, 256, 384],
+    "sizes": [
+      16,
+      32,
+      48,
+      64,
+      96,
+      128,
+      256,
+      384
+    ],
     "remotePatterns": [
       {
         "protocol": "https",
@@ -109,6 +118,10 @@
     ]
   },
   "rewrites": [
+    {
+      "source": "/.well-known/:path*",
+      "destination": "/.well-known/:path*"
+    },
     {
       "source": "/images/:path*",
       "destination": "/images/:path*"
@@ -257,17 +270,38 @@
           "key": "Link",
           "value": "<https://fonts.googleapis.com>; rel=dns-prefetch"
         },
-        { "key": "Link", "value": "<https://instagram.com>; rel=dns-prefetch" },
+        {
+          "key": "Link",
+          "value": "<https://instagram.com>; rel=dns-prefetch"
+        },
         {
           "key": "Link",
           "value": "<https://drive.google.com>; rel=preconnect; crossorigin"
         },
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
-        { "key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains; preload" },
-        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.stripe.com https://cdn.jsdelivr.net https://www.paypal.com https://www.sandbox.paypal.com https://www.googletagmanager.com https://www.google-analytics.com https://vercel.live; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://vercel.com; font-src 'self' data: https://fonts.gstatic.com https://vercel.live; img-src 'self' data: https: https://drive.google.com https://*.googleusercontent.com https://vercel.com; connect-src 'self' https://api.stripe.com https://m.stripe.com https://m.stripe.network https://api.paypal.com https://api-m.paypal.com https://api-m.sandbox.paypal.com https://www.paypal.com https://www.sandbox.paypal.com https://api.brevo.com https://www.google-analytics.com https://vercel.live https://*.pusher.com wss://*.pusher.com https://cdn.jsdelivr.net https://*.blob.vercel-storage.com; frame-src https://js.stripe.com https://hooks.stripe.com https://www.paypal.com https://www.sandbox.paypal.com https://vercel.live; media-src 'self' https://drive.google.com https://*.googleusercontent.com; object-src 'none'; base-uri 'self'; form-action 'self' https://checkout.stripe.com https://www.paypal.com https://www.sandbox.paypal.com; manifest-src 'self'" },
-        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), interest-cohort=(), browsing-topics=()" }
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=31536000; includeSubDomains; preload"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.stripe.com https://cdn.jsdelivr.net https://www.paypal.com https://www.sandbox.paypal.com https://www.googletagmanager.com https://www.google-analytics.com https://vercel.live; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://vercel.com; font-src 'self' data: https://fonts.gstatic.com https://vercel.live; img-src 'self' data: https: https://drive.google.com https://*.googleusercontent.com https://vercel.com; connect-src 'self' https://api.stripe.com https://m.stripe.com https://m.stripe.network https://api.paypal.com https://api-m.paypal.com https://api-m.sandbox.paypal.com https://www.paypal.com https://www.sandbox.paypal.com https://api.brevo.com https://www.google-analytics.com https://vercel.live https://*.pusher.com wss://*.pusher.com https://cdn.jsdelivr.net https://*.blob.vercel-storage.com; frame-src https://js.stripe.com https://hooks.stripe.com https://www.paypal.com https://www.sandbox.paypal.com https://vercel.live; media-src 'self' https://drive.google.com https://*.googleusercontent.com; object-src 'none'; base-uri 'self'; form-action 'self' https://checkout.stripe.com https://www.paypal.com https://www.sandbox.paypal.com; manifest-src 'self'"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=(), interest-cohort=(), browsing-topics=()"
+        }
       ]
     },
     {
@@ -277,7 +311,10 @@
           "key": "Cache-Control",
           "value": "public, max-age=31536000, immutable"
         },
-        { "key": "Vary", "value": "Accept" }
+        {
+          "key": "Vary",
+          "value": "Accept"
+        }
       ]
     },
     {
@@ -285,15 +322,21 @@
       "headers": [
         {
           "key": "Cache-Control",
-          "value": "public, max-age=86400, stale-while-revalidate=604800"
+          "value": "public, max-age=3600, must-revalidate"
         },
-        { "key": "Vary", "value": "Accept-Encoding" }
+        {
+          "key": "Vary",
+          "value": "Accept-Encoding"
+        }
       ]
     },
     {
       "source": "/(.*)\\.(json)",
       "headers": [
-        { "key": "Content-Type", "value": "application/json" },
+        {
+          "key": "Content-Type",
+          "value": "application/json"
+        },
         {
           "key": "Cache-Control",
           "value": "public, max-age=3600, stale-while-revalidate=86400"
@@ -311,8 +354,14 @@
           "key": "Access-Control-Allow-Origin",
           "value": "https://www.alocubanoboulderfest.org"
         },
-        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS, PUT, DELETE" },
-        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, X-CSRF-Token, Authorization" }
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, OPTIONS, PUT, DELETE"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, X-CSRF-Token, Authorization"
+        }
       ]
     },
     {
@@ -322,7 +371,10 @@
           "key": "Cache-Control",
           "value": "public, max-age=0, must-revalidate"
         },
-        { "key": "Service-Worker-Allowed", "value": "/" }
+        {
+          "key": "Service-Worker-Allowed",
+          "value": "/"
+        }
       ]
     },
     {
@@ -336,7 +388,23 @@
           "key": "Cache-Control",
           "value": "public, max-age=0, must-revalidate"
         },
-        { "key": "Service-Worker-Allowed", "value": "/" }
+        {
+          "key": "Service-Worker-Allowed",
+          "value": "/"
+        }
+      ]
+    },
+    {
+      "source": "/.well-known/apple-developer-merchantid-domain-association",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/plain"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400"
+        }
       ]
     }
   ]
