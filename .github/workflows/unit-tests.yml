@@ -117,9 +117,11 @@ jobs:
 
           start_time=$(date +%s%3N)
 
-          # FIXED: Run tests with JSON reporter for reliable parsing + verbose output
-          CI=true npm test -- --reporter=json --reporter=verbose --no-color > unit-test-results-raw.json 2>&1 || true
+          # FIXED: Capture actual test exit code (removed || true)
+          set +e  # Allow command to fail without stopping script
+          CI=true npm test -- --reporter=json --reporter=verbose --no-color > unit-test-results-raw.json 2>&1
           test_exit_code=$?
+          set -e  # Re-enable exit on error
 
           # Also capture verbose output for logs
           CI=true npm test -- --reporter=verbose --no-color 2>&1 | tee unit-test-output.log || true

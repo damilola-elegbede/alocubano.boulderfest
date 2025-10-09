@@ -993,6 +993,12 @@ class MigrationSystem {
  * CLI interface for migration system
  */
 async function main() {
+  // Set default local database if not configured
+  if (!process.env.TURSO_DATABASE_URL && !process.env.DATABASE_URL) {
+    process.env.DATABASE_URL = 'file:local.db';
+    console.log('📁 Using local database: local.db');
+  }
+
   const args = process.argv.slice(2);
   const command = args[0] || "run";
 

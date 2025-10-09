@@ -34,6 +34,8 @@ describe('RegistrationTokenService - Unit Tests', () => {
 
   afterEach(() => {
     vi.clearAllMocks();
+    // Restore REGISTRATION_SECRET after tests that delete it
+    process.env.REGISTRATION_SECRET = TEST_SECRET;
   });
 
   describe('Token Generation', () => {
@@ -377,14 +379,12 @@ describe('RegistrationTokenService - Unit Tests', () => {
   });
 
   describe('Security & Error Handling', () => {
-    it('should reject initialization without REGISTRATION_SECRET', () => {
+    it('should reject initialization without REGISTRATION_SECRET', async () => {
       delete process.env.REGISTRATION_SECRET;
 
-      expect(() => {
-        const newService = new RegistrationTokenService();
-        newService.secret = null;
-        newService._performInitialization();
-      }).rejects.toThrow('REGISTRATION_SECRET must be set');
+      const newService = new RegistrationTokenService();
+      newService.secret = null;
+      await expect(newService._performInitialization()).rejects.toThrow('REGISTRATION_SECRET must be set');
     });
 
     it('should reject secret shorter than 32 characters', async () => {
