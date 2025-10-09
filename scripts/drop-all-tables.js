@@ -77,6 +77,12 @@ function askConfirmation(question) {
  * Drop all tables in the database
  */
 async function dropAllTables() {
+  // Set default local database if not configured
+  if (!process.env.TURSO_DATABASE_URL && !process.env.DATABASE_URL) {
+    process.env.DATABASE_URL = 'file:local.db';
+    console.log('📁 Using local database: local.db');
+  }
+
   console.log('\n🗑️  Drop All Tables Script\n' + '='.repeat(50));
 
   try {
