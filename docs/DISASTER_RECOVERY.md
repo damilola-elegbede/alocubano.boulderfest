@@ -41,6 +41,7 @@ This runbook provides step-by-step procedures for recovering the A Lo Cubano Bou
 ### Automated Backups
 
 #### Daily Backups (Vercel Blob)
+
 - **Schedule**: Daily at 3 AM UTC (8 PM Mountain Time previous day)
 - **Workflow**: `.github/workflows/database-backup-daily.yml`
 - **Storage**: Vercel Blob Storage
@@ -49,6 +50,7 @@ This runbook provides step-by-step procedures for recovering the A Lo Cubano Bou
 - **Location**: `database-backups/prod/` and `database-backups/dev/`
 
 #### Monthly Snapshots (Turso Branches)
+
 - **Schedule**: 1st of each month at 3 AM UTC
 - **Workflow**: `.github/workflows/database-snapshot-monthly.yml`
 - **Storage**: Turso Database Platform
@@ -57,6 +59,7 @@ This runbook provides step-by-step procedures for recovering the A Lo Cubano Bou
 - **Naming**: `{database-name}-{YYYY-MM}`
 
 #### Native PITR (Turso Built-in)
+
 - **Schedule**: Continuous (automatic)
 - **Storage**: Turso/AWS S3
 - **Retention**: 24 hours (free tier)
@@ -93,12 +96,14 @@ gh workflow run database-snapshot-monthly.yml -f dry_run=true
 **RPO**: Near-zero (continuous backup)
 
 #### Prerequisites
+
 - Turso CLI installed and authenticated
 - Know the approximate time of the incident
 
 #### Step-by-Step Procedure
 
 1. **Identify Recovery Timestamp**
+
    ```bash
    # Determine when the issue occurred
    # Example: 6 hours ago
@@ -107,6 +112,7 @@ gh workflow run database-snapshot-monthly.yml -f dry_run=true
    ```
 
 2. **Create Point-in-Time Restore**
+
    ```bash
    # For production database
    turso db create alocubano-recovered-prod \
@@ -120,6 +126,7 @@ gh workflow run database-snapshot-monthly.yml -f dry_run=true
    ```
 
 3. **Verify Restored Data**
+
    ```bash
    # Check ticket count
    turso db shell alocubano-recovered-prod \
@@ -135,6 +142,7 @@ gh workflow run database-snapshot-monthly.yml -f dry_run=true
    ```
 
 4. **Get Connection Credentials**
+
    ```bash
    # Get database URL
    turso db show alocubano-recovered-prod
@@ -144,14 +152,21 @@ gh workflow run database-snapshot-monthly.yml -f dry_run=true
    ```
 
 5. **Update Vercel Environment Variables**
+
    ```bash
    # Update production database URL
-   vercel env add TURSO_DATABASE_URL production
-   # Paste the new database URL
+   vercel env edit TURSO_DATABASE_URL production
+   # Follow prompts to enter the new database URL
 
    # Update auth token
-   vercel env add TURSO_AUTH_TOKEN production
-   # Paste the new auth token
+   vercel env edit TURSO_AUTH_TOKEN production
+   # Follow prompts to enter the new auth token
+
+   # Alternative: Remove and re-add if edit fails
+   # vercel env rm TURSO_DATABASE_URL production
+   # vercel env add TURSO_DATABASE_URL production
+   # vercel env rm TURSO_AUTH_TOKEN production
+   # vercel env add TURSO_AUTH_TOKEN production
 
    # Trigger redeployment
    vercel --prod
@@ -163,6 +178,7 @@ gh workflow run database-snapshot-monthly.yml -f dry_run=true
    - Test critical functionality (tickets, registrations, etc.)
 
 7. **Clean Up (After Verification)**
+
    ```bash
    # Once confident recovery is successful:
 
@@ -188,6 +204,7 @@ gh workflow run database-snapshot-monthly.yml -f dry_run=true
 **RPO**: Up to 24 hours (daily backups)
 
 #### Prerequisites
+
 - Access to Vercel Blob Storage
 - Turso CLI installed
 - `BLOB_READ_WRITE_TOKEN` configured
@@ -195,6 +212,7 @@ gh workflow run database-snapshot-monthly.yml -f dry_run=true
 #### Step-by-Step Procedure
 
 1. **List Available Backups**
+
    ```bash
    # Install Vercel CLI if needed
    npm install -g vercel
@@ -212,6 +230,7 @@ gh workflow run database-snapshot-monthly.yml -f dry_run=true
    - Choose backup from before the data loss occurred
 
 3. **Download Backup from Vercel Blob**
+
    ```bash
    # Get the blob URL from Vercel dashboard or API
    BLOB_URL="https://[your-blob-url].vercel-storage.com/..."
@@ -224,6 +243,7 @@ gh workflow run database-snapshot-monthly.yml -f dry_run=true
    ```
 
 4. **Decompress Backup**
+
    ```bash
    # Decompress the SQL dump
    gunzip backup.sql.gz
@@ -233,6 +253,7 @@ gh workflow run database-snapshot-monthly.yml -f dry_run=true
    ```
 
 5. **Create New Turso Database**
+
    ```bash
    # Create empty database for restoration
    turso db create alocubano-restored-prod
@@ -243,6 +264,7 @@ gh workflow run database-snapshot-monthly.yml -f dry_run=true
    ```
 
 6. **Import SQL Dump**
+
    ```bash
    # Option A: Via Turso shell (smaller dumps)
    cat backup.sql | turso db shell alocubano-restored-prod
@@ -253,6 +275,7 @@ gh workflow run database-snapshot-monthly.yml -f dry_run=true
    ```
 
 7. **Verify Restored Data**
+
    ```bash
    # Check row counts
    turso db shell alocubano-restored-prod \
@@ -270,6 +293,7 @@ gh workflow run database-snapshot-monthly.yml -f dry_run=true
    - Follow steps 5-7 from Scenario 1
 
 9. **Clean Up**
+
    ```bash
    # Delete downloaded files
    rm backup.sql backup.sql.gz
@@ -285,12 +309,14 @@ gh workflow run database-snapshot-monthly.yml -f dry_run=true
 **RPO**: Monthly snapshot
 
 #### Prerequisites
+
 - Turso CLI installed and authenticated
 - Know the approximate month needed
 
 #### Step-by-Step Procedure
 
 1. **List Available Monthly Snapshots**
+
    ```bash
    # List all databases
    turso db list
@@ -304,6 +330,7 @@ gh workflow run database-snapshot-monthly.yml -f dry_run=true
    - Example: `alocubano-boulderfest-prod-2024-12`
 
 3. **Query Historical Data**
+
    ```bash
    # Connect to historical snapshot
    turso db shell alocubano-boulderfest-prod-2024-12
@@ -314,6 +341,7 @@ gh workflow run database-snapshot-monthly.yml -f dry_run=true
    ```
 
 4. **Export Specific Data (If Needed)**
+
    ```bash
    # Export to CSV
    turso db shell alocubano-boulderfest-prod-2024-12 \
@@ -341,6 +369,7 @@ gh workflow run database-snapshot-monthly.yml -f dry_run=true
 **RPO**: Up to 24 hours
 
 #### Prerequisites
+
 - Latest daily backup from Vercel Blob
 - Alternative database provider ready (e.g., new Turso account, Fly.io, Railway)
 - Database migration scripts
@@ -351,6 +380,7 @@ gh workflow run database-snapshot-monthly.yml -f dry_run=true
    - Follow steps 2-4 from Scenario 2
 
 2. **Set Up Alternative Database**
+
    ```bash
    # Option A: New Turso Account
    # Create new account at https://turso.tech
@@ -365,10 +395,20 @@ gh workflow run database-snapshot-monthly.yml -f dry_run=true
    - Follow step 6 from Scenario 2
 
 4. **Update Application Configuration**
+
    ```bash
    # Update Vercel environment variables
-   vercel env add TURSO_DATABASE_URL production
-   vercel env add TURSO_AUTH_TOKEN production
+   vercel env edit TURSO_DATABASE_URL production
+   # Follow prompts to enter the new database URL
+
+   vercel env edit TURSO_AUTH_TOKEN production
+   # Follow prompts to enter the new auth token
+
+   # Alternative: Remove and re-add if edit fails
+   # vercel env rm TURSO_DATABASE_URL production
+   # vercel env add TURSO_DATABASE_URL production
+   # vercel env rm TURSO_AUTH_TOKEN production
+   # vercel env add TURSO_AUTH_TOKEN production
 
    # Deploy immediately
    vercel --prod --force
@@ -389,16 +429,19 @@ gh workflow run database-snapshot-monthly.yml -f dry_run=true
 ## Emergency Contacts
 
 ### Internal Team
+
 - **Database Admin**: [Your email]
 - **DevOps Lead**: [Your email]
 - **CTO/Technical Lead**: [Your email]
 
 ### External Services
+
 - **Turso Support**: support@turso.tech
 - **Vercel Support**: https://vercel.com/support
 - **Stripe Support**: https://support.stripe.com
 
 ### Escalation Path
+
 1. Attempt recovery using this runbook (30 minutes)
 2. Contact Turso support if Turso-specific issue (1 hour)
 3. Contact Vercel support if blob storage issue (1 hour)
@@ -414,21 +457,25 @@ gh workflow run database-snapshot-monthly.yml -f dry_run=true
 **Schedule**: 1st Monday of each quarter (Jan, Apr, Jul, Oct)
 
 #### Q1 Drill (January)
+
 - Test Scenario 1: PITR restore to previous day
 - Verify backup automation is working
 - Review and update runbook
 
 #### Q2 Drill (April)
+
 - Test Scenario 2: Restore from SQL dump (1 week old)
 - Verify Vercel Blob access
 - Test import procedure
 
 #### Q3 Drill (July)
+
 - Test Scenario 3: Access monthly snapshot
 - Verify query performance
 - Test data export
 
 #### Q4 Drill (October)
+
 - Test Scenario 4: Full disaster recovery simulation
 - Time each step
 - Update RTO/RPO estimates
@@ -452,11 +499,13 @@ gh workflow run database-snapshot-monthly.yml -f dry_run=true
 #### Issue: Turso CLI Not Authenticated
 
 **Symptoms**:
-```
+
+```text
 Error: Not authenticated
 ```
 
 **Solution**:
+
 ```bash
 # Re-authenticate
 turso auth login
@@ -469,11 +518,13 @@ echo "$TURSO_AUTH_TOKEN" > ~/.config/turso/token
 #### Issue: Backup Download Fails
 
 **Symptoms**:
-```
+
+```text
 Error: Failed to fetch blob
 ```
 
 **Solution**:
+
 ```bash
 # Verify BLOB_READ_WRITE_TOKEN
 echo $BLOB_READ_WRITE_TOKEN
@@ -488,11 +539,13 @@ vercel env pull .env.vercel
 #### Issue: SQL Import Timeout
 
 **Symptoms**:
-```
+
+```text
 Error: Operation timed out
 ```
 
 **Solution**:
+
 ```bash
 # Split large SQL file into chunks
 split -l 10000 backup.sql backup_chunk_
@@ -506,11 +559,13 @@ done
 #### Issue: Database Already Exists
 
 **Symptoms**:
-```
+
+```text
 Error: Database already exists
 ```
 
 **Solution**:
+
 ```bash
 # Use different name with timestamp
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
@@ -524,10 +579,12 @@ turso db create alocubano-recovered-prod
 #### Issue: Missing Data After Restore
 
 **Symptoms**:
+
 - Ticket count lower than expected
 - Recent transactions missing
 
 **Solution**:
+
 1. Check backup timestamp - may be older than expected
 2. Try more recent backup
 3. Check for data in monthly snapshot
@@ -539,6 +596,7 @@ turso db create alocubano-recovered-prod
 ## Runbook Maintenance
 
 ### Review Schedule
+
 - **Quarterly**: Test recovery procedures
 - **After Incidents**: Document lessons learned
 - **Annual**: Full runbook review and update
@@ -550,6 +608,7 @@ turso db create alocubano-recovered-prod
 | 2025-01-15 | 1.0 | Initial runbook creation | Claude |
 
 ### Next Review Date
+
 **April 1, 2025**
 
 ---
