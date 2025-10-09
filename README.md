@@ -75,6 +75,9 @@ alocubano.boulderfest/
 ├── scripts/
 │   ├── start-with-ngrok.js (Development server with ngrok)
 │   ├── migrate.js (Database migration system)
+│   ├── upload-backup-to-blob.js (Backup upload to Vercel Blob)
+│   ├── cleanup-old-backups.js (Cleanup old backups)
+│   ├── cleanup-old-branches.js (Cleanup old snapshot branches)
 │   └── verify-structure.js (Project structure validation)
 ├── css/
 │   ├── base.css (Design system)
@@ -98,6 +101,12 @@ alocubano.boulderfest/
 │   ├── unit/ (Unit tests)
 │   ├── integration/ (Integration tests)
 │   └── e2e/ (Playwright E2E tests)
+├── docs/
+│   ├── DISASTER_RECOVERY.md (Database recovery runbook)
+│   └── api/ (API documentation)
+├── .github/workflows/
+│   ├── database-backup-daily.yml (Daily backup workflow)
+│   └── database-snapshot-monthly.yml (Monthly snapshot workflow)
 └── images/
     ├── logo.png (Main logo)
     ├── social/ (Social media icons folder)
@@ -330,6 +339,100 @@ npm run migrate:up             # Run pending migrations
 npm run migrate:status         # Check migration status
 ```
 
+### Database Backups & Disaster Recovery
+
+The project implements a comprehensive three-tier backup strategy to protect against data loss:
+
+#### Backup Strategy Overview
+
+| Tier | Method | Retention | Recovery Time | Use Case |
+|------|--------|-----------|---------------|----------|
+| **Tier 1** | Turso PITR | 24 hours | < 5 minutes | Same-day mistakes, accidental deletions |
+| **Tier 2** | Daily SQL Dumps | 30 days | 30-60 minutes | Recent data loss (1-30 days ago) |
+| **Tier 3** | Monthly Snapshots | 12 months | Immediate (read-only) | Historical access, compliance, auditing |
+
+#### Automated Workflows
+
+**Daily Backups** (3 AM UTC / 8 PM Mountain Time):
+
+- Workflow: `.github/workflows/database-backup-daily.yml`
+- Storage: Vercel Blob Storage
+- Format: Compressed SQL dumps (.sql.gz)
+- Retention: 30 days with automatic cleanup
+
+**Monthly Snapshots** (1st of each month, 3 AM UTC):
+
+- Workflow: `.github/workflows/database-snapshot-monthly.yml`
+- Storage: Turso Database Branches
+- Format: Full database snapshots
+- Retention: 12 months with automatic cleanup
+
+#### Manual Backup Triggers
+
+```bash
+# Trigger daily backup for both databases
+gh workflow run database-backup-daily.yml
+
+# Trigger backup for specific database
+gh workflow run database-backup-daily.yml -f database=prod
+gh workflow run database-backup-daily.yml -f database=dev
+
+# Trigger monthly snapshot
+gh workflow run database-snapshot-monthly.yml
+
+# Dry run (test without creating snapshot)
+gh workflow run database-snapshot-monthly.yml -f dry_run=true
+```
+
+#### Recovery Scenarios
+
+**Recent Data Loss (< 24 hours)**: Use Turso Point-in-Time Recovery (PITR)
+
+```bash
+# Restore to specific timestamp (e.g., 6 hours ago)
+RECOVERY_TIME=$(date -u -d '6 hours ago' '+%Y-%m-%dT%H:%M:%S-00:00')
+turso db create alocubano-recovered-prod \
+  --from-db alocubano-boulderfest-prod \
+  --timestamp "$RECOVERY_TIME"
+```
+
+**Data Loss (24 hours - 30 days)**: Use daily SQL dump from Vercel Blob
+
+```bash
+# Download and import SQL dump
+# See DISASTER_RECOVERY.md for detailed steps
+```
+
+**Historical Access (1-12 months)**: Query monthly snapshot directly
+
+```bash
+# List available snapshots
+turso db list | grep -E "alocubano.*-20[0-9]{2}-[0-9]{2}"
+
+# Connect to historical snapshot
+turso db shell alocubano-boulderfest-prod-2024-12
+```
+
+#### Complete Documentation
+
+For detailed recovery procedures, troubleshooting, and quarterly testing schedule, see:
+
+- **[Disaster Recovery Runbook](/docs/DISASTER_RECOVERY.md)** - Complete step-by-step recovery procedures
+- **[Backup Scripts](/scripts/)** - Automation scripts for backup operations
+- **[GitHub Workflows](/.github/workflows/)** - Automated backup workflow configurations
+
+#### Required Environment Variables
+
+Configure these in Vercel Dashboard and GitHub Secrets for backup automation:
+
+- `BLOB_READ_WRITE_TOKEN` - Vercel Blob storage access (production environment)
+- `TURSO_AUTH_TOKEN` - Turso CLI authentication for backup operations
+
+GitHub Repository Variables (Settings → Secrets and variables → Actions → Variables):
+
+- `TURSO_PROD_DB_NAME` - Production database name (e.g., `alocubano-boulderfest-prod`)
+- `TURSO_DEV_DB_NAME` - Development database name (e.g., `alocubano-boulderfest-dev`)
+
 ## 📱 Browser Support
 
 - Chrome/Edge 90+
@@ -376,6 +479,10 @@ npm run migrate:status         # Check migration status
 - [Security Policy](SECURITY.md) - Security practices and vulnerability reporting
 - [Changelog](CHANGELOG.md) - Version history and release notes
 
+### Operations Documentation
+
+- [Disaster Recovery Runbook](/docs/DISASTER_RECOVERY.md) - Database backup and recovery procedures
+
 ### Key Features Documentation
 
 - **Donations System**: Preset/custom amounts, cart integration, admin tracking, and analytics
@@ -389,6 +496,7 @@ npm run migrate:status         # Check migration status
 - **Gallery System**: Google Drive integration with AVIF/WebP optimization
 - **E2E Testing**: Comprehensive browser automation with Vercel Preview Deployments
 - **Admin Panel**: Complete administration dashboard with donations tracking, registrations, and analytics
+- **Database Backups**: Three-tier backup strategy with automated daily/monthly backups and disaster recovery
 
 ## Environment Variables
 
@@ -441,6 +549,7 @@ openssl rand -base64 32
 - **Payments**: `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`
 - **Gallery**: `GOOGLE_DRIVE_FOLDER_ID`, `GOOGLE_SERVICE_ACCOUNT_EMAIL`
 - **Wallet Passes**: `APPLE_PASS_TYPE_ID`, `GOOGLE_WALLET_ISSUER_ID`
+- **Backups**: `BLOB_READ_WRITE_TOKEN` (Vercel Blob storage for database backups)
 
 See [INSTALLATION.md](INSTALLATION.md) for complete environment variable documentation.
 
