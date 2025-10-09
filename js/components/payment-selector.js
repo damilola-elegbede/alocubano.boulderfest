@@ -17,8 +17,6 @@ class PaymentSelector {
         this.cssLoaded = false;
         this.eventListeners = new Map(); // Track event listeners for cleanup
         this.eventDate = null; // No default - must be explicitly set
-        this.environmentChecked = false; // Track if environment has been checked
-        this.isProduction = false; // Cache production status
     }
 
     /**
@@ -92,9 +90,6 @@ class PaymentSelector {
             this.modal.remove();
         }
 
-        // Check environment from API (uses VERCEL_ENV)
-        const isProduction = await this.checkEnvironment();
-
         const modalHTML = `
             <div class="payment-selector-modal" role="dialog" aria-modal="true" aria-labelledby="payment-selector-title" aria-describedby="payment-selector-description">
                 <div class="payment-selector-backdrop"></div>
@@ -118,11 +113,9 @@ class PaymentSelector {
                     <div class="payment-methods" role="group" aria-labelledby="payment-selector-title">
                         <!-- Credit Cards & Digital Wallets Option -->
                         <!-- Payment logos sourced from: https://github.com/payrexx/payment-logos -->
-                        <button class="payment-method-option ${isProduction ? 'disabled' : ''}"
+                        <button class="payment-method-option"
                                 data-method="stripe"
-                                ${isProduction ? 'disabled' : ''}
-                                ${isProduction ? 'aria-disabled="true"' : ''}
-                                aria-label="Pay with credit card, Apple Pay, or Google Pay - ${isProduction ? 'temporarily unavailable' : 'opens Stripe secure checkout'}"
+                                aria-label="Pay with credit card, Apple Pay, or Google Pay - opens Stripe secure checkout"
                                 aria-describedby="stripe-description">
                             <div class="payment-card-icons">
                                 <img src="/images/payment-icons/card_visa.svg" alt="Visa" class="card-icon visa-icon">
@@ -130,8 +123,7 @@ class PaymentSelector {
                                 <img src="/images/payment-icons/apple-pay.svg" alt="Apple Pay" class="card-icon apple-pay-icon">
                                 <img src="/images/payment-icons/card_google-pay.svg" alt="Google Pay" class="card-icon google-pay-icon">
                             </div>
-                            ${isProduction ? '<div class="payment-method-status" data-status="unavailable" style="display: block;"><span class="status-text">Temporarily Unavailable</span></div>' : ''}
-                            <span id="stripe-description" class="sr-only">Secure payment processing with Stripe. Supports all major credit cards, Apple Pay, and Google Pay. ${isProduction ? 'Currently temporarily unavailable.' : ''}</span>
+                            <span id="stripe-description" class="sr-only">Secure payment processing with Stripe. Supports all major credit cards, Apple Pay, and Google Pay.</span>
                         </button>
 
                         <!-- PayPal Option -->
@@ -267,41 +259,6 @@ class PaymentSelector {
             }
         });
         this.eventListeners.clear();
-    }
-
-    /**
-   * Check environment from API to determine if we're in production
-   * Uses VERCEL_ENV for reliable environment detection
-   */
-    async checkEnvironment() {
-        // Return cached result if already checked
-        if (this.environmentChecked) {
-            return this.isProduction;
-        }
-
-        try {
-            const response = await fetch('/api/config/environment');
-            if (response.ok) {
-                const data = await response.json();
-                this.isProduction = data.vercelEnv === 'production';
-                this.environmentChecked = true;
-                return this.isProduction;
-            } else {
-                // API failed - assume non-production for safety (allow all payment methods)
-                // eslint-disable-next-line no-console
-                console.warn('Environment check failed - assuming non-production');
-                this.isProduction = false;
-                this.environmentChecked = true;
-                return false;
-            }
-        } catch (error) {
-            // Error occurred - assume non-production for safety
-            // eslint-disable-next-line no-console
-            console.warn('Environment check error:', error.message);
-            this.isProduction = false;
-            this.environmentChecked = true;
-            return false;
-        }
     }
 
     /**
