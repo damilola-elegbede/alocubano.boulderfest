@@ -1,5 +1,5 @@
 import { getDatabaseClient } from "../../lib/database.js";
-import { getBrevoService } from "../../lib/brevo-service.js";
+// Brevo service imported dynamically with proper async initialization
 import rateLimit from "../../lib/rate-limit-middleware.js";
 import auditService from "../../lib/audit-service.js";
 import { processDatabaseResult } from "../../lib/bigint-serializer.js";
@@ -819,7 +819,8 @@ export default async function handler(req, res) {
       }
     } else {
       try {
-        const brevo = getBrevoService();
+        const { initBrevoService } = await import('../../lib/brevo-service.js');
+        const brevo = await initBrevoService();
         if (process.env.NODE_ENV !== 'production') {
           console.log('[BATCH_REG] Brevo service initialized');
         }

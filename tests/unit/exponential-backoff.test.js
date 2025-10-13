@@ -206,6 +206,7 @@ describe('ExponentialBackoff', () => {
         .mockRejectedValueOnce(new Error('Error 2'))
         .mockRejectedValueOnce(new Error('Error 3'));
 
+      // Capture error for detailed inspection of error aggregation across all retry attempts
       const resultPromise = backoff.execute(operation);
       const errorCapture = resultPromise.catch(error => error);
 
@@ -398,7 +399,7 @@ describe('ExponentialBackoff', () => {
       const operation = vi.fn().mockRejectedValue(authError);
 
       const resultPromise = backoff.execute(operation);
-      const errorCapture = resultPromise.catch(error => error);
+      const errorCapture = resultPromise.catch(error => error); // Capture to prevent unhandled rejection
 
       await vi.runAllTimersAsync();
       await errorCapture;
