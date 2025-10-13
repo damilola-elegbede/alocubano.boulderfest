@@ -13,16 +13,24 @@ import { beforeAll, afterAll } from 'vitest';
 import { configureEnvironment, cleanupEnvironment, validateEnvironment, TEST_ENVIRONMENTS } from './config/test-environment.js';
 
 /**
- * CRITICAL: Process cleanup handlers
+ * CRITICAL: Process cleanup handlers (ASYNC)
  * Ensures vitest processes don't hang after test completion
+ * Addresses memory exhaustion issue with multiple hung workers
  */
-const forceCleanup = () => {
+const forceCleanup = async () => {
   // Close any open database connections
   if (global.testDbClient) {
     try {
-      global.testDbClient.close();
+      if (typeof global.testDbClient.close === 'function') {
+        await Promise.race([
+          global.testDbClient.close(),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Connection close timeout')), 5000)
+          )
+        ]);
+      }
     } catch (e) {
-      // Ignore errors during cleanup
+      console.warn('⚠️ Error closing database connection:', e.message);
     }
   }
 
@@ -35,16 +43,32 @@ const forceCleanup = () => {
       clearInterval(i);
     }
   }
+
+  console.log('🧹 Unit test force cleanup completed');
 };
 
-// Register cleanup handlers
-process.on('exit', forceCleanup);
-process.on('SIGINT', () => {
-  forceCleanup();
+// Register synchronous cleanup handlers for signals
+process.on('exit', () => {
+  console.log('🚪 Process exiting - cleanup handlers executed');
+});
+
+process.on('SIGINT', async () => {
+  console.log('⚠️ SIGINT received - forcing cleanup and exit');
+  try {
+    await forceCleanup();
+  } catch (error) {
+    console.warn('⚠️ Cleanup error on SIGINT:', error.message);
+  }
   process.exit(0);
 });
-process.on('SIGTERM', () => {
-  forceCleanup();
+
+process.on('SIGTERM', async () => {
+  console.log('⚠️ SIGTERM received - forcing cleanup and exit');
+  try {
+    await forceCleanup();
+  } catch (error) {
+    console.warn('⚠️ Cleanup error on SIGTERM:', error.message);
+  }
   process.exit(0);
 });
 
@@ -131,7 +155,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   // Minimal cleanup for unit tests + force cleanup to prevent hanging processes
-  forceCleanup();
+  await forceCleanup();
 
   // Additional cleanup for fork pool
   if (global.gc) {

@@ -40,7 +40,8 @@ export default defineConfig({
       forks: {
         singleFork: false,      // Use multiple forks for parallelism
         isolate: true,          // Maintain test isolation
-        execArgv: ['--max-old-space-size=2048']  // 2GB memory limit per fork (down from 4GB)
+        execArgv: ['--max-old-space-size=2048'],  // 2GB memory limit per fork (down from 4GB)
+        exitTimeout: 5000       // Force kill workers after 5 seconds if they don't exit
       }
     },
 

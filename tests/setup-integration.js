@@ -14,22 +14,27 @@ import { configureEnvironment, cleanupEnvironment, validateEnvironment, TEST_ENV
 import { getTestIsolationManager } from '../lib/test-isolation-manager.js';
 
 /**
- * CRITICAL: Process cleanup handlers
+ * CRITICAL: Process cleanup handlers (ASYNC)
  * Ensures vitest processes don't hang after test completion
  * Addresses memory exhaustion issue with multiple hung workers
+ *
+ * FIXED: Made async and properly awaits database cleanup
  */
-const forceCleanup = () => {
-  // Close any open database connections from test isolation manager
+const forceCleanup = async () => {
   try {
+    // Close any open database connections from test isolation manager
     const isolationManager = getTestIsolationManager();
     if (isolationManager) {
-      // Force close all worker databases
-      isolationManager.cleanupWorkerDatabaseFile().catch(err => {
+      // CRITICAL FIX: AWAIT database cleanup instead of fire-and-forget
+      try {
+        await isolationManager.cleanupWorkerDatabaseFile();
+        console.log('✅ Worker database cleaned up successfully');
+      } catch (err) {
         console.warn('⚠️ Error during force cleanup of worker database:', err.message);
-      });
+      }
     }
   } catch (e) {
-    // Ignore errors during cleanup
+    console.warn('⚠️ Error getting isolation manager:', e.message);
   }
 
   // Clear any timers/intervals
@@ -45,30 +50,30 @@ const forceCleanup = () => {
   console.log('🧹 Force cleanup completed - process ready to exit');
 };
 
-// Register cleanup handlers to prevent hung workers
-process.on('exit', forceCleanup);
-process.on('SIGINT', () => {
+// Register synchronous cleanup handlers for signals
+// Note: 'exit' event doesn't support async, so we do best-effort sync cleanup
+process.on('exit', () => {
+  console.log('🚪 Process exiting - cleanup handlers executed');
+});
+
+process.on('SIGINT', async () => {
   console.log('⚠️ SIGINT received - forcing cleanup and exit');
-  forceCleanup();
+  try {
+    await forceCleanup();
+  } catch (error) {
+    console.warn('⚠️ Cleanup error on SIGINT:', error.message);
+  }
   process.exit(0);
 });
-process.on('SIGTERM', () => {
+
+process.on('SIGTERM', async () => {
   console.log('⚠️ SIGTERM received - forcing cleanup and exit');
-  forceCleanup();
+  try {
+    await forceCleanup();
+  } catch (error) {
+    console.warn('⚠️ Cleanup error on SIGTERM:', error.message);
+  }
   process.exit(0);
-});
-
-// Add timeout mechanism to kill hung workers after test completion
-// This prevents the memory exhaustion issue from hung vitest processes
-let hangDetectionTimeout = null;
-const HANG_DETECTION_TIMEOUT = 30000; // 30 seconds after all tests complete
-
-process.on('beforeExit', () => {
-  // Start hang detection timer when tests complete
-  hangDetectionTimeout = setTimeout(() => {
-    console.error('❌ Worker process hung after test completion - forcing exit');
-    process.exit(1);
-  }, HANG_DETECTION_TIMEOUT);
 });
 
 // Import secret validation for integration tests (simplified version of E2E secret validation)
@@ -626,16 +631,26 @@ afterAll(async () => {
     // Clear the force-exit timeout if cleanup completed successfully
     clearTimeout(forceExitTimeout);
 
-    // Add explicit process.exit with delay to ensure worker exits
+    // Set exit code (allows process to exit naturally)
+    process.exitCode = 0;
+
+    // Hard kill timeout as safety net (unreferenced so it doesn't block exit)
     setTimeout(() => {
-      console.log(`🚪 Worker ${workerId} exiting gracefully`);
-      process.exit(0);
-    }, 100);
+      console.error('❌ FORCE KILL: Worker did not exit gracefully');
+      process.kill(process.pid, 'SIGKILL');
+    }, 1000).unref();
   } catch (error) {
     console.error(`❌ Worker ${workerId} cleanup error:`, error.message);
     clearTimeout(forceExitTimeout);
-    // Force exit on error
-    setTimeout(() => process.exit(1), 100);
+
+    // Set error exit code
+    process.exitCode = 1;
+
+    // Hard kill timeout as safety net (unreferenced so it doesn't block exit)
+    setTimeout(() => {
+      console.error('❌ FORCE KILL: Worker did not exit after error');
+      process.kill(process.pid, 'SIGKILL');
+    }, 1000).unref();
   }
 }, config.timeouts.cleanup);
 
