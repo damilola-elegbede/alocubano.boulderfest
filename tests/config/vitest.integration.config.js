@@ -32,21 +32,24 @@ export default defineConfig({
       'tests/helpers/**'
     ],
 
-    // PARALLEL EXECUTION ENABLED!
-    // In-memory SQLite allows safe parallel test execution
-    pool: 'threads',
+    // PARALLEL EXECUTION WITH RESOURCE LIMITS
+    // Switch to forks pool for better isolation and memory management
+    // Reduced worker count to prevent memory exhaustion (was causing hangs)
+    pool: 'forks',
     poolOptions: {
-      threads: {
-        minThreads: 2,
-        maxThreads: process.env.CI === 'true' ? 4 : 2, // More workers in CI
-        isolate: true // Maintain test isolation
+      forks: {
+        singleFork: false,      // Use multiple forks for parallelism
+        isolate: true,          // Maintain test isolation
+        execArgv: ['--max-old-space-size=2048']  // 2GB memory limit per fork (down from 4GB)
       }
     },
 
-    // Enable concurrent test execution (no more database locks!)
-    maxConcurrency: 4,
-    minWorkers: 2,
-    maxWorkers: process.env.CI === 'true' ? 4 : 2,
+    // Reduced concurrency to prevent memory exhaustion
+    // CI: 2 workers × 2GB = 4GB max (down from 4 workers × 4GB+ = 16GB+)
+    // Local: 1 worker × 2GB = 2GB max (down from 2 workers × 4GB+ = 8GB+)
+    maxConcurrency: process.env.CI === 'true' ? 2 : 1,
+    minWorkers: process.env.CI === 'true' ? 1 : 1,
+    maxWorkers: process.env.CI === 'true' ? 2 : 1,
 
     // Fewer retries needed with in-memory databases
     retry: process.env.CI === 'true' ? 1 : 0,

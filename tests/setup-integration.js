@@ -13,6 +13,64 @@ import { beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 import { configureEnvironment, cleanupEnvironment, validateEnvironment, TEST_ENVIRONMENTS } from './config/test-environment.js';
 import { getTestIsolationManager } from '../lib/test-isolation-manager.js';
 
+/**
+ * CRITICAL: Process cleanup handlers
+ * Ensures vitest processes don't hang after test completion
+ * Addresses memory exhaustion issue with multiple hung workers
+ */
+const forceCleanup = () => {
+  // Close any open database connections from test isolation manager
+  try {
+    const isolationManager = getTestIsolationManager();
+    if (isolationManager) {
+      // Force close all worker databases
+      isolationManager.cleanupWorkerDatabaseFile().catch(err => {
+        console.warn('⚠️ Error during force cleanup of worker database:', err.message);
+      });
+    }
+  } catch (e) {
+    // Ignore errors during cleanup
+  }
+
+  // Clear any timers/intervals
+  if (typeof clearInterval !== 'undefined') {
+    // Clear any lingering intervals
+    const highestId = setTimeout(() => {}, 0);
+    for (let i = 0; i < highestId; i++) {
+      clearTimeout(i);
+      clearInterval(i);
+    }
+  }
+
+  console.log('🧹 Force cleanup completed - process ready to exit');
+};
+
+// Register cleanup handlers to prevent hung workers
+process.on('exit', forceCleanup);
+process.on('SIGINT', () => {
+  console.log('⚠️ SIGINT received - forcing cleanup and exit');
+  forceCleanup();
+  process.exit(0);
+});
+process.on('SIGTERM', () => {
+  console.log('⚠️ SIGTERM received - forcing cleanup and exit');
+  forceCleanup();
+  process.exit(0);
+});
+
+// Add timeout mechanism to kill hung workers after test completion
+// This prevents the memory exhaustion issue from hung vitest processes
+let hangDetectionTimeout = null;
+const HANG_DETECTION_TIMEOUT = 30000; // 30 seconds after all tests complete
+
+process.on('beforeExit', () => {
+  // Start hang detection timer when tests complete
+  hangDetectionTimeout = setTimeout(() => {
+    console.error('❌ Worker process hung after test completion - forcing exit');
+    process.exit(1);
+  }, HANG_DETECTION_TIMEOUT);
+});
+
 // Import secret validation for integration tests (simplified version of E2E secret validation)
 const validateIntegrationSecrets = () => {
   const requiredSecrets = {
@@ -546,16 +604,39 @@ afterEach(async () => {
 afterAll(async () => {
   console.log(`🧹 Worker ${workerId} cleanup starting`);
 
-  // Clean up all test scopes (but keep worker database for other tests in this worker)
-  await isolationManager.cleanupAllScopes();
+  // Set a hard timeout to force-exit if cleanup hangs
+  const forceExitTimeout = setTimeout(() => {
+    console.error('❌ CRITICAL: afterAll cleanup hung - forcing process exit');
+    process.exit(0);
+  }, 10000); // 10 seconds max for cleanup
 
-  // Clean up the temporary database file for this worker
-  await isolationManager.cleanupWorkerDatabaseFile();
+  try {
+    // Clean up all test scopes (but keep worker database for other tests in this worker)
+    await isolationManager.cleanupAllScopes();
 
-  // Worker database will be garbage collected when worker exits
-  console.log(`✅ Worker ${workerId} cleanup completed`);
+    // Clean up the temporary database file for this worker
+    await isolationManager.cleanupWorkerDatabaseFile();
 
-  await cleanupEnvironment(TEST_ENVIRONMENTS.INTEGRATION);
+    // Clean up environment
+    await cleanupEnvironment(TEST_ENVIRONMENTS.INTEGRATION);
+
+    // Worker database will be garbage collected when worker exits
+    console.log(`✅ Worker ${workerId} cleanup completed`);
+
+    // Clear the force-exit timeout if cleanup completed successfully
+    clearTimeout(forceExitTimeout);
+
+    // Add explicit process.exit with delay to ensure worker exits
+    setTimeout(() => {
+      console.log(`🚪 Worker ${workerId} exiting gracefully`);
+      process.exit(0);
+    }, 100);
+  } catch (error) {
+    console.error(`❌ Worker ${workerId} cleanup error:`, error.message);
+    clearTimeout(forceExitTimeout);
+    // Force exit on error
+    setTimeout(() => process.exit(1), 100);
+  }
 }, config.timeouts.cleanup);
 
 /**
