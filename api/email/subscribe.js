@@ -170,7 +170,6 @@ export default async function handler(req, res) {
 
     // Check if we're in test mode
     const isTestMode = process.env.NODE_ENV === 'test' ||
-                      process.env.INTEGRATION_TEST_MODE === 'true' ||
                       isPreviewDeployment;
 
     // For preview deployments without Brevo configured, return mock success
