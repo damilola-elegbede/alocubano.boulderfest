@@ -59,7 +59,7 @@ process.on('SIGINT', async () => {
   } catch (error) {
     console.warn('⚠️ Cleanup error on SIGINT:', error.message);
   }
-  process.exit(0);
+  process.exit(130); // 128 + 2 (SIGINT signal number)
 });
 
 process.on('SIGTERM', async () => {
@@ -69,7 +69,7 @@ process.on('SIGTERM', async () => {
   } catch (error) {
     console.warn('⚠️ Cleanup error on SIGTERM:', error.message);
   }
-  process.exit(0);
+  process.exit(143); // 128 + 15 (SIGTERM signal number)
 });
 
 /**
