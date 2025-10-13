@@ -191,6 +191,8 @@ describe('ExponentialBackoff', () => {
       const operation = vi.fn().mockRejectedValue(new Error('Always fails'));
 
       const resultPromise = backoff.execute(operation);
+      // Suppress unhandled rejection warnings during test
+      resultPromise.catch(() => {});
 
       await expect(async () => {
         await vi.runAllTimersAsync();
@@ -209,6 +211,8 @@ describe('ExponentialBackoff', () => {
 
       try {
         const resultPromise = backoff.execute(operation);
+        // Suppress unhandled rejection warnings during test
+        resultPromise.catch(() => {});
         await vi.runAllTimersAsync();
         await resultPromise;
       } catch (error) {
@@ -346,6 +350,8 @@ describe('ExponentialBackoff', () => {
 
       try {
         const resultPromise = backoff.execute(operation);
+        // Suppress unhandled rejection warnings during test
+        resultPromise.catch(() => {});
         await vi.runAllTimersAsync();
         await resultPromise;
       } catch (error) {
@@ -400,6 +406,8 @@ describe('ExponentialBackoff', () => {
 
       try {
         const resultPromise = backoff.execute(operation);
+        // Suppress unhandled rejection warnings during test
+        resultPromise.catch(() => {});
         await vi.runAllTimersAsync();
         await resultPromise;
       } catch (error) {
