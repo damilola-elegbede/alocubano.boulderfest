@@ -115,7 +115,7 @@ function setupPageIntegrations(cartManager) {
 function setupTicketsPageIntegration(cartManager) {
     // Listen for ticket selection updates
     document.addEventListener('ticket-quantity-changed', async(event) => {
-        const { ticketType, quantity, price, name, eventId } = event.detail;
+        const { ticketType, quantity, price, name, description, eventId } = event.detail;
 
         try {
             if (quantity > 0) {
@@ -150,6 +150,7 @@ function setupTicketsPageIntegration(cartManager) {
                     quantity,
                     price,
                     name,
+                    description,
                     eventId,
                     eventName,
                     eventDate,

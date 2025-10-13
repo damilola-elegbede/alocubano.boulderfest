@@ -465,6 +465,7 @@ class TicketSelection {
         // Read ticket data from HTML data attributes (static tickets)
         const price = parseFloat(card.dataset.price) * 100; // Convert dollars to cents
         const ticketName = card.dataset.name;
+        const ticketDescription = card.dataset.description || '';
 
         console.log('🎫 [DIAGNOSTIC] Price:', price, 'Name:', ticketName);
 
@@ -548,6 +549,7 @@ class TicketSelection {
             quantity: currentQuantity,
             price,
             name: ticketName,
+            description: ticketDescription,
             eventId: cardEventId,
             eventName: eventName
         };
@@ -584,6 +586,7 @@ class TicketSelection {
         // Read ticket data from HTML data attributes (static tickets)
         const price = parseFloat(card.dataset.price) * 100; // Convert dollars to cents
         const ticketName = card.dataset.name;
+        const ticketDescription = card.dataset.description || '';
 
         if (!ticketName || !price) {
             console.error(`Missing ticket data in HTML for: ${ticketType}`);
@@ -650,6 +653,7 @@ class TicketSelection {
             quantity: currentQuantity,
             price,
             name: ticketName,
+            description: ticketDescription,
             eventId: cardEventId,
             eventName: eventName
         };

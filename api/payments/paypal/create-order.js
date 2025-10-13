@@ -16,6 +16,7 @@ import {
 } from '../../../lib/test-mode-utils.js';
 import { v4 as uuidv4 } from 'uuid';
 import { generateOrderNumber } from '../../../lib/order-number-generator.js';
+import { sanitizeProductName, sanitizeProductDescription } from '../../../lib/payment-sanitization.js';
 
 // Maximum request body size (100KB)
 const MAX_BODY_SIZE = 100 * 1024;
@@ -126,6 +127,20 @@ async function createOrderHandler(req, res) {
         });
       }
 
+      // Validate required fields for tickets
+      if (item.type === 'ticket') {
+        if (!item.ticketType) {
+          return res.status(400).json({
+            error: `Invalid ticket data - missing ticket type for: ${item.name || 'Unknown'}`
+          });
+        }
+        if (!item.eventDate) {
+          return res.status(400).json({
+            error: `Invalid ticket data - missing event date for: ${item.name || 'Unknown'}`
+          });
+        }
+      }
+
       const itemTotal = item.price * item.quantity;
       totalAmount += itemTotal;
 
@@ -144,13 +159,13 @@ async function createOrderHandler(req, res) {
 
       // Prepare sanitized item for PayPal (use camelCase for SDK)
       orderItems.push({
-        name: item.name.substring(0, 127), // PayPal name limit
+        name: sanitizeProductName(item.name).substring(0, 127), // Sanitized: "Event-Ticket" (PayPal limit: 127 chars)
         unitAmount: {
           currencyCode: 'USD',
           value: priceInDollars // PayPal expects dollars, not cents
         },
         quantity: item.quantity.toString(),
-        description: item.description,
+        description: sanitizeProductDescription(item.description || item.name, 'paypal'), // Sanitized with PayPal 127 char limit enforced
         category: hasTickets ? 'DIGITAL_GOODS' : 'DONATION'
       });
     }
