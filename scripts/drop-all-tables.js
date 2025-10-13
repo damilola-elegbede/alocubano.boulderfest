@@ -18,6 +18,7 @@
 
 import dotenv from 'dotenv';
 import { getDatabaseClient } from '../lib/database.js';
+import { ensureDatabaseUrl } from '../lib/database-defaults.js';
 import readline from 'readline';
 
 // Load environment variables from .env.vercel
@@ -78,10 +79,7 @@ function askConfirmation(question) {
  */
 async function dropAllTables() {
   // Set default local database if not configured
-  if (!process.env.TURSO_DATABASE_URL && !process.env.DATABASE_URL) {
-    process.env.DATABASE_URL = 'file:local.db';
-    console.log('📁 Using local database: local.db');
-  }
+  ensureDatabaseUrl();
 
   console.log('\n🗑️  Drop All Tables Script\n' + '='.repeat(50));
 

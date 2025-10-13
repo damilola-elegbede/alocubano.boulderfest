@@ -14,13 +14,11 @@
 
 import { bootstrapService } from '../lib/bootstrap-service.js';
 import { logger } from '../lib/logger.js';
+import { ensureDatabaseUrl } from '../lib/database-defaults.js';
 
 async function runBootstrap() {
   // Set default local database if not configured
-  if (!process.env.TURSO_DATABASE_URL && !process.env.DATABASE_URL) {
-    process.env.DATABASE_URL = 'file:local.db';
-    logger.log('📁 Using local database: local.db');
-  }
+  ensureDatabaseUrl();
 
   logger.log('\n' + '═'.repeat(60));
   logger.log('🚀 Bootstrap Data Loading');

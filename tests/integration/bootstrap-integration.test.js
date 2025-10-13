@@ -57,12 +57,13 @@ describe('Bootstrap Integration Tests', () => {
     expect(eventsResult.rows.length).toBe(productionEvents.length);
 
     // Verify event data matches bootstrap config
-    const event1 = eventsResult.rows.find(e => e.id === 1);
-    expect(event1).toBeDefined();
-
-    // Find the matching event in bootstrap data array
+    // Find the first event in bootstrap data array
     const event1Config = bootstrapData.events.find(e => e.id === 1);
     expect(event1Config).toBeDefined();
+
+    // Match event by slug instead of hardcoded ID
+    const event1 = eventsResult.rows.find(e => e.slug === event1Config.slug);
+    expect(event1).toBeDefined();
 
     expect(event1.name).toBe(event1Config.name);
     expect(event1.slug).toBe(event1Config.slug);

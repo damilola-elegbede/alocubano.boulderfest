@@ -65,7 +65,7 @@ describe('Reminder Scheduler Integration', () => {
         false
       );
 
-      expect(count).toBe(5); // immediate, 24hr-post, 1-week-before, 72hr-before, 24hr-before
+      expect(count).toBe(5); // initial, 24hr-post, 1-week-before, 72hr-before, 24hr-before
 
       // Verify reminders in database
       const result = await dbClient.execute({
@@ -84,7 +84,7 @@ describe('Reminder Scheduler Integration', () => {
       expect(types).toContain('24hr-before');
     });
 
-    test('should schedule immediate reminder 1 hour after purchase', async () => {
+    test('should schedule initial reminder 1 hour after purchase', async () => {
       const transactionId = await createTestTransaction({ isTest: false });
       const deadline = new Date(Date.now() + (30 * 24 * 60 * 60 * 1000));
 
@@ -312,7 +312,7 @@ describe('Reminder Scheduler Integration', () => {
         false
       );
 
-      // Should only schedule immediate reminder (1 hour from now)
+      // Should only schedule initial reminder (1 hour from now)
       // All other reminders (24hr, 1-week, 72hr, 24hr before) would be after deadline
       expect(count).toBeGreaterThanOrEqual(0); // May be 0-2 depending on timing
       expect(count).toBeLessThan(5);

@@ -6,6 +6,7 @@
 import { promises as fs } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { ensureDatabaseUrl } from '../lib/database-defaults.js';
 import { getDatabaseClient } from "../lib/database.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -992,12 +993,13 @@ class MigrationSystem {
 /**
  * CLI interface for migration system
  */
+
+/**
+ * CLI interface for migration system
+ */
 async function main() {
   // Set default local database if not configured
-  if (!process.env.TURSO_DATABASE_URL && !process.env.DATABASE_URL) {
-    process.env.DATABASE_URL = 'file:local.db';
-    console.log('📁 Using local database: local.db');
-  }
+  ensureDatabaseUrl();
 
   const args = process.argv.slice(2);
   const command = args[0] || "run";

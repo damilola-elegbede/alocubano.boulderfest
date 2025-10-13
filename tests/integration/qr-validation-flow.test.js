@@ -12,6 +12,9 @@ describe('QR Validation Flow - Integration Tests', () => {
   let db;
   let qrService;
   let testEventId;
+  let timestamp;
+  let tx1Id, tx2Id, tx3Id, txExtraIds;
+  let ticket1Id, ticket2Id, ticket3Id;
 
   beforeAll(async () => {
     // Set up test environment
@@ -19,11 +22,13 @@ describe('QR Validation Flow - Integration Tests', () => {
     process.env.QR_SECRET_KEY = 'test-qr-secret-key-minimum-32-chars-long-for-integration';
     process.env.WALLET_AUTH_SECRET = 'test-wallet-auth-secret-minimum-32-chars-long';
 
-    db = await getDbClient();
     qrService = getQRTokenService();
   });
 
   beforeEach(async () => {
+    // Get fresh scoped client for each test to prevent PK collisions
+    db = await getDbClient();
+
     // Create test event for foreign key references (fresh for each test)
     testEventId = await createTestEvent(db, {
       slug: `qr-test-event-${Date.now()}`,
@@ -33,50 +38,59 @@ describe('QR Validation Flow - Integration Tests', () => {
     });
 
     // Create test transactions (required for foreign key constraints)
-    await db.execute({
-      sql: `
-        INSERT INTO transactions (
-          id, transaction_id, type, status, amount_cents, currency,
-          customer_email, customer_name, order_data, event_id, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
-      `,
-      args: [1, 'tx-qr-001', 'tickets', 'completed', 10000, 'USD', 'test@example.com', 'Test User', '{}', testEventId]
-    });
+    // Use auto-increment for id, capture lastInsertRowid for dependent rows
+    timestamp = Date.now();
 
-    await db.execute({
+    const tx1Result = await db.execute({
       sql: `
         INSERT INTO transactions (
-          id, transaction_id, type, status, amount_cents, currency,
+          transaction_id, type, status, amount_cents, currency,
           customer_email, customer_name, order_data, event_id, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
       `,
-      args: [2, 'tx-qr-002', 'tickets', 'completed', 10000, 'USD', 'test@example.com', 'Test User', '{}', testEventId]
+      args: [`tx-qr-001-${timestamp}`, 'tickets', 'completed', 10000, 'USD', 'test@example.com', 'Test User', '{}', testEventId]
     });
+    tx1Id = tx1Result.lastInsertRowid;
 
-    await db.execute({
+    const tx2Result = await db.execute({
       sql: `
         INSERT INTO transactions (
-          id, transaction_id, type, status, amount_cents, currency,
+          transaction_id, type, status, amount_cents, currency,
           customer_email, customer_name, order_data, event_id, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
       `,
-      args: [3, 'tx-qr-003', 'tickets', 'completed', 10000, 'USD', 'test@example.com', 'Test User', '{}', testEventId]
+      args: [`tx-qr-002-${timestamp}`, 'tickets', 'completed', 10000, 'USD', 'test@example.com', 'Test User', '{}', testEventId]
     });
+    tx2Id = tx2Result.lastInsertRowid;
+
+    const tx3Result = await db.execute({
+      sql: `
+        INSERT INTO transactions (
+          transaction_id, type, status, amount_cents, currency,
+          customer_email, customer_name, order_data, event_id, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+      `,
+      args: [`tx-qr-003-${timestamp}`, 'tickets', 'completed', 10000, 'USD', 'test@example.com', 'Test User', '{}', testEventId]
+    });
+    tx3Id = tx3Result.lastInsertRowid;
 
     // Create additional transactions for tests that create their own tickets
-    for (let i = 100; i <= 110; i++) {
-      await db.execute({
+    txExtraIds = [];
+    for (let i = 0; i < 11; i++) {
+      const result = await db.execute({
         sql: `
           INSERT INTO transactions (
-            id, transaction_id, type, status, amount_cents, currency,
+            transaction_id, type, status, amount_cents, currency,
             customer_email, customer_name, order_data, event_id, created_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
         `,
-        args: [i, `tx-qr-${i}`, 'tickets', 'completed', 10000, 'USD', 'test@example.com', 'Test User', '{}', testEventId]
+        args: [`tx-qr-extra-${i}-${timestamp}`, 'tickets', 'completed', 10000, 'USD', 'test@example.com', 'Test User', '{}', testEventId]
       });
+      txExtraIds.push(result.lastInsertRowid);
     }
 
-    // Create test tickets
+    // Create test tickets with unique IDs using timestamp
+    ticket1Id = `QR-TEST-001-${timestamp}`;
     await db.execute({
       sql: `
         INSERT INTO tickets (
@@ -87,8 +101,8 @@ describe('QR Validation Flow - Integration Tests', () => {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
       `,
       args: [
-        'QR-TEST-001',
-        1,
+        ticket1Id,
+        tx1Id,
         'full-pass',
         10000,
         'Alice',
@@ -104,6 +118,7 @@ describe('QR Validation Flow - Integration Tests', () => {
     });
 
     // Create ticket at scan limit
+    ticket2Id = `QR-TEST-002-${timestamp}`;
     await db.execute({
       sql: `
         INSERT INTO tickets (
@@ -114,8 +129,8 @@ describe('QR Validation Flow - Integration Tests', () => {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
       `,
       args: [
-        'QR-TEST-002',
-        2,
+        ticket2Id,
+        tx2Id,
         'full-pass',
         10000,
         'Bob',
@@ -131,6 +146,7 @@ describe('QR Validation Flow - Integration Tests', () => {
     });
 
     // Create invalidated ticket (was "suspended")
+    ticket3Id = `QR-TEST-003-${timestamp}`;
     await db.execute({
       sql: `
         INSERT INTO tickets (
@@ -141,8 +157,8 @@ describe('QR Validation Flow - Integration Tests', () => {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
       `,
       args: [
-        'QR-TEST-003',
-        3,
+        ticket3Id,
+        tx3Id,
         'full-pass',
         10000,
         'Charlie',
@@ -164,7 +180,7 @@ describe('QR Validation Flow - Integration Tests', () => {
 
   describe('Complete QR Scan Workflow', () => {
     it('should validate ticket and increment scan count', async () => {
-      const ticketId = 'QR-TEST-001';
+      const ticketId = ticket1Id;
       const token = await qrService.getOrCreateToken(ticketId);
 
       const response = await testRequest('POST', '/api/tickets/validate', { token });
@@ -185,7 +201,7 @@ describe('QR Validation Flow - Integration Tests', () => {
     });
 
     it('should set first_scanned_at on initial scan', async () => {
-      const ticketId = 'QR-TEST-001';
+      const ticketId = ticket1Id;
 
       // Check first_scanned_at was set
       const result = await db.execute({
@@ -206,7 +222,7 @@ describe('QR Validation Flow - Integration Tests', () => {
     });
 
     it('should reject scan when limit reached', async () => {
-      const ticketId = 'QR-TEST-002';
+      const ticketId = ticket2Id;
       const token = await qrService.getOrCreateToken(ticketId);
 
       const response = await testRequest('POST', '/api/tickets/validate', { token });
@@ -217,7 +233,7 @@ describe('QR Validation Flow - Integration Tests', () => {
     });
 
     it('should reject scan for invalidated ticket', async () => {
-      const ticketId = 'QR-TEST-003';
+      const ticketId = ticket3Id;
       const token = await qrService.getOrCreateToken(ticketId);
 
       const response = await testRequest('POST', '/api/tickets/validate', { token });
@@ -262,7 +278,7 @@ describe('QR Validation Flow - Integration Tests', () => {
 
   describe('Scan Count Atomicity', () => {
     it('should prevent race conditions in concurrent scans', async () => {
-      const ticketId = 'QR-CONCURRENT-001';
+      const ticketId = `QR-CONCURRENT-001-${timestamp}`;
 
       // Create fresh ticket
       await db.execute({
@@ -276,7 +292,7 @@ describe('QR Validation Flow - Integration Tests', () => {
         `,
         args: [
           ticketId,
-          100,
+          txExtraIds[0],
           'full-pass',
           10000,
           'Test',
@@ -327,7 +343,7 @@ describe('QR Validation Flow - Integration Tests', () => {
     });
 
     it('should verify rowsAffected after atomic update', async () => {
-      const ticketId = 'QR-ATOMIC-001';
+      const ticketId = `QR-ATOMIC-001-${timestamp}`;
 
       await db.execute({
         sql: `
@@ -340,7 +356,7 @@ describe('QR Validation Flow - Integration Tests', () => {
         `,
         args: [
           ticketId,
-          101,
+          txExtraIds[1],
           'full-pass',
           10000,
           'Test',
@@ -381,7 +397,7 @@ describe('QR Validation Flow - Integration Tests', () => {
     });
 
     it('should reject cancelled ticket', async () => {
-      const ticketId = 'QR-CANCELLED-001';
+      const ticketId = `QR-CANCELLED-001-${timestamp}`;
 
       await db.execute({
         sql: `
@@ -394,7 +410,7 @@ describe('QR Validation Flow - Integration Tests', () => {
         `,
         args: [
           ticketId,
-          102,
+          txExtraIds[2],
           'full-pass',
           10000,
           'Test',
@@ -419,7 +435,7 @@ describe('QR Validation Flow - Integration Tests', () => {
     });
 
     it('should reject refunded ticket', async () => {
-      const ticketId = 'QR-REFUNDED-001';
+      const ticketId = `QR-REFUNDED-001-${timestamp}`;
 
       await db.execute({
         sql: `
@@ -432,7 +448,7 @@ describe('QR Validation Flow - Integration Tests', () => {
         `,
         args: [
           ticketId,
-          103,
+          txExtraIds[3],
           'full-pass',
           10000,
           'Test',
@@ -459,7 +475,7 @@ describe('QR Validation Flow - Integration Tests', () => {
 
   describe('Scan Audit Logging', () => {
     it('should log successful scan to qr_validations table', async () => {
-      const ticketId = 'QR-AUDIT-001';
+      const ticketId = `QR-AUDIT-001-${timestamp}`;
 
       await db.execute({
         sql: `
@@ -472,7 +488,7 @@ describe('QR Validation Flow - Integration Tests', () => {
         `,
         args: [
           ticketId,
-          104,
+          txExtraIds[4],
           'full-pass',
           10000,
           'Test',
@@ -515,7 +531,7 @@ describe('QR Validation Flow - Integration Tests', () => {
     });
 
     it('should record validation source (web, apple_wallet, google_wallet)', async () => {
-      const ticketId = 'QR-SOURCE-001';
+      const ticketId = `QR-SOURCE-001-${timestamp}`;
 
       await db.execute({
         sql: `
@@ -528,7 +544,7 @@ describe('QR Validation Flow - Integration Tests', () => {
         `,
         args: [
           ticketId,
-          105,
+          txExtraIds[5],
           'full-pass',
           10000,
           'Test',
@@ -570,7 +586,7 @@ describe('QR Validation Flow - Integration Tests', () => {
 
   describe('IP Tracking', () => {
     it('should extract and log client IP address', async () => {
-      const ticketId = 'QR-IP-001';
+      const ticketId = `QR-IP-001-${timestamp}`;
 
       await db.execute({
         sql: `
@@ -583,7 +599,7 @@ describe('QR Validation Flow - Integration Tests', () => {
         `,
         args: [
           ticketId,
-          106,
+          txExtraIds[6],
           'full-pass',
           10000,
           'Test',
@@ -637,7 +653,7 @@ describe('QR Validation Flow - Integration Tests', () => {
 
   describe('Performance', () => {
     it('should complete validation under 100ms', async () => {
-      const ticketId = 'QR-PERF-001';
+      const ticketId = `QR-PERF-001-${timestamp}`;
 
       await db.execute({
         sql: `
@@ -650,7 +666,7 @@ describe('QR Validation Flow - Integration Tests', () => {
         `,
         args: [
           ticketId,
-          107,
+          txExtraIds[7],
           'full-pass',
           10000,
           'Test',

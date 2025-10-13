@@ -120,6 +120,9 @@ export class CartManager extends EventTarget {
             return;
         }
 
+        // Detect test mode BEFORE loading from storage
+        this.testMode = this.detectTestMode();
+
         // Load from localStorage
         this.loadFromStorage();
 
@@ -517,7 +520,17 @@ export class CartManager extends EventTarget {
 
     loadFromStorage() {
         try {
-            const stored = localStorage.getItem(this.storageKey);
+            // Check both test and normal storage keys
+            const testKey = 'alocubano_cart_test';
+            const normalKey = this.storageKey;
+
+            const testCart = localStorage.getItem(testKey);
+            const normalCart = localStorage.getItem(normalKey);
+
+            // Prefer test cart if it exists, otherwise use normal cart
+            const stored = testCart ?? normalCart;
+            const activeKey = testCart ? testKey : normalKey;
+
             if (stored) {
                 const parsed = JSON.parse(stored);
 
@@ -543,6 +556,12 @@ export class CartManager extends EventTarget {
                 // Validate and set stored data
                 if (this.isValidStoredCart(parsed)) {
                     this.state = parsed;
+
+                    // Update storageKey to match the active key we loaded from
+                    // This ensures future saves go to the correct location
+                    if (activeKey === testKey && !this.storageKey.includes('test')) {
+                        this.storageKey = testKey;
+                    }
                 }
             }
         } catch (error) {
@@ -565,7 +584,8 @@ export class CartManager extends EventTarget {
     setupEventListeners() {
     // Listen for storage changes from other tabs
         window.addEventListener('storage', (event) => {
-            if (event.key === this.storageKey) {
+            // Watch both normal and test cart keys for cross-tab sync
+            if (event.key === this.storageKey || event.key === 'alocubano_cart_test') {
                 this.loadFromStorage();
                 this.emit('cart:synced', this.getState());
             }

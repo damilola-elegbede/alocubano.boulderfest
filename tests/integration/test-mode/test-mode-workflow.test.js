@@ -22,8 +22,8 @@ describe('Test Mode End-to-End Workflow', () => {
 
     // Create test event for foreign key constraint
     testEventId = await createTestEvent(client, {
-      slug: 'test-mode-workflow-event',
       name: 'Test Mode Workflow Event'
+      // Let createTestEvent generate unique slug
     });
   });
 

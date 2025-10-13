@@ -60,7 +60,7 @@ describe('Integration: Database Data Integrity', () => {
     // Clean up test data before each test
     try {
       await db.execute({
-        sql: 'DELETE FROM qr_validations WHERE ticket_id IN (SELECT id FROM tickets WHERE ticket_id LIKE ?)',
+        sql: 'DELETE FROM qr_validations WHERE ticket_id LIKE ?',
         args: ['TKT-INTEGRITY-%']
       });
     } catch (error) {

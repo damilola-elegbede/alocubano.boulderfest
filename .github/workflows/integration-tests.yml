@@ -146,11 +146,11 @@ jobs:
           # Record start time
           start_time=$(date +%s%3N)
 
-          # Run tests once with both JSON and verbose output
-          set +e  # Allow command to fail without stopping script
-          CI=true timeout 280s npm run test:integration -- --reporter=json --reporter=verbose --no-color 2>&1 | tee integration-test-output.log > integration-test-results-raw.json
+          # Run tests once with verbose output and capture all output
+          set +e
+          CI=true timeout 280s npm run test:integration -- --reporter=verbose --no-color 2>&1 | tee integration-test-output.log
           test_exit_code=$?
-          set -e  # Re-enable exit on error
+          set -e
 
           # Ensure log file exists even if tests failed catastrophically
           if [ ! -f integration-test-output.log ]; then

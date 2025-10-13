@@ -84,15 +84,14 @@ describe('Wallet Pass Endpoints - Integration Tests', () => {
     });
 
     // Create test transaction first (required for FK constraint)
-    await db.execute({
+    const txResult = await db.execute({
       sql: `
         INSERT INTO transactions (
-          id, transaction_id, uuid, type, stripe_session_id, status, amount_cents,
+          transaction_id, uuid, type, stripe_session_id, status, amount_cents,
           total_amount, currency, customer_email, customer_name, order_data, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
       `,
       args: [
-        2000,
         'TXN-WALLET-001',
         'test-transaction-wallet-001',
         'tickets',
@@ -107,6 +106,9 @@ describe('Wallet Pass Endpoints - Integration Tests', () => {
       ]
     });
 
+    // Capture auto-generated transaction ID
+    const txId = Number(txResult.lastInsertRowid);
+
     // Create test ticket for wallet passes
     await db.execute({
       sql: `
@@ -119,7 +121,7 @@ describe('Wallet Pass Endpoints - Integration Tests', () => {
       `,
       args: [
         'WALLET-TEST-001',
-        2000,
+        txId,
         'full-pass',
         10000, // price_cents
         'Alice',
@@ -316,15 +318,14 @@ describe('Wallet Pass Endpoints - Integration Tests', () => {
       }
 
       // Create transaction for unregistered ticket
-      await db.execute({
+      const unregTxResult = await db.execute({
         sql: `
           INSERT INTO transactions (
-            id, transaction_id, uuid, type, stripe_session_id, status, amount_cents,
+            transaction_id, uuid, type, stripe_session_id, status, amount_cents,
             total_amount, currency, customer_email, customer_name, order_data, created_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
         `,
         args: [
-          2001,
           'TXN-UNREG-001',
           'test-transaction-unreg-001',
           'tickets',
@@ -339,6 +340,9 @@ describe('Wallet Pass Endpoints - Integration Tests', () => {
         ]
       });
 
+      // Capture auto-generated transaction ID
+      const unregTxId = Number(unregTxResult.lastInsertRowid);
+
       // Create unregistered ticket
       await db.execute({
         sql: `
@@ -350,7 +354,7 @@ describe('Wallet Pass Endpoints - Integration Tests', () => {
         `,
         args: [
           'WALLET-UNREG-001',
-          2001,
+          unregTxId,
           'full-pass',
           10000, // price_cents
           'valid',
@@ -471,15 +475,14 @@ describe('Wallet Pass Endpoints - Integration Tests', () => {
       }
 
       // Create transaction for cancelled ticket
-      await db.execute({
+      const cancelTxResult = await db.execute({
         sql: `
           INSERT INTO transactions (
-            id, transaction_id, uuid, type, stripe_session_id, status, amount_cents,
+            transaction_id, uuid, type, stripe_session_id, status, amount_cents,
             total_amount, currency, customer_email, customer_name, order_data, created_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
         `,
         args: [
-          2002,
           'TXN-CANCELLED-001',
           'test-transaction-cancelled-001',
           'tickets',
@@ -494,6 +497,9 @@ describe('Wallet Pass Endpoints - Integration Tests', () => {
         ]
       });
 
+      // Capture auto-generated transaction ID
+      const cancelTxId = Number(cancelTxResult.lastInsertRowid);
+
       await db.execute({
         sql: `
           INSERT INTO tickets (
@@ -505,7 +511,7 @@ describe('Wallet Pass Endpoints - Integration Tests', () => {
         `,
         args: [
           'WALLET-CANCELLED-001',
-          2002,
+          cancelTxId,
           'full-pass',
           10000, // price_cents
           'Cancel',

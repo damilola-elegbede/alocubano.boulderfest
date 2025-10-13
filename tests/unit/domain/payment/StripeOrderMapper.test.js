@@ -8,7 +8,8 @@ describe('StripeOrderMapper Domain Service', () => {
         name: 'Weekend Pass',
         price: 125.00,
         quantity: 2,
-        type: 'ticket'
+        type: 'ticket',
+        eventDate: '2026-05-15'
       };
 
       const result = StripeOrderMapper.mapCartItemToStripeLineItem(item);
@@ -104,6 +105,7 @@ describe('StripeOrderMapper Domain Service', () => {
         price: 10.00,
         quantity: 1,
         type: 'ticket',
+        eventDate: '2026-05-15',
         attributes: {
           customField1: 'value1',
           customField2: 123,

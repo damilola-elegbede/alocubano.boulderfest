@@ -4,8 +4,6 @@ import rateLimit from "../../lib/rate-limit-middleware.js";
 import auditService from "../../lib/audit-service.js";
 import { processDatabaseResult } from "../../lib/bigint-serializer.js";
 
-console.log('[BATCH_MODULE] Module imports completed successfully');
-
 // Input validation regex patterns
 const NAME_REGEX = /^[a-zA-Z\s\-']{2,50}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -16,6 +14,48 @@ const limiter = rateLimit({
   max: 10,
   message: 'Too many registration attempts. Please try again in a few minutes.'
 });
+
+// Helper function to redact PII from logs
+function redactPII(data) {
+  if (!data) return data;
+  
+  if (Array.isArray(data)) {
+    return data.map(item => redactPII(item));
+  }
+  
+  if (typeof data === 'object') {
+    const redacted = { ...data };
+    
+    // Redact common PII fields
+    if (redacted.firstName) redacted.firstName = 'REDACTED';
+    if (redacted.lastName) redacted.lastName = 'REDACTED';
+    if (redacted.email) redacted.email = 'REDACTED';
+    if (redacted.attendee_first_name) redacted.attendee_first_name = 'REDACTED';
+    if (redacted.attendee_last_name) redacted.attendee_last_name = 'REDACTED';
+    if (redacted.attendee_email) redacted.attendee_email = 'REDACTED';
+    if (redacted.customer_name) redacted.customer_name = 'REDACTED';
+    if (redacted.customer_email) redacted.customer_email = 'REDACTED';
+    if (redacted.purchaser_email) redacted.purchaser_email = 'REDACTED';
+    if (redacted.recipient_email) redacted.recipient_email = 'REDACTED';
+    if (redacted.attendeeName) redacted.attendeeName = 'REDACTED';
+    if (redacted.attendeeEmail) redacted.attendeeEmail = 'REDACTED';
+    
+    // Recursively redact nested objects
+    if (redacted.attendee && typeof redacted.attendee === 'object') {
+      redacted.attendee = redactPII(redacted.attendee);
+    }
+    if (redacted.beforeValue && typeof redacted.beforeValue === 'object') {
+      redacted.beforeValue = redactPII(redacted.beforeValue);
+    }
+    if (redacted.afterValue && typeof redacted.afterValue === 'object') {
+      redacted.afterValue = redactPII(redacted.afterValue);
+    }
+    
+    return redacted;
+  }
+  
+  return data;
+}
 
 // XSS prevention
 function sanitizeInput(input) {
@@ -261,40 +301,60 @@ async function auditRegistrationChange(params) {
     });
   } catch (auditError) {
     // Non-blocking: log error but don't fail the operation
-    console.error('Batch registration audit failed (non-blocking):', auditError.message);
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('Batch registration audit failed (non-blocking):', auditError.message);
+    }
   }
 }
 
-console.log('[BATCH_MODULE] About to export handler function');
-
 export default async function handler(req, res) {
-  console.log('[BATCH_HANDLER] Handler function entered');
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('[BATCH_HANDLER] Handler function entered');
+  }
   const startTime = Date.now();
 
   // CRITICAL FIX: Skip audit service initialization in integration test mode
   // The audit service tries to get a database client which can hang when called from dynamically imported handlers
   if (process.env.INTEGRATION_TEST_MODE !== 'true') {
-    console.log('[BATCH_HANDLER] About to initialize audit service');
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[BATCH_HANDLER] About to initialize audit service');
+    }
     // Ensure audit service is initialized to prevent race conditions
     if (auditService.ensureInitialized) {
       await auditService.ensureInitialized();
     }
-    console.log('[BATCH_HANDLER] Audit service initialized');
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[BATCH_HANDLER] Audit service initialized');
+    }
   } else {
-    console.log('[BATCH_HANDLER] Skipping audit service initialization in integration test mode');
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[BATCH_HANDLER] Skipping audit service initialization in integration test mode');
+    }
   }
 
-  console.log('[BATCH_HANDLER] About to generate request ID');
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('[BATCH_HANDLER] About to generate request ID');
+  }
   const requestId = auditService.generateRequestId();
-  console.log('[BATCH_HANDLER] Request ID generated:', requestId);
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('[BATCH_HANDLER] Request ID generated:', requestId);
+  }
 
-  console.log('[BATCH_HANDLER] About to get client IP');
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('[BATCH_HANDLER] About to get client IP');
+  }
   const clientIP = getClientIP(req);
-  console.log('[BATCH_HANDLER] Client IP obtained:', clientIP);
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('[BATCH_HANDLER] Client IP obtained:', clientIP);
+  }
 
-  console.log('[BATCH_HANDLER] About to get user agent');
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('[BATCH_HANDLER] About to get user agent');
+  }
   const userAgent = req.headers['user-agent'] || '';
-  console.log('[BATCH_HANDLER] User agent obtained');
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('[BATCH_HANDLER] User agent obtained');
+  }
 
   // CRITICAL FIX: Skip rate limiting in integration test mode
   // Rate limiter uses middleware pattern (next callback) which doesn't work with mock req/res
@@ -303,7 +363,9 @@ export default async function handler(req, res) {
                                process.env.SKIP_RATE_LIMIT_IN_TESTS !== 'false';
 
   if (!shouldSkipRateLimit) {
-    console.log('[BATCH_HANDLER] Applying rate limiting');
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[BATCH_HANDLER] Applying rate limiting');
+    }
     // Apply rate limiting with early return on limit
     try {
       await new Promise((resolve, reject) => {
@@ -312,9 +374,13 @@ export default async function handler(req, res) {
     } catch {
       return res.status(429).json({ error: 'Too many registration attempts' });
     }
-    console.log('[BATCH_HANDLER] Rate limiting passed');
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[BATCH_HANDLER] Rate limiting passed');
+    }
   } else {
-    console.log('[BATCH_HANDLER] Skipping rate limiting in integration test mode');
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[BATCH_HANDLER] Skipping rate limiting in integration test mode');
+    }
   }
 
   if (req.method !== 'POST') {
@@ -353,17 +419,23 @@ export default async function handler(req, res) {
   const sanitizedRegistrations = validationResults.map(r => r.sanitized);
 
   try {
-    console.log('[BATCH_REG] About to get database client...');
-    console.log('[BATCH_REG] INTEGRATION_TEST_MODE:', process.env.INTEGRATION_TEST_MODE);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[BATCH_REG] About to get database client...');
+      console.log('[BATCH_REG] INTEGRATION_TEST_MODE:', process.env.INTEGRATION_TEST_MODE);
+    }
     const db = await getDatabaseClient();
-    console.log('[BATCH_REG] Database client obtained successfully');
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[BATCH_REG] Database client obtained successfully');
+    }
 
     // Fetch all tickets with transaction info
     const ticketIds = sanitizedRegistrations.map(r => r.ticketId);
 
-    console.log('[BATCH_REG] Starting batch registration for tickets:', ticketIds);
-    console.log('[BATCH_REG] Request ID:', requestId);
-    console.log('[BATCH_REG] Client IP:', clientIP);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[BATCH_REG] Starting batch registration for tickets:', ticketIds);
+      console.log('[BATCH_REG] Request ID:', requestId);
+      console.log('[BATCH_REG] Client IP:', clientIP);
+    }
 
     const ticketsResult = await db.execute({
       sql: `
@@ -396,13 +468,14 @@ export default async function handler(req, res) {
     // Process database result to handle BigInt values
     const processedTicketsResult = processDatabaseResult(ticketsResult);
 
-    console.log('[BATCH_REG] Found tickets:', processedTicketsResult.rows.map(t => ({
-      id: t.ticket_id,
-      status: t.registration_status,
-      hasAttendee: !!(t.attendee_first_name || t.attendee_email),
-      attendeeName: `${t.attendee_first_name || 'NO_FIRST'} ${t.attendee_last_name || 'NO_LAST'}`,
-      type: t.ticket_type
-    })));
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[BATCH_REG] Found tickets:', redactPII(processedTicketsResult.rows.map(t => ({
+        id: t.ticket_id,
+        status: t.registration_status,
+        hasAttendee: !!(t.attendee_first_name || t.attendee_email),
+        type: t.ticket_type
+      }))));
+    }
 
     if (processedTicketsResult.rows.length !== ticketIds.length) {
       const foundIds = processedTicketsResult.rows.map(t => t.ticket_id);
@@ -420,26 +493,31 @@ export default async function handler(req, res) {
 
     for (const ticket of processedTicketsResult.rows) {
       if (ticket.registration_status === 'completed') {
-        console.log(`[BATCH_REG] WARNING: Ticket ${ticket.ticket_id} is already registered with status: ${ticket.registration_status}`);
-        console.log(`[BATCH_REG] Existing attendee: ${ticket.attendee_first_name} ${ticket.attendee_last_name} (${ticket.attendee_email})`);
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`[BATCH_REG] WARNING: Ticket ${ticket.ticket_id} is already registered with status: ${ticket.registration_status}`);
+        }
         alreadyRegistered.push({
           ticketId: ticket.ticket_id,
-          attendeeName: `${ticket.attendee_first_name} ${ticket.attendee_last_name}`,
-          attendeeEmail: ticket.attendee_email
+          attendeeName: 'REDACTED',
+          attendeeEmail: 'REDACTED'
         });
         // Don't add to issues - we'll handle gracefully below
       }
 
       const deadline = new Date(ticket.registration_deadline);
       if (now > deadline) {
-        console.log(`[BATCH_REG] ERROR: Ticket ${ticket.ticket_id} registration deadline has passed`);
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`[BATCH_REG] ERROR: Ticket ${ticket.ticket_id} registration deadline has passed`);
+        }
         issues.push(`Ticket ${ticket.ticket_id} registration deadline has passed`);
       }
     }
 
     // Only fail for expired tickets, not already registered ones
     if (issues.length > 0) {
-      console.log('[BATCH_REG] Registration validation failed:', issues);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[BATCH_REG] Registration validation failed:', issues);
+      }
       return res.status(400).json({
         error: 'Registration validation failed',
         details: issues
@@ -448,7 +526,9 @@ export default async function handler(req, res) {
 
     // If ALL tickets are already registered, return success with that info
     if (alreadyRegistered.length === ticketIds.length) {
-      console.log('[BATCH_REG] All tickets already registered, returning success');
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[BATCH_REG] All tickets already registered, returning success');
+      }
 
       // Get full ticket details for already registered tickets
       const registeredDetails = processedTicketsResult.rows.map(ticket => ({
@@ -494,7 +574,9 @@ export default async function handler(req, res) {
 
         // Skip if already registered
         if (ticket.registration_status === 'completed') {
-          console.log(`[BATCH_REG] Skipping already registered ticket ${ticket.ticket_id}`);
+          if (process.env.NODE_ENV !== 'production') {
+            console.log(`[BATCH_REG] Skipping already registered ticket ${ticket.ticket_id}`);
+          }
           results.push({
             ticketId: registration.ticketId,
             status: 'already_registered',
@@ -508,7 +590,9 @@ export default async function handler(req, res) {
           continue; // Skip to next ticket
         }
 
-        console.log(`[BATCH_REG] Processing ticket ${registration.ticketId} (${i + 1}/${sanitizedRegistrations.length})`);
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`[BATCH_REG] Processing ticket ${registration.ticketId} (${i + 1}/${sanitizedRegistrations.length})`);
+        }
 
         // Capture before state for audit
         const beforeState = {
@@ -611,9 +695,13 @@ export default async function handler(req, res) {
       }
 
       // Execute all operations in a single batch (transaction is automatic)
-      console.log(`[BATCH_REG] Executing ${batchOperations.length} batch operations`);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`[BATCH_REG] Executing ${batchOperations.length} batch operations`);
+      }
       if (batchOperations.length === 0) {
-        console.log('[BATCH_REG] No operations to execute (all tickets already registered)');
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('[BATCH_REG] No operations to execute (all tickets already registered)');
+        }
       } else {
         const batchResults = await db.batch(batchOperations);
 
@@ -633,10 +721,14 @@ export default async function handler(req, res) {
           const updateResult = batchResults[updateResultIndex];
           const rowsChanged = updateResult?.rowsAffected ?? updateResult?.changes ?? 0;
 
-          console.log(`[BATCH_REG] Update result for ${sanitizedRegistrations[i].ticketId}: ${rowsChanged} rows affected`);
+          if (process.env.NODE_ENV !== 'production') {
+            console.log(`[BATCH_REG] Update result for ${sanitizedRegistrations[i].ticketId}: ${rowsChanged} rows affected`);
+          }
 
           if (rowsChanged === 0) {
-            console.error(`[BATCH_REG] WARNING: No rows updated for ticket ${sanitizedRegistrations[i].ticketId} - may be already registered`);
+            if (process.env.NODE_ENV !== 'production') {
+              console.error(`[BATCH_REG] WARNING: No rows updated for ticket ${sanitizedRegistrations[i].ticketId} - may be already registered`);
+            }
             // Don't throw error - ticket might have been registered by another process
           } else {
             successCount++;
@@ -644,7 +736,9 @@ export default async function handler(req, res) {
           actualUpdateIndex++;
         }
 
-        console.log(`[BATCH_REG] Successfully updated ${successCount} tickets`);
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`[BATCH_REG] Successfully updated ${successCount} tickets`);
+        }
       }
 
       // Perform audit logging after successful transaction
@@ -653,33 +747,43 @@ export default async function handler(req, res) {
           await auditRegistrationChange(auditTask);
         } catch (auditError) {
           // Log but don't fail the registration
-          console.error('Audit logging failed (non-blocking):', auditError.message);
+          if (process.env.NODE_ENV !== 'production') {
+            console.error('Audit logging failed (non-blocking):', auditError.message);
+          }
         }
       }
 
     } catch (error) {
       // Rollback is automatic if batch fails
-      console.error('[BATCH_REG] Batch transaction failed:', error);
-      console.error('[BATCH_REG] Error stack:', error.stack);
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('[BATCH_REG] Batch transaction failed:', error);
+        console.error('[BATCH_REG] Error stack:', error.stack);
+      }
       throw error;
     }
 
     // SEND EMAILS OUTSIDE TRANSACTION (after successful commit)
     const emailResults = [];
 
-    console.log('[BATCH_REG] Starting email sending phase');
-    console.log('[BATCH_REG] INTEGRATION_TEST_MODE:', process.env.INTEGRATION_TEST_MODE);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[BATCH_REG] Starting email sending phase');
+      console.log('[BATCH_REG] INTEGRATION_TEST_MODE:', process.env.INTEGRATION_TEST_MODE);
+    }
 
     // Get transaction information for order number and purchaser details
     // IMPORTANT: Declare transactionInfo BEFORE try block to ensure scope visibility
     const transactionIds = [...new Set(processedTicketsResult.rows.map(t => t.transaction_id))];
     let transactionInfo = null;
 
-    console.log('[BATCH_REG] Transaction IDs involved:', transactionIds);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[BATCH_REG] Transaction IDs involved:', transactionIds);
+    }
 
     // Skip email sending in integration test mode to prevent timeouts
     if (process.env.INTEGRATION_TEST_MODE === 'true') {
-      console.log('[BATCH_REG] Skipping email sending in integration test mode');
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[BATCH_REG] Skipping email sending in integration test mode');
+      }
 
       // Insert mock email records into database for test verification
       for (const task of emailTasks) {
@@ -692,14 +796,18 @@ export default async function handler(req, res) {
             args: [task.registration.ticketId, task.ticket.transaction_id, 'attendee_confirmation', task.registration.email]
           });
 
-          console.log(`[BATCH_REG] Mock email record inserted for ticket ${task.registration.ticketId}`);
+          if (process.env.NODE_ENV !== 'production') {
+            console.log(`[BATCH_REG] Mock email record inserted for ticket ${task.registration.ticketId}`);
+          }
           emailResults.push({
             ticketId: task.registration.ticketId,
             emailSent: true,
             mockMode: true
           });
         } catch (emailError) {
-          console.error(`[BATCH_REG] Failed to insert mock email record for ${task.registration.ticketId}:`, emailError);
+          if (process.env.NODE_ENV !== 'production') {
+            console.error(`[BATCH_REG] Failed to insert mock email record for ${task.registration.ticketId}:`, emailError);
+          }
           emailResults.push({
             ticketId: task.registration.ticketId,
             emailSent: false,
@@ -711,7 +819,9 @@ export default async function handler(req, res) {
     } else {
       try {
         const brevo = getBrevoService();
-        console.log('[BATCH_REG] Brevo service initialized');
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('[BATCH_REG] Brevo service initialized');
+        }
 
       if (transactionIds.length === 1) {
         // Single transaction - get order details for summary email
@@ -728,11 +838,15 @@ export default async function handler(req, res) {
       }
 
       // Send individual confirmation emails
-      console.log(`[BATCH_REG] Preparing to send ${emailTasks.length} confirmation emails`);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`[BATCH_REG] Preparing to send ${emailTasks.length} confirmation emails`);
+      }
 
       for (const task of emailTasks) {
         try {
-          console.log(`[BATCH_REG] Sending email for ticket ${task.registration.ticketId} to ${task.registration.email}`);
+          if (process.env.NODE_ENV !== 'production') {
+            console.log(`[BATCH_REG] Sending email for ticket ${task.registration.ticketId}`);
+          }
 
           // Determine base URL for email links
           let baseUrl;
@@ -807,14 +921,18 @@ export default async function handler(req, res) {
             args: [task.registration.ticketId, task.ticket.transaction_id, 'attendee_confirmation', task.registration.email]
           });
 
-          console.log(`[BATCH_REG] Email sent successfully for ticket ${task.registration.ticketId}`);
+          if (process.env.NODE_ENV !== 'production') {
+            console.log(`[BATCH_REG] Email sent successfully for ticket ${task.registration.ticketId}`);
+          }
           emailResults.push({
             ticketId: task.registration.ticketId,
             emailSent: true
           });
         } catch (emailError) {
-          console.error(`[BATCH_REG] Failed to send email for ${task.registration.ticketId}:`, emailError);
-          console.error(`[BATCH_REG] Email error details:`, emailError.message, emailError.stack);
+          if (process.env.NODE_ENV !== 'production') {
+            console.error(`[BATCH_REG] Failed to send email for ${task.registration.ticketId}:`, emailError);
+            console.error(`[BATCH_REG] Email error details:`, emailError.message, emailError.stack);
+          }
           emailResults.push({
             ticketId: task.registration.ticketId,
             emailSent: false,
@@ -826,21 +944,27 @@ export default async function handler(req, res) {
       // Note: Batch summary email removed - individual confirmations only
 
       } catch (emailServiceError) {
-        console.error('[BATCH_REG] Email service error (non-blocking):', emailServiceError);
-        console.error('[BATCH_REG] Email service error details:', emailServiceError.message, emailServiceError.stack);
+        if (process.env.NODE_ENV !== 'production') {
+          console.error('[BATCH_REG] Email service error (non-blocking):', emailServiceError);
+          console.error('[BATCH_REG] Email service error details:', emailServiceError.message, emailServiceError.stack);
+        }
         // Continue - registration was successful even if emails fail
       }
     }
 
-    console.log('[BATCH_REG] Email results summary:', {
-      total: emailResults.length,
-      sent: emailResults.filter(e => e.emailSent).length,
-      failed: emailResults.filter(e => !e.emailSent).length,
-      failures: emailResults.filter(e => !e.emailSent)
-    });
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[BATCH_REG] Email results summary:', {
+        total: emailResults.length,
+        sent: emailResults.filter(e => e.emailSent).length,
+        failed: emailResults.filter(e => !e.emailSent).length,
+        failures: redactPII(emailResults.filter(e => !e.emailSent))
+      });
+    }
 
     // CRITICAL: Verify the tickets are actually marked as completed in the database
-    console.log('[BATCH_REG] Verifying ticket status in database after registration...');
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[BATCH_REG] Verifying ticket status in database after registration...');
+    }
     const verifyResult = await db.execute({
       sql: `
         SELECT t.ticket_id, t.registration_status, t.attendee_first_name, t.attendee_last_name,
@@ -856,23 +980,27 @@ export default async function handler(req, res) {
     // Process database result to handle BigInt values
     const processedVerifyResult = processDatabaseResult(verifyResult);
 
-    console.log('[BATCH_REG] Database verification - tickets after registration:',
-      processedVerifyResult.rows.map(t => ({
-        id: t.ticket_id,
-        status: t.registration_status,
-        attendee: `${t.attendee_first_name} ${t.attendee_last_name}`,
-        email: t.attendee_email,
-        registeredAt: t.registered_at,
-        transactionId: t.transaction_id
-      }))
-    );
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[BATCH_REG] Database verification - tickets after registration:',
+        redactPII(processedVerifyResult.rows.map(t => ({
+          id: t.ticket_id,
+          status: t.registration_status,
+          registeredAt: t.registered_at,
+          transactionId: t.transaction_id
+        })))
+      );
+    }
 
     // Check for any tickets that are still pending
     const stillPending = processedVerifyResult.rows.filter(t => t.registration_status !== 'completed');
     if (stillPending.length > 0) {
-      console.error('[BATCH_REG] WARNING: Some tickets are still pending after registration!', stillPending.map(t => t.ticket_id));
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('[BATCH_REG] WARNING: Some tickets are still pending after registration!', stillPending.map(t => t.ticket_id));
+      }
     } else {
-      console.log('[BATCH_REG] SUCCESS: All tickets confirmed as completed in database');
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[BATCH_REG] SUCCESS: All tickets confirmed as completed in database');
+      }
     }
 
     // Log batch operation summary (non-blocking)
@@ -903,12 +1031,16 @@ export default async function handler(req, res) {
       },
       severity: 'info'
     }).catch(auditError => {
-      console.error('Batch operation audit failed (non-blocking):', auditError.message);
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('Batch operation audit failed (non-blocking):', auditError.message);
+      }
     });
 
     // Return success response with enhanced data for frontend
-    console.log('[BATCH_REG] Preparing final response with', results.length, 'results');
-    console.log('[BATCH_REG] Final results:', results);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[BATCH_REG] Preparing final response with', results.length, 'results');
+      console.log('[BATCH_REG] Final results:', redactPII(results));
+    }
 
     res.status(200).json({
       success: true,
@@ -939,7 +1071,9 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
-    console.error('Batch registration error:', error);
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('Batch registration error:', error);
+    }
     res.status(500).json({ error: 'Failed to process batch registration' });
   }
 }

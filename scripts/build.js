@@ -13,11 +13,10 @@
  */
 
 import { execSync } from 'child_process';
+import { ensureDatabaseUrl } from '../lib/database-defaults.js';
 
 // Set default local database if not configured
-if (!process.env.TURSO_DATABASE_URL && !process.env.DATABASE_URL) {
-  process.env.DATABASE_URL = 'file:local.db';
-}
+ensureDatabaseUrl(false); // Silent mode - no logging needed
 
 const isVercel = process.env.VERCEL === '1';
 const env = process.env.VERCEL_ENV || 'local';

@@ -15,7 +15,7 @@ describe('Cron Job Scheduling - Integration Tests', () => {
   });
 
   afterEach(async () => {
-    // Cleanup is handled automatically by test isolation manager
+    await getTestIsolationManager().emergencyCleanup();
   });
 
   describe('All Cron Endpoints Respond', () => {
@@ -224,9 +224,8 @@ describe('Cron Job Scheduling - Integration Tests', () => {
       expect(durationMatch.length).toBeGreaterThan(1);
 
       const durationMs = parseInt(durationMatch[1], 10);
-      // Duration should be at least 1ms (even if operations are very fast, Date.now() should show at least 1ms)
-      // If durationMs is 0, it means the test completed in less than 1ms or there's a timing issue
-      expect(durationMs).toBeGreaterThanOrEqual(0);
+      // Duration should be at least 1ms; Date.now() has millisecond granularity
+      expect(durationMs).toBeGreaterThan(0);
       expect(durationMs).toBeLessThan(60000); // Should complete within 60 seconds
     });
   });

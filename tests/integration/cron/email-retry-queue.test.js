@@ -20,11 +20,12 @@ describe('Email Retry Queue - Integration Tests', () => {
     scheduler = getReminderScheduler();
     await scheduler.ensureInitialized();
 
-    // Create a test event for FK constraints
+    // Create a test event for FK constraints with unique slug
+    const uniqueSlug = `test-event-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const eventResult = await testDb.execute({
       sql: `INSERT INTO events (slug, name, type, status, start_date, end_date)
             VALUES (?, ?, ?, ?, ?, ?)`,
-      args: ['test-event-2026', 'Test Event 2026', 'festival', 'test', '2026-05-15', '2026-05-17']
+      args: [uniqueSlug, 'Test Event 2026', 'festival', 'test', '2026-05-15', '2026-05-17']
     });
     testEventId = Number(eventResult.lastInsertRowid);
   });

@@ -185,13 +185,13 @@ describe('Reminder Batching - Integration Tests', () => {
     test('should enforce batch limit across multiple reminder types', async () => {
       const dueTime = new Date(Date.now() - 1000).toISOString();
 
-      // Create 50 immediate reminders
+      // Create 50 initial reminders
       for (let i = 0; i < 50; i++) {
         const txResult = await testDb.execute({
           sql: `INSERT INTO transactions (
             transaction_id, type, customer_email, customer_name, amount_cents, registration_token, registration_token_expires, order_data, order_number, is_test, event_id
           ) VALUES (?, 'tickets', ?, ?, 12500, ?, datetime('now', '+7 days'), ?, ?, ?, ?)`,
-          args: [`TXN_IMMEDIATE_${i}`, `immediate${i}@example.com`, `User ${i}`, `token_i${i}`, JSON.stringify({ test: true }), `ORDER_I${i}`, 1, testEventId]
+          args: [`TXN_INITIAL_${i}`, `initial${i}@example.com`, `User ${i}`, `token_i${i}`, JSON.stringify({ test: true }), `ORDER_I${i}`, 1, testEventId]
         });
         const txId = Number(txResult.lastInsertRowid);
 
