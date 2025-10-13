@@ -638,7 +638,8 @@ export class CartManager extends EventTarget {
                             return false;
                         }
                     }
-                } catch (e) {
+                // eslint-disable-next-line no-unused-vars
+                } catch (_error) {
                     // URLSearchParams not available or failed, continue to other checks
                 }
             }
@@ -652,7 +653,8 @@ export class CartManager extends EventTarget {
                     if (cartTestMode === 'true' || adminTestSession === 'true') {
                         return true;
                     }
-                } catch (e) {
+                // eslint-disable-next-line no-unused-vars
+                } catch (_error) {
                     // localStorage access failed, continue to other checks
                 }
             }
@@ -672,7 +674,8 @@ export class CartManager extends EventTarget {
                         if (typeof localStorage !== 'undefined') {
                             return localStorage.getItem('cart_test_mode') === 'true';
                         }
-                    } catch (e) {
+                    // eslint-disable-next-line no-unused-vars
+                    } catch (_error) {
                         // Ignore localStorage errors
                     }
                 }
@@ -681,6 +684,7 @@ export class CartManager extends EventTarget {
             return false;
         } catch (error) {
             // If any error occurs, default to false (not in test mode)
+            devLog.error('Unexpected error in detectTestMode():', error);
             return false;
         }
     }
