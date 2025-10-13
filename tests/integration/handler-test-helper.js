@@ -166,15 +166,17 @@ export const HTTP_STATUS = {
   FORBIDDEN: 403,
   NOT_FOUND: 404,
   CONFLICT: 409,
+  GONE: 410,
   UNPROCESSABLE_ENTITY: 422,
   TOO_MANY_REQUESTS: 429,
-  INTERNAL_SERVER_ERROR: 500
+  INTERNAL_SERVER_ERROR: 500,
+  SERVICE_UNAVAILABLE: 503
 };
 
 /**
  * Create mock request object
  */
-function createMockRequest(method, url, body = null, headers = {}) {
+export function createMockRequest(method, url, body = null, headers = {}) {
   const urlObj = new URL(url, 'http://localhost:3001');
 
   return {
@@ -182,14 +184,14 @@ function createMockRequest(method, url, body = null, headers = {}) {
     url: urlObj.toString(),
     headers: {
       'content-type': 'application/json',
-      'x-forwarded-for': '127.0.0.1',  // Add client IP for tests
+      'x-forwarded-for': `127.0.0.1-${Date.now()}-${Math.random()}`,  // Unique IP per request to avoid rate limiting in tests
       ...headers
     },
     body: body,  // Pass body as-is, not stringified
     json: async () => body,
     text: async () => body ? JSON.stringify(body) : '',
     connection: {
-      remoteAddress: '127.0.0.1'  // Fallback IP
+      remoteAddress: `127.0.0.1-${Date.now()}-${Math.random()}`  // Unique fallback IP
     }
   };
 }
@@ -197,7 +199,7 @@ function createMockRequest(method, url, body = null, headers = {}) {
 /**
  * Create mock response object
  */
-function createMockResponse() {
+export function createMockResponse() {
   let statusCode = 200;
   let responseBody = null;
   let responseHeaders = {};
@@ -260,41 +262,55 @@ export async function testHandler(handler, method, path, data = null, headers = 
   }
 }
 
+// Track if services have been initialized
+let servicesInitialized = false;
+
 /**
  * Import and test an API handler
  */
 export async function testApiHandler(apiPath, method, urlPath, data = null, headers = {}) {
   try {
-    // Initialize services with test database before handler runs
-    // This prevents middleware from creating new database connections
-    if (process.env.NODE_ENV === 'test') {
+    // SKIP service initialization in integration tests - services are already initialized by setup-integration.js
+    // Only initialize for standalone handler tests
+    if (process.env.NODE_ENV === 'test' && !servicesInitialized && !process.env.INTEGRATION_TEST_MODE) {
+      console.log('[TEST_API_HANDLER] Initializing services...');
       await initializeTestServices();
+      servicesInitialized = true;
+      console.log('[TEST_API_HANDLER] Services initialized');
     }
 
     // Convert API path to file path
     const handlerPath = `../../${apiPath}.js`;
+    console.log('[TEST_API_HANDLER] Importing:', handlerPath);
     const handlerModule = await import(handlerPath);
+    console.log('[TEST_API_HANDLER] Module imported, checking for default export');
     const handler = handlerModule.default;
 
     if (!handler || typeof handler !== 'function') {
+      console.error('[TEST_API_HANDLER] No handler found. Module keys:', Object.keys(handlerModule));
       throw new Error(`No default handler exported from ${apiPath}`);
     }
 
-    return await testHandler(handler, method, urlPath, data, headers);
+    console.log('[TEST_API_HANDLER] Calling handler...');
+    const result = await testHandler(handler, method, urlPath, data, headers);
+    console.log('[TEST_API_HANDLER] Handler completed with status:', result.status);
+    return result;
   } catch (error) {
     // Could not import handler - treat as 404
     if (error.code === 'MODULE_NOT_FOUND') {
+      console.error('[TEST_API_HANDLER] Module not found:', apiPath, error.message);
       return {
         status: 404,
-        data: { error: 'Handler not found' },
+        data: { error: 'Handler not found', path: apiPath, message: error.message },
         headers: {}
       };
     }
 
     // Other import errors - treat as 500
+    console.error('[TEST_API_HANDLER] Import error:', apiPath, error.message, error.stack);
     return {
       status: 500,
-      data: { error: error.message },
+      data: { error: error.message, path: apiPath },
       headers: {}
     };
   }
@@ -314,6 +330,8 @@ export async function testRequest(method, path, data = null, headers = {}) {
     '/api/admin/transactions': 'api/admin/transactions',
     '/api/admin/audit-logs': 'api/admin/audit-logs',
     '/api/admin/search': 'api/admin/search',
+    '/api/admin/manual-ticket-entry': 'api/admin/manual-ticket-entry',
+    '/api/admin/csrf-token': 'api/admin/csrf-token',
     '/api/email/subscribe': 'api/email/subscribe',
     '/api/email/unsubscribe': 'api/email/unsubscribe',
     '/api/email/brevo-webhook': 'api/email/brevo-webhook',
@@ -321,7 +339,8 @@ export async function testRequest(method, path, data = null, headers = {}) {
     '/api/payments/stripe-webhook': 'api/payments/stripe-webhook',
     '/api/tickets/validate': 'api/tickets/validate',
     '/api/tickets/register': 'api/tickets/register',
-    '/api/registration': 'api/registration',
+    '/api/registration': 'api/registration/index',
+    '/api/registration/batch': 'api/registration/batch',
     '/api/health/check': 'api/health/check',
     '/api/health/database': 'api/health/database',
     '/api/health/brevo': 'api/health/brevo',
@@ -336,8 +355,11 @@ export async function testRequest(method, path, data = null, headers = {}) {
   // Find matching handler
   const apiPath = pathMappings[basePath];
 
+  console.log('[TEST_REQUEST] Method:', method, 'Path:', path, 'API Path:', apiPath);
+
   if (!apiPath) {
     // No mapping found - return 404
+    console.log('[TEST_REQUEST] No mapping found for:', basePath);
     return {
       status: 404,
       data: { error: `No handler mapping for ${basePath}` }
@@ -357,6 +379,45 @@ export function generateTestEmail() {
   return `test.${Date.now()}.${Math.random().toString(36).slice(2)}@example.com`;
 }
 
+/**
+ * Create a test event and return its numeric ID
+ * Handles the foreign key requirement for tickets table
+ */
+export async function createTestEvent(dbClient, eventData = {}) {
+  const slug = eventData.slug || `test-event-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const name = eventData.name || 'Test Event';
+  const type = eventData.type || 'festival';
+  const status = eventData.status || 'test';
+  const startDate = eventData.startDate || '2026-05-15';
+  const endDate = eventData.endDate || '2026-05-17';
+  const venueName = eventData.venueName || 'Test Venue';
+  const venueCity = eventData.venueCity || 'Boulder';
+  const venueState = eventData.venueState || 'CO';
+
+  // Insert event and get its ID
+  await dbClient.execute({
+    sql: `
+      INSERT INTO events (
+        slug, name, type, status, start_date, end_date,
+        venue_name, venue_city, venue_state, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+    `,
+    args: [slug, name, type, status, startDate, endDate, venueName, venueCity, venueState]
+  });
+
+  // Get the generated ID
+  const result = await dbClient.execute({
+    sql: 'SELECT id FROM events WHERE slug = ?',
+    args: [slug]
+  });
+
+  if (result.rows.length === 0) {
+    throw new Error(`Failed to create test event with slug: ${slug}`);
+  }
+
+  return result.rows[0].id;
+}
+
 // Export everything
 export default {
   testHandler,
@@ -366,5 +427,6 @@ export default {
   createMockResponse,
   HTTP_STATUS,
   generateTestId,
-  generateTestEmail
+  generateTestEmail,
+  createTestEvent
 };

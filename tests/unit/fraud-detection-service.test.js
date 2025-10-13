@@ -4,17 +4,19 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { FraudDetectionService, getFraudDetectionService } from '../../lib/fraud-detection-service.js';
+import { FraudDetectionService, getFraudDetectionService, resetFraudDetectionService } from '../../lib/fraud-detection-service.js';
 import { getDatabaseClient, resetDatabaseInstance } from '../../lib/database.js';
 
-describe('Fraud Detection Service', () => {
+// Run tests sequentially to avoid data conflicts in shared database
+describe.sequential('Fraud Detection Service', () => {
   let fraudService;
   let dbClient;
 
   beforeEach(async () => {
     // Clear any cached instances
     await resetDatabaseInstance();
-    
+    resetFraudDetectionService(); // Reset fraud service to get fresh instance with new DB
+
     fraudService = getFraudDetectionService();
     await fraudService.ensureInitialized();
     dbClient = await getDatabaseClient();
@@ -50,16 +52,16 @@ describe('Fraud Detection Service', () => {
   });
 
   afterEach(async () => {
-    // Clean up test data
+    // Clean up test data (delete data, don't drop tables to avoid affecting concurrent tests)
+    // Note: Don't close the connection for shared in-memory databases as it breaks singleton services
     if (dbClient) {
       try {
-        await dbClient.execute('DROP TABLE IF EXISTS tickets');
-        await dbClient.execute('DROP TABLE IF EXISTS transactions');
+        await dbClient.execute('DELETE FROM tickets');
+        await dbClient.execute('DELETE FROM transactions');
       } catch (error) {
         console.warn('Cleanup error:', error.message);
       }
     }
-    await resetDatabaseInstance();
   });
 
   describe('Rate Limit Detection', () => {

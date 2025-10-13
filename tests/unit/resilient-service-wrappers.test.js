@@ -425,24 +425,39 @@ describe('ResilientServiceWrapper', () => {
     });
 
     it('should respect rate limit headers', async () => {
-      const brevo = new ResilientBrevoService({ initialDelay: 100 });
+      // Mock Date.now() to work with fake timers
+      let currentTime = 0;
+      vi.spyOn(Date, 'now').mockImplementation(() => currentTime);
 
-      const emailData = {
-        shouldFail: true,
-        errorCode: 'RATE_LIMIT',
-        rateLimitReset: 2000
-      };
+      const brevo = new ResilientBrevoService({ initialDelay: 100, maxRetries: 1 });
 
-      const startTime = Date.now();
+      let attemptCount = 0;
+      const operation = vi.fn().mockImplementation(async () => {
+        attemptCount++;
+        if (attemptCount === 1) {
+          const error = new Error('Rate limited');
+          error.code = 'RATE_LIMIT';
+          error.rateLimitReset = 2000;
+          throw error;
+        }
+        return { messageId: 'msg_123', status: 'sent' };
+      });
 
-      try {
-        const promise = brevo.sendEmail(emailData);
-        await vi.advanceTimersByTimeAsync(2100);
-        await promise;
-      } catch (e) {
-        const duration = Date.now() - startTime;
-        expect(duration).toBeGreaterThanOrEqual(2000);
-      }
+      const startTime = currentTime;
+
+      // Execute with retry
+      const promise = brevo.execute(operation);
+
+      // Advance time past rate limit
+      currentTime += 2100;
+      await vi.advanceTimersByTimeAsync(2100);
+
+      const result = await promise;
+
+      const duration = currentTime - startTime;
+      expect(duration).toBeGreaterThanOrEqual(2000);
+      expect(result.messageId).toBe('msg_123');
+      expect(attemptCount).toBe(2);
     });
 
     it('should queue failed emails when circuit opens', async () => {
@@ -607,24 +622,39 @@ describe('ResilientServiceWrapper', () => {
     });
 
     it('should respect Google Drive rate limits', async () => {
-      const drive = new ResilientGoogleDriveService({ initialDelay: 100 });
+      // Mock Date.now() to work with fake timers
+      let currentTime = 0;
+      vi.spyOn(Date, 'now').mockImplementation(() => currentTime);
 
-      const query = {
-        shouldFail: true,
-        errorCode: 'RATE_LIMIT',
-        rateLimitReset: 1000
-      };
+      const drive = new ResilientGoogleDriveService({ initialDelay: 100, maxRetries: 1 });
 
-      const startTime = Date.now();
+      let attemptCount = 0;
+      const operation = vi.fn().mockImplementation(async () => {
+        attemptCount++;
+        if (attemptCount === 1) {
+          const error = new Error('Rate limited');
+          error.code = 'RATE_LIMIT';
+          error.rateLimitReset = 1000;
+          throw error;
+        }
+        return { files: [{ id: 'file1', name: 'photo.jpg' }] };
+      });
 
-      try {
-        const promise = drive.listFiles(query);
-        await vi.advanceTimersByTimeAsync(1100);
-        await promise;
-      } catch (e) {
-        const duration = Date.now() - startTime;
-        expect(duration).toBeGreaterThanOrEqual(1000);
-      }
+      const startTime = currentTime;
+
+      // Execute with retry
+      const promise = drive.execute(operation);
+
+      // Advance time past rate limit
+      currentTime += 1100;
+      await vi.advanceTimersByTimeAsync(1100);
+
+      const result = await promise;
+
+      const duration = currentTime - startTime;
+      expect(duration).toBeGreaterThanOrEqual(1000);
+      expect(result.files).toHaveLength(1);
+      expect(attemptCount).toBe(2);
     });
 
     it('should have higher retry threshold for Google Drive', async () => {

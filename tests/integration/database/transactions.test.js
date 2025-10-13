@@ -4,15 +4,24 @@
  */
 import { describe, test, expect, beforeEach } from 'vitest';
 import { getDbClient } from '../../setup-integration.js';
-import { generateTestEmail } from '../handler-test-helper.js';
+import { generateTestEmail, createTestEvent } from '../handler-test-helper.js';
 
 describe('Database Transaction Integration', () => {
   let testEmail;
   let dbClient;
+  let testEventId;
 
   beforeEach(async () => {
     testEmail = generateTestEmail();
     dbClient = await getDbClient(); // Note: getDbClient is async, must await it
+
+    // Create a test event for foreign key requirements
+    testEventId = await createTestEvent(dbClient, {
+      slug: 'boulder-fest-2026-test',
+      name: 'A Lo Cubano Boulder Fest 2026',
+      startDate: '2026-05-15',
+      endDate: '2026-05-17'
+    });
   });
 
   test('transaction rollback on payment failure maintains data integrity', async () => {
@@ -47,7 +56,7 @@ describe('Database Transaction Integration', () => {
           INSERT INTO "tickets" (
             ticket_id, transaction_id, ticket_type, event_id, price_cents, qr_token, created_at
           ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
-        `, ['TICKET_' + testSessionId, transactionId, 'weekend-pass', 'boulder-fest-2026', 12500, 'QR_' + testSessionId]);
+        `, ['TICKET_' + testSessionId, transactionId, 'weekend-pass', testEventId, 12500, 'QR_' + testSessionId]);
       }
 
       // Simulate a failure condition
@@ -123,7 +132,7 @@ describe('Database Transaction Integration', () => {
           INSERT INTO "tickets" (
             ticket_id, transaction_id, ticket_type, event_id, price_cents, qr_token, created_at
           ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
-        `, [`TICKET_${testSessionId}_${ticket.type.replace(/\s+/g, '_')}`, transactionId, ticket.type, 'boulder-fest-2026', ticket.price_cents, `QR_${testSessionId}_${ticket.type.replace(/\s+/g, '_')}`]);
+        `, [`TICKET_${testSessionId}_${ticket.type.replace(/\s+/g, '_')}`, transactionId, ticket.type, testEventId, ticket.price_cents, `QR_${testSessionId}_${ticket.type.replace(/\s+/g, '_')}`]);
       }
 
       // Create registration records with consistent ticket type data

@@ -3,6 +3,8 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
+// Tests for detectTestMode() method in CartManager
+// Verifies client-side test mode detection from URL parameters, localStorage, and environment
 describe('Test Mode Detection', () => {
   let mockWindow;
   let mockLocalStorage;

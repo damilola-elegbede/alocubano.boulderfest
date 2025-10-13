@@ -410,6 +410,10 @@ describe('ExponentialBackoff', () => {
 
   describe('Timeout Enforcement', () => {
     it('should enforce overall timeout', async () => {
+      // Mock Date.now() to work with fake timers
+      let currentTime = 0;
+      vi.spyOn(Date, 'now').mockImplementation(() => currentTime);
+
       backoff = new ExponentialBackoff({
         initialDelay: 1000,
         maxRetries: 10,
@@ -418,14 +422,16 @@ describe('ExponentialBackoff', () => {
 
       const operation = vi.fn().mockRejectedValue(new Error('Always fails'));
 
-      try {
-        const resultPromise = backoff.execute(operation);
-        await vi.advanceTimersByTimeAsync(5100);
-        await resultPromise;
-      } catch (error) {
-        expect(error.code).toBe('TIMEOUT_ERROR');
-        expect(error.message).toContain('Overall timeout exceeded');
-      }
+      const resultPromise = backoff.execute(operation);
+
+      // Advance time past the timeout
+      currentTime += 5100;
+      await vi.advanceTimersByTimeAsync(5100);
+
+      await expect(resultPromise).rejects.toMatchObject({
+        code: 'TIMEOUT_ERROR',
+        message: expect.stringContaining('Overall timeout exceeded')
+      });
     });
 
     it('should succeed if operation completes before timeout', async () => {
@@ -448,6 +454,10 @@ describe('ExponentialBackoff', () => {
     });
 
     it('should include attempt count in timeout error', async () => {
+      // Mock Date.now() to work with fake timers
+      let currentTime = 0;
+      vi.spyOn(Date, 'now').mockImplementation(() => currentTime);
+
       backoff = new ExponentialBackoff({
         initialDelay: 1000,
         maxRetries: 10,
@@ -456,14 +466,20 @@ describe('ExponentialBackoff', () => {
 
       const operation = vi.fn().mockRejectedValue(new Error('Slow operation'));
 
-      try {
-        const resultPromise = backoff.execute(operation);
-        await vi.advanceTimersByTimeAsync(3100);
-        await resultPromise;
-      } catch (error) {
-        expect(error.attempts).toBeGreaterThanOrEqual(1);
-        expect(error.errors.length).toBeGreaterThanOrEqual(1);
-      }
+      const resultPromise = backoff.execute(operation);
+
+      // Advance time past the timeout
+      currentTime += 3100;
+      await vi.advanceTimersByTimeAsync(3100);
+
+      await expect(resultPromise).rejects.toMatchObject({
+        attempts: expect.any(Number),
+        errors: expect.arrayContaining([
+          expect.objectContaining({
+            attempt: expect.any(Number)
+          })
+        ])
+      });
     });
   });
 

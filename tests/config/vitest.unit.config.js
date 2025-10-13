@@ -38,6 +38,7 @@ export default defineConfig({
       ADMIN_SECRET: 'test-admin-jwt-secret-minimum-32-characters-for-security',
       WALLET_AUTH_SECRET: 'test-wallet-auth-secret-key-for-testing-purposes-32-chars',
       APPLE_PASS_KEY: 'dGVzdC1hcHBsZS1wYXNzLWtleQ==', // base64 encoded 'test-apple-pass-key'
+      APPLE_PASS_CERT: 'dGVzdC1jZXJ0aWZpY2F0ZQ==', // base64 encoded 'test-certificate'
       INTERNAL_API_KEY: 'test-internal-api-key-32-chars-min',
       REGISTRATION_SECRET: 'test-registration-secret-key-minimum-32-chars-long',
       TEST_ADMIN_PASSWORD: 'test-admin-password-123',
@@ -64,17 +65,19 @@ export default defineConfig({
       'tests/e2e/**',         // E2E tests excluded (disabled)
       'tests/integration/**', // Integration tests excluded (disabled)
       'tests/unit/cron/**',   // Cron tests are integration tests (use TestIsolationManager + real DB, covered in tests/integration/cron/)
+      'tests/unit/bootstrap-ticket-architecture.test.js', // API integration test (requires running server)
       'tests/helpers/**',     // Test helpers (utilities only)
       'tests/mocks/**',       // Mock data (utilities only)
       'tests/fixtures/**'     // Test fixtures (utilities only)
     ],
 
-    // MOST STABLE pooling - single fork for reliability
+    // Use forks pool (Vitest recommended default for stability)
+    // Threads can cause hanging issues with native modules and cleanup
     pool: 'forks',
     poolOptions: {
       forks: {
-        singleFork: true,       // Single fork for maximum stability
-        isolate: false,         // Reduce overhead while maintaining stability
+        singleFork: false,      // Use multiple forks for parallelism
+        isolate: true,          // Isolate tests for safety
         execArgv: ['--max-old-space-size=4096']  // Match CI: 4GB memory
       }
     },
@@ -87,10 +90,14 @@ export default defineConfig({
 
     // CRITICAL: Force process cleanup after tests complete
     forceRerunTriggers: ['**/package.json', '**/vitest.config.*'],
-    isolate: false,  // Reduce isolation for faster cleanup
+    isolate: true,  // Enable isolation for test safety
 
-    // MINIMAL reporting for speed
-    reporter: process.env.CI === 'true' ? ['dot', 'junit'] : 'dot',  // Dot reporter is fastest
+    // MINIMAL reporting for speed + hanging-process for debugging
+    reporter: process.env.CI === 'true'
+      ? ['dot', 'junit']
+      : process.env.DEBUG_HANGING
+        ? ['default', 'hanging-process']  // Use DEBUG_HANGING=1 to debug hanging
+        : 'dot',  // Dot reporter is fastest
     outputFile: process.env.CI === 'true' ? './unit-test-results.xml' : undefined,
 
     // Performance tracking optimized

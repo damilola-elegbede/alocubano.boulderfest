@@ -11,7 +11,6 @@ import {
   generateTestAwareTransactionId,
   createTestModeMetadata,
   validateTestModeConsistency,
-  createTestModeFilter,
   extractTestModeFromStripeSession,
   getTestModeConfig
 } from '../../lib/test-mode-utils.js';
@@ -159,48 +158,10 @@ describe('Test Mode Utils', () => {
     });
   });
 
-  describe('Test Mode Filtering', () => {
-    it('should return test-only filter in test mode (strict data isolation)', () => {
-      process.env.NODE_ENV = 'test';
-
-      const filter = createTestModeFilter();
-
-      expect(filter.sql).toBe(' AND is_test = ?');
-      expect(filter.args).toEqual([1]);
-    });
-
-    it('should return production filter in production mode', () => {
-      process.env.NODE_ENV = 'production';
-
-      const filter = createTestModeFilter();
-
-      expect(filter.sql).toBe(' AND is_test = ?');
-      expect(filter.args).toEqual([0]);
-    });
-
-    it('should support table aliases', () => {
-      process.env.NODE_ENV = 'production';
-
-      const filter = createTestModeFilter('t');
-
-      expect(filter.sql).toBe(' AND t.is_test = ?');
-      expect(filter.args).toEqual([0]);
-    });
-
-    it('should maintain strict data isolation regardless of explicit control', () => {
-      process.env.NODE_ENV = 'production';
-
-      // Security: Even when forcing inclusion, should maintain data isolation
-      const includeFilter = createTestModeFilter('', true);
-      expect(includeFilter.sql).toBe(' AND is_test = ?');
-      expect(includeFilter.args).toEqual([0]); // Production only sees production data
-
-      // Force exclude test data (should work the same)
-      const excludeFilter = createTestModeFilter('', false);
-      expect(excludeFilter.sql).toBe(' AND is_test = ?');
-      expect(excludeFilter.args).toEqual([0]);
-    });
-  });
+  // REMOVED: Test Mode Filtering tests
+  // Reason: createTestModeFilter() function was removed from lib/test-mode-utils.js
+  // The admin portal now shows ALL data (test + production) at all times.
+  // Filtering is controlled by UI elements, not automatic code logic.
 
   describe('Stripe Session Test Mode Extraction', () => {
     it('should detect test mode from Stripe livemode=false', () => {

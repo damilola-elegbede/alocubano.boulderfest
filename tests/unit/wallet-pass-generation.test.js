@@ -258,12 +258,13 @@ describe('Wallet Pass Generation - Unit Tests', () => {
     it('should include hero image for visual branding', () => {
       const heroImage = {
         sourceUri: {
-          uri: expect.stringContaining('https://')
+          uri: 'https://example.com/images/event-hero.jpg'
         },
-        contentDescription: expect.any(String)
+        contentDescription: 'A Lo Cubano Boulder Fest Event Image'
       };
 
       expect(heroImage.sourceUri.uri).toContain('https://');
+      expect(heroImage.contentDescription).toBeTruthy();
     });
 
     it('should set valid event date/time', () => {
@@ -516,10 +517,11 @@ describe('Wallet Pass Generation - Unit Tests', () => {
     it('should validate pass configuration before generation', () => {
       const service = new AppleWalletService();
 
-      // Check configuration
-      const isConfigured = service.passTypeId && service.teamId && service.signerCert && service.signerKey;
+      // Check configuration - convert to boolean explicitly
+      const isConfigured = Boolean(service.passTypeId && service.teamId && service.signerCert && service.signerKey);
 
       expect(typeof isConfigured).toBe('boolean');
+      expect(isConfigured).toBe(true);
     });
 
     it('should handle missing attendee information gracefully', () => {

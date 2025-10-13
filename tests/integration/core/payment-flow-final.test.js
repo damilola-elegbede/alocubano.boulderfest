@@ -13,6 +13,7 @@
 
 import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { getDbClient } from '../../setup-integration.js';
+import { createTestEvent } from '../handler-test-helper.js';
 
 // Load environment variables
 import { config } from 'dotenv';
@@ -23,11 +24,20 @@ describe('Payment Integration Tests - Final Implementation', () => {
   let db;
   let testTransactionIds = [];
   let testEventIds = [];
+  let testEventId;
 
   beforeEach(async () => {
     db = await getDbClient(); // Note: getDbClient is async, must await it
     testTransactionIds = [];
     testEventIds = [];
+
+    // Create test event for this test suite
+    testEventId = await createTestEvent(db, {
+      slug: 'payment-flow-final-test',
+      name: 'Payment Flow Test Event',
+      startDate: '2026-05-15',
+      endDate: '2026-05-17'
+    });
   });
 
   afterEach(async () => {
@@ -91,7 +101,7 @@ describe('Payment Integration Tests - Final Implementation', () => {
         unit_price_cents: 15000,
         total_price_cents: 15000,
         ticket_type: 'vip',
-        event_id: 'boulder-fest-2026'
+        event_id: testEventId
       });
 
       // 3. Get ticket count before creation for database state verification
@@ -713,7 +723,7 @@ describe('Payment Integration Tests - Final Implementation', () => {
       ticket_id: 'TICKET-TEST-' + Date.now(),
       transaction_id: transactionId,
       ticket_type: 'general',
-      event_id: 'boulder-fest-2026',
+      event_id: testEventId,
       event_date: '2026-05-15',
       price_cents: 1000,
       status: 'valid',

@@ -69,7 +69,7 @@ describe('AuditService', () => {
         normalField: 'value'
       };
 
-      const sanitized = auditService.sanitizeData(data);
+      const sanitized = await auditService.sanitizeData(data);
 
       expect(sanitized.username).toBe('admin');
       expect(sanitized.password).toBe('[REDACTED]');
@@ -80,10 +80,10 @@ describe('AuditService', () => {
     it('should handle non-object data', async () => {
       await auditService.ensureInitialized();
 
-      expect(auditService.sanitizeData('string')).toBe('string');
-      expect(auditService.sanitizeData(123)).toBe(123);
-      expect(auditService.sanitizeData(null)).toBeNull();
-      expect(auditService.sanitizeData(undefined)).toBeUndefined();
+      expect(await auditService.sanitizeData('string')).toBe('string');
+      expect(await auditService.sanitizeData(123)).toBe(123);
+      expect(await auditService.sanitizeData(null)).toBeNull();
+      expect(await auditService.sanitizeData(undefined)).toBeUndefined();
     });
   });
 

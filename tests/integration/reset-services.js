@@ -21,6 +21,30 @@ export async function resetAllServices() {
     console.warn('⚠️ Could not reset database instance:', error.message);
   }
 
+  // Reset bootstrap service state (CRITICAL: must re-initialize after database cleanup)
+  try {
+    const { bootstrapService } = await import('../../lib/bootstrap-service.js');
+    if (bootstrapService) {
+      bootstrapService.initialized = false;
+      bootstrapService.initializationPromise = null;
+      bootstrapService.lastChecksum = null;
+    }
+  } catch (error) {
+    console.warn('⚠️ Could not reset bootstrap service:', error.message);
+  }
+
+  // Reset Stripe price sync service state
+  try {
+    const { stripePriceSyncService } = await import('../../lib/stripe-price-sync-service.js');
+    if (stripePriceSyncService) {
+      stripePriceSyncService.initialized = false;
+      stripePriceSyncService.initializationPromise = null;
+      stripePriceSyncService.stripe = null;
+    }
+  } catch (error) {
+    console.warn('⚠️ Could not reset Stripe price sync service:', error.message);
+  }
+
   // Reset audit service state
   auditService.initialized = false;
   auditService.initializationPromise = null;
@@ -65,6 +89,16 @@ export async function resetAndInitializeServices() {
 
   // Initialize available services
   const initPromises = [auditService.ensureInitialized()];
+
+  // Add bootstrap service initialization (CRITICAL: populates ticket_types and events)
+  try {
+    const { bootstrapService } = await import('../../lib/bootstrap-service.js');
+    if (bootstrapService && typeof bootstrapService.initialize === 'function') {
+      initPromises.push(bootstrapService.initialize());
+    }
+  } catch (error) {
+    console.warn('⚠️ Bootstrap service not available for initialization:', error.message);
+  }
 
   // Add security alert service if available
   try {
