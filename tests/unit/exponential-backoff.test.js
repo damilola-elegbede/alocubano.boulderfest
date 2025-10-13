@@ -423,6 +423,8 @@ describe('ExponentialBackoff', () => {
       const operation = vi.fn().mockRejectedValue(new Error('Always fails'));
 
       const resultPromise = backoff.execute(operation);
+      // Suppress unhandled rejection warnings during test
+      resultPromise.catch(() => {});
 
       // Advance time past the timeout
       currentTime += 5100;
@@ -467,6 +469,8 @@ describe('ExponentialBackoff', () => {
       const operation = vi.fn().mockRejectedValue(new Error('Slow operation'));
 
       const resultPromise = backoff.execute(operation);
+      // Suppress unhandled rejection warnings during test
+      resultPromise.catch(() => {});
 
       // Advance time past the timeout
       currentTime += 3100;
@@ -614,9 +618,13 @@ describe('ExponentialBackoff', () => {
       backoff = new ExponentialBackoff({ initialDelay: 100, maxRetries: 0 });
       const operation = vi.fn().mockRejectedValue(new Error('Failed'));
 
+      const resultPromise = backoff.execute(operation);
+      // Suppress unhandled rejection warnings during test
+      resultPromise.catch(() => {});
+
+      await vi.runAllTimersAsync();
+
       try {
-        const resultPromise = backoff.execute(operation);
-        await vi.runAllTimersAsync();
         await resultPromise;
       } catch (error) {
         expect(operation).toHaveBeenCalledTimes(1); // Only initial attempt
