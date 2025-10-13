@@ -407,21 +407,26 @@ describe('ResilientServiceWrapper', () => {
         return brevo.sendEmail({ shouldFail: false });
       };
 
+      let finalResult;
       for (let i = 0; i < 3; i++) {
         try {
           const promise = sendWithRetry();
           await vi.runAllTimersAsync();
           const result = await promise;
           if (result.messageId) {
-            expect(result.messageId).toBe('msg_123');
+            finalResult = result;
             break;
           }
         } catch (e) {
-          // Retry
+          // Retry - suppress error
+          if (i === 2) throw e; // Re-throw on last attempt if still failing
         }
       }
 
       expect(attempts).toBeGreaterThanOrEqual(2);
+      if (finalResult) {
+        expect(finalResult.messageId).toBe('msg_123');
+      }
     });
 
     it('should respect rate limit headers', async () => {
@@ -540,21 +545,26 @@ describe('ResilientServiceWrapper', () => {
         return stripe.createPaymentIntent({ shouldFail: false });
       };
 
+      let finalResult;
       for (let i = 0; i < 2; i++) {
         try {
           const promise = createWithRetry();
           await vi.runAllTimersAsync();
           const result = await promise;
           if (result.id) {
-            expect(result.id).toBe('pi_123');
+            finalResult = result;
             break;
           }
         } catch (e) {
-          // Retry
+          // Retry - suppress error
+          if (i === 1) throw e; // Re-throw on last attempt if still failing
         }
       }
 
       expect(attempts).toBeGreaterThanOrEqual(2);
+      if (finalResult) {
+        expect(finalResult.id).toBe('pi_123');
+      }
     });
 
     it('should not retry card errors', async () => {
@@ -597,16 +607,21 @@ describe('ResilientServiceWrapper', () => {
         circuitBreakerThreshold: 2
       });
 
-      // Trigger failures
+      // Trigger failures to open circuit
+      const failures = [];
       for (let i = 0; i < 2; i++) {
+        const promise = drive.listFiles({ shouldFail: true });
+        failures.push(promise.catch(() => {})); // Suppress unhandled rejections
+        await vi.runAllTimersAsync();
         try {
-          const promise = drive.listFiles({ shouldFail: true });
-          await vi.runAllTimersAsync();
           await promise;
         } catch (e) {
-          // Expected
+          // Expected - circuit should open after these failures
         }
       }
+
+      // Wait for all failures to complete
+      await Promise.all(failures);
 
       // Next request should use cache
       const cachedFiles = [{ id: 'cached1', name: 'cached.jpg' }];
@@ -731,11 +746,10 @@ describe('ResilientServiceWrapper', () => {
 
       const operation = vi.fn();
 
-      await expect(async () => {
-        const promise = wrapper.execute(operation);
-        await vi.runAllTimersAsync();
-        await promise;
-      }).rejects.toThrow('Circuit breaker open');
+      const promise = wrapper.execute(operation);
+      await vi.runAllTimersAsync();
+
+      await expect(promise).rejects.toThrow('Circuit breaker open');
     });
   });
 
@@ -744,19 +758,19 @@ describe('ResilientServiceWrapper', () => {
       wrapper = new ResilientServiceWrapper('test', { initialDelay: 100 });
 
       // Successful request
-      await (async () => {
-        const promise = wrapper.execute(vi.fn().mockResolvedValue('ok'));
-        await vi.runAllTimersAsync();
-        await promise;
-      })();
+      const successPromise = wrapper.execute(vi.fn().mockResolvedValue('ok'));
+      await vi.runAllTimersAsync();
+      await successPromise;
 
       // Failed request with retry
+      const failPromise = wrapper.execute(vi.fn().mockRejectedValue(new Error('fail')));
+      // Add error handler to prevent unhandled rejection
+      failPromise.catch(() => {});
+      await vi.runAllTimersAsync();
       try {
-        const promise = wrapper.execute(vi.fn().mockRejectedValue(new Error('fail')));
-        await vi.runAllTimersAsync();
-        await promise;
+        await failPromise;
       } catch (e) {
-        // Expected
+        // Expected - just catching to complete the test
       }
 
       const metrics = wrapper.getMetrics();
