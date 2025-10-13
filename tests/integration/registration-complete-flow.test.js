@@ -361,6 +361,17 @@ describe('Registration Complete Flow - Integration Tests', () => {
     }, 30000); // 30 second timeout
 
     it('should set registered_at timestamp', async () => {
+      // First, register the ticket within this test
+      const registrations = [{
+        ticketId: 'REG-SINGLE-001',
+        firstName: 'Registered',
+        lastName: 'User',
+        email: 'registered@example.com'
+      }];
+
+      await testRequest('POST', '/api/registration/batch', { registrations });
+
+      // Now verify the registered_at timestamp is set
       const result = await db.execute({
         sql: 'SELECT registered_at FROM tickets WHERE ticket_id = ?',
         args: ['REG-SINGLE-001']
@@ -368,7 +379,7 @@ describe('Registration Complete Flow - Integration Tests', () => {
 
       expect(result.rows[0].registered_at).toBeDefined();
       expect(new Date(result.rows[0].registered_at)).toBeInstanceOf(Date);
-    });
+    }, 30000); // 30 second timeout for registration with emails
 
     it('should handle already registered tickets gracefully', async () => {
       // First registration

@@ -24,6 +24,7 @@ import { getDatabaseClient } from "../../lib/database.js";
 import auditService from "../../lib/audit-service.js";
 import { createOrRetrieveTickets } from "../../lib/ticket-creation-service.js";
 import { fulfillReservation, releaseReservation } from "../../lib/ticket-availability-service.js";
+import { extractTestModeFromStripeSession } from "../../lib/test-mode-utils.js";
 
 // Initialize Stripe with strict error handling
 if (!process.env.STRIPE_SECRET_KEY) {
@@ -128,9 +129,9 @@ export default async function handler(req, res) {
     switch (event.type) {
     case 'checkout.session.completed': {
       const session = event.data.object;
-      const isTestTransaction = session.metadata?.testMode === 'true' ||
-                               session.metadata?.testTransaction === 'true' ||
-                               session.id?.includes('test');
+      // Use centralized secure detection (checks livemode flag and metadata)
+      const testModeInfo = extractTestModeFromStripeSession(session);
+      const isTestTransaction = testModeInfo.is_test === 1;
 
       console.log(`Processing ${isTestTransaction ? 'TEST ' : ''}checkout.session.completed for ${session.id}`);
 
@@ -246,9 +247,9 @@ export default async function handler(req, res) {
 
     case 'checkout.session.async_payment_succeeded': {
       const session = event.data.object;
-      const isTestTransaction = session.metadata?.testMode === 'true' ||
-                               session.metadata?.testTransaction === 'true' ||
-                               session.id?.includes('test');
+      // Use centralized secure detection (checks livemode flag and metadata)
+      const testModeInfo = extractTestModeFromStripeSession(session);
+      const isTestTransaction = testModeInfo.is_test === 1;
 
       console.log(`${isTestTransaction ? 'TEST ' : ''}Async payment succeeded for session:`, session.id);
 

@@ -203,6 +203,11 @@ describe('QR Validation Flow - Integration Tests', () => {
     it('should set first_scanned_at on initial scan', async () => {
       const ticketId = ticket1Id;
 
+      // Perform initial scan in this test
+      const token = await qrService.getOrCreateToken(ticketId);
+      const scanRes = await testRequest('POST', '/api/tickets/validate', { token });
+      expect(scanRes.status).toBe(200);
+
       // Check first_scanned_at was set
       const result = await db.execute({
         sql: 'SELECT first_scanned_at FROM tickets WHERE ticket_id = ?',
@@ -509,7 +514,7 @@ describe('QR Validation Flow - Integration Tests', () => {
 
       // Check qr_validations log
       const result = await db.execute({
-        sql: 'SELECT * FROM qr_validations WHERE ticket_id = ? ORDER BY created_at DESC LIMIT 1',
+        sql: 'SELECT * FROM qr_validations WHERE ticket_id = (SELECT id FROM tickets WHERE ticket_id = ?) ORDER BY created_at DESC LIMIT 1',
         args: [ticketId]
       });
 
@@ -570,7 +575,7 @@ describe('QR Validation Flow - Integration Tests', () => {
       expect(response.data.valid).toBe(true);
 
       const result = await db.execute({
-        sql: 'SELECT validation_metadata FROM qr_validations WHERE ticket_id = ? ORDER BY created_at DESC LIMIT 1',
+        sql: 'SELECT validation_metadata FROM qr_validations WHERE ticket_id = (SELECT id FROM tickets WHERE ticket_id = ?) ORDER BY created_at DESC LIMIT 1',
         args: [ticketId]
       });
 
@@ -621,7 +626,7 @@ describe('QR Validation Flow - Integration Tests', () => {
       });
 
       const result = await db.execute({
-        sql: 'SELECT validation_metadata FROM qr_validations WHERE ticket_id = ? ORDER BY created_at DESC LIMIT 1',
+        sql: 'SELECT validation_metadata FROM qr_validations WHERE ticket_id = (SELECT id FROM tickets WHERE ticket_id = ?) ORDER BY created_at DESC LIMIT 1',
         args: [ticketId]
       });
 

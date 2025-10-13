@@ -191,13 +191,10 @@ describe('ExponentialBackoff', () => {
       const operation = vi.fn().mockRejectedValue(new Error('Always fails'));
 
       const resultPromise = backoff.execute(operation);
-      // Suppress unhandled rejection warnings during test
-      resultPromise.catch(() => {});
+      const assertion = expect(resultPromise).rejects.toThrow('Operation failed after 3 attempts');
 
-      await expect(async () => {
-        await vi.runAllTimersAsync();
-        await resultPromise;
-      }).rejects.toThrow('Operation failed after 3 attempts');
+      await vi.runAllTimersAsync();
+      await assertion;
 
       expect(operation).toHaveBeenCalledTimes(3); // Initial + 2 retries
     });
@@ -209,18 +206,16 @@ describe('ExponentialBackoff', () => {
         .mockRejectedValueOnce(new Error('Error 2'))
         .mockRejectedValueOnce(new Error('Error 3'));
 
-      try {
-        const resultPromise = backoff.execute(operation);
-        // Suppress unhandled rejection warnings during test
-        resultPromise.catch(() => {});
-        await vi.runAllTimersAsync();
-        await resultPromise;
-      } catch (error) {
-        expect(error.errors).toHaveLength(3);
-        expect(error.errors[0].attempt).toBe(1);
-        expect(error.errors[1].attempt).toBe(2);
-        expect(error.errors[2].attempt).toBe(3);
-      }
+      const resultPromise = backoff.execute(operation);
+      const errorCapture = resultPromise.catch(error => error);
+
+      await vi.runAllTimersAsync();
+      const error = await errorCapture;
+
+      expect(error.errors).toHaveLength(3);
+      expect(error.errors[0].attempt).toBe(1);
+      expect(error.errors[1].attempt).toBe(2);
+      expect(error.errors[2].attempt).toBe(3);
     });
   });
 
@@ -348,16 +343,14 @@ describe('ExponentialBackoff', () => {
 
       const operation = vi.fn().mockRejectedValue(new Error('validation error'));
 
-      try {
-        const resultPromise = backoff.execute(operation);
-        // Suppress unhandled rejection warnings during test
-        resultPromise.catch(() => {});
-        await vi.runAllTimersAsync();
-        await resultPromise;
-      } catch (error) {
-        expect(error.code).toBe('MAX_RETRIES_EXCEEDED');
-        expect(operation).toHaveBeenCalledTimes(1); // No retries
-      }
+      const resultPromise = backoff.execute(operation);
+      const errorCapture = resultPromise.catch(error => error);
+
+      await vi.runAllTimersAsync();
+      const error = await errorCapture;
+
+      expect(error.code).toBe('MAX_RETRIES_EXCEEDED');
+      expect(operation).toHaveBeenCalledTimes(1); // No retries
     });
 
     it('should retry on transient errors only', async () => {
@@ -404,15 +397,13 @@ describe('ExponentialBackoff', () => {
 
       const operation = vi.fn().mockRejectedValue(authError);
 
-      try {
-        const resultPromise = backoff.execute(operation);
-        // Suppress unhandled rejection warnings during test
-        resultPromise.catch(() => {});
-        await vi.runAllTimersAsync();
-        await resultPromise;
-      } catch (error) {
-        expect(operation).toHaveBeenCalledTimes(1); // No retries
-      }
+      const resultPromise = backoff.execute(operation);
+      const errorCapture = resultPromise.catch(error => error);
+
+      await vi.runAllTimersAsync();
+      await errorCapture;
+
+      expect(operation).toHaveBeenCalledTimes(1); // No retries
     });
   });
 
@@ -431,17 +422,16 @@ describe('ExponentialBackoff', () => {
       const operation = vi.fn().mockRejectedValue(new Error('Always fails'));
 
       const resultPromise = backoff.execute(operation);
-      // Suppress unhandled rejection warnings during test
-      resultPromise.catch(() => {});
+      const assertion = expect(resultPromise).rejects.toMatchObject({
+        code: 'TIMEOUT_ERROR',
+        message: expect.stringContaining('Overall timeout exceeded')
+      });
 
       // Advance time past the timeout
       currentTime += 5100;
       await vi.advanceTimersByTimeAsync(5100);
 
-      await expect(resultPromise).rejects.toMatchObject({
-        code: 'TIMEOUT_ERROR',
-        message: expect.stringContaining('Overall timeout exceeded')
-      });
+      await assertion;
     });
 
     it('should succeed if operation completes before timeout', async () => {
@@ -477,14 +467,7 @@ describe('ExponentialBackoff', () => {
       const operation = vi.fn().mockRejectedValue(new Error('Slow operation'));
 
       const resultPromise = backoff.execute(operation);
-      // Suppress unhandled rejection warnings during test
-      resultPromise.catch(() => {});
-
-      // Advance time past the timeout
-      currentTime += 3100;
-      await vi.advanceTimersByTimeAsync(3100);
-
-      await expect(resultPromise).rejects.toMatchObject({
+      const assertion = expect(resultPromise).rejects.toMatchObject({
         attempts: expect.any(Number),
         errors: expect.arrayContaining([
           expect.objectContaining({
@@ -492,6 +475,12 @@ describe('ExponentialBackoff', () => {
           })
         ])
       });
+
+      // Advance time past the timeout
+      currentTime += 3100;
+      await vi.advanceTimersByTimeAsync(3100);
+
+      await assertion;
     });
   });
 
@@ -627,17 +616,13 @@ describe('ExponentialBackoff', () => {
       const operation = vi.fn().mockRejectedValue(new Error('Failed'));
 
       const resultPromise = backoff.execute(operation);
-      // Suppress unhandled rejection warnings during test
-      resultPromise.catch(() => {});
+      const errorCapture = resultPromise.catch(error => error);
 
       await vi.runAllTimersAsync();
+      const error = await errorCapture;
 
-      try {
-        await resultPromise;
-      } catch (error) {
-        expect(operation).toHaveBeenCalledTimes(1); // Only initial attempt
-        expect(error.attempts).toBe(1);
-      }
+      expect(operation).toHaveBeenCalledTimes(1); // Only initial attempt
+      expect(error.attempts).toBe(1);
     });
 
     it('should handle very large retry counts', async () => {

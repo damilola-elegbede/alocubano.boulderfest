@@ -3,6 +3,7 @@ import { getBrevoService } from "../../lib/brevo-service.js";
 import rateLimit from "../../lib/rate-limit-middleware.js";
 import auditService from "../../lib/audit-service.js";
 import { processDatabaseResult } from "../../lib/bigint-serializer.js";
+import { enhanceApiResponse } from "../../lib/time-utils.js";
 
 // Input validation regex patterns
 const NAME_REGEX = /^[a-zA-Z\s\-']{2,50}$/;
@@ -1042,7 +1043,8 @@ export default async function handler(req, res) {
       console.log('[BATCH_REG] Final results:', redactPII(results));
     }
 
-    res.status(200).json({
+    // Build response payload first, then enhance with Mountain Time fields
+    const payload = {
       success: true,
       message: `Successfully registered ${results.length} tickets`,
       registrations: results,
@@ -1068,7 +1070,10 @@ export default async function handler(req, res) {
         purchaserEmail: transactionInfo?.customer_email,
         registrationDate: new Date().toISOString()
       }
-    });
+    };
+
+    // Add Mountain Time fields and return enhanced response
+    return res.status(200).json(enhanceApiResponse(payload, ['registrationDate']));
 
   } catch (error) {
     if (process.env.NODE_ENV !== 'production') {
