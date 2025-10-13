@@ -291,6 +291,8 @@ describe('ResilientServiceWrapper', () => {
 
       try {
         const resultPromise = wrapper.execute(operation);
+        // Attach error handler immediately to prevent unhandled rejection
+        resultPromise.catch(() => {});
         await vi.runAllTimersAsync();
         await resultPromise;
       } catch (e) {
@@ -314,6 +316,8 @@ describe('ResilientServiceWrapper', () => {
       for (let i = 0; i < 3; i++) {
         try {
           const promise = wrapper.execute(operation, { defaultValue: null });
+          // Attach error handler immediately to prevent unhandled rejection
+          promise.catch(() => {});
           await vi.runAllTimersAsync();
           await promise;
         } catch (e) {
@@ -402,15 +406,21 @@ describe('ResilientServiceWrapper', () => {
       const sendWithRetry = async () => {
         attempts++;
         if (attempts < 3) {
-          return brevo.sendEmail({ shouldFail: true });
+          const promise = brevo.sendEmail({ shouldFail: true });
+          // Attach error handler immediately to prevent unhandled rejection
+          promise.catch(() => {});
+          return promise;
         }
         return brevo.sendEmail({ shouldFail: false });
       };
 
       let finalResult;
+      const errors = [];
       for (let i = 0; i < 3; i++) {
         try {
           const promise = sendWithRetry();
+          // Attach error handler to prevent unhandled rejection during timer advancement
+          promise.catch((e) => errors.push(e));
           await vi.runAllTimersAsync();
           const result = await promise;
           if (result.messageId) {
@@ -475,6 +485,8 @@ describe('ResilientServiceWrapper', () => {
       for (let i = 0; i < 2; i++) {
         try {
           const promise = brevo.sendEmail({ shouldFail: true });
+          // Attach error handler immediately to prevent unhandled rejection
+          promise.catch(() => {});
           await vi.runAllTimersAsync();
           await promise;
         } catch (e) {
@@ -540,15 +552,21 @@ describe('ResilientServiceWrapper', () => {
       const createWithRetry = async () => {
         attempts++;
         if (attempts < 2) {
-          return stripe.createPaymentIntent({ shouldFail: true });
+          const promise = stripe.createPaymentIntent({ shouldFail: true });
+          // Attach error handler immediately to prevent unhandled rejection
+          promise.catch(() => {});
+          return promise;
         }
         return stripe.createPaymentIntent({ shouldFail: false });
       };
 
       let finalResult;
+      const errors = [];
       for (let i = 0; i < 2; i++) {
         try {
           const promise = createWithRetry();
+          // Attach error handler to prevent unhandled rejection during timer advancement
+          promise.catch((e) => errors.push(e));
           await vi.runAllTimersAsync();
           const result = await promise;
           if (result.id) {
@@ -580,6 +598,8 @@ describe('ResilientServiceWrapper', () => {
 
       try {
         const promise = operation();
+        // Attach error handler immediately to prevent unhandled rejection
+        promise.catch(() => {});
         await vi.runAllTimersAsync();
         await promise;
       } catch (e) {
@@ -747,6 +767,8 @@ describe('ResilientServiceWrapper', () => {
       const operation = vi.fn();
 
       const promise = wrapper.execute(operation);
+      // Attach error handler immediately to prevent unhandled rejection
+      promise.catch(() => {});
       await vi.runAllTimersAsync();
 
       await expect(promise).rejects.toThrow('Circuit breaker open');

@@ -146,12 +146,19 @@ jobs:
           # Record start time
           start_time=$(date +%s%3N)
 
-          # Run tests with JSON reporter for reliable parsing + verbose output
-          CI=true timeout 280s npm run test:integration -- --reporter=json --reporter=verbose --no-color > integration-test-results-raw.json 2>&1
+          # Run tests once with both JSON and verbose output
+          set +e  # Allow command to fail without stopping script
+          CI=true timeout 280s npm run test:integration -- --reporter=json --reporter=verbose --no-color 2>&1 | tee integration-test-output.log > integration-test-results-raw.json
           test_exit_code=$?
+          set -e  # Re-enable exit on error
 
-          # Also capture verbose output for logs
-          CI=true timeout 280s npm run test:integration -- --reporter=verbose --no-color 2>&1 | tee integration-test-output.log
+          # Ensure log file exists even if tests failed catastrophically
+          if [ ! -f integration-test-output.log ]; then
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" > integration-test-output.log
+            echo "⚠️  Integration tests failed to produce output" >> integration-test-output.log
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >> integration-test-output.log
+            echo "Exit code: $test_exit_code" >> integration-test-output.log
+          fi
 
           # Record end time
           end_time=$(date +%s%3N)
@@ -227,7 +234,15 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
-            const output = fs.readFileSync('integration-test-output.log', 'utf8');
+
+            // Read output with fallback
+            let output = '';
+            try {
+              output = fs.readFileSync('integration-test-output.log', 'utf8');
+            } catch (error) {
+              output = `⚠️  Log file not found: ${error.message}`;
+            }
+
             const nodeVersion = '${{ matrix.node-version }}';
             const status = '${{ job.status }}';
 
