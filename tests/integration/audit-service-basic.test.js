@@ -49,7 +49,7 @@ describe('Basic Audit Service Tests', () => {
   });
 
   describe('Data Sanitization', () => {
-    it('should sanitize sensitive fields', () => {
+    it('should sanitize sensitive fields', async () => {
       const testData = {
         username: 'testuser',
         password: 'secret123',
@@ -58,7 +58,7 @@ describe('Basic Audit Service Tests', () => {
         sessionToken: 'token_abcdef'
       };
 
-      const sanitized = auditService.sanitizeData(testData);
+      const sanitized = await auditService.sanitizeData(testData);
 
       expect(sanitized.username).toBe('testuser');
       expect(sanitized.email).toBe('test@example.com');
@@ -67,11 +67,11 @@ describe('Basic Audit Service Tests', () => {
       expect(sanitized.sessionToken).toBe('[REDACTED]');
     });
 
-    it('should handle null and undefined data gracefully', () => {
-      expect(auditService.sanitizeData(null)).toBeNull();
-      expect(auditService.sanitizeData(undefined)).toBeUndefined();
-      expect(auditService.sanitizeData('string')).toBe('string');
-      expect(auditService.sanitizeData(123)).toBe(123);
+    it('should handle null and undefined data gracefully', async () => {
+      expect(await auditService.sanitizeData(null)).toBeNull();
+      expect(await auditService.sanitizeData(undefined)).toBeUndefined();
+      expect(await auditService.sanitizeData('string')).toBe('string');
+      expect(await auditService.sanitizeData(123)).toBe(123);
     });
   });
 

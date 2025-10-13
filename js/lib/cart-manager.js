@@ -100,10 +100,12 @@ export class CartManager extends EventTarget {
                 updatedAt: Date.now(),
                 sessionId: this.generateSessionId(),
                 checkoutStartedAt: null,
-                checkoutSessionId: null
+                checkoutSessionId: null,
+                testMode: false  // Track if cart contains test items
             }
         };
         this.storageKey = 'alocubano_cart';
+        this.testMode = false;  // Global test mode flag
         this.initialized = false;
         this.operationQueue = [];
         this.isExecutingQueue = false;
@@ -182,7 +184,7 @@ export class CartManager extends EventTarget {
 
     // Ticket operations
     async addTicket(ticketData) {
-        const { ticketType, price, name, eventId, eventDate, venue, eventName, quantity = 1 } = ticketData;
+        const { ticketType, price, name, eventId, eventDate, venue, eventName, quantity = 1, isTestItem = false } = ticketData;
 
         if (!ticketType || !price || !name) {
             throw new Error('Invalid ticket data');
@@ -190,51 +192,75 @@ export class CartManager extends EventTarget {
 
         // CRITICAL FIX: Use operation queue instead of blocking lock
         return this.queueOperation('addTicket', async() => {
+            // Determine if this should be a test item (global testMode or explicit isTestItem)
+            const shouldBeTestItem = this.testMode || isTestItem;
+
+            // Adjust ticket type and name for test items
+            const actualTicketType = shouldBeTestItem ? `TEST-${ticketType}` : ticketType;
+            const actualName = shouldBeTestItem ? `TEST - ${name}` : name;
+
             // Update state
-            if (!this.state.tickets[ticketType]) {
-                this.state.tickets[ticketType] = {
-                    ticketType,
+            if (!this.state.tickets[actualTicketType]) {
+                this.state.tickets[actualTicketType] = {
+                    ticketType: actualTicketType,
+                    originalTicketType: shouldBeTestItem ? ticketType : undefined,
                     price,
-                    name,
+                    name: actualName,
                     eventId,
                     eventName,  // Store event name - NO FALLBACK
                     eventDate,  // Store event date
                     venue,      // Store venue
                     quantity: 0,
-                    addedAt: Date.now()
+                    addedAt: Date.now(),
+                    isTestItem: shouldBeTestItem
                 };
             }
 
-            this.state.tickets[ticketType].quantity += quantity;
-            this.state.tickets[ticketType].updatedAt = Date.now();
+            this.state.tickets[actualTicketType].quantity += quantity;
+            this.state.tickets[actualTicketType].updatedAt = Date.now();
             // Update eventName, eventDate and venue if provided (in case they changed)
             if (eventName) {
-                this.state.tickets[ticketType].eventName = eventName;
+                this.state.tickets[actualTicketType].eventName = eventName;
             }
             if (eventDate) {
-                this.state.tickets[ticketType].eventDate = eventDate;
+                this.state.tickets[actualTicketType].eventDate = eventDate;
             }
             if (venue) {
-                this.state.tickets[ticketType].venue = venue;
+                this.state.tickets[actualTicketType].venue = venue;
+            }
+
+            // Update test mode flag in metadata if test item added
+            if (shouldBeTestItem) {
+                this.state.metadata.testMode = true;
             }
 
             // Use coordinated storage write
             await this.saveToStorage();
 
             // Track analytics
-            this.analytics.trackCartEvent('ticket_added', {
-                ticketType,
+            const analyticsData = {
+                ticketType: actualTicketType,
                 quantity,
                 price,
-                total: this.state.tickets[ticketType].quantity * price
-            });
+                total: this.state.tickets[actualTicketType].quantity * price
+            };
+            if (shouldBeTestItem) {
+                analyticsData.originalTicketType = ticketType;
+                analyticsData.isTestItem = true;
+                analyticsData.testMode = this.detectTestMode();
+            }
+            this.analytics.trackCartEvent('ticket_added', analyticsData);
 
             // Emit events immediately
-            this.emit('cart:ticket:added', {
-                ticketType,
+            const eventDetail = {
+                ticketType: actualTicketType,
                 quantity,
-                total: this.state.tickets[ticketType].quantity
-            });
+                total: this.state.tickets[actualTicketType].quantity
+            };
+            if (shouldBeTestItem) {
+                eventDetail.isTestItem = true;
+            }
+            this.emit('cart:ticket:added', eventDetail);
             this.emit('cart:updated', this.getState());
 
             return true;
@@ -275,11 +301,17 @@ export class CartManager extends EventTarget {
 
     // Upsert operation that combines add and update logic
     async upsertTicket(ticketData) {
-        const { ticketType, price, name, eventId, eventName, eventDate, venue, quantity } = ticketData;
+        const { ticketType, price, name, eventId, eventName, eventDate, venue, quantity, isTestItem = false } = ticketData;
+
+        // Determine if this should be a test item (global testMode or explicit isTestItem)
+        const shouldBeTestItem = this.testMode || isTestItem;
+
+        // Adjust ticket type for test items
+        const actualTicketType = shouldBeTestItem ? `TEST-${ticketType}` : ticketType;
 
         // If quantity is 0 or undefined/null, remove the ticket
         if (quantity === 0 || quantity === null || quantity === undefined) {
-            return this.removeTicket(ticketType);
+            return this.removeTicket(actualTicketType);
         }
 
         // Check required fields only when adding/updating (not removing)
@@ -293,90 +325,119 @@ export class CartManager extends EventTarget {
         }
 
         return this.queueOperation('upsertTicket', async() => {
-            const isNew = !this.state.tickets[ticketType];
+            const isNew = !this.state.tickets[actualTicketType];
+
+            // Adjust name for test items
+            const actualName = shouldBeTestItem ? `TEST - ${name}` : name;
 
             // Update state - handles both new and existing tickets
             if (isNew) {
                 // Add new ticket
-                this.state.tickets[ticketType] = {
-                    ticketType,
+                this.state.tickets[actualTicketType] = {
+                    ticketType: actualTicketType,
+                    originalTicketType: shouldBeTestItem ? ticketType : undefined,
                     price,
-                    name,
+                    name: actualName,
                     eventId,
                     eventName,  // Store event name - NO FALLBACK
                     eventDate,  // Store event date
                     venue,      // Store venue
                     quantity: 0,
-                    addedAt: Date.now()
+                    addedAt: Date.now(),
+                    isTestItem: shouldBeTestItem
                 };
             } else {
                 // Update existing ticket metadata if provided
                 if (price) {
-                    this.state.tickets[ticketType].price = price;
+                    this.state.tickets[actualTicketType].price = price;
                 }
                 if (name) {
-                    this.state.tickets[ticketType].name = name;
+                    this.state.tickets[actualTicketType].name = actualName;
                 }
                 if (eventId) {
-                    this.state.tickets[ticketType].eventId = eventId;
+                    this.state.tickets[actualTicketType].eventId = eventId;
                 }
                 if (eventName) {
-                    this.state.tickets[ticketType].eventName = eventName;
+                    this.state.tickets[actualTicketType].eventName = eventName;
                 }
                 if (eventDate) {
-                    this.state.tickets[ticketType].eventDate = eventDate;
+                    this.state.tickets[actualTicketType].eventDate = eventDate;
                 }
                 if (venue) {
-                    this.state.tickets[ticketType].venue = venue;
+                    this.state.tickets[actualTicketType].venue = venue;
                 }
             }
 
             // Set the exact quantity (replaces current quantity)
-            this.state.tickets[ticketType].quantity = quantity;
-            this.state.tickets[ticketType].updatedAt = Date.now();
+            this.state.tickets[actualTicketType].quantity = quantity;
+            this.state.tickets[actualTicketType].updatedAt = Date.now();
+
+            // Update test mode flag in metadata if test item added
+            if (shouldBeTestItem) {
+                this.state.metadata.testMode = true;
+            }
 
             // Use coordinated storage write
             await this.saveToStorage();
 
             // Emit events using dual dispatch pattern
             if (isNew && quantity > 0) {
-                this.emit('cart:ticket:added', { ticketType, quantity, price, name, eventId });
+                this.emit('cart:ticket:added', { ticketType: actualTicketType, quantity, price, name: actualName, eventId });
             } else {
-                this.emit('cart:ticket:updated', { ticketType, quantity });
+                this.emit('cart:ticket:updated', { ticketType: actualTicketType, quantity });
             }
             this.emit('cart:updated', this.getState());
 
-            return this.state.tickets[ticketType];
+            return this.state.tickets[actualTicketType];
         });
     }
 
     // Donation operations
-    async addDonation(amount, isTest = false) {
+    async addDonation(amount, isTestItem = false) {
         if (amount <= 0) {
             throw new Error('Invalid donation amount');
         }
 
+        // Determine if this should be a test item (global testMode or explicit isTestItem)
+        const shouldBeTestItem = this.testMode || isTestItem;
+
         // Store donation amount in dollars (same as ticket prices)
         const donationAmount = Math.round(amount * 100) / 100; // Round to 2 decimal places
 
-        // Create new donation item
-        const donationId = `donation_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+        // Create donation ID with test prefix if test item
+        const idPrefix = shouldBeTestItem ? 'test_donation_' : 'donation_';
+        const donationId = `${idPrefix}${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+
+        // Create donation name with test prefix if test item
+        const donationName = shouldBeTestItem ? 'TEST - Festival Support' : 'Festival Support';
+
         const donation = {
             id: donationId,
             amount: donationAmount,
-            name: 'Festival Support',
+            name: donationName,
             addedAt: Date.now(),
-            isTest: isTest  // Track whether this is a test donation
+            isTestItem: shouldBeTestItem  // Track whether this is a test donation
         };
 
         this.state.donations.push(donation);
+
+        // Update test mode flag in metadata if test item added
+        if (shouldBeTestItem) {
+            this.state.metadata.testMode = true;
+        }
+
         await this.saveToStorage();
 
         // Track analytics
-        this.analytics.trackCartEvent('donation_added', {
+        const analyticsData = {
             donationAmount: amount,
             donationId: donationId
-        });
+        };
+        if (shouldBeTestItem) {
+            analyticsData.isTestItem = true;
+            analyticsData.testMode = this.detectTestMode();
+        }
+        this.analytics.trackCartEvent('donation_added', analyticsData);
 
         this.emit('cart:donation:added', {
             donation,
@@ -449,7 +510,9 @@ export class CartManager extends EventTarget {
     // Persistence
     async saveToStorage() {
         this.state.metadata.updatedAt = Date.now();
-        await this.storageCoordinator.write(this.storageKey, this.state);
+        // Use different storage key for test carts
+        const storageKey = this.state.metadata.testMode ? 'alocubano_cart_test' : this.storageKey;
+        await this.storageCoordinator.write(storageKey, this.state);
     }
 
     loadFromStorage() {
@@ -556,6 +619,72 @@ export class CartManager extends EventTarget {
         return !hasTickets && !hasDonations;
     }
 
+    /**
+     * Detect test mode from URL parameters, localStorage, or environment
+     * @returns {boolean} True if in test mode
+     */
+    detectTestMode() {
+        try {
+            // Check URL parameters for test_mode
+            if (typeof window !== 'undefined' && window.location) {
+                try {
+                    if (typeof URLSearchParams !== 'undefined') {
+                        const params = new URLSearchParams(window.location.search);
+                        const testModeParam = params.get('test_mode');
+                        if (testModeParam === 'true') {
+                            return true;
+                        }
+                        if (testModeParam === 'false') {
+                            return false;
+                        }
+                    }
+                } catch (e) {
+                    // URLSearchParams not available or failed, continue to other checks
+                }
+            }
+
+            // Check localStorage for test mode flags
+            if (typeof localStorage !== 'undefined') {
+                try {
+                    const cartTestMode = localStorage.getItem('cart_test_mode');
+                    const adminTestSession = localStorage.getItem('admin_test_session');
+
+                    if (cartTestMode === 'true' || adminTestSession === 'true') {
+                        return true;
+                    }
+                } catch (e) {
+                    // localStorage access failed, continue to other checks
+                }
+            }
+
+            // Check for development environment
+            if (typeof window !== 'undefined' && window.location) {
+                const hostname = window.location.hostname;
+                const port = window.location.port;
+
+                if (hostname === 'localhost' ||
+                    hostname === '127.0.0.1' ||
+                    port === '3000' ||
+                    port === '8080') {
+                    // In development, check localStorage to explicitly opt-in to test mode
+                    // Don't automatically enable test mode just because we're on localhost
+                    try {
+                        if (typeof localStorage !== 'undefined') {
+                            return localStorage.getItem('cart_test_mode') === 'true';
+                        }
+                    } catch (e) {
+                        // Ignore localStorage errors
+                    }
+                }
+            }
+
+            return false;
+        } catch (error) {
+            // If any error occurs, default to false (not in test mode)
+            return false;
+        }
+    }
+
     async clear() {
         this.state = {
             tickets: {},
@@ -563,7 +692,8 @@ export class CartManager extends EventTarget {
             metadata: {
                 createdAt: Date.now(),
                 updatedAt: Date.now(),
-                sessionId: this.generateSessionId()
+                sessionId: this.generateSessionId(),
+                testMode: false  // Reset test mode
             }
         };
         await this.saveToStorage();

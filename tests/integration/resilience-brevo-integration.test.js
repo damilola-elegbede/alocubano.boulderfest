@@ -69,9 +69,8 @@ describe('Resilience - Brevo Integration', () => {
   });
 
   afterEach(async () => {
-    if (isolationManager) {
-      await isolationManager.cleanup();
-    }
+    // Note: isolationManager doesn't have a cleanup() method
+    // Database cleanup is handled by Vitest's test isolation
     mockBrevo.reset();
   });
 
@@ -128,9 +127,10 @@ describe('Resilience - Brevo Integration', () => {
       // Create transaction for email
       const txResult = await testDb.execute({
         sql: `INSERT INTO transactions (
-          customer_email, customer_name, registration_token, order_number, is_test
-        ) VALUES (?, ?, ?, ?, ?)`,
-        args: ['queue@example.com', 'Queue User', 'token_queue', 'ORDER_QUEUE', 1]
+          transaction_id, customer_email, customer_name, registration_token, registration_token_expires,
+          order_number, type, order_data, amount_cents, is_test
+        ) VALUES (?, ?, ?, ?, datetime('now', '+7 days'), ?, ?, ?, ?, ?)`,
+        args: ['tx_queue_' + Date.now(), 'queue@example.com', 'Queue User', 'token_queue', 'ORDER_QUEUE', 'tickets', JSON.stringify({ test: true }), 5000, 1]
       });
       const txId = Number(txResult.lastInsertRowid);
 
@@ -139,7 +139,7 @@ describe('Resilience - Brevo Integration', () => {
         sql: `INSERT INTO registration_reminders (
           transaction_id, reminder_type, scheduled_at, status
         ) VALUES (?, ?, ?, ?)`,
-        args: [txId, 'order-confirmation', new Date().toISOString(), 'scheduled']
+        args: [txId, '24hr-post-purchase', new Date().toISOString(), 'scheduled']
       });
       const reminderId = Number(reminderResult.lastInsertRowid);
 
@@ -249,9 +249,10 @@ describe('Resilience - Brevo Integration', () => {
       // Create transaction
       const txResult = await testDb.execute({
         sql: `INSERT INTO transactions (
-          customer_email, customer_name, registration_token, order_number, is_test
-        ) VALUES (?, ?, ?, ?, ?)`,
-        args: ['rate@example.com', 'Rate User', 'token_rate', 'ORDER_RATE', 1]
+          transaction_id, customer_email, customer_name, registration_token, registration_token_expires,
+          order_number, type, order_data, amount_cents, is_test
+        ) VALUES (?, ?, ?, ?, datetime('now', '+7 days'), ?, ?, ?, ?, ?)`,
+        args: ['tx_rate_' + Date.now(), 'rate@example.com', 'Rate User', 'token_rate', 'ORDER_RATE', 'tickets', JSON.stringify({ test: true }), 5000, 1]
       });
       const txId = Number(txResult.lastInsertRowid);
 
@@ -266,7 +267,7 @@ describe('Resilience - Brevo Integration', () => {
           ) VALUES (?, ?, ?, ?, ?)`,
           args: [
             txId,
-            'order-confirmation',
+            '24hr-post-purchase',
             new Date(Date.now() + 2000).toISOString(), // Retry after 2 seconds
             'scheduled',
             'Rate limited'
@@ -338,9 +339,10 @@ describe('Resilience - Brevo Integration', () => {
       // Create transaction
       const txResult = await testDb.execute({
         sql: `INSERT INTO transactions (
-          customer_email, customer_name, registration_token, order_number, is_test
-        ) VALUES (?, ?, ?, ?, ?)`,
-        args: ['circuit@example.com', 'Circuit User', 'token_circuit', 'ORDER_CIRCUIT', 1]
+          transaction_id, customer_email, customer_name, registration_token, registration_token_expires,
+          order_number, type, order_data, amount_cents, is_test
+        ) VALUES (?, ?, ?, ?, datetime('now', '+7 days'), ?, ?, ?, ?, ?)`,
+        args: ['tx_circuit_' + Date.now(), 'circuit@example.com', 'Circuit User', 'token_circuit', 'ORDER_CIRCUIT', 'tickets', JSON.stringify({ test: true }), 5000, 1]
       });
       const txId = Number(txResult.lastInsertRowid);
 
@@ -352,7 +354,7 @@ describe('Resilience - Brevo Integration', () => {
           ) VALUES (?, ?, ?, ?)`,
           args: [
             txId,
-            'order-confirmation',
+            '24hr-post-purchase',
             new Date(Date.now() + 60000).toISOString(),
             'scheduled'
           ]
@@ -410,9 +412,10 @@ describe('Resilience - Brevo Integration', () => {
       for (let i = 0; i < 3; i++) {
         const txResult = await testDb.execute({
           sql: `INSERT INTO transactions (
-            customer_email, customer_name, registration_token, order_number, is_test
-          ) VALUES (?, ?, ?, ?, ?)`,
-          args: [`mix${i}@example.com`, `User ${i}`, `token_${i}`, `ORDER_${i}`, 1]
+            transaction_id, customer_email, customer_name, registration_token, registration_token_expires,
+            order_number, type, order_data, amount_cents, is_test
+          ) VALUES (?, ?, ?, ?, datetime('now', '+7 days'), ?, ?, ?, ?, ?)`,
+          args: [`tx_mix_${i}_${Date.now()}`, `mix${i}@example.com`, `User ${i}`, `token_${i}`, `ORDER_${i}`, 'tickets', JSON.stringify({ test: true }), 5000, 1]
         });
 
         promises.push(Number(txResult.lastInsertRowid));

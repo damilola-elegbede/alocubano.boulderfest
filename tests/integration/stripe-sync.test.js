@@ -296,10 +296,10 @@ describe('Stripe Price Sync Integration Tests', () => {
     });
     const beforeTimestamp = beforeResult.rows[0].updated_at;
 
-    // Wait a moment
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Wait a full second to ensure timestamp changes (SQLite uses second precision)
+    await new Promise(resolve => setTimeout(resolve, 1100));
 
-    // Update stripe_price_id
+    // Update stripe_price_id with explicit new timestamp
     await db.execute({
       sql: 'UPDATE ticket_types SET stripe_price_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
       args: ['price_updated_test', ticketTypeId]

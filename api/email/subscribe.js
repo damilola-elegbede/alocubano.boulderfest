@@ -213,6 +213,28 @@ export default async function handler(req, res) {
       });
     }
 
+    // Check if user is already subscribed (better UX - immediate feedback)
+    try {
+      const existingSubscriber = await emailService.getSubscriberByEmail(sanitized.email);
+
+      if (existingSubscriber && existingSubscriber.status === 'active') {
+        return res.status(200).json({
+          success: true,
+          message: "You're already subscribed to our newsletter!",
+          subscriber: {
+            email: existingSubscriber.email,
+            status: existingSubscriber.status,
+            alreadySubscribed: true
+          }
+        });
+      }
+
+      // If unsubscribed or not found, continue with subscription process
+    } catch (checkError) {
+      // If check fails, log and continue with normal flow
+      console.warn('Failed to check existing subscriber:', checkError.message);
+    }
+
     // Get newsletter list ID with test mode fallback
     let newsletterListId;
     if (isTestMode && !process.env.BREVO_NEWSLETTER_LIST_ID) {

@@ -11,18 +11,37 @@ describe('Reminder Batching - Integration Tests', () => {
   let testDb;
   let isolationManager;
   let scheduler;
+  let testEventId;
 
   beforeEach(async () => {
     isolationManager = getTestIsolationManager();
     testDb = await isolationManager.getScopedDatabaseClient();
     scheduler = getReminderScheduler();
     await scheduler.ensureInitialized();
+
+    // Create a test event for FK constraints
+    const eventResult = await testDb.execute({
+      sql: `INSERT INTO events (
+        slug, name, type, status, start_date, end_date,
+        venue_name, venue_city, venue_state, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+      args: [
+        'test-event',
+        'Test Festival',
+        'festival',
+        'test',
+        '2026-05-15',
+        '2026-05-17',
+        'Test Venue',
+        'Test City',
+        'CO'
+      ]
+    });
+    testEventId = Number(eventResult.lastInsertRowid);
   });
 
   afterEach(async () => {
-    if (isolationManager) {
-      await isolationManager.cleanup();
-    }
+    // Worker-level database management - no per-test cleanup needed
   });
 
   describe('Batch Size Enforcement (100/run)', () => {
@@ -33,22 +52,23 @@ describe('Reminder Batching - Integration Tests', () => {
       for (let i = 0; i < 150; i++) {
         const txResult = await testDb.execute({
           sql: `INSERT INTO transactions (
-            customer_email, customer_name, registration_token, order_number, is_test
-          ) VALUES (?, ?, ?, ?, ?)`,
-          args: [`batch${i}@example.com`, `User ${i}`, `token_${i}`, `ORDER_${i}`, 1]
+            transaction_id, type, customer_email, customer_name, amount_cents, registration_token, registration_token_expires, order_data, order_number, is_test, event_id
+          ) VALUES (?, 'tickets', ?, ?, 12500, ?, datetime('now', '+7 days'), ?, ?, ?, ?)`,
+          args: [`TXN_BATCH_${i}`, `batch${i}@example.com`, `User ${i}`, `token_${i}`, JSON.stringify({ test: true }), `ORDER_${i}`, 1, testEventId]
         });
         const txId = Number(txResult.lastInsertRowid);
 
         await testDb.execute({
           sql: `INSERT INTO tickets (
-            transaction_id, ticket_type, ticket_id, qr_code,
+            transaction_id, ticket_type, ticket_id, qr_code_data, event_id, price_cents,
             registration_status, registration_deadline
-          ) VALUES (?, ?, ?, ?, ?, ?)`,
+          ) VALUES (?, ?, ?, ?, ?, 12500, ?, ?)`,
           args: [
             txId,
             'weekender',
             `TICKET_${i}`,
             `QR_${i}`,
+            testEventId,
             'pending',
             new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
           ]
@@ -58,7 +78,7 @@ describe('Reminder Batching - Integration Tests', () => {
           sql: `INSERT INTO registration_reminders (
             transaction_id, reminder_type, scheduled_at, status
           ) VALUES (?, ?, ?, ?)`,
-          args: [txId, '24hr-before', dueTime, 'scheduled']
+          args: [txId, 'initial', dueTime, 'scheduled']
         });
       }
 
@@ -75,22 +95,23 @@ describe('Reminder Batching - Integration Tests', () => {
       for (let i = 0; i < 120; i++) {
         const txResult = await testDb.execute({
           sql: `INSERT INTO transactions (
-            customer_email, customer_name, registration_token, order_number, is_test
-          ) VALUES (?, ?, ?, ?, ?)`,
-          args: [`multi${i}@example.com`, `User ${i}`, `token_m${i}`, `ORDER_M${i}`, 1]
+            transaction_id, type, customer_email, customer_name, amount_cents, registration_token, registration_token_expires, order_data, order_number, is_test, event_id
+          ) VALUES (?, 'tickets', ?, ?, 12500, ?, datetime('now', '+7 days'), ?, ?, ?, ?)`,
+          args: [`TXN_MULTI_${i}`, `multi${i}@example.com`, `User ${i}`, `token_m${i}`, JSON.stringify({ test: true }), `ORDER_M${i}`, 1, testEventId]
         });
         const txId = Number(txResult.lastInsertRowid);
 
         await testDb.execute({
           sql: `INSERT INTO tickets (
-            transaction_id, ticket_type, ticket_id, qr_code,
+            transaction_id, ticket_type, ticket_id, qr_code_data, event_id, price_cents,
             registration_status, registration_deadline
-          ) VALUES (?, ?, ?, ?, ?, ?)`,
+          ) VALUES (?, ?, ?, ?, ?, 12500, ?, ?)`,
           args: [
             txId,
             'weekender',
             `TICKET_M${i}`,
             `QR_M${i}`,
+            testEventId,
             'pending',
             new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
           ]
@@ -100,7 +121,7 @@ describe('Reminder Batching - Integration Tests', () => {
           sql: `INSERT INTO registration_reminders (
             transaction_id, reminder_type, scheduled_at, status
           ) VALUES (?, ?, ?, ?)`,
-          args: [txId, 'batch-test', dueTime, 'scheduled']
+          args: [txId, 'followup_1', dueTime, 'scheduled']
         });
       }
 
@@ -125,22 +146,23 @@ describe('Reminder Batching - Integration Tests', () => {
       for (let i = 0; i < 45; i++) {
         const txResult = await testDb.execute({
           sql: `INSERT INTO transactions (
-            customer_email, customer_name, registration_token, order_number, is_test
-          ) VALUES (?, ?, ?, ?, ?)`,
-          args: [`partial${i}@example.com`, `User ${i}`, `token_p${i}`, `ORDER_P${i}`, 1]
+            transaction_id, type, customer_email, customer_name, amount_cents, registration_token, registration_token_expires, order_data, order_number, is_test, event_id
+          ) VALUES (?, 'tickets', ?, ?, 12500, ?, datetime('now', '+7 days'), ?, ?, ?, ?)`,
+          args: [`TXN_PARTIAL_${i}`, `partial${i}@example.com`, `User ${i}`, `token_p${i}`, JSON.stringify({ test: true }), `ORDER_P${i}`, 1, testEventId]
         });
         const txId = Number(txResult.lastInsertRowid);
 
         await testDb.execute({
           sql: `INSERT INTO tickets (
-            transaction_id, ticket_type, ticket_id, qr_code,
+            transaction_id, ticket_type, ticket_id, qr_code_data, event_id, price_cents,
             registration_status, registration_deadline
-          ) VALUES (?, ?, ?, ?, ?, ?)`,
+          ) VALUES (?, ?, ?, ?, ?, 12500, ?, ?)`,
           args: [
             txId,
             'weekender',
             `TICKET_P${i}`,
             `QR_P${i}`,
+            testEventId,
             'pending',
             new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
           ]
@@ -150,7 +172,7 @@ describe('Reminder Batching - Integration Tests', () => {
           sql: `INSERT INTO registration_reminders (
             transaction_id, reminder_type, scheduled_at, status
           ) VALUES (?, ?, ?, ?)`,
-          args: [txId, 'partial-batch', dueTime, 'scheduled']
+          args: [txId, 'followup_2', dueTime, 'scheduled']
         });
       }
 
@@ -167,22 +189,23 @@ describe('Reminder Batching - Integration Tests', () => {
       for (let i = 0; i < 50; i++) {
         const txResult = await testDb.execute({
           sql: `INSERT INTO transactions (
-            customer_email, customer_name, registration_token, order_number, is_test
-          ) VALUES (?, ?, ?, ?, ?)`,
-          args: [`immediate${i}@example.com`, `User ${i}`, `token_i${i}`, `ORDER_I${i}`, 1]
+            transaction_id, type, customer_email, customer_name, amount_cents, registration_token, registration_token_expires, order_data, order_number, is_test, event_id
+          ) VALUES (?, 'tickets', ?, ?, 12500, ?, datetime('now', '+7 days'), ?, ?, ?, ?)`,
+          args: [`TXN_IMMEDIATE_${i}`, `immediate${i}@example.com`, `User ${i}`, `token_i${i}`, JSON.stringify({ test: true }), `ORDER_I${i}`, 1, testEventId]
         });
         const txId = Number(txResult.lastInsertRowid);
 
         await testDb.execute({
           sql: `INSERT INTO tickets (
-            transaction_id, ticket_type, ticket_id, qr_code,
+            transaction_id, ticket_type, ticket_id, qr_code_data, event_id, price_cents,
             registration_status, registration_deadline
-          ) VALUES (?, ?, ?, ?, ?, ?)`,
+          ) VALUES (?, ?, ?, ?, ?, 12500, ?, ?)`,
           args: [
             txId,
             'weekender',
             `TICKET_I${i}`,
             `QR_I${i}`,
+            testEventId,
             'pending',
             new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
           ]
@@ -192,7 +215,7 @@ describe('Reminder Batching - Integration Tests', () => {
           sql: `INSERT INTO registration_reminders (
             transaction_id, reminder_type, scheduled_at, status
           ) VALUES (?, ?, ?, ?)`,
-          args: [txId, 'immediate', dueTime, 'scheduled']
+          args: [txId, 'final', dueTime, 'scheduled']
         });
       }
 
@@ -200,22 +223,23 @@ describe('Reminder Batching - Integration Tests', () => {
       for (let i = 0; i < 60; i++) {
         const txResult = await testDb.execute({
           sql: `INSERT INTO transactions (
-            customer_email, customer_name, registration_token, order_number, is_test
-          ) VALUES (?, ?, ?, ?, ?)`,
-          args: [`before${i}@example.com`, `User ${i}`, `token_b${i}`, `ORDER_B${i}`, 1]
+            transaction_id, type, customer_email, customer_name, amount_cents, registration_token, registration_token_expires, order_data, order_number, is_test, event_id
+          ) VALUES (?, 'tickets', ?, ?, 12500, ?, datetime('now', '+7 days'), ?, ?, ?, ?)`,
+          args: [`TXN_BEFORE_${i}`, `before${i}@example.com`, `User ${i}`, `token_b${i}`, JSON.stringify({ test: true }), `ORDER_B${i}`, 1, testEventId]
         });
         const txId = Number(txResult.lastInsertRowid);
 
         await testDb.execute({
           sql: `INSERT INTO tickets (
-            transaction_id, ticket_type, ticket_id, qr_code,
+            transaction_id, ticket_type, ticket_id, qr_code_data, event_id, price_cents,
             registration_status, registration_deadline
-          ) VALUES (?, ?, ?, ?, ?, ?)`,
+          ) VALUES (?, ?, ?, ?, ?, 12500, ?, ?)`,
           args: [
             txId,
             'weekender',
             `TICKET_B${i}`,
             `QR_B${i}`,
+            testEventId,
             'pending',
             new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
           ]
@@ -225,7 +249,7 @@ describe('Reminder Batching - Integration Tests', () => {
           sql: `INSERT INTO registration_reminders (
             transaction_id, reminder_type, scheduled_at, status
           ) VALUES (?, ?, ?, ?)`,
-          args: [txId, '24hr-before', dueTime, 'scheduled']
+          args: [txId, 'initial', dueTime, 'scheduled']
         });
       }
 
@@ -251,22 +275,23 @@ describe('Reminder Batching - Integration Tests', () => {
       for (let i = 0; i < times.length; i++) {
         const txResult = await testDb.execute({
           sql: `INSERT INTO transactions (
-            customer_email, customer_name, registration_token, order_number, is_test
-          ) VALUES (?, ?, ?, ?, ?)`,
-          args: [`order${i}@example.com`, `User ${i}`, `token_o${i}`, `ORDER_O${i}`, 1]
+            transaction_id, type, customer_email, customer_name, amount_cents, registration_token, registration_token_expires, order_data, order_number, is_test, event_id
+          ) VALUES (?, 'tickets', ?, ?, 12500, ?, datetime('now', '+7 days'), ?, ?, ?, ?)`,
+          args: [`TXN_ORDER_${i}`, `order${i}@example.com`, `User ${i}`, `token_o${i}`, JSON.stringify({ test: true }), `ORDER_O${i}`, 1, testEventId]
         });
         const txId = Number(txResult.lastInsertRowid);
 
         await testDb.execute({
           sql: `INSERT INTO tickets (
-            transaction_id, ticket_type, ticket_id, qr_code,
+            transaction_id, ticket_type, ticket_id, qr_code_data, event_id, price_cents,
             registration_status, registration_deadline
-          ) VALUES (?, ?, ?, ?, ?, ?)`,
+          ) VALUES (?, ?, ?, ?, ?, 12500, ?, ?)`,
           args: [
             txId,
             'weekender',
             `TICKET_O${i}`,
             `QR_O${i}`,
+            testEventId,
             'pending',
             new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
           ]
@@ -276,7 +301,7 @@ describe('Reminder Batching - Integration Tests', () => {
           sql: `INSERT INTO registration_reminders (
             transaction_id, reminder_type, scheduled_at, status
           ) VALUES (?, ?, ?, ?)`,
-          args: [txId, 'priority-test', times[i].toISOString(), 'scheduled']
+          args: [txId, '24hr-post-purchase', times[i].toISOString(), 'scheduled']
         });
       }
 
@@ -297,23 +322,24 @@ describe('Reminder Batching - Integration Tests', () => {
       for (let i = 0; i < 5; i++) {
         const txResult = await testDb.execute({
           sql: `INSERT INTO transactions (
-            customer_email, customer_name, registration_token, order_number, is_test
-          ) VALUES (?, ?, ?, ?, ?)`,
-          args: [`fifo${i}@example.com`, `User ${i}`, `token_f${i}`, `ORDER_F${i}`, 1]
+            transaction_id, type, customer_email, customer_name, amount_cents, registration_token, registration_token_expires, order_data, order_number, is_test, event_id
+          ) VALUES (?, 'tickets', ?, ?, 12500, ?, datetime('now', '+7 days'), ?, ?, ?, ?)`,
+          args: [`TXN_FIFO_${i}`, `fifo${i}@example.com`, `User ${i}`, `token_f${i}`, JSON.stringify({ test: true }), `ORDER_F${i}`, 1, testEventId]
         });
         const txId = Number(txResult.lastInsertRowid);
         transactionIds.push(txId);
 
         await testDb.execute({
           sql: `INSERT INTO tickets (
-            transaction_id, ticket_type, ticket_id, qr_code,
+            transaction_id, ticket_type, ticket_id, qr_code_data, event_id, price_cents,
             registration_status, registration_deadline
-          ) VALUES (?, ?, ?, ?, ?, ?)`,
+          ) VALUES (?, ?, ?, ?, ?, 12500, ?, ?)`,
           args: [
             txId,
             'weekender',
             `TICKET_F${i}`,
             `QR_F${i}`,
+            testEventId,
             'pending',
             new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
           ]
@@ -323,7 +349,7 @@ describe('Reminder Batching - Integration Tests', () => {
           sql: `INSERT INTO registration_reminders (
             transaction_id, reminder_type, scheduled_at, status
           ) VALUES (?, ?, ?, ?)`,
-          args: [txId, 'fifo-test', dueTime, 'scheduled']
+          args: [txId, 'followup_1', dueTime, 'scheduled']
         });
       }
 
@@ -346,22 +372,23 @@ describe('Reminder Batching - Integration Tests', () => {
 
       const urgentTxResult = await testDb.execute({
         sql: `INSERT INTO transactions (
-          customer_email, customer_name, registration_token, order_number, is_test
-        ) VALUES (?, ?, ?, ?, ?)`,
-        args: ['urgent@example.com', 'Urgent User', 'token_urgent', 'ORDER_URGENT', 1]
+          transaction_id, type, customer_email, customer_name, amount_cents, registration_token, registration_token_expires, order_data, order_number, is_test, event_id
+        ) VALUES (?, 'tickets', ?, ?, 12500, ?, datetime('now', '+7 days'), ?, ?, ?, ?)`,
+        args: ['TXN_URGENT', 'urgent@example.com', 'Urgent User', 'token_urgent', JSON.stringify({ test: true }), 'ORDER_URGENT', 1, testEventId]
       });
       const urgentTxId = Number(urgentTxResult.lastInsertRowid);
 
       await testDb.execute({
         sql: `INSERT INTO tickets (
-          transaction_id, ticket_type, ticket_id, qr_code,
+          transaction_id, ticket_type, ticket_id, qr_code_data, event_id, price_cents,
           registration_status, registration_deadline
-        ) VALUES (?, ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, 12500, ?, ?)`,
         args: [
           urgentTxId,
           'weekender',
           'TICKET_URGENT',
           'QR_URGENT',
+          testEventId,
           'pending',
           new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
         ]
@@ -371,7 +398,7 @@ describe('Reminder Batching - Integration Tests', () => {
         sql: `INSERT INTO registration_reminders (
           transaction_id, reminder_type, scheduled_at, status
         ) VALUES (?, ?, ?, ?)`,
-        args: [urgentTxId, 'urgent-reminder', urgentTime, 'scheduled']
+        args: [urgentTxId, 'final', urgentTime, 'scheduled']
       });
 
       // Create regular reminder (just due)
@@ -379,22 +406,23 @@ describe('Reminder Batching - Integration Tests', () => {
 
       const regularTxResult = await testDb.execute({
         sql: `INSERT INTO transactions (
-          customer_email, customer_name, registration_token, order_number, is_test
-        ) VALUES (?, ?, ?, ?, ?)`,
-        args: ['regular@example.com', 'Regular User', 'token_regular', 'ORDER_REGULAR', 1]
+          transaction_id, type, customer_email, customer_name, amount_cents, registration_token, registration_token_expires, order_data, order_number, is_test, event_id
+        ) VALUES (?, 'tickets', ?, ?, 12500, ?, datetime('now', '+7 days'), ?, ?, ?, ?)`,
+        args: ['TXN_REGULAR', 'regular@example.com', 'Regular User', 'token_regular', JSON.stringify({ test: true }), 'ORDER_REGULAR', 1, testEventId]
       });
       const regularTxId = Number(regularTxResult.lastInsertRowid);
 
       await testDb.execute({
         sql: `INSERT INTO tickets (
-          transaction_id, ticket_type, ticket_id, qr_code,
+          transaction_id, ticket_type, ticket_id, qr_code_data, event_id, price_cents,
           registration_status, registration_deadline
-        ) VALUES (?, ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, 12500, ?, ?)`,
         args: [
           regularTxId,
           'weekender',
           'TICKET_REGULAR',
           'QR_REGULAR',
+          testEventId,
           'pending',
           new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
         ]
@@ -404,7 +432,7 @@ describe('Reminder Batching - Integration Tests', () => {
         sql: `INSERT INTO registration_reminders (
           transaction_id, reminder_type, scheduled_at, status
         ) VALUES (?, ?, ?, ?)`,
-        args: [regularTxId, 'regular-reminder', regularTime, 'scheduled']
+        args: [regularTxId, 'followup_2', regularTime, 'scheduled']
       });
 
       // Query reminders
@@ -423,22 +451,23 @@ describe('Reminder Batching - Integration Tests', () => {
       for (let i = 0; i < 10; i++) {
         const txResult = await testDb.execute({
           sql: `INSERT INTO transactions (
-            customer_email, customer_name, registration_token, order_number, is_test
-          ) VALUES (?, ?, ?, ?, ?)`,
-          args: [`atomic${i}@example.com`, `User ${i}`, `token_a${i}`, `ORDER_A${i}`, 1]
+            transaction_id, type, customer_email, customer_name, amount_cents, registration_token, registration_token_expires, order_data, order_number, is_test, event_id
+          ) VALUES (?, 'tickets', ?, ?, 12500, ?, datetime('now', '+7 days'), ?, ?, ?, ?)`,
+          args: [`TXN_ATOMIC_${i}`, `atomic${i}@example.com`, `User ${i}`, `token_a${i}`, JSON.stringify({ test: true }), `ORDER_A${i}`, 1, testEventId]
         });
         const txId = Number(txResult.lastInsertRowid);
 
         await testDb.execute({
           sql: `INSERT INTO tickets (
-            transaction_id, ticket_type, ticket_id, qr_code,
+            transaction_id, ticket_type, ticket_id, qr_code_data, event_id, price_cents,
             registration_status, registration_deadline
-          ) VALUES (?, ?, ?, ?, ?, ?)`,
+          ) VALUES (?, ?, ?, ?, ?, 12500, ?, ?)`,
           args: [
             txId,
             'weekender',
             `TICKET_A${i}`,
             `QR_A${i}`,
+            testEventId,
             'pending',
             new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
           ]
@@ -448,7 +477,7 @@ describe('Reminder Batching - Integration Tests', () => {
           sql: `INSERT INTO registration_reminders (
             transaction_id, reminder_type, scheduled_at, status
           ) VALUES (?, ?, ?, ?)`,
-          args: [txId, 'atomic-test', dueTime, 'scheduled']
+          args: [txId, 'initial', dueTime, 'scheduled']
         });
       }
 
@@ -463,7 +492,7 @@ describe('Reminder Batching - Integration Tests', () => {
       // Verify all marked as sent
       const result = await testDb.execute({
         sql: `SELECT COUNT(*) as count FROM registration_reminders
-              WHERE status = 'sent' AND reminder_type = 'atomic-test'`
+              WHERE status = 'sent' AND reminder_type = 'initial'`
       });
 
       expect(result.rows[0].count).toBe(10);
@@ -506,22 +535,23 @@ describe('Reminder Batching - Integration Tests', () => {
 
       const txResult = await testDb.execute({
         sql: `INSERT INTO transactions (
-          customer_email, customer_name, registration_token, order_number, is_test
-        ) VALUES (?, ?, ?, ?, ?)`,
-        args: ['duplicate@example.com', 'Duplicate User', 'token_dup', 'ORDER_DUP', 1]
+          transaction_id, type, customer_email, customer_name, amount_cents, registration_token, registration_token_expires, order_data, order_number, is_test, event_id
+        ) VALUES (?, 'tickets', ?, ?, 12500, ?, datetime('now', '+7 days'), ?, ?, ?, ?)`,
+        args: ['TXN_DUP', 'duplicate@example.com', 'Duplicate User', 'token_dup', JSON.stringify({ test: true }), 'ORDER_DUP', 1, testEventId]
       });
       const txId = Number(txResult.lastInsertRowid);
 
       await testDb.execute({
         sql: `INSERT INTO tickets (
-          transaction_id, ticket_type, ticket_id, qr_code,
+          transaction_id, ticket_type, ticket_id, qr_code_data, event_id, price_cents,
           registration_status, registration_deadline
-        ) VALUES (?, ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, 12500, ?, ?)`,
         args: [
           txId,
           'weekender',
           'TICKET_DUP',
           'QR_DUP',
+          testEventId,
           'pending',
           new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
         ]
@@ -531,7 +561,7 @@ describe('Reminder Batching - Integration Tests', () => {
         sql: `INSERT INTO registration_reminders (
           transaction_id, reminder_type, scheduled_at, status
         ) VALUES (?, ?, ?, ?)`,
-        args: [txId, 'duplicate-test', dueTime, 'scheduled']
+        args: [txId, '72hr-before', dueTime, 'scheduled']
       });
       const reminderId = Number(reminderResult.lastInsertRowid);
 
@@ -581,22 +611,23 @@ describe('Reminder Batching - Integration Tests', () => {
       for (let i = 0; i < 5; i++) {
         const txResult = await testDb.execute({
           sql: `INSERT INTO transactions (
-            customer_email, customer_name, registration_token, order_number, is_test
-          ) VALUES (?, ?, ?, ?, ?)`,
-          args: [`partial${i}@example.com`, `User ${i}`, `token_pf${i}`, `ORDER_PF${i}`, 1]
+            transaction_id, type, customer_email, customer_name, amount_cents, registration_token, registration_token_expires, order_data, order_number, is_test, event_id
+          ) VALUES (?, 'tickets', ?, ?, 12500, ?, datetime('now', '+7 days'), ?, ?, ?, ?)`,
+          args: [`TXN_PARTIALFAIL_${i}`, `partial${i}@example.com`, `User ${i}`, `token_pf${i}`, JSON.stringify({ test: true }), `ORDER_PF${i}`, 1, testEventId]
         });
         const txId = Number(txResult.lastInsertRowid);
 
         await testDb.execute({
           sql: `INSERT INTO tickets (
-            transaction_id, ticket_type, ticket_id, qr_code,
+            transaction_id, ticket_type, ticket_id, qr_code_data, event_id, price_cents,
             registration_status, registration_deadline
-          ) VALUES (?, ?, ?, ?, ?, ?)`,
+          ) VALUES (?, ?, ?, ?, ?, 12500, ?, ?)`,
           args: [
             txId,
             'weekender',
             `TICKET_PF${i}`,
             `QR_PF${i}`,
+            testEventId,
             'pending',
             new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
           ]
@@ -606,7 +637,7 @@ describe('Reminder Batching - Integration Tests', () => {
           sql: `INSERT INTO registration_reminders (
             transaction_id, reminder_type, scheduled_at, status
           ) VALUES (?, ?, ?, ?)`,
-          args: [txId, 'partial-fail', dueTime, 'scheduled']
+          args: [txId, 'followup_2', dueTime, 'scheduled']
         });
       }
 
@@ -645,22 +676,23 @@ describe('Reminder Batching - Integration Tests', () => {
       for (let i = 0; i < 25; i++) {
         const txResult = await testDb.execute({
           sql: `INSERT INTO transactions (
-            customer_email, customer_name, registration_token, order_number, is_test
-          ) VALUES (?, ?, ?, ?, ?)`,
-          args: [`stats${i}@example.com`, `User ${i}`, `token_s${i}`, `ORDER_S${i}`, 1]
+            transaction_id, type, customer_email, customer_name, amount_cents, registration_token, registration_token_expires, order_data, order_number, is_test, event_id
+          ) VALUES (?, 'tickets', ?, ?, 12500, ?, datetime('now', '+7 days'), ?, ?, ?, ?)`,
+          args: [`TXN_STATS_${i}`, `stats${i}@example.com`, `User ${i}`, `token_s${i}`, JSON.stringify({ test: true }), `ORDER_S${i}`, 1, testEventId]
         });
         const txId = Number(txResult.lastInsertRowid);
 
         await testDb.execute({
           sql: `INSERT INTO tickets (
-            transaction_id, ticket_type, ticket_id, qr_code,
+            transaction_id, ticket_type, ticket_id, qr_code_data, event_id, price_cents,
             registration_status, registration_deadline
-          ) VALUES (?, ?, ?, ?, ?, ?)`,
+          ) VALUES (?, ?, ?, ?, ?, 12500, ?, ?)`,
           args: [
             txId,
             'weekender',
             `TICKET_S${i}`,
             `QR_S${i}`,
+            testEventId,
             'pending',
             new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
           ]
@@ -670,7 +702,7 @@ describe('Reminder Batching - Integration Tests', () => {
           sql: `INSERT INTO registration_reminders (
             transaction_id, reminder_type, scheduled_at, status
           ) VALUES (?, ?, ?, ?)`,
-          args: [txId, 'stats-test', dueTime, 'scheduled']
+          args: [txId, 'final', dueTime, 'scheduled']
         });
       }
 
@@ -685,22 +717,23 @@ describe('Reminder Batching - Integration Tests', () => {
       for (let i = 0; i < 10; i++) {
         const txResult = await testDb.execute({
           sql: `INSERT INTO transactions (
-            customer_email, customer_name, registration_token, order_number, is_test
-          ) VALUES (?, ?, ?, ?, ?)`,
-          args: [`success${i}@example.com`, `User ${i}`, `token_sc${i}`, `ORDER_SC${i}`, 1]
+            transaction_id, type, customer_email, customer_name, amount_cents, registration_token, registration_token_expires, order_data, order_number, is_test, event_id
+          ) VALUES (?, 'tickets', ?, ?, 12500, ?, datetime('now', '+7 days'), ?, ?, ?, ?)`,
+          args: [`TXN_SUCCESS_${i}`, `success${i}@example.com`, `User ${i}`, `token_sc${i}`, JSON.stringify({ test: true }), `ORDER_SC${i}`, 1, testEventId]
         });
         const txId = Number(txResult.lastInsertRowid);
 
         await testDb.execute({
           sql: `INSERT INTO tickets (
-            transaction_id, ticket_type, ticket_id, qr_code,
+            transaction_id, ticket_type, ticket_id, qr_code_data, event_id, price_cents,
             registration_status, registration_deadline
-          ) VALUES (?, ?, ?, ?, ?, ?)`,
+          ) VALUES (?, ?, ?, ?, ?, 12500, ?, ?)`,
           args: [
             txId,
             'weekender',
             `TICKET_SC${i}`,
             `QR_SC${i}`,
+            testEventId,
             'pending',
             new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
           ]
@@ -710,7 +743,7 @@ describe('Reminder Batching - Integration Tests', () => {
           sql: `INSERT INTO registration_reminders (
             transaction_id, reminder_type, scheduled_at, status
           ) VALUES (?, ?, ?, ?)`,
-          args: [txId, 'success-track', dueTime, 'scheduled']
+          args: [txId, 'initial', dueTime, 'scheduled']
         });
       }
 
@@ -724,7 +757,7 @@ describe('Reminder Batching - Integration Tests', () => {
       // Query sent count
       const result = await testDb.execute({
         sql: `SELECT COUNT(*) as count FROM registration_reminders
-              WHERE status = 'sent' AND reminder_type = 'success-track'`
+              WHERE status = 'sent' AND reminder_type = 'initial'`
       });
 
       expect(result.rows[0].count).toBe(10);
@@ -736,22 +769,23 @@ describe('Reminder Batching - Integration Tests', () => {
       for (let i = 0; i < 10; i++) {
         const txResult = await testDb.execute({
           sql: `INSERT INTO transactions (
-            customer_email, customer_name, registration_token, order_number, is_test
-          ) VALUES (?, ?, ?, ?, ?)`,
-          args: [`fail${i}@example.com`, `User ${i}`, `token_fl${i}`, `ORDER_FL${i}`, 1]
+            transaction_id, type, customer_email, customer_name, amount_cents, registration_token, registration_token_expires, order_data, order_number, is_test, event_id
+          ) VALUES (?, 'tickets', ?, ?, 12500, ?, datetime('now', '+7 days'), ?, ?, ?, ?)`,
+          args: [`TXN_FAIL_${i}`, `fail${i}@example.com`, `User ${i}`, `token_fl${i}`, JSON.stringify({ test: true }), `ORDER_FL${i}`, 1, testEventId]
         });
         const txId = Number(txResult.lastInsertRowid);
 
         await testDb.execute({
           sql: `INSERT INTO tickets (
-            transaction_id, ticket_type, ticket_id, qr_code,
+            transaction_id, ticket_type, ticket_id, qr_code_data, event_id, price_cents,
             registration_status, registration_deadline
-          ) VALUES (?, ?, ?, ?, ?, ?)`,
+          ) VALUES (?, ?, ?, ?, ?, 12500, ?, ?)`,
           args: [
             txId,
             'weekender',
             `TICKET_FL${i}`,
             `QR_FL${i}`,
+            testEventId,
             'pending',
             new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
           ]
@@ -761,7 +795,7 @@ describe('Reminder Batching - Integration Tests', () => {
           sql: `INSERT INTO registration_reminders (
             transaction_id, reminder_type, scheduled_at, status
           ) VALUES (?, ?, ?, ?)`,
-          args: [txId, 'fail-track', dueTime, 'scheduled']
+          args: [txId, 'followup_1', dueTime, 'scheduled']
         });
       }
 
@@ -775,7 +809,7 @@ describe('Reminder Batching - Integration Tests', () => {
       // Query failed count
       const result = await testDb.execute({
         sql: `SELECT COUNT(*) as count FROM registration_reminders
-              WHERE status = 'failed' AND reminder_type = 'fail-track'`
+              WHERE status = 'failed' AND reminder_type = 'followup_1'`
       });
 
       expect(result.rows[0].count).toBe(10);

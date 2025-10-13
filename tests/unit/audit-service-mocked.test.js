@@ -72,7 +72,7 @@ describe('Audit Service - Mocked Unit Tests', () => {
         auth_key: 'key789'
       };
 
-      const sanitized = auditService.sanitizeData(data);
+      const sanitized = await auditService.sanitizeData(data);
 
       expect(sanitized.username).toBe('admin');
       expect(sanitized.email).toBe('admin@example.com');
@@ -93,7 +93,7 @@ describe('Audit Service - Mocked Unit Tests', () => {
         token: 'xyz'
       };
 
-      const sanitized = auditService.sanitizeData(data);
+      const sanitized = await auditService.sanitizeData(data);
 
       expect(sanitized.user).toBe('John');
       expect(sanitized.password).toBe('[REDACTED]');
@@ -182,9 +182,9 @@ describe('Audit Service - Mocked Unit Tests', () => {
       };
 
       // Should accept GDPR-related fields
-      expect(() => auditService.sanitizeData(auditData)).not.toThrow();
+      await expect(auditService.sanitizeData(auditData)).resolves.toBeDefined();
 
-      const sanitized = auditService.sanitizeData(auditData);
+      const sanitized = await auditService.sanitizeData(auditData);
       expect(sanitized.gdpr_relevant).toBe(true);
       expect(sanitized.data_retention_days).toBe(30);
     });

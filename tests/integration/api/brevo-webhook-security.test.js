@@ -5,7 +5,7 @@
 
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { getDbClient } from '../../setup-integration.js';
-import { generateTestEmail } from '../handler-test-helper.js';
+import { generateTestEmail, testRequest } from '../handler-test-helper.js';
 
 describe('Brevo Webhook Security', () => {
   let dbClient;
@@ -333,6 +333,12 @@ describe('Brevo Webhook Security', () => {
       process.env.BREVO_WEBHOOK_SECRET = 'test-secret-key';
       process.env.BREVO_ENABLE_IP_WHITELIST = 'false';
 
+      // Create email subscriber in database
+      await dbClient.execute({
+        sql: `INSERT INTO email_subscribers (email, status, source) VALUES (?, ?, ?)`,
+        args: [testEmail, 'active', 'website']
+      });
+
       const handler = (await import('../../../api/email/brevo-webhook.js')).default;
 
       const req = createMockRequest({
@@ -356,6 +362,12 @@ describe('Brevo Webhook Security', () => {
       process.env.BREVO_WEBHOOK_SECRET = 'test-secret-key';
       process.env.BREVO_ENABLE_IP_WHITELIST = 'false';
 
+      // Create email subscriber in database
+      await dbClient.execute({
+        sql: `INSERT INTO email_subscribers (email, status, source) VALUES (?, ?, ?)`,
+        args: [testEmail, 'active', 'website']
+      });
+
       const handler = (await import('../../../api/email/brevo-webhook.js')).default;
 
       const req = createMockRequest({
@@ -378,6 +390,12 @@ describe('Brevo Webhook Security', () => {
     test('should process clicked event', async () => {
       process.env.BREVO_WEBHOOK_SECRET = 'test-secret-key';
       process.env.BREVO_ENABLE_IP_WHITELIST = 'false';
+
+      // Create email subscriber in database
+      await dbClient.execute({
+        sql: `INSERT INTO email_subscribers (email, status, source) VALUES (?, ?, ?)`,
+        args: [testEmail, 'active', 'website']
+      });
 
       const handler = (await import('../../../api/email/brevo-webhook.js')).default;
 
@@ -403,6 +421,12 @@ describe('Brevo Webhook Security', () => {
       process.env.BREVO_WEBHOOK_SECRET = 'test-secret-key';
       process.env.BREVO_ENABLE_IP_WHITELIST = 'false';
 
+      // Create email subscriber in database
+      await dbClient.execute({
+        sql: `INSERT INTO email_subscribers (email, status, source) VALUES (?, ?, ?)`,
+        args: [testEmail, 'active', 'website']
+      });
+
       const handler = (await import('../../../api/email/brevo-webhook.js')).default;
 
       const req = createMockRequest({
@@ -426,6 +450,12 @@ describe('Brevo Webhook Security', () => {
     test('should process hard_bounce event', async () => {
       process.env.BREVO_WEBHOOK_SECRET = 'test-secret-key';
       process.env.BREVO_ENABLE_IP_WHITELIST = 'false';
+
+      // Create email subscriber in database
+      await dbClient.execute({
+        sql: `INSERT INTO email_subscribers (email, status, source) VALUES (?, ?, ?)`,
+        args: [testEmail, 'active', 'website']
+      });
 
       const handler = (await import('../../../api/email/brevo-webhook.js')).default;
 
@@ -451,6 +481,12 @@ describe('Brevo Webhook Security', () => {
       process.env.BREVO_WEBHOOK_SECRET = 'test-secret-key';
       process.env.BREVO_ENABLE_IP_WHITELIST = 'false';
 
+      // Create email subscriber in database
+      await dbClient.execute({
+        sql: `INSERT INTO email_subscribers (email, status, source) VALUES (?, ?, ?)`,
+        args: [testEmail, 'active', 'website']
+      });
+
       const handler = (await import('../../../api/email/brevo-webhook.js')).default;
 
       const req = createMockRequest({
@@ -474,13 +510,21 @@ describe('Brevo Webhook Security', () => {
       process.env.BREVO_WEBHOOK_SECRET = 'test-secret-key';
       process.env.BREVO_ENABLE_IP_WHITELIST = 'false';
 
+      const invalidEmail = 'invalid@';
+
+      // Create email subscriber in database
+      await dbClient.execute({
+        sql: `INSERT INTO email_subscribers (email, status, source) VALUES (?, ?, ?)`,
+        args: [invalidEmail, 'active', 'website']
+      });
+
       const handler = (await import('../../../api/email/brevo-webhook.js')).default;
 
       const req = createMockRequest({
         headers: { 'authorization': 'Bearer test-secret-key' },
         body: {
           event: 'invalid_email',
-          email: 'invalid@',
+          email: invalidEmail,
           date: new Date().toISOString()
         }
       });
@@ -496,6 +540,12 @@ describe('Brevo Webhook Security', () => {
     test('should process unsubscribed event', async () => {
       process.env.BREVO_WEBHOOK_SECRET = 'test-secret-key';
       process.env.BREVO_ENABLE_IP_WHITELIST = 'false';
+
+      // Create email subscriber in database
+      await dbClient.execute({
+        sql: `INSERT INTO email_subscribers (email, status, source) VALUES (?, ?, ?)`,
+        args: [testEmail, 'active', 'website']
+      });
 
       const handler = (await import('../../../api/email/brevo-webhook.js')).default;
 
@@ -519,6 +569,12 @@ describe('Brevo Webhook Security', () => {
     test('should handle unknown event type gracefully', async () => {
       process.env.BREVO_WEBHOOK_SECRET = 'test-secret-key';
       process.env.BREVO_ENABLE_IP_WHITELIST = 'false';
+
+      // Create email subscriber in database
+      await dbClient.execute({
+        sql: `INSERT INTO email_subscribers (email, status, source) VALUES (?, ?, ?)`,
+        args: [testEmail, 'active', 'website']
+      });
 
       const handler = (await import('../../../api/email/brevo-webhook.js')).default;
 

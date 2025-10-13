@@ -132,6 +132,21 @@ beforeAll(async () => {
 afterAll(async () => {
   // Minimal cleanup for unit tests + force cleanup to prevent hanging processes
   forceCleanup();
+
+  // Additional cleanup for fork pool
+  if (global.gc) {
+    global.gc(); // Force garbage collection if available
+  }
+
+  // Clear module cache to prevent leaks
+  if (typeof require !== 'undefined' && require.cache) {
+    Object.keys(require.cache).forEach(key => {
+      if (key.includes('/lib/database') || key.includes('/lib/logger')) {
+        delete require.cache[key];
+      }
+    });
+  }
+
   console.log('✅ Unit test cleanup completed (minimal overhead)');
 }, config.timeouts.cleanup);
 

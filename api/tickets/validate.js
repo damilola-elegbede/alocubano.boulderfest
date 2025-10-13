@@ -437,22 +437,26 @@ async function logValidation(db, params) {
       return;
     }
 
-    // Legacy QR validation logging (keep for compatibility)
+    // Prepare validation metadata as JSON
+    const metadata = {
+      token: params.token,
+      source: params.source,
+      ip: params.ip,
+      deviceInfo: params.deviceInfo || null,
+      failureReason: params.failureReason || null
+    };
+
+    // Insert into qr_validations with correct schema
     await db.execute({
       sql: `
         INSERT INTO qr_validations (
-          ticket_id, validation_token, validation_result,
-          validation_source, ip_address, device_info, failure_reason
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+          ticket_id, validation_result, validation_metadata
+        ) VALUES (?, ?, ?)
       `,
       args: [
         params.ticketId || null,
-        params.token,
         params.result,
-        params.source,
-        params.ip,
-        params.deviceInfo || null,
-        params.failureReason || null
+        JSON.stringify(metadata)
       ]
     });
   } catch (error) {
@@ -1100,7 +1104,7 @@ async function handler(req, res) {
         await logValidation(db, {
           ticketId: ticketId || null,
           token: token ? token.substring(0, 10) + '...' : 'invalid',
-          result: 'failed',
+          result: 'invalid', // Use schema-compliant enum value
           failureReason: safeErrorMessage,
           source: source,
           ip: clientIP

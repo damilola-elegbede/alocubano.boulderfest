@@ -41,6 +41,11 @@ const validateIntegrationSecrets = () => {
       description: 'QR code validation secret key',
       validator: (value) => value && value.length >= 32,
       fallback: 'test-qr-secret-key-for-integration-testing-32-chars'
+    },
+    CRON_SECRET: {
+      description: 'Cron job authentication secret',
+      validator: (value) => value && value.length >= 32,
+      fallback: 'test-cron-secret-for-integration-testing-32-chars'
     }
   };
 

@@ -7,11 +7,13 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { getDatabaseClient } from '../../../lib/database.js';
 import authService from '../../../lib/auth-service.js';
 import auditService from '../../../lib/audit-service.js';
+import { createTestEvent } from '../handler-test-helper.js';
 import jwt from 'jsonwebtoken';
 
 describe('Admin Donations Dashboard API', () => {
   let db;
   let adminToken;
+  let testEventId;
 
   beforeEach(async () => {
     db = await getDatabaseClient();
@@ -24,33 +26,14 @@ describe('Admin Donations Dashboard API', () => {
     // Create admin JWT token
     adminToken = await authService.createSessionToken('admin');
 
-    // Ensure required tables exist
-    await db.execute(`
-      CREATE TABLE IF NOT EXISTS transactions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        transaction_id TEXT UNIQUE NOT NULL,
-        status TEXT NOT NULL,
-        amount_cents INTEGER NOT NULL,
-        customer_email TEXT,
-        customer_name TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
+    // Create test event for foreign key constraints
+    testEventId = await createTestEvent(db, {
+      slug: 'admin-donations-test-event',
+      name: 'Admin Donations Test Event',
+      status: 'test'
+    });
 
-    await db.execute(`
-      CREATE TABLE IF NOT EXISTS transaction_items (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        transaction_id TEXT NOT NULL,
-        item_type TEXT NOT NULL,
-        item_name TEXT NOT NULL,
-        quantity INTEGER DEFAULT 1,
-        unit_price_cents INTEGER NOT NULL,
-        total_price_cents INTEGER NOT NULL,
-        is_test INTEGER DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (transaction_id) REFERENCES transactions(transaction_id)
-      )
-    `);
+    // Tables are already created by migrations - no need to create them manually
 
     // Clean up test data
     await db.execute('DELETE FROM transaction_items WHERE is_test = 1');
@@ -176,16 +159,20 @@ describe('Admin Donations Dashboard API', () => {
       ];
 
       for (const data of testData) {
-        await db.execute({
-          sql: `INSERT INTO transactions (transaction_id, status, amount_cents, customer_email, customer_name, created_at)
-                VALUES (?, ?, ?, ?, ?, ?)`,
-          args: [data.transactionId, 'completed', data.amountCents, data.email, data.name, data.createdAt]
+        // Insert transaction and get its auto-generated ID
+        const txResult = await db.execute({
+          sql: `INSERT INTO transactions (transaction_id, type, status, amount_cents, customer_email, customer_name, order_data, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                RETURNING id`,
+          args: [data.transactionId, 'donation', 'completed', data.amountCents, data.email, data.name, '{}', data.createdAt]
         });
+        const transactionDbId = txResult.rows[0].id;
 
+        // Insert transaction item with the INTEGER transaction ID
         await db.execute({
           sql: `INSERT INTO transaction_items (transaction_id, item_type, item_name, quantity, unit_price_cents, total_price_cents, is_test, created_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          args: [data.transactionId, 'donation', data.itemName, 1, data.amountCents, data.amountCents, data.isTest, data.createdAt]
+          args: [transactionDbId, 'donation', data.itemName, 1, data.amountCents, data.amountCents, data.isTest, data.createdAt]
         });
       }
     });
@@ -316,16 +303,20 @@ describe('Admin Donations Dashboard API', () => {
       ];
 
       for (const donation of donations) {
-        await db.execute({
-          sql: `INSERT INTO transactions (transaction_id, status, amount_cents, customer_email, customer_name, created_at)
-                VALUES (?, ?, ?, ?, ?, ?)`,
-          args: [donation.transactionId, 'completed', donation.amount, 'metrics@test.com', 'Metrics Test', new Date().toISOString()]
+        // Insert transaction and get its auto-generated ID
+        const txResult = await db.execute({
+          sql: `INSERT INTO transactions (transaction_id, type, status, amount_cents, customer_email, customer_name, order_data, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                RETURNING id`,
+          args: [donation.transactionId, 'donation', 'completed', donation.amount, 'metrics@test.com', 'Metrics Test', '{}', new Date().toISOString()]
         });
+        const transactionDbId = txResult.rows[0].id;
 
+        // Insert transaction item with the INTEGER transaction ID
         await db.execute({
           sql: `INSERT INTO transaction_items (transaction_id, item_type, item_name, quantity, unit_price_cents, total_price_cents, is_test, created_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          args: [donation.transactionId, 'donation', 'Festival Support', 1, donation.amount, donation.amount, 0, new Date().toISOString()]
+          args: [transactionDbId, 'donation', 'Festival Support', 1, donation.amount, donation.amount, 0, new Date().toISOString()]
         });
       }
     });
@@ -404,16 +395,20 @@ describe('Admin Donations Dashboard API', () => {
   describe('Mountain Time Formatting', () => {
     it('should include created_at_mt fields for all donations', async () => {
       // Create a donation
-      await db.execute({
-        sql: `INSERT INTO transactions (transaction_id, status, amount_cents, customer_email, customer_name, created_at)
-              VALUES (?, ?, ?, ?, ?, ?)`,
-        args: ['MT-TEST-001', 'completed', 5000, 'mt@test.com', 'MT Test', new Date().toISOString()]
+      // Insert transaction and get its auto-generated ID
+      const txResult = await db.execute({
+        sql: `INSERT INTO transactions (transaction_id, type, status, amount_cents, customer_email, customer_name, order_data, created_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+              RETURNING id`,
+        args: ['MT-TEST-001', 'donation', 'completed', 5000, 'mt@test.com', 'MT Test', '{}', new Date().toISOString()]
       });
+      const transactionDbId = txResult.rows[0].id;
 
+      // Insert transaction item with the INTEGER transaction ID
       await db.execute({
         sql: `INSERT INTO transaction_items (transaction_id, item_type, item_name, quantity, unit_price_cents, total_price_cents, is_test, created_at)
               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        args: ['MT-TEST-001', 'donation', 'Festival Support', 1, 5000, 5000, 0, new Date().toISOString()]
+        args: [transactionDbId, 'donation', 'Festival Support', 1, 5000, 5000, 0, new Date().toISOString()]
       });
 
       const handler = (await import('../../../api/admin/donations.js')).default;
@@ -450,16 +445,20 @@ describe('Admin Donations Dashboard API', () => {
       // Create donation with large amount
       const largeAmount = 999999999; // $9,999,999.99
 
-      await db.execute({
-        sql: `INSERT INTO transactions (transaction_id, status, amount_cents, customer_email, customer_name, created_at)
-              VALUES (?, ?, ?, ?, ?, ?)`,
-        args: ['BIGINT-001', 'completed', largeAmount, 'bigint@test.com', 'BigInt Test', new Date().toISOString()]
+      // Insert transaction and get its auto-generated ID
+      const txResult = await db.execute({
+        sql: `INSERT INTO transactions (transaction_id, type, status, amount_cents, customer_email, customer_name, order_data, created_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+              RETURNING id`,
+        args: ['BIGINT-001', 'donation', 'completed', largeAmount, 'bigint@test.com', 'BigInt Test', '{}', new Date().toISOString()]
       });
+      const transactionDbId = txResult.rows[0].id;
 
+      // Insert transaction item with the INTEGER transaction ID
       await db.execute({
         sql: `INSERT INTO transaction_items (transaction_id, item_type, item_name, quantity, unit_price_cents, total_price_cents, is_test, created_at)
               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        args: ['BIGINT-001', 'donation', 'Large Donation', 1, largeAmount, largeAmount, 0, new Date().toISOString()]
+        args: [transactionDbId, 'donation', 'Large Donation', 1, largeAmount, largeAmount, 0, new Date().toISOString()]
       });
 
       const handler = (await import('../../../api/admin/donations.js')).default;
@@ -522,38 +521,27 @@ describe('Admin Donations Dashboard API', () => {
 
   describe('Large Dataset Performance', () => {
     it('should handle 100+ donations efficiently', async () => {
-      // Create 100 donations
-      const promises = [];
+      // Create 100 donations sequentially (due to RETURNING ID requirement)
       for (let i = 0; i < 100; i++) {
         const transactionId = `PERF-${String(i).padStart(3, '0')}`;
         const amount = 1000 + (i * 100); // $10.00 to $109.00
 
-        promises.push(
-          db.execute({
-            sql: `INSERT INTO transactions (transaction_id, status, amount_cents, customer_email, customer_name, created_at)
-                  VALUES (?, ?, ?, ?, ?, ?)`,
-            args: [transactionId, 'completed', amount, `perf${i}@test.com`, `Perf Test ${i}`, new Date().toISOString()]
-          })
-        );
+        // Insert transaction and get its auto-generated ID
+        const txResult = await db.execute({
+          sql: `INSERT INTO transactions (transaction_id, type, status, amount_cents, customer_email, customer_name, order_data, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                RETURNING id`,
+          args: [transactionId, 'donation', 'completed', amount, `perf${i}@test.com`, `Perf Test ${i}`, '{}', new Date().toISOString()]
+        });
+        const transactionDbId = txResult.rows[0].id;
+
+        // Insert transaction item with the INTEGER transaction ID
+        await db.execute({
+          sql: `INSERT INTO transaction_items (transaction_id, item_type, item_name, quantity, unit_price_cents, total_price_cents, is_test, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          args: [transactionDbId, 'donation', 'Festival Support', 1, amount, amount, 0, new Date().toISOString()]
+        });
       }
-
-      await Promise.all(promises);
-
-      const itemPromises = [];
-      for (let i = 0; i < 100; i++) {
-        const transactionId = `PERF-${String(i).padStart(3, '0')}`;
-        const amount = 1000 + (i * 100);
-
-        itemPromises.push(
-          db.execute({
-            sql: `INSERT INTO transaction_items (transaction_id, item_type, item_name, quantity, unit_price_cents, total_price_cents, is_test, created_at)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            args: [transactionId, 'donation', 'Festival Support', 1, amount, amount, 0, new Date().toISOString()]
-          })
-        );
-      }
-
-      await Promise.all(itemPromises);
 
       const handler = (await import('../../../api/admin/donations.js')).default;
 
@@ -595,16 +583,21 @@ describe('Admin Donations Dashboard API', () => {
 
       for (let i = 0; i < dates.length; i++) {
         const transactionId = `SORT-${i}`;
-        await db.execute({
-          sql: `INSERT INTO transactions (transaction_id, status, amount_cents, customer_email, customer_name, created_at)
-                VALUES (?, ?, ?, ?, ?, ?)`,
-          args: [transactionId, 'completed', 5000, `sort${i}@test.com`, `Sort Test ${i}`, dates[i].toISOString()]
-        });
 
+        // Insert transaction and get its auto-generated ID
+        const txResult = await db.execute({
+          sql: `INSERT INTO transactions (transaction_id, type, status, amount_cents, customer_email, customer_name, order_data, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                RETURNING id`,
+          args: [transactionId, 'donation', 'completed', 5000, `sort${i}@test.com`, `Sort Test ${i}`, '{}', dates[i].toISOString()]
+        });
+        const transactionDbId = txResult.rows[0].id;
+
+        // Insert transaction item with the INTEGER transaction ID
         await db.execute({
           sql: `INSERT INTO transaction_items (transaction_id, item_type, item_name, quantity, unit_price_cents, total_price_cents, is_test, created_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          args: [transactionId, 'donation', 'Festival Support', 1, 5000, 5000, 0, dates[i].toISOString()]
+          args: [transactionDbId, 'donation', 'Festival Support', 1, 5000, 5000, 0, dates[i].toISOString()]
         });
       }
 
