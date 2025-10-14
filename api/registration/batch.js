@@ -885,7 +885,8 @@ export default async function handler(req, res) {
             walletPassUrl: `${baseUrl}/api/tickets/apple-wallet/${task.registration.ticketId}`,
             googleWalletUrl: `${baseUrl}/api/tickets/google-wallet/${task.registration.ticketId}`,
             appleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-apple.png`,
-            googleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-google.png`
+            googleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-google.png`,
+            viewTicketUrl: `${baseUrl}/my-ticket#${qrToken}`
           });
 
           // Send email using Brevo API with custom HTML

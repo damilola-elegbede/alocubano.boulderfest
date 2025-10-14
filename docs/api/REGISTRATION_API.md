@@ -2,7 +2,7 @@
 
 ## Overview
 
-The A Lo Cubano Boulder Fest registration system enables ticket purchasers to register attendee information for each ticket within a 72-hour window after purchase. The system includes JWT-based authentication, rate limiting, and comprehensive validation.
+The A Lo Cubano Boulder Fest registration system enables ticket purchasers to register attendee information for each ticket with intelligent deadline calculation based on purchase timing. The system includes JWT-based authentication, rate limiting, and comprehensive validation.
 
 ## Authentication
 
@@ -241,7 +241,11 @@ Checks the health of the registration system components.
 
 ### JWT Token Security
 - Secret with at least 32 bytes of entropy (256-bit key)
-- Token expiry enforcement (default 72 hours via `REGISTRATION_TOKEN_EXPIRY`)
+- Token expiry enforcement with intelligent deadline calculation:
+  - **Standard purchases**: 24 hours before event
+  - **Late purchases** (12-24hr before event): 1 hour before event
+  - **Very late purchases** (6-12hr before event): Half remaining time (min 30min before)
+  - **Emergency purchases** (<6hr before event): 30min from now OR 15min before event
 - Algorithm restricted to HS256 for security
 - Secure token transmission via HTTPS only
 
@@ -319,8 +323,11 @@ attendee_last_name TEXT,
 attendee_email TEXT,
 registration_status TEXT DEFAULT 'pending',
 registered_at DATETIME,
-registration_deadline DATETIME
+registration_deadline DATETIME,
+max_scan_count INTEGER DEFAULT 3
 ```
+
+**Note on Scan Limits**: The system uses a default `max_scan_count` of 3 scans per ticket. This supports wristband-based access control where 1 scan = wristband = unlimited venue access. The 2-3 extra scans allow for error recovery (QR failures, network issues).
 
 ### Registration Reminders Table
 ```sql

@@ -318,7 +318,8 @@ export default async function handler(req, res) {
         walletPassUrl: `${baseUrl}/api/tickets/apple-wallet/${ticketId}`,
         googleWalletUrl: `${baseUrl}/api/tickets/google-wallet/${ticketId}`,
         appleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-apple.png`,
-        googleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-google.png`
+        googleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-google.png`,
+        viewTicketUrl: `${baseUrl}/my-ticket#${qrToken}`
       });
 
       await brevo.sendTransactionalEmail({
