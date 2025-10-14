@@ -23,28 +23,16 @@ env:
   NODE_VERSION: "20.19.5"
 
 jobs:
-  backup:
-    name: "💾 Backup ${{ matrix.database.name }}"
+  backup-production:
+    name: "💾 Backup Production"
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
-    strategy:
-      fail-fast: false
-      matrix:
-        database:
-          - name: production
-            turso_name: ${{ vars.TURSO_PROD_DB_NAME }}
-            env: prod
-          - name: development
-            turso_name: ${{ vars.TURSO_DEV_DB_NAME }}
-            env: dev
-
-    # Skip dev backup if manual trigger specified prod only (and vice versa)
+    # Run on schedule or when manually triggered for prod/both
     if: |
       github.event_name == 'schedule' ||
       github.event.inputs.database == 'both' ||
-      (github.event.inputs.database == 'prod' && matrix.database.env == 'prod') ||
-      (github.event.inputs.database == 'dev' && matrix.database.env == 'dev')
+      github.event.inputs.database == 'prod'
 
     steps:
       - name: "📥 Checkout Code"
@@ -84,22 +72,24 @@ jobs:
 
       - name: "💾 Create Database Backup"
         id: backup
+        env:
+          DB_NAME: ${{ vars.TURSO_PROD_DB_NAME }}
         run: |
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "💾 Creating ${{ matrix.database.name }} Database Backup"
+          echo "💾 Creating Production Database Backup"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "📊 Database: ${{ matrix.database.turso_name }}"
+          echo "📊 Database: $DB_NAME"
           echo "📅 Date: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
           # Generate backup filename with timestamp
           TIMESTAMP=$(date -u '+%Y-%m-%d_%H-%M-%S')
-          BACKUP_FILE="backup-${{ matrix.database.env }}-${TIMESTAMP}.sql"
+          BACKUP_FILE="backup-prod-${TIMESTAMP}.sql"
           COMPRESSED_FILE="${BACKUP_FILE}.gz"
 
           # Dump database
           echo "📤 Dumping database..."
-          turso db shell ${{ matrix.database.turso_name }} .dump > "$BACKUP_FILE"
+          turso db shell "$DB_NAME" .dump > "$BACKUP_FILE"
 
           # Check if dump succeeded
           if [ ! -s "$BACKUP_FILE" ]; then
@@ -133,7 +123,7 @@ jobs:
           echo "☁️  Uploading backup to Vercel Blob Storage..."
           node scripts/upload-backup-to-blob.js \
             "${{ steps.backup.outputs.backup_file }}" \
-            "${{ matrix.database.env }}"
+            "prod"
 
       - name: "🧹 Cleanup Old Backups"
         env:
@@ -146,7 +136,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: database-backup-${{ matrix.database.env }}-${{ steps.backup.outputs.timestamp }}
+          name: database-backup-prod-${{ steps.backup.outputs.timestamp }}
           path: ${{ steps.backup.outputs.backup_file }}
           retention-days: 7
           compression-level: 0  # Already compressed with gzip
@@ -155,7 +145,138 @@ jobs:
         if: always()
         run: |
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "📊 Backup Summary - ${{ matrix.database.name }}"
+          echo "📊 Backup Summary - Production"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "✅ Status: ${{ job.status }}"
+          echo "📦 Original Size: ${{ steps.backup.outputs.original_size }} bytes"
+          echo "🗜️  Compressed Size: ${{ steps.backup.outputs.compressed_size }} bytes"
+          echo "📉 Compression: ${{ steps.backup.outputs.compression_ratio }}%"
+          echo "📅 Timestamp: ${{ steps.backup.outputs.timestamp }}"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+  backup-development:
+    name: "💾 Backup Development"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # Run on schedule or when manually triggered for dev/both
+    if: |
+      github.event_name == 'schedule' ||
+      github.event.inputs.database == 'both' ||
+      github.event.inputs.database == 'dev'
+
+    steps:
+      - name: "📥 Checkout Code"
+        uses: actions/checkout@v4
+
+      - name: "🔧 Setup Node.js"
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: "📦 Install Dependencies"
+        run: |
+          echo "📦 Installing @vercel/blob SDK..."
+          npm install @vercel/blob --no-save --no-audit
+
+      - name: "🔧 Install Turso CLI"
+        run: |
+          echo "🔧 Installing Turso CLI..."
+          curl -sSfL https://get.tur.so/install.sh | bash
+          echo "$HOME/.turso/bin" >> $GITHUB_PATH
+
+      - name: "🔐 Authenticate with Turso"
+        env:
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+        run: |
+          echo "🔐 Configuring Turso authentication..."
+          mkdir -p ~/.config/turso
+          echo "$TURSO_AUTH_TOKEN" > ~/.config/turso/token
+
+          # Verify authentication
+          turso db list > /dev/null 2>&1 || {
+            echo "❌ Turso authentication failed"
+            exit 1
+          }
+          echo "✅ Turso authentication successful"
+
+      - name: "💾 Create Database Backup"
+        id: backup
+        env:
+          DB_NAME: ${{ vars.TURSO_DEV_DB_NAME }}
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "💾 Creating Development Database Backup"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📊 Database: $DB_NAME"
+          echo "📅 Date: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+          # Generate backup filename with timestamp
+          TIMESTAMP=$(date -u '+%Y-%m-%d_%H-%M-%S')
+          BACKUP_FILE="backup-dev-${TIMESTAMP}.sql"
+          COMPRESSED_FILE="${BACKUP_FILE}.gz"
+
+          # Dump database
+          echo "📤 Dumping database..."
+          turso db shell "$DB_NAME" .dump > "$BACKUP_FILE"
+
+          # Check if dump succeeded
+          if [ ! -s "$BACKUP_FILE" ]; then
+            echo "❌ Database dump failed or is empty"
+            exit 1
+          fi
+
+          ORIGINAL_SIZE=$(stat -f%z "$BACKUP_FILE" 2>/dev/null || stat -c%s "$BACKUP_FILE")
+          echo "✅ Database dumped: $(numfmt --to=iec-i --suffix=B $ORIGINAL_SIZE || echo ${ORIGINAL_SIZE}B)"
+
+          # Compress backup
+          echo "🗜️  Compressing backup..."
+          gzip -9 "$BACKUP_FILE"
+
+          COMPRESSED_SIZE=$(stat -f%z "$COMPRESSED_FILE" 2>/dev/null || stat -c%s "$COMPRESSED_FILE")
+          COMPRESSION_RATIO=$(awk "BEGIN {printf \"%.1f\", (1 - $COMPRESSED_SIZE / $ORIGINAL_SIZE) * 100}")
+
+          echo "✅ Backup compressed: $(numfmt --to=iec-i --suffix=B $COMPRESSED_SIZE || echo ${COMPRESSED_SIZE}B) (${COMPRESSION_RATIO}% reduction)"
+
+          # Export variables for next steps
+          echo "backup_file=$COMPRESSED_FILE" >> $GITHUB_OUTPUT
+          echo "original_size=$ORIGINAL_SIZE" >> $GITHUB_OUTPUT
+          echo "compressed_size=$COMPRESSED_SIZE" >> $GITHUB_OUTPUT
+          echo "compression_ratio=$COMPRESSION_RATIO" >> $GITHUB_OUTPUT
+          echo "timestamp=$TIMESTAMP" >> $GITHUB_OUTPUT
+
+      - name: "☁️  Upload to Vercel Blob Storage"
+        env:
+          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
+        run: |
+          echo "☁️  Uploading backup to Vercel Blob Storage..."
+          node scripts/upload-backup-to-blob.js \
+            "${{ steps.backup.outputs.backup_file }}" \
+            "dev"
+
+      - name: "🧹 Cleanup Old Backups"
+        env:
+          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
+        run: |
+          echo "🧹 Cleaning up backups older than 30 days..."
+          node scripts/cleanup-old-backups.js --retention-days 30
+
+      - name: "📤 Upload Backup Artifact"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-backup-dev-${{ steps.backup.outputs.timestamp }}
+          path: ${{ steps.backup.outputs.backup_file }}
+          retention-days: 7
+          compression-level: 0  # Already compressed with gzip
+
+      - name: "📊 Backup Summary"
+        if: always()
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📊 Backup Summary - Development"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "✅ Status: ${{ job.status }}"
           echo "📦 Original Size: ${{ steps.backup.outputs.original_size }} bytes"
@@ -167,8 +288,8 @@ jobs:
   notify:
     name: "📧 Notify on Failure"
     runs-on: ubuntu-latest
-    needs: backup
-    if: failure()
+    needs: [backup-production, backup-development]
+    if: always() && (needs.backup-production.result == 'failure' || needs.backup-development.result == 'failure')
 
     steps:
       - name: "📧 Send Failure Notification"
