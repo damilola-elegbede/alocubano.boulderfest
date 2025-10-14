@@ -653,7 +653,11 @@
         }
 
         async loadTickets() {
-          console.log('[VIEW] Loading tickets with token type:', this.tokenType, ', token:', this.token?.substring(0, 20) + '...');
+          // Development-only: show partial token for debugging
+          // Production: fully mask token to prevent exposure
+          const isDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname.includes('.local');
+          const tokenDebug = isDev ? this.token?.substring(0, 20) + '...' : '****';
+          console.log('[VIEW] Loading tickets with token type:', this.tokenType, ', token:', tokenDebug);
 
           // Get ticketId from URL if present (for single-ticket view from confirmation emails)
           const urlParams = new URLSearchParams(window.location.search);
