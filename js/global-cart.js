@@ -1,16 +1,102 @@
 /**
  * Global Cart Initialization
- * Sets up cart system on all pages
+ * Sets up cart system conditionally based on page context for performance
  */
 import { getCartManager } from './lib/cart-manager.js';
 import { initializeHeaderCart } from './header-cart.js';
 import { initializeFloatingCart } from './floating-cart.js';
 
+// Cart-relevant pages where full cart functionality is needed
+const CART_REQUIRED_PATHS = [
+    '/tickets',
+    '/donations',
+    '/checkout',
+    '/view-tickets',
+    '/register-tickets',
+    '/success',
+    '/failure'
+];
+
+// Check if current page requires cart functionality
+function shouldInitializeCart() {
+    const currentPath = window.location.pathname.toLowerCase();
+    return CART_REQUIRED_PATHS.some(path => currentPath.includes(path));
+}
+
 // Initialize on DOM ready
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeGlobalCart);
+    document.addEventListener('DOMContentLoaded', conditionalInitialize);
 } else {
-    initializeGlobalCart();
+    conditionalInitialize();
+}
+
+function conditionalInitialize() {
+    if (shouldInitializeCart()) {
+        // Full cart initialization for cart-relevant pages
+        initializeGlobalCart();
+    } else {
+        // Minimal header cart badge only for other pages
+        initializeHeaderCartBadge();
+    }
+}
+
+/**
+ * Minimal header cart badge initialization for non-cart pages
+ * Only reads from localStorage and updates badge count - no CartManager overhead
+ */
+function initializeHeaderCartBadge() {
+    try {
+        // Read cart state directly from localStorage (no async operations)
+        const cartData = localStorage.getItem('cart');
+        const cart = cartData ? JSON.parse(cartData) : { items: [], donations: [] };
+
+        // Calculate total item count
+        const ticketCount = cart.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0;
+        const donationCount = cart.donations?.length || 0;
+        const totalCount = ticketCount + donationCount;
+
+        // Update header cart badge
+        const badge = document.querySelector('.nav-cart-badge');
+        if (badge) {
+            badge.textContent = totalCount;
+            badge.style.display = totalCount > 0 ? 'flex' : 'none';
+        }
+
+        // Make cart button clickable to navigate to tickets page
+        const cartButton = document.querySelector('.nav-cart-button');
+        if (cartButton && !cartButton.dataset.listenerAttached) {
+            cartButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                window.location.href = '/pages/tickets.html';
+            });
+            cartButton.dataset.listenerAttached = 'true';
+        }
+
+        // Listen for storage events to sync badge across tabs
+        window.addEventListener('storage', (e) => {
+            if (e.key !== 'cart') return;
+
+            try {
+                const updatedCart = e.newValue
+                    ? JSON.parse(e.newValue)
+                    : { items: [], donations: [] };
+                const updatedTicketCount = updatedCart.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0;
+                const updatedDonationCount = updatedCart.donations?.length || 0;
+                const updatedTotalCount = updatedTicketCount + updatedDonationCount;
+
+                if (badge) {
+                    badge.textContent = updatedTotalCount;
+                    badge.style.display = updatedTotalCount > 0 ? 'flex' : 'none';
+                }
+            } catch (err) {
+                console.warn('Ignoring invalid cart data in storage event:', err);
+            }
+        });
+
+    } catch (error) {
+        console.error('Failed to initialize header cart badge:', error);
+        // Fail silently - badge just won't update
+    }
 }
 
 async function initializeGlobalCart() {

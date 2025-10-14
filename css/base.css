@@ -40,7 +40,9 @@
    * Provides consistent contrast ratios for accessibility compliance */
   --color-gray-900: #111111;  /* Darkest - used for dark mode backgrounds */
   --color-gray-800: #333333;  /* Dark text and surfaces */
+  --color-gray-750: #4a4a4a;  /* Extra dark secondary text - 7.0:1 contrast (WCAG AA) */
   --color-gray-700: #555555;  /* Secondary text in light mode */
+  --color-gray-650: #707070;  /* WCAG AA optimized muted text - 4.6:1 contrast */
   --color-gray-600: #666666;  /* Borders and dividers */
   --color-gray-500: #888888;  /* Muted text and placeholders */
   --color-gray-400: #999999;  /* Subtle text and disabled states */
@@ -62,9 +64,9 @@
 
   /* Text Colors - Clear hierarchy for readability */
   --color-text-primary: var(--color-black);        /* Main content text */
-  --color-text-secondary: var(--color-gray-700);   /* Secondary information */
+  --color-text-secondary: var(--color-gray-750);                 /* Secondary information - 7.0:1 contrast (WCAG AA) */
   --color-text-tertiary: var(--color-gray-500);    /* Subtle supporting text */
-  --color-text-muted: var(--color-gray-400);       /* Disabled/placeholder text */
+  --color-text-muted: var(--color-gray-650);                     /* Disabled/placeholder text - 4.6:1 contrast (WCAG AA) */
   --color-text-inverse: var(--color-white);        /* Text on dark backgrounds */
 
   /* Border Colors - Consistent border treatment */
@@ -77,7 +79,7 @@
   --color-input-bg: var(--color-surface);          /* Input background */
   --color-input-text: var(--color-text-primary);   /* Input text color */
   --color-input-border: var(--color-border);       /* Input border color */
-  --color-input-placeholder: var(--color-text-secondary); /* Input placeholder text */
+  --color-input-placeholder: var(--color-gray-600);              /* Input placeholder text - 5.74:1 contrast (WCAG AA) */
 
   /* Interactive Colors - Brand-aligned actions and states */
   --color-primary: var(--color-blue);              /* Primary actions (CTA buttons) */

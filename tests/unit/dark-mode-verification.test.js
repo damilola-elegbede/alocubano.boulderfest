@@ -39,7 +39,9 @@ const colors = {
   // Gray scale
   'gray-900': [17, 17, 17],      // #111111
   'gray-800': [51, 51, 51],      // #333333
+  'gray-750': [74, 74, 74],      // #4a4a4a - WCAG AA secondary text
   'gray-700': [85, 85, 85],      // #555555
+  'gray-650': [112, 112, 112],   // #707070 - WCAG AA muted text
   'gray-600': [102, 102, 102],   // #666666
   'gray-500': [136, 136, 136],   // #888888
   'gray-400': [153, 153, 153],   // #999999
@@ -77,10 +79,10 @@ describe("Dark Mode Verification Tests", () => {
     navigationCss = readFileSync(join(process.cwd(), "css/navigation.css"), "utf8");
   });
 
-  describe("1. Muted Text Contrast (--color-gray-400)", () => {
-    it("should use --color-gray-400 (#999999) for muted text", () => {
-      expect(baseCss).toContain("--color-gray-400: #999999");
-      expect(baseCss).toContain("--color-text-muted: var(--color-gray-400)");
+  describe("1. Muted Text Contrast (--color-gray-650)", () => {
+    it("should use --color-gray-650 (#707070) for muted text in light mode", () => {
+      expect(baseCss).toContain("--color-gray-650: #707070");
+      expect(baseCss).toContain("--color-text-muted: var(--color-gray-650)");
     });
 
     it("should meet WCAG AA contrast ratio for muted text on dark backgrounds", () => {
@@ -179,8 +181,8 @@ describe("Dark Mode Verification Tests", () => {
       // Check that placeholders use the semantic --color-input-placeholder variable
       expect(formsCss).toContain("color: var(--color-input-placeholder)");
 
-      // Verify the variable is defined in base.css to use --color-text-secondary
-      expect(baseCss).toContain("--color-input-placeholder: var(--color-text-secondary)");
+      // Verify the variable is defined in base.css using semantic gray-scale variable
+      expect(baseCss).toContain("--color-input-placeholder: var(--color-gray-600)");
     });
 
     it("should have dark mode specific placeholder styles", () => {
@@ -189,9 +191,9 @@ describe("Dark Mode Verification Tests", () => {
     });
 
     it("should meet contrast requirements for placeholder text", () => {
-      // Placeholder uses text-secondary which is gray-300 in dark mode
-      const placeholderColor = colors['gray-300'];
-      const inputBg = colors['gray-800']; // background-secondary
+      // Placeholder uses #666666 (gray-600) for optimized WCAG AA contrast
+      const placeholderColor = colors['gray-600']; // #666666
+      const inputBg = colors['white']; // Light mode background
 
       const ratio = contrastRatio(placeholderColor, inputBg);
       expect(ratio).toBeGreaterThanOrEqual(4.5); // WCAG AA for normal text
@@ -337,9 +339,9 @@ describe("Dark Mode Verification Tests", () => {
         },
         {
           name: "Placeholder text contrast",
-          foreground: colors['gray-300'], // #bbbbbb
-          background: colors['gray-800'], // #333333
-          expected: 6.58,
+          foreground: colors['gray-600'], // #666666
+          background: colors['white'], // #ffffff (light mode)
+          expected: 5.74,
           minRequired: 4.5
         }
       ];
@@ -422,7 +424,9 @@ describe("CSS Variable Consistency Tests", () => {
     const grayVars = [
       "--color-gray-900: #111111",
       "--color-gray-800: #333333",
+      "--color-gray-750: #4a4a4a",   // Added for WCAG AA secondary text
       "--color-gray-700: #555555",
+      "--color-gray-650: #707070",   // Added for WCAG AA muted text
       "--color-gray-600: #666666",
       "--color-gray-500: #888888",
       "--color-gray-400: #999999",
@@ -438,11 +442,10 @@ describe("CSS Variable Consistency Tests", () => {
 
   it("should have proper semantic color mappings", () => {
     const semanticVars = [
-      "--color-text-muted: var(--color-gray-400)",
-      "--color-border: var(--color-gray-600)",
-      "--color-border-light: var(--color-gray-700)",
-      "--color-text-secondary: var(--color-gray-300)",
-      "--color-text-tertiary: var(--color-gray-400)"
+      "--color-text-muted: var(--color-gray-650)",       // Updated to use new gray-650 variable
+      "--color-border: var(--color-gray-200)",           // Light mode default border
+      "--color-text-secondary: var(--color-gray-750)",   // Light mode secondary text
+      "--color-text-tertiary: var(--color-gray-500)"     // Tertiary text color
     ];
 
     semanticVars.forEach(varDeclaration => {

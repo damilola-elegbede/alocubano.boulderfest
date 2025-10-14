@@ -84,16 +84,12 @@
 @media (max-width: 768px) {
   /* Position cart icon in mobile header */
   .nav-cart-item {
-    position: absolute;
-    right: 60px; /* Position to the left of hamburger menu */
-    top: 50%;
-    transform: translateY(-50%);
+    position: fixed !important; /* Fixed to viewport, no parent transform */
+    right: 80px; /* Position to the left of hamburger menu with more spacing */
+    top: var(--space-lg); /* Align with hamburger vertical position */
+    transform: none;
     margin: 0;
-  }
-  
-  /* Hide cart item from mobile menu dropdown */
-  .nav-list.open .nav-cart-item {
-    display: none;
+    z-index: 1001; /* Same as hamburger menu */
   }
   
   .nav-cart-button {

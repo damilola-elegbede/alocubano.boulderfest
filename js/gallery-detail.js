@@ -1163,6 +1163,42 @@
                 url: errorUrl
             });
 
+            // Show user-friendly error notification
+            if (typeof window.errorNotifier !== 'undefined') {
+                const isNetworkError = error.message.includes('Failed to fetch') ||
+                                      error.message.includes('Network') ||
+                                      error.message.includes('offline') ||
+                                      !navigator.onLine;
+
+                if (isNetworkError) {
+                    window.errorNotifier.showNetworkError(
+                        'Unable to load gallery photos. Please check your connection.',
+                        () => {
+                            // Retry loading this page
+                            state.loadingMutex = false;
+                            loadNextPage(year, loadingEl, contentEl, staticEl);
+                        }
+                    );
+                } else if (error.message.includes('Rate limit')) {
+                    window.errorNotifier.show('Too many requests. Please wait a moment and try again.', {
+                        type: 'validation',
+                        duration: 5000,
+                        dismissible: true
+                    });
+                } else {
+                    // Generic error
+                    window.errorNotifier.show('Failed to load gallery photos. Please try again.', {
+                        type: 'system',
+                        duration: 5000,
+                        dismissible: true,
+                        onRetry: () => {
+                            state.loadingMutex = false;
+                            loadNextPage(year, loadingEl, contentEl, staticEl);
+                        }
+                    });
+                }
+            }
+
             // Show static fallback only on first page
             if (state.loadedPages === 0) {
                 if (loadingEl) {
