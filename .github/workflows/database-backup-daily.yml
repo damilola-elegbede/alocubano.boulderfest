@@ -289,7 +289,7 @@ jobs:
     name: "📧 Notify on Failure"
     runs-on: ubuntu-latest
     needs: [backup-production, backup-development]
-    if: failure()
+    if: always() && (needs.backup-production.result == 'failure' || needs.backup-development.result == 'failure')
 
     steps:
       - name: "📧 Send Failure Notification"
