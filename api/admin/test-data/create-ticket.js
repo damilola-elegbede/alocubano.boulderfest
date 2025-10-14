@@ -112,8 +112,10 @@ export default async function handler(req, res) {
     const now = new Date();
     const eventTime = ticketDetails.event_time || '00:00';
     const [eh, em] = eventTime.split(':').map(Number);
-    const eventDateObj = new Date(ticketDetails.event_date);
-    eventDateObj.setHours(Number.isFinite(eh) ? eh : 0, Number.isFinite(em) ? em : 0, 0, 0);
+    const hours = Number.isFinite(eh) ? eh : 0;
+    const minutes = Number.isFinite(em) ? em : 0;
+    const isoString = `${ticketDetails.event_date}T${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`;
+    const eventDateObj = new Date(isoString);
     const standardDeadline = new Date(eventDateObj.getTime() - (24 * 60 * 60 * 1000));
     const hoursUntilEvent = (eventDateObj.getTime() - now.getTime()) / (1000 * 60 * 60);
 
