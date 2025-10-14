@@ -133,8 +133,8 @@ export default async function handler(req, res) {
         registeredAt: ticket.registered_at,
         hoursRemaining: Math.max(0, Number(ticket.hours_remaining || 0)),
         scan_count: ticket.scan_count || 0,
-        max_scan_count: ticket.max_scan_count || 10,
-        scans_remaining: Math.max(0, (ticket.max_scan_count || 10) - (ticket.scan_count || 0)),
+        max_scan_count: ticket.max_scan_count || 3,
+        scans_remaining: Math.max(0, (ticket.max_scan_count || 3) - (ticket.scan_count || 0)),
         attendee: ticket.attendee_first_name ? {
           firstName: ticket.attendee_first_name,
           lastName: ticket.attendee_last_name,

@@ -93,6 +93,7 @@ export default async function handler(req, res) {
       ticket_type: 'test-weekender-pass',
       event_id: -1, // Test Weekender
       event_date: '2024-12-01',
+      event_time: '18:00',
       price_cents: 7500 // $75.00
     };
 
@@ -109,7 +110,10 @@ export default async function handler(req, res) {
 
     // Calculate registration deadline: 24 hours before event
     const now = new Date();
+    const eventTime = ticketDetails.event_time || '00:00';
+    const [eh, em] = eventTime.split(':').map(Number);
     const eventDateObj = new Date(ticketDetails.event_date);
+    eventDateObj.setHours(Number.isFinite(eh) ? eh : 0, Number.isFinite(em) ? em : 0, 0, 0);
     const standardDeadline = new Date(eventDateObj.getTime() - (24 * 60 * 60 * 1000));
     const hoursUntilEvent = (eventDateObj.getTime() - now.getTime()) / (1000 * 60 * 60);
 
@@ -122,7 +126,7 @@ export default async function handler(req, res) {
       registrationDeadline = new Date(eventDateObj.getTime() - (1 * 60 * 60 * 1000));
     } else if (hoursUntilEvent > 6) {
       // Very late: half remaining time (min 30 min before)
-      const hoursUntilDeadline = Math.max(0.5, Math.floor(hoursUntilEvent / 2));
+      const hoursUntilDeadline = Math.max(0.5, hoursUntilEvent / 2);
       registrationDeadline = new Date(now.getTime() + (hoursUntilDeadline * 60 * 60 * 1000));
     } else {
       // Emergency: 30 min from now OR 15 min before event (whichever is longer)
@@ -210,7 +214,7 @@ export default async function handler(req, res) {
 
     // Get the transaction ID for token generation and reminder scheduling
     const transactionResult = await db.execute({
-      sql: `SELECT id FROM transactions WHERE uuid = ?`,
+      sql: 'SELECT id FROM transactions WHERE uuid = ?',
       args: [transactionUuid]
     });
 
