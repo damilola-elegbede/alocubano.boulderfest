@@ -134,23 +134,40 @@ jobs:
           echo "📅 Date: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-          # Generate backup filename with timestamp
+          # Generate backup filenames with timestamp
           TIMESTAMP=$(date -u '+%Y-%m-%d_%H-%M-%S')
+          DB_FILE="backup-prod-${TIMESTAMP}.db"
           BACKUP_FILE="backup-prod-${TIMESTAMP}.sql"
           COMPRESSED_FILE="${BACKUP_FILE}.gz"
 
-          # Dump database
-          echo "📤 Dumping database..."
-          turso db shell "$DB_NAME" .dump > "$BACKUP_FILE"
+          # Export database to SQLite format (reliable for CI/CD)
+          echo "📤 Exporting database to SQLite format..."
+          turso db export "$DB_NAME" --output-file "$DB_FILE" --overwrite
 
-          # Check if dump succeeded
+          # Check if export succeeded
+          if [ ! -s "$DB_FILE" ]; then
+            echo "❌ Database export failed or is empty"
+            exit 1
+          fi
+
+          SQLITE_SIZE=$(stat -f%z "$DB_FILE" 2>/dev/null || stat -c%s "$DB_FILE")
+          echo "✅ Database exported: $(numfmt --to=iec-i --suffix=B $SQLITE_SIZE || echo ${SQLITE_SIZE}B)"
+
+          # Convert SQLite to SQL format for compatibility
+          echo "🔄 Converting to SQL format..."
+          sqlite3 "$DB_FILE" .dump > "$BACKUP_FILE"
+
+          # Clean up SQLite files
+          rm -f "$DB_FILE" "${DB_FILE}-wal"
+
+          # Verify SQL dump
           if [ ! -s "$BACKUP_FILE" ]; then
-            echo "❌ Database dump failed or is empty"
+            echo "❌ SQL conversion failed or is empty"
             exit 1
           fi
 
           ORIGINAL_SIZE=$(stat -f%z "$BACKUP_FILE" 2>/dev/null || stat -c%s "$BACKUP_FILE")
-          echo "✅ Database dumped: $(numfmt --to=iec-i --suffix=B $ORIGINAL_SIZE || echo ${ORIGINAL_SIZE}B)"
+          echo "✅ SQL dump created: $(numfmt --to=iec-i --suffix=B $ORIGINAL_SIZE || echo ${ORIGINAL_SIZE}B)"
 
           # Compress backup
           echo "🗜️  Compressing backup..."
@@ -309,23 +326,40 @@ jobs:
           echo "📅 Date: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-          # Generate backup filename with timestamp
+          # Generate backup filenames with timestamp
           TIMESTAMP=$(date -u '+%Y-%m-%d_%H-%M-%S')
+          DB_FILE="backup-dev-${TIMESTAMP}.db"
           BACKUP_FILE="backup-dev-${TIMESTAMP}.sql"
           COMPRESSED_FILE="${BACKUP_FILE}.gz"
 
-          # Dump database
-          echo "📤 Dumping database..."
-          turso db shell "$DB_NAME" .dump > "$BACKUP_FILE"
+          # Export database to SQLite format (reliable for CI/CD)
+          echo "📤 Exporting database to SQLite format..."
+          turso db export "$DB_NAME" --output-file "$DB_FILE" --overwrite
 
-          # Check if dump succeeded
+          # Check if export succeeded
+          if [ ! -s "$DB_FILE" ]; then
+            echo "❌ Database export failed or is empty"
+            exit 1
+          fi
+
+          SQLITE_SIZE=$(stat -f%z "$DB_FILE" 2>/dev/null || stat -c%s "$DB_FILE")
+          echo "✅ Database exported: $(numfmt --to=iec-i --suffix=B $SQLITE_SIZE || echo ${SQLITE_SIZE}B)"
+
+          # Convert SQLite to SQL format for compatibility
+          echo "🔄 Converting to SQL format..."
+          sqlite3 "$DB_FILE" .dump > "$BACKUP_FILE"
+
+          # Clean up SQLite files
+          rm -f "$DB_FILE" "${DB_FILE}-wal"
+
+          # Verify SQL dump
           if [ ! -s "$BACKUP_FILE" ]; then
-            echo "❌ Database dump failed or is empty"
+            echo "❌ SQL conversion failed or is empty"
             exit 1
           fi
 
           ORIGINAL_SIZE=$(stat -f%z "$BACKUP_FILE" 2>/dev/null || stat -c%s "$BACKUP_FILE")
-          echo "✅ Database dumped: $(numfmt --to=iec-i --suffix=B $ORIGINAL_SIZE || echo ${ORIGINAL_SIZE}B)"
+          echo "✅ SQL dump created: $(numfmt --to=iec-i --suffix=B $ORIGINAL_SIZE || echo ${ORIGINAL_SIZE}B)"
 
           # Compress backup
           echo "🗜️  Compressing backup..."
