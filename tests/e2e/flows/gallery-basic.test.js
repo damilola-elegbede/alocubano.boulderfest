@@ -210,10 +210,16 @@ test.describe('Gallery Basic Browsing', () => {
     const googleImages = page.locator('img[src*="googleusercontent.com"], img[src*="drive.google.com"]');
     const googleImageCount = await googleImages.count();
 
-    // Verify gallery has dynamic content OR skip if empty (valid state for future events)
+    // Handle empty gallery gracefully - test the empty state UI
     if (dynamicCount === 0) {
-      test.skip('Gallery has no content yet - skipping image tests');
-      return;
+      console.log('✅ Gallery is empty - testing empty state handling');
+      // Verify page still loads and has basic structure
+      const bodyText = await page.locator('body').textContent();
+      expect(bodyText.length).toBeGreaterThan(100);
+      // Look for empty state messaging or basic page structure
+      const hasEmptyStateUI = await page.locator('.empty-state, .no-content, #workshops-section, #socials-section').count() > 0;
+      expect(hasEmptyStateUI).toBe(true);
+      return; // Test passes - empty state is handled correctly
     }
     expect(dynamicCount).toBeGreaterThan(0);
 
@@ -289,10 +295,16 @@ test.describe('Gallery Basic Browsing', () => {
       }
     }
 
-    // Skip test if no images are found (valid for future events)
+    // Handle empty gallery gracefully - test the empty state UI
     if (maxCount === 0) {
-      test.skip('Gallery has no images yet - skipping modal test');
-      return;
+      console.log('✅ Gallery is empty - testing empty state handling');
+      // Verify page still loads with basic structure
+      const bodyText = await page.locator('body').textContent();
+      expect(bodyText.length).toBeGreaterThan(100);
+      // Look for empty state messaging or basic page structure
+      const hasEmptyStateUI = await page.locator('.empty-state, .no-content, #workshops-section, #socials-section').count() > 0;
+      expect(hasEmptyStateUI).toBe(true);
+      return; // Test passes - empty state is handled correctly
     }
 
     // Try to click using the best selector found
@@ -473,10 +485,16 @@ test.describe('Gallery Basic Browsing', () => {
     const dynamicContent = await page.locator('.gallery-detail-grid .gallery-item, .gallery-detail-content img').count();
     const googleImages = await page.locator('img[src*="googleusercontent.com"], img[src*="drive.google.com"]').count();
 
-    // Verify gallery has dynamic content OR skip if empty (valid state for future events)
+    // Handle empty gallery gracefully - test the empty state UI
     if (dynamicContent === 0) {
-      test.skip('Gallery has no content yet - skipping content tests');
-      return;
+      console.log('✅ Gallery is empty - testing empty state handling');
+      // Ensure page is not broken or completely empty
+      const bodyText = await page.locator('body').textContent();
+      expect(bodyText.length).toBeGreaterThan(100);
+      // Look for empty state messaging or basic page structure
+      const hasEmptyStateUI = await page.locator('.empty-state, .no-content, #workshops-section, #socials-section').count() > 0;
+      expect(hasEmptyStateUI).toBe(true);
+      return; // Test passes - empty state is handled correctly
     }
     expect(dynamicContent).toBeGreaterThan(0);
 

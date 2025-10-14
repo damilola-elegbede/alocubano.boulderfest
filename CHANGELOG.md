@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed - E2E Test Suite Reliability (October 2025)
+
+#### Test Quality Improvements
+- **Eliminated Silent Test Passes**: Fixed 26+ instances where tests could silently pass without running assertions
+  - Replaced early `return;` statements with proper `test.skip(true, 'reason')` across 5 test files
+  - Fixed improper `test.skip()` usage without the `true` parameter inside running tests
+  - Added explicit error throwing for prerequisite failures instead of silent returns
+- **Converted Inappropriate Skips to Failures**: Fixed ~15 tests that were hiding real bugs by skipping
+  - Tests now FAIL when features are broken (CSRF unavailable, admin login fails, API errors)
+  - Only skip for valid reasons (rate limiting, MFA required)
+  - Added proper empty state testing instead of skipping when data is empty
+- **GitHub Actions Workflow Improvements**: Enhanced `.github/workflows/e2e-tests-preview.yml`
+  - Removed `|| true` pattern that hid missing critical secrets
+  - Implemented proper exit code handling that correctly detects test failures
+  - Added critical vs. optional secret categorization
+- **Test Quality Helper**: Added `tests/e2e/helpers/test-quality.js` with assertion tracking utilities
+- **Comprehensive Documentation**: Created `tests/e2e/README.md` with best practices and historical issues
+
+#### Impact
+- **Before**: 26+ tests could silently pass, ~18 skips hiding real bugs
+- **After**: All tests properly fail when features broken, ~4 valid skips remaining
+- **Result**: Tests now accurately reflect system health
+
 ### Fixed - Integration Test Suite Reliability
 
 #### Test Suite Stabilization (100% Pass Rate Achieved)

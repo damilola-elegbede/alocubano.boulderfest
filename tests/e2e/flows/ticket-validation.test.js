@@ -74,13 +74,11 @@ test.describe('Ticket Validation', () => {
     const loginResult = await loginAsAdmin(page);
 
     if (loginResult === 'rate_limited') {
-      test.skip('Skipping test - admin account rate limited');
-      return;
+      test.skip(true, 'Skipping test - admin account rate limited');
     }
 
     if (!loginResult) {
-      test.skip('Skipping test - admin login failed');
-      return;
+      throw new Error('Admin login failed - cannot proceed with ticket validation tests!');
     }
 
     // Navigate to ticket validation page (if exists) or admin area
