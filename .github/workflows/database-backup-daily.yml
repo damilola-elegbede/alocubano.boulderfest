@@ -110,6 +110,25 @@ jobs:
 
           echo "✅ Turso authentication successful"
 
+      - name: "🔍 Verify Database Access"
+        env:
+          DB_NAME: ${{ vars.TURSO_PROD_DB_NAME }}
+        run: |
+          echo "🔍 Verifying production database access..."
+
+          if turso db show "$DB_NAME" > /dev/null 2>&1; then
+            echo "✅ Can access production database"
+
+            # Verify we can query the database
+            TABLE_COUNT=$(turso db shell "$DB_NAME" "SELECT COUNT(*) as count FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'" | tail -n 1 | tr -d ' ')
+            echo "📊 Tables in database: $TABLE_COUNT"
+          else
+            echo "❌ Cannot access production database"
+            exit 1
+          fi
+
+          echo "✅ Database access verification complete"
+
       - name: "💾 Create Database Backup"
         id: backup
         env:
@@ -272,6 +291,25 @@ jobs:
           fi
 
           echo "✅ Turso authentication successful"
+
+      - name: "🔍 Verify Database Access"
+        env:
+          DB_NAME: ${{ vars.TURSO_DEV_DB_NAME }}
+        run: |
+          echo "🔍 Verifying development database access..."
+
+          if turso db show "$DB_NAME" > /dev/null 2>&1; then
+            echo "✅ Can access development database"
+
+            # Verify we can query the database
+            TABLE_COUNT=$(turso db shell "$DB_NAME" "SELECT COUNT(*) as count FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'" | tail -n 1 | tr -d ' ')
+            echo "📊 Tables in database: $TABLE_COUNT"
+          else
+            echo "❌ Cannot access development database"
+            exit 1
+          fi
+
+          echo "✅ Database access verification complete"
 
       - name: "💾 Create Database Backup"
         id: backup

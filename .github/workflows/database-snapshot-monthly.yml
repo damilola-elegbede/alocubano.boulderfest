@@ -81,11 +81,49 @@ jobs:
 
           echo "✅ Turso authentication successful"
 
+      - name: "🔍 Verify Database Access"
+        env:
+          PROD_DB: ${{ vars.TURSO_PROD_DB_NAME }}
+          DEV_DB: ${{ vars.TURSO_DEV_DB_NAME }}
+        run: |
+          echo "🔍 Verifying database access and data..."
+          echo ""
+
+          # Check production database
+          echo "📊 Production Database: $PROD_DB"
+          if turso db show "$PROD_DB" > /dev/null 2>&1; then
+            echo "  ✅ Can access production database"
+
+            # Try to get a row count from a table to verify data access
+            ROW_COUNT=$(turso db shell "$PROD_DB" "SELECT COUNT(*) as count FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'" | tail -n 1 | tr -d ' ')
+            echo "  📊 Tables in production: $ROW_COUNT"
+          else
+            echo "  ❌ Cannot access production database"
+            exit 1
+          fi
+
+          echo ""
+
+          # Check development database
+          echo "📊 Development Database: $DEV_DB"
+          if turso db show "$DEV_DB" > /dev/null 2>&1; then
+            echo "  ✅ Can access development database"
+
+            # Try to get a row count from a table to verify data access
+            ROW_COUNT=$(turso db shell "$DEV_DB" "SELECT COUNT(*) as count FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'" | tail -n 1 | tr -d ' ')
+            echo "  📊 Tables in development: $ROW_COUNT"
+          else
+            echo "  ❌ Cannot access development database"
+            exit 1
+          fi
+
+          echo ""
+          echo "✅ Database access verification complete"
+
       - name: "📸 Create Production Snapshot"
         env:
           PROD_DB: ${{ vars.TURSO_PROD_DB_NAME }}
           DRY_RUN: ${{ github.event.inputs.dry_run }}
-          TURSO_API_TOKEN: ${{ secrets.TURSO_API_TOKEN }}
         run: |
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "📸 Creating Production Database Snapshot"
@@ -131,7 +169,6 @@ jobs:
         env:
           DEV_DB: ${{ vars.TURSO_DEV_DB_NAME }}
           DRY_RUN: ${{ github.event.inputs.dry_run }}
-          TURSO_API_TOKEN: ${{ secrets.TURSO_API_TOKEN }}
         run: |
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "📸 Creating Development Database Snapshot"
