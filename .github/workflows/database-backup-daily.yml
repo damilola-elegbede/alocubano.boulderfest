@@ -63,7 +63,17 @@ jobs:
         run: |
           echo "🔧 Installing Turso CLI..."
           curl -sSfL https://get.tur.so/install.sh | bash
-          echo "$HOME/.turso/bin" >> $GITHUB_PATH
+
+          # Verify installation
+          if [ ! -f "$HOME/.turso/turso" ]; then
+            echo "❌ Turso CLI installation failed - binary not found"
+            exit 1
+          fi
+
+          echo "✅ Turso CLI installed: $(ls -lh $HOME/.turso/turso)"
+
+          # Add to PATH for subsequent steps (correct directory)
+          echo "$HOME/.turso" >> $GITHUB_PATH
 
       - name: "🔐 Authenticate with Turso"
         env:
@@ -80,22 +90,13 @@ jobs:
             exit 1
           fi
 
-          # Verify Turso CLI is installed
-          if ! command -v turso &> /dev/null; then
-            echo "❌ Turso CLI not found in PATH"
-            echo "   Expected location: $HOME/.turso/bin/turso"
-            exit 1
-          fi
-
-          echo "✅ Turso CLI found: $(which turso)"
-
           # Configure authentication
           mkdir -p ~/.config/turso
           echo "$TURSO_AUTH_TOKEN" > ~/.config/turso/token
 
           # Verify authentication with detailed error output
           echo "🔍 Verifying authentication..."
-          if ! turso db list 2>&1; then
+          if ! $HOME/.turso/turso db list 2>&1; then
             echo ""
             echo "❌ Turso authentication failed"
             echo ""
@@ -225,7 +226,17 @@ jobs:
         run: |
           echo "🔧 Installing Turso CLI..."
           curl -sSfL https://get.tur.so/install.sh | bash
-          echo "$HOME/.turso/bin" >> $GITHUB_PATH
+
+          # Verify installation
+          if [ ! -f "$HOME/.turso/turso" ]; then
+            echo "❌ Turso CLI installation failed - binary not found"
+            exit 1
+          fi
+
+          echo "✅ Turso CLI installed: $(ls -lh $HOME/.turso/turso)"
+
+          # Add to PATH for subsequent steps (correct directory)
+          echo "$HOME/.turso" >> $GITHUB_PATH
 
       - name: "🔐 Authenticate with Turso"
         env:
@@ -242,22 +253,13 @@ jobs:
             exit 1
           fi
 
-          # Verify Turso CLI is installed
-          if ! command -v turso &> /dev/null; then
-            echo "❌ Turso CLI not found in PATH"
-            echo "   Expected location: $HOME/.turso/bin/turso"
-            exit 1
-          fi
-
-          echo "✅ Turso CLI found: $(which turso)"
-
           # Configure authentication
           mkdir -p ~/.config/turso
           echo "$TURSO_AUTH_TOKEN" > ~/.config/turso/token
 
           # Verify authentication with detailed error output
           echo "🔍 Verifying authentication..."
-          if ! turso db list 2>&1; then
+          if ! $HOME/.turso/turso db list 2>&1; then
             echo ""
             echo "❌ Turso authentication failed"
             echo ""
