@@ -85,7 +85,7 @@
   /* Position cart icon in mobile header */
   .nav-cart-item {
     position: fixed !important; /* Fixed to viewport, no parent transform */
-    right: 60px; /* Position to the left of hamburger menu */
+    right: 80px; /* Position to the left of hamburger menu with more spacing */
     top: var(--space-lg); /* Align with hamburger vertical position */
     transform: none;
     margin: 0;
