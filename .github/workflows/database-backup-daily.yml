@@ -103,7 +103,7 @@ jobs:
             echo "✅ Can access production database"
 
             # Verify we can query the database
-            TABLE_COUNT=$(turso db shell "$DB_NAME" "SELECT COUNT(*) as count FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'" | tail -n 1 | tr -d ' ')
+            TABLE_COUNT=$(turso db shell "$DB_NAME" --command "SELECT COUNT(*) as count FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';" | tail -n 1 | tr -d ' ')
             echo "📊 Tables in database: $TABLE_COUNT"
           else
             echo "❌ Cannot access production database"
@@ -294,7 +294,7 @@ jobs:
             echo "✅ Can access development database"
 
             # Verify we can query the database
-            TABLE_COUNT=$(turso db shell "$DB_NAME" "SELECT COUNT(*) as count FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'" | tail -n 1 | tr -d ' ')
+            TABLE_COUNT=$(turso db shell "$DB_NAME" --command "SELECT COUNT(*) as count FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';" | tail -n 1 | tr -d ' ')
             echo "📊 Tables in database: $TABLE_COUNT"
           else
             echo "❌ Cannot access development database"
