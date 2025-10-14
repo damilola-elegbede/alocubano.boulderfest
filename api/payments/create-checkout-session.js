@@ -7,6 +7,7 @@ import Stripe from 'stripe';
 import { setSecureCorsHeaders } from '../../lib/cors-config.js';
 import { validateTicketAvailability, reserveTickets, releaseReservation } from '../../lib/ticket-availability-service.js';
 import { logger } from '../../lib/logger.js';
+import { sanitizeProductName, sanitizeProductDescription } from '../../lib/payment-sanitization.js';
 
 // Check if we're in test mode
 const isTestMode = process.env.NODE_ENV === 'test' || process.env.INTEGRATION_TEST_MODE === 'true';
@@ -236,11 +237,35 @@ export default async function handler(req, res) {
         logger.log(`Using Stripe Price ID for ${item.name}: ${item.stripePriceId}`);
       } else {
         // Fall back to dynamic price_data if stripe_price_id not available
+
+        // Validate required fields for tickets
+        if (item.type === 'ticket') {
+          if (!item.name) {
+            return res.status(400).json({
+              error: 'Missing product name for ticket. This indicates a cart state error.'
+            });
+          }
+          if (!item.ticketType) {
+            return res.status(400).json({
+              error: `Missing ticket type for ${item.name}. This is a critical error - please contact support.`
+            });
+          }
+          if (!item.eventDate) {
+            return res.status(400).json({
+              error: `Missing event date for ${item.name}. This is a critical error - please contact support.`
+            });
+          }
+          // Ensure description is defined (empty string if null/undefined)
+          if (item.description === undefined || item.description === null) {
+            item.description = '';
+          }
+        }
+
         lineItem.price_data = {
           currency: 'usd',
           product_data: {
-            name: item.name,
-            description: item.description
+            name: sanitizeProductName(item.name),  // Sanitized: "Event-Ticket" (max 250 chars)
+            description: sanitizeProductDescription(item.description, 'stripe')  // Sanitized with database description + date (max 500 chars)
           },
           // Donations are stored in dollars, tickets in cents
           unit_amount: item.type === 'donation'
@@ -250,19 +275,6 @@ export default async function handler(req, res) {
 
         // Add metadata for different item types
         if (item.type === 'ticket') {
-          // Validate ticket type is present - NO DEFAULTS
-          if (!item.ticketType) {
-            return res.status(400).json({
-              error: `Missing ticket type for ticket: ${item.name || 'Unknown'}. This is a critical error - please contact support.`
-            });
-          }
-
-          // Validate event date is present
-          if (!item.eventDate) {
-            return res.status(400).json({
-              error: `Missing event date for ticket: ${item.name || 'Unknown'}. This is a critical error - please contact support.`
-            });
-          }
 
           // Set event metadata for tickets - no defaults
           lineItem.price_data.product_data.metadata = {

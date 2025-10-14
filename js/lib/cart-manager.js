@@ -187,7 +187,7 @@ export class CartManager extends EventTarget {
 
     // Ticket operations
     async addTicket(ticketData) {
-        const { ticketType, price, name, eventId, eventDate, venue, eventName, quantity = 1, isTestItem = false } = ticketData;
+        const { ticketType, price, name, description, eventId, eventDate, venue, eventName, quantity = 1, isTestItem = false } = ticketData;
 
         if (!ticketType || !price || !name) {
             throw new Error('Invalid ticket data');
@@ -209,6 +209,7 @@ export class CartManager extends EventTarget {
                     originalTicketType: shouldBeTestItem ? ticketType : undefined,
                     price,
                     name: actualName,
+                    description,  // Store description from database
                     eventId,
                     eventName,  // Store event name - NO FALLBACK
                     eventDate,  // Store event date
@@ -221,7 +222,7 @@ export class CartManager extends EventTarget {
 
             this.state.tickets[actualTicketType].quantity += quantity;
             this.state.tickets[actualTicketType].updatedAt = Date.now();
-            // Update eventName, eventDate and venue if provided (in case they changed)
+            // Update eventName, eventDate, venue, and description if provided (in case they changed)
             if (eventName) {
                 this.state.tickets[actualTicketType].eventName = eventName;
             }
@@ -235,6 +236,9 @@ export class CartManager extends EventTarget {
             // Update test mode flag in metadata if test item added
             if (shouldBeTestItem) {
                 this.state.metadata.testMode = true;
+            }
+            if (description) {
+                this.state.tickets[actualTicketType].description = description;
             }
 
             // Use coordinated storage write
@@ -304,7 +308,7 @@ export class CartManager extends EventTarget {
 
     // Upsert operation that combines add and update logic
     async upsertTicket(ticketData) {
-        const { ticketType, price, name, eventId, eventName, eventDate, venue, quantity, isTestItem = false } = ticketData;
+        const { ticketType, price, name, description, eventId, eventName, eventDate, venue, quantity, isTestItem = false } = ticketData;
 
         // Determine if this should be a test item (global testMode or explicit isTestItem)
         const shouldBeTestItem = this.testMode || isTestItem;
@@ -341,6 +345,7 @@ export class CartManager extends EventTarget {
                     originalTicketType: shouldBeTestItem ? ticketType : undefined,
                     price,
                     name: actualName,
+                    description,  // Store description from database
                     eventId,
                     eventName,  // Store event name - NO FALLBACK
                     eventDate,  // Store event date
@@ -356,6 +361,9 @@ export class CartManager extends EventTarget {
                 }
                 if (name) {
                     this.state.tickets[actualTicketType].name = actualName;
+                }
+                if (description) {
+                    this.state.tickets[actualTicketType].description = description;
                 }
                 if (eventId) {
                     this.state.tickets[actualTicketType].eventId = eventId;
