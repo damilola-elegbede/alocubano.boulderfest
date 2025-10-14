@@ -114,7 +114,7 @@ jobs:
 
           # Create snapshot branch
           echo "📸 Creating snapshot branch..."
-          turso db create "$SNAPSHOT_NAME" --from-db "$PROD_DB"
+          turso db create "$SNAPSHOT_NAME" --from-db "$PROD_DB" --wait
 
           # Verify snapshot was created
           if turso db list | grep -q "^${SNAPSHOT_NAME}\s"; then
@@ -160,7 +160,7 @@ jobs:
 
           # Create snapshot branch
           echo "📸 Creating snapshot branch..."
-          turso db create "$SNAPSHOT_NAME" --from-db "$DEV_DB"
+          turso db create "$SNAPSHOT_NAME" --from-db "$DEV_DB" --wait
 
           # Verify snapshot was created
           if turso db list | grep -q "^${SNAPSHOT_NAME}\s"; then
