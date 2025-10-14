@@ -89,7 +89,7 @@ async function uploadBackup() {
 
     // Upload to Vercel Blob
     const blob = await put(blobPath, fileBuffer, {
-      access: 'private',
+      access: 'public', // Required by current Vercel Blob configuration
       token: process.env.BLOB_READ_WRITE_TOKEN,
       addRandomSuffix: false, // Keep exact filename for predictability
     });
