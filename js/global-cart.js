@@ -74,8 +74,12 @@ function initializeHeaderCartBadge() {
 
         // Listen for storage events to sync badge across tabs
         window.addEventListener('storage', (e) => {
-            if (e.key === 'cart') {
-                const updatedCart = e.newValue ? JSON.parse(e.newValue) : { items: [], donations: [] };
+            if (e.key !== 'cart') return;
+
+            try {
+                const updatedCart = e.newValue
+                    ? JSON.parse(e.newValue)
+                    : { items: [], donations: [] };
                 const updatedTicketCount = updatedCart.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0;
                 const updatedDonationCount = updatedCart.donations?.length || 0;
                 const updatedTotalCount = updatedTicketCount + updatedDonationCount;
@@ -84,6 +88,8 @@ function initializeHeaderCartBadge() {
                     badge.textContent = updatedTotalCount;
                     badge.style.display = updatedTotalCount > 0 ? 'flex' : 'none';
                 }
+            } catch (err) {
+                console.warn('Ignoring invalid cart data in storage event:', err);
             }
         });
 
