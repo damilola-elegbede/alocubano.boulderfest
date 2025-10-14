@@ -11,6 +11,14 @@ on:
         required: false
         default: false
         type: boolean
+  # TEMPORARY: Testing workflow on fix/turso-backups branch
+  # TODO: Remove these triggers before merging to main
+  push:
+    branches:
+      - fix/turso-backups
+  pull_request:
+    branches:
+      - fix/turso-backups
 
 permissions:
   contents: read
@@ -26,21 +34,51 @@ jobs:
         run: |
           echo "🔧 Installing Turso CLI..."
           curl -sSfL https://get.tur.so/install.sh | bash
-          echo "$HOME/.turso/bin" >> $GITHUB_PATH
+
+          # Verify installation
+          if [ ! -f "$HOME/.turso/turso" ]; then
+            echo "❌ Turso CLI installation failed - binary not found"
+            exit 1
+          fi
+
+          echo "✅ Turso CLI installed: $(ls -lh $HOME/.turso/turso)"
+
+          # Add to PATH for subsequent steps (correct directory)
+          echo "$HOME/.turso" >> $GITHUB_PATH
 
       - name: "🔐 Authenticate with Turso"
         env:
           TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
         run: |
           echo "🔐 Configuring Turso authentication..."
+
+          # Check if token is set
+          if [ -z "$TURSO_AUTH_TOKEN" ]; then
+            echo "❌ TURSO_AUTH_TOKEN secret is not set"
+            echo "📝 Fix: Go to GitHub Settings → Secrets → Actions → New secret"
+            echo "   Name: TURSO_AUTH_TOKEN"
+            echo "   Value: Run 'turso auth token' to get your token"
+            exit 1
+          fi
+
+          # Configure authentication
           mkdir -p ~/.config/turso
           echo "$TURSO_AUTH_TOKEN" > ~/.config/turso/token
 
-          # Verify authentication
-          turso db list > /dev/null 2>&1 || {
+          # Verify authentication with detailed error output
+          echo "🔍 Verifying authentication..."
+          if ! $HOME/.turso/turso db list 2>&1; then
+            echo ""
             echo "❌ Turso authentication failed"
+            echo ""
+            echo "🔍 Troubleshooting:"
+            echo "   1. Check if TURSO_AUTH_TOKEN is valid (run: turso auth token)"
+            echo "   2. Ensure no extra spaces/newlines in the secret"
+            echo "   3. Token should start with 'eyJ'"
+            echo "   4. Check network connectivity to Turso API"
             exit 1
-          }
+          fi
+
           echo "✅ Turso authentication successful"
 
       - name: "📸 Create Production Snapshot"
