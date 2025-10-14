@@ -65,7 +65,7 @@
     width: 0;
     height: 0;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.5);
+    background: var(--color-surface-overlay);
     transform: translate(-50%, -50%);
     transition: width 0.6s, height 0.6s;
   }
@@ -94,7 +94,7 @@
   z-index: 10000;
   opacity: 0;
   pointer-events: none;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px var(--shadow-color-strong);
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -296,7 +296,7 @@
   width: 20px;
   height: 20px;
   margin: -10px 0 0 -10px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid var(--shadow-color-light);
   border-top-color: var(--color-white);
   border-radius: 50%;
   animation: btnSpin 0.6s linear infinite;
@@ -328,7 +328,7 @@
   width: 16px;
   height: 16px;
   margin: -8px 0 0 -8px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid var(--shadow-color-light);
   border-top-color: var(--color-white);
   border-radius: 50%;
   animation: btnSpin 0.6s linear infinite;
