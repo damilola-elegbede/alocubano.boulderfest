@@ -99,7 +99,7 @@ jobs:
         run: |
           echo "🔍 Verifying production database access..."
 
-          if turso db show "$DB_NAME" > /dev/null 2>&1; then
+          if OUTPUT=$(turso db show "$DB_NAME" 2>&1); then
             echo "✅ Can access production database"
 
             # Verify we can query the database
@@ -107,6 +107,8 @@ jobs:
             echo "📊 Tables in database: $TABLE_COUNT"
           else
             echo "❌ Cannot access production database"
+            echo "🔎 turso db show output:"
+            echo "$OUTPUT"
             exit 1
           fi
 
@@ -290,7 +292,7 @@ jobs:
         run: |
           echo "🔍 Verifying development database access..."
 
-          if turso db show "$DB_NAME" > /dev/null 2>&1; then
+          if OUTPUT=$(turso db show "$DB_NAME" 2>&1); then
             echo "✅ Can access development database"
 
             # Verify we can query the database
@@ -298,6 +300,8 @@ jobs:
             echo "📊 Tables in database: $TABLE_COUNT"
           else
             echo "❌ Cannot access development database"
+            echo "🔎 turso db show output:"
+            echo "$OUTPUT"
             exit 1
           fi
 
