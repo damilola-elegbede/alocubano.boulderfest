@@ -85,7 +85,7 @@ jobs:
         env:
           PROD_DB: ${{ vars.TURSO_PROD_DB_NAME }}
           DRY_RUN: ${{ github.event.inputs.dry_run }}
-          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+          TURSO_API_TOKEN: ${{ secrets.TURSO_API_TOKEN }}
         run: |
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "📸 Creating Production Database Snapshot"
@@ -99,10 +99,6 @@ jobs:
           echo "📅 Snapshot Name: $SNAPSHOT_NAME"
           echo "🔍 Dry Run: ${DRY_RUN:-false}"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-          # Configure authentication (token file should persist from auth step, but recreate to be safe)
-          mkdir -p ~/.config/turso
-          echo "$TURSO_AUTH_TOKEN" > ~/.config/turso/token
 
           # Check if snapshot already exists
           if turso db list | grep -q "^${SNAPSHOT_NAME}\s"; then
@@ -135,7 +131,7 @@ jobs:
         env:
           DEV_DB: ${{ vars.TURSO_DEV_DB_NAME }}
           DRY_RUN: ${{ github.event.inputs.dry_run }}
-          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+          TURSO_API_TOKEN: ${{ secrets.TURSO_API_TOKEN }}
         run: |
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "📸 Creating Development Database Snapshot"
@@ -149,10 +145,6 @@ jobs:
           echo "📅 Snapshot Name: $SNAPSHOT_NAME"
           echo "🔍 Dry Run: ${DRY_RUN:-false}"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-          # Configure authentication (token file should persist from auth step, but recreate to be safe)
-          mkdir -p ~/.config/turso
-          echo "$TURSO_AUTH_TOKEN" > ~/.config/turso/token
 
           # Check if snapshot already exists
           if turso db list | grep -q "^${SNAPSHOT_NAME}\s"; then
