@@ -617,6 +617,7 @@
         constructor() {
           this.token = this.getTokenFromURL();
           this.tickets = [];
+          this.tokenType = null;
           this.init();
         }
 
@@ -625,11 +626,22 @@
           return urlParams.get('token');
         }
 
+        detectTokenType(token) {
+          // JWT format: xxx.yyy.zzz (3 parts separated by dots)
+          // QR token format: different (no dots or fewer parts)
+          if (!token) return null;
+          const parts = token.split('.');
+          return parts.length === 3 ? 'jwt' : 'qrToken';
+        }
+
         async init() {
           if (!this.token) {
             this.showError('No ticket access token provided. Please use the link from your email.');
             return;
           }
+
+          this.tokenType = this.detectTokenType(this.token);
+          console.log('[VIEW] Token type detected:', this.tokenType);
 
           try {
             await this.loadTickets();
@@ -641,9 +653,28 @@
         }
 
         async loadTickets() {
-          console.log('[VIEW] Loading tickets with token:', this.token?.substring(0, 20) + '...');
+          // Development-only: show partial token for debugging
+          // Production: fully mask token to prevent exposure
+          const isDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname.includes('.local');
+          const tokenDebug = isDev ? this.token?.substring(0, 20) + '...' : '****';
+          console.log('[VIEW] Loading tickets with token type:', this.tokenType, ', token:', tokenDebug);
 
-          const response = await fetch(`/api/registration?token=${this.token}`);
+          // Get ticketId from URL if present (for single-ticket view from confirmation emails)
+          const urlParams = new URLSearchParams(window.location.search);
+          const ticketId = urlParams.get('ticketId');
+
+          // Choose endpoint based on token type
+          let endpoint = this.tokenType === 'jwt'
+            ? `/api/registration?token=${encodeURIComponent(this.token)}`
+            : `/api/tickets/by-qr?token=${encodeURIComponent(this.token)}`;
+
+          // Append ticketId parameter if present
+          if (ticketId && this.tokenType === 'jwt') {
+            endpoint += `&ticketId=${encodeURIComponent(ticketId)}`;
+            console.log('[VIEW] Including ticketId filter:', ticketId);
+          }
+
+          const response = await fetch(endpoint);
 
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
@@ -675,8 +706,24 @@
           document.getElementById('loading-state').style.display = 'none';
           document.getElementById('tickets-content').style.display = 'block';
 
-          // Update ticket count
-          document.getElementById('total-tickets').textContent = this.tickets.length;
+          // Update header text based on single vs multiple tickets
+          const headerTitle = document.querySelector('.tickets-header h1');
+          const isSingleTicket = this.tickets.length === 1;
+
+          if (headerTitle) {
+            headerTitle.textContent = isSingleTicket ? 'Your Ticket' : 'Your Tickets';
+          }
+
+          // Update ticket count (only show for multiple tickets)
+          const ticketCountElement = document.getElementById('total-tickets');
+          if (ticketCountElement) {
+            ticketCountElement.textContent = this.tickets.length;
+            // Hide count display for single ticket view
+            const eventInfo = ticketCountElement.closest('.event-info');
+            if (eventInfo && isSingleTicket) {
+              eventInfo.style.display = 'none';
+            }
+          }
 
           // Render each ticket
           const ticketsList = document.getElementById('tickets-list');

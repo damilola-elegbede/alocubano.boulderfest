@@ -93,6 +93,7 @@ export default async function handler(req, res) {
       ticket_type: 'test-weekender-pass',
       event_id: -1, // Test Weekender
       event_date: '2024-12-01',
+      event_time: '18:00',
       price_cents: 7500 // $75.00
     };
 
@@ -107,13 +108,40 @@ export default async function handler(req, res) {
       ticketId
     });
 
-    // Calculate registration deadline: 7 days from now
+    // Calculate registration deadline: 24 hours before event
     const now = new Date();
-    const registrationDeadline = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000));
+    const eventTime = ticketDetails.event_time || '00:00';
+    const [eh, em] = eventTime.split(':').map(Number);
+    const hours = Number.isFinite(eh) ? eh : 0;
+    const minutes = Number.isFinite(em) ? em : 0;
+    const isoString = `${ticketDetails.event_date}T${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`;
+    const eventDateObj = new Date(isoString);
+    const standardDeadline = new Date(eventDateObj.getTime() - (24 * 60 * 60 * 1000));
+    const hoursUntilEvent = (eventDateObj.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+    let registrationDeadline;
+    if (standardDeadline > now) {
+      // Standard case: 24 hours before event
+      registrationDeadline = standardDeadline;
+    } else if (hoursUntilEvent > 12) {
+      // Late purchase: 1 hour before event
+      registrationDeadline = new Date(eventDateObj.getTime() - (1 * 60 * 60 * 1000));
+    } else if (hoursUntilEvent > 6) {
+      // Very late: half remaining time (min 30 min before)
+      const hoursUntilDeadline = Math.max(0.5, hoursUntilEvent / 2);
+      registrationDeadline = new Date(now.getTime() + (hoursUntilDeadline * 60 * 60 * 1000));
+    } else {
+      // Emergency: 30 min from now OR 15 min before event (whichever is longer)
+      const emergencyDeadline1 = new Date(now.getTime() + (30 * 60 * 1000));
+      const emergencyDeadline2 = new Date(eventDateObj.getTime() - (15 * 60 * 1000));
+      registrationDeadline = emergencyDeadline1 > emergencyDeadline2 ? emergencyDeadline1 : emergencyDeadline2;
+    }
 
     console.log('Registration deadline calculated:', {
       now: now.toISOString(),
-      deadline: registrationDeadline.toISOString()
+      eventDate: eventDateObj.toISOString(),
+      deadline: registrationDeadline.toISOString(),
+      hoursUntilEvent: hoursUntilEvent.toFixed(1)
     });
 
     // Prepare transaction data
@@ -188,7 +216,7 @@ export default async function handler(req, res) {
 
     // Get the transaction ID for token generation and reminder scheduling
     const transactionResult = await db.execute({
-      sql: `SELECT id FROM transactions WHERE uuid = ?`,
+      sql: 'SELECT id FROM transactions WHERE uuid = ?',
       args: [transactionUuid]
     });
 

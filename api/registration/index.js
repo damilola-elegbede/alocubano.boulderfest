@@ -10,7 +10,7 @@ export default async function handler(req, res) {
     res.setHeader('Allow', 'GET, OPTIONS');    return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { token } = req.query;
+  const { token, ticketId } = req.query;
 
   if (!token) {
     return res.status(400).json({ error: 'Token is required' });
@@ -41,16 +41,44 @@ export default async function handler(req, res) {
       exp: new Date(decoded.exp * 1000).toISOString()
     });
 
-    // Handle both old format (transactionId) and new format (txn)
-    const transactionId = decoded.transactionId || decoded.txn;
+    // Get database client first
+    const db = await getDatabaseClient();
+
+    // Handle multiple token formats:
+    // 1. New format: { tid: UUID, txn: transactionId, type: 'registration' }
+    // 2. Legacy format: { transactionId: ... }
+    // 3. Ticket-based format: { tid: ticketId } - requires database lookup
+    let transactionId = decoded.transactionId || decoded.txn;
+
+    // If no transaction ID but we have a ticket ID, look up the transaction
+    if (!transactionId && decoded.tid) {
+      console.log('[REG_STATUS] No transaction ID in token, attempting lookup by ticket ID:', decoded.tid);
+
+      try {
+        const ticketLookup = await db.execute({
+          sql: 'SELECT transaction_id FROM tickets WHERE ticket_id = ?',
+          args: [decoded.tid]
+        });
+
+        if (ticketLookup.rows && ticketLookup.rows.length > 0) {
+          transactionId = ticketLookup.rows[0].transaction_id;
+          console.log('[REG_STATUS] Found transaction ID from ticket lookup:', transactionId);
+        } else {
+          console.error('[REG_STATUS] Ticket not found for ID:', decoded.tid);
+          return res.status(404).json({ error: 'Ticket not found for the provided token' });
+        }
+      } catch (lookupError) {
+        console.error('[REG_STATUS] Error looking up ticket:', lookupError);
+        return res.status(500).json({ error: 'Failed to validate token' });
+      }
+    }
+
     if (!transactionId) {
-      console.error('[REG_STATUS] Invalid token format - missing transaction ID');
-      return res.status(400).json({ error: 'Invalid token format - missing transaction ID' });
+      console.error('[REG_STATUS] Invalid token format - missing transaction ID and ticket ID');
+      return res.status(400).json({ error: 'Invalid token format - missing transaction or ticket identifier' });
     }
 
     console.log('[REG_STATUS] Looking up tickets for transaction ID:', transactionId);
-
-    const db = await getDatabaseClient();
 
     // Fetch all tickets for the transaction along with purchase timestamp
     const tickets = await db.execute({
@@ -64,6 +92,8 @@ export default async function handler(req, res) {
           t.registration_status,
           t.registered_at,
           t.registration_deadline,
+          t.scan_count,
+          t.max_scan_count,
           t.created_at as ticket_created_at,
           tx.created_at as purchase_date,
           CASE
@@ -116,9 +146,20 @@ export default async function handler(req, res) {
       });
     }
 
+    // Filter tickets by ticketId if provided (for single-ticket view from confirmation emails)
+    let ticketsToDisplay = processedTickets.rows;
+    if (ticketId) {
+      ticketsToDisplay = processedTickets.rows.filter(t => t.ticket_id === ticketId);
+      if (ticketsToDisplay.length === 0) {
+        console.log('[REG_STATUS] Ticket ID filter applied but no match found:', ticketId);
+        return res.status(404).json({ error: 'Ticket not found in this transaction' });
+      }
+      console.log('[REG_STATUS] Filtered to single ticket:', ticketId);
+    }
+
     // Format response with Mountain Time information and color data
     const colorService = getTicketColorService();
-    const enhancedTickets = await Promise.all(processedTickets.rows.map(async (ticket) => {
+    const enhancedTickets = await Promise.all(ticketsToDisplay.map(async (ticket) => {
       // Get color for this ticket type
       const ticketColor = await colorService.getColorForTicketType(ticket.ticket_type);
 
@@ -130,6 +171,9 @@ export default async function handler(req, res) {
         status: ticket.current_status,
         registeredAt: ticket.registered_at,
         hoursRemaining: Math.max(0, Number(ticket.hours_remaining || 0)),
+        scan_count: ticket.scan_count || 0,
+        max_scan_count: ticket.max_scan_count || 3,
+        scans_remaining: Math.max(0, (ticket.max_scan_count || 3) - (ticket.scan_count || 0)),
         attendee: ticket.attendee_first_name ? {
           firstName: ticket.attendee_first_name,
           lastName: ticket.attendee_last_name,
