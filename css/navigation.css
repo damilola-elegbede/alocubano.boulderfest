@@ -143,6 +143,7 @@
   display: flex;
   justify-content: flex-end;
   align-items: baseline;
+  gap: var(--space-md); /* Spacing between nav-list and cart icon */
 }
 
 /* Desktop navigation */
