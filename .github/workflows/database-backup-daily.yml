@@ -15,14 +15,6 @@ on:
           - both
           - prod
           - dev
-  # TEMPORARY: Testing workflow on fix/turso-backups branch
-  # TODO: Remove these triggers before merging to main
-  push:
-    branches:
-      - fix/turso-backups
-  pull_request:
-    branches:
-      - fix/turso-backups
 
 permissions:
   contents: read
