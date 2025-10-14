@@ -6,6 +6,7 @@
 
 import { getStripePaymentHandler } from '../lib/stripe-integration.js';
 import { getPayPalSDKLoader } from '../lib/paypal-sdk-loader.js';
+import timeManager from '../time-manager.js';
 
 class PaymentSelector {
     constructor() {
@@ -922,15 +923,11 @@ class PaymentSelector {
     /**
    * Format date for display in checkout
    * @param {string} dateString - ISO date string
-   * @returns {string} Formatted date (e.g., "Nov 14, 2025")
+   * @returns {string} Formatted date in Mountain Time (e.g., "Nov 14, 2025")
    */
     formatDateForDisplay(dateString) {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric'
-        });
+        // Delegate to timeManager to ensure Mountain Time formatting
+        return timeManager.formatDate(dateString);
     }
 
     /**
