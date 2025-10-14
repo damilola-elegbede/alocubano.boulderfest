@@ -100,7 +100,7 @@ jobs:
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
           # Check if snapshot already exists
-          if turso db show "$SNAPSHOT_NAME" > /dev/null 2>&1; then
+          if turso db list | grep -q "^${SNAPSHOT_NAME}\s"; then
             echo "⚠️  Snapshot already exists: $SNAPSHOT_NAME"
             echo "   Skipping creation to avoid duplicates"
             exit 0
@@ -116,7 +116,7 @@ jobs:
           turso db create "$SNAPSHOT_NAME" --from-db "$PROD_DB"
 
           # Verify snapshot was created
-          if turso db show "$SNAPSHOT_NAME" > /dev/null 2>&1; then
+          if turso db list | grep -q "^${SNAPSHOT_NAME}\s"; then
             echo "✅ Production snapshot created successfully"
 
             # Get snapshot details
@@ -145,7 +145,7 @@ jobs:
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
           # Check if snapshot already exists
-          if turso db show "$SNAPSHOT_NAME" > /dev/null 2>&1; then
+          if turso db list | grep -q "^${SNAPSHOT_NAME}\s"; then
             echo "⚠️  Snapshot already exists: $SNAPSHOT_NAME"
             echo "   Skipping creation to avoid duplicates"
             exit 0
@@ -161,7 +161,7 @@ jobs:
           turso db create "$SNAPSHOT_NAME" --from-db "$DEV_DB"
 
           # Verify snapshot was created
-          if turso db show "$SNAPSHOT_NAME" > /dev/null 2>&1; then
+          if turso db list | grep -q "^${SNAPSHOT_NAME}\s"; then
             echo "✅ Development snapshot created successfully"
 
             # Get snapshot details
