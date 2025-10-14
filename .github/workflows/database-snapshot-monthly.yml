@@ -85,7 +85,7 @@ jobs:
         env:
           PROD_DB: ${{ vars.TURSO_PROD_DB_NAME }}
           DRY_RUN: ${{ github.event.inputs.dry_run }}
-          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+          TURSO_API_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
         run: |
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "📸 Creating Production Database Snapshot"
@@ -100,16 +100,8 @@ jobs:
           echo "🔍 Dry Run: ${DRY_RUN:-false}"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-          # Re-authenticate in this step (token file may not persist)
-          echo "🔐 Re-configuring Turso authentication..."
-          mkdir -p ~/.config/turso
-          echo "$TURSO_AUTH_TOKEN" > ~/.config/turso/token
-
-          # Use explicit turso path for all commands
-          TURSO_CLI="$HOME/.turso/turso"
-
           # Check if snapshot already exists
-          if $TURSO_CLI db list | grep -q "^${SNAPSHOT_NAME}\s"; then
+          if turso db list | grep -q "^${SNAPSHOT_NAME}\s"; then
             echo "⚠️  Snapshot already exists: $SNAPSHOT_NAME"
             echo "   Skipping creation to avoid duplicates"
             exit 0
@@ -122,14 +114,14 @@ jobs:
 
           # Create snapshot branch
           echo "📸 Creating snapshot branch..."
-          $TURSO_CLI db create "$SNAPSHOT_NAME" --from-db "$PROD_DB"
+          turso db create "$SNAPSHOT_NAME" --from-db "$PROD_DB"
 
           # Verify snapshot was created
-          if $TURSO_CLI db list | grep -q "^${SNAPSHOT_NAME}\s"; then
+          if turso db list | grep -q "^${SNAPSHOT_NAME}\s"; then
             echo "✅ Production snapshot created successfully"
 
             # Get snapshot details
-            $TURSO_CLI db show "$SNAPSHOT_NAME"
+            turso db show "$SNAPSHOT_NAME"
           else
             echo "❌ Failed to verify snapshot creation"
             exit 1
@@ -139,7 +131,7 @@ jobs:
         env:
           DEV_DB: ${{ vars.TURSO_DEV_DB_NAME }}
           DRY_RUN: ${{ github.event.inputs.dry_run }}
-          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+          TURSO_API_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
         run: |
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "📸 Creating Development Database Snapshot"
@@ -154,16 +146,8 @@ jobs:
           echo "🔍 Dry Run: ${DRY_RUN:-false}"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-          # Re-authenticate in this step (token file may not persist)
-          echo "🔐 Re-configuring Turso authentication..."
-          mkdir -p ~/.config/turso
-          echo "$TURSO_AUTH_TOKEN" > ~/.config/turso/token
-
-          # Use explicit turso path for all commands
-          TURSO_CLI="$HOME/.turso/turso"
-
           # Check if snapshot already exists
-          if $TURSO_CLI db list | grep -q "^${SNAPSHOT_NAME}\s"; then
+          if turso db list | grep -q "^${SNAPSHOT_NAME}\s"; then
             echo "⚠️  Snapshot already exists: $SNAPSHOT_NAME"
             echo "   Skipping creation to avoid duplicates"
             exit 0
@@ -176,14 +160,14 @@ jobs:
 
           # Create snapshot branch
           echo "📸 Creating snapshot branch..."
-          $TURSO_CLI db create "$SNAPSHOT_NAME" --from-db "$DEV_DB"
+          turso db create "$SNAPSHOT_NAME" --from-db "$DEV_DB"
 
           # Verify snapshot was created
-          if $TURSO_CLI db list | grep -q "^${SNAPSHOT_NAME}\s"; then
+          if turso db list | grep -q "^${SNAPSHOT_NAME}\s"; then
             echo "✅ Development snapshot created successfully"
 
             # Get snapshot details
-            $TURSO_CLI db show "$SNAPSHOT_NAME"
+            turso db show "$SNAPSHOT_NAME"
           else
             echo "❌ Failed to verify snapshot creation"
             exit 1
