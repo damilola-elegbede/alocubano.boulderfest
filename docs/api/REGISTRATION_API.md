@@ -13,6 +13,7 @@ Tokens are generated during Stripe webhook processing after successful payment.
 - GET `/api/registration/health`: does not require authentication.
 
 ### Token Structure
+
 ```json
 {
   "transactionId": "pi_xxx",
@@ -31,9 +32,11 @@ Tokens are generated during Stripe webhook processing after successful payment.
 Fetches the registration status for all tickets in a transaction.
 
 **Parameters:**
+
 - `token` (string, required): JWT token from registration email
 
 **Response (200 OK):**
+
 ```json
 {
   "transactionId": "pi_xxx",
@@ -65,6 +68,7 @@ Fetches the registration status for all tickets in a transaction.
 ```
 
 **Error Responses:**
+
 - `400 Bad Request`: Token is missing or invalid format
 - `401 Unauthorized`: Token is expired or invalid signature
 - `404 Not Found`: No tickets found for transaction
@@ -79,6 +83,7 @@ Registers attendee information for a single ticket.
 **Rate Limiting:** 3 requests per 15 minutes per IP
 
 **Request Body:**
+
 ```json
 {
   "ticketId": "T001",
@@ -89,12 +94,14 @@ Registers attendee information for a single ticket.
 ```
 
 **Validation Rules:**
+
 - `firstName`: 2-50 characters, letters/spaces/hyphens/apostrophes only
 - `lastName`: 2-50 characters, letters/spaces/hyphens/apostrophes only
 - `email`: Valid basic email format (local@domain.tld)
 - All inputs are sanitized (HTML-escaped) to prevent XSS
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -110,6 +117,7 @@ Registers attendee information for a single ticket.
 ```
 
 **Error Responses:**
+
 - `400 Bad Request`: Validation error or ticket already registered
 - `404 Not Found`: Ticket not found
 - `429 Too Many Requests`: Rate limit exceeded
@@ -124,6 +132,7 @@ Registers multiple tickets in a single atomic transaction.
 **Rate Limiting:** 3 requests per 15 minutes per IP
 
 **Request Body:**
+
 ```json
 {
   "registrations": [
@@ -144,11 +153,13 @@ Registers multiple tickets in a single atomic transaction.
 ```
 
 **Constraints:**
+
 - Maximum 10 tickets per batch
 - All validations must pass before any registration is processed
 - Atomic transaction - all succeed or all fail
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -181,6 +192,7 @@ Registers multiple tickets in a single atomic transaction.
 ```
 
 **Error Responses:**
+
 - `400 Bad Request`: Validation error or batch size exceeded
 - `404 Not Found`: One or more tickets not found
 - `429 Too Many Requests`: Rate limit exceeded
@@ -193,6 +205,7 @@ Registers multiple tickets in a single atomic transaction.
 Checks the health of the registration system components.
 
 **Response (200 OK - Healthy):**
+
 ```json
 {
   "service": "registration-api",
@@ -215,6 +228,7 @@ Checks the health of the registration system components.
 ```
 
 **Response (503 Service Unavailable - Unhealthy):**
+
 ```json
 {
   "service": "registration-api",
@@ -240,6 +254,7 @@ Checks the health of the registration system components.
 ## Security Features
 
 ### JWT Token Security
+
 - Secret with at least 32 bytes of entropy (256-bit key)
 - Token expiry enforcement with intelligent deadline calculation:
   - **Standard purchases**: 24 hours before event
@@ -250,19 +265,107 @@ Checks the health of the registration system components.
 - Secure token transmission via HTTPS only
 
 ### Input Validation
+
 - Name validation: 2-50 characters, letters/spaces/hyphens only
 - Email validation: RFC 5322 compliant
 - XSS prevention through HTML entity encoding
 - SQL injection prevention via parameterized queries
 
 ### Rate Limiting
+
 - 3 registration attempts per 15 minutes per IP
 - Progressive backoff for failed attempts
 - Bypass for authenticated admin users
 
+## Reminder Scheduling System
+
+The system uses **adaptive reminder scheduling** that scales with the time between purchase and registration deadline. This ensures all users receive appropriate reminder frequency regardless of when they purchase tickets.
+
+### Reminder Cadence by Deadline Length
+
+| Deadline Window | Reminders | Timing |
+|----------------|-----------|---------|
+| **24+ hours** (Standard) | 4 reminders | • Initial: 1hr after purchase<br>• Mid: 12hr after purchase<br>• Urgent: 12hr before deadline<br>• Final: 6hr before deadline |
+| **6-24 hours** (Late Purchase) | 3 reminders | • Initial: 10% into window<br>• Midpoint: 50% of window<br>• Final: 20% before deadline |
+| **1-6 hours** (Very Late) | 2 reminders | • Initial: 10% into window<br>• Urgent: Halfway before deadline |
+| **< 1 hour** (Emergency) | 1 reminder | • Initial: 10% into window |
+
+### Real-World Examples
+
+#### Standard Purchase (32 hours before event)
+
+```text
+Purchase: May 1, 10:00 AM
+Deadline: May 2, 6:00 PM (32 hours)
+
+Reminders:
+1. May 1, 11:00 AM (1hr after) - "Initial confirmation"
+2. May 1, 10:00 PM (12hr after) - "Don't forget to register"
+3. May 2, 6:00 AM (12hr before) - "Registration closing soon"
+4. May 2, 12:00 PM (6hr before) - "Final reminder"
+```
+
+#### Late Purchase (12 hours before event)
+
+```text
+Purchase: May 2, 6:00 AM
+Deadline: May 2, 6:00 PM (12 hours)
+
+Reminders:
+1. May 2, 7:12 AM (~1.2hr after) - "Initial confirmation"
+2. May 2, 12:00 PM (6hr after / 6hr before) - "Midpoint reminder"
+3. May 2, 3:36 PM (2.4hr before) - "Final reminder"
+```
+
+#### Very Late Purchase (4 hours before event)
+
+```text
+Purchase: May 2, 2:00 PM
+Deadline: May 2, 6:00 PM (4 hours)
+
+Reminders:
+1. May 2, 2:24 PM (24min after) - "Initial confirmation"
+2. May 2, 4:00 PM (2hr before) - "Urgent: Register now"
+```
+
+#### Emergency Purchase (45 minutes before event)
+
+```text
+Purchase: May 2, 5:15 PM
+Deadline: May 2, 6:00 PM (45 minutes)
+
+Reminders:
+1. May 2, 5:19 PM (~4.5min after) - "Register immediately"
+(Only 1 reminder - user has very limited time)
+```
+
+### Why Adaptive Scheduling?
+
+The fixed 24-hour schedule doesn't work for late purchases:
+
+- **Problem**: User buys ticket 3 hours before event with 1-hour registration deadline
+- **Old system**: Tries to send "12hr before deadline" reminder → Already past, skipped
+- **New system**: Sends urgent reminder at 30-minute mark → User has time to register
+
+This ensures all users receive appropriate reminder frequency regardless of purchase timing.
+
+### Reminder States
+
+Reminders in the `registration_reminders` table have these statuses:
+
+- `scheduled` - Waiting to be sent
+- `sent` - Successfully delivered
+- `failed` - Send attempt failed
+- `cancelled` - Reminder cancelled (e.g., user already registered all tickets)
+
+### Implementation Details
+
+The reminder scheduler automatically detects test transactions (small amounts like $0.50) and disables reminder scheduling to prevent spam during development and testing. Production transactions always receive adaptive reminders based on their deadline window.
+
 ## Email Notifications
 
 ### Confirmation Emails
+
 When a ticket is registered, the system sends confirmation emails:
 
 1. **Purchaser Confirmation** (if attendee is the purchaser)
@@ -274,6 +377,7 @@ When a ticket is registered, the system sends confirmation emails:
    - Contains ticket details and wallet pass links
 
 ### Email Template Variables
+
 ```json
 {
   "firstName": "John",
@@ -295,6 +399,7 @@ When a ticket is registered, the system sends confirmation emails:
 ## Error Handling
 
 ### Error Response Format
+
 ```json
 {
   "error": "Error message",
@@ -304,6 +409,7 @@ When a ticket is registered, the system sends confirmation emails:
 ```
 
 ### Common Error Codes
+
 - `INVALID_TOKEN`: JWT token is invalid or malformed
 - `TOKEN_EXPIRED`: JWT token has expired
 - `TICKET_NOT_FOUND`: Ticket ID does not exist
@@ -317,6 +423,7 @@ When a ticket is registered, the system sends confirmation emails:
 ## Database Schema
 
 ### Tickets Table (Updated Fields)
+
 ```sql
 attendee_first_name TEXT,
 attendee_last_name TEXT,
@@ -330,6 +437,7 @@ max_scan_count INTEGER DEFAULT 3
 **Note on Scan Limits**: The system uses a default `max_scan_count` of 3 scans per ticket. This supports wristband-based access control where 1 scan = wristband = unlimited venue access. The 2-3 extra scans allow for error recovery (QR failures, network issues).
 
 ### Registration Reminders Table
+
 ```sql
 CREATE TABLE registration_reminders (
   id INTEGER PRIMARY KEY,
@@ -341,7 +449,16 @@ CREATE TABLE registration_reminders (
 )
 ```
 
+**Reminder Types:**
+
+- `initial` - First reminder shortly after purchase (1hr or 10% into window)
+- `mid` - Middle reminder for standard purchases (12hr after purchase)
+- `midpoint` - Midpoint reminder for late purchases (50% of window)
+- `urgent` - Urgent reminder before deadline (12hr before or halfway before)
+- `final` - Final reminder before deadline (6hr before or 20% before)
+
 ### Registration Emails Table
+
 ```sql
 CREATE TABLE registration_emails (
   id INTEGER PRIMARY KEY,
@@ -359,18 +476,20 @@ CREATE TABLE registration_emails (
 graph TD
     A[Stripe Payment] -->|Webhook| B[Generate JWT Token]
     B --> C[Send Registration Email]
-    C --> D[User Clicks Link]
-    D --> E[Registration Form]
-    E --> F[Submit Registration]
-    F --> G[Validate Input]
-    G --> H[Update Database]
-    H --> I[Send Confirmation]
-    I --> J[Cancel Reminders]
+    C --> D[Schedule Adaptive Reminders]
+    D --> E[User Clicks Link]
+    E --> F[Registration Form]
+    F --> G[Submit Registration]
+    G --> H[Validate Input]
+    H --> I[Update Database]
+    I --> J[Send Confirmation]
+    J --> K[Cancel Remaining Reminders]
 ```
 
 ## Testing
 
 ### Test Coverage Requirements
+
 - JWT token generation and validation
 - Input validation for all fields
 - XSS and SQL injection prevention
@@ -378,8 +497,10 @@ graph TD
 - Email template rendering
 - Database transaction atomicity
 - Error handling for all scenarios
+- Adaptive reminder scheduling for all deadline windows
 
 ### Example Test Cases
+
 ```javascript
 // Token validation
 expect(jwt.verify(token, secret)).toBeTruthy();
@@ -395,27 +516,40 @@ expect(EMAIL_REGEX.test("invalid-email")).toBe(false);
 // XSS prevention
 expect(sanitize("<script>alert('xss')</script>"))
   .toBe("&lt;script&gt;alert('xss')&lt;/script&gt;");
+
+// Adaptive reminder scheduling
+expect(calculateReminders(32 * 60 * 60 * 1000).length).toBe(4); // Standard: 4 reminders
+expect(calculateReminders(12 * 60 * 60 * 1000).length).toBe(3); // Late: 3 reminders
+expect(calculateReminders(4 * 60 * 60 * 1000).length).toBe(2);  // Very late: 2 reminders
+expect(calculateReminders(0.75 * 60 * 60 * 1000).length).toBe(1); // Emergency: 1 reminder
 ```
 
 ## Monitoring
 
 ### Key Metrics to Track
+
 - Registration completion rate
 - Average time to register
 - Token validation failures
 - Rate limit violations
 - Email delivery success rate
 - Database query performance
+- Reminder delivery success rate
+- Reminder timing accuracy
 
 ### Recommended Alerts
+
 - Registration rate < 50% after 48 hours
 - Token validation errors > 5% of requests
 - Database response time > 100ms
 - Email service failures
 - Rate limit violations > 10 per hour
+- Reminder send failures > 5%
+- Scheduled reminders not sent within 5 minutes of schedule time
 
 ## Support
 
 For issues or questions about the registration API:
+
 - Email: alocubanoboulderfest@gmail.com
 - Documentation: https://github.com/damilola-elegbede/alocubano.boulderfest/docs

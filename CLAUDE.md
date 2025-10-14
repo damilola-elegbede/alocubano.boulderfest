@@ -100,6 +100,18 @@ npm run verify-structure        # Verify project structure (via build)
 - **Donations tracking** with database recording and admin analytics
 - **Wallet passes** for Apple/Google with JWT authentication
 - **Admin panel** with bcrypt auth, JWT sessions, and donations dashboard
+- **Registration system** with adaptive reminder scheduling based on deadline length
+
+### Registration Reminder System
+
+**Adaptive Reminder Scheduling** - Automatically scales reminder frequency based on time until deadline:
+
+- **Standard (24+ hours)**: 4 reminders - Initial (1hr), Mid (12hr), Urgent (12hr before), Final (6hr before)
+- **Late purchase (6-24 hours)**: 3 reminders - Initial (10% into window), Midpoint (50%), Final (20% before)
+- **Very late (1-6 hours)**: 2 reminders - Initial (10% into window), Urgent (halfway before)
+- **Emergency (< 1 hour)**: 1 reminder - Initial (10% into window)
+
+This ensures users always receive appropriate reminder frequency regardless of when they purchase tickets. Test transactions (small amounts like $0.50) are automatically excluded from reminder scheduling.
 
 ### Theme System
 
@@ -503,17 +515,20 @@ Features:
 ### Cart System
 
 **Floating Cart** (css/floating-cart.css, js/floating-cart.js):
+
 - Right-to-left slide animation (more intuitive for shopping carts)
 - 44px minimum touch targets for all interactive elements
 - Smooth momentum scrolling on mobile with `-webkit-overflow-scrolling: touch`
 - Conditional initialization: Full cart functionality only loads on cart-relevant pages
 
 **Cart Visibility** - Managed by `determineCartVisibility()` in `floating-cart.js`:
+
 - **Always visible**: `/tickets`, `/donations`
 - **Visible with items**: `/about`, `/artists`, `/schedule`, `/gallery`
 - **Never visible**: `/404`, `/index.html`
 
 **Performance Optimization** (js/global-cart.js:14-42):
+
 - **Cart-relevant pages**: Full CartManager with all features
 - **Other pages**: Minimal badge-only mode (reads localStorage directly, no async overhead)
 - Cross-tab synchronization via storage events
@@ -522,6 +537,7 @@ Features:
 ### Navigation
 
 **Mobile Menu** (css/navigation.css:432-543):
+
 - 280px width with 0.98 opacity and backdrop blur
 - Cuban-themed gradient hover effects (blue-to-red gradient)
 - Visual separation between menu items
@@ -531,6 +547,7 @@ Features:
 ### Form Elements
 
 **Touch-Friendly Inputs** (css/forms.css:128-151, css/mobile-enhancements.css:124-170):
+
 - 44px minimum height for all buttons and inputs
 - 48px minimum for form inputs on mobile
 - 16px font size prevents iOS zoom on focus
@@ -540,6 +557,7 @@ Features:
 ### Accessibility
 
 **WCAG AA Compliance** (css/base.css:65-80):
+
 - Secondary text: #4a4a4a (7.0:1 contrast ratio)
 - Muted text: #707070 (4.6:1 contrast ratio)
 - Placeholder text: #666666 (5.74:1 contrast ratio)
@@ -549,6 +567,7 @@ Features:
 ### Error Handling
 
 **Error Notifier System** (js/lib/error-notifier.js):
+
 - User-friendly toast notifications with retry functionality
 - Network error detection and retry callbacks
 - Maximum 3 concurrent toasts to prevent spam
@@ -556,6 +575,7 @@ Features:
 - Types: network, validation, system, success
 
 **Usage Pattern**:
+
 ```javascript
 import errorNotifier from './lib/error-notifier.js';
 
@@ -572,17 +592,20 @@ errorNotifier.showSuccess('Item added to cart');
 ```
 
 **Integration Points**:
+
 - js/gallery-detail.js:1166-1199 - Gallery photo loading errors
 - js/lib/cart-manager.js:76-83 - Storage quota exceeded errors
 
 ### Visual Feedback
 
 **Loading States** (css/mobile-enhancements.css:282-336):
+
 - Button loading spinner with color: transparent trick
 - Form submission state with opacity reduction
 - Hardware-accelerated animations
 
 **Skeleton Screens** (css/mobile-enhancements.css:339-428):
+
 - Pulsing gradient animation for loading states
 - Gallery, card, text, heading, image, button variants
 - Dark mode support with adjusted opacity
@@ -591,6 +614,7 @@ errorNotifier.showSuccess('Item added to cart');
 ### Cuban-Inspired Design
 
 **Visual Elements** (css/mobile-enhancements.css:431-479):
+
 - Cuban flag gradient accents (blue-to-red)
 - 4px vertical accent bars on cards
 - Section dividers with gradient fading
@@ -645,7 +669,7 @@ window.errorNotifier.dismissAll(); // Clear all notifications
 ├── pages/              # HTML pages
 ├── js/                 # Frontend JavaScript
 │   ├── theme-manager.js       # Core theme management system
-│   ├── theme-toggle.js        # Theme toggle component
+│   ├── theme-toggle.js        # Three-state toggle component
 │   ├── global-cart.js         # Conditional cart initialization
 │   ├── floating-cart.js       # Cart UI with slide animation
 │   └── lib/
@@ -764,6 +788,7 @@ export default async function handler(req, res) {
 ```
 
 **Result**: Each timestamp field gets a corresponding `_mt` field:
+
 ```json
 {
   "created_at": "2026-01-15T10:30:00Z",
@@ -802,6 +827,7 @@ formatEventDate(date) {
 ### Available Time Utilities
 
 **Backend** (`lib/time-utils.js`):
+
 - `toMountainTime(date)` - Full datetime with timezone
 - `formatDate(date)` - Date only (e.g., "Jan 15, 2026")
 - `formatDateTime(date)` - Date + time (e.g., "Jan 15, 2026, 3:30 PM MST")
@@ -809,6 +835,7 @@ formatEventDate(date) {
 - `enhanceApiResponse(data, fields, options)` - Auto-add `_mt` fields
 
 **Frontend** (`js/time-manager.js`):
+
 - Same methods as backend for consistency
 - Automatically handles DST transitions
 - Falls back gracefully if module not loaded
