@@ -553,23 +553,10 @@
 
 /* Dark mode support - removed in favor of explicit dark mode CSS file */
 /* @media (prefers-color-scheme: dark) rules have been moved to floating-cart-dark.css */
-
-  .qty-adjust:hover {
-    background: var(--color-background-tertiary);
-  }
-
-  .cart-close:hover {
-    background: var(--color-background-tertiary);
-  }
-
-  .donation-item {
-    background: linear-gradient(135deg, var(--color-background-tertiary) 0%, var(--color-surface) 100%);
-    border-color: var(--color-border-medium);
-  }
-}
+/* Orphaned dark-mode overrides removed (migrated to floating-cart-dark.css) */
 
 /* Animations */
-@keyframes pulse {
+@keyframes cart-pulse {
   0% {
     transform: scale(1);
   }

@@ -158,7 +158,7 @@
 /* Visible selected state for accessibility and user feedback */
 .theme-option.active {
   /* Add visual distinction for selected option */
-  background-color: var(--color-primary-light);
+  background-color: var(--color-primary-hover);
   border-radius: var(--radius-sm);
   box-shadow: 0 0 0 2px var(--color-primary);
   transform: scale(1.05);
@@ -497,8 +497,8 @@
 
 /* Focus visible improvements */
 .theme-option:focus-visible {
-  outline: none;
-  outline-offset: 0;
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
   box-shadow: none;
 }
 
