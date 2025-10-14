@@ -10,7 +10,7 @@ export default async function handler(req, res) {
     res.setHeader('Allow', 'GET, OPTIONS');    return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { token } = req.query;
+  const { token, ticketId } = req.query;
 
   if (!token) {
     return res.status(400).json({ error: 'Token is required' });
@@ -146,9 +146,20 @@ export default async function handler(req, res) {
       });
     }
 
+    // Filter tickets by ticketId if provided (for single-ticket view from confirmation emails)
+    let ticketsToDisplay = processedTickets.rows;
+    if (ticketId) {
+      ticketsToDisplay = processedTickets.rows.filter(t => t.ticket_id === ticketId);
+      if (ticketsToDisplay.length === 0) {
+        console.log('[REG_STATUS] Ticket ID filter applied but no match found:', ticketId);
+        return res.status(404).json({ error: 'Ticket not found in this transaction' });
+      }
+      console.log('[REG_STATUS] Filtered to single ticket:', ticketId);
+    }
+
     // Format response with Mountain Time information and color data
     const colorService = getTicketColorService();
-    const enhancedTickets = await Promise.all(processedTickets.rows.map(async (ticket) => {
+    const enhancedTickets = await Promise.all(ticketsToDisplay.map(async (ticket) => {
       // Get color for this ticket type
       const ticketColor = await colorService.getColorForTicketType(ticket.ticket_type);
 

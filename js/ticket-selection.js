@@ -18,6 +18,29 @@ class TicketSelection {
         this.init();
     }
 
+    /**
+     * Detect event ID synchronously from DOM (no API call)
+     * This prevents blocking button initialization
+     */
+    detectEventIdFromDOM() {
+        try {
+            // Read event ID directly from first ticket card's data attribute
+            const firstCard = document.querySelector('[data-event-id]');
+            const eventId = firstCard ? parseInt(firstCard.dataset.eventId) : null;
+
+            console.log('🎫 Detected event ID from DOM:', eventId);
+
+            // Default to boulderfest-2026 (event ID 3) if not found
+            return eventId || 3;
+        } catch (error) {
+            console.error('Failed to detect event ID from DOM:', error);
+            return 3; // Default to boulderfest-2026
+        }
+    }
+
+    /**
+     * @deprecated Use detectEventIdFromDOM() instead - this makes unnecessary API call
+     */
     async detectEventId() {
         try {
             return await ticketDataService.detectEventIdFromPage();
@@ -52,8 +75,8 @@ class TicketSelection {
             // Skip API loading - tickets are static in HTML
             // await this.loadTicketData();
 
-            // Detect event ID from loaded data
-            this.eventId = await this.detectEventId();
+            // Detect event ID from DOM (synchronous, no API call)
+            this.eventId = this.detectEventIdFromDOM();
 
             // Initialize ticket cards with default attributes for testing
             this.initializeTicketCards();

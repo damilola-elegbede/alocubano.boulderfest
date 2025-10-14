@@ -144,7 +144,7 @@ export default async function handler(req, res) {
   try {
     const db = await getDatabaseClient();
 
-    // Fetch ticket details with event information
+    // Fetch ticket details with event information and transaction registration token
     const ticketResult = await db.execute({
       sql: `
         SELECT
@@ -160,9 +160,11 @@ export default async function handler(req, res) {
           e.venue_city,
           e.venue_state,
           e.start_date,
-          e.end_date
+          e.end_date,
+          tx.registration_token
         FROM tickets t
         LEFT JOIN events e ON t.event_id = e.id
+        LEFT JOIN transactions tx ON t.transaction_id = tx.id
         WHERE t.ticket_id = ?
       `,
       args: [ticketId]
@@ -319,7 +321,7 @@ export default async function handler(req, res) {
         googleWalletUrl: `${baseUrl}/api/tickets/google-wallet/${ticketId}`,
         appleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-apple.png`,
         googleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-google.png`,
-        viewTicketUrl: `${baseUrl}/view-tickets?token=${qrToken}`
+        viewTicketUrl: `${baseUrl}/view-tickets?token=${ticket.registration_token}&ticketId=${ticketId}`
       });
 
       await brevo.sendTransactionalEmail({

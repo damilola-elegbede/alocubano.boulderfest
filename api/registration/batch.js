@@ -828,7 +828,7 @@ export default async function handler(req, res) {
       if (transactionIds.length === 1) {
         // Single transaction - get order details for summary email
         const transactionResult = await db.execute({
-          sql: `SELECT id, order_number, customer_email, customer_name, total_amount, amount_cents, completed_at, created_at FROM transactions WHERE id = ?`,
+          sql: `SELECT id, order_number, customer_email, customer_name, total_amount, amount_cents, completed_at, created_at, registration_token FROM transactions WHERE id = ?`,
           args: [transactionIds[0]]
         });
 
@@ -886,7 +886,7 @@ export default async function handler(req, res) {
             googleWalletUrl: `${baseUrl}/api/tickets/google-wallet/${task.registration.ticketId}`,
             appleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-apple.png`,
             googleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-google.png`,
-            viewTicketUrl: `${baseUrl}/view-tickets?token=${qrToken}`
+            viewTicketUrl: `${baseUrl}/view-tickets?token=${transactionInfo?.registration_token}&ticketId=${task.registration.ticketId}`
           });
 
           // Send email using Brevo API with custom HTML
