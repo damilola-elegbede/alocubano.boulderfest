@@ -22,8 +22,9 @@
 -- - No breaking changes to API contracts or ticket functionality
 -- - Consistent scan limit policy across all tickets (new and existing)
 -- - Scan counts remain unchanged (only the limit is updated)
-
-BEGIN TRANSACTION;
+--
+-- NOTE: Transaction control is handled automatically by the migration system.
+-- Do not include BEGIN TRANSACTION or COMMIT statements.
 
 -- Update existing tickets to new scan limit
 -- Only affects tickets with max_scan_count > 3
@@ -37,5 +38,3 @@ WHERE max_scan_count > 3;
 SELECT COUNT(*) as remaining_tickets_over_limit
 FROM tickets
 WHERE max_scan_count > 3;
-
-COMMIT;
