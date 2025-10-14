@@ -182,7 +182,7 @@ export class CartManager extends EventTarget {
 
     // Ticket operations
     async addTicket(ticketData) {
-        const { ticketType, price, name, eventId, eventDate, venue, eventName, quantity = 1 } = ticketData;
+        const { ticketType, price, name, description, eventId, eventDate, venue, eventName, quantity = 1 } = ticketData;
 
         if (!ticketType || !price || !name) {
             throw new Error('Invalid ticket data');
@@ -196,6 +196,7 @@ export class CartManager extends EventTarget {
                     ticketType,
                     price,
                     name,
+                    description,  // Store description from database
                     eventId,
                     eventName,  // Store event name - NO FALLBACK
                     eventDate,  // Store event date
@@ -207,7 +208,7 @@ export class CartManager extends EventTarget {
 
             this.state.tickets[ticketType].quantity += quantity;
             this.state.tickets[ticketType].updatedAt = Date.now();
-            // Update eventName, eventDate and venue if provided (in case they changed)
+            // Update eventName, eventDate, venue, and description if provided (in case they changed)
             if (eventName) {
                 this.state.tickets[ticketType].eventName = eventName;
             }
@@ -216,6 +217,9 @@ export class CartManager extends EventTarget {
             }
             if (venue) {
                 this.state.tickets[ticketType].venue = venue;
+            }
+            if (description) {
+                this.state.tickets[ticketType].description = description;
             }
 
             // Use coordinated storage write
@@ -275,7 +279,7 @@ export class CartManager extends EventTarget {
 
     // Upsert operation that combines add and update logic
     async upsertTicket(ticketData) {
-        const { ticketType, price, name, eventId, eventName, eventDate, venue, quantity } = ticketData;
+        const { ticketType, price, name, description, eventId, eventName, eventDate, venue, quantity } = ticketData;
 
         // If quantity is 0 or undefined/null, remove the ticket
         if (quantity === 0 || quantity === null || quantity === undefined) {
@@ -302,6 +306,7 @@ export class CartManager extends EventTarget {
                     ticketType,
                     price,
                     name,
+                    description,  // Store description from database
                     eventId,
                     eventName,  // Store event name - NO FALLBACK
                     eventDate,  // Store event date
@@ -316,6 +321,9 @@ export class CartManager extends EventTarget {
                 }
                 if (name) {
                     this.state.tickets[ticketType].name = name;
+                }
+                if (description) {
+                    this.state.tickets[ticketType].description = description;
                 }
                 if (eventId) {
                     this.state.tickets[ticketType].eventId = eventId;

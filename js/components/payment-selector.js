@@ -6,6 +6,7 @@
 
 import { getStripePaymentHandler } from '../lib/stripe-integration.js';
 import { getPayPalSDKLoader } from '../lib/paypal-sdk-loader.js';
+import timeManager from '../time-manager.js';
 
 class PaymentSelector {
     constructor() {
@@ -594,20 +595,38 @@ class PaymentSelector {
 
         // Add tickets
         Object.values(cartState.tickets).forEach((ticket) => {
-            // Require eventDate to be set explicitly - no defaults
-            if (!ticket.eventDate && !this.eventDate) {
-                throw new Error(`Event date is required for ticket: ${ticket.name}`);
+            // Validate required fields - NO FALLBACKS
+            if (!ticket.eventName) {
+                throw new Error(`Missing eventName for ticket: ${ticket.name}`);
             }
+            if (!ticket.eventDate) {
+                throw new Error(`Missing eventDate for ticket: ${ticket.name}`);
+            }
+            if (!ticket.ticketType) {
+                throw new Error(`Missing ticketType for ticket: ${ticket.name}`);
+            }
+
+            // Format date: "Nov 14, 2025"
+            const formattedDate = this.formatDateForDisplay(ticket.eventDate);
+
+            // Build product name: "Event Name-Ticket Type" (no date)
+            const productName = `${ticket.eventName}-${ticket.name}`;
+
+            // Build description: Database description + Event Date
+            const description = ticket.description
+                ? `${ticket.description}\nEvent Date: ${formattedDate}`
+                : `Event Date: ${formattedDate}`;
 
             cartItems.push({
                 type: 'ticket',
                 ticketType: ticket.ticketType,
-                name: ticket.name,
+                name: productName,
+                description: description,
                 price: ticket.price,
                 quantity: ticket.quantity,
-                eventDate: ticket.eventDate || this.eventDate,  // Use ticket-specific date or fallback
-                eventId: ticket.eventId || this.eventId,        // Include event ID
-                venue: ticket.venue || this.venue                // Include venue
+                eventDate: ticket.eventDate,
+                eventId: ticket.eventId,
+                venue: ticket.venue
             });
         });
 
@@ -899,6 +918,16 @@ class PaymentSelector {
             overlay.textContent = message;
         }
         this.announceToScreenReader(message);
+    }
+
+    /**
+   * Format date for display in checkout
+   * @param {string} dateString - ISO date string
+   * @returns {string} Formatted date in Mountain Time (e.g., "Nov 14, 2025")
+   */
+    formatDateForDisplay(dateString) {
+        // Delegate to timeManager to ensure Mountain Time formatting
+        return timeManager.formatDate(dateString);
     }
 
     /**
