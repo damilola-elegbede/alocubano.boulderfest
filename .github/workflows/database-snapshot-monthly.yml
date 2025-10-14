@@ -28,15 +28,16 @@ jobs:
           curl -sSfL https://get.tur.so/install.sh | bash
 
           # Verify installation
-          if [ ! -f "$HOME/.turso/turso" ]; then
+          if [ ! -f "$HOME/.turso/bin/turso" ]; then
             echo "❌ Turso CLI installation failed - binary not found"
             exit 1
           fi
 
-          echo "✅ Turso CLI installed: $(ls -lh $HOME/.turso/turso)"
+          echo "✅ Turso CLI installed: $(ls -lh $HOME/.turso/bin/turso)"
+          "$HOME/.turso/bin/turso" --version || true
 
           # Add to PATH for subsequent steps (correct directory)
-          echo "$HOME/.turso" >> $GITHUB_PATH
+          echo "$HOME/.turso/bin" >> "$GITHUB_PATH"
 
       - name: "🔐 Verify Turso API Token"
         env:
@@ -124,7 +125,7 @@ jobs:
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
           # Check if snapshot already exists
-          if turso db list | grep -q "^${SNAPSHOT_NAME}\s"; then
+          if turso db list | grep -q "^${SNAPSHOT_NAME}[[:space:]]"; then
             echo "⚠️  Snapshot already exists: $SNAPSHOT_NAME"
             echo "   Skipping creation to avoid duplicates"
             exit 0
@@ -140,7 +141,7 @@ jobs:
           turso db create "$SNAPSHOT_NAME" --from-db "$PROD_DB" --wait
 
           # Verify snapshot was created
-          if turso db list | grep -q "^${SNAPSHOT_NAME}\s"; then
+          if turso db list | grep -q "^${SNAPSHOT_NAME}[[:space:]]"; then
             echo "✅ Production snapshot created successfully"
 
             # Get snapshot details
@@ -170,7 +171,7 @@ jobs:
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
           # Check if snapshot already exists
-          if turso db list | grep -q "^${SNAPSHOT_NAME}\s"; then
+          if turso db list | grep -q "^${SNAPSHOT_NAME}[[:space:]]"; then
             echo "⚠️  Snapshot already exists: $SNAPSHOT_NAME"
             echo "   Skipping creation to avoid duplicates"
             exit 0
@@ -186,7 +187,7 @@ jobs:
           turso db create "$SNAPSHOT_NAME" --from-db "$DEV_DB" --wait
 
           # Verify snapshot was created
-          if turso db list | grep -q "^${SNAPSHOT_NAME}\s"; then
+          if turso db list | grep -q "^${SNAPSHOT_NAME}[[:space:]]"; then
             echo "✅ Development snapshot created successfully"
 
             # Get snapshot details

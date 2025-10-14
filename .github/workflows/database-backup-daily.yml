@@ -28,11 +28,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
-    # Run on schedule, manual trigger for prod/both, or push/PR events (for testing)
+    # Run on schedule or manual trigger for prod/both
     if: |
       github.event_name == 'schedule' ||
-      github.event_name == 'push' ||
-      github.event_name == 'pull_request' ||
       github.event.inputs.database == 'both' ||
       github.event.inputs.database == 'prod'
 
@@ -56,16 +54,17 @@ jobs:
           echo "🔧 Installing Turso CLI..."
           curl -sSfL https://get.tur.so/install.sh | bash
 
-          # Verify installation
-          if [ ! -f "$HOME/.turso/turso" ]; then
+          # Verify installation (correct path: ~/.turso/bin/turso)
+          if [ ! -f "$HOME/.turso/bin/turso" ]; then
             echo "❌ Turso CLI installation failed - binary not found"
             exit 1
           fi
 
-          echo "✅ Turso CLI installed: $(ls -lh $HOME/.turso/turso)"
+          echo "✅ Turso CLI installed: $(ls -lh $HOME/.turso/bin/turso)"
+          "$HOME/.turso/bin/turso" --version || true
 
-          # Add to PATH for subsequent steps (correct directory)
-          echo "$HOME/.turso" >> $GITHUB_PATH
+          # Add to PATH for subsequent steps (correct directory: ~/.turso/bin)
+          echo "$HOME/.turso/bin" >> "$GITHUB_PATH"
 
       - name: "🔐 Verify Turso API Token"
         env:
@@ -220,11 +219,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
-    # Run on schedule, manual trigger for dev/both, or push/PR events (for testing)
+    # Run on schedule or manual trigger for dev/both
     if: |
       github.event_name == 'schedule' ||
-      github.event_name == 'push' ||
-      github.event_name == 'pull_request' ||
       github.event.inputs.database == 'both' ||
       github.event.inputs.database == 'dev'
 
@@ -248,16 +245,17 @@ jobs:
           echo "🔧 Installing Turso CLI..."
           curl -sSfL https://get.tur.so/install.sh | bash
 
-          # Verify installation
-          if [ ! -f "$HOME/.turso/turso" ]; then
+          # Verify installation (correct path: ~/.turso/bin/turso)
+          if [ ! -f "$HOME/.turso/bin/turso" ]; then
             echo "❌ Turso CLI installation failed - binary not found"
             exit 1
           fi
 
-          echo "✅ Turso CLI installed: $(ls -lh $HOME/.turso/turso)"
+          echo "✅ Turso CLI installed: $(ls -lh $HOME/.turso/bin/turso)"
+          "$HOME/.turso/bin/turso" --version || true
 
-          # Add to PATH for subsequent steps (correct directory)
-          echo "$HOME/.turso" >> $GITHUB_PATH
+          # Add to PATH for subsequent steps (correct directory: ~/.turso/bin)
+          echo "$HOME/.turso/bin" >> "$GITHUB_PATH"
 
       - name: "🔐 Verify Turso API Token"
         env:
