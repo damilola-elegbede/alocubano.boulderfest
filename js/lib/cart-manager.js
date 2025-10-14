@@ -520,25 +520,18 @@ export class CartManager extends EventTarget {
 
     loadFromStorage() {
         try {
-            // Check both test and normal storage keys
-            const testKey = 'alocubano_cart_test';
-            const normalKey = this.storageKey;
+            // Load from both keys, preferring test cart
+            const normal = localStorage.getItem(this.storageKey);
+            const test = localStorage.getItem('alocubano_cart_test');
+            const chosen = test ?? normal;
 
-            const testCart = localStorage.getItem(testKey);
-            const normalCart = localStorage.getItem(normalKey);
-
-            // Prefer test cart if it exists, otherwise use normal cart
-            const stored = testCart ?? normalCart;
-            const activeKey = testCart ? testKey : normalKey;
-
-            if (stored) {
-                const parsed = JSON.parse(stored);
+            if (chosen) {
+                const parsed = JSON.parse(chosen);
 
                 // Migrate old donation format if needed
                 if (parsed.donations && !Array.isArray(parsed.donations)) {
                     devLog.log('Migrating old donation format to new array format');
                     if (parsed.donations.amount && parsed.donations.amount > 0) {
-                        // Convert old single donation to array format
                         parsed.donations = [
                             {
                                 id: `donation_${Date.now()}_migrated`,
@@ -548,7 +541,6 @@ export class CartManager extends EventTarget {
                             }
                         ];
                     } else {
-                        // No donation amount, use empty array
                         parsed.donations = [];
                     }
                 }
@@ -557,17 +549,17 @@ export class CartManager extends EventTarget {
                 if (this.isValidStoredCart(parsed)) {
                     this.state = parsed;
 
-                    // Update storageKey to match the active key we loaded from
-                    // This ensures future saves go to the correct location
-                    if (activeKey === testKey && !this.storageKey.includes('test')) {
-                        this.storageKey = testKey;
-                    }
+                    // Keep flags consistent - if we loaded test cart, ensure testMode is set
+                    const loadedFromTest = chosen === test;
+                    this.state.metadata.testMode = Boolean(parsed?.metadata?.testMode || loadedFromTest);
+                    this.testMode = Boolean(this.state.metadata.testMode || this.testMode);
                 }
             }
         } catch (error) {
             devLog.log('Failed to load cart from storage:', error);
             // Failed to load cart - continue with empty state
         }
+
     }
 
     isValidStoredCart(data) {
@@ -582,7 +574,7 @@ export class CartManager extends EventTarget {
 
     // Event handling
     setupEventListeners() {
-    // Listen for storage changes from other tabs
+    // Listen for storage updates from both keys
         window.addEventListener('storage', (event) => {
             // Watch both normal and test cart keys for cross-tab sync
             if (event.key === this.storageKey || event.key === 'alocubano_cart_test') {
@@ -601,8 +593,10 @@ export class CartManager extends EventTarget {
     // Dispatch on CartManager instance (for direct listeners)
         this.dispatchEvent(new CustomEvent(eventName, { detail }));
 
-        // CRITICAL FIX: Also dispatch on document for cross-component communication
-        document.dispatchEvent(new CustomEvent(eventName, { detail }));
+        // Guard document dispatch for non-browser environments
+        if (typeof document !== 'undefined' && document?.dispatchEvent) {
+            document.dispatchEvent(new CustomEvent(eventName, { detail }));
+        }
     }
 
     // Validation
