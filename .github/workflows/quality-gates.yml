@@ -64,9 +64,11 @@ jobs:
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           npm run lint:js 2>&1 | tee eslint-output.log || true
 
-          # Count issues (use head -1 to ensure single value)
-          errors=$(grep -c "error" eslint-output.log 2>/dev/null | head -1 || echo "0")
-          warnings=$(grep -c "warning" eslint-output.log 2>/dev/null | head -1 || echo "0")
+          # Parse error and warning counts from ESLint summary line
+          errors=$(grep "problems" eslint-output.log 2>/dev/null | sed -n 's/.*(\([0-9]*\) errors.*/\1/p' | head -1)
+          errors=${errors:-0}
+          warnings=$(grep "problems" eslint-output.log 2>/dev/null | sed -n 's/.* \([0-9]*\) warnings.*/\1/p' | head -1)
+          warnings=${warnings:-0}
 
           echo "eslint_errors=$errors" >> $GITHUB_OUTPUT
           echo "eslint_warnings=$warnings" >> $GITHUB_OUTPUT

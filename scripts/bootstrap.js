@@ -14,8 +14,12 @@
 
 import { bootstrapService } from '../lib/bootstrap-service.js';
 import { logger } from '../lib/logger.js';
+import { ensureDatabaseUrl } from '../lib/database-defaults.js';
 
 async function runBootstrap() {
+  // Set default local database if not configured
+  ensureDatabaseUrl();
+
   logger.log('\n' + '═'.repeat(60));
   logger.log('🚀 Bootstrap Data Loading');
   logger.log('═'.repeat(60));

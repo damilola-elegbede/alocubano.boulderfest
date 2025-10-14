@@ -348,7 +348,7 @@ export const testCleanupFixtures = {
       transaction_ids: ['TEST-TRANS-1', 'TEST-TRANS-2', 'TEST-TRANS-3']
     },
     expectedRecords: 3,
-    priority: 'immediate'
+    priority: 'initial'
   },
 
   emergency: {
@@ -361,7 +361,7 @@ export const testCleanupFixtures = {
       reason: 'test_environment_reset'
     },
     expectedRecords: 1000,
-    priority: 'immediate'
+    priority: 'initial'
   }
 };
 

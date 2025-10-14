@@ -38,17 +38,19 @@ export default defineConfig({
       ADMIN_SECRET: 'test-admin-jwt-secret-minimum-32-characters-for-security',
       WALLET_AUTH_SECRET: 'test-wallet-auth-secret-key-for-testing-purposes-32-chars',
       APPLE_PASS_KEY: 'dGVzdC1hcHBsZS1wYXNzLWtleQ==', // base64 encoded 'test-apple-pass-key'
+      APPLE_PASS_CERT: 'dGVzdC1jZXJ0aWZpY2F0ZQ==', // base64 encoded 'test-certificate'
       INTERNAL_API_KEY: 'test-internal-api-key-32-chars-min',
+      REGISTRATION_SECRET: 'test-registration-secret-key-minimum-32-chars-long',
       TEST_ADMIN_PASSWORD: 'test-admin-password-123',
       ADMIN_PASSWORD: '$2b$10$test.bcrypt.hash.for.testing.purposes.only',
 
-      // Database configuration for unit tests
-      DATABASE_URL: 'file::memory:?cache=shared'
+      // Database configuration for unit tests (match CI exactly)
+      DATABASE_URL: ':memory:'
     },
 
-    // AGGRESSIVE timeout optimization for <2s target
-    testTimeout: Number(process.env.VITEST_TEST_TIMEOUT || (process.env.CI === 'true' ? 8000 : 5000)),
-    hookTimeout: Number(process.env.VITEST_HOOK_TIMEOUT || (process.env.CI === 'true' ? 3000 : 2000)),
+    // Timeouts matching CI configuration exactly
+    testTimeout: Number(process.env.VITEST_TEST_TIMEOUT || 8000),  // Match CI: 8s
+    hookTimeout: Number(process.env.VITEST_HOOK_TIMEOUT || 3000),  // Match CI: 3s
     setupTimeout: Number(process.env.VITEST_SETUP_TIMEOUT || 5000),
     teardownTimeout: Number(process.env.VITEST_CLEANUP_TIMEOUT || 2000),
 
@@ -62,33 +64,40 @@ export default defineConfig({
       'node_modules/**',
       'tests/e2e/**',         // E2E tests excluded (disabled)
       'tests/integration/**', // Integration tests excluded (disabled)
+      'tests/unit/cron/**',   // Cron tests are integration tests (use TestIsolationManager + real DB, covered in tests/integration/cron/)
+      'tests/unit/bootstrap-ticket-architecture.test.js', // API integration test (requires running server)
       'tests/helpers/**',     // Test helpers (utilities only)
       'tests/mocks/**',       // Mock data (utilities only)
       'tests/fixtures/**'     // Test fixtures (utilities only)
     ],
 
-    // MOST STABLE pooling - single fork for reliability
+    // Use forks pool (Vitest recommended default for stability)
+    // Threads can cause hanging issues with native modules and cleanup
     pool: 'forks',
     poolOptions: {
       forks: {
-        singleFork: true,       // Single fork for maximum stability
-        isolate: false,         // Reduce overhead while maintaining stability
-        execArgv: ['--max-old-space-size=1024']  // Limit memory per worker
+        singleFork: false,      // Use multiple forks for parallelism
+        isolate: true,          // Isolate tests for safety
+        execArgv: ['--max-old-space-size=4096']  // Match CI: 4GB memory
       }
     },
 
-    // CONSERVATIVE concurrency for stability
-    maxConcurrency: process.env.CI === 'true' ? 4 : 6,  // Conservative for single fork
+    // Match CI concurrency settings
+    maxConcurrency: 4,  // Match CI exactly
 
     // Zero retry for maximum speed (unit tests should be deterministic)
     retry: 0,
 
     // CRITICAL: Force process cleanup after tests complete
     forceRerunTriggers: ['**/package.json', '**/vitest.config.*'],
-    isolate: false,  // Reduce isolation for faster cleanup
+    isolate: true,  // Enable isolation for test safety
 
-    // MINIMAL reporting for speed
-    reporter: process.env.CI === 'true' ? ['dot', 'junit'] : 'dot',  // Dot reporter is fastest
+    // MINIMAL reporting for speed + hanging-process for debugging
+    reporter: process.env.CI === 'true'
+      ? ['dot', 'junit']
+      : process.env.DEBUG_HANGING
+        ? ['default', 'hanging-process']  // Use DEBUG_HANGING=1 to debug hanging
+        : 'dot',  // Dot reporter is fastest
     outputFile: process.env.CI === 'true' ? './unit-test-results.xml' : undefined,
 
     // Performance tracking optimized

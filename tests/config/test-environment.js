@@ -227,6 +227,7 @@ export const configureEnvironment = (testType) => {
   // Wallet service configuration (required for ticket services)
   process.env.WALLET_AUTH_SECRET = process.env.WALLET_AUTH_SECRET || 'test-wallet-auth-secret-key-for-testing-purposes-32-chars';
   process.env.APPLE_PASS_KEY = process.env.APPLE_PASS_KEY || 'dGVzdC1hcHBsZS1wYXNzLWtleQ=='; // base64 encoded 'test-apple-pass-key'
+  process.env.APPLE_PASS_CERT = process.env.APPLE_PASS_CERT || 'dGVzdC1jZXJ0aWZpY2F0ZQ=='; // base64 encoded 'test-certificate'
 
   // Internal API Security (required for secure internal operations)
   process.env.INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || 'test-internal-api-key-32-chars-min';

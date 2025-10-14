@@ -170,7 +170,6 @@ export default async function handler(req, res) {
 
     // Check if we're in test mode
     const isTestMode = process.env.NODE_ENV === 'test' ||
-                      process.env.INTEGRATION_TEST_MODE === 'true' ||
                       isPreviewDeployment;
 
     // For preview deployments without Brevo configured, return mock success
@@ -211,6 +210,28 @@ export default async function handler(req, res) {
       return res.status(503).json({
         error: 'Email service is temporarily unavailable. Please try again later.'
       });
+    }
+
+    // Check if user is already subscribed (better UX - immediate feedback)
+    try {
+      const existingSubscriber = await emailService.getSubscriberByEmail(sanitized.email);
+
+      if (existingSubscriber && existingSubscriber.status === 'active') {
+        return res.status(200).json({
+          success: true,
+          message: "You're already subscribed to our newsletter!",
+          subscriber: {
+            email: existingSubscriber.email,
+            status: existingSubscriber.status,
+            alreadySubscribed: true
+          }
+        });
+      }
+
+      // If unsubscribed or not found, continue with subscription process
+    } catch (checkError) {
+      // If check fails, log and continue with normal flow
+      console.warn('Failed to check existing subscriber:', checkError.message);
     }
 
     // Get newsletter list ID with test mode fallback

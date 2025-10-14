@@ -5,10 +5,15 @@
  * including DST transitions, timezone suffixes, and consistency across templates.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, beforeAll } from 'vitest';
 import timeUtils from '../../../lib/time-utils.js';
 
 describe('Email Timezone Formatting', () => {
+  // Force America/Denver timezone for consistent cross-platform behavior
+  // This ensures Intl.DateTimeFormat behaves identically on Linux and macOS
+  beforeAll(() => {
+    process.env.TZ = 'America/Denver';
+  });
   describe('Mountain Time Display', () => {
     it('should format timestamps in Mountain Time, not UTC', () => {
       const utcDate = '2026-01-15T18:30:00Z'; // 6:30 PM UTC

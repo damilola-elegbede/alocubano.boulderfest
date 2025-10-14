@@ -49,6 +49,14 @@ describe('Email Service Test Mode', () => {
       process.env.NODE_ENV = 'production';
       process.env.INTEGRATION_TEST_MODE = 'false';
       process.env.BREVO_API_KEY = 'real-api-key';
+      // Required environment variables for production mode
+      process.env.BREVO_NEWSLETTER_LIST_ID = '1';
+      process.env.BREVO_TICKET_HOLDERS_LIST_ID = '2';
+      process.env.BREVO_VIP_LIST_ID = '3';
+      process.env.BREVO_WORKSHOPS_LIST_ID = '4';
+      process.env.BREVO_WELCOME_TEMPLATE_ID = '1';
+      process.env.BREVO_VERIFICATION_TEMPLATE_ID = '2';
+      process.env.BREVO_UNSUBSCRIBE_TEMPLATE_ID = '3';
 
       const brevoService = new BrevoService();
 
@@ -364,7 +372,15 @@ describe('Email Service Test Mode', () => {
       process.env = {
         ...originalEnv,
         NODE_ENV: 'production',
-        BREVO_API_KEY: 'prod-api-key'
+        BREVO_API_KEY: 'prod-api-key',
+        // Required environment variables for production mode
+        BREVO_NEWSLETTER_LIST_ID: '1',
+        BREVO_TICKET_HOLDERS_LIST_ID: '2',
+        BREVO_VIP_LIST_ID: '3',
+        BREVO_WORKSHOPS_LIST_ID: '4',
+        BREVO_WELCOME_TEMPLATE_ID: '1',
+        BREVO_VERIFICATION_TEMPLATE_ID: '2',
+        BREVO_UNSUBSCRIBE_TEMPLATE_ID: '3'
       };
 
       const brevoService = new BrevoService();

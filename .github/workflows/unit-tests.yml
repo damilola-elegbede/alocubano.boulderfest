@@ -117,12 +117,11 @@ jobs:
 
           start_time=$(date +%s%3N)
 
-          # FIXED: Run tests with JSON reporter for reliable parsing + verbose output
-          CI=true npm test -- --reporter=json --reporter=verbose --no-color > unit-test-results-raw.json 2>&1 || true
+          # Run tests once with both JSON and verbose output
+          set +e  # Allow command to fail without stopping script
+          CI=true npm test -- --reporter=json --reporter=verbose --no-color 2>&1 | tee unit-test-output.log > unit-test-results-raw.json
           test_exit_code=$?
-
-          # Also capture verbose output for logs
-          CI=true npm test -- --reporter=verbose --no-color 2>&1 | tee unit-test-output.log || true
+          set -e  # Re-enable exit on error
 
           end_time=$(date +%s%3N)
           duration=$((end_time - start_time))
@@ -210,7 +209,15 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
-            const output = fs.readFileSync('unit-test-output.log', 'utf8');
+
+            // Read output with fallback
+            let output = '';
+            try {
+              output = fs.readFileSync('unit-test-output.log', 'utf8');
+            } catch (error) {
+              output = `⚠️  Log file not found: ${error.message}`;
+            }
+
             const nodeVersion = '${{ matrix.node-version }}';
             const status = '${{ job.status }}';
 

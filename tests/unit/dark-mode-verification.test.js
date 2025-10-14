@@ -175,14 +175,17 @@ describe("Dark Mode Verification Tests", () => {
   });
 
   describe("5. Placeholder Text Contrast", () => {
-    it("should use --color-text-secondary for placeholders", () => {
-      expect(formsCss).toContain("color: var(--color-text-secondary)");
-      expect(formsCss).toContain("opacity: 0.9");
+    it("should use semantic color variable for placeholders", () => {
+      // Check that placeholders use the semantic --color-input-placeholder variable
+      expect(formsCss).toContain("color: var(--color-input-placeholder)");
+
+      // Verify the variable is defined in base.css to use --color-text-secondary
+      expect(baseCss).toContain("--color-input-placeholder: var(--color-text-secondary)");
     });
 
     it("should have dark mode specific placeholder styles", () => {
       expect(formsCss).toContain("[data-theme=\"dark\"] .form-input::placeholder");
-      expect(formsCss).toContain("opacity: 1");
+      expect(formsCss).toContain("color: var(--color-input-placeholder)");
     });
 
     it("should meet contrast requirements for placeholder text", () => {

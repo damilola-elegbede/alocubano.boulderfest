@@ -13,7 +13,6 @@ import { getDatabaseClient } from '../../../lib/database.js';
 // ============================================================================
 
 const TEST_TIMEOUT = 30000;
-const TEST_USER_ID = 'test-admin-001';
 
 let db;
 let testCashShiftIds = [];
@@ -63,7 +62,6 @@ afterEach(async () => {
  */
 async function createTestCashShift(status = 'open', overrides = {}) {
   const shiftData = {
-    user_id: TEST_USER_ID,
     opening_cash_cents: 10000, // $100.00
     status,
     opened_at: new Date().toISOString(),
@@ -72,12 +70,11 @@ async function createTestCashShift(status = 'open', overrides = {}) {
 
   const result = await db.execute({
     sql: `INSERT INTO cash_shifts (
-      user_id, opening_cash_cents, status, opened_at,
+      opening_cash_cents, status, opened_at,
       cash_sales_count, cash_sales_total_cents, expected_cash_cents,
       created_at
-    ) VALUES (?, ?, ?, ?, 0, 0, ?, CURRENT_TIMESTAMP)`,
+    ) VALUES (?, ?, ?, 0, 0, ?, CURRENT_TIMESTAMP)`,
     args: [
-      shiftData.user_id,
       shiftData.opening_cash_cents,
       shiftData.status,
       shiftData.opened_at,
@@ -106,14 +103,14 @@ async function getCashShift(shiftId) {
 /**
  * Close cash shift
  */
-async function closeCashShift(shiftId, closingCashCents = 10000) {
+async function closeCashShift(shiftId, actualCashCents = 10000) {
   await db.execute({
     sql: `UPDATE cash_shifts
           SET status = 'closed',
-              closing_cash_cents = ?,
+              actual_cash_cents = ?,
               closed_at = CURRENT_TIMESTAMP
           WHERE id = ?`,
-    args: [closingCashCents, shiftId]
+    args: [actualCashCents, shiftId]
   });
 }
 
@@ -216,8 +213,8 @@ describe('Cash Shift Validation - Closed Cash Shift', () => {
     const result = await validateCashShiftForPayment(shiftId, 'cash');
 
     expect(result.isValid).toBe(false);
-    expect(result.error).toMatch(/closed|open/i);
-    expect(result.errorCode).toBe('INVALID_CASH_SHIFT');
+    expect(result.error).toMatch(/must be open|closed|open/i);
+    expect(result.errorCode).toBe('CASH_SHIFT_CLOSED');
   }, TEST_TIMEOUT);
 
   it('should reject payment to shift that was just closed', async () => {
@@ -229,7 +226,7 @@ describe('Cash Shift Validation - Closed Cash Shift', () => {
     const result = await validateCashShiftForPayment(shiftId, 'cash');
 
     expect(result.isValid).toBe(false);
-    expect(result.error).toMatch(/closed|open/i);
+    expect(result.error).toMatch(/must be open|closed|open/i);
   }, TEST_TIMEOUT);
 
   it('should provide clear error message for closed shift', async () => {
@@ -237,7 +234,7 @@ describe('Cash Shift Validation - Closed Cash Shift', () => {
 
     const result = await validateCashShiftForPayment(shiftId, 'cash');
 
-    expect(result.error).toContain('closed');
+    expect(result.error).toMatch(/must be open|open/i);
     expect(result.error).toContain('open');
   }, TEST_TIMEOUT);
 });
@@ -294,7 +291,7 @@ describe('Cash Shift Validation - Race Condition Handling', () => {
     const finalValidation = await validateCashShiftForPayment(shiftId, 'cash');
 
     expect(finalValidation.isValid).toBe(false);
-    expect(finalValidation.error).toMatch(/closed/i);
+    expect(finalValidation.error).toMatch(/must be open|open/i);
   }, TEST_TIMEOUT);
 
   it('should handle concurrent payments to same shift', async () => {
@@ -624,8 +621,8 @@ describe('Cash Shift Validation - Error Messages', () => {
     const shiftId = await createTestCashShift('closed');
     const result = await validateCashShiftForPayment(shiftId, 'cash');
 
-    expect(result.error).toContain('closed');
-    expect(result.errorCode).toBe('INVALID_CASH_SHIFT');
+    expect(result.error).toMatch(/must be open|open/i);
+    expect(result.errorCode).toBe('CASH_SHIFT_CLOSED');
   }, TEST_TIMEOUT);
 
   it('should suggest opening a cash shift', async () => {

@@ -153,7 +153,7 @@ describe('Send Registration Reminder - Unit Tests', () => {
 
     test('should format reminder type for display', () => {
       const reminderTypes = {
-        'immediate': 'Immediate',
+        'initial': 'Immediate',
         '24hr-post-purchase': '24 Hours After Purchase',
         '1-week-before': '1 Week Before Deadline',
         '72hr-before': '72 Hours Before Deadline',
@@ -161,7 +161,7 @@ describe('Send Registration Reminder - Unit Tests', () => {
       };
 
       expect(reminderTypes['24hr-before']).toBe('24 Hours Before Deadline');
-      expect(reminderTypes['immediate']).toBe('Immediate');
+      expect(reminderTypes['initial']).toBe('Immediate');
     });
   });
 
@@ -455,7 +455,7 @@ describe('Send Registration Reminder - Unit Tests', () => {
   describe('Reminder Content Variations', () => {
     test('should customize message for different reminder types', () => {
       const reminderMessages = {
-        'immediate': 'Thank you for your purchase! Please complete registration.',
+        'initial': 'Thank you for your purchase! Please complete registration.',
         '24hr-post-purchase': 'Reminder: Please register your tickets soon.',
         '1-week-before': 'You have 1 week left to register your tickets.',
         '72hr-before': 'Only 3 days left to register your tickets!',
@@ -463,7 +463,7 @@ describe('Send Registration Reminder - Unit Tests', () => {
       };
 
       expect(reminderMessages['24hr-before']).toContain('URGENT');
-      expect(reminderMessages['immediate']).toContain('Thank you');
+      expect(reminderMessages['initial']).toContain('Thank you');
     });
 
     test('should handle single vs multiple tickets in message', () => {

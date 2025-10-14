@@ -145,13 +145,20 @@ describe('DonationSelection', () => {
 
       handleCustomAmountChange(event) {
         const value = parseFloat(event.target.value) || 0;
-        this.customAmount = value > 0 ? value : null;
+        // Enforce minimum donation amount of $1
+        this.customAmount = value >= 1 ? value : null;
 
         const customInput = event.target;
         const card = customInput.closest('.donation-card');
+
+        // Guard against null card (e.g., if input was removed from DOM)
+        if (!card) {
+          return;
+        }
+
         const donationAmount = card.querySelector('.donation-amount');
 
-        if (value === 0 || !event.target.value) {
+        if (value < 1 || !event.target.value) {
           donationAmount.innerHTML = 'CUSTOM';
           card.classList.remove('selected');
           card.setAttribute('aria-pressed', 'false');
@@ -288,6 +295,7 @@ describe('DonationSelection', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.clearAllTimers();
+    vi.useRealTimers(); // CRITICAL: Restore real timers to prevent hanging
     document.body.innerHTML = '';
   });
 
@@ -726,8 +734,19 @@ describe('DonationSelection', () => {
     });
 
     it('should create celebration message with amount', () => {
-      const card = document.querySelector('[data-amount="75"]');
+      // Create a new card element since data-amount="75" doesn't exist
+      const card = document.createElement('div');
+      card.className = 'donation-card';
       card.dataset.amount = '75';
+      card.setAttribute('tabindex', '0');
+      card.setAttribute('role', 'button');
+      card.setAttribute('aria-pressed', 'false');
+
+      const donationAmount = document.createElement('div');
+      donationAmount.className = 'donation-amount';
+      donationAmount.textContent = '$75';
+      card.appendChild(donationAmount);
+
       document.querySelector('.donation-selection').appendChild(card);
 
       // Reinitialize to bind new card
@@ -913,7 +932,7 @@ describe('DonationSelection', () => {
       expect(donationInstance.customAmount).toBe(null);
     });
 
-    it('should handle very small custom amounts (cents)', () => {
+    it('should reject very small custom amounts below $1 (cents)', () => {
       const customCard = document.querySelector('[data-amount="custom"]');
       customCard.click();
 
@@ -921,7 +940,9 @@ describe('DonationSelection', () => {
       input.value = '0.01';
       input.dispatchEvent(new window.Event('input', { bubbles: true }));
 
-      expect(donationInstance.customAmount).toBe(0.01);
+      // Minimum donation amount is $1, so cents should be rejected
+      expect(donationInstance.customAmount).toBe(null);
+      expect(customCard.classList.contains('selected')).toBe(false);
     });
 
     it('should handle whitespace in custom input', () => {

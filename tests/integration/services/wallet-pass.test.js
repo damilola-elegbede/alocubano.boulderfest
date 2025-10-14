@@ -45,46 +45,80 @@ describe('Wallet Pass Integration Tests', () => {
     testTransactionId = `stripe-tx-${timestamp}-${randomSuffix}`;
     testTicketId = `test-ticket-${timestamp}-${randomSuffix}`;
 
-    // STEP 1: Insert test transaction FIRST
-    const transactionResult = await database.execute({
-      sql: `INSERT INTO "transactions" (
-        transaction_id, type, stripe_session_id, amount_cents, status,
-        customer_email, order_data, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    // STEP 1: Create test event first (required for ticket foreign key)
+    const eventSlug = `boulder-fest-2026-${timestamp}`;
+    await database.execute({
+      sql: `
+        INSERT INTO events (
+          slug, name, type, status, start_date, end_date,
+          venue_name, venue_city, venue_state, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+      `,
       args: [
-        testTransactionId, 'tickets', `test-session-${timestamp}`,
-        5000, 'completed', 'test@example.com', '{}', new Date().toISOString()
+        eventSlug,
+        'Boulder Fest 2026',
+        'festival',
+        'test',
+        '2026-05-15',
+        '2026-05-17',
+        'Avalon Ballroom',
+        'Boulder',
+        'CO'
       ]
     });
 
-    // STEP 2: Get the auto-generated INTEGER primary key ID from the transaction
+    // Get the event ID
+    const eventResult = await database.execute({
+      sql: 'SELECT id FROM events WHERE slug = ?',
+      args: [eventSlug]
+    });
+
+    if (eventResult.rows.length === 0) {
+      throw new Error(`Failed to create test event with slug: ${eventSlug}`);
+    }
+
+    const testEventId = eventResult.rows[0].id;
+
+    // STEP 2: Insert test transaction
+    const transactionResult = await database.execute({
+      sql: `INSERT INTO "transactions" (
+        transaction_id, type, stripe_session_id, amount_cents, currency, status,
+        customer_email, order_data, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [
+        testTransactionId, 'tickets', `test-session-${timestamp}`,
+        5000, 'USD', 'completed', 'test@example.com', '{}', new Date().toISOString()
+      ]
+    });
+
+    // STEP 3: Get the auto-generated INTEGER primary key ID from the transaction
     const transactionDbId = transactionResult.lastInsertRowid || transactionResult.meta?.last_row_id;
 
     if (!transactionDbId) {
       throw new Error('Failed to get transaction ID from database insert');
     }
 
-    // STEP 3: Insert test ticket with the correct integer foreign key reference
+    // STEP 4: Insert test ticket with the correct integer foreign key references
     const ticketResult = await database.execute({
       sql: `INSERT INTO "tickets" (
-        ticket_id, transaction_id, ticket_type, event_id, price_cents, status,
+        ticket_id, transaction_id, ticket_type, event_id, event_date, price_cents, status,
         attendee_first_name, attendee_last_name, attendee_email, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       args: [
-        testTicketId, transactionDbId, 'Weekend Pass', 'boulder-fest-2026',
-        5000, 'valid', 'Test', 'User', 'test@example.com',
+        testTicketId, transactionDbId, 'Weekend Pass', testEventId,
+        '2026-05-15', 5000, 'valid', 'Test', 'User', 'test@example.com',
         new Date().toISOString()
       ]
     });
 
-    // STEP 4: Verify both records were created and can be found
+    // STEP 5: Verify all records were created and can be found
     const verifyTransaction = await database.execute({
       sql: 'SELECT id, transaction_id FROM "transactions" WHERE transaction_id = ?',
       args: [testTransactionId]
     });
 
     const verifyTicket = await database.execute({
-      sql: 'SELECT ticket_id, transaction_id FROM "tickets" WHERE ticket_id = ?',
+      sql: 'SELECT ticket_id, transaction_id, event_id FROM "tickets" WHERE ticket_id = ?',
       args: [testTicketId]
     });
 
@@ -96,12 +130,16 @@ describe('Wallet Pass Integration Tests', () => {
       throw new Error(`Ticket not found after insert: ${testTicketId}`);
     }
 
-    // STEP 5: Verify the relationship is correct
+    // STEP 6: Verify the relationships are correct
     if (verifyTicket.rows[0].transaction_id !== verifyTransaction.rows[0].id) {
       throw new Error(`Transaction relationship mismatch: ticket.transaction_id=${verifyTicket.rows[0].transaction_id}, transaction.id=${verifyTransaction.rows[0].id}`);
     }
 
-    console.log(`✅ Test data created: transaction.id=${verifyTransaction.rows[0].id}, ticket.transaction_id=${verifyTicket.rows[0].transaction_id}`);
+    if (verifyTicket.rows[0].event_id !== testEventId) {
+      throw new Error(`Event relationship mismatch: ticket.event_id=${verifyTicket.rows[0].event_id}, expected=${testEventId}`);
+    }
+
+    console.log(`✅ Test data created: event.id=${testEventId}, transaction.id=${verifyTransaction.rows[0].id}, ticket.transaction_id=${verifyTicket.rows[0].transaction_id}`);
   });
 
   // Note: Database cleanup is handled by setup-integration.js

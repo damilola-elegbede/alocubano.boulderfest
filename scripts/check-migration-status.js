@@ -9,6 +9,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { MigrationSystem } from "./migrate.js";
+import { ensureDatabaseUrl } from "../lib/database-defaults.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -31,6 +32,9 @@ function log(message, color = colors.reset) {
 
 async function checkMigrationStatus() {
   try {
+    // Set default local database if not configured
+    ensureDatabaseUrl();
+
     log("\n🔍 Migration Status Check", colors.bright + colors.blue);
     log("=" .repeat(60), colors.blue);
 

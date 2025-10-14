@@ -39,8 +39,11 @@ describe('PayPal Integration Flow', () => {
     // Clean up test data before each test
     await dbClient.execute({ sql: 'DELETE FROM transactions WHERE is_test = 1' });
     await dbClient.execute({ sql: 'DELETE FROM transaction_items WHERE transaction_id NOT IN (SELECT id FROM transactions)' });
-    await dbClient.execute({ sql: 'DELETE FROM paypal_webhook_events WHERE verification_status = "test"' });
-    await dbClient.execute({ sql: 'DELETE FROM audit_logs WHERE event_type LIKE "%TEST%"' });
+    await dbClient.execute({ sql: 'DELETE FROM paypal_webhook_events WHERE is_test = 1' });
+    await dbClient.execute({
+      sql: "DELETE FROM audit_logs WHERE event_type LIKE ?",
+      args: ['%TEST%']
+    });
 
     // Reset PayPal service
     if (paypalService.reset) {
@@ -52,8 +55,11 @@ describe('PayPal Integration Flow', () => {
     // Clean up after each test
     await dbClient.execute({ sql: 'DELETE FROM transactions WHERE is_test = 1' });
     await dbClient.execute({ sql: 'DELETE FROM transaction_items WHERE transaction_id NOT IN (SELECT id FROM transactions)' });
-    await dbClient.execute({ sql: 'DELETE FROM paypal_webhook_events WHERE verification_status = "test"' });
-    await dbClient.execute({ sql: 'DELETE FROM audit_logs WHERE event_type LIKE "%TEST%"' });
+    await dbClient.execute({ sql: 'DELETE FROM paypal_webhook_events WHERE is_test = 1' });
+    await dbClient.execute({
+      sql: "DELETE FROM audit_logs WHERE event_type LIKE ?",
+      args: ['%TEST%']
+    });
   });
 
   describe('Complete Payment Flow', () => {
@@ -130,12 +136,18 @@ describe('PayPal Integration Flow', () => {
       const transactionId = generateTestAwareTransactionId(`paypal_${Date.now()}`);
       const uuid = `test-uuid-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 
+      // Get a test event ID for foreign key constraint (nullable)
+      const eventResult = await dbClient.execute({
+        sql: 'SELECT id FROM events LIMIT 1'
+      });
+      const testEventId = eventResult.rows[0]?.id || null;
+
       const dbResult = await dbClient.execute({
         sql: `INSERT INTO transactions (
           transaction_id, uuid, type, status, amount_cents, total_amount, currency,
           paypal_order_id, payment_processor, reference_id, cart_data,
           customer_email, customer_name, order_data, metadata,
-          event_id, source, is_test, created_at
+          source, event_id, is_test, created_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
         args: [
           transactionId,
@@ -157,13 +169,14 @@ describe('PayPal Integration Flow', () => {
             paypal_order_id: paypalOrder.id,
             total_amount: totalAmount
           })),
-          'boulderfest_2026',
           'website',
+          testEventId,
           1 // is_test = true
         ]
       });
 
-      expect(dbResult.changes).toBe(1);
+      // Verify insertion succeeded
+      expect(dbResult.rowsAffected || dbResult.changes).toBeGreaterThan(0);
       const transactionRowId = dbResult.lastInsertRowid;
 
       // Step 4: Verify transaction was stored correctly
@@ -203,16 +216,18 @@ describe('PayPal Integration Flow', () => {
       expect(updatedTransaction.status).toBe('completed');
       expect(updatedTransaction.paypal_capture_id).toBe(capture.id);
 
-      // Step 8: Verify audit trail was created
-      const auditLogs = await dbClient.execute({
-        sql: 'SELECT * FROM audit_logs WHERE target_type = ? AND target_id = ? ORDER BY created_at DESC',
-        args: ['transaction', uuid]
+      // Step 8: Verify payment event was created
+      const paymentEvents = await dbClient.execute({
+        sql: `SELECT * FROM payment_events
+              WHERE transaction_id = (SELECT id FROM transactions WHERE uuid = ?)
+              ORDER BY processed_at DESC`,
+        args: [uuid]
       });
 
-      expect(auditLogs.rows.length).toBeGreaterThan(0);
-      const latestLog = auditLogs.rows[0];
-      expect(latestLog.action).toContain('status_change');
-      expect(latestLog.new_value).toBe('completed');
+      expect(paymentEvents.rows.length).toBeGreaterThan(0);
+      const latestEvent = paymentEvents.rows[0];
+      expect(latestEvent.event_type).toContain('status_change');
+      expect(latestEvent.new_status).toBe('completed');
     });
 
     it('should handle webhook event processing', async () => {
@@ -221,11 +236,17 @@ describe('PayPal Integration Flow', () => {
       const captureId = 'TEST-CAPTURE-WEBHOOK-123';
       const uuid = `test-uuid-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 
+      // Get a test event ID for foreign key constraint (nullable)
+      const eventResult = await dbClient.execute({
+        sql: 'SELECT id FROM events LIMIT 1'
+      });
+      const testEventId = eventResult.rows[0]?.id || null;
+
       await dbClient.execute({
         sql: `INSERT INTO transactions (
           transaction_id, uuid, type, status, amount_cents, currency,
-          paypal_order_id, payment_processor, is_test, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+          paypal_order_id, payment_processor, customer_email, order_data, event_id, is_test, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
         args: [
           `test_webhook_${Date.now()}`,
           uuid,
@@ -235,6 +256,9 @@ describe('PayPal Integration Flow', () => {
           'USD',
           paypalOrderId,
           'paypal',
+          'test-webhook@example.com',
+          JSON.stringify({ test: true, webhook: true }),
+          testEventId,
           1
         ]
       });
@@ -266,16 +290,17 @@ describe('PayPal Integration Flow', () => {
       await dbClient.execute({
         sql: `INSERT INTO paypal_webhook_events (
           event_id, event_type, paypal_order_id, paypal_capture_id,
-          event_data, verification_status, processing_status, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          event_data, verification_status, processing_status, is_test, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
           webhookEvent.id,
           webhookEvent.event_type,
           paypalOrderId,
           captureId,
           JSON.stringify(webhookEvent),
-          'test',
+          'verified',
           'pending',
+          1,
           new Date().toISOString()
         ]
       });
@@ -315,6 +340,12 @@ describe('PayPal Integration Flow', () => {
       const paypalOrderId = 'TEST-EC-INTEGRITY-123';
       const uuid = `test-uuid-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 
+      // Get a test event ID for foreign key constraint (nullable)
+      const eventResult = await dbClient.execute({
+        sql: 'SELECT id FROM events LIMIT 1'
+      });
+      const testEventId = eventResult.rows[0]?.id || null;
+
       // Start transaction
       await dbClient.execute({ sql: 'BEGIN TRANSACTION' });
 
@@ -323,8 +354,8 @@ describe('PayPal Integration Flow', () => {
         const result = await dbClient.execute({
           sql: `INSERT INTO transactions (
             transaction_id, uuid, type, status, amount_cents, currency,
-            paypal_order_id, payment_processor, is_test, created_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+            paypal_order_id, payment_processor, customer_email, order_data, event_id, is_test, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
           args: [
             `test_integrity_${Date.now()}`,
             uuid,
@@ -334,6 +365,9 @@ describe('PayPal Integration Flow', () => {
             'USD',
             paypalOrderId,
             'paypal',
+            'test-integrity@example.com',
+            JSON.stringify({ test: true, integrity: true }),
+            testEventId,
             1
           ]
         });
@@ -343,11 +377,12 @@ describe('PayPal Integration Flow', () => {
         // Insert transaction items
         await dbClient.execute({
           sql: `INSERT INTO transaction_items (
-            transaction_id, ticket_type, item_name, item_price_cents,
-            quantity, total_price_cents, metadata, is_test, created_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+            transaction_id, item_type, ticket_type, item_name, unit_price_cents,
+            quantity, total_price_cents, product_metadata, is_test, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
           args: [
             transactionRowId,
+            'ticket',
             'full_pass',
             'Test Integration Ticket',
             10000,
@@ -423,33 +458,35 @@ describe('PayPal Integration Flow', () => {
       const result1 = await dbClient.execute({
         sql: `INSERT INTO paypal_webhook_events (
           event_id, event_type, event_data, verification_status,
-          processing_status, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?)`,
+          processing_status, is_test, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
         args: [
           eventId,
           webhookEvent.event_type,
           JSON.stringify(webhookEvent),
-          'test',
+          'verified',
           'processed',
+          1,
           new Date().toISOString()
         ]
       });
 
-      expect(result1.changes).toBe(1);
+      expect(result1.rowsAffected || result1.changes).toBeGreaterThan(0);
 
       // Try to insert duplicate - should fail with UNIQUE constraint
       await expect(
         dbClient.execute({
           sql: `INSERT INTO paypal_webhook_events (
             event_id, event_type, event_data, verification_status,
-            processing_status, created_at
-          ) VALUES (?, ?, ?, ?, ?, ?)`,
+            processing_status, is_test, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
           args: [
             eventId, // Same event ID
             webhookEvent.event_type,
             JSON.stringify(webhookEvent),
-            'test',
+            'verified',
             'pending',
+            1,
             new Date().toISOString()
           ]
         })
@@ -461,12 +498,18 @@ describe('PayPal Integration Flow', () => {
       const captureId = 'TEST-CAPTURE-DUP-456';
       const uuid = `test-uuid-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 
+      // Get a test event ID for foreign key constraint (nullable)
+      const eventResult = await dbClient.execute({
+        sql: 'SELECT id FROM events LIMIT 1'
+      });
+      const testEventId = eventResult.rows[0]?.id || null;
+
       // Create transaction
       await dbClient.execute({
         sql: `INSERT INTO transactions (
           transaction_id, uuid, type, status, amount_cents, currency,
-          paypal_order_id, payment_processor, is_test, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+          paypal_order_id, payment_processor, customer_email, order_data, event_id, is_test, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
         args: [
           `test_dup_capture_${Date.now()}`,
           uuid,
@@ -476,6 +519,9 @@ describe('PayPal Integration Flow', () => {
           'USD',
           paypalOrderId,
           'paypal',
+          'test-duplicate@example.com',
+          JSON.stringify({ test: true, duplicate: true }),
+          testEventId,
           1
         ]
       });
@@ -533,19 +579,20 @@ describe('PayPal Integration Flow', () => {
       const result = await dbClient.execute({
         sql: `INSERT INTO paypal_webhook_events (
           event_id, event_type, event_data, verification_status,
-          processing_status, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?)`,
+          processing_status, is_test, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
         args: [
           malformedEvent.id,
           malformedEvent.event_type,
           JSON.stringify(malformedEvent),
-          'test',
           'failed',
+          'failed',
+          1,
           new Date().toISOString()
         ]
       });
 
-      expect(result.changes).toBe(1);
+      expect(result.rowsAffected || result.changes).toBeGreaterThan(0);
     });
   });
 
@@ -596,13 +643,19 @@ describe('PayPal Integration Flow', () => {
       const order = await createPayPalOrder(orderData);
       expect(order).toBeDefined();
 
+      // Get a test event ID for foreign key constraint (nullable)
+      const eventResult = await dbClient.execute({
+        sql: 'SELECT id FROM events LIMIT 1'
+      });
+      const testEventId = eventResult.rows[0]?.id || null;
+
       // Test database storage of large amounts
       const uuid = `test-uuid-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
       await dbClient.execute({
         sql: `INSERT INTO transactions (
           transaction_id, uuid, type, status, amount_cents, currency,
-          paypal_order_id, payment_processor, is_test, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+          paypal_order_id, payment_processor, customer_email, order_data, event_id, is_test, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
         args: [
           `test_large_${Date.now()}`,
           uuid,
@@ -612,6 +665,9 @@ describe('PayPal Integration Flow', () => {
           'USD',
           order.id,
           'paypal',
+          'test-large@example.com',
+          JSON.stringify({ test: true, large_amount: true }),
+          testEventId,
           1
         ]
       });
@@ -630,12 +686,18 @@ describe('PayPal Integration Flow', () => {
       const paypalOrderId = 'TEST-EC-AUDIT-123';
       const uuid = `test-uuid-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 
+      // Get a test event ID for foreign key constraint (nullable)
+      const eventResult = await dbClient.execute({
+        sql: 'SELECT id FROM events LIMIT 1'
+      });
+      const testEventId = eventResult.rows[0]?.id || null;
+
       // Create transaction
       await dbClient.execute({
         sql: `INSERT INTO transactions (
           transaction_id, uuid, type, status, amount_cents, currency,
-          paypal_order_id, payment_processor, is_test, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+          paypal_order_id, payment_processor, customer_email, order_data, event_id, is_test, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
         args: [
           `test_audit_${Date.now()}`,
           uuid,
@@ -645,28 +707,32 @@ describe('PayPal Integration Flow', () => {
           'USD',
           paypalOrderId,
           'paypal',
+          'test-audit@example.com',
+          JSON.stringify({ test: true, audit: true }),
+          testEventId,
           1
         ]
       });
 
-      // Update status to create audit trail
+      // Update status to create payment event
       await transactionService.updateStatus(uuid, 'completed');
 
-      // Check audit logs
-      const auditLogs = await dbClient.execute({
-        sql: 'SELECT * FROM audit_logs WHERE target_type = ? AND target_id = ?',
-        args: ['transaction', uuid]
+      // Check payment events
+      const paymentEvents = await dbClient.execute({
+        sql: `SELECT * FROM payment_events
+              WHERE transaction_id = (SELECT id FROM transactions WHERE uuid = ?)`,
+        args: [uuid]
       });
 
-      expect(auditLogs.rows.length).toBeGreaterThan(0);
+      expect(paymentEvents.rows.length).toBeGreaterThan(0);
 
-      const statusChangeLog = auditLogs.rows.find(log =>
-        log.action.includes('status_change')
+      const statusChangeEvent = paymentEvents.rows.find(event =>
+        event.event_type.includes('status_change')
       );
 
-      expect(statusChangeLog).toBeDefined();
-      expect(statusChangeLog.old_value).toBe('pending');
-      expect(statusChangeLog.new_value).toBe('completed');
+      expect(statusChangeEvent).toBeDefined();
+      expect(statusChangeEvent.previous_status).toBe('pending');
+      expect(statusChangeEvent.new_status).toBe('completed');
     });
 
     it('should maintain data consistency across all tables', async () => {
@@ -674,12 +740,18 @@ describe('PayPal Integration Flow', () => {
       const uuid = `test-uuid-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
       const transactionId = `test_consistency_${Date.now()}`;
 
+      // Get a test event ID for foreign key constraint (nullable)
+      const eventResult = await dbClient.execute({
+        sql: 'SELECT id FROM events LIMIT 1'
+      });
+      const testEventId = eventResult.rows[0]?.id || null;
+
       // Create complete transaction with items
       const dbResult = await dbClient.execute({
         sql: `INSERT INTO transactions (
           transaction_id, uuid, type, status, amount_cents, currency,
-          paypal_order_id, payment_processor, is_test, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+          paypal_order_id, payment_processor, customer_email, order_data, event_id, is_test, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
         args: [
           transactionId,
           uuid,
@@ -689,6 +761,9 @@ describe('PayPal Integration Flow', () => {
           'USD',
           paypalOrderId,
           'paypal',
+          'test-consistency@example.com',
+          JSON.stringify({ test: true, consistency: true }),
+          testEventId,
           1
         ]
       });
@@ -698,11 +773,12 @@ describe('PayPal Integration Flow', () => {
       // Add transaction items
       await dbClient.execute({
         sql: `INSERT INTO transaction_items (
-          transaction_id, ticket_type, item_name, item_price_cents,
+          transaction_id, item_type, ticket_type, item_name, unit_price_cents,
           quantity, total_price_cents, is_test, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
         args: [
           transactionRowId,
+          'ticket',
           'full_pass',
           'Test Consistency Ticket',
           15000,

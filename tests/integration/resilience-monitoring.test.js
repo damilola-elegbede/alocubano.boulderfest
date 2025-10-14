@@ -231,7 +231,7 @@ describe('Resilience Monitoring', () => {
 
   afterEach(async () => {
     if (isolationManager) {
-      await isolationManager.cleanup();
+      await isolationManager.cleanupTestScope(expect.getState().currentTestName);
     }
     metricsCollector.reset();
   });
@@ -341,20 +341,20 @@ describe('Resilience Monitoring', () => {
     test('should persist circuit state to database', async () => {
       // Insert circuit state record
       const result = await testDb.execute({
-        sql: `INSERT INTO service_monitoring (
-          service_name, status, circuit_state, failure_count, last_check
-        ) VALUES (?, ?, ?, ?, ?)`,
-        args: ['brevo', 'degraded', 'OPEN', 5, new Date().toISOString()]
+        sql: `INSERT INTO circuit_breaker_state (
+          service_name, state, failure_count, last_failure_at
+        ) VALUES (?, ?, ?, ?)`,
+        args: ['brevo', 'open', 5, new Date().toISOString()]
       });
 
       expect(Number(result.lastInsertRowid)).toBeGreaterThan(0);
 
       const check = await testDb.execute({
-        sql: `SELECT * FROM service_monitoring WHERE service_name = ?`,
+        sql: `SELECT * FROM circuit_breaker_state WHERE service_name = ?`,
         args: ['brevo']
       });
 
-      expect(check.rows[0].circuit_state).toBe('OPEN');
+      expect(check.rows[0].state).toBe('open');
       expect(check.rows[0].failure_count).toBe(5);
     });
   });
@@ -400,18 +400,18 @@ describe('Resilience Monitoring', () => {
         failureCount: 5
       });
 
-      // Store alert in database
+      // Store alert in database using security_alerts table
       const result = await testDb.execute({
-        sql: `INSERT INTO resilience_alerts (
-          alert_id, alert_type, service_name, severity, details, created_at
+        sql: `INSERT INTO security_alerts (
+          alert_id, alert_type, severity, title, description, evidence
         ) VALUES (?, ?, ?, ?, ?, ?)`,
         args: [
           alert.id,
           alert.type,
-          alert.serviceName,
-          alert.severity,
-          JSON.stringify(alert.details),
-          alert.timestamp.toISOString()
+          alert.severity.toLowerCase(), // Convert to lowercase to match CHECK constraint
+          `Circuit Breaker Alert: ${alert.serviceName}`,
+          `Service ${alert.serviceName} circuit breaker opened`,
+          JSON.stringify(alert.details)
         ]
       });
 
@@ -424,7 +424,13 @@ describe('Resilience Monitoring', () => {
       metricsCollector.recordRequest('brevo', true);
       metricsCollector.recordRequest('brevo', true);
       metricsCollector.recordRequest('brevo', true);
-      metricsCollector.recordRequest('brevo', false); // 25% failure rate
+      metricsCollector.recordRequest('brevo', true);
+      metricsCollector.recordRequest('brevo', true);
+      metricsCollector.recordRequest('brevo', true);
+      metricsCollector.recordRequest('brevo', true);
+      metricsCollector.recordRequest('brevo', true);
+      metricsCollector.recordRequest('brevo', true);
+      metricsCollector.recordRequest('brevo', false); // 10% failure rate
 
       const health = metricsCollector.getServiceHealth('brevo');
 
@@ -570,16 +576,16 @@ describe('Resilience Monitoring', () => {
     test('should track service availability', async () => {
       // Record service availability check
       const result = await testDb.execute({
-        sql: `INSERT INTO service_monitoring (
-          service_name, status, circuit_state, response_time_ms, last_check
+        sql: `INSERT INTO service_health (
+          service_name, status, response_time_ms, error_count, success_count
         ) VALUES (?, ?, ?, ?, ?)`,
-        args: ['brevo', 'healthy', 'CLOSED', 150, new Date().toISOString()]
+        args: ['brevo', 'healthy', 150, 0, 10]
       });
 
       expect(Number(result.lastInsertRowid)).toBeGreaterThan(0);
 
       const check = await testDb.execute({
-        sql: `SELECT * FROM service_monitoring WHERE service_name = ?`,
+        sql: `SELECT * FROM service_health WHERE service_name = ?`,
         args: ['brevo']
       });
 

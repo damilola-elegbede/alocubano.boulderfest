@@ -146,63 +146,51 @@ jobs:
           # Record start time
           start_time=$(date +%s%3N)
 
-          # FIXED: Run tests with JSON reporter for reliable parsing + verbose output
-          CI=true timeout 280s npm run test:integration -- --reporter=json --reporter=verbose --no-color > integration-test-results-raw.json 2>&1 || true
+          # Run tests once with verbose output and capture all output
+          set +e
+          CI=true timeout 280s npm run test:integration -- --reporter=verbose --no-color 2>&1 | tee integration-test-output.log
           test_exit_code=$?
+          set -e
 
-          # Also capture verbose output for logs
-          CI=true timeout 280s npm run test:integration -- --reporter=verbose --no-color 2>&1 | tee integration-test-output.log || true
+          # Ensure log file exists even if tests failed catastrophically
+          if [ ! -f integration-test-output.log ]; then
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" > integration-test-output.log
+            echo "⚠️  Integration tests failed to produce output" >> integration-test-output.log
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >> integration-test-output.log
+            echo "Exit code: $test_exit_code" >> integration-test-output.log
+          fi
 
           # Record end time
           end_time=$(date +%s%3N)
           duration=$((end_time - start_time))
 
-          # FIXED: Improved test parsing using JSON output + robust fallback patterns
-          echo "🔍 Parsing integration test results using JSON reporter with fallbacks..."
+          # Parse test results from Vitest summary line
+          echo "🔍 Parsing integration test results..."
 
-          # Method 1: Parse JSON output (most reliable)
-          if [ -f "integration-test-results-raw.json" ] && jq empty integration-test-results-raw.json 2>/dev/null; then
-            echo "✅ Using JSON test results"
-            total_tests=$(jq -r '.numTotalTests // 0' integration-test-results-raw.json 2>/dev/null || echo "0")
-            passing_tests=$(jq -r '.numPassedTests // 0' integration-test-results-raw.json 2>/dev/null || echo "0")
-            failing_tests=$(jq -r '.numFailedTests // 0' integration-test-results-raw.json 2>/dev/null || echo "0")
-            parsing_method="json_primary"
-          else
-            echo "🔄 JSON parsing failed, using robust fallback patterns..."
+          # Extract from Vitest summary line: "Tests  X passed (Y)"
+          if grep -q "Tests.*passed" integration-test-output.log; then
+            # Get the summary line
+            summary_line=$(grep "Tests.*passed" integration-test-output.log | tail -1)
+            echo "📋 Summary line: $summary_line"
 
-            # Method 2: Standard Vitest output pattern "Tests X passed"
-            passing_tests=$(grep -E "Tests[[:space:]]+[0-9]+[[:space:]]+passed" integration-test-output.log | sed -E "s/.*Tests[[:space:]]+([0-9]+)[[:space:]]+passed.*/\1/" | head -1 || echo "0")
-            failing_tests=$(grep -E "Tests[[:space:]]+[0-9]+[[:space:]]+failed" integration-test-output.log | sed -E "s/.*Tests[[:space:]]+([0-9]+)[[:space:]]+failed.*/\1/" | head -1 || echo "0")
+            # Parse passed tests
+            passing_tests=$(echo "$summary_line" | grep -oE "Tests[[:space:]]+[0-9]+" | grep -oE "[0-9]+" || echo "0")
 
-            # Method 3: Alternative patterns if standard fails
-            if [ "$passing_tests" = "0" ] && [ "$failing_tests" = "0" ]; then
-              echo "🔄 Trying alternative test result patterns..."
-              passing_tests=$(grep -E "[0-9]+[[:space:]]+tests?[[:space:]]+passed" integration-test-output.log | sed -E "s/.*([0-9]+)[[:space:]]+tests?[[:space:]]+passed.*/\1/" | head -1 || echo "0")
-              failing_tests=$(grep -E "[0-9]+[[:space:]]+tests?[[:space:]]+failed" integration-test-output.log | sed -E "s/.*([0-9]+)[[:space:]]+tests?[[:space:]]+failed.*/\1/" | head -1 || echo "0")
+            # Parse failed tests if present
+            if echo "$summary_line" | grep -q "failed"; then
+              failing_tests=$(echo "$summary_line" | grep -oE "[0-9]+[[:space:]]+failed" | grep -oE "[0-9]+" || echo "0")
+            else
+              failing_tests="0"
             fi
 
-            # Method 4: Checkmark patterns
-            if [ "$passing_tests" = "0" ] && [ "$failing_tests" = "0" ]; then
-              echo "🔄 Trying checkmark patterns..."
-              passing_tests=$(grep -E "✓[[:space:]]+[0-9]+[[:space:]]+tests?" integration-test-output.log | sed -E "s/.*✓[[:space:]]+([0-9]+)[[:space:]]+tests?.*/\1/" | head -1 || echo "0")
-              failing_tests=$(grep -E "✗[[:space:]]+[0-9]+[[:space:]]+tests?" integration-test-output.log | sed -E "s/.*✗[[:space:]]+([0-9]+)[[:space:]]+tests?.*/\1/" | head -1 || echo "0")
-            fi
-
-            # Method 5: Final summary pattern parsing
-            if [ "$passing_tests" = "0" ] && [ "$failing_tests" = "0" ]; then
-              echo "🔄 Trying final summary patterns..."
-              # Look for summary line like "Test Files  2 passed, 2 total"
-              passing_tests=$(grep -E "Test Files[[:space:]]+[0-9]+" integration-test-output.log | sed -E "s/.*Test Files[[:space:]]+([0-9]+)[[:space:]]+passed.*/\1/" | head -1 || echo "0")
-              # Look for any numeric patterns in test results
-              if [ "$passing_tests" = "0" ]; then
-                passing_tests=$(grep -oE "[0-9]+[[:space:]]*passed" integration-test-output.log | grep -oE "[0-9]+" | head -1 || echo "0")
-              fi
-              failing_tests=$(grep -oE "[0-9]+[[:space:]]*failed" integration-test-output.log | grep -oE "[0-9]+" | head -1 || echo "0")
-            fi
-
-            # Calculate total as sum
             total_tests=$((passing_tests + failing_tests))
-            parsing_method="fallback_patterns"
+            parsing_method="vitest_summary"
+          else
+            echo "❌ Could not find Vitest summary line"
+            passing_tests="0"
+            failing_tests="0"
+            total_tests="0"
+            parsing_method="not_found"
           fi
 
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -246,7 +234,15 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
-            const output = fs.readFileSync('integration-test-output.log', 'utf8');
+
+            // Read output with fallback
+            let output = '';
+            try {
+              output = fs.readFileSync('integration-test-output.log', 'utf8');
+            } catch (error) {
+              output = `⚠️  Log file not found: ${error.message}`;
+            }
+
             const nodeVersion = '${{ matrix.node-version }}';
             const status = '${{ job.status }}';
 

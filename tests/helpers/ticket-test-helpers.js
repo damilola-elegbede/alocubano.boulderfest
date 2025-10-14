@@ -20,7 +20,7 @@ export function generateTestTicketId() {
 export async function createTestTicket(ticketData) {
   const {
     ticketType = 'general',
-    eventId = 1,
+    eventId: providedEventId,
     attendeeEmail,
     priceInCents = 5000,
     attendeeFirstName = null,
@@ -31,6 +31,48 @@ export async function createTestTicket(ticketData) {
 
   const client = await getDatabaseClient();
   const ticketId = generateTestTicketId();
+
+  // Ensure a test event exists for foreign key constraint
+  let eventId = providedEventId;
+  if (!eventId) {
+    // Check if test event exists
+    const existingEvent = await client.execute({
+      sql: 'SELECT id FROM events WHERE slug = ?',
+      args: ['test-event-helper']
+    });
+
+    if (existingEvent.rows.length > 0) {
+      eventId = existingEvent.rows[0].id;
+    } else {
+      // Create test event
+      await client.execute({
+        sql: `
+          INSERT INTO events (
+            slug, name, type, status, start_date, end_date,
+            venue_name, venue_city, venue_state, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        `,
+        args: [
+          'test-event-helper',
+          'Test Event (Helper)',
+          'festival',
+          'test',
+          '2026-05-15',
+          '2026-05-17',
+          'Test Venue',
+          'Boulder',
+          'CO'
+        ]
+      });
+
+      // Get the created event ID
+      const newEvent = await client.execute({
+        sql: 'SELECT id FROM events WHERE slug = ?',
+        args: ['test-event-helper']
+      });
+      eventId = newEvent.rows[0].id;
+    }
+  }
 
   // Create a test transaction first with better uniqueness
   const transactionId = `TEST-TRANS-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
@@ -73,6 +115,8 @@ export async function createTestTicket(ticketData) {
   }
 
   // Create the test ticket
+  // Note: ticket_type_id is set to NULL because test tickets don't require
+  // a FK reference to ticket_types table (which is populated by bootstrap service)
   await client.execute(`
     INSERT INTO tickets (
       ticket_id, transaction_id, ticket_type, ticket_type_id, event_id, price_cents,
@@ -83,7 +127,7 @@ export async function createTestTicket(ticketData) {
     ticketId,
     dbTransactionId,
     ticketType,
-    ticketType,  // ticket_type_id uses same value (ticket_types.id is TEXT)
+    null,  // ticket_type_id - NULL for test tickets (FK constraint allows NULL)
     eventId,
     priceInCents,
     attendeeEmail,
@@ -101,7 +145,8 @@ export async function createTestTicket(ticketData) {
     const { QRTokenService } = await import('../../lib/qr-token-service.js');
     const qrService = new QRTokenService();
     qrToken = await qrService.generateToken({
-      ticketId,
+      tid: ticketId,  // Use 'tid' to match QR service convention
+      ticketId,       // Also include ticketId for backwards compatibility
       eventId,
       isTest: true,
       metadata: {
@@ -140,7 +185,8 @@ export async function generateTestQRCode(payload) {
   const { ticketId, eventId, isTest = true, metadata = {} } = payload;
 
   const tokenPayload = {
-    ticketId,
+    tid: ticketId,  // Use 'tid' to match QR service convention
+    ticketId,       // Also include for backwards compatibility
     eventId,
     isTest,
     metadata: {
@@ -167,14 +213,30 @@ export async function generateTestQRCode(payload) {
 export async function validateTestTicket(qrToken) {
   try {
     // Try to use the QR token service for validation (may be mocked in tests)
+    let ticketId;
     let isTestTokenResult = false;
+
     try {
       const { QRTokenService } = await import('../../lib/qr-token-service.js');
       const qrService = new QRTokenService();
-      isTestTokenResult = await qrService.isTestToken(qrToken);
+
+      // Validate and decode the token
+      const validation = qrService.validateToken(qrToken);
+      if (validation.valid && validation.payload) {
+        // Extract ticket ID from payload (stored as 'tid')
+        ticketId = validation.payload.tid || validation.payload.ticketId;
+        isTestTokenResult = validation.payload.isTest || (ticketId && ticketId.startsWith('TEST-'));
+      }
     } catch (error) {
       // Fall back to simple pattern check if service fails
       isTestTokenResult = qrToken.startsWith('TEST-QR-') || qrToken.includes('TEST');
+
+      // Extract ticket ID from token pattern
+      if (qrToken.includes('TEST-TICKET-')) {
+        // Extract from full token like "TEST-QR-TEST-TICKET-123456789-abc123"
+        const ticketIdMatch = qrToken.match(/TEST-TICKET-\d+-[a-z0-9]+/);
+        ticketId = ticketIdMatch ? ticketIdMatch[0] : null;
+      }
     }
 
     if (process.env.TEST_ONLY_MODE === 'true' && !isTestTokenResult) {
@@ -184,24 +246,10 @@ export async function validateTestTicket(qrToken) {
       };
     }
 
-    // For test mode, use a more flexible ticket ID extraction
-    let ticketId;
-    if (qrToken.includes('TEST-TICKET-')) {
-      // Extract from full token like "TEST-QR-TEST-TICKET-123-abc"
-      const ticketIdMatch = qrToken.match(/TEST-TICKET-[^-]+-[^-]+/);
-      ticketId = ticketIdMatch ? ticketIdMatch[0] : null;
-    } else if (qrToken.includes('TOKEN-')) {
-      // Handle tokens like "TEST-QR-TOKEN-12345" by mapping to ticket ID
-      ticketId = 'TEST-TICKET-12345';
-    } else {
-      // Default fallback
-      ticketId = 'TEST-TICKET-12345';
-    }
-
     if (!ticketId) {
       return {
         valid: false,
-        error: 'Invalid test QR token format'
+        error: 'Invalid test QR token format - could not extract ticket ID'
       };
     }
 
@@ -214,7 +262,7 @@ export async function validateTestTicket(qrToken) {
     if (result.rows.length === 0) {
       return {
         valid: false,
-        error: 'Test ticket not found'
+        error: `Test ticket not found for ID: ${ticketId}`
       };
     }
 
@@ -333,6 +381,7 @@ export async function registerTestTicket(ticketId, registrationData) {
     }
 
     // Update ticket with registration information
+    // Set registration_status to 'registered' to match test expectations
     await client.execute(`
       UPDATE tickets
       SET attendee_first_name = ?, attendee_last_name = ?,
@@ -374,20 +423,22 @@ export async function checkInTestTicket(ticketId) {
     }
 
     const ticket = checkResult.rows[0];
-    if (ticket.registration_status !== 'registered') {
+    // Allow both 'registered' and 'completed' as valid registration statuses for check-in
+    if (ticket.registration_status !== 'completed' && ticket.registration_status !== 'registered') {
       return {
         success: false,
-        error: 'Ticket must be registered before check-in'
+        error: `Ticket must be registered before check-in. Current status: ${ticket.registration_status}`
       };
     }
 
-    // Update ticket to checked in
+    // Update ticket to checked in (use 'used' status as per CHECK constraint)
+    // Also update registration_status to 'checked_in'
     const checkedInAt = new Date().toISOString();
     await client.execute(`
       UPDATE tickets
-      SET status = ?, checked_in_at = ?
+      SET status = ?, checked_in_at = ?, registration_status = ?
       WHERE ticket_id = ?
-    `, ['checked_in', checkedInAt, ticketId]);
+    `, ['used', checkedInAt, 'checked_in', ticketId]);
 
     return {
       success: true,
@@ -416,17 +467,16 @@ export async function trackTestValidationAttempt(validationData) {
 
     const client = await getDatabaseClient();
 
+    // qr_validations schema: ticket_id, validation_time, validation_location,
+    // validator_id, validation_result, validation_metadata, created_at
     await client.execute(`
       INSERT INTO qr_validations (
-        ticket_id, qr_token, validation_result, is_test, metadata, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?)
+        ticket_id, validation_result, validation_metadata
+      ) VALUES (?, ?, ?)
     `, [
       ticketId,
-      qrToken,
       validationResult,
-      1, // is_test
-      JSON.stringify(metadata),
-      new Date().toISOString()
+      JSON.stringify({ ...metadata, qrToken, isTest: true })
     ]);
 
     return {
@@ -481,7 +531,13 @@ export async function cleanupTestTickets() {
   const client = await getDatabaseClient();
 
   // Delete test tickets and their associated data
-  await client.execute('DELETE FROM qr_validations WHERE is_test = 1');
+  // Note: qr_validations doesn't have is_test column, so we delete by ticket_id pattern
+  await client.execute(`
+    DELETE FROM qr_validations
+    WHERE ticket_id IN (
+      SELECT ticket_id FROM tickets WHERE is_test = 1
+    )
+  `);
   await client.execute('DELETE FROM tickets WHERE is_test = 1');
   await client.execute('DELETE FROM transaction_items WHERE is_test = 1');
   await client.execute('DELETE FROM transactions WHERE is_test = 1');

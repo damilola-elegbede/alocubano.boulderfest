@@ -4,50 +4,91 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll } from 'vitest';
-import { setupTestDatabase, teardownTestDatabase } from '../config/test-database.js';
+import { getDbClient } from '../setup-integration.js';
 import handler from '../../api/admin/transfer-ticket.js';
-import { getDatabaseClient } from '../../lib/database.js';
 import authService from '../../lib/auth-service.js';
+import { createTestEvent } from './handler-test-helper.js';
 
 describe('Admin Ticket Transfer - Integration Tests', () => {
   let testDb;
   let adminToken;
   let csrfToken = 'test-csrf-token';
+  let testEventId;
+  let originalSkipCsrf;
+  let originalNodeEnv;
 
   beforeAll(async () => {
+    // Bypass CSRF validation for integration tests
+    originalNodeEnv = process.env.NODE_ENV;
+    originalSkipCsrf = process.env.SKIP_CSRF;
+    process.env.NODE_ENV = 'development';
+    process.env.SKIP_CSRF = 'true';
+
     // Generate admin token for testing
     if (process.env.ADMIN_SECRET) {
-      adminToken = authService.generateToken({ email: 'admin@test.com', role: 'admin' });
+      adminToken = await authService.createSessionToken('admin@test.com');
     }
   });
 
   beforeEach(async () => {
-    testDb = await setupTestDatabase();
+    testDb = await getDbClient();
+    // Create test event for all tests
+    testEventId = await createTestEvent(testDb, {
+      slug: 'admin-transfer-test',
+      name: 'Admin Transfer Test Event',
+      status: 'active'
+    });
   });
 
   afterEach(async () => {
-    await teardownTestDatabase(testDb);
+    // Clean up test data
+    if (testDb) {
+      try {
+        await testDb.execute({
+          sql: "DELETE FROM ticket_transfers WHERE ticket_id LIKE 'TEST-%'"
+        });
+        await testDb.execute({
+          sql: "DELETE FROM tickets WHERE ticket_id LIKE 'TEST-%'"
+        });
+        await testDb.execute({
+          sql: "DELETE FROM transactions WHERE transaction_id LIKE 'test-txn-%'"
+        });
+        await testDb.execute({
+          sql: "DELETE FROM events WHERE slug = 'admin-transfer-test'"
+        });
+      } catch (error) {
+        console.warn('⚠️ Failed to clean up test data:', error.message);
+      }
+    }
   });
 
   afterAll(async () => {
-    // Cleanup
+    // Restore environment variables
+    if (originalNodeEnv !== undefined) {
+      process.env.NODE_ENV = originalNodeEnv;
+    } else {
+      delete process.env.NODE_ENV;
+    }
+
+    if (originalSkipCsrf !== undefined) {
+      process.env.SKIP_CSRF = originalSkipCsrf;
+    } else {
+      delete process.env.SKIP_CSRF;
+    }
   });
 
   describe('Complete Transfer Flow', () => {
     it('should successfully transfer a valid ticket', async () => {
-      // Create test event
-      await testDb.execute({
-        sql: `INSERT INTO events (id, name, start_date, end_date, status, is_test)
-              VALUES (1, 'Test Event', '2026-05-15', '2026-05-17', 'active', 1)`
-      });
-
       // Create test transaction
-      await testDb.execute({
+      const txnResult = await testDb.execute({
         sql: `INSERT INTO transactions (
-                id, transaction_id, order_number, customer_email, customer_name,
-                amount_cents, status, payment_processor, is_test
-              ) VALUES (1, 'test-txn-001', 'ORD-001', 'old@example.com', 'Old Owner', 5000, 'succeeded', 'stripe', 1)`
+                transaction_id, order_number, customer_email, customer_name,
+                amount_cents, status, payment_processor, is_test, type, order_data
+              ) VALUES ('test-txn-001', 'ORD-001', 'old@example.com', 'Old Owner', 5000, 'completed', 'stripe', 1, 'tickets', ?)
+              RETURNING id`,
+        args: [JSON.stringify({ test: true, transfer_test: true })]
       });
+      const transactionId = txnResult.rows[0].id;
 
       // Create test ticket
       const ticketId = 'TEST-TRANSFER-001';
@@ -56,8 +97,8 @@ describe('Admin Ticket Transfer - Integration Tests', () => {
                 ticket_id, transaction_id, ticket_type, ticket_type_id, event_id,
                 price_cents, attendee_first_name, attendee_last_name,
                 attendee_email, status, is_test
-              ) VALUES (?, 1, 'weekend-pass', 'wp-1', 1, 5000, 'Old', 'Owner', 'old@example.com', 'valid', 1)`,
-        args: [ticketId]
+              ) VALUES (?, ?, 'weekend-pass', NULL, ?, 5000, 'Old', 'Owner', 'old@example.com', 'valid', 1)`,
+        args: [ticketId, transactionId, testEventId]
       });
 
       // Mock request and response
@@ -129,19 +170,16 @@ describe('Admin Ticket Transfer - Integration Tests', () => {
     });
 
     it('should reject transfer of cancelled ticket', async () => {
-      // Create test event
-      await testDb.execute({
-        sql: `INSERT INTO events (id, name, start_date, end_date, status, is_test)
-              VALUES (1, 'Test Event', '2026-05-15', '2026-05-17', 'active', 1)`
-      });
-
       // Create test transaction
-      await testDb.execute({
+      const txnResult = await testDb.execute({
         sql: `INSERT INTO transactions (
-                id, transaction_id, order_number, customer_email, customer_name,
-                amount_cents, status, payment_processor, is_test
-              ) VALUES (1, 'test-txn-002', 'ORD-002', 'old@example.com', 'Old Owner', 5000, 'succeeded', 'stripe', 1)`
+                transaction_id, order_number, customer_email, customer_name,
+                amount_cents, status, payment_processor, is_test, type, order_data
+              ) VALUES ('test-txn-002', 'ORD-002', 'old@example.com', 'Old Owner', 5000, 'completed', 'stripe', 1, 'tickets', ?)
+              RETURNING id`,
+        args: [JSON.stringify({ test: true, cancelled_ticket_test: true })]
       });
+      const transactionId = txnResult.rows[0].id;
 
       // Create cancelled ticket
       const ticketId = 'TEST-CANCELLED-001';
@@ -150,8 +188,8 @@ describe('Admin Ticket Transfer - Integration Tests', () => {
                 ticket_id, transaction_id, ticket_type, ticket_type_id, event_id,
                 price_cents, attendee_first_name, attendee_last_name,
                 attendee_email, status, is_test
-              ) VALUES (?, 1, 'weekend-pass', 'wp-1', 1, 5000, 'Old', 'Owner', 'old@example.com', 'cancelled', 1)`,
-        args: [ticketId]
+              ) VALUES (?, ?, 'weekend-pass', NULL, ?, 5000, 'Old', 'Owner', 'old@example.com', 'cancelled', 1)`,
+        args: [ticketId, transactionId, testEventId]
       });
 
       // Mock request
@@ -193,19 +231,16 @@ describe('Admin Ticket Transfer - Integration Tests', () => {
     });
 
     it('should reject transfer to same email', async () => {
-      // Create test event
-      await testDb.execute({
-        sql: `INSERT INTO events (id, name, start_date, end_date, status, is_test)
-              VALUES (1, 'Test Event', '2026-05-15', '2026-05-17', 'active', 1)`
-      });
-
       // Create test transaction
-      await testDb.execute({
+      const txnResult = await testDb.execute({
         sql: `INSERT INTO transactions (
-                id, transaction_id, order_number, customer_email, customer_name,
-                amount_cents, status, payment_processor, is_test
-              ) VALUES (1, 'test-txn-003', 'ORD-003', 'same@example.com', 'Same Owner', 5000, 'succeeded', 'stripe', 1)`
+                transaction_id, order_number, customer_email, customer_name,
+                amount_cents, status, payment_processor, is_test, type, order_data
+              ) VALUES ('test-txn-003', 'ORD-003', 'same@example.com', 'Same Owner', 5000, 'completed', 'stripe', 1, 'tickets', ?)
+              RETURNING id`,
+        args: [JSON.stringify({ test: true, same_email_test: true })]
       });
+      const transactionId = txnResult.rows[0].id;
 
       // Create ticket
       const ticketId = 'TEST-SAME-EMAIL-001';
@@ -214,8 +249,8 @@ describe('Admin Ticket Transfer - Integration Tests', () => {
                 ticket_id, transaction_id, ticket_type, ticket_type_id, event_id,
                 price_cents, attendee_first_name, attendee_last_name,
                 attendee_email, status, is_test
-              ) VALUES (?, 1, 'weekend-pass', 'wp-1', 1, 5000, 'Same', 'Owner', 'same@example.com', 'valid', 1)`,
-        args: [ticketId]
+              ) VALUES (?, ?, 'weekend-pass', NULL, ?, 5000, 'Same', 'Owner', 'same@example.com', 'valid', 1)`,
+        args: [ticketId, transactionId, testEventId]
       });
 
       // Mock request - try to transfer to same email
@@ -393,19 +428,16 @@ describe('Admin Ticket Transfer - Integration Tests', () => {
 
   describe('Transfer History Tracking', () => {
     it('should track multiple transfers for same ticket', async () => {
-      // Create test event
-      await testDb.execute({
-        sql: `INSERT INTO events (id, name, start_date, end_date, status, is_test)
-              VALUES (1, 'Test Event', '2026-05-15', '2026-05-17', 'active', 1)`
-      });
-
       // Create test transaction
-      await testDb.execute({
+      const txnResult = await testDb.execute({
         sql: `INSERT INTO transactions (
-                id, transaction_id, order_number, customer_email, customer_name,
-                amount_cents, status, payment_processor, is_test
-              ) VALUES (1, 'test-txn-multi', 'ORD-MULTI', 'first@example.com', 'First Owner', 5000, 'succeeded', 'stripe', 1)`
+                transaction_id, order_number, customer_email, customer_name,
+                amount_cents, status, payment_processor, is_test, type, order_data
+              ) VALUES ('test-txn-multi', 'ORD-MULTI', 'first@example.com', 'First Owner', 5000, 'completed', 'stripe', 1, 'tickets', ?)
+              RETURNING id`,
+        args: [JSON.stringify({ test: true, multi_transfer_test: true })]
       });
+      const transactionId = txnResult.rows[0].id;
 
       const ticketId = 'TEST-MULTI-TRANSFER-001';
 
@@ -415,8 +447,8 @@ describe('Admin Ticket Transfer - Integration Tests', () => {
                 ticket_id, transaction_id, ticket_type, ticket_type_id, event_id,
                 price_cents, attendee_first_name, attendee_last_name,
                 attendee_email, status, is_test
-              ) VALUES (?, 1, 'weekend-pass', 'wp-1', 1, 5000, 'First', 'Owner', 'first@example.com', 'valid', 1)`,
-        args: [ticketId]
+              ) VALUES (?, ?, 'weekend-pass', NULL, ?, 5000, 'First', 'Owner', 'first@example.com', 'valid', 1)`,
+        args: [ticketId, transactionId, testEventId]
       });
 
       // Perform 3 consecutive transfers

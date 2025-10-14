@@ -16,7 +16,7 @@ describe('Ticket Availability Service', () => {
     await resetDatabaseInstance();
     client = await getDatabaseClient();
 
-    // Create ticket_types table for testing
+    // Create ticket_types table for testing (matches migration 043 schema)
     await client.execute({
       sql: `
         CREATE TABLE IF NOT EXISTS ticket_types (
@@ -29,10 +29,16 @@ describe('Ticket Availability Service', () => {
           currency TEXT DEFAULT 'USD',
           status TEXT CHECK(status IN ('available', 'sold-out', 'coming-soon', 'closed', 'test')) DEFAULT 'available',
           max_quantity INTEGER,
-          sold_count INTEGER DEFAULT 0,
+          sold_count INTEGER DEFAULT 0 CHECK(
+            sold_count >= 0 AND
+            (max_quantity IS NULL OR sold_count <= max_quantity)
+          ),
+          test_sold_count INTEGER DEFAULT 0 CHECK(test_sold_count >= 0),
           display_order INTEGER DEFAULT 0,
           metadata TEXT,
           availability TEXT,
+          event_date DATE NOT NULL DEFAULT '2026-01-01',
+          event_time TIME NOT NULL DEFAULT '00:00',
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
@@ -77,15 +83,18 @@ describe('Ticket Availability Service', () => {
 
   afterEach(async () => {
     // Clean up test data
+    // Note: Don't close the connection for shared in-memory databases as it breaks other tests
     try {
-      await client.execute({
-        sql: 'DELETE FROM ticket_reservations WHERE ticket_type_id LIKE ?',
-        args: ['test-%']
-      });
-      await client.execute({
-        sql: 'DELETE FROM ticket_types WHERE id LIKE ?',
-        args: ['test-%']
-      });
+      if (client) {
+        await client.execute({
+          sql: 'DELETE FROM ticket_reservations WHERE ticket_type_id LIKE ?',
+          args: ['test-%']
+        });
+        await client.execute({
+          sql: 'DELETE FROM ticket_types WHERE id LIKE ?',
+          args: ['test-%']
+        });
+      }
     } catch (error) {
       console.warn('Cleanup error:', error.message);
     }

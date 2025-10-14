@@ -51,17 +51,23 @@ describe('Bootstrap Integration Tests', () => {
     expect(eventsResult.rows.length).toBeGreaterThan(0);
 
     // Count events in bootstrap.json (excluding test events)
-    const productionEvents = Object.values(bootstrapData.events).filter(
+    const productionEvents = bootstrapData.events.filter(
       e => e.status !== 'test'
     );
     expect(eventsResult.rows.length).toBe(productionEvents.length);
 
     // Verify event data matches bootstrap config
-    const event1 = eventsResult.rows.find(e => e.id === 1);
+    // Find the first event in bootstrap data array
+    const event1Config = bootstrapData.events.find(e => e.id === 1);
+    expect(event1Config).toBeDefined();
+
+    // Match event by slug instead of hardcoded ID
+    const event1 = eventsResult.rows.find(e => e.slug === event1Config.slug);
     expect(event1).toBeDefined();
-    expect(event1.name).toBe(bootstrapData.events['1'].name);
-    expect(event1.slug).toBe(bootstrapData.events['1'].slug);
-    expect(event1.type).toBe(bootstrapData.events['1'].type);
+
+    expect(event1.name).toBe(event1Config.name);
+    expect(event1.slug).toBe(event1Config.slug);
+    expect(event1.type).toBe(event1Config.type);
 
     console.log(`✓ Bootstrap events test completed in ${Date.now() - testStart}ms`);
   });
@@ -86,7 +92,7 @@ describe('Bootstrap Integration Tests', () => {
     expect(ticketTypesResult.rows.length).toBeGreaterThan(0);
 
     // Count ticket types in bootstrap.json (excluding test ticket types)
-    const productionTicketTypes = Object.values(bootstrapData.ticket_types).filter(
+    const productionTicketTypes = bootstrapData.ticket_types.filter(
       tt => tt.status !== 'test'
     );
     expect(ticketTypesResult.rows.length).toBe(productionTicketTypes.length);
@@ -94,10 +100,15 @@ describe('Bootstrap Integration Tests', () => {
     // Verify ticket type data matches bootstrap config
     const weekenderFull = ticketTypesResult.rows.find(tt => tt.id === 'weekender-2025-11-full');
     expect(weekenderFull).toBeDefined();
-    expect(weekenderFull.event_id).toBe(bootstrapData.ticket_types['weekender-2025-11-full'].event_id);
-    expect(weekenderFull.name).toBe(bootstrapData.ticket_types['weekender-2025-11-full'].name);
-    expect(weekenderFull.price_cents).toBe(bootstrapData.ticket_types['weekender-2025-11-full'].price_cents);
-    expect(weekenderFull.status).toBe(bootstrapData.ticket_types['weekender-2025-11-full'].status);
+
+    // Find the matching ticket type in bootstrap data array
+    const weekenderFullConfig = bootstrapData.ticket_types.find(tt => tt.id === 'weekender-2025-11-full');
+    expect(weekenderFullConfig).toBeDefined();
+
+    expect(weekenderFull.event_id).toBe(weekenderFullConfig.event_id);
+    expect(weekenderFull.name).toBe(weekenderFullConfig.name);
+    expect(weekenderFull.price_cents).toBe(weekenderFullConfig.price_cents);
+    expect(weekenderFull.status).toBe(weekenderFullConfig.status);
 
     // Verify ticket_type_id FK populated correctly
     expect(weekenderFull.id).toBe('weekender-2025-11-full');
@@ -190,17 +201,17 @@ describe('Bootstrap Integration Tests', () => {
     // Apply bootstrap
     await bootstrapService.initialize();
 
-    // Find coming-soon ticket types
-    const comingSoonTicketTypes = Object.entries(bootstrapData.ticket_types)
-      .filter(([_, tt]) => tt.status === 'coming-soon');
+    // Find coming-soon ticket types from array structure
+    const comingSoonTicketTypes = bootstrapData.ticket_types
+      .filter(tt => tt.status === 'coming-soon');
 
     expect(comingSoonTicketTypes.length).toBeGreaterThan(0);
 
     // Verify coming-soon tickets in database
-    for (const [ticketId, ticketData] of comingSoonTicketTypes) {
+    for (const ticketData of comingSoonTicketTypes) {
       const ticketResult = await db.execute({
         sql: 'SELECT * FROM ticket_types WHERE id = ?',
-        args: [ticketId]
+        args: [ticketData.id]
       });
 
       expect(ticketResult.rows.length).toBe(1);

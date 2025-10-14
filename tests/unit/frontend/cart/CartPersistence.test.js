@@ -381,7 +381,7 @@ describe('CartPersistence', () => {
           zeroQuantity: { ticketType: 'zero', price: 40, name: 'Zero', quantity: 0 }
         },
         donations: [],
-        metadata: { createdAt: 1000, updatedAt: 2000 }
+        metadata: { createdAt: 1234567890, updatedAt: 1234567890 }  // Use mocked current time
       };
 
       const cleaned = cleanCartState(dirtyState);
@@ -400,7 +400,7 @@ describe('CartPersistence', () => {
           null,
           { id: 'negative', amount: -10, name: 'Negative' }
         ],
-        metadata: { createdAt: 1000, updatedAt: 2000 }
+        metadata: { createdAt: 1234567890, updatedAt: 1234567890 }  // Use mocked current time
       };
 
       const cleaned = cleanCartState(dirtyState);

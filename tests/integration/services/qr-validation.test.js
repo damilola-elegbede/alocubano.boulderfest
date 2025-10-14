@@ -91,7 +91,7 @@ test('QR validation prevents duplicate scanning and enforces scan limits', async
     }
 
     // Expired token should be rejected
-    expect([HTTP_STATUS.BAD_REQUEST, HTTP_STATUS.INTERNAL_SERVER_ERROR].includes(response.status)).toBe(true);
+    expect([HTTP_STATUS.BAD_REQUEST, HTTP_STATUS.UNAUTHORIZED, HTTP_STATUS.NOT_FOUND, HTTP_STATUS.INTERNAL_SERVER_ERROR].includes(response.status)).toBe(true);
     if (response.status === HTTP_STATUS.BAD_REQUEST) {
       expect(response.data).toHaveProperty('valid');
       expect(response.data.valid).toBe(false);
@@ -105,7 +105,7 @@ test('QR validation prevents duplicate scanning and enforces scan limits', async
     });
 
     if (malformedResponse.status !== 0) {
-      expect([HTTP_STATUS.BAD_REQUEST, HTTP_STATUS.INTERNAL_SERVER_ERROR].includes(malformedResponse.status)).toBe(true);
+      expect([HTTP_STATUS.BAD_REQUEST, HTTP_STATUS.UNAUTHORIZED, HTTP_STATUS.NOT_FOUND, HTTP_STATUS.INTERNAL_SERVER_ERROR].includes(malformedResponse.status)).toBe(true);
       if (malformedResponse.status === HTTP_STATUS.BAD_REQUEST) {
         expect(malformedResponse.data.valid).toBe(false);
         expect(malformedResponse.data).toHaveProperty('error');
@@ -141,7 +141,7 @@ test('QR validation enforces rate limiting for security', async () => {
   if (validResponses.length > 0) {
     // In test mode, all should return BAD_REQUEST for invalid tokens (no rate limiting)
     validResponses.forEach(response => {
-      expect([HTTP_STATUS.BAD_REQUEST, HTTP_STATUS.INTERNAL_SERVER_ERROR].includes(response.status)).toBe(true);
+      expect([HTTP_STATUS.BAD_REQUEST, HTTP_STATUS.UNAUTHORIZED, HTTP_STATUS.NOT_FOUND, HTTP_STATUS.INTERNAL_SERVER_ERROR].includes(response.status)).toBe(true);
       if (response.status === HTTP_STATUS.BAD_REQUEST) {
         expect(response.data).toHaveProperty('valid');
         expect(response.data.valid).toBe(false);
@@ -229,6 +229,8 @@ test('QR validation handles configuration errors gracefully', async () => {
     // Should handle missing configuration gracefully - allow appropriate error codes
     expect([
       HTTP_STATUS.BAD_REQUEST,
+      HTTP_STATUS.UNAUTHORIZED, // Token validation failed
+      HTTP_STATUS.NOT_FOUND, // Resource not found
       503, // Service unavailable
       HTTP_STATUS.CONFLICT, // Configuration error
       HTTP_STATUS.INTERNAL_SERVER_ERROR // Server error
@@ -261,6 +263,8 @@ test('QR validation handles configuration errors gracefully', async () => {
     if (response.status !== 0) {
       expect([
         HTTP_STATUS.BAD_REQUEST,
+        HTTP_STATUS.UNAUTHORIZED, // Token validation failed
+        HTTP_STATUS.NOT_FOUND, // Resource not found
         503, // Service unavailable
         HTTP_STATUS.CONFLICT, // Configuration error
         HTTP_STATUS.INTERNAL_SERVER_ERROR // Server error

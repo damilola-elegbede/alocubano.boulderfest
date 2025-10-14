@@ -12,18 +12,26 @@ describe('Email Retry Queue - Integration Tests', () => {
   let testDb;
   let isolationManager;
   let scheduler;
+  let testEventId;
 
   beforeEach(async () => {
     isolationManager = getTestIsolationManager();
     testDb = await isolationManager.getScopedDatabaseClient();
     scheduler = getReminderScheduler();
     await scheduler.ensureInitialized();
+
+    // Create a test event for FK constraints with unique slug
+    const uniqueSlug = `test-event-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const eventResult = await testDb.execute({
+      sql: `INSERT INTO events (slug, name, type, status, start_date, end_date)
+            VALUES (?, ?, ?, ?, ?, ?)`,
+      args: [uniqueSlug, 'Test Event 2026', 'festival', 'test', '2026-05-15', '2026-05-17']
+    });
+    testEventId = Number(eventResult.lastInsertRowid);
   });
 
   afterEach(async () => {
-    if (isolationManager) {
-      await isolationManager.cleanup();
-    }
+    // Worker-level database management - no per-test cleanup needed
   });
 
   describe('Failed Email Queuing', () => {
@@ -31,24 +39,27 @@ describe('Email Retry Queue - Integration Tests', () => {
       // Create transaction and reminder
       const txResult = await testDb.execute({
         sql: `INSERT INTO transactions (
-          customer_email, customer_name, registration_token, order_number, is_test
-        ) VALUES (?, ?, ?, ?, ?)`,
-        args: ['queue@example.com', 'Queue User', 'token_queue', 'ORDER_QUEUE', 1]
+          transaction_id, customer_email, customer_name, registration_token, registration_token_expires,
+          order_number, is_test, type, order_data, amount_cents, currency, event_id
+        ) VALUES (?, ?, ?, ?, datetime('now', '+7 days'), ?, ?, ?, ?, ?, ?, ?)`,
+        args: ['tx_queue_001', 'queue@example.com', 'Queue User', 'token_queue', 'ORDER_QUEUE', 1, 'tickets', '{}', 5000, 'USD', testEventId]
       });
       const txId = Number(txResult.lastInsertRowid);
 
       await testDb.execute({
         sql: `INSERT INTO tickets (
-          transaction_id, ticket_type, ticket_id, qr_code,
-          registration_status, registration_deadline
-        ) VALUES (?, ?, ?, ?, ?, ?)`,
+          transaction_id, ticket_type, ticket_id, qr_token,
+          registration_status, registration_deadline, event_id, price_cents
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
           txId,
           'weekender',
           'TICKET_QUEUE',
           'QR_QUEUE',
           'pending',
-          new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+          new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          testEventId,
+          5000
         ]
       });
 
@@ -56,7 +67,7 @@ describe('Email Retry Queue - Integration Tests', () => {
         sql: `INSERT INTO registration_reminders (
           transaction_id, reminder_type, scheduled_at, status
         ) VALUES (?, ?, ?, ?)`,
-        args: [txId, 'test-reminder', new Date().toISOString(), 'scheduled']
+        args: [txId, 'test-5min-1', new Date().toISOString(), 'scheduled']
       });
       const reminderId = Number(reminderResult.lastInsertRowid);
 
@@ -77,24 +88,27 @@ describe('Email Retry Queue - Integration Tests', () => {
     test('should track retry attempts count', async () => {
       const txResult = await testDb.execute({
         sql: `INSERT INTO transactions (
-          customer_email, customer_name, registration_token, order_number, is_test
-        ) VALUES (?, ?, ?, ?, ?)`,
-        args: ['retry@example.com', 'Retry User', 'token_retry', 'ORDER_RETRY', 1]
+          transaction_id, customer_email, customer_name, registration_token, registration_token_expires,
+          order_number, is_test, type, order_data, amount_cents, currency, event_id
+        ) VALUES (?, ?, ?, ?, datetime('now', '+7 days'), ?, ?, ?, ?, ?, ?, ?)`,
+        args: ['tx_retry_001', 'retry@example.com', 'Retry User', 'token_retry', 'ORDER_RETRY', 1, 'tickets', '{}', 5000, 'USD', testEventId]
       });
       const txId = Number(txResult.lastInsertRowid);
 
       await testDb.execute({
         sql: `INSERT INTO tickets (
-          transaction_id, ticket_type, ticket_id, qr_code,
-          registration_status, registration_deadline
-        ) VALUES (?, ?, ?, ?, ?, ?)`,
+          transaction_id, ticket_type, ticket_id, qr_token,
+          registration_status, registration_deadline, event_id, price_cents
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
           txId,
           'weekender',
           'TICKET_RETRY',
           'QR_RETRY',
           'pending',
-          new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+          new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          testEventId,
+          5000
         ]
       });
 
@@ -104,7 +118,7 @@ describe('Email Retry Queue - Integration Tests', () => {
           sql: `INSERT INTO registration_reminders (
             transaction_id, reminder_type, scheduled_at, status
           ) VALUES (?, ?, ?, ?)`,
-          args: [txId, 'retry-reminder', new Date().toISOString(), 'scheduled']
+          args: [txId, 'test-5min-2', new Date().toISOString(), 'scheduled']
         });
         const reminderId = Number(reminderResult.lastInsertRowid);
 
@@ -139,24 +153,27 @@ describe('Email Retry Queue - Integration Tests', () => {
     test('should preserve original failure timestamp', async () => {
       const txResult = await testDb.execute({
         sql: `INSERT INTO transactions (
-          customer_email, customer_name, registration_token, order_number, is_test
-        ) VALUES (?, ?, ?, ?, ?)`,
-        args: ['timestamp@example.com', 'Timestamp User', 'token_ts', 'ORDER_TS', 1]
+          transaction_id, customer_email, customer_name, registration_token, registration_token_expires,
+          order_number, is_test, type, order_data, amount_cents, currency, event_id
+        ) VALUES (?, ?, ?, ?, datetime('now', '+7 days'), ?, ?, ?, ?, ?, ?, ?)`,
+        args: ['tx_ts_001', 'timestamp@example.com', 'Timestamp User', 'token_ts', 'ORDER_TS', 1, 'tickets', '{}', 5000, 'USD', testEventId]
       });
       const txId = Number(txResult.lastInsertRowid);
 
       await testDb.execute({
         sql: `INSERT INTO tickets (
-          transaction_id, ticket_type, ticket_id, qr_code,
-          registration_status, registration_deadline
-        ) VALUES (?, ?, ?, ?, ?, ?)`,
+          transaction_id, ticket_type, ticket_id, qr_token,
+          registration_status, registration_deadline, event_id, price_cents
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
           txId,
           'weekender',
           'TICKET_TS',
           'QR_TS',
           'pending',
-          new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+          new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          testEventId,
+          5000
         ]
       });
 
@@ -164,7 +181,7 @@ describe('Email Retry Queue - Integration Tests', () => {
         sql: `INSERT INTO registration_reminders (
           transaction_id, reminder_type, scheduled_at, status
         ) VALUES (?, ?, ?, ?)`,
-        args: [txId, 'timestamp-reminder', new Date().toISOString(), 'scheduled']
+        args: [txId, 'test-5min-3', new Date().toISOString(), 'scheduled']
       });
       const reminderId = Number(reminderResult.lastInsertRowid);
 
@@ -203,24 +220,27 @@ describe('Email Retry Queue - Integration Tests', () => {
     test('should identify failed reminders eligible for retry', async () => {
       const txResult = await testDb.execute({
         sql: `INSERT INTO transactions (
-          customer_email, customer_name, registration_token, order_number, is_test
-        ) VALUES (?, ?, ?, ?, ?)`,
-        args: ['eligible@example.com', 'Eligible User', 'token_eligible', 'ORDER_ELIGIBLE', 1]
+          transaction_id, customer_email, customer_name, registration_token, registration_token_expires,
+          order_number, is_test, type, order_data, amount_cents, currency, event_id
+        ) VALUES (?, ?, ?, ?, datetime('now', '+7 days'), ?, ?, ?, ?, ?, ?, ?)`,
+        args: ['tx_eligible_001', 'eligible@example.com', 'Eligible User', 'token_eligible', 'ORDER_ELIGIBLE', 1, 'tickets', '{}', 5000, 'USD', testEventId]
       });
       const txId = Number(txResult.lastInsertRowid);
 
       await testDb.execute({
         sql: `INSERT INTO tickets (
-          transaction_id, ticket_type, ticket_id, qr_code,
-          registration_status, registration_deadline
-        ) VALUES (?, ?, ?, ?, ?, ?)`,
+          transaction_id, ticket_type, ticket_id, qr_token,
+          registration_status, registration_deadline, event_id, price_cents
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
           txId,
           'weekender',
           'TICKET_ELIGIBLE',
           'QR_ELIGIBLE',
           'pending',
-          new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+          new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          testEventId,
+          5000
         ]
       });
 
@@ -229,7 +249,7 @@ describe('Email Retry Queue - Integration Tests', () => {
         sql: `INSERT INTO registration_reminders (
           transaction_id, reminder_type, scheduled_at, status
         ) VALUES (?, ?, ?, ?)`,
-        args: [txId, 'failed-reminder', new Date(Date.now() - 3600000).toISOString(), 'failed']
+        args: [txId, 'test-5min-4', new Date(Date.now() - 3600000).toISOString(), 'failed']
       });
 
       // Query failed reminders
@@ -246,24 +266,27 @@ describe('Email Retry Queue - Integration Tests', () => {
       for (let i = 0; i < 5; i++) {
         const txResult = await testDb.execute({
           sql: `INSERT INTO transactions (
-            customer_email, customer_name, registration_token, order_number, is_test
-          ) VALUES (?, ?, ?, ?, ?)`,
-          args: [`batch${i}@example.com`, `Batch ${i}`, `token_b${i}`, `ORDER_B${i}`, 1]
+            transaction_id, customer_email, customer_name, registration_token, registration_token_expires,
+            order_number, is_test, type, order_data, amount_cents, currency, event_id
+          ) VALUES (?, ?, ?, ?, datetime('now', '+7 days'), ?, ?, ?, ?, ?, ?, ?)`,
+          args: [`tx_batch_${i}`, `batch${i}@example.com`, `Batch ${i}`, `token_b${i}`, `ORDER_B${i}`, 1, 'tickets', '{}', 5000, 'USD', testEventId]
         });
         const txId = Number(txResult.lastInsertRowid);
 
         await testDb.execute({
           sql: `INSERT INTO tickets (
-            transaction_id, ticket_type, ticket_id, qr_code,
-            registration_status, registration_deadline
-          ) VALUES (?, ?, ?, ?, ?, ?)`,
+            transaction_id, ticket_type, ticket_id, qr_token,
+            registration_status, registration_deadline, event_id, price_cents
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
           args: [
             txId,
             'weekender',
             `TICKET_B${i}`,
             `QR_B${i}`,
             'pending',
-            new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+            new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+            testEventId,
+            5000
           ]
         });
 
@@ -271,7 +294,7 @@ describe('Email Retry Queue - Integration Tests', () => {
           sql: `INSERT INTO registration_reminders (
             transaction_id, reminder_type, scheduled_at, status
           ) VALUES (?, ?, ?, ?)`,
-          args: [txId, 'batch-reminder', new Date(Date.now() - 3600000).toISOString(), 'failed']
+          args: [txId, 'test-5min-5', new Date(Date.now() - 3600000).toISOString(), 'failed']
         });
       }
 
@@ -288,24 +311,27 @@ describe('Email Retry Queue - Integration Tests', () => {
     test('should skip permanently failed reminders', async () => {
       const txResult = await testDb.execute({
         sql: `INSERT INTO transactions (
-          customer_email, customer_name, registration_token, order_number, is_test
-        ) VALUES (?, ?, ?, ?, ?)`,
-        args: ['permanent@example.com', 'Permanent User', 'token_perm', 'ORDER_PERM', 1]
+          transaction_id, customer_email, customer_name, registration_token, registration_token_expires,
+          order_number, is_test, type, order_data, amount_cents, currency, event_id
+        ) VALUES (?, ?, ?, ?, datetime('now', '+7 days'), ?, ?, ?, ?, ?, ?, ?)`,
+        args: ['tx_perm_001', 'permanent@example.com', 'Permanent User', 'token_perm', 'ORDER_PERM', 1, 'tickets', '{}', 5000, 'USD', testEventId]
       });
       const txId = Number(txResult.lastInsertRowid);
 
       await testDb.execute({
         sql: `INSERT INTO tickets (
-          transaction_id, ticket_type, ticket_id, qr_code,
-          registration_status, registration_deadline
-        ) VALUES (?, ?, ?, ?, ?, ?)`,
+          transaction_id, ticket_type, ticket_id, qr_token,
+          registration_status, registration_deadline, event_id, price_cents
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
           txId,
           'weekender',
           'TICKET_PERM',
           'QR_PERM',
           'pending',
-          new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+          new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          testEventId,
+          5000
         ]
       });
 
@@ -314,7 +340,7 @@ describe('Email Retry Queue - Integration Tests', () => {
         sql: `INSERT INTO registration_reminders (
           transaction_id, reminder_type, scheduled_at, status
         ) VALUES (?, ?, ?, ?)`,
-        args: [txId, 'permanent-fail', new Date(Date.now() - 3600000).toISOString(), 'cancelled']
+        args: [txId, 'test-5min-6', new Date(Date.now() - 3600000).toISOString(), 'cancelled']
       });
 
       // Query should not include cancelled reminders
@@ -432,24 +458,27 @@ describe('Email Retry Queue - Integration Tests', () => {
     test('should identify permanently failed reminders', async () => {
       const txResult = await testDb.execute({
         sql: `INSERT INTO transactions (
-          customer_email, customer_name, registration_token, order_number, is_test
-        ) VALUES (?, ?, ?, ?, ?)`,
-        args: ['maxfail@example.com', 'Max Fail User', 'token_maxfail', 'ORDER_MAXFAIL', 1]
+          transaction_id, customer_email, customer_name, registration_token, registration_token_expires,
+          order_number, is_test, type, order_data, amount_cents, currency, event_id
+        ) VALUES (?, ?, ?, ?, datetime('now', '+7 days'), ?, ?, ?, ?, ?, ?, ?)`,
+        args: ['tx_maxfail_001', 'maxfail@example.com', 'Max Fail User', 'token_maxfail', 'ORDER_MAXFAIL', 1, 'tickets', '{}', 5000, 'USD', testEventId]
       });
       const txId = Number(txResult.lastInsertRowid);
 
       await testDb.execute({
         sql: `INSERT INTO tickets (
-          transaction_id, ticket_type, ticket_id, qr_code,
-          registration_status, registration_deadline
-        ) VALUES (?, ?, ?, ?, ?, ?)`,
+          transaction_id, ticket_type, ticket_id, qr_token,
+          registration_status, registration_deadline, event_id, price_cents
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
           txId,
           'weekender',
           'TICKET_MAXFAIL',
           'QR_MAXFAIL',
           'pending',
-          new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+          new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          testEventId,
+          5000
         ]
       });
 
@@ -458,7 +487,7 @@ describe('Email Retry Queue - Integration Tests', () => {
         sql: `INSERT INTO registration_reminders (
           transaction_id, reminder_type, scheduled_at, status
         ) VALUES (?, ?, ?, ?)`,
-        args: [txId, 'maxfail-reminder', new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(), 'failed']
+        args: [txId, 'test-5min-1', new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(), 'failed']
       });
 
       // Query should include failed reminders
@@ -503,24 +532,27 @@ describe('Email Retry Queue - Integration Tests', () => {
     test('should mark as sent after successful retry', async () => {
       const txResult = await testDb.execute({
         sql: `INSERT INTO transactions (
-          customer_email, customer_name, registration_token, order_number, is_test
-        ) VALUES (?, ?, ?, ?, ?)`,
-        args: ['success@example.com', 'Success User', 'token_success', 'ORDER_SUCCESS', 1]
+          transaction_id, customer_email, customer_name, registration_token, registration_token_expires,
+          order_number, is_test, type, order_data, amount_cents, currency, event_id
+        ) VALUES (?, ?, ?, ?, datetime('now', '+7 days'), ?, ?, ?, ?, ?, ?, ?)`,
+        args: ['tx_success_001', 'success@example.com', 'Success User', 'token_success', 'ORDER_SUCCESS', 1, 'tickets', '{}', 5000, 'USD', testEventId]
       });
       const txId = Number(txResult.lastInsertRowid);
 
       await testDb.execute({
         sql: `INSERT INTO tickets (
-          transaction_id, ticket_type, ticket_id, qr_code,
-          registration_status, registration_deadline
-        ) VALUES (?, ?, ?, ?, ?, ?)`,
+          transaction_id, ticket_type, ticket_id, qr_token,
+          registration_status, registration_deadline, event_id, price_cents
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
           txId,
           'weekender',
           'TICKET_SUCCESS',
           'QR_SUCCESS',
           'pending',
-          new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+          new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          testEventId,
+          5000
         ]
       });
 
@@ -528,7 +560,7 @@ describe('Email Retry Queue - Integration Tests', () => {
         sql: `INSERT INTO registration_reminders (
           transaction_id, reminder_type, scheduled_at, status
         ) VALUES (?, ?, ?, ?)`,
-        args: [txId, 'success-reminder', new Date().toISOString(), 'failed']
+        args: [txId, 'test-5min-2', new Date().toISOString(), 'failed']
       });
       const reminderId = Number(reminderResult.lastInsertRowid);
 
@@ -556,24 +588,27 @@ describe('Email Retry Queue - Integration Tests', () => {
     test('should remove from retry queue after success', async () => {
       const txResult = await testDb.execute({
         sql: `INSERT INTO transactions (
-          customer_email, customer_name, registration_token, order_number, is_test
-        ) VALUES (?, ?, ?, ?, ?)`,
-        args: ['remove@example.com', 'Remove User', 'token_remove', 'ORDER_REMOVE', 1]
+          transaction_id, customer_email, customer_name, registration_token, registration_token_expires,
+          order_number, is_test, type, order_data, amount_cents, currency, event_id
+        ) VALUES (?, ?, ?, ?, datetime('now', '+7 days'), ?, ?, ?, ?, ?, ?, ?)`,
+        args: ['tx_remove_001', 'remove@example.com', 'Remove User', 'token_remove', 'ORDER_REMOVE', 1, 'tickets', '{}', 5000, 'USD', testEventId]
       });
       const txId = Number(txResult.lastInsertRowid);
 
       await testDb.execute({
         sql: `INSERT INTO tickets (
-          transaction_id, ticket_type, ticket_id, qr_code,
-          registration_status, registration_deadline
-        ) VALUES (?, ?, ?, ?, ?, ?)`,
+          transaction_id, ticket_type, ticket_id, qr_token,
+          registration_status, registration_deadline, event_id, price_cents
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
           txId,
           'weekender',
           'TICKET_REMOVE',
           'QR_REMOVE',
           'pending',
-          new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+          new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          testEventId,
+          5000
         ]
       });
 
@@ -581,7 +616,7 @@ describe('Email Retry Queue - Integration Tests', () => {
         sql: `INSERT INTO registration_reminders (
           transaction_id, reminder_type, scheduled_at, status
         ) VALUES (?, ?, ?, ?)`,
-        args: [txId, 'remove-reminder', new Date().toISOString(), 'failed']
+        args: [txId, 'test-5min-3', new Date().toISOString(), 'failed']
       });
       const reminderId = Number(reminderResult.lastInsertRowid);
 

@@ -3,16 +3,22 @@
  * Tests registration functionality with database integration
  */
 import { describe, test, expect, beforeEach } from 'vitest';
-import { testRequest, generateTestEmail, HTTP_STATUS } from '../handler-test-helper.js';
+import { testRequest, generateTestEmail, HTTP_STATUS, createTestEvent } from '../handler-test-helper.js';
 import { getDbClient } from '../../setup-integration.js';
 
 describe('Registration API Integration', () => {
   let testEmail;
   let dbClient;
+  let testEventId;
 
   beforeEach(async () => {
     testEmail = generateTestEmail();
     dbClient = await getDbClient();
+
+    // Create test event for foreign key constraint
+    if (dbClient) {
+      testEventId = await createTestEvent(dbClient);
+    }
   });
 
   test('ticket registration creates complete database records', async () => {
@@ -45,7 +51,7 @@ describe('Registration API Integration', () => {
         INSERT INTO "tickets" (
           ticket_id, transaction_id, ticket_type, event_id, price_cents, qr_token, created_at
         ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
-      `, ['TICKET_' + testSessionId, transactionId, 'Weekend Pass', 'boulder-fest-2026', 12500, testQrCode]);
+      `, ['TICKET_' + testSessionId, transactionId, 'Weekend Pass', testEventId, 12500, testQrCode]);
 
       const ticketResult = await dbClient.execute(
         'SELECT id FROM "tickets" WHERE qr_token = ?',
@@ -136,7 +142,7 @@ describe('Registration API Integration', () => {
           INSERT INTO "tickets" (
             ticket_id, transaction_id, ticket_type, event_id, price_cents, qr_token, created_at
           ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
-        `, [`TICKET_BATCH_${testSessionId}_${i}`, transactionId, 'Weekend Pass', 'boulder-fest-2026', 12500, qrCode]);
+        `, [`TICKET_BATCH_${testSessionId}_${i}`, transactionId, 'Weekend Pass', testEventId, 12500, qrCode]);
 
         const ticketResult = await dbClient.execute(
           'SELECT id FROM "tickets" WHERE qr_token = ?',
@@ -227,7 +233,7 @@ describe('Registration API Integration', () => {
         INSERT INTO "tickets" (
           ticket_id, transaction_id, ticket_type, event_id, price_cents, qr_token, created_at
         ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
-      `, ['TICKET-' + testQrCode, transactionId, 'Weekend Pass', 'boulder-fest-2026', 12500, testQrCode]);
+      `, ['TICKET-' + testQrCode, transactionId, 'Weekend Pass', testEventId, 12500, testQrCode]);
 
       const ticketResult = await dbClient.execute(
         'SELECT id FROM "tickets" WHERE qr_token = ?',

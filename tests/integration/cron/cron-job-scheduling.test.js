@@ -8,17 +8,14 @@ import { testApiHandler } from '../handler-test-helper.js';
 import { getTestIsolationManager } from '../../../lib/test-isolation-manager.js';
 
 describe('Cron Job Scheduling - Integration Tests', () => {
-  let isolationManager;
-
   beforeEach(async () => {
-    isolationManager = getTestIsolationManager();
+    // Initialize test isolation manager for this test suite
+    const isolationManager = getTestIsolationManager();
     await isolationManager.getScopedDatabaseClient();
   });
 
   afterEach(async () => {
-    if (isolationManager) {
-      await isolationManager.cleanup();
-    }
+    await getTestIsolationManager().emergencyCleanup();
   });
 
   describe('All Cron Endpoints Respond', () => {
@@ -221,7 +218,13 @@ describe('Cron Job Scheduling - Integration Tests', () => {
       expect(response.data.duration).toBeTruthy();
       expect(response.data.duration).toMatch(/\d+ms/);
 
-      const durationMs = parseInt(response.data.duration);
+      // Extract numeric value from duration string (e.g., "123ms" -> 123)
+      const durationMatch = response.data.duration.match(/(\d+)ms/);
+      expect(durationMatch).toBeTruthy();
+      expect(durationMatch.length).toBeGreaterThan(1);
+
+      const durationMs = parseInt(durationMatch[1], 10);
+      // Duration should be at least 1ms; Date.now() has millisecond granularity
       expect(durationMs).toBeGreaterThan(0);
       expect(durationMs).toBeLessThan(60000); // Should complete within 60 seconds
     });

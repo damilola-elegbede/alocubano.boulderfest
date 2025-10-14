@@ -13,6 +13,69 @@ import { beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 import { configureEnvironment, cleanupEnvironment, validateEnvironment, TEST_ENVIRONMENTS } from './config/test-environment.js';
 import { getTestIsolationManager } from '../lib/test-isolation-manager.js';
 
+/**
+ * CRITICAL: Process cleanup handlers (ASYNC)
+ * Ensures vitest processes don't hang after test completion
+ * Addresses memory exhaustion issue with multiple hung workers
+ *
+ * FIXED: Made async and properly awaits database cleanup
+ */
+const forceCleanup = async () => {
+  try {
+    // Close any open database connections from test isolation manager
+    const isolationManager = getTestIsolationManager();
+    if (isolationManager) {
+      // CRITICAL FIX: AWAIT database cleanup instead of fire-and-forget
+      try {
+        await isolationManager.cleanupWorkerDatabaseFile();
+        console.log('✅ Worker database cleaned up successfully');
+      } catch (err) {
+        console.warn('⚠️ Error during force cleanup of worker database:', err.message);
+      }
+    }
+  } catch (e) {
+    console.warn('⚠️ Error getting isolation manager:', e.message);
+  }
+
+  // Clear any timers/intervals
+  if (typeof clearInterval !== 'undefined') {
+    // Clear any lingering intervals
+    const highestId = setTimeout(() => {}, 0);
+    for (let i = 0; i < highestId; i++) {
+      clearTimeout(i);
+      clearInterval(i);
+    }
+  }
+
+  console.log('🧹 Force cleanup completed - process ready to exit');
+};
+
+// Register synchronous cleanup handlers for signals
+// Note: 'exit' event doesn't support async, so we do best-effort sync cleanup
+process.on('exit', () => {
+  console.log('🚪 Process exiting - cleanup handlers executed');
+});
+
+process.on('SIGINT', async () => {
+  console.log('⚠️ SIGINT received - forcing cleanup and exit');
+  try {
+    await forceCleanup();
+  } catch (error) {
+    console.warn('⚠️ Cleanup error on SIGINT:', error.message);
+  }
+  process.exit(130); // 128 + 2 (SIGINT signal number)
+});
+
+process.on('SIGTERM', async () => {
+  console.log('⚠️ SIGTERM received - forcing cleanup and exit');
+  try {
+    await forceCleanup();
+  } catch (error) {
+    console.warn('⚠️ Cleanup error on SIGTERM:', error.message);
+  }
+  process.exit(143); // 128 + 15 (SIGTERM signal number)
+});
+
 // Import secret validation for integration tests (simplified version of E2E secret validation)
 const validateIntegrationSecrets = () => {
   const requiredSecrets = {
@@ -41,6 +104,11 @@ const validateIntegrationSecrets = () => {
       description: 'QR code validation secret key',
       validator: (value) => value && value.length >= 32,
       fallback: 'test-qr-secret-key-for-integration-testing-32-chars'
+    },
+    CRON_SECRET: {
+      description: 'Cron job authentication secret',
+      validator: (value) => value && value.length >= 32,
+      fallback: 'test-cron-secret-for-integration-testing-32-chars'
     }
   };
 
@@ -541,16 +609,49 @@ afterEach(async () => {
 afterAll(async () => {
   console.log(`🧹 Worker ${workerId} cleanup starting`);
 
-  // Clean up all test scopes (but keep worker database for other tests in this worker)
-  await isolationManager.cleanupAllScopes();
+  // Set a hard timeout to force-exit if cleanup hangs
+  const forceExitTimeout = setTimeout(() => {
+    console.error('❌ CRITICAL: afterAll cleanup hung - forcing process exit');
+    process.exit(0);
+  }, 10000); // 10 seconds max for cleanup
 
-  // Clean up the temporary database file for this worker
-  await isolationManager.cleanupWorkerDatabaseFile();
+  try {
+    // Clean up all test scopes (but keep worker database for other tests in this worker)
+    await isolationManager.cleanupAllScopes();
 
-  // Worker database will be garbage collected when worker exits
-  console.log(`✅ Worker ${workerId} cleanup completed`);
+    // Clean up the temporary database file for this worker
+    await isolationManager.cleanupWorkerDatabaseFile();
 
-  await cleanupEnvironment(TEST_ENVIRONMENTS.INTEGRATION);
+    // Clean up environment
+    await cleanupEnvironment(TEST_ENVIRONMENTS.INTEGRATION);
+
+    // Worker database will be garbage collected when worker exits
+    console.log(`✅ Worker ${workerId} cleanup completed`);
+
+    // Clear the force-exit timeout if cleanup completed successfully
+    clearTimeout(forceExitTimeout);
+
+    // Set exit code (allows process to exit naturally)
+    process.exitCode = 0;
+
+    // Hard kill timeout as safety net (unreferenced so it doesn't block exit)
+    setTimeout(() => {
+      console.error('❌ FORCE KILL: Worker did not exit gracefully');
+      process.kill(process.pid, 'SIGKILL');
+    }, 1000).unref();
+  } catch (error) {
+    console.error(`❌ Worker ${workerId} cleanup error:`, error.message);
+    clearTimeout(forceExitTimeout);
+
+    // Set error exit code
+    process.exitCode = 1;
+
+    // Hard kill timeout as safety net (unreferenced so it doesn't block exit)
+    setTimeout(() => {
+      console.error('❌ FORCE KILL: Worker did not exit after error');
+      process.kill(process.pid, 'SIGKILL');
+    }, 1000).unref();
+  }
 }, config.timeouts.cleanup);
 
 /**

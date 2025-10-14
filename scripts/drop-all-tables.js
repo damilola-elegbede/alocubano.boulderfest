@@ -18,6 +18,7 @@
 
 import dotenv from 'dotenv';
 import { getDatabaseClient } from '../lib/database.js';
+import { ensureDatabaseUrl } from '../lib/database-defaults.js';
 import readline from 'readline';
 
 // Load environment variables from .env.vercel
@@ -77,6 +78,9 @@ function askConfirmation(question) {
  * Drop all tables in the database
  */
 async function dropAllTables() {
+  // Set default local database if not configured
+  ensureDatabaseUrl();
+
   console.log('\n🗑️  Drop All Tables Script\n' + '='.repeat(50));
 
   try {

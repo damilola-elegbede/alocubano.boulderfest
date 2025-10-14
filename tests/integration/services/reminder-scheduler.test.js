@@ -5,7 +5,7 @@
 
 import { describe, test, expect, beforeEach } from 'vitest';
 import { getDbClient } from '../../setup-integration.js';
-import { generateTestEmail } from '../handler-test-helper.js';
+import { generateTestEmail, createTestEvent } from '../handler-test-helper.js';
 import { getReminderScheduler } from '../../../lib/reminder-scheduler.js';
 
 describe('Reminder Scheduler Integration', () => {
@@ -28,19 +28,25 @@ describe('Reminder Scheduler Integration', () => {
       status = 'completed'
     } = config;
 
+    const transactionId = `txn-${Date.now()}-${Math.random()}`;
+    const orderNumber = `ALO-2026-${Date.now()}`;
     const result = await dbClient.execute({
       sql: `INSERT INTO transactions (
-        uuid, customer_email, customer_name, total_amount, status,
-        registration_token, order_number, is_test, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+        transaction_id, uuid, type, customer_email, customer_name, amount_cents, total_amount, status,
+        registration_token, registration_token_expires, order_data, order_number, is_test, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '+7 days'), ?, ?, ?, datetime('now'))`,
       args: [
-        `txn-${Date.now()}-${Math.random()}`,
+        transactionId,
+        transactionId,
+        'tickets',
         customerEmail,
         'Test Customer',
         12500,
+        12500,
         status,
         `reg-token-${Date.now()}`,
-        `ALO-2026-${Date.now()}`,
+        JSON.stringify({ test: true }),
+        orderNumber,
         isTest ? 1 : 0
       ]
     });
@@ -59,7 +65,7 @@ describe('Reminder Scheduler Integration', () => {
         false
       );
 
-      expect(count).toBe(5); // immediate, 24hr-post, 1-week-before, 72hr-before, 24hr-before
+      expect(count).toBe(5); // initial, 24hr-post, 1-week-before, 72hr-before, 24hr-before
 
       // Verify reminders in database
       const result = await dbClient.execute({
@@ -71,14 +77,14 @@ describe('Reminder Scheduler Integration', () => {
 
       // Verify reminder types
       const types = result.rows.map(r => r.reminder_type);
-      expect(types).toContain('immediate');
+      expect(types).toContain('initial');
       expect(types).toContain('24hr-post-purchase');
       expect(types).toContain('1-week-before');
       expect(types).toContain('72hr-before');
       expect(types).toContain('24hr-before');
     });
 
-    test('should schedule immediate reminder 1 hour after purchase', async () => {
+    test('should schedule initial reminder 1 hour after purchase', async () => {
       const transactionId = await createTestTransaction({ isTest: false });
       const deadline = new Date(Date.now() + (30 * 24 * 60 * 60 * 1000));
 
@@ -86,7 +92,7 @@ describe('Reminder Scheduler Integration', () => {
 
       const result = await dbClient.execute({
         sql: `SELECT * FROM registration_reminders
-              WHERE transaction_id = ? AND reminder_type = 'immediate'`,
+              WHERE transaction_id = ? AND reminder_type = 'initial'`,
         args: [transactionId]
       });
 
@@ -306,7 +312,7 @@ describe('Reminder Scheduler Integration', () => {
         false
       );
 
-      // Should only schedule immediate reminder (1 hour from now)
+      // Should only schedule initial reminder (1 hour from now)
       // All other reminders (24hr, 1-week, 72hr, 24hr before) would be after deadline
       expect(count).toBeGreaterThanOrEqual(0); // May be 0-2 depending on timing
       expect(count).toBeLessThan(5);
@@ -335,26 +341,29 @@ describe('Reminder Scheduler Integration', () => {
     test('should get pending reminders that are due', async () => {
       const transactionId = await createTestTransaction({ isTest: false });
 
+      // Create test event
+      const eventId = await createTestEvent(dbClient);
+
       // Schedule a reminder for 1 second ago (already due)
       const pastTime = new Date(Date.now() - 1000);
       await dbClient.execute({
         sql: `INSERT INTO registration_reminders (
           transaction_id, reminder_type, scheduled_at, status
         ) VALUES (?, ?, ?, 'scheduled')`,
-        args: [transactionId, 'immediate', pastTime.toISOString()]
+        args: [transactionId, 'initial', pastTime.toISOString()]
       });
 
       // Add ticket for this transaction
       await dbClient.execute({
         sql: `INSERT INTO tickets (
           ticket_id, transaction_id, ticket_type, event_id, price_cents,
-          qr_token, registration_status, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+          qr_token, registration_status, registration_deadline, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now', '+7 days'), datetime('now'))`,
         args: [
           `ticket-${Date.now()}`,
           transactionId,
           'Weekend Pass',
-          'boulder-fest-2026',
+          eventId,
           12500,
           `qr-${Date.now()}`,
           'pending'
@@ -367,7 +376,7 @@ describe('Reminder Scheduler Integration', () => {
 
       const reminder = pending.find(r => r.transaction_id === transactionId);
       expect(reminder).toBeDefined();
-      expect(reminder.reminder_type).toBe('immediate');
+      expect(reminder.reminder_type).toBe('initial');
       expect(reminder.customer_email).toBe(testEmail);
       expect(Number(reminder.pending_tickets)).toBeGreaterThan(0);
     });
@@ -375,13 +384,16 @@ describe('Reminder Scheduler Integration', () => {
     test('should NOT return reminders for fully registered transactions', async () => {
       const transactionId = await createTestTransaction({ isTest: false });
 
+      // Create test event
+      const eventId = await createTestEvent(dbClient);
+
       // Schedule a reminder
       const pastTime = new Date(Date.now() - 1000);
       await dbClient.execute({
         sql: `INSERT INTO registration_reminders (
           transaction_id, reminder_type, scheduled_at, status
         ) VALUES (?, ?, ?, 'scheduled')`,
-        args: [transactionId, 'immediate', pastTime.toISOString()]
+        args: [transactionId, 'initial', pastTime.toISOString()]
       });
 
       // Add ticket that is already registered
@@ -389,16 +401,16 @@ describe('Reminder Scheduler Integration', () => {
         sql: `INSERT INTO tickets (
           ticket_id, transaction_id, ticket_type, event_id, price_cents,
           qr_token, registration_status, attendee_first_name, attendee_last_name,
-          attendee_email, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+          attendee_email, registration_deadline, registered_at, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '+7 days'), datetime('now'), datetime('now'))`,
         args: [
           `ticket-${Date.now()}`,
           transactionId,
           'Weekend Pass',
-          'boulder-fest-2026',
+          eventId,
           12500,
           `qr-${Date.now()}`,
-          'registered',
+          'completed',
           'John',
           'Doe',
           testEmail
@@ -422,7 +434,7 @@ describe('Reminder Scheduler Integration', () => {
         sql: `INSERT INTO registration_reminders (
           transaction_id, reminder_type, scheduled_at, status
         ) VALUES (?, ?, ?, 'scheduled')`,
-        args: [transactionId, 'immediate', new Date().toISOString()]
+        args: [transactionId, 'initial', new Date().toISOString()]
       });
 
       const reminderId = Number(result.lastInsertRowid);
@@ -446,7 +458,7 @@ describe('Reminder Scheduler Integration', () => {
         sql: `INSERT INTO registration_reminders (
           transaction_id, reminder_type, scheduled_at, status
         ) VALUES (?, ?, ?, 'scheduled')`,
-        args: [transactionId, 'immediate', new Date().toISOString()]
+        args: [transactionId, 'initial', new Date().toISOString()]
       });
 
       const reminderId = Number(result.lastInsertRowid);
@@ -492,7 +504,7 @@ describe('Reminder Scheduler Integration', () => {
         sql: `INSERT INTO registration_reminders (
           transaction_id, reminder_type, scheduled_at, status
         ) VALUES (?, ?, ?, 'sent')`,
-        args: [transactionId, 'immediate', new Date().toISOString()]
+        args: [transactionId, 'initial', new Date().toISOString()]
       });
 
       await dbClient.execute({
@@ -509,7 +521,7 @@ describe('Reminder Scheduler Integration', () => {
       // Verify sent reminder still has 'sent' status
       const result = await dbClient.execute({
         sql: `SELECT status FROM registration_reminders
-              WHERE transaction_id = ? AND reminder_type = 'immediate'`,
+              WHERE transaction_id = ? AND reminder_type = 'initial'`,
         args: [transactionId]
       });
 
@@ -527,7 +539,7 @@ describe('Reminder Scheduler Integration', () => {
         sql: `INSERT INTO registration_reminders (
           transaction_id, reminder_type, scheduled_at, status
         ) VALUES (?, ?, ?, 'sent')`,
-        args: [transactionId, 'immediate', oldDate.toISOString()]
+        args: [transactionId, 'initial', oldDate.toISOString()]
       });
 
       // Create recent reminder
