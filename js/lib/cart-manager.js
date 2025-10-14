@@ -122,6 +122,7 @@ export class CartManager extends EventTarget {
 
         // Detect test mode BEFORE loading from storage
         this.testMode = this.detectTestMode();
+        this.state.metadata.testMode = this.testMode;
 
         // Load from localStorage
         this.loadFromStorage();
@@ -233,7 +234,7 @@ export class CartManager extends EventTarget {
                 this.state.tickets[actualTicketType].venue = venue;
             }
 
-            // Update test mode flag in metadata if test item added
+            // Update metadata flag if test item added (this.testMode is environment-level, not item-level)
             if (shouldBeTestItem) {
                 this.state.metadata.testMode = true;
             }
@@ -310,12 +311,6 @@ export class CartManager extends EventTarget {
     async upsertTicket(ticketData) {
         const { ticketType, price, name, description, eventId, eventName, eventDate, venue, quantity, isTestItem = false } = ticketData;
 
-        // Determine if this should be a test item (global testMode or explicit isTestItem)
-        const shouldBeTestItem = this.testMode || isTestItem;
-
-        // Adjust ticket type for test items
-        const actualTicketType = shouldBeTestItem ? `TEST-${ticketType}` : ticketType;
-
         // If quantity is 0 or undefined/null, remove the ticket
         if (quantity === 0 || quantity === null || quantity === undefined) {
             return this.removeTicket(actualTicketType);
@@ -330,6 +325,12 @@ export class CartManager extends EventTarget {
         if (quantity > 0 && (!price || !name)) {
             throw new Error('Price and name are required for adding tickets');
         }
+
+        // Determine if this should be a test item (global testMode or explicit isTestItem)
+        const shouldBeTestItem = this.testMode || isTestItem;
+
+        // Adjust ticket type for test items
+        const actualTicketType = shouldBeTestItem ? `TEST-${ticketType}` : ticketType;
 
         return this.queueOperation('upsertTicket', async() => {
             const isNew = !this.state.tickets[actualTicketType];
@@ -383,9 +384,12 @@ export class CartManager extends EventTarget {
             this.state.tickets[actualTicketType].quantity = quantity;
             this.state.tickets[actualTicketType].updatedAt = Date.now();
 
-            // Update test mode flag in metadata if test item added
+            // Update metadata flag if test item added (this.testMode is environment-level, not item-level)
             if (shouldBeTestItem) {
                 this.state.metadata.testMode = true;
+            }
+            if (description) {
+                this.state.tickets[actualTicketType].description = description;
             }
 
             // Use coordinated storage write
@@ -432,7 +436,7 @@ export class CartManager extends EventTarget {
 
         this.state.donations.push(donation);
 
-        // Update test mode flag in metadata if test item added
+        // Update metadata flag if test item added (this.testMode is environment-level, not item-level)
         if (shouldBeTestItem) {
             this.state.metadata.testMode = true;
         }
@@ -560,7 +564,8 @@ export class CartManager extends EventTarget {
                     // Keep flags consistent - if we loaded test cart, ensure testMode is set
                     const loadedFromTest = chosen === test;
                     this.state.metadata.testMode = Boolean(parsed?.metadata?.testMode || loadedFromTest);
-                    this.testMode = Boolean(this.state.metadata.testMode || this.testMode);
+                    // Sync instance flag with metadata flag
+                    this.testMode = this.state.metadata.testMode;
                 }
             }
         } catch (error) {
@@ -722,6 +727,9 @@ export class CartManager extends EventTarget {
                 testMode: false  // Reset test mode
             }
         };
+        // Sync instance flag with metadata flag
+        this.testMode = false;
+
         await this.saveToStorage();
 
         // Track analytics
