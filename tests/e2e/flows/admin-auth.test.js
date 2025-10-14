@@ -132,7 +132,11 @@ test.describe('Admin Authentication', () => {
     await expect(submitButton).toBeVisible({ timeout: 60000 });
 
     console.log(`🔐 Attempting login with email: ${adminCredentials.email}`);
-    console.log(`🔐 Using password fallback: ${adminCredentials.password}`);
+    console.log(
+      `🔐 Using admin password from ${
+        process.env.TEST_ADMIN_PASSWORD ? 'TEST_ADMIN_PASSWORD env' : 'default test fixture'
+      }`
+    );
 
     await usernameField.fill(adminCredentials.email);
     await passwordField.fill(adminCredentials.password);
@@ -248,7 +252,7 @@ test.describe('Admin Authentication', () => {
       if (!currentUrl.includes('/admin/dashboard')) {
         // Check if MFA is blocking
         const mfaInput = page.locator('input[name="mfaCode"], input[type="text"][placeholder*="code"]');
-        if (await mfaInput.count() > 0) {
+        if (await mfaInput.isVisible()) {
           test.skip(true, 'Cannot test session persistence - MFA enabled');
         }
 
@@ -290,7 +294,7 @@ test.describe('Admin Authentication', () => {
       if (!currentUrl.includes('/admin/dashboard')) {
         // Check if MFA is blocking
         const mfaInput = page.locator('input[name="mfaCode"], input[type="text"][placeholder*="code"]');
-        if (await mfaInput.count() > 0) {
+        if (await mfaInput.isVisible()) {
           test.skip(true, 'Cannot test logout - MFA enabled');
         }
 
