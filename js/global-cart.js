@@ -56,14 +56,14 @@ function initializeHeaderCartBadge() {
         const totalCount = ticketCount + donationCount;
 
         // Update header cart badge
-        const badge = document.querySelector('.cart-count');
+        const badge = document.querySelector('.nav-cart-badge');
         if (badge) {
             badge.textContent = totalCount;
             badge.style.display = totalCount > 0 ? 'flex' : 'none';
         }
 
         // Make cart button clickable to navigate to tickets page
-        const cartButton = document.querySelector('.header-cart-button');
+        const cartButton = document.querySelector('.nav-cart-button');
         if (cartButton && !cartButton.dataset.listenerAttached) {
             cartButton.addEventListener('click', (e) => {
                 e.preventDefault();
