@@ -64,6 +64,8 @@ export default async function handler(req, res) {
           t.registration_status,
           t.registered_at,
           t.registration_deadline,
+          t.scan_count,
+          t.max_scan_count,
           t.created_at as ticket_created_at,
           tx.created_at as purchase_date,
           CASE
@@ -130,6 +132,9 @@ export default async function handler(req, res) {
         status: ticket.current_status,
         registeredAt: ticket.registered_at,
         hoursRemaining: Math.max(0, Number(ticket.hours_remaining || 0)),
+        scan_count: ticket.scan_count || 0,
+        max_scan_count: ticket.max_scan_count || 10,
+        scans_remaining: Math.max(0, (ticket.max_scan_count || 10) - (ticket.scan_count || 0)),
         attendee: ticket.attendee_first_name ? {
           firstName: ticket.attendee_first_name,
           lastName: ticket.attendee_last_name,

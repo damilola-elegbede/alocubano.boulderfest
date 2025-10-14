@@ -113,7 +113,7 @@ export default async function handler(req, res) {
       qr_token: ticket.qr_token,
       qr_access_method: ticket.qr_access_method,
       scan_count: ticket.scan_count || 0,
-      max_scan_count: ticket.max_scan_count || 10,
+      max_scan_count: ticket.max_scan_count || 3,
       first_scanned_at: ticket.first_scanned_at,
       last_scanned_at: ticket.last_scanned_at,
 
@@ -177,10 +177,10 @@ export default async function handler(req, res) {
       is_checked_in: !!ticket.checked_in_at,
 
       // Scanning status
-      scans_remaining: Math.max(0, (ticket.max_scan_count || 10) - (ticket.scan_count || 0)),
+      scans_remaining: Math.max(0, (ticket.max_scan_count || 3) - (ticket.scan_count || 0)),
       can_scan: ticket.status === 'valid' &&
                 ticket.validation_status === 'active' &&
-                (ticket.scan_count || 0) < (ticket.max_scan_count || 10),
+                (ticket.scan_count || 0) < (ticket.max_scan_count || 3),
 
       // Price formatting
       price_display: `$${((ticket.price_cents || 0) / 100).toFixed(2)}`,

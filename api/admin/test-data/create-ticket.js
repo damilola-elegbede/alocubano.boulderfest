@@ -107,13 +107,35 @@ export default async function handler(req, res) {
       ticketId
     });
 
-    // Calculate registration deadline: 7 days from now
+    // Calculate registration deadline: 24 hours before event
     const now = new Date();
-    const registrationDeadline = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000));
+    const eventDateObj = new Date(ticketDetails.event_date);
+    const standardDeadline = new Date(eventDateObj.getTime() - (24 * 60 * 60 * 1000));
+    const hoursUntilEvent = (eventDateObj.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+    let registrationDeadline;
+    if (standardDeadline > now) {
+      // Standard case: 24 hours before event
+      registrationDeadline = standardDeadline;
+    } else if (hoursUntilEvent > 12) {
+      // Late purchase: 1 hour before event
+      registrationDeadline = new Date(eventDateObj.getTime() - (1 * 60 * 60 * 1000));
+    } else if (hoursUntilEvent > 6) {
+      // Very late: half remaining time (min 30 min before)
+      const hoursUntilDeadline = Math.max(0.5, Math.floor(hoursUntilEvent / 2));
+      registrationDeadline = new Date(now.getTime() + (hoursUntilDeadline * 60 * 60 * 1000));
+    } else {
+      // Emergency: 30 min from now OR 15 min before event (whichever is longer)
+      const emergencyDeadline1 = new Date(now.getTime() + (30 * 60 * 1000));
+      const emergencyDeadline2 = new Date(eventDateObj.getTime() - (15 * 60 * 1000));
+      registrationDeadline = emergencyDeadline1 > emergencyDeadline2 ? emergencyDeadline1 : emergencyDeadline2;
+    }
 
     console.log('Registration deadline calculated:', {
       now: now.toISOString(),
-      deadline: registrationDeadline.toISOString()
+      eventDate: eventDateObj.toISOString(),
+      deadline: registrationDeadline.toISOString(),
+      hoursUntilEvent: hoursUntilEvent.toFixed(1)
     });
 
     // Prepare transaction data
