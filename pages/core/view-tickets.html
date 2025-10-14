@@ -661,8 +661,8 @@
 
           // Choose endpoint based on token type
           let endpoint = this.tokenType === 'jwt'
-            ? `/api/registration?token=${this.token}`
-            : `/api/tickets/by-qr?token=${this.token}`;
+            ? `/api/registration?token=${encodeURIComponent(this.token)}`
+            : `/api/tickets/by-qr?token=${encodeURIComponent(this.token)}`;
 
           // Append ticketId parameter if present
           if (ticketId && this.tokenType === 'jwt') {
