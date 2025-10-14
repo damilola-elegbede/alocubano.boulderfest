@@ -151,15 +151,8 @@ test.describe('Admin Authentication', () => {
     // Wait for either navigation to dashboard, error message, or loading to complete with longer timeout
     console.log('⏳ Waiting for login response...');
 
-    if (!adminAuthAvailable) {
-      // If admin auth API is not available, just verify form submission doesn't crash
-      await page.waitForTimeout(3000);
-      const formStillPresent = await page.locator('#loginForm, form').isVisible();
-      if (formStillPresent) {
-        console.log('✅ Admin login form handled submission gracefully without API');
-        return; // Skip the rest of the test
-      }
-    }
+    // Note: We no longer skip if admin API is unavailable
+    // The test should verify actual login behavior, not just form submission
 
     try {
       const result = await Promise.race([
@@ -193,26 +186,25 @@ test.describe('Admin Authentication', () => {
           const isOnLoginPage = currentUrl.includes('/admin/login');
 
           if (await mfaInput.count() > 0) {
-            console.log('MFA required for admin login - this is expected behavior');
-            // For now, we'll accept MFA requirement as valid authentication of credentials
-            return;
+            console.log('✅ MFA required for admin login - credentials validated, MFA step reached');
+            // MFA requirement indicates successful credential verification
+            // This is a valid pass state - credentials were accepted
+            expect(await mfaInput.isVisible()).toBe(true);
           } else if (isOnLoginPage) {
-            // Still on login page - check if there are any visible errors or if form is disabled
+            // Still on login page - this is a failure unless there's a clear reason
             const loginButton = page.locator('button[type="submit"]');
             const isDisabled = await loginButton.getAttribute('disabled');
             const hasHiddenError = await page.locator('#errorMessage').count() > 0;
 
-            console.log('Login attempt details:', {
+            const loginDetails = {
               currentUrl,
               buttonDisabled: isDisabled !== null,
               hasErrorElements: hasHiddenError,
               loadingVisible: await page.locator('#loading:visible').count() > 0
-            });
+            };
 
-            // If we're still here and no obvious error, the credentials might be correct
-            // but the system might require MFA or have other requirements
-            console.log('Login appears to have processed credentials but no navigation occurred');
-            return;
+            console.error('Login did not navigate to dashboard:', loginDetails);
+            throw new Error(`Login failed: still on login page after submission. Details: ${JSON.stringify(loginDetails)}`);
           } else {
             throw new Error(`Login did not navigate to dashboard. Current URL: ${currentUrl}`);
           }
@@ -251,15 +243,20 @@ test.describe('Admin Authentication', () => {
         page.waitForSelector('#errorMessage', { state: 'visible', timeout: 30000 })
       ]);
 
-      // Skip this test if MFA is required or login failed
+      // Verify login succeeded - this is a prerequisite for session testing
       const currentUrl = page.url();
       if (!currentUrl.includes('/admin/dashboard')) {
-        console.log('Skipping session test - login did not complete successfully');
-        return;
+        // Check if MFA is blocking
+        const mfaInput = page.locator('input[name="mfaCode"], input[type="text"][placeholder*="code"]');
+        if (await mfaInput.count() > 0) {
+          test.skip(true, 'Cannot test session persistence - MFA enabled');
+        }
+
+        const errorVisible = await page.locator('#errorMessage').isVisible();
+        throw new Error(`Session test prerequisite failed: login did not reach dashboard (URL: ${currentUrl}, error visible: ${errorVisible})`);
       }
     } catch (error) {
-      console.log('Skipping session test - login timeout or error occurred');
-      return;
+      throw new Error(`Session test prerequisite failed: ${error.message}`);
     }
 
     // Navigate away and back - should remain logged in
@@ -288,15 +285,20 @@ test.describe('Admin Authentication', () => {
         page.waitForSelector('#errorMessage', { state: 'visible', timeout: 30000 })
       ]);
 
-      // Skip this test if login didn't complete successfully
+      // Verify login succeeded - this is a prerequisite for logout testing
       const currentUrl = page.url();
       if (!currentUrl.includes('/admin/dashboard')) {
-        console.log('Skipping logout test - login did not complete successfully');
-        return;
+        // Check if MFA is blocking
+        const mfaInput = page.locator('input[name="mfaCode"], input[type="text"][placeholder*="code"]');
+        if (await mfaInput.count() > 0) {
+          test.skip(true, 'Cannot test logout - MFA enabled');
+        }
+
+        const errorVisible = await page.locator('#errorMessage').isVisible();
+        throw new Error(`Logout test prerequisite failed: login did not reach dashboard (URL: ${currentUrl}, error visible: ${errorVisible})`);
       }
     } catch (error) {
-      console.log('Skipping logout test - login timeout or error occurred');
-      return;
+      throw new Error(`Logout test prerequisite failed: ${error.message}`);
     }
 
     // Find and click logout button with more comprehensive selectors

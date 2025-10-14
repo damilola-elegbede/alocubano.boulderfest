@@ -380,20 +380,30 @@ jobs:
           npx playwright install --with-deps "$INSTALL_BROWSER"
           echo "✅ Browser installed: $INSTALL_BROWSER"
 
-      - name: 🔍 Debug GitHub Secrets Availability
+      - name: 🔍 Validate Required Secrets
         run: |
-          echo "🔐 GitHub Secrets Availability Check (DEBUG)"
+          echo "🔐 Validating Required Secrets for E2E Tests"
           echo "======================================="
           echo ""
-          
+
+          # Track missing secrets
+          MISSING_CRITICAL=0
+          MISSING_OPTIONAL=0
+
           # Function to check secret availability without exposing values
           check_secret() {
             local secret_name="$1"
             local secret_value="$2"
-            
+            local is_critical="$3"  # "critical" or "optional"
+
             if [ -z "$secret_value" ] || [ "$secret_value" = "" ]; then
               echo "❌ $secret_name: NOT AVAILABLE"
-              return 0  # Don't fail the step
+              if [ "$is_critical" = "critical" ]; then
+                MISSING_CRITICAL=$((MISSING_CRITICAL + 1))
+              else
+                MISSING_OPTIONAL=$((MISSING_OPTIONAL + 1))
+              fi
+              return 1
             else
               # Show only first 3 and last 3 characters for verification
               local masked_value="${secret_value:0:3}***${secret_value: -3}"
@@ -401,36 +411,54 @@ jobs:
               return 0
             fi
           }
-          
-          echo "🔑 Admin Authentication Secrets:"
-          check_secret "TEST_ADMIN_PASSWORD" "${{ secrets.TEST_ADMIN_PASSWORD }}" || true
-          check_secret "ADMIN_PASSWORD" "${{ secrets.ADMIN_PASSWORD }}" || true
-          check_secret "ADMIN_SECRET" "${{ secrets.ADMIN_SECRET }}" || true
-          
+
+          echo "🔑 Critical Admin Authentication Secrets:"
+          check_secret "TEST_ADMIN_PASSWORD" "${{ secrets.TEST_ADMIN_PASSWORD }}" "critical"
+          check_secret "ADMIN_SECRET" "${{ secrets.ADMIN_SECRET }}" "critical"
+
           echo ""
-          echo "🗄️ Database Configuration Secrets:"
-          check_secret "TURSO_DATABASE_URL" "${{ secrets.TURSO_DATABASE_URL }}" || true
-          check_secret "TURSO_AUTH_TOKEN" "${{ secrets.TURSO_AUTH_TOKEN }}" || true
-          
+          echo "🗄️ Critical Database Configuration Secrets:"
+          check_secret "TURSO_DATABASE_URL" "${{ secrets.TURSO_DATABASE_URL }}" "critical"
+          check_secret "TURSO_AUTH_TOKEN" "${{ secrets.TURSO_AUTH_TOKEN }}" "critical"
+
           echo ""
-          echo "☁️ Google Drive Service Account Secrets:"
-          check_secret "GOOGLE_SERVICE_ACCOUNT_EMAIL" "${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}" || true
-          check_secret "GOOGLE_PRIVATE_KEY" "${{ secrets.GOOGLE_PRIVATE_KEY }}" || true
-          check_secret "GOOGLE_DRIVE_GALLERY_FOLDER_ID" "${{ secrets.GOOGLE_DRIVE_GALLERY_FOLDER_ID }}" || true
-          
+          echo "☁️ Optional Google Drive Service Account Secrets:"
+          check_secret "GOOGLE_SERVICE_ACCOUNT_EMAIL" "${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}" "optional"
+          check_secret "GOOGLE_PRIVATE_KEY" "${{ secrets.GOOGLE_PRIVATE_KEY }}" "optional"
+          check_secret "GOOGLE_DRIVE_GALLERY_FOLDER_ID" "${{ secrets.GOOGLE_DRIVE_GALLERY_FOLDER_ID }}" "optional"
+
           echo ""
-          echo "💳 Payment Processing Secrets (if available):"
-          check_secret "STRIPE_PUBLISHABLE_KEY" "${{ secrets.STRIPE_PUBLISHABLE_KEY }}" || true
-          check_secret "STRIPE_SECRET_KEY" "${{ secrets.STRIPE_SECRET_KEY }}" || true
-          check_secret "STRIPE_WEBHOOK_SECRET" "${{ secrets.STRIPE_WEBHOOK_SECRET }}" || true
-          
+          echo "💳 Optional Payment Processing Secrets:"
+          check_secret "STRIPE_PUBLISHABLE_KEY" "${{ secrets.STRIPE_PUBLISHABLE_KEY }}" "optional"
+          check_secret "STRIPE_SECRET_KEY" "${{ secrets.STRIPE_SECRET_KEY }}" "optional"
+          check_secret "STRIPE_WEBHOOK_SECRET" "${{ secrets.STRIPE_WEBHOOK_SECRET }}" "optional"
+
           echo ""
-          echo "📧 Email Service Secrets (if available):"
-          check_secret "BREVO_API_KEY" "${{ secrets.BREVO_API_KEY }}" || true
-          check_secret "BREVO_NEWSLETTER_LIST_ID" "${{ secrets.BREVO_NEWSLETTER_LIST_ID }}" || true
-          check_secret "BREVO_WEBHOOK_SECRET" "${{ secrets.BREVO_WEBHOOK_SECRET }}" || true
-          
+          echo "📧 Optional Email Service Secrets:"
+          check_secret "BREVO_API_KEY" "${{ secrets.BREVO_API_KEY }}" "optional"
+          check_secret "BREVO_NEWSLETTER_LIST_ID" "${{ secrets.BREVO_NEWSLETTER_LIST_ID }}" "optional"
+          check_secret "BREVO_WEBHOOK_SECRET" "${{ secrets.BREVO_WEBHOOK_SECRET }}" "optional"
+
           echo ""
+          echo "======================================="
+          echo "📊 Secret Validation Summary:"
+          echo "  Critical secrets missing: $MISSING_CRITICAL"
+          echo "  Optional secrets missing: $MISSING_OPTIONAL"
+
+          if [ $MISSING_CRITICAL -gt 0 ]; then
+            echo ""
+            echo "❌ CRITICAL: $MISSING_CRITICAL required secret(s) are missing!"
+            echo "E2E tests cannot run without these secrets."
+            echo "Please configure the missing secrets in GitHub repository settings."
+            exit 1
+          elif [ $MISSING_OPTIONAL -gt 0 ]; then
+            echo ""
+            echo "⚠️  WARNING: $MISSING_OPTIONAL optional secret(s) are missing."
+            echo "Some tests may be skipped, but core tests will run."
+          else
+            echo ""
+            echo "✅ All required secrets are configured correctly!"
+          fi
           echo "======================================="
 
       - name: 🌐 Test Preview URL Connectivity
@@ -603,32 +631,87 @@ jobs:
           echo "🌐 Target URL: ${{ env.PREVIEW_URL }}"
           echo "🦊 Browser Project: $PROJECT_NAME"
           TEST_EXIT_CODE=${PIPESTATUS[0]}
-          
-          # Check if tests actually failed
-          if [ $TEST_EXIT_CODE -ne 0 ]; then
-            echo "🔍 Test command exited with code: $TEST_EXIT_CODE"
-            echo "📊 Analyzing test results..."
-            
-            # Check if tests passed despite non-zero exit code
-            # This can happen with Playwright's grep when some files have no matching tests
-            if grep -q "[0-9]* passed" test_output.log && ! grep -q "[1-9][0-9]* failed" test_output.log; then
-              echo "✅ All tests passed despite non-zero exit code"
-              echo "📝 This occurs when grep filters exclude some test files entirely"
-              echo "🎉 Marking as success since no tests actually failed"
-              exit 0
-            else
-              echo "❌ E2E tests failed for ${{ matrix.browser }}"
-              echo "📊 Test summary from output:"
-              grep -E "([0-9]+ passed|[0-9]+ failed|[0-9]+ skipped)" test_output.log || echo "No summary found"
-              
+
+          # Extract test statistics from output
+          PASSED_TESTS=$(grep -oP '\d+(?= passed)' test_output.log 2>/dev/null | head -1 || echo "0")
+          FAILED_TESTS=$(grep -oP '\d+(?= failed)' test_output.log 2>/dev/null | head -1 || echo "0")
+          SKIPPED_TESTS=$(grep -oP '\d+(?= skipped)' test_output.log 2>/dev/null | head -1 || echo "0")
+
+          echo ""
+          echo "📊 Test Execution Summary:"
+          echo "  Exit Code: $TEST_EXIT_CODE"
+          echo "  Tests Passed: $PASSED_TESTS"
+          echo "  Tests Failed: $FAILED_TESTS"
+          echo "  Tests Skipped: $SKIPPED_TESTS"
+
+          # Determine if tests actually passed or failed
+          if [ $TEST_EXIT_CODE -eq 0 ]; then
+            # Exit code 0 = success
+            if [ "$PASSED_TESTS" -eq 0 ] && [ "$FAILED_TESTS" -eq 0 ]; then
               echo ""
-              echo "📁 Available test files:"
-              find tests/e2e/flows -name "*.test.js" | head -10
-              
-              exit 1
+              echo "⚠️  WARNING: No tests were executed!"
+              echo "This might indicate a configuration issue or all tests were skipped."
+              echo "Skipped: $SKIPPED_TESTS tests"
+
+              # If tests were skipped due to missing dependencies, that's okay
+              # But if NO tests ran at all, that's a problem
+              if [ "$SKIPPED_TESTS" -gt 0 ]; then
+                echo "✅ Tests were properly skipped (not an error)"
+                exit 0
+              else
+                echo "❌ No tests executed and none skipped - this is an error!"
+                exit 1
+              fi
+            else
+              echo "✅ All tests passed successfully for ${{ matrix.browser }}"
+              exit 0
             fi
           else
-            echo "✅ E2E tests passed successfully for ${{ matrix.browser }}"
+            # Exit code != 0 = potential failure
+            echo "🔍 Non-zero exit code detected: $TEST_EXIT_CODE"
+
+            # Check for actual test failures
+            if [ "$FAILED_TESTS" -gt 0 ]; then
+              echo ""
+              echo "❌ FAILED: $FAILED_TESTS test(s) failed for ${{ matrix.browser }}"
+              echo ""
+              echo "📊 Full test summary:"
+              grep -E "([0-9]+ passed|[0-9]+ failed|[0-9]+ skipped)" test_output.log || echo "  No summary found in output"
+              echo ""
+              echo "🔍 Check the test output above for details on which tests failed."
+              exit 1
+            elif [ "$PASSED_TESTS" -gt 0 ]; then
+              # Tests passed but exit code is non-zero
+              # This can happen with Playwright's --grep when some files have no matching tests
+              echo ""
+              echo "⚠️  Non-zero exit code BUT all tests passed ($PASSED_TESTS passed, 0 failed)"
+
+              if [ -n "$TEST_PATTERN" ] && [ "$TEST_PATTERN" != "" ]; then
+                echo "📝 This is expected with --grep filtering when some test files have no matches"
+                echo "✅ Marking as success since no tests actually failed"
+                exit 0
+              else
+                echo "⚠️  Unexpected: non-zero exit without grep filtering"
+                echo "This might indicate an issue with the test runner"
+                echo "⚠️  Proceeding with caution - treating as success since tests passed"
+                exit 0
+              fi
+            else
+              # No passed tests, no failed tests, but non-zero exit code
+              echo ""
+              echo "❌ ERROR: No tests executed and exit code is non-zero"
+              echo "This indicates a test infrastructure failure, not a test failure."
+              echo ""
+              echo "🔍 Possible causes:"
+              echo "  - Playwright configuration error"
+              echo "  - Test file syntax errors"
+              echo "  - Missing dependencies"
+              echo "  - Browser launch failures"
+              echo ""
+              echo "📋 Available test files:"
+              find tests/e2e/flows -name "*.test.js" | head -10
+              exit 1
+            fi
           fi
 
       - name: 📊 Upload Test Results

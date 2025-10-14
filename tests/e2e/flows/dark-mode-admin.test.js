@@ -168,9 +168,9 @@ test.describe('Dark Mode Admin Integration', () => {
   test('should maintain dark theme in admin dashboard', async ({ page }) => {
     const loginResult = await loginAsAdmin(page);
     if (loginResult === 'rate_limited') {
-      test.skip('Admin account is rate limited - skipping test');
+      test.skip(true, 'Admin account is rate limited - skipping test');
     } else if (!loginResult) {
-      test.skip('Admin login failed - skipping dark mode test');
+      test.skip(true, 'Admin login failed - skipping dark mode test');
     }
 
     await waitForPageReady(page, {
@@ -208,9 +208,9 @@ test.describe('Dark Mode Admin Integration', () => {
   test('should ensure all admin components are visible in dark mode', async ({ page }) => {
     const loginResult = await loginAsAdmin(page);
     if (loginResult === 'rate_limited') {
-      test.skip('Admin account is rate limited - skipping test');
+      test.skip(true, 'Admin account is rate limited - skipping test');
     } else if (!loginResult) {
-      test.skip('Admin login failed - skipping dark mode test');
+      test.skip(true, 'Admin login failed - skipping dark mode test');
     }
 
     await waitForPageReady(page, {
@@ -251,9 +251,9 @@ test.describe('Dark Mode Admin Integration', () => {
   test('should maintain proper form styling in dark mode', async ({ page }) => {
     const loginResult = await loginAsAdmin(page);
     if (loginResult === 'rate_limited') {
-      test.skip('Admin account is rate limited - skipping test');
+      test.skip(true, 'Admin account is rate limited - skipping test');
     } else if (!loginResult) {
-      test.skip('Admin login failed - skipping dark mode test');
+      test.skip(true, 'Admin login failed - skipping dark mode test');
     }
 
     await waitForPageReady(page, {
@@ -294,9 +294,9 @@ test.describe('Dark Mode Admin Integration', () => {
   test('should persist dark theme across admin page navigation', async ({ page }) => {
     const loginResult = await loginAsAdmin(page);
     if (loginResult === 'rate_limited') {
-      test.skip('Admin account is rate limited - skipping test');
+      test.skip(true, 'Admin account is rate limited - skipping test');
     } else if (!loginResult) {
-      test.skip('Admin login failed - skipping dark mode test');
+      test.skip(true, 'Admin login failed - skipping dark mode test');
     }
 
     // Start at dashboard and verify dark theme
@@ -376,9 +376,9 @@ test.describe('Dark Mode Admin Integration', () => {
   test('should support visual regression testing for color inversion', async ({ page }) => {
     const loginResult = await loginAsAdmin(page);
     if (loginResult === 'rate_limited') {
-      test.skip('Admin account is rate limited - skipping test');
+      test.skip(true, 'Admin account is rate limited - skipping test');
     } else if (!loginResult) {
-      test.skip('Admin login failed - skipping dark mode test');
+      test.skip(true, 'Admin login failed - skipping dark mode test');
     }
 
     await waitForPageReady(page, {
@@ -445,9 +445,9 @@ test.describe('Dark Mode Admin Integration', () => {
   test('should ensure data tables are readable in dark mode', async ({ page }) => {
     const loginResult = await loginAsAdmin(page);
     if (loginResult === 'rate_limited') {
-      test.skip('Admin account is rate limited - skipping test');
+      test.skip(true, 'Admin account is rate limited - skipping test');
     } else if (!loginResult) {
-      test.skip('Admin login failed - skipping dark mode test');
+      test.skip(true, 'Admin login failed - skipping dark mode test');
     }
 
     await waitForPageReady(page, {

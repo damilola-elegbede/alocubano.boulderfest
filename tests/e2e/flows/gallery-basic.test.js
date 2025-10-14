@@ -212,8 +212,7 @@ test.describe('Gallery Basic Browsing', () => {
 
     // Verify gallery has dynamic content OR skip if empty (valid state for future events)
     if (dynamicCount === 0) {
-      test.skip('Gallery has no content yet - skipping image tests');
-      return;
+      test.skip(true, 'Gallery has no content yet - skipping image tests');
     }
     expect(dynamicCount).toBeGreaterThan(0);
 
@@ -291,8 +290,7 @@ test.describe('Gallery Basic Browsing', () => {
 
     // Skip test if no images are found (valid for future events)
     if (maxCount === 0) {
-      test.skip('Gallery has no images yet - skipping modal test');
-      return;
+      test.skip(true, 'Gallery has no images yet - skipping modal test');
     }
 
     // Try to click using the best selector found
@@ -475,8 +473,7 @@ test.describe('Gallery Basic Browsing', () => {
 
     // Verify gallery has dynamic content OR skip if empty (valid state for future events)
     if (dynamicContent === 0) {
-      test.skip('Gallery has no content yet - skipping content tests');
-      return;
+      test.skip(true, 'Gallery has no content yet - skipping content tests');
     }
     expect(dynamicContent).toBeGreaterThan(0);
 
