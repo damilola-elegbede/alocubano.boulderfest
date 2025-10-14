@@ -36,9 +36,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
-    # Run on schedule or when manually triggered for prod/both
+    # Run on schedule, manual trigger for prod/both, or push/PR events (for testing)
     if: |
       github.event_name == 'schedule' ||
+      github.event_name == 'push' ||
+      github.event_name == 'pull_request' ||
       github.event.inputs.database == 'both' ||
       github.event.inputs.database == 'prod'
 
@@ -196,9 +198,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
-    # Run on schedule or when manually triggered for dev/both
+    # Run on schedule, manual trigger for dev/both, or push/PR events (for testing)
     if: |
       github.event_name == 'schedule' ||
+      github.event_name == 'push' ||
+      github.event_name == 'pull_request' ||
       github.event.inputs.database == 'both' ||
       github.event.inputs.database == 'dev'
 
