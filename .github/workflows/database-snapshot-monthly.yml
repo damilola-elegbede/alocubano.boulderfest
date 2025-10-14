@@ -26,25 +26,88 @@ jobs:
         run: |
           echo "🔧 Installing Turso CLI..."
           curl -sSfL https://get.tur.so/install.sh | bash
-          echo "$HOME/.turso/bin" >> $GITHUB_PATH
 
-      - name: "🔐 Authenticate with Turso"
-        env:
-          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
-        run: |
-          echo "🔐 Configuring Turso authentication..."
-          mkdir -p ~/.config/turso
-          echo "$TURSO_AUTH_TOKEN" > ~/.config/turso/token
-
-          # Verify authentication
-          turso db list > /dev/null 2>&1 || {
-            echo "❌ Turso authentication failed"
+          # Verify installation
+          if [ ! -f "$HOME/.turso/bin/turso" ]; then
+            echo "❌ Turso CLI installation failed - binary not found"
             exit 1
-          }
-          echo "✅ Turso authentication successful"
+          fi
+
+          echo "✅ Turso CLI installed: $(ls -lh $HOME/.turso/bin/turso)"
+          "$HOME/.turso/bin/turso" --version || true
+
+          # Add to PATH for subsequent steps (correct directory)
+          echo "$HOME/.turso/bin" >> "$GITHUB_PATH"
+
+      - name: "🔐 Verify Turso API Token"
+        env:
+          TURSO_API_TOKEN: ${{ secrets.TURSO_API_TOKEN }}
+        run: |
+          echo "🔐 Verifying Turso API token..."
+
+          # Check if token is set
+          if [ -z "$TURSO_API_TOKEN" ]; then
+            echo "❌ TURSO_API_TOKEN secret is not set"
+            echo ""
+            echo "📝 Fix: Go to GitHub Settings → Secrets → Actions → New secret"
+            echo "   Name: TURSO_API_TOKEN"
+            echo "   Value: Run 'turso auth token' to get your platform API token"
+            echo ""
+            echo "⚠️  Note: TURSO_API_TOKEN (platform token) is different from"
+            echo "   TURSO_AUTH_TOKEN (database connection token)"
+            exit 1
+          fi
+
+          # Verify token format (JWT should start with 'eyJ')
+          if [[ ! "$TURSO_API_TOKEN" =~ ^eyJ ]]; then
+            echo "⚠️  Warning: Token doesn't appear to be a valid JWT (should start with 'eyJ')"
+          fi
+
+          echo "✅ TURSO_API_TOKEN is configured"
+
+      - name: "🔍 Verify Database Access"
+        env:
+          TURSO_API_TOKEN: ${{ secrets.TURSO_API_TOKEN }}
+          PROD_DB: ${{ vars.TURSO_PROD_DB_NAME }}
+          DEV_DB: ${{ vars.TURSO_DEV_DB_NAME }}
+        run: |
+          echo "🔍 Verifying database access and data..."
+          echo ""
+
+          # Check production database
+          echo "📊 Production Database: $PROD_DB"
+          if turso db show "$PROD_DB" > /dev/null 2>&1; then
+            echo "  ✅ Can access production database"
+
+            # Try to get a row count from a table to verify data access
+            ROW_COUNT=$(turso db shell "$PROD_DB" "SELECT COUNT(*) as count FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'" | tail -n 1 | tr -d ' ')
+            echo "  📊 Tables in production: $ROW_COUNT"
+          else
+            echo "  ❌ Cannot access production database"
+            exit 1
+          fi
+
+          echo ""
+
+          # Check development database
+          echo "📊 Development Database: $DEV_DB"
+          if turso db show "$DEV_DB" > /dev/null 2>&1; then
+            echo "  ✅ Can access development database"
+
+            # Try to get a row count from a table to verify data access
+            ROW_COUNT=$(turso db shell "$DEV_DB" "SELECT COUNT(*) as count FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'" | tail -n 1 | tr -d ' ')
+            echo "  📊 Tables in development: $ROW_COUNT"
+          else
+            echo "  ❌ Cannot access development database"
+            exit 1
+          fi
+
+          echo ""
+          echo "✅ Database access verification complete"
 
       - name: "📸 Create Production Snapshot"
         env:
+          TURSO_API_TOKEN: ${{ secrets.TURSO_API_TOKEN }}
           PROD_DB: ${{ vars.TURSO_PROD_DB_NAME }}
           DRY_RUN: ${{ github.event.inputs.dry_run }}
         run: |
@@ -62,7 +125,7 @@ jobs:
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
           # Check if snapshot already exists
-          if turso db show "$SNAPSHOT_NAME" > /dev/null 2>&1; then
+          if turso db list | grep -q "^${SNAPSHOT_NAME}[[:space:]]"; then
             echo "⚠️  Snapshot already exists: $SNAPSHOT_NAME"
             echo "   Skipping creation to avoid duplicates"
             exit 0
@@ -75,10 +138,10 @@ jobs:
 
           # Create snapshot branch
           echo "📸 Creating snapshot branch..."
-          turso db create "$SNAPSHOT_NAME" --from-db "$PROD_DB"
+          turso db create "$SNAPSHOT_NAME" --from-db "$PROD_DB" --wait
 
           # Verify snapshot was created
-          if turso db show "$SNAPSHOT_NAME" > /dev/null 2>&1; then
+          if turso db list | grep -q "^${SNAPSHOT_NAME}[[:space:]]"; then
             echo "✅ Production snapshot created successfully"
 
             # Get snapshot details
@@ -90,6 +153,7 @@ jobs:
 
       - name: "📸 Create Development Snapshot"
         env:
+          TURSO_API_TOKEN: ${{ secrets.TURSO_API_TOKEN }}
           DEV_DB: ${{ vars.TURSO_DEV_DB_NAME }}
           DRY_RUN: ${{ github.event.inputs.dry_run }}
         run: |
@@ -107,7 +171,7 @@ jobs:
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
           # Check if snapshot already exists
-          if turso db show "$SNAPSHOT_NAME" > /dev/null 2>&1; then
+          if turso db list | grep -q "^${SNAPSHOT_NAME}[[:space:]]"; then
             echo "⚠️  Snapshot already exists: $SNAPSHOT_NAME"
             echo "   Skipping creation to avoid duplicates"
             exit 0
@@ -120,10 +184,10 @@ jobs:
 
           # Create snapshot branch
           echo "📸 Creating snapshot branch..."
-          turso db create "$SNAPSHOT_NAME" --from-db "$DEV_DB"
+          turso db create "$SNAPSHOT_NAME" --from-db "$DEV_DB" --wait
 
           # Verify snapshot was created
-          if turso db show "$SNAPSHOT_NAME" > /dev/null 2>&1; then
+          if turso db list | grep -q "^${SNAPSHOT_NAME}[[:space:]]"; then
             echo "✅ Development snapshot created successfully"
 
             # Get snapshot details
@@ -135,6 +199,7 @@ jobs:
 
       - name: "🧹 Cleanup Old Snapshots"
         env:
+          TURSO_API_TOKEN: ${{ secrets.TURSO_API_TOKEN }}
           PROD_DB: ${{ vars.TURSO_PROD_DB_NAME }}
           DEV_DB: ${{ vars.TURSO_DEV_DB_NAME }}
           DRY_RUN: ${{ github.event.inputs.dry_run }}
@@ -193,6 +258,7 @@ jobs:
 
       - name: "📊 List Current Snapshots"
         env:
+          TURSO_API_TOKEN: ${{ secrets.TURSO_API_TOKEN }}
           PROD_DB: ${{ vars.TURSO_PROD_DB_NAME }}
           DEV_DB: ${{ vars.TURSO_DEV_DB_NAME }}
         run: |

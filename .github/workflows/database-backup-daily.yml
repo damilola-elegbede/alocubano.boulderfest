@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
-    # Run on schedule or when manually triggered for prod/both
+    # Run on schedule or manual trigger for prod/both
     if: |
       github.event_name == 'schedule' ||
       github.event.inputs.database == 'both' ||
@@ -53,26 +53,71 @@ jobs:
         run: |
           echo "🔧 Installing Turso CLI..."
           curl -sSfL https://get.tur.so/install.sh | bash
-          echo "$HOME/.turso/bin" >> $GITHUB_PATH
 
-      - name: "🔐 Authenticate with Turso"
-        env:
-          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
-        run: |
-          echo "🔐 Configuring Turso authentication..."
-          mkdir -p ~/.config/turso
-          echo "$TURSO_AUTH_TOKEN" > ~/.config/turso/token
-
-          # Verify authentication
-          turso db list > /dev/null 2>&1 || {
-            echo "❌ Turso authentication failed"
+          # Verify installation (correct path: ~/.turso/bin/turso)
+          if [ ! -f "$HOME/.turso/bin/turso" ]; then
+            echo "❌ Turso CLI installation failed - binary not found"
             exit 1
-          }
-          echo "✅ Turso authentication successful"
+          fi
+
+          echo "✅ Turso CLI installed: $(ls -lh $HOME/.turso/bin/turso)"
+          "$HOME/.turso/bin/turso" --version || true
+
+          # Add to PATH for subsequent steps (correct directory: ~/.turso/bin)
+          echo "$HOME/.turso/bin" >> "$GITHUB_PATH"
+
+      - name: "🔐 Verify Turso API Token"
+        env:
+          TURSO_API_TOKEN: ${{ secrets.TURSO_API_TOKEN }}
+        run: |
+          echo "🔐 Verifying Turso API token..."
+
+          # Check if token is set
+          if [ -z "$TURSO_API_TOKEN" ]; then
+            echo "❌ TURSO_API_TOKEN secret is not set"
+            echo ""
+            echo "📝 Fix: Go to GitHub Settings → Secrets → Actions → New secret"
+            echo "   Name: TURSO_API_TOKEN"
+            echo "   Value: Run 'turso auth token' to get your platform API token"
+            echo ""
+            echo "⚠️  Note: TURSO_API_TOKEN (platform token) is different from"
+            echo "   TURSO_AUTH_TOKEN (database connection token)"
+            exit 1
+          fi
+
+          # Verify token format (JWT should start with 'eyJ')
+          if [[ ! "$TURSO_API_TOKEN" =~ ^eyJ ]]; then
+            echo "⚠️  Warning: Token doesn't appear to be a valid JWT (should start with 'eyJ')"
+          fi
+
+          echo "✅ TURSO_API_TOKEN is configured"
+
+      - name: "🔍 Verify Database Access"
+        env:
+          TURSO_API_TOKEN: ${{ secrets.TURSO_API_TOKEN }}
+          DB_NAME: ${{ vars.TURSO_PROD_DB_NAME }}
+        run: |
+          echo "🔍 Verifying production database access..."
+
+          if OUTPUT=$(turso db show "$DB_NAME" 2>&1); then
+            echo "✅ Can access production database"
+
+            # Verify we can query the database
+            TABLE_COUNT=$(turso db shell "$DB_NAME" --command "SELECT COUNT(*) as count FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';" | tail -n 1 | tr -d ' ')
+            echo "📊 Tables in database: $TABLE_COUNT"
+          else
+            echo "❌ Cannot access production database"
+            echo "🔎 turso db show output:"
+            echo "$OUTPUT"
+            exit 1
+          fi
+
+          echo "✅ Database access verification complete"
 
       - name: "💾 Create Database Backup"
         id: backup
         env:
+          TURSO_API_TOKEN: ${{ secrets.TURSO_API_TOKEN }}
           DB_NAME: ${{ vars.TURSO_PROD_DB_NAME }}
         run: |
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -82,23 +127,40 @@ jobs:
           echo "📅 Date: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-          # Generate backup filename with timestamp
+          # Generate backup filenames with timestamp
           TIMESTAMP=$(date -u '+%Y-%m-%d_%H-%M-%S')
+          DB_FILE="backup-prod-${TIMESTAMP}.db"
           BACKUP_FILE="backup-prod-${TIMESTAMP}.sql"
           COMPRESSED_FILE="${BACKUP_FILE}.gz"
 
-          # Dump database
-          echo "📤 Dumping database..."
-          turso db shell "$DB_NAME" .dump > "$BACKUP_FILE"
+          # Export database to SQLite format (reliable for CI/CD)
+          echo "📤 Exporting database to SQLite format..."
+          turso db export "$DB_NAME" --output-file "$DB_FILE" --overwrite
 
-          # Check if dump succeeded
+          # Check if export succeeded
+          if [ ! -s "$DB_FILE" ]; then
+            echo "❌ Database export failed or is empty"
+            exit 1
+          fi
+
+          SQLITE_SIZE=$(stat -f%z "$DB_FILE" 2>/dev/null || stat -c%s "$DB_FILE")
+          echo "✅ Database exported: $(numfmt --to=iec-i --suffix=B $SQLITE_SIZE || echo ${SQLITE_SIZE}B)"
+
+          # Convert SQLite to SQL format for compatibility
+          echo "🔄 Converting to SQL format..."
+          sqlite3 "$DB_FILE" .dump > "$BACKUP_FILE"
+
+          # Clean up SQLite files
+          rm -f "$DB_FILE" "${DB_FILE}-wal"
+
+          # Verify SQL dump
           if [ ! -s "$BACKUP_FILE" ]; then
-            echo "❌ Database dump failed or is empty"
+            echo "❌ SQL conversion failed or is empty"
             exit 1
           fi
 
           ORIGINAL_SIZE=$(stat -f%z "$BACKUP_FILE" 2>/dev/null || stat -c%s "$BACKUP_FILE")
-          echo "✅ Database dumped: $(numfmt --to=iec-i --suffix=B $ORIGINAL_SIZE || echo ${ORIGINAL_SIZE}B)"
+          echo "✅ SQL dump created: $(numfmt --to=iec-i --suffix=B $ORIGINAL_SIZE || echo ${ORIGINAL_SIZE}B)"
 
           # Compress backup
           echo "🗜️  Compressing backup..."
@@ -159,7 +221,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
-    # Run on schedule or when manually triggered for dev/both
+    # Run on schedule or manual trigger for dev/both
     if: |
       github.event_name == 'schedule' ||
       github.event.inputs.database == 'both' ||
@@ -184,26 +246,71 @@ jobs:
         run: |
           echo "🔧 Installing Turso CLI..."
           curl -sSfL https://get.tur.so/install.sh | bash
-          echo "$HOME/.turso/bin" >> $GITHUB_PATH
 
-      - name: "🔐 Authenticate with Turso"
-        env:
-          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
-        run: |
-          echo "🔐 Configuring Turso authentication..."
-          mkdir -p ~/.config/turso
-          echo "$TURSO_AUTH_TOKEN" > ~/.config/turso/token
-
-          # Verify authentication
-          turso db list > /dev/null 2>&1 || {
-            echo "❌ Turso authentication failed"
+          # Verify installation (correct path: ~/.turso/bin/turso)
+          if [ ! -f "$HOME/.turso/bin/turso" ]; then
+            echo "❌ Turso CLI installation failed - binary not found"
             exit 1
-          }
-          echo "✅ Turso authentication successful"
+          fi
+
+          echo "✅ Turso CLI installed: $(ls -lh $HOME/.turso/bin/turso)"
+          "$HOME/.turso/bin/turso" --version || true
+
+          # Add to PATH for subsequent steps (correct directory: ~/.turso/bin)
+          echo "$HOME/.turso/bin" >> "$GITHUB_PATH"
+
+      - name: "🔐 Verify Turso API Token"
+        env:
+          TURSO_API_TOKEN: ${{ secrets.TURSO_API_TOKEN }}
+        run: |
+          echo "🔐 Verifying Turso API token..."
+
+          # Check if token is set
+          if [ -z "$TURSO_API_TOKEN" ]; then
+            echo "❌ TURSO_API_TOKEN secret is not set"
+            echo ""
+            echo "📝 Fix: Go to GitHub Settings → Secrets → Actions → New secret"
+            echo "   Name: TURSO_API_TOKEN"
+            echo "   Value: Run 'turso auth token' to get your platform API token"
+            echo ""
+            echo "⚠️  Note: TURSO_API_TOKEN (platform token) is different from"
+            echo "   TURSO_AUTH_TOKEN (database connection token)"
+            exit 1
+          fi
+
+          # Verify token format (JWT should start with 'eyJ')
+          if [[ ! "$TURSO_API_TOKEN" =~ ^eyJ ]]; then
+            echo "⚠️  Warning: Token doesn't appear to be a valid JWT (should start with 'eyJ')"
+          fi
+
+          echo "✅ TURSO_API_TOKEN is configured"
+
+      - name: "🔍 Verify Database Access"
+        env:
+          TURSO_API_TOKEN: ${{ secrets.TURSO_API_TOKEN }}
+          DB_NAME: ${{ vars.TURSO_DEV_DB_NAME }}
+        run: |
+          echo "🔍 Verifying development database access..."
+
+          if OUTPUT=$(turso db show "$DB_NAME" 2>&1); then
+            echo "✅ Can access development database"
+
+            # Verify we can query the database
+            TABLE_COUNT=$(turso db shell "$DB_NAME" --command "SELECT COUNT(*) as count FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';" | tail -n 1 | tr -d ' ')
+            echo "📊 Tables in database: $TABLE_COUNT"
+          else
+            echo "❌ Cannot access development database"
+            echo "🔎 turso db show output:"
+            echo "$OUTPUT"
+            exit 1
+          fi
+
+          echo "✅ Database access verification complete"
 
       - name: "💾 Create Database Backup"
         id: backup
         env:
+          TURSO_API_TOKEN: ${{ secrets.TURSO_API_TOKEN }}
           DB_NAME: ${{ vars.TURSO_DEV_DB_NAME }}
         run: |
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -213,23 +320,40 @@ jobs:
           echo "📅 Date: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-          # Generate backup filename with timestamp
+          # Generate backup filenames with timestamp
           TIMESTAMP=$(date -u '+%Y-%m-%d_%H-%M-%S')
+          DB_FILE="backup-dev-${TIMESTAMP}.db"
           BACKUP_FILE="backup-dev-${TIMESTAMP}.sql"
           COMPRESSED_FILE="${BACKUP_FILE}.gz"
 
-          # Dump database
-          echo "📤 Dumping database..."
-          turso db shell "$DB_NAME" .dump > "$BACKUP_FILE"
+          # Export database to SQLite format (reliable for CI/CD)
+          echo "📤 Exporting database to SQLite format..."
+          turso db export "$DB_NAME" --output-file "$DB_FILE" --overwrite
 
-          # Check if dump succeeded
+          # Check if export succeeded
+          if [ ! -s "$DB_FILE" ]; then
+            echo "❌ Database export failed or is empty"
+            exit 1
+          fi
+
+          SQLITE_SIZE=$(stat -f%z "$DB_FILE" 2>/dev/null || stat -c%s "$DB_FILE")
+          echo "✅ Database exported: $(numfmt --to=iec-i --suffix=B $SQLITE_SIZE || echo ${SQLITE_SIZE}B)"
+
+          # Convert SQLite to SQL format for compatibility
+          echo "🔄 Converting to SQL format..."
+          sqlite3 "$DB_FILE" .dump > "$BACKUP_FILE"
+
+          # Clean up SQLite files
+          rm -f "$DB_FILE" "${DB_FILE}-wal"
+
+          # Verify SQL dump
           if [ ! -s "$BACKUP_FILE" ]; then
-            echo "❌ Database dump failed or is empty"
+            echo "❌ SQL conversion failed or is empty"
             exit 1
           fi
 
           ORIGINAL_SIZE=$(stat -f%z "$BACKUP_FILE" 2>/dev/null || stat -c%s "$BACKUP_FILE")
-          echo "✅ Database dumped: $(numfmt --to=iec-i --suffix=B $ORIGINAL_SIZE || echo ${ORIGINAL_SIZE}B)"
+          echo "✅ SQL dump created: $(numfmt --to=iec-i --suffix=B $ORIGINAL_SIZE || echo ${ORIGINAL_SIZE}B)"
 
           # Compress backup
           echo "🗜️  Compressing backup..."
