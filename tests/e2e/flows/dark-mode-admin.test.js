@@ -170,7 +170,7 @@ test.describe('Dark Mode Admin Integration', () => {
     if (loginResult === 'rate_limited') {
       test.skip(true, 'Admin account is rate limited - skipping test');
     } else if (!loginResult) {
-      test.skip(true, 'Admin login failed - skipping dark mode test');
+      throw new Error('Admin login failed - authentication system is broken!');
     }
 
     await waitForPageReady(page, {
@@ -210,7 +210,7 @@ test.describe('Dark Mode Admin Integration', () => {
     if (loginResult === 'rate_limited') {
       test.skip(true, 'Admin account is rate limited - skipping test');
     } else if (!loginResult) {
-      test.skip(true, 'Admin login failed - skipping dark mode test');
+      throw new Error('Admin login failed - authentication system is broken!');
     }
 
     await waitForPageReady(page, {
@@ -253,7 +253,7 @@ test.describe('Dark Mode Admin Integration', () => {
     if (loginResult === 'rate_limited') {
       test.skip(true, 'Admin account is rate limited - skipping test');
     } else if (!loginResult) {
-      test.skip(true, 'Admin login failed - skipping dark mode test');
+      throw new Error('Admin login failed - authentication system is broken!');
     }
 
     await waitForPageReady(page, {
@@ -296,7 +296,7 @@ test.describe('Dark Mode Admin Integration', () => {
     if (loginResult === 'rate_limited') {
       test.skip(true, 'Admin account is rate limited - skipping test');
     } else if (!loginResult) {
-      test.skip(true, 'Admin login failed - skipping dark mode test');
+      throw new Error('Admin login failed - authentication system is broken!');
     }
 
     // Start at dashboard and verify dark theme
@@ -378,7 +378,7 @@ test.describe('Dark Mode Admin Integration', () => {
     if (loginResult === 'rate_limited') {
       test.skip(true, 'Admin account is rate limited - skipping test');
     } else if (!loginResult) {
-      test.skip(true, 'Admin login failed - skipping dark mode test');
+      throw new Error('Admin login failed - authentication system is broken!');
     }
 
     await waitForPageReady(page, {
@@ -447,7 +447,7 @@ test.describe('Dark Mode Admin Integration', () => {
     if (loginResult === 'rate_limited') {
       test.skip(true, 'Admin account is rate limited - skipping test');
     } else if (!loginResult) {
-      test.skip(true, 'Admin login failed - skipping dark mode test');
+      throw new Error('Admin login failed - authentication system is broken!');
     }
 
     await waitForPageReady(page, {

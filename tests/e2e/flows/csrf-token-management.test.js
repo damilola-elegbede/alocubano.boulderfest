@@ -215,7 +215,7 @@ test.describe('CSRF Token Management E2E', () => {
     });
 
     if (!hasCSRFService) {
-      test.skip(true, 'CSRF service not available - skipping token refresh test');
+      throw new Error('CSRF service not available - this is a critical security feature that must be loaded!');
     }
 
     // Get initial token
@@ -224,7 +224,7 @@ test.describe('CSRF Token Management E2E', () => {
     });
 
     if (!initialToken) {
-      test.skip(true, 'No CSRF token cached - skipping refresh test');
+      throw new Error('No CSRF token was cached - token management is broken!');
     }
 
     // Set token expiration to past (simulate expiration)
@@ -307,7 +307,7 @@ test.describe('CSRF Token Management E2E', () => {
     });
 
     if (!hasCSRFService) {
-      test.skip(true, 'CSRF service not available - skipping 401 redirect test');
+      throw new Error('CSRF service not available - this is a critical security feature that must be loaded!');
     }
 
     // Trigger CSRF token fetch (should get 401)
@@ -368,7 +368,7 @@ test.describe('CSRF Token Management E2E', () => {
     });
 
     if (!hasCSRFService) {
-      test.skip(true, 'CSRF service not available - skipping cache test');
+      throw new Error('CSRF service not available - this is a critical security feature that must be loaded!');
     }
 
     const initialRequestCount = csrfRequests.length;
@@ -416,7 +416,7 @@ test.describe('CSRF Token Management E2E', () => {
     });
 
     if (!hasCSRFService) {
-      test.skip(true, 'CSRF service not available - skipping navigation test');
+      throw new Error('CSRF service not available - this is a critical security feature that must be loaded!');
     }
 
     // Get token from first page
@@ -425,7 +425,7 @@ test.describe('CSRF Token Management E2E', () => {
     });
 
     if (!token1) {
-      test.skip(true, 'No CSRF token cached - skipping navigation persistence test');
+      throw new Error('No CSRF token was cached - token management is broken!');
     }
 
     // Navigate to dashboard
@@ -469,7 +469,7 @@ test.describe('CSRF Token Management E2E', () => {
     const formExists = await page.locator('form').count() > 0;
 
     if (!formExists) {
-      test.skip(true, 'Form not found - skipping CSRF error message test');
+      throw new Error('Form not found on manual ticket entry page - UI element is missing!');
     }
 
     // Try to submit form
@@ -564,7 +564,7 @@ test.describe('CSRF Token Management E2E', () => {
     });
 
     if (!hasCSRFService) {
-      test.skip(true, 'CSRF service not available - skipping concurrent requests test');
+      throw new Error('CSRF service not available - this is a critical security feature that must be loaded!');
     }
 
     // Clear cached token to force fetch

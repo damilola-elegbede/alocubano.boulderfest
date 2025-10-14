@@ -6,7 +6,21 @@ This directory contains end-to-end (E2E) tests for A Lo Cubano Boulder Fest usin
 
 ## Critical Best Practices
 
-### 1. Never Use Early Returns Without test.skip()
+### 1. Skip Only When Absolutely Necessary
+
+**Rule**: Tests should FAIL when features are broken, not skip. Only skip for external constraints you can't control.
+
+**Valid Skip Reasons** (Only 2!):
+- ✅ **Rate Limiting**: External service throttling (temporary)
+- ✅ **MFA Required**: Human interaction needed (can't automate)
+
+**Invalid Skip Reasons** (Should FAIL):
+- ❌ Admin login failed → Feature broken!
+- ❌ CSRF service unavailable → Security bug!
+- ❌ Form not found → UI broken!
+- ❌ API returns error → Backend bug!
+
+### 2. Never Use Early Returns Without test.skip()
 
 **Problem**: Early returns cause tests to silently pass without executing assertions, creating false positives in the test suite.
 
@@ -112,15 +126,16 @@ test('my test', async ({ page }) => {
 
 ## Common Patterns
 
-### Handling Optional Features
+### Handling Missing Features (Should FAIL)
 
 ```javascript
-test('optional feature test', async ({ page }) => {
+test('critical feature test', async ({ page }) => {
   // Check if feature is available
   const hasFeature = await page.locator('.feature-element').count() > 0;
 
   if (!hasFeature) {
-    test.skip(true, 'Feature not available in this deployment');
+    // ❌ Don't skip - this is a BUG!
+    throw new Error('Feature element not found - this is a critical UI bug!');
   }
 
   // Test the feature
@@ -134,12 +149,14 @@ test('optional feature test', async ({ page }) => {
 test('authenticated feature', async ({ page }) => {
   const loginSuccess = await loginAsAdmin(page);
 
+  // ✅ Valid skip: External rate limiting (temporary constraint)
   if (loginSuccess === 'rate_limited') {
     test.skip(true, 'Admin account rate limited');
   }
 
+  // ❌ Don't skip: Login failure is a BUG!
   if (!loginSuccess) {
-    test.skip(true, 'Login failed - cannot test authenticated features');
+    throw new Error('Admin login failed - authentication system is broken!');
   }
 
   // Test authenticated functionality
@@ -147,7 +164,7 @@ test('authenticated feature', async ({ page }) => {
 });
 ```
 
-### Handling Empty State (Valid Future Events)
+### Handling Empty State (Test It, Don't Skip!)
 
 ```javascript
 test('gallery content', async ({ page }) => {
@@ -155,9 +172,16 @@ test('gallery content', async ({ page }) => {
 
   const imageCount = await page.locator('.gallery-item').count();
 
+  // ✅ Don't skip - test the empty state UI!
   if (imageCount === 0) {
-    // This is a valid state for future events
-    test.skip(true, 'Gallery has no content yet - valid for future events');
+    console.log('✅ Gallery is empty - testing empty state handling');
+    // Verify page still loads with basic structure
+    const bodyText = await page.locator('body').textContent();
+    expect(bodyText.length).toBeGreaterThan(100);
+    // Look for empty state messaging or basic page structure
+    const hasEmptyStateUI = await page.locator('.empty-state, .no-content').count() > 0;
+    expect(hasEmptyStateUI).toBe(true);
+    return; // Test passes - empty state is handled correctly
   }
 
   // Test gallery with content
@@ -200,6 +224,24 @@ test('gallery content', async ({ page }) => {
 **Problem**: Tests calling `test.skip('reason')` without the `true` parameter inside running tests, which doesn't actually skip the test.
 
 **Fix**: Updated all conditional skips to use `test.skip(true, 'reason')` syntax.
+
+### Issue 4: Excessive Skipping Hiding Real Bugs
+
+**Problem**: Tests were skipping when they should have been failing. Missing features or broken functionality would cause tests to skip instead of fail, hiding real bugs.
+
+**Examples**:
+- ❌ **Before**: "CSRF service not available" → test.skip()
+- ✅ **After**: "CSRF service not available" → throw Error() (it's a critical security bug!)
+- ❌ **Before**: "Admin login failed" → test.skip()
+- ✅ **After**: "Admin login failed" → throw Error() (authentication is broken!)
+- ❌ **Before**: "Gallery empty" → test.skip()
+- ✅ **After**: "Gallery empty" → Test the empty state UI (passes)
+
+**Impact**:
+- Fixed ~15 inappropriate skips → now properly fail when features broken
+- Fixed ~6 gallery skips → now test empty state handling
+- Kept only 4 valid skips (rate limiting + MFA)
+- Tests now accurately reflect system health
 
 ## Test Quality Helper
 

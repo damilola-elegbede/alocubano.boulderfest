@@ -78,7 +78,7 @@ test.describe('Ticket Validation', () => {
     }
 
     if (!loginResult) {
-      test.skip(true, 'Skipping test - admin login failed');
+      throw new Error('Admin login failed - cannot proceed with ticket validation tests!');
     }
 
     // Navigate to ticket validation page (if exists) or admin area
