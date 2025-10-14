@@ -655,10 +655,20 @@
         async loadTickets() {
           console.log('[VIEW] Loading tickets with token type:', this.tokenType, ', token:', this.token?.substring(0, 20) + '...');
 
+          // Get ticketId from URL if present (for single-ticket view from confirmation emails)
+          const urlParams = new URLSearchParams(window.location.search);
+          const ticketId = urlParams.get('ticketId');
+
           // Choose endpoint based on token type
-          const endpoint = this.tokenType === 'jwt'
+          let endpoint = this.tokenType === 'jwt'
             ? `/api/registration?token=${this.token}`
             : `/api/tickets/by-qr?token=${this.token}`;
+
+          // Append ticketId parameter if present
+          if (ticketId && this.tokenType === 'jwt') {
+            endpoint += `&ticketId=${encodeURIComponent(ticketId)}`;
+            console.log('[VIEW] Including ticketId filter:', ticketId);
+          }
 
           const response = await fetch(endpoint);
 
