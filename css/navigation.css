@@ -432,10 +432,11 @@
     position: fixed !important;
     top: 0;
     right: 0;
-    width: 200px;
+    width: 280px;
     height: 100vh;
     background: var(--color-surface);
-    opacity: 0.85;
+    opacity: 0.98;
+    backdrop-filter: blur(20px);
     padding: var(--space-4xl) var(--space-lg) var(--space-xl);
     flex-direction: column;
     gap: var(--space-sm);
@@ -479,17 +480,17 @@
   .typographic .nav-list.is-open .nav-trigger,
   .nav-list.is-open .nav-trigger {
     font-family: var(--font-display);
-    font-size: var(--font-size-lg);
+    font-size: var(--font-size-base);
     font-weight: 400;
     letter-spacing: var(--letter-spacing-wide);
     text-transform: uppercase;
     color: var(--color-text-primary);
-    padding: var(--space-md) var(--space-sm);
+    padding: var(--space-md) var(--space-lg);
     text-decoration: none;
     position: relative;
     transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
     touch-action: manipulation;
-    min-height: 44px;
+    min-height: 48px;
     display: flex;
     align-items: center;
     justify-content: flex-start;
@@ -511,7 +512,7 @@
     left: -100%;
     width: 100%;
     height: 100%;
-    background: var(--color-secondary);
+    background: linear-gradient(135deg, var(--color-blue), var(--color-red));
     transition: left 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
     z-index: -1;
   }
@@ -562,6 +563,29 @@
     list-style: none;
     margin: 0;
     padding: 0;
+  }
+
+  /* Add visual separation between menu sections */
+  .typographic .nav-list.is-open li + li,
+  .nav-list.is-open li + li {
+    border-top: 1px solid var(--color-border-light);
+  }
+
+  /* Cuban accent on active item for mobile */
+  .typographic .nav-list.is-open .nav-link.is-active,
+  .nav-list.is-open .nav-link.is-active {
+    position: relative;
+  }
+
+  .typographic .nav-list.is-open .nav-link.is-active::after,
+  .nav-list.is-open .nav-link.is-active::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(180deg, var(--color-blue), var(--color-red));
   }
 }
 

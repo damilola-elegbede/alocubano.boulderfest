@@ -43,7 +43,7 @@
 
 /* Cart Badge - Now used in header only */
 
-/* Cart Panel - Now animates from header area */
+/* Cart Panel - Slides in from right (more intuitive for shopping carts) */
 .floating-cart-panel {
   position: fixed;
   right: 0;
@@ -53,15 +53,19 @@
   max-width: 400px;
   background: var(--cart-bg);
   z-index: 1000;
-  transform: translateY(-100%);
+  transform: translateX(100%);
   transition: transform var(--cart-transition);
   display: flex;
   flex-direction: column;
   backdrop-filter: blur(10px);
+  /* Mobile: Add smooth momentum scrolling */
+  -webkit-overflow-scrolling: touch;
 }
 
 .floating-cart-panel.open {
-  transform: translateY(0);
+  transform: translateX(0);
+  /* Add subtle box shadow for depth */
+  box-shadow: -4px 0 24px var(--cart-shadow);
 }
 
 /* Cart Header */
@@ -89,7 +93,12 @@
   background: none;
   border: none;
   cursor: pointer;
-  padding: 8px;
+  padding: 12px;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--cart-text-secondary);
   border-radius: 4px;
   /* Removed transition per performance guidelines */
@@ -247,8 +256,8 @@
 }
 
 .qty-adjust {
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   border: 1px solid var(--cart-border);
   background: var(--color-surface);
   border-radius: 4px;
@@ -459,8 +468,8 @@
   }
 
   .qty-adjust {
-    width: 28px;
-    height: 28px;
+    width: 44px;
+    height: 44px;
     font-size: 16px;
   }
 

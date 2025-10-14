@@ -128,7 +128,7 @@
   margin-right: var(--space-sm);
 }
 
-/* Button Components */
+/* Button Components - Mobile-First Design */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -142,6 +142,14 @@
   transition: all var(--transition-base);
   cursor: pointer;
   text-decoration: none;
+  /* Mobile-first: Ensure minimum touch target */
+  min-height: 44px;
+  min-width: 44px;
+  /* Better tap feedback on mobile */
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+  /* Prevent text selection on double-tap */
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .btn-primary {

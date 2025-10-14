@@ -285,18 +285,23 @@
 
 @media (max-width: 768px) {
   .theme-toggle {
-    /* Adjust positioning for mobile */
+    /* Move to top-left on mobile to avoid hamburger menu conflict */
     top: var(--space-md);
-    right: var(--space-lg);
-    
+    left: var(--space-md);
+    right: auto;
+
+    /* Stack horizontally to save vertical space */
+    flex-direction: row;
+    gap: var(--space-sm);
+
     /* Maintain same size for touch targets */
-    width: var(--theme-toggle-width);
+    width: auto;
     height: var(--theme-toggle-height);
-    
+
     /* Ensure it doesn't interfere with mobile menu */
     z-index: calc(var(--z-fixed) + 5);
   }
-  
+
   /* Ensure buttons maintain 44px minimum touch target */
   .theme-option {
     min-width: var(--theme-toggle-button-size);
@@ -306,14 +311,21 @@
 
 @media (max-width: 480px) {
   .theme-toggle {
-    /* Stack vertically on very small screens if needed */
-    right: var(--space-md);
-    
-    /* Slightly reduce size on small screens */
-    width: calc(var(--theme-toggle-width) - 20px);
+    /* Keep on left side for small screens */
+    left: var(--space-sm);
+    top: var(--space-sm);
+
+    /* Maintain horizontal layout */
+    width: auto;
     height: var(--theme-toggle-height);
   }
-  
+
+  .theme-option {
+    /* Maintain 44px minimum even on small screens */
+    min-width: var(--theme-toggle-button-size);
+    min-height: var(--theme-toggle-button-size);
+  }
+
   .theme-option::before {
     /* Slightly smaller icons on mobile */
     width: 18px;

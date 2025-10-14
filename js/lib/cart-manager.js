@@ -5,6 +5,7 @@
 import { getAnalyticsTracker } from './analytics-tracker.js';
 import { CartExpirationManager } from './cart-expiration-manager.js';
 import { cleanCartState } from './pure/cart-persistence.js';
+import errorNotifier from './error-notifier.js';
 
 // Development-only logging utility
 const devLog = {
@@ -73,6 +74,14 @@ class CartStorageCoordinator {
                 resolve();
             } catch (error) {
                 devLog.error('Failed to write to localStorage:', error);
+                // Show user-friendly error for storage quota exceeded
+                if (error.name === 'QuotaExceededError') {
+                    errorNotifier.show('Storage limit reached. Please clear your browser data.', {
+                        type: 'system',
+                        duration: 0,
+                        dismissible: true
+                    });
+                }
                 resolve(); // Don't block on storage errors
             } finally {
                 this.writeLock = false;
