@@ -60,14 +60,43 @@ jobs:
           TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
         run: |
           echo "🔐 Configuring Turso authentication..."
+
+          # Check if token is set
+          if [ -z "$TURSO_AUTH_TOKEN" ]; then
+            echo "❌ TURSO_AUTH_TOKEN secret is not set"
+            echo "📝 Fix: Go to GitHub Settings → Secrets → Actions → New secret"
+            echo "   Name: TURSO_AUTH_TOKEN"
+            echo "   Value: Run 'turso auth token' to get your token"
+            exit 1
+          fi
+
+          # Verify Turso CLI is installed
+          if ! command -v turso &> /dev/null; then
+            echo "❌ Turso CLI not found in PATH"
+            echo "   Expected location: $HOME/.turso/bin/turso"
+            exit 1
+          fi
+
+          echo "✅ Turso CLI found: $(which turso)"
+
+          # Configure authentication
           mkdir -p ~/.config/turso
           echo "$TURSO_AUTH_TOKEN" > ~/.config/turso/token
 
-          # Verify authentication
-          turso db list > /dev/null 2>&1 || {
+          # Verify authentication with detailed error output
+          echo "🔍 Verifying authentication..."
+          if ! turso db list 2>&1; then
+            echo ""
             echo "❌ Turso authentication failed"
+            echo ""
+            echo "🔍 Troubleshooting:"
+            echo "   1. Check if TURSO_AUTH_TOKEN is valid (run: turso auth token)"
+            echo "   2. Ensure no extra spaces/newlines in the secret"
+            echo "   3. Token should start with 'eyJ'"
+            echo "   4. Check network connectivity to Turso API"
             exit 1
-          }
+          fi
+
           echo "✅ Turso authentication successful"
 
       - name: "💾 Create Database Backup"
@@ -191,14 +220,43 @@ jobs:
           TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
         run: |
           echo "🔐 Configuring Turso authentication..."
+
+          # Check if token is set
+          if [ -z "$TURSO_AUTH_TOKEN" ]; then
+            echo "❌ TURSO_AUTH_TOKEN secret is not set"
+            echo "📝 Fix: Go to GitHub Settings → Secrets → Actions → New secret"
+            echo "   Name: TURSO_AUTH_TOKEN"
+            echo "   Value: Run 'turso auth token' to get your token"
+            exit 1
+          fi
+
+          # Verify Turso CLI is installed
+          if ! command -v turso &> /dev/null; then
+            echo "❌ Turso CLI not found in PATH"
+            echo "   Expected location: $HOME/.turso/bin/turso"
+            exit 1
+          fi
+
+          echo "✅ Turso CLI found: $(which turso)"
+
+          # Configure authentication
           mkdir -p ~/.config/turso
           echo "$TURSO_AUTH_TOKEN" > ~/.config/turso/token
 
-          # Verify authentication
-          turso db list > /dev/null 2>&1 || {
+          # Verify authentication with detailed error output
+          echo "🔍 Verifying authentication..."
+          if ! turso db list 2>&1; then
+            echo ""
             echo "❌ Turso authentication failed"
+            echo ""
+            echo "🔍 Troubleshooting:"
+            echo "   1. Check if TURSO_AUTH_TOKEN is valid (run: turso auth token)"
+            echo "   2. Ensure no extra spaces/newlines in the secret"
+            echo "   3. Token should start with 'eyJ'"
+            echo "   4. Check network connectivity to Turso API"
             exit 1
-          }
+          fi
+
           echo "✅ Turso authentication successful"
 
       - name: "💾 Create Database Backup"
