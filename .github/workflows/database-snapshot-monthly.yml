@@ -46,43 +46,35 @@ jobs:
           # Add to PATH for subsequent steps (correct directory)
           echo "$HOME/.turso" >> $GITHUB_PATH
 
-      - name: "🔐 Authenticate with Turso"
+      - name: "🔐 Verify Turso API Token"
         env:
-          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+          TURSO_API_TOKEN: ${{ secrets.TURSO_API_TOKEN }}
         run: |
-          echo "🔐 Configuring Turso authentication..."
+          echo "🔐 Verifying Turso API token..."
 
           # Check if token is set
-          if [ -z "$TURSO_AUTH_TOKEN" ]; then
-            echo "❌ TURSO_AUTH_TOKEN secret is not set"
+          if [ -z "$TURSO_API_TOKEN" ]; then
+            echo "❌ TURSO_API_TOKEN secret is not set"
+            echo ""
             echo "📝 Fix: Go to GitHub Settings → Secrets → Actions → New secret"
-            echo "   Name: TURSO_AUTH_TOKEN"
-            echo "   Value: Run 'turso auth token' to get your token"
+            echo "   Name: TURSO_API_TOKEN"
+            echo "   Value: Run 'turso auth token' to get your platform API token"
+            echo ""
+            echo "⚠️  Note: TURSO_API_TOKEN (platform token) is different from"
+            echo "   TURSO_AUTH_TOKEN (database connection token)"
             exit 1
           fi
 
-          # Configure authentication
-          mkdir -p ~/.config/turso
-          echo "$TURSO_AUTH_TOKEN" > ~/.config/turso/token
-
-          # Verify authentication with detailed error output
-          echo "🔍 Verifying authentication..."
-          if ! $HOME/.turso/turso db list 2>&1; then
-            echo ""
-            echo "❌ Turso authentication failed"
-            echo ""
-            echo "🔍 Troubleshooting:"
-            echo "   1. Check if TURSO_AUTH_TOKEN is valid (run: turso auth token)"
-            echo "   2. Ensure no extra spaces/newlines in the secret"
-            echo "   3. Token should start with 'eyJ'"
-            echo "   4. Check network connectivity to Turso API"
-            exit 1
+          # Verify token format (JWT should start with 'eyJ')
+          if [[ ! "$TURSO_API_TOKEN" =~ ^eyJ ]]; then
+            echo "⚠️  Warning: Token doesn't appear to be a valid JWT (should start with 'eyJ')"
           fi
 
-          echo "✅ Turso authentication successful"
+          echo "✅ TURSO_API_TOKEN is configured"
 
       - name: "🔍 Verify Database Access"
         env:
+          TURSO_API_TOKEN: ${{ secrets.TURSO_API_TOKEN }}
           PROD_DB: ${{ vars.TURSO_PROD_DB_NAME }}
           DEV_DB: ${{ vars.TURSO_DEV_DB_NAME }}
         run: |
@@ -122,6 +114,7 @@ jobs:
 
       - name: "📸 Create Production Snapshot"
         env:
+          TURSO_API_TOKEN: ${{ secrets.TURSO_API_TOKEN }}
           PROD_DB: ${{ vars.TURSO_PROD_DB_NAME }}
           DRY_RUN: ${{ github.event.inputs.dry_run }}
         run: |
@@ -167,6 +160,7 @@ jobs:
 
       - name: "📸 Create Development Snapshot"
         env:
+          TURSO_API_TOKEN: ${{ secrets.TURSO_API_TOKEN }}
           DEV_DB: ${{ vars.TURSO_DEV_DB_NAME }}
           DRY_RUN: ${{ github.event.inputs.dry_run }}
         run: |
@@ -212,6 +206,7 @@ jobs:
 
       - name: "🧹 Cleanup Old Snapshots"
         env:
+          TURSO_API_TOKEN: ${{ secrets.TURSO_API_TOKEN }}
           PROD_DB: ${{ vars.TURSO_PROD_DB_NAME }}
           DEV_DB: ${{ vars.TURSO_DEV_DB_NAME }}
           DRY_RUN: ${{ github.event.inputs.dry_run }}
@@ -270,6 +265,7 @@ jobs:
 
       - name: "📊 List Current Snapshots"
         env:
+          TURSO_API_TOKEN: ${{ secrets.TURSO_API_TOKEN }}
           PROD_DB: ${{ vars.TURSO_PROD_DB_NAME }}
           DEV_DB: ${{ vars.TURSO_DEV_DB_NAME }}
         run: |
