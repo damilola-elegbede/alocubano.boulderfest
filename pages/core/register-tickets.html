@@ -792,7 +792,7 @@
             statusClass = 'plenty';
             icon = '✓';
             title = 'No Rush - Plenty of Time';
-            message = `Register by ${window.timeManager.formatDateTime(this.registrationData.deadline)} (Mountain Time). You have ${Math.floor(hoursRemaining)} hours remaining.`;
+            message = `Register by ${window.timeManager.formatDateTime(this.registrationData.deadline)} (Mountain Time).`;
           } else if (hoursRemaining > 24) {
             // Getting close
             statusClass = 'close';
