@@ -1239,35 +1239,6 @@
       <div class="scanner-container" data-testid="scanner-container">
         <!-- Test Mode Indicator for Scanner -->
 
-        <div class="stats-bar" id="statsBar">
-          <div class="admin-stat-card">
-            <div class="stat-number" id="todayCount">0</div>
-            <div class="stat-label">Today</div>
-          </div>
-          <div class="admin-stat-card">
-            <div
-              class="stat-number"
-              id="sessionCount"
-              data-testid="checkin-counter"
-            >
-              0
-            </div>
-            <div class="stat-label">Session</div>
-          </div>
-          <div class="admin-stat-card">
-            <div class="stat-number" id="queueCount">0</div>
-            <div class="stat-label">Queued</div>
-          </div>
-          <div class="admin-stat-card">
-            <div class="stat-number" id="walletCount">0</div>
-            <div class="stat-label">Wallet</div>
-          </div>
-          <div class="admin-stat-card">
-            <div class="stat-number" id="totalCount">0</div>
-            <div class="stat-label">Total</div>
-          </div>
-        </div>
-
         <div class="scanner-viewport">
           <div id="reader" data-testid="camera-scanner"></div>
 
@@ -2508,7 +2479,7 @@
           scanner = new Html5Qrcode("reader");
 
           // Get device-optimized configuration
-          const config = getOptimizedScannerConfig();
+          const config = getFullscreenScannerConfig();
           console.log('Scanner config for', deviceInfo.isIOS ? 'iOS' : deviceInfo.isAndroid ? 'Android' : 'generic', ':', config);
 
           // Device-agnostic camera constraints

@@ -235,6 +235,11 @@ function isEventEnded(ticket) {
  * @param {Object} scanData - Scan data to log
  */
 async function logScanAttempt(db, scanData) {
+  // Skip logging if ticket doesn't exist (prevents FOREIGN KEY constraint errors)
+  if (!scanData.ticketId || scanData.ticketId === 'unknown') {
+    return;
+  }
+
   try {
     await db.execute({
       sql: `
@@ -351,6 +356,22 @@ async function validateTicket(db, validationCode, source, isJWT = false) {
       // Process database result to handle BigInt values
       const processedResult = processDatabaseResult(result);
       ticket = processedResult.rows[0];
+
+      // Fallback: Try ticket_id for legacy QR codes or manual entry
+      if (!ticket) {
+        const fallbackResult = await tx.execute({
+          sql: `
+            SELECT t.*,
+                   'A Lo Cubano Boulder Fest' as event_name,
+                   t.event_date
+            FROM tickets t
+            WHERE t.ticket_id = ?
+          `,
+          args: [validationCode]
+        });
+        const fallbackProcessed = processDatabaseResult(fallbackResult);
+        ticket = fallbackProcessed.rows[0];
+      }
     }
 
     if (!ticket) {
@@ -422,6 +443,11 @@ async function validateTicket(db, validationCode, source, isJWT = false) {
  * @param {object} params - Logging parameters
  */
 async function logValidation(db, params) {
+  // Skip logging if ticket doesn't exist (prevents NOT NULL constraint errors)
+  if (!params.ticketId) {
+    return;
+  }
+
   try {
     // Ensure database exists and qr_validations table is available
     if (!db) {
