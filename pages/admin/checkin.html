@@ -276,44 +276,7 @@
         box-shadow: 0 0 40px rgba(16, 185, 129, 0.5);
       }
 
-      .scan-corners {
-        position: absolute;
-        width: 30px;
-        height: 30px;
-        border: 4px solid var(--color-white);
-      }
-
-      .scan-corners.tl {
-        top: -2px;
-        left: -2px;
-        border-right: none;
-        border-bottom: none;
-        border-top-left-radius: var(--radius-md);
-      }
-
-      .scan-corners.tr {
-        top: -2px;
-        right: -2px;
-        border-left: none;
-        border-bottom: none;
-        border-top-right-radius: var(--radius-md);
-      }
-
-      .scan-corners.bl {
-        bottom: -2px;
-        left: -2px;
-        border-right: none;
-        border-top: none;
-        border-bottom-left-radius: var(--radius-md);
-      }
-
-      .scan-corners.br {
-        bottom: -2px;
-        right: -2px;
-        border-left: none;
-        border-top: none;
-        border-bottom-right-radius: var(--radius-md);
-      }
+      /* Scan corners removed for cleaner appearance - full-screen scanner uses simple borders */
 
       .controls {
         background: var(--color-surface-elevated);
@@ -605,16 +568,6 @@
 
         .logout-btn {
           order: 2;
-        }
-
-        /* Mobile Scanner Layout: Scanner at top, stats below */
-        .scanner-container {
-          flex-direction: column-reverse;
-        }
-
-        .stats-bar {
-          border-bottom: none;
-          border-top: 1px solid var(--color-border);
         }
       }
 
@@ -1035,6 +988,134 @@
         font-size: var(--font-size-xl);
       }
 
+      /* Full-Screen Scanner Modal */
+      .fullscreen-scanner-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.95);
+        z-index: 9999;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .fullscreen-scanner-modal.active {
+        display: flex;
+      }
+
+      .fullscreen-scanner-header {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        padding: var(--space-lg);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        z-index: 10000;
+        background: linear-gradient(180deg, rgba(0, 0, 0, 0.8) 0%, transparent 100%);
+      }
+
+      .fullscreen-scanner-title {
+        color: var(--color-white);
+        font-family: var(--font-display);
+        font-size: var(--font-size-xl);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+      }
+
+      .fullscreen-close-btn {
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        color: var(--color-white);
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .fullscreen-close-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.5);
+        transform: scale(1.1);
+      }
+
+      .fullscreen-scanner-container {
+        width: 90vw;
+        max-width: 600px;
+        height: auto;
+        position: relative;
+      }
+
+      .fullscreen-scan-region {
+        width: 100%;
+        aspect-ratio: 1;
+        border: 3px solid var(--color-red);
+        border-radius: var(--radius-xl);
+        position: relative;
+        box-shadow: 0 0 60px rgba(239, 68, 68, 0.4);
+        transition: all 0.3s ease;
+        background: rgba(0, 0, 0, 0.3);
+      }
+
+      .fullscreen-scan-region.scanning {
+        border-color: var(--color-red);
+        box-shadow: 0 0 60px rgba(239, 68, 68, 0.4);
+      }
+
+      .fullscreen-scan-region.locked {
+        border-color: #10b981;
+        box-shadow: 0 0 60px rgba(16, 185, 129, 0.6);
+      }
+
+      #fullscreenReader {
+        width: 100%;
+        height: 100%;
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+      }
+
+      #fullscreenReader video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: var(--radius-lg);
+      }
+
+      .fullscreen-instructions {
+        color: rgba(255, 255, 255, 0.9);
+        font-family: var(--font-sans);
+        font-size: var(--font-size-lg);
+        text-align: center;
+        margin-top: var(--space-xl);
+        padding: 0 var(--space-lg);
+        max-width: 500px;
+      }
+
+      @media (max-width: 768px) {
+        .fullscreen-scanner-container {
+          width: 95vw;
+        }
+
+        .fullscreen-scanner-title {
+          font-size: var(--font-size-lg);
+        }
+
+        .fullscreen-instructions {
+          font-size: var(--font-size-base);
+        }
+      }
+
       /* Mobile Optimizations */
       @media (max-width: 480px) {
         .permission-content {
@@ -1223,15 +1304,20 @@
 
           <div class="scanner-overlay">
             <div class="scan-region scanning">
-              <div class="scan-corners tl"></div>
-              <div class="scan-corners tr"></div>
-              <div class="scan-corners bl"></div>
-              <div class="scan-corners br"></div>
+              <!-- Decorative corners removed for cleaner appearance -->
             </div>
           </div>
         </div>
 
         <div class="controls">
+          <button
+            class="control-btn admin-btn admin-btn-primary"
+            onclick="openFullscreenScanner()"
+            title="Scan Ticket"
+            style="font-size: 24px;"
+          >
+            📷
+          </button>
           <button
             class="control-btn manual admin-btn"
             onclick="showManualInput()"
@@ -1289,6 +1375,24 @@
           <button class="permission-btn secondary" id="useManualOnly" onclick="useManualMode()">
             ⌨️ Manual Only
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Full-Screen Scanner Modal -->
+    <div class="fullscreen-scanner-modal" id="fullscreenScannerModal">
+      <div class="fullscreen-scanner-header">
+        <div class="fullscreen-scanner-title">Scan Ticket QR Code</div>
+        <button class="fullscreen-close-btn" onclick="closeFullscreenScanner()" aria-label="Close scanner">
+          ✕
+        </button>
+      </div>
+      <div class="fullscreen-scanner-container">
+        <div class="fullscreen-scan-region scanning" id="fullscreenScanRegion">
+          <div id="fullscreenReader"></div>
+        </div>
+        <div class="fullscreen-instructions">
+          Position the QR code within the frame
         </div>
       </div>
     </div>
@@ -1627,56 +1731,37 @@
         }
       }
 
-      // Get device-optimized scanner configuration
-      function getOptimizedScannerConfig() {
-        // Simplified, optimized configuration for reliable QR code scanning
-        const baseConfig = {
-          // Scan region size
-          qrbox: { width: 280, height: 280 },
+      // Get optimized scanner configuration for full-screen modal
+      function getFullscreenScannerConfig() {
+        // Calculate responsive scan box size (80% of viewport width, max 500px)
+        const viewportWidth = window.innerWidth;
+        const scanBoxSize = Math.min(viewportWidth * 0.8, 500);
 
-          // Higher FPS for better detection (30 FPS for all devices)
+        const config = {
+          // Large responsive scan region
+          qrbox: { width: scanBoxSize, height: scanBoxSize },
+
+          // Fixed 30 FPS for all devices (reliable and fast)
           fps: 30,
 
-          // Focus on QR_CODE format only for faster detection
+          // QR_CODE format only for faster recognition
           formatsToSupport: typeof Html5QrcodeSupportedFormats !== 'undefined'
             ? [Html5QrcodeSupportedFormats.QR_CODE]
             : undefined,
 
-          // Enable experimental features for better performance
-          experimentalFeatures: {
-            useBarCodeDetectorIfSupported: true
-          },
-
-          // Simplified camera constraints - remove restrictive settings
+          // Simple camera constraints
           videoConstraints: {
-            facingMode: "environment",
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
+            facingMode: "environment"
           }
         };
 
-        // Device-specific FPS adjustments if needed
-        if (performanceMonitor.adaptiveSettings) {
-          baseConfig.fps = performanceMonitor.adaptiveSettings.fps;
-        } else {
-          // Set FPS based on device type
-          if (deviceInfo.isIOS) {
-            baseConfig.fps = 20; // Increased from 8 for better detection
-          } else if (deviceInfo.isAndroid) {
-            baseConfig.fps = 30; // Increased from 10-15 for better detection
-          } else {
-            baseConfig.fps = 30; // Desktop/other devices
-          }
-        }
-
-        console.log('Scanner config:', {
-          fps: baseConfig.fps,
-          qrbox: baseConfig.qrbox,
-          formatsToSupport: baseConfig.formatsToSupport ? 'QR_CODE only' : 'all formats',
-          videoConstraints: baseConfig.videoConstraints
+        console.log('Full-screen scanner config:', {
+          fps: config.fps,
+          qrbox: config.qrbox,
+          formatsToSupport: 'QR_CODE only'
         });
 
-        return baseConfig;
+        return config;
       }
 
       // Performance monitoring and optimization functions
@@ -3080,6 +3165,105 @@
         document.getElementById("resultModal").classList.remove("show");
       }
 
+      // Full-Screen Scanner Functions
+      let fullscreenScanner = null;
+      let isFullscreenScanning = false;
+
+      async function openFullscreenScanner() {
+        const modal = document.getElementById('fullscreenScannerModal');
+        const scanRegion = document.getElementById('fullscreenScanRegion');
+
+        // Show modal
+        modal.classList.add('active');
+
+        // Initialize scanner
+        try {
+          fullscreenScanner = new Html5Qrcode("fullscreenReader");
+
+          const config = getFullscreenScannerConfig();
+
+          await fullscreenScanner.start(
+            { facingMode: "environment" },
+            config,
+            onFullscreenScanSuccess,
+            onFullscreenScanFailure
+          );
+
+          isFullscreenScanning = true;
+          scanRegion.classList.add('scanning');
+          console.log('Full-screen scanner started successfully');
+
+        } catch (error) {
+          console.error('Failed to start full-screen scanner:', error);
+          alert('Failed to access camera. Please check permissions and try again.');
+          closeFullscreenScanner();
+        }
+      }
+
+      async function closeFullscreenScanner() {
+        const modal = document.getElementById('fullscreenScannerModal');
+        const scanRegion = document.getElementById('fullscreenScanRegion');
+
+        // Stop scanner
+        if (fullscreenScanner) {
+          try {
+            await fullscreenScanner.stop();
+            fullscreenScanner.clear();
+          } catch (error) {
+            console.log('Error stopping scanner:', error);
+          }
+          fullscreenScanner = null;
+        }
+
+        isFullscreenScanning = false;
+        scanRegion.classList.remove('scanning', 'locked');
+        modal.classList.remove('active');
+      }
+
+      async function onFullscreenScanSuccess(decodedText) {
+        if (!isFullscreenScanning) return;
+
+        isFullscreenScanning = false;
+
+        const scanRegion = document.getElementById('fullscreenScanRegion');
+
+        // Visual feedback: green border (locked on QR)
+        scanRegion.classList.remove('scanning');
+        scanRegion.classList.add('locked');
+
+        // Haptic feedback
+        if (navigator.vibrate) {
+          navigator.vibrate(200);
+        }
+
+        // Validate ticket
+        try {
+          await validateTicket(decodedText);
+
+          // Close scanner after short delay
+          setTimeout(async () => {
+            await closeFullscreenScanner();
+          }, 500);
+
+        } catch (error) {
+          console.error('Validation error:', error);
+
+          // Resume scanning after error
+          setTimeout(() => {
+            isFullscreenScanning = true;
+            scanRegion.classList.remove('locked');
+            scanRegion.classList.add('scanning');
+          }, 2000);
+        }
+      }
+
+      function onFullscreenScanFailure(error) {
+        // Silently handle scan failures (normal during scanning)
+        // Only log if it's an actual error, not just "No QR code found"
+        if (error && !error.includes && !error.toString().includes('NotFoundException')) {
+          console.log('Scan error:', error);
+        }
+      }
 
       // Show manual input with backdrop
       function showManualInput() {

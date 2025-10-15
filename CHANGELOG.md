@@ -7,29 +7,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Enhanced - Admin QR Code Scanner (October 2025)
+### Enhanced - Admin QR Code Scanner Redesign (October 2025)
 
-#### Scanner Performance & Visual Feedback Improvements
-- **Enhanced Visual State Indicators**: QR code scanner now shows clear visual feedback with color-coded borders
-  - Red border during active scanning (default state)
+#### Full-Screen Scanner Modal Implementation
+- **New Scanning Approach**: Complete redesign from embedded scanner to full-screen modal
+  - Large, prominent "Scan Ticket" button (📷) in admin controls
+  - Full-screen modal overlay (100vw x 100vh) with dark semi-transparent backdrop
+  - Much larger scan region (80% of viewport width, max 500px) for better QR code detection
+  - Simple, clean design with minimal visual distractions
+  - Auto-closes on successful scan and returns to admin dashboard
+
+- **Enhanced Visual Feedback**: Clear state indicators throughout scanning process
+  - Red border during active scanning (searching for QR code)
   - Green border when QR code is locked on and being processed
   - Smooth transitions between states for better user experience
-- **Scanner Configuration Optimization**: Simplified QR code scanner configuration for better reliability
-  - Increased FPS across all devices (iOS: 8→20, Android: 10-15→30, Desktop: 10→30)
-  - Focused on QR_CODE format only for faster detection
-  - Removed overly restrictive camera constraints that caused scanning issues
-  - Simplified configuration removes adaptive complexity in favor of reliable scanning
-- **Mobile Layout Enhancement**: Improved scanner layout on mobile devices
-  - Scanner positioned at top with stats below for better thumb accessibility
-  - Border styling adjusted for clearer visual hierarchy
-- **Performance**: Faster QR code detection with higher frame rates and streamlined format support
+  - Haptic feedback on successful scan (vibration)
+
+- **Scanner Configuration Simplification**: Removed complex adaptive logic in favor of reliable scanning
+  - Fixed 30 FPS for all devices (no more device-specific adjustments)
+  - Responsive scan box size (adapts to viewport)
+  - QR_CODE format only for faster recognition
+  - Simple camera constraints (facingMode: "environment" only)
+  - Removed experimental features that caused compatibility issues
+
+- **User Experience Improvements**: Mobile-first design with industry standard patterns
+  - Click button → camera opens full-screen → scan → auto-close
+  - Easy close button and backdrop click to dismiss
+  - Clear instructions: "Position the QR code within the frame"
+  - Larger scan area dramatically improves QR code detection success rate
 
 #### Technical Changes
-- Removed pulsing animation in favor of state-based color changes (red/green)
-- Added `.scanning` and `.locked` CSS classes for visual state management
-- Increased scanner FPS from adaptive 8-15 to consistent 20-30 across devices
-- Enabled QR_CODE-only format filtering for faster recognition
-- Added detailed scanner configuration logging for debugging
+- Added full-screen scanner modal HTML/CSS (`.fullscreen-scanner-modal`)
+- Created `openFullscreenScanner()` and `closeFullscreenScanner()` functions
+- Added `getFullscreenScannerConfig()` with responsive qrbox calculation
+- Removed decorative corner brackets (`.scan-corners`) for cleaner appearance
+- Reverted mobile layout changes (removed `flex-direction: column-reverse`)
+- Proper scanner cleanup on modal close to prevent resource leaks
+- Error handling with fallback to manual entry on camera access failure
+
+#### Why This Approach?
+Previous embedded scanner had:
+- Small scan area (280x280px) limiting QR code detection
+- Complex adaptive FPS logic causing reliability issues
+- Decorative elements adding visual noise
+- Restrictive camera constraints preventing proper focus
+
+New full-screen modal provides:
+- 3-5x larger scan area for much better detection
+- Simpler, more reliable configuration
+- Industry-standard mobile UX pattern
+- Better camera access and focus capability
 
 ### Fixed - E2E Test Suite Reliability (October 2025)
 
