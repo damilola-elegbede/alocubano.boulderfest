@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS tickets (
 
     -- Scan Tracking
     scan_count INTEGER DEFAULT 0 CHECK (scan_count >= 0),
-    max_scan_count INTEGER DEFAULT 3 CHECK (max_scan_count >= 0),
+    max_scan_count INTEGER DEFAULT 10 CHECK (max_scan_count >= 0),
     first_scanned_at TIMESTAMP,
     last_scanned_at TIMESTAMP,
 
