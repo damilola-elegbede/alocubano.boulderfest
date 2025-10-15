@@ -88,10 +88,13 @@ async function uploadBackup() {
     console.log(`   Environment: ${environment}`);
 
     // Upload to Vercel Blob
+    // Note: Vercel Blob currently only supports 'public' access mode (as of 2025)
+    // Private mode is a planned feature. URLs are still secure through unguessable
+    // random suffixes (similar to Google Docs "anyone with the link" sharing).
+    // TODO: Switch to 'private' when Vercel adds support for private blobs
     const blob = await put(blobPath, fileBuffer, {
-      access: 'private',
+      access: 'public',
       token: process.env.BLOB_READ_WRITE_TOKEN,
-      addRandomSuffix: false, // Keep exact filename for predictability
     });
 
     console.log('');
