@@ -654,6 +654,15 @@
       </div>
     </div>
 
+    <!-- Mobile Hamburger Menu Toggle -->
+    <button class="admin-menu-toggle" aria-label="Toggle navigation menu" aria-expanded="false">
+      <div class="admin-menu-icon">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </button>
+
     <!-- Unified Admin Header -->
     <header class="admin-header">
       <div class="admin-header-content">
@@ -676,48 +685,67 @@
     <!-- Unified Admin Navigation -->
     <nav class="admin-navigation">
       <ul class="admin-nav-list">
+        <!-- Core Tools Group -->
+        <div class="admin-nav-group-header">Core Tools</div>
         <li class="admin-nav-item">
           <a href="/admin" class="admin-nav-link active">
+            <span class="nav-icon">🏠</span>
             <span>Portal</span>
           </a>
         </li>
         <li class="admin-nav-item">
           <a href="/admin/dashboard" class="admin-nav-link">
+            <span class="nav-icon">📊</span>
             <span>Dashboard</span>
           </a>
         </li>
         <li class="admin-nav-item">
-          <a href="/admin/manual-entry" class="admin-nav-link">
-            <span>Manual Entry</span>
+          <a href="/admin/checkin" class="admin-nav-link">
+            <span class="nav-icon">📱</span>
+            <span>Check-in Scanner</span>
           </a>
         </li>
         <li class="admin-nav-item">
+          <a href="/admin/manual-entry" class="admin-nav-link">
+            <span class="nav-icon">✏️</span>
+            <span>Manual Entry</span>
+          </a>
+        </li>
+
+        <!-- Data & Analytics Group -->
+        <div class="admin-nav-separator"></div>
+        <div class="admin-nav-group-header">Data & Analytics</div>
+        <li class="admin-nav-item">
           <a href="/admin/tickets" class="admin-nav-link">
+            <span class="nav-icon">🎫</span>
             <span>Tickets</span>
           </a>
         </li>
         <li class="admin-nav-item">
           <a href="/admin/analytics" class="admin-nav-link">
+            <span class="nav-icon">📈</span>
             <span>Analytics</span>
           </a>
         </li>
         <li class="admin-nav-item">
           <a href="/admin/donations" class="admin-nav-link">
+            <span class="nav-icon">💝</span>
             <span>Donations</span>
           </a>
         </li>
-        <li class="admin-nav-item">
-          <a href="/admin/checkin" class="admin-nav-link">
-            <span>Check-in Scanner</span>
-          </a>
-        </li>
+
+        <!-- Utilities Group -->
+        <div class="admin-nav-separator"></div>
+        <div class="admin-nav-group-header">Utilities</div>
         <li class="admin-nav-item">
           <a href="/admin/test" class="admin-nav-link">
+            <span class="nav-icon">🧪</span>
             <span>Test</span>
           </a>
         </li>
         <li class="admin-nav-item">
           <a href="/admin/api-endpoints" class="admin-nav-link">
+            <span class="nav-icon">🔌</span>
             <span>API Endpoints</span>
           </a>
         </li>
@@ -2606,6 +2634,9 @@ Full API docs: /docs/api/README.md
     <button class="history-fab" onclick="toggleHistoryPanel()" title="Show Response History">
       📚
     </button>
+
+    <!-- Mobile Navigation Controller -->
+    <script src="/js/admin-mobile-nav.js"></script>
 
   </body>
 </html>

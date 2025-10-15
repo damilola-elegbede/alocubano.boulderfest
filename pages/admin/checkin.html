@@ -304,6 +304,19 @@
         box-shadow: var(--shadow-md);
       }
 
+      .stat-item-clickable {
+        cursor: pointer;
+      }
+
+      .stat-item-clickable:hover {
+        border-color: var(--color-blue);
+        box-shadow: var(--shadow-lg);
+      }
+
+      .stat-item-clickable:active {
+        transform: translateY(0);
+      }
+
       .stat-value {
         font-size: 24px;
         font-weight: 700;
@@ -1284,10 +1297,89 @@
     </style>
   </head>
   <body>
+    <!-- Mobile Hamburger Menu Toggle -->
+    <button class="admin-menu-toggle" aria-label="Toggle navigation menu" aria-expanded="false">
+      <div class="admin-menu-icon">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </button>
+
+    <!-- Mobile Navigation (Hidden on Desktop) -->
+    <nav class="admin-navigation" style="display: none;">
+      <ul class="admin-nav-list">
+        <!-- Core Tools Group -->
+        <div class="admin-nav-group-header">Core Tools</div>
+        <li class="admin-nav-item">
+          <a href="/admin" class="admin-nav-link">
+            <span class="nav-icon">🏠</span>
+            <span>Portal</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/dashboard" class="admin-nav-link">
+            <span class="nav-icon">📊</span>
+            <span>Dashboard</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/checkin" class="admin-nav-link active">
+            <span class="nav-icon">📱</span>
+            <span>Check-in Scanner</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/manual-entry" class="admin-nav-link">
+            <span class="nav-icon">✏️</span>
+            <span>Manual Entry</span>
+          </a>
+        </li>
+
+        <!-- Data & Analytics Group -->
+        <div class="admin-nav-separator"></div>
+        <div class="admin-nav-group-header">Data & Analytics</div>
+        <li class="admin-nav-item">
+          <a href="/admin/tickets" class="admin-nav-link">
+            <span class="nav-icon">🎫</span>
+            <span>Tickets</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/analytics" class="admin-nav-link">
+            <span class="nav-icon">📈</span>
+            <span>Analytics</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/donations" class="admin-nav-link">
+            <span class="nav-icon">💝</span>
+            <span>Donations</span>
+          </a>
+        </li>
+
+        <!-- Utilities Group -->
+        <div class="admin-nav-separator"></div>
+        <div class="admin-nav-group-header">Utilities</div>
+        <li class="admin-nav-item">
+          <a href="/admin/test" class="admin-nav-link">
+            <span class="nav-icon">🧪</span>
+            <span>Test</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/api-endpoints" class="admin-nav-link">
+            <span class="nav-icon">🔌</span>
+            <span>API Endpoints</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+
     <div class="scanner-app">
       <div class="app-header">
-        <button 
-          class="back-btn admin-btn admin-btn-ghost admin-btn-sm" 
+        <button
+          class="back-btn admin-btn admin-btn-ghost admin-btn-sm"
           onclick="backToPortal()"
           aria-label="Go back to admin portal"
           title="Return to admin portal"
@@ -1317,11 +1409,11 @@
 
         <!-- Stats Bar -->
         <div class="stats-bar">
-          <div class="stat-item">
+          <div class="stat-item stat-item-clickable" onclick="viewStatTickets('today')" title="Click to view today's check-ins">
             <div class="stat-value" id="statToday">0</div>
             <div class="stat-label">Today</div>
           </div>
-          <div class="stat-item">
+          <div class="stat-item stat-item-clickable" onclick="viewStatTickets('session')" title="Click to view this session's check-ins">
             <div class="stat-value" id="statSession">0</div>
             <div class="stat-label">Session</div>
           </div>
@@ -1329,11 +1421,11 @@
             <div class="stat-value" id="statQueued">0</div>
             <div class="stat-label">Queued</div>
           </div>
-          <div class="stat-item">
+          <div class="stat-item stat-item-clickable" onclick="viewStatTickets('wallet')" title="Click to view wallet check-ins">
             <div class="stat-value" id="statWallet">0</div>
             <div class="stat-label">Wallet</div>
           </div>
-          <div class="stat-item">
+          <div class="stat-item stat-item-clickable" onclick="viewStatTickets('total')" title="Click to view all checked-in tickets">
             <div class="stat-value" id="statTotal">0</div>
             <div class="stat-label">Total</div>
           </div>
@@ -1355,7 +1447,7 @@
           <button
             class="control-btn admin-btn admin-btn-primary"
             onclick="openFullscreenScanner()"
-            title="Scan Ticket"
+            title="Scan Ticket - Camera permissions are saved by your browser and persist across sessions"
             style="font-size: 24px;"
           >
             📷
@@ -1476,17 +1568,82 @@
         timeManager = module.default;
       });
 
-      // Statistics
+      // Statistics with localStorage persistence
+      const STATS_STORAGE_KEY = 'scanner_stats_v2';
+      const STATS_SESSION_HOURS = 8;
+
       const stats = {
-        today: 0,
+        // Server baselines (loaded from API, never incremented)
+        todayBaseline: 0,
+        totalBaseline: 0,
+        walletBaseline: 0,
+
+        // Session increments (persisted, incremented locally)
+        todayIncrement: 0,
+        walletIncrement: 0,
         session: 0,
         queued: 0,
-        wallet: 0,
-        total: 0,
-        failed: 0,        // Failed validations (network/system errors)
-        invalid: 0,       // Invalid tickets (bad format, expired, etc.)
-        validationTimes: [] // Track validation times for average
+        failed: 0,
+        invalid: 0,
+        validationTimes: [],
+
+        // Session metadata
+        sessionStart: Date.now(),
+        lastActivity: Date.now()
       };
+
+      // Restore from localStorage
+      function restoreSessionStats() {
+        try {
+          const stored = localStorage.getItem(STATS_STORAGE_KEY);
+          if (!stored) return;
+
+          const data = JSON.parse(stored);
+          const age = (Date.now() - data.sessionStart) / (1000 * 60 * 60);
+
+          // Expire after 8 hours
+          if (age > STATS_SESSION_HOURS) {
+            localStorage.removeItem(STATS_STORAGE_KEY);
+            console.log('Session stats expired after 8 hours');
+            return;
+          }
+
+          // Restore session stats only (not baselines)
+          stats.todayIncrement = data.todayIncrement || 0;
+          stats.walletIncrement = data.walletIncrement || 0;
+          stats.session = data.session || 0;
+          stats.queued = data.queued || 0;
+          stats.failed = data.failed || 0;
+          stats.invalid = data.invalid || 0;
+          stats.validationTimes = data.validationTimes || [];
+          stats.sessionStart = data.sessionStart;
+          console.log('Restored session stats:', { session: stats.session, todayIncrement: stats.todayIncrement });
+        } catch (error) {
+          console.error('Failed to restore stats:', error);
+        }
+      }
+
+      // Save to localStorage
+      function persistSessionStats() {
+        try {
+          localStorage.setItem(STATS_STORAGE_KEY, JSON.stringify({
+            todayIncrement: stats.todayIncrement,
+            walletIncrement: stats.walletIncrement,
+            session: stats.session,
+            queued: stats.queued,
+            failed: stats.failed,
+            invalid: stats.invalid,
+            validationTimes: stats.validationTimes.slice(-100), // Keep last 100
+            sessionStart: stats.sessionStart,
+            lastActivity: Date.now()
+          }));
+        } catch (error) {
+          console.error('Failed to persist stats:', error);
+        }
+      }
+
+      // Initialize - restore previous session if exists
+      restoreSessionStats();
 
       // Performance monitoring and resource management
       const performanceMonitor = {
@@ -3128,8 +3285,8 @@
           } else if (data.valid) {
             // Success
             stats.session++;
-            stats.today++;
-            if (data.ticket && data.ticket.wallet_source) stats.wallet++;
+            stats.todayIncrement++;  // Increment session overlay, not baseline
+            if (data.ticket && data.ticket.wallet_source) stats.walletIncrement++;
             updateStats();
 
             // Detect if this is a test ticket
@@ -3258,6 +3415,12 @@
       let isFullscreenScanning = false;
 
       async function openFullscreenScanner() {
+        // If the inline scanner is running, stop it to release camera
+        // This prevents NotReadableError ("device already in use") on mobile devices
+        if (isScanning && scanner) {
+          await stopScanner();
+        }
+
         const modal = document.getElementById('fullscreenScannerModal');
         const scanRegion = document.getElementById('fullscreenScanRegion');
 
@@ -3306,6 +3469,15 @@
         isFullscreenScanning = false;
         scanRegion.classList.remove('scanning', 'locked');
         modal.classList.remove('active');
+
+        // After closing fullscreen, restart the inline scanner if it was running
+        if (!isScanning && scanner) {
+          try {
+            await initScanner();
+          } catch (error) {
+            console.log('Error restarting inline scanner:', error);
+          }
+        }
       }
 
       async function onFullscreenScanSuccess(decodedText) {
@@ -3469,12 +3641,13 @@
 
       // Update statistics display
       function updateStats() {
-        // Update original stats
-        document.getElementById("statToday").textContent = stats.today;
+        // Display = baseline + session increment
+        document.getElementById("statToday").textContent = stats.todayBaseline + stats.todayIncrement;
         document.getElementById("statSession").textContent = stats.session;
         document.getElementById("statQueued").textContent = stats.queued;
-        document.getElementById("statWallet").textContent = stats.wallet;
-        document.getElementById("statTotal").textContent = stats.total;
+        document.getElementById("statWallet").textContent = stats.walletBaseline + stats.walletIncrement;
+        // Total should include today's session scans
+        document.getElementById("statTotal").textContent = stats.totalBaseline + stats.todayIncrement;
 
         // Update new stats
         document.getElementById("statFailed").textContent = stats.failed;
@@ -3486,6 +3659,44 @@
           document.getElementById("statAvgTime").textContent = `${(avgTime / 1000).toFixed(1)}s`;
         } else {
           document.getElementById("statAvgTime").textContent = "0s";
+        }
+
+        // Persist to localStorage
+        persistSessionStats();
+      }
+
+      // Navigate to tickets page with stat-specific filters
+      function viewStatTickets(statType) {
+        try {
+          // Build query parameters based on stat type
+          const params = new URLSearchParams();
+
+          // Add event filter if event selector is active
+          const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
+          if (selectedEventId) {
+            params.set('eventId', selectedEventId);
+          }
+
+          // Add stat-specific filters
+          switch (statType) {
+            case 'today':
+            case 'session':
+              // Session stats are local to browser, show today's check-ins
+              params.set('checkedInToday', 'true');
+              break;
+            case 'wallet':
+              params.set('walletAccess', 'true');
+              break;
+            case 'total':
+              params.set('checkedIn', 'true');
+              break;
+          }
+
+          // Navigate to tickets page
+          const queryString = params.toString();
+          window.location.href = `/pages/admin/tickets${queryString ? '?' + queryString : ''}`;
+        } catch (error) {
+          console.error('Failed to navigate to tickets:', error);
         }
       }
 
@@ -3506,9 +3717,11 @@
             const today = timeManager ? timeManager.formatDate(new Date()).replace(/\s/g, '-') : new Date().toISOString().split('T')[0];
             const todayCheckins = data.stats.daily_checkins?.find(d => d.date === today);
 
-            stats.today = todayCheckins?.count || data.stats.today_checkins || 0;
-            stats.total = data.stats.checked_in || 0;
-            stats.wallet = data.stats.wallet_checkins || 0;
+            // Load baselines from server, preserve session increments
+            stats.todayBaseline = todayCheckins?.count || data.stats.today_checkins || 0;
+            stats.totalBaseline = data.stats.checked_in || 0;
+            stats.walletBaseline = data.stats.wallet_checkins || 0;
+            // Session increments (todayIncrement, walletIncrement, session, etc.) are NOT reset here - they persist!
 
             // Check if we're dealing with test data
             const hasTestData = data.testModeInfo && data.testModeInfo.hasTestModeSupport &&
@@ -3517,8 +3730,7 @@
             // Update test mode indicators
             updateScannerTestModeIndicators(hasTestData);
 
-            // Update session count (preserve existing session count)
-            // Total can be shown as all-time check-ins
+            // Update display (combines baselines + increments)
             updateStats();
           }
         } catch (error) {
@@ -3854,5 +4066,8 @@
       // Start app
       init();
     </script>
+
+    <!-- Mobile Navigation Controller -->
+    <script src="/js/admin-mobile-nav.js"></script>
   </body>
 </html>

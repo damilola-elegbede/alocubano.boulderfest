@@ -97,6 +97,16 @@ async function handler(req, res) {
         sql += ' AND t.checked_in_at IS NULL';
       }
 
+      // Filter by today's check-ins
+      if (sanitized.checkedInToday === 'true') {
+        sql += ` AND DATE(t.checked_in_at) = DATE('now')`;
+      }
+
+      // Filter by wallet access
+      if (sanitized.walletAccess === 'true') {
+        sql += ` AND t.qr_access_method = 'wallet'`;
+      }
+
       // Whitelist allowed columns for ORDER BY to prevent SQL injection
       const allowedSortColumns = ['created_at', 'updated_at', 'checked_in_at', 'ticket_id', 'status', 'ticket_type'];
       const allowedSortOrders = ['ASC', 'DESC'];
@@ -151,6 +161,16 @@ async function handler(req, res) {
         countSql += ' AND t.checked_in_at IS NOT NULL';
       } else if (sanitized.checkedIn === 'false') {
         countSql += ' AND t.checked_in_at IS NULL';
+      }
+
+      // Filter by today's check-ins (same as main query)
+      if (sanitized.checkedInToday === 'true') {
+        countSql += ` AND DATE(t.checked_in_at) = DATE('now')`;
+      }
+
+      // Filter by wallet access (same as main query)
+      if (sanitized.walletAccess === 'true') {
+        countSql += ` AND t.qr_access_method = 'wallet'`;
       }
 
       const countResult = await db.execute({ sql: countSql, args: countArgs });
