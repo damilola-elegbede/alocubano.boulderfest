@@ -50,15 +50,19 @@ async function handler(req, res) {
         -- Test mode statistics
         (SELECT COUNT(*) FROM tickets WHERE is_test = 1 ${ticketWhereClause}) as test_tickets,
         (SELECT COUNT(*) FROM transactions WHERE is_test = 1 ${transactionWhereClause}) as test_transactions,
-        (SELECT COALESCE(SUM(amount_cents), 0) / 100.0 FROM transactions WHERE is_test = 1 AND status = 'completed' ${transactionWhereClause}) as test_revenue
+        (SELECT COALESCE(SUM(amount_cents), 0) / 100.0 FROM transactions WHERE is_test = 1 AND status = 'completed' ${transactionWhereClause}) as test_revenue,
+        -- Check-in statistics (using actual scan timestamps)
+        (SELECT COUNT(*) FROM tickets WHERE (last_scanned_at IS NOT NULL OR checked_in_at IS NOT NULL) AND date(COALESCE(last_scanned_at, checked_in_at)) = date('now') ${ticketWhereClause}) as today_checkins,
+        (SELECT COUNT(*) FROM tickets WHERE (last_scanned_at IS NOT NULL OR checked_in_at IS NOT NULL) AND qr_access_method IN ('apple_wallet', 'google_wallet', 'samsung_wallet') ${ticketWhereClause}) as wallet_checkins
     `;
 
     // Add parameters for each subquery that uses event_id filtering
     if (eventId && ticketsHasEventId) {
       // Count the subqueries using tickets table:
       // total_tickets, checked_in, total_orders, workshop_tickets, vip_tickets, today_sales,
-      // qr_generated, apple_wallet_users, google_wallet_users, web_only_users, test_tickets = 11 subqueries
-      for (let i = 0; i < 11; i++) {
+      // qr_generated, apple_wallet_users, google_wallet_users, web_only_users, test_tickets,
+      // today_checkins, wallet_checkins = 13 subqueries
+      for (let i = 0; i < 13; i++) {
         statsParams.push(eventId);
       }
     }
@@ -88,7 +92,10 @@ async function handler(req, res) {
       // Test mode stats (will be 0 if columns don't exist)
       test_tickets: 0,
       test_transactions: 0,
-      test_revenue: 0
+      test_revenue: 0,
+      // Check-in stats
+      today_checkins: 0,
+      wallet_checkins: 0
     };
 
     // Get recent registrations with event filtering
