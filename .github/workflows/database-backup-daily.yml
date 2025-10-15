@@ -54,17 +54,17 @@ jobs:
           echo "🔧 Installing Turso CLI..."
           curl -sSfL https://get.tur.so/install.sh | bash
 
-          # Verify installation (correct path: ~/.turso/bin/turso)
-          if [ ! -f "$HOME/.turso/bin/turso" ]; then
+          # Verify installation (correct path: ~/.turso/turso)
+          if [ ! -f "$HOME/.turso/turso" ]; then
             echo "❌ Turso CLI installation failed - binary not found"
             exit 1
           fi
 
-          echo "✅ Turso CLI installed: $(ls -lh $HOME/.turso/bin/turso)"
-          "$HOME/.turso/bin/turso" --version || true
+          echo "✅ Turso CLI installed: $(ls -lh $HOME/.turso/turso)"
+          "$HOME/.turso/turso" --version || true
 
-          # Add to PATH for subsequent steps (correct directory: ~/.turso/bin)
-          echo "$HOME/.turso/bin" >> "$GITHUB_PATH"
+          # Add to PATH for subsequent steps (correct directory: ~/.turso)
+          echo "$HOME/.turso" >> "$GITHUB_PATH"
 
       - name: "🔐 Verify Turso API Token"
         env:
@@ -247,17 +247,17 @@ jobs:
           echo "🔧 Installing Turso CLI..."
           curl -sSfL https://get.tur.so/install.sh | bash
 
-          # Verify installation (correct path: ~/.turso/bin/turso)
-          if [ ! -f "$HOME/.turso/bin/turso" ]; then
+          # Verify installation (correct path: ~/.turso/turso)
+          if [ ! -f "$HOME/.turso/turso" ]; then
             echo "❌ Turso CLI installation failed - binary not found"
             exit 1
           fi
 
-          echo "✅ Turso CLI installed: $(ls -lh $HOME/.turso/bin/turso)"
-          "$HOME/.turso/bin/turso" --version || true
+          echo "✅ Turso CLI installed: $(ls -lh $HOME/.turso/turso)"
+          "$HOME/.turso/turso" --version || true
 
-          # Add to PATH for subsequent steps (correct directory: ~/.turso/bin)
-          echo "$HOME/.turso/bin" >> "$GITHUB_PATH"
+          # Add to PATH for subsequent steps (correct directory: ~/.turso)
+          echo "$HOME/.turso" >> "$GITHUB_PATH"
 
       - name: "🔐 Verify Turso API Token"
         env:
