@@ -2,8 +2,8 @@ name: "💾 Daily Database Backup"
 
 on:
   schedule:
-    # Daily at 3 AM UTC (8 PM Mountain Time previous day)
-    - cron: '0 3 * * *'
+    # Daily at 12 PM UTC (6 AM MDT / 5 AM MST)
+    - cron: '0 12 * * *'
   workflow_dispatch:
     inputs:
       database:
