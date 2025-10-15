@@ -3664,7 +3664,7 @@
           console.log('Processing QR code content');
           return qrContent;
         } catch (error) {
-          console.error('Error extracting token from QR:', error);
+          console.error('Error extracting token from QR - invalid format');
           return qrContent;
         }
       }
