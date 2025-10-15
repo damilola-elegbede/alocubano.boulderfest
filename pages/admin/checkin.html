@@ -278,6 +278,82 @@
 
       /* Scan corners removed for cleaner appearance - full-screen scanner uses simple borders */
 
+      /* Stats Bar */
+      .stats-bar {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: var(--space-md);
+        padding: var(--space-lg);
+        background: var(--color-surface-elevated);
+        border-bottom: 1px solid var(--color-border);
+      }
+
+      .stat-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: var(--space-md);
+        background: var(--color-surface);
+        border-radius: var(--radius-md);
+        border: 1px solid var(--color-border);
+        transition: all 0.2s ease;
+      }
+
+      .stat-item:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+      }
+
+      .stat-value {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--color-blue);
+        font-family: var(--font-mono);
+        line-height: 1;
+        margin-bottom: var(--space-xs);
+      }
+
+      .stat-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--color-text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        text-align: center;
+      }
+
+      /* Highlight new stats */
+      #statFailed { color: var(--color-red); }
+      #statInvalid { color: var(--color-warning); }
+      #statAvgTime { color: var(--color-success); }
+
+      /* Mobile responsive stats */
+      @media (max-width: 768px) {
+        .stats-bar {
+          grid-template-columns: repeat(4, 1fr);
+          gap: var(--space-sm);
+          padding: var(--space-md);
+        }
+
+        .stat-item {
+          padding: var(--space-sm);
+        }
+
+        .stat-value {
+          font-size: 18px;
+        }
+
+        .stat-label {
+          font-size: 10px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .stats-bar {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
       .controls {
         background: var(--color-surface-elevated);
         border-top: 1px solid var(--color-border);
@@ -1239,44 +1315,39 @@
       <div class="scanner-container" data-testid="scanner-container">
         <!-- Test Mode Indicator for Scanner -->
 
-        <div class="scanner-viewport">
-          <div id="reader" data-testid="camera-scanner"></div>
-
-          <!-- Loading State -->
-          <div class="scanner-loading" id="scannerLoading" role="status" aria-live="polite" aria-labelledby="loadingText" aria-describedby="loadingSubtext">
-            <div class="loading-spinner" aria-hidden="true"></div>
-            <div class="loading-text" id="loadingText">Initializing Camera</div>
-            <div class="loading-subtext" id="loadingSubtext">Please wait while we access your camera...</div>
+        <!-- Stats Bar -->
+        <div class="stats-bar">
+          <div class="stat-item">
+            <div class="stat-value" id="statToday">0</div>
+            <div class="stat-label">Today</div>
           </div>
-
-          <!-- Error State -->
-          <div class="scanner-error" id="scannerError" role="alert" aria-labelledby="errorTitle" aria-describedby="errorMessage">
-            <div class="error-icon" id="errorIcon" aria-hidden="true">📷</div>
-            <div class="error-title" id="errorTitle">Camera Not Available</div>
-            <div class="error-message" id="errorMessage">We couldn't access your camera. Please check your permissions and try again.</div>
-            <div class="error-actions" role="group" aria-label="Error resolution options">
-              <button class="error-btn retry" id="retryCamera" onclick="retryScanner()" aria-describedby="errorMessage">
-                🔄 Retry Camera
-              </button>
-              <button class="error-btn manual" id="useManual" onclick="showManualInput()" aria-label="Switch to manual ticket entry mode">
-                ⌨️ Manual Entry
-              </button>
-              <button class="error-btn settings" id="openSettings" onclick="openCameraSettings()" style="display: none;" aria-label="Open camera settings instructions">
-                ⚙️ Settings
-              </button>
-            </div>
+          <div class="stat-item">
+            <div class="stat-value" id="statSession">0</div>
+            <div class="stat-label">Session</div>
           </div>
-
-          <!-- Success Indicator -->
-          <div class="scanner-success" id="scannerSuccess" role="status" aria-live="polite">
-            <div class="success-icon" aria-hidden="true">✅</div>
-            <div>Camera Ready</div>
+          <div class="stat-item">
+            <div class="stat-value" id="statQueued">0</div>
+            <div class="stat-label">Queued</div>
           </div>
-
-          <div class="scanner-overlay">
-            <div class="scan-region scanning">
-              <!-- Decorative corners removed for cleaner appearance -->
-            </div>
+          <div class="stat-item">
+            <div class="stat-value" id="statWallet">0</div>
+            <div class="stat-label">Wallet</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="statTotal">0</div>
+            <div class="stat-label">Total</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="statFailed">0</div>
+            <div class="stat-label">Failed</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="statInvalid">0</div>
+            <div class="stat-label">Invalid</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="statAvgTime">0s</div>
+            <div class="stat-label">Avg Time</div>
           </div>
         </div>
 
@@ -1412,6 +1483,9 @@
         queued: 0,
         wallet: 0,
         total: 0,
+        failed: 0,        // Failed validations (network/system errors)
+        invalid: 0,       // Invalid tickets (bad format, expired, etc.)
+        validationTimes: [] // Track validation times for average
       };
 
       // Performance monitoring and resource management
@@ -2911,6 +2985,35 @@
         }
       });
 
+      /**
+       * Extract JWT token from QR code content
+       * QR codes contain: https://domain.com/my-ticket#TOKEN
+       * We need to extract just the TOKEN part for validation
+       */
+      function extractTokenFromQR(qrContent) {
+        try {
+          // Check if it's a my-ticket URL with hash
+          if (qrContent.includes('#')) {
+            const hashIndex = qrContent.indexOf('#');
+            if (hashIndex >= 0) {
+              const extracted = qrContent.substring(hashIndex + 1);
+              console.log('Extracted token from QR:', {
+                original: qrContent.substring(0, 50) + '...',
+                extracted: extracted.substring(0, 20) + '...'
+              });
+              return extracted;
+            }
+          }
+
+          // If no hash, assume it's already a token
+          console.log('QR content appears to be direct token');
+          return qrContent;
+        } catch (error) {
+          console.error('Error extracting token from QR:', error);
+          return qrContent;
+        }
+      }
+
       // Handle successful scan with performance tracking
       async function onScanSuccess(decodedText) {
         if (!isScanning) return;
@@ -2937,7 +3040,7 @@
 
         // Validate QR code with performance tracking
         try {
-          await validateTicket(decodedText);
+          await validateTicket(extractTokenFromQR(decodedText));
           measureScanPerformance('scan_success', scanStartTime);
         } catch (error) {
           performanceMonitor.errorCounts.validation++;
@@ -3060,19 +3163,33 @@
               showResult("success", "Valid Ticket!", "Check-in successful", false);
             }
           } else {
-            // Error
+            // Invalid ticket
+            stats.invalid++;
+            updateStats();
             showResult(
               "error",
               "Invalid Ticket",
               data.error || "This ticket cannot be validated",
             );
           }
+
+          // Track validation time
+          const validationTime = performance.now() - validationStartTime;
+          stats.validationTimes.push(validationTime);
+          // Keep only last 100 validation times to avoid memory bloat
+          if (stats.validationTimes.length > 100) {
+            stats.validationTimes.shift();
+          }
+
           // Measure successful validation performance
           measureScanPerformance('validation_network', validationStartTime);
 
         } catch (error) {
           console.error("Validation error:", error);
           performanceMonitor.errorCounts.network++;
+
+          // Track failed validation (network/system error)
+          stats.failed++;
 
           // Queue for offline sync
           stats.queued++;
@@ -3209,7 +3326,7 @@
 
         // Validate ticket
         try {
-          await validateTicket(decodedText);
+          await validateTicket(extractTokenFromQR(decodedText));
 
           // Close scanner after short delay
           setTimeout(async () => {
@@ -3352,11 +3469,24 @@
 
       // Update statistics display
       function updateStats() {
-        document.getElementById("todayCount").textContent = stats.today;
-        document.getElementById("sessionCount").textContent = stats.session;
-        document.getElementById("queueCount").textContent = stats.queued;
-        document.getElementById("walletCount").textContent = stats.wallet;
-        document.getElementById("totalCount").textContent = stats.total;
+        // Update original stats
+        document.getElementById("statToday").textContent = stats.today;
+        document.getElementById("statSession").textContent = stats.session;
+        document.getElementById("statQueued").textContent = stats.queued;
+        document.getElementById("statWallet").textContent = stats.wallet;
+        document.getElementById("statTotal").textContent = stats.total;
+
+        // Update new stats
+        document.getElementById("statFailed").textContent = stats.failed;
+        document.getElementById("statInvalid").textContent = stats.invalid;
+
+        // Calculate and display average validation time
+        if (stats.validationTimes.length > 0) {
+          const avgTime = stats.validationTimes.reduce((a, b) => a + b, 0) / stats.validationTimes.length;
+          document.getElementById("statAvgTime").textContent = `${(avgTime / 1000).toFixed(1)}s`;
+        } else {
+          document.getElementById("statAvgTime").textContent = "0s";
+        }
       }
 
       // Load statistics
