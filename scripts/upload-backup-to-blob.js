@@ -95,7 +95,6 @@ async function uploadBackup() {
     const blob = await put(blobPath, fileBuffer, {
       access: 'public',
       token: process.env.BLOB_READ_WRITE_TOKEN,
-      addRandomSuffix: false, // Keep exact filename for predictability
     });
 
     console.log('');
