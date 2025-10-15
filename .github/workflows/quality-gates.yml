@@ -209,8 +209,9 @@ jobs:
           echo "🔒 Running Security Scan"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-          # Run npm audit
-          npm audit --audit-level=moderate 2>&1 | tee audit-output.log || true
+          # Run npm audit on production dependencies only
+          # Dev dependencies (like Vercel CLI) are not deployed to production
+          npm audit --omit=dev --audit-level=moderate 2>&1 | tee audit-output.log || true
 
           # Extract vulnerability counts
           critical=$(grep -oP '(\d+) critical' audit-output.log | grep -oP '\d+' || echo "0")
@@ -224,7 +225,7 @@ jobs:
           echo "vuln_low=$low" >> $GITHUB_OUTPUT
 
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "🔒 Security Scan Results:"
+          echo "🔒 Security Scan Results (Production Dependencies):"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "🔴 Critical: $critical"
           echo "🟠 High: $high"
@@ -232,10 +233,10 @@ jobs:
           echo "🟢 Low: $low"
 
           if [ "$critical" -gt 0 ]; then
-            echo "❌ Security: Critical vulnerabilities found!"
+            echo "❌ Security: Critical vulnerabilities found in production dependencies!"
             exit 1
           elif [ "$high" -gt 0 ]; then
-            echo "⚠️ Security: High vulnerabilities found (in dev dependencies)"
+            echo "⚠️ Security: High vulnerabilities found in production dependencies"
             echo "   Consider updating: npm audit fix"
           elif [ "$moderate" -gt 0 ]; then
             echo "⚠️ Security: Moderate vulnerabilities found"
