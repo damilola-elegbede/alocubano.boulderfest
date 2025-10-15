@@ -376,6 +376,19 @@
         align-items: center;
         gap: var(--space-xl);
         box-shadow: var(--shadow-lg);
+        position: sticky;
+        bottom: 0;
+        z-index: 50;
+      }
+
+      .controls::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--color-blue), var(--color-red));
       }
 
       .control-btn {
@@ -395,6 +408,187 @@
         transform: scale(0.95);
       }
 
+      /* Recent Activity Feed */
+      .recent-activity {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: var(--space-lg);
+        background: linear-gradient(180deg,
+          rgba(91, 107, 181, 0.03) 0%,
+          rgba(204, 41, 54, 0.03) 100%);
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .activity-header {
+        font-family: var(--font-display);
+        font-size: var(--font-size-lg);
+        font-weight: 700;
+        color: var(--color-text-primary);
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+        margin: 0 0 var(--space-lg) 0;
+        padding-bottom: var(--space-sm);
+        border-bottom: 2px solid var(--color-border);
+        position: relative;
+      }
+
+      .activity-header::after {
+        content: "";
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 60px;
+        height: 2px;
+        background: linear-gradient(90deg, var(--color-blue), var(--color-red));
+      }
+
+      .activity-list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-sm);
+      }
+
+      .activity-empty {
+        text-align: center;
+        padding: var(--space-3xl);
+        color: var(--color-text-muted);
+        font-family: var(--font-accent);
+        font-style: italic;
+        font-size: var(--font-size-base);
+      }
+
+      .activity-item {
+        display: flex;
+        align-items: center;
+        gap: var(--space-md);
+        padding: var(--space-md);
+        background: var(--color-surface);
+        border-left: 4px solid;
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-sm);
+        animation: slideInRight 0.3s ease-out;
+        transition: all 0.2s ease;
+      }
+
+      .activity-item:hover {
+        transform: translateX(-2px);
+        box-shadow: var(--shadow-md);
+      }
+
+      .activity-item.success {
+        border-color: var(--color-success);
+      }
+
+      .activity-item.error {
+        border-color: var(--color-error);
+      }
+
+      .activity-item.pending {
+        border-color: var(--color-warning);
+      }
+
+      .activity-icon {
+        font-size: 24px;
+        line-height: 1;
+        flex-shrink: 0;
+      }
+
+      .activity-details {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .activity-ticket {
+        font-family: var(--font-mono);
+        font-size: var(--font-size-sm);
+        font-weight: 600;
+        color: var(--color-text-primary);
+        margin-bottom: var(--space-xs);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .activity-info {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+        flex-wrap: wrap;
+      }
+
+      .activity-timestamp {
+        font-family: var(--font-mono);
+        font-size: var(--font-size-xs);
+        color: var(--color-text-muted);
+        flex-shrink: 0;
+      }
+
+      .activity-badge {
+        display: inline-block;
+        padding: 2px 6px;
+        border-radius: var(--radius-sm);
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .activity-badge.type {
+        background: rgba(91, 107, 181, 0.1);
+        color: var(--color-blue);
+      }
+
+      @keyframes slideInRight {
+        from {
+          opacity: 0;
+          transform: translateX(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      @keyframes pulse {
+        0%, 100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.6;
+        }
+      }
+
+      /* Pulsing animation on active stats */
+      .stat-value.pulsing {
+        animation: pulse 1s ease-in-out 2;
+      }
+
+      /* Mobile responsive activity feed */
+      @media (max-width: 768px) {
+        .recent-activity {
+          padding: var(--space-md);
+        }
+
+        .activity-item {
+          padding: var(--space-sm);
+          gap: var(--space-sm);
+        }
+
+        .activity-icon {
+          font-size: 20px;
+        }
+
+        .activity-ticket {
+          font-size: var(--font-size-xs);
+        }
+
+        .activity-info {
+          font-size: 10px;
+        }
+      }
 
       .control-btn.manual {
         background: var(--color-red) !important;
@@ -1282,6 +1476,18 @@
           animation: none;
         }
 
+        .activity-item {
+          animation: none;
+        }
+
+        .stat-value.pulsing {
+          animation: none;
+        }
+
+        .activity-item:hover {
+          transform: none;
+        }
+
         .control-btn:active,
         .menu-btn:active,
         .permission-btn:hover,
@@ -1440,6 +1646,14 @@
           <div class="stat-item">
             <div class="stat-value" id="statAvgTime">0s</div>
             <div class="stat-label">Avg Time</div>
+          </div>
+        </div>
+
+        <!-- Recent Activity Feed -->
+        <div class="recent-activity">
+          <h3 class="activity-header">Recent Scans</h3>
+          <div id="activityFeed" class="activity-list">
+            <div class="activity-empty">Waiting for scans...</div>
           </div>
         </div>
 
@@ -3382,6 +3596,11 @@
           content.className = `result-content success ${isTestScan ? 'test-scan-result' : ''}`;
           icon.textContent = isTestScan ? "🧪" : "✅";
           content.setAttribute("data-testid", "checkin-success");
+
+          // Haptic feedback for successful scan
+          if (navigator.vibrate) {
+            navigator.vibrate([50, 30, 50]); // Double tap pattern
+          }
         } else if (type === "error") {
           content.className = `result-content error ${isTestScan ? 'test-scan-result' : ''}`;
           icon.textContent = isTestScan ? "🧪❌" : "❌";
@@ -3395,6 +3614,14 @@
         // Update title and details with test mode indicators
         titleEl.textContent = isTestScan && !title.includes('🧪') ? `🧪 ${title}` : title;
         detailsEl.textContent = details;
+
+        // Add to activity feed
+        addToActivityFeed({
+          type: type,
+          title: title,
+          details: details,
+          isTestTicket: isTestScan
+        });
 
         // Show modal
         modal.classList.add("show");
@@ -4057,6 +4284,102 @@
           initializePerformanceMonitoring();
         }
       });
+
+      // Recent Activity Feed
+      const recentScans = [];
+      const MAX_RECENT_SCANS = 10;
+
+      function addToActivityFeed(scanData) {
+        // Add to beginning of array
+        recentScans.unshift({
+          timestamp: Date.now(),
+          type: scanData.type, // 'success', 'error', 'queued'
+          title: scanData.title,
+          details: scanData.details,
+          isTestTicket: scanData.isTestTicket || false
+        });
+
+        // Keep only last 10 scans
+        if (recentScans.length > MAX_RECENT_SCANS) {
+          recentScans.pop();
+        }
+
+        // Re-render the feed
+        renderActivityFeed();
+      }
+
+      function renderActivityFeed() {
+        const feedContainer = document.getElementById('activityFeed');
+        if (!feedContainer) return;
+
+        if (recentScans.length === 0) {
+          feedContainer.innerHTML = '<div class="activity-empty">Waiting for scans...</div>';
+          return;
+        }
+
+        feedContainer.innerHTML = recentScans.map(scan => {
+          // Format timestamp
+          const timeAgo = formatTimeAgo(scan.timestamp);
+
+          // Determine icon and status class
+          let icon = '🎫';
+          let statusClass = scan.type;
+
+          if (scan.type === 'success') {
+            icon = scan.isTestTicket ? '🧪' : '✅';
+          } else if (scan.type === 'error') {
+            icon = scan.isTestTicket ? '🧪❌' : '❌';
+            statusClass = 'error';
+          } else if (scan.type === 'queued') {
+            icon = '📥';
+            statusClass = 'pending';
+          }
+
+          // Extract attendee name and ticket type from details if available
+          const detailsLines = scan.details.split('\n');
+          const attendeeName = detailsLines[0] || scan.details;
+          const ticketType = detailsLines.length > 1 ? detailsLines[1] : '';
+
+          return `
+            <div class="activity-item ${statusClass}" role="article" aria-label="${scan.title}">
+              <div class="activity-icon" aria-hidden="true">${icon}</div>
+              <div class="activity-details">
+                <div class="activity-name">${attendeeName}</div>
+                ${ticketType ? `<div class="activity-ticket-type">${ticketType}</div>` : ''}
+                <div class="activity-status">${scan.title}</div>
+              </div>
+              <div class="activity-time">
+                <time datetime="${new Date(scan.timestamp).toISOString()}">${timeAgo}</time>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        // Auto-scroll to top to show newest scan
+        feedContainer.scrollTop = 0;
+      }
+
+      function formatTimeAgo(timestamp) {
+        const seconds = Math.floor((Date.now() - timestamp) / 1000);
+
+        if (seconds < 10) return 'just now';
+        if (seconds < 60) return `${seconds}s ago`;
+
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return `${minutes}m ago`;
+
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return `${hours}h ago`;
+
+        return 'today';
+      }
+
+      // Update activity feed every 30 seconds to refresh "time ago" labels
+      setInterval(() => {
+        if (recentScans.length > 0) {
+          renderActivityFeed();
+        }
+      }, 30000);
 
       // Log initial performance setup
       console.log('Scanner Performance Optimization Loaded');
