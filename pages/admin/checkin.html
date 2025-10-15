@@ -4270,7 +4270,7 @@
           // Build query params
           const params = new URLSearchParams();
           params.set('filter', statType);
-          if (selectedEventId) params.set('event_id', selectedEventId);
+          if (selectedEventId) params.set('eventId', selectedEventId);
 
           // Fetch tickets from API
           const response = await fetch(`/api/admin/checked-in-tickets?${params}`, {
@@ -4332,12 +4332,21 @@
         try {
           // Get selected event ID from event selector
           const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
-          const eventParam = selectedEventId ? `?event_id=${selectedEventId}` : '';
+          const eventParam = selectedEventId ? `?eventId=${selectedEventId}` : '';
 
           const response = await fetch(`/api/admin/dashboard${eventParam}`, {
             credentials: "include"
           });
           const data = await response.json();
+
+          // Debug logging to track stats loading
+          console.log('📊 Dashboard API Response:', {
+            today_checkins: data.stats?.today_checkins,
+            checked_in: data.stats?.checked_in,
+            wallet_checkins: data.stats?.wallet_checkins,
+            eventId: selectedEventId,
+            timestamp: new Date().toISOString()
+          });
 
           if (data.stats) {
             // Load baselines from server, preserve session increments
