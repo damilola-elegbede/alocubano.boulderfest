@@ -1736,7 +1736,7 @@
     </button>
 
     <!-- Mobile Navigation (Hidden on Desktop) -->
-    <nav class="admin-navigation" style="display: none;">
+    <nav class="admin-navigation">
       <ul class="admin-nav-list">
         <!-- Core Tools Group -->
         <li role="presentation" class="admin-nav-group-header">Core Tools</li>
@@ -1802,7 +1802,16 @@
             <span>API Endpoints</span>
           </a>
         </li>
+        <li class="admin-nav-item">
+          <a href="/admin/audit-logs" class="admin-nav-link">
+            <span class="nav-icon">📋</span>
+            <span>Audit Logs</span>
+          </a>
+        </li>
       </ul>
+
+      <!-- Event Selector -->
+      <div id="event-selector-container"></div>
     </nav>
 
     <div class="scanner-app">
@@ -2050,6 +2059,18 @@
       import('/js/time-manager.js').then(module => {
         timeManager = module.default;
       });
+
+      // HTML escaping function to prevent XSS attacks
+      // CRITICAL: Use this for ALL user-provided data displayed in innerHTML
+      function escapeHtml(unsafe) {
+        if (unsafe == null) return "";
+        return String(unsafe)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
 
       // Statistics with localStorage persistence
       const STATS_STORAGE_KEY = 'scanner_stats_v2';
@@ -3906,12 +3927,13 @@
           const attendeeName = lines[0];
           const otherDetails = lines.slice(1).join('\n');
 
+          // XSS Fix: Escape user-provided data before injecting into innerHTML
           detailsEl.innerHTML = `
             <div style="font-size: var(--font-size-xl); font-weight: 700; margin-bottom: var(--space-sm); font-family: var(--font-display);">
-              ${attendeeName}
+              ${escapeHtml(attendeeName)}
             </div>
             <div style="opacity: 0.85;">
-              ${otherDetails}
+              ${escapeHtml(otherDetails)}
             </div>
           `;
         } else {
@@ -4245,16 +4267,18 @@
 
               // Make row clickable if ticket ID is available
               const hasTicketId = scan.ticketId && scan.ticketId !== '—';
+              // XSS Fix: Escape ticketId in onclick handlers to prevent code injection
               const clickHandler = hasTicketId ?
-                `onclick="openTicketDetail('${scan.ticketId}')" role="button" tabindex="0" onkeypress="if(event.key === 'Enter' || event.key === ' ') openTicketDetail('${scan.ticketId}')"` :
+                `onclick="openTicketDetail('${escapeHtml(scan.ticketId)}')" role="button" tabindex="0" onkeypress="if(event.key === 'Enter' || event.key === ' ') openTicketDetail('${escapeHtml(scan.ticketId)}')"` :
                 'style="cursor: default;"';
 
+              // XSS Fix: Escape all user-provided data
               return `
                 <tr ${clickHandler}>
-                  <td>${scan.ticketId || '—'}</td>
-                  <td>${firstName || '—'}</td>
-                  <td>${lastName || '—'}</td>
-                  <td>${timeFormatted}</td>
+                  <td>${escapeHtml(scan.ticketId || '—')}</td>
+                  <td>${escapeHtml(firstName || '—')}</td>
+                  <td>${escapeHtml(lastName || '—')}</td>
+                  <td>${escapeHtml(timeFormatted)}</td>
                 </tr>
               `;
             }).join('');
@@ -4296,12 +4320,13 @@
             const scanTime = ticket.scan_time_mt ||
               (timeManager ? timeManager.formatDateTime(ticket.scan_time) : ticket.scan_time);
 
+            // XSS Fix: Escape all API data before rendering
             return `
-              <tr onclick="openTicketDetail('${ticket.ticket_id}')" role="button" tabindex="0" onkeypress="if(event.key === 'Enter' || event.key === ' ') openTicketDetail('${ticket.ticket_id}')">
-                <td>${ticket.ticket_id}</td>
-                <td>${ticket.first_name}</td>
-                <td>${ticket.last_name}</td>
-                <td>${scanTime}</td>
+              <tr onclick="openTicketDetail('${escapeHtml(ticket.ticket_id)}')" role="button" tabindex="0" onkeypress="if(event.key === 'Enter' || event.key === ' ') openTicketDetail('${escapeHtml(ticket.ticket_id)}')">
+                <td>${escapeHtml(ticket.ticket_id)}</td>
+                <td>${escapeHtml(ticket.first_name)}</td>
+                <td>${escapeHtml(ticket.last_name)}</td>
+                <td>${escapeHtml(scanTime)}</td>
               </tr>
             `;
           }).join('');
@@ -4325,7 +4350,7 @@
           return;
         }
         // Navigate to ticket detail page with ticketId query parameter
-        window.location.href = `/pages/admin/ticket-detail.html?ticketId=${encodeURIComponent(ticketId)}`;
+        window.location.href = `/admin/ticket-detail?ticketId=${encodeURIComponent(ticketId)}`;
       }
 
       // Load statistics
@@ -4747,16 +4772,17 @@
           const attendeeName = detailsLines[0] || scan.details;
           const ticketType = detailsLines.length > 1 ? detailsLines[1] : '';
 
+          // XSS Fix: Escape all user-provided data in activity feed
           return `
-            <div class="activity-item ${statusClass}" role="article" aria-label="${scan.title}">
+            <div class="activity-item ${statusClass}" role="article" aria-label="${escapeHtml(scan.title)}">
               <div class="activity-icon" aria-hidden="true">${icon}</div>
               <div class="activity-details">
-                <div class="activity-name">${attendeeName}</div>
-                ${ticketType ? `<div class="activity-ticket-type">${ticketType}</div>` : ''}
-                <div class="activity-status">${scan.title}</div>
+                <div class="activity-name">${escapeHtml(attendeeName)}</div>
+                ${ticketType ? `<div class="activity-ticket-type">${escapeHtml(ticketType)}</div>` : ''}
+                <div class="activity-status">${escapeHtml(scan.title)}</div>
               </div>
               <div class="activity-time">
-                <time datetime="${new Date(scan.timestamp).toISOString()}">${timeAgo}</time>
+                <time datetime="${new Date(scan.timestamp).toISOString()}">${escapeHtml(timeAgo)}</time>
               </div>
             </div>
           `;

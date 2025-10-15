@@ -23,7 +23,7 @@ export default async function handler(req, res) {
   res.setHeader('Surrogate-Control', 'no-store');
 
   try {
-    console.log('[REG_STATUS] Registration status check for token:', token?.substring(0, 20) + '...');
+    console.log('[REG_STATUS] Registration status check initiated');
 
     // Verify JWT token strictly with the registration secret
     const secret = process.env.REGISTRATION_SECRET;

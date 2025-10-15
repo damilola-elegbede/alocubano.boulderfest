@@ -33,8 +33,9 @@ async function handler(req, res) {
 
       const { sanitized } = validation;
 
-      // Check if event_id column exists in tickets table
+      // Check if event_id and qr_access_method columns exist in tickets table
       const ticketsHasEventId = await columnExists(db, 'tickets', 'event_id');
+      const ticketsHasQrAccessMethod = await columnExists(db, 'tickets', 'qr_access_method');
 
       let sql = `
       SELECT
@@ -104,8 +105,8 @@ async function handler(req, res) {
         sql += ` AND DATE(t.checked_in_at, '-7 hours') = DATE('now', '-7 hours')`;
       }
 
-      // Filter by wallet access
-      if (sanitized.walletAccess === 'true') {
+      // Filter by wallet access (only if column exists)
+      if (sanitized.walletAccess === 'true' && ticketsHasQrAccessMethod) {
         sql += ` AND t.qr_access_method = 'wallet'`;
       }
 
@@ -170,8 +171,8 @@ async function handler(req, res) {
         countSql += ` AND DATE(t.checked_in_at, '-7 hours') = DATE('now', '-7 hours')`;
       }
 
-      // Filter by wallet access (same as main query)
-      if (sanitized.walletAccess === 'true') {
+      // Filter by wallet access (same as main query - only if column exists)
+      if (sanitized.walletAccess === 'true' && ticketsHasQrAccessMethod) {
         countSql += ` AND t.qr_access_method = 'wallet'`;
       }
 

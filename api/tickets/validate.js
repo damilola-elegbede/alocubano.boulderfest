@@ -98,7 +98,7 @@ function validateTicketToken(token) {
 
   for (const pattern of suspiciousPatterns) {
     if (pattern.test(token)) {
-      console.warn(`Suspicious token pattern detected from IP: ${token.substring(0, 20)}...`);
+      console.warn('Suspicious token pattern detected');
       return {
         isValid: false,
         error: 'Token contains invalid characters',
@@ -172,8 +172,7 @@ function extractValidationCode(token) {
 
   // Fallback to treating as direct validation code (legacy format)
   console.warn('JWT token validation failed, treating as direct validation code:', {
-    error: jwtValidation.error,
-    tokenPrefix: token.substring(0, 10)
+    error: jwtValidation.error
   });
 
   // Additional validation for direct validation codes
@@ -949,7 +948,7 @@ async function handler(req, res) {
     // Log successful validation (legacy format for compatibility)
     await logValidation(db, {
       ticketId: ticket.ticket_id,
-      token: token.substring(0, 10) + '...', // Don't log full token
+      token: '[REDACTED]', // Don't log any part of token
       result: 'success',
       source: source,
       ip: clientIP,
@@ -1129,7 +1128,7 @@ async function handler(req, res) {
       if (db) {
         await logValidation(db, {
           ticketId: ticketId || null,
-          token: token ? token.substring(0, 10) + '...' : 'invalid',
+          token: token ? '[REDACTED]' : 'invalid',
           result: 'invalid', // Use schema-compliant enum value
           failureReason: safeErrorMessage,
           source: source,

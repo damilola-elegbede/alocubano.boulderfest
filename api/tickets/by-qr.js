@@ -23,7 +23,7 @@ export default async function handler(req, res) {
   res.setHeader('Surrogate-Control', 'no-store');
 
   try {
-    console.log('[BY_QR] Fetching ticket by QR token:', token?.substring(0, 20) + '...');
+    console.log('[BY_QR] Fetching ticket by QR token');
 
     const db = await getDatabaseClient();
 
@@ -34,7 +34,7 @@ export default async function handler(req, res) {
     });
 
     if (!qrTokenResult.rows || qrTokenResult.rows.length === 0) {
-      console.log('[BY_QR] QR token not found:', token?.substring(0, 20) + '...');
+      console.log('[BY_QR] QR token not found');
       return res.status(404).json({ error: 'Invalid or expired QR token' });
     }
 
@@ -45,7 +45,7 @@ export default async function handler(req, res) {
     if (qrTokenData.expires_at) {
       const expiresAt = new Date(qrTokenData.expires_at);
       if (expiresAt < new Date()) {
-        console.log('[BY_QR] QR token expired:', token?.substring(0, 20) + '...');
+        console.log('[BY_QR] QR token expired');
         return res.status(401).json({ error: 'QR token has expired' });
       }
     }

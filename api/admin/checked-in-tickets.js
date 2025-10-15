@@ -41,8 +41,9 @@ async function handler(req, res) {
       });
     }
 
-    // Check if event_id column exists
+    // Check if event_id and qr_access_method columns exist
     const ticketsHasEventId = await columnExists(db, 'tickets', 'event_id');
+    const ticketsHasQrAccessMethod = await columnExists(db, 'tickets', 'qr_access_method');
 
     // Build WHERE clauses based on filter and event ID
     const whereConditions = [];
@@ -63,7 +64,7 @@ async function handler(req, res) {
 
       // Convert UTC timestamps to MT by applying offset, then compare dates
       whereConditions.push(`date(COALESCE(last_scanned_at, checked_in_at), '${offsetHours} hours') = date('now', '${offsetHours} hours')`);
-    } else if (filter === 'wallet') {
+    } else if (filter === 'wallet' && ticketsHasQrAccessMethod) {
       whereConditions.push("qr_access_method IN ('apple_wallet', 'google_wallet', 'samsung_wallet')");
     }
     // 'total' filter has no additional conditions
