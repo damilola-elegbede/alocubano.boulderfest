@@ -257,23 +257,23 @@
       .scan-region {
         width: 280px;
         height: 280px;
-        border: 3px solid var(--color-blue);
+        border: 3px solid var(--color-red);
         border-radius: var(--radius-xl);
         position: relative;
-        animation: scannerPulse 2s infinite;
-        box-shadow: 0 0 40px rgba(102, 126, 234, 0.3);
+        box-shadow: 0 0 40px rgba(239, 68, 68, 0.3);
+        transition: all 0.3s ease;
       }
 
-      @keyframes scannerPulse {
-        0% {
-          border-color: var(--color-blue);
-        }
-        50% {
-          border-color: var(--color-red);
-        }
-        100% {
-          border-color: var(--color-blue);
-        }
+      /* Scanner state: actively scanning (default - red border) */
+      .scan-region.scanning {
+        border-color: var(--color-red);
+        box-shadow: 0 0 40px rgba(239, 68, 68, 0.3);
+      }
+
+      /* Scanner state: QR code locked on (green border) */
+      .scan-region.locked {
+        border-color: #10b981;
+        box-shadow: 0 0 40px rgba(16, 185, 129, 0.5);
       }
 
       .scan-corners {
@@ -605,6 +605,16 @@
 
         .logout-btn {
           order: 2;
+        }
+
+        /* Mobile Scanner Layout: Scanner at top, stats below */
+        .scanner-container {
+          flex-direction: column-reverse;
+        }
+
+        .stats-bar {
+          border-bottom: none;
+          border-top: 1px solid var(--color-border);
         }
       }
 
@@ -1212,7 +1222,7 @@
           </div>
 
           <div class="scanner-overlay">
-            <div class="scan-region">
+            <div class="scan-region scanning">
               <div class="scan-corners tl"></div>
               <div class="scan-corners tr"></div>
               <div class="scan-corners bl"></div>
@@ -1619,112 +1629,52 @@
 
       // Get device-optimized scanner configuration
       function getOptimizedScannerConfig() {
+        // Simplified, optimized configuration for reliable QR code scanning
         const baseConfig = {
+          // Scan region size
           qrbox: { width: 280, height: 280 },
-          aspectRatio: 1.0
+
+          // Higher FPS for better detection (30 FPS for all devices)
+          fps: 30,
+
+          // Focus on QR_CODE format only for faster detection
+          formatsToSupport: typeof Html5QrcodeSupportedFormats !== 'undefined'
+            ? [Html5QrcodeSupportedFormats.QR_CODE]
+            : undefined,
+
+          // Enable experimental features for better performance
+          experimentalFeatures: {
+            useBarCodeDetectorIfSupported: true
+          },
+
+          // Simplified camera constraints - remove restrictive settings
+          videoConstraints: {
+            facingMode: "environment",
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          }
         };
 
-        // Apply adaptive performance settings if available
+        // Device-specific FPS adjustments if needed
         if (performanceMonitor.adaptiveSettings) {
           baseConfig.fps = performanceMonitor.adaptiveSettings.fps;
-
-          // Adjust resolution based on adaptive settings
-          const resolutionMap = {
-            'low': { width: 720, height: 480 },
-            'medium': { width: 1280, height: 720 },
-            'high': { width: 1920, height: 1080 }
-          };
-
-          const resolution = resolutionMap[performanceMonitor.adaptiveSettings.resolution] || resolutionMap.medium;
-
-          baseConfig.videoConstraints = {
-            facingMode: "environment",
-            width: { ideal: resolution.width },
-            height: { ideal: resolution.height }
-          };
-        }
-
-        // iOS-specific optimizations
-        if (deviceInfo.isIOS) {
-          if (!performanceMonitor.adaptiveSettings) {
-            baseConfig.fps = 8; // Fallback FPS for iOS performance
-          }
-          baseConfig.experimentalFeatures = {
-            useBarCodeDetectorIfSupported: false // Disable on iOS for stability
-          };
-
-          baseConfig.videoConstraints = {
-            facingMode: "environment",
-            width: { ideal: 1280, max: 1920 }, // Lower resolution for iOS
-            height: { ideal: 720, max: 1080 },
-            frameRate: { ideal: 15, max: 30 }
-          };
-
-          // Add iOS-specific format support (simplified for compatibility)
-          if (typeof Html5QrcodeSupportedFormats !== 'undefined') {
-            baseConfig.formatsToSupport = [
-              Html5QrcodeSupportedFormats.QR_CODE,
-              Html5QrcodeSupportedFormats.CODE_128,
-              Html5QrcodeSupportedFormats.CODE_39
-            ];
-          }
-        }
-        // Android-specific optimizations
-        else if (deviceInfo.isAndroid) {
-          if (!performanceMonitor.adaptiveSettings) {
-            baseConfig.fps = deviceInfo.isAndroidChrome ? 15 : 10; // Fallback FPS for Android Chrome
-          }
-          baseConfig.experimentalFeatures = {
-            useBarCodeDetectorIfSupported: true // Enable on Android for better performance
-          };
-
-          // Android Chrome can handle higher resolutions and frame rates
-          if (deviceInfo.isAndroidChrome) {
-            baseConfig.videoConstraints = {
-              facingMode: "environment",
-              width: { ideal: 1920, max: 2560 }, // Higher resolution for Android
-              height: { ideal: 1080, max: 1440 },
-              frameRate: { ideal: 30, max: 60 },
-              // Android-specific optimizations
-              focusMode: { ideal: "continuous" },
-              exposureMode: { ideal: "continuous" },
-              whiteBalanceMode: { ideal: "continuous" }
-            };
-
-            // Enable more format support on Android
-            if (typeof Html5QrcodeSupportedFormats !== 'undefined') {
-              baseConfig.formatsToSupport = [
-                Html5QrcodeSupportedFormats.QR_CODE,
-                Html5QrcodeSupportedFormats.CODE_128,
-                Html5QrcodeSupportedFormats.CODE_39,
-                Html5QrcodeSupportedFormats.CODE_93,
-                Html5QrcodeSupportedFormats.EAN_13,
-                Html5QrcodeSupportedFormats.EAN_8
-              ];
-            }
+        } else {
+          // Set FPS based on device type
+          if (deviceInfo.isIOS) {
+            baseConfig.fps = 20; // Increased from 8 for better detection
+          } else if (deviceInfo.isAndroid) {
+            baseConfig.fps = 30; // Increased from 10-15 for better detection
           } else {
-            // Generic Android browser fallback
-            baseConfig.videoConstraints = {
-              facingMode: "environment",
-              width: { ideal: 1280, max: 1920 },
-              height: { ideal: 720, max: 1080 },
-              frameRate: { ideal: 20, max: 30 }
-            };
+            baseConfig.fps = 30; // Desktop/other devices
           }
         }
-        // Generic configuration for other platforms
-        else {
-          baseConfig.fps = 10;
-          baseConfig.experimentalFeatures = {
-            useBarCodeDetectorIfSupported: true
-          };
 
-          baseConfig.videoConstraints = {
-            facingMode: "environment",
-            width: { ideal: 1920 },
-            height: { ideal: 1080 }
-          };
-        }
+        console.log('Scanner config:', {
+          fps: baseConfig.fps,
+          qrbox: baseConfig.qrbox,
+          formatsToSupport: baseConfig.formatsToSupport ? 'QR_CODE only' : 'all formats',
+          videoConstraints: baseConfig.videoConstraints
+        });
 
         return baseConfig;
       }
@@ -2914,6 +2864,13 @@
         // Prevent multiple scans
         isScanning = false;
 
+        // Visual feedback: Show green border (QR locked on)
+        const scanRegion = document.querySelector('.scan-region');
+        if (scanRegion) {
+          scanRegion.classList.remove('scanning');
+          scanRegion.classList.add('locked');
+        }
+
         // Update scan count for performance monitoring
         performanceMonitor.scanCount++;
 
@@ -2935,6 +2892,12 @@
         const resumeDelay = performanceMonitor.isLowPowerMode ? 3000 : 2000;
         setTimeout(() => {
           isScanning = true;
+
+          // Visual feedback: Return to red border (scanning state)
+          if (scanRegion) {
+            scanRegion.classList.remove('locked');
+            scanRegion.classList.add('scanning');
+          }
         }, resumeDelay);
       }
 

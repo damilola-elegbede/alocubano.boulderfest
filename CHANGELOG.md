@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Enhanced - Admin QR Code Scanner (October 2025)
+
+#### Scanner Performance & Visual Feedback Improvements
+- **Enhanced Visual State Indicators**: QR code scanner now shows clear visual feedback with color-coded borders
+  - Red border during active scanning (default state)
+  - Green border when QR code is locked on and being processed
+  - Smooth transitions between states for better user experience
+- **Scanner Configuration Optimization**: Simplified QR code scanner configuration for better reliability
+  - Increased FPS across all devices (iOS: 8→20, Android: 10-15→30, Desktop: 10→30)
+  - Focused on QR_CODE format only for faster detection
+  - Removed overly restrictive camera constraints that caused scanning issues
+  - Simplified configuration removes adaptive complexity in favor of reliable scanning
+- **Mobile Layout Enhancement**: Improved scanner layout on mobile devices
+  - Scanner positioned at top with stats below for better thumb accessibility
+  - Border styling adjusted for clearer visual hierarchy
+- **Performance**: Faster QR code detection with higher frame rates and streamlined format support
+
+#### Technical Changes
+- Removed pulsing animation in favor of state-based color changes (red/green)
+- Added `.scanning` and `.locked` CSS classes for visual state management
+- Increased scanner FPS from adaptive 8-15 to consistent 20-30 across devices
+- Enabled QR_CODE-only format filtering for faster recognition
+- Added detailed scanner configuration logging for debugging
+
 ### Fixed - E2E Test Suite Reliability (October 2025)
 
 #### Test Quality Improvements
