@@ -86,7 +86,7 @@ async function handler(req, res) {
         checked_in_at,
         scan_count,
         max_scan_count,
-        qr_access_method,
+        ${ticketsHasQrAccessMethod ? "qr_access_method," : ""}
         COALESCE(last_scanned_at, checked_in_at) as scan_time
       FROM tickets
       WHERE ${whereConditions.join(' AND ')}
@@ -110,7 +110,7 @@ async function handler(req, res) {
       scan_time_mt: timeUtils.formatDateTime(ticket.scan_time),
       scan_count: ticket.scan_count,
       max_scans: ticket.max_scan_count,
-      wallet_source: ticket.qr_access_method
+      wallet_source: ticketsHasQrAccessMethod ? ticket.qr_access_method : null
     }));
 
     // Set security headers

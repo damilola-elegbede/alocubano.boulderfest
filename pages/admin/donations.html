@@ -79,6 +79,10 @@
     <link rel="icon" type="image/x-icon" href="/images/favicon.ico" />
 
     <!-- Main Site CSS System -->
+    <!-- Theme Manager - loaded early to prevent FOUC -->
+    <script type="module" src="/js/theme-manager.js"></script>
+    <script type="module" src="/js/time-manager.js"></script>
+
     <link rel="stylesheet" href="/css/base.css">
     <link rel="stylesheet" href="/css/typography.css">
     <link rel="stylesheet" href="/css/components.css">

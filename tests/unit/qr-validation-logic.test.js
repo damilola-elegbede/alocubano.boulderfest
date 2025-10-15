@@ -678,6 +678,90 @@ describe('QR Validation Logic - Unit Tests', () => {
       });
     });
 
+    it('should return ticket immediately when validation_code succeeds (no fallback executed)', async () => {
+      const validationCode = 'VALID-CODE-001';
+      const mockTicket = {
+        ticket_id: 'TKT-PRIMARY-001',
+        validation_code: 'VALID-CODE-001',
+        ticket_type: 'VIP',
+        status: 'valid',
+        validation_status: 'active',
+        scan_count: 0,
+        max_scan_count: 10,
+        attendee_first_name: 'Primary',
+        attendee_last_name: 'User',
+        event_name: 'A Lo Cubano Boulder Fest',
+        event_date: '2026-05-15',
+        event_end_date: '2026-05-17'
+      };
+
+      // Mock database to return ticket on first query
+      mockDb.execute.mockResolvedValueOnce({ rows: [mockTicket] });
+
+      // Mock transaction
+      const mockTransaction = {
+        execute: mockDb.execute,
+        commit: vi.fn().mockResolvedValue(undefined),
+        rollback: vi.fn().mockResolvedValue(undefined)
+      };
+
+      mockDb.transaction = vi.fn().mockResolvedValue(mockTransaction);
+
+      // Simulate validation logic
+      const tx = await mockDb.transaction();
+
+      // First query: validation_code
+      const result = await tx.execute({
+        sql: `
+          SELECT t.*,
+                 'A Lo Cubano Boulder Fest' as event_name,
+                 t.event_date
+          FROM tickets t
+          WHERE t.validation_code = ?
+        `,
+        args: [validationCode]
+      });
+
+      let ticket = result.rows[0];
+
+      // Fallback: Should NOT be executed when first query succeeds
+      if (!ticket) {
+        const fallbackResult = await tx.execute({
+          sql: `
+            SELECT t.*,
+                   'A Lo Cubano Boulder Fest' as event_name,
+                   t.event_date
+            FROM tickets t
+            WHERE t.ticket_id = ?
+          `,
+          args: [validationCode]
+        });
+        ticket = fallbackResult.rows[0];
+      }
+
+      // Verify ticket was found from primary query
+      expect(ticket).toBeDefined();
+      expect(ticket.ticket_id).toBe('TKT-PRIMARY-001');
+      expect(ticket.validation_code).toBe('VALID-CODE-001');
+      expect(ticket.status).toBe('valid');
+
+      // Critical assertion: Only ONE query should have been executed
+      expect(mockDb.execute).toHaveBeenCalledTimes(1);
+
+      // Verify the query was the primary validation_code query
+      expect(mockDb.execute).toHaveBeenCalledWith({
+        sql: expect.stringContaining('WHERE t.validation_code = ?'),
+        args: [validationCode]
+      });
+
+      // Verify fallback query was NOT executed (performance optimization)
+      expect(mockDb.execute).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          sql: expect.stringContaining('WHERE t.ticket_id = ?')
+        })
+      );
+    });
+
     it('should return ticket when validation_code fails but ticket_id succeeds (fallback)', async () => {
       const legacyCode = 'TKT-LEGACY-123';
       const mockTicket = {

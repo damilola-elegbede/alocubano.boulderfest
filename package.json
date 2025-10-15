@@ -9,8 +9,7 @@
   },
   "overrides": {
     "esbuild": "^0.25.9",
-    "undici": "^6.21.0",
-    "path-to-regexp": "^8.0.0"
+    "undici": "^6.21.0"
   },
   "scripts": {
     "build": "NODE_OPTIONS='--max-old-space-size=1024' node scripts/build.js",
