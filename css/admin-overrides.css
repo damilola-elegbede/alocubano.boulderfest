@@ -3268,8 +3268,18 @@
     display: flex;
   }
 
-  /* Hide desktop navigation items */
+  /* Hide desktop navigation items visually but keep container for fixed child */
   .admin-navigation {
+    height: 0;
+    overflow: visible; /* Allow fixed child to show */
+    padding: 0;
+    margin: 0;
+    border: none;
+    background: transparent;
+  }
+
+  /* Hide event selector on mobile (inside admin-navigation) */
+  .admin-navigation #event-selector-container {
     display: none;
   }
 
