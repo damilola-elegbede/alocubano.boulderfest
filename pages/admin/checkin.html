@@ -3774,7 +3774,6 @@
           if (data.offline) {
             // Offline check-in
             stats.queued++;
-            updateStats();
             showResult(
               "queued",
               "Queued for Sync",
@@ -3785,7 +3784,6 @@
             stats.session++;
             stats.todayIncrement++;  // Increment session overlay, not baseline
             if (data.ticket && data.ticket.wallet_source) stats.walletIncrement++;
-            updateStats();
 
             // Detect if this is a test ticket
             const isTestTicket = data.ticket && (
@@ -3821,7 +3819,6 @@
           } else {
             // Invalid ticket
             stats.invalid++;
-            updateStats();
             showResult(
               "error",
               "Invalid Ticket",
@@ -3836,6 +3833,10 @@
           if (stats.validationTimes.length > 100) {
             stats.validationTimes.shift();
           }
+
+          // Update stats AFTER validation time is recorded
+          // This ensures average time includes the current scan
+          updateStats();
 
           // Measure successful validation performance
           measureScanPerformance('validation_network', validationStartTime);

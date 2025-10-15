@@ -54,8 +54,15 @@ async function handler(req, res) {
 
     // Apply filter-specific conditions
     if (filter === 'today') {
-      // Use Mountain Time offset to match local timezone, not UTC
-      whereConditions.push("date(COALESCE(last_scanned_at, checked_in_at), '-7 hours') = date('now', '-7 hours')");
+      // Calculate current Mountain Time offset (handles DST automatically)
+      // During MST (winter): UTC-7, During MDT (summer): UTC-6
+      const now = new Date();
+      const utcDate = new Date(now.toLocaleString('en-US', { timeZone: 'UTC' }));
+      const mtDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/Denver' }));
+      const offsetHours = Math.round((utcDate - mtDate) / (1000 * 60 * 60));
+
+      // Convert UTC timestamps to MT by applying offset, then compare dates
+      whereConditions.push(`date(COALESCE(last_scanned_at, checked_in_at), '${offsetHours} hours') = date('now', '${offsetHours} hours')`);
     } else if (filter === 'wallet') {
       whereConditions.push("qr_access_method IN ('apple_wallet', 'google_wallet', 'samsung_wallet')");
     }
