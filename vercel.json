@@ -300,7 +300,7 @@
         },
         {
           "key": "Permissions-Policy",
-          "value": "camera=(), microphone=(), geolocation=(), interest-cohort=(), browsing-topics=()"
+          "value": "camera=(self), microphone=(), geolocation=(), interest-cohort=(), browsing-topics=()"
         }
       ]
     },

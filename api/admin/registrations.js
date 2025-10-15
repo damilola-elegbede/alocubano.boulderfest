@@ -97,9 +97,11 @@ async function handler(req, res) {
         sql += ' AND t.checked_in_at IS NULL';
       }
 
-      // Filter by today's check-ins
+      // Filter by today's check-ins (using Mountain Time, not UTC)
+      // SQLite's DATE('now') returns UTC, so we apply -7 hour offset for Mountain Time
+      // This ensures "today" matches the festival's local timezone near midnight boundaries
       if (sanitized.checkedInToday === 'true') {
-        sql += ` AND DATE(t.checked_in_at) = DATE('now')`;
+        sql += ` AND DATE(t.checked_in_at, '-7 hours') = DATE('now', '-7 hours')`;
       }
 
       // Filter by wallet access
@@ -163,9 +165,9 @@ async function handler(req, res) {
         countSql += ' AND t.checked_in_at IS NULL';
       }
 
-      // Filter by today's check-ins (same as main query)
+      // Filter by today's check-ins (same as main query - using Mountain Time, not UTC)
       if (sanitized.checkedInToday === 'true') {
-        countSql += ` AND DATE(t.checked_in_at) = DATE('now')`;
+        countSql += ` AND DATE(t.checked_in_at, '-7 hours') = DATE('now', '-7 hours')`;
       }
 
       // Filter by wallet access (same as main query)

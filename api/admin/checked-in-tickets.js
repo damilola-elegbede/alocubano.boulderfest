@@ -54,7 +54,8 @@ async function handler(req, res) {
 
     // Apply filter-specific conditions
     if (filter === 'today') {
-      whereConditions.push("date(COALESCE(last_scanned_at, checked_in_at)) = date('now')");
+      // Use Mountain Time offset to match local timezone, not UTC
+      whereConditions.push("date(COALESCE(last_scanned_at, checked_in_at), '-7 hours') = date('now', '-7 hours')");
     } else if (filter === 'wallet') {
       whereConditions.push("qr_access_method IN ('apple_wallet', 'google_wallet', 'samsung_wallet')");
     }

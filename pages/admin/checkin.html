@@ -1739,7 +1739,7 @@
     <nav class="admin-navigation" style="display: none;">
       <ul class="admin-nav-list">
         <!-- Core Tools Group -->
-        <div class="admin-nav-group-header">Core Tools</div>
+        <li role="presentation" class="admin-nav-group-header">Core Tools</li>
         <li class="admin-nav-item">
           <a href="/admin" class="admin-nav-link">
             <span class="nav-icon">🏠</span>
@@ -1766,8 +1766,8 @@
         </li>
 
         <!-- Data & Analytics Group -->
-        <div class="admin-nav-separator"></div>
-        <div class="admin-nav-group-header">Data & Analytics</div>
+        <li role="presentation" aria-hidden="true" class="admin-nav-separator"></li>
+        <li role="presentation" class="admin-nav-group-header">Data & Analytics</li>
         <li class="admin-nav-item">
           <a href="/admin/tickets" class="admin-nav-link">
             <span class="nav-icon">🎫</span>
@@ -1788,8 +1788,8 @@
         </li>
 
         <!-- Utilities Group -->
-        <div class="admin-nav-separator"></div>
-        <div class="admin-nav-group-header">Utilities</div>
+        <li role="presentation" aria-hidden="true" class="admin-nav-separator"></li>
+        <li role="presentation" class="admin-nav-group-header">Utilities</li>
         <li class="admin-nav-item">
           <a href="/admin/test" class="admin-nav-link">
             <span class="nav-icon">🧪</span>
@@ -1835,9 +1835,13 @@
 
       <div class="scanner-container" data-testid="scanner-container">
         <!-- Test Mode Indicator for Scanner -->
+        <div id="scannerTestModeIndicator" class="test-mode-indicator" style="display: none;">
+          <span class="test-icon">🧪</span>
+          <span class="test-text">Test Mode: Scanner contains test data</span>
+        </div>
 
         <!-- Stats Bar -->
-        <div class="stats-bar">
+        <div id="statsBar" class="stats-bar">
           <div class="stat-item stat-item-clickable" onclick="viewStatTickets('today')" title="Click to view today's check-ins">
             <div class="stat-value" id="statToday">0</div>
             <div class="stat-label">Today</div>
@@ -1870,6 +1874,13 @@
             <div class="stat-value" id="statAvgTime">0s</div>
             <div class="stat-label">Avg Time</div>
           </div>
+        </div>
+
+        <!-- Scanner Loading State -->
+        <div id="scannerLoading" class="scanner-loading" style="display: none;">
+          <div class="loading-spinner"></div>
+          <div id="loadingText" class="loading-text">Initializing camera...</div>
+          <div id="loadingSubtext" class="loading-subtext">Please allow camera permissions</div>
         </div>
 
         <!-- Recent Activity Feed -->
@@ -2415,7 +2426,7 @@
           // Large responsive scan region
           qrbox: { width: scanBoxSize, height: scanBoxSize },
 
-          // Fixed 30 FPS for all devices (reliable and fast)
+          // FPS will be set below based on power mode
           fps: 30,
 
           // QR_CODE format only for faster recognition
@@ -2429,10 +2440,19 @@
           }
         };
 
+        // Apply FPS based on power mode
+        if (performanceMonitor.isLowPowerMode) {
+          config.fps = performanceMonitor.adaptiveSettings.fps;
+        } else {
+          config.fps = deviceInfo.isIOS ? 20 : 30;
+          performanceMonitor.adaptiveSettings.fps = config.fps;
+        }
+
         console.log('Full-screen scanner config:', {
           fps: config.fps,
           qrbox: config.qrbox,
-          formatsToSupport: 'QR_CODE only'
+          formatsToSupport: 'QR_CODE only',
+          isLowPowerMode: performanceMonitor.isLowPowerMode
         });
 
         return config;
@@ -3013,8 +3033,14 @@
         const loadingText = document.getElementById('loadingText');
         const loadingSubtext = document.getElementById('loadingSubtext');
 
+        if (!loadingEl || !loadingText || !loadingSubtext) {
+          console.warn('Loading state elements not found');
+          return;
+        }
+
         loadingText.textContent = text;
         loadingSubtext.textContent = subtext;
+        loadingEl.style.display = 'block';
         loadingEl.classList.add('show');
         uiState.isLoading = true;
 
@@ -3033,6 +3059,9 @@
       // Hide loading state
       function hideLoadingState() {
         const loadingEl = document.getElementById('scannerLoading');
+        if (!loadingEl) return;
+
+        loadingEl.style.display = 'none';
         loadingEl.classList.remove('show');
         uiState.isLoading = false;
 
@@ -3626,16 +3655,13 @@
             const hashIndex = qrContent.indexOf('#');
             if (hashIndex >= 0) {
               const extracted = qrContent.substring(hashIndex + 1);
-              console.log('Extracted token from QR:', {
-                original: qrContent.substring(0, 50) + '...',
-                extracted: extracted.substring(0, 20) + '...'
-              });
+              console.log('Token extracted successfully from URL');
               return extracted;
             }
           }
 
           // If no hash, assume it's already a token
-          console.log('QR content appears to be direct token');
+          console.log('Processing QR code content');
           return qrContent;
         } catch (error) {
           console.error('Error extracting token from QR:', error);

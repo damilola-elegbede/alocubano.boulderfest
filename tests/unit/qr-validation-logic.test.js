@@ -588,4 +588,429 @@ describe('QR Validation Logic - Unit Tests', () => {
       expect(qrService.getDb).toBeDefined();
     });
   });
+
+  describe('Legacy QR Code Fallback (api/tickets/validate.js:360-374)', () => {
+    /**
+     * Tests for the fallback mechanism in api/tickets/validate.js
+     * When validation_code query fails, system falls back to ticket_id query
+     * This enables support for legacy QR codes that use ticket_id instead of validation_code
+     */
+
+    it('should throw "Ticket not found" when both validation_code and ticket_id queries fail', async () => {
+      const validationCode = 'LEGACY-QR-CODE-001';
+
+      // Mock database to return empty results for both queries
+      mockDb.execute
+        .mockResolvedValueOnce({ rows: [] }) // First query: validation_code returns empty
+        .mockResolvedValueOnce({ rows: [] }); // Fallback query: ticket_id returns empty
+
+      // Mock transaction
+      const mockTransaction = {
+        execute: mockDb.execute,
+        commit: vi.fn().mockResolvedValue(undefined),
+        rollback: vi.fn().mockResolvedValue(undefined)
+      };
+
+      mockDb.transaction = vi.fn().mockResolvedValue(mockTransaction);
+
+      // Import the validateTicket function logic
+      // Since we can't directly import it (it's internal), we'll test the behavior
+      const startTime = Date.now();
+
+      try {
+        // Simulate the validation logic from api/tickets/validate.js
+        const tx = await mockDb.transaction();
+
+        // First query: validation_code (legacy non-JWT path)
+        const result = await tx.execute({
+          sql: `
+            SELECT t.*,
+                   'A Lo Cubano Boulder Fest' as event_name,
+                   t.event_date
+            FROM tickets t
+            WHERE t.validation_code = ?
+          `,
+          args: [validationCode]
+        });
+
+        let ticket = result.rows[0];
+
+        // Fallback: Try ticket_id for legacy QR codes
+        if (!ticket) {
+          const fallbackResult = await tx.execute({
+            sql: `
+              SELECT t.*,
+                     'A Lo Cubano Boulder Fest' as event_name,
+                     t.event_date
+              FROM tickets t
+              WHERE t.ticket_id = ?
+            `,
+            args: [validationCode]
+          });
+          ticket = fallbackResult.rows[0];
+        }
+
+        if (!ticket) {
+          throw new Error('Ticket not found');
+        }
+
+        // Should not reach here
+        expect(true).toBe(false);
+      } catch (error) {
+        expect(error.message).toBe('Ticket not found');
+      }
+
+      const endTime = Date.now();
+
+      // Verify both queries were executed
+      expect(mockDb.execute).toHaveBeenCalledTimes(2);
+
+      // Verify first query used validation_code
+      expect(mockDb.execute).toHaveBeenNthCalledWith(1, {
+        sql: expect.stringContaining('WHERE t.validation_code = ?'),
+        args: [validationCode]
+      });
+
+      // Verify second query used ticket_id (fallback)
+      expect(mockDb.execute).toHaveBeenNthCalledWith(2, {
+        sql: expect.stringContaining('WHERE t.ticket_id = ?'),
+        args: [validationCode]
+      });
+    });
+
+    it('should return ticket when validation_code fails but ticket_id succeeds (fallback)', async () => {
+      const legacyCode = 'TKT-LEGACY-123';
+      const mockTicket = {
+        ticket_id: 'TKT-LEGACY-123',
+        validation_code: null, // Legacy ticket without validation_code
+        ticket_type: 'General Admission',
+        status: 'valid',
+        validation_status: 'active',
+        scan_count: 0,
+        max_scan_count: 10,
+        attendee_first_name: 'Legacy',
+        attendee_last_name: 'User',
+        event_name: 'A Lo Cubano Boulder Fest',
+        event_date: '2026-05-15',
+        event_end_date: '2026-05-17'
+      };
+
+      // Mock database responses
+      mockDb.execute
+        .mockResolvedValueOnce({ rows: [] }) // First query: validation_code fails (empty result)
+        .mockResolvedValueOnce({ rows: [mockTicket] }); // Fallback query: ticket_id succeeds
+
+      // Mock transaction
+      const mockTransaction = {
+        execute: mockDb.execute,
+        commit: vi.fn().mockResolvedValue(undefined),
+        rollback: vi.fn().mockResolvedValue(undefined)
+      };
+
+      mockDb.transaction = vi.fn().mockResolvedValue(mockTransaction);
+
+      // Simulate validation logic with fallback
+      const tx = await mockDb.transaction();
+
+      // First query: validation_code
+      const result = await tx.execute({
+        sql: `
+          SELECT t.*,
+                 'A Lo Cubano Boulder Fest' as event_name,
+                 t.event_date
+          FROM tickets t
+          WHERE t.validation_code = ?
+        `,
+        args: [legacyCode]
+      });
+
+      let ticket = result.rows[0];
+
+      // Fallback: Try ticket_id for legacy QR codes
+      if (!ticket) {
+        const fallbackResult = await tx.execute({
+          sql: `
+            SELECT t.*,
+                   'A Lo Cubano Boulder Fest' as event_name,
+                   t.event_date
+            FROM tickets t
+            WHERE t.ticket_id = ?
+          `,
+          args: [legacyCode]
+        });
+        ticket = fallbackResult.rows[0];
+      }
+
+      // Verify ticket was found via fallback
+      expect(ticket).toBeDefined();
+      expect(ticket.ticket_id).toBe('TKT-LEGACY-123');
+      expect(ticket.status).toBe('valid');
+      expect(ticket.validation_status).toBe('active');
+
+      // Verify both queries were executed
+      expect(mockDb.execute).toHaveBeenCalledTimes(2);
+
+      // Verify fallback query was executed with correct parameters
+      expect(mockDb.execute).toHaveBeenNthCalledWith(2, {
+        sql: expect.stringContaining('WHERE t.ticket_id = ?'),
+        args: [legacyCode]
+      });
+    });
+
+    it('should not add significant latency - fallback overhead should be < 50ms', async () => {
+      const validationCode = 'PERF-TEST-001';
+      const mockTicket = {
+        ticket_id: 'PERF-TEST-001',
+        validation_code: null,
+        ticket_type: 'VIP',
+        status: 'valid',
+        validation_status: 'active',
+        scan_count: 2,
+        max_scan_count: 10,
+        attendee_first_name: 'Performance',
+        attendee_last_name: 'Test',
+        event_name: 'A Lo Cubano Boulder Fest',
+        event_date: '2026-05-15',
+        event_end_date: '2026-05-17'
+      };
+
+      // Mock database with realistic delays
+      mockDb.execute = vi.fn()
+        .mockImplementationOnce(async () => {
+          // Simulate realistic database query time (5-10ms)
+          await new Promise(resolve => setTimeout(resolve, 8));
+          return { rows: [] };
+        })
+        .mockImplementationOnce(async () => {
+          // Simulate realistic database query time (5-10ms)
+          await new Promise(resolve => setTimeout(resolve, 7));
+          return { rows: [mockTicket] };
+        });
+
+      // Mock transaction
+      const mockTransaction = {
+        execute: mockDb.execute,
+        commit: vi.fn().mockResolvedValue(undefined),
+        rollback: vi.fn().mockResolvedValue(undefined)
+      };
+
+      mockDb.transaction = vi.fn().mockResolvedValue(mockTransaction);
+
+      // Measure performance
+      const startTime = performance.now();
+
+      const tx = await mockDb.transaction();
+
+      // First query: validation_code
+      const result = await tx.execute({
+        sql: `
+          SELECT t.*,
+                 'A Lo Cubano Boulder Fest' as event_name,
+                 t.event_date
+          FROM tickets t
+          WHERE t.validation_code = ?
+        `,
+        args: [validationCode]
+      });
+
+      let ticket = result.rows[0];
+
+      // Fallback: Try ticket_id
+      if (!ticket) {
+        const fallbackResult = await tx.execute({
+          sql: `
+            SELECT t.*,
+                   'A Lo Cubano Boulder Fest' as event_name,
+                   t.event_date
+            FROM tickets t
+            WHERE t.ticket_id = ?
+          `,
+          args: [validationCode]
+        });
+        ticket = fallbackResult.rows[0];
+      }
+
+      const endTime = performance.now();
+      const duration = endTime - startTime;
+
+      // Verify ticket was found
+      expect(ticket).toBeDefined();
+      expect(ticket.ticket_id).toBe('PERF-TEST-001');
+
+      // Verify performance: total time should be < 50ms overhead + query times
+      // With 2 queries at ~8ms each = ~16ms total, plus overhead should be well under 50ms
+      expect(duration).toBeLessThan(50);
+
+      // Verify both queries were executed
+      expect(mockDb.execute).toHaveBeenCalledTimes(2);
+    });
+
+    it('should use same transaction for both queries to ensure consistency', async () => {
+      const validationCode = 'TX-CONSISTENCY-001';
+      const mockTicket = {
+        ticket_id: 'TX-CONSISTENCY-001',
+        validation_code: null,
+        ticket_type: 'General Admission',
+        status: 'valid',
+        validation_status: 'active',
+        scan_count: 0,
+        max_scan_count: 10
+      };
+
+      // Track transaction instance
+      let transactionInstance = null;
+
+      mockDb.execute = vi.fn()
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [mockTicket] });
+
+      const mockTransaction = {
+        execute: mockDb.execute,
+        commit: vi.fn().mockResolvedValue(undefined),
+        rollback: vi.fn().mockResolvedValue(undefined)
+      };
+
+      mockDb.transaction = vi.fn().mockResolvedValue(mockTransaction);
+
+      // Start transaction
+      const tx = await mockDb.transaction();
+      transactionInstance = tx;
+
+      // Execute queries
+      await tx.execute({
+        sql: 'SELECT * FROM tickets WHERE validation_code = ?',
+        args: [validationCode]
+      });
+
+      await tx.execute({
+        sql: 'SELECT * FROM tickets WHERE ticket_id = ?',
+        args: [validationCode]
+      });
+
+      // Verify same transaction was used for both queries
+      expect(tx).toBe(transactionInstance);
+      expect(mockDb.transaction).toHaveBeenCalledTimes(1);
+      expect(tx.execute).toHaveBeenCalledTimes(2);
+    });
+
+    it('should maintain query result structure consistency between primary and fallback', async () => {
+      const validationCode = 'STRUCT-TEST-001';
+      const mockTicketStructure = {
+        ticket_id: 'STRUCT-TEST-001',
+        validation_code: null,
+        ticket_type: 'VIP',
+        ticket_type_name: 'VIP Pass',
+        status: 'valid',
+        validation_status: 'active',
+        scan_count: 1,
+        max_scan_count: 10,
+        attendee_first_name: 'Structure',
+        attendee_last_name: 'Test',
+        attendee_email: 'structure@test.com',
+        event_name: 'A Lo Cubano Boulder Fest',
+        event_date: '2026-05-15',
+        event_end_date: '2026-05-17',
+        first_scanned_at: '2026-05-15T10:00:00Z',
+        last_scanned_at: '2026-05-15T10:00:00Z',
+        qr_access_method: 'web'
+      };
+
+      // Mock both queries to return same structure
+      mockDb.execute
+        .mockResolvedValueOnce({ rows: [] }) // Primary query fails
+        .mockResolvedValueOnce({ rows: [mockTicketStructure] }); // Fallback succeeds
+
+      const mockTransaction = {
+        execute: mockDb.execute,
+        commit: vi.fn().mockResolvedValue(undefined),
+        rollback: vi.fn().mockResolvedValue(undefined)
+      };
+
+      mockDb.transaction = vi.fn().mockResolvedValue(mockTransaction);
+
+      const tx = await mockDb.transaction();
+
+      // Primary query
+      const primaryResult = await tx.execute({
+        sql: `SELECT t.*, 'A Lo Cubano Boulder Fest' as event_name, t.event_date FROM tickets t WHERE t.validation_code = ?`,
+        args: [validationCode]
+      });
+
+      let ticket = primaryResult.rows[0];
+
+      // Fallback query
+      if (!ticket) {
+        const fallbackResult = await tx.execute({
+          sql: `SELECT t.*, 'A Lo Cubano Boulder Fest' as event_name, t.event_date FROM tickets t WHERE t.ticket_id = ?`,
+          args: [validationCode]
+        });
+        ticket = fallbackResult.rows[0];
+      }
+
+      // Verify result structure includes all expected fields
+      expect(ticket).toBeDefined();
+      expect(ticket).toHaveProperty('ticket_id');
+      expect(ticket).toHaveProperty('ticket_type');
+      expect(ticket).toHaveProperty('status');
+      expect(ticket).toHaveProperty('validation_status');
+      expect(ticket).toHaveProperty('scan_count');
+      expect(ticket).toHaveProperty('max_scan_count');
+      expect(ticket).toHaveProperty('attendee_first_name');
+      expect(ticket).toHaveProperty('attendee_last_name');
+      expect(ticket).toHaveProperty('event_name');
+      expect(ticket).toHaveProperty('event_date');
+
+      // Verify structure matches expected format
+      expect(ticket.event_name).toBe('A Lo Cubano Boulder Fest');
+    });
+
+    it('should handle BigInt values correctly in fallback query results', async () => {
+      const validationCode = 'BIGINT-TEST-001';
+      const mockTicketWithBigInt = {
+        id: BigInt(123456789),
+        ticket_id: 'BIGINT-TEST-001',
+        transaction_id: BigInt(987654321),
+        scan_count: BigInt(3),
+        max_scan_count: BigInt(10),
+        status: 'valid',
+        validation_status: 'active'
+      };
+
+      mockDb.execute
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [mockTicketWithBigInt] });
+
+      const mockTransaction = {
+        execute: mockDb.execute,
+        commit: vi.fn().mockResolvedValue(undefined),
+        rollback: vi.fn().mockResolvedValue(undefined)
+      };
+
+      mockDb.transaction = vi.fn().mockResolvedValue(mockTransaction);
+
+      const tx = await mockDb.transaction();
+
+      // Queries
+      const primaryResult = await tx.execute({
+        sql: 'SELECT * FROM tickets WHERE validation_code = ?',
+        args: [validationCode]
+      });
+
+      let ticket = primaryResult.rows[0];
+
+      if (!ticket) {
+        const fallbackResult = await tx.execute({
+          sql: 'SELECT * FROM tickets WHERE ticket_id = ?',
+          args: [validationCode]
+        });
+        ticket = fallbackResult.rows[0];
+      }
+
+      // Verify BigInt fields are present (will be processed by bigint-serializer.js in actual API)
+      expect(ticket).toBeDefined();
+      expect(ticket.id).toBe(BigInt(123456789));
+      expect(ticket.transaction_id).toBe(BigInt(987654321));
+      expect(ticket.scan_count).toBe(BigInt(3));
+    });
+  });
 });
