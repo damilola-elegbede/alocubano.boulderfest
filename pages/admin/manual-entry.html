@@ -369,6 +369,12 @@
             <span>API Endpoints</span>
           </a>
         </li>
+        <li class="admin-nav-item">
+          <a href="/admin/audit-logs" class="admin-nav-link">
+            <span class="nav-icon">📋</span>
+            <span>Audit Logs</span>
+          </a>
+        </li>
       </ul>
     </nav>
 
@@ -640,6 +646,10 @@
         let totalTickets = 0;
         let totalAmount = 0;
 
+        // Check if payment method is comp(free)
+        const paymentMethod = document.getElementById('payment-method').value;
+        const isComp = paymentMethod === 'comp';
+
         document.querySelectorAll('.ticket-item').forEach(item => {
           const select = item.querySelector('.ticket-type-select');
           const quantityInput = item.querySelector('.quantity-input');
@@ -650,7 +660,8 @@
             const price = parseInt(selectedOption.dataset.price) || 0;
 
             totalTickets += quantity;
-            totalAmount += price * quantity;
+            // If comp payment, force amount to 0
+            totalAmount += isComp ? 0 : (price * quantity);
           }
         });
 
@@ -671,6 +682,8 @@
           } else {
             cashContainer.style.display = 'none';
           }
+          // Update summary when payment method changes (handles comp/free forcing $0.00)
+          updateSummary();
         });
 
         // Update summary on changes

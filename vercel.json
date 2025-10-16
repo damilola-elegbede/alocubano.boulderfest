@@ -191,7 +191,7 @@
       "destination": "/pages/admin/index"
     },
     {
-      "source": "/admin/(login|dashboard|manual-entry|checkin|analytics|donations|mfa-settings|registrations|tickets|ticket-detail|api-endpoints|test-dashboard|test)",
+      "source": "/admin/(login|dashboard|manual-entry|checkin|analytics|donations|mfa-settings|registrations|tickets|ticket-detail|api-endpoints|test-dashboard|test|audit-logs)",
       "destination": "/pages/admin/$1"
     }
   ],

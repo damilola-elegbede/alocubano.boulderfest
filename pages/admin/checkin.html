@@ -4315,6 +4315,10 @@
           loadingEl.style.display = 'none';
 
           if (recentScans.length === 0) {
+            const emptyParagraph = emptyEl.querySelector('p');
+            if (emptyParagraph) {
+              emptyParagraph.textContent = "No tickets scanned in this session yet.";
+            }
             emptyEl.style.display = 'block';
             return;
           }
@@ -4385,6 +4389,18 @@
           loadingEl.style.display = 'none';
 
           if (!data.tickets || data.tickets.length === 0) {
+            // Update empty state message based on filter type
+            const emptyMessages = {
+              'today': "No tickets scanned today.",
+              'apple_wallet': "No tickets scanned from Apple Wallet yet.",
+              'google_wallet': "No tickets scanned from Google Wallet yet.",
+              'wallet': "No tickets scanned from any wallet yet.",
+              'total': "No tickets have been scanned yet."
+            };
+            const emptyParagraph = emptyEl.querySelector('p');
+            if (emptyParagraph) {
+              emptyParagraph.textContent = emptyMessages[statType] || "No tickets found for this filter.";
+            }
             emptyEl.style.display = 'block';
             return;
           }
@@ -4472,34 +4488,31 @@
           const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
           const eventParam = selectedEventId ? `?eventId=${selectedEventId}` : '';
 
-          const response = await fetch(`/api/admin/dashboard${eventParam}`, {
+          const response = await fetch(`/api/admin/scanner-stats${eventParam}`, {
             credentials: "include"
           });
           const data = await response.json();
 
           // Debug logging to track stats loading
-          console.log('📊 Dashboard API Response:', {
-            today_checkins: data.stats?.today_checkins,
-            checked_in: data.stats?.checked_in,
-            wallet_checkins: data.stats?.wallet_checkins,
+          console.log('📊 Scanner Stats API Response:', {
+            today: data.stats?.today,
+            total: data.stats?.total,
+            apple_wallet: data.stats?.apple_wallet,
+            google_wallet: data.stats?.google_wallet,
             eventId: selectedEventId,
             timestamp: new Date().toISOString()
           });
 
           if (data.stats) {
             // Load baselines from server, preserve session increments
-            stats.todayBaseline = data.stats.today_checkins || 0;
-            stats.totalBaseline = data.stats.checked_in || 0;
-            stats.appleWalletBaseline = data.stats.apple_wallet_users || 0;
-            stats.googleWalletBaseline = data.stats.google_wallet_users || 0;
+            stats.todayBaseline = data.stats.today || 0;
+            stats.totalBaseline = data.stats.total || 0;
+            stats.appleWalletBaseline = data.stats.apple_wallet || 0;
+            stats.googleWalletBaseline = data.stats.google_wallet || 0;
             // Session increments (todayIncrement, appleWalletIncrement, googleWalletIncrement, session, etc.) are NOT reset here - they persist!
 
-            // Check if we're dealing with test data
-            const hasTestData = data.testModeInfo && data.testModeInfo.hasTestModeSupport &&
-                               (data.stats.test_tickets > 0 || data.stats.test_transactions > 0);
-
-            // Update test mode indicators
-            updateScannerTestModeIndicators(hasTestData);
+            // Note: Test mode indicators removed as scanner-stats focuses on scanned tickets only
+            // If test mode tracking is needed, it should be added to scanner-stats endpoint
 
             // Update display (combines baselines + increments)
             updateStats();
