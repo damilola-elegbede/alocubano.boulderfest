@@ -1835,9 +1835,6 @@
           </a>
         </li>
       </ul>
-
-      <!-- Event Selector -->
-      <div id="event-selector-container"></div>
     </nav>
 
     <div class="scanner-app">
@@ -1857,6 +1854,8 @@
             Check-In Scanner
           </h1>
         </div>
+        <!-- Event Selector -->
+        <div id="event-selector-container" style="flex: 1; display: flex; justify-content: flex-end; padding-right: var(--space-md);"></div>
       </div>
 
       <!-- Mobile Navigation Menu -->
@@ -4373,7 +4372,7 @@
           params.set('filter', statType);
           params.set('page', page);
           params.set('limit', 50);
-          if (selectedEventId) params.set('eventId', selectedEventId);
+          if (selectedEventId && selectedEventId !== 'all') params.set('eventId', selectedEventId);
 
           // Fetch tickets from API
           const response = await fetch(`/api/admin/checked-in-tickets?${params}`, {
@@ -4486,7 +4485,7 @@
         try {
           // Get selected event ID from event selector
           const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
-          const eventParam = selectedEventId ? `?eventId=${selectedEventId}` : '';
+          const eventParam = selectedEventId && selectedEventId !== 'all' ? `?eventId=${selectedEventId}` : '';
 
           const response = await fetch(`/api/admin/scanner-stats${eventParam}`, {
             credentials: "include"
@@ -4745,6 +4744,9 @@
         // Load statistics
         await loadStats();
 
+        // Load today's scans into recent activity feed
+        await loadTodaysScans();
+
         // Monitor online status
         updateOnlineStatus();
         window.addEventListener("online", updateOnlineStatus);
@@ -4852,6 +4854,58 @@
       // Recent Activity Feed
       const recentScans = [];
       const MAX_RECENT_SCANS = 10;
+
+      // Load today's scans from database on page initialization
+      async function loadTodaysScans() {
+        try {
+          const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
+          const params = new URLSearchParams({
+            filter: 'today',
+            limit: 50,
+            page: 1
+          });
+
+          if (selectedEventId && selectedEventId !== 'all') {
+            params.set('eventId', selectedEventId);
+          }
+
+          const response = await fetch(`/api/admin/checked-in-tickets?${params}`, {
+            credentials: 'include'
+          });
+
+          if (!response.ok) {
+            console.error('Failed to load today\'s scans');
+            return;
+          }
+
+          const data = await response.json();
+
+          // Populate recentScans with today's data (most recent first)
+          if (data.tickets && Array.isArray(data.tickets)) {
+            recentScans.length = 0; // Clear existing
+            data.tickets.forEach(ticket => {
+              recentScans.push({
+                timestamp: new Date(ticket.scan_time).getTime(),
+                type: 'success',
+                title: `${ticket.first_name || 'Unknown'} ${ticket.last_name || ''}`.trim(),
+                details: `${ticket.ticket_type}\n${ticket.ticket_id}`,
+                ticketId: ticket.ticket_id,
+                walletSource: ticket.wallet_source
+              });
+            });
+
+            // Limit to MAX_RECENT_SCANS
+            if (recentScans.length > MAX_RECENT_SCANS) {
+              recentScans.length = MAX_RECENT_SCANS;
+            }
+
+            // Render the activity feed
+            renderActivityFeed();
+          }
+        } catch (error) {
+          console.error('Failed to load today\'s scans:', error);
+        }
+      }
 
       // Pagination state
       let currentPage = 1;
