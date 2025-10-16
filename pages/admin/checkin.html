@@ -1854,8 +1854,6 @@
             Check-In Scanner
           </h1>
         </div>
-        <!-- Event Selector -->
-        <div id="event-selector-container" style="flex: 1; display: flex; justify-content: flex-end; padding-right: var(--space-md);"></div>
       </div>
 
       <!-- Mobile Navigation Menu -->
@@ -3895,7 +3893,10 @@
                 data.ticket.wallet_source
               );
             } else {
-              showResult("success", "Valid Ticket!", "Check-in successful", false, null, null);
+              // Fallback: extract ticket info from data object or use scanned token
+              const ticketId = data.ticketId || data.ticket_id || extractTokenFromQR(decodedText) || "Unknown";
+              const walletSource = data.wallet_source || data.walletSource || null;
+              showResult("success", "Valid Ticket!", "Check-in successful", false, ticketId, walletSource);
             }
           } else {
             // Invalid ticket
@@ -4013,10 +4014,10 @@
         // Show modal
         modal.classList.add("show");
 
-        // Auto-close after 3 seconds
+        // Auto-close after 30 seconds
         setTimeout(() => {
           closeResult();
-        }, 3000);
+        }, 30000);
       }
 
       // Close result modal
@@ -4377,6 +4378,14 @@
           params.set('limit', 50);
           if (selectedEventId && selectedEventId !== 'all') params.set('eventId', selectedEventId);
 
+          // Debug logging
+          console.log('[DEBUG] Fetching checked-in tickets:', {
+            statType,
+            page,
+            selectedEventId,
+            url: `/api/admin/checked-in-tickets?${params.toString()}`
+          });
+
           // Fetch tickets from API
           const response = await fetch(`/api/admin/checked-in-tickets?${params}`, {
             credentials: 'include'
@@ -4388,9 +4397,61 @@
 
           const data = await response.json();
 
+          // Debug logging for response
+          console.log('[DEBUG] Checked-in tickets API response:', {
+            filter: statType,
+            ticketCount: data.tickets?.length || 0,
+            totalCount: data.pagination?.total_count || 0,
+            hasTickets: !!data.tickets,
+            isArray: Array.isArray(data.tickets),
+            responseKeys: Object.keys(data)
+          });
+
           loadingEl.style.display = 'none';
 
-          if (!data.tickets || data.tickets.length === 0) {
+          // Merge database tickets with session scans for 'today' and 'total' filters
+          // This ensures displayed counts match the cards (which include session increments)
+          let allTickets = data.tickets || [];
+
+          if (statType === 'today' || statType === 'total') {
+            // Get session scans that should be included
+            const sessionScans = recentScans
+              .filter(scan => scan.type === 'success' && scan.ticketId && scan.ticketId !== '—')
+              .map(scan => {
+                const detailsLines = scan.details.split('\n');
+                const fullName = detailsLines[0] || '';
+                const [firstName, ...lastNameParts] = fullName.split(' ');
+                const lastName = lastNameParts.join(' ');
+
+                return {
+                  ticket_id: scan.ticketId,
+                  first_name: firstName || '—',
+                  last_name: lastName || '—',
+                  wallet_source: scan.walletSource,
+                  scan_time: scan.timestamp,
+                  scan_time_mt: timeManager ? timeManager.formatDateTime(new Date(scan.timestamp)) : new Date(scan.timestamp).toLocaleString(),
+                  fromSession: true // Flag to identify session scans
+                };
+              });
+
+            // Create a Set of ticket IDs already in database results to avoid duplicates
+            const dbTicketIds = new Set(allTickets.map(t => String(t.ticket_id)));
+
+            // Add session scans that aren't already in database results
+            sessionScans.forEach(sessionTicket => {
+              if (!dbTicketIds.has(String(sessionTicket.ticket_id))) {
+                allTickets.push(sessionTicket);
+              }
+            });
+
+            console.log('[DEBUG] Merged tickets with session scans:', {
+              dbTickets: data.tickets?.length || 0,
+              sessionScans: sessionScans.length,
+              merged: allTickets.length
+            });
+          }
+
+          if (allTickets.length === 0) {
             // Update empty state message based on filter type
             const emptyMessages = {
               'today': "No tickets scanned today.",
@@ -4408,7 +4469,7 @@
           }
 
           // Render tickets table
-          tableBody.innerHTML = data.tickets.map(ticket => {
+          tableBody.innerHTML = allTickets.map(ticket => {
             const scanTime = ticket.scan_time_mt ||
               (timeManager ? timeManager.formatDateTime(ticket.scan_time) : ticket.scan_time);
 
@@ -4706,6 +4767,9 @@
         // Check authentication
         if (!(await checkAuth())) return;
 
+        // Event selector removed from scanner page per user request
+        // Can be re-enabled later by uncommenting this block
+        /*
         // Wait for event selector to be available
         const waitForEventSelector = async () => {
           let attempts = 0;
@@ -4730,6 +4794,7 @@
             loadStats();
           });
         }
+        */
 
         // Register service worker
         if ("serviceWorker" in navigator) {
