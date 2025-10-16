@@ -48,6 +48,17 @@ async function handler(req, res) {
     const ticketsHasEventId = await columnExists(db, 'tickets', 'event_id');
     const ticketsHasQrAccessMethod = await columnExists(db, 'tickets', 'qr_access_method');
 
+    // Fail-fast: Wallet-specific filters require qr_access_method column
+    const walletFilters = ['wallet', 'apple_wallet', 'google_wallet'];
+    if (walletFilters.includes(filter) && !ticketsHasQrAccessMethod) {
+      return res.status(400).json({
+        error: 'Wallet filtering unavailable',
+        message: 'The qr_access_method column does not exist in the database',
+        suggestion: 'Run database migrations to add wallet tracking support',
+        filter_requested: filter
+      });
+    }
+
     // Build WHERE clauses based on filter and event ID
     const whereConditions = [];
     const queryParams = [];

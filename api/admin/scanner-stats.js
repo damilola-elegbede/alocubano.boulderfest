@@ -3,6 +3,7 @@ import { getDatabaseClient } from "../../lib/database.js";
 import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
 import { columnExists, safeParseInt } from "../../lib/db-utils.js";
 import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
+import timeUtils from "../../lib/time-utils.js";
 
 async function handler(req, res) {
   let db;
@@ -69,7 +70,7 @@ async function handler(req, res) {
       };
 
       // 4. Google Wallet check-ins
-      const googleConditions = [...baseConditions, "qr_access_method = 'google_wallet'"];
+      const googleConditions = [...baseConditions, "qr_access_method IN ('google_wallet', 'samsung_wallet')"];
       queries.google_wallet = {
         sql: `SELECT COUNT(*) as count FROM tickets WHERE ${googleConditions.join(' AND ')}`,
         params: baseParams
@@ -102,11 +103,20 @@ async function handler(req, res) {
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
 
-    res.status(200).json({
+    // Prepare response data
+    const responseData = {
       stats,
       timezone: 'America/Denver',
       timestamp: new Date().toISOString()
-    });
+    };
+
+    // Enhance with Mountain Time fields
+    const enhancedResponse = timeUtils.enhanceApiResponse(
+      responseData,
+      ['timestamp']
+    );
+
+    res.status(200).json(enhancedResponse);
   } catch (error) {
     console.error('Scanner stats API error:', error);
 

@@ -2134,6 +2134,7 @@
         todayIncrement: 0,
         appleWalletIncrement: 0,
         googleWalletIncrement: 0,
+        queued: 0,
         session: 0,
         failed: 0,
         invalid: 0,
@@ -2162,7 +2163,8 @@
 
           // Restore session stats only (not baselines)
           stats.todayIncrement = data.todayIncrement || 0;
-          stats.walletIncrement = data.walletIncrement || 0;
+          stats.appleWalletIncrement = data.appleWalletIncrement || 0;
+          stats.googleWalletIncrement = data.googleWalletIncrement || 0;
           stats.session = data.session || 0;
           stats.queued = data.queued || 0;
           stats.failed = data.failed || 0;
@@ -2180,7 +2182,8 @@
         try {
           localStorage.setItem(STATS_STORAGE_KEY, JSON.stringify({
             todayIncrement: stats.todayIncrement,
-            walletIncrement: stats.walletIncrement,
+            appleWalletIncrement: stats.appleWalletIncrement,
+            googleWalletIncrement: stats.googleWalletIncrement,
             session: stats.session,
             queued: stats.queued,
             failed: stats.failed,
