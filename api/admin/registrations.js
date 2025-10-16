@@ -33,8 +33,9 @@ async function handler(req, res) {
 
       const { sanitized } = validation;
 
-      // Check if event_id column exists in tickets table
+      // Check if event_id and qr_access_method columns exist in tickets table
       const ticketsHasEventId = await columnExists(db, 'tickets', 'event_id');
+      const ticketsHasQrAccessMethod = await columnExists(db, 'tickets', 'qr_access_method');
 
       let sql = `
       SELECT
@@ -97,6 +98,18 @@ async function handler(req, res) {
         sql += ' AND t.checked_in_at IS NULL';
       }
 
+      // Filter by today's check-ins (using Mountain Time, not UTC)
+      // SQLite's DATE('now') returns UTC, so we apply -7 hour offset for Mountain Time
+      // This ensures "today" matches the festival's local timezone near midnight boundaries
+      if (sanitized.checkedInToday === 'true') {
+        sql += ` AND DATE(t.checked_in_at, '-7 hours') = DATE('now', '-7 hours')`;
+      }
+
+      // Filter by wallet access (only if column exists)
+      if (sanitized.walletAccess === 'true' && ticketsHasQrAccessMethod) {
+        sql += ` AND t.qr_access_method = 'wallet'`;
+      }
+
       // Whitelist allowed columns for ORDER BY to prevent SQL injection
       const allowedSortColumns = ['created_at', 'updated_at', 'checked_in_at', 'ticket_id', 'status', 'ticket_type'];
       const allowedSortOrders = ['ASC', 'DESC'];
@@ -151,6 +164,16 @@ async function handler(req, res) {
         countSql += ' AND t.checked_in_at IS NOT NULL';
       } else if (sanitized.checkedIn === 'false') {
         countSql += ' AND t.checked_in_at IS NULL';
+      }
+
+      // Filter by today's check-ins (same as main query - using Mountain Time, not UTC)
+      if (sanitized.checkedInToday === 'true') {
+        countSql += ` AND DATE(t.checked_in_at, '-7 hours') = DATE('now', '-7 hours')`;
+      }
+
+      // Filter by wallet access (same as main query - only if column exists)
+      if (sanitized.walletAccess === 'true' && ticketsHasQrAccessMethod) {
+        countSql += ` AND t.qr_access_method = 'wallet'`;
       }
 
       const countResult = await db.execute({ sql: countSql, args: countArgs });

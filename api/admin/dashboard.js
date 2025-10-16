@@ -41,7 +41,8 @@ async function handler(req, res) {
         (SELECT COALESCE(SUM(amount_cents), 0) / 100.0 FROM transactions WHERE status = 'completed' ${transactionWhereClause}) as total_revenue,
         (SELECT COUNT(*) FROM tickets WHERE ticket_type LIKE '%workshop%' ${ticketWhereClause}) as workshop_tickets,
         (SELECT COUNT(*) FROM tickets WHERE ticket_type LIKE '%vip%' ${ticketWhereClause}) as vip_tickets,
-        (SELECT COUNT(*) FROM tickets WHERE date(created_at) = date('now') ${ticketWhereClause}) as today_sales,
+        -- Today's sales (using Mountain Time, not UTC)
+        (SELECT COUNT(*) FROM tickets WHERE date(created_at, '-7 hours') = date('now', '-7 hours') ${ticketWhereClause}) as today_sales,
         -- Wallet statistics
         (SELECT COUNT(*) FROM tickets WHERE qr_token IS NOT NULL ${ticketWhereClause}) as qr_generated,
         (SELECT COUNT(*) FROM tickets WHERE qr_access_method = 'apple_wallet' ${ticketWhereClause}) as apple_wallet_users,
@@ -50,15 +51,19 @@ async function handler(req, res) {
         -- Test mode statistics
         (SELECT COUNT(*) FROM tickets WHERE is_test = 1 ${ticketWhereClause}) as test_tickets,
         (SELECT COUNT(*) FROM transactions WHERE is_test = 1 ${transactionWhereClause}) as test_transactions,
-        (SELECT COALESCE(SUM(amount_cents), 0) / 100.0 FROM transactions WHERE is_test = 1 AND status = 'completed' ${transactionWhereClause}) as test_revenue
+        (SELECT COALESCE(SUM(amount_cents), 0) / 100.0 FROM transactions WHERE is_test = 1 AND status = 'completed' ${transactionWhereClause}) as test_revenue,
+        -- Check-in statistics (using actual scan timestamps with Mountain Time, not UTC)
+        (SELECT COUNT(*) FROM tickets WHERE (last_scanned_at IS NOT NULL OR checked_in_at IS NOT NULL) AND date(COALESCE(last_scanned_at, checked_in_at), '-7 hours') = date('now', '-7 hours') ${ticketWhereClause}) as today_checkins,
+        (SELECT COUNT(*) FROM tickets WHERE (last_scanned_at IS NOT NULL OR checked_in_at IS NOT NULL) AND qr_access_method IN ('apple_wallet', 'google_wallet', 'samsung_wallet') ${ticketWhereClause}) as wallet_checkins
     `;
 
     // Add parameters for each subquery that uses event_id filtering
     if (eventId && ticketsHasEventId) {
       // Count the subqueries using tickets table:
       // total_tickets, checked_in, total_orders, workshop_tickets, vip_tickets, today_sales,
-      // qr_generated, apple_wallet_users, google_wallet_users, web_only_users, test_tickets = 11 subqueries
-      for (let i = 0; i < 11; i++) {
+      // qr_generated, apple_wallet_users, google_wallet_users, web_only_users, test_tickets,
+      // today_checkins, wallet_checkins = 13 subqueries
+      for (let i = 0; i < 13; i++) {
         statsParams.push(eventId);
       }
     }
@@ -88,7 +93,10 @@ async function handler(req, res) {
       // Test mode stats (will be 0 if columns don't exist)
       test_tickets: 0,
       test_transactions: 0,
-      test_revenue: 0
+      test_revenue: 0,
+      // Check-in stats
+      today_checkins: 0,
+      wallet_checkins: 0
     };
 
     // Get recent registrations with event filtering
@@ -155,9 +163,9 @@ async function handler(req, res) {
 
     const ticketBreakdown = await db.execute(ticketBreakdownQuery, ticketBreakdownParams);
 
-    // Get daily sales for the last 7 days with event filtering
+    // Get daily sales for the last 7 days with event filtering (using Mountain Time, not UTC)
     const dailySalesParams = [];
-    const dailySalesConditions = ['created_at >= date(\'now\', \'-7 days\')'];
+    const dailySalesConditions = ['created_at >= date(\'now\', \'-7 hours\', \'-7 days\')'];
 
     // Add event filtering if applicable
     if (eventId && ticketsHasEventId) {
@@ -167,14 +175,14 @@ async function handler(req, res) {
 
     const dailySalesQuery = `
       SELECT
-        date(created_at) as date,
+        date(created_at, '-7 hours') as date,
         COUNT(*) as tickets_sold,
         SUM(price_cents) / 100.0 as revenue,
         SUM(CASE WHEN is_test = 1 THEN 1 ELSE 0 END) as test_tickets_sold,
         SUM(CASE WHEN is_test = 0 THEN 1 ELSE 0 END) as production_tickets_sold
       FROM tickets
       WHERE ${dailySalesConditions.join(' AND ')}
-      GROUP BY date(created_at)
+      GROUP BY date(created_at, '-7 hours')
       ORDER BY date DESC
     `;
 

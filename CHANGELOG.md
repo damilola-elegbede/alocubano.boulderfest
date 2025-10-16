@@ -7,6 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Enhanced - Admin QR Code Scanner Redesign (October 2025)
+
+#### Full-Screen Scanner Modal Implementation
+- **New Scanning Approach**: Complete redesign from embedded scanner to full-screen modal
+  - Large, prominent "Scan Ticket" button (📷) in admin controls
+  - Full-screen modal overlay (100vw x 100vh) with dark semi-transparent backdrop
+  - Much larger scan region (80% of viewport width, max 500px) for better QR code detection
+  - Simple, clean design with minimal visual distractions
+  - Auto-closes on successful scan and returns to admin dashboard
+
+- **Enhanced Visual Feedback**: Clear state indicators throughout scanning process
+  - Red border during active scanning (searching for QR code)
+  - Green border when QR code is locked on and being processed
+  - Smooth transitions between states for better user experience
+  - Haptic feedback on successful scan (vibration)
+
+- **Scanner Configuration Simplification**: Removed complex adaptive logic in favor of reliable scanning
+  - Fixed 30 FPS for all devices (no more device-specific adjustments)
+  - Responsive scan box size (adapts to viewport)
+  - QR_CODE format only for faster recognition
+  - Simple camera constraints (facingMode: "environment" only)
+  - Removed experimental features that caused compatibility issues
+
+- **User Experience Improvements**: Mobile-first design with industry standard patterns
+  - Click button → camera opens full-screen → scan → auto-close
+  - Easy close button and backdrop click to dismiss
+  - Clear instructions: "Position the QR code within the frame"
+  - Larger scan area dramatically improves QR code detection success rate
+
+#### Technical Changes
+- Added full-screen scanner modal HTML/CSS (`.fullscreen-scanner-modal`)
+- Created `openFullscreenScanner()` and `closeFullscreenScanner()` functions
+- Added `getFullscreenScannerConfig()` with responsive qrbox calculation
+- Removed decorative corner brackets (`.scan-corners`) for cleaner appearance
+- Reverted mobile layout changes (removed `flex-direction: column-reverse`)
+- Proper scanner cleanup on modal close to prevent resource leaks
+- Error handling with fallback to manual entry on camera access failure
+
+#### Why This Approach?
+Previous embedded scanner had:
+- Small scan area (280x280px) limiting QR code detection
+- Complex adaptive FPS logic causing reliability issues
+- Decorative elements adding visual noise
+- Restrictive camera constraints preventing proper focus
+
+New full-screen modal provides:
+- 3-5x larger scan area for much better detection
+- Simpler, more reliable configuration
+- Industry-standard mobile UX pattern
+- Better camera access and focus capability
+
 ### Fixed - E2E Test Suite Reliability (October 2025)
 
 #### Test Quality Improvements

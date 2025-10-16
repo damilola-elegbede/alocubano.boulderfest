@@ -3182,3 +3182,434 @@
   color: var(--color-text-secondary);
   margin: var(--space-xs) 0 0 0;
 }
+
+/* ==========================================================================
+   MOBILE NAVIGATION (HAMBURGER MENU)
+   ========================================================================== */
+
+/* Hamburger Menu Toggle Button */
+.admin-menu-toggle {
+  display: none; /* Hidden on desktop */
+  position: fixed;
+  top: var(--space-lg);
+  right: var(--space-lg);
+  width: 48px;
+  height: 48px;
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  z-index: 1001;
+  transition: all var(--transition-base);
+  box-shadow: var(--shadow-md);
+  padding: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.admin-menu-toggle:hover {
+  background: var(--color-blue);
+  border-color: var(--color-blue);
+  transform: scale(1.05);
+  box-shadow: var(--shadow-lg);
+}
+
+.admin-menu-toggle:focus {
+  outline: 3px solid rgba(91, 107, 181, 0.3);
+  outline-offset: 2px;
+}
+
+/* Hamburger Icon (Three Lines) */
+.admin-menu-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 24px;
+  height: 18px;
+  position: relative;
+}
+
+.admin-menu-icon span {
+  display: block;
+  width: 24px;
+  height: 2px;
+  background: var(--color-text-primary);
+  border-radius: 2px;
+  transition: all var(--transition-base);
+  transform-origin: center;
+}
+
+.admin-menu-toggle:hover .admin-menu-icon span {
+  background: var(--color-text-inverse);
+}
+
+/* Animated Hamburger to X Transformation */
+.admin-menu-toggle.is-active .admin-menu-icon span:nth-child(1) {
+  transform: translateY(8px) rotate(45deg);
+}
+
+.admin-menu-toggle.is-active .admin-menu-icon span:nth-child(2) {
+  opacity: 0;
+  transform: scaleX(0);
+}
+
+.admin-menu-toggle.is-active .admin-menu-icon span:nth-child(3) {
+  transform: translateY(-8px) rotate(-45deg);
+}
+
+/* Mobile Navigation Panel */
+@media (max-width: 768px) {
+  /* Show hamburger button on mobile */
+  .admin-menu-toggle {
+    display: flex;
+  }
+
+  /* Hide desktop navigation items visually but keep container for fixed child */
+  .admin-navigation {
+    height: 0;
+    overflow: visible; /* Allow fixed child to show */
+    padding: 0;
+    margin: 0;
+    border: none;
+    background: transparent;
+  }
+
+  /* Hide event selector on mobile (inside admin-navigation) */
+  .admin-navigation #event-selector-container {
+    display: none;
+  }
+
+  /* Mobile slide-out navigation panel */
+  .admin-nav-list {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 320px;
+    max-width: 85vw;
+    height: 100vh;
+    background: var(--color-surface);
+    border-left: 2px solid var(--color-border);
+    box-shadow: var(--shadow-xl);
+    z-index: 1000;
+    transform: translate3d(100%, 0, 0);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding: calc(var(--space-xl) * 2) var(--space-lg) var(--space-xl);
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  /* Backdrop overlay */
+  .admin-nav-list::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 320px;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: -1;
+  }
+
+  /* Open state */
+  .admin-nav-list.is-open {
+    transform: translate3d(0, 0, 0);
+  }
+
+  .admin-nav-list.is-open::before {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Navigation Items */
+  .admin-nav-item {
+    width: 100%;
+    margin: 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .admin-nav-item:last-child {
+    border-bottom: none;
+  }
+
+  /* Navigation Links */
+  .admin-nav-link {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md) var(--space-lg);
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    text-align: left;
+    transition: all var(--transition-base);
+    min-height: 48px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .admin-nav-link::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-blue), var(--color-red));
+    transition: left var(--transition-base);
+    z-index: 0;
+    opacity: 0.1;
+  }
+
+  .admin-nav-link:hover {
+    background: var(--color-background-secondary);
+    transform: translateX(4px);
+    box-shadow: none;
+    border: none;
+  }
+
+  .admin-nav-link:hover::before {
+    left: 0;
+  }
+
+  .admin-nav-link.active {
+    background: var(--color-blue);
+    color: var(--color-text-inverse);
+    font-weight: 700;
+  }
+
+  .admin-nav-link.active::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--color-red);
+  }
+
+  /* Navigation Icon */
+  .nav-icon {
+    font-size: 24px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Navigation Group Headers */
+  .admin-nav-group-header {
+    font-family: var(--font-display);
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    color: var(--color-text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-wider);
+    padding: var(--space-lg) var(--space-lg) var(--space-sm);
+    margin-top: var(--space-md);
+    border-bottom: 2px solid var(--color-border);
+    position: relative;
+  }
+
+  .admin-nav-group-header:first-child {
+    margin-top: 0;
+  }
+
+  .admin-nav-group-header::after {
+    content: "";
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 60px;
+    height: 2px;
+    background: linear-gradient(90deg, var(--color-blue), var(--color-red));
+  }
+
+  /* Navigation Separator */
+  .admin-nav-separator {
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      var(--color-border),
+      transparent
+    );
+    margin: var(--space-md) 0;
+  }
+
+  /* Prevent body scroll when menu is open */
+  body.menu-open {
+    overflow: hidden;
+  }
+}
+
+/* Small Mobile Screens (iPhone SE, etc.) */
+@media (max-width: 375px) {
+  .admin-nav-list {
+    width: 280px;
+  }
+
+  .admin-menu-toggle {
+    top: var(--space-md);
+    right: var(--space-md);
+  }
+
+  .admin-nav-link {
+    padding: var(--space-sm) var(--space-md);
+    font-size: var(--font-size-sm);
+  }
+
+  .nav-icon {
+    font-size: 20px;
+    width: 28px;
+    height: 28px;
+  }
+}
+
+/* Tablet Adjustments */
+@media (min-width: 481px) and (max-width: 768px) {
+  .admin-nav-list {
+    width: 360px;
+  }
+
+  .admin-nav-link {
+    font-size: var(--font-size-base);
+  }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .admin-menu-toggle {
+    border-width: 3px;
+  }
+
+  .admin-menu-icon span {
+    height: 3px;
+  }
+
+  .admin-nav-list {
+    border-left-width: 3px;
+  }
+
+  .admin-nav-link {
+    border-bottom-width: 2px;
+  }
+
+  .admin-nav-group-header {
+    border-bottom-width: 3px;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .admin-menu-toggle,
+  .admin-nav-list,
+  .admin-nav-link,
+  .admin-menu-icon span {
+    transition: none;
+    animation: none;
+  }
+
+  .admin-nav-list.is-open {
+    transform: none;
+  }
+
+  .admin-nav-link:hover {
+    transform: none;
+  }
+
+  .admin-menu-toggle:hover {
+    transform: none;
+  }
+}
+
+/* Desktop: Ensure desktop navigation works correctly */
+@media (min-width: 769px) {
+  /* Keep desktop navigation visible */
+  .admin-navigation {
+    display: block;
+  }
+
+  /* Hide mobile-only elements */
+  .admin-menu-toggle {
+    display: none;
+  }
+
+  .admin-nav-group-header,
+  .admin-nav-separator,
+  .nav-icon {
+    display: none;
+  }
+
+  /* Desktop navigation keeps horizontal layout */
+  .admin-nav-list {
+    position: static;
+    width: auto;
+    height: auto;
+    transform: none;
+    overflow: visible;
+    padding: 0;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    background: transparent;
+    border: none;
+    box-shadow: none;
+  }
+
+  .admin-nav-item {
+    width: auto;
+    border: none;
+  }
+
+  .admin-nav-link {
+    display: inline-flex;
+    width: auto;
+    min-height: auto;
+    padding: var(--space-sm) var(--space-lg);
+    background: var(--color-background-secondary);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+  }
+}
+
+/* Focus States for Keyboard Navigation */
+.admin-menu-toggle:focus-visible {
+  outline: 3px solid var(--color-blue);
+  outline-offset: 2px;
+}
+
+.admin-nav-link:focus-visible {
+  outline: 3px solid var(--color-blue);
+  outline-offset: -3px;
+  z-index: 10;
+}
+
+/* Screen Reader Only Text */
+.admin-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

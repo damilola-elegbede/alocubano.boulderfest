@@ -103,26 +103,53 @@ function checkDrift() {
     }
   }
 
-  // Check 5: Quick npm ci dry run (ultimate test)
+  // Check 5: Verify overrides/resolutions changed but lock file not updated (CRITICAL)
+  if (packageJson.overrides || packageJson.resolutions) {
+    log(COLORS.BLUE, '🔍', 'Checking overrides/resolutions...');
+
+    // If package.json modified after lock AND has overrides, this is critical drift
+    if (packageStat.mtime > lockStat.mtime) {
+      log(COLORS.RED, '❌', 'Overrides/resolutions exist but lock file is stale');
+      log(COLORS.YELLOW, '💡', 'Overrides require lock file regeneration - run: npm install');
+      hasErrors = true;
+    }
+  }
+
+  // Check 6: Verify all declared dependencies exist in lock file
   if (!hasErrors) {
-    try {
-      log(COLORS.BLUE, '🧪', 'Running npm ci dry-run test...');
+    log(COLORS.BLUE, '🔍', 'Verifying all dependencies exist in lock file...');
 
-      // Create a temporary test by checking if npm ci would work
-      // We use npm ls to verify dependency tree integrity
-      execSync('npm ls --depth=0 --json', {
-        stdio: 'pipe',
-        encoding: 'utf8'
-      });
+    const allDeps = {
+      ...packageJson.dependencies || {},
+      ...packageJson.devDependencies || {},
+      ...packageJson.optionalDependencies || {}
+    };
 
-      log(COLORS.GREEN, '✅', 'npm dependency tree is valid');
-    } catch (error) {
-      // npm ls returns non-zero on issues
-      if (error.status !== 0) {
-        log(COLORS.RED, '❌', 'npm dependency tree has issues');
-        log(COLORS.YELLOW, '💡', 'Run: rm -rf node_modules package-lock.json && npm install');
+    let missingFromLock = 0;
+    const resolvedPackages = lockJson.packages || {};
+
+    for (const [name, version] of Object.entries(allDeps)) {
+      // Check if package exists in lock file (handles both flat and nested structures)
+      const inLock = resolvedPackages[`node_modules/${name}`] ||
+                     Object.keys(resolvedPackages).some(k =>
+                       k.endsWith(`/node_modules/${name}`)
+                     );
+
+      if (!inLock) {
+        if (missingFromLock === 0) {
+          log(COLORS.RED, '❌', 'Dependencies missing from lock file:');
+        }
+        log(COLORS.RED, '   ', `${name}@${version}`);
+        missingFromLock++;
         hasErrors = true;
       }
+    }
+
+    if (missingFromLock > 0) {
+      log(COLORS.RED, '❌', `${missingFromLock} package(s) missing from lock file`);
+      log(COLORS.YELLOW, '💡', 'Run: npm install to regenerate lock file');
+    } else {
+      log(COLORS.GREEN, '✅', 'All declared dependencies exist in lock file');
     }
   }
 
@@ -130,11 +157,11 @@ function checkDrift() {
   console.log('\n================================');
   if (hasErrors) {
     log(COLORS.RED, '❌', 'Drift detected! Fix required before commit.');
-    log(COLORS.YELLOW, '💡', 'Quick fix: rm -rf node_modules package-lock.json && npm install');
+    log(COLORS.YELLOW, '💡', 'Run: npm install');
     process.exit(1);
   } else if (hasWarnings) {
     log(COLORS.YELLOW, '⚠️', 'Warnings detected but commit can proceed.');
-    log(COLORS.BLUE, '💡', 'Consider running: npm install');
+    log(COLORS.BLUE, '💡', 'Consider running: npm install to sync timestamps');
   } else {
     log(COLORS.GREEN, '✅', 'No drift detected - packages are synchronized!');
   }

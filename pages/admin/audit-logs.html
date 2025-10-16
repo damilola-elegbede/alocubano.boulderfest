@@ -367,17 +367,96 @@
             overflow-x: auto;
         }
     </style>
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/typography.css" />
+    <link rel="stylesheet" href="/css/components.css" />
+    <link rel="stylesheet" href="/css/navigation.css" />
+    <link rel="stylesheet" href="/css/admin-overrides.css" />
 </head>
 <body>
-    <nav class="admin-nav">
-        <div class="nav-brand">Admin Panel</div>
-        <div class="nav-links">
-            <a href="/admin/dashboard">Dashboard</a>
-            <a href="/admin/registrations">Registrations</a>
-            <a href="/admin/donations">Donations</a>
-            <a href="/admin/audit-logs" class="active">Audit Logs</a>
-            <a href="/admin/mfa-settings">Security</a>
-        </div>
+    <!-- Mobile Hamburger Menu Toggle -->
+    <button class="admin-menu-toggle" aria-label="Toggle navigation menu" aria-expanded="false">
+      <div class="admin-menu-icon">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </button>
+
+    <!-- Unified Admin Navigation -->
+    <nav class="admin-navigation">
+      <ul class="admin-nav-list">
+        <!-- Core Tools Group -->
+        <li role="presentation" class="admin-nav-group-header">Core Tools</li>
+        <li class="admin-nav-item">
+          <a href="/admin" class="admin-nav-link">
+            <span class="nav-icon">🏠</span>
+            <span>Portal</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/dashboard" class="admin-nav-link">
+            <span class="nav-icon">📊</span>
+            <span>Dashboard</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/checkin" class="admin-nav-link">
+            <span class="nav-icon">📱</span>
+            <span>Check-in Scanner</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/manual-entry" class="admin-nav-link">
+            <span class="nav-icon">✏️</span>
+            <span>Manual Entry</span>
+          </a>
+        </li>
+
+        <!-- Data & Analytics Group -->
+        <li role="presentation" aria-hidden="true" class="admin-nav-separator"></li>
+        <li role="presentation" class="admin-nav-group-header">Data & Analytics</li>
+        <li class="admin-nav-item">
+          <a href="/admin/tickets" class="admin-nav-link">
+            <span class="nav-icon">🎫</span>
+            <span>Tickets</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/analytics" class="admin-nav-link">
+            <span class="nav-icon">📈</span>
+            <span>Analytics</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/donations" class="admin-nav-link">
+            <span class="nav-icon">💝</span>
+            <span>Donations</span>
+          </a>
+        </li>
+
+        <!-- Utilities Group -->
+        <li role="presentation" aria-hidden="true" class="admin-nav-separator"></li>
+        <li role="presentation" class="admin-nav-group-header">Utilities</li>
+        <li class="admin-nav-item">
+          <a href="/admin/test" class="admin-nav-link">
+            <span class="nav-icon">🧪</span>
+            <span>Test</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/api-endpoints" class="admin-nav-link">
+            <span class="nav-icon">🔌</span>
+            <span>API Endpoints</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/audit-logs" class="admin-nav-link active">
+            <span class="nav-icon">📋</span>
+            <span>Audit Logs</span>
+          </a>
+        </li>
+      </ul>
     </nav>
 
     <div class="audit-container">
@@ -505,5 +584,8 @@
     </div>
 
     <script type="module" src="/js/admin-audit-logs.js"></script>
+
+    <!-- Mobile Navigation Controller -->
+    <script src="/js/admin-mobile-nav.js"></script>
 </body>
 </html>

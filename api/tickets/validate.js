@@ -98,7 +98,7 @@ function validateTicketToken(token) {
 
   for (const pattern of suspiciousPatterns) {
     if (pattern.test(token)) {
-      console.warn(`Suspicious token pattern detected from IP: ${token.substring(0, 20)}...`);
+      console.warn('Suspicious token pattern detected');
       return {
         isValid: false,
         error: 'Token contains invalid characters',
@@ -172,8 +172,7 @@ function extractValidationCode(token) {
 
   // Fallback to treating as direct validation code (legacy format)
   console.warn('JWT token validation failed, treating as direct validation code:', {
-    error: jwtValidation.error,
-    tokenPrefix: token.substring(0, 10)
+    error: jwtValidation.error
   });
 
   // Additional validation for direct validation codes
@@ -235,6 +234,11 @@ function isEventEnded(ticket) {
  * @param {Object} scanData - Scan data to log
  */
 async function logScanAttempt(db, scanData) {
+  // Skip logging if ticket doesn't exist (prevents FOREIGN KEY constraint errors)
+  if (!scanData.ticketId || scanData.ticketId === 'unknown') {
+    return;
+  }
+
   try {
     await db.execute({
       sql: `
@@ -351,6 +355,22 @@ async function validateTicket(db, validationCode, source, isJWT = false) {
       // Process database result to handle BigInt values
       const processedResult = processDatabaseResult(result);
       ticket = processedResult.rows[0];
+
+      // Fallback: Try ticket_id for legacy QR codes or manual entry
+      if (!ticket) {
+        const fallbackResult = await tx.execute({
+          sql: `
+            SELECT t.*,
+                   'A Lo Cubano Boulder Fest' as event_name,
+                   t.event_date
+            FROM tickets t
+            WHERE t.ticket_id = ?
+          `,
+          args: [validationCode]
+        });
+        const fallbackProcessed = processDatabaseResult(fallbackResult);
+        ticket = fallbackProcessed.rows[0];
+      }
     }
 
     if (!ticket) {
@@ -422,6 +442,11 @@ async function validateTicket(db, validationCode, source, isJWT = false) {
  * @param {object} params - Logging parameters
  */
 async function logValidation(db, params) {
+  // Skip logging if ticket doesn't exist (prevents NOT NULL constraint errors)
+  if (!params.ticketId) {
+    return;
+  }
+
   try {
     // Ensure database exists and qr_validations table is available
     if (!db) {
@@ -923,7 +948,7 @@ async function handler(req, res) {
     // Log successful validation (legacy format for compatibility)
     await logValidation(db, {
       ticketId: ticket.ticket_id,
-      token: token.substring(0, 10) + '...', // Don't log full token
+      token: '[REDACTED]', // Don't log any part of token
       result: 'success',
       source: source,
       ip: clientIP,
@@ -1103,7 +1128,7 @@ async function handler(req, res) {
       if (db) {
         await logValidation(db, {
           ticketId: ticketId || null,
-          token: token ? token.substring(0, 10) + '...' : 'invalid',
+          token: token ? '[REDACTED]' : 'invalid',
           result: 'invalid', // Use schema-compliant enum value
           failureReason: safeErrorMessage,
           source: source,

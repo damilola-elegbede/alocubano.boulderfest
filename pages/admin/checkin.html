@@ -257,62 +257,114 @@
       .scan-region {
         width: 280px;
         height: 280px;
-        border: 3px solid var(--color-blue);
+        border: 3px solid var(--color-red);
         border-radius: var(--radius-xl);
         position: relative;
-        animation: scannerPulse 2s infinite;
-        box-shadow: 0 0 40px rgba(102, 126, 234, 0.3);
+        box-shadow: 0 0 40px rgba(239, 68, 68, 0.3);
+        transition: all 0.3s ease;
       }
 
-      @keyframes scannerPulse {
-        0% {
-          border-color: var(--color-blue);
+      /* Scanner state: actively scanning (default - red border) */
+      .scan-region.scanning {
+        border-color: var(--color-red);
+        box-shadow: 0 0 40px rgba(239, 68, 68, 0.3);
+      }
+
+      /* Scanner state: QR code locked on (green border) */
+      .scan-region.locked {
+        border-color: #10b981;
+        box-shadow: 0 0 40px rgba(16, 185, 129, 0.5);
+      }
+
+      /* Scan corners removed for cleaner appearance - full-screen scanner uses simple borders */
+
+      /* Stats Bar */
+      .stats-bar {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: var(--space-md);
+        padding: var(--space-lg);
+        background: var(--color-surface-elevated);
+        border-bottom: 1px solid var(--color-border);
+      }
+
+      .stat-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: var(--space-md);
+        background: var(--color-surface);
+        border-radius: var(--radius-md);
+        border: 1px solid var(--color-border);
+        transition: all 0.2s ease;
+      }
+
+      .stat-item:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+      }
+
+      .stat-item-clickable {
+        cursor: pointer;
+      }
+
+      .stat-item-clickable:hover {
+        border-color: var(--color-blue);
+        box-shadow: var(--shadow-lg);
+      }
+
+      .stat-item-clickable:active {
+        transform: translateY(0);
+      }
+
+      .stat-value {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--color-blue);
+        font-family: var(--font-mono);
+        line-height: 1;
+        margin-bottom: var(--space-xs);
+      }
+
+      .stat-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--color-text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        text-align: center;
+      }
+
+      /* Highlight new stats */
+      #statFailed { color: var(--color-red); }
+      #statInvalid { color: var(--color-warning); }
+      #statAvgTime { color: var(--color-success); }
+
+      /* Mobile responsive stats */
+      @media (max-width: 768px) {
+        .stats-bar {
+          grid-template-columns: repeat(4, 1fr);
+          gap: var(--space-sm);
+          padding: var(--space-md);
         }
-        50% {
-          border-color: var(--color-red);
+
+        .stat-item {
+          padding: var(--space-sm);
         }
-        100% {
-          border-color: var(--color-blue);
+
+        .stat-value {
+          font-size: 18px;
+        }
+
+        .stat-label {
+          font-size: 10px;
         }
       }
 
-      .scan-corners {
-        position: absolute;
-        width: 30px;
-        height: 30px;
-        border: 4px solid var(--color-white);
-      }
-
-      .scan-corners.tl {
-        top: -2px;
-        left: -2px;
-        border-right: none;
-        border-bottom: none;
-        border-top-left-radius: var(--radius-md);
-      }
-
-      .scan-corners.tr {
-        top: -2px;
-        right: -2px;
-        border-left: none;
-        border-bottom: none;
-        border-top-right-radius: var(--radius-md);
-      }
-
-      .scan-corners.bl {
-        bottom: -2px;
-        left: -2px;
-        border-right: none;
-        border-top: none;
-        border-bottom-left-radius: var(--radius-md);
-      }
-
-      .scan-corners.br {
-        bottom: -2px;
-        right: -2px;
-        border-left: none;
-        border-top: none;
-        border-bottom-right-radius: var(--radius-md);
+      @media (max-width: 480px) {
+        .stats-bar {
+          grid-template-columns: repeat(2, 1fr);
+        }
       }
 
       .controls {
@@ -324,6 +376,19 @@
         align-items: center;
         gap: var(--space-xl);
         box-shadow: var(--shadow-lg);
+        position: sticky;
+        bottom: 0;
+        z-index: 50;
+      }
+
+      .controls::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--color-blue), var(--color-red));
       }
 
       .control-btn {
@@ -343,6 +408,187 @@
         transform: scale(0.95);
       }
 
+      /* Recent Activity Feed */
+      .recent-activity {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: var(--space-lg);
+        background: linear-gradient(180deg,
+          rgba(91, 107, 181, 0.03) 0%,
+          rgba(204, 41, 54, 0.03) 100%);
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .activity-header {
+        font-family: var(--font-display);
+        font-size: var(--font-size-lg);
+        font-weight: 700;
+        color: var(--color-text-primary);
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+        margin: 0 0 var(--space-lg) 0;
+        padding-bottom: var(--space-sm);
+        border-bottom: 2px solid var(--color-border);
+        position: relative;
+      }
+
+      .activity-header::after {
+        content: "";
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 60px;
+        height: 2px;
+        background: linear-gradient(90deg, var(--color-blue), var(--color-red));
+      }
+
+      .activity-list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-sm);
+      }
+
+      .activity-empty {
+        text-align: center;
+        padding: var(--space-3xl);
+        color: var(--color-text-muted);
+        font-family: var(--font-accent);
+        font-style: italic;
+        font-size: var(--font-size-base);
+      }
+
+      .activity-item {
+        display: flex;
+        align-items: center;
+        gap: var(--space-md);
+        padding: var(--space-md);
+        background: var(--color-surface);
+        border-left: 4px solid;
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-sm);
+        animation: slideInRight 0.3s ease-out;
+        transition: all 0.2s ease;
+      }
+
+      .activity-item:hover {
+        transform: translateX(-2px);
+        box-shadow: var(--shadow-md);
+      }
+
+      .activity-item.success {
+        border-color: var(--color-success);
+      }
+
+      .activity-item.error {
+        border-color: var(--color-error);
+      }
+
+      .activity-item.pending {
+        border-color: var(--color-warning);
+      }
+
+      .activity-icon {
+        font-size: 24px;
+        line-height: 1;
+        flex-shrink: 0;
+      }
+
+      .activity-details {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .activity-ticket {
+        font-family: var(--font-mono);
+        font-size: var(--font-size-sm);
+        font-weight: 600;
+        color: var(--color-text-primary);
+        margin-bottom: var(--space-xs);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .activity-info {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+        flex-wrap: wrap;
+      }
+
+      .activity-timestamp {
+        font-family: var(--font-mono);
+        font-size: var(--font-size-xs);
+        color: var(--color-text-muted);
+        flex-shrink: 0;
+      }
+
+      .activity-badge {
+        display: inline-block;
+        padding: 2px 6px;
+        border-radius: var(--radius-sm);
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .activity-badge.type {
+        background: rgba(91, 107, 181, 0.1);
+        color: var(--color-blue);
+      }
+
+      @keyframes slideInRight {
+        from {
+          opacity: 0;
+          transform: translateX(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      @keyframes pulse {
+        0%, 100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.6;
+        }
+      }
+
+      /* Pulsing animation on active stats */
+      .stat-value.pulsing {
+        animation: pulse 1s ease-in-out 2;
+      }
+
+      /* Mobile responsive activity feed */
+      @media (max-width: 768px) {
+        .recent-activity {
+          padding: var(--space-md);
+        }
+
+        .activity-item {
+          padding: var(--space-sm);
+          gap: var(--space-sm);
+        }
+
+        .activity-icon {
+          font-size: 20px;
+        }
+
+        .activity-ticket {
+          font-size: var(--font-size-xs);
+        }
+
+        .activity-info {
+          font-size: 10px;
+        }
+      }
 
       .control-btn.manual {
         background: var(--color-red) !important;
@@ -471,6 +717,229 @@
       .result-content.error .result-btn:hover {
         background: rgba(255, 255, 255, 0.3) !important;
         color: var(--color-white) !important;
+      }
+
+      /* Checked-In Tickets Overlay */
+      .tickets-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.85);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        animation: fadeIn 0.2s ease-out;
+      }
+
+      .tickets-overlay.show {
+        display: flex;
+      }
+
+      .tickets-overlay-content {
+        background: var(--color-surface);
+        border-radius: var(--radius-lg);
+        width: 90%;
+        max-width: 900px;
+        max-height: 85vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: var(--shadow-2xl);
+        overflow: hidden;
+      }
+
+      .tickets-overlay-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--space-lg);
+        border-bottom: 2px solid var(--color-border);
+        background: linear-gradient(90deg, rgba(91,107,181,0.1), rgba(204,41,54,0.1));
+        position: relative;
+      }
+
+      .tickets-overlay-header::after {
+        content: "";
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 100px;
+        height: 2px;
+        background: linear-gradient(90deg, var(--color-blue), var(--color-red));
+      }
+
+      .tickets-overlay-header h3 {
+        font-family: var(--font-display);
+        font-size: var(--font-size-xl);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+        color: var(--color-text-primary);
+        margin: 0;
+      }
+
+      .tickets-overlay-close {
+        background: transparent;
+        border: none;
+        color: var(--color-text-primary);
+        font-size: var(--font-size-2xl);
+        cursor: pointer;
+        padding: var(--space-xs);
+        line-height: 1;
+        transition: all 0.2s ease;
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--radius-md);
+      }
+
+      .tickets-overlay-close:hover {
+        background: rgba(0, 0, 0, 0.05);
+        transform: scale(1.1);
+      }
+
+      .tickets-overlay-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: var(--space-lg);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .tickets-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: var(--space-3xl);
+        color: var(--color-text-muted);
+      }
+
+      .tickets-loading .loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid var(--color-border);
+        border-top-color: var(--color-blue);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin-bottom: var(--space-md);
+      }
+
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+
+      .tickets-error {
+        padding: var(--space-lg);
+        background: rgba(204, 41, 54, 0.1);
+        border: 1px solid var(--color-error);
+        border-radius: var(--radius-md);
+        color: var(--color-error);
+        text-align: center;
+        margin: var(--space-lg);
+      }
+
+      .tickets-empty {
+        text-align: center;
+        padding: var(--space-3xl);
+        color: var(--color-text-muted);
+        font-family: var(--font-accent);
+        font-style: italic;
+      }
+
+      .tickets-table-container {
+        overflow-x: auto;
+        overflow-y: auto;
+        flex: 1;
+      }
+
+      .tickets-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: var(--font-size-base);
+      }
+
+      .tickets-table thead {
+        position: sticky;
+        top: 0;
+        background: var(--color-surface-elevated);
+        z-index: 1;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .tickets-table th {
+        text-align: left;
+        padding: var(--space-md);
+        font-family: var(--font-display);
+        text-transform: uppercase;
+        font-size: var(--font-size-sm);
+        font-weight: 700;
+        letter-spacing: var(--letter-spacing-wide);
+        border-bottom: 2px solid var(--color-border);
+        color: var(--color-text-primary);
+      }
+
+      .tickets-table td {
+        padding: var(--space-md);
+        border-bottom: 1px solid var(--color-border);
+        font-family: var(--font-sans);
+      }
+
+      .tickets-table tbody tr {
+        transition: background-color 0.2s ease, transform 0.1s ease;
+        cursor: pointer;
+      }
+
+      .tickets-table tbody tr:hover {
+        background: rgba(91, 107, 181, 0.08);
+        transform: translateX(2px);
+      }
+
+      .tickets-table tbody tr:active {
+        background: rgba(91, 107, 181, 0.12);
+      }
+
+      .tickets-table tbody tr:last-child td {
+        border-bottom: none;
+      }
+
+      /* Mobile responsive */
+      @media (max-width: 768px) {
+        .tickets-overlay-content {
+          width: 95%;
+          max-height: 90vh;
+        }
+
+        .tickets-overlay-header {
+          padding: var(--space-md);
+        }
+
+        .tickets-overlay-header h3 {
+          font-size: var(--font-size-lg);
+        }
+
+        .tickets-overlay-body {
+          padding: var(--space-md);
+        }
+
+        .tickets-table {
+          font-size: var(--font-size-sm);
+        }
+
+        .tickets-table th,
+        .tickets-table td {
+          padding: var(--space-sm);
+        }
+
+        /* Stack table columns more compactly on small screens */
+        .tickets-table th:first-child,
+        .tickets-table td:first-child {
+          min-width: 100px;
+        }
       }
 
       .manual-input-backdrop {
@@ -1025,6 +1494,134 @@
         font-size: var(--font-size-xl);
       }
 
+      /* Full-Screen Scanner Modal */
+      .fullscreen-scanner-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.95);
+        z-index: 9999;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .fullscreen-scanner-modal.active {
+        display: flex;
+      }
+
+      .fullscreen-scanner-header {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        padding: var(--space-lg);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        z-index: 10000;
+        background: linear-gradient(180deg, rgba(0, 0, 0, 0.8) 0%, transparent 100%);
+      }
+
+      .fullscreen-scanner-title {
+        color: var(--color-white);
+        font-family: var(--font-display);
+        font-size: var(--font-size-xl);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+      }
+
+      .fullscreen-close-btn {
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        color: var(--color-white);
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .fullscreen-close-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.5);
+        transform: scale(1.1);
+      }
+
+      .fullscreen-scanner-container {
+        width: 90vw;
+        max-width: 600px;
+        height: auto;
+        position: relative;
+      }
+
+      .fullscreen-scan-region {
+        width: 100%;
+        aspect-ratio: 1;
+        border: 3px solid var(--color-red);
+        border-radius: var(--radius-xl);
+        position: relative;
+        box-shadow: 0 0 60px rgba(239, 68, 68, 0.4);
+        transition: all 0.3s ease;
+        background: rgba(0, 0, 0, 0.3);
+      }
+
+      .fullscreen-scan-region.scanning {
+        border-color: var(--color-red);
+        box-shadow: 0 0 60px rgba(239, 68, 68, 0.4);
+      }
+
+      .fullscreen-scan-region.locked {
+        border-color: #10b981;
+        box-shadow: 0 0 60px rgba(16, 185, 129, 0.6);
+      }
+
+      #fullscreenReader {
+        width: 100%;
+        height: 100%;
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+      }
+
+      #fullscreenReader video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: var(--radius-lg);
+      }
+
+      .fullscreen-instructions {
+        color: rgba(255, 255, 255, 0.9);
+        font-family: var(--font-sans);
+        font-size: var(--font-size-lg);
+        text-align: center;
+        margin-top: var(--space-xl);
+        padding: 0 var(--space-lg);
+        max-width: 500px;
+      }
+
+      @media (max-width: 768px) {
+        .fullscreen-scanner-container {
+          width: 95vw;
+        }
+
+        .fullscreen-scanner-title {
+          font-size: var(--font-size-lg);
+        }
+
+        .fullscreen-instructions {
+          font-size: var(--font-size-base);
+        }
+      }
+
       /* Mobile Optimizations */
       @media (max-width: 480px) {
         .permission-content {
@@ -1102,6 +1699,18 @@
           animation: none;
         }
 
+        .activity-item {
+          animation: none;
+        }
+
+        .stat-value.pulsing {
+          animation: none;
+        }
+
+        .activity-item:hover {
+          transform: none;
+        }
+
         .control-btn:active,
         .menu-btn:active,
         .permission-btn:hover,
@@ -1117,10 +1726,98 @@
     </style>
   </head>
   <body>
+    <!-- Mobile Hamburger Menu Toggle -->
+    <button class="admin-menu-toggle" aria-label="Toggle navigation menu" aria-expanded="false">
+      <div class="admin-menu-icon">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </button>
+
+    <!-- Mobile Navigation (Hidden on Desktop) -->
+    <nav class="admin-navigation">
+      <ul class="admin-nav-list">
+        <!-- Core Tools Group -->
+        <li role="presentation" class="admin-nav-group-header">Core Tools</li>
+        <li class="admin-nav-item">
+          <a href="/admin" class="admin-nav-link">
+            <span class="nav-icon">🏠</span>
+            <span>Portal</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/dashboard" class="admin-nav-link">
+            <span class="nav-icon">📊</span>
+            <span>Dashboard</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/checkin" class="admin-nav-link active">
+            <span class="nav-icon">📱</span>
+            <span>Check-in Scanner</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/manual-entry" class="admin-nav-link">
+            <span class="nav-icon">✏️</span>
+            <span>Manual Entry</span>
+          </a>
+        </li>
+
+        <!-- Data & Analytics Group -->
+        <li role="presentation" aria-hidden="true" class="admin-nav-separator"></li>
+        <li role="presentation" class="admin-nav-group-header">Data & Analytics</li>
+        <li class="admin-nav-item">
+          <a href="/admin/tickets" class="admin-nav-link">
+            <span class="nav-icon">🎫</span>
+            <span>Tickets</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/analytics" class="admin-nav-link">
+            <span class="nav-icon">📈</span>
+            <span>Analytics</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/donations" class="admin-nav-link">
+            <span class="nav-icon">💝</span>
+            <span>Donations</span>
+          </a>
+        </li>
+
+        <!-- Utilities Group -->
+        <li role="presentation" aria-hidden="true" class="admin-nav-separator"></li>
+        <li role="presentation" class="admin-nav-group-header">Utilities</li>
+        <li class="admin-nav-item">
+          <a href="/admin/test" class="admin-nav-link">
+            <span class="nav-icon">🧪</span>
+            <span>Test</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/api-endpoints" class="admin-nav-link">
+            <span class="nav-icon">🔌</span>
+            <span>API Endpoints</span>
+          </a>
+        </li>
+        <li class="admin-nav-item">
+          <a href="/admin/audit-logs" class="admin-nav-link">
+            <span class="nav-icon">📋</span>
+            <span>Audit Logs</span>
+          </a>
+        </li>
+      </ul>
+
+      <!-- Event Selector -->
+      <div id="event-selector-container"></div>
+    </nav>
+
     <div class="scanner-app">
       <div class="app-header">
-        <button 
-          class="back-btn admin-btn admin-btn-ghost admin-btn-sm" 
+        <button
+          class="back-btn admin-btn admin-btn-ghost admin-btn-sm"
           onclick="backToPortal()"
           aria-label="Go back to admin portal"
           title="Return to admin portal"
@@ -1147,81 +1844,71 @@
 
       <div class="scanner-container" data-testid="scanner-container">
         <!-- Test Mode Indicator for Scanner -->
+        <div id="scannerTestModeIndicator" class="test-mode-indicator" style="display: none;">
+          <span class="test-icon">🧪</span>
+          <span class="test-text">Test Mode: Scanner contains test data</span>
+        </div>
 
-        <div class="stats-bar" id="statsBar">
-          <div class="admin-stat-card">
-            <div class="stat-number" id="todayCount">0</div>
+        <!-- Stats Bar -->
+        <div id="statsBar" class="stats-bar">
+          <div class="stat-item stat-item-clickable" onclick="viewStatTickets('today')" title="Click to view today's check-ins">
+            <div class="stat-value" id="statToday">0</div>
             <div class="stat-label">Today</div>
           </div>
-          <div class="admin-stat-card">
-            <div
-              class="stat-number"
-              id="sessionCount"
-              data-testid="checkin-counter"
-            >
-              0
-            </div>
+          <div class="stat-item stat-item-clickable" onclick="viewStatTickets('session')" title="Click to view this session's check-ins">
+            <div class="stat-value" id="statSession">0</div>
             <div class="stat-label">Session</div>
           </div>
-          <div class="admin-stat-card">
-            <div class="stat-number" id="queueCount">0</div>
+          <div class="stat-item">
+            <div class="stat-value" id="statQueued">0</div>
             <div class="stat-label">Queued</div>
           </div>
-          <div class="admin-stat-card">
-            <div class="stat-number" id="walletCount">0</div>
+          <div class="stat-item stat-item-clickable" onclick="viewStatTickets('wallet')" title="Click to view wallet check-ins">
+            <div class="stat-value" id="statWallet">0</div>
             <div class="stat-label">Wallet</div>
           </div>
-          <div class="admin-stat-card">
-            <div class="stat-number" id="totalCount">0</div>
+          <div class="stat-item stat-item-clickable" onclick="viewStatTickets('total')" title="Click to view all checked-in tickets">
+            <div class="stat-value" id="statTotal">0</div>
             <div class="stat-label">Total</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="statFailed">0</div>
+            <div class="stat-label">Failed</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="statInvalid">0</div>
+            <div class="stat-label">Invalid</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="statAvgTime">0s</div>
+            <div class="stat-label">Avg Time</div>
           </div>
         </div>
 
-        <div class="scanner-viewport">
-          <div id="reader" data-testid="camera-scanner"></div>
+        <!-- Scanner Loading State -->
+        <div id="scannerLoading" class="scanner-loading" style="display: none;">
+          <div class="loading-spinner"></div>
+          <div id="loadingText" class="loading-text">Initializing camera...</div>
+          <div id="loadingSubtext" class="loading-subtext">Please allow camera permissions</div>
+        </div>
 
-          <!-- Loading State -->
-          <div class="scanner-loading" id="scannerLoading" role="status" aria-live="polite" aria-labelledby="loadingText" aria-describedby="loadingSubtext">
-            <div class="loading-spinner" aria-hidden="true"></div>
-            <div class="loading-text" id="loadingText">Initializing Camera</div>
-            <div class="loading-subtext" id="loadingSubtext">Please wait while we access your camera...</div>
-          </div>
-
-          <!-- Error State -->
-          <div class="scanner-error" id="scannerError" role="alert" aria-labelledby="errorTitle" aria-describedby="errorMessage">
-            <div class="error-icon" id="errorIcon" aria-hidden="true">📷</div>
-            <div class="error-title" id="errorTitle">Camera Not Available</div>
-            <div class="error-message" id="errorMessage">We couldn't access your camera. Please check your permissions and try again.</div>
-            <div class="error-actions" role="group" aria-label="Error resolution options">
-              <button class="error-btn retry" id="retryCamera" onclick="retryScanner()" aria-describedby="errorMessage">
-                🔄 Retry Camera
-              </button>
-              <button class="error-btn manual" id="useManual" onclick="showManualInput()" aria-label="Switch to manual ticket entry mode">
-                ⌨️ Manual Entry
-              </button>
-              <button class="error-btn settings" id="openSettings" onclick="openCameraSettings()" style="display: none;" aria-label="Open camera settings instructions">
-                ⚙️ Settings
-              </button>
-            </div>
-          </div>
-
-          <!-- Success Indicator -->
-          <div class="scanner-success" id="scannerSuccess" role="status" aria-live="polite">
-            <div class="success-icon" aria-hidden="true">✅</div>
-            <div>Camera Ready</div>
-          </div>
-
-          <div class="scanner-overlay">
-            <div class="scan-region">
-              <div class="scan-corners tl"></div>
-              <div class="scan-corners tr"></div>
-              <div class="scan-corners bl"></div>
-              <div class="scan-corners br"></div>
-            </div>
+        <!-- Recent Activity Feed -->
+        <div class="recent-activity">
+          <h3 class="activity-header">Recent Scans</h3>
+          <div id="activityFeed" class="activity-list">
+            <div class="activity-empty">Waiting for scans...</div>
           </div>
         </div>
 
         <div class="controls">
+          <button
+            class="control-btn admin-btn admin-btn-primary"
+            onclick="openFullscreenScanner()"
+            title="Scan Ticket - Camera permissions are saved by your browser and persist across sessions"
+            style="font-size: 24px;"
+          >
+            📷
+          </button>
           <button
             class="control-btn manual admin-btn"
             onclick="showManualInput()"
@@ -1256,6 +1943,41 @@
       </div>
     </div>
 
+    <!-- Checked-In Tickets Overlay -->
+    <div class="tickets-overlay" id="ticketsOverlay">
+      <div class="tickets-overlay-content">
+        <div class="tickets-overlay-header">
+          <h3 id="ticketsOverlayTitle">Checked-In Tickets</h3>
+          <button class="tickets-overlay-close" onclick="closeTicketsOverlay()" aria-label="Close">✕</button>
+        </div>
+        <div class="tickets-overlay-body">
+          <div class="tickets-loading" id="ticketsLoading">
+            <div class="loading-spinner"></div>
+            <p>Loading tickets...</p>
+          </div>
+          <div class="tickets-error" id="ticketsError" style="display: none;"></div>
+          <div class="tickets-table-container" id="ticketsTableContainer" style="display: none;">
+            <table class="tickets-table">
+              <thead>
+                <tr>
+                  <th>Ticket ID</th>
+                  <th>First Name</th>
+                  <th>Last Name</th>
+                  <th>Scan Time (MT)</th>
+                </tr>
+              </thead>
+              <tbody id="ticketsTableBody">
+                <!-- Rows populated by JavaScript -->
+              </tbody>
+            </table>
+          </div>
+          <div class="tickets-empty" id="ticketsEmpty" style="display: none;">
+            <p>No tickets found for this filter.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Permission Request Modal -->
     <div class="permission-modal" id="permissionModal" role="dialog" aria-labelledby="permissionTitle" aria-describedby="permissionDescription">
       <div class="permission-content">
@@ -1279,6 +2001,24 @@
           <button class="permission-btn secondary" id="useManualOnly" onclick="useManualMode()">
             ⌨️ Manual Only
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Full-Screen Scanner Modal -->
+    <div class="fullscreen-scanner-modal" id="fullscreenScannerModal">
+      <div class="fullscreen-scanner-header">
+        <div class="fullscreen-scanner-title">Scan Ticket QR Code</div>
+        <button class="fullscreen-close-btn" onclick="closeFullscreenScanner()" aria-label="Close scanner">
+          ✕
+        </button>
+      </div>
+      <div class="fullscreen-scanner-container">
+        <div class="fullscreen-scan-region scanning" id="fullscreenScanRegion">
+          <div id="fullscreenReader"></div>
+        </div>
+        <div class="fullscreen-instructions">
+          Position the QR code within the frame
         </div>
       </div>
     </div>
@@ -1320,14 +2060,94 @@
         timeManager = module.default;
       });
 
-      // Statistics
+      // HTML escaping function to prevent XSS attacks
+      // CRITICAL: Use this for ALL user-provided data displayed in innerHTML
+      function escapeHtml(unsafe) {
+        if (unsafe == null) return "";
+        return String(unsafe)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      // Statistics with localStorage persistence
+      const STATS_STORAGE_KEY = 'scanner_stats_v2';
+      const STATS_SESSION_HOURS = 8;
+
       const stats = {
-        today: 0,
+        // Server baselines (loaded from API, never incremented)
+        todayBaseline: 0,
+        totalBaseline: 0,
+        walletBaseline: 0,
+
+        // Session increments (persisted, incremented locally)
+        todayIncrement: 0,
+        walletIncrement: 0,
         session: 0,
         queued: 0,
-        wallet: 0,
-        total: 0,
+        failed: 0,
+        invalid: 0,
+        validationTimes: [],
+
+        // Session metadata
+        sessionStart: Date.now(),
+        lastActivity: Date.now()
       };
+
+      // Restore from localStorage
+      function restoreSessionStats() {
+        try {
+          const stored = localStorage.getItem(STATS_STORAGE_KEY);
+          if (!stored) return;
+
+          const data = JSON.parse(stored);
+          const age = (Date.now() - data.sessionStart) / (1000 * 60 * 60);
+
+          // Expire after 8 hours
+          if (age > STATS_SESSION_HOURS) {
+            localStorage.removeItem(STATS_STORAGE_KEY);
+            console.log('Session stats expired after 8 hours');
+            return;
+          }
+
+          // Restore session stats only (not baselines)
+          stats.todayIncrement = data.todayIncrement || 0;
+          stats.walletIncrement = data.walletIncrement || 0;
+          stats.session = data.session || 0;
+          stats.queued = data.queued || 0;
+          stats.failed = data.failed || 0;
+          stats.invalid = data.invalid || 0;
+          stats.validationTimes = data.validationTimes || [];
+          stats.sessionStart = data.sessionStart;
+          console.log('Restored session stats:', { session: stats.session, todayIncrement: stats.todayIncrement });
+        } catch (error) {
+          console.error('Failed to restore stats:', error);
+        }
+      }
+
+      // Save to localStorage
+      function persistSessionStats() {
+        try {
+          localStorage.setItem(STATS_STORAGE_KEY, JSON.stringify({
+            todayIncrement: stats.todayIncrement,
+            walletIncrement: stats.walletIncrement,
+            session: stats.session,
+            queued: stats.queued,
+            failed: stats.failed,
+            invalid: stats.invalid,
+            validationTimes: stats.validationTimes.slice(-100), // Keep last 100
+            sessionStart: stats.sessionStart,
+            lastActivity: Date.now()
+          }));
+        } catch (error) {
+          console.error('Failed to persist stats:', error);
+        }
+      }
+
+      // Initialize - restore previous session if exists
+      restoreSessionStats();
 
       // Performance monitoring and resource management
       const performanceMonitor = {
@@ -1617,116 +2437,46 @@
         }
       }
 
-      // Get device-optimized scanner configuration
-      function getOptimizedScannerConfig() {
-        const baseConfig = {
-          qrbox: { width: 280, height: 280 },
-          aspectRatio: 1.0
+      // Get optimized scanner configuration for full-screen modal
+      function getFullscreenScannerConfig() {
+        // Calculate responsive scan box size (80% of viewport width, max 500px)
+        const viewportWidth = window.innerWidth;
+        const scanBoxSize = Math.min(viewportWidth * 0.8, 500);
+
+        const config = {
+          // Large responsive scan region
+          qrbox: { width: scanBoxSize, height: scanBoxSize },
+
+          // FPS will be set below based on power mode
+          fps: 30,
+
+          // QR_CODE format only for faster recognition
+          formatsToSupport: typeof Html5QrcodeSupportedFormats !== 'undefined'
+            ? [Html5QrcodeSupportedFormats.QR_CODE]
+            : undefined,
+
+          // Simple camera constraints
+          videoConstraints: {
+            facingMode: "environment"
+          }
         };
 
-        // Apply adaptive performance settings if available
-        if (performanceMonitor.adaptiveSettings) {
-          baseConfig.fps = performanceMonitor.adaptiveSettings.fps;
-
-          // Adjust resolution based on adaptive settings
-          const resolutionMap = {
-            'low': { width: 720, height: 480 },
-            'medium': { width: 1280, height: 720 },
-            'high': { width: 1920, height: 1080 }
-          };
-
-          const resolution = resolutionMap[performanceMonitor.adaptiveSettings.resolution] || resolutionMap.medium;
-
-          baseConfig.videoConstraints = {
-            facingMode: "environment",
-            width: { ideal: resolution.width },
-            height: { ideal: resolution.height }
-          };
+        // Apply FPS based on power mode
+        if (performanceMonitor.isLowPowerMode) {
+          config.fps = performanceMonitor.adaptiveSettings.fps;
+        } else {
+          config.fps = deviceInfo.isIOS ? 20 : 30;
+          performanceMonitor.adaptiveSettings.fps = config.fps;
         }
 
-        // iOS-specific optimizations
-        if (deviceInfo.isIOS) {
-          if (!performanceMonitor.adaptiveSettings) {
-            baseConfig.fps = 8; // Fallback FPS for iOS performance
-          }
-          baseConfig.experimentalFeatures = {
-            useBarCodeDetectorIfSupported: false // Disable on iOS for stability
-          };
+        console.log('Full-screen scanner config:', {
+          fps: config.fps,
+          qrbox: config.qrbox,
+          formatsToSupport: 'QR_CODE only',
+          isLowPowerMode: performanceMonitor.isLowPowerMode
+        });
 
-          baseConfig.videoConstraints = {
-            facingMode: "environment",
-            width: { ideal: 1280, max: 1920 }, // Lower resolution for iOS
-            height: { ideal: 720, max: 1080 },
-            frameRate: { ideal: 15, max: 30 }
-          };
-
-          // Add iOS-specific format support (simplified for compatibility)
-          if (typeof Html5QrcodeSupportedFormats !== 'undefined') {
-            baseConfig.formatsToSupport = [
-              Html5QrcodeSupportedFormats.QR_CODE,
-              Html5QrcodeSupportedFormats.CODE_128,
-              Html5QrcodeSupportedFormats.CODE_39
-            ];
-          }
-        }
-        // Android-specific optimizations
-        else if (deviceInfo.isAndroid) {
-          if (!performanceMonitor.adaptiveSettings) {
-            baseConfig.fps = deviceInfo.isAndroidChrome ? 15 : 10; // Fallback FPS for Android Chrome
-          }
-          baseConfig.experimentalFeatures = {
-            useBarCodeDetectorIfSupported: true // Enable on Android for better performance
-          };
-
-          // Android Chrome can handle higher resolutions and frame rates
-          if (deviceInfo.isAndroidChrome) {
-            baseConfig.videoConstraints = {
-              facingMode: "environment",
-              width: { ideal: 1920, max: 2560 }, // Higher resolution for Android
-              height: { ideal: 1080, max: 1440 },
-              frameRate: { ideal: 30, max: 60 },
-              // Android-specific optimizations
-              focusMode: { ideal: "continuous" },
-              exposureMode: { ideal: "continuous" },
-              whiteBalanceMode: { ideal: "continuous" }
-            };
-
-            // Enable more format support on Android
-            if (typeof Html5QrcodeSupportedFormats !== 'undefined') {
-              baseConfig.formatsToSupport = [
-                Html5QrcodeSupportedFormats.QR_CODE,
-                Html5QrcodeSupportedFormats.CODE_128,
-                Html5QrcodeSupportedFormats.CODE_39,
-                Html5QrcodeSupportedFormats.CODE_93,
-                Html5QrcodeSupportedFormats.EAN_13,
-                Html5QrcodeSupportedFormats.EAN_8
-              ];
-            }
-          } else {
-            // Generic Android browser fallback
-            baseConfig.videoConstraints = {
-              facingMode: "environment",
-              width: { ideal: 1280, max: 1920 },
-              height: { ideal: 720, max: 1080 },
-              frameRate: { ideal: 20, max: 30 }
-            };
-          }
-        }
-        // Generic configuration for other platforms
-        else {
-          baseConfig.fps = 10;
-          baseConfig.experimentalFeatures = {
-            useBarCodeDetectorIfSupported: true
-          };
-
-          baseConfig.videoConstraints = {
-            facingMode: "environment",
-            width: { ideal: 1920 },
-            height: { ideal: 1080 }
-          };
-        }
-
-        return baseConfig;
+        return config;
       }
 
       // Performance monitoring and optimization functions
@@ -2304,8 +3054,14 @@
         const loadingText = document.getElementById('loadingText');
         const loadingSubtext = document.getElementById('loadingSubtext');
 
+        if (!loadingEl || !loadingText || !loadingSubtext) {
+          console.warn('Loading state elements not found');
+          return;
+        }
+
         loadingText.textContent = text;
         loadingSubtext.textContent = subtext;
+        loadingEl.style.display = 'block';
         loadingEl.classList.add('show');
         uiState.isLoading = true;
 
@@ -2324,6 +3080,9 @@
       // Hide loading state
       function hideLoadingState() {
         const loadingEl = document.getElementById('scannerLoading');
+        if (!loadingEl) return;
+
+        loadingEl.style.display = 'none';
         loadingEl.classList.remove('show');
         uiState.isLoading = false;
 
@@ -2473,7 +3232,7 @@
           scanner = new Html5Qrcode("reader");
 
           // Get device-optimized configuration
-          const config = getOptimizedScannerConfig();
+          const config = getFullscreenScannerConfig();
           console.log('Scanner config for', deviceInfo.isIOS ? 'iOS' : deviceInfo.isAndroid ? 'Android' : 'generic', ':', config);
 
           // Device-agnostic camera constraints
@@ -2905,6 +3664,32 @@
         }
       });
 
+      /**
+       * Extract JWT token from QR code content
+       * QR codes contain: https://domain.com/my-ticket#TOKEN
+       * We need to extract just the TOKEN part for validation
+       */
+      function extractTokenFromQR(qrContent) {
+        try {
+          // Check if it's a my-ticket URL with hash
+          if (qrContent.includes('#')) {
+            const hashIndex = qrContent.indexOf('#');
+            if (hashIndex >= 0) {
+              const extracted = qrContent.substring(hashIndex + 1);
+              console.log('Token extracted successfully from URL');
+              return extracted;
+            }
+          }
+
+          // If no hash, assume it's already a token
+          console.log('Processing QR code content');
+          return qrContent;
+        } catch (error) {
+          console.error('Error extracting token from QR - invalid format');
+          return qrContent;
+        }
+      }
+
       // Handle successful scan with performance tracking
       async function onScanSuccess(decodedText) {
         if (!isScanning) return;
@@ -2913,6 +3698,13 @@
 
         // Prevent multiple scans
         isScanning = false;
+
+        // Visual feedback: Show green border (QR locked on)
+        const scanRegion = document.querySelector('.scan-region');
+        if (scanRegion) {
+          scanRegion.classList.remove('scanning');
+          scanRegion.classList.add('locked');
+        }
 
         // Update scan count for performance monitoring
         performanceMonitor.scanCount++;
@@ -2924,7 +3716,7 @@
 
         // Validate QR code with performance tracking
         try {
-          await validateTicket(decodedText);
+          await validateTicket(extractTokenFromQR(decodedText));
           measureScanPerformance('scan_success', scanStartTime);
         } catch (error) {
           performanceMonitor.errorCounts.validation++;
@@ -2935,6 +3727,12 @@
         const resumeDelay = performanceMonitor.isLowPowerMode ? 3000 : 2000;
         setTimeout(() => {
           isScanning = true;
+
+          // Visual feedback: Return to red border (scanning state)
+          if (scanRegion) {
+            scanRegion.classList.remove('locked');
+            scanRegion.classList.add('scanning');
+          }
         }, resumeDelay);
       }
 
@@ -2997,7 +3795,6 @@
           if (data.offline) {
             // Offline check-in
             stats.queued++;
-            updateStats();
             showResult(
               "queued",
               "Queued for Sync",
@@ -3006,9 +3803,8 @@
           } else if (data.valid) {
             // Success
             stats.session++;
-            stats.today++;
-            if (data.ticket && data.ticket.wallet_source) stats.wallet++;
-            updateStats();
+            stats.todayIncrement++;  // Increment session overlay, not baseline
+            if (data.ticket && data.ticket.wallet_source) stats.walletIncrement++;
 
             // Detect if this is a test ticket
             const isTestTicket = data.ticket && (
@@ -3034,26 +3830,44 @@
               showResult(
                 "success",
                 resultTitle,
-                `${data.ticket.attendeeName}\n${data.ticket.type}${accessMethod}\nScan ${data.ticket.scanCount}/${data.ticket.maxScans}`,
-                isTestTicket
+                `${data.ticket.attendee}\n${data.ticket.type}${accessMethod}\nScan ${data.ticket.scanCount}/${data.ticket.maxScans}`,
+                isTestTicket,
+                data.ticket.ticket_id
               );
             } else {
-              showResult("success", "Valid Ticket!", "Check-in successful", false);
+              showResult("success", "Valid Ticket!", "Check-in successful", false, null);
             }
           } else {
-            // Error
+            // Invalid ticket
+            stats.invalid++;
             showResult(
               "error",
               "Invalid Ticket",
               data.error || "This ticket cannot be validated",
             );
           }
+
+          // Track validation time
+          const validationTime = performance.now() - validationStartTime;
+          stats.validationTimes.push(validationTime);
+          // Keep only last 100 validation times to avoid memory bloat
+          if (stats.validationTimes.length > 100) {
+            stats.validationTimes.shift();
+          }
+
+          // Update stats AFTER validation time is recorded
+          // This ensures average time includes the current scan
+          updateStats();
+
           // Measure successful validation performance
           measureScanPerformance('validation_network', validationStartTime);
 
         } catch (error) {
           console.error("Validation error:", error);
           performanceMonitor.errorCounts.network++;
+
+          // Track failed validation (network/system error)
+          stats.failed++;
 
           // Queue for offline sync
           stats.queued++;
@@ -3074,7 +3888,7 @@
       }
 
       // Show result modal
-      function showResult(type, title, details, isTestTicket = false) {
+      function showResult(type, title, details, isTestTicket = false, ticketId = null) {
         const modal = document.getElementById("resultModal");
         const content = document.getElementById("resultContent");
         const icon = document.getElementById("resultIcon");
@@ -3089,6 +3903,11 @@
           content.className = `result-content success ${isTestScan ? 'test-scan-result' : ''}`;
           icon.textContent = isTestScan ? "🧪" : "✅";
           content.setAttribute("data-testid", "checkin-success");
+
+          // Haptic feedback for successful scan
+          if (navigator.vibrate) {
+            navigator.vibrate([50, 30, 50]); // Double tap pattern
+          }
         } else if (type === "error") {
           content.className = `result-content error ${isTestScan ? 'test-scan-result' : ''}`;
           icon.textContent = isTestScan ? "🧪❌" : "❌";
@@ -3101,7 +3920,34 @@
 
         // Update title and details with test mode indicators
         titleEl.textContent = isTestScan && !title.includes('🧪') ? `🧪 ${title}` : title;
-        detailsEl.textContent = details;
+
+        // For success scans, enhance display with prominent attendee name
+        if (type === 'success' && details.includes('\n')) {
+          const lines = details.split('\n');
+          const attendeeName = lines[0];
+          const otherDetails = lines.slice(1).join('\n');
+
+          // XSS Fix: Escape user-provided data before injecting into innerHTML
+          detailsEl.innerHTML = `
+            <div style="font-size: var(--font-size-xl); font-weight: 700; margin-bottom: var(--space-sm); font-family: var(--font-display);">
+              ${escapeHtml(attendeeName)}
+            </div>
+            <div style="opacity: 0.85;">
+              ${escapeHtml(otherDetails)}
+            </div>
+          `;
+        } else {
+          detailsEl.textContent = details;
+        }
+
+        // Add to activity feed
+        addToActivityFeed({
+          type: type,
+          title: title,
+          details: details,
+          isTestTicket: isTestScan,
+          ticketId: ticketId
+        });
 
         // Show modal
         modal.classList.add("show");
@@ -3117,6 +3963,120 @@
         document.getElementById("resultModal").classList.remove("show");
       }
 
+      // Full-Screen Scanner Functions
+      let fullscreenScanner = null;
+      let isFullscreenScanning = false;
+
+      async function openFullscreenScanner() {
+        // If the inline scanner is running, stop it to release camera
+        // This prevents NotReadableError ("device already in use") on mobile devices
+        if (isScanning && scanner) {
+          await stopScanner();
+        }
+
+        const modal = document.getElementById('fullscreenScannerModal');
+        const scanRegion = document.getElementById('fullscreenScanRegion');
+
+        // Show modal
+        modal.classList.add('active');
+
+        // Initialize scanner
+        try {
+          fullscreenScanner = new Html5Qrcode("fullscreenReader");
+
+          const config = getFullscreenScannerConfig();
+
+          await fullscreenScanner.start(
+            { facingMode: "environment" },
+            config,
+            onFullscreenScanSuccess,
+            onFullscreenScanFailure
+          );
+
+          isFullscreenScanning = true;
+          scanRegion.classList.add('scanning');
+          console.log('Full-screen scanner started successfully');
+
+        } catch (error) {
+          console.error('Failed to start full-screen scanner:', error);
+          alert('Failed to access camera. Please check permissions and try again.');
+          closeFullscreenScanner();
+        }
+      }
+
+      async function closeFullscreenScanner() {
+        const modal = document.getElementById('fullscreenScannerModal');
+        const scanRegion = document.getElementById('fullscreenScanRegion');
+
+        // Stop scanner
+        if (fullscreenScanner) {
+          try {
+            await fullscreenScanner.stop();
+            fullscreenScanner.clear();
+          } catch (error) {
+            console.log('Error stopping scanner:', error);
+          }
+          fullscreenScanner = null;
+        }
+
+        isFullscreenScanning = false;
+        scanRegion.classList.remove('scanning', 'locked');
+        modal.classList.remove('active');
+
+        // After closing fullscreen, restart the inline scanner if it was running
+        if (!isScanning && scanner) {
+          try {
+            await initScanner();
+          } catch (error) {
+            console.log('Error restarting inline scanner:', error);
+          }
+        }
+      }
+
+      async function onFullscreenScanSuccess(decodedText) {
+        if (!isFullscreenScanning) return;
+
+        isFullscreenScanning = false;
+
+        const scanRegion = document.getElementById('fullscreenScanRegion');
+
+        // Visual feedback: green border (locked on QR)
+        scanRegion.classList.remove('scanning');
+        scanRegion.classList.add('locked');
+
+        // Haptic feedback
+        if (navigator.vibrate) {
+          navigator.vibrate(200);
+        }
+
+        // Validate ticket
+        try {
+          await validateTicket(extractTokenFromQR(decodedText));
+
+          // Close scanner after short delay
+          setTimeout(async () => {
+            await closeFullscreenScanner();
+          }, 500);
+
+        } catch (error) {
+          console.error('Validation error:', error);
+
+          // Resume scanning after error
+          setTimeout(() => {
+            isFullscreenScanning = true;
+            scanRegion.classList.remove('locked');
+            scanRegion.classList.add('scanning');
+          }, 2000);
+        }
+      }
+
+      function onFullscreenScanFailure(error) {
+        // Silently handle scan failures (normal during scanning)
+        // Only log if it's an actual error, not just "No QR code found"
+        if (error && !error.includes && !error.toString().includes('NotFoundException')) {
+          console.log('Scan error:', error);
+        }
+      }
 
       // Show manual input with backdrop
       function showManualInput() {
@@ -3234,11 +4194,163 @@
 
       // Update statistics display
       function updateStats() {
-        document.getElementById("todayCount").textContent = stats.today;
-        document.getElementById("sessionCount").textContent = stats.session;
-        document.getElementById("queueCount").textContent = stats.queued;
-        document.getElementById("walletCount").textContent = stats.wallet;
-        document.getElementById("totalCount").textContent = stats.total;
+        // Display = baseline + session increment
+        document.getElementById("statToday").textContent = stats.todayBaseline + stats.todayIncrement;
+        document.getElementById("statSession").textContent = stats.session;
+        document.getElementById("statQueued").textContent = stats.queued;
+        document.getElementById("statWallet").textContent = stats.walletBaseline + stats.walletIncrement;
+        // Total should include today's session scans
+        document.getElementById("statTotal").textContent = stats.totalBaseline + stats.todayIncrement;
+
+        // Update new stats
+        document.getElementById("statFailed").textContent = stats.failed;
+        document.getElementById("statInvalid").textContent = stats.invalid;
+
+        // Calculate and display average validation time
+        if (stats.validationTimes.length > 0) {
+          const avgTime = stats.validationTimes.reduce((a, b) => a + b, 0) / stats.validationTimes.length;
+          document.getElementById("statAvgTime").textContent = `${(avgTime / 1000).toFixed(1)}s`;
+        } else {
+          document.getElementById("statAvgTime").textContent = "0s";
+        }
+
+        // Persist to localStorage
+        persistSessionStats();
+      }
+
+      // Open overlay modal with filtered checked-in tickets
+      async function viewStatTickets(statType) {
+        const overlay = document.getElementById('ticketsOverlay');
+        const titleEl = document.getElementById('ticketsOverlayTitle');
+        const loadingEl = document.getElementById('ticketsLoading');
+        const errorEl = document.getElementById('ticketsError');
+        const tableContainer = document.getElementById('ticketsTableContainer');
+        const emptyEl = document.getElementById('ticketsEmpty');
+        const tableBody = document.getElementById('ticketsTableBody');
+
+        // Set title based on filter
+        const titles = {
+          'today': "Today's Check-Ins",
+          'session': "Session Check-Ins",
+          'wallet': "Wallet Check-Ins",
+          'total': "All Checked-In Tickets"
+        };
+        titleEl.textContent = titles[statType] || "Checked-In Tickets";
+
+        // Show overlay with loading state
+        overlay.classList.add('show');
+        loadingEl.style.display = 'flex';
+        errorEl.style.display = 'none';
+        tableContainer.style.display = 'none';
+        emptyEl.style.display = 'none';
+
+        // For session filter, use local data from recentScans array
+        if (statType === 'session') {
+          loadingEl.style.display = 'none';
+
+          if (recentScans.length === 0) {
+            emptyEl.style.display = 'block';
+            return;
+          }
+
+          // Render session scans from local array
+          tableBody.innerHTML = recentScans
+            .filter(scan => scan.type === 'success')
+            .map(scan => {
+              const detailsLines = scan.details.split('\n');
+              const fullName = detailsLines[0] || '';
+              const [firstName, ...lastNameParts] = fullName.split(' ');
+              const lastName = lastNameParts.join(' ');
+              const timeFormatted = timeManager ?
+                timeManager.formatDateTime(new Date(scan.timestamp)) :
+                new Date(scan.timestamp).toLocaleString();
+
+              // Make row clickable if ticket ID is available
+              const hasTicketId = scan.ticketId && scan.ticketId !== '—';
+              // XSS Fix: Escape ticketId in onclick handlers to prevent code injection
+              const clickHandler = hasTicketId ?
+                `onclick="openTicketDetail('${escapeHtml(scan.ticketId)}')" role="button" tabindex="0" onkeypress="if(event.key === 'Enter' || event.key === ' ') openTicketDetail('${escapeHtml(scan.ticketId)}')"` :
+                'style="cursor: default;"';
+
+              // XSS Fix: Escape all user-provided data
+              return `
+                <tr ${clickHandler}>
+                  <td>${escapeHtml(scan.ticketId || '—')}</td>
+                  <td>${escapeHtml(firstName || '—')}</td>
+                  <td>${escapeHtml(lastName || '—')}</td>
+                  <td>${escapeHtml(timeFormatted)}</td>
+                </tr>
+              `;
+            }).join('');
+
+          tableContainer.style.display = 'block';
+          return;
+        }
+
+        try {
+          // Get selected event ID
+          const selectedEventId = window.eventSelector ?
+            window.eventSelector.getSelectedEventId() : null;
+
+          // Build query params
+          const params = new URLSearchParams();
+          params.set('filter', statType);
+          if (selectedEventId) params.set('eventId', selectedEventId);
+
+          // Fetch tickets from API
+          const response = await fetch(`/api/admin/checked-in-tickets?${params}`, {
+            credentials: 'include'
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to fetch tickets: ${response.status}`);
+          }
+
+          const data = await response.json();
+
+          loadingEl.style.display = 'none';
+
+          if (!data.tickets || data.tickets.length === 0) {
+            emptyEl.style.display = 'block';
+            return;
+          }
+
+          // Render tickets table
+          tableBody.innerHTML = data.tickets.map(ticket => {
+            const scanTime = ticket.scan_time_mt ||
+              (timeManager ? timeManager.formatDateTime(ticket.scan_time) : ticket.scan_time);
+
+            // XSS Fix: Escape all API data before rendering
+            return `
+              <tr onclick="openTicketDetail('${escapeHtml(ticket.ticket_id)}')" role="button" tabindex="0" onkeypress="if(event.key === 'Enter' || event.key === ' ') openTicketDetail('${escapeHtml(ticket.ticket_id)}')">
+                <td>${escapeHtml(ticket.ticket_id)}</td>
+                <td>${escapeHtml(ticket.first_name)}</td>
+                <td>${escapeHtml(ticket.last_name)}</td>
+                <td>${escapeHtml(scanTime)}</td>
+              </tr>
+            `;
+          }).join('');
+
+          tableContainer.style.display = 'block';
+        } catch (error) {
+          console.error('Failed to load tickets:', error);
+          loadingEl.style.display = 'none';
+          errorEl.textContent = 'Failed to load tickets. Please try again.';
+          errorEl.style.display = 'block';
+        }
+      }
+
+      function closeTicketsOverlay() {
+        document.getElementById('ticketsOverlay').classList.remove('show');
+      }
+
+      function openTicketDetail(ticketId) {
+        if (!ticketId) {
+          console.error('No ticket ID provided');
+          return;
+        }
+        // Navigate to ticket detail page with ticketId query parameter
+        window.location.href = `/admin/ticket-detail?ticketId=${encodeURIComponent(ticketId)}`;
       }
 
       // Load statistics
@@ -3246,21 +4358,28 @@
         try {
           // Get selected event ID from event selector
           const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
-          const eventParam = selectedEventId ? `?event_id=${selectedEventId}` : '';
+          const eventParam = selectedEventId ? `?eventId=${selectedEventId}` : '';
 
           const response = await fetch(`/api/admin/dashboard${eventParam}`, {
             credentials: "include"
           });
           const data = await response.json();
 
-          if (data.stats) {
-            // Get today's check-ins from the daily_checkins array if available
-            const today = timeManager ? timeManager.formatDate(new Date()).replace(/\s/g, '-') : new Date().toISOString().split('T')[0];
-            const todayCheckins = data.stats.daily_checkins?.find(d => d.date === today);
+          // Debug logging to track stats loading
+          console.log('📊 Dashboard API Response:', {
+            today_checkins: data.stats?.today_checkins,
+            checked_in: data.stats?.checked_in,
+            wallet_checkins: data.stats?.wallet_checkins,
+            eventId: selectedEventId,
+            timestamp: new Date().toISOString()
+          });
 
-            stats.today = todayCheckins?.count || data.stats.today_checkins || 0;
-            stats.total = data.stats.checked_in || 0;
-            stats.wallet = data.stats.wallet_checkins || 0;
+          if (data.stats) {
+            // Load baselines from server, preserve session increments
+            stats.todayBaseline = data.stats.today_checkins || 0;
+            stats.totalBaseline = data.stats.checked_in || 0;
+            stats.walletBaseline = data.stats.wallet_checkins || 0;
+            // Session increments (todayIncrement, walletIncrement, session, etc.) are NOT reset here - they persist!
 
             // Check if we're dealing with test data
             const hasTestData = data.testModeInfo && data.testModeInfo.hasTestModeSupport &&
@@ -3269,8 +4388,7 @@
             // Update test mode indicators
             updateScannerTestModeIndicators(hasTestData);
 
-            // Update session count (preserve existing session count)
-            // Total can be shown as all-time check-ins
+            // Update display (combines baselines + increments)
             updateStats();
           }
         } catch (error) {
@@ -3598,6 +4716,112 @@
         }
       });
 
+      // Recent Activity Feed
+      const recentScans = [];
+      const MAX_RECENT_SCANS = 10;
+
+      function addToActivityFeed(scanData) {
+        // Add to beginning of array
+        recentScans.unshift({
+          timestamp: Date.now(),
+          type: scanData.type, // 'success', 'error', 'queued'
+          title: scanData.title,
+          details: scanData.details,
+          isTestTicket: scanData.isTestTicket || false,
+          ticketId: scanData.ticketId || null
+        });
+
+        // Keep only last 10 scans
+        if (recentScans.length > MAX_RECENT_SCANS) {
+          recentScans.pop();
+        }
+
+        // Re-render the feed
+        renderActivityFeed();
+      }
+
+      function renderActivityFeed() {
+        const feedContainer = document.getElementById('activityFeed');
+        if (!feedContainer) return;
+
+        if (recentScans.length === 0) {
+          feedContainer.innerHTML = '<div class="activity-empty">Waiting for scans...</div>';
+          return;
+        }
+
+        feedContainer.innerHTML = recentScans.map(scan => {
+          // Format timestamp
+          const timeAgo = formatTimeAgo(scan.timestamp);
+
+          // Determine icon and status class
+          let icon = '🎫';
+          let statusClass = scan.type;
+
+          if (scan.type === 'success') {
+            icon = scan.isTestTicket ? '🧪' : '✅';
+          } else if (scan.type === 'error') {
+            icon = scan.isTestTicket ? '🧪❌' : '❌';
+            statusClass = 'error';
+          } else if (scan.type === 'queued') {
+            icon = '📥';
+            statusClass = 'pending';
+          }
+
+          // Extract attendee name and ticket type from details if available
+          const detailsLines = scan.details.split('\n');
+          const attendeeName = detailsLines[0] || scan.details;
+          const ticketType = detailsLines.length > 1 ? detailsLines[1] : '';
+
+          // XSS Fix: Escape all user-provided data in activity feed
+          return `
+            <div class="activity-item ${statusClass}" role="article" aria-label="${escapeHtml(scan.title)}">
+              <div class="activity-icon" aria-hidden="true">${icon}</div>
+              <div class="activity-details">
+                <div class="activity-name">${escapeHtml(attendeeName)}</div>
+                ${ticketType ? `<div class="activity-ticket-type">${escapeHtml(ticketType)}</div>` : ''}
+                <div class="activity-status">${escapeHtml(scan.title)}</div>
+              </div>
+              <div class="activity-time">
+                <time datetime="${new Date(scan.timestamp).toISOString()}">${escapeHtml(timeAgo)}</time>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        // Auto-scroll to top to show newest scan
+        feedContainer.scrollTop = 0;
+      }
+
+      function formatTimeAgo(timestamp) {
+        const seconds = Math.floor((Date.now() - timestamp) / 1000);
+
+        if (seconds < 10) return 'just now';
+        if (seconds < 60) return `${seconds}s ago`;
+
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return `${minutes}m ago`;
+
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return `${hours}h ago`;
+
+        return 'today';
+      }
+
+      // Update activity feed every 30 seconds to refresh "time ago" labels
+      setInterval(() => {
+        if (recentScans.length > 0) {
+          renderActivityFeed();
+        }
+      }, 30000);
+
+      // Close tickets overlay when clicking backdrop
+      document.addEventListener('click', (e) => {
+        const overlay = document.getElementById('ticketsOverlay');
+        if (e.target === overlay) {
+          closeTicketsOverlay();
+        }
+      });
+
       // Log initial performance setup
       console.log('Scanner Performance Optimization Loaded');
       console.log('Available debugging: window.scannerPerformance');
@@ -3606,5 +4830,8 @@
       // Start app
       init();
     </script>
+
+    <!-- Mobile Navigation Controller -->
+    <script src="/js/admin-mobile-nav.js"></script>
   </body>
 </html>
