@@ -92,47 +92,27 @@
         justify-content: center;
         align-items: center;
         box-shadow: var(--shadow-lg);
-        position: relative;
-        z-index: 100;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
         min-height: 80px;
       }
 
-      .logout-btn {
-        position: absolute;
-        top: var(--space-lg);
-        right: var(--space-lg);
-        background: rgba(255, 255, 255, 0.2) !important;
-        border: 2px solid rgba(255, 255, 255, 0.3) !important;
-        color: var(--color-white) !important;
-        font-size: var(--font-size-sm);
-        font-weight: 600;
-        min-height: 36px;
-        z-index: 110;
+      .app-title-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        flex: 1;
+        margin: 0 60px;
       }
 
-      .logout-btn:hover {
-        background: rgba(255, 255, 255, 0.3) !important;
-        color: var(--color-white) !important;
-      }
-
-      .back-btn {
-        position: absolute;
-        top: var(--space-lg);
-        left: var(--space-lg);
-        background: rgba(255, 255, 255, 0.2) !important;
-        border: 2px solid rgba(255, 255, 255, 0.3) !important;
-        color: var(--color-white) !important;
-        font-size: var(--font-size-sm);
-        font-weight: 600;
-        min-height: 36px;
-        padding: var(--space-xs) var(--space-sm);
-        z-index: 110;
-      }
-
-      .back-btn:hover {
-        background: rgba(255, 255, 255, 0.3) !important;
-        color: var(--color-white) !important;
-        transform: translateX(-2px);
+      .app-portal-label {
+        font-family: var(--font-sans);
+        font-size: var(--font-size-xs);
+        color: rgba(255, 255, 255, 0.8);
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin-bottom: 4px;
       }
 
       .app-title {
@@ -142,13 +122,8 @@
         color: var(--color-white);
         text-transform: uppercase;
         letter-spacing: var(--letter-spacing-wider);
-        margin: 0 120px;
+        margin: 0;
         text-align: center;
-        flex: 1;
-        max-width: calc(100% - 240px);
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
       }
 
       .menu-btn {
@@ -190,6 +165,10 @@
         gap: var(--space-xs);
         font-size: var(--font-size-xs);
         min-height: 45px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
       }
 
       .stats-bar .admin-stat-card {
@@ -297,6 +276,8 @@
         border-radius: var(--radius-md);
         border: 1px solid var(--color-border);
         transition: all 0.2s ease;
+        flex: 0 0 auto;
+        min-width: 80px;
       }
 
       .stat-item:hover {
@@ -362,8 +343,9 @@
       }
 
       @media (max-width: 480px) {
-        .stats-bar {
-          grid-template-columns: repeat(2, 1fr);
+        .stat-item {
+          min-width: 70px;
+          padding: var(--space-sm);
         }
       }
 
@@ -940,6 +922,50 @@
         .tickets-table td:first-child {
           min-width: 100px;
         }
+      }
+
+      .tickets-pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: var(--space-md);
+        padding: var(--space-lg);
+        background: var(--color-surface-elevated);
+        border-top: 1px solid var(--color-border);
+      }
+
+      .pagination-btn {
+        padding: var(--space-sm) var(--space-md);
+        background: var(--color-blue);
+        color: white;
+        border: none;
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        font-family: var(--font-sans);
+        font-size: var(--font-size-sm);
+        font-weight: 600;
+        transition: all 0.2s ease;
+        min-width: 100px;
+      }
+
+      .pagination-btn:hover:not(:disabled) {
+        background: var(--color-blue-dark);
+        transform: translateY(-1px);
+      }
+
+      .pagination-btn:disabled {
+        background: var(--color-border);
+        color: var(--color-text-muted);
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+
+      .pagination-info {
+        font-family: var(--font-sans);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        min-width: 100px;
+        text-align: center;
       }
 
       .manual-input-backdrop {
@@ -1817,25 +1843,41 @@
     <div class="scanner-app">
       <div class="app-header">
         <button
-          class="back-btn admin-btn admin-btn-ghost admin-btn-sm"
-          onclick="backToPortal()"
-          aria-label="Go back to admin portal"
-          title="Return to admin portal"
+          class="menu-btn admin-menu-toggle"
+          onclick="toggleMobileMenu()"
+          aria-label="Open menu"
+          aria-expanded="false"
+          title="Open navigation menu"
         >
-          ← Portal
+          ☰
         </button>
-        <h1 class="app-title" data-testid="scanner-title">
-          Check-in Scanner
-        </h1>
-        <button 
-          class="logout-btn admin-btn admin-btn-ghost admin-btn-sm" 
-          onclick="logout()"
-          aria-label="Logout from admin session"
-          title="Logout from admin session"
-        >
-          Logout
-        </button>
+        <div class="app-title-container">
+          <div class="app-portal-label">Portal</div>
+          <h1 class="app-title" data-testid="scanner-title">
+            Check-In Scanner
+          </h1>
+        </div>
       </div>
+
+      <!-- Mobile Navigation Menu -->
+      <nav class="admin-nav-list" role="navigation" aria-label="Admin navigation">
+        <a href="/admin/dashboard" class="admin-nav-link">
+          📊 Dashboard
+        </a>
+        <a href="/admin/tickets" class="admin-nav-link">
+          🎫 Tickets
+        </a>
+        <a href="/admin/registrations" class="admin-nav-link">
+          📝 Registrations
+        </a>
+        <a href="/admin/checkin" class="admin-nav-link">
+          📷 Check-In Scanner
+        </a>
+        <hr class="admin-nav-divider">
+        <button onclick="logout()" class="admin-nav-link admin-nav-logout">
+          🚪 Logout
+        </button>
+      </nav>
 
       <div class="admin-alert error offline-indicator" id="offlineIndicator">
         <div class="alert-title">📵 Offline Mode</div>
@@ -1859,13 +1901,13 @@
             <div class="stat-value" id="statSession">0</div>
             <div class="stat-label">Session</div>
           </div>
-          <div class="stat-item">
-            <div class="stat-value" id="statQueued">0</div>
-            <div class="stat-label">Queued</div>
+          <div class="stat-item stat-item-clickable" onclick="viewStatTickets('apple_wallet')" title="Click to view Apple Wallet check-ins">
+            <div class="stat-value" id="statAppleWallet">0</div>
+            <div class="stat-label">🍎 Apple</div>
           </div>
-          <div class="stat-item stat-item-clickable" onclick="viewStatTickets('wallet')" title="Click to view wallet check-ins">
-            <div class="stat-value" id="statWallet">0</div>
-            <div class="stat-label">Wallet</div>
+          <div class="stat-item stat-item-clickable" onclick="viewStatTickets('google_wallet')" title="Click to view Google Wallet check-ins">
+            <div class="stat-value" id="statGoogleWallet">0</div>
+            <div class="stat-label">📱 Google</div>
           </div>
           <div class="stat-item stat-item-clickable" onclick="viewStatTickets('total')" title="Click to view all checked-in tickets">
             <div class="stat-value" id="statTotal">0</div>
@@ -1963,6 +2005,7 @@
                   <th>Ticket ID</th>
                   <th>First Name</th>
                   <th>Last Name</th>
+                  <th>Source</th>
                   <th>Scan Time (MT)</th>
                 </tr>
               </thead>
@@ -1970,6 +2013,11 @@
                 <!-- Rows populated by JavaScript -->
               </tbody>
             </table>
+          </div>
+          <div class="tickets-pagination" id="ticketsPagination" style="display: none;">
+            <button class="pagination-btn" id="prevPageBtn" onclick="previousPage()" disabled>← Previous</button>
+            <span class="pagination-info" id="paginationInfo">Page 1 of 1</span>
+            <button class="pagination-btn" id="nextPageBtn" onclick="nextPage()" disabled>Next →</button>
           </div>
           <div class="tickets-empty" id="ticketsEmpty" style="display: none;">
             <p>No tickets found for this filter.</p>
@@ -2080,13 +2128,14 @@
         // Server baselines (loaded from API, never incremented)
         todayBaseline: 0,
         totalBaseline: 0,
-        walletBaseline: 0,
+        appleWalletBaseline: 0,
+        googleWalletBaseline: 0,
 
         // Session increments (persisted, incremented locally)
         todayIncrement: 0,
-        walletIncrement: 0,
+        appleWalletIncrement: 0,
+        googleWalletIncrement: 0,
         session: 0,
-        queued: 0,
         failed: 0,
         invalid: 0,
         validationTimes: [],
@@ -3804,7 +3853,15 @@
             // Success
             stats.session++;
             stats.todayIncrement++;  // Increment session overlay, not baseline
-            if (data.ticket && data.ticket.wallet_source) stats.walletIncrement++;
+
+            // Increment wallet-specific counters
+            if (data.ticket && data.ticket.wallet_source) {
+              if (data.ticket.wallet_source === 'apple_wallet') {
+                stats.appleWalletIncrement++;
+              } else if (data.ticket.wallet_source === 'google_wallet' || data.ticket.wallet_source === 'samsung_wallet') {
+                stats.googleWalletIncrement++;
+              }
+            }
 
             // Detect if this is a test ticket
             const isTestTicket = data.ticket && (
@@ -3832,10 +3889,11 @@
                 resultTitle,
                 `${data.ticket.attendee}\n${data.ticket.type}${accessMethod}\nScan ${data.ticket.scanCount}/${data.ticket.maxScans}`,
                 isTestTicket,
-                data.ticket.ticket_id
+                data.ticket.ticket_id,
+                data.ticket.wallet_source
               );
             } else {
-              showResult("success", "Valid Ticket!", "Check-in successful", false, null);
+              showResult("success", "Valid Ticket!", "Check-in successful", false, null, null);
             }
           } else {
             // Invalid ticket
@@ -3888,7 +3946,7 @@
       }
 
       // Show result modal
-      function showResult(type, title, details, isTestTicket = false, ticketId = null) {
+      function showResult(type, title, details, isTestTicket = false, ticketId = null, walletSource = null) {
         const modal = document.getElementById("resultModal");
         const content = document.getElementById("resultContent");
         const icon = document.getElementById("resultIcon");
@@ -3946,7 +4004,8 @@
           title: title,
           details: details,
           isTestTicket: isTestScan,
-          ticketId: ticketId
+          ticketId: ticketId,
+          walletSource: walletSource
         });
 
         // Show modal
@@ -4197,8 +4256,8 @@
         // Display = baseline + session increment
         document.getElementById("statToday").textContent = stats.todayBaseline + stats.todayIncrement;
         document.getElementById("statSession").textContent = stats.session;
-        document.getElementById("statQueued").textContent = stats.queued;
-        document.getElementById("statWallet").textContent = stats.walletBaseline + stats.walletIncrement;
+        document.getElementById("statAppleWallet").textContent = stats.appleWalletBaseline + stats.appleWalletIncrement;
+        document.getElementById("statGoogleWallet").textContent = stats.googleWalletBaseline + stats.googleWalletIncrement;
         // Total should include today's session scans
         document.getElementById("statTotal").textContent = stats.totalBaseline + stats.todayIncrement;
 
@@ -4219,7 +4278,7 @@
       }
 
       // Open overlay modal with filtered checked-in tickets
-      async function viewStatTickets(statType) {
+      async function viewStatTickets(statType, page = 1) {
         const overlay = document.getElementById('ticketsOverlay');
         const titleEl = document.getElementById('ticketsOverlayTitle');
         const loadingEl = document.getElementById('ticketsLoading');
@@ -4227,12 +4286,19 @@
         const tableContainer = document.getElementById('ticketsTableContainer');
         const emptyEl = document.getElementById('ticketsEmpty');
         const tableBody = document.getElementById('ticketsTableBody');
+        const paginationEl = document.getElementById('ticketsPagination');
+
+        // Update pagination state
+        currentFilter = statType;
+        currentPage = page;
 
         // Set title based on filter
         const titles = {
           'today': "Today's Check-Ins",
           'session': "Session Check-Ins",
           'wallet': "Wallet Check-Ins",
+          'apple_wallet': "🍎 Apple Wallet Check-Ins",
+          'google_wallet': "📱 Google Wallet Check-Ins",
           'total': "All Checked-In Tickets"
         };
         titleEl.textContent = titles[statType] || "Checked-In Tickets";
@@ -4272,12 +4338,18 @@
                 `onclick="openTicketDetail('${escapeHtml(scan.ticketId)}')" role="button" tabindex="0" onkeypress="if(event.key === 'Enter' || event.key === ' ') openTicketDetail('${escapeHtml(scan.ticketId)}')"` :
                 'style="cursor: default;"';
 
+              // Wallet source badge
+              const walletBadge = scan.walletSource === 'apple_wallet' ? '🍎' :
+                                  scan.walletSource === 'google_wallet' ? '📱' :
+                                  scan.walletSource === 'samsung_wallet' ? '📱' : '—';
+
               // XSS Fix: Escape all user-provided data
               return `
                 <tr ${clickHandler}>
                   <td>${escapeHtml(scan.ticketId || '—')}</td>
                   <td>${escapeHtml(firstName || '—')}</td>
                   <td>${escapeHtml(lastName || '—')}</td>
+                  <td>${walletBadge}</td>
                   <td>${escapeHtml(timeFormatted)}</td>
                 </tr>
               `;
@@ -4295,6 +4367,8 @@
           // Build query params
           const params = new URLSearchParams();
           params.set('filter', statType);
+          params.set('page', page);
+          params.set('limit', 50);
           if (selectedEventId) params.set('eventId', selectedEventId);
 
           // Fetch tickets from API
@@ -4320,18 +4394,44 @@
             const scanTime = ticket.scan_time_mt ||
               (timeManager ? timeManager.formatDateTime(ticket.scan_time) : ticket.scan_time);
 
+            // Wallet source badge
+            const walletBadge = ticket.wallet_source === 'apple_wallet' ? '🍎' :
+                                ticket.wallet_source === 'google_wallet' ? '📱' :
+                                ticket.wallet_source === 'samsung_wallet' ? '📱' : '—';
+
             // XSS Fix: Escape all API data before rendering
             return `
               <tr onclick="openTicketDetail('${escapeHtml(ticket.ticket_id)}')" role="button" tabindex="0" onkeypress="if(event.key === 'Enter' || event.key === ' ') openTicketDetail('${escapeHtml(ticket.ticket_id)}')">
                 <td>${escapeHtml(ticket.ticket_id)}</td>
                 <td>${escapeHtml(ticket.first_name)}</td>
                 <td>${escapeHtml(ticket.last_name)}</td>
+                <td>${walletBadge}</td>
                 <td>${escapeHtml(scanTime)}</td>
               </tr>
             `;
           }).join('');
 
           tableContainer.style.display = 'block';
+
+          // Update pagination controls
+          if (data.pagination) {
+            totalPages = data.pagination.total_pages;
+            const prevBtn = document.getElementById('prevPageBtn');
+            const nextBtn = document.getElementById('nextPageBtn');
+            const paginationInfo = document.getElementById('paginationInfo');
+
+            // Update pagination info text
+            paginationInfo.textContent = `Page ${data.pagination.page} of ${data.pagination.total_pages} (${data.pagination.total_count} total)`;
+
+            // Update button states
+            prevBtn.disabled = !data.pagination.has_prev;
+            nextBtn.disabled = !data.pagination.has_next;
+
+            // Show pagination controls
+            paginationEl.style.display = 'flex';
+          } else {
+            paginationEl.style.display = 'none';
+          }
         } catch (error) {
           console.error('Failed to load tickets:', error);
           loadingEl.style.display = 'none';
@@ -4342,6 +4442,18 @@
 
       function closeTicketsOverlay() {
         document.getElementById('ticketsOverlay').classList.remove('show');
+      }
+
+      function previousPage() {
+        if (currentPage > 1) {
+          viewStatTickets(currentFilter, currentPage - 1);
+        }
+      }
+
+      function nextPage() {
+        if (currentPage < totalPages) {
+          viewStatTickets(currentFilter, currentPage + 1);
+        }
       }
 
       function openTicketDetail(ticketId) {
@@ -4378,8 +4490,9 @@
             // Load baselines from server, preserve session increments
             stats.todayBaseline = data.stats.today_checkins || 0;
             stats.totalBaseline = data.stats.checked_in || 0;
-            stats.walletBaseline = data.stats.wallet_checkins || 0;
-            // Session increments (todayIncrement, walletIncrement, session, etc.) are NOT reset here - they persist!
+            stats.appleWalletBaseline = data.stats.apple_wallet_users || 0;
+            stats.googleWalletBaseline = data.stats.google_wallet_users || 0;
+            // Session increments (todayIncrement, appleWalletIncrement, googleWalletIncrement, session, etc.) are NOT reset here - they persist!
 
             // Check if we're dealing with test data
             const hasTestData = data.testModeInfo && data.testModeInfo.hasTestModeSupport &&
@@ -4427,6 +4540,13 @@
           }
         } else {
           indicator.style.display = "block";
+        }
+      }
+
+      // Toggle mobile navigation menu
+      function toggleMobileMenu() {
+        if (window.adminMobileNav) {
+          window.adminMobileNav.toggleMenu();
         }
       }
 
@@ -4720,6 +4840,11 @@
       const recentScans = [];
       const MAX_RECENT_SCANS = 10;
 
+      // Pagination state
+      let currentPage = 1;
+      let currentFilter = 'total';
+      let totalPages = 1;
+
       function addToActivityFeed(scanData) {
         // Add to beginning of array
         recentScans.unshift({
@@ -4728,7 +4853,8 @@
           title: scanData.title,
           details: scanData.details,
           isTestTicket: scanData.isTestTicket || false,
-          ticketId: scanData.ticketId || null
+          ticketId: scanData.ticketId || null,
+          walletSource: scanData.walletSource || null
         });
 
         // Keep only last 10 scans

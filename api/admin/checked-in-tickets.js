@@ -20,9 +20,12 @@ async function handler(req, res) {
     // Get query parameters
     const filter = req.query?.filter || 'total';
     const eventId = safeParseInt(req.query?.eventId);
+    const page = Math.max(1, safeParseInt(req.query?.page) || 1);
+    const limit = Math.min(100, Math.max(1, safeParseInt(req.query?.limit) || 50));
+    const offset = (page - 1) * limit;
 
     // Validate filter parameter
-    const validFilters = ['today', 'session', 'wallet', 'total'];
+    const validFilters = ['today', 'session', 'wallet', 'apple_wallet', 'google_wallet', 'total'];
     if (!validFilters.includes(filter)) {
       return res.status(400).json({
         error: 'Invalid filter parameter',
@@ -63,9 +66,14 @@ async function handler(req, res) {
       const offsetHours = Math.round((utcDate - mtDate) / (1000 * 60 * 60));
 
       // Convert UTC timestamps to MT by applying offset, then compare dates
-      whereConditions.push(`date(COALESCE(last_scanned_at, checked_in_at), '${offsetHours} hours') = date('now', '${offsetHours} hours')`);
+      // FIX: Subtract hours to convert UTC to MT (negative offset means subtract to go back in time)
+      whereConditions.push(`date(COALESCE(last_scanned_at, checked_in_at), '-${Math.abs(offsetHours)} hours') = date('now', '-${Math.abs(offsetHours)} hours')`);
     } else if (filter === 'wallet' && ticketsHasQrAccessMethod) {
       whereConditions.push("qr_access_method IN ('apple_wallet', 'google_wallet', 'samsung_wallet')");
+    } else if (filter === 'apple_wallet' && ticketsHasQrAccessMethod) {
+      whereConditions.push("qr_access_method = 'apple_wallet'");
+    } else if (filter === 'google_wallet' && ticketsHasQrAccessMethod) {
+      whereConditions.push("qr_access_method = 'google_wallet'");
     }
     // 'total' filter has no additional conditions
 
@@ -75,7 +83,16 @@ async function handler(req, res) {
       queryParams.push(eventId);
     }
 
-    // Build the query
+    // Get total count first
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM tickets
+      WHERE ${whereConditions.join(' AND ')}
+    `;
+    const countResult = await db.execute(countQuery, queryParams);
+    const totalCount = countResult.rows[0]?.total || 0;
+
+    // Build the paginated query
     const query = `
       SELECT
         ticket_id,
@@ -91,10 +108,11 @@ async function handler(req, res) {
       FROM tickets
       WHERE ${whereConditions.join(' AND ')}
       ORDER BY scan_time DESC
-      LIMIT 100
+      LIMIT ? OFFSET ?
     `;
 
-    const result = await db.execute(query, queryParams);
+    const paginatedParams = [...queryParams, limit, offset];
+    const result = await db.execute(query, paginatedParams);
 
     // Process BigInt values
     const processedResult = processDatabaseResult(result);
@@ -113,6 +131,9 @@ async function handler(req, res) {
       wallet_source: ticketsHasQrAccessMethod ? ticket.qr_access_method : null
     }));
 
+    // Calculate pagination metadata
+    const totalPages = Math.ceil(totalCount / limit);
+
     // Set security headers
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Pragma', 'no-cache');
@@ -121,7 +142,14 @@ async function handler(req, res) {
     res.status(200).json({
       tickets: enhancedTickets,
       filter,
-      total_count: tickets.length,
+      pagination: {
+        page,
+        limit,
+        total_count: totalCount,
+        total_pages: totalPages,
+        has_next: page < totalPages,
+        has_prev: page > 1
+      },
       timezone: 'America/Denver',
       timestamp: new Date().toISOString(),
       timestamp_mt: timeUtils.toMountainTime(new Date())
