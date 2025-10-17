@@ -272,6 +272,63 @@
         </div>
       </div>
 
+      <!-- Flagged Tickets Analytics / Monitoring Section -->
+      <div class="admin-card admin-mb-xl" id="flagged-tickets-analytics-section">
+        <div class="admin-card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+          <h2 class="admin-card-title" style="color: white;">
+            <span style="font-size: 1.2em; margin-right: 8px;">📊</span>
+            Flagged Tickets Analytics
+          </h2>
+          <div class="admin-card-actions">
+            <select id="analytics-period-select" style="padding: 6px 12px; border-radius: 4px; border: 1px solid white; background: rgba(255,255,255,0.2); color: white; cursor: pointer;">
+              <option value="7d">Last 7 Days</option>
+              <option value="30d" selected>Last 30 Days</option>
+              <option value="90d">Last 90 Days</option>
+              <option value="all">All Time</option>
+            </select>
+            <button id="refresh-analytics-btn" class="admin-btn admin-btn-sm" style="margin-left: 8px; background: rgba(255,255,255,0.2); border: 1px solid white; color: white;">
+              🔄 Refresh
+            </button>
+          </div>
+        </div>
+        <div class="admin-card-body">
+          <!-- Summary Metrics -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;" id="analytics-summary-cards">
+            <div class="admin-loading">Loading analytics...</div>
+          </div>
+
+          <!-- Key Insights -->
+          <div id="analytics-insights" style="margin-bottom: 24px; display: none;">
+            <h3 style="margin-bottom: 12px; font-size: 1.1em; color: var(--color-text-primary);">Key Insights</h3>
+            <div id="insights-content"></div>
+          </div>
+
+          <!-- Error Breakdown Chart -->
+          <div style="margin-bottom: 24px;">
+            <h3 style="margin-bottom: 12px; font-size: 1.1em; color: var(--color-text-primary);">Validation Error Breakdown</h3>
+            <div id="error-breakdown-chart" style="padding: 16px; background: var(--color-background, #f9fafb); border-radius: 8px;">
+              <!-- Will be populated by JavaScript -->
+            </div>
+          </div>
+
+          <!-- Webhook Delay Analysis -->
+          <div style="margin-bottom: 24px;">
+            <h3 style="margin-bottom: 12px; font-size: 1.1em; color: var(--color-text-primary);">Webhook Delay Correlation</h3>
+            <div id="webhook-delay-chart" style="padding: 16px; background: var(--color-background, #f9fafb); border-radius: 8px;">
+              <!-- Will be populated by JavaScript -->
+            </div>
+          </div>
+
+          <!-- Time Series Trend -->
+          <div>
+            <h3 style="margin-bottom: 12px; font-size: 1.1em; color: var(--color-text-primary);">Daily Trend</h3>
+            <div id="time-series-chart" style="padding: 16px; background: var(--color-background, #f9fafb); border-radius: 8px;">
+              <!-- Will be populated by JavaScript -->
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Events Section -->
       <div class="admin-card admin-mb-xl" id="events-section">
         <div class="admin-card-header">
@@ -737,9 +794,224 @@
         }
       }
 
+      // Load flagged tickets analytics
+      async function loadFlaggedTicketsAnalytics(period = '30d') {
+        try {
+          const token = localStorage.getItem('adminToken');
+          if (!token) {
+            throw new Error('No authentication token found');
+          }
+
+          const response = await fetch(`/api/admin/flagged-tickets-analytics?period=${period}&report_type=summary`, {
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "application/json"
+            }
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to load analytics');
+          }
+
+          const data = await response.json();
+          displayAnalytics(data);
+
+        } catch (error) {
+          console.error('Failed to load flagged tickets analytics:', error);
+          document.getElementById('analytics-summary-cards').innerHTML = `
+            <div class="error" style="grid-column: 1 / -1;">Failed to load analytics: ${escapeHtml(error.message)}</div>
+          `;
+        }
+      }
+
+      // Display analytics data
+      function displayAnalytics(data) {
+        const summary = data.summary || {};
+        const errorBreakdown = data.error_breakdown || {};
+        const webhookDelayAnalysis = data.webhook_delay_analysis || {};
+        const insights = data.insights || {};
+
+        // Summary Cards
+        const summaryHTML = `
+          <div style="background: white; padding: 16px; border-radius: 8px; border-left: 4px solid #ef4444;">
+            <div style="font-size: 0.875rem; color: #6b7280; margin-bottom: 4px;">Total Flagged</div>
+            <div style="font-size: 1.875rem; font-weight: bold; color: #111827;">${summary.total_flagged || 0}</div>
+            <div style="font-size: 0.75rem; color: #9ca3af; margin-top: 4px;">$${summary.total_flagged_value || '0.00'} total value</div>
+          </div>
+          <div style="background: white; padding: 16px; border-radius: 8px; border-left: 4px solid #10b981;">
+            <div style="font-size: 0.875rem; color: #6b7280; margin-bottom: 4px;">Pass Rate</div>
+            <div style="font-size: 1.875rem; font-weight: bold; color: #111827;">${summary.validation_pass_rate || 'N/A'}</div>
+            <div style="font-size: 0.75rem; color: #9ca3af; margin-top: 4px;">${summary.total_validations || 0} total validations</div>
+          </div>
+          <div style="background: white; padding: 16px; border-radius: 8px; border-left: 4px solid #f59e0b;">
+            <div style="font-size: 0.875rem; color: #6b7280; margin-bottom: 4px;">False Positive Rate</div>
+            <div style="font-size: 1.875rem; font-weight: bold; color: #111827;">${summary.false_positive_rate || '0%'}</div>
+            <div style="font-size: 0.75rem; color: #9ca3af; margin-top: 4px;">Target: <5%</div>
+          </div>
+          <div style="background: white; padding: 16px; border-radius: 8px; border-left: 4px solid #6366f1;">
+            <div style="font-size: 0.875rem; color: #6b7280; margin-bottom: 4px;">Avg Per Day</div>
+            <div style="font-size: 1.875rem; font-weight: bold; color: #111827;">${summary.avg_flagged_per_day || 0}</div>
+            <div style="font-size: 0.75rem; color: #9ca3af; margin-top: 4px;">${summary.days_with_flags || 0} days with flags</div>
+          </div>
+        `;
+        document.getElementById('analytics-summary-cards').innerHTML = summaryHTML;
+
+        // Key Insights
+        if (insights && Object.keys(insights).length > 0) {
+          const insightsSection = document.getElementById('analytics-insights');
+          insightsSection.style.display = 'block';
+
+          let insightsHTML = '';
+
+          if (insights.most_common_error && insights.most_common_error !== 'none') {
+            insightsHTML += `
+              <div style="padding: 12px; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 4px; margin-bottom: 8px;">
+                <strong>Most Common Error:</strong> ${escapeHtml(insights.most_common_error.replace(/_/g, ' '))}
+              </div>
+            `;
+          }
+
+          if (insights.high_delay_correlation) {
+            insightsHTML += `
+              <div style="padding: 12px; background: #dbeafe; border-left: 4px solid #3b82f6; border-radius: 4px; margin-bottom: 8px;">
+                <strong>⚠️ High Webhook Delay Correlation:</strong> Many flagged tickets occurred with delayed webhooks (>5min). This suggests timing-related false positives.
+              </div>
+            `;
+          }
+
+          if (insights.trending) {
+            const trend = insights.trending;
+            const trendColor = trend.direction === 'increasing' ? '#ef4444' : trend.direction === 'decreasing' ? '#10b981' : '#6b7280';
+            const trendIcon = trend.direction === 'increasing' ? '📈' : trend.direction === 'decreasing' ? '📉' : '➡️';
+
+            insightsHTML += `
+              <div style="padding: 12px; background: #f3f4f6; border-left: 4px solid ${trendColor}; border-radius: 4px;">
+                <strong>${trendIcon} 7-Day Trend:</strong> ${trend.direction} (${trend.change_percent}% change from previous week)
+                <br><small>Recent 7d: ${trend.recent_7d} flags | Previous 7d: ${trend.previous_7d} flags</small>
+              </div>
+            `;
+          }
+
+          document.getElementById('insights-content').innerHTML = insightsHTML;
+        }
+
+        // Error Breakdown Chart (Simple horizontal bars)
+        let errorChartHTML = '<div style="display: flex; flex-direction: column; gap: 8px;">';
+        const totalErrors = Object.values(errorBreakdown).reduce((sum, count) => sum + count, 0);
+
+        for (const [errorType, count] of Object.entries(errorBreakdown)) {
+          if (count > 0) {
+            const percentage = totalErrors > 0 ? ((count / totalErrors) * 100).toFixed(1) : 0;
+            const barWidth = percentage + '%';
+
+            errorChartHTML += `
+              <div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 0.875rem;">
+                  <span>${escapeHtml(errorType.replace(/_/g, ' '))}</span>
+                  <span><strong>${count}</strong> (${percentage}%)</span>
+                </div>
+                <div style="background: #e5e7eb; height: 24px; border-radius: 4px; overflow: hidden;">
+                  <div style="background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); height: 100%; width: ${barWidth}; transition: width 0.3s;"></div>
+                </div>
+              </div>
+            `;
+          }
+        }
+        errorChartHTML += '</div>';
+        document.getElementById('error-breakdown-chart').innerHTML = errorChartHTML;
+
+        // Webhook Delay Chart
+        let delayChartHTML = '<div style="display: flex; flex-direction: column; gap: 8px;">';
+        const totalDelays = Object.values(webhookDelayAnalysis).reduce((sum, count) => {
+          return typeof count === 'number' ? sum + count : sum;
+        }, 0);
+
+        const delayLabels = {
+          immediate: '< 1 minute',
+          normal: '1-5 minutes',
+          delayed: '5-15 minutes (lenient)',
+          very_delayed: '> 15 minutes (lenient)',
+          unknown: 'Unknown'
+        };
+
+        for (const [delayType, count] of Object.entries(webhookDelayAnalysis)) {
+          if (typeof count === 'number' && count > 0) {
+            const percentage = totalDelays > 0 ? ((count / totalDelays) * 100).toFixed(1) : 0;
+            const barWidth = percentage + '%';
+            const isLenient = delayType === 'delayed' || delayType === 'very_delayed';
+            const barColor = isLenient ? '#10b981' : '#6366f1';
+
+            delayChartHTML += `
+              <div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 0.875rem;">
+                  <span>${delayLabels[delayType] || delayType}</span>
+                  <span><strong>${count}</strong> (${percentage}%)</span>
+                </div>
+                <div style="background: #e5e7eb; height: 24px; border-radius: 4px; overflow: hidden;">
+                  <div style="background: ${barColor}; height: 100%; width: ${barWidth}; transition: width 0.3s;"></div>
+                </div>
+              </div>
+            `;
+          }
+        }
+        delayChartHTML += '</div>';
+        document.getElementById('webhook-delay-chart').innerHTML = delayChartHTML;
+
+        // Time Series Chart (Simple line representation)
+        const timeSeries = data.time_series || [];
+        if (timeSeries.length > 0) {
+          let timeSeriesHTML = '<div style="display: flex; flex-direction: column; gap: 4px; max-height: 300px; overflow-y: auto;">';
+
+          for (const day of timeSeries.slice(0, 30)) {
+            const date = new Date(day.date).toLocaleDateString();
+            const count = day.count || 0;
+            const maxCount = Math.max(...timeSeries.map(d => d.count || 0));
+            const barWidth = maxCount > 0 ? ((count / maxCount) * 100) + '%' : '0%';
+
+            timeSeriesHTML += `
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="min-width: 90px; font-size: 0.75rem; color: #6b7280;">${date}</span>
+                <div style="flex: 1; background: #e5e7eb; height: 20px; border-radius: 4px; overflow: hidden;">
+                  <div style="background: #667eea; height: 100%; width: ${barWidth};"></div>
+                </div>
+                <span style="min-width: 30px; text-align: right; font-size: 0.875rem; font-weight: 600;">${count}</span>
+              </div>
+            `;
+          }
+
+          timeSeriesHTML += '</div>';
+          document.getElementById('time-series-chart').innerHTML = timeSeriesHTML;
+        } else {
+          document.getElementById('time-series-chart').innerHTML = '<p style="text-align: center; color: #6b7280;">No data available for selected period</p>';
+        }
+      }
+
+      // Event listeners for analytics controls
+      document.addEventListener('DOMContentLoaded', function() {
+        const periodSelect = document.getElementById('analytics-period-select');
+        const refreshBtn = document.getElementById('refresh-analytics-btn');
+
+        if (periodSelect) {
+          periodSelect.addEventListener('change', function() {
+            loadFlaggedTicketsAnalytics(this.value);
+          });
+        }
+
+        if (refreshBtn) {
+          refreshBtn.addEventListener('click', function() {
+            const period = document.getElementById('analytics-period-select').value;
+            loadFlaggedTicketsAnalytics(period);
+          });
+        }
+
+        // Load analytics on initial page load
+        loadFlaggedTicketsAnalytics('30d');
+      });
+
       // Make functions globally available
       window.showValidationDetails = showValidationDetails;
       window.handleFlaggedTicketAction = handleFlaggedTicketAction;
+      window.loadFlaggedTicketsAnalytics = loadFlaggedTicketsAnalytics;
 
       // Make loadDashboardData available globally for event selector
       window.loadDashboardData = loadDashboardData;
