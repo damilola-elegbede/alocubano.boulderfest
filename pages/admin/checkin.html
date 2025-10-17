@@ -1950,23 +1950,19 @@
           </div>
           <div class="stat-item stat-item-clickable" onclick="viewStatTickets('valid')" title="Click to view valid scans">
             <div class="stat-value" id="statValid">0</div>
-            <div class="stat-label">✓ Valid</div>
+            <div class="stat-label">Valid</div>
           </div>
           <div class="stat-item stat-item-clickable" onclick="viewStatTickets('failed')" title="Click to view failed scans">
             <div class="stat-value" id="statFailed">0</div>
-            <div class="stat-label">✗ Failed</div>
+            <div class="stat-label">Failed</div>
           </div>
           <div class="stat-item stat-item-clickable" onclick="viewStatTickets('rateLimited')" title="Click to view rate limited scans">
             <div class="stat-value" id="statRateLimited">0</div>
-            <div class="stat-label">⏱ Limited</div>
+            <div class="stat-label">Rate Limited</div>
           </div>
-          <div class="stat-item stat-item-clickable" onclick="viewStatTickets('appleWallet')" title="Click to view Apple Wallet check-ins">
-            <div class="stat-value" id="statAppleWallet">0</div>
-            <div class="stat-label">🍎 Apple</div>
-          </div>
-          <div class="stat-item stat-item-clickable" onclick="viewStatTickets('googleWallet')" title="Click to view Google Wallet check-ins">
-            <div class="stat-value" id="statGoogleWallet">0</div>
-            <div class="stat-label">📱 Google</div>
+          <div class="stat-item stat-item-clickable" onclick="viewStatTickets('alreadyScanned')" title="Click to view re-scanned tickets">
+            <div class="stat-value" id="statAlreadyScanned">0</div>
+            <div class="stat-label">Re-scanned</div>
           </div>
           <div class="stat-item">
             <div class="stat-value" id="statAvgTime">0ms</div>
@@ -2052,10 +2048,6 @@
                   <th>Ticket ID</th>
                   <th>First Name</th>
                   <th>Last Name</th>
-                  <th>Type</th>
-                  <th>Status</th>
-                  <th>Source</th>
-                  <th>Duration</th>
                   <th>Scan Time (MT)</th>
                 </tr>
               </thead>
@@ -2172,19 +2164,23 @@
 
       // Statistics with localStorage persistence
       const STATS_STORAGE_KEY = 'scanner_stats_v2';
+      const SESSION_SCAN_LOG_IDS_KEY = 'session_scan_log_ids_v1';
       const STATS_SESSION_HOURS = 8;
+
+      // Session scan log IDs for database queries
+      const sessionScanLogIds = [];
 
       const stats = {
         // Server baselines (loaded from API, never incremented)
         todayBaseline: 0,
         totalBaseline: 0,
-        appleWalletBaseline: 0,
-        googleWalletBaseline: 0,
+        validBaseline: 0,
+        failedBaseline: 0,
+        rateLimitedBaseline: 0,
+        alreadyScannedBaseline: 0,
 
         // Session increments (persisted, incremented locally)
         todayIncrement: 0,
-        appleWalletIncrement: 0,
-        googleWalletIncrement: 0,
         queued: 0,
         session: 0,
         failed: 0,
@@ -2243,13 +2239,57 @@
             sessionStart: stats.sessionStart,
             lastActivity: Date.now()
           }));
+
+          // Also persist scan log IDs
+          persistSessionScanLogIds();
         } catch (error) {
           console.error('Failed to persist stats:', error);
         }
       }
 
+      // Restore session scan log IDs from localStorage
+      function restoreSessionScanLogIds() {
+        try {
+          const stored = localStorage.getItem(SESSION_SCAN_LOG_IDS_KEY);
+          if (!stored) return;
+
+          const data = JSON.parse(stored);
+          const age = (Date.now() - data.sessionStart) / (1000 * 60 * 60);
+
+          // Expire after 8 hours (same as session stats)
+          if (age > STATS_SESSION_HOURS) {
+            localStorage.removeItem(SESSION_SCAN_LOG_IDS_KEY);
+            console.log('Session scan log IDs expired after 8 hours');
+            return;
+          }
+
+          // Restore scan log IDs
+          if (Array.isArray(data.ids)) {
+            sessionScanLogIds.length = 0;
+            sessionScanLogIds.push(...data.ids);
+            console.log(`Restored ${sessionScanLogIds.length} session scan log IDs`);
+          }
+        } catch (error) {
+          console.error('Failed to restore session scan log IDs:', error);
+        }
+      }
+
+      // Save session scan log IDs to localStorage
+      function persistSessionScanLogIds() {
+        try {
+          localStorage.setItem(SESSION_SCAN_LOG_IDS_KEY, JSON.stringify({
+            ids: sessionScanLogIds,
+            sessionStart: stats.sessionStart,
+            lastActivity: Date.now()
+          }));
+        } catch (error) {
+          console.error('Failed to persist session scan log IDs:', error);
+        }
+      }
+
       // Initialize - restore previous session if exists
       restoreSessionStats();
+      restoreSessionScanLogIds();
 
       // Performance monitoring and resource management
       const performanceMonitor = {
@@ -3905,6 +3945,12 @@
             stats.session++;
             stats.todayIncrement++;  // Increment session overlay, not baseline
 
+            // Store scan log ID for session tracking
+            if (data.scanLogId) {
+              sessionScanLogIds.push(data.scanLogId);
+              console.log(`Stored scan log ID: ${data.scanLogId} (total: ${sessionScanLogIds.length})`);
+            }
+
             // Increment wallet-specific counters
             if (data.ticket && data.ticket.wallet_source) {
               if (data.ticket.wallet_source === 'apple_wallet') {
@@ -4317,13 +4363,13 @@
         document.getElementById("statValid").textContent = stats.validBaseline || 0;
         document.getElementById("statFailed").textContent = stats.failedBaseline || 0;
         document.getElementById("statRateLimited").textContent = stats.rateLimitedBaseline || 0;
+        document.getElementById("statAlreadyScanned").textContent = stats.alreadyScannedBaseline || 0;
 
-        document.getElementById("statAppleWallet").textContent = stats.appleWalletBaseline + stats.appleWalletIncrement;
-        document.getElementById("statGoogleWallet").textContent = stats.googleWalletBaseline + stats.googleWalletIncrement;
-
-        // Display average scan time from API
-        if (stats.avgScanTimeMs !== null && stats.avgScanTimeMs !== undefined) {
-          document.getElementById("statAvgTime").textContent = `${stats.avgScanTimeMs}ms`;
+        // Display average scan time for SESSION ONLY (not from API)
+        if (stats.validationTimes && stats.validationTimes.length > 0) {
+          const sum = stats.validationTimes.reduce((a, b) => a + b, 0);
+          const avg = Math.round(sum / stats.validationTimes.length);
+          document.getElementById("statAvgTime").textContent = `${avg}ms`;
         } else {
           document.getElementById("statAvgTime").textContent = "0ms";
         }
@@ -4352,11 +4398,10 @@
           'today': "Today's Check-Ins",
           'session': "Session Check-Ins",
           'total': "All Checked-In Tickets",
-          'valid': "✓ Valid Scans",
-          'failed': "✗ Failed Scans",
-          'rateLimited': "⏱ Rate Limited Scans",
-          'appleWallet': "🍎 Apple Wallet Check-Ins",
-          'googleWallet': "📱 Google Wallet Check-Ins"
+          'valid': "Valid Scans",
+          'failed': "Failed Scans",
+          'rateLimited': "Rate Limited Scans",
+          'alreadyScanned': "Re-scanned Tickets"
         };
         titleEl.textContent = titles[statType] || "Checked-In Tickets";
 
@@ -4376,11 +4421,11 @@
         tableContainer.style.display = 'none';
         emptyEl.style.display = 'none';
 
-        // For session filter, use local data from recentScans array
+        // For session filter, query database using scan log IDs
         if (statType === 'session') {
-          loadingEl.style.display = 'none';
-
-          if (recentScans.length === 0) {
+          // Check if we have any scan log IDs
+          if (sessionScanLogIds.length === 0) {
+            loadingEl.style.display = 'none';
             const emptyParagraph = emptyEl.querySelector('p');
             if (emptyParagraph) {
               emptyParagraph.textContent = "No tickets scanned in this session yet.";
@@ -4389,44 +4434,66 @@
             return;
           }
 
-          // Render session scans from local array
-          tableBody.innerHTML = recentScans
-            .filter(scan => scan.type === 'success')
-            .map(scan => {
-              const detailsLines = scan.details.split('\n');
-              const fullName = detailsLines[0] || '';
-              const [firstName, ...lastNameParts] = fullName.split(' ');
-              const lastName = lastNameParts.join(' ');
-              const timeFormatted = timeManager ?
-                timeManager.formatDateTime(new Date(scan.timestamp)) :
-                new Date(scan.timestamp).toLocaleString();
+          try {
+            // Query database with scan log IDs
+            const params = new URLSearchParams();
+            params.set('filter', 'session');
+            params.set('scanLogIds', sessionScanLogIds.join(','));
 
-              // Make row clickable if ticket ID is available
-              const hasTicketId = scan.ticketId && scan.ticketId !== '—';
-              // XSS Fix: Escape ticketId in onclick handlers to prevent code injection
-              const clickHandler = hasTicketId ?
-                `onclick="openTicketDetail('${escapeHtml(scan.ticketId)}')" role="button" tabindex="0" onkeypress="if(event.key === 'Enter' || event.key === ' ') openTicketDetail('${escapeHtml(scan.ticketId)}')"` :
-                'style="cursor: default;"';
+            console.log(`[DEBUG] Querying session scans with ${sessionScanLogIds.length} scan log IDs`);
 
-              // Wallet source badge
-              const walletBadge = scan.walletSource === 'apple_wallet' ? '🍎' :
-                                  scan.walletSource === 'google_wallet' ? '📱' :
-                                  scan.walletSource === 'samsung_wallet' ? '📱' : '—';
+            const response = await fetch(`/api/admin/checked-in-tickets?${params}`, {
+              credentials: 'include'
+            });
 
-              // XSS Fix: Escape all user-provided data
+            if (!response.ok) {
+              throw new Error(`Failed to fetch session tickets: ${response.status}`);
+            }
+
+            const data = await response.json();
+            loadingEl.style.display = 'none';
+
+            if (!data.tickets || data.tickets.length === 0) {
+              const emptyParagraph = emptyEl.querySelector('p');
+              if (emptyParagraph) {
+                emptyParagraph.textContent = "No session tickets found in database.";
+              }
+              emptyEl.style.display = 'block';
+              return;
+            }
+
+            // Render tickets in 4-column format
+            tableBody.innerHTML = data.tickets.map(ticket => {
+              const scanTime = ticket.scanTimeMt ||
+                (timeManager ? timeManager.formatDateTime(ticket.scanTime) : ticket.scanTime);
+
               return `
-                <tr ${clickHandler}>
-                  <td>${escapeHtml(scan.ticketId || '—')}</td>
-                  <td>${escapeHtml(firstName || '—')}</td>
-                  <td>${escapeHtml(lastName || '—')}</td>
-                  <td>${walletBadge}</td>
-                  <td>${escapeHtml(timeFormatted)}</td>
+                <tr>
+                  <td>
+                    <a href="/admin/ticket-detail.html?ticketId=${escapeHtml(ticket.ticketId)}"
+                       style="color: #007bff; text-decoration: underline; cursor: pointer;">
+                      ${escapeHtml(ticket.ticketId)}
+                    </a>
+                  </td>
+                  <td>${escapeHtml(ticket.firstName) || 'N/A'}</td>
+                  <td>${escapeHtml(ticket.lastName) || 'N/A'}</td>
+                  <td>${escapeHtml(scanTime)}</td>
                 </tr>
               `;
             }).join('');
 
-          tableContainer.style.display = 'block';
-          return;
+            tableContainer.style.display = 'block';
+            return;
+          } catch (error) {
+            console.error('Failed to load session tickets:', error);
+            loadingEl.style.display = 'none';
+            errorEl.style.display = 'block';
+            const errorMessage = errorEl.querySelector('.error-message');
+            if (errorMessage) {
+              errorMessage.textContent = 'Failed to load session tickets. Please try again.';
+            }
+            return;
+          }
         }
 
         try {
@@ -4534,33 +4601,17 @@
             const scanTime = ticket.scanTimeMt ||
               (timeManager ? timeManager.formatDateTime(ticket.scanTime) : ticket.scanTime);
 
-            // Validation source badge (updated from wallet_source to validationSource)
-            const sourceBadge = ticket.validationSource === 'apple_wallet' ? '🍎 Apple' :
-                                ticket.validationSource === 'google_wallet' ? '📱 Google' :
-                                ticket.validationSource === 'samsung_wallet' ? '📱 Samsung' :
-                                ticket.validationSource === 'web' ? '🌐 Web' : '—';
-
-            // Status badge with color
-            const statusBadge = ticket.scanStatus === 'valid' ? '<span class="badge badge-success">✓ Valid</span>' :
-                                ticket.scanStatus === 'invalid' ? '<span class="badge badge-error">✗ Invalid</span>' :
-                                ticket.scanStatus === 'expired' ? '<span class="badge badge-error">⏰ Expired</span>' :
-                                ticket.scanStatus === 'suspicious' ? '<span class="badge badge-warning">⚠ Suspicious</span>' :
-                                ticket.scanStatus === 'rate_limited' ? '<span class="badge badge-warning">⏱ Limited</span>' :
-                                ticket.scanStatus === 'already_scanned' ? '<span class="badge badge-info">🔄 Rescanned</span>' : '—';
-
-            // Scan duration display
-            const durationText = ticket.scanDurationMs ? `${ticket.scanDurationMs}ms` : '—';
-
             // XSS Fix: Escape all API data before rendering
             return `
-              <tr onclick="openTicketDetail('${escapeHtml(ticket.ticketId)}')" role="button" tabindex="0" onkeypress="if(event.key === 'Enter' || event.key === ' ') openTicketDetail('${escapeHtml(ticket.ticketId)}')">
-                <td>${escapeHtml(ticket.ticketId)}</td>
-                <td>${escapeHtml(ticket.firstName)}</td>
-                <td>${escapeHtml(ticket.lastName)}</td>
-                <td>${escapeHtml(ticket.ticketType)}</td>
-                <td>${statusBadge}</td>
-                <td>${sourceBadge}</td>
-                <td>${durationText}</td>
+              <tr>
+                <td>
+                  <a href="/admin/ticket-detail.html?ticketId=${escapeHtml(ticket.ticketId)}"
+                     style="color: #007bff; text-decoration: underline; cursor: pointer;">
+                    ${escapeHtml(ticket.ticketId)}
+                  </a>
+                </td>
+                <td>${escapeHtml(ticket.firstName) || 'N/A'}</td>
+                <td>${escapeHtml(ticket.lastName) || 'N/A'}</td>
                 <td>${escapeHtml(scanTime)}</td>
               </tr>
             `;
@@ -4634,12 +4685,10 @@
           console.log('📊 Scanner Stats API Response:', {
             today: data.stats?.today,
             total: data.stats?.total,
-            appleWallet: data.stats?.appleWallet,
-            googleWallet: data.stats?.googleWallet,
             valid: data.stats?.valid,
             failed: data.stats?.failed,
             rateLimited: data.stats?.rateLimited,
-            avgScanTimeMs: data.stats?.avgScanTimeMs,
+            alreadyScanned: data.stats?.alreadyScanned,
             eventId: selectedEventId,
             timestamp: new Date().toISOString()
           });
@@ -4648,13 +4697,11 @@
             // Load baselines from server, preserve session increments
             stats.todayBaseline = data.stats.today || 0;
             stats.totalBaseline = data.stats.total || 0;
-            stats.appleWalletBaseline = data.stats.appleWallet || 0;
-            stats.googleWalletBaseline = data.stats.googleWallet || 0;
             stats.validBaseline = data.stats.valid || 0;
             stats.failedBaseline = data.stats.failed || 0;
             stats.rateLimitedBaseline = data.stats.rateLimited || 0;
-            stats.avgScanTimeMs = data.stats.avgScanTimeMs || null;
-            // Session increments (todayIncrement, appleWalletIncrement, googleWalletIncrement, session, etc.) are NOT reset here - they persist!
+            stats.alreadyScannedBaseline = data.stats.alreadyScanned || 0;
+            // Session increments (todayIncrement, session, etc.) are NOT reset here - they persist!
 
             // Note: Test mode indicators removed as scanner-stats focuses on scanned tickets only
             // If test mode tracking is needed, it should be added to scanner-stats endpoint

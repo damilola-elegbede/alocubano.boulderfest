@@ -236,11 +236,11 @@ function isEventEnded(ticket) {
 async function logScanAttempt(db, scanData) {
   // Skip logging if ticket doesn't exist (prevents FOREIGN KEY constraint errors)
   if (!scanData.ticketId || scanData.ticketId === 'unknown') {
-    return;
+    return null;
   }
 
   try {
-    await db.execute({
+    const result = await db.execute({
       sql: `
         INSERT INTO scan_logs (
           ticket_id, scan_status, scan_location, device_info, ip_address,
@@ -263,9 +263,13 @@ async function logScanAttempt(db, scanData) {
         scanData.securityFlags ? JSON.stringify(scanData.securityFlags) : null
       ]
     });
+
+    // Return the inserted scan_logs ID
+    return result.lastInsertRowid || result.insertId || null;
   } catch (error) {
     // Non-blocking: log error but don't fail the operation
     console.error('Failed to log scan attempt (non-blocking):', error.message);
+    return null;
   }
 }
 
@@ -929,8 +933,8 @@ async function handler(req, res) {
     const ticket = validationResult.ticket;
     const validationTimeMs = Date.now() - startTime;
 
-    // Log successful scan to new scan_logs table
-    await logScanAttempt(db, {
+    // Log successful scan to new scan_logs table and capture the ID
+    const scanLogId = await logScanAttempt(db, {
       ticketId: ticket.ticket_id,
       scanStatus: 'valid',
       ipAddress: clientIP,
@@ -997,6 +1001,7 @@ async function handler(req, res) {
     res.status(200).json({
       valid: true,
       ticketId: ticket.ticket_id, // Top-level ticket ID for easy access
+      scanLogId: scanLogId, // Scan logs ID for session tracking
       wallet_source: source, // Wallet source for tracking
       ticket: {
         ticket_id: ticket.ticket_id, // For UI compatibility (checkin.html)

@@ -35,21 +35,19 @@ async function handler(req, res) {
     const baseWhere = baseConditions.length > 0 ? `WHERE ${baseConditions.join(' AND ')}` : '';
 
     // Calculate Mountain Time offset for 'today' filter
-    const now = new Date();
-    const utcDate = new Date(now.toLocaleString('en-US', { timeZone: 'UTC' }));
-    const mtDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/Denver' }));
-    const offsetHours = Math.round((utcDate - mtDate) / (1000 * 60 * 60));
+    const timezoneInfo = timeUtils.getTimezoneInfo();
+    const offsetHours = Math.abs(timezoneInfo.offsetHours);
 
     // Build all count queries
     const queries = [];
 
     // 1. Today's scans (Mountain Time)
     const todayConditions = [...baseConditions];
-    todayConditions.push(`date(sl.scanned_at, '-${Math.abs(offsetHours)} hours') = date('now', '-${Math.abs(offsetHours)} hours')`);
+    todayConditions.push(`date(sl.scanned_at, '-${offsetHours} hours') = date('now', '-${offsetHours} hours')`);
     const todayWhere = todayConditions.length > 0 ? `WHERE ${todayConditions.join(' AND ')}` : '';
     queries.push(
       db.execute({
-        sql: `SELECT COUNT(*) as count ${fromClause} ${todayWhere}`,
+        sql: `SELECT COUNT(DISTINCT sl.ticket_id) as count ${fromClause} ${todayWhere}`,
         args: baseParams
       })
     );
@@ -62,57 +60,47 @@ async function handler(req, res) {
       })
     );
 
-    // 3. Apple Wallet scans
-    const appleConditions = [...baseConditions, "sl.validation_source = 'apple_wallet'"];
-    const appleWhere = appleConditions.length > 0 ? `WHERE ${appleConditions.join(' AND ')}` : '';
-    queries.push(
-      db.execute({
-        sql: `SELECT COUNT(*) as count ${fromClause} ${appleWhere}`,
-        args: baseParams
-      })
-    );
-
-    // 4. Google/Samsung Wallet scans
-    const googleConditions = [...baseConditions, "sl.validation_source IN ('google_wallet', 'samsung_wallet')"];
-    const googleWhere = googleConditions.length > 0 ? `WHERE ${googleConditions.join(' AND ')}` : '';
-    queries.push(
-      db.execute({
-        sql: `SELECT COUNT(*) as count ${fromClause} ${googleWhere}`,
-        args: baseParams
-      })
-    );
-
-    // 5. Valid scans
+    // 3. Valid scans
     const validConditions = [...baseConditions, "sl.scan_status = 'valid'"];
     const validWhere = validConditions.length > 0 ? `WHERE ${validConditions.join(' AND ')}` : '';
     queries.push(
       db.execute({
-        sql: `SELECT COUNT(*) as count ${fromClause} ${validWhere}`,
+        sql: `SELECT COUNT(DISTINCT sl.ticket_id) as count ${fromClause} ${validWhere}`,
         args: baseParams
       })
     );
 
-    // 6. Failed scans (invalid, expired, suspicious)
+    // 4. Failed scans (invalid, expired, suspicious)
     const failedConditions = [...baseConditions, "sl.scan_status IN ('invalid', 'expired', 'suspicious')"];
     const failedWhere = failedConditions.length > 0 ? `WHERE ${failedConditions.join(' AND ')}` : '';
     queries.push(
       db.execute({
-        sql: `SELECT COUNT(*) as count ${fromClause} ${failedWhere}`,
+        sql: `SELECT COUNT(DISTINCT sl.ticket_id) as count ${fromClause} ${failedWhere}`,
         args: baseParams
       })
     );
 
-    // 7. Rate limited scans
+    // 5. Rate limited scans
     const rateLimitedConditions = [...baseConditions, "sl.scan_status = 'rate_limited'"];
     const rateLimitedWhere = rateLimitedConditions.length > 0 ? `WHERE ${rateLimitedConditions.join(' AND ')}` : '';
     queries.push(
       db.execute({
-        sql: `SELECT COUNT(*) as count ${fromClause} ${rateLimitedWhere}`,
+        sql: `SELECT COUNT(DISTINCT sl.ticket_id) as count ${fromClause} ${rateLimitedWhere}`,
         args: baseParams
       })
     );
 
-    // 8. Average scan time (only for valid scans with duration data)
+    // 6. Already scanned tickets (re-scans after initial successful scan)
+    const alreadyScannedConditions = [...baseConditions, "sl.scan_status = 'already_scanned'"];
+    const alreadyScannedWhere = alreadyScannedConditions.length > 0 ? `WHERE ${alreadyScannedConditions.join(' AND ')}` : '';
+    queries.push(
+      db.execute({
+        sql: `SELECT COUNT(DISTINCT sl.ticket_id) as count ${fromClause} ${alreadyScannedWhere}`,
+        args: baseParams
+      })
+    );
+
+    // 7. Average scan time (only for valid scans with duration data)
     const avgTimeConditions = [...baseConditions, "sl.scan_status = 'valid'", "sl.scan_duration_ms IS NOT NULL"];
     const avgTimeWhere = avgTimeConditions.length > 0 ? `WHERE ${avgTimeConditions.join(' AND ')}` : '';
     queries.push(
@@ -129,12 +117,11 @@ async function handler(req, res) {
     const stats = {
       today: results[0].rows[0]?.count || 0,
       total: results[1].rows[0]?.count || 0,
-      appleWallet: results[2].rows[0]?.count || 0,
-      googleWallet: results[3].rows[0]?.count || 0,
-      valid: results[4].rows[0]?.count || 0,
-      failed: results[5].rows[0]?.count || 0,
-      rateLimited: results[6].rows[0]?.count || 0,
-      avgScanTimeMs: results[7].rows[0]?.avg_time ? Math.round(results[7].rows[0].avg_time) : null,
+      valid: results[2].rows[0]?.count || 0,
+      failed: results[3].rows[0]?.count || 0,
+      rateLimited: results[4].rows[0]?.count || 0,
+      alreadyScanned: results[5].rows[0]?.count || 0,
+      avgScanTimeMs: results[6].rows[0]?.avg_time ? Math.round(results[6].rows[0].avg_time) : null,
       session: 0 // Session data is browser-local only
     };
 

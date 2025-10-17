@@ -25,7 +25,7 @@ async function handler(req, res) {
     const offset = (page - 1) * limit;
 
     // Validate filter parameter - updated to match scanner-stats.js
-    const validFilters = ['today', 'session', 'total', 'valid', 'failed', 'rateLimited', 'appleWallet', 'googleWallet'];
+    const validFilters = ['today', 'session', 'total', 'valid', 'failed', 'rateLimited', 'alreadyScanned'];
     if (!validFilters.includes(filter)) {
       return res.status(400).json({
         error: 'Invalid filter parameter',
@@ -33,14 +33,93 @@ async function handler(req, res) {
       });
     }
 
-    // Session filter returns empty array (session stats are browser-local only)
+    // Session filter: query by scan_logs IDs from client
     if (filter === 'session') {
+      // Get scan log IDs from request body or query parameter
+      const scanLogIds = req.query?.scanLogIds || req.body?.scanLogIds;
+
+      if (!scanLogIds || (Array.isArray(scanLogIds) && scanLogIds.length === 0)) {
+        // No IDs provided - return empty array
+        return res.status(200).json({
+          tickets: [],
+          filter: 'session',
+          totalCount: 0,
+          message: 'No session scan log IDs provided',
+          timezone: 'America/Denver'
+        });
+      }
+
+      // Parse IDs if string (comma-separated)
+      const idsArray = Array.isArray(scanLogIds) ? scanLogIds : scanLogIds.split(',').map(id => id.trim()).filter(Boolean);
+
+      if (idsArray.length === 0) {
+        return res.status(200).json({
+          tickets: [],
+          filter: 'session',
+          totalCount: 0,
+          message: 'No valid scan log IDs provided',
+          timezone: 'America/Denver'
+        });
+      }
+
+      // Query database for these specific scan_logs IDs
+      const placeholders = idsArray.map(() => '?').join(',');
+      const query = `
+        SELECT
+          t.ticket_id,
+          t.attendee_first_name,
+          t.attendee_last_name,
+          t.ticket_type,
+          t.scan_count,
+          t.max_scan_count,
+          sl.scanned_at,
+          sl.scan_status,
+          sl.validation_source,
+          sl.scan_duration_ms,
+          sl.device_info
+        FROM tickets t
+        JOIN scan_logs sl ON t.ticket_id = sl.ticket_id
+        WHERE sl.id IN (${placeholders})
+        ORDER BY sl.scanned_at DESC
+      `;
+
+      const result = await db.execute({ sql: query, args: idsArray });
+
+      // Process BigInt values
+      const processedResult = processDatabaseResult(result);
+      const tickets = processedResult.rows || [];
+
+      // Enhance with Mountain Time formatted timestamps and convert to camelCase
+      const enhancedTickets = tickets.map(ticket => ({
+        ticketId: ticket.ticket_id,
+        firstName: ticket.attendee_first_name,
+        lastName: ticket.attendee_last_name,
+        ticketType: ticket.ticket_type,
+        scanTime: ticket.scanned_at,
+        scanTimeMt: timeUtils.formatDateTime(ticket.scanned_at),
+        scanCount: ticket.scan_count,
+        maxScans: ticket.max_scan_count,
+        scanStatus: ticket.scan_status,
+        validationSource: ticket.validation_source,
+        scanDurationMs: ticket.scan_duration_ms,
+        deviceInfo: ticket.device_info
+      }));
+
       return res.status(200).json({
-        tickets: [],
+        tickets: enhancedTickets,
         filter: 'session',
-        totalCount: 0,
-        message: 'Session data is stored locally in browser',
-        timezone: 'America/Denver'
+        totalCount: enhancedTickets.length,
+        pagination: {
+          page: 1,
+          limit: enhancedTickets.length,
+          totalCount: enhancedTickets.length,
+          totalPages: 1,
+          hasNext: false,
+          hasPrev: false
+        },
+        timezone: 'America/Denver',
+        timestamp: new Date().toISOString(),
+        timestampMt: timeUtils.toMountainTime(new Date())
       });
     }
 
@@ -53,24 +132,20 @@ async function handler(req, res) {
     const queryParams = [];
 
     // Calculate Mountain Time offset for 'today' filter (same logic as scanner-stats.js)
-    const now = new Date();
-    const utcDate = new Date(now.toLocaleString('en-US', { timeZone: 'UTC' }));
-    const mtDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/Denver' }));
-    const offsetHours = Math.round((utcDate - mtDate) / (1000 * 60 * 60));
+    const timezoneInfo = timeUtils.getTimezoneInfo();
+    const offsetHours = Math.abs(timezoneInfo.offsetHours);
 
     // Apply filter-specific conditions to scan_logs (these go in subquery)
     if (filter === 'today') {
-      scanLogConditions.push(`date(scanned_at, '-${Math.abs(offsetHours)} hours') = date('now', '-${Math.abs(offsetHours)} hours')`);
-    } else if (filter === 'appleWallet') {
-      scanLogConditions.push("validation_source = 'apple_wallet'");
-    } else if (filter === 'googleWallet') {
-      scanLogConditions.push("validation_source IN ('google_wallet', 'samsung_wallet')");
+      scanLogConditions.push(`date(scanned_at, '-${offsetHours} hours') = date('now', '-${offsetHours} hours')`);
     } else if (filter === 'valid') {
       scanLogConditions.push("scan_status = 'valid'");
     } else if (filter === 'failed') {
       scanLogConditions.push("scan_status IN ('invalid', 'expired', 'suspicious')");
     } else if (filter === 'rateLimited') {
       scanLogConditions.push("scan_status = 'rate_limited'");
+    } else if (filter === 'alreadyScanned') {
+      scanLogConditions.push("scan_status = 'already_scanned'");
     }
     // 'total' filter has no additional conditions
 
