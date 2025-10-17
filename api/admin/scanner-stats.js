@@ -114,6 +114,26 @@ async function handler(req, res) {
       })
     );
 
+    // 8. Apple Wallet scans
+    const appleWalletConditions = [...baseConditions, "sl.validation_source = 'apple_wallet'"];
+    const appleWalletWhere = appleWalletConditions.length > 0 ? `WHERE ${appleWalletConditions.join(' AND ')}` : '';
+    queries.push(
+      db.execute({
+        sql: `SELECT COUNT(DISTINCT sl.ticket_id) as count ${fromClause} ${appleWalletWhere}`,
+        args: baseParams
+      })
+    );
+
+    // 9. Google Wallet scans (includes Samsung Wallet)
+    const googleWalletConditions = [...baseConditions, "sl.validation_source IN ('google_wallet', 'samsung_wallet')"];
+    const googleWalletWhere = googleWalletConditions.length > 0 ? `WHERE ${googleWalletConditions.join(' AND ')}` : '';
+    queries.push(
+      db.execute({
+        sql: `SELECT COUNT(DISTINCT sl.ticket_id) as count ${fromClause} ${googleWalletWhere}`,
+        args: baseParams
+      })
+    );
+
     // Execute all queries in parallel
     const results = await Promise.all(queries);
 
@@ -126,6 +146,8 @@ async function handler(req, res) {
       rateLimited: results[4].rows[0]?.count || 0,
       alreadyScanned: results[5].rows[0]?.count || 0,
       avgScanTimeMs: results[6].rows[0]?.avg_time ? Math.round(results[6].rows[0].avg_time) : null,
+      appleWallet: results[7].rows[0]?.count || 0,
+      googleWallet: results[8].rows[0]?.count || 0, // Includes Samsung Wallet
       session: 0 // Session data is browser-local only
     };
 
@@ -134,10 +156,15 @@ async function handler(req, res) {
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
 
-    // Prepare response data
+    // Prepare response data with comprehensive timezone info
     const responseData = {
       stats,
-      timezone: 'America/Denver',
+      timezone: {
+        name: timezoneInfo.timezone,
+        abbreviation: timezoneInfo.abbreviation,
+        isDST: timezoneInfo.isDST,
+        offsetHours: timezoneInfo.offsetHours
+      },
       timestamp: new Date().toISOString()
     };
 
