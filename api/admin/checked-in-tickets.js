@@ -240,11 +240,22 @@ async function handler(req, res) {
     });
 
     const countResult = await db.execute({ sql: countQuery, args: queryParams });
-    const totalCount = Number(countResult.rows[0]?.total || 0);
 
-    console.log('[CHECKED-IN-TICKETS] Count query result', {
+    // Log raw count result with type information
+    console.log('[CHECKED-IN-TICKETS] Raw count query result', {
+      rawResult: countResult.rows[0],
+      totalType: typeof countResult.rows[0]?.total,
+      isBigInt: typeof countResult.rows[0]?.total === 'bigint'
+    });
+
+    // Process BigInt BEFORE Number() conversion
+    const processedCountResult = processDatabaseResult(countResult);
+    const totalCount = processedCountResult.rows[0]?.total || 0;
+
+    console.log('[CHECKED-IN-TICKETS] Count query result processed', {
       totalCount,
-      rawResult: countResult.rows[0]
+      totalCountType: typeof totalCount,
+      processedResult: processedCountResult.rows[0]
     });
 
     // Build the paginated query
@@ -357,8 +368,16 @@ async function handler(req, res) {
       error: error.message,
       stack: error.stack,
       code: error.code,
-      name: error.name
+      name: error.name,
+      // Add context for BigInt errors
+      isBigIntError: error.message.includes('BigInt'),
+      isTypeError: error.name === 'TypeError'
     });
+
+    // Special handling for BigInt errors
+    if (error.message.includes('BigInt') || error.message.includes('Cannot convert')) {
+      console.error('[CHECKED-IN-TICKETS] BigInt conversion error detected - this should not happen after fix');
+    }
 
     // Handle specific errors
     if (error.code === 'SQLITE_BUSY') {

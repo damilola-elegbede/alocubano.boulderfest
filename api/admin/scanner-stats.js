@@ -184,26 +184,41 @@ async function handler(req, res) {
       rawResults: results.map((r, i) => ({
         queryIndex: i,
         rowCount: r.rows?.length || 0,
-        firstRow: r.rows?.[0]
+        firstRow: r.rows?.[0],
+        // Log types to detect BigInt
+        firstRowTypes: r.rows?.[0] ? Object.fromEntries(
+          Object.entries(r.rows[0]).map(([k, v]) => [k, typeof v])
+        ) : null
       }))
     });
 
-    // Extract counts (using camelCase for frontend compatibility)
-    const rawStats = {
-      today: results[0].rows[0]?.count || 0,
-      total: results[1].rows[0]?.count || 0,
-      valid: results[2].rows[0]?.count || 0,
-      failed: results[3].rows[0]?.count || 0,
-      rateLimited: results[4].rows[0]?.count || 0,
-      alreadyScanned: results[5].rows[0]?.count || 0,
-      avgScanTimeMs: results[6].rows[0]?.avg_time ? Math.round(results[6].rows[0].avg_time) : null,
-      appleWallet: results[7].rows[0]?.count || 0,
-      googleWallet: results[8].rows[0]?.count || 0, // Includes Samsung Wallet
+    // Process query results BEFORE extracting values to convert BigInt → Number
+    const processedResults = results.map(r => processDatabaseResult(r));
+
+    console.log('[SCANNER-STATS] BigInt processing complete', {
+      processedResults: processedResults.map((r, i) => ({
+        queryIndex: i,
+        firstRow: r.rows?.[0],
+        // Log types after processing to verify conversion
+        firstRowTypes: r.rows?.[0] ? Object.fromEntries(
+          Object.entries(r.rows[0]).map(([k, v]) => [k, typeof v])
+        ) : null
+      }))
+    });
+
+    // Extract counts from PROCESSED results (using camelCase for frontend compatibility)
+    const stats = {
+      today: processedResults[0].rows[0]?.count || 0,
+      total: processedResults[1].rows[0]?.count || 0,
+      valid: processedResults[2].rows[0]?.count || 0,
+      failed: processedResults[3].rows[0]?.count || 0,
+      rateLimited: processedResults[4].rows[0]?.count || 0,
+      alreadyScanned: processedResults[5].rows[0]?.count || 0,
+      avgScanTimeMs: processedResults[6].rows[0]?.avg_time ? Math.round(processedResults[6].rows[0].avg_time) : null,
+      appleWallet: processedResults[7].rows[0]?.count || 0,
+      googleWallet: processedResults[8].rows[0]?.count || 0, // Includes Samsung Wallet
       session: 0 // Session data is browser-local only
     };
-
-    // Convert BigInt values to Numbers for JSON serialization
-    const stats = processDatabaseResult(rawStats);
 
     console.log('[SCANNER-STATS] Stats object constructed', {
       stats,
@@ -259,8 +274,16 @@ async function handler(req, res) {
       error: error.message,
       stack: error.stack,
       code: error.code,
-      name: error.name
+      name: error.name,
+      // Add context for BigInt errors
+      isBigIntError: error.message.includes('BigInt'),
+      isTypeError: error.name === 'TypeError'
     });
+
+    // Special handling for BigInt errors
+    if (error.message.includes('BigInt') || error.message.includes('Cannot convert')) {
+      console.error('[SCANNER-STATS] BigInt conversion error detected - this should not happen after fix');
+    }
 
     // Handle specific errors
     if (error.code === 'SQLITE_BUSY') {
