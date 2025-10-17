@@ -171,9 +171,9 @@ async function handler(req, res) {
       ticketsHasEventId
     });
 
-    // Build WHERE clauses - separate scan_logs conditions from tickets conditions
-    const scanLogConditions = [];
-    const ticketConditions = [];
+    // Build WHERE clauses - separate conditions for subquery vs outer query
+    const outerScanLogConditions = []; // Scan log conditions for outer WHERE clause
+    const ticketConditions = [];       // Ticket table conditions for outer WHERE clause
     const queryParams = [];
 
     // Calculate Mountain Time offset for 'today' filter (same logic as scanner-stats.js)
@@ -187,17 +187,18 @@ async function handler(req, res) {
       offsetHours: timezoneInfo.offsetHours
     });
 
-    // Apply filter-specific conditions to scan_logs (these go in subquery)
+    // Apply filter-specific conditions to the OUTER query (not subquery)
+    // This ensures we filter on the latest scan's status, not just tickets with any scan matching the filter
     if (filter === 'today') {
-      scanLogConditions.push(`date(scanned_at, '${offsetHours} hours') = date('now', '${offsetHours} hours')`);
+      outerScanLogConditions.push(`date(sl.scanned_at, '${offsetHours} hours') = date('now', '${offsetHours} hours')`);
     } else if (filter === 'valid') {
-      scanLogConditions.push("scan_status = 'valid'");
+      outerScanLogConditions.push("sl.scan_status = 'valid'");
     } else if (filter === 'failed') {
-      scanLogConditions.push("scan_status IN ('invalid', 'expired', 'suspicious')");
+      outerScanLogConditions.push("sl.scan_status IN ('invalid', 'expired', 'suspicious')");
     } else if (filter === 'rateLimited') {
-      scanLogConditions.push("scan_status = 'rate_limited'");
+      outerScanLogConditions.push("sl.scan_status = 'rate_limited'");
     } else if (filter === 'alreadyScanned') {
-      scanLogConditions.push("scan_status = 'already_scanned'");
+      outerScanLogConditions.push("sl.scan_status = 'already_scanned'");
     }
     // 'total' filter has no additional conditions
 
@@ -207,20 +208,23 @@ async function handler(req, res) {
       queryParams.push(eventId);
     }
 
-    // Build WHERE clauses for different parts of the query
-    const subqueryWhere = scanLogConditions.length > 0 ? `WHERE ${scanLogConditions.join(' AND ')}` : '';
-    const outerWhere = ticketConditions.length > 0 ? `WHERE ${ticketConditions.join(' AND ')}` : '';
+    // Build WHERE clause for outer query
+    // Combine both scan_log conditions and ticket conditions
+    const allOuterConditions = [...outerScanLogConditions, ...ticketConditions];
+    const outerWhere = allOuterConditions.length > 0 ? `WHERE ${allOuterConditions.join(' AND ')}` : '';
 
     console.log('[CHECKED-IN-TICKETS] Query conditions built', {
-      scanLogConditions,
+      outerScanLogConditions,
       ticketConditions,
+      allOuterConditions,
       queryParams,
-      subqueryWhere,
       outerWhere
     });
 
     // Get total count first
     // Count distinct tickets matching filter criteria
+    // The subquery gets the absolute latest scan for each ticket (no filtering)
+    // Then we filter in the outer WHERE to get tickets whose latest scan matches the criteria
     const countQuery = `
       SELECT COUNT(DISTINCT sl.ticket_id) as total
       FROM scan_logs sl
@@ -228,7 +232,6 @@ async function handler(req, res) {
       JOIN (
         SELECT ticket_id, MAX(scanned_at) as max_scanned_at
         FROM scan_logs
-        ${subqueryWhere}
         GROUP BY ticket_id
       ) latest ON sl.ticket_id = latest.ticket_id AND sl.scanned_at = latest.max_scanned_at
       ${outerWhere}
@@ -259,7 +262,8 @@ async function handler(req, res) {
     });
 
     // Build the paginated query
-    // Use a subquery to get the latest scan for each ticket that matches filter criteria
+    // The subquery gets the absolute latest scan for each ticket (no filtering)
+    // Then we filter in the outer WHERE to get tickets whose latest scan matches the criteria
     const query = `
       SELECT
         t.ticket_id,
@@ -278,7 +282,6 @@ async function handler(req, res) {
       JOIN (
         SELECT ticket_id, MAX(scanned_at) as max_scanned_at
         FROM scan_logs
-        ${subqueryWhere}
         GROUP BY ticket_id
       ) latest ON sl.ticket_id = latest.ticket_id AND sl.scanned_at = latest.max_scanned_at
       ${outerWhere}
