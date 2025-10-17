@@ -89,20 +89,20 @@ async function handler(req, res) {
       const processedResult = processDatabaseResult(result);
       const tickets = processedResult.rows || [];
 
-      // Enhance with Mountain Time formatted timestamps and convert to camelCase
+      // Enhance with Mountain Time formatted timestamps (keep snake_case for frontend compatibility)
       const enhancedTickets = tickets.map(ticket => ({
-        ticketId: ticket.ticket_id,
-        firstName: ticket.attendee_first_name,
-        lastName: ticket.attendee_last_name,
-        ticketType: ticket.ticket_type,
-        scanTime: ticket.scanned_at,
-        scanTimeMt: timeUtils.formatDateTime(ticket.scanned_at),
-        scanCount: ticket.scan_count,
-        maxScans: ticket.max_scan_count,
-        scanStatus: ticket.scan_status,
-        validationSource: ticket.validation_source,
-        scanDurationMs: ticket.scan_duration_ms,
-        deviceInfo: ticket.device_info
+        ticket_id: ticket.ticket_id,
+        first_name: ticket.attendee_first_name,
+        last_name: ticket.attendee_last_name,
+        ticket_type: ticket.ticket_type,
+        scan_time: ticket.scanned_at,
+        scan_time_mt: timeUtils.formatDateTime(ticket.scanned_at),
+        scan_count: ticket.scan_count,
+        max_scans: ticket.max_scan_count,
+        scan_status: ticket.scan_status,
+        validation_source: ticket.validation_source,
+        scan_duration_ms: ticket.scan_duration_ms,
+        device_info: ticket.device_info
       }));
 
       return res.status(200).json({
@@ -133,11 +133,11 @@ async function handler(req, res) {
 
     // Calculate Mountain Time offset for 'today' filter (same logic as scanner-stats.js)
     const timezoneInfo = timeUtils.getTimezoneInfo();
-    const offsetHours = Math.abs(timezoneInfo.offsetHours);
+    const offsetHours = timezoneInfo.offsetHours; // Keep sign: -6 for MDT, -7 for MST
 
     // Apply filter-specific conditions to scan_logs (these go in subquery)
     if (filter === 'today') {
-      scanLogConditions.push(`date(scanned_at, '-${offsetHours} hours') = date('now', '-${offsetHours} hours')`);
+      scanLogConditions.push(`date(scanned_at, '${offsetHours} hours') = date('now', '${offsetHours} hours')`);
     } else if (filter === 'valid') {
       scanLogConditions.push("scan_status = 'valid'");
     } else if (filter === 'failed') {
@@ -211,20 +211,20 @@ async function handler(req, res) {
     const processedResult = processDatabaseResult(result);
     const tickets = processedResult.rows || [];
 
-    // Enhance with Mountain Time formatted timestamps and convert to camelCase
+    // Enhance with Mountain Time formatted timestamps (keep snake_case for frontend compatibility)
     const enhancedTickets = tickets.map(ticket => ({
-      ticketId: ticket.ticket_id,
-      firstName: ticket.attendee_first_name,
-      lastName: ticket.attendee_last_name,
-      ticketType: ticket.ticket_type,
-      scanTime: ticket.scanned_at,
-      scanTimeMt: timeUtils.formatDateTime(ticket.scanned_at),
-      scanCount: ticket.scan_count,
-      maxScans: ticket.max_scan_count,
-      scanStatus: ticket.scan_status,
-      validationSource: ticket.validation_source,
-      scanDurationMs: ticket.scan_duration_ms,
-      deviceInfo: ticket.device_info
+      ticket_id: ticket.ticket_id,
+      first_name: ticket.attendee_first_name,
+      last_name: ticket.attendee_last_name,
+      ticket_type: ticket.ticket_type,
+      scan_time: ticket.scanned_at,
+      scan_time_mt: timeUtils.formatDateTime(ticket.scanned_at),
+      scan_count: ticket.scan_count,
+      max_scans: ticket.max_scan_count,
+      scan_status: ticket.scan_status,
+      validation_source: ticket.validation_source,
+      scan_duration_ms: ticket.scan_duration_ms,
+      device_info: ticket.device_info
     }));
 
     // Calculate pagination metadata

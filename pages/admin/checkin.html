@@ -442,6 +442,7 @@
         overflow-y: auto;
         overflow-x: hidden;
         padding: var(--space-lg);
+        padding-bottom: 90px; /* Account for footer controls height to prevent items from hiding */
         background: linear-gradient(180deg,
           rgba(91, 107, 181, 0.03) 0%,
           rgba(204, 41, 54, 0.03) 100%);
@@ -4444,19 +4445,19 @@
 
             // Render tickets in 4-column format
             tableBody.innerHTML = data.tickets.map(ticket => {
-              const scanTime = ticket.scanTimeMt ||
-                (timeManager ? timeManager.formatDateTime(ticket.scanTime) : ticket.scanTime);
+              const scanTime = ticket.scan_time_mt ||
+                (timeManager ? timeManager.formatDateTime(ticket.scan_time) : ticket.scan_time);
 
               return `
                 <tr>
                   <td>
-                    <a href="/admin/ticket-detail.html?ticketId=${escapeHtml(ticket.ticketId)}"
+                    <a href="/admin/ticket-detail.html?ticketId=${escapeHtml(ticket.ticket_id)}"
                        style="color: #007bff; text-decoration: underline; cursor: pointer;">
-                      ${escapeHtml(ticket.ticketId)}
+                      ${escapeHtml(ticket.ticket_id)}
                     </a>
                   </td>
-                  <td>${escapeHtml(ticket.firstName) || 'N/A'}</td>
-                  <td>${escapeHtml(ticket.lastName) || 'N/A'}</td>
+                  <td>${escapeHtml(ticket.first_name) || 'N/A'}</td>
+                  <td>${escapeHtml(ticket.last_name) || 'N/A'}</td>
                   <td>${escapeHtml(scanTime)}</td>
                 </tr>
               `;
@@ -4578,20 +4579,20 @@
 
           // Render tickets table
           tableBody.innerHTML = allTickets.map(ticket => {
-            const scanTime = ticket.scanTimeMt ||
-              (timeManager ? timeManager.formatDateTime(ticket.scanTime) : ticket.scanTime);
+            const scanTime = ticket.scan_time_mt ||
+              (timeManager ? timeManager.formatDateTime(ticket.scan_time) : ticket.scan_time);
 
             // XSS Fix: Escape all API data before rendering
             return `
               <tr>
                 <td>
-                  <a href="/admin/ticket-detail.html?ticketId=${escapeHtml(ticket.ticketId)}"
+                  <a href="/admin/ticket-detail.html?ticketId=${escapeHtml(ticket.ticket_id)}"
                      style="color: #007bff; text-decoration: underline; cursor: pointer;">
-                    ${escapeHtml(ticket.ticketId)}
+                    ${escapeHtml(ticket.ticket_id)}
                   </a>
                 </td>
-                <td>${escapeHtml(ticket.firstName) || 'N/A'}</td>
-                <td>${escapeHtml(ticket.lastName) || 'N/A'}</td>
+                <td>${escapeHtml(ticket.first_name) || 'N/A'}</td>
+                <td>${escapeHtml(ticket.last_name) || 'N/A'}</td>
                 <td>${escapeHtml(scanTime)}</td>
               </tr>
             `;
@@ -5058,12 +5059,12 @@
             recentScans.length = 0; // Clear existing
             data.tickets.forEach(ticket => {
               recentScans.push({
-                timestamp: new Date(ticket.scanTime).getTime(),
+                timestamp: new Date(ticket.scan_time).getTime(),
                 type: 'success',
-                title: `${ticket.firstName || 'Unknown'} ${ticket.lastName || ''}`.trim(),
-                details: `${ticket.firstName || 'Unknown'} ${ticket.lastName || ''}\n${ticket.ticketType}`,
-                ticketId: ticket.ticketId,
-                walletSource: ticket.validationSource
+                title: `${ticket.first_name || 'Unknown'} ${ticket.last_name || ''}`.trim(),
+                details: `${ticket.first_name || 'Unknown'} ${ticket.last_name || ''}\n${ticket.ticket_type}`,
+                ticketId: ticket.ticket_id,
+                walletSource: ticket.validation_source
               });
             });
 

@@ -94,12 +94,16 @@ async function handler(req, res) {
       })
     );
 
-    // 6. Already scanned tickets (re-scans after initial successful scan)
-    const alreadyScannedConditions = [...baseConditions, "sl.scan_status = 'already_scanned'"];
-    const alreadyScannedWhere = alreadyScannedConditions.length > 0 ? `WHERE ${alreadyScannedConditions.join(' AND ')}` : '';
+    // 6. Re-scanned tickets (tickets that have been scanned more than once successfully)
+    // Count tickets where scan_count > 1 (indicates multiple successful scans)
+    const alreadyScannedConditions = [...baseConditions];
+    const alreadyScannedWhere = baseConditions.length > 0 ? `WHERE ${baseConditions.join(' AND ')} AND` : 'WHERE';
+
+    // Join with tickets table to check scan_count
+    let alreadyScannedFromClause = eventId ? fromClause : 'FROM scan_logs sl JOIN tickets t ON sl.ticket_id = t.ticket_id';
     queries.push(
       db.execute({
-        sql: `SELECT COUNT(DISTINCT sl.ticket_id) as count ${fromClause} ${alreadyScannedWhere}`,
+        sql: `SELECT COUNT(DISTINCT sl.ticket_id) as count ${alreadyScannedFromClause} ${alreadyScannedWhere} t.scan_count > 1`,
         args: baseParams
       })
     );
