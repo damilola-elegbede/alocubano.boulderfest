@@ -128,7 +128,7 @@
     },
     {
       "source": "/images/:path*",
-      "destination": "/images/:path*"
+      "destination": "/public/images/:path*"
     },
     {
       "source": "/wallet/:path*",
