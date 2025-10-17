@@ -188,8 +188,8 @@ export default async function handler(req, res) {
         event_date, price_cents,
         attendee_first_name, attendee_last_name, attendee_email,
         registration_status, registration_deadline,
-        status, created_at, is_test
-      ) VALUES (?, (SELECT id FROM transactions WHERE uuid = ?), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        max_scan_count, status, created_at, is_test
+      ) VALUES (?, (SELECT id FROM transactions WHERE uuid = ?), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       args: [
         ticketId,
         transactionUuid,
@@ -203,6 +203,7 @@ export default async function handler(req, res) {
         ticketDetails.attendee_email,
         'pending', // registration_status
         registrationDeadline.toISOString(),
+        3, // max_scan_count - use configured limit for test data
         'valid', // ticket status
         now.toISOString(),
         1 // is_test
