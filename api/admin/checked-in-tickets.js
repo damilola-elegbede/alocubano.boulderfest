@@ -24,8 +24,8 @@ async function handler(req, res) {
     const limit = Math.min(100, Math.max(1, safeParseInt(req.query?.limit) || 50));
     const offset = (page - 1) * limit;
 
-    // Validate filter parameter
-    const validFilters = ['today', 'session', 'wallet', 'apple_wallet', 'google_wallet', 'total'];
+    // Validate filter parameter - updated to match scanner-stats.js
+    const validFilters = ['today', 'session', 'total', 'valid', 'failed', 'rateLimited', 'appleWallet', 'googleWallet'];
     if (!validFilters.includes(filter)) {
       return res.status(400).json({
         error: 'Invalid filter parameter',
@@ -38,108 +38,118 @@ async function handler(req, res) {
       return res.status(200).json({
         tickets: [],
         filter: 'session',
-        total_count: 0,
+        totalCount: 0,
         message: 'Session data is stored locally in browser',
         timezone: 'America/Denver'
       });
     }
 
-    // Check if event_id and qr_access_method columns exist
+    // Check if event_id column exists in tickets table
     const ticketsHasEventId = await columnExists(db, 'tickets', 'event_id');
-    const ticketsHasQrAccessMethod = await columnExists(db, 'tickets', 'qr_access_method');
 
-    // Fail-fast: Wallet-specific filters require qr_access_method column
-    const walletFilters = ['wallet', 'apple_wallet', 'google_wallet'];
-    if (walletFilters.includes(filter) && !ticketsHasQrAccessMethod) {
-      return res.status(400).json({
-        error: 'Wallet filtering unavailable',
-        message: 'The qr_access_method column does not exist in the database',
-        suggestion: 'Run database migrations to add wallet tracking support',
-        filter_requested: filter
-      });
-    }
-
-    // Build WHERE clauses based on filter and event ID
-    const whereConditions = [];
+    // Build WHERE clauses - separate scan_logs conditions from tickets conditions
+    const scanLogConditions = [];
+    const ticketConditions = [];
     const queryParams = [];
 
-    // Base condition: only checked-in tickets
-    // We check for either last_scanned_at or checked_in_at being set
-    whereConditions.push('(last_scanned_at IS NOT NULL OR checked_in_at IS NOT NULL)');
+    // Calculate Mountain Time offset for 'today' filter (same logic as scanner-stats.js)
+    const now = new Date();
+    const utcDate = new Date(now.toLocaleString('en-US', { timeZone: 'UTC' }));
+    const mtDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/Denver' }));
+    const offsetHours = Math.round((utcDate - mtDate) / (1000 * 60 * 60));
 
-    // Apply filter-specific conditions
+    // Apply filter-specific conditions to scan_logs (these go in subquery)
     if (filter === 'today') {
-      // Calculate current Mountain Time offset (handles DST automatically)
-      // During MST (winter): UTC-7, During MDT (summer): UTC-6
-      const now = new Date();
-      const utcDate = new Date(now.toLocaleString('en-US', { timeZone: 'UTC' }));
-      const mtDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/Denver' }));
-      const offsetHours = Math.round((utcDate - mtDate) / (1000 * 60 * 60));
-
-      // Convert UTC timestamps to MT by applying offset, then compare dates
-      // FIX: Subtract hours to convert UTC to MT (negative offset means subtract to go back in time)
-      whereConditions.push(`date(COALESCE(last_scanned_at, checked_in_at), '-${Math.abs(offsetHours)} hours') = date('now', '-${Math.abs(offsetHours)} hours')`);
-    } else if (filter === 'wallet' && ticketsHasQrAccessMethod) {
-      whereConditions.push("qr_access_method IN ('apple_wallet', 'google_wallet', 'samsung_wallet')");
-    } else if (filter === 'apple_wallet' && ticketsHasQrAccessMethod) {
-      whereConditions.push("qr_access_method = 'apple_wallet'");
-    } else if (filter === 'google_wallet' && ticketsHasQrAccessMethod) {
-      whereConditions.push("qr_access_method = 'google_wallet'");
+      scanLogConditions.push(`date(scanned_at, '-${Math.abs(offsetHours)} hours') = date('now', '-${Math.abs(offsetHours)} hours')`);
+    } else if (filter === 'appleWallet') {
+      scanLogConditions.push("validation_source = 'apple_wallet'");
+    } else if (filter === 'googleWallet') {
+      scanLogConditions.push("validation_source IN ('google_wallet', 'samsung_wallet')");
+    } else if (filter === 'valid') {
+      scanLogConditions.push("scan_status = 'valid'");
+    } else if (filter === 'failed') {
+      scanLogConditions.push("scan_status IN ('invalid', 'expired', 'suspicious')");
+    } else if (filter === 'rateLimited') {
+      scanLogConditions.push("scan_status = 'rate_limited'");
     }
     // 'total' filter has no additional conditions
 
-    // Add event filtering if applicable
+    // Add event filtering to ticket conditions (applies to outer query)
     if (eventId && ticketsHasEventId) {
-      whereConditions.push('event_id = ?');
+      ticketConditions.push('t.event_id = ?');
       queryParams.push(eventId);
     }
 
+    // Build WHERE clauses for different parts of the query
+    const subqueryWhere = scanLogConditions.length > 0 ? `WHERE ${scanLogConditions.join(' AND ')}` : '';
+    const outerWhere = ticketConditions.length > 0 ? `WHERE ${ticketConditions.join(' AND ')}` : '';
+
     // Get total count first
+    // Count distinct tickets matching filter criteria
     const countQuery = `
-      SELECT COUNT(*) as total
-      FROM tickets
-      WHERE ${whereConditions.join(' AND ')}
+      SELECT COUNT(DISTINCT sl.ticket_id) as total
+      FROM scan_logs sl
+      JOIN tickets t ON sl.ticket_id = t.ticket_id
+      JOIN (
+        SELECT ticket_id, MAX(scanned_at) as max_scanned_at
+        FROM scan_logs
+        ${subqueryWhere}
+        GROUP BY ticket_id
+      ) latest ON sl.ticket_id = latest.ticket_id AND sl.scanned_at = latest.max_scanned_at
+      ${outerWhere}
     `;
-    const countResult = await db.execute(countQuery, queryParams);
+    const countResult = await db.execute({ sql: countQuery, args: queryParams });
     const totalCount = Number(countResult.rows[0]?.total || 0);
 
     // Build the paginated query
+    // Use a subquery to get the latest scan for each ticket that matches filter criteria
     const query = `
       SELECT
-        ticket_id,
-        attendee_first_name,
-        attendee_last_name,
-        ticket_type,
-        last_scanned_at,
-        checked_in_at,
-        scan_count,
-        max_scan_count,
-        ${ticketsHasQrAccessMethod ? "qr_access_method," : ""}
-        COALESCE(last_scanned_at, checked_in_at) as scan_time
-      FROM tickets
-      WHERE ${whereConditions.join(' AND ')}
-      ORDER BY scan_time DESC
+        t.ticket_id,
+        t.attendee_first_name,
+        t.attendee_last_name,
+        t.ticket_type,
+        t.scan_count,
+        t.max_scan_count,
+        sl.scanned_at,
+        sl.scan_status,
+        sl.validation_source,
+        sl.scan_duration_ms,
+        sl.device_info
+      FROM tickets t
+      JOIN scan_logs sl ON t.ticket_id = sl.ticket_id
+      JOIN (
+        SELECT ticket_id, MAX(scanned_at) as max_scanned_at
+        FROM scan_logs
+        ${subqueryWhere}
+        GROUP BY ticket_id
+      ) latest ON sl.ticket_id = latest.ticket_id AND sl.scanned_at = latest.max_scanned_at
+      ${outerWhere}
+      ORDER BY sl.scanned_at DESC
       LIMIT ? OFFSET ?
     `;
 
     const paginatedParams = [...queryParams, limit, offset];
-    const result = await db.execute(query, paginatedParams);
+    const result = await db.execute({ sql: query, args: paginatedParams });
 
     // Process BigInt values
     const processedResult = processDatabaseResult(result);
     const tickets = processedResult.rows || [];
 
-    // Enhance with Mountain Time formatted timestamps
+    // Enhance with Mountain Time formatted timestamps and convert to camelCase
     const enhancedTickets = tickets.map(ticket => ({
-      ticket_id: ticket.ticket_id,
-      first_name: ticket.attendee_first_name,
-      last_name: ticket.attendee_last_name,
-      ticket_type: ticket.ticket_type,
-      scan_time: ticket.scan_time,
-      scan_time_mt: timeUtils.formatDateTime(ticket.scan_time),
-      scan_count: ticket.scan_count,
-      max_scans: ticket.max_scan_count,
-      wallet_source: ticketsHasQrAccessMethod ? ticket.qr_access_method : null
+      ticketId: ticket.ticket_id,
+      firstName: ticket.attendee_first_name,
+      lastName: ticket.attendee_last_name,
+      ticketType: ticket.ticket_type,
+      scanTime: ticket.scanned_at,
+      scanTimeMt: timeUtils.formatDateTime(ticket.scanned_at),
+      scanCount: ticket.scan_count,
+      maxScans: ticket.max_scan_count,
+      scanStatus: ticket.scan_status,
+      validationSource: ticket.validation_source,
+      scanDurationMs: ticket.scan_duration_ms,
+      deviceInfo: ticket.device_info
     }));
 
     // Calculate pagination metadata
@@ -156,14 +166,14 @@ async function handler(req, res) {
       pagination: {
         page,
         limit,
-        total_count: totalCount,
-        total_pages: totalPages,
-        has_next: page < totalPages,
-        has_prev: page > 1
+        totalCount,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
       },
       timezone: 'America/Denver',
       timestamp: new Date().toISOString(),
-      timestamp_mt: timeUtils.toMountainTime(new Date())
+      timestampMt: timeUtils.toMountainTime(new Date())
     });
   } catch (error) {
     console.error('Checked-in tickets API error:', error);

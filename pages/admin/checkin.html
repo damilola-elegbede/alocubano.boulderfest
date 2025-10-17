@@ -316,10 +316,56 @@
         text-align: center;
       }
 
-      /* Highlight new stats */
+      /* Highlight stats with colors */
+      #statValid { color: var(--color-success); }
       #statFailed { color: var(--color-red); }
-      #statInvalid { color: var(--color-warning); }
-      #statAvgTime { color: var(--color-success); }
+      #statRateLimited { color: var(--color-warning); }
+      #statAvgTime { color: var(--color-info); }
+
+      /* Active state for clickable stat cards */
+      .stat-item-clickable.active {
+        background: var(--color-primary);
+        border-color: var(--color-primary);
+      }
+
+      .stat-item-clickable.active .stat-value,
+      .stat-item-clickable.active .stat-label {
+        color: var(--color-white);
+      }
+
+      /* Badge styles for ticket table */
+      .badge {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        display: inline-block;
+        white-space: nowrap;
+      }
+
+      .badge-success {
+        background: rgba(16, 185, 129, 0.2);
+        color: #10b981;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+      }
+
+      .badge-error {
+        background: rgba(239, 68, 68, 0.2);
+        color: #ef4444;
+        border: 1px solid rgba(239, 68, 68, 0.3);
+      }
+
+      .badge-warning {
+        background: rgba(245, 158, 11, 0.2);
+        color: #f59e0b;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+      }
+
+      .badge-info {
+        background: rgba(59, 130, 246, 0.2);
+        color: #3b82f6;
+        border: 1px solid rgba(59, 130, 246, 0.3);
+      }
 
       /* Mobile responsive stats */
       @media (max-width: 768px) {
@@ -1898,28 +1944,32 @@
             <div class="stat-value" id="statSession">0</div>
             <div class="stat-label">Session</div>
           </div>
-          <div class="stat-item stat-item-clickable" onclick="viewStatTickets('apple_wallet')" title="Click to view Apple Wallet check-ins">
-            <div class="stat-value" id="statAppleWallet">0</div>
-            <div class="stat-label">🍎 Apple</div>
-          </div>
-          <div class="stat-item stat-item-clickable" onclick="viewStatTickets('google_wallet')" title="Click to view Google Wallet check-ins">
-            <div class="stat-value" id="statGoogleWallet">0</div>
-            <div class="stat-label">📱 Google</div>
-          </div>
           <div class="stat-item stat-item-clickable" onclick="viewStatTickets('total')" title="Click to view all checked-in tickets">
             <div class="stat-value" id="statTotal">0</div>
             <div class="stat-label">Total</div>
           </div>
-          <div class="stat-item">
+          <div class="stat-item stat-item-clickable" onclick="viewStatTickets('valid')" title="Click to view valid scans">
+            <div class="stat-value" id="statValid">0</div>
+            <div class="stat-label">✓ Valid</div>
+          </div>
+          <div class="stat-item stat-item-clickable" onclick="viewStatTickets('failed')" title="Click to view failed scans">
             <div class="stat-value" id="statFailed">0</div>
-            <div class="stat-label">Failed</div>
+            <div class="stat-label">✗ Failed</div>
+          </div>
+          <div class="stat-item stat-item-clickable" onclick="viewStatTickets('rateLimited')" title="Click to view rate limited scans">
+            <div class="stat-value" id="statRateLimited">0</div>
+            <div class="stat-label">⏱ Limited</div>
+          </div>
+          <div class="stat-item stat-item-clickable" onclick="viewStatTickets('appleWallet')" title="Click to view Apple Wallet check-ins">
+            <div class="stat-value" id="statAppleWallet">0</div>
+            <div class="stat-label">🍎 Apple</div>
+          </div>
+          <div class="stat-item stat-item-clickable" onclick="viewStatTickets('googleWallet')" title="Click to view Google Wallet check-ins">
+            <div class="stat-value" id="statGoogleWallet">0</div>
+            <div class="stat-label">📱 Google</div>
           </div>
           <div class="stat-item">
-            <div class="stat-value" id="statInvalid">0</div>
-            <div class="stat-label">Invalid</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-value" id="statAvgTime">0s</div>
+            <div class="stat-value" id="statAvgTime">0ms</div>
             <div class="stat-label">Avg Time</div>
           </div>
         </div>
@@ -2002,7 +2052,10 @@
                   <th>Ticket ID</th>
                   <th>First Name</th>
                   <th>Last Name</th>
+                  <th>Type</th>
+                  <th>Status</th>
                   <th>Source</th>
+                  <th>Duration</th>
                   <th>Scan Time (MT)</th>
                 </tr>
               </thead>
@@ -3882,10 +3935,14 @@
                 `🧪 ${walletBadge}Valid Test Ticket!` :
                 `${walletBadge}Valid Ticket!`;
 
+              // Read scan counts from validation object
+              const scanCount = data.validation?.scan_count ?? 0;
+              const maxScans = data.validation?.max_scan_count ?? 0;
+
               showResult(
                 "success",
                 resultTitle,
-                `${data.ticket.attendee}\n${data.ticket.type}${accessMethod}\nScan ${data.ticket.scanCount}/${data.ticket.maxScans}`,
+                `${data.ticket.attendee}\n${data.ticket.type}${accessMethod}\nScan ${scanCount}/${maxScans}`,
                 isTestTicket,
                 data.ticket.ticket_id,
                 data.ticket.wallet_source
@@ -4251,24 +4308,24 @@
 
       // Update statistics display
       function updateStats() {
-        // Display = baseline + session increment
-        document.getElementById("statToday").textContent = stats.todayBaseline + stats.todayIncrement;
+        // Display baseline values directly from API (no session increments to avoid double-counting)
+        document.getElementById("statToday").textContent = stats.todayBaseline;
         document.getElementById("statSession").textContent = stats.session;
+        document.getElementById("statTotal").textContent = stats.totalBaseline;
+
+        // New stat cards from scan_logs
+        document.getElementById("statValid").textContent = stats.validBaseline || 0;
+        document.getElementById("statFailed").textContent = stats.failedBaseline || 0;
+        document.getElementById("statRateLimited").textContent = stats.rateLimitedBaseline || 0;
+
         document.getElementById("statAppleWallet").textContent = stats.appleWalletBaseline + stats.appleWalletIncrement;
         document.getElementById("statGoogleWallet").textContent = stats.googleWalletBaseline + stats.googleWalletIncrement;
-        // Total should include today's session scans
-        document.getElementById("statTotal").textContent = stats.totalBaseline + stats.todayIncrement;
 
-        // Update new stats
-        document.getElementById("statFailed").textContent = stats.failed;
-        document.getElementById("statInvalid").textContent = stats.invalid;
-
-        // Calculate and display average validation time
-        if (stats.validationTimes.length > 0) {
-          const avgTime = stats.validationTimes.reduce((a, b) => a + b, 0) / stats.validationTimes.length;
-          document.getElementById("statAvgTime").textContent = `${(avgTime / 1000).toFixed(1)}s`;
+        // Display average scan time from API
+        if (stats.avgScanTimeMs !== null && stats.avgScanTimeMs !== undefined) {
+          document.getElementById("statAvgTime").textContent = `${stats.avgScanTimeMs}ms`;
         } else {
-          document.getElementById("statAvgTime").textContent = "0s";
+          document.getElementById("statAvgTime").textContent = "0ms";
         }
 
         // Persist to localStorage
@@ -4294,12 +4351,23 @@
         const titles = {
           'today': "Today's Check-Ins",
           'session': "Session Check-Ins",
-          'wallet': "Wallet Check-Ins",
-          'apple_wallet': "🍎 Apple Wallet Check-Ins",
-          'google_wallet': "📱 Google Wallet Check-Ins",
-          'total': "All Checked-In Tickets"
+          'total': "All Checked-In Tickets",
+          'valid': "✓ Valid Scans",
+          'failed': "✗ Failed Scans",
+          'rateLimited': "⏱ Rate Limited Scans",
+          'appleWallet': "🍎 Apple Wallet Check-Ins",
+          'googleWallet': "📱 Google Wallet Check-Ins"
         };
         titleEl.textContent = titles[statType] || "Checked-In Tickets";
+
+        // Update active state for stat cards
+        document.querySelectorAll('.stat-item-clickable').forEach(item => {
+          item.classList.remove('active');
+        });
+        const activeCard = document.querySelector(`.stat-item-clickable[onclick*="${statType}"]`);
+        if (activeCard) {
+          activeCard.classList.add('active');
+        }
 
         // Show overlay with loading state
         overlay.classList.add('show');
@@ -4461,21 +4529,36 @@
 
           // Render tickets table
           tableBody.innerHTML = allTickets.map(ticket => {
-            const scanTime = ticket.scan_time_mt ||
-              (timeManager ? timeManager.formatDateTime(ticket.scan_time) : ticket.scan_time);
+            const scanTime = ticket.scanTimeMt ||
+              (timeManager ? timeManager.formatDateTime(ticket.scanTime) : ticket.scanTime);
 
-            // Wallet source badge
-            const walletBadge = ticket.wallet_source === 'apple_wallet' ? '🍎' :
-                                ticket.wallet_source === 'google_wallet' ? '📱' :
-                                ticket.wallet_source === 'samsung_wallet' ? '📱' : '—';
+            // Validation source badge (updated from wallet_source to validationSource)
+            const sourceBadge = ticket.validationSource === 'apple_wallet' ? '🍎 Apple' :
+                                ticket.validationSource === 'google_wallet' ? '📱 Google' :
+                                ticket.validationSource === 'samsung_wallet' ? '📱 Samsung' :
+                                ticket.validationSource === 'web' ? '🌐 Web' : '—';
+
+            // Status badge with color
+            const statusBadge = ticket.scanStatus === 'valid' ? '<span class="badge badge-success">✓ Valid</span>' :
+                                ticket.scanStatus === 'invalid' ? '<span class="badge badge-error">✗ Invalid</span>' :
+                                ticket.scanStatus === 'expired' ? '<span class="badge badge-error">⏰ Expired</span>' :
+                                ticket.scanStatus === 'suspicious' ? '<span class="badge badge-warning">⚠ Suspicious</span>' :
+                                ticket.scanStatus === 'rate_limited' ? '<span class="badge badge-warning">⏱ Limited</span>' :
+                                ticket.scanStatus === 'already_scanned' ? '<span class="badge badge-info">🔄 Rescanned</span>' : '—';
+
+            // Scan duration display
+            const durationText = ticket.scanDurationMs ? `${ticket.scanDurationMs}ms` : '—';
 
             // XSS Fix: Escape all API data before rendering
             return `
-              <tr onclick="openTicketDetail('${escapeHtml(ticket.ticket_id)}')" role="button" tabindex="0" onkeypress="if(event.key === 'Enter' || event.key === ' ') openTicketDetail('${escapeHtml(ticket.ticket_id)}')">
-                <td>${escapeHtml(ticket.ticket_id)}</td>
-                <td>${escapeHtml(ticket.first_name)}</td>
-                <td>${escapeHtml(ticket.last_name)}</td>
-                <td>${walletBadge}</td>
+              <tr onclick="openTicketDetail('${escapeHtml(ticket.ticketId)}')" role="button" tabindex="0" onkeypress="if(event.key === 'Enter' || event.key === ' ') openTicketDetail('${escapeHtml(ticket.ticketId)}')">
+                <td>${escapeHtml(ticket.ticketId)}</td>
+                <td>${escapeHtml(ticket.firstName)}</td>
+                <td>${escapeHtml(ticket.lastName)}</td>
+                <td>${escapeHtml(ticket.ticketType)}</td>
+                <td>${statusBadge}</td>
+                <td>${sourceBadge}</td>
+                <td>${durationText}</td>
                 <td>${escapeHtml(scanTime)}</td>
               </tr>
             `;
@@ -4485,17 +4568,18 @@
 
           // Update pagination controls
           if (data.pagination) {
-            totalPages = data.pagination.total_pages;
+            // Use camelCase field names from API
+            totalPages = data.pagination.totalPages;
             const prevBtn = document.getElementById('prevPageBtn');
             const nextBtn = document.getElementById('nextPageBtn');
             const paginationInfo = document.getElementById('paginationInfo');
 
             // Update pagination info text
-            paginationInfo.textContent = `Page ${data.pagination.page} of ${data.pagination.total_pages} (${data.pagination.total_count} total)`;
+            paginationInfo.textContent = `Page ${data.pagination.page} of ${data.pagination.totalPages} (${data.pagination.totalCount} total)`;
 
             // Update button states
-            prevBtn.disabled = !data.pagination.has_prev;
-            nextBtn.disabled = !data.pagination.has_next;
+            prevBtn.disabled = !data.pagination.hasPrev;
+            nextBtn.disabled = !data.pagination.hasNext;
 
             // Show pagination controls
             paginationEl.style.display = 'flex';
@@ -4548,8 +4632,12 @@
           console.log('📊 Scanner Stats API Response:', {
             today: data.stats?.today,
             total: data.stats?.total,
-            apple_wallet: data.stats?.apple_wallet,
-            google_wallet: data.stats?.google_wallet,
+            appleWallet: data.stats?.appleWallet,
+            googleWallet: data.stats?.googleWallet,
+            valid: data.stats?.valid,
+            failed: data.stats?.failed,
+            rateLimited: data.stats?.rateLimited,
+            avgScanTimeMs: data.stats?.avgScanTimeMs,
             eventId: selectedEventId,
             timestamp: new Date().toISOString()
           });
@@ -4558,8 +4646,12 @@
             // Load baselines from server, preserve session increments
             stats.todayBaseline = data.stats.today || 0;
             stats.totalBaseline = data.stats.total || 0;
-            stats.appleWalletBaseline = data.stats.apple_wallet || 0;
-            stats.googleWalletBaseline = data.stats.google_wallet || 0;
+            stats.appleWalletBaseline = data.stats.appleWallet || 0;
+            stats.googleWalletBaseline = data.stats.googleWallet || 0;
+            stats.validBaseline = data.stats.valid || 0;
+            stats.failedBaseline = data.stats.failed || 0;
+            stats.rateLimitedBaseline = data.stats.rateLimited || 0;
+            stats.avgScanTimeMs = data.stats.avgScanTimeMs || null;
             // Session increments (todayIncrement, appleWalletIncrement, googleWalletIncrement, session, etc.) are NOT reset here - they persist!
 
             // Note: Test mode indicators removed as scanner-stats focuses on scanned tickets only
@@ -4937,12 +5029,12 @@
             recentScans.length = 0; // Clear existing
             data.tickets.forEach(ticket => {
               recentScans.push({
-                timestamp: new Date(ticket.scan_time).getTime(),
+                timestamp: new Date(ticket.scanTime).getTime(),
                 type: 'success',
-                title: `${ticket.first_name || 'Unknown'} ${ticket.last_name || ''}`.trim(),
-                details: `${ticket.ticket_type}\n${ticket.ticket_id}`,
-                ticketId: ticket.ticket_id,
-                walletSource: ticket.wallet_source
+                title: `${ticket.firstName || 'Unknown'} ${ticket.lastName || ''}`.trim(),
+                details: `${ticket.ticketType}\n${ticket.ticketId}`,
+                ticketId: ticket.ticketId,
+                walletSource: ticket.validationSource
               });
             });
 

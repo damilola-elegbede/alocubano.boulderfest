@@ -1007,6 +1007,7 @@ async function handler(req, res) {
       validation: {
         status: 'valid',
         scan_count: ticket.scan_count,
+        max_scan_count: ticket.max_scan_count,
         last_scanned: new Date().toISOString(),
         message: ticketIsTest ?
           `${testModeIndicator} - Welcome ${ticket.attendee_first_name}! (Test Mode)` :
