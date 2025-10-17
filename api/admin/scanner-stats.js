@@ -4,6 +4,7 @@ import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
 import { safeParseInt } from "../../lib/db-utils.js";
 import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
 import timeUtils from "../../lib/time-utils.js";
+import { processDatabaseResult } from "../../lib/bigint-serializer.js";
 
 async function handler(req, res) {
   const startTime = Date.now();
@@ -188,7 +189,7 @@ async function handler(req, res) {
     });
 
     // Extract counts (using camelCase for frontend compatibility)
-    const stats = {
+    const rawStats = {
       today: results[0].rows[0]?.count || 0,
       total: results[1].rows[0]?.count || 0,
       valid: results[2].rows[0]?.count || 0,
@@ -200,6 +201,9 @@ async function handler(req, res) {
       googleWallet: results[8].rows[0]?.count || 0, // Includes Samsung Wallet
       session: 0 // Session data is browser-local only
     };
+
+    // Convert BigInt values to Numbers for JSON serialization
+    const stats = processDatabaseResult(rawStats);
 
     console.log('[SCANNER-STATS] Stats object constructed', {
       stats,
