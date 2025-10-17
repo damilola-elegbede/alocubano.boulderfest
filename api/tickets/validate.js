@@ -898,6 +898,7 @@ async function handler(req, res) {
 
         // Nested ticket object (for backward compatibility)
         ticket: {
+          ticket_id: ticket.ticket_id, // For UI compatibility (checkin.html)
           id: ticket.ticket_id,
           type: ticket.ticket_type,
           attendee: `${ticket.attendee_first_name} ${ticket.attendee_last_name}`.trim(),
@@ -998,6 +999,7 @@ async function handler(req, res) {
       ticketId: ticket.ticket_id, // Top-level ticket ID for easy access
       wallet_source: source, // Wallet source for tracking
       ticket: {
+        ticket_id: ticket.ticket_id, // For UI compatibility (checkin.html)
         id: ticket.ticket_id,
         type: ticket.ticket_type,
         attendee: `${ticket.attendee_first_name} ${ticket.attendee_last_name}`.trim(),

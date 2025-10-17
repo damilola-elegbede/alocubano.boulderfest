@@ -4469,10 +4469,11 @@
           loadingEl.style.display = 'none';
 
           // Merge database tickets with session scans for 'today' and 'total' filters
+          // NOTE: Only merge session scans on page 1 to prevent duplicates across pages
           // This ensures displayed counts match the cards (which include session increments)
           let allTickets = data.tickets || [];
 
-          if (statType === 'today' || statType === 'total') {
+          if ((statType === 'today' || statType === 'total') && page === 1) {
             // Get session scans that should be included
             const sessionScans = recentScans
               .filter(scan => scan.type === 'success' && scan.ticketId && scan.ticketId !== '—')
@@ -4503,7 +4504,8 @@
               }
             });
 
-            console.log('[DEBUG] Merged tickets with session scans:', {
+            console.log('[DEBUG] Merged tickets with session scans (page 1 only):', {
+              page: page,
               dbTickets: data.tickets?.length || 0,
               sessionScans: sessionScans.length,
               merged: allTickets.length
@@ -5032,7 +5034,7 @@
                 timestamp: new Date(ticket.scanTime).getTime(),
                 type: 'success',
                 title: `${ticket.firstName || 'Unknown'} ${ticket.lastName || ''}`.trim(),
-                details: `${ticket.ticketType}\n${ticket.ticketId}`,
+                details: `${ticket.firstName || 'Unknown'} ${ticket.lastName || ''}\n${ticket.ticketType}`,
                 ticketId: ticket.ticketId,
                 walletSource: ticket.validationSource
               });
