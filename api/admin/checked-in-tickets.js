@@ -7,9 +7,16 @@ import timeUtils from "../../lib/time-utils.js";
 import { processDatabaseResult } from "../../lib/bigint-serializer.js";
 
 async function handler(req, res) {
+  const startTime = Date.now();
   let db;
 
   try {
+    console.log('[CHECKED-IN-TICKETS] Request received', {
+      method: req.method,
+      query: req.query,
+      timestamp: new Date().toISOString()
+    });
+
     db = await getDatabaseClient();
 
     if (req.method !== 'GET') {
@@ -24,6 +31,15 @@ async function handler(req, res) {
     const limit = Math.min(100, Math.max(1, safeParseInt(req.query?.limit) || 50));
     const offset = (page - 1) * limit;
 
+    console.log('[CHECKED-IN-TICKETS] Parsed parameters', {
+      filter,
+      eventId,
+      page,
+      limit,
+      offset,
+      scanLogIds: req.query?.scanLogIds ? 'present' : 'not present'
+    });
+
     // Validate filter parameter - updated to match scanner-stats.js
     const validFilters = ['today', 'session', 'total', 'valid', 'failed', 'rateLimited', 'alreadyScanned'];
     if (!validFilters.includes(filter)) {
@@ -35,8 +51,16 @@ async function handler(req, res) {
 
     // Session filter: query by scan_logs IDs from client
     if (filter === 'session') {
+      console.log('[CHECKED-IN-TICKETS] Processing session filter');
+
       // Get scan log IDs from request body or query parameter
       const scanLogIds = req.query?.scanLogIds || req.body?.scanLogIds;
+
+      console.log('[CHECKED-IN-TICKETS] Scan log IDs received', {
+        source: req.query?.scanLogIds ? 'query' : (req.body?.scanLogIds ? 'body' : 'none'),
+        type: Array.isArray(scanLogIds) ? 'array' : typeof scanLogIds,
+        length: Array.isArray(scanLogIds) ? scanLogIds.length : (scanLogIds ? scanLogIds.length : 0)
+      });
 
       if (!scanLogIds || (Array.isArray(scanLogIds) && scanLogIds.length === 0)) {
         // No IDs provided - return empty array
@@ -83,11 +107,26 @@ async function handler(req, res) {
         ORDER BY sl.scanned_at DESC
       `;
 
+      console.log('[CHECKED-IN-TICKETS] Executing session query', {
+        idsCount: idsArray.length,
+        idsArray: idsArray.slice(0, 10), // Log first 10 IDs
+        queryLength: query.length
+      });
+
       const result = await db.execute({ sql: query, args: idsArray });
+
+      console.log('[CHECKED-IN-TICKETS] Session query result', {
+        rowCount: result.rows?.length || 0,
+        firstRow: result.rows?.[0]
+      });
 
       // Process BigInt values
       const processedResult = processDatabaseResult(result);
       const tickets = processedResult.rows || [];
+
+      console.log('[CHECKED-IN-TICKETS] BigInt processing complete', {
+        ticketCount: tickets.length
+      });
 
       // Enhance with Mountain Time formatted timestamps (keep snake_case for frontend compatibility)
       const enhancedTickets = tickets.map(ticket => ({
@@ -123,8 +162,14 @@ async function handler(req, res) {
       });
     }
 
+    console.log('[CHECKED-IN-TICKETS] Processing standard filter', { filter });
+
     // Check if event_id column exists in tickets table
     const ticketsHasEventId = await columnExists(db, 'tickets', 'event_id');
+
+    console.log('[CHECKED-IN-TICKETS] Database schema check', {
+      ticketsHasEventId
+    });
 
     // Build WHERE clauses - separate scan_logs conditions from tickets conditions
     const scanLogConditions = [];
@@ -134,6 +179,13 @@ async function handler(req, res) {
     // Calculate Mountain Time offset for 'today' filter (same logic as scanner-stats.js)
     const timezoneInfo = timeUtils.getTimezoneInfo();
     const offsetHours = timezoneInfo.offsetHours; // Keep sign: -6 for MDT, -7 for MST
+
+    console.log('[CHECKED-IN-TICKETS] Timezone calculation', {
+      timezone: timezoneInfo.timezone,
+      abbreviation: timezoneInfo.abbreviation,
+      isDST: timezoneInfo.isDST,
+      offsetHours: timezoneInfo.offsetHours
+    });
 
     // Apply filter-specific conditions to scan_logs (these go in subquery)
     if (filter === 'today') {
@@ -159,6 +211,14 @@ async function handler(req, res) {
     const subqueryWhere = scanLogConditions.length > 0 ? `WHERE ${scanLogConditions.join(' AND ')}` : '';
     const outerWhere = ticketConditions.length > 0 ? `WHERE ${ticketConditions.join(' AND ')}` : '';
 
+    console.log('[CHECKED-IN-TICKETS] Query conditions built', {
+      scanLogConditions,
+      ticketConditions,
+      queryParams,
+      subqueryWhere,
+      outerWhere
+    });
+
     // Get total count first
     // Count distinct tickets matching filter criteria
     const countQuery = `
@@ -173,8 +233,19 @@ async function handler(req, res) {
       ) latest ON sl.ticket_id = latest.ticket_id AND sl.scanned_at = latest.max_scanned_at
       ${outerWhere}
     `;
+
+    console.log('[CHECKED-IN-TICKETS] Executing count query', {
+      queryLength: countQuery.length,
+      queryParams
+    });
+
     const countResult = await db.execute({ sql: countQuery, args: queryParams });
     const totalCount = Number(countResult.rows[0]?.total || 0);
+
+    console.log('[CHECKED-IN-TICKETS] Count query result', {
+      totalCount,
+      rawResult: countResult.rows[0]
+    });
 
     // Build the paginated query
     // Use a subquery to get the latest scan for each ticket that matches filter criteria
@@ -205,11 +276,28 @@ async function handler(req, res) {
     `;
 
     const paginatedParams = [...queryParams, limit, offset];
+
+    console.log('[CHECKED-IN-TICKETS] Executing paginated query', {
+      queryLength: query.length,
+      paginatedParams,
+      limit,
+      offset
+    });
+
     const result = await db.execute({ sql: query, args: paginatedParams });
+
+    console.log('[CHECKED-IN-TICKETS] Paginated query result', {
+      rowCount: result.rows?.length || 0,
+      firstRow: result.rows?.[0]
+    });
 
     // Process BigInt values
     const processedResult = processDatabaseResult(result);
     const tickets = processedResult.rows || [];
+
+    console.log('[CHECKED-IN-TICKETS] BigInt processing complete', {
+      ticketCount: tickets.length
+    });
 
     // Enhance with Mountain Time formatted timestamps (keep snake_case for frontend compatibility)
     const enhancedTickets = tickets.map(ticket => ({
@@ -235,7 +323,8 @@ async function handler(req, res) {
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
 
-    res.status(200).json({
+    const duration = Date.now() - startTime;
+    const responseData = {
       tickets: enhancedTickets,
       filter,
       pagination: {
@@ -249,9 +338,27 @@ async function handler(req, res) {
       timezone: 'America/Denver',
       timestamp: new Date().toISOString(),
       timestampMt: timeUtils.toMountainTime(new Date())
+    };
+
+    console.log('[CHECKED-IN-TICKETS] Response ready', {
+      duration: `${duration}ms`,
+      filter,
+      ticketCount: enhancedTickets.length,
+      totalCount,
+      page,
+      totalPages,
+      hasNext: page < totalPages,
+      hasPrev: page > 1
     });
+
+    res.status(200).json(responseData);
   } catch (error) {
-    console.error('Checked-in tickets API error:', error);
+    console.error('[CHECKED-IN-TICKETS] Error occurred', {
+      error: error.message,
+      stack: error.stack,
+      code: error.code,
+      name: error.name
+    });
 
     // Handle specific errors
     if (error.code === 'SQLITE_BUSY') {

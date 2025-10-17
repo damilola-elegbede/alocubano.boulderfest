@@ -4916,8 +4916,8 @@
           }
         }
 
-        // Initialize scanner
-        await initScanner();
+        // Note: Inline scanner removed in commit 358a0f26 - page now uses fullscreen scanner modal only
+        // Fullscreen scanner is initialized on-demand when user clicks the camera button
 
         // Load statistics
         await loadStats();

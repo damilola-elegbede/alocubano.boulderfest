@@ -6,9 +6,16 @@ import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
 import timeUtils from "../../lib/time-utils.js";
 
 async function handler(req, res) {
+  const startTime = Date.now();
   let db;
 
   try {
+    console.log('[SCANNER-STATS] Request received', {
+      method: req.method,
+      query: req.query,
+      timestamp: new Date().toISOString()
+    });
+
     db = await getDatabaseClient();
 
     if (req.method !== 'GET') {
@@ -18,6 +25,7 @@ async function handler(req, res) {
 
     // Get query parameters
     const eventId = safeParseInt(req.query?.eventId);
+    console.log('[SCANNER-STATS] Parsed parameters', { eventId });
 
     // Base WHERE condition for scan_logs
     // Join with tickets for event filtering if needed
@@ -34,12 +42,26 @@ async function handler(req, res) {
 
     const baseWhere = baseConditions.length > 0 ? `WHERE ${baseConditions.join(' AND ')}` : '';
 
+    console.log('[SCANNER-STATS] Query building', {
+      fromClause,
+      baseConditions,
+      baseParams,
+      baseWhere
+    });
+
     // Calculate Mountain Time offset for 'today' filter
     // timeUtils returns DST-aware offset: -6 for MDT (summer), -7 for MST (winter)
     // SQLite date() function applies this offset to convert UTC timestamps to Mountain Time
     // Example: date('2025-10-17 09:00:00', '-6 hours') = '2025-10-17 03:00:00' (MDT)
     const timezoneInfo = timeUtils.getTimezoneInfo();
     const offsetHours = timezoneInfo.offsetHours; // Negative value: -6 or -7
+
+    console.log('[SCANNER-STATS] Timezone calculation', {
+      timezone: timezoneInfo.timezone,
+      abbreviation: timezoneInfo.abbreviation,
+      isDST: timezoneInfo.isDST,
+      offsetHours: timezoneInfo.offsetHours
+    });
 
     // Build all count queries
     const queries = [];
@@ -138,8 +160,32 @@ async function handler(req, res) {
       })
     );
 
+    console.log('[SCANNER-STATS] Executing 9 parallel queries', {
+      queryCount: queries.length,
+      queryDescriptions: [
+        'Today\'s scans (Mountain Time)',
+        'Total scans (all time)',
+        'Valid scans',
+        'Failed scans (invalid/expired/suspicious)',
+        'Rate limited scans',
+        'Re-scanned tickets (scan_count > 1)',
+        'Average scan time (valid scans only)',
+        'Apple Wallet scans',
+        'Google Wallet scans (includes Samsung)'
+      ]
+    });
+
     // Execute all queries in parallel
     const results = await Promise.all(queries);
+
+    console.log('[SCANNER-STATS] Query results received', {
+      resultCount: results.length,
+      rawResults: results.map((r, i) => ({
+        queryIndex: i,
+        rowCount: r.rows?.length || 0,
+        firstRow: r.rows?.[0]
+      }))
+    });
 
     // Extract counts (using camelCase for frontend compatibility)
     const stats = {
@@ -154,6 +200,22 @@ async function handler(req, res) {
       googleWallet: results[8].rows[0]?.count || 0, // Includes Samsung Wallet
       session: 0 // Session data is browser-local only
     };
+
+    console.log('[SCANNER-STATS] Stats object constructed', {
+      stats,
+      statsBreakdown: {
+        today: `${stats.today} unique tickets scanned today`,
+        total: `${stats.total} total unique tickets scanned`,
+        valid: `${stats.valid} valid scans`,
+        failed: `${stats.failed} failed scans`,
+        rateLimited: `${stats.rateLimited} rate-limited`,
+        alreadyScanned: `${stats.alreadyScanned} tickets re-scanned`,
+        avgScanTimeMs: stats.avgScanTimeMs ? `${stats.avgScanTimeMs}ms` : 'null',
+        appleWallet: `${stats.appleWallet} Apple Wallet`,
+        googleWallet: `${stats.googleWallet} Google Wallet`,
+        session: `${stats.session} (browser-local only)`
+      }
+    });
 
     // Set security headers
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -178,9 +240,23 @@ async function handler(req, res) {
       ['timestamp']
     );
 
+    const duration = Date.now() - startTime;
+    console.log('[SCANNER-STATS] Response ready', {
+      duration: `${duration}ms`,
+      responseKeys: Object.keys(enhancedResponse),
+      timezoneInfo: enhancedResponse.timezone,
+      timestamp: enhancedResponse.timestamp,
+      statsCount: Object.keys(enhancedResponse.stats).length
+    });
+
     res.status(200).json(enhancedResponse);
   } catch (error) {
-    console.error('Scanner stats API error:', error);
+    console.error('[SCANNER-STATS] Error occurred', {
+      error: error.message,
+      stack: error.stack,
+      code: error.code,
+      name: error.name
+    });
 
     // Handle specific errors
     if (error.code === 'SQLITE_BUSY') {
