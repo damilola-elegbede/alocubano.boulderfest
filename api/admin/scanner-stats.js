@@ -35,15 +35,19 @@ async function handler(req, res) {
     const baseWhere = baseConditions.length > 0 ? `WHERE ${baseConditions.join(' AND ')}` : '';
 
     // Calculate Mountain Time offset for 'today' filter
+    // timeUtils returns DST-aware offset: -6 for MDT (summer), -7 for MST (winter)
+    // SQLite date() function applies this offset to convert UTC timestamps to Mountain Time
+    // Example: date('2025-10-17 09:00:00', '-6 hours') = '2025-10-17 03:00:00' (MDT)
     const timezoneInfo = timeUtils.getTimezoneInfo();
-    const offsetHours = Math.abs(timezoneInfo.offsetHours);
+    const offsetHours = timezoneInfo.offsetHours; // Negative value: -6 or -7
 
     // Build all count queries
     const queries = [];
 
     // 1. Today's scans (Mountain Time)
+    // Converts both scan timestamps and 'now' to Mountain Time before comparing dates
     const todayConditions = [...baseConditions];
-    todayConditions.push(`date(sl.scanned_at, '-${offsetHours} hours') = date('now', '-${offsetHours} hours')`);
+    todayConditions.push(`date(sl.scanned_at, '${offsetHours} hours') = date('now', '${offsetHours} hours')`);
     const todayWhere = todayConditions.length > 0 ? `WHERE ${todayConditions.join(' AND ')}` : '';
     queries.push(
       db.execute({

@@ -4354,8 +4354,8 @@
 
       // Update statistics display
       function updateStats() {
-        // Display baseline values directly from API (no session increments to avoid double-counting)
-        document.getElementById("statToday").textContent = stats.todayBaseline;
+        // Display baseline + session increments for today's count
+        document.getElementById("statToday").textContent = (stats.todayBaseline || 0) + (stats.todayIncrement || 0);
         document.getElementById("statSession").textContent = stats.session;
         document.getElementById("statTotal").textContent = stats.totalBaseline;
 

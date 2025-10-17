@@ -950,6 +950,9 @@ async function handler(req, res) {
       }
     });
 
+    // Convert BigInt to Number for JSON serialization (Turso/libsql returns BigInt)
+    const safeScanLogId = scanLogId ? Number(scanLogId) : null;
+
     // Log successful validation (legacy format for compatibility)
     await logValidation(db, {
       ticketId: ticket.ticket_id,
@@ -1001,7 +1004,7 @@ async function handler(req, res) {
     res.status(200).json({
       valid: true,
       ticketId: ticket.ticket_id, // Top-level ticket ID for easy access
-      scanLogId: scanLogId, // Scan logs ID for session tracking
+      scanLogId: safeScanLogId, // Scan logs ID for session tracking (converted from BigInt)
       wallet_source: source, // Wallet source for tracking
       ticket: {
         ticket_id: ticket.ticket_id, // For UI compatibility (checkin.html)
