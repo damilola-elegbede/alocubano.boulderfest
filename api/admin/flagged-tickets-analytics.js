@@ -341,7 +341,11 @@ async function handler(req, res) {
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
 
-    res.status(200).json(processDatabaseResult(responseData));
+    // Enhance with Mountain Time fields per coding guidelines
+    const timestampFields = ['generated_at', 'start_date', 'end_date', 'first_flagged', 'last_flagged'];
+    const enhanced = timeUtils.enhanceApiResponse(responseData, timestampFields);
+
+    res.status(200).json(processDatabaseResult(enhanced));
 
   } catch (error) {
     console.error('Flagged tickets analytics error:', error);

@@ -38,7 +38,7 @@ The flagged tickets monitoring system provides multiple ways to track validation
 
 ### Accessing the Dashboard
 
-1. Navigate to the admin dashboard: `/pages/admin/dashboard.html`
+1. Navigate to the admin dashboard: `/admin/dashboard`
 2. Login with admin credentials
 3. Scroll to the **"📊 Flagged Tickets Analytics"** section
 
@@ -287,7 +287,7 @@ turso db shell your-db-name
 
 ✅ **Webhook delays distributed normally**
 - Most webhooks process within 1-5 minutes
-- Few delayed webhooks (>5min)
+- Few delayed webhooks (>5 min)
 
 ✅ **Event ID mismatch decreasing**
 - Type-safe validation fix is working
@@ -305,7 +305,7 @@ turso db shell your-db-name
 
 ⚠️ **High webhook delay correlation**
 - Many flagged tickets have delayed webhooks
-- Consider increasing delay threshold from 5min to 10min
+- Consider increasing delay threshold from 5 min to 10 min
 
 ⚠️ **Event ID mismatch still high**
 - Check if frontend is properly setting eventId in metadata
@@ -369,13 +369,13 @@ BEFORE FIX (Jan 1-7):
 - Total Flagged: 52
 - False Positive Rate: 8.5%
 - Event ID Mismatch: 25 (48%)
-- Webhook Delay >5min: 8 (15%)
+- Webhook Delay >5 min: 8 (15%)
 
 AFTER FIX (Jan 17-24):
 - Total Flagged: 18 ⬇️ 65% reduction
 - False Positive Rate: 3.2% ⬇️ 62% reduction
 - Event ID Mismatch: 3 ⬇️ 88% reduction
-- Webhook Delay >5min: 7 (39%) ✅ Lenient validation applied
+- Webhook Delay >5 min: 7 (39%) ✅ Lenient validation applied
 
 CONCLUSION: Fix highly effective
 - Event ID mismatch nearly eliminated
@@ -465,7 +465,7 @@ async function checkFlaggedTicketsHealth() {
 
 **Investigation**:
 1. Check error breakdown - which validation is failing most?
-2. Review webhook delay distribution - are delays >5min?
+2. Review webhook delay distribution - are delays >5 min?
 3. Query detailed errors for patterns:
    ```sql
    SELECT json_extract(ticket_metadata, '$.validation.errors')
@@ -477,7 +477,7 @@ async function checkFlaggedTicketsHealth() {
 **Solutions**:
 - If event_id_mismatch high: Check frontend cart metadata
 - If price_mismatch high: Increase tolerance from 2% to 3%
-- If quantity_exceeded high: Increase delay threshold to 10min
+- If quantity_exceeded high: Increase delay threshold to 10 min
 - If webhook delays frequent: Investigate Stripe webhook delivery
 
 ### Event ID Still Mismatching
@@ -505,7 +505,7 @@ async function checkFlaggedTicketsHealth() {
 
 ### Delayed Webhooks Increasing
 
-**Symptoms**: More webhooks delayed >5min than before
+**Symptoms**: More webhooks delayed >5 min than before
 
 **Investigation**:
 - Check Stripe dashboard for webhook delivery times
@@ -516,7 +516,7 @@ async function checkFlaggedTicketsHealth() {
 - Optimize webhook handler performance
 - Increase Vercel function timeout
 - Add webhook retry logic
-- Consider increasing delay threshold to 10min
+- Consider increasing delay threshold to 10 min
 
 ---
 
