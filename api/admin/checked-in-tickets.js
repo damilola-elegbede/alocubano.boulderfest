@@ -173,6 +173,7 @@ async function handler(req, res) {
 
     // Build WHERE clauses - separate conditions for subquery vs outer query
     const subqueryScanLogConditions = []; // Scan log conditions for SUBQUERY WHERE clause
+    const outerScanLogConditions = [];    // Scan log conditions for OUTER QUERY WHERE clause (to filter sl table)
     const ticketConditions = [];          // Ticket table conditions for outer WHERE clause
     const queryParams = [];
 
@@ -187,21 +188,28 @@ async function handler(req, res) {
       offsetHours: timezoneInfo.offsetHours
     });
 
-    // Apply filter-specific conditions to the SUBQUERY
-    // This ensures we get the latest scan MATCHING the filter criteria, not the absolute latest scan
-    // For 'failed': Get latest failed scan for each ticket (not latest overall scan)
-    // For 'valid': Get latest valid scan for each ticket
-    // For 'total': Get absolute latest scan for each ticket (no filter)
+    // Apply filter-specific conditions to BOTH subquery and outer query
+    // Subquery: Finds the latest scan MATCHING the filter criteria for each ticket
+    // Outer query: Ensures we only return scan logs that match the filter (prevents duplicate rows)
+    // For 'failed': Get latest failed scan AND only return failed scans
+    // For 'valid': Get latest valid scan AND only return valid scans
+    // For 'total': Get absolute latest scan (no filter)
     if (filter === 'today') {
+      // 'today' filter only applies to subquery (latest scan today per ticket)
+      // Outer query doesn't need additional filter - we want the specific scan at that timestamp
       subqueryScanLogConditions.push(`date(scanned_at, '${offsetHours} hours') = date('now', '${offsetHours} hours')`);
     } else if (filter === 'valid') {
       subqueryScanLogConditions.push("scan_status = 'valid'");
+      outerScanLogConditions.push("sl.scan_status = 'valid'"); // Filter outer sl table
     } else if (filter === 'failed') {
       subqueryScanLogConditions.push("scan_status IN ('invalid', 'expired', 'suspicious')");
+      outerScanLogConditions.push("sl.scan_status IN ('invalid', 'expired', 'suspicious')"); // Filter outer sl table
     } else if (filter === 'rateLimited') {
       subqueryScanLogConditions.push("scan_status = 'rate_limited'");
+      outerScanLogConditions.push("sl.scan_status = 'rate_limited'"); // Filter outer sl table
     } else if (filter === 'alreadyScanned') {
       subqueryScanLogConditions.push("scan_status = 'already_scanned'");
+      outerScanLogConditions.push("sl.scan_status = 'already_scanned'"); // Filter outer sl table
     }
     // 'total' filter has no additional conditions - gets absolute latest scan
 
@@ -213,11 +221,16 @@ async function handler(req, res) {
 
     // Build WHERE clauses
     const subqueryWhere = subqueryScanLogConditions.length > 0 ? `WHERE ${subqueryScanLogConditions.join(' AND ')}` : '';
-    const outerWhere = ticketConditions.length > 0 ? `WHERE ${ticketConditions.join(' AND ')}` : '';
+
+    // Merge outer scan log conditions with ticket conditions for outer query
+    const allOuterConditions = [...outerScanLogConditions, ...ticketConditions];
+    const outerWhere = allOuterConditions.length > 0 ? `WHERE ${allOuterConditions.join(' AND ')}` : '';
 
     console.log('[CHECKED-IN-TICKETS] Query conditions built', {
       subqueryScanLogConditions,
+      outerScanLogConditions,
       ticketConditions,
+      allOuterConditions,
       queryParams,
       subqueryWhere,
       outerWhere
