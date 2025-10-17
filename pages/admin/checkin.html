@@ -1917,13 +1917,17 @@
 
         <!-- Stats Bar -->
         <div id="statsBar" class="stats-bar">
-          <div class="stat-item stat-item-clickable" onclick="viewStatTickets('today')" title="Click to view today's check-ins">
-            <div class="stat-value" id="statToday">0</div>
-            <div class="stat-label">Today</div>
-          </div>
           <div class="stat-item stat-item-clickable" onclick="viewStatTickets('session')" title="Click to view this session's check-ins">
             <div class="stat-value" id="statSession">0</div>
             <div class="stat-label">Session</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="statAvgTime">0ms</div>
+            <div class="stat-label">Avg Time</div>
+          </div>
+          <div class="stat-item stat-item-clickable" onclick="viewStatTickets('today')" title="Click to view today's check-ins">
+            <div class="stat-value" id="statToday">0</div>
+            <div class="stat-label">Today</div>
           </div>
           <div class="stat-item stat-item-clickable" onclick="viewStatTickets('total')" title="Click to view all checked-in tickets">
             <div class="stat-value" id="statTotal">0</div>
@@ -1944,10 +1948,6 @@
           <div class="stat-item stat-item-clickable" onclick="viewStatTickets('alreadyScanned')" title="Click to view re-scanned tickets">
             <div class="stat-value" id="statAlreadyScanned">0</div>
             <div class="stat-label">Re-scanned</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-value" id="statAvgTime">0ms</div>
-            <div class="stat-label">Avg Time</div>
           </div>
         </div>
 
@@ -4489,7 +4489,6 @@
           console.log('[DEBUG] Fetching checked-in tickets:', {
             statType,
             page,
-            selectedEventId,
             url: `/api/admin/checked-in-tickets?${params.toString()}`
           });
 
