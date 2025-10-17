@@ -101,7 +101,7 @@ async function handler(req, res) {
       WHERE ${whereConditions.join(' AND ')}
     `;
     const countResult = await db.execute(countQuery, queryParams);
-    const totalCount = countResult.rows[0]?.total || 0;
+    const totalCount = Number(countResult.rows[0]?.total || 0);
 
     // Build the paginated query
     const query = `

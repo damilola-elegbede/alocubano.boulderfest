@@ -3807,9 +3807,7 @@
           // Detect wallet tokens (JWT format)
           const isWalletToken = token.includes(".") && token.length > 100;
 
-          // Get selected event ID from event selector
-          const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
-
+          // Scanner is event-agnostic - no event filtering
           // Get CSRF token for admin operations (only if admin authenticated)
           let headers = { "Content-Type": "application/json" };
           try {
@@ -3833,8 +3831,8 @@
               validatedBy: "admin-scanner",
               location: "entrance",
               wallet_source: isWalletToken ? "jwt" : null,
-              qr_access_method: isWalletToken ? "wallet" : "qr_code",
-              event_id: selectedEventId,
+              qr_access_method: isWalletToken ? "wallet" : "qr_code"
+              // No event_id - scanner is event-agnostic
             }),
             credentials: "include"
           });
@@ -3893,9 +3891,9 @@
                 data.ticket.wallet_source
               );
             } else {
-              // Fallback: extract ticket info from data object or use scanned token
-              const ticketId = data.ticketId || data.ticket_id || extractTokenFromQR(decodedText) || "Unknown";
-              const walletSource = data.wallet_source || data.walletSource || null;
+              // Fallback: extract ticket info from top-level response fields
+              const ticketId = data.ticketId || data.ticket?.id || extractTokenFromQR(decodedText) || "Unknown";
+              const walletSource = data.wallet_source || data.ticket?.wallet_source || null;
               showResult("success", "Valid Ticket!", "Check-in successful", false, ticketId, walletSource);
             }
           } else {
@@ -4232,12 +4230,9 @@
 
         // For manual entry, we need to look up the ticket first
         try {
-          // Get selected event ID from event selector
-          const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
-          const eventParam = selectedEventId ? `&event_id=${selectedEventId}` : '';
-
+          // Scanner is event-agnostic - no event filtering
           const response = await fetch(
-            `/api/tickets?ticket_id=${encodeURIComponent(ticketId)}${eventParam}`,
+            `/api/tickets?ticket_id=${encodeURIComponent(ticketId)}`,
             {
               credentials: "include"
             }
@@ -4367,16 +4362,12 @@
         }
 
         try {
-          // Get selected event ID
-          const selectedEventId = window.eventSelector ?
-            window.eventSelector.getSelectedEventId() : null;
-
+          // Scanner is event-agnostic - no event filtering
           // Build query params
           const params = new URLSearchParams();
           params.set('filter', statType);
           params.set('page', page);
           params.set('limit', 50);
-          if (selectedEventId && selectedEventId !== 'all') params.set('eventId', selectedEventId);
 
           // Debug logging
           console.log('[DEBUG] Fetching checked-in tickets:', {
@@ -4547,11 +4538,8 @@
       // Load statistics
       async function loadStats() {
         try {
-          // Get selected event ID from event selector
-          const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
-          const eventParam = selectedEventId && selectedEventId !== 'all' ? `?eventId=${selectedEventId}` : '';
-
-          const response = await fetch(`/api/admin/scanner-stats${eventParam}`, {
+          // Scanner is event-agnostic - no event filtering
+          const response = await fetch(`/api/admin/scanner-stats`, {
             credentials: "include"
           });
           const data = await response.json();
@@ -4926,16 +4914,12 @@
       // Load today's scans from database on page initialization
       async function loadTodaysScans() {
         try {
-          const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
+          // Scanner is event-agnostic - no event filtering
           const params = new URLSearchParams({
             filter: 'today',
             limit: 50,
             page: 1
           });
-
-          if (selectedEventId && selectedEventId !== 'all') {
-            params.set('eventId', selectedEventId);
-          }
 
           const response = await fetch(`/api/admin/checked-in-tickets?${params}`, {
             credentials: 'include'

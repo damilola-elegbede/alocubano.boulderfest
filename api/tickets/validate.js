@@ -995,11 +995,14 @@ async function handler(req, res) {
     // Return enhanced response format as specified
     res.status(200).json({
       valid: true,
+      ticketId: ticket.ticket_id, // Top-level ticket ID for easy access
+      wallet_source: source, // Wallet source for tracking
       ticket: {
         id: ticket.ticket_id,
         type: ticket.ticket_type,
         attendee: `${ticket.attendee_first_name} ${ticket.attendee_last_name}`.trim(),
-        event: ticket.event_name
+        event: ticket.event_name,
+        wallet_source: source // Also include in nested object for consistency
       },
       validation: {
         status: 'valid',
