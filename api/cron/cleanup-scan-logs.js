@@ -63,7 +63,7 @@ export default async function handler(req, res) {
     }
 
     // Step 2: Delete old qr_validations records (older than 90 days)
-    // Performance: Uses idx_qr_validations_time index (migration 009) for efficient filtering
+    // Performance: Uses idx_qr_validations_validation_time index (migration 050) for efficient filtering
     logger.info('[ScanLogsCleanup] Step 2/2: Deleting old qr_validations records');
     try {
       const qrValidationsResult = await db.execute({

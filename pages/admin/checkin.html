@@ -2150,7 +2150,7 @@
       const STATS_STORAGE_KEY = 'scanner_stats_v2';
       const SESSION_SCAN_LOG_IDS_KEY = 'session_scan_log_ids_v1';
       const STATS_SESSION_HOURS = 8;
-      const MAX_SESSION_SCAN_LOGS = 999; // Maximum scan log IDs to store (SQLite limit: 999 parameters)
+      const MAX_SESSION_SCAN_LOGS = 900; // SQLite hard limit: 999 bind parameters, keep safety buffer
 
       // Conditional logging utility - only logs in development
       // Usage: Replace console.log() with debugLog.log() to prevent production logging
@@ -4556,7 +4556,7 @@
         // Calculate values
         const todayCount = (stats.todayBaseline || 0) + (stats.todayIncrement || 0);
         const sessionCount = stats.session;
-        const totalCount = stats.totalBaseline;
+        const totalCount = stats.totalBaseline + stats.session;
         const validCount = stats.validBaseline || 0;
         const failedCount = stats.failedBaseline || 0;
         const rateLimitedCount = stats.rateLimitedBaseline || 0;
@@ -4666,8 +4666,10 @@
             const params = new URLSearchParams();
             params.set('filter', 'session');
             params.set('scanLogIds', sessionScanLogIds.join(','));
+            params.set('page', page);
+            params.set('limit', 50);
 
-            console.log(`[DEBUG] Querying session scans with ${sessionScanLogIds.length} scan log IDs`);
+            console.log(`[DEBUG] Querying session scans with ${sessionScanLogIds.length} scan log IDs (page ${page})`);
 
             const response = await fetch(`/api/admin/checked-in-tickets?${params}`, {
               credentials: 'include'
@@ -4711,6 +4713,34 @@
             }).join('');
 
             tableContainer.style.display = 'block';
+            
+            // Update pagination controls for session filter
+            if (data.pagination) {
+              const prevBtn = document.getElementById('prevPageBtn');
+              const nextBtn = document.getElementById('nextPageBtn');
+              const paginationInfo = document.getElementById('paginationInfo');
+
+              // Defensive checks for pagination API response structure
+              const pagination = data.pagination || {};
+              const currentPageNum = pagination.page ?? page ?? 1;
+              const totalPages = pagination.totalPages ?? pagination.total_pages ?? 1;
+              const totalCount = pagination.totalCount ?? pagination.total_count ?? data.tickets.length;
+              const hasPrev = pagination.hasPrev ?? pagination.has_prev ?? (currentPageNum > 1);
+              const hasNext = pagination.hasNext ?? pagination.has_next ?? false;
+
+              // Update pagination info text
+              paginationInfo.textContent = `Page ${currentPageNum} of ${totalPages} (${totalCount} total)`;
+
+              // Update button states
+              prevBtn.disabled = !hasPrev;
+              nextBtn.disabled = !hasNext;
+
+              // Show pagination controls
+              paginationEl.style.display = 'flex';
+            } else {
+              paginationEl.style.display = 'none';
+            }
+            
             return;
           } catch (error) {
             console.error('Failed to load session tickets:', error);
@@ -4866,7 +4896,7 @@
             // Defensive checks for pagination API response structure
             const pagination = data.pagination || {};
             const currentPageNum = pagination.page ?? page ?? 1;
-            const totalPages = pagination.totalPages ?? pagination.total_pages ?? 1;
+            totalPages = pagination.totalPages ?? pagination.total_pages ?? 1;
             let totalCount = pagination.totalCount ?? pagination.total_count ?? allTickets.length;
 
             // CRITICAL: Adjust total count if session scans were added on page 1

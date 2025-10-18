@@ -5,7 +5,7 @@ import { withSecurityHeaders } from "../../lib/security-headers.js";
 import auditService from "../../lib/audit-service.js";
 import { isTestMode, getTestModeFlag } from "../../lib/test-mode-utils.js";
 import { getQRTokenService } from "../../lib/qr-token-service.js";
-import { processDatabaseResult } from "../../lib/bigint-serializer.js";
+import { processDatabaseResult, sanitizeBigInt } from "../../lib/bigint-serializer.js";
 import { getTicketColorService } from "../../lib/ticket-color-service.js";
 import timeUtils from "../../lib/time-utils.js";
 
@@ -1035,22 +1035,9 @@ async function handler(req, res) {
       }
     });
 
-    // Convert BigInt to Number for JSON serialization (Turso/libsql returns BigInt)
-    // Verify ID is within safe integer range (2^53-1) before conversion
-    let safeScanLogId = null;
-    if (scanLogId) {
-      const scanLogIdNum = Number(scanLogId);
-      if (scanLogIdNum > Number.MAX_SAFE_INTEGER) {
-        console.error('[TICKET-VALIDATE] Scan log ID exceeds MAX_SAFE_INTEGER', {
-          scanLogId: String(scanLogId),
-          maxSafeInteger: Number.MAX_SAFE_INTEGER
-        });
-        // Use string representation for IDs exceeding safe integer range
-        safeScanLogId = String(scanLogId);
-      } else {
-        safeScanLogId = scanLogIdNum;
-      }
-    }
+
+    // Use sanitizeBigInt helper for consistent BigInt handling
+    const safeScanLogId = sanitizeBigInt(scanLogId);
 
     console.log('[TICKET-VALIDATE] Scan logged', {
       scanLogId: safeScanLogId,

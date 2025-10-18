@@ -41,7 +41,7 @@ async function handler(req, res) {
     });
 
     // Validate filter parameter - updated to match scanner-stats.js
-    const validFilters = ['today', 'session', 'total', 'valid', 'failed', 'rateLimited', 'alreadyScanned'];
+    const validFilters = ['today', 'session', 'total', 'valid', 'failed', 'rateLimited', 'alreadyScanned', 'wallet', 'apple_wallet', 'google_wallet'];
     if (!validFilters.includes(filter)) {
       return res.status(400).json({
         error: 'Invalid filter parameter',
@@ -197,10 +197,23 @@ async function handler(req, res) {
 
     // Check if event_id column exists in tickets table
     const ticketsHasEventId = await columnExists(db, 'tickets', 'event_id');
+    const ticketsHasQrAccessMethod = await columnExists(db, 'tickets', 'qr_access_method');
 
     console.log('[CHECKED-IN-TICKETS] Database schema check', {
-      ticketsHasEventId
+      ticketsHasEventId,
+      ticketsHasQrAccessMethod
     });
+
+    // Fail-fast: Wallet-specific filters require qr_access_method column
+    const walletFilters = ['wallet', 'apple_wallet', 'google_wallet'];
+    if (walletFilters.includes(filter) && !ticketsHasQrAccessMethod) {
+      return res.status(400).json({
+        error: `${filter} filter unavailable: qr_access_method column missing`,
+        message: 'The qr_access_method column does not exist in the database',
+        suggestion: 'Run database migrations to add wallet tracking support',
+        filter_requested: filter
+      });
+    }
 
     // Build WHERE clauses - separate conditions for subquery vs outer query
     const subqueryScanLogConditions = []; // Scan log conditions for SUBQUERY WHERE clause
@@ -253,7 +266,23 @@ async function handler(req, res) {
       // No subquery conditions needed - we want the absolute latest scan
       // Only filter on ticket's scan_count in outer query
       ticketConditions.push('t.scan_count > 1');
+    } else if (filter === 'wallet') {
+      if (!ticketsHasQrAccessMethod) {
+        return res.status(400).json({ error: 'wallet filter unavailable: qr_access_method column missing' });
+      }
+      ticketConditions.push("t.qr_access_method IN ('apple_wallet', 'google_wallet', 'samsung_wallet')");
+    } else if (filter === 'apple_wallet') {
+      if (!ticketsHasQrAccessMethod) {
+        return res.status(400).json({ error: 'apple_wallet filter unavailable: qr_access_method column missing' });
+      }
+      ticketConditions.push("t.qr_access_method = 'apple_wallet'");
+    } else if (filter === 'google_wallet') {
+      if (!ticketsHasQrAccessMethod) {
+        return res.status(400).json({ error: 'google_wallet filter unavailable: qr_access_method column missing' });
+      }
+      ticketConditions.push("t.qr_access_method = 'google_wallet'");
     }
+
     // 'total' filter has no additional conditions - gets absolute latest scan
 
     // Add event filtering to ticket conditions (applies to outer query)

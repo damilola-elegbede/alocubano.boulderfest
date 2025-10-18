@@ -24,11 +24,15 @@ async function handler(req, res) {
     // Calculate Mountain Time offset dynamically (handles DST correctly)
     // MST = UTC-7, MDT = UTC-6
     const timezoneInfo = timeUtils.getTimezoneInfo();
+    if (!timezoneInfo || typeof timezoneInfo.offsetHours !== 'number') {
+      throw new Error('Failed to get timezone information');
+    }
+    
     const offsetHours = timezoneInfo.offsetHours; // Negative value: -6 or -7
 
-    // Validate timezone offset to prevent SQL injection
-    if (typeof offsetHours !== 'number' || offsetHours < -12 || offsetHours > 14) {
-      throw new Error('Invalid timezone offset');
+    // Validate offset is within Mountain Time range (UTC-6 or UTC-7)
+    if (Math.abs(offsetHours) < 6 || Math.abs(offsetHours) > 7) {
+      throw new Error(`Invalid MT offset: ${offsetHours} (expected -6 or -7)`);
     }
 
     // Format offset for SQLite date() function (e.g., '-6 hours' or '-7 hours')
