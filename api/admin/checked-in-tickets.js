@@ -86,7 +86,23 @@ async function handler(req, res) {
         });
       }
 
-      // Query database for these specific scan_logs IDs
+      // Get total count for pagination
+      const countPlaceholders = idsArray.map(() => '?').join(',');
+      const countQuery = `
+        SELECT COUNT(DISTINCT sl.id) as total
+        FROM scan_logs sl
+        WHERE sl.id IN (${countPlaceholders})
+      `;
+
+      console.log('[CHECKED-IN-TICKETS] Executing session count query', {
+        idsCount: idsArray.length
+      });
+
+      const countResult = await db.execute({ sql: countQuery, args: idsArray });
+      const processedCountResult = processDatabaseResult(countResult);
+      const totalCount = processedCountResult.rows[0]?.total || 0;
+
+      // Query database for these specific scan_logs IDs with pagination
       const placeholders = idsArray.map(() => '?').join(',');
       const query = `
         SELECT
@@ -105,15 +121,21 @@ async function handler(req, res) {
         JOIN scan_logs sl ON t.ticket_id = sl.ticket_id
         WHERE sl.id IN (${placeholders})
         ORDER BY sl.scanned_at DESC
+        LIMIT ? OFFSET ?
       `;
+
+      const paginatedArgs = [...idsArray, limit, offset];
 
       console.log('[CHECKED-IN-TICKETS] Executing session query', {
         idsCount: idsArray.length,
         idsArray: idsArray.slice(0, 10), // Log first 10 IDs
-        queryLength: query.length
+        queryLength: query.length,
+        limit,
+        offset,
+        totalCount
       });
 
-      const result = await db.execute({ sql: query, args: idsArray });
+      const result = await db.execute({ sql: query, args: paginatedArgs });
 
       console.log('[CHECKED-IN-TICKETS] Session query result', {
         rowCount: result.rows?.length || 0,
@@ -128,14 +150,13 @@ async function handler(req, res) {
         ticketCount: tickets.length
       });
 
-      // Enhance with Mountain Time formatted timestamps (keep snake_case for frontend compatibility)
-      const enhancedTickets = tickets.map(ticket => ({
+      // Build tickets with scan_time field (keep snake_case for frontend compatibility)
+      const ticketsWithScanTime = tickets.map(ticket => ({
         ticket_id: ticket.ticket_id,
         first_name: ticket.attendee_first_name,
         last_name: ticket.attendee_last_name,
         ticket_type: ticket.ticket_type,
         scan_time: ticket.scanned_at ? ticket.scanned_at.replace(' ', 'T') + 'Z' : null,
-        scan_time_mt: timeUtils.formatDateTime(ticket.scanned_at),
         scan_count: ticket.scan_count,
         max_scans: ticket.max_scan_count,
         scan_status: ticket.scan_status,
@@ -144,22 +165,32 @@ async function handler(req, res) {
         device_info: ticket.device_info
       }));
 
-      return res.status(200).json({
+      // Enhance tickets with Mountain Time fields using timeUtils
+      const enhancedTickets = timeUtils.enhanceApiResponse(ticketsWithScanTime, ['scan_time'], { includeDeadline: false });
+
+      // Calculate pagination metadata
+      const totalPages = Math.ceil(totalCount / limit);
+
+      // Build response object
+      const responseData = {
         tickets: enhancedTickets,
         filter: 'session',
-        totalCount: enhancedTickets.length,
+        totalCount,
         pagination: {
-          page: 1,
-          limit: enhancedTickets.length,
-          totalCount: enhancedTickets.length,
-          totalPages: 1,
-          hasNext: false,
-          hasPrev: false
+          page,
+          limit,
+          totalCount,
+          totalPages,
+          hasNext: page < totalPages,
+          hasPrev: page > 1
         },
-        timezone: 'America/Denver',
-        timestamp: new Date().toISOString(),
-        timestampMt: timeUtils.toMountainTime(new Date())
-      });
+        timestamp: new Date().toISOString()
+      };
+
+      // Enhance response with Mountain Time fields
+      const enhancedResponse = timeUtils.enhanceApiResponse(responseData, ['timestamp'], { includeDeadline: false });
+
+      return res.status(200).json(enhancedResponse);
     }
 
     console.log('[CHECKED-IN-TICKETS] Processing standard filter', { filter });
@@ -344,14 +375,13 @@ async function handler(req, res) {
       ticketCount: tickets.length
     });
 
-    // Enhance with Mountain Time formatted timestamps (keep snake_case for frontend compatibility)
-    const enhancedTickets = tickets.map(ticket => ({
+    // Build tickets with scan_time field (keep snake_case for frontend compatibility)
+    const ticketsWithScanTime = tickets.map(ticket => ({
       ticket_id: ticket.ticket_id,
       first_name: ticket.attendee_first_name,
       last_name: ticket.attendee_last_name,
       ticket_type: ticket.ticket_type,
       scan_time: ticket.scanned_at ? ticket.scanned_at.replace(' ', 'T') + 'Z' : null,
-      scan_time_mt: timeUtils.formatDateTime(ticket.scanned_at),
       scan_count: ticket.scan_count,
       max_scans: ticket.max_scan_count,
       scan_status: ticket.scan_status,
@@ -359,6 +389,9 @@ async function handler(req, res) {
       scan_duration_ms: ticket.scan_duration_ms,
       device_info: ticket.device_info
     }));
+
+    // Enhance tickets with Mountain Time fields using timeUtils
+    const enhancedTickets = timeUtils.enhanceApiResponse(ticketsWithScanTime, ['scan_time'], { includeDeadline: false });
 
     // Calculate pagination metadata
     const totalPages = Math.ceil(totalCount / limit);
@@ -369,6 +402,8 @@ async function handler(req, res) {
     res.setHeader('Expires', '0');
 
     const duration = Date.now() - startTime;
+
+    // Build response object
     const responseData = {
       tickets: enhancedTickets,
       filter,
@@ -380,10 +415,11 @@ async function handler(req, res) {
         hasNext: page < totalPages,
         hasPrev: page > 1
       },
-      timezone: 'America/Denver',
-      timestamp: new Date().toISOString(),
-      timestampMt: timeUtils.toMountainTime(new Date())
+      timestamp: new Date().toISOString()
     };
+
+    // Enhance response with Mountain Time fields
+    const enhancedResponse = timeUtils.enhanceApiResponse(responseData, ['timestamp'], { includeDeadline: false });
 
     console.log('[CHECKED-IN-TICKETS] Response ready', {
       duration: `${duration}ms`,
@@ -396,7 +432,7 @@ async function handler(req, res) {
       hasPrev: page > 1
     });
 
-    res.status(200).json(responseData);
+    res.status(200).json(enhancedResponse);
   } catch (error) {
     console.error('[CHECKED-IN-TICKETS] Error occurred', {
       error: error.message,

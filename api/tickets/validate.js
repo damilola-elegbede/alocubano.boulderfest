@@ -1034,7 +1034,21 @@ async function handler(req, res) {
     });
 
     // Convert BigInt to Number for JSON serialization (Turso/libsql returns BigInt)
-    const safeScanLogId = scanLogId ? Number(scanLogId) : null;
+    // Verify ID is within safe integer range (2^53-1) before conversion
+    let safeScanLogId = null;
+    if (scanLogId) {
+      const scanLogIdNum = Number(scanLogId);
+      if (scanLogIdNum > Number.MAX_SAFE_INTEGER) {
+        console.error('[TICKET-VALIDATE] Scan log ID exceeds MAX_SAFE_INTEGER', {
+          scanLogId: String(scanLogId),
+          maxSafeInteger: Number.MAX_SAFE_INTEGER
+        });
+        // Use string representation for IDs exceeding safe integer range
+        safeScanLogId = String(scanLogId);
+      } else {
+        safeScanLogId = scanLogIdNum;
+      }
+    }
 
     console.log('[TICKET-VALIDATE] Scan logged', {
       scanLogId: safeScanLogId,

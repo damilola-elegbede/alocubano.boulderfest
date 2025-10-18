@@ -1,7 +1,8 @@
 /**
  * Scan Logs Cleanup Cron Job
  * Runs weekly to delete old scan logs and QR validation records
- * Scheduled via Vercel Cron: Sundays at 4 AM UTC (Vercel only supports UTC timezone)
+ * Scheduled via Vercel Cron: Sundays at 5 AM UTC (10 PM MST / 11 PM MDT Saturday)
+ * Note: Vercel Cron only supports UTC scheduling. Local time varies with DST.
  *
  * Retention Policy:
  * - scan_logs: 90 days (for security/fraud analysis)
@@ -13,19 +14,22 @@ import { logger } from '../../lib/logger.js';
 
 export default async function handler(req, res) {
   // Verify cron secret to prevent unauthorized execution
-  const authHeader = req.headers.authorization || '';
-  const [, token] = authHeader.match(/^Bearer\s+(.+)$/i) || [];
+  // Step 1: Fail fast if CRON_SECRET is not configured in production
   const secret = process.env.CRON_SECRET || '';
 
-  if (process.env.NODE_ENV === 'production') {
-    if (!secret) {
-      logger.error('[ScanLogsCleanup] CRON_SECRET not configured');
-      return res.status(500).json({ error: 'Server misconfiguration' });
-    }
-    if (token !== secret) {
-      logger.warn('[ScanLogsCleanup] Unauthorized cron attempt blocked');
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
+  if (process.env.NODE_ENV === 'production' && !secret) {
+    logger.error('[ScanLogsCleanup] CRON_SECRET not configured');
+    return res.status(500).json({ error: 'Server misconfiguration' });
+  }
+
+  // Step 2: Parse Authorization header (case-insensitive Bearer token parsing)
+  const authHeader = req.headers.authorization || '';
+  const [, token] = authHeader.match(/^Bearer\s+(.+)$/i) || [];
+
+  // Step 3: Validate token matches secret in production
+  if (process.env.NODE_ENV === 'production' && token !== secret) {
+    logger.warn('[ScanLogsCleanup] Unauthorized cron attempt blocked');
+    return res.status(401).json({ error: 'Unauthorized' });
   }
 
   const startTime = Date.now();
@@ -43,6 +47,7 @@ export default async function handler(req, res) {
     };
 
     // Step 1: Delete old scan_logs records (older than 90 days)
+    // Performance: Uses idx_scan_logs_time_status index (migration 049) for efficient filtering
     logger.info('[ScanLogsCleanup] Step 1/2: Deleting old scan_logs records');
     try {
       const scanLogsResult = await db.execute({
@@ -58,6 +63,7 @@ export default async function handler(req, res) {
     }
 
     // Step 2: Delete old qr_validations records (older than 90 days)
+    // Performance: Uses idx_qr_validations_time index (migration 009) for efficient filtering
     logger.info('[ScanLogsCleanup] Step 2/2: Deleting old qr_validations records');
     try {
       const qrValidationsResult = await db.execute({

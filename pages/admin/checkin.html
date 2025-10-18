@@ -2150,7 +2150,7 @@
       const STATS_STORAGE_KEY = 'scanner_stats_v2';
       const SESSION_SCAN_LOG_IDS_KEY = 'session_scan_log_ids_v1';
       const STATS_SESSION_HOURS = 8;
-      const MAX_SESSION_SCAN_LOGS = 1000; // Maximum scan log IDs to store in session
+      const MAX_SESSION_SCAN_LOGS = 999; // Maximum scan log IDs to store (SQLite limit: 999 parameters)
 
       // Conditional logging utility - only logs in development
       // Usage: Replace console.log() with debugLog.log() to prevent production logging
