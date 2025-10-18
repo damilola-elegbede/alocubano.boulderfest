@@ -9,16 +9,23 @@ import { getTicketEmailService } from '../../lib/ticket-email-service-brevo.js';
 export default async function handler(req, res) {
   console.log('[CRON] Starting registration reminder processing at', new Date().toISOString());
 
-  // Verify authorization for cron job
-  const authHeader = req.headers.authorization;
-  const expectedAuth = `Bearer ${process.env.CRON_SECRET || ''}`;
+  // Verify authorization for cron job with RFC-compliant Bearer token parsing
+  const authHeader = req.headers.authorization || '';
+  const [, token] = authHeader.match(/^Bearer\s+(.+)$/i) || [];
+  const secret = process.env.CRON_SECRET || '';
 
-  if (authHeader !== expectedAuth && process.env.NODE_ENV === 'production') {
-    console.warn('[CRON] Unauthorized cron job access attempt');
-    return res.status(401).json({
-      error: 'Unauthorized',
-      message: 'Invalid authorization header'
-    });
+  if (process.env.NODE_ENV === 'production') {
+    if (!secret) {
+      console.error('[CRON] CRON_SECRET not configured');
+      return res.status(500).json({ error: 'Server misconfiguration' });
+    }
+    if (token !== secret) {
+      console.warn('[CRON] Unauthorized cron job access attempt');
+      return res.status(401).json({
+        error: 'Unauthorized',
+        message: 'Invalid authorization header'
+      });
+    }
   }
 
   try {

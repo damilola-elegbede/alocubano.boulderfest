@@ -57,6 +57,15 @@ async function handler(req, res) {
     const timezoneInfo = timeUtils.getTimezoneInfo();
     const offsetHours = timezoneInfo.offsetHours; // Negative value: -6 or -7
 
+    // Validate timezone offset to prevent SQL injection
+    if (typeof offsetHours !== 'number' || offsetHours < -12 || offsetHours > 14) {
+      console.error('[SCANNER-STATS] Invalid timezone offset:', offsetHours);
+      return res.status(500).json({
+        error: 'Internal server error',
+        message: 'Invalid timezone configuration'
+      });
+    }
+
     console.log('[SCANNER-STATS] Timezone calculation', {
       timezone: timezoneInfo.timezone,
       abbreviation: timezoneInfo.abbreviation,

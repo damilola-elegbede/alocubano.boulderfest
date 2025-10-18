@@ -181,6 +181,15 @@ async function handler(req, res) {
     const timezoneInfo = timeUtils.getTimezoneInfo();
     const offsetHours = timezoneInfo.offsetHours; // Keep sign: -6 for MDT, -7 for MST
 
+    // Validate timezone offset to prevent SQL injection
+    if (typeof offsetHours !== 'number' || offsetHours < -12 || offsetHours > 14) {
+      console.error('[CHECKED-IN-TICKETS] Invalid timezone offset:', offsetHours);
+      return res.status(500).json({
+        error: 'Internal server error',
+        message: 'Invalid timezone configuration'
+      });
+    }
+
     console.log('[CHECKED-IN-TICKETS] Timezone calculation', {
       timezone: timezoneInfo.timezone,
       abbreviation: timezoneInfo.abbreviation,
