@@ -45,6 +45,8 @@ async function handler(req, res) {
     // Build WHERE clauses based on eventId parameter and column existence
     const ticketWhereClause = eventId && ticketsHasEventId ? 'AND event_id = ?' : '';
     const transactionWhereClause = eventId && transactionsHasEventId ? 'AND event_id = ?' : '';
+    // For JOIN queries that use table alias 't' for tickets
+    const ticketWhereClauseWithAlias = eventId && ticketsHasEventId ? 'AND t.event_id = ?' : '';
 
     // Parameters for the stats query
     const statsParams = [];
@@ -74,11 +76,11 @@ async function handler(req, res) {
         (SELECT COUNT(*) FROM tickets WHERE (last_scanned_at IS NOT NULL OR checked_in_at IS NOT NULL) AND qr_access_method IN ('apple_wallet', 'google_wallet', 'samsung_wallet') ${ticketWhereClause}) as wallet_checkins,
         -- Manual entry statistics
         (SELECT COUNT(DISTINCT id) FROM transactions WHERE source = 'manual_entry' AND status = 'completed' ${transactionWhereClause}) as manual_transactions,
-        (SELECT COUNT(*) FROM tickets t JOIN transactions tr ON t.transaction_id = tr.id WHERE tr.source = 'manual_entry' ${ticketWhereClause}) as manual_tickets,
-        (SELECT COUNT(*) FROM tickets t JOIN transactions tr ON t.transaction_id = tr.id WHERE tr.source = 'manual_entry' AND tr.payment_processor = 'cash' ${ticketWhereClause}) as manual_cash_tickets,
-        (SELECT COUNT(*) FROM tickets t JOIN transactions tr ON t.transaction_id = tr.id WHERE tr.source = 'manual_entry' AND tr.payment_processor = 'card_terminal' ${ticketWhereClause}) as manual_card_tickets,
-        (SELECT COUNT(*) FROM tickets t JOIN transactions tr ON t.transaction_id = tr.id WHERE tr.source = 'manual_entry' AND tr.payment_processor = 'venmo' ${ticketWhereClause}) as manual_venmo_tickets,
-        (SELECT COUNT(*) FROM tickets t JOIN transactions tr ON t.transaction_id = tr.id WHERE tr.source = 'manual_entry' AND tr.payment_processor = 'comp' ${ticketWhereClause}) as manual_comp_tickets,
+        (SELECT COUNT(*) FROM tickets t JOIN transactions tr ON t.transaction_id = tr.id WHERE tr.source = 'manual_entry' AND t.status = 'valid' ${ticketWhereClauseWithAlias}) as manual_tickets,
+        (SELECT COUNT(*) FROM tickets t JOIN transactions tr ON t.transaction_id = tr.id WHERE tr.source = 'manual_entry' AND tr.payment_processor = 'cash' AND t.status = 'valid' ${ticketWhereClauseWithAlias}) as manual_cash_tickets,
+        (SELECT COUNT(*) FROM tickets t JOIN transactions tr ON t.transaction_id = tr.id WHERE tr.source = 'manual_entry' AND tr.payment_processor = 'card_terminal' AND t.status = 'valid' ${ticketWhereClauseWithAlias}) as manual_card_tickets,
+        (SELECT COUNT(*) FROM tickets t JOIN transactions tr ON t.transaction_id = tr.id WHERE tr.source = 'manual_entry' AND tr.payment_processor = 'venmo' AND t.status = 'valid' ${ticketWhereClauseWithAlias}) as manual_venmo_tickets,
+        (SELECT COUNT(*) FROM tickets t JOIN transactions tr ON t.transaction_id = tr.id WHERE tr.source = 'manual_entry' AND tr.payment_processor = 'comp' AND t.status = 'valid' ${ticketWhereClauseWithAlias}) as manual_comp_tickets,
         (SELECT COALESCE(SUM(amount_cents), 0) / 100.0 FROM transactions WHERE source = 'manual_entry' AND status = 'completed' AND payment_processor NOT IN ('comp') ${transactionWhereClause}) as manual_revenue
     `;
 
