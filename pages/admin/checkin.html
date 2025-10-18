@@ -4763,8 +4763,11 @@
           loadingEl.style.display = 'none';
 
           // Merge database tickets with session scans for 'today' and 'total' filters
-          // NOTE: Only merge session scans on page 1 to prevent duplicates across pages
-          // This ensures displayed counts match the cards (which include session increments)
+          // CRITICAL: Only merge session scans on page 1 to prevent pagination breaks
+          // - Merging on all pages would cause duplicates (same scan shown on multiple pages)
+          // - Session scans are already counted in stat cards (via sessionScanIds)
+          // - Backend API now properly paginates session filter, so duplicates are prevented
+          // - This merge only adds session scans not yet in the database to page 1
           let allTickets = data.tickets || [];
 
           if ((statType === 'today' || statType === 'total') && page === 1) {
@@ -4855,12 +4858,20 @@
             const nextBtn = document.getElementById('nextPageBtn');
             const paginationInfo = document.getElementById('paginationInfo');
 
+            // Defensive checks for pagination API response structure
+            const pagination = data.pagination || {};
+            const currentPageNum = pagination.page ?? page ?? 1;
+            const totalPages = pagination.totalPages ?? pagination.total_pages ?? 1;
+            const totalCount = pagination.totalCount ?? pagination.total_count ?? allTickets.length;
+            const hasPrev = pagination.hasPrev ?? pagination.has_prev ?? (currentPageNum > 1);
+            const hasNext = pagination.hasNext ?? pagination.has_next ?? false;
+
             // Update pagination info text
-            paginationInfo.textContent = `Page ${data.pagination.page} of ${data.pagination.totalPages} (${data.pagination.totalCount} total)`;
+            paginationInfo.textContent = `Page ${currentPageNum} of ${totalPages} (${totalCount} total)`;
 
             // Update button states
-            prevBtn.disabled = !data.pagination.hasPrev;
-            nextBtn.disabled = !data.pagination.hasNext;
+            prevBtn.disabled = !hasPrev;
+            nextBtn.disabled = !hasNext;
 
             // Show pagination controls
             paginationEl.style.display = 'flex';

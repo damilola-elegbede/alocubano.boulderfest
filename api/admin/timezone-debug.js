@@ -104,7 +104,7 @@ async function handler(req, res) {
     const statsResult = await db.execute(statsQuery);
     const dbStats = statsResult.rows[0];
 
-    // Prepare response
+    // Prepare response (keep diagnostic fields for debugging purposes)
     const responseData = {
       timezoneInfo: {
         timezone: timezoneInfo.timezone,
@@ -134,15 +134,19 @@ async function handler(req, res) {
         `DST active: ${timezoneInfo.isDST ? 'Yes' : 'No'}`,
         'SQLite date() function applies offset to convert UTC to Mountain Time',
         '"Today" filter compares dates after both timestamps are converted to Mountain Time'
-      ]
+      ],
+      timestamp: new Date().toISOString()
     };
+
+    // Enhance response with Mountain Time fields for consistency
+    const enhancedResponse = timeUtils.enhanceApiResponse(responseData, ['timestamp'], { includeDeadline: false });
 
     // Set cache headers (don't cache debug endpoint)
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
 
-    return res.status(200).json(responseData);
+    return res.status(200).json(enhancedResponse);
 
   } catch (error) {
     console.error('Timezone debug endpoint error:', error);
