@@ -60,32 +60,7 @@ END;
 -- However, this requires recreating the table in SQLite.
 
 -- ============================================================================
--- STEP 5: Create default cash shifts for all active/test events
--- ============================================================================
--- Create open cash shifts for all active or test events that don't have one yet
--- This ensures immediate availability of cash payments for all active events
-INSERT OR IGNORE INTO cash_shifts (
-  event_id,
-  opened_at,
-  status,
-  opening_cash_cents,
-  notes
-)
-SELECT
-  e.id,
-  CURRENT_TIMESTAMP,
-  'open',
-  0,
-  'Auto-created default shift for ' || e.name
-FROM events e
-WHERE e.status IN ('active', 'test')
-  AND NOT EXISTS (
-    SELECT 1 FROM cash_shifts cs
-    WHERE cs.event_id = e.id AND cs.status = 'open'
-  );
-
--- ============================================================================
--- STEP 6: Data validation
+-- STEP 5: Data validation
 -- ============================================================================
 SELECT CASE
   WHEN EXISTS (
