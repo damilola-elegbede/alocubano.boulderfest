@@ -389,16 +389,30 @@
           <h2 class="section-title">Customer Information</h2>
 
           <div class="admin-form-group">
-            <label for="customer-name" class="admin-form-label">
-              Full Name <span style="color: var(--color-error);">*</span>
+            <label for="customer-first-name" class="admin-form-label">
+              First Name <span style="color: var(--color-error);">*</span>
             </label>
             <input
               type="text"
-              id="customer-name"
-              name="customerName"
+              id="customer-first-name"
+              name="customerFirstName"
               class="admin-form-input"
               required
-              placeholder="John Doe"
+              placeholder="John"
+            />
+          </div>
+
+          <div class="admin-form-group">
+            <label for="customer-last-name" class="admin-form-label">
+              Last Name <span style="color: var(--color-error);">*</span>
+            </label>
+            <input
+              type="text"
+              id="customer-last-name"
+              name="customerLastName"
+              class="admin-form-input"
+              required
+              placeholder="Doe"
             />
           </div>
 
@@ -709,13 +723,15 @@
           // Gather form data
           const formData = new FormData(e.target);
           const paymentMethod = formData.get('paymentMethod');
-          const customerName = formData.get('customerName');
+          const customerFirstName = formData.get('customerFirstName');
+          const customerLastName = formData.get('customerLastName');
+          const customerName = `${customerFirstName} ${customerLastName}`.trim();
           const customerEmail = formData.get('customerEmail');
           const customerPhone = formData.get('customerPhone');
           const cashShiftId = formData.get('cashShiftId');
 
           // Validate required fields
-          if (!customerName || !customerEmail || !paymentMethod) {
+          if (!customerFirstName || !customerLastName || !customerEmail || !paymentMethod) {
             throw new Error('Please fill in all required fields');
           }
 
@@ -763,6 +779,8 @@
               paymentMethod,
               customerEmail,
               customerName,
+              customerFirstName,
+              customerLastName,
               customerPhone: customerPhone || null,
               cashShiftId: cashShiftId || null,
               isTest: false

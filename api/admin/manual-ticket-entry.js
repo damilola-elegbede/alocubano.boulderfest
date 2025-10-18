@@ -33,10 +33,22 @@ const INPUT_VALIDATION = {
     error: 'customerEmail must be a valid email address'
   },
   customerName: {
-    required: true,
+    required: false, // Optional for backward compatibility
     minLength: 1,
     maxLength: 200,
-    error: 'customerName is required and must be under 200 characters'
+    error: 'customerName must be under 200 characters'
+  },
+  customerFirstName: {
+    required: false, // Optional but preferred
+    minLength: 1,
+    maxLength: 100,
+    error: 'customerFirstName must be under 100 characters'
+  },
+  customerLastName: {
+    required: false, // Optional but preferred
+    minLength: 1,
+    maxLength: 100,
+    error: 'customerLastName must be under 100 characters'
   },
   customerPhone: {
     required: false,
@@ -156,6 +168,8 @@ async function handler(req, res) {
       paymentMethod,
       customerEmail,
       customerName,
+      customerFirstName,
+      customerLastName,
       customerPhone,
       cashShiftId,
       isTest = false
@@ -167,6 +181,8 @@ async function handler(req, res) {
       paymentMethod: validateField(paymentMethod, 'paymentMethod', INPUT_VALIDATION.paymentMethod),
       customerEmail: validateField(customerEmail, 'customerEmail', INPUT_VALIDATION.customerEmail),
       customerName: validateField(customerName, 'customerName', INPUT_VALIDATION.customerName),
+      customerFirstName: validateField(customerFirstName, 'customerFirstName', INPUT_VALIDATION.customerFirstName),
+      customerLastName: validateField(customerLastName, 'customerLastName', INPUT_VALIDATION.customerLastName),
       customerPhone: validateField(customerPhone, 'customerPhone', INPUT_VALIDATION.customerPhone),
       cashShiftId: validateField(cashShiftId, 'cashShiftId', INPUT_VALIDATION.cashShiftId),
       isTest: validateField(isTest, 'isTest', INPUT_VALIDATION.isTest)
@@ -177,6 +193,13 @@ async function handler(req, res) {
       if (!result.isValid) {
         return res.status(400).json({ error: result.error, field });
       }
+    }
+
+    // Custom validation: require either customerFirstName/customerLastName OR customerName
+    if ((!customerFirstName || !customerLastName) && (!customerName || !customerName.trim())) {
+      return res.status(400).json({
+        error: 'Either customerFirstName and customerLastName, or customerName is required'
+      });
     }
 
     // Validate ticketItems array
@@ -254,6 +277,8 @@ async function handler(req, res) {
       paymentMethod,
       customerEmail,
       customerName,
+      customerFirstName,
+      customerLastName,
       customerPhone: customerPhone || null,
       cashShiftId: cashShiftId ? parseInt(cashShiftId, 10) : null,
       isTest
