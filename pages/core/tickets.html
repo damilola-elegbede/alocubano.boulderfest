@@ -1224,10 +1224,41 @@
             </div>
           </section>
 
+          <!-- Go to Cart Button -->
+          <div
+            class="cart-checkout-section"
+            style="margin-top: var(--space-3xl, 2.5rem); margin-bottom: 1rem; text-align: center; clear: both;"
+          >
+            <button
+              id="go-to-cart-button"
+              class="cta-button go-to-cart-btn"
+              type="button"
+              aria-label="Go to cart and checkout"
+              style="
+                background: var(--color-blue, #5b6bb5);
+                color: white;
+                padding: 1rem 3rem;
+                font-size: 1.25rem;
+                font-weight: 700;
+                border-radius: 8px;
+                border: none;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+              "
+              onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 12px rgba(0, 0, 0, 0.15)';"
+              onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 6px rgba(0, 0, 0, 0.1)';"
+            >
+              Go to Cart
+            </button>
+          </div>
+
           <!-- Policy -->
           <div
             class="policy-section"
-            style="margin-top: var(--space-4xl, 3rem); margin-bottom: var(--space-4xl); text-align: center; clear: both;"
+            style="margin-top: 0; margin-bottom: var(--space-4xl); text-align: center; clear: both;"
           >
             <p class="font-display" style="font-size: var(--font-size-xl)">
               NO REFUNDS
@@ -1374,6 +1405,28 @@
             }, 2000);
 
             console.log('Test donation added: $25');
+          });
+        }
+      });
+    </script>
+
+    <!-- Go to Cart Button Handler -->
+    <script>
+      // Handle "Go to Cart" button click
+      document.addEventListener('DOMContentLoaded', function() {
+        const goToCartButton = document.getElementById('go-to-cart-button');
+
+        if (goToCartButton) {
+          goToCartButton.addEventListener('click', function() {
+            // Emit custom event that floating cart listens to
+            document.dispatchEvent(new CustomEvent('header-cart:open-requested'));
+
+            // Also try to call floating cart directly if available
+            if (window.floatingCartAPI && typeof window.floatingCartAPI.open === 'function') {
+              window.floatingCartAPI.open();
+            }
+
+            console.log('Opening cart from Go to Cart button');
           });
         }
       });
