@@ -6,9 +6,12 @@
  * 1. MFA is skipped when SKIP_MFA=true
  * 2. MFA is skipped in test environments (NODE_ENV=test)
  * 3. MFA is skipped in CI (CI=true)
- * 4. MFA is skipped in preview (VERCEL_ENV=preview)
+ * 4. MFA is skipped in E2E test mode (E2E_TEST_MODE=true)
  * 5. The /api/admin/simple-login endpoint works only in test environments
  * 6. Simple login returns 404 in production
+ *
+ * NOTE: VERCEL_ENV='preview' bypass removed in commit 375e60a for security reasons.
+ * Preview deployments now use production security. Use E2E_TEST_MODE for testing.
  */
 import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { testRequest, HTTP_STATUS } from '../handler-test-helper.js';
@@ -153,35 +156,11 @@ describe('Admin MFA Bypass Integration', () => {
     }
   });
 
-  test('MFA is bypassed in preview environment (VERCEL_ENV=preview)', async () => {
-    // Set VERCEL_ENV=preview
-    process.env.VERCEL_ENV = 'preview';
-    delete process.env.SKIP_MFA;
-    delete process.env.NODE_ENV;
-    delete process.env.CI;
-
-    const loginData = {
-      username: 'admin',
-      password: adminPassword
-    };
-
-    const response = await testRequest('POST', '/api/admin/login', loginData);
-
-    // Skip if service unavailable
-    if (response.status === 0) {
-      console.warn('⚠️ Admin auth service unavailable - skipping VERCEL_ENV test');
-      return;
-    }
-
-    // Should succeed without MFA step
-    expect(response.status).toBe(HTTP_STATUS.OK);
-    expect(response.data).toHaveProperty('success', true);
-    expect(response.data).not.toHaveProperty('requiresMfa');
-
-    // Check that MFA was not used
-    if (response.data.hasOwnProperty('mfaUsed')) {
-      expect(response.data.mfaUsed).toBe(false);
-    }
+  test('MFA is bypassed in preview environment (VERCEL_ENV=preview) - DEPRECATED', async () => {
+    // DEPRECATED: VERCEL_ENV='preview' no longer bypasses MFA for security reasons
+    // This test is kept for documentation purposes but will be skipped
+    // Use E2E_TEST_MODE='true' for testing instead
+    console.warn('⚠️ VERCEL_ENV bypass removed for security - test skipped');
   });
 
   test('MFA is bypassed in E2E test mode (E2E_TEST_MODE=true)', async () => {
@@ -300,31 +279,11 @@ describe('Admin MFA Bypass Integration', () => {
     expect(response.data).toHaveProperty('adminId', 'admin');
   });
 
-  test('simple-login mode works in preview environment', async () => {
-    // Set VERCEL_ENV=preview
-    process.env.VERCEL_ENV = 'preview';
-    delete process.env.NODE_ENV;
-    delete process.env.SKIP_MFA;
-    delete process.env.CI;
-
-    const loginData = {
-      username: 'admin',
-      password: adminPassword,
-      mode: 'simple'
-    };
-
-    const response = await testRequest('POST', '/api/admin/login', loginData);
-
-    // Skip if service unavailable
-    if (response.status === 0) {
-      console.warn('⚠️ Simple login service unavailable - skipping preview environment test');
-      return;
-    }
-
-    // Should succeed in preview environment
-    expect(response.status).toBe(HTTP_STATUS.OK);
-    expect(response.data).toHaveProperty('success', true);
-    expect(response.data).toHaveProperty('adminId', 'admin');
+  test('simple-login mode works in preview environment - DEPRECATED', async () => {
+    // DEPRECATED: VERCEL_ENV='preview' no longer enables simple login for security reasons
+    // This test is kept for documentation purposes but will be skipped
+    // Use E2E_TEST_MODE='true' for testing instead
+    console.warn('⚠️ VERCEL_ENV bypass removed for security - test skipped');
   });
 
   test('simple-login mode returns 404 in production-like environments', async () => {
@@ -446,11 +405,11 @@ describe('Admin MFA Bypass Integration', () => {
     };
 
     // Test all bypass conditions in sequence
+    // NOTE: VERCEL_ENV='preview' removed for security reasons (commit 375e60a)
     const bypassConditions = [
       { SKIP_MFA: 'true', description: 'SKIP_MFA=true' },
       { NODE_ENV: 'test', description: 'NODE_ENV=test' },
       { CI: 'true', description: 'CI=true' },
-      { VERCEL_ENV: 'preview', description: 'VERCEL_ENV=preview' },
       { E2E_TEST_MODE: 'true', description: 'E2E_TEST_MODE=true' }
     ];
 

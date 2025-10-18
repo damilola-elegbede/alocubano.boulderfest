@@ -3278,11 +3278,6 @@
     background: transparent;
   }
 
-  /* Hide event selector on mobile (inside admin-navigation) */
-  .admin-navigation #event-selector-container {
-    display: none;
-  }
-
   /* Mobile slide-out navigation panel */
   .admin-nav-list {
     position: fixed;

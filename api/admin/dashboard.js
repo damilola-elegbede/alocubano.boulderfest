@@ -21,6 +21,23 @@ async function handler(req, res) {
     // Get query parameters with proper NaN handling
     const eventId = safeParseInt(req.query?.eventId);
 
+    // Calculate Mountain Time offset dynamically (handles DST correctly)
+    // MST = UTC-7, MDT = UTC-6
+    const timezoneInfo = timeUtils.getTimezoneInfo();
+    if (!timezoneInfo || typeof timezoneInfo.offsetHours !== 'number') {
+      throw new Error('Failed to get timezone information');
+    }
+    
+    const offsetHours = timezoneInfo.offsetHours; // Negative value: -6 or -7
+
+    // Validate offset is within Mountain Time range (UTC-6 or UTC-7)
+    if (Math.abs(offsetHours) < 6 || Math.abs(offsetHours) > 7) {
+      throw new Error(`Invalid MT offset: ${offsetHours} (expected -6 or -7)`);
+    }
+
+    // Format offset for SQLite date() function (e.g., '-6 hours' or '-7 hours')
+    const mtOffset = `'${offsetHours} hours'`;
+
     // Check if event_id column exists
     const ticketsHasEventId = await columnExists(db, 'tickets', 'event_id');
     const transactionsHasEventId = await columnExists(db, 'transactions', 'event_id');
@@ -36,13 +53,13 @@ async function handler(req, res) {
     const statsQuery = `
       SELECT
         (SELECT COUNT(*) FROM tickets WHERE status = 'valid' ${ticketWhereClause}) as total_tickets,
-        (SELECT COUNT(*) FROM tickets WHERE checked_in_at IS NOT NULL ${ticketWhereClause}) as checked_in,
+        (SELECT COUNT(*) FROM tickets WHERE (last_scanned_at IS NOT NULL OR checked_in_at IS NOT NULL) ${ticketWhereClause}) as checked_in,
         (SELECT COUNT(DISTINCT transaction_id) FROM tickets WHERE 1=1 ${ticketWhereClause}) as total_orders,
         (SELECT COALESCE(SUM(amount_cents), 0) / 100.0 FROM transactions WHERE status = 'completed' ${transactionWhereClause}) as total_revenue,
         (SELECT COUNT(*) FROM tickets WHERE ticket_type LIKE '%workshop%' ${ticketWhereClause}) as workshop_tickets,
         (SELECT COUNT(*) FROM tickets WHERE ticket_type LIKE '%vip%' ${ticketWhereClause}) as vip_tickets,
-        -- Today's sales (using Mountain Time, not UTC)
-        (SELECT COUNT(*) FROM tickets WHERE date(created_at, '-7 hours') = date('now', '-7 hours') ${ticketWhereClause}) as today_sales,
+        -- Today's sales (using dynamic DST-aware Mountain Time offset)
+        (SELECT COUNT(*) FROM tickets WHERE date(created_at, ${mtOffset}) = date('now', ${mtOffset}) ${ticketWhereClause}) as today_sales,
         -- Wallet statistics
         (SELECT COUNT(*) FROM tickets WHERE qr_token IS NOT NULL ${ticketWhereClause}) as qr_generated,
         (SELECT COUNT(*) FROM tickets WHERE qr_access_method = 'apple_wallet' ${ticketWhereClause}) as apple_wallet_users,
@@ -53,7 +70,7 @@ async function handler(req, res) {
         (SELECT COUNT(*) FROM transactions WHERE is_test = 1 ${transactionWhereClause}) as test_transactions,
         (SELECT COALESCE(SUM(amount_cents), 0) / 100.0 FROM transactions WHERE is_test = 1 AND status = 'completed' ${transactionWhereClause}) as test_revenue,
         -- Check-in statistics (using actual scan timestamps with Mountain Time, not UTC)
-        (SELECT COUNT(*) FROM tickets WHERE (last_scanned_at IS NOT NULL OR checked_in_at IS NOT NULL) AND date(COALESCE(last_scanned_at, checked_in_at), '-7 hours') = date('now', '-7 hours') ${ticketWhereClause}) as today_checkins,
+        (SELECT COUNT(*) FROM tickets WHERE (last_scanned_at IS NOT NULL OR checked_in_at IS NOT NULL) AND date(COALESCE(last_scanned_at, checked_in_at), ${mtOffset}) = date('now', ${mtOffset}) ${ticketWhereClause}) as today_checkins,
         (SELECT COUNT(*) FROM tickets WHERE (last_scanned_at IS NOT NULL OR checked_in_at IS NOT NULL) AND qr_access_method IN ('apple_wallet', 'google_wallet', 'samsung_wallet') ${ticketWhereClause}) as wallet_checkins
     `;
 
@@ -163,9 +180,9 @@ async function handler(req, res) {
 
     const ticketBreakdown = await db.execute(ticketBreakdownQuery, ticketBreakdownParams);
 
-    // Get daily sales for the last 7 days with event filtering (using Mountain Time, not UTC)
+    // Get daily sales for the last 7 days with event filtering (using dynamic DST-aware Mountain Time offset)
     const dailySalesParams = [];
-    const dailySalesConditions = ['created_at >= date(\'now\', \'-7 hours\', \'-7 days\')'];
+    const dailySalesConditions = [`created_at >= date('now', ${mtOffset}, '-7 days')`];
 
     // Add event filtering if applicable
     if (eventId && ticketsHasEventId) {
@@ -175,14 +192,14 @@ async function handler(req, res) {
 
     const dailySalesQuery = `
       SELECT
-        date(created_at, '-7 hours') as date,
+        date(created_at, ${mtOffset}) as date,
         COUNT(*) as tickets_sold,
         SUM(price_cents) / 100.0 as revenue,
         SUM(CASE WHEN is_test = 1 THEN 1 ELSE 0 END) as test_tickets_sold,
         SUM(CASE WHEN is_test = 0 THEN 1 ELSE 0 END) as production_tickets_sold
       FROM tickets
       WHERE ${dailySalesConditions.join(' AND ')}
-      GROUP BY date(created_at, '-7 hours')
+      GROUP BY date(created_at, ${mtOffset})
       ORDER BY date DESC
     `;
 

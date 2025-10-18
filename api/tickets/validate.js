@@ -5,7 +5,7 @@ import { withSecurityHeaders } from "../../lib/security-headers.js";
 import auditService from "../../lib/audit-service.js";
 import { isTestMode, getTestModeFlag } from "../../lib/test-mode-utils.js";
 import { getQRTokenService } from "../../lib/qr-token-service.js";
-import { processDatabaseResult } from "../../lib/bigint-serializer.js";
+import { processDatabaseResult, sanitizeBigInt } from "../../lib/bigint-serializer.js";
 import { getTicketColorService } from "../../lib/ticket-color-service.js";
 import timeUtils from "../../lib/time-utils.js";
 
@@ -236,11 +236,11 @@ function isEventEnded(ticket) {
 async function logScanAttempt(db, scanData) {
   // Skip logging if ticket doesn't exist (prevents FOREIGN KEY constraint errors)
   if (!scanData.ticketId || scanData.ticketId === 'unknown') {
-    return;
+    return null;
   }
 
   try {
-    await db.execute({
+    const result = await db.execute({
       sql: `
         INSERT INTO scan_logs (
           ticket_id, scan_status, scan_location, device_info, ip_address,
@@ -263,9 +263,13 @@ async function logScanAttempt(db, scanData) {
         scanData.securityFlags ? JSON.stringify(scanData.securityFlags) : null
       ]
     });
+
+    // Return the inserted scan_logs ID
+    return result.lastInsertRowid || result.insertId || null;
   } catch (error) {
     // Non-blocking: log error but don't fail the operation
     console.error('Failed to log scan attempt (non-blocking):', error.message);
+    return null;
   }
 }
 
@@ -701,12 +705,25 @@ function isValidIPv6Groups(groups) {
  */
 async function handler(req, res) {
   const startTime = Date.now();
+
+  console.log('[TICKET-VALIDATE] Request received', {
+    method: req.method,
+    timestamp: new Date().toISOString(),
+    headers: {
+      'user-agent': req.headers['user-agent']?.substring(0, 100),
+      'x-wallet-source': req.headers['x-wallet-source'],
+      'x-forwarded-for': req.headers['x-forwarded-for']
+    }
+  });
+
   // Ensure audit service is initialized to prevent race conditions
   if (auditService.ensureInitialized) {
     await auditService.ensureInitialized();
   }
 
   const requestId = auditService.generateRequestId();
+
+  console.log('[TICKET-VALIDATE] Request ID generated', { requestId });
 
   // Only accept POST for security (tokens should not be in URL)
   if (req.method !== 'POST') {
@@ -721,14 +738,27 @@ async function handler(req, res) {
   const clientIP = extractClientIP(req);
   const userAgent = req.headers['user-agent'] || '';
 
+  console.log('[TICKET-VALIDATE] Client info extracted', {
+    clientIP,
+    userAgentLength: userAgent.length
+  });
+
   if (clientIP === 'unknown') {
     console.warn('Unable to determine client IP address for rate limiting');
   }
 
   // Enhanced rate limiting check (skip only in test environment)
   if (process.env.NODE_ENV !== 'test') {
+    console.log('[TICKET-VALIDATE] Checking rate limit', { clientIP });
+
     try {
       const rateLimitResult = await checkEnhancedRateLimit(clientIP);
+
+      console.log('[TICKET-VALIDATE] Rate limit check result', {
+        isAllowed: rateLimitResult.isAllowed,
+        remaining: rateLimitResult.remaining,
+        retryAfter: rateLimitResult.retryAfter
+      });
 
       if (!rateLimitResult.isAllowed) {
         return res.status(429).json({
@@ -738,15 +768,30 @@ async function handler(req, res) {
         });
       }
     } catch (rateLimitError) {
-      console.error('Rate limiting service error:', rateLimitError);
+      console.error('[TICKET-VALIDATE] Rate limiting service error:', rateLimitError);
       // Continue processing but log the error - don't block legitimate requests
     }
+  } else {
+    console.log('[TICKET-VALIDATE] Skipping rate limit check (test mode)');
   }
 
   const { token, validateOnly } = req.body || {};
 
+  console.log('[TICKET-VALIDATE] Request body parsed', {
+    hasToken: !!token,
+    tokenLength: token?.length || 0,
+    validateOnly: validateOnly || false
+  });
+
   // Enhanced token validation
   const tokenValidation = validateTicketToken(token);
+
+  console.log('[TICKET-VALIDATE] Token validation result', {
+    isValid: tokenValidation.isValid,
+    securityRisk: tokenValidation.securityRisk,
+    error: tokenValidation.error
+  });
+
   if (!tokenValidation.isValid) {
     // Log security risks for monitoring
     if (tokenValidation.securityRisk) {
@@ -766,21 +811,44 @@ async function handler(req, res) {
   }
 
   const source = detectSource(req, clientIP);
+
+  console.log('[TICKET-VALIDATE] Validation source detected', { source });
+
   let db;
   let extractionResult;
   let ticketId;
 
   try {
+    console.log('[TICKET-VALIDATE] Getting database client');
     db = await getDatabaseClient();
+    console.log('[TICKET-VALIDATE] Database client obtained');
+
+    console.log('[TICKET-VALIDATE] Extracting validation code from token');
     extractionResult = extractValidationCode(token);
     const validationCode = extractionResult.validationCode;
+
+    console.log('[TICKET-VALIDATE] Token extraction result', {
+      isJWT: extractionResult.isJWT,
+      validationCodeLength: validationCode?.length || 0,
+      hasTokenPayload: !!extractionResult.tokenPayload,
+      tokenType: extractionResult.isJWT ? 'JWT' : 'direct'
+    });
 
     // For JWT tokens, validationCode is the ticket_id
     ticketId = extractionResult.isJWT ? validationCode : null;
 
+    console.log('[TICKET-VALIDATE] Ticket ID extracted', { ticketId });
+
     // Per-ticket rate limiting (only if we have a ticket ID)
     if (ticketId && process.env.NODE_ENV !== 'test') {
+      console.log('[TICKET-VALIDATE] Checking per-ticket rate limit', { ticketId });
       const ticketRateLimit = await checkPerTicketRateLimit(ticketId);
+
+      console.log('[TICKET-VALIDATE] Per-ticket rate limit result', {
+        isAllowed: ticketRateLimit.isAllowed,
+        remaining: ticketRateLimit.remaining,
+        retryAfter: ticketRateLimit.retryAfter
+      });
       if (!ticketRateLimit.isAllowed) {
         // Log rate limit exceeded
         await logScanAttempt(db, {
@@ -809,10 +877,14 @@ async function handler(req, res) {
     }
 
     if (validateOnly) {
+      console.log('[TICKET-VALIDATE] Preview-only validation (no scan count update)');
+
       // For preview only - no updates
       let ticket;
 
       if (extractionResult.isJWT) {
+        console.log('[TICKET-VALIDATE] Querying ticket by ticket_id (JWT)');
+
         // For JWT tokens, validationCode is ticket_id
         const result = await db.execute({
           sql: `
@@ -898,16 +970,20 @@ async function handler(req, res) {
 
         // Nested ticket object (for backward compatibility)
         ticket: {
+          ticket_id: ticket.ticket_id, // For UI compatibility (checkin.html)
           id: ticket.ticket_id,
           type: ticket.ticket_type,
           attendee: `${ticket.attendee_first_name} ${ticket.attendee_last_name}`.trim(),
-          event: ticket.event_name
+          event: ticket.event_name,
+          scanCount: ticket.scan_count, // For UI modal display (shows "Scan X/Y")
+          maxScans: ticket.max_scan_count // For UI modal display
         },
 
         // Validation status
         validation: {
           status: 'valid',
           scan_count: ticket.scan_count,
+          max_scan_count: ticket.max_scan_count,
           last_scanned: ticket.last_scanned_at,
           message: ticketIsTest ? `${testModeIndicator} - Test ticket verified` : 'Ticket verified for preview'
         }
@@ -924,12 +1000,26 @@ async function handler(req, res) {
     }
 
     // Actual validation with scan count update
+    console.log('[TICKET-VALIDATE] Starting actual validation with scan count update', {
+      validationCode: validationCode?.substring(0, 10) + '...',
+      source,
+      isJWT: extractionResult.isJWT
+    });
+
     const validationResult = await validateTicket(db, validationCode, source, extractionResult.isJWT);
     const ticket = validationResult.ticket;
     const validationTimeMs = Date.now() - startTime;
 
-    // Log successful scan to new scan_logs table
-    await logScanAttempt(db, {
+    console.log('[TICKET-VALIDATE] Validation successful', {
+      ticketId: ticket.ticket_id,
+      scanCount: ticket.scan_count,
+      maxScanCount: ticket.max_scan_count,
+      validationTimeMs
+    });
+
+    // Log successful scan to new scan_logs table and capture the ID
+    console.log('[TICKET-VALIDATE] Logging scan attempt');
+    const scanLogId = await logScanAttempt(db, {
       ticketId: ticket.ticket_id,
       scanStatus: 'valid',
       ipAddress: clientIP,
@@ -943,6 +1033,15 @@ async function handler(req, res) {
         suspicious_pattern: tokenValidation.securityRisk || false,
         jwt_token: extractionResult.isJWT
       }
+    });
+
+
+    // Use sanitizeBigInt helper for consistent BigInt handling
+    const safeScanLogId = sanitizeBigInt(scanLogId);
+
+    console.log('[TICKET-VALIDATE] Scan logged', {
+      scanLogId: safeScanLogId,
+      scanLogIdType: typeof safeScanLogId
     });
 
     // Log successful validation (legacy format for compatibility)
@@ -992,25 +1091,55 @@ async function handler(req, res) {
     const ticketIsTest = isTestTicket(ticket);
     const testModeIndicator = getTestModeValidationIndicator(ticketIsTest);
 
-    // Return enhanced response format as specified
-    res.status(200).json({
+    const responseData = {
       valid: true,
+      ticketId: ticket.ticket_id, // Top-level ticket ID for easy access
+      scanLogId: safeScanLogId, // Scan logs ID for session tracking (converted from BigInt)
+      wallet_source: source, // Wallet source for tracking
       ticket: {
+        ticket_id: ticket.ticket_id, // For UI compatibility (checkin.html)
         id: ticket.ticket_id,
         type: ticket.ticket_type,
         attendee: `${ticket.attendee_first_name} ${ticket.attendee_last_name}`.trim(),
-        event: ticket.event_name
+        event: ticket.event_name,
+        wallet_source: source, // Also include in nested object for consistency
+        scanCount: ticket.scan_count, // For UI modal display (shows "Scan X/Y")
+        maxScans: ticket.max_scan_count // For UI modal display
       },
       validation: {
         status: 'valid',
         scan_count: ticket.scan_count,
+        max_scan_count: ticket.max_scan_count,
         last_scanned: new Date().toISOString(),
         message: ticketIsTest ?
           `${testModeIndicator} - Welcome ${ticket.attendee_first_name}! (Test Mode)` :
           `Welcome ${ticket.attendee_first_name}! Ticket validated successfully`
       }
+    };
+
+    console.log('[TICKET-VALIDATE] Success response ready', {
+      duration: `${validationTimeMs}ms`,
+      ticketId: ticket.ticket_id,
+      scanLogId: safeScanLogId,
+      scanCount: ticket.scan_count,
+      testMode: ticketIsTest
     });
+
+    // Enhance with Mountain Time formatted timestamps
+    const enhancedResponse = timeUtils.enhanceApiResponse(
+      responseData,
+      ['last_scanned'],
+      { includeDeadline: false }
+    );
+
+    // Return enhanced response format with MT fields
+    res.status(200).json(enhancedResponse);
   } catch (error) {
+    console.log('[TICKET-VALIDATE] Error occurred', {
+      error: error.message,
+      stack: error.stack?.substring(0, 200)
+    });
+
     // Handle initialization errors
     if (error.message.includes('Failed to initialize database client')) {
       return res.status(503).json({

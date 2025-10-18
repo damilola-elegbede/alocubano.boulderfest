@@ -281,11 +281,11 @@ async function loginHandler(req, res) {
     }
 
     // Check enhanced rate limiting with progressive delays (skip in test environments)
+    // Note: Preview deployments use production security (no VERCEL_ENV check)
     const isTestEnvironment =
       process.env.NODE_ENV === 'test' ||
       process.env.CI === 'true' ||
       process.env.E2E_TEST_MODE === 'true' ||
-      process.env.VERCEL_ENV === 'preview' ||
       req.headers['user-agent']?.includes('Playwright');
 
     if (!isTestEnvironment) {
@@ -430,10 +430,10 @@ async function handlePasswordStep(req, res, username, password, clientIP) {
   const db = await getDatabaseClient();
 
   // Check if this is a test environment for debug logging
+  // Note: Preview deployments use production security (no VERCEL_ENV check)
   const isE2ETest =
     process.env.E2E_TEST_MODE === 'true' ||
     process.env.CI === 'true' ||
-    process.env.VERCEL_ENV === 'preview' ||
     req.headers['user-agent']?.includes('Playwright');
 
   console.log('[Login] Environment check:', {
@@ -840,12 +840,12 @@ async function handleSimpleLogin(req, res, username, password, clientIP) {
   res.setHeader('Expires', '0');
 
   // Check if we're in a test environment
+  // Note: Preview deployments use production security (no VERCEL_ENV check)
   const isTestEnvironment =
     process.env.NODE_ENV === 'test' ||
     process.env.CI === 'true' ||
     process.env.SKIP_MFA === 'true' ||
-    process.env.E2E_TEST_MODE === 'true' ||
-    process.env.VERCEL_ENV === 'preview';
+    process.env.E2E_TEST_MODE === 'true';
 
   // Return 404 in production environments
   if (!isTestEnvironment) {
@@ -958,11 +958,11 @@ async function handleMobileLogin(req, res, username, password, clientIP) {
   }
 
   // Check rate limiting (skip in test environments)
+  // Note: Preview deployments use production security (no VERCEL_ENV check)
   const isTestEnvironment =
     process.env.NODE_ENV === 'test' ||
     process.env.CI === 'true' ||
-    process.env.E2E_TEST_MODE === 'true' ||
-    process.env.VERCEL_ENV === 'preview';
+    process.env.E2E_TEST_MODE === 'true';
 
   if (!isTestEnvironment) {
     const rateLimitResult = await checkEnhancedRateLimit(clientIP);

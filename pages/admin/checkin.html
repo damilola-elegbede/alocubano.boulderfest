@@ -92,47 +92,27 @@
         justify-content: center;
         align-items: center;
         box-shadow: var(--shadow-lg);
-        position: relative;
-        z-index: 100;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
         min-height: 80px;
       }
 
-      .logout-btn {
-        position: absolute;
-        top: var(--space-lg);
-        right: var(--space-lg);
-        background: rgba(255, 255, 255, 0.2) !important;
-        border: 2px solid rgba(255, 255, 255, 0.3) !important;
-        color: var(--color-white) !important;
-        font-size: var(--font-size-sm);
-        font-weight: 600;
-        min-height: 36px;
-        z-index: 110;
+      .app-title-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        flex: 1;
+        margin: 0 60px;
       }
 
-      .logout-btn:hover {
-        background: rgba(255, 255, 255, 0.3) !important;
-        color: var(--color-white) !important;
-      }
-
-      .back-btn {
-        position: absolute;
-        top: var(--space-lg);
-        left: var(--space-lg);
-        background: rgba(255, 255, 255, 0.2) !important;
-        border: 2px solid rgba(255, 255, 255, 0.3) !important;
-        color: var(--color-white) !important;
-        font-size: var(--font-size-sm);
-        font-weight: 600;
-        min-height: 36px;
-        padding: var(--space-xs) var(--space-sm);
-        z-index: 110;
-      }
-
-      .back-btn:hover {
-        background: rgba(255, 255, 255, 0.3) !important;
-        color: var(--color-white) !important;
-        transform: translateX(-2px);
+      .app-portal-label {
+        font-family: var(--font-sans);
+        font-size: var(--font-size-xs);
+        color: rgba(255, 255, 255, 0.8);
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin-bottom: 4px;
       }
 
       .app-title {
@@ -142,13 +122,8 @@
         color: var(--color-white);
         text-transform: uppercase;
         letter-spacing: var(--letter-spacing-wider);
-        margin: 0 120px;
+        margin: 0;
         text-align: center;
-        flex: 1;
-        max-width: calc(100% - 240px);
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
       }
 
       .menu-btn {
@@ -190,6 +165,10 @@
         gap: var(--space-xs);
         font-size: var(--font-size-xs);
         min-height: 45px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
       }
 
       .stats-bar .admin-stat-card {
@@ -297,6 +276,8 @@
         border-radius: var(--radius-md);
         border: 1px solid var(--color-border);
         transition: all 0.2s ease;
+        flex: 0 0 auto;
+        min-width: 80px;
       }
 
       .stat-item:hover {
@@ -335,10 +316,56 @@
         text-align: center;
       }
 
-      /* Highlight new stats */
+      /* Highlight stats with colors */
+      #statValid { color: var(--color-success); }
       #statFailed { color: var(--color-red); }
-      #statInvalid { color: var(--color-warning); }
-      #statAvgTime { color: var(--color-success); }
+      #statRateLimited { color: var(--color-warning); }
+      #statAvgTime { color: var(--color-info); }
+
+      /* Active state for clickable stat cards */
+      .stat-item-clickable.active {
+        background: var(--color-primary);
+        border-color: var(--color-primary);
+      }
+
+      .stat-item-clickable.active .stat-value,
+      .stat-item-clickable.active .stat-label {
+        color: var(--color-white);
+      }
+
+      /* Badge styles for ticket table */
+      .badge {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        display: inline-block;
+        white-space: nowrap;
+      }
+
+      .badge-success {
+        background: rgba(16, 185, 129, 0.2);
+        color: #10b981;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+      }
+
+      .badge-error {
+        background: rgba(239, 68, 68, 0.2);
+        color: #ef4444;
+        border: 1px solid rgba(239, 68, 68, 0.3);
+      }
+
+      .badge-warning {
+        background: rgba(245, 158, 11, 0.2);
+        color: #f59e0b;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+      }
+
+      .badge-info {
+        background: rgba(59, 130, 246, 0.2);
+        color: #3b82f6;
+        border: 1px solid rgba(59, 130, 246, 0.3);
+      }
 
       /* Mobile responsive stats */
       @media (max-width: 768px) {
@@ -362,8 +389,9 @@
       }
 
       @media (max-width: 480px) {
-        .stats-bar {
-          grid-template-columns: repeat(2, 1fr);
+        .stat-item {
+          min-width: 70px;
+          padding: var(--space-sm);
         }
       }
 
@@ -414,6 +442,7 @@
         overflow-y: auto;
         overflow-x: hidden;
         padding: var(--space-lg);
+        padding-bottom: 90px; /* Account for footer controls height to prevent items from hiding */
         background: linear-gradient(180deg,
           rgba(91, 107, 181, 0.03) 0%,
           rgba(204, 41, 54, 0.03) 100%);
@@ -940,6 +969,50 @@
         .tickets-table td:first-child {
           min-width: 100px;
         }
+      }
+
+      .tickets-pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: var(--space-md);
+        padding: var(--space-lg);
+        background: var(--color-surface-elevated);
+        border-top: 1px solid var(--color-border);
+      }
+
+      .pagination-btn {
+        padding: var(--space-sm) var(--space-md);
+        background: var(--color-blue);
+        color: white;
+        border: none;
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        font-family: var(--font-sans);
+        font-size: var(--font-size-sm);
+        font-weight: 600;
+        transition: all 0.2s ease;
+        min-width: 100px;
+      }
+
+      .pagination-btn:hover:not(:disabled) {
+        background: var(--color-blue-dark);
+        transform: translateY(-1px);
+      }
+
+      .pagination-btn:disabled {
+        background: var(--color-border);
+        color: var(--color-text-muted);
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+
+      .pagination-info {
+        font-family: var(--font-sans);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        min-width: 100px;
+        text-align: center;
       }
 
       .manual-input-backdrop {
@@ -1809,32 +1882,25 @@
           </a>
         </li>
       </ul>
-
-      <!-- Event Selector -->
-      <div id="event-selector-container"></div>
     </nav>
 
     <div class="scanner-app">
       <div class="app-header">
         <button
-          class="back-btn admin-btn admin-btn-ghost admin-btn-sm"
-          onclick="backToPortal()"
-          aria-label="Go back to admin portal"
-          title="Return to admin portal"
+          class="menu-btn admin-menu-toggle"
+          onclick="toggleMobileMenu(this)"
+          aria-label="Open menu"
+          aria-expanded="false"
+          title="Open navigation menu"
         >
-          ← Portal
+          ☰
         </button>
-        <h1 class="app-title" data-testid="scanner-title">
-          Check-in Scanner
-        </h1>
-        <button 
-          class="logout-btn admin-btn admin-btn-ghost admin-btn-sm" 
-          onclick="logout()"
-          aria-label="Logout from admin session"
-          title="Logout from admin session"
-        >
-          Logout
-        </button>
+        <div class="app-title-container">
+          <div class="app-portal-label">Portal</div>
+          <h1 class="app-title" data-testid="scanner-title">
+            Check-In Scanner
+          </h1>
+        </div>
       </div>
 
       <div class="admin-alert error offline-indicator" id="offlineIndicator">
@@ -1850,38 +1916,38 @@
         </div>
 
         <!-- Stats Bar -->
-        <div id="statsBar" class="stats-bar">
-          <div class="stat-item stat-item-clickable" onclick="viewStatTickets('today')" title="Click to view today's check-ins">
-            <div class="stat-value" id="statToday">0</div>
-            <div class="stat-label">Today</div>
-          </div>
-          <div class="stat-item stat-item-clickable" onclick="viewStatTickets('session')" title="Click to view this session's check-ins">
-            <div class="stat-value" id="statSession">0</div>
+        <div id="statsBar" class="stats-bar" role="region" aria-label="Scanner Statistics">
+          <div class="stat-item stat-item-clickable" onclick="viewStatTickets('session')" title="Click to view this session's check-ins" role="button" tabindex="0" aria-label="Session check-ins: 0. Click to view details">
+            <div class="stat-value" id="statSession" aria-live="polite">0</div>
             <div class="stat-label">Session</div>
           </div>
-          <div class="stat-item">
-            <div class="stat-value" id="statQueued">0</div>
-            <div class="stat-label">Queued</div>
+          <div class="stat-item" role="status" aria-label="Average validation time: 0 milliseconds">
+            <div class="stat-value" id="statAvgTime" aria-live="polite">0ms</div>
+            <div class="stat-label">Avg Time</div>
           </div>
-          <div class="stat-item stat-item-clickable" onclick="viewStatTickets('wallet')" title="Click to view wallet check-ins">
-            <div class="stat-value" id="statWallet">0</div>
-            <div class="stat-label">Wallet</div>
+          <div class="stat-item stat-item-clickable" onclick="viewStatTickets('today')" title="Click to view today's check-ins" role="button" tabindex="0" aria-label="Today's check-ins: 0. Click to view details">
+            <div class="stat-value" id="statToday" aria-live="polite">0</div>
+            <div class="stat-label">Today</div>
           </div>
-          <div class="stat-item stat-item-clickable" onclick="viewStatTickets('total')" title="Click to view all checked-in tickets">
-            <div class="stat-value" id="statTotal">0</div>
+          <div class="stat-item stat-item-clickable" onclick="viewStatTickets('total')" title="Click to view all checked-in tickets" role="button" tabindex="0" aria-label="Total check-ins: 0. Click to view details">
+            <div class="stat-value" id="statTotal" aria-live="polite">0</div>
             <div class="stat-label">Total</div>
           </div>
-          <div class="stat-item">
-            <div class="stat-value" id="statFailed">0</div>
+          <div class="stat-item stat-item-clickable" onclick="viewStatTickets('valid')" title="Click to view valid scans" role="button" tabindex="0" aria-label="Valid scans: 0. Click to view details">
+            <div class="stat-value" id="statValid" aria-live="polite">0</div>
+            <div class="stat-label">Valid</div>
+          </div>
+          <div class="stat-item stat-item-clickable" onclick="viewStatTickets('failed')" title="Click to view failed scans" role="button" tabindex="0" aria-label="Failed scans: 0. Click to view details">
+            <div class="stat-value" id="statFailed" aria-live="polite">0</div>
             <div class="stat-label">Failed</div>
           </div>
-          <div class="stat-item">
-            <div class="stat-value" id="statInvalid">0</div>
-            <div class="stat-label">Invalid</div>
+          <div class="stat-item stat-item-clickable" onclick="viewStatTickets('rateLimited')" title="Click to view rate limited scans" role="button" tabindex="0" aria-label="Rate limited scans: 0. Click to view details">
+            <div class="stat-value" id="statRateLimited" aria-live="polite">0</div>
+            <div class="stat-label">Rate Limited</div>
           </div>
-          <div class="stat-item">
-            <div class="stat-value" id="statAvgTime">0s</div>
-            <div class="stat-label">Avg Time</div>
+          <div class="stat-item stat-item-clickable" onclick="viewStatTickets('alreadyScanned')" title="Click to view re-scanned tickets" role="button" tabindex="0" aria-label="Re-scanned tickets: 0. Click to view details">
+            <div class="stat-value" id="statAlreadyScanned" aria-live="polite">0</div>
+            <div class="stat-label">Re-scanned</div>
           </div>
         </div>
 
@@ -1919,6 +1985,9 @@
           </button>
           <button class="control-btn admin-btn" onclick="location.reload()" title="Refresh Scanner">
             🔄
+          </button>
+          <button class="control-btn admin-btn" onclick="clearSessionData()" title="Clear Session Data - Reset session scan logs and counters" style="background: var(--color-warning) !important; border-color: var(--color-warning) !important;">
+            🗑️
           </button>
         </div>
       </div>
@@ -1970,6 +2039,11 @@
                 <!-- Rows populated by JavaScript -->
               </tbody>
             </table>
+          </div>
+          <div class="tickets-pagination" id="ticketsPagination" style="display: none;">
+            <button class="pagination-btn" id="prevPageBtn" onclick="previousPage()" disabled>← Previous</button>
+            <span class="pagination-info" id="paginationInfo">Page 1 of 1</span>
+            <button class="pagination-btn" id="nextPageBtn" onclick="nextPage()" disabled>Next →</button>
           </div>
           <div class="tickets-empty" id="ticketsEmpty" style="display: none;">
             <p>No tickets found for this filter.</p>
@@ -2074,19 +2148,55 @@
 
       // Statistics with localStorage persistence
       const STATS_STORAGE_KEY = 'scanner_stats_v2';
+      const SESSION_SCAN_LOG_IDS_KEY = 'session_scan_log_ids_v1';
       const STATS_SESSION_HOURS = 8;
+      const MAX_SESSION_SCAN_LOGS = 900; // SQLite hard limit: 999 bind parameters, keep safety buffer
+
+      // Conditional logging utility - only logs in development
+      // Usage: Replace console.log() with debugLog.log() to prevent production logging
+      // Example: debugLog.log('Debug info') instead of console.log('Debug info')
+      // Error logs are always shown (even in production) for critical debugging
+      const IS_PRODUCTION = window.location.hostname === 'www.alocubanoboulderfest.org' ||
+                           window.location.hostname === 'alocubanoboulderfest.org';
+
+      const debugLog = {
+        log: (...args) => {
+          if (!IS_PRODUCTION) {
+            console.log(...args);
+          }
+        },
+        warn: (...args) => {
+          if (!IS_PRODUCTION) {
+            console.warn(...args);
+          }
+        },
+        error: (...args) => {
+          // Always log errors, even in production
+          console.error(...args);
+        },
+        info: (...args) => {
+          if (!IS_PRODUCTION) {
+            console.info(...args);
+          }
+        }
+      };
+
+      // Session scan log IDs for database queries
+      const sessionScanLogIds = [];
 
       const stats = {
         // Server baselines (loaded from API, never incremented)
         todayBaseline: 0,
         totalBaseline: 0,
-        walletBaseline: 0,
+        validBaseline: 0,
+        failedBaseline: 0,
+        rateLimitedBaseline: 0,
+        alreadyScannedBaseline: 0,
 
         // Session increments (persisted, incremented locally)
         todayIncrement: 0,
-        walletIncrement: 0,
-        session: 0,
         queued: 0,
+        session: 0,
         failed: 0,
         invalid: 0,
         validationTimes: [],
@@ -2114,7 +2224,8 @@
 
           // Restore session stats only (not baselines)
           stats.todayIncrement = data.todayIncrement || 0;
-          stats.walletIncrement = data.walletIncrement || 0;
+          stats.appleWalletIncrement = data.appleWalletIncrement || 0;
+          stats.googleWalletIncrement = data.googleWalletIncrement || 0;
           stats.session = data.session || 0;
           stats.queued = data.queued || 0;
           stats.failed = data.failed || 0;
@@ -2132,7 +2243,8 @@
         try {
           localStorage.setItem(STATS_STORAGE_KEY, JSON.stringify({
             todayIncrement: stats.todayIncrement,
-            walletIncrement: stats.walletIncrement,
+            appleWalletIncrement: stats.appleWalletIncrement,
+            googleWalletIncrement: stats.googleWalletIncrement,
             session: stats.session,
             queued: stats.queued,
             failed: stats.failed,
@@ -2141,13 +2253,157 @@
             sessionStart: stats.sessionStart,
             lastActivity: Date.now()
           }));
+
+          // Also persist scan log IDs
+          persistSessionScanLogIds();
         } catch (error) {
-          console.error('Failed to persist stats:', error);
+          if (error.name === 'QuotaExceededError') {
+            console.error('localStorage quota exceeded - clearing old stats data');
+            // Clear old data and retry with minimal stats
+            localStorage.removeItem(STATS_STORAGE_KEY);
+            try {
+              localStorage.setItem(STATS_STORAGE_KEY, JSON.stringify({
+                todayIncrement: stats.todayIncrement,
+                session: stats.session,
+                validationTimes: stats.validationTimes.slice(-50), // Keep only last 50
+                sessionStart: stats.sessionStart,
+                lastActivity: Date.now()
+              }));
+            } catch (retryError) {
+              console.error('Unable to save stats even after truncation:', retryError);
+            }
+          } else {
+            console.error('Failed to persist stats:', error);
+          }
+        }
+      }
+
+      // Restore session scan log IDs from localStorage
+      function restoreSessionScanLogIds() {
+        try {
+          const stored = localStorage.getItem(SESSION_SCAN_LOG_IDS_KEY);
+          if (!stored) return;
+
+          const data = JSON.parse(stored);
+          const age = (Date.now() - data.sessionStart) / (1000 * 60 * 60);
+
+          // Expire after 8 hours (same as session stats)
+          if (age > STATS_SESSION_HOURS) {
+            localStorage.removeItem(SESSION_SCAN_LOG_IDS_KEY);
+            console.log('Session scan log IDs expired after 8 hours');
+            return;
+          }
+
+          // Restore scan log IDs
+          if (Array.isArray(data.ids)) {
+            sessionScanLogIds.length = 0;
+            sessionScanLogIds.push(...data.ids);
+            console.log(`Restored ${sessionScanLogIds.length} session scan log IDs`);
+          }
+        } catch (error) {
+          console.error('Failed to restore session scan log IDs:', error);
+        }
+      }
+
+      // Save session scan log IDs to localStorage
+      function persistSessionScanLogIds() {
+        try {
+          // Truncate to MAX_SESSION_SCAN_LOGS before saving
+          const idsToSave = sessionScanLogIds.length > MAX_SESSION_SCAN_LOGS
+            ? sessionScanLogIds.slice(-MAX_SESSION_SCAN_LOGS)
+            : sessionScanLogIds;
+
+          localStorage.setItem(SESSION_SCAN_LOG_IDS_KEY, JSON.stringify({
+            ids: idsToSave,
+            sessionStart: stats.sessionStart,
+            lastActivity: Date.now()
+          }));
+        } catch (error) {
+          if (error.name === 'QuotaExceededError') {
+            console.error('localStorage quota exceeded - clearing old session data');
+            // Clear old data and retry
+            localStorage.removeItem(SESSION_SCAN_LOG_IDS_KEY);
+            // Try again with truncated data
+            try {
+              const truncatedIds = sessionScanLogIds.slice(-500); // Save only last 500
+              localStorage.setItem(SESSION_SCAN_LOG_IDS_KEY, JSON.stringify({
+                ids: truncatedIds,
+                sessionStart: stats.sessionStart,
+                lastActivity: Date.now()
+              }));
+            } catch (retryError) {
+              console.error('Unable to save session data even after truncation:', retryError);
+            }
+          } else {
+            console.error('Failed to persist session scan log IDs:', error);
+          }
         }
       }
 
       // Initialize - restore previous session if exists
       restoreSessionStats();
+      restoreSessionScanLogIds();
+
+      // Check localStorage availability
+      try {
+        localStorage.setItem('__storage_test__', 'test');
+        localStorage.removeItem('__storage_test__');
+      } catch (e) {
+        console.warn('localStorage is not available - session data will not persist across page reloads');
+        // Note: We don't show a UI notification here to avoid disrupting the user experience
+        // The scanner will still work, just without session persistence
+      }
+
+      // Cross-tab synchronization - sync session data when changed in another tab
+      window.addEventListener('storage', (event) => {
+        // Only handle changes to our scanner storage keys
+        if (event.key === STATS_STORAGE_KEY || event.key === SESSION_SCAN_LOG_IDS_KEY) {
+          debugLog.log('[CROSS-TAB] Storage change detected from another tab', {
+            key: event.key,
+            oldValue: event.oldValue ? 'exists' : 'null',
+            newValue: event.newValue ? 'exists' : 'null'
+          });
+
+          // Restore session data from localStorage (updated by other tab)
+          if (event.key === STATS_STORAGE_KEY) {
+            restoreSessionStats();
+            updateStats();
+            debugLog.log('[CROSS-TAB] Session stats synchronized from other tab');
+          }
+
+          // Restore session scan log IDs from localStorage (updated by other tab)
+          if (event.key === SESSION_SCAN_LOG_IDS_KEY) {
+            restoreSessionScanLogIds();
+            debugLog.log('[CROSS-TAB] Session scan log IDs synchronized from other tab', {
+              count: sessionScanLogIds.length
+            });
+          }
+        }
+
+        // Handle session clear from another tab
+        if ((event.key === STATS_STORAGE_KEY || event.key === SESSION_SCAN_LOG_IDS_KEY) && event.newValue === null) {
+          debugLog.log('[CROSS-TAB] Session cleared in another tab - syncing clear operation');
+
+          if (event.key === STATS_STORAGE_KEY) {
+            // Reset stats to match the clear operation
+            stats.session = 0;
+            stats.todayIncrement = 0;
+            stats.appleWalletIncrement = 0;
+            stats.googleWalletIncrement = 0;
+            stats.queued = 0;
+            stats.failed = 0;
+            stats.invalid = 0;
+            stats.validationTimes = [];
+            updateStats();
+          }
+
+          if (event.key === SESSION_SCAN_LOG_IDS_KEY) {
+            sessionScanLogIds.length = 0;
+          }
+        }
+      });
+
+      debugLog.log('[CROSS-TAB] Cross-tab synchronization initialized');
 
       // Performance monitoring and resource management
       const performanceMonitor = {
@@ -3758,9 +4014,7 @@
           // Detect wallet tokens (JWT format)
           const isWalletToken = token.includes(".") && token.length > 100;
 
-          // Get selected event ID from event selector
-          const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
-
+          // Scanner is event-agnostic - no event filtering
           // Get CSRF token for admin operations (only if admin authenticated)
           let headers = { "Content-Type": "application/json" };
           try {
@@ -3784,11 +4038,34 @@
               validatedBy: "admin-scanner",
               location: "entrance",
               wallet_source: isWalletToken ? "jwt" : null,
-              qr_access_method: isWalletToken ? "wallet" : "qr_code",
-              event_id: selectedEventId,
+              qr_access_method: isWalletToken ? "wallet" : "qr_code"
+              // No event_id - scanner is event-agnostic
             }),
             credentials: "include"
           });
+
+          // Check for rate limiting (429) before parsing JSON
+          if (response.status === 429) {
+            console.warn('[RATE-LIMIT] 429 response received - too many validation requests');
+            const retryAfter = response.headers.get('Retry-After');
+            const waitTime = retryAfter ? parseInt(retryAfter) : 60; // Default to 60 seconds if not specified
+
+            stats.failed++;
+            updateStats();
+
+            showResult(
+              "error",
+              "⏱️ Rate Limit Reached",
+              `Too many scans in a short time.\n\nPlease wait ${waitTime} seconds before scanning again.\n\nThis helps prevent system overload.`,
+            );
+
+            console.log('[RATE-LIMIT] User notified of rate limit', {
+              retryAfter: waitTime,
+              failed: stats.failed
+            });
+
+            return;
+          }
 
           const data = await response.json();
 
@@ -3804,7 +4081,26 @@
             // Success
             stats.session++;
             stats.todayIncrement++;  // Increment session overlay, not baseline
-            if (data.ticket && data.ticket.wallet_source) stats.walletIncrement++;
+
+            // Store scan log ID for session tracking
+            if (data.scanLogId !== null && data.scanLogId !== undefined) {
+              // Enforce maximum session scan log IDs to prevent localStorage overflow
+              if (sessionScanLogIds.length >= MAX_SESSION_SCAN_LOGS) {
+                sessionScanLogIds.shift(); // Remove oldest entry
+                console.warn(`Session scan logs limit reached (${MAX_SESSION_SCAN_LOGS}), removing oldest entry`);
+              }
+              sessionScanLogIds.push(data.scanLogId);
+              console.log(`Stored scan log ID: ${data.scanLogId} (total: ${sessionScanLogIds.length})`);
+            }
+
+            // Increment wallet-specific counters
+            if (data.ticket && data.ticket.wallet_source) {
+              if (data.ticket.wallet_source === 'apple_wallet') {
+                stats.appleWalletIncrement++;
+              } else if (data.ticket.wallet_source === 'google_wallet' || data.ticket.wallet_source === 'samsung_wallet') {
+                stats.googleWalletIncrement++;
+              }
+            }
 
             // Detect if this is a test ticket
             const isTestTicket = data.ticket && (
@@ -3827,15 +4123,23 @@
                 `🧪 ${walletBadge}Valid Test Ticket!` :
                 `${walletBadge}Valid Ticket!`;
 
+              // Read scan counts from validation object
+              const scanCount = data.validation?.scan_count ?? 0;
+              const maxScans = data.validation?.max_scan_count ?? 0;
+
               showResult(
                 "success",
                 resultTitle,
-                `${data.ticket.attendee}\n${data.ticket.type}${accessMethod}\nScan ${data.ticket.scanCount}/${data.ticket.maxScans}`,
+                `${data.ticket.attendee}\n${data.ticket.type}${accessMethod}\nScan ${scanCount}/${maxScans}`,
                 isTestTicket,
-                data.ticket.ticket_id
+                data.ticket.ticket_id,
+                data.ticket.wallet_source
               );
             } else {
-              showResult("success", "Valid Ticket!", "Check-in successful", false, null);
+              // Fallback: extract ticket info from top-level response fields
+              const ticketId = data.ticketId || data.ticket?.id || extractTokenFromQR(decodedText) || "Unknown";
+              const walletSource = data.wallet_source || data.ticket?.wallet_source || null;
+              showResult("success", "Valid Ticket!", "Check-in successful", false, ticketId, walletSource);
             }
           } else {
             // Invalid ticket
@@ -3888,7 +4192,7 @@
       }
 
       // Show result modal
-      function showResult(type, title, details, isTestTicket = false, ticketId = null) {
+      function showResult(type, title, details, isTestTicket = false, ticketId = null, walletSource = null) {
         const modal = document.getElementById("resultModal");
         const content = document.getElementById("resultContent");
         const icon = document.getElementById("resultIcon");
@@ -3946,16 +4250,17 @@
           title: title,
           details: details,
           isTestTicket: isTestScan,
-          ticketId: ticketId
+          ticketId: ticketId,
+          walletSource: walletSource
         });
 
         // Show modal
         modal.classList.add("show");
 
-        // Auto-close after 3 seconds
+        // Auto-close after 30 seconds
         setTimeout(() => {
           closeResult();
-        }, 3000);
+        }, 30000);
       }
 
       // Close result modal
@@ -4092,6 +4397,63 @@
         document.getElementById("manualTicketId").value = "";
       }
 
+      // Clear session data - reset session scan logs and counters
+      function clearSessionData() {
+        const confirmed = confirm(
+          'Clear Session Data?\n\n' +
+          'This will:\n' +
+          '• Reset session scan count to 0\n' +
+          '• Clear session scan log history\n' +
+          '• Reset session-specific counters\n\n' +
+          'Database records and today\'s total count will NOT be affected.\n\n' +
+          'Continue?'
+        );
+
+        if (!confirmed) {
+          return;
+        }
+
+        try {
+          // Clear sessionScanLogIds array
+          sessionScanLogIds.length = 0;
+          console.log('[SESSION-CLEAR] Cleared sessionScanLogIds array');
+
+          // Clear localStorage
+          localStorage.removeItem(STATS_STORAGE_KEY);
+          localStorage.removeItem(SESSION_SCAN_LOG_IDS_KEY);
+          console.log('[SESSION-CLEAR] Cleared localStorage session data');
+
+          // Reset session counters (keep baseline values from server)
+          stats.session = 0;
+          stats.todayIncrement = 0;
+          stats.appleWalletIncrement = 0;
+          stats.googleWalletIncrement = 0;
+          stats.queued = 0;
+          stats.failed = 0;
+          stats.invalid = 0;
+          stats.validationTimes = [];
+          stats.sessionStart = Date.now();
+          stats.lastActivity = Date.now();
+          console.log('[SESSION-CLEAR] Reset session counters');
+
+          // Update UI
+          updateStats();
+          console.log('[SESSION-CLEAR] Updated UI');
+
+          // Show success message
+          alert('✅ Session data cleared successfully!\n\nSession count reset to 0.');
+
+          console.log('[SESSION-CLEAR] Session data cleared successfully', {
+            sessionScanLogIds: sessionScanLogIds.length,
+            sessionCount: stats.session,
+            todayIncrement: stats.todayIncrement
+          });
+        } catch (error) {
+          console.error('[SESSION-CLEAR] Failed to clear session data:', error);
+          alert('❌ Failed to clear session data.\n\nPlease try refreshing the page.');
+        }
+      }
+
       // Enhanced keyboard navigation and accessibility
       document.addEventListener('keydown', (e) => {
         // Escape key handling
@@ -4170,12 +4532,9 @@
 
         // For manual entry, we need to look up the ticket first
         try {
-          // Get selected event ID from event selector
-          const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
-          const eventParam = selectedEventId ? `&event_id=${selectedEventId}` : '';
-
+          // Scanner is event-agnostic - no event filtering
           const response = await fetch(
-            `/api/tickets?ticket_id=${encodeURIComponent(ticketId)}${eventParam}`,
+            `/api/tickets?ticket_id=${encodeURIComponent(ticketId)}`,
             {
               credentials: "include"
             }
@@ -4194,32 +4553,59 @@
 
       // Update statistics display
       function updateStats() {
-        // Display = baseline + session increment
-        document.getElementById("statToday").textContent = stats.todayBaseline + stats.todayIncrement;
-        document.getElementById("statSession").textContent = stats.session;
-        document.getElementById("statQueued").textContent = stats.queued;
-        document.getElementById("statWallet").textContent = stats.walletBaseline + stats.walletIncrement;
-        // Total should include today's session scans
-        document.getElementById("statTotal").textContent = stats.totalBaseline + stats.todayIncrement;
+        // Calculate values
+        const todayCount = (stats.todayBaseline || 0) + (stats.todayIncrement || 0);
+        const sessionCount = stats.session;
+        const totalCount = stats.totalBaseline + stats.session;
+        const validCount = stats.validBaseline || 0;
+        const failedCount = stats.failedBaseline || 0;
+        const rateLimitedCount = stats.rateLimitedBaseline || 0;
+        const alreadyScannedCount = stats.alreadyScannedBaseline || 0;
 
-        // Update new stats
-        document.getElementById("statFailed").textContent = stats.failed;
-        document.getElementById("statInvalid").textContent = stats.invalid;
-
-        // Calculate and display average validation time
-        if (stats.validationTimes.length > 0) {
-          const avgTime = stats.validationTimes.reduce((a, b) => a + b, 0) / stats.validationTimes.length;
-          document.getElementById("statAvgTime").textContent = `${(avgTime / 1000).toFixed(1)}s`;
-        } else {
-          document.getElementById("statAvgTime").textContent = "0s";
+        // Calculate average time
+        let avgTime = "0ms";
+        let avgTimeMilliseconds = 0;
+        if (stats.validationTimes && stats.validationTimes.length > 0) {
+          const sum = stats.validationTimes.reduce((a, b) => a + b, 0);
+          avgTimeMilliseconds = Math.round(sum / stats.validationTimes.length);
+          avgTime = `${avgTimeMilliseconds}ms`;
         }
+
+        // Update text content
+        document.getElementById("statToday").textContent = todayCount;
+        document.getElementById("statSession").textContent = sessionCount;
+        document.getElementById("statTotal").textContent = totalCount;
+        document.getElementById("statValid").textContent = validCount;
+        document.getElementById("statFailed").textContent = failedCount;
+        document.getElementById("statRateLimited").textContent = rateLimitedCount;
+        document.getElementById("statAlreadyScanned").textContent = alreadyScannedCount;
+        document.getElementById("statAvgTime").textContent = avgTime;
+
+        // Update ARIA labels for accessibility
+        const sessionStat = document.querySelector('[onclick="viewStatTickets(\'session\')"]');
+        const todayStat = document.querySelector('[onclick="viewStatTickets(\'today\')"]');
+        const totalStat = document.querySelector('[onclick="viewStatTickets(\'total\')"]');
+        const validStat = document.querySelector('[onclick="viewStatTickets(\'valid\')"]');
+        const failedStat = document.querySelector('[onclick="viewStatTickets(\'failed\')"]');
+        const rateLimitedStat = document.querySelector('[onclick="viewStatTickets(\'rateLimited\')"]');
+        const alreadyScannedStat = document.querySelector('[onclick="viewStatTickets(\'alreadyScanned\')"]');
+        const avgTimeStat = document.querySelector('.stat-item[role="status"]');
+
+        if (sessionStat) sessionStat.setAttribute('aria-label', `Session check-ins: ${sessionCount}. Click to view details`);
+        if (todayStat) todayStat.setAttribute('aria-label', `Today's check-ins: ${todayCount}. Click to view details`);
+        if (totalStat) totalStat.setAttribute('aria-label', `Total check-ins: ${totalCount}. Click to view details`);
+        if (validStat) validStat.setAttribute('aria-label', `Valid scans: ${validCount}. Click to view details`);
+        if (failedStat) failedStat.setAttribute('aria-label', `Failed scans: ${failedCount}. Click to view details`);
+        if (rateLimitedStat) rateLimitedStat.setAttribute('aria-label', `Rate limited scans: ${rateLimitedCount}. Click to view details`);
+        if (alreadyScannedStat) alreadyScannedStat.setAttribute('aria-label', `Re-scanned tickets: ${alreadyScannedCount}. Click to view details`);
+        if (avgTimeStat) avgTimeStat.setAttribute('aria-label', `Average validation time: ${avgTimeMilliseconds} milliseconds`);
 
         // Persist to localStorage
         persistSessionStats();
       }
 
       // Open overlay modal with filtered checked-in tickets
-      async function viewStatTickets(statType) {
+      async function viewStatTickets(statType, page = 1) {
         const overlay = document.getElementById('ticketsOverlay');
         const titleEl = document.getElementById('ticketsOverlayTitle');
         const loadingEl = document.getElementById('ticketsLoading');
@@ -4227,15 +4613,32 @@
         const tableContainer = document.getElementById('ticketsTableContainer');
         const emptyEl = document.getElementById('ticketsEmpty');
         const tableBody = document.getElementById('ticketsTableBody');
+        const paginationEl = document.getElementById('ticketsPagination');
+
+        // Update pagination state
+        currentFilter = statType;
+        currentPage = page;
 
         // Set title based on filter
         const titles = {
           'today': "Today's Check-Ins",
           'session': "Session Check-Ins",
-          'wallet': "Wallet Check-Ins",
-          'total': "All Checked-In Tickets"
+          'total': "All Checked-In Tickets",
+          'valid': "Valid Scans",
+          'failed': "Failed Scans",
+          'rateLimited': "Rate Limited Scans",
+          'alreadyScanned': "Re-scanned Tickets"
         };
         titleEl.textContent = titles[statType] || "Checked-In Tickets";
+
+        // Update active state for stat cards
+        document.querySelectorAll('.stat-item-clickable').forEach(item => {
+          item.classList.remove('active');
+        });
+        const activeCard = document.querySelector(`.stat-item-clickable[onclick*="${statType}"]`);
+        if (activeCard) {
+          activeCard.classList.add('active');
+        }
 
         // Show overlay with loading state
         overlay.classList.add('show');
@@ -4244,58 +4647,127 @@
         tableContainer.style.display = 'none';
         emptyEl.style.display = 'none';
 
-        // For session filter, use local data from recentScans array
+        // For session filter, query database using scan log IDs
         if (statType === 'session') {
-          loadingEl.style.display = 'none';
-
-          if (recentScans.length === 0) {
+          // Check if we have any scan log IDs
+          if (sessionScanLogIds.length === 0) {
+            loadingEl.style.display = 'none';
+            const emptyParagraph = emptyEl.querySelector('p');
+            if (emptyParagraph) {
+              emptyParagraph.textContent = "No tickets scanned in this session yet.";
+            }
             emptyEl.style.display = 'block';
+            paginationEl.style.display = 'none';
             return;
           }
 
-          // Render session scans from local array
-          tableBody.innerHTML = recentScans
-            .filter(scan => scan.type === 'success')
-            .map(scan => {
-              const detailsLines = scan.details.split('\n');
-              const fullName = detailsLines[0] || '';
-              const [firstName, ...lastNameParts] = fullName.split(' ');
-              const lastName = lastNameParts.join(' ');
-              const timeFormatted = timeManager ?
-                timeManager.formatDateTime(new Date(scan.timestamp)) :
-                new Date(scan.timestamp).toLocaleString();
+          try {
+            // Query database with scan log IDs
+            const params = new URLSearchParams();
+            params.set('filter', 'session');
+            params.set('scanLogIds', sessionScanLogIds.join(','));
+            params.set('page', page);
+            params.set('limit', 50);
 
-              // Make row clickable if ticket ID is available
-              const hasTicketId = scan.ticketId && scan.ticketId !== '—';
-              // XSS Fix: Escape ticketId in onclick handlers to prevent code injection
-              const clickHandler = hasTicketId ?
-                `onclick="openTicketDetail('${escapeHtml(scan.ticketId)}')" role="button" tabindex="0" onkeypress="if(event.key === 'Enter' || event.key === ' ') openTicketDetail('${escapeHtml(scan.ticketId)}')"` :
-                'style="cursor: default;"';
+            console.log(`[DEBUG] Querying session scans with ${sessionScanLogIds.length} scan log IDs (page ${page})`);
 
-              // XSS Fix: Escape all user-provided data
+            const response = await fetch(`/api/admin/checked-in-tickets?${params}`, {
+              credentials: 'include'
+            });
+
+            if (!response.ok) {
+              throw new Error(`Failed to fetch session tickets: ${response.status}`);
+            }
+
+            const data = await response.json();
+            loadingEl.style.display = 'none';
+
+            if (!data.tickets || data.tickets.length === 0) {
+              const emptyParagraph = emptyEl.querySelector('p');
+              if (emptyParagraph) {
+                emptyParagraph.textContent = "No session tickets found in database.";
+              }
+              emptyEl.style.display = 'block';
+              paginationEl.style.display = 'none';
+              return;
+            }
+
+            // Render tickets in 4-column format
+            tableBody.innerHTML = data.tickets.map(ticket => {
+              const scanTime = ticket.scan_time_mt ||
+                (timeManager ? timeManager.formatDateTime(ticket.scan_time) : ticket.scan_time);
+
               return `
-                <tr ${clickHandler}>
-                  <td>${escapeHtml(scan.ticketId || '—')}</td>
-                  <td>${escapeHtml(firstName || '—')}</td>
-                  <td>${escapeHtml(lastName || '—')}</td>
-                  <td>${escapeHtml(timeFormatted)}</td>
+                <tr>
+                  <td>
+                    <a href="/admin/ticket-detail.html?ticketId=${escapeHtml(ticket.ticket_id)}"
+                       style="color: #007bff; text-decoration: underline; cursor: pointer;">
+                      ${escapeHtml(ticket.ticket_id)}
+                    </a>
+                  </td>
+                  <td>${escapeHtml(ticket.first_name) || 'N/A'}</td>
+                  <td>${escapeHtml(ticket.last_name) || 'N/A'}</td>
+                  <td>${escapeHtml(scanTime)}</td>
                 </tr>
               `;
             }).join('');
 
-          tableContainer.style.display = 'block';
-          return;
+            tableContainer.style.display = 'block';
+            
+            // Update pagination controls for session filter
+            if (data.pagination) {
+              const prevBtn = document.getElementById('prevPageBtn');
+              const nextBtn = document.getElementById('nextPageBtn');
+              const paginationInfo = document.getElementById('paginationInfo');
+
+              // Defensive checks for pagination API response structure
+              const pagination = data.pagination || {};
+              const currentPageNum = pagination.page ?? page ?? 1;
+              const totalPages = pagination.totalPages ?? pagination.total_pages ?? 1;
+              const totalCount = pagination.totalCount ?? pagination.total_count ?? data.tickets.length;
+              const hasPrev = pagination.hasPrev ?? pagination.has_prev ?? (currentPageNum > 1);
+              const hasNext = pagination.hasNext ?? pagination.has_next ?? false;
+
+              // Update pagination info text
+              paginationInfo.textContent = `Page ${currentPageNum} of ${totalPages} (${totalCount} total)`;
+
+              // Update button states
+              prevBtn.disabled = !hasPrev;
+              nextBtn.disabled = !hasNext;
+
+              // Show pagination controls
+              paginationEl.style.display = 'flex';
+            } else {
+              paginationEl.style.display = 'none';
+            }
+            
+            return;
+          } catch (error) {
+            console.error('Failed to load session tickets:', error);
+            loadingEl.style.display = 'none';
+            errorEl.style.display = 'block';
+            const errorMessage = errorEl.querySelector('.error-message');
+            if (errorMessage) {
+              errorMessage.textContent = 'Failed to load session tickets. Please try again.';
+            }
+            return;
+          }
         }
 
         try {
-          // Get selected event ID
-          const selectedEventId = window.eventSelector ?
-            window.eventSelector.getSelectedEventId() : null;
-
+          // Scanner is event-agnostic - no event filtering
           // Build query params
           const params = new URLSearchParams();
           params.set('filter', statType);
-          if (selectedEventId) params.set('eventId', selectedEventId);
+          params.set('page', page);
+          params.set('limit', 50);
+
+          // Debug logging
+          console.log('[DEBUG] Fetching checked-in tickets:', {
+            statType,
+            page,
+            url: `/api/admin/checked-in-tickets?${params.toString()}`
+          });
 
           // Fetch tickets from API
           const response = await fetch(`/api/admin/checked-in-tickets?${params}`, {
@@ -4308,30 +4780,150 @@
 
           const data = await response.json();
 
+          // Debug logging for response
+          console.log('[DEBUG] Checked-in tickets API response:', {
+            filter: statType,
+            ticketCount: data.tickets?.length || 0,
+            totalCount: data.pagination?.total_count || 0,
+            hasTickets: !!data.tickets,
+            isArray: Array.isArray(data.tickets),
+            responseKeys: Object.keys(data)
+          });
+
           loadingEl.style.display = 'none';
 
-          if (!data.tickets || data.tickets.length === 0) {
+          // Merge database tickets with session scans for 'today' and 'total' filters
+          // CRITICAL: Only merge session scans on page 1 to prevent pagination breaks
+          // - Merging on all pages would cause duplicates (same scan shown on multiple pages)
+          // - Session scans are already counted in stat cards (via sessionScanIds)
+          // - Backend API now properly paginates session filter, so duplicates are prevented
+          // - This merge only adds session scans not yet in the database to page 1
+          let allTickets = data.tickets || [];
+          const dbTicketCount = allTickets.length; // Track original DB ticket count before merging
+
+          if ((statType === 'today' || statType === 'total') && page === 1) {
+            // Get session scans that should be included
+            const sessionScans = recentScans
+              .filter(scan => scan.type === 'success' && scan.ticketId && scan.ticketId !== '—')
+              .map(scan => {
+                const detailsLines = scan.details.split('\n');
+                const fullName = detailsLines[0] || '';
+                const [firstName, ...lastNameParts] = fullName.split(' ');
+                const lastName = lastNameParts.join(' ');
+
+                return {
+                  ticket_id: scan.ticketId,
+                  first_name: firstName || '—',
+                  last_name: lastName || '—',
+                  wallet_source: scan.walletSource,
+                  scan_time: scan.timestamp,
+                  scan_time_mt: timeManager ? timeManager.formatDateTime(new Date(scan.timestamp)) : new Date(scan.timestamp).toLocaleString(),
+                  fromSession: true // Flag to identify session scans
+                };
+              });
+
+            // Create a Set of ticket IDs already in database results to avoid duplicates
+            const dbTicketIds = new Set(allTickets.map(t => String(t.ticket_id)));
+
+            // Add session scans that aren't already in database results
+            sessionScans.forEach(sessionTicket => {
+              if (!dbTicketIds.has(String(sessionTicket.ticket_id))) {
+                allTickets.push(sessionTicket);
+              }
+            });
+
+            console.log('[DEBUG] Merged tickets with session scans (page 1 only):', {
+              page: page,
+              dbTickets: data.tickets?.length || 0,
+              sessionScans: sessionScans.length,
+              merged: allTickets.length,
+              addedScans: allTickets.length - dbTicketCount
+            });
+          }
+
+          // Calculate how many session scans were actually added (for pagination adjustment)
+          const addedSessionScans = allTickets.length - dbTicketCount;
+
+          if (allTickets.length === 0) {
+            // Update empty state message based on filter type
+            const emptyMessages = {
+              'today': "No tickets scanned today.",
+              'apple_wallet': "No tickets scanned from Apple Wallet yet.",
+              'google_wallet': "No tickets scanned from Google Wallet yet.",
+              'wallet': "No tickets scanned from any wallet yet.",
+              'total': "No tickets have been scanned yet."
+            };
+            const emptyParagraph = emptyEl.querySelector('p');
+            if (emptyParagraph) {
+              emptyParagraph.textContent = emptyMessages[statType] || "No tickets found for this filter.";
+            }
             emptyEl.style.display = 'block';
+            paginationEl.style.display = 'none';
             return;
           }
 
           // Render tickets table
-          tableBody.innerHTML = data.tickets.map(ticket => {
+          tableBody.innerHTML = allTickets.map(ticket => {
             const scanTime = ticket.scan_time_mt ||
               (timeManager ? timeManager.formatDateTime(ticket.scan_time) : ticket.scan_time);
 
             // XSS Fix: Escape all API data before rendering
             return `
-              <tr onclick="openTicketDetail('${escapeHtml(ticket.ticket_id)}')" role="button" tabindex="0" onkeypress="if(event.key === 'Enter' || event.key === ' ') openTicketDetail('${escapeHtml(ticket.ticket_id)}')">
-                <td>${escapeHtml(ticket.ticket_id)}</td>
-                <td>${escapeHtml(ticket.first_name)}</td>
-                <td>${escapeHtml(ticket.last_name)}</td>
+              <tr>
+                <td>
+                  <a href="/admin/ticket-detail.html?ticketId=${escapeHtml(ticket.ticket_id)}"
+                     style="color: #007bff; text-decoration: underline; cursor: pointer;">
+                    ${escapeHtml(ticket.ticket_id)}
+                  </a>
+                </td>
+                <td>${escapeHtml(ticket.first_name) || 'N/A'}</td>
+                <td>${escapeHtml(ticket.last_name) || 'N/A'}</td>
                 <td>${escapeHtml(scanTime)}</td>
               </tr>
             `;
           }).join('');
 
           tableContainer.style.display = 'block';
+
+          // Update pagination controls
+          if (data.pagination) {
+            // Use camelCase field names from API
+            totalPages = data.pagination.totalPages;
+            const prevBtn = document.getElementById('prevPageBtn');
+            const nextBtn = document.getElementById('nextPageBtn');
+            const paginationInfo = document.getElementById('paginationInfo');
+
+            // Defensive checks for pagination API response structure
+            const pagination = data.pagination || {};
+            const currentPageNum = pagination.page ?? page ?? 1;
+            totalPages = pagination.totalPages ?? pagination.total_pages ?? 1;
+            let totalCount = pagination.totalCount ?? pagination.total_count ?? allTickets.length;
+
+            // CRITICAL: Adjust total count if session scans were added on page 1
+            // Backend's total_count only includes database tickets, but we display database + session scans
+            if ((statType === 'today' || statType === 'total') && page === 1 && addedSessionScans > 0) {
+              totalCount += addedSessionScans;
+              console.log('[DEBUG] Adjusted pagination total count:', {
+                backendTotal: pagination.totalCount ?? pagination.total_count,
+                addedScans: addedSessionScans,
+                adjustedTotal: totalCount
+              });
+            }
+            const hasPrev = pagination.hasPrev ?? pagination.has_prev ?? (currentPageNum > 1);
+            const hasNext = pagination.hasNext ?? pagination.has_next ?? false;
+
+            // Update pagination info text
+            paginationInfo.textContent = `Page ${currentPageNum} of ${totalPages} (${totalCount} total)`;
+
+            // Update button states
+            prevBtn.disabled = !hasPrev;
+            nextBtn.disabled = !hasNext;
+
+            // Show pagination controls
+            paginationEl.style.display = 'flex';
+          } else {
+            paginationEl.style.display = 'none';
+          }
         } catch (error) {
           console.error('Failed to load tickets:', error);
           loadingEl.style.display = 'none';
@@ -4342,6 +4934,18 @@
 
       function closeTicketsOverlay() {
         document.getElementById('ticketsOverlay').classList.remove('show');
+      }
+
+      function previousPage() {
+        if (currentPage > 1) {
+          viewStatTickets(currentFilter, currentPage - 1);
+        }
+      }
+
+      function nextPage() {
+        if (currentPage < totalPages) {
+          viewStatTickets(currentFilter, currentPage + 1);
+        }
       }
 
       function openTicketDetail(ticketId) {
@@ -4356,37 +4960,35 @@
       // Load statistics
       async function loadStats() {
         try {
-          // Get selected event ID from event selector
-          const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
-          const eventParam = selectedEventId ? `?eventId=${selectedEventId}` : '';
-
-          const response = await fetch(`/api/admin/dashboard${eventParam}`, {
+          // Scanner is event-agnostic - no event filtering
+          const response = await fetch(`/api/admin/scanner-stats`, {
             credentials: "include"
           });
           const data = await response.json();
 
           // Debug logging to track stats loading
-          console.log('📊 Dashboard API Response:', {
-            today_checkins: data.stats?.today_checkins,
-            checked_in: data.stats?.checked_in,
-            wallet_checkins: data.stats?.wallet_checkins,
-            eventId: selectedEventId,
+          console.log('📊 Scanner Stats API Response:', {
+            today: data.stats?.today,
+            total: data.stats?.total,
+            valid: data.stats?.valid,
+            failed: data.stats?.failed,
+            rateLimited: data.stats?.rateLimited,
+            alreadyScanned: data.stats?.alreadyScanned,
             timestamp: new Date().toISOString()
           });
 
           if (data.stats) {
             // Load baselines from server, preserve session increments
-            stats.todayBaseline = data.stats.today_checkins || 0;
-            stats.totalBaseline = data.stats.checked_in || 0;
-            stats.walletBaseline = data.stats.wallet_checkins || 0;
-            // Session increments (todayIncrement, walletIncrement, session, etc.) are NOT reset here - they persist!
+            stats.todayBaseline = data.stats.today || 0;
+            stats.totalBaseline = data.stats.total || 0;
+            stats.validBaseline = data.stats.valid || 0;
+            stats.failedBaseline = data.stats.failed || 0;
+            stats.rateLimitedBaseline = data.stats.rateLimited || 0;
+            stats.alreadyScannedBaseline = data.stats.alreadyScanned || 0;
+            // Session increments (todayIncrement, session, etc.) are NOT reset here - they persist!
 
-            // Check if we're dealing with test data
-            const hasTestData = data.testModeInfo && data.testModeInfo.hasTestModeSupport &&
-                               (data.stats.test_tickets > 0 || data.stats.test_transactions > 0);
-
-            // Update test mode indicators
-            updateScannerTestModeIndicators(hasTestData);
+            // Note: Test mode indicators removed as scanner-stats focuses on scanned tickets only
+            // If test mode tracking is needed, it should be added to scanner-stats endpoint
 
             // Update display (combines baselines + increments)
             updateStats();
@@ -4427,6 +5029,17 @@
           }
         } else {
           indicator.style.display = "block";
+        }
+      }
+
+      // Toggle mobile navigation menu
+      function toggleMobileMenu(btnEl) {
+        if (window.adminMobileNav) {
+          const isOpen = window.adminMobileNav.toggleMenu();
+          // Sync aria-expanded for accessibility
+          if (btnEl && typeof isOpen === 'boolean') {
+            btnEl.setAttribute('aria-expanded', String(isOpen));
+          }
         }
       }
 
@@ -4571,6 +5184,9 @@
         // Check authentication
         if (!(await checkAuth())) return;
 
+        // Event selector removed from scanner page per user request
+        // Can be re-enabled later by uncommenting this block
+        /*
         // Wait for event selector to be available
         const waitForEventSelector = async () => {
           let attempts = 0;
@@ -4595,6 +5211,7 @@
             loadStats();
           });
         }
+        */
 
         // Register service worker
         if ("serviceWorker" in navigator) {
@@ -4606,11 +5223,14 @@
           }
         }
 
-        // Initialize scanner
-        await initScanner();
+        // Note: Inline scanner removed in commit 358a0f26 - page now uses fullscreen scanner modal only
+        // Fullscreen scanner is initialized on-demand when user clicks the camera button
 
         // Load statistics
         await loadStats();
+
+        // Load today's scans into recent activity feed
+        await loadTodaysScans();
 
         // Monitor online status
         updateOnlineStatus();
@@ -4720,6 +5340,59 @@
       const recentScans = [];
       const MAX_RECENT_SCANS = 10;
 
+      // Load today's scans from database on page initialization
+      async function loadTodaysScans() {
+        try {
+          // Scanner is event-agnostic - no event filtering
+          const params = new URLSearchParams({
+            filter: 'today',
+            limit: 50,
+            page: 1
+          });
+
+          const response = await fetch(`/api/admin/checked-in-tickets?${params}`, {
+            credentials: 'include'
+          });
+
+          if (!response.ok) {
+            console.error('Failed to load today\'s scans');
+            return;
+          }
+
+          const data = await response.json();
+
+          // Populate recentScans with today's data (most recent first)
+          if (data.tickets && Array.isArray(data.tickets)) {
+            recentScans.length = 0; // Clear existing
+            data.tickets.forEach(ticket => {
+              recentScans.push({
+                timestamp: new Date(ticket.scan_time).getTime(),
+                type: 'success',
+                title: `${ticket.first_name || 'Unknown'} ${ticket.last_name || ''}`.trim(),
+                details: `${ticket.first_name || 'Unknown'} ${ticket.last_name || ''}\n${ticket.ticket_type}`,
+                ticketId: ticket.ticket_id,
+                walletSource: ticket.validation_source
+              });
+            });
+
+            // Limit to MAX_RECENT_SCANS
+            if (recentScans.length > MAX_RECENT_SCANS) {
+              recentScans.length = MAX_RECENT_SCANS;
+            }
+
+            // Render the activity feed
+            renderActivityFeed();
+          }
+        } catch (error) {
+          console.error('Failed to load today\'s scans:', error);
+        }
+      }
+
+      // Pagination state
+      let currentPage = 1;
+      let currentFilter = 'total';
+      let totalPages = 1;
+
       function addToActivityFeed(scanData) {
         // Add to beginning of array
         recentScans.unshift({
@@ -4728,7 +5401,8 @@
           title: scanData.title,
           details: scanData.details,
           isTestTicket: scanData.isTestTicket || false,
-          ticketId: scanData.ticketId || null
+          ticketId: scanData.ticketId || null,
+          walletSource: scanData.walletSource || null
         });
 
         // Keep only last 10 scans

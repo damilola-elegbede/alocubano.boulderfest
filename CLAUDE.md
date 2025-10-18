@@ -293,6 +293,7 @@ CRON_SECRET=                                  # Bearer token for Vercel Cron job
 
 # Testing (optional)
 TEST_ADMIN_PASSWORD=                          # Plain text password for admin panel E2E testing (not bcrypt hashed)
+E2E_TEST_MODE=                                # Enable E2E test mode (REQUIRED for Preview environment, set to 'true')
 
 # Timeout Configuration (optional - for CI/CD flexibility)
 E2E_STARTUP_TIMEOUT=                          # Server startup timeout in ms (default: 60000)
@@ -323,6 +324,39 @@ VITEST_REQUEST_TIMEOUT=                       # HTTP request timeout in ms (defa
   - Run `vercel env pull .env.vercel` to refresh local file
 - **CI/CD**: GitHub Actions uses GitHub Secrets (no .env files)
 - **Security**: `.env.vercel` is gitignored, sensitive values never committed
+
+### E2E_TEST_MODE Configuration (CRITICAL for E2E Testing)
+
+**Purpose**: Enables test-specific behavior for E2E tests running against Vercel preview deployments.
+
+**CRITICAL REQUIREMENT**: This environment variable MUST be set in Vercel Dashboard for Preview environments to enable:
+1. MFA bypass for admin authentication tests
+2. Rate limiting bypass for test requests
+3. Simple login mode for E2E test scenarios
+
+**Configuration Steps**:
+
+1. Go to Vercel Dashboard → Project Settings → Environment Variables
+2. Add new environment variable:
+   - Name: `E2E_TEST_MODE`
+   - Value: `true`
+   - Environment: **Preview ONLY** (DO NOT set for Production)
+3. Redeploy preview deployment to apply changes
+
+**Security Notes**:
+- MUST be set ONLY for Preview environments, NEVER for Production
+- Required for admin authentication tests to pass
+- Without this variable, E2E tests will fail with MFA prompts and rate limiting errors
+
+**Why This is Required**:
+- GitHub Actions sets `E2E_TEST_MODE=true` for the test runner environment
+- However, Vercel preview deployments check their own environment variables
+- When E2E tests make HTTP requests to preview APIs, those APIs need `E2E_TEST_MODE=true` in the Vercel deployment
+- This enables test-specific code paths in `api/admin/login.js` and other endpoints
+
+**Affected Tests**: All admin authentication E2E tests (admin-auth.test.js, admin-dashboard.test.js, etc.)
+
+**Verification**: After setting, run `npm run test:e2e -- tests/e2e/flows/admin-auth.test.js` to confirm admin tests pass.
 
 ### CRON_SECRET Configuration
 
