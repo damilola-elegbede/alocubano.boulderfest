@@ -208,8 +208,11 @@ async function handler(req, res) {
       subqueryScanLogConditions.push("scan_status = 'rate_limited'");
       outerScanLogConditions.push("sl.scan_status = 'rate_limited'"); // Filter outer sl table
     } else if (filter === 'alreadyScanned') {
-      subqueryScanLogConditions.push("scan_status = 'already_scanned'");
-      outerScanLogConditions.push("sl.scan_status = 'already_scanned'"); // Filter outer sl table
+      // For alreadyScanned: filter by ticket scan_count, not scan_status
+      // This matches the stats calculation (tickets where scan_count > 1)
+      // No subquery conditions needed - we want the absolute latest scan
+      // Only filter on ticket's scan_count in outer query
+      ticketConditions.push('t.scan_count > 1');
     }
     // 'total' filter has no additional conditions - gets absolute latest scan
 
