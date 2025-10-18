@@ -27,32 +27,7 @@ export default async function handler(req, res) {
 
     const db = await getDatabaseClient();
 
-    // Look up ticket ID from QR token
-    const qrTokenResult = await db.execute({
-      sql: `SELECT ticket_id, created_at, expires_at FROM qr_tokens WHERE token = ?`,
-      args: [token]
-    });
-
-    if (!qrTokenResult.rows || qrTokenResult.rows.length === 0) {
-      console.log('[BY_QR] QR token not found');
-      return res.status(404).json({ error: 'Invalid or expired QR token' });
-    }
-
-    const qrTokenData = qrTokenResult.rows[0];
-    const ticketId = qrTokenData.ticket_id;
-
-    // Check if QR token has expired (if expires_at is set)
-    if (qrTokenData.expires_at) {
-      const expiresAt = new Date(qrTokenData.expires_at);
-      if (expiresAt < new Date()) {
-        console.log('[BY_QR] QR token expired');
-        return res.status(401).json({ error: 'QR token has expired' });
-      }
-    }
-
-    console.log('[BY_QR] Looking up ticket:', ticketId);
-
-    // Fetch ticket details
+    // Fetch ticket details by QR token (stored in tickets.qr_token field)
     const ticketResult = await db.execute({
       sql: `
         SELECT
@@ -77,14 +52,14 @@ export default async function handler(req, res) {
           CAST((julianday(t.registration_deadline) - julianday('now')) * 24 AS INTEGER) as hours_remaining
         FROM tickets t
         LEFT JOIN transactions tx ON t.transaction_id = tx.id
-        WHERE t.ticket_id = ?
+        WHERE t.qr_token = ?
       `,
-      args: [ticketId]
+      args: [token]
     });
 
     if (!ticketResult.rows || ticketResult.rows.length === 0) {
-      console.log('[BY_QR] Ticket not found:', ticketId);
-      return res.status(404).json({ error: 'Ticket not found' });
+      console.log('[BY_QR] Ticket not found for QR token');
+      return res.status(404).json({ error: 'Invalid or expired QR token' });
     }
 
     // Process database result to handle BigInt values
