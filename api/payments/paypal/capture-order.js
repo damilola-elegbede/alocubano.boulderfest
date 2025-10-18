@@ -178,6 +178,7 @@ async function captureOrderHandler(req, res) {
     let orderNumber;
     let cartData = [];
     let hasTickets = false;
+    let hasDonations = false;
 
     if (existingTransaction.rows && existingTransaction.rows.length > 0) {
       // Update existing transaction
@@ -206,9 +207,11 @@ async function captureOrderHandler(req, res) {
         try {
           cartData = JSON.parse(transaction.cart_data);
           hasTickets = cartData.some(item => item.type === 'ticket');
+          hasDonations = cartData.some(item => item.type === 'donation');
           console.log('Parsed cart data:', {
             itemCount: cartData.length,
             hasTickets,
+            hasDonations,
             items: cartData.map(item => ({ type: item.type, name: item.name }))
           });
         } catch (e) {
@@ -505,6 +508,7 @@ async function captureOrderHandler(req, res) {
       amount: parseFloat(capture.amount.value),
       currency: capture.amount.currency_code,
       hasTickets,
+      hasDonations,
       registrationToken,
       registrationUrl,
       transaction: timeUtils.enhanceApiResponse(processDatabaseResult({
