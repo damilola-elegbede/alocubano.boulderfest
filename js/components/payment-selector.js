@@ -636,6 +636,7 @@ class PaymentSelector {
                 cartItems.push({
                     type: 'donation',
                     name: donation.name || 'A Lo Cubano Boulder Fest Donation',
+                    description: 'Support for A Lo Cubano Boulder Fest',
                     price: donation.amount,
                     quantity: 1,
                     category: 'general',
