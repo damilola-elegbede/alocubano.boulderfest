@@ -974,7 +974,9 @@ async function handler(req, res) {
           id: ticket.ticket_id,
           type: ticket.ticket_type,
           attendee: `${ticket.attendee_first_name} ${ticket.attendee_last_name}`.trim(),
-          event: ticket.event_name
+          event: ticket.event_name,
+          scanCount: ticket.scan_count, // For UI modal display (shows "Scan X/Y")
+          maxScans: ticket.max_scan_count // For UI modal display
         },
 
         // Validation status
@@ -1113,7 +1115,9 @@ async function handler(req, res) {
         type: ticket.ticket_type,
         attendee: `${ticket.attendee_first_name} ${ticket.attendee_last_name}`.trim(),
         event: ticket.event_name,
-        wallet_source: source // Also include in nested object for consistency
+        wallet_source: source, // Also include in nested object for consistency
+        scanCount: ticket.scan_count, // For UI modal display (shows "Scan X/Y")
+        maxScans: ticket.max_scan_count // For UI modal display
       },
       validation: {
         status: 'valid',
