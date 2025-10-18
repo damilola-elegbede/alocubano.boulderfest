@@ -1888,7 +1888,7 @@
       <div class="app-header">
         <button
           class="menu-btn admin-menu-toggle"
-          onclick="toggleMobileMenu()"
+          onclick="toggleMobileMenu(this)"
           aria-label="Open menu"
           aria-expanded="false"
           title="Open navigation menu"
@@ -4769,6 +4769,7 @@
           // - Backend API now properly paginates session filter, so duplicates are prevented
           // - This merge only adds session scans not yet in the database to page 1
           let allTickets = data.tickets || [];
+          const dbTicketCount = allTickets.length; // Track original DB ticket count before merging
 
           if ((statType === 'today' || statType === 'total') && page === 1) {
             // Get session scans that should be included
@@ -4805,9 +4806,13 @@
               page: page,
               dbTickets: data.tickets?.length || 0,
               sessionScans: sessionScans.length,
-              merged: allTickets.length
+              merged: allTickets.length,
+              addedScans: allTickets.length - dbTicketCount
             });
           }
+
+          // Calculate how many session scans were actually added (for pagination adjustment)
+          const addedSessionScans = allTickets.length - dbTicketCount;
 
           if (allTickets.length === 0) {
             // Update empty state message based on filter type
@@ -4862,7 +4867,18 @@
             const pagination = data.pagination || {};
             const currentPageNum = pagination.page ?? page ?? 1;
             const totalPages = pagination.totalPages ?? pagination.total_pages ?? 1;
-            const totalCount = pagination.totalCount ?? pagination.total_count ?? allTickets.length;
+            let totalCount = pagination.totalCount ?? pagination.total_count ?? allTickets.length;
+
+            // CRITICAL: Adjust total count if session scans were added on page 1
+            // Backend's total_count only includes database tickets, but we display database + session scans
+            if ((statType === 'today' || statType === 'total') && page === 1 && addedSessionScans > 0) {
+              totalCount += addedSessionScans;
+              console.log('[DEBUG] Adjusted pagination total count:', {
+                backendTotal: pagination.totalCount ?? pagination.total_count,
+                addedScans: addedSessionScans,
+                adjustedTotal: totalCount
+              });
+            }
             const hasPrev = pagination.hasPrev ?? pagination.has_prev ?? (currentPageNum > 1);
             const hasNext = pagination.hasNext ?? pagination.has_next ?? false;
 
@@ -4987,9 +5003,13 @@
       }
 
       // Toggle mobile navigation menu
-      function toggleMobileMenu() {
+      function toggleMobileMenu(btnEl) {
         if (window.adminMobileNav) {
-          window.adminMobileNav.toggleMenu();
+          const isOpen = window.adminMobileNav.toggleMenu();
+          // Sync aria-expanded for accessibility
+          if (btnEl && typeof isOpen === 'boolean') {
+            btnEl.setAttribute('aria-expanded', String(isOpen));
+          }
         }
       }
 
