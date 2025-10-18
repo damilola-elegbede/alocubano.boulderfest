@@ -57,7 +57,7 @@ async function handler(req, res) {
         (SELECT COUNT(*) FROM tickets WHERE status = 'valid' ${ticketWhereClause}) as total_tickets,
         (SELECT COUNT(*) FROM tickets WHERE (last_scanned_at IS NOT NULL OR checked_in_at IS NOT NULL) ${ticketWhereClause}) as checked_in,
         (SELECT COUNT(DISTINCT transaction_id) FROM tickets WHERE 1=1 ${ticketWhereClause}) as total_orders,
-        (SELECT COALESCE(SUM(amount_cents), 0) / 100.0 FROM transactions WHERE status = 'completed' AND payment_processor NOT IN ('comp') AND id IN (SELECT DISTINCT transaction_id FROM tickets WHERE 1=1 ${ticketWhereClause})) as total_revenue,
+        (SELECT COALESCE(SUM(t.price_cents), 0) / 100.0 FROM tickets t JOIN transactions tr ON t.transaction_id = tr.id WHERE t.status = 'valid' AND tr.payment_processor NOT IN ('comp') AND tr.status = 'completed' ${ticketWhereClauseWithAlias}) as total_revenue,
         (SELECT COUNT(*) FROM tickets WHERE ticket_type LIKE '%workshop%' ${ticketWhereClause}) as workshop_tickets,
         (SELECT COUNT(*) FROM tickets WHERE ticket_type LIKE '%vip%' ${ticketWhereClause}) as vip_tickets,
         -- Today's sales (using dynamic DST-aware Mountain Time offset)
@@ -70,7 +70,7 @@ async function handler(req, res) {
         -- Test mode statistics
         (SELECT COUNT(*) FROM tickets WHERE is_test = 1 ${ticketWhereClause}) as test_tickets,
         (SELECT COUNT(*) FROM transactions WHERE is_test = 1 AND id IN (SELECT DISTINCT transaction_id FROM tickets WHERE 1=1 ${ticketWhereClause})) as test_transactions,
-        (SELECT COALESCE(SUM(amount_cents), 0) / 100.0 FROM transactions WHERE is_test = 1 AND status = 'completed' AND payment_processor NOT IN ('comp') AND id IN (SELECT DISTINCT transaction_id FROM tickets WHERE 1=1 ${ticketWhereClause})) as test_revenue,
+        (SELECT COALESCE(SUM(t.price_cents), 0) / 100.0 FROM tickets t JOIN transactions tr ON t.transaction_id = tr.id WHERE t.status = 'valid' AND tr.is_test = 1 AND tr.payment_processor NOT IN ('comp') AND tr.status = 'completed' ${ticketWhereClauseWithAlias}) as test_revenue,
         -- Check-in statistics (using actual scan timestamps with Mountain Time, not UTC)
         (SELECT COUNT(*) FROM tickets WHERE (last_scanned_at IS NOT NULL OR checked_in_at IS NOT NULL) AND date(COALESCE(last_scanned_at, checked_in_at), ${mtOffset}) = date('now', ${mtOffset}) ${ticketWhereClause}) as today_checkins,
         (SELECT COUNT(*) FROM tickets WHERE (last_scanned_at IS NOT NULL OR checked_in_at IS NOT NULL) AND qr_access_method IN ('apple_wallet', 'google_wallet', 'samsung_wallet') ${ticketWhereClause}) as wallet_checkins,
@@ -81,7 +81,7 @@ async function handler(req, res) {
         (SELECT COUNT(*) FROM tickets t JOIN transactions tr ON t.transaction_id = tr.id WHERE tr.source = 'manual_entry' AND tr.payment_processor = 'card_terminal' AND t.status = 'valid' ${ticketWhereClauseWithAlias}) as manual_card_tickets,
         (SELECT COUNT(*) FROM tickets t JOIN transactions tr ON t.transaction_id = tr.id WHERE tr.source = 'manual_entry' AND tr.payment_processor = 'venmo' AND t.status = 'valid' ${ticketWhereClauseWithAlias}) as manual_venmo_tickets,
         (SELECT COUNT(*) FROM tickets t JOIN transactions tr ON t.transaction_id = tr.id WHERE tr.source = 'manual_entry' AND tr.payment_processor = 'comp' AND t.status = 'valid' ${ticketWhereClauseWithAlias}) as manual_comp_tickets,
-        (SELECT COALESCE(SUM(amount_cents), 0) / 100.0 FROM transactions WHERE source = 'manual_entry' AND status = 'completed' AND payment_processor NOT IN ('comp') AND id IN (SELECT DISTINCT transaction_id FROM tickets WHERE 1=1 ${ticketWhereClause})) as manual_revenue
+        (SELECT COALESCE(SUM(t.price_cents), 0) / 100.0 FROM tickets t JOIN transactions tr ON t.transaction_id = tr.id WHERE t.status = 'valid' AND tr.source = 'manual_entry' AND tr.payment_processor NOT IN ('comp') AND tr.status = 'completed' ${ticketWhereClauseWithAlias}) as manual_revenue
     `;
 
     // Add parameters for each subquery that uses event_id filtering
