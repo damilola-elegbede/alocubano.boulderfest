@@ -981,6 +981,7 @@ async function handler(req, res) {
         validation: {
           status: 'valid',
           scan_count: ticket.scan_count,
+          max_scan_count: ticket.max_scan_count,
           last_scanned: ticket.last_scanned_at,
           message: ticketIsTest ? `${testModeIndicator} - Test ticket verified` : 'Ticket verified for preview'
         }
@@ -1119,8 +1120,15 @@ async function handler(req, res) {
       testMode: ticketIsTest
     });
 
-    // Return enhanced response format as specified
-    res.status(200).json(responseData);
+    // Enhance with Mountain Time formatted timestamps
+    const enhancedResponse = timeUtils.enhanceApiResponse(
+      responseData,
+      ['last_scanned'],
+      { includeDeadline: false }
+    );
+
+    // Return enhanced response format with MT fields
+    res.status(200).json(enhancedResponse);
   } catch (error) {
     console.log('[TICKET-VALIDATE] Error occurred', {
       error: error.message,
