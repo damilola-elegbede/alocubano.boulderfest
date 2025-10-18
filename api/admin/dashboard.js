@@ -57,7 +57,7 @@ async function handler(req, res) {
         (SELECT COUNT(*) FROM tickets WHERE status = 'valid' ${ticketWhereClause}) as total_tickets,
         (SELECT COUNT(*) FROM tickets WHERE (last_scanned_at IS NOT NULL OR checked_in_at IS NOT NULL) ${ticketWhereClause}) as checked_in,
         (SELECT COUNT(DISTINCT transaction_id) FROM tickets WHERE 1=1 ${ticketWhereClause}) as total_orders,
-        (SELECT COALESCE(SUM(amount_cents), 0) / 100.0 FROM transactions WHERE status = 'completed' AND payment_processor NOT IN ('comp') ${transactionWhereClause}) as total_revenue,
+        (SELECT COALESCE(SUM(amount_cents), 0) / 100.0 FROM transactions WHERE status = 'completed' AND payment_processor NOT IN ('comp') AND id IN (SELECT DISTINCT transaction_id FROM tickets WHERE 1=1 ${ticketWhereClause})) as total_revenue,
         (SELECT COUNT(*) FROM tickets WHERE ticket_type LIKE '%workshop%' ${ticketWhereClause}) as workshop_tickets,
         (SELECT COUNT(*) FROM tickets WHERE ticket_type LIKE '%vip%' ${ticketWhereClause}) as vip_tickets,
         -- Today's sales (using dynamic DST-aware Mountain Time offset)
@@ -69,39 +69,49 @@ async function handler(req, res) {
         (SELECT COUNT(*) FROM tickets WHERE qr_access_method = 'web' ${ticketWhereClause}) as web_only_users,
         -- Test mode statistics
         (SELECT COUNT(*) FROM tickets WHERE is_test = 1 ${ticketWhereClause}) as test_tickets,
-        (SELECT COUNT(*) FROM transactions WHERE is_test = 1 ${transactionWhereClause}) as test_transactions,
-        (SELECT COALESCE(SUM(amount_cents), 0) / 100.0 FROM transactions WHERE is_test = 1 AND status = 'completed' AND payment_processor NOT IN ('comp') ${transactionWhereClause}) as test_revenue,
+        (SELECT COUNT(*) FROM transactions WHERE is_test = 1 AND id IN (SELECT DISTINCT transaction_id FROM tickets WHERE 1=1 ${ticketWhereClause})) as test_transactions,
+        (SELECT COALESCE(SUM(amount_cents), 0) / 100.0 FROM transactions WHERE is_test = 1 AND status = 'completed' AND payment_processor NOT IN ('comp') AND id IN (SELECT DISTINCT transaction_id FROM tickets WHERE 1=1 ${ticketWhereClause})) as test_revenue,
         -- Check-in statistics (using actual scan timestamps with Mountain Time, not UTC)
         (SELECT COUNT(*) FROM tickets WHERE (last_scanned_at IS NOT NULL OR checked_in_at IS NOT NULL) AND date(COALESCE(last_scanned_at, checked_in_at), ${mtOffset}) = date('now', ${mtOffset}) ${ticketWhereClause}) as today_checkins,
         (SELECT COUNT(*) FROM tickets WHERE (last_scanned_at IS NOT NULL OR checked_in_at IS NOT NULL) AND qr_access_method IN ('apple_wallet', 'google_wallet', 'samsung_wallet') ${ticketWhereClause}) as wallet_checkins,
         -- Manual entry statistics
-        (SELECT COUNT(DISTINCT id) FROM transactions WHERE source = 'manual_entry' AND status = 'completed' ${transactionWhereClause}) as manual_transactions,
+        (SELECT COUNT(DISTINCT id) FROM transactions WHERE source = 'manual_entry' AND status = 'completed' AND id IN (SELECT DISTINCT transaction_id FROM tickets WHERE 1=1 ${ticketWhereClause})) as manual_transactions,
         (SELECT COUNT(*) FROM tickets t JOIN transactions tr ON t.transaction_id = tr.id WHERE tr.source = 'manual_entry' AND t.status = 'valid' ${ticketWhereClauseWithAlias}) as manual_tickets,
         (SELECT COUNT(*) FROM tickets t JOIN transactions tr ON t.transaction_id = tr.id WHERE tr.source = 'manual_entry' AND tr.payment_processor = 'cash' AND t.status = 'valid' ${ticketWhereClauseWithAlias}) as manual_cash_tickets,
         (SELECT COUNT(*) FROM tickets t JOIN transactions tr ON t.transaction_id = tr.id WHERE tr.source = 'manual_entry' AND tr.payment_processor = 'card_terminal' AND t.status = 'valid' ${ticketWhereClauseWithAlias}) as manual_card_tickets,
         (SELECT COUNT(*) FROM tickets t JOIN transactions tr ON t.transaction_id = tr.id WHERE tr.source = 'manual_entry' AND tr.payment_processor = 'venmo' AND t.status = 'valid' ${ticketWhereClauseWithAlias}) as manual_venmo_tickets,
         (SELECT COUNT(*) FROM tickets t JOIN transactions tr ON t.transaction_id = tr.id WHERE tr.source = 'manual_entry' AND tr.payment_processor = 'comp' AND t.status = 'valid' ${ticketWhereClauseWithAlias}) as manual_comp_tickets,
-        (SELECT COALESCE(SUM(amount_cents), 0) / 100.0 FROM transactions WHERE source = 'manual_entry' AND status = 'completed' AND payment_processor NOT IN ('comp') ${transactionWhereClause}) as manual_revenue
+        (SELECT COALESCE(SUM(amount_cents), 0) / 100.0 FROM transactions WHERE source = 'manual_entry' AND status = 'completed' AND payment_processor NOT IN ('comp') AND id IN (SELECT DISTINCT transaction_id FROM tickets WHERE 1=1 ${ticketWhereClause})) as manual_revenue
     `;
 
     // Add parameters for each subquery that uses event_id filtering
     if (eventId && ticketsHasEventId) {
-      // Count the subqueries using tickets table:
-      // total_tickets, checked_in, total_orders, workshop_tickets, vip_tickets, today_sales,
-      // qr_generated, apple_wallet_users, google_wallet_users, web_only_users, test_tickets,
-      // today_checkins, wallet_checkins = 13 subqueries
-      // manual_tickets, manual_cash_tickets, manual_card_tickets, manual_venmo_tickets, manual_comp_tickets = 5 more
-      // Total: 18 subqueries using tickets table
-      for (let i = 0; i < 18; i++) {
-        statsParams.push(eventId);
-      }
-    }
-    if (eventId && transactionsHasEventId) {
-      // 3 subqueries use transactions table with event_id filtering:
-      // total_revenue, test_transactions, test_revenue
-      // manual_transactions, manual_revenue = 2 more
-      // Total: 5 subqueries using transactions table
-      for (let i = 0; i < 5; i++) {
+      // Count all subqueries that use ${ticketWhereClause} or ${ticketWhereClauseWithAlias}:
+      // 1. total_tickets
+      // 2. checked_in
+      // 3. total_orders
+      // 4. total_revenue (subquery: SELECT DISTINCT transaction_id FROM tickets...)
+      // 5. workshop_tickets
+      // 6. vip_tickets
+      // 7. today_sales
+      // 8. qr_generated
+      // 9. apple_wallet_users
+      // 10. google_wallet_users
+      // 11. web_only_users
+      // 12. test_tickets
+      // 13. test_transactions (subquery: SELECT DISTINCT transaction_id FROM tickets...)
+      // 14. test_revenue (subquery: SELECT DISTINCT transaction_id FROM tickets...)
+      // 15. today_checkins
+      // 16. wallet_checkins
+      // 17. manual_transactions (subquery: SELECT DISTINCT transaction_id FROM tickets...)
+      // 18. manual_tickets (uses ticketWhereClauseWithAlias)
+      // 19. manual_cash_tickets (uses ticketWhereClauseWithAlias)
+      // 20. manual_card_tickets (uses ticketWhereClauseWithAlias)
+      // 21. manual_venmo_tickets (uses ticketWhereClauseWithAlias)
+      // 22. manual_comp_tickets (uses ticketWhereClauseWithAlias)
+      // 23. manual_revenue (subquery: SELECT DISTINCT transaction_id FROM tickets...)
+      // Total: 23 parameters needed
+      for (let i = 0; i < 23; i++) {
         statsParams.push(eventId);
       }
     }
