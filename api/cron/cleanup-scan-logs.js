@@ -1,7 +1,7 @@
 /**
  * Scan Logs Cleanup Cron Job
  * Runs weekly to delete old scan logs and QR validation records
- * Scheduled via Vercel Cron: Sundays at 4 AM Mountain Time
+ * Scheduled via Vercel Cron: Sundays at 4 AM UTC (Vercel only supports UTC timezone)
  *
  * Retention Policy:
  * - scan_logs: 90 days (for security/fraud analysis)
@@ -13,12 +13,19 @@ import { logger } from '../../lib/logger.js';
 
 export default async function handler(req, res) {
   // Verify cron secret to prevent unauthorized execution
-  const authHeader = req.headers.authorization;
-  const expectedAuth = `Bearer ${process.env.CRON_SECRET || ''}`;
+  const authHeader = req.headers.authorization || '';
+  const [, token] = authHeader.match(/^Bearer\s+(.+)$/i) || [];
+  const secret = process.env.CRON_SECRET || '';
 
-  if (authHeader !== expectedAuth && process.env.NODE_ENV === 'production') {
-    logger.warn('[ScanLogsCleanup] Unauthorized cron attempt blocked');
-    return res.status(401).json({ error: 'Unauthorized' });
+  if (process.env.NODE_ENV === 'production') {
+    if (!secret) {
+      logger.error('[ScanLogsCleanup] CRON_SECRET not configured');
+      return res.status(500).json({ error: 'Server misconfiguration' });
+    }
+    if (token !== secret) {
+      logger.warn('[ScanLogsCleanup] Unauthorized cron attempt blocked');
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
   }
 
   const startTime = Date.now();
