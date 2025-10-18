@@ -23,8 +23,8 @@ const INPUT_VALIDATION = {
   },
   paymentMethod: {
     required: true,
-    allowedValues: ['cash', 'card_terminal', 'venmo', 'comp'],
-    error: 'paymentMethod must be one of: cash, card_terminal, venmo, comp'
+    allowedValues: ['cash', 'card_terminal', 'paypal', 'venmo', 'comp'],
+    error: 'paymentMethod must be one of: cash, card_terminal, paypal, venmo, comp'
   },
   customerEmail: {
     required: true,
