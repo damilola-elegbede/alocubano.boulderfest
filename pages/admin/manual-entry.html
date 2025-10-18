@@ -576,9 +576,81 @@
 
       // Load active cash shifts
       async function loadCashShifts() {
-        // TODO: Implement when cash shift API is ready
-        // For now, we'll use a placeholder
-        cashShifts = [];
+        try {
+          const token = localStorage.getItem('adminToken');
+          const response = await fetch('/api/admin/cash-shifts', {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to load cash shifts');
+          }
+
+          const data = await response.json();
+          cashShifts = data.cashShifts || [];
+
+          // Populate the cash shift dropdown
+          populateCashShiftDropdown();
+        } catch (error) {
+          console.error('Error loading cash shifts:', error);
+          cashShifts = [];
+          populateCashShiftDropdown();
+          showAlert('Failed to load cash shifts. Cash payments may not be available.', 'warning');
+        }
+      }
+
+      // Populate cash shift dropdown with available shifts
+      function populateCashShiftDropdown() {
+        const select = document.getElementById('cash-shift-id');
+
+        if (!select) {
+          console.error('Cash shift select element not found');
+          return;
+        }
+
+        // Clear existing options
+        select.innerHTML = '';
+
+        if (cashShifts.length === 0) {
+          select.innerHTML = '<option value="">No open cash shifts available</option>';
+          select.disabled = true;
+          return;
+        }
+
+        // Add placeholder option
+        const placeholderOption = document.createElement('option');
+        placeholderOption.value = '';
+        placeholderOption.textContent = 'Select a cash shift...';
+        select.appendChild(placeholderOption);
+
+        // Add cash shift options
+        cashShifts.forEach(shift => {
+          const option = document.createElement('option');
+          option.value = shift.id;
+
+          // Format the opened_at timestamp
+          const openedDate = new Date(shift.opened_at);
+          const formattedDate = openedDate.toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+          });
+
+          // Include event name if available
+          let optionText = `Shift #${shift.id} - Opened ${formattedDate}`;
+          if (shift.event_name) {
+            optionText = `${shift.event_name} - ${optionText}`;
+          }
+
+          option.textContent = optionText;
+          select.appendChild(option);
+        });
+
+        select.disabled = false;
       }
 
       // Add a new ticket item row
