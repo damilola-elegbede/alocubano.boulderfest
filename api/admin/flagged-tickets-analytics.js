@@ -221,7 +221,8 @@ async function handler(req, res) {
     for (const row of (validationStats.rows || [])) {
       const date = row.date;
       const action = row.action;
-      const count = row.count;
+      // Convert BigInt to Number to avoid "Cannot mix BigInt and other types" error
+      const count = Number(row.count);
 
       if (!dailyValidationRates[date]) {
         dailyValidationRates[date] = { passed: 0, failed: 0, date };

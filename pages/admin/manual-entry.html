@@ -389,16 +389,30 @@
           <h2 class="section-title">Customer Information</h2>
 
           <div class="admin-form-group">
-            <label for="customer-name" class="admin-form-label">
-              Full Name <span style="color: var(--color-error);">*</span>
+            <label for="customer-first-name" class="admin-form-label">
+              First Name <span style="color: var(--color-error);">*</span>
             </label>
             <input
               type="text"
-              id="customer-name"
-              name="customerName"
+              id="customer-first-name"
+              name="customerFirstName"
               class="admin-form-input"
               required
-              placeholder="John Doe"
+              placeholder="John"
+            />
+          </div>
+
+          <div class="admin-form-group">
+            <label for="customer-last-name" class="admin-form-label">
+              Last Name <span style="color: var(--color-error);">*</span>
+            </label>
+            <input
+              type="text"
+              id="customer-last-name"
+              name="customerLastName"
+              class="admin-form-input"
+              required
+              placeholder="Doe"
             />
           </div>
 
@@ -446,7 +460,8 @@
             >
               <option value="">Select payment method...</option>
               <option value="cash">Cash</option>
-              <option value="card_terminal">Card Terminal</option>
+              <option value="card_terminal">Card</option>
+              <option value="paypal">PayPal</option>
               <option value="venmo">Venmo</option>
               <option value="comp">Comp (Free)</option>
             </select>
@@ -467,17 +482,81 @@
           </div>
         </div>
 
-        <!-- Ticket Items -->
+        <!-- Ticket Selection & Attendee Information -->
         <div class="form-section">
-          <h2 class="section-title">Ticket Selection</h2>
+          <h2 class="section-title">Ticket & Attendee Information</h2>
 
-          <div id="ticket-items-container" class="ticket-items-container">
-            <!-- Ticket items will be added dynamically -->
+          <div class="admin-form-group">
+            <label for="ticket-type" class="admin-form-label">
+              Ticket Type <span style="color: var(--color-error);">*</span>
+            </label>
+            <select id="ticket-type" name="ticketType" class="admin-form-select" required>
+              <option value="">Select ticket type...</option>
+              <!-- Options populated dynamically -->
+            </select>
           </div>
 
-          <button type="button" id="add-ticket-btn" class="admin-btn add-ticket-btn">
-            <span>+ Add Ticket Type</span>
-          </button>
+          <!-- Same as Purchaser Checkbox -->
+          <div class="admin-form-group" style="background: rgba(91, 107, 181, 0.1); border: 1px solid rgba(91, 107, 181, 0.3); border-radius: var(--radius-md); padding: var(--space-md);">
+            <label style="display: flex; align-items: center; cursor: pointer; user-select: none;">
+              <input
+                type="checkbox"
+                id="same-as-purchaser"
+                style="width: 20px; height: 20px; margin-right: var(--space-sm); cursor: pointer;"
+              />
+              <span style="font-weight: 500;">
+                Attendee is the same as the purchaser
+              </span>
+            </label>
+            <small style="color: var(--color-text-secondary); display: block; margin-top: 8px; margin-left: 28px;">
+              Check this box to automatically fill attendee information with customer details
+            </small>
+          </div>
+
+          <div class="admin-form-group">
+            <label for="attendee-first-name" class="admin-form-label">
+              Attendee First Name <span style="color: var(--color-error);">*</span>
+            </label>
+            <input
+              type="text"
+              id="attendee-first-name"
+              name="attendeeFirstName"
+              class="admin-form-input"
+              required
+              placeholder="Jane"
+            />
+          </div>
+
+          <div class="admin-form-group">
+            <label for="attendee-last-name" class="admin-form-label">
+              Attendee Last Name <span style="color: var(--color-error);">*</span>
+            </label>
+            <input
+              type="text"
+              id="attendee-last-name"
+              name="attendeeLastName"
+              class="admin-form-input"
+              required
+              placeholder="Smith"
+            />
+          </div>
+
+          <div class="admin-form-group">
+            <label for="attendee-email" class="admin-form-label">
+              Attendee Email Address <span style="color: var(--color-error);">*</span>
+            </label>
+            <input
+              type="email"
+              id="attendee-email"
+              name="attendeeEmail"
+              class="admin-form-input"
+              required
+              placeholder="jane@example.com"
+            />
+            <small style="color: var(--color-text-secondary); display: block; margin-top: 4px;">
+              Attendee will receive their ticket with QR code at this email
+            </small>
+          </div>
         </div>
 
         <!-- Order Summary -->
@@ -485,11 +564,7 @@
           <h2 class="section-title">Order Summary</h2>
           <div id="order-summary">
             <div class="summary-row">
-              <span>Total Tickets:</span>
-              <span id="total-tickets">0</span>
-            </div>
-            <div class="summary-row">
-              <span>Total Amount:</span>
+              <span>Ticket Amount:</span>
               <span id="total-amount">$0.00</span>
             </div>
           </div>
@@ -511,7 +586,6 @@
 
       // State
       let ticketTypes = [];
-      let ticketItemCounter = 0;
       let cashShifts = [];
 
       // HTML escaping function to prevent XSS attacks
@@ -530,7 +604,7 @@
       document.addEventListener('DOMContentLoaded', async () => {
         await loadTicketTypes();
         await loadCashShifts();
-        addTicketItem(); // Add first ticket item
+        populateTicketTypeDropdown();
         setupEventListeners();
 
         // Show content after initialization
@@ -562,19 +636,91 @@
 
       // Load active cash shifts
       async function loadCashShifts() {
-        // TODO: Implement when cash shift API is ready
-        // For now, we'll use a placeholder
-        cashShifts = [];
+        try {
+          const token = localStorage.getItem('adminToken');
+          const response = await fetch('/api/admin/cash-shifts', {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to load cash shifts');
+          }
+
+          const data = await response.json();
+          cashShifts = data.cashShifts || [];
+
+          // Populate the cash shift dropdown
+          populateCashShiftDropdown();
+        } catch (error) {
+          console.error('Error loading cash shifts:', error);
+          cashShifts = [];
+          populateCashShiftDropdown();
+          showAlert('Failed to load cash shifts. Cash payments may not be available.', 'warning');
+        }
       }
 
-      // Add a new ticket item row
-      function addTicketItem() {
-        ticketItemCounter++;
-        const container = document.getElementById('ticket-items-container');
+      // Populate cash shift dropdown with available shifts
+      function populateCashShiftDropdown() {
+        const select = document.getElementById('cash-shift-id');
 
-        const itemDiv = document.createElement('div');
-        itemDiv.className = 'ticket-item';
-        itemDiv.dataset.itemId = ticketItemCounter;
+        if (!select) {
+          console.error('Cash shift select element not found');
+          return;
+        }
+
+        // Clear existing options
+        select.innerHTML = '';
+
+        if (cashShifts.length === 0) {
+          select.innerHTML = '<option value="">No open cash shifts available</option>';
+          select.disabled = true;
+          return;
+        }
+
+        // Add placeholder option
+        const placeholderOption = document.createElement('option');
+        placeholderOption.value = '';
+        placeholderOption.textContent = 'Select a cash shift...';
+        select.appendChild(placeholderOption);
+
+        // Add cash shift options
+        cashShifts.forEach(shift => {
+          const option = document.createElement('option');
+          option.value = shift.id;
+
+          // Format the opened_at timestamp
+          const openedDate = new Date(shift.opened_at);
+          const formattedDate = openedDate.toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+          });
+
+          // Include event name if available
+          let optionText = `Shift #${shift.id} - Opened ${formattedDate}`;
+          if (shift.event_name) {
+            optionText = `${shift.event_name} - ${optionText}`;
+          }
+
+          option.textContent = optionText;
+          select.appendChild(option);
+        });
+
+        select.disabled = false;
+      }
+
+      // Populate the ticket type dropdown
+      function populateTicketTypeDropdown() {
+        const select = document.getElementById('ticket-type');
+
+        if (!select) {
+          console.error('Ticket type select element not found');
+          return;
+        }
 
         // Group tickets by event - include both available and test tickets
         const availableTickets = ticketTypes.filter(tt => tt.status === 'available' || tt.status === 'test');
@@ -588,92 +734,54 @@
           ticketsByEvent[eventName].push(tt);
         });
 
+        // Clear existing options except placeholder
+        select.innerHTML = '<option value="">Select ticket type...</option>';
+
         // Build optgroups for each event
-        let optionsHtml = '<option value="">Select ticket type...</option>';
-
         Object.keys(ticketsByEvent).sort().forEach(eventName => {
-          optionsHtml += `<optgroup label="${escapeHtml(eventName)}">`;
+          const optgroup = document.createElement('optgroup');
+          optgroup.label = eventName;
+
           ticketsByEvent[eventName].forEach(tt => {
-            const remaining = tt.max_quantity > 0 ? ` (${tt.max_quantity - tt.sold_count} remaining)` : '';
+            const option = document.createElement('option');
+            option.value = tt.id;
+            option.dataset.price = tt.price_cents;
+
+            const maxQ = Number(tt.max_quantity || 0);
+            const sold = Number(tt.sold_count || 0);
+            const remainingCount = maxQ > 0 ? Math.max(0, maxQ - sold) : 0;
+            const remaining = maxQ > 0 ? ` (${remainingCount} remaining)` : '';
             const testLabel = tt.status === 'test' ? ' [TEST]' : '';
-            optionsHtml += `
-              <option value="${escapeHtml(tt.id)}" data-price="${escapeHtml(tt.price_cents)}">
-                ${escapeHtml(tt.name)} - $${(tt.price_cents / 100).toFixed(2)}${remaining}${testLabel}
-              </option>
-            `;
+            option.textContent = `${tt.name} - $${(tt.price_cents / 100).toFixed(2)}${remaining}${testLabel}`;
+
+            optgroup.appendChild(option);
           });
-          optionsHtml += '</optgroup>';
+
+          select.appendChild(optgroup);
         });
-
-        itemDiv.innerHTML = `
-          <div class="ticket-item-header">
-            <span class="ticket-item-number">Ticket Type #${ticketItemCounter}</span>
-            <button type="button" class="remove-ticket-btn" onclick="removeTicketItem(${ticketItemCounter})">×</button>
-          </div>
-          <div class="form-row">
-            <div class="admin-form-group">
-              <label class="admin-form-label">Ticket Type</label>
-              <select class="admin-form-select ticket-type-select" required data-item-id="${ticketItemCounter}">
-                ${optionsHtml}
-              </select>
-            </div>
-            <div class="admin-form-group">
-              <label class="admin-form-label">Quantity</label>
-              <input type="number" class="admin-form-input quantity-input" min="1" max="50" value="1" required data-item-id="${ticketItemCounter}" />
-            </div>
-          </div>
-        `;
-
-        container.appendChild(itemDiv);
-        updateSummary();
       }
-
-      // Remove a ticket item row
-      window.removeTicketItem = function(itemId) {
-        const item = document.querySelector(`[data-item-id="${itemId}"]`).closest('.ticket-item');
-        item.remove();
-        updateSummary();
-
-        // Ensure at least one ticket item exists
-        const remainingItems = document.querySelectorAll('.ticket-item');
-        if (remainingItems.length === 0) {
-          addTicketItem();
-        }
-      };
 
       // Update order summary
       function updateSummary() {
-        let totalTickets = 0;
-        let totalAmount = 0;
-
-        // Check if payment method is comp(free)
+        const select = document.getElementById('ticket-type');
         const paymentMethod = document.getElementById('payment-method').value;
         const isComp = paymentMethod === 'comp';
 
-        document.querySelectorAll('.ticket-item').forEach(item => {
-          const select = item.querySelector('.ticket-type-select');
-          const quantityInput = item.querySelector('.quantity-input');
+        let totalAmount = 0;
 
-          if (select.value && quantityInput.value) {
-            const quantity = parseInt(quantityInput.value) || 0;
-            const selectedOption = select.options[select.selectedIndex];
-            const price = parseInt(selectedOption.dataset.price) || 0;
+        if (select && select.value) {
+          const selectedOption = select.options[select.selectedIndex];
+          const price = parseInt(selectedOption.dataset.price) || 0;
 
-            totalTickets += quantity;
-            // If comp payment, force amount to 0
-            totalAmount += isComp ? 0 : (price * quantity);
-          }
-        });
+          // If comp payment, force amount to 0
+          totalAmount = isComp ? 0 : price;
+        }
 
-        document.getElementById('total-tickets').textContent = totalTickets;
         document.getElementById('total-amount').textContent = `$${(totalAmount / 100).toFixed(2)}`;
       }
 
       // Setup event listeners
       function setupEventListeners() {
-        // Add ticket button
-        document.getElementById('add-ticket-btn').addEventListener('click', addTicketItem);
-
         // Payment method change
         document.getElementById('payment-method').addEventListener('change', (e) => {
           const cashContainer = document.getElementById('cash-shift-container');
@@ -686,12 +794,53 @@
           updateSummary();
         });
 
-        // Update summary on changes
-        document.addEventListener('change', (e) => {
-          if (e.target.classList.contains('ticket-type-select') ||
-              e.target.classList.contains('quantity-input')) {
-            updateSummary();
+        // Update summary when ticket type changes
+        document.getElementById('ticket-type').addEventListener('change', updateSummary);
+
+        // "Same as Purchaser" checkbox - copy customer info to attendee fields
+        document.getElementById('same-as-purchaser').addEventListener('change', (e) => {
+          const attendeeFields = [
+            document.getElementById('attendee-first-name'),
+            document.getElementById('attendee-last-name'),
+            document.getElementById('attendee-email')
+          ];
+
+          if (e.target.checked) {
+            // Copy customer fields to attendee fields
+            document.getElementById('attendee-first-name').value = document.getElementById('customer-first-name').value;
+            document.getElementById('attendee-last-name').value = document.getElementById('customer-last-name').value;
+            document.getElementById('attendee-email').value = document.getElementById('customer-email').value;
+
+            // Make attendee fields readonly and style them
+            attendeeFields.forEach(field => {
+              field.readOnly = true;
+              field.style.backgroundColor = 'rgba(91, 107, 181, 0.1)';
+              field.style.cursor = 'not-allowed';
+            });
+          } else {
+            // Clear attendee fields when unchecked
+            document.getElementById('attendee-first-name').value = '';
+            document.getElementById('attendee-last-name').value = '';
+            document.getElementById('attendee-email').value = '';
+
+            // Make attendee fields editable again and restore styling
+            attendeeFields.forEach(field => {
+              field.readOnly = false;
+              field.style.backgroundColor = '';
+              field.style.cursor = '';
+            });
           }
+        });
+
+        // Also update attendee fields when customer fields change (if checkbox is checked)
+        ['customer-first-name', 'customer-last-name', 'customer-email'].forEach(fieldId => {
+          document.getElementById(fieldId).addEventListener('input', () => {
+            if (document.getElementById('same-as-purchaser').checked) {
+              // Auto-sync when checkbox is checked
+              const attendeeFieldId = fieldId.replace('customer', 'attendee');
+              document.getElementById(attendeeFieldId).value = document.getElementById(fieldId).value;
+            }
+          });
         });
 
         // Form submission
@@ -709,37 +858,39 @@
           // Gather form data
           const formData = new FormData(e.target);
           const paymentMethod = formData.get('paymentMethod');
-          const customerName = formData.get('customerName');
+          // CRITICAL: Trim values when extracting to reject whitespace-only inputs
+          const customerFirstName = (formData.get('customerFirstName') || '').trim();
+          const customerLastName = (formData.get('customerLastName') || '').trim();
+          const customerName = `${customerFirstName} ${customerLastName}`.trim();
           const customerEmail = formData.get('customerEmail');
           const customerPhone = formData.get('customerPhone');
           const cashShiftId = formData.get('cashShiftId');
 
+          // Attendee details
+          // CRITICAL: Trim attendee values to reject whitespace-only inputs
+          const attendeeFirstName = (formData.get('attendeeFirstName') || '').trim();
+          const attendeeLastName = (formData.get('attendeeLastName') || '').trim();
+          const attendeeEmail = (formData.get('attendeeEmail') || '').trim();
+
+          // Ticket selection
+          const ticketTypeId = formData.get('ticketType');
+
           // Validate required fields
-          if (!customerName || !customerEmail || !paymentMethod) {
-            throw new Error('Please fill in all required fields');
+          if (!customerFirstName || !customerLastName || !customerEmail || !paymentMethod) {
+            throw new Error('Please fill in all customer information fields');
+          }
+
+          if (!attendeeFirstName || !attendeeLastName || !attendeeEmail) {
+            throw new Error('Please fill in all attendee information fields');
+          }
+
+          if (!ticketTypeId) {
+            throw new Error('Please select a ticket type');
           }
 
           // Validate cash shift for cash payments
           if (paymentMethod === 'cash' && !cashShiftId) {
             throw new Error('Please select an active cash shift for cash payments');
-          }
-
-          // Gather ticket items
-          const ticketItems = [];
-          document.querySelectorAll('.ticket-item').forEach(item => {
-            const select = item.querySelector('.ticket-type-select');
-            const quantityInput = item.querySelector('.quantity-input');
-
-            if (select.value && quantityInput.value) {
-              ticketItems.push({
-                ticketTypeId: select.value,
-                quantity: parseInt(quantityInput.value)
-              });
-            }
-          });
-
-          if (ticketItems.length === 0) {
-            throw new Error('Please add at least one ticket');
           }
 
           // Generate UUID for idempotency
@@ -749,7 +900,7 @@
           const token = localStorage.getItem('adminToken');
           const csrfToken = await csrfService.getCSRFToken();
 
-          // Submit to API
+          // Submit to API - single ticket with attendee details
           const response = await fetch('/api/admin/manual-ticket-entry', {
             method: 'POST',
             headers: {
@@ -759,10 +910,20 @@
             },
             body: JSON.stringify({
               manualEntryId,
-              ticketItems,
+              ticketItems: [{
+                ticketTypeId: ticketTypeId,
+                quantity: 1,
+                attendee: {
+                  firstName: attendeeFirstName,
+                  lastName: attendeeLastName,
+                  email: attendeeEmail
+                }
+              }],
               paymentMethod,
               customerEmail,
               customerName,
+              customerFirstName,
+              customerLastName,
               customerPhone: customerPhone || null,
               cashShiftId: cashShiftId || null,
               isTest: false
@@ -777,10 +938,24 @@
 
           // Show success message
           showAlert(
-            `Success! Order #${result.transaction.order_number} created with ${result.ticketCount} ticket(s).
-            Confirmation email sent to ${customerEmail}.`,
+            `Success! Ticket created for ${attendeeFirstName} ${attendeeLastName}.`,
             'success'
           );
+
+          // Show email error if emails failed
+          if (result.emailError) {
+            showAlert(
+              `⚠️ Ticket created successfully BUT emails failed to send!
+              Error: ${result.emailError.message}
+              Please manually send confirmation emails or check Vercel logs.`,
+              'error'
+            );
+          } else {
+            showAlert(
+              `✅ Confirmation emails sent to customer (${customerEmail}) and attendee (${attendeeEmail}).`,
+              'success'
+            );
+          }
 
           // Show fraud alert if triggered
           if (result.fraudCheck?.alert) {
@@ -793,9 +968,6 @@
 
           // Reset form
           e.target.reset();
-          document.getElementById('ticket-items-container').innerHTML = '';
-          ticketItemCounter = 0;
-          addTicketItem();
           updateSummary();
 
         } catch (error) {

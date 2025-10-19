@@ -58,7 +58,7 @@ function validatePaymentRules(params) {
   }
 
   // Rule 6: Valid payment processor types only
-  const allowedMethods = new Set(['cash', 'card_terminal', 'venmo', 'comp']);
+  const allowedMethods = new Set(['cash', 'card_terminal', 'paypal', 'venmo', 'comp']);
   if (!allowedMethods.has(paymentMethod)) {
     return {
       isValid: false,
@@ -120,6 +120,17 @@ describe('Manual Ticket Entry - Zero Dollar Transaction Validation', () => {
   it('should reject $0 transaction with venmo payment method', () => {
     const result = validatePaymentRules({
       paymentMethod: 'venmo',
+      totalPriceCents: 0,
+      cashShiftId: null,
+      ticketItems: [{ ticketTypeId: 'comp-pass-2026', quantity: 1 }]
+    });
+    expect(result.isValid).toBe(false);
+    expect(result.error).toBe('Transaction total cannot be $0 unless payment method is "comp"');
+  });
+
+  it('should reject $0 transaction with paypal payment method', () => {
+    const result = validatePaymentRules({
+      paymentMethod: 'paypal',
       totalPriceCents: 0,
       cashShiftId: null,
       ticketItems: [{ ticketTypeId: 'comp-pass-2026', quantity: 1 }]
@@ -194,6 +205,16 @@ describe('Manual Ticket Entry - Minimum Amount Validation', () => {
     expect(result.isValid).toBe(false);
   });
 
+  it('should reject transaction below $0.50 minimum with paypal', () => {
+    const result = validatePaymentRules({
+      paymentMethod: 'paypal',
+      totalPriceCents: 30, // $0.30
+      cashShiftId: null,
+      ticketItems: [{ ticketTypeId: 'test-pass', quantity: 1 }]
+    });
+    expect(result.isValid).toBe(false);
+  });
+
   it('should accept exactly $0.50 transaction with cash', () => {
     const result = validatePaymentRules({
       paymentMethod: 'cash',
@@ -208,6 +229,16 @@ describe('Manual Ticket Entry - Minimum Amount Validation', () => {
     const result = validatePaymentRules({
       paymentMethod: 'card_terminal',
       totalPriceCents: 100, // $1.00
+      cashShiftId: null,
+      ticketItems: [{ ticketTypeId: 'test-pass', quantity: 1 }]
+    });
+    expect(result.isValid).toBe(true);
+  });
+
+  it('should accept $0.75 transaction with paypal', () => {
+    const result = validatePaymentRules({
+      paymentMethod: 'paypal',
+      totalPriceCents: 75, // $0.75
       cashShiftId: null,
       ticketItems: [{ ticketTypeId: 'test-pass', quantity: 1 }]
     });
@@ -257,6 +288,16 @@ describe('Manual Ticket Entry - Maximum Amount Validation', () => {
     expect(result.isValid).toBe(false);
   });
 
+  it('should reject transaction exceeding $10,000 maximum with paypal', () => {
+    const result = validatePaymentRules({
+      paymentMethod: 'paypal',
+      totalPriceCents: 1100000, // $11,000
+      cashShiftId: null,
+      ticketItems: [{ ticketTypeId: 'full-pass-2026', quantity: 100 }]
+    });
+    expect(result.isValid).toBe(false);
+  });
+
   it('should accept exactly $10,000 transaction with cash', () => {
     const result = validatePaymentRules({
       paymentMethod: 'cash',
@@ -273,6 +314,16 @@ describe('Manual Ticket Entry - Maximum Amount Validation', () => {
       totalPriceCents: 999999, // $9,999.99
       cashShiftId: null,
       ticketItems: [{ ticketTypeId: 'full-pass-2026', quantity: 79 }]
+    });
+    expect(result.isValid).toBe(true);
+  });
+
+  it('should accept $8,500.00 transaction with paypal', () => {
+    const result = validatePaymentRules({
+      paymentMethod: 'paypal',
+      totalPriceCents: 850000, // $8,500.00
+      cashShiftId: null,
+      ticketItems: [{ ticketTypeId: 'full-pass-2026', quantity: 68 }]
     });
     expect(result.isValid).toBe(true);
   });
@@ -314,6 +365,16 @@ describe('Manual Ticket Entry - Negative Amount Prevention', () => {
     const result = validatePaymentRules({
       paymentMethod: 'venmo',
       totalPriceCents: -1,
+      cashShiftId: null,
+      ticketItems: [{ ticketTypeId: 'full-pass-2026', quantity: 1 }]
+    });
+    expect(result.isValid).toBe(false);
+  });
+
+  it('should reject negative amount with paypal payment', () => {
+    const result = validatePaymentRules({
+      paymentMethod: 'paypal',
+      totalPriceCents: -250,
       cashShiftId: null,
       ticketItems: [{ ticketTypeId: 'full-pass-2026', quantity: 1 }]
     });
@@ -395,6 +456,16 @@ describe('Manual Ticket Entry - Cash Shift Not Required for Non-Cash Payments', 
     expect(result.isValid).toBe(true);
   });
 
+  it('should allow paypal payment without cashShiftId', () => {
+    const result = validatePaymentRules({
+      paymentMethod: 'paypal',
+      totalPriceCents: 12500,
+      cashShiftId: null,
+      ticketItems: [{ ticketTypeId: 'full-pass-2026', quantity: 1 }]
+    });
+    expect(result.isValid).toBe(true);
+  });
+
   it('should allow comp payment without cashShiftId', () => {
     const result = validatePaymentRules({
       paymentMethod: 'comp',
@@ -425,6 +496,16 @@ describe('Manual Ticket Entry - Cash Shift Not Required for Non-Cash Payments', 
     expect(result.isValid).toBe(true);
   });
 
+  it('should allow paypal payment with cashShiftId provided (ignored)', () => {
+    const result = validatePaymentRules({
+      paymentMethod: 'paypal',
+      totalPriceCents: 12500,
+      cashShiftId: 1,
+      ticketItems: [{ ticketTypeId: 'full-pass-2026', quantity: 1 }]
+    });
+    expect(result.isValid).toBe(true);
+  });
+
   it('should allow comp payment with cashShiftId provided (ignored)', () => {
     const result = validatePaymentRules({
       paymentMethod: 'comp',
@@ -446,16 +527,6 @@ describe('Manual Ticket Entry - Invalid Payment Processor Types', () => {
     });
     expect(result.isValid).toBe(false);
     expect(result.error).toBe('Invalid payment method: stripe');
-  });
-
-  it('should reject invalid payment method - paypal', () => {
-    const result = validatePaymentRules({
-      paymentMethod: 'paypal',
-      totalPriceCents: 12500,
-      cashShiftId: null,
-      ticketItems: [{ ticketTypeId: 'full-pass-2026', quantity: 1 }]
-    });
-    expect(result.isValid).toBe(false);
   });
 
   it('should reject invalid payment method - credit_card', () => {
@@ -543,6 +614,20 @@ describe('Manual Ticket Entry - Realistic Pricing Scenarios', () => {
     });
     expect(result.isValid).toBe(true);
     expect(totalPriceCents).toBe(7500); // $75.00
+  });
+
+  it('should accept single full pass purchase with paypal', () => {
+    const ticketItems = [{ ticketTypeId: 'full-pass-2026', quantity: 1 }];
+    const totalPriceCents = calculateTotalPrice(ticketItems, TICKET_PRICES);
+
+    const result = validatePaymentRules({
+      paymentMethod: 'paypal',
+      totalPriceCents,
+      cashShiftId: null,
+      ticketItems
+    });
+    expect(result.isValid).toBe(true);
+    expect(totalPriceCents).toBe(12500); // $125.00
   });
 
   it('should accept large group purchase with cash', () => {

@@ -627,11 +627,21 @@
         }
 
         detectTokenType(token) {
-          // JWT format: xxx.yyy.zzz (3 parts separated by dots)
-          // QR token format: different (no dots or fewer parts)
+          // Both QR tokens and registration tokens are JWTs (3 parts)
+          // Differentiate by decoding payload and checking for 'txn' field
           if (!token) return null;
           const parts = token.split('.');
-          return parts.length === 3 ? 'jwt' : 'qrToken';
+          if (parts.length !== 3) return 'unknown';
+
+          try {
+            // Decode JWT payload (base64 decode the middle part)
+            const payload = JSON.parse(atob(parts[1]));
+            // Registration tokens have 'txn' field, QR tokens only have 'tid'
+            return payload.txn ? 'jwt' : 'qrToken';
+          } catch (e) {
+            console.error('[VIEW] Failed to decode token:', e);
+            return 'unknown';
+          }
         }
 
         async init() {
