@@ -482,17 +482,64 @@
           </div>
         </div>
 
-        <!-- Ticket Items -->
+        <!-- Ticket Selection & Attendee Information -->
         <div class="form-section">
-          <h2 class="section-title">Ticket Selection</h2>
+          <h2 class="section-title">Ticket & Attendee Information</h2>
 
-          <div id="ticket-items-container" class="ticket-items-container">
-            <!-- Ticket items will be added dynamically -->
+          <div class="admin-form-group">
+            <label for="ticket-type" class="admin-form-label">
+              Ticket Type <span style="color: var(--color-error);">*</span>
+            </label>
+            <select id="ticket-type" name="ticketType" class="admin-form-select" required>
+              <option value="">Select ticket type...</option>
+              <!-- Options populated dynamically -->
+            </select>
           </div>
 
-          <button type="button" id="add-ticket-btn" class="admin-btn add-ticket-btn">
-            <span>+ Add Ticket Type</span>
-          </button>
+          <div class="admin-form-group">
+            <label for="attendee-first-name" class="admin-form-label">
+              Attendee First Name <span style="color: var(--color-error);">*</span>
+            </label>
+            <input
+              type="text"
+              id="attendee-first-name"
+              name="attendeeFirstName"
+              class="admin-form-input"
+              required
+              placeholder="Jane"
+            />
+          </div>
+
+          <div class="admin-form-group">
+            <label for="attendee-last-name" class="admin-form-label">
+              Attendee Last Name <span style="color: var(--color-error);">*</span>
+            </label>
+            <input
+              type="text"
+              id="attendee-last-name"
+              name="attendeeLastName"
+              class="admin-form-input"
+              required
+              placeholder="Smith"
+            />
+          </div>
+
+          <div class="admin-form-group">
+            <label for="attendee-email" class="admin-form-label">
+              Attendee Email Address <span style="color: var(--color-error);">*</span>
+            </label>
+            <input
+              type="email"
+              id="attendee-email"
+              name="attendeeEmail"
+              class="admin-form-input"
+              required
+              placeholder="jane@example.com"
+            />
+            <small style="color: var(--color-text-secondary); display: block; margin-top: 4px;">
+              Attendee will receive their ticket with QR code at this email
+            </small>
+          </div>
         </div>
 
         <!-- Order Summary -->
@@ -500,11 +547,7 @@
           <h2 class="section-title">Order Summary</h2>
           <div id="order-summary">
             <div class="summary-row">
-              <span>Total Tickets:</span>
-              <span id="total-tickets">0</span>
-            </div>
-            <div class="summary-row">
-              <span>Total Amount:</span>
+              <span>Ticket Amount:</span>
               <span id="total-amount">$0.00</span>
             </div>
           </div>
@@ -526,7 +569,6 @@
 
       // State
       let ticketTypes = [];
-      let ticketItemCounter = 0;
       let cashShifts = [];
 
       // HTML escaping function to prevent XSS attacks
@@ -545,7 +587,7 @@
       document.addEventListener('DOMContentLoaded', async () => {
         await loadTicketTypes();
         await loadCashShifts();
-        addTicketItem(); // Add first ticket item
+        populateTicketTypeDropdown();
         setupEventListeners();
 
         // Show content after initialization
@@ -654,14 +696,14 @@
         select.disabled = false;
       }
 
-      // Add a new ticket item row
-      function addTicketItem() {
-        ticketItemCounter++;
-        const container = document.getElementById('ticket-items-container');
+      // Populate the ticket type dropdown
+      function populateTicketTypeDropdown() {
+        const select = document.getElementById('ticket-type');
 
-        const itemDiv = document.createElement('div');
-        itemDiv.className = 'ticket-item';
-        itemDiv.dataset.itemId = ticketItemCounter;
+        if (!select) {
+          console.error('Ticket type select element not found');
+          return;
+        }
 
         // Group tickets by event - include both available and test tickets
         const availableTickets = ticketTypes.filter(tt => tt.status === 'available' || tt.status === 'test');
@@ -675,92 +717,51 @@
           ticketsByEvent[eventName].push(tt);
         });
 
-        // Build optgroups for each event
-        let optionsHtml = '<option value="">Select ticket type...</option>';
+        // Clear existing options except placeholder
+        select.innerHTML = '<option value="">Select ticket type...</option>';
 
+        // Build optgroups for each event
         Object.keys(ticketsByEvent).sort().forEach(eventName => {
-          optionsHtml += `<optgroup label="${escapeHtml(eventName)}">`;
+          const optgroup = document.createElement('optgroup');
+          optgroup.label = eventName;
+
           ticketsByEvent[eventName].forEach(tt => {
+            const option = document.createElement('option');
+            option.value = tt.id;
+            option.dataset.price = tt.price_cents;
+
             const remaining = tt.max_quantity > 0 ? ` (${tt.max_quantity - tt.sold_count} remaining)` : '';
             const testLabel = tt.status === 'test' ? ' [TEST]' : '';
-            optionsHtml += `
-              <option value="${escapeHtml(tt.id)}" data-price="${escapeHtml(tt.price_cents)}">
-                ${escapeHtml(tt.name)} - $${(tt.price_cents / 100).toFixed(2)}${remaining}${testLabel}
-              </option>
-            `;
+            option.textContent = `${tt.name} - $${(tt.price_cents / 100).toFixed(2)}${remaining}${testLabel}`;
+
+            optgroup.appendChild(option);
           });
-          optionsHtml += '</optgroup>';
+
+          select.appendChild(optgroup);
         });
-
-        itemDiv.innerHTML = `
-          <div class="ticket-item-header">
-            <span class="ticket-item-number">Ticket Type #${ticketItemCounter}</span>
-            <button type="button" class="remove-ticket-btn" onclick="removeTicketItem(${ticketItemCounter})">×</button>
-          </div>
-          <div class="form-row">
-            <div class="admin-form-group">
-              <label class="admin-form-label">Ticket Type</label>
-              <select class="admin-form-select ticket-type-select" required data-item-id="${ticketItemCounter}">
-                ${optionsHtml}
-              </select>
-            </div>
-            <div class="admin-form-group">
-              <label class="admin-form-label">Quantity</label>
-              <input type="number" class="admin-form-input quantity-input" min="1" max="50" value="1" required data-item-id="${ticketItemCounter}" />
-            </div>
-          </div>
-        `;
-
-        container.appendChild(itemDiv);
-        updateSummary();
       }
-
-      // Remove a ticket item row
-      window.removeTicketItem = function(itemId) {
-        const item = document.querySelector(`[data-item-id="${itemId}"]`).closest('.ticket-item');
-        item.remove();
-        updateSummary();
-
-        // Ensure at least one ticket item exists
-        const remainingItems = document.querySelectorAll('.ticket-item');
-        if (remainingItems.length === 0) {
-          addTicketItem();
-        }
-      };
 
       // Update order summary
       function updateSummary() {
-        let totalTickets = 0;
-        let totalAmount = 0;
-
-        // Check if payment method is comp(free)
+        const select = document.getElementById('ticket-type');
         const paymentMethod = document.getElementById('payment-method').value;
         const isComp = paymentMethod === 'comp';
 
-        document.querySelectorAll('.ticket-item').forEach(item => {
-          const select = item.querySelector('.ticket-type-select');
-          const quantityInput = item.querySelector('.quantity-input');
+        let totalAmount = 0;
 
-          if (select.value && quantityInput.value) {
-            const quantity = parseInt(quantityInput.value) || 0;
-            const selectedOption = select.options[select.selectedIndex];
-            const price = parseInt(selectedOption.dataset.price) || 0;
+        if (select && select.value) {
+          const selectedOption = select.options[select.selectedIndex];
+          const price = parseInt(selectedOption.dataset.price) || 0;
 
-            totalTickets += quantity;
-            // If comp payment, force amount to 0
-            totalAmount += isComp ? 0 : (price * quantity);
-          }
-        });
+          // If comp payment, force amount to 0
+          totalAmount = isComp ? 0 : price;
+        }
 
-        document.getElementById('total-tickets').textContent = totalTickets;
         document.getElementById('total-amount').textContent = `$${(totalAmount / 100).toFixed(2)}`;
       }
 
       // Setup event listeners
       function setupEventListeners() {
-        // Add ticket button
-        document.getElementById('add-ticket-btn').addEventListener('click', addTicketItem);
-
         // Payment method change
         document.getElementById('payment-method').addEventListener('change', (e) => {
           const cashContainer = document.getElementById('cash-shift-container');
@@ -773,13 +774,8 @@
           updateSummary();
         });
 
-        // Update summary on changes
-        document.addEventListener('change', (e) => {
-          if (e.target.classList.contains('ticket-type-select') ||
-              e.target.classList.contains('quantity-input')) {
-            updateSummary();
-          }
-        });
+        // Update summary when ticket type changes
+        document.getElementById('ticket-type').addEventListener('change', updateSummary);
 
         // Form submission
         document.getElementById('manual-entry-form').addEventListener('submit', handleFormSubmit);
@@ -803,32 +799,30 @@
           const customerPhone = formData.get('customerPhone');
           const cashShiftId = formData.get('cashShiftId');
 
+          // Attendee details
+          const attendeeFirstName = formData.get('attendeeFirstName');
+          const attendeeLastName = formData.get('attendeeLastName');
+          const attendeeEmail = formData.get('attendeeEmail');
+
+          // Ticket selection
+          const ticketTypeId = formData.get('ticketType');
+
           // Validate required fields
           if (!customerFirstName || !customerLastName || !customerEmail || !paymentMethod) {
-            throw new Error('Please fill in all required fields');
+            throw new Error('Please fill in all customer information fields');
+          }
+
+          if (!attendeeFirstName || !attendeeLastName || !attendeeEmail) {
+            throw new Error('Please fill in all attendee information fields');
+          }
+
+          if (!ticketTypeId) {
+            throw new Error('Please select a ticket type');
           }
 
           // Validate cash shift for cash payments
           if (paymentMethod === 'cash' && !cashShiftId) {
             throw new Error('Please select an active cash shift for cash payments');
-          }
-
-          // Gather ticket items
-          const ticketItems = [];
-          document.querySelectorAll('.ticket-item').forEach(item => {
-            const select = item.querySelector('.ticket-type-select');
-            const quantityInput = item.querySelector('.quantity-input');
-
-            if (select.value && quantityInput.value) {
-              ticketItems.push({
-                ticketTypeId: select.value,
-                quantity: parseInt(quantityInput.value)
-              });
-            }
-          });
-
-          if (ticketItems.length === 0) {
-            throw new Error('Please add at least one ticket');
           }
 
           // Generate UUID for idempotency
@@ -838,7 +832,7 @@
           const token = localStorage.getItem('adminToken');
           const csrfToken = await csrfService.getCSRFToken();
 
-          // Submit to API
+          // Submit to API - single ticket with attendee details
           const response = await fetch('/api/admin/manual-ticket-entry', {
             method: 'POST',
             headers: {
@@ -848,7 +842,15 @@
             },
             body: JSON.stringify({
               manualEntryId,
-              ticketItems,
+              ticketItems: [{
+                ticketTypeId: ticketTypeId,
+                quantity: 1,
+                attendee: {
+                  firstName: attendeeFirstName,
+                  lastName: attendeeLastName,
+                  email: attendeeEmail
+                }
+              }],
               paymentMethod,
               customerEmail,
               customerName,
@@ -868,8 +870,8 @@
 
           // Show success message
           showAlert(
-            `Success! Order #${result.transaction.order_number} created with ${result.ticketCount} ticket(s).
-            Confirmation email sent to ${customerEmail}.`,
+            `Success! Ticket created for ${attendeeFirstName} ${attendeeLastName}.
+            Ticket confirmation with QR code sent to ${attendeeEmail}.`,
             'success'
           );
 
@@ -884,9 +886,6 @@
 
           // Reset form
           e.target.reset();
-          document.getElementById('ticket-items-container').innerHTML = '';
-          ticketItemCounter = 0;
-          addTicketItem();
           updateSummary();
 
         } catch (error) {
