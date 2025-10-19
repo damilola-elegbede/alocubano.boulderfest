@@ -216,24 +216,27 @@ async function handler(req, res) {
 
     // Get daily sales for the last 7 days with event filtering (using dynamic DST-aware Mountain Time offset)
     const dailySalesParams = [];
-    const dailySalesConditions = [`created_at >= date('now', ${mtOffset}, '-7 days')`];
+    const dailySalesConditions = [`t.created_at >= date('now', ${mtOffset}, '-7 days')`];
 
     // Add event filtering if applicable
     if (eventId && ticketsHasEventId) {
-      dailySalesConditions.push('event_id = ?');
+      dailySalesConditions.push('t.event_id = ?');
       dailySalesParams.push(eventId);
     }
 
     const dailySalesQuery = `
       SELECT
-        date(created_at, ${mtOffset}) as date,
+        date(t.created_at, ${mtOffset}) as date,
         COUNT(*) as tickets_sold,
-        SUM(price_cents) / 100.0 as revenue,
-        SUM(CASE WHEN is_test = 1 THEN 1 ELSE 0 END) as test_tickets_sold,
-        SUM(CASE WHEN is_test = 0 THEN 1 ELSE 0 END) as production_tickets_sold
-      FROM tickets
+        SUM(t.price_cents) / 100.0 as revenue,
+        SUM(CASE WHEN t.is_test = 1 THEN 1 ELSE 0 END) as test_tickets_sold,
+        SUM(CASE WHEN t.is_test = 0 THEN 1 ELSE 0 END) as production_tickets_sold
+      FROM tickets t
+      JOIN transactions tr ON t.transaction_id = tr.id
       WHERE ${dailySalesConditions.join(' AND ')}
-      GROUP BY date(created_at, ${mtOffset})
+        AND COALESCE(tr.payment_processor, '') <> 'comp'
+        AND tr.status = 'completed'
+      GROUP BY date(t.created_at, ${mtOffset})
       ORDER BY date DESC
     `;
 
