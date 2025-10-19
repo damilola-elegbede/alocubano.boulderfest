@@ -730,7 +730,10 @@
             option.value = tt.id;
             option.dataset.price = tt.price_cents;
 
-            const remaining = tt.max_quantity > 0 ? ` (${tt.max_quantity - tt.sold_count} remaining)` : '';
+            const maxQ = Number(tt.max_quantity || 0);
+            const sold = Number(tt.sold_count || 0);
+            const remainingCount = maxQ > 0 ? Math.max(0, maxQ - sold) : 0;
+            const remaining = maxQ > 0 ? ` (${remainingCount} remaining)` : '';
             const testLabel = tt.status === 'test' ? ' [TEST]' : '';
             option.textContent = `${tt.name} - $${(tt.price_cents / 100).toFixed(2)}${remaining}${testLabel}`;
 
@@ -792,8 +795,8 @@
           // Gather form data
           const formData = new FormData(e.target);
           const paymentMethod = formData.get('paymentMethod');
-          const customerFirstName = formData.get('customerFirstName');
-          const customerLastName = formData.get('customerLastName');
+          const customerFirstName = (formData.get('customerFirstName') || '').trim();
+          const customerLastName = (formData.get('customerLastName') || '').trim();
           const customerName = `${customerFirstName} ${customerLastName}`.trim();
           const customerEmail = formData.get('customerEmail');
           const customerPhone = formData.get('customerPhone');

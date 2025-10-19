@@ -57,7 +57,7 @@ async function handler(req, res) {
         (SELECT COUNT(*) FROM tickets WHERE status = 'valid' ${ticketWhereClause}) as total_tickets,
         (SELECT COUNT(*) FROM tickets WHERE (last_scanned_at IS NOT NULL OR checked_in_at IS NOT NULL) ${ticketWhereClause}) as checked_in,
         (SELECT COUNT(DISTINCT transaction_id) FROM tickets WHERE 1=1 ${ticketWhereClause}) as total_orders,
-        (SELECT COALESCE(SUM(t.price_cents), 0) / 100.0 FROM tickets t JOIN transactions tr ON t.transaction_id = tr.id WHERE t.status = 'valid' AND tr.payment_processor NOT IN ('comp') AND tr.status = 'completed' ${ticketWhereClauseWithAlias}) as total_revenue,
+        (SELECT COALESCE(SUM(t.price_cents), 0) / 100.0 FROM tickets t JOIN transactions tr ON t.transaction_id = tr.id WHERE t.status = 'valid' AND COALESCE(tr.payment_processor, '') <> 'comp' AND tr.status = 'completed' ${ticketWhereClauseWithAlias}) as total_revenue,
         (SELECT COUNT(*) FROM tickets WHERE ticket_type LIKE '%workshop%' ${ticketWhereClause}) as workshop_tickets,
         (SELECT COUNT(*) FROM tickets WHERE ticket_type LIKE '%vip%' ${ticketWhereClause}) as vip_tickets,
         -- Today's sales (using dynamic DST-aware Mountain Time offset)
@@ -70,7 +70,7 @@ async function handler(req, res) {
         -- Test mode statistics
         (SELECT COUNT(*) FROM tickets WHERE is_test = 1 ${ticketWhereClause}) as test_tickets,
         (SELECT COUNT(*) FROM transactions WHERE is_test = 1 AND id IN (SELECT DISTINCT transaction_id FROM tickets WHERE 1=1 ${ticketWhereClause})) as test_transactions,
-        (SELECT COALESCE(SUM(t.price_cents), 0) / 100.0 FROM tickets t JOIN transactions tr ON t.transaction_id = tr.id WHERE t.status = 'valid' AND tr.is_test = 1 AND tr.payment_processor NOT IN ('comp') AND tr.status = 'completed' ${ticketWhereClauseWithAlias}) as test_revenue,
+        (SELECT COALESCE(SUM(t.price_cents), 0) / 100.0 FROM tickets t JOIN transactions tr ON t.transaction_id = tr.id WHERE t.status = 'valid' AND tr.is_test = 1 AND COALESCE(tr.payment_processor, '') <> 'comp' AND tr.status = 'completed' ${ticketWhereClauseWithAlias}) as test_revenue,
         -- Check-in statistics (using actual scan timestamps with Mountain Time, not UTC)
         (SELECT COUNT(*) FROM tickets WHERE (last_scanned_at IS NOT NULL OR checked_in_at IS NOT NULL) AND date(COALESCE(last_scanned_at, checked_in_at), ${mtOffset}) = date('now', ${mtOffset}) ${ticketWhereClause}) as today_checkins,
         (SELECT COUNT(*) FROM tickets WHERE (last_scanned_at IS NOT NULL OR checked_in_at IS NOT NULL) AND qr_access_method IN ('apple_wallet', 'google_wallet', 'samsung_wallet') ${ticketWhereClause}) as wallet_checkins,
@@ -81,7 +81,7 @@ async function handler(req, res) {
         (SELECT COUNT(*) FROM tickets t JOIN transactions tr ON t.transaction_id = tr.id WHERE tr.source = 'manual_entry' AND tr.payment_processor = 'card_terminal' AND t.status = 'valid' ${ticketWhereClauseWithAlias}) as manual_card_tickets,
         (SELECT COUNT(*) FROM tickets t JOIN transactions tr ON t.transaction_id = tr.id WHERE tr.source = 'manual_entry' AND tr.payment_processor = 'venmo' AND t.status = 'valid' ${ticketWhereClauseWithAlias}) as manual_venmo_tickets,
         (SELECT COUNT(*) FROM tickets t JOIN transactions tr ON t.transaction_id = tr.id WHERE tr.source = 'manual_entry' AND tr.payment_processor = 'comp' AND t.status = 'valid' ${ticketWhereClauseWithAlias}) as manual_comp_tickets,
-        (SELECT COALESCE(SUM(t.price_cents), 0) / 100.0 FROM tickets t JOIN transactions tr ON t.transaction_id = tr.id WHERE t.status = 'valid' AND tr.source = 'manual_entry' AND tr.payment_processor NOT IN ('comp') AND tr.status = 'completed' ${ticketWhereClauseWithAlias}) as manual_revenue
+        (SELECT COALESCE(SUM(t.price_cents), 0) / 100.0 FROM tickets t JOIN transactions tr ON t.transaction_id = tr.id WHERE t.status = 'valid' AND tr.source = 'manual_entry' AND COALESCE(tr.payment_processor, '') <> 'comp' AND tr.status = 'completed' ${ticketWhereClauseWithAlias}) as manual_revenue
     `;
 
     // Add parameters for each subquery that uses event_id filtering
@@ -189,24 +189,26 @@ async function handler(req, res) {
 
     // Get ticket type breakdown with event filtering
     const ticketBreakdownParams = [];
-    const breakdownConditions = ['status = \'valid\''];
+    const breakdownConditions = ['t.status = \'valid\''];
 
     // Add event filtering if applicable
     if (eventId && ticketsHasEventId) {
-      breakdownConditions.push('event_id = ?');
+      breakdownConditions.push('t.event_id = ?');
       ticketBreakdownParams.push(eventId);
     }
 
     const ticketBreakdownQuery = `
       SELECT
-        ticket_type,
+        t.ticket_type,
         COUNT(*) as count,
-        SUM(price_cents) / 100.0 as revenue,
-        SUM(CASE WHEN is_test = 1 THEN 1 ELSE 0 END) as test_count,
-        SUM(CASE WHEN is_test = 0 THEN 1 ELSE 0 END) as production_count
-      FROM tickets
+        SUM(t.price_cents) / 100.0 as revenue,
+        SUM(CASE WHEN t.is_test = 1 THEN 1 ELSE 0 END) as test_count,
+        SUM(CASE WHEN t.is_test = 0 THEN 1 ELSE 0 END) as production_count
+      FROM tickets t
+      JOIN transactions tr ON t.transaction_id = tr.id
       WHERE ${breakdownConditions.join(' AND ')}
-      GROUP BY ticket_type
+        AND COALESCE(tr.payment_processor, '') <> 'comp'
+      GROUP BY t.ticket_type
       ORDER BY count DESC
     `;
 
@@ -314,7 +316,7 @@ async function handler(req, res) {
              JOIN transactions tr ON t.transaction_id = tr.id
              WHERE t.ticket_type_id = tt.id
              AND t.status = 'valid'
-             AND tr.payment_processor NOT IN ('comp')),
+             AND COALESCE(tr.payment_processor, '') <> 'comp'),
             0
           ) as total_revenue_cents
         FROM ticket_types tt
