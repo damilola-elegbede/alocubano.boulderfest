@@ -496,6 +496,23 @@
             </select>
           </div>
 
+          <!-- Same as Purchaser Checkbox -->
+          <div class="admin-form-group" style="background: rgba(91, 107, 181, 0.1); border: 1px solid rgba(91, 107, 181, 0.3); border-radius: var(--radius-md); padding: var(--space-md);">
+            <label style="display: flex; align-items: center; cursor: pointer; user-select: none;">
+              <input
+                type="checkbox"
+                id="same-as-purchaser"
+                style="width: 20px; height: 20px; margin-right: var(--space-sm); cursor: pointer;"
+              />
+              <span style="font-weight: 500;">
+                Attendee is the same as the purchaser
+              </span>
+            </label>
+            <small style="color: var(--color-text-secondary); display: block; margin-top: 8px; margin-left: 28px;">
+              Check this box to automatically fill attendee information with customer details
+            </small>
+          </div>
+
           <div class="admin-form-group">
             <label for="attendee-first-name" class="admin-form-label">
               Attendee First Name <span style="color: var(--color-error);">*</span>
@@ -779,6 +796,32 @@
 
         // Update summary when ticket type changes
         document.getElementById('ticket-type').addEventListener('change', updateSummary);
+
+        // "Same as Purchaser" checkbox - copy customer info to attendee fields
+        document.getElementById('same-as-purchaser').addEventListener('change', (e) => {
+          if (e.target.checked) {
+            // Copy customer fields to attendee fields
+            document.getElementById('attendee-first-name').value = document.getElementById('customer-first-name').value;
+            document.getElementById('attendee-last-name').value = document.getElementById('customer-last-name').value;
+            document.getElementById('attendee-email').value = document.getElementById('customer-email').value;
+          } else {
+            // Clear attendee fields when unchecked
+            document.getElementById('attendee-first-name').value = '';
+            document.getElementById('attendee-last-name').value = '';
+            document.getElementById('attendee-email').value = '';
+          }
+        });
+
+        // Also update attendee fields when customer fields change (if checkbox is checked)
+        ['customer-first-name', 'customer-last-name', 'customer-email'].forEach(fieldId => {
+          document.getElementById(fieldId).addEventListener('input', () => {
+            if (document.getElementById('same-as-purchaser').checked) {
+              // Auto-sync when checkbox is checked
+              const attendeeFieldId = fieldId.replace('customer', 'attendee');
+              document.getElementById(attendeeFieldId).value = document.getElementById(fieldId).value;
+            }
+          });
+        });
 
         // Form submission
         document.getElementById('manual-entry-form').addEventListener('submit', handleFormSubmit);
