@@ -858,6 +858,7 @@
           // Gather form data
           const formData = new FormData(e.target);
           const paymentMethod = formData.get('paymentMethod');
+          // CRITICAL: Trim values when extracting to reject whitespace-only inputs
           const customerFirstName = (formData.get('customerFirstName') || '').trim();
           const customerLastName = (formData.get('customerLastName') || '').trim();
           const customerName = `${customerFirstName} ${customerLastName}`.trim();
@@ -866,9 +867,10 @@
           const cashShiftId = formData.get('cashShiftId');
 
           // Attendee details
-          const attendeeFirstName = formData.get('attendeeFirstName');
-          const attendeeLastName = formData.get('attendeeLastName');
-          const attendeeEmail = formData.get('attendeeEmail');
+          // CRITICAL: Trim attendee values to reject whitespace-only inputs
+          const attendeeFirstName = (formData.get('attendeeFirstName') || '').trim();
+          const attendeeLastName = (formData.get('attendeeLastName') || '').trim();
+          const attendeeEmail = (formData.get('attendeeEmail') || '').trim();
 
           // Ticket selection
           const ticketTypeId = formData.get('ticketType');

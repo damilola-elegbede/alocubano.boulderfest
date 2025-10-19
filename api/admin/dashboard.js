@@ -216,7 +216,7 @@ async function handler(req, res) {
 
     // Get daily sales for the last 7 days with event filtering (using dynamic DST-aware Mountain Time offset)
     const dailySalesParams = [];
-    const dailySalesConditions = [`t.created_at >= date('now', ${mtOffset}, '-7 days')`];
+    const dailySalesConditions = [`date(t.created_at, ${mtOffset}) >= date('now', ${mtOffset}, '-7 days')`];
 
     // Add event filtering if applicable
     if (eventId && ticketsHasEventId) {
@@ -319,7 +319,8 @@ async function handler(req, res) {
              JOIN transactions tr ON t.transaction_id = tr.id
              WHERE t.ticket_type_id = tt.id
              AND t.status = 'valid'
-             AND COALESCE(tr.payment_processor, '') <> 'comp'),
+             AND COALESCE(tr.payment_processor, '') <> 'comp'
+             AND tr.status = 'completed'),
             0
           ) as total_revenue_cents
         FROM ticket_types tt

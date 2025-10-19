@@ -196,7 +196,12 @@ async function handler(req, res) {
     }
 
     // Custom validation: require either customerFirstName/customerLastName OR customerName
-    if ((!customerFirstName || !customerLastName) && (!customerName || !customerName.trim())) {
+    // CRITICAL: Trim values BEFORE validation to reject whitespace-only inputs
+    const trimmedFirstName = (customerFirstName || '').trim();
+    const trimmedLastName = (customerLastName || '').trim();
+    const trimmedCustomerName = (customerName || '').trim();
+
+    if ((!trimmedFirstName || !trimmedLastName) && !trimmedCustomerName) {
       return res.status(400).json({
         error: 'Either customerFirstName and customerLastName, or customerName is required'
       });

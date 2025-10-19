@@ -144,10 +144,10 @@ const INPUT_VALIDATION = {
     error: 'customerEmail must be a valid email address'
   },
   customerName: {
-    required: true,
+    required: false, // Optional for backward compatibility
     minLength: 1,
     maxLength: 200,
-    error: 'customerName is required and must be under 200 characters'
+    error: 'customerName must be under 200 characters'
   },
   customerPhone: {
     required: false,
@@ -785,23 +785,21 @@ describe('Manual Ticket Entry - Customer Name Validation', () => {
     expect(result.isValid).toBe(true);
   });
 
-  it('should reject empty name', () => {
+  it('should accept empty name (optional field)', () => {
     const result = validateField('', 'customerName', INPUT_VALIDATION.customerName);
-    expect(result.isValid).toBe(false);
-    expect(result.error).toBe('customerName is required');
+    expect(result.isValid).toBe(true);
   });
 
-  it('should reject null name', () => {
+  it('should accept null name (optional field)', () => {
     const result = validateField(null, 'customerName', INPUT_VALIDATION.customerName);
-    expect(result.isValid).toBe(false);
-    expect(result.error).toBe('customerName is required');
+    expect(result.isValid).toBe(true);
   });
 
   it('should reject name exceeding max length', () => {
     const longName = 'A'.repeat(201);
     const result = validateField(longName, 'customerName', INPUT_VALIDATION.customerName);
     expect(result.isValid).toBe(false);
-    expect(result.error).toBe('customerName is required and must be under 200 characters');
+    expect(result.error).toBe('customerName must be under 200 characters');
   });
 });
 

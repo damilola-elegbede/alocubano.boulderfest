@@ -1,17 +1,26 @@
 import { createClient } from '@libsql/client';
 import { readFileSync } from 'fs';
 
-// Load .env.vercel manually
-const envFile = readFileSync('.env.vercel', 'utf-8');
-const envVars = {};
-envFile.split('\n').forEach(line => {
-  if (line && !line.startsWith('#')) {
-    const match = line.match(/^([^=]+)=(.*)$/);
-    if (match) {
-      envVars[match[1].trim()] = match[2].trim().replace(/^["']|["']$/g, '');
-    }
+// Load .env.vercel manually with defensive parsing
+let envVars = {};
+try {
+  const envFile = readFileSync('.env.vercel', 'utf-8');
+  if (envFile) {
+    envFile.split('\n').forEach(line => {
+      if (line && !line.startsWith('#')) {
+        const match = line.match(/^([^=]+)=(.*)$/);
+        if (match) {
+          envVars[match[1].trim()] = match[2].trim().replace(/^["']|["']$/g, '');
+        }
+      }
+    });
   }
-});
+} catch (error) {
+  if (error.code !== 'ENOENT') {
+    console.error('Warning: Error reading .env.vercel file:', error.message);
+  }
+  // Continue with empty envVars - will fall back to process.env
+}
 
 const client = createClient({
   url: envVars.TURSO_DATABASE_URL || process.env.TURSO_DATABASE_URL,
@@ -28,7 +37,7 @@ try {
     console.log(`  - ${col.name} (${col.type})`);
   });
   const hasEventId = tableInfo.rows.some(col => col.name === 'event_id');
-  console.log(`\n❌ Transactions table ${hasEventId ? 'HAS' : 'DOES NOT HAVE'} event_id column\n`);
+  console.log(`\n${hasEventId ? '✅' : '❌'} Transactions table ${hasEventId ? 'HAS' : 'DOES NOT HAVE'} event_id column\n`);
 
   console.log('---\n');
   console.log('🔍 Checking all events and their tickets...\n');
@@ -56,7 +65,7 @@ try {
 
   console.log('Tickets by event:');
   ticketCounts.rows.forEach(row => {
-    console.log(`  ${row.event_id}: ${row.count} tickets, $${row.total_price_cents / 100} total, processors: ${row.processors}`);
+    console.log(`  ${row.event_id}: ${row.count} tickets, $${(row.total_price_cents / 100).toFixed(2)} total, processors: ${row.processors}`);
   });
 
   console.log('\n---\n');
@@ -82,7 +91,7 @@ try {
     console.log(`  Transaction #${row.transaction_id}:`);
     console.log(`    transaction.event_id = ${row.transaction_event_id} ${row.transaction_event_id === null ? '❌ NULL!' : row.transaction_event_id === -1 ? '✅' : '❌ MISMATCH!'}`);
     console.log(`    tickets.event_id = ${row.ticket_event_ids}`);
-    console.log(`    processor = ${row.payment_processor}, amount = $${row.amount_cents/100}, status = ${row.status}`);
+    console.log(`    processor = ${row.payment_processor}, amount = $${(row.amount_cents/100).toFixed(2)}, status = ${row.status}`);
     console.log('');
   });
 
@@ -111,13 +120,14 @@ try {
   console.log(`Found ${result.rows.length} "weekender" tickets:\n`);
   result.rows.forEach((row, i) => {
     console.log(`Ticket ${i + 1}:`);
-    console.log(`  Event ID: ${row.event_id}`);
+    console.log(`  Ticket Event ID: ${row.ticket_event_id}`);
+    console.log(`  Transaction Event ID: ${row.transaction_event_id}`);
     console.log(`  ID: ${row.ticket_id}`);
     console.log(`  Type: ${row.ticket_type}`);
-    console.log(`  Price: $${row.price_cents / 100}`);
+    console.log(`  Price: $${(row.price_cents / 100).toFixed(2)}`);
     console.log(`  Status: ${row.ticket_status}`);
     console.log(`  Payment Processor: ${row.payment_processor}`);
-    console.log(`  Transaction Amount: $${row.amount_cents / 100}`);
+    console.log(`  Transaction Amount: $${(row.amount_cents / 100).toFixed(2)}`);
     console.log(`  Transaction Status: ${row.transaction_status}`);
     console.log(`  Source: ${row.source || 'online'}`);
     console.log('');
