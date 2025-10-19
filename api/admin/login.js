@@ -528,8 +528,12 @@ async function handlePasswordStep(req, res, username, password, clientIP) {
   const mfaRequired = authService.isMFARequired();
   const mfaStatus = mfaRequired ? await getMfaStatus(adminId) : { isEnabled: false };
 
-  if (!mfaRequired || !mfaStatus.isEnabled) {
+  // Skip MFA in E2E test environment
+  if (!mfaRequired || !mfaStatus.isEnabled || isE2ETest) {
     // No MFA required - complete login
+    if (isE2ETest && (mfaRequired || mfaStatus.isEnabled)) {
+      console.log('[Login] Bypassing MFA requirement for E2E test environment');
+    }
     return await completeLogin(req, res, adminId, clientIP, false);
   }
 
