@@ -916,10 +916,24 @@
 
           // Show success message
           showAlert(
-            `Success! Ticket created for ${attendeeFirstName} ${attendeeLastName}.
-            Ticket confirmation with QR code sent to ${attendeeEmail}.`,
+            `Success! Ticket created for ${attendeeFirstName} ${attendeeLastName}.`,
             'success'
           );
+
+          // Show email error if emails failed
+          if (result.emailError) {
+            showAlert(
+              `⚠️ Ticket created successfully BUT emails failed to send!
+              Error: ${result.emailError.message}
+              Please manually send confirmation emails or check Vercel logs.`,
+              'error'
+            );
+          } else {
+            showAlert(
+              `✅ Confirmation emails sent to customer (${customerEmail}) and attendee (${attendeeEmail}).`,
+              'success'
+            );
+          }
 
           // Show fraud alert if triggered
           if (result.fraudCheck?.alert) {

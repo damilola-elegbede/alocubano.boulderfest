@@ -328,6 +328,7 @@ async function handler(req, res) {
         transaction: enhancedTransaction,
         tickets: enhancedTickets,
         ticketCount: result.ticketCount,
+        emailError: result.emailError, // Include email error if present
         fraudCheck: {
           recentTickets: fraudCheck.count,
           threshold: 20,
