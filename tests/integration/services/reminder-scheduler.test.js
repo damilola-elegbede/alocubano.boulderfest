@@ -55,7 +55,7 @@ describe('Reminder Scheduler Integration', () => {
   }
 
   describe('Production Reminder Schedule', () => {
-    test('should schedule 5 reminders for production transaction', async () => {
+    test('should schedule 4 reminders for production transaction (24+ hours)', async () => {
       const transactionId = await createTestTransaction({ isTest: false });
       const deadline = new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)); // 30 days from now
 
@@ -65,7 +65,7 @@ describe('Reminder Scheduler Integration', () => {
         false
       );
 
-      expect(count).toBe(5); // initial, 24hr-post, 1-week-before, 72hr-before, 24hr-before
+      expect(count).toBe(4); // initial, 24hr-post-purchase, 72hr-before, 24hr-before
 
       // Verify reminders in database
       const result = await dbClient.execute({
@@ -73,13 +73,12 @@ describe('Reminder Scheduler Integration', () => {
         args: [transactionId]
       });
 
-      expect(result.rows).toHaveLength(5);
+      expect(result.rows).toHaveLength(4);
 
       // Verify reminder types
       const types = result.rows.map(r => r.reminder_type);
       expect(types).toContain('initial');
       expect(types).toContain('24hr-post-purchase');
-      expect(types).toContain('1-week-before');
       expect(types).toContain('72hr-before');
       expect(types).toContain('24hr-before');
     });
@@ -128,26 +127,6 @@ describe('Reminder Scheduler Integration', () => {
       expect(diffHours).toBeLessThan(25);
     });
 
-    test('should schedule reminder 1 week before deadline', async () => {
-      const transactionId = await createTestTransaction({ isTest: false });
-      const deadline = new Date(Date.now() + (30 * 24 * 60 * 60 * 1000));
-
-      await scheduler.scheduleRemindersForTransaction(transactionId, deadline, false);
-
-      const result = await dbClient.execute({
-        sql: `SELECT * FROM registration_reminders
-              WHERE transaction_id = ? AND reminder_type = '1-week-before'`,
-        args: [transactionId]
-      });
-
-      expect(result.rows).toHaveLength(1);
-
-      const scheduled = new Date(result.rows[0].scheduled_at);
-      const diffHours = (deadline - scheduled) / (1000 * 60 * 60);
-
-      expect(diffHours).toBeGreaterThan(167); // ~7 days = 168 hours
-      expect(diffHours).toBeLessThan(169);
-    });
 
     test('should schedule reminder 72 hours before deadline', async () => {
       const transactionId = await createTestTransaction({ isTest: false });
@@ -267,16 +246,16 @@ describe('Reminder Scheduler Integration', () => {
         false
       );
 
-      expect(count1).toBe(5);
+      expect(count1).toBe(4);
       expect(count2).toBe(0); // All duplicates, none added
 
-      // Verify still only 5 reminders
+      // Verify still only 4 reminders
       const result = await dbClient.execute({
         sql: 'SELECT COUNT(*) as count FROM registration_reminders WHERE transaction_id = ?',
         args: [transactionId]
       });
 
-      expect(Number(result.rows[0].count)).toBe(5);
+      expect(Number(result.rows[0].count)).toBe(4);
     });
   });
 
@@ -312,10 +291,10 @@ describe('Reminder Scheduler Integration', () => {
         false
       );
 
-      // Should only schedule initial reminder (1 hour from now)
-      // All other reminders (24hr, 1-week, 72hr, 24hr before) would be after deadline
+      // Should only schedule initial reminder + followup_2 (very late purchase: 1-6 hours)
+      // 24hr-post-purchase would be after deadline
       expect(count).toBeGreaterThanOrEqual(0); // May be 0-2 depending on timing
-      expect(count).toBeLessThan(5);
+      expect(count).toBeLessThan(4);
     });
   });
 
@@ -329,11 +308,11 @@ describe('Reminder Scheduler Integration', () => {
       const stats = await scheduler.getReminderStats(transactionId);
 
       expect(stats.transactionId).toBe(transactionId);
-      expect(stats.scheduled).toBe(5);
+      expect(stats.scheduled).toBe(4);
       expect(stats.sent).toBe(0);
       expect(stats.failed).toBe(0);
       expect(stats.cancelled).toBe(0);
-      expect(stats.total).toBe(5);
+      expect(stats.total).toBe(4);
     });
   });
 
@@ -484,7 +463,7 @@ describe('Reminder Scheduler Integration', () => {
 
       const cancelled = await scheduler.cancelRemindersForTransaction(transactionId);
 
-      expect(cancelled).toBe(5);
+      expect(cancelled).toBe(4);
 
       // Verify all marked as cancelled
       const result = await dbClient.execute({
@@ -493,7 +472,7 @@ describe('Reminder Scheduler Integration', () => {
         args: [transactionId]
       });
 
-      expect(Number(result.rows[0].count)).toBe(5);
+      expect(Number(result.rows[0].count)).toBe(4);
     });
 
     test('should NOT cancel already sent reminders', async () => {

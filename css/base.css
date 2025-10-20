@@ -65,7 +65,7 @@
   /* Text Colors - Clear hierarchy for readability */
   --color-text-primary: var(--color-black);        /* Main content text */
   --color-text-secondary: var(--color-gray-750);                 /* Secondary information - 7.0:1 contrast (WCAG AA) */
-  --color-text-tertiary: var(--color-gray-500);    /* Subtle supporting text */
+  --color-text-tertiary: var(--color-gray-650);    /* Subtle supporting text - 4.6:1 contrast (WCAG AA) */
   --color-text-muted: var(--color-gray-650);                     /* Disabled/placeholder text - 4.6:1 contrast (WCAG AA) */
   --color-text-inverse: var(--color-white);        /* Text on dark backgrounds */
 
@@ -92,7 +92,7 @@
   /* State Colors - Standard feedback colors for UI states */
   --color-success: #22c55e;                        /* Success states and confirmations */
   --color-success-light: #dcfce7;                  /* Success background tints */
-  --color-warning: #f59e0b;                        /* Warning and caution states */
+  --color-warning: #d97706;                        /* Warning and caution states - 4.17:1 contrast (WCAG AA) */
   --color-warning-light: #fef3c7;                  /* Warning background tints */
   --color-error: var(--color-red);                 /* Error states (reuses brand red) */
   --color-error-light: #fef2f2;                    /* Error background tints */

@@ -335,7 +335,7 @@ describe('Brevo Webhook Security', () => {
 
       // Create email subscriber in database
       await dbClient.execute({
-        sql: `INSERT INTO email_subscribers (email, status, source) VALUES (?, ?, ?)`,
+        sql: `INSERT INTO email_subscribers (email, status, consent_source) VALUES (?, ?, ?)`,
         args: [testEmail, 'active', 'website']
       });
 
@@ -364,7 +364,7 @@ describe('Brevo Webhook Security', () => {
 
       // Create email subscriber in database
       await dbClient.execute({
-        sql: `INSERT INTO email_subscribers (email, status, source) VALUES (?, ?, ?)`,
+        sql: `INSERT INTO email_subscribers (email, status, consent_source) VALUES (?, ?, ?)`,
         args: [testEmail, 'active', 'website']
       });
 
@@ -393,7 +393,7 @@ describe('Brevo Webhook Security', () => {
 
       // Create email subscriber in database
       await dbClient.execute({
-        sql: `INSERT INTO email_subscribers (email, status, source) VALUES (?, ?, ?)`,
+        sql: `INSERT INTO email_subscribers (email, status, consent_source) VALUES (?, ?, ?)`,
         args: [testEmail, 'active', 'website']
       });
 
@@ -423,7 +423,7 @@ describe('Brevo Webhook Security', () => {
 
       // Create email subscriber in database
       await dbClient.execute({
-        sql: `INSERT INTO email_subscribers (email, status, source) VALUES (?, ?, ?)`,
+        sql: `INSERT INTO email_subscribers (email, status, consent_source) VALUES (?, ?, ?)`,
         args: [testEmail, 'active', 'website']
       });
 
@@ -453,7 +453,7 @@ describe('Brevo Webhook Security', () => {
 
       // Create email subscriber in database
       await dbClient.execute({
-        sql: `INSERT INTO email_subscribers (email, status, source) VALUES (?, ?, ?)`,
+        sql: `INSERT INTO email_subscribers (email, status, consent_source) VALUES (?, ?, ?)`,
         args: [testEmail, 'active', 'website']
       });
 
@@ -483,7 +483,7 @@ describe('Brevo Webhook Security', () => {
 
       // Create email subscriber in database
       await dbClient.execute({
-        sql: `INSERT INTO email_subscribers (email, status, source) VALUES (?, ?, ?)`,
+        sql: `INSERT INTO email_subscribers (email, status, consent_source) VALUES (?, ?, ?)`,
         args: [testEmail, 'active', 'website']
       });
 
@@ -514,7 +514,7 @@ describe('Brevo Webhook Security', () => {
 
       // Create email subscriber in database
       await dbClient.execute({
-        sql: `INSERT INTO email_subscribers (email, status, source) VALUES (?, ?, ?)`,
+        sql: `INSERT INTO email_subscribers (email, status, consent_source) VALUES (?, ?, ?)`,
         args: [invalidEmail, 'active', 'website']
       });
 
@@ -543,7 +543,7 @@ describe('Brevo Webhook Security', () => {
 
       // Create email subscriber in database
       await dbClient.execute({
-        sql: `INSERT INTO email_subscribers (email, status, source) VALUES (?, ?, ?)`,
+        sql: `INSERT INTO email_subscribers (email, status, consent_source) VALUES (?, ?, ?)`,
         args: [testEmail, 'active', 'website']
       });
 
@@ -572,7 +572,7 @@ describe('Brevo Webhook Security', () => {
 
       // Create email subscriber in database
       await dbClient.execute({
-        sql: `INSERT INTO email_subscribers (email, status, source) VALUES (?, ?, ?)`,
+        sql: `INSERT INTO email_subscribers (email, status, consent_source) VALUES (?, ?, ?)`,
         args: [testEmail, 'active', 'website']
       });
 

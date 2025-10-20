@@ -230,6 +230,7 @@ function isEventEnded(ticket) {
 
 /**
  * Log comprehensive scan attempt to scan_logs table
+ * Includes retry logic for SQLITE_BUSY errors
  * @param {Object} db - Database client
  * @param {Object} scanData - Scan data to log
  */
@@ -239,38 +240,54 @@ async function logScanAttempt(db, scanData) {
     return null;
   }
 
-  try {
-    const result = await db.execute({
-      sql: `
-        INSERT INTO scan_logs (
-          ticket_id, scan_status, scan_location, device_info, ip_address,
-          user_agent, validation_source, token_type, failure_reason,
-          request_id, scan_duration_ms, security_flags
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `,
-      args: [
-        scanData.ticketId,
-        scanData.scanStatus,
-        scanData.scanLocation || null,
-        scanData.deviceInfo || null,
-        scanData.ipAddress,
-        scanData.userAgent || null,
-        scanData.validationSource,
-        scanData.tokenType,
-        scanData.failureReason || null,
-        scanData.requestId,
-        scanData.scanDurationMs || null,
-        scanData.securityFlags ? JSON.stringify(scanData.securityFlags) : null
-      ]
-    });
+  const maxRetries = 3;
+  const baseDelay = 30; // ms
 
-    // Return the inserted scan_logs ID
-    return result.lastInsertRowid || result.insertId || null;
-  } catch (error) {
-    // Non-blocking: log error but don't fail the operation
-    console.error('Failed to log scan attempt (non-blocking):', error.message);
-    return null;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const result = await db.execute({
+        sql: `
+          INSERT INTO scan_logs (
+            ticket_id, scan_status, scan_location, device_info, ip_address,
+            user_agent, validation_source, token_type, failure_reason,
+            request_id, scan_duration_ms, security_flags
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+        args: [
+          scanData.ticketId,
+          scanData.scanStatus,
+          scanData.scanLocation || null,
+          scanData.deviceInfo || null,
+          scanData.ipAddress,
+          scanData.userAgent || null,
+          scanData.validationSource,
+          scanData.tokenType,
+          scanData.failureReason || null,
+          scanData.requestId,
+          scanData.scanDurationMs || null,
+          scanData.securityFlags ? JSON.stringify(scanData.securityFlags) : null
+        ]
+      });
+
+      // Return the inserted scan_logs ID
+      return result.lastInsertRowid || result.insertId || null;
+    } catch (error) {
+      const isBusyError = error.message?.includes('SQLITE_BUSY') ||
+                          error.message?.includes('database is locked');
+
+      if (isBusyError && attempt < maxRetries) {
+        const delay = baseDelay * Math.pow(2, attempt - 1) + Math.random() * 10;
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+
+      // Non-blocking: log error but don't fail the operation
+      console.error('Failed to log scan attempt (non-blocking):', error.message);
+      return null;
+    }
   }
+
+  return null;
 }
 
 /**
@@ -316,6 +333,7 @@ function detectSource(req, clientIP) {
 
 /**
  * Validate ticket and update scan count atomically with enhanced JWT support
+ * Includes retry logic for SQLITE_BUSY errors during concurrent operations
  * @param {object} db - Database instance
  * @param {string} validationCode - Validation code (ticket_id for JWT, validation_code for legacy)
  * @param {string} source - Validation source
@@ -323,46 +341,21 @@ function detectSource(req, clientIP) {
  * @returns {object} - Validation result
  */
 async function validateTicket(db, validationCode, source, isJWT = false) {
-  // Start transaction for atomic operations
-  const tx = await db.transaction();
+  const maxRetries = 5;
+  const baseDelay = 50; // ms
 
-  try {
-    let ticket;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    let tx;
 
-    if (isJWT) {
-      // For JWT tokens, validationCode is actually the ticket_id
-      const result = await tx.execute({
-        sql: `
-          SELECT t.*,
-                 'A Lo Cubano Boulder Fest' as event_name,
-                 t.event_date
-          FROM tickets t
-          WHERE t.ticket_id = ?
-        `,
-        args: [validationCode]
-      });
-      // Process database result to handle BigInt values
-      const processedResult = processDatabaseResult(result);
-      ticket = processedResult.rows[0];
-    } else {
-      // Legacy validation - use validation_code
-      const result = await tx.execute({
-        sql: `
-          SELECT t.*,
-                 'A Lo Cubano Boulder Fest' as event_name,
-                 t.event_date
-          FROM tickets t
-          WHERE t.validation_code = ?
-        `,
-        args: [validationCode]
-      });
-      // Process database result to handle BigInt values
-      const processedResult = processDatabaseResult(result);
-      ticket = processedResult.rows[0];
+    try {
+      // Start transaction for atomic operations
+      tx = await db.transaction();
 
-      // Fallback: Try ticket_id for legacy QR codes or manual entry
-      if (!ticket) {
-        const fallbackResult = await tx.execute({
+      let ticket;
+
+      if (isJWT) {
+        // For JWT tokens, validationCode is actually the ticket_id
+        const result = await tx.execute({
           sql: `
             SELECT t.*,
                    'A Lo Cubano Boulder Fest' as event_name,
@@ -372,76 +365,135 @@ async function validateTicket(db, validationCode, source, isJWT = false) {
           `,
           args: [validationCode]
         });
-        const fallbackProcessed = processDatabaseResult(fallbackResult);
-        ticket = fallbackProcessed.rows[0];
+        // Process database result to handle BigInt values
+        const processedResult = processDatabaseResult(result);
+        ticket = processedResult.rows[0];
+      } else {
+        // Legacy validation - use validation_code
+        const result = await tx.execute({
+          sql: `
+            SELECT t.*,
+                   'A Lo Cubano Boulder Fest' as event_name,
+                   t.event_date
+            FROM tickets t
+            WHERE t.validation_code = ?
+          `,
+          args: [validationCode]
+        });
+        // Process database result to handle BigInt values
+        const processedResult = processDatabaseResult(result);
+        ticket = processedResult.rows[0];
+
+        // Fallback: Try ticket_id for legacy QR codes or manual entry
+        if (!ticket) {
+          const fallbackResult = await tx.execute({
+            sql: `
+              SELECT t.*,
+                     'A Lo Cubano Boulder Fest' as event_name,
+                     t.event_date
+              FROM tickets t
+              WHERE t.ticket_id = ?
+            `,
+            args: [validationCode]
+          });
+          const fallbackProcessed = processDatabaseResult(fallbackResult);
+          ticket = fallbackProcessed.rows[0];
+        }
       }
-    }
 
-    if (!ticket) {
-      throw new Error('Ticket not found');
-    }
-
-    // Check ticket status
-    if (ticket.status !== 'valid') {
-      throw new Error(`Ticket is ${ticket.status}`);
-    }
-
-    // Check validation status
-    if (ticket.validation_status !== 'active') {
-      throw new Error(`Ticket validation is ${ticket.validation_status}`);
-    }
-
-    // Check if event has ended
-    if (isEventEnded(ticket)) {
-      throw new Error('Event has ended');
-    }
-
-    // Check scan limits
-    if (ticket.scan_count >= ticket.max_scan_count) {
-      throw new Error('Maximum scans exceeded');
-    }
-
-    // Atomic update with condition check (prevents race condition)
-    const updateField = isJWT ? 'ticket_id' : 'validation_code';
-    const updateResult = await tx.execute({
-      sql: `
-        UPDATE tickets
-        SET scan_count = scan_count + 1,
-            qr_access_method = ?,
-            first_scanned_at = COALESCE(first_scanned_at, CURRENT_TIMESTAMP),
-            last_scanned_at = CURRENT_TIMESTAMP
-        WHERE ${updateField} = ?
-          AND scan_count < max_scan_count
-          AND status = 'valid'
-          AND validation_status = 'active'
-      `,
-      args: [source, validationCode]
-    });
-
-    // Use portable rows changed check for different database implementations
-    const rowsChanged = updateResult.rowsAffected ?? updateResult.changes ?? 0;
-    if (rowsChanged === 0) {
-      throw new Error('Validation failed - ticket may have reached scan limit or status changed');
-    }
-
-    // Commit transaction
-    await tx.commit();
-
-    return {
-      success: true,
-      ticket: {
-        ...ticket,
-        scan_count: ticket.scan_count + 1
+      if (!ticket) {
+        throw new Error('Ticket not found');
       }
-    };
-  } catch (error) {
-    await tx.rollback();
-    throw error;
+
+      // Check ticket status
+      if (ticket.status !== 'valid') {
+        throw new Error(`Ticket is ${ticket.status}`);
+      }
+
+      // Check validation status
+      if (ticket.validation_status !== 'active') {
+        throw new Error(`Ticket validation is ${ticket.validation_status}`);
+      }
+
+      // Check if event has ended
+      if (isEventEnded(ticket)) {
+        throw new Error('Event has ended');
+      }
+
+      // Check scan limits
+      if (ticket.scan_count >= ticket.max_scan_count) {
+        throw new Error('Maximum scans exceeded');
+      }
+
+      // Atomic update with condition check (prevents race condition)
+      const updateField = isJWT ? 'ticket_id' : 'validation_code';
+      const updateResult = await tx.execute({
+        sql: `
+          UPDATE tickets
+          SET scan_count = scan_count + 1,
+              qr_access_method = ?,
+              first_scanned_at = COALESCE(first_scanned_at, CURRENT_TIMESTAMP),
+              last_scanned_at = CURRENT_TIMESTAMP
+          WHERE ${updateField} = ?
+            AND scan_count < max_scan_count
+            AND status = 'valid'
+            AND validation_status = 'active'
+        `,
+        args: [source, validationCode]
+      });
+
+      // Use portable rows changed check for different database implementations
+      const rowsChanged = updateResult.rowsAffected ?? updateResult.changes ?? 0;
+      if (rowsChanged === 0) {
+        throw new Error('Validation failed - ticket may have reached scan limit or status changed');
+      }
+
+      // Commit transaction
+      await tx.commit();
+
+      return {
+        success: true,
+        ticket: {
+          ...ticket,
+          scan_count: ticket.scan_count + 1
+        }
+      };
+    } catch (error) {
+      // Ensure rollback if transaction was started
+      if (tx) {
+        try {
+          await tx.rollback();
+        } catch (rollbackError) {
+          // Rollback can fail if transaction already committed/rolled back
+          console.warn('Transaction rollback failed (non-critical):', rollbackError.message);
+        }
+      }
+
+      // Check if this is a SQLITE_BUSY error that can be retried
+      const isBusyError = error.message?.includes('SQLITE_BUSY') ||
+                          error.message?.includes('database is locked') ||
+                          error.message?.includes('cannot commit transaction');
+
+      if (isBusyError && attempt < maxRetries) {
+        // Exponential backoff with jitter
+        const delay = baseDelay * Math.pow(2, attempt - 1) + Math.random() * 20;
+        console.log(`[VALIDATE] Database busy, retrying (${attempt}/${maxRetries}) after ${delay.toFixed(0)}ms`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+
+      // Non-retryable error or max retries exceeded
+      throw error;
+    }
   }
+
+  // Should never reach here, but for type safety
+  throw new Error('Maximum retry attempts exceeded');
 }
 
 /**
  * Log validation attempt with comprehensive audit trail
+ * Includes retry logic for SQLITE_BUSY errors
  * @param {object} db - Database instance
  * @param {object} params - Logging parameters
  */
@@ -450,6 +502,9 @@ async function logValidation(db, params) {
   if (!params.ticketId) {
     return;
   }
+
+  const maxRetries = 3;
+  const baseDelay = 30; // ms
 
   try {
     // Ensure database exists and qr_validations table is available
@@ -475,19 +530,39 @@ async function logValidation(db, params) {
       failureReason: params.failureReason || null
     };
 
-    // Insert into qr_validations with correct schema
-    await db.execute({
-      sql: `
-        INSERT INTO qr_validations (
-          ticket_id, validation_result, validation_metadata
-        ) VALUES (?, ?, ?)
-      `,
-      args: [
-        params.ticketId || null,
-        params.result,
-        JSON.stringify(metadata)
-      ]
-    });
+    // Retry loop for database locked errors
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        // Insert into qr_validations with correct schema
+        await db.execute({
+          sql: `
+            INSERT INTO qr_validations (
+              ticket_id, validation_result, validation_metadata
+            ) VALUES (?, ?, ?)
+          `,
+          args: [
+            params.ticketId || null,
+            params.result,
+            JSON.stringify(metadata)
+          ]
+        });
+
+        // Success - exit retry loop
+        return;
+      } catch (error) {
+        const isBusyError = error.message?.includes('SQLITE_BUSY') ||
+                            error.message?.includes('database is locked');
+
+        if (isBusyError && attempt < maxRetries) {
+          const delay = baseDelay * Math.pow(2, attempt - 1) + Math.random() * 10;
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
+
+        // Non-retryable error or max retries exceeded
+        throw error;
+      }
+    }
   } catch (error) {
     // Log error but dont throw - validation logging is not critical
     console.error('Failed to log QR validation:', error.message);
@@ -1170,7 +1245,7 @@ async function handler(req, res) {
     if (error.message.includes('Token validation service')) {
       // Configuration errors - don't expose details to client
       safeErrorMessage = 'Service temporarily unavailable';
-      validationStatus = 'service_unavailable';
+      validationStatus = 'invalid'; // Map service unavailable to invalid for scan_logs schema
       httpStatusCode = 503;
       logDetails.category = 'configuration_error';
       console.error('Token validation service error:', logDetails);
@@ -1211,9 +1286,11 @@ async function handler(req, res) {
                error.message.includes('Ticket validation is')) {
       // Ticket status errors - safe to show to user
       safeErrorMessage = error.message;
-      validationStatus = error.message.includes('cancelled') ? 'cancelled' :
-                        error.message.includes('refunded') ? 'refunded' :
-                        error.message.includes('suspended') ? 'suspended' : 'invalid';
+      // Map ticket status errors to scan_logs CHECK constraint values
+      validationStatus = error.message.includes('cancelled') ? 'invalid' :
+                        error.message.includes('refunded') ? 'invalid' :
+                        error.message.includes('suspended') ? 'invalid' :
+                        error.message.includes('invalidated') ? 'invalid' : 'invalid';
       httpStatusCode = 400;
       logDetails.category = 'ticket_status';
     } else {

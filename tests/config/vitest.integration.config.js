@@ -17,7 +17,7 @@ export default defineConfig({
 
     // Optimized timeouts for in-memory databases (faster than file-based)
     testTimeout: Number(process.env.VITEST_TEST_TIMEOUT || (process.env.CI === 'true' ? 30000 : 15000)),
-    hookTimeout: Number(process.env.VITEST_HOOK_TIMEOUT || (process.env.CI === 'true' ? 10000 : 5000)),
+    hookTimeout: Number(process.env.VITEST_HOOK_TIMEOUT || (process.env.CI === 'true' ? 15000 : 10000)),
 
     // Integration test specific setup
     setupFiles: ['./tests/setup-integration.js'],

@@ -135,9 +135,10 @@ test.describe('Basic Navigation', () => {
     const footer = page.locator('footer');
     await expect(footer).toBeVisible();
 
-    // Check for key footer content
-    await expect(footer).toContainText(/May 15-17, 2026/i);
-    await expect(footer).toContainText(/Boulder, Colorado/i);
+    // Check for contextual footer sayings (changed Oct 7, 2025)
+    // Home page displays: "DANCE • CONNECT • CELEBRATE •"
+    // Footer no longer contains dates or location (cleaner design)
+    await expect(footer).toContainText(/DANCE.*CONNECT.*CELEBRATE/i);
 
     // Check for contact email
     const emailLink = footer.locator('a[href*="mailto:alocubanoboulderfest@gmail.com"]');

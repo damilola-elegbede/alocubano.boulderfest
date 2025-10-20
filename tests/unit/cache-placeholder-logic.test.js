@@ -4,16 +4,33 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { getGalleryService } from '../../lib/gallery-service.js';
+import { getGoogleDriveService } from '../../lib/google-drive-service.js';
 
 describe('Cache Placeholder Logic', () => {
   let originalEnv;
   let galleryService;
+  let googleDriveService;
 
   beforeEach(() => {
     // Backup original environment
     originalEnv = { ...process.env };
+
+    // Simulate missing Google Drive credentials to trigger graceful degradation
+    delete process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+    delete process.env.GOOGLE_PRIVATE_KEY;
+    delete process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID;
+
     galleryService = getGalleryService();
+    googleDriveService = getGoogleDriveService();
     galleryService.clearCache();
+
+    // Mock Google Drive service to prevent actual API calls (as a safety fallback)
+    // Return empty fallback when credentials are missing
+    vi.spyOn(googleDriveService, 'fetchImages').mockResolvedValue({
+      totalCount: 0,
+      categories: { workshops: [], socials: [], performances: [], other: [] },
+      message: 'Google Drive credentials not configured - gallery disabled'
+    });
   });
 
   afterEach(() => {
@@ -26,7 +43,7 @@ describe('Cache Placeholder Logic', () => {
     it('should gracefully handle placeholder cache data with isPlaceholder: true', async () => {
       // Mock build-time cache that is a placeholder
       const mockCacheData = {
-        eventId: 'test-event',
+        eventId: '2025',
         totalCount: 0,
         categories: { workshops: [], socials: [], other: [] },
         hasMore: false,
@@ -39,7 +56,7 @@ describe('Cache Placeholder Logic', () => {
       vi.spyOn(galleryService, 'getBuildTimeCache').mockResolvedValue(mockCacheData);
 
       // Should gracefully degrade and return empty data
-      const result = await galleryService.getGalleryData('test-event');
+      const result = await galleryService.getGalleryData('2025');
       expect(result).toBeDefined();
       expect(result.totalCount).toBe(0);
       expect(result.source).toBe('empty-fallback');
@@ -90,7 +107,7 @@ describe('Cache Placeholder Logic', () => {
       // Mock build-time cache that has empty data with placeholder message
       // This should now be detected as placeholder even without explicit isPlaceholder field
       const mockEmptyData = {
-        eventId: 'empty-event',
+        eventId: '2024',
         totalCount: 0,
         categories: { workshops: [], socials: [], other: [] },
         hasMore: false,
@@ -103,7 +120,7 @@ describe('Cache Placeholder Logic', () => {
       vi.spyOn(galleryService, 'getBuildTimeCache').mockResolvedValue(mockEmptyData);
 
       // Should gracefully degrade and return empty data
-      const result = await galleryService.getGalleryData('empty-event');
+      const result = await galleryService.getGalleryData('2024');
       expect(result).toBeDefined();
       expect(result.totalCount).toBe(0);
       expect(result.source).toBe('empty-fallback');
@@ -122,7 +139,7 @@ describe('Cache Placeholder Logic', () => {
 
       // Set placeholder data in runtime cache
       const placeholderData = {
-        eventId: 'runtime-placeholder',
+        eventId: '2023',
         totalCount: 0,
         categories: { workshops: [], socials: [], other: [] },
         hasMore: false,
@@ -131,10 +148,10 @@ describe('Cache Placeholder Logic', () => {
         message: "Placeholder data - Google Drive credentials not available"
       };
 
-      galleryService.setRuntimeCache('runtime-placeholder', galleryService.compressData(placeholderData));
+      galleryService.setRuntimeCache('2023', galleryService.compressData(placeholderData));
 
       // Should gracefully degrade and return empty data
-      const result = await galleryService.getGalleryData(null, 'runtime-placeholder');
+      const result = await galleryService.getGalleryData(null, '2023');
       expect(result).toBeDefined();
       expect(result.totalCount).toBe(0);
       expect(result.source).toBe('empty-fallback');

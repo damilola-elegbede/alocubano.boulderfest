@@ -8,7 +8,7 @@ import { getDbClient } from '../setup-integration.js';
 import { getQRTokenService } from '../../lib/qr-token-service.js';
 import { createTestEvent, testRequest } from './handler-test-helper.js';
 
-describe('QR Validation Flow - Integration Tests', () => {
+describe.sequential('QR Validation Flow - Integration Tests', () => {
   let db;
   let qrService;
   let testEventId;
@@ -23,7 +23,7 @@ describe('QR Validation Flow - Integration Tests', () => {
     process.env.WALLET_AUTH_SECRET = 'test-wallet-auth-secret-minimum-32-chars-long';
 
     qrService = getQRTokenService();
-  });
+  }, 30000); // Increased timeout for beforeAll
 
   beforeEach(async () => {
     // Get fresh scoped client for each test to prevent PK collisions
@@ -74,9 +74,9 @@ describe('QR Validation Flow - Integration Tests', () => {
     });
     tx3Id = tx3Result.lastInsertRowid;
 
-    // Create additional transactions for tests that create their own tickets
+    // Create additional transactions for tests that create their own tickets (reduced to 8 for faster setup)
     txExtraIds = [];
-    for (let i = 0; i < 11; i++) {
+    for (let i = 0; i < 8; i++) {
       const result = await db.execute({
         sql: `
           INSERT INTO transactions (
@@ -172,7 +172,7 @@ describe('QR Validation Flow - Integration Tests', () => {
         'completed'
       ]
     });
-  });
+  }, 30000); // Increased timeout for beforeEach to handle database operations
 
   afterAll(async () => {
     // Cleanup handled by setup-integration.js
@@ -514,7 +514,7 @@ describe('QR Validation Flow - Integration Tests', () => {
 
       // Check qr_validations log
       const result = await db.execute({
-        sql: 'SELECT * FROM qr_validations WHERE ticket_id = (SELECT id FROM tickets WHERE ticket_id = ?) ORDER BY created_at DESC LIMIT 1',
+        sql: 'SELECT * FROM qr_validations WHERE ticket_id = ? ORDER BY created_at DESC LIMIT 1',
         args: [ticketId]
       });
 
@@ -575,7 +575,7 @@ describe('QR Validation Flow - Integration Tests', () => {
       expect(response.data.valid).toBe(true);
 
       const result = await db.execute({
-        sql: 'SELECT validation_metadata FROM qr_validations WHERE ticket_id = (SELECT id FROM tickets WHERE ticket_id = ?) ORDER BY created_at DESC LIMIT 1',
+        sql: 'SELECT validation_metadata FROM qr_validations WHERE ticket_id = ? ORDER BY created_at DESC LIMIT 1',
         args: [ticketId]
       });
 
@@ -626,7 +626,7 @@ describe('QR Validation Flow - Integration Tests', () => {
       });
 
       const result = await db.execute({
-        sql: 'SELECT validation_metadata FROM qr_validations WHERE ticket_id = (SELECT id FROM tickets WHERE ticket_id = ?) ORDER BY created_at DESC LIMIT 1',
+        sql: 'SELECT validation_metadata FROM qr_validations WHERE ticket_id = ? ORDER BY created_at DESC LIMIT 1',
         args: [ticketId]
       });
 

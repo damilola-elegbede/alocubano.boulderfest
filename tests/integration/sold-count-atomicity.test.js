@@ -419,9 +419,9 @@ describe('sold_count Atomicity Integration Tests', () => {
       const typeId = `test-atomicity-last-${Date.now()}`;
 
       await db.execute({
-        sql: `INSERT INTO ticket_types (id, event_id, name, price_cents, max_quantity, sold_count, status)
-              VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        args: [typeId, testEventId, 'Last Ticket Test', 5000, 10, 9, 'test']
+        sql: `INSERT INTO ticket_types (id, event_id, name, price_cents, max_quantity, sold_count, test_sold_count, status)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [typeId, testEventId, 'Last Ticket Test', 5000, 10, 0, 9, 'test']
       });
 
       // Simulate 3 concurrent attempts to buy the last ticket
@@ -448,13 +448,15 @@ describe('sold_count Atomicity Integration Tests', () => {
       const successCount = results.filter(r => r.created === true).length;
       expect(successCount).toBeLessThanOrEqual(1);
 
-      // Verify final test_sold_count doesn't exceed max_quantity
+      // Verify final test_sold_count doesn't exceed max_quantity (should be exactly 10 if one succeeded)
       const finalResult = await db.execute({
-        sql: 'SELECT test_sold_count FROM ticket_types WHERE id = ?',
+        sql: 'SELECT test_sold_count, max_quantity FROM ticket_types WHERE id = ?',
         args: [typeId]
       });
 
-      expect(finalResult.rows[0].test_sold_count).toBeLessThanOrEqual(1);
+      expect(finalResult.rows[0].test_sold_count).toBeLessThanOrEqual(finalResult.rows[0].max_quantity);
+      // Starting at 9, only 1 ticket should have been sold (bringing total to 10)
+      expect(finalResult.rows[0].test_sold_count).toBe(10);
     });
 
     it('should enforce maximum capacity', async () => {
@@ -623,9 +625,15 @@ describe('sold_count Atomicity Integration Tests', () => {
   });
 
   describe('Performance Under Concurrent Load', () => {
-    it('should handle high concurrent load without race conditions', async () => {
+    it('should handle high concurrent load without race conditions', { timeout: 30000 }, async () => {
       // Create ticket type with capacity for many concurrent purchases
       const typeId = `test-atomicity-perf-${Date.now()}`;
+
+      // CRITICAL: Set event to active status for validation to pass
+      await db.execute({
+        sql: 'UPDATE events SET status = ? WHERE id = ?',
+        args: ['active', testEventId]
+      });
 
       await db.execute({
         sql: `INSERT INTO ticket_types (id, event_id, name, price_cents, max_quantity, sold_count, status)

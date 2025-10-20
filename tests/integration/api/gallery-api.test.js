@@ -415,7 +415,7 @@ describe('Gallery API Integration Tests', () => {
           await galleryService.getGalleryData('1999');
         } catch (error) {
           // Should get specific error about year not existing, OR authentication error if using test credentials
-          expect(error.message).toMatch(/No gallery found for year 1999|Invalid year format|Google Drive API validation failed|authentication failed/);
+          expect(error.message).toMatch(/No gallery found for event boulder-fest-1999|Invalid year format|Google Drive API validation failed|authentication failed/);
         }
       }
     });
@@ -616,7 +616,7 @@ describe('Gallery API Integration Tests', () => {
 
         } catch (error) {
           // May fail if year doesn't exist in Google Drive
-          expect(error.message).toMatch(/No gallery found for year 2023/);
+          expect(error.message).toMatch(/No gallery found for event boulder-fest-2023/);
         }
       }
 

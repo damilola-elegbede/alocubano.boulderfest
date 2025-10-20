@@ -19,39 +19,22 @@ export const getDatabaseConfig = (testType) => {
   switch (testType) {
     case TEST_ENVIRONMENTS.UNIT:
       return {
-        url: 'file::memory:?cache=shared',  // Shared cache for performance
+        url: ':memory:',  // In-memory database for unit tests
         authToken: null,
-        description: 'Shared in-memory SQLite for fast unit tests (no migrations)',
+        description: 'In-memory SQLite for fast unit tests (no migrations)',
         persistent: false,
         skipMigrations: true,  // Skip migrations for unit test performance
         useSharedCache: true   // Share cache across tests for speed
       };
 
     case TEST_ENVIRONMENTS.INTEGRATION:
-      // Determine best database URL for integration tests
-      const getIntegrationDbUrl = () => {
-        // Prefer in-memory databases for perfect test isolation
-        // Each test worker gets its own isolated database instance
-        if (process.env.DATABASE_URL === ':memory:' ||
-            process.env.INTEGRATION_DATABASE_URL === ':memory:') {
-          return ':memory:';
-        }
-
-        // Allow file-based SQLite if explicitly requested
-        if (process.env.INTEGRATION_DATABASE_URL &&
-            process.env.INTEGRATION_DATABASE_URL.startsWith('file:')) {
-          return process.env.INTEGRATION_DATABASE_URL;
-        }
-
-        // Default to in-memory for better isolation and performance
-        // File-based databases cause lock contention with parallel workers
-        return ':memory:';
-      };
-
+      // Always use in-memory database for perfect test isolation
+      // Each test worker gets its own isolated database instance
+      // File-based databases cause lock contention with parallel workers
       return {
-        url: getIntegrationDbUrl(),
+        url: ':memory:',
         authToken: null, // Integration tests never need auth tokens
-        description: 'In-memory SQLite for perfect test isolation (or local file if specified)',
+        description: 'In-memory SQLite for perfect test isolation',
         persistent: true,
         cleanup: true,
         remoteAllowed: false // Explicitly flag that remote databases are not allowed
@@ -199,13 +182,7 @@ export const configureEnvironment = (testType) => {
   if (testType === TEST_ENVIRONMENTS.INTEGRATION) {
     delete process.env.TURSO_DATABASE_URL;
     delete process.env.TURSO_AUTH_TOKEN;
-
-    // Allow both file-based and in-memory databases for integration tests
-    // :memory: is valid for perfect test isolation
-    if (!process.env.DATABASE_URL.startsWith('file:') && process.env.DATABASE_URL !== ':memory:') {
-      console.warn('⚠️ Fixing invalid DATABASE_URL for integration test');
-      process.env.DATABASE_URL = ':memory:'; // Default to in-memory for better isolation
-    }
+    // DATABASE_URL is always set to :memory: by configureEnvironment
   }
 
   // Port configuration

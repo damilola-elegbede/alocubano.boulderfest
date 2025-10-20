@@ -10,19 +10,33 @@
  */
 
 import { defineConfig, devices } from '@playwright/test';
+import { config as loadEnv } from 'dotenv';
+import { existsSync } from 'fs';
 
-// Use existing Vercel preview from CI or fallback to local
+// Load .env.preview if it exists (created by global setup)
+const previewEnvPath = '.env.preview';
+if (existsSync(previewEnvPath)) {
+  loadEnv({ path: previewEnvPath });
+}
+
+// Use Vercel preview deployment - no local fallback
 const baseURL = process.env.PREVIEW_URL ||
                 process.env.PLAYWRIGHT_BASE_URL ||
-                process.env.CI_EXTRACTED_PREVIEW_URL ||
-                'http://localhost:3000';
+                process.env.CI_EXTRACTED_PREVIEW_URL;
+
+// Note: If baseURL is not set here, global setup will handle preview detection
+// and create .env.preview file with the URL
+if (!baseURL) {
+  console.log('⚠️  No preview URL found in environment');
+  console.log('   Global setup will handle preview detection/creation');
+}
 
 const isCI = !!process.env.CI;
-const isPreview = baseURL.includes('vercel.app') || process.env.PREVIEW_URL;
+const isPreview = true; // Always preview mode - no local server support
 
 console.log(`🚀 Optimized E2E Configuration:`);
 console.log(`   Target: ${baseURL}`);
-console.log(`   Mode: ${isPreview ? 'Vercel Preview' : 'Local'}`);
+console.log(`   Mode: Vercel Preview (always)`);
 console.log(`   Parallel: Enabled (${isCI ? '2 workers' : '4 workers'})`);
 
 // Standard test ignore patterns
@@ -67,7 +81,8 @@ export default defineConfig({
   },
 
   use: {
-    baseURL: baseURL,
+    // BaseURL is set if available, otherwise global setup will provide it
+    ...(baseURL ? { baseURL } : {}),
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: isCI ? 'off' : 'retain-on-failure',  // Disable video in CI for speed
@@ -136,7 +151,7 @@ export default defineConfig({
     },
   ],
 
-  // Use resilient global setup that works for both local and preview modes
-  globalSetup: isPreview ? './tests/e2e/global-setup-preview.js' : './tests/e2e/global-setup.js',
-  globalTeardown: isPreview ? './tests/e2e/global-teardown-preview.js' : './tests/e2e/global-teardown.js',
+  // Always use preview setup/teardown (no local mode)
+  globalSetup: './tests/e2e/global-setup-preview.js',
+  globalTeardown: './tests/e2e/global-teardown-preview.js',
 });

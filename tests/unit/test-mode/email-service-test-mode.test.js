@@ -298,6 +298,16 @@ describe('Email Service Test Mode', () => {
         // No list or template IDs set
       };
 
+      // Explicitly delete all Brevo list and template environment variables
+      // to test that defaults are used (these may be set in .env.local or .env.vercel)
+      delete process.env.BREVO_NEWSLETTER_LIST_ID;
+      delete process.env.BREVO_TICKET_HOLDERS_LIST_ID;
+      delete process.env.BREVO_VIP_LIST_ID;
+      delete process.env.BREVO_WORKSHOPS_LIST_ID;
+      delete process.env.BREVO_WELCOME_TEMPLATE_ID;
+      delete process.env.BREVO_VERIFICATION_TEMPLATE_ID;
+      delete process.env.BREVO_UNSUBSCRIBE_TEMPLATE_ID;
+
       const brevoService = new BrevoService();
 
       expect(brevoService.lists.newsletter).toBe(1);

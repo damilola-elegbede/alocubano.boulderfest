@@ -368,9 +368,9 @@ describe('QR Token Security', () => {
     it('should have secure default configuration', () => {
       // Verify default expiry (90 days)
       expect(qrService.expiryDays).toBe(90);
-      
-      // Verify default max scans (10)
-      expect(qrService.maxScans).toBe(10);
+
+      // Verify default max scans (3) - changed from 10 in migration 047
+      expect(qrService.maxScans).toBe(3);
     });
   });
 

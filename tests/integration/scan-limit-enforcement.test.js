@@ -24,7 +24,8 @@ import { testRequest, HTTP_STATUS, createTestEvent } from './handler-test-helper
 import { getDbClient } from '../setup-integration.js';
 import { QRTokenService } from '../../lib/qr-token-service.js';
 
-describe('Integration: Scan Limit Enforcement', () => {
+// Run tests sequentially to avoid database locking issues
+describe.sequential('Integration: Scan Limit Enforcement', () => {
   let db;
   let qrService;
   let testEventId;
@@ -41,14 +42,27 @@ describe('Integration: Scan Limit Enforcement', () => {
 
     // Get database client
     db = await getDbClient();
-    
+
+    // Configure database for better concurrency handling
+    try {
+      // Enable WAL mode for better concurrent access
+      await db.execute('PRAGMA journal_mode = WAL');
+      // Set busy timeout to 30 seconds to handle lock contention
+      await db.execute('PRAGMA busy_timeout = 30000');
+      // Optimize for concurrent writes
+      await db.execute('PRAGMA synchronous = NORMAL');
+      console.log('✅ Database configured for concurrent access (WAL mode, 30s timeout)');
+    } catch (error) {
+      console.warn('⚠️ Could not configure database pragmas:', error.message);
+    }
+
     // Verify tables exist
     const tablesCheck = await db.execute(`
       SELECT name FROM sqlite_master
       WHERE type='table' AND name IN ('tickets', 'scan_logs', 'qr_validations')
       ORDER BY name
     `);
-    
+
     const existingTables = tablesCheck.rows.map(row => row.name);
     expect(existingTables).toContain('tickets');
     console.log('✅ Verified required tables exist:', existingTables);
@@ -62,27 +76,60 @@ describe('Integration: Scan Limit Enforcement', () => {
     // Get fresh database client for each test
     db = await getDbClient();
 
-    // Create a test event for foreign key requirements (ensure it exists for this test)
-    // Check if event already exists first to avoid duplicates
-    const existingEvent = await db.execute({
-      sql: 'SELECT id FROM events WHERE slug = ?',
-      args: ['boulder-fest-2026-scan-test']
-    });
+    // Ensure database is configured with busy timeout for each test
+    try {
+      await db.execute('PRAGMA busy_timeout = 30000');
+    } catch (error) {
+      console.warn('⚠️ Could not set busy timeout:', error.message);
+    }
 
-    if (existingEvent.rows.length > 0) {
-      testEventId = existingEvent.rows[0].id;
-    } else {
-      testEventId = await createTestEvent(db, {
-        slug: 'boulder-fest-2026-scan-test',
-        name: 'A Lo Cubano Boulder Fest 2026 (Scan Tests)',
-        startDate: '2026-05-15',
-        endDate: '2026-05-17'
-      });
+    // Create a test event for foreign key requirements with retry logic
+    const maxRetries = 20; // Increased from 10
+    const baseDelay = 200; // Increased from 100ms
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        // Check if event already exists first to avoid duplicates
+        const existingEvent = await db.execute({
+          sql: 'SELECT id FROM events WHERE slug = ?',
+          args: ['boulder-fest-2026-scan-test']
+        });
+
+        if (existingEvent.rows.length > 0) {
+          testEventId = existingEvent.rows[0].id;
+        } else {
+          testEventId = await createTestEvent(db, {
+            slug: 'boulder-fest-2026-scan-test',
+            name: 'A Lo Cubano Boulder Fest 2026 (Scan Tests)',
+            startDate: '2026-05-15',
+            endDate: '2026-05-17'
+          });
+        }
+
+        // Success - exit retry loop
+        break;
+      } catch (error) {
+        const isBusyError = error.message?.includes('SQLITE_BUSY') ||
+                            error.message?.includes('database is locked') ||
+                            error.code === 'SQLITE_BUSY';
+
+        if (isBusyError && attempt < maxRetries) {
+          // Exponential backoff with jitter - longer delays for cleanup conflicts
+          const delay = baseDelay * Math.pow(2, attempt - 1) + Math.random() * 100;
+          console.log(`⏳ Database busy (attempt ${attempt}/${maxRetries}), retrying in ${Math.round(delay)}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
+
+        // Non-retryable error or max retries exceeded
+        console.error(`❌ Failed to create test event after ${maxRetries} attempts:`, error.message);
+        throw error;
+      }
     }
   });
 
   /**
-   * Helper function to create test ticket
+   * Helper function to create test ticket with retry logic for database locked errors
    */
   async function createTestTicket(options = {}) {
     const timestamp = Date.now();
@@ -97,37 +144,66 @@ describe('Integration: Scan Limit Enforcement', () => {
       validationStatus = 'active',
     } = options;
 
-    await db.execute({
-      sql: `
-        INSERT INTO tickets (
-          ticket_id, transaction_id, ticket_type, event_id, event_date,
-          price_cents, attendee_first_name, attendee_last_name, attendee_email,
-          status, validation_status, validation_code, scan_count, max_scan_count
-        ) VALUES (?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `,
-      args: [
-        ticketId,
-        'Weekend Pass',
-        testEventId,
-        '2026-05-15',
-        12500,
-        'Scan',
-        'Test',
-        'scan-test@example.com',
-        status,
-        validationStatus,
-        validationCode,
-        initialScanCount,
-        maxScanCount,
-      ],
-    });
+    const maxRetries = 20; // Increased from 10
+    const baseDelay = 200; // Increased from 100ms
 
-    return {
-      ticketId,
-      validationCode,
-      maxScanCount,
-      initialScanCount,
-    };
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        // Ensure busy timeout is set before each insert attempt
+        await db.execute('PRAGMA busy_timeout = 30000');
+
+        await db.execute({
+          sql: `
+            INSERT INTO tickets (
+              ticket_id, transaction_id, ticket_type, event_id, event_date,
+              price_cents, attendee_first_name, attendee_last_name, attendee_email,
+              status, validation_status, validation_code, scan_count, max_scan_count
+            ) VALUES (?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `,
+          args: [
+            ticketId,
+            'Weekend Pass',
+            testEventId,
+            '2026-05-15',
+            12500,
+            'Scan',
+            'Test',
+            'scan-test@example.com',
+            status,
+            validationStatus,
+            validationCode,
+            initialScanCount,
+            maxScanCount,
+          ],
+        });
+
+        // Success - return ticket data
+        return {
+          ticketId,
+          validationCode,
+          maxScanCount,
+          initialScanCount,
+        };
+      } catch (error) {
+        const isBusyError = error.message?.includes('SQLITE_BUSY') ||
+                            error.message?.includes('database is locked') ||
+                            error.code === 'SQLITE_BUSY';
+
+        if (isBusyError && attempt < maxRetries) {
+          // Exponential backoff with jitter - longer delays for cleanup conflicts
+          const delay = baseDelay * Math.pow(2, attempt - 1) + Math.random() * 100;
+          console.log(`⏳ Database busy creating ticket (attempt ${attempt}/${maxRetries}), retrying in ${Math.round(delay)}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
+
+        // Non-retryable error or max retries exceeded
+        console.error(`❌ Failed to create ticket after ${maxRetries} attempts:`, error.message);
+        throw error;
+      }
+    }
+
+    throw new Error('Failed to create test ticket after max retries');
   }
 
   /**

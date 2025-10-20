@@ -646,7 +646,20 @@ jobs:
 
           # Determine if tests actually passed or failed
           if [ $TEST_EXIT_CODE -eq 0 ]; then
-            # Exit code 0 = success
+            # Exit code 0 = success, BUT need to check if tests actually passed
+
+            # CRITICAL FIX: Check FAILED_TESTS even when exit code is 0
+            # Playwright can return 0 even with failures in some configurations
+            if [ "$FAILED_TESTS" -gt 0 ]; then
+              echo ""
+              echo "❌ FAILED: $FAILED_TESTS test(s) failed for ${{ matrix.browser }}"
+              echo "⚠️  Exit code was 0 but tests failed - Playwright configuration issue!"
+              echo ""
+              echo "📊 Full test summary:"
+              grep -E "([0-9]+ passed|[0-9]+ failed|[0-9]+ skipped)" test_output.log || echo "  No summary found in output"
+              exit 1
+            fi
+
             if [ "$PASSED_TESTS" -eq 0 ] && [ "$FAILED_TESTS" -eq 0 ]; then
               echo ""
               echo "⚠️  WARNING: No tests were executed!"

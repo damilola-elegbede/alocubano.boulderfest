@@ -15,6 +15,10 @@ import { getDbClient } from '../../setup-integration.js';
 import jwt from 'jsonwebtoken';
 
 describe('Integration: Tickets API', () => {
+  // Increase hook timeout to handle database lock retries after concurrent tests
+  // The race condition test can leave the database locked, requiring exponential backoff retries
+  const hookTimeout = 20000; // 20 seconds to allow for up to 10 retry attempts
+
   let db;
   let testTicket;
   let testEventId;
@@ -83,8 +87,8 @@ describe('Integration: Tickets API', () => {
     db = await getDbClient();
 
     // Create test event to satisfy foreign key constraint
+    // Use unique slug per test run to avoid UNIQUE constraint violations
     testEventId = await createTestEvent(db, {
-      slug: 'boulder-fest-2026',
       name: 'Boulder Fest 2026',
       type: 'festival',
       status: 'test',
@@ -159,6 +163,12 @@ describe('Integration: Tickets API', () => {
       firstName: 'Integration',
       lastName: 'Test'
     };
+  }, hookTimeout);
+
+  afterEach(async () => {
+    // Give database time to release locks from concurrent operations
+    // This is especially important after the race condition test
+    await new Promise(resolve => setTimeout(resolve, 500));
   });
 
   it('should validate ticket and update scan count atomically', async () => {

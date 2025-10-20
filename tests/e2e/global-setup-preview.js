@@ -32,17 +32,30 @@ async function globalSetupPreview() {
   console.log('✅ No local secret validation needed - Vercel deployments have their own secrets');
 
   try {
-    // Step 1: Get preview URL from environment (CI provides this)
+    // Step 1: Get or create preview URL using smart detection
     let previewUrl = process.env.PREVIEW_URL || process.env.PLAYWRIGHT_BASE_URL;
 
     if (!previewUrl) {
-      // In CI, this should never happen as GitHub Actions sets it
-      // For local development, user must provide PREVIEW_URL
-      throw new Error(
-        'PREVIEW_URL not set. ' +
-        'In CI, this is set by GitHub Actions. ' +
-        'For local testing, set PREVIEW_URL environment variable to your Vercel preview deployment URL.'
-      );
+      console.log('🔍 No PREVIEW_URL provided, using smart detection...');
+      console.log('   This will check for existing preview or create new deployment (~4 min)');
+
+      // Import and use existing deployment manager
+      const { VercelDeploymentManager } = await import('../../scripts/vercel-deployment-manager.js');
+      const manager = new VercelDeploymentManager();
+
+      // Smart detection: reuse existing preview for current commit or create new
+      // This handles everything: git commit detection, Vercel API search, deployment creation
+      previewUrl = await manager.getDeploymentUrl();
+
+      if (!previewUrl) {
+        throw new Error(
+          'Failed to obtain preview URL. ' +
+          'Ensure VERCEL_TOKEN, VERCEL_ORG_ID, and VERCEL_PROJECT_ID environment variables are set. ' +
+          'Alternatively, set PREVIEW_URL manually to skip auto-detection.'
+        );
+      }
+
+      console.log(`✅ Smart detection completed: ${previewUrl}`);
     }
 
     // Ensure URL has protocol
