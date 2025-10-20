@@ -110,7 +110,7 @@ describe('Gallery API Integration Tests', () => {
             expect(result2023.source).toMatch(/runtime-generated|google-drive/);
           } catch (error) {
             // Expected if 2023 year doesn't exist in Google Drive
-            expect(error.message).toMatch(/No gallery found for year 2023/);
+            expect(error.message).toMatch(/No gallery found for event boulder-fest-2023/);
           }
         }
       }
@@ -397,7 +397,7 @@ describe('Gallery API Integration Tests', () => {
             expect(result2023.source).toMatch(/runtime-generated|google-drive/);
           } catch (error) {
             // May fail if year doesn't exist in Google Drive
-            expect(error.message).toMatch(/No gallery found for year 2023/);
+            expect(error.message).toMatch(/No gallery found for event boulder-fest-2023/);
           }
         }
       }

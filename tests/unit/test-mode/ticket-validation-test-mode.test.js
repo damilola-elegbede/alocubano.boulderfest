@@ -384,7 +384,7 @@ describe('Ticket Validation Test Mode', () => {
           'Test',
           'User',
           'test@example.com',
-          'registered',
+          'completed',
           'TEST-TICKET-12345'
         ])
       );
@@ -403,7 +403,7 @@ describe('Ticket Validation Test Mode', () => {
             ticket_id: 'TEST-TICKET-12345',
             status: 'valid',
             is_test: 1,
-            registration_status: 'registered'
+            registration_status: 'completed'
           }]
         })
         .mockResolvedValueOnce({
@@ -427,13 +427,13 @@ describe('Ticket Validation Test Mode', () => {
         ['TEST-TICKET-12345']
       );
 
-      // Should update ticket to checked in status (status='used', registration_status='checked_in')
+      // Should update ticket to checked in status (status='used')
+      // Note: registration_status stays 'completed' - check-in only updates status and checked_in_at
       expect(mockDatabase.execute).toHaveBeenCalledWith(
         expect.stringContaining('UPDATE tickets'),
         expect.arrayContaining([
           'used', // status changes to 'used' per CHECK constraint
           expect.any(String), // checked_in_at timestamp
-          'checked_in', // registration_status changes to 'checked_in'
           'TEST-TICKET-12345'
         ])
       );

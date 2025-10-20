@@ -282,11 +282,11 @@ async function loginHandler(req, res) {
 
     // Check enhanced rate limiting with progressive delays (skip in test environments)
     // Note: Preview deployments use production security (no VERCEL_ENV check)
+    // Security: Only use environment variables for test detection - never User-Agent
     const isTestEnvironment =
       process.env.NODE_ENV === 'test' ||
       process.env.CI === 'true' ||
-      process.env.E2E_TEST_MODE === 'true' ||
-      req.headers['user-agent']?.includes('Playwright');
+      process.env.E2E_TEST_MODE === 'true';
 
     if (!isTestEnvironment) {
       const rateLimitResult = await checkEnhancedRateLimit(clientIP);
@@ -431,10 +431,10 @@ async function handlePasswordStep(req, res, username, password, clientIP) {
 
   // Check if this is a test environment for debug logging
   // Note: Preview deployments use production security (no VERCEL_ENV check)
+  // Security: Only use environment variables for test detection - never User-Agent
   const isE2ETest =
     process.env.E2E_TEST_MODE === 'true' ||
-    process.env.CI === 'true' ||
-    req.headers['user-agent']?.includes('Playwright');
+    process.env.CI === 'true';
 
   console.log('[Login] Environment check:', {
     isE2ETest,
