@@ -60,6 +60,7 @@ describe('Webhook Validation Integration Tests', () => {
     const sessionId = `cs_val_tamper1_${Date.now()}`;
     const mockStripeSession = {
       id: sessionId,
+      created: Math.floor(Date.now() / 1000), // Stripe timestamp
       amount_total: 6500,
       currency: 'usd',
       customer_details: {
@@ -125,6 +126,7 @@ describe('Webhook Validation Integration Tests', () => {
 
     const mockStripeSession = {
       id: sessionId,
+      created: Math.floor(Date.now() / 1000), // Stripe timestamp
       amount_total: 100, // Tampered: claiming $1.00 instead of $65.00
       currency: 'usd',
       customer_details: {
@@ -221,6 +223,7 @@ describe('Webhook Validation Integration Tests', () => {
     const sessionId = `cs_validation_soldout_${Date.now()}`;
     const mockStripeSession = {
       id: sessionId,
+      created: Math.floor(Date.now() / 1000), // Stripe timestamp
       amount_total: 100,
       currency: 'usd',
       customer_details: {
@@ -279,6 +282,7 @@ describe('Webhook Validation Integration Tests', () => {
     // Create session with price mismatch to trigger flagged status
     const mockStripeSession = {
       id: sessionId,
+      created: Math.floor(Date.now() / 1000), // Stripe timestamp
       amount_total: 1000, // Tampered price (real: 6500)
       currency: 'usd',
       customer_details: {
@@ -342,6 +346,7 @@ describe('Webhook Validation Integration Tests', () => {
     // Simulate critical validation failure
     const mockStripeSession = {
       id: sessionId,
+      created: Math.floor(Date.now() / 1000), // Stripe timestamp
       amount_total: 10, // Severely tampered price
       currency: 'usd',
       customer_details: {
@@ -407,6 +412,7 @@ describe('Webhook Validation Integration Tests', () => {
     // Valid session (should pass validation)
     const mockStripeSession = {
       id: sessionId,
+      created: Math.floor(Date.now() / 1000), // Stripe timestamp
       amount_total: 6500,
       currency: 'usd',
       customer_details: {
@@ -478,6 +484,7 @@ describe('Webhook Validation Integration Tests', () => {
 
     const mockStripeSession = {
       id: sessionId,
+      created: Math.floor(Date.now() / 1000), // Stripe timestamp
       amount_total: 6500,
       currency: 'usd',
       customer_details: {
@@ -562,6 +569,7 @@ describe('Webhook Validation Integration Tests', () => {
 
     const mockStripeSession = {
       id: sessionId,
+      created: Math.floor(Date.now() / 1000), // Stripe timestamp
       amount_total: 500,
       currency: 'usd',
       customer_details: {

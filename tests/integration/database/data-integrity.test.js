@@ -553,14 +553,14 @@ describe('Integration: Database Data Integrity', () => {
   it('should enforce email subscriber constraints and data consistency', async () => {
     const testEmail = `integrity-test-${Date.now()}@example.com`;
 
-    // Create email subscriber
+    // Create email subscriber (note: source column does not exist in schema)
     const subscriberResult = await db.execute({
       sql: `
         INSERT INTO "email_subscribers" (
-          email, status, source
-        ) VALUES (?, ?, ?)
+          email, status
+        ) VALUES (?, ?)
       `,
-      args: [testEmail, 'active', 'test']
+      args: [testEmail, 'active']
     });
 
     expect(subscriberResult.rowsAffected).toBe(1);

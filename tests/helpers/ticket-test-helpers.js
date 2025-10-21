@@ -381,13 +381,13 @@ export async function registerTestTicket(ticketId, registrationData) {
     }
 
     // Update ticket with registration information
-    // Set registration_status to 'registered' to match test expectations
+    // Set registration_status to 'completed' to match test expectations
     await client.execute(`
       UPDATE tickets
       SET attendee_first_name = ?, attendee_last_name = ?,
           attendee_email = ?, registration_status = ?
       WHERE ticket_id = ?
-    `, [firstName, lastName, email, 'registered', ticketId]);
+    `, [firstName, lastName, email, 'completed', ticketId]);
 
     return {
       success: true,
@@ -423,22 +423,22 @@ export async function checkInTestTicket(ticketId) {
     }
 
     const ticket = checkResult.rows[0];
-    // Allow both 'registered' and 'completed' as valid registration statuses for check-in
-    if (ticket.registration_status !== 'completed' && ticket.registration_status !== 'registered') {
+    // Allow 'completed' as valid registration status for check-in
+    if (ticket.registration_status !== 'completed') {
       return {
         success: false,
-        error: `Ticket must be registered before check-in. Current status: ${ticket.registration_status}`
+        error: `Ticket must be registered (completed) before check-in. Current status: ${ticket.registration_status}`
       };
     }
 
     // Update ticket to checked in (use 'used' status as per CHECK constraint)
-    // Also update registration_status to 'checked_in'
+    // Keep registration_status as 'completed' (don't change it to 'checked_in')
     const checkedInAt = new Date().toISOString();
     await client.execute(`
       UPDATE tickets
-      SET status = ?, checked_in_at = ?, registration_status = ?
+      SET status = ?, checked_in_at = ?
       WHERE ticket_id = ?
-    `, ['used', checkedInAt, 'checked_in', ticketId]);
+    `, ['used', checkedInAt, ticketId]);
 
     return {
       success: true,

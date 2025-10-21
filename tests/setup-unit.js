@@ -118,6 +118,15 @@ console.warn = (...args) => {
   originalConsoleWarn.apply(console, args);
 };
 
+// Force in-memory database for unit tests
+// Belt-and-suspenders: ensure it's set even before configureEnvironment()
+process.env.DATABASE_URL = ':memory:';
+
+// CRITICAL: Delete TURSO variables to prevent them from being used
+// lib/database.js:1372 checks TURSO_DATABASE_URL first with || operator
+delete process.env.TURSO_DATABASE_URL;
+delete process.env.TURSO_AUTH_TOKEN;
+
 // Configure unit test environment
 const config = configureEnvironment(TEST_ENVIRONMENTS.UNIT);
 

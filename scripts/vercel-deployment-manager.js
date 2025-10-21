@@ -606,4 +606,6 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     });
 }
 
+// Export for both default and named imports
 export default VercelDeploymentManager;
+export { VercelDeploymentManager };

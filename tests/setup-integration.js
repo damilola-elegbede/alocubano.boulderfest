@@ -229,11 +229,9 @@ const secretValidation = validateIntegrationSecrets();
 console.log('🔧 Step 2: Environment Configuration');
 const config = configureEnvironment(TEST_ENVIRONMENTS.INTEGRATION);
 
-// CRITICAL FIX: Set DATABASE_URL AFTER configureEnvironment to prevent override
-// Use in-memory SQLite for complete test isolation
-// This prevents SQLITE_BUSY, SQLITE_LOCKED, and race condition errors
-process.env.DATABASE_URL = ':memory:';
-console.log('✅ Forced DATABASE_URL to :memory: for perfect test isolation');
+// DATABASE_URL is already set to :memory: by configureEnvironment
+// No override needed - configuration is consistent across all test environments
+console.log('✅ DATABASE_URL configured to :memory: for perfect test isolation');
 
 // Validate environment setup
 console.log('🔧 Step 3: Environment Validation');

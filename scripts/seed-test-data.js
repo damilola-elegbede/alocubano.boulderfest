@@ -14,7 +14,7 @@ export const getTestDataConstants = () => {
     admin: {
       username: 'admin',
       password: process.env.TEST_ADMIN_PASSWORD || 'test-admin-password',
-      email: 'admin@alocubano.test'
+      email: 'admin'  // Must match username for login (not a real email address)
     },
 
     // Test user data

@@ -224,8 +224,8 @@ describe('Cron Job Scheduling - Integration Tests', () => {
       expect(durationMatch.length).toBeGreaterThan(1);
 
       const durationMs = parseInt(durationMatch[1], 10);
-      // Duration should be at least 1ms; Date.now() has millisecond granularity
-      expect(durationMs).toBeGreaterThan(0);
+      // Duration should be 0 or greater (Date.now() has millisecond granularity, so 0ms is valid for very fast operations)
+      expect(durationMs).toBeGreaterThanOrEqual(0);
       expect(durationMs).toBeLessThan(60000); // Should complete within 60 seconds
     });
   });

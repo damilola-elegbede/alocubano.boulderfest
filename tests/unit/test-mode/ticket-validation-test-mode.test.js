@@ -149,67 +149,9 @@ describe('Ticket Validation Test Mode', () => {
   });
 
   describe('Test Ticket Validation', () => {
-    it.skip('should validate test tickets correctly', async () => {
-      // SKIPPED: This test relies on module mocking that doesn't work with dynamic imports
-      // The helper functions use dynamic import() which bypasses vi.doMock()
-      // TODO: Refactor to test actual behavior or use dependency injection
-      process.env = {
-        ...originalProcessEnv,
-        NODE_ENV: 'test'
-      };
-
-      // Mock QR token validation
-      mockQRTokenService.validateToken.mockReturnValue({
-        valid: true,
-        payload: {
-          ticketId: 'TEST-TICKET-12345',
-          isTest: true,
-          eventId: 1
-        }
-      });
-
-      mockQRTokenService.isTestToken.mockReturnValue(true);
-
-      // Mock database ticket lookup
-      mockDatabase.execute.mockResolvedValue({
-        rows: [{
-          id: 1,
-          ticket_id: 'TEST-TICKET-12345',
-          status: 'valid',
-          is_test: 1,
-          attendee_email: 'test@example.com',
-          event_id: 1
-        }]
-      });
-
-      vi.doMock('../../../lib/qr-token-service.js', () => ({
-        default: mockQRTokenService,
-        QRTokenService: class {
-          generateToken(payload) {
-            return mockQRTokenService.generateToken(payload);
-          }
-          validateToken(token) {
-            return mockQRTokenService.validateToken(token);
-          }
-          isTestToken(token) {
-            return mockQRTokenService.isTestToken(token);
-          }
-        }
-      }));
-
-      vi.doMock('../../../lib/database.js', () => ({
-        getDatabaseClient: () => mockDatabase
-      }));
-
-      const { validateTestTicket } = await import('../../../tests/helpers/ticket-test-helpers.js');
-
-      const validationResult = await validateTestTicket('TEST-QR-TOKEN-12345');
-
-      expect(validationResult.valid).toBe(true);
-      expect(validationResult.ticket.isTest).toBe(true);
-      expect(validationResult.ticket.ticketId).toBe('TEST-TICKET-12345');
-      expect(mockQRTokenService.isTestToken).toHaveBeenCalledWith('TEST-QR-TOKEN-12345');
-    });
+    // NOTE: Test ticket validation integration tests have been moved to:
+    // tests/integration/test-mode/ticket-validation-test-mode.test.js
+    // These tests require actual QR token service and database interactions.
 
     it('should reject production QR codes in test-only mode', async () => {
       process.env = {
@@ -336,56 +278,9 @@ describe('Ticket Validation Test Mode', () => {
   });
 
   describe('Test Ticket QR Code Generation', () => {
-    it.skip('should generate QR codes with test indicators', async () => {
-      // SKIPPED: This test relies on module mocking that doesn't work with dynamic imports
-      // The helper functions use dynamic import() which bypasses vi.doMock()
-      // TODO: Refactor to test actual behavior or use dependency injection
-      process.env = {
-        ...originalProcessEnv,
-        QR_SECRET_KEY: 'test-secret-key-32-chars-minimum'
-      };
-
-      mockQRTokenService.generateToken.mockImplementation((payload) => {
-        if (payload.isTest) {
-          return `TEST-QR-${payload.ticketId}-${Date.now()}`;
-        }
-        return `QR-${payload.ticketId}-${Date.now()}`;
-      });
-
-      vi.doMock('../../../lib/qr-token-service.js', () => ({
-        default: mockQRTokenService,
-        QRTokenService: class {
-          generateToken(payload) {
-            return mockQRTokenService.generateToken(payload);
-          }
-          validateToken(token) {
-            return mockQRTokenService.validateToken(token);
-          }
-          isTestToken(token) {
-            return mockQRTokenService.isTestToken(token);
-          }
-        }
-      }));
-
-      const { generateTestQRCode } = await import('../../../tests/helpers/ticket-test-helpers.js');
-
-      const qrCode = await generateTestQRCode({
-        ticketId: 'TEST-TICKET-12345',
-        eventId: 1,
-        isTest: true
-      });
-
-      expect(qrCode).toMatch(/^TEST-QR-TEST-TICKET-12345-/);
-      expect(mockQRTokenService.generateToken).toHaveBeenCalledWith({
-        ticketId: 'TEST-TICKET-12345',
-        eventId: 1,
-        isTest: true,
-        metadata: {
-          testMode: true
-        },
-        iat: expect.any(Number)
-      });
-    });
+    // NOTE: QR code generation integration tests have been moved to:
+    // tests/integration/test-mode/ticket-validation-test-mode.test.js
+    // These tests require actual QR token service and database interactions.
 
     it('should include test metadata in QR token payload', async () => {
       process.env = {
@@ -489,7 +384,7 @@ describe('Ticket Validation Test Mode', () => {
           'Test',
           'User',
           'test@example.com',
-          'registered',
+          'completed',
           'TEST-TICKET-12345'
         ])
       );
@@ -508,7 +403,7 @@ describe('Ticket Validation Test Mode', () => {
             ticket_id: 'TEST-TICKET-12345',
             status: 'valid',
             is_test: 1,
-            registration_status: 'registered'
+            registration_status: 'completed'
           }]
         })
         .mockResolvedValueOnce({
@@ -532,60 +427,21 @@ describe('Ticket Validation Test Mode', () => {
         ['TEST-TICKET-12345']
       );
 
-      // Should update ticket to checked in status (status='used', registration_status='checked_in')
+      // Should update ticket to checked in status (status='used')
+      // Note: registration_status stays 'completed' - check-in only updates status and checked_in_at
       expect(mockDatabase.execute).toHaveBeenCalledWith(
         expect.stringContaining('UPDATE tickets'),
         expect.arrayContaining([
           'used', // status changes to 'used' per CHECK constraint
           expect.any(String), // checked_in_at timestamp
-          'checked_in', // registration_status changes to 'checked_in'
           'TEST-TICKET-12345'
         ])
       );
     });
 
-    it.skip('should track test ticket validation attempts', async () => {
-      // SKIPPED: This test relies on module mocking that doesn't work with dynamic imports
-      // The helper functions use dynamic import() which bypasses vi.doMock()
-      // TODO: Refactor to test actual behavior or use dependency injection
-      process.env = {
-        ...originalProcessEnv,
-        NODE_ENV: 'test'
-      };
-
-      mockDatabase.execute.mockResolvedValue({
-        rows: [],
-        rowsAffected: 1
-      });
-
-      vi.doMock('../../../lib/database.js', () => ({
-        getDatabaseClient: () => mockDatabase
-      }));
-
-      const { trackTestValidationAttempt } = await import('../../../tests/helpers/ticket-test-helpers.js');
-
-      await trackTestValidationAttempt({
-        ticketId: 'TEST-TICKET-12345',
-        qrToken: 'TEST-QR-TOKEN',
-        validationResult: 'success',
-        metadata: {
-          testMode: true,
-          environment: 'test'
-        }
-      });
-
-      // Should track the validation attempt
-      expect(mockDatabase.execute).toHaveBeenCalledWith(
-        expect.stringContaining('INSERT INTO qr_validations'),
-        expect.arrayContaining([
-          'TEST-TICKET-12345',
-          'TEST-QR-TOKEN',
-          'success',
-          1, // is_test
-          expect.any(String) // metadata JSON
-        ])
-      );
-    });
+    // NOTE: Validation tracking integration tests have been moved to:
+    // tests/integration/test-mode/ticket-validation-test-mode.test.js
+    // These tests require actual database interactions.
   });
 
   describe('Test Data Isolation', () => {

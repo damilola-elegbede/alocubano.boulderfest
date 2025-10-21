@@ -111,7 +111,15 @@ describe('Ticket Purchase Flow Integration Tests', () => {
     expect(reservationResult.reservationIds.length).toBeGreaterThan(0);
 
     // Step 3: Simulate Stripe checkout session completed webhook
+    // Note: Event MUST be active for validation to pass and avoid flagged_for_review
+    await db.execute({
+      sql: 'UPDATE events SET status = ? WHERE id = ?',
+      args: ['active', testEventId]
+    });
+
     const mockStripeSession = {
+      livemode: false,
+      created: Math.floor(Date.now() / 1000),
       id: sessionId,
       amount_total: ticketType.price_cents * quantity,
       currency: 'usd',
@@ -122,7 +130,7 @@ describe('Ticket Purchase Flow Integration Tests', () => {
       },
       metadata: {
         event_id: String(testEventId),
-        testMode: 'true'
+        test_mode: 'true'
       },
       line_items: {
         data: [
@@ -210,6 +218,8 @@ describe('Ticket Purchase Flow Integration Tests', () => {
     // Create a purchase
     const sessionId = `cs_test_soldcount_${Date.now()}`;
     const mockStripeSession = {
+      livemode: false,
+      created: Math.floor(Date.now() / 1000),
       id: sessionId,
       amount_total: 2500 * quantity,
       currency: 'usd',
@@ -219,7 +229,7 @@ describe('Ticket Purchase Flow Integration Tests', () => {
       },
       metadata: {
         event_id: String(testEventId),
-        testMode: 'true'
+        test_mode: 'true'
       },
       line_items: {
         data: [
@@ -271,6 +281,8 @@ describe('Ticket Purchase Flow Integration Tests', () => {
 
     // Create tickets
     const mockStripeSession = {
+      livemode: false,
+      created: Math.floor(Date.now() / 1000),
       id: sessionId,
       amount_total: 6500,
       currency: 'usd',
@@ -280,7 +292,7 @@ describe('Ticket Purchase Flow Integration Tests', () => {
       },
       metadata: {
         event_id: String(testEventId),
-        testMode: 'true'
+        test_mode: 'true'
       },
       line_items: {
         data: [
@@ -398,6 +410,8 @@ describe('Ticket Purchase Flow Integration Tests', () => {
     // Try to purchase more than max_quantity (WITHOUT testMode to enable validation)
     const sessionId = `cs_oversell_${Date.now()}`;
     const mockStripeSession = {
+      livemode: false,
+      created: Math.floor(Date.now() / 1000),
       id: sessionId,
       amount_total: 500 * 3, // Trying to buy 3 when max is 2
       currency: 'usd',
@@ -452,6 +466,8 @@ describe('Ticket Purchase Flow Integration Tests', () => {
     const sessionId = `cs_test_fk_${Date.now()}`;
 
     const mockStripeSession = {
+      livemode: false,
+      created: Math.floor(Date.now() / 1000),
       id: sessionId,
       amount_total: 6500,
       currency: 'usd',
@@ -461,7 +477,7 @@ describe('Ticket Purchase Flow Integration Tests', () => {
       },
       metadata: {
         event_id: String(testEventId),
-        testMode: 'true'
+        test_mode: 'true'
       },
       line_items: {
         data: [
@@ -519,6 +535,8 @@ describe('Ticket Purchase Flow Integration Tests', () => {
 
     const sessionId = `cs_test_idempotent_${Date.now()}`;
     const mockStripeSession = {
+      livemode: false,
+      created: Math.floor(Date.now() / 1000),
       id: sessionId,
       amount_total: 6500,
       currency: 'usd',
@@ -528,7 +546,7 @@ describe('Ticket Purchase Flow Integration Tests', () => {
       },
       metadata: {
         event_id: String(testEventId),
-        testMode: 'true'
+        test_mode: 'true'
       },
       line_items: {
         data: [
@@ -612,6 +630,8 @@ describe('Ticket Purchase Flow Integration Tests', () => {
 
     // Complete purchase and get transaction
     const mockStripeSession = {
+      livemode: false,
+      created: Math.floor(Date.now() / 1000),
       id: sessionId,
       amount_total: 2500 * quantity,
       currency: 'usd',
@@ -621,7 +641,7 @@ describe('Ticket Purchase Flow Integration Tests', () => {
       },
       metadata: {
         event_id: String(testEventId),
-        testMode: 'true'
+        test_mode: 'true'
       },
       line_items: {
         data: [

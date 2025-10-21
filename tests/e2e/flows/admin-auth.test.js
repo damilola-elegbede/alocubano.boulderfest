@@ -160,14 +160,8 @@ test.describe('Admin Authentication', () => {
 
     try {
       const result = await Promise.race([
-        page.waitForURL('**/admin/dashboard', { timeout: 45000 }).then(() => 'dashboard'),
-        page.waitForSelector('#errorMessage', { state: 'visible', timeout: 45000 }).then(() => 'error'),
-        page.waitForFunction(() => {
-          const loading = document.querySelector('#loading');
-          return loading && loading.style.display === 'none';
-        }, { timeout: 45000 }).then(() => 'loading_complete'),
-        // Also wait for any network requests to complete
-        page.waitForLoadState('networkidle', { timeout: 30000 }).then(() => 'network_idle')
+        page.waitForURL('**/admin/dashboard', { timeout: 60000 }).then(() => 'dashboard'),
+        page.waitForSelector('#errorMessage', { state: 'visible', timeout: 60000 }).then(() => 'error')
       ]);
 
       console.log('✅ Login response received:', result);

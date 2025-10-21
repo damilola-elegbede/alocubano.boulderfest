@@ -230,9 +230,9 @@ describe('Database Migration Integration', () => {
         try {
           await dbClient.execute(`
             INSERT INTO transactions (
-              transaction_id, stripe_session_id, customer_email, amount_cents, order_data, status, created_at
+              transaction_id, type, stripe_session_id, customer_email, amount_cents, order_data, status, created_at
             ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
-          `, ['TXN-TEST-' + sessionId, sessionId, testEmail, Math.round((100.00 + index * 10) * 100), '{}', 'pending']);
+          `, ['TXN-TEST-' + sessionId, 'tickets', sessionId, testEmail, Math.round((100.00 + index * 10) * 100), '{}', 'pending']);
 
           return { success: true, sessionId };
         } catch (error) {

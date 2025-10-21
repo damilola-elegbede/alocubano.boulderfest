@@ -145,8 +145,9 @@ describe('Admin Bootstrap Integration Tests', () => {
     });
     const initialSoldCount = initialResult.rows[0].sold_count || 0;
 
-    // Simulate a purchase (NOT test mode - we want to test real sold_count)
+    // Simulate a purchase (real sold_count test - NOT test mode)
     // Session ID must NOT contain "test" to avoid test transaction detection
+    // AND metadata must NOT have testMode to update sold_count (not test_sold_count)
     const sessionId = `cs_admin_integration_${Date.now()}`;
     const quantity = 2;
     const unitPrice = bootstrapTicketTypes[0].price_cents;
@@ -160,7 +161,7 @@ describe('Admin Bootstrap Integration Tests', () => {
       },
       metadata: {
         event_id: bootstrapEventId.toString()
-        // NOT testMode: we want to test real sold_count behavior
+        // CRITICAL: Do NOT set testMode here - we want sold_count (production), not test_sold_count
       },
       line_items: {
         data: [
@@ -355,6 +356,7 @@ describe('Admin Bootstrap Integration Tests', () => {
 
     for (let i = 0; i < 3; i++) {
       // Session ID must NOT contain "test" to avoid test transaction detection
+      // AND metadata must NOT have testMode to update sold_count (not test_sold_count)
       const sessionId = `cs_stats_integration_${Date.now()}_${i}`;
       const mockStripeSession = {
         id: sessionId,
@@ -366,7 +368,7 @@ describe('Admin Bootstrap Integration Tests', () => {
         },
         metadata: {
           event_id: bootstrapEventId.toString()
-          // NOT testMode: we want to test real sold_count behavior
+          // CRITICAL: Do NOT set testMode here - we want sold_count (production), not test_sold_count
         },
         line_items: {
           data: [
@@ -512,6 +514,7 @@ describe('Admin Bootstrap Integration Tests', () => {
 
     for (const purchase of purchases) {
       // Session ID must NOT contain "test" to avoid test transaction detection
+      // AND metadata must NOT have testMode to update sold_count (not test_sold_count)
       const sessionId = `cs_revenue_integration_${Date.now()}_${purchase.ticket_type}`;
       const mockStripeSession = {
         id: sessionId,
@@ -523,7 +526,7 @@ describe('Admin Bootstrap Integration Tests', () => {
         },
         metadata: {
           event_id: bootstrapEventId.toString()
-          // NOT testMode: we want to test real sold_count behavior
+          // CRITICAL: Do NOT set testMode here - we want sold_count (production), not test_sold_count
         },
         line_items: {
           data: [

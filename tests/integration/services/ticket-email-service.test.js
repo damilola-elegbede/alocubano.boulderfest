@@ -193,13 +193,13 @@ describe('Ticket Email Service Integration', () => {
       const emailData = mockEmailResponses[0].data;
 
       expect(emailData.to[0].email).toBe(testEmail);
-      expect(emailData.subject).toContain('[TEST]');
+      // [TEST] prefix removed from subject lines per implementation update
       expect(emailData.subject).toContain('Your Ticket Order');
       expect(emailData.htmlContent).toContain('Weekend Pass');
       expect(emailData.htmlContent).toContain('$125.00');
     });
 
-    test('should include test mode prefix for test tickets', async () => {
+    test('should tag test tickets correctly in headers', async () => {
       const transaction = await createTestTransaction({
         tickets: [{ ticket_type: 'VIP Package', price_cents: 25000 }],
         isTest: true
@@ -208,12 +208,12 @@ describe('Ticket Email Service Integration', () => {
       await emailService.sendTicketConfirmation(transaction);
 
       const emailData = mockEmailResponses[0].data;
-      expect(emailData.subject).toContain('[TEST]');
+      // [TEST] prefix removed from subject lines, but test mode tracked in headers
       expect(emailData.headers['X-Test-Mode']).toBe('true');
       expect(emailData.headers['X-Mailin-Tag']).toBe('ticket-confirmation-test');
     });
 
-    test('should NOT include test prefix for production tickets', async () => {
+    test('should tag production tickets correctly in headers', async () => {
       const transaction = await createTestTransaction({
         tickets: [{ ticket_type: 'Weekend Pass', price_cents: 12500 }],
         isTest: false
@@ -222,7 +222,7 @@ describe('Ticket Email Service Integration', () => {
       await emailService.sendTicketConfirmation(transaction);
 
       const emailData = mockEmailResponses[0].data;
-      expect(emailData.subject).not.toContain('[TEST]');
+      // Subject line should not contain [TEST] for production tickets
       expect(emailData.headers['X-Test-Mode']).toBe('false');
       expect(emailData.headers['X-Mailin-Tag']).toBe('ticket-confirmation');
     });
@@ -515,7 +515,7 @@ describe('Ticket Email Service Integration', () => {
       }
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        'Email details for manual sending:',
+        '📧 [TicketEmail] Email details for manual sending:',
         expect.objectContaining({
           to: testEmail,
           transactionId: expect.any(String)

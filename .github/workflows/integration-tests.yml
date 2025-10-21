@@ -83,23 +83,24 @@ jobs:
         run: |
           echo "📦 Installing minimal dependencies for integration tests..."
 
+          # Install with --ignore-scripts to prevent ngrok download failures (HTTP 503 errors)
           # Skip heavy dev dependencies not needed for integration tests
           # This saves ~77MB and 2+ minutes of installation time
-          npm ci --prefer-offline --no-audit --no-fund \
+          npm ci --ignore-scripts --prefer-offline --no-audit --no-fund \
             --omit=optional 2>/dev/null || {
-              # If omit fails, do regular install
-              npm ci --prefer-offline --no-audit --no-fund
+              # If omit fails, do regular install with --ignore-scripts
+              npm ci --ignore-scripts --prefer-offline --no-audit --no-fund
             }
 
           # Only install the specific LibSQL binary we need
           if [ "$RUNNER_OS" = "Linux" ]; then
             if [ ! -d "node_modules/@libsql/linux-x64-gnu" ]; then
               echo "🔧 Installing LibSQL Linux binary..."
-              npm install @libsql/linux-x64-gnu@0.5.22 --no-save --no-audit
+              npm install @libsql/linux-x64-gnu@0.5.22 --no-save --no-audit --ignore-scripts
             fi
           fi
 
-          echo "✅ Minimal dependencies installed"
+          echo "✅ Minimal dependencies installed (skipped postinstall scripts)"
 
       - name: "🧽 Optimize for Integration Tests"
         run: |

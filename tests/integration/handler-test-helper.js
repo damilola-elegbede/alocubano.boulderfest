@@ -174,24 +174,34 @@ export const HTTP_STATUS = {
 };
 
 /**
- * Create mock request object
+ * Create mock request object with proper IP address
  */
 export function createMockRequest(method, url, body = null, headers = {}) {
   const urlObj = new URL(url, 'http://localhost:3001');
+
+  // Generate unique but valid IP address for test isolation
+  // Use 127.0.0.x range for valid localhost IPs
+  const uniqueOctet = (Date.now() % 254) + 1; // 1-255
+  const randomOctet = Math.floor(Math.random() * 254) + 1; // 1-255
+  const testIP = `127.0.${uniqueOctet}.${randomOctet}`;
 
   return {
     method: method.toUpperCase(),
     url: urlObj.toString(),
     headers: {
       'content-type': 'application/json',
-      'x-forwarded-for': `127.0.0.1-${Date.now()}-${Math.random()}`,  // Unique IP per request to avoid rate limiting in tests
+      'x-forwarded-for': testIP,  // Valid IP address for rate limiting
+      'x-real-ip': testIP,  // Fallback IP header
       ...headers
     },
     body: body,  // Pass body as-is, not stringified
     json: async () => body,
     text: async () => body ? JSON.stringify(body) : '',
     connection: {
-      remoteAddress: `127.0.0.1-${Date.now()}-${Math.random()}`  // Unique fallback IP
+      remoteAddress: testIP  // Valid fallback IP
+    },
+    socket: {
+      remoteAddress: testIP  // Additional fallback
     }
   };
 }
@@ -382,6 +392,7 @@ export function generateTestEmail() {
 /**
  * Create a test event and return its numeric ID
  * Handles the foreign key requirement for tickets table
+ * Includes retry logic for SQLITE_BUSY errors
  */
 export async function createTestEvent(dbClient, eventData = {}) {
   const slug = eventData.slug || `test-event-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -393,29 +404,52 @@ export async function createTestEvent(dbClient, eventData = {}) {
   const venueName = eventData.venueName || 'Test Venue';
   const venueCity = eventData.venueCity || 'Boulder';
   const venueState = eventData.venueState || 'CO';
+  const venueAddress = eventData.venueAddress || '123 Test Street, Boulder, CO 80301';
 
-  // Insert event and get its ID
-  await dbClient.execute({
-    sql: `
-      INSERT INTO events (
-        slug, name, type, status, start_date, end_date,
-        venue_name, venue_city, venue_state, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
-    `,
-    args: [slug, name, type, status, startDate, endDate, venueName, venueCity, venueState]
-  });
+  const maxRetries = 10;
+  const baseDelay = 50; // ms
 
-  // Get the generated ID
-  const result = await dbClient.execute({
-    sql: 'SELECT id FROM events WHERE slug = ?',
-    args: [slug]
-  });
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      // Insert event and get its ID
+      await dbClient.execute({
+        sql: `
+          INSERT INTO events (
+            slug, name, type, status, start_date, end_date,
+            venue_name, venue_city, venue_state, venue_address, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        `,
+        args: [slug, name, type, status, startDate, endDate, venueName, venueCity, venueState, venueAddress]
+      });
 
-  if (result.rows.length === 0) {
-    throw new Error(`Failed to create test event with slug: ${slug}`);
+      // Get the generated ID
+      const result = await dbClient.execute({
+        sql: 'SELECT id FROM events WHERE slug = ?',
+        args: [slug]
+      });
+
+      if (result.rows.length === 0) {
+        throw new Error(`Failed to create test event with slug: ${slug}`);
+      }
+
+      return result.rows[0].id;
+    } catch (error) {
+      const isBusyError = error.message?.includes('SQLITE_BUSY') ||
+                          error.message?.includes('database is locked');
+
+      if (isBusyError && attempt < maxRetries) {
+        const delay = baseDelay * Math.pow(2, attempt - 1) + Math.random() * 10;
+        const delayRounded = Math.floor(delay);
+        console.log(`[TEST-HELPER] Database busy creating event, retrying (${attempt}/${maxRetries}) after ${delayRounded}ms`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+
+      throw error;
+    }
   }
 
-  return result.rows[0].id;
+  throw new Error(`Maximum retry attempts exceeded for createTestEvent`);
 }
 
 // Export everything

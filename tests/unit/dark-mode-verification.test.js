@@ -445,7 +445,7 @@ describe("CSS Variable Consistency Tests", () => {
       "--color-text-muted: var(--color-gray-650)",       // Updated to use new gray-650 variable
       "--color-border: var(--color-gray-200)",           // Light mode default border
       "--color-text-secondary: var(--color-gray-750)",   // Light mode secondary text
-      "--color-text-tertiary: var(--color-gray-500)"     // Tertiary text color
+      "--color-text-tertiary: var(--color-gray-650)"     // Tertiary text color (updated for WCAG AA compliance)
     ];
 
     semanticVars.forEach(varDeclaration => {

@@ -153,8 +153,54 @@ This ensures users always receive appropriate reminder frequency regardless of w
 - **Unit tests**: Fast, essential coverage with SQLite (`npm test`)
 - **Integration tests**: Service and API validation (`npm run test:integration`)
 - **E2E tests**: 12 comprehensive flows with Vercel Preview Deployments (`npm run test:e2e`)
+  - **Always uses Vercel preview deployments** (no local server fallback)
+  - **Smart preview detection**: Automatically reuses existing preview for current commit or creates new deployment (~4 min)
+  - **Powered by**: `scripts/vercel-deployment-manager.js` handles git commit detection, Vercel API search, and deployment creation
 - **Simple execution**: Direct API testing with minimal mocking
 - **Zero abstractions**: Every test readable by any JavaScript developer
+
+### E2E Testing: Smart Preview Detection
+
+**How it works:**
+
+When you run `npm run test:e2e`, the test framework:
+
+1. **Checks for PREVIEW_URL** environment variable
+   - If set: Uses that URL directly
+   - If not set: Triggers smart detection
+
+2. **Smart Detection** (via `VercelDeploymentManager`):
+   - Gets current git commit SHA
+   - Searches Vercel API for preview deployment matching this commit
+   - **If found & healthy**: Reuses existing preview ✅ (instant, no build time)
+   - **If not found**: Creates new preview deployment ⏳ (~4 minutes)
+   - Waits for deployment to be ready and validates health
+
+3. **Runs tests** against the preview deployment
+
+**Required Environment Variables** (for deployment creation):
+- `VERCEL_TOKEN` - Vercel API authentication token
+- `VERCEL_ORG_ID` - Your Vercel organization/team ID
+- `VERCEL_PROJECT_ID` - Project identifier
+
+**Benefits:**
+- ✅ No local server configuration needed
+- ✅ Tests run against production-like environment
+- ✅ Automatic preview reuse saves time when commit hasn't changed
+- ✅ Works in both CI and local development environments
+- ✅ Deployment cache speeds up repeated test runs
+
+**Manual Preview Creation:**
+
+If you want to pre-create a preview deployment:
+
+```bash
+# Creates/finds preview and caches URL
+node scripts/vercel-deployment-manager.js
+
+# Then run tests (will use cached preview)
+npm run test:e2e
+```
 
 ## Vercel Configuration
 
