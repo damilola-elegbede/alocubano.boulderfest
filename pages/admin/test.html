@@ -16,27 +16,7 @@
       document.documentElement.style.opacity = '0';
       document.documentElement.style.transition = 'opacity 0.2s ease-in';
 
-      // Quick token validation
-      (async function() {
-        const token = localStorage.getItem('adminToken');
-        if (!token) {
-          window.location.replace('/admin/login');
-          return;
-        }
-
-        try {
-          const payload = JSON.parse(atob(token.split('.')[1]));
-          if (payload.exp && payload.exp * 1000 < Date.now()) {
-            localStorage.removeItem('adminToken');
-            window.location.replace('/admin/login');
-            return;
-          }
-        } catch (e) {
-          localStorage.removeItem('adminToken');
-          window.location.replace('/admin/login');
-          return;
-        }
-      })();
+      // Auth verified via cookie by backend
     </script>
 
     <meta charset="UTF-8" />
@@ -385,7 +365,6 @@
           // Use existing AdminAuthGuard for server-side verification
           const isAuthenticated = await (window.AdminAuthGuard?.verifyAndShow?.() ?? false);
           if (!isAuthenticated) {
-            localStorage.removeItem('adminToken');
             window.location.replace('/admin/login');
             return;
           }
@@ -394,7 +373,6 @@
           document.documentElement.style.opacity = '1';
         } catch (error) {
           console.error('Auth verification failed:', error);
-          localStorage.removeItem('adminToken');
           window.location.replace('/admin/login');
         }
       }
@@ -520,17 +498,12 @@
           btn.innerHTML = '<span>⏳</span><span>Creating test ticket...</span>';
           resultDiv.className = 'test-result';
 
-          const token = localStorage.getItem('adminToken');
-          if (!token) {
-            throw new Error('No authentication token found');
-          }
-
           const response = await fetch('/api/admin/test-data/create-ticket', {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
-            }
+            },
+            credentials: 'include'
           });
 
           if (!response.ok) {
@@ -585,17 +558,12 @@
           btn.innerHTML = '<span>⏳</span><span>Clearing test data...</span>';
           resultDiv.className = 'test-result';
 
-          const token = localStorage.getItem('adminToken');
-          if (!token) {
-            throw new Error('No authentication token found');
-          }
-
           const response = await fetch('/api/admin/test-data/clear', {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
-            }
+            },
+            credentials: 'include'
           });
 
           if (!response.ok) {
@@ -630,7 +598,7 @@
 
       // Logout function
       function logout() {
-        localStorage.removeItem('adminToken');
+        // Cookie cleared by server
         window.location.href = '/admin/login';
       }
 

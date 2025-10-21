@@ -4,6 +4,7 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { getTestMFACode } from '../helpers/totp-generator.js';
 
 test.describe('Admin Ticket Transfer UI', () => {
   const ADMIN_EMAIL = 'admin@test.com';
@@ -13,11 +14,19 @@ test.describe('Admin Ticket Transfer UI', () => {
   // Helper function to login as admin
   async function loginAsAdmin(page) {
     await page.goto(`${BASE_URL}/admin/login`);
+
+    // Step 1: Submit credentials
     await page.fill('input[name="email"]', ADMIN_EMAIL);
     await page.fill('input[name="password"]', ADMIN_PASSWORD);
     await page.click('button[type="submit"]');
 
-    // Wait for dashboard to load
+    // Step 2: Handle MFA
+    await page.waitForSelector('input[name="mfaCode"]', { timeout: 10000 });
+    const mfaCode = getTestMFACode();
+    await page.fill('input[name="mfaCode"]', mfaCode);
+    await page.click('button[type="submit"]');
+
+    // Step 3: Wait for dashboard to load
     await page.waitForURL('**/admin/dashboard', { timeout: 10000 });
   }
 

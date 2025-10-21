@@ -16,35 +16,7 @@
       document.documentElement.style.opacity = '0';
       document.documentElement.style.transition = 'opacity 0.2s ease-in';
 
-      // Quick token validation to prevent flash with invalid tokens
-      (async function() {
-        if (!window.location.pathname.includes('/admin/login')) {
-          const token = localStorage.getItem('adminToken');
-          if (!token) {
-            // No token - redirect immediately
-            window.location.replace('/admin/login');
-            return;
-          }
-
-          // Quick validation - check if token is expired client-side
-          try {
-            // Parse JWT to check expiration (basic check)
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            if (payload.exp && payload.exp * 1000 < Date.now()) {
-              // Token expired - clear and redirect
-              localStorage.removeItem('adminToken');
-              window.location.replace('/admin/login');
-              return;
-            }
-          } catch (e) {
-            // Invalid token format - clear and redirect
-            localStorage.removeItem('adminToken');
-            window.location.replace('/admin/login');
-            return;
-          }
-          // Valid token format - wait for server verification
-        }
-      })();
+      // Auth verified via cookie by backend
     </script>
 
     <meta charset="UTF-8" />
@@ -615,11 +587,8 @@
       // Load available ticket types
       async function loadTicketTypes() {
         try {
-          const token = localStorage.getItem('adminToken');
           const response = await fetch('/api/admin/dashboard', {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
+            credentials: 'include'
           });
 
           if (!response.ok) {
@@ -637,11 +606,8 @@
       // Load active cash shifts
       async function loadCashShifts() {
         try {
-          const token = localStorage.getItem('adminToken');
           const response = await fetch('/api/admin/cash-shifts', {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
+            credentials: 'include'
           });
 
           if (!response.ok) {
@@ -897,15 +863,14 @@
           const manualEntryId = crypto.randomUUID();
 
           // Get CSRF token
-          const token = localStorage.getItem('adminToken');
           const csrfToken = await csrfService.getCSRFToken();
 
           // Submit to API - single ticket with attendee details
           const response = await fetch('/api/admin/manual-ticket-entry', {
             method: 'POST',
+            credentials: 'include',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,
               'X-CSRF-Token': csrfToken
             },
             body: JSON.stringify({
@@ -1000,17 +965,14 @@
       // Logout
       window.logout = async function() {
         try {
-          const token = localStorage.getItem('adminToken');
           await fetch('/api/admin/login', {
             method: 'DELETE',
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
+            credentials: 'include'
           });
         } catch (error) {
           console.error('Logout error:', error);
         } finally {
-          localStorage.removeItem('adminToken');
+          // Cookie cleared by server
           window.location.href = '/admin/login';
         }
       };

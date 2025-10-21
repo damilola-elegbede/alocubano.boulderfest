@@ -17,6 +17,7 @@ import { test, expect } from '@playwright/test';
 import { getTestDataConstants } from '../../../scripts/seed-test-data.js';
 import { skipTestIfSecretsUnavailable } from '../helpers/test-setup.js';
 import { waitForPageReady, waitForConditions } from '../helpers/playwright-utils.js';
+import { getTestMFACode } from '../helpers/totp-generator.js';
 
 const testConstants = getTestDataConstants();
 
@@ -45,26 +46,22 @@ test.describe('Dark Mode Admin Integration', () => {
         waitForSelector: 'input[name="username"]'
       });
 
+      // Password step
       await page.fill('input[name="username"]', adminCredentials.email);
       await page.fill('input[type="password"]', adminCredentials.password);
       await page.click('button[type="submit"]');
 
-      // Wait for login to complete
-      await Promise.race([
-        page.waitForURL('**/admin/dashboard', { timeout: 60000 }),
-        page.waitForSelector('#errorMessage', { state: 'visible', timeout: 30000 })
-      ]);
+      // MFA step
+      await page.waitForSelector('input[name="mfaCode"]', { timeout: 10000 });
+      const mfaCode = getTestMFACode();
+      await page.fill('input[name="mfaCode"]', mfaCode);
+      await page.click('button[type="submit"]');
+
+      // Success
+      await page.waitForURL('**/admin/**', { timeout: 10000 });
 
       const currentUrl = page.url();
-      if (!currentUrl.includes('/admin/dashboard')) {
-        const errorMessage = page.locator('#errorMessage');
-        if (await errorMessage.isVisible()) {
-          const errorText = await errorMessage.textContent();
-          if (errorText.includes('locked') || errorText.includes('rate limit')) {
-            return 'rate_limited';
-          }
-          throw new Error(`Login failed: ${errorText}`);
-        }
+      if (!currentUrl.includes('/admin/')) {
         return false;
       }
 

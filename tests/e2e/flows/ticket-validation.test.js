@@ -5,6 +5,7 @@
 
 import { test, expect } from '@playwright/test';
 import { getTestDataConstants } from '../../../scripts/seed-test-data.js';
+import { getTestMFACode } from '../helpers/totp-generator.js';
 
 const testConstants = getTestDataConstants();
 
@@ -20,7 +21,7 @@ test.describe('Ticket Validation', () => {
   };
 
   /**
-   * Helper function to perform admin login
+   * Helper function to perform admin login with MFA
    * @param {Page} page - Playwright page object
    * @returns {Promise<boolean|string>} True if login successful, 'rate_limited' if rate limited, false otherwise
    */
@@ -33,21 +34,25 @@ test.describe('Ticket Validation', () => {
       await page.waitForSelector('input[name="password"]', { timeout: 30000 });
       await page.waitForSelector('button[type="submit"]', { timeout: 30000 });
 
-      // Fill in credentials
+      // Step 1: Password
       await page.fill('input[name="username"]', adminCredentials.email);
       await page.fill('input[name="password"]', adminCredentials.password);
-
-      // Submit login form
       await page.click('button[type="submit"]');
 
-      // Wait for login to complete
+      // Step 2: MFA
+      await page.waitForSelector('input[name="mfaCode"]', { timeout: 10000 });
+      const mfaCode = getTestMFACode();
+      await page.fill('input[name="mfaCode"]', mfaCode);
+      await page.click('button[type="submit"]');
+
+      // Step 3: Success - Wait for login to complete
       await Promise.race([
-        page.waitForURL('**/admin/dashboard', { timeout: 60000 }),
+        page.waitForURL('**/admin/**', { timeout: 60000 }),
         page.waitForSelector('#errorMessage', { state: 'visible', timeout: 30000 })
       ]);
 
       const currentUrl = page.url();
-      if (!currentUrl.includes('/admin/dashboard')) {
+      if (!currentUrl.includes('/admin/')) {
         const errorMessage = page.locator('#errorMessage');
         if (await errorMessage.isVisible()) {
           const errorText = await errorMessage.textContent();
@@ -57,7 +62,7 @@ test.describe('Ticket Validation', () => {
           }
           throw new Error(`Login failed: ${errorText}`);
         }
-        console.log('⚠️  Login did not redirect to dashboard');
+        console.log('⚠️  Login did not redirect to admin area');
         return false;
       }
 

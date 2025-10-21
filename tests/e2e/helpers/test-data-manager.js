@@ -86,9 +86,6 @@ export class TestDataManager {
         lastName: user.lastName,
         email: user.email,
         phone: user.phone,
-        emergencyContact: user.emergencyContact?.name || 'Test Emergency Contact',
-        emergencyPhone: user.emergencyContact?.phone || '+1987654321',
-        dietaryRestrictions: '',
         accessibilityNeeds: '',
         workshopPreferences: ['Salsa Basics']
       },

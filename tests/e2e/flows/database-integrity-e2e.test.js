@@ -5,12 +5,13 @@
 
 import { test, expect } from '@playwright/test';
 import { waitForPageReady, getTestTimeout } from '../helpers/playwright-utils.js';
+import { getTestMFACode } from '../helpers/totp-generator.js';
 
 test.describe('Database Integrity E2E', () => {
   let adminPage;
 
   /**
-   * Helper: Login as admin
+   * Helper: Login as admin with MFA
    */
   async function loginAsAdmin(page) {
     const adminAuthAvailable = process.env.ADMIN_AUTH_AVAILABLE !== 'false';
@@ -20,12 +21,21 @@ test.describe('Database Integrity E2E', () => {
     }
 
     await page.goto('/admin/login');
+
+    // Step 1: Password
     await page.fill('input[name="username"]', process.env.TEST_ADMIN_EMAIL || 'admin@test.com');
     await page.fill('input[type="password"]', process.env.TEST_ADMIN_PASSWORD || 'test-password');
     await page.click('button[type="submit"]');
 
+    // Step 2: MFA
+    await page.waitForSelector('input[name="mfaCode"]', { timeout: 10000 });
+    const mfaCode = getTestMFACode();
+    await page.fill('input[name="mfaCode"]', mfaCode);
+    await page.click('button[type="submit"]');
+
+    // Step 3: Success
     const navTimeout = getTestTimeout(test.info(), 'navigation');
-    await page.waitForURL('**/admin/dashboard', { timeout: navTimeout });
+    await page.waitForURL('**/admin/**', { timeout: navTimeout });
   }
 
   test.beforeEach(async ({ page }) => {

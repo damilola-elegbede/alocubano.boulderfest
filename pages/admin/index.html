@@ -42,35 +42,7 @@
       document.documentElement.style.opacity = '0';
       document.documentElement.style.transition = 'opacity 0.2s ease-in';
 
-      // Quick token validation to prevent flash with invalid tokens
-      (async function() {
-        if (!window.location.pathname.includes('/admin/login')) {
-          const token = localStorage.getItem('adminToken');
-          if (!token) {
-            // No token - redirect immediately
-            window.location.replace('/admin/login');
-            return;
-          }
-
-          // Quick validation - check if token is expired client-side
-          try {
-            // Parse JWT to check expiration (basic check)
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            if (payload.exp && payload.exp * 1000 < Date.now()) {
-              // Token expired - clear and redirect
-              localStorage.removeItem('adminToken');
-              window.location.replace('/admin/login');
-              return;
-            }
-          } catch (e) {
-            // Invalid token format - clear and redirect
-            localStorage.removeItem('adminToken');
-            window.location.replace('/admin/login');
-            return;
-          }
-          // Valid token format - wait for server verification
-        }
-      })();
+      // Auth verified via cookie by backend
     </script>
 
 
@@ -1569,9 +1541,7 @@
           if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
             try {
               const csrfResponse = await fetch('/api/admin/csrf-token', {
-                headers: {
-                  'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-                }
+                credentials: 'include'
               });
               if (csrfResponse.ok) {
                 const csrfData = await csrfResponse.json();
@@ -1740,23 +1710,15 @@
       // Use the AdminAuthGuard for authentication
       async function checkAuth() {
         try {
-          // Get token from localStorage
-          const token = localStorage.getItem('adminToken');
-          if (!token) {
-            window.location.replace("/admin/login");
-            return false;
-          }
-
           const response = await fetch("/api/admin/verify-session", {
+            credentials: 'include',
             headers: {
-              "Authorization": `Bearer ${token}`,
               "Cache-Control": "no-cache"
             }
           });
 
           if (!response.ok) {
-            // Clear invalid token and redirect
-            localStorage.removeItem('adminToken');
+            // Redirect if session invalid
             window.location.replace("/admin/login");
             return false;
           }
@@ -1764,7 +1726,6 @@
           // Success - verify the session is valid
           const data = await response.json();
           if (!data.valid) {
-            localStorage.removeItem('adminToken');
             window.location.replace("/admin/login");
             return false;
           }
@@ -1790,10 +1751,9 @@
           // Get CSRF token for state-changing operation
           const headers = { "Content-Type": "application/json" };
           try {
-            const token = localStorage.getItem('adminToken');
             const csrfResponse = await fetch("/api/admin/csrf-token", {
+              credentials: 'include',
               headers: {
-                "Authorization": `Bearer ${token}`,
                 "Accept": "application/json"
               }
             });
@@ -1812,10 +1772,9 @@
             return;
           }
 
-          const token = localStorage.getItem('adminToken');
-          headers["Authorization"] = `Bearer ${token}`;
           const response = await fetch("/api/sheets/sync", {
             method: "POST",
+            credentials: 'include',
             headers: headers,
           });
 
@@ -2043,18 +2002,10 @@
         try {
           const headers = {};
 
-          // Add token for secure logout
-          const token = localStorage.getItem('adminToken');
-          if (token) {
-            headers["Authorization"] = `Bearer ${token}`;
-          }
-
           // Add CSRF token for secure logout
           try {
             const csrfResponse = await fetch("/api/admin/csrf-token", {
-              headers: {
-                "Authorization": `Bearer ${token}`
-              }
+              credentials: 'include'
             });
             if (csrfResponse.ok) {
               const csrfData = await csrfResponse.json();
@@ -2066,12 +2017,13 @@
 
           await fetch("/api/admin/login", {
             method: "DELETE",
+            credentials: 'include',
             headers: headers
           });
         } finally {
           // Clear client storage
-          localStorage.removeItem('adminToken');
           sessionStorage.clear();
+          // Cookie cleared by server
           // Redirect
           window.location.href = '/admin/login';
         }

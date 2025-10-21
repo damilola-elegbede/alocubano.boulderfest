@@ -12,6 +12,7 @@
 import { test, expect } from '@playwright/test';
 import { getTestDataConstants } from '../../../scripts/seed-test-data.js';
 import { skipTestIfSecretsUnavailable, warnIfOptionalSecretsUnavailable } from '../helpers/test-setup.js';
+import { getTestMFACode } from '../helpers/totp-generator.js';
 
 const testConstants = getTestDataConstants();
 
@@ -141,7 +142,7 @@ test.describe('Admin Authentication', () => {
     await usernameField.fill(adminCredentials.email);
     await passwordField.fill(adminCredentials.password);
 
-    // Click submit and wait for loading state to start
+    // Step 1: Submit credentials
     await submitButton.click();
 
     // Wait for loading state to appear (indicates form submission started)
@@ -152,79 +153,56 @@ test.describe('Admin Authentication', () => {
       console.log('No loading indicator found, continuing...');
     }
 
-    // Wait for either navigation to dashboard, error message, or loading to complete with longer timeout
-    console.log('⏳ Waiting for login response...');
+    console.log('⏳ Waiting for MFA prompt after credential submission...');
 
-    // Note: We no longer skip if admin API is unavailable
-    // The test should verify actual login behavior, not just form submission
-
+    // Step 2: Wait for MFA prompt to appear
     try {
-      const result = await Promise.race([
-        page.waitForURL('**/admin/dashboard', { timeout: 60000 }).then(() => 'dashboard'),
-        page.waitForSelector('#errorMessage', { state: 'visible', timeout: 60000 }).then(() => 'error')
-      ]);
-
-      console.log('✅ Login response received:', result);
-
-      // Check if we're on the dashboard (success case)
-      const currentUrl = page.url();
-      if (currentUrl.includes('/admin/dashboard')) {
-        // Success - verify we're on the dashboard page
-        await expect(page).toHaveURL(/\/admin\/dashboard/);
-        console.log('Admin login successful - redirected to dashboard');
-      } else {
-        // Check if there's an error message visible
-        const errorMessage = page.locator('#errorMessage');
-        if (await errorMessage.isVisible()) {
-          const errorText = await errorMessage.textContent();
-          throw new Error(`Login failed with error: ${errorText}`);
-        } else {
-          // Check if MFA is required or if we're still on login page
-          const mfaInput = page.locator('input[name="mfaCode"], input[type="text"][placeholder*="code"]');
-          const isOnLoginPage = currentUrl.includes('/admin/login');
-
-          if (await mfaInput.count() > 0) {
-            console.log('✅ MFA required for admin login - credentials validated, MFA step reached');
-            // MFA requirement indicates successful credential verification
-            // This is a valid pass state - credentials were accepted
-            expect(await mfaInput.isVisible()).toBe(true);
-          } else if (isOnLoginPage) {
-            // Still on login page - this is a failure unless there's a clear reason
-            const loginButton = page.locator('button[type="submit"]');
-            const isDisabled = await loginButton.getAttribute('disabled');
-            const hasHiddenError = await page.locator('#errorMessage').count() > 0;
-
-            const loginDetails = {
-              currentUrl,
-              buttonDisabled: isDisabled !== null,
-              hasErrorElements: hasHiddenError,
-              loadingVisible: await page.locator('#loading:visible').count() > 0
-            };
-
-            console.error('Login did not navigate to dashboard:', loginDetails);
-            throw new Error(`Login failed: still on login page after submission. Details: ${JSON.stringify(loginDetails)}`);
-          } else {
-            throw new Error(`Login did not navigate to dashboard. Current URL: ${currentUrl}`);
-          }
-        }
-      }
+      await page.waitForSelector('input[name="mfaCode"]', { timeout: 10000 });
+      console.log('✅ MFA prompt detected');
     } catch (error) {
-      // Handle timeout or other errors more gracefully
+      // Check if we got an error message instead
+      const errorMessage = page.locator('#errorMessage');
+      if (await errorMessage.isVisible()) {
+        const errorText = await errorMessage.textContent();
+        throw new Error(`Login failed with error: ${errorText}`);
+      }
+      throw new Error('MFA prompt did not appear after credential submission');
+    }
+
+    // Step 3: Generate and enter TOTP code
+    const mfaCode = getTestMFACode();
+    console.log(`🔐 Generated MFA code: ${mfaCode}`);
+    await page.fill('input[name="mfaCode"]', mfaCode);
+    await page.click('button[type="submit"]');
+
+    console.log('⏳ Waiting for dashboard redirect after MFA submission...');
+
+    // Step 4: Wait for successful login and redirect to dashboard
+    try {
+      await page.waitForURL('**/admin/dashboard', { timeout: 10000 });
+      console.log('✅ Successfully authenticated with MFA - redirected to dashboard');
+      await expect(page).toHaveURL(/\/admin\/dashboard/);
+    } catch (error) {
+      // Check for error message
+      const errorMessage = page.locator('#errorMessage');
+      if (await errorMessage.isVisible()) {
+        const errorText = await errorMessage.textContent();
+        throw new Error(`MFA verification failed with error: ${errorText}`);
+      }
+
       const debugInfo = {
         currentUrl: page.url(),
         hasError: await page.locator('#errorMessage').isVisible(),
         hasLoadingIndicator: await page.locator('#loading:visible').count() > 0,
         buttonDisabled: await page.locator('button[type="submit"]').getAttribute('disabled') !== null
       };
-      console.log('Login attempt debugging info:', debugInfo);
-
-      // Re-throw the error for proper test failure reporting
-      throw error;
+      console.log('MFA verification debugging info:', debugInfo);
+      throw new Error(`Dashboard redirect failed after MFA. Current URL: ${page.url()}`);
     }
   });
 
   test('should maintain session after login', async ({ page }) => {
-    // Login first with correct selectors
+    // Step 1: Login with credentials
     const usernameField = page.locator('input[name="username"]');
     const passwordField = page.locator('input[name="password"]');
     const submitButton = page.locator('button[type="submit"]');
@@ -234,25 +212,26 @@ test.describe('Admin Authentication', () => {
     await passwordField.fill(adminCredentials.password);
     await submitButton.click();
 
-    // Wait for dashboard or handle MFA/errors with longer timeout
+    // Step 2: Wait for MFA prompt
     try {
-      await Promise.race([
-        page.waitForURL('**/admin/dashboard', { timeout: 60000 }),
-        page.waitForSelector('#errorMessage', { state: 'visible', timeout: 30000 })
-      ]);
-
-      // Verify login succeeded - this is a prerequisite for session testing
-      const currentUrl = page.url();
-      if (!currentUrl.includes('/admin/dashboard')) {
-        // Check if MFA is blocking
-        const mfaInput = page.locator('input[name="mfaCode"], input[type="text"][placeholder*="code"]');
-        if (await mfaInput.isVisible()) {
-          test.skip(true, 'Cannot test session persistence - MFA enabled');
-        }
-
-        const errorVisible = await page.locator('#errorMessage').isVisible();
-        throw new Error(`Session test prerequisite failed: login did not reach dashboard (URL: ${currentUrl}, error visible: ${errorVisible})`);
+      await page.waitForSelector('input[name="mfaCode"]', { timeout: 10000 });
+    } catch (error) {
+      const errorMessage = page.locator('#errorMessage');
+      if (await errorMessage.isVisible()) {
+        const errorText = await errorMessage.textContent();
+        throw new Error(`Login failed with error: ${errorText}`);
       }
+      throw new Error('MFA prompt did not appear after credential submission');
+    }
+
+    // Step 3: Enter MFA code
+    const mfaCode = getTestMFACode();
+    await page.fill('input[name="mfaCode"]', mfaCode);
+    await page.click('button[type="submit"]');
+
+    // Step 4: Wait for dashboard
+    try {
+      await page.waitForURL('**/admin/dashboard', { timeout: 10000 });
     } catch (error) {
       throw new Error(`Session test prerequisite failed: ${error.message}`);
     }
@@ -266,7 +245,7 @@ test.describe('Admin Authentication', () => {
   });
 
   test('should logout successfully', async ({ page }) => {
-    // Login first with correct selectors
+    // Step 1: Login with credentials
     const usernameField = page.locator('input[name="username"]');
     const passwordField = page.locator('input[name="password"]');
     const submitButton = page.locator('button[type="submit"]');
@@ -276,25 +255,26 @@ test.describe('Admin Authentication', () => {
     await passwordField.fill(adminCredentials.password);
     await submitButton.click();
 
-    // Wait for dashboard or handle login failure with longer timeout
+    // Step 2: Wait for MFA prompt
     try {
-      await Promise.race([
-        page.waitForURL('**/admin/dashboard', { timeout: 60000 }),
-        page.waitForSelector('#errorMessage', { state: 'visible', timeout: 30000 })
-      ]);
-
-      // Verify login succeeded - this is a prerequisite for logout testing
-      const currentUrl = page.url();
-      if (!currentUrl.includes('/admin/dashboard')) {
-        // Check if MFA is blocking
-        const mfaInput = page.locator('input[name="mfaCode"], input[type="text"][placeholder*="code"]');
-        if (await mfaInput.isVisible()) {
-          test.skip(true, 'Cannot test logout - MFA enabled');
-        }
-
-        const errorVisible = await page.locator('#errorMessage').isVisible();
-        throw new Error(`Logout test prerequisite failed: login did not reach dashboard (URL: ${currentUrl}, error visible: ${errorVisible})`);
+      await page.waitForSelector('input[name="mfaCode"]', { timeout: 10000 });
+    } catch (error) {
+      const errorMessage = page.locator('#errorMessage');
+      if (await errorMessage.isVisible()) {
+        const errorText = await errorMessage.textContent();
+        throw new Error(`Login failed with error: ${errorText}`);
       }
+      throw new Error('MFA prompt did not appear after credential submission');
+    }
+
+    // Step 3: Enter MFA code
+    const mfaCode = getTestMFACode();
+    await page.fill('input[name="mfaCode"]', mfaCode);
+    await page.click('button[type="submit"]');
+
+    // Step 4: Wait for dashboard
+    try {
+      await page.waitForURL('**/admin/dashboard', { timeout: 10000 });
     } catch (error) {
       throw new Error(`Logout test prerequisite failed: ${error.message}`);
     }
