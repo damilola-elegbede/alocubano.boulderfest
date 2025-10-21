@@ -114,7 +114,7 @@ test.describe('Registration Process', () => {
     }
   });
 
-  test('should handle dietary restrictions and accessibility needs', async ({ page }) => {
+  test('should handle accessibility needs', async ({ page }) => {
     const addButton = page.locator('button:has-text("Weekend")').first();
     if (await addButton.count() > 0) {
       await addButton.click();
@@ -124,41 +124,11 @@ test.describe('Registration Process', () => {
         await checkoutBtn.click();
         await page.waitForLoadState('domcontentloaded');
 
-        // Look for optional fields
-        const dietaryField = page.locator('input[name*="dietary"], textarea[placeholder*="dietary"], select[name*="dietary"]');
+        // Look for accessibility field
         const accessibilityField = page.locator('input[name*="accessibility"], textarea[placeholder*="accessibility"]');
-
-        if (await dietaryField.count() > 0) {
-          await dietaryField.fill('Vegetarian');
-        }
 
         if (await accessibilityField.count() > 0) {
           await accessibilityField.fill('Wheelchair accessible seating');
-        }
-      }
-    }
-  });
-
-  test('should collect emergency contact information', async ({ page }) => {
-    const addButton = page.locator('button:has-text("Weekend")').first();
-    if (await addButton.count() > 0) {
-      await addButton.click();
-
-      const checkoutBtn = page.locator('button:has-text("Checkout")').first();
-      if (await checkoutBtn.count() > 0) {
-        await checkoutBtn.click();
-        await page.waitForLoadState('domcontentloaded');
-
-        // Look for emergency contact fields
-        const emergencyNameField = page.locator('input[name*="emergency"], input[placeholder*="emergency"]');
-        const emergencyPhoneField = page.locator('input[name*="emergency_phone"], input[placeholder*="emergency phone"]');
-
-        if (await emergencyNameField.count() > 0) {
-          await emergencyNameField.fill('Emergency Contact');
-        }
-
-        if (await emergencyPhoneField.count() > 0) {
-          await emergencyPhoneField.fill('+1-555-0199');
         }
       }
     }

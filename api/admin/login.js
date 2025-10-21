@@ -222,11 +222,6 @@ async function loginHandler(req, res) {
     // Determine login mode (default to standard)
     const loginMode = mode || 'standard';
 
-    // Handle simple-login mode (test environment only)
-    if (loginMode === 'simple') {
-      return await handleSimpleLogin(req, res, username, password, clientIP);
-    }
-
     // Handle mobile-login mode
     if (loginMode === 'mobile') {
       return await handleMobileLogin(req, res, username, password, clientIP);
@@ -824,114 +819,12 @@ async function completeLogin(
   res.setHeader('Set-Cookie', cookie);
   const responseData = {
     success: true,
-    token: token,
     expiresIn: authService.sessionDuration,
     mfaUsed,
     adminId
   };
 
   res.status(200).json(processDatabaseResult(responseData));
-}
-
-/**
- * Handle simple login (test environment only)
- * Bypasses MFA and provides simplified authentication
- */
-async function handleSimpleLogin(req, res, username, password, clientIP) {
-  // Set no-cache headers for sensitive authentication data
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-  res.setHeader('Pragma', 'no-cache');
-  res.setHeader('Expires', '0');
-
-  // Check if we're in a test environment
-  // Note: Preview deployments use production security (no VERCEL_ENV check)
-  const isTestEnvironment =
-    process.env.NODE_ENV === 'test' ||
-    process.env.CI === 'true' ||
-    process.env.SKIP_MFA === 'true' ||
-    process.env.E2E_TEST_MODE === 'true';
-
-  // Return 404 in production environments
-  if (!isTestEnvironment) {
-    return res.status(404).json({
-      error: 'Not found'
-    });
-  }
-
-  // Validate required fields
-  if (!username) {
-    return res.status(400).json({
-      error: 'Username is required'
-    });
-  }
-
-  if (!password) {
-    return res.status(400).json({
-      error: 'Password is required'
-    });
-  }
-
-  try {
-    // Verify credentials - both username and password must be correct
-    if (username !== 'admin') {
-      console.log('[SimpleLogin] Failed login attempt - invalid username in test environment', {
-        username,
-        environment: process.env.NODE_ENV
-      });
-
-      return res.status(401).json({
-        error: 'Invalid credentials'
-      });
-    }
-
-    const isValid = await authService.verifyPassword(password);
-
-    if (!isValid) {
-      console.log('[SimpleLogin] Failed login attempt - invalid password in test environment', {
-        username,
-        environment: process.env.NODE_ENV
-      });
-
-      return res.status(401).json({
-        error: 'Invalid credentials'
-      });
-    }
-
-    // Generate session token (no MFA required)
-    const token = await authService.createSessionToken(username);
-
-    // Set secure cookie
-    const isSecure = process.env.NODE_ENV === 'production' || req.headers['x-forwarded-proto'] === 'https';
-
-    res.setHeader('Set-Cookie',
-      `admin_session=${token}; ` +
-      'HttpOnly; ' +
-      'SameSite=Strict; ' +
-      (isSecure ? 'Secure; ' : '') +
-      'Path=/; ' +
-      'Max-Age=3600'
-    );
-
-    console.log('[SimpleLogin] Successful test environment login', {
-      username,
-      environment: process.env.NODE_ENV
-    });
-
-    return res.status(200).json({
-      success: true,
-      adminId: username,
-      token: token,
-      expiresIn: authService.sessionDuration,
-      message: 'Login successful (test environment) - MFA bypassed'
-    });
-
-  } catch (error) {
-    console.error('[SimpleLogin] Login error:', error);
-
-    return res.status(500).json({
-      error: 'Internal server error'
-    });
-  }
 }
 
 /**

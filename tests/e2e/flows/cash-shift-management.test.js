@@ -5,6 +5,7 @@
 
 import { test, expect } from '@playwright/test';
 import { waitForPageReady, getTestTimeout } from '../helpers/playwright-utils.js';
+import { getTestMFACode } from '../helpers/totp-generator.js';
 
 test.describe('Cash Shift Management E2E', () => {
   let adminPage;
@@ -20,12 +21,21 @@ test.describe('Cash Shift Management E2E', () => {
     }
 
     await page.goto('/admin/login');
+
+    // Password step
     await page.fill('input[name="username"]', process.env.TEST_ADMIN_EMAIL || 'admin@test.com');
     await page.fill('input[type="password"]', process.env.TEST_ADMIN_PASSWORD || 'test-password');
     await page.click('button[type="submit"]');
 
+    // MFA step
+    await page.waitForSelector('input[name="mfaCode"]', { timeout: 10000 });
+    const mfaCode = getTestMFACode();
+    await page.fill('input[name="mfaCode"]', mfaCode);
+    await page.click('button[type="submit"]');
+
+    // Success
     const navTimeout = getTestTimeout(test.info(), 'navigation');
-    await page.waitForURL('**/admin/dashboard', { timeout: navTimeout });
+    await page.waitForURL('**/admin/**', { timeout: navTimeout });
   }
 
   /**

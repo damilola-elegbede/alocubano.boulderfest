@@ -6,6 +6,7 @@
 import { test, expect } from '@playwright/test';
 import { getTestDataConstants } from '../../../scripts/seed-test-data.js';
 import { waitForPageReady, waitForConditions, getTestTimeout } from '../helpers/playwright-utils.js';
+import { getTestMFACode } from '../helpers/totp-generator.js';
 
 const testConstants = getTestDataConstants();
 
@@ -63,14 +64,22 @@ test.describe('Admin Dashboard & Security', () => {
       // First validate login route is accessible
       await validateAdminRoute(page, '/admin/login', 'Admin Login', test.info());
 
+      // Use dynamic timeouts from config
+      const navTimeout = getTestTimeout(test.info(), 'navigation');
+      const actionTimeout = getTestTimeout(test.info(), 'action');
+
+      // Step 1: Submit credentials
       await page.fill('input[name="username"]', adminCredentials.email);
       await page.fill('input[type="password"]', adminCredentials.password);
       await page.click('button[type="submit"]');
 
-      // Wait for either dashboard or error, with timeout handling
-      // Use dynamic timeouts from config
-      const navTimeout = getTestTimeout(test.info(), 'navigation');
-      const actionTimeout = getTestTimeout(test.info(), 'action');
+      // Step 2: Handle MFA
+      await page.waitForSelector('input[name="mfaCode"]', { timeout: actionTimeout });
+      const mfaCode = getTestMFACode();
+      await page.fill('input[name="mfaCode"]', mfaCode);
+      await page.click('button[type="submit"]');
+
+      // Step 3: Wait for either dashboard or error
       await Promise.race([
         page.waitForURL('**/admin/dashboard', { timeout: navTimeout }),
         page.waitForSelector('#errorMessage', { state: 'visible', timeout: actionTimeout })

@@ -433,15 +433,14 @@
         });
 
         try {
-          const fetchOptions = {};
+          const fetchOptions = {
+            credentials: 'include'
+          };
           if (abortSignal) {
             fetchOptions.signal = abortSignal;
           }
-          
-          const response = await fetch(`/api/admin/registrations?${params}`, {
-            ...fetchOptions,
-            credentials: "include"
-          });
+
+          const response = await fetch(`/api/admin/registrations?${params}`, fetchOptions);
           const data = await response.json();
 
           if (!response.ok) throw new Error(data.error);
@@ -606,7 +605,7 @@
               method: "PUT",
               headers: headers,
               body: JSON.stringify({ action: "checkin" }),
-              credentials: "include"
+              credentials: 'include'
             },
           );
 
@@ -638,7 +637,7 @@
               method: "PUT",
               headers: headers,
               body: JSON.stringify({ action: "undo_checkin" }),
-              credentials: "include"
+              credentials: 'include'
             },
           );
 
@@ -673,7 +672,7 @@
 
         try {
           const response = await fetch(`/api/admin/registrations?${params}`, {
-            credentials: "include"
+            credentials: 'include'
           });
           const data = await response.json();
 
@@ -762,8 +761,7 @@
             credentials: "same-origin"
           });
         } finally {
-          // Clear client storage
-          localStorage.removeItem('adminToken');
+          // Cookie cleared by server
           sessionStorage.clear();
           // Redirect
           window.location.href = '/admin/login';
@@ -899,11 +897,6 @@
         submitBtn.innerHTML = '<span>Transferring...</span>';
 
         try {
-          const token = localStorage.getItem('adminToken');
-          if (!token) {
-            throw new Error('No authentication token found');
-          }
-
           // Import CSRF service
           const csrfModule = await import('/js/csrf-service.js');
           const csrfService = csrfModule.default;
@@ -914,9 +907,9 @@
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,
               'X-CSRF-Token': csrfToken
             },
+            credentials: 'include',
             body: JSON.stringify({
               ticketId: currentTransferTicket.ticketId,
               newEmail: newEmail.trim(),

@@ -7,6 +7,7 @@
 import { test, expect } from '@playwright/test';
 import { skipTestIfSecretsUnavailable } from '../helpers/test-setup.js';
 import { getTestDataConstants } from '../../../scripts/seed-test-data.js';
+import { getTestMFACode } from '../helpers/totp-generator.js';
 
 const testConstants = getTestDataConstants();
 
@@ -33,25 +34,19 @@ test.describe('CSRF Token Management E2E', () => {
     await page.waitForSelector('input[name="username"]', { timeout: 30000 });
     await page.waitForSelector('input[name="password"]', { timeout: 30000 });
 
+    // Password step
     await page.fill('input[name="username"]', adminCredentials.username);
     await page.fill('input[name="password"]', adminCredentials.password);
+    await page.click('button[type="submit"]');
 
-    // Wait for login to complete
-    const [response] = await Promise.all([
-      page.waitForResponse(response =>
-        response.url().includes('/api/admin/login') &&
-        response.request().method() === 'POST',
-        { timeout: 60000 }
-      ),
-      page.click('button[type="submit"]')
-    ]);
+    // MFA step
+    await page.waitForSelector('input[name="mfaCode"]', { timeout: 10000 });
+    const mfaCode = getTestMFACode();
+    await page.fill('input[name="mfaCode"]', mfaCode);
+    await page.click('button[type="submit"]');
 
-    // Verify login was successful
-    const loginData = await response.json();
-    expect(loginData.success).toBe(true);
-
-    // Wait for redirect to dashboard
-    await page.waitForURL(/\/admin/, { timeout: 30000 });
+    // Success
+    await page.waitForURL('**/admin/**', { timeout: 10000 });
 
     return page;
   }

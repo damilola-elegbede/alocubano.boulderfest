@@ -42,35 +42,7 @@
       document.documentElement.style.opacity = '0';
       document.documentElement.style.transition = 'opacity 0.2s ease-in';
 
-      // Quick token validation to prevent flash with invalid tokens
-      (async function() {
-        if (!window.location.pathname.includes('/admin/login')) {
-          const token = localStorage.getItem('adminToken');
-          if (!token) {
-            // No token - redirect immediately
-            window.location.replace('/admin/login');
-            return;
-          }
-
-          // Quick validation - check if token is expired client-side
-          try {
-            // Parse JWT to check expiration (basic check)
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            if (payload.exp && payload.exp * 1000 < Date.now()) {
-              // Token expired - clear and redirect
-              localStorage.removeItem('adminToken');
-              window.location.replace('/admin/login');
-              return;
-            }
-          } catch (e) {
-            // Invalid token format - clear and redirect
-            localStorage.removeItem('adminToken');
-            window.location.replace('/admin/login');
-            return;
-          }
-          // Valid token format - wait for server verification
-        }
-      })();
+      // Auth verified via cookie by backend - wait for server verification
     </script>
 
     <meta charset="UTF-8" />
@@ -704,28 +676,20 @@
       // Check authentication
       async function checkAuth() {
         try {
-          const token = localStorage.getItem('adminToken');
-          if (!token) {
-            window.location.replace("/admin/login");
-            return false;
-          }
-
           const response = await fetch("/api/admin/verify-session", {
+            credentials: 'include',
             headers: {
-              "Authorization": `Bearer ${token}`,
               "Cache-Control": "no-cache"
             }
           });
 
           if (!response.ok) {
-            localStorage.removeItem('adminToken');
             window.location.replace("/admin/login");
             return false;
           }
 
           const data = await response.json();
           if (!data.valid) {
-            localStorage.removeItem('adminToken');
             window.location.replace("/admin/login");
             return false;
           }
@@ -758,14 +722,9 @@
         }
 
         try {
-          const token = localStorage.getItem('adminToken');
-          if (!token) {
-            throw new Error('No authentication token found');
-          }
-
           const response = await fetch(`/api/tickets/${encodeURIComponent(ticketId)}`, {
+            credentials: 'include',
             headers: {
-              "Authorization": `Bearer ${token}`,
               "Cache-Control": "no-cache"
             }
           });
@@ -1080,11 +1039,6 @@
         submitBtn.innerHTML = '<span>Transferring...</span>';
 
         try {
-          const token = localStorage.getItem('adminToken');
-          if (!token) {
-            throw new Error('No authentication token found');
-          }
-
           // Import CSRF service
           const csrfModule = await import('/js/csrf-service.js');
           const csrfService = csrfModule.default;
@@ -1095,9 +1049,9 @@
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,
               'X-CSRF-Token': csrfToken
             },
+            credentials: 'include',
             body: JSON.stringify({
               ticketId: currentTicketData.ticketId,
               newEmail: newEmail.trim(),
@@ -1172,16 +1126,13 @@
             headers["X-CSRF-Token"] = csrfToken;
           }
 
-          const token = localStorage.getItem('adminToken');
-          if (token) {
-            headers["Authorization"] = `Bearer ${token}`;
-          }
           await fetch("/api/admin/login", {
             method: "DELETE",
             headers: headers,
+            credentials: 'include'
           });
         } finally {
-          localStorage.removeItem('adminToken');
+          // Cookie cleared by server
           sessionStorage.clear();
           window.location.href = '/admin/login';
         }

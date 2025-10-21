@@ -104,12 +104,6 @@ export const generateRegistrationData = (ticketType = 'weekend-pass') => {
     lastName: 'Attendee',
     email,
     phone: '+1234567890',
-    emergencyContact: {
-      name: 'Emergency Contact',
-      phone: '+1987654321',
-      relationship: 'Friend'
-    },
-    dietaryRestrictions: '',
     accessibilityNeeds: '',
     workshopPreferences: ['Salsa Basics', 'Bachata Fundamentals'],
     timestamp: Date.now()

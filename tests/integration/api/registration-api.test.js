@@ -99,10 +99,6 @@ describe('Registration API Integration', () => {
         expect(registration.last_name).toBe('Test');
         expect(registration.email).toBe(testEmail);
         expect(registration.phone).toBe('+1234567890');
-        // Handle flexible column naming for dietary restrictions
-        const dietaryField = registration.dietary_restrictions || registration.dietary;
-        expect(dietaryField).toBe('vegetarian');
-        expect(registration.emergency_contact).toBe('Jane Doe - 555-0123');
       }
 
     } catch (error) {

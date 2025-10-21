@@ -234,9 +234,6 @@ export class DatabaseHelper {
       first_name: userData.firstName || 'Test',
       last_name: userData.lastName || 'User',
       phone: userData.phone || '+1234567890',
-      emergency_contact: userData.emergencyContact || 'Emergency Contact',
-      emergency_phone: userData.emergencyPhone || '+1987654321',
-      dietary_restrictions: userData.dietaryRestrictions || '',
       accessibility_needs: userData.accessibilityNeeds || '',
       created_at: new Date().toISOString(),
       test_session: this.testId
@@ -288,9 +285,6 @@ export class DatabaseHelper {
         firstName: user.first_name,
         lastName: user.last_name,
         phone: user.phone,
-        emergencyContact: user.emergency_contact,
-        emergencyPhone: user.emergency_phone,
-        dietaryRestrictions: user.dietary_restrictions,
         accessibilityNeeds: user.accessibility_needs
       }),
       created_at: new Date().toISOString(),

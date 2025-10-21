@@ -42,35 +42,8 @@
       document.documentElement.style.opacity = '0';
       document.documentElement.style.transition = 'opacity 0.2s ease-in';
 
-      // Quick token validation to prevent flash with invalid tokens
-      (async function() {
-        if (!window.location.pathname.includes('/admin/login')) {
-          const token = localStorage.getItem('adminToken');
-          if (!token) {
-            // No token - redirect immediately
-            window.location.replace('/admin/login');
-            return;
-          }
-
-          // Quick validation - check if token is expired client-side
-          try {
-            // Parse JWT to check expiration (basic check)
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            if (payload.exp && payload.exp * 1000 < Date.now()) {
-              // Token expired - clear and redirect
-              localStorage.removeItem('adminToken');
-              window.location.replace('/admin/login');
-              return;
-            }
-          } catch (e) {
-            // Invalid token format - clear and redirect
-            localStorage.removeItem('adminToken');
-            window.location.replace('/admin/login');
-            return;
-          }
-          // Valid token format - wait for server verification
-        }
-      })();
+      // Auth verified via cookie by backend
+      // Server will verify session when page loads
     </script>
 
     <meta charset="UTF-8" />
@@ -466,9 +439,7 @@
       async function fetchCSRFToken() {
         try {
           const response = await fetch("/api/admin/csrf-token", {
-            headers: {
-              "Authorization": `Bearer ${localStorage.getItem('adminToken')}`
-            }
+            credentials: 'include' // Send cookie automatically
           });
           if (response.ok) {
             const data = await response.json();
@@ -485,23 +456,14 @@
       // ✅ PROPER AUTH CHECK - Use verify-session endpoint with credentials
       async function checkAuth() {
         try {
-          // Get token from localStorage
-          const token = localStorage.getItem('adminToken');
-          if (!token) {
-            window.location.replace("/admin/login");
-            return false;
-          }
-
           const response = await fetch("/api/admin/verify-session", {
+            credentials: 'include', // Cookie sent automatically
             headers: {
-              "Authorization": `Bearer ${token}`,
               "Cache-Control": "no-cache"
             }
           });
 
           if (!response.ok) {
-            // Clear invalid token and redirect
-            localStorage.removeItem('adminToken');
             window.location.replace("/admin/login");
             return false;
           }
@@ -509,7 +471,6 @@
           // Success - verify the session is valid
           const data = await response.json();
           if (!data.valid) {
-            localStorage.removeItem('adminToken');
             window.location.replace("/admin/login");
             return false;
           }
@@ -550,14 +511,9 @@
             url.searchParams.set('eventId', eventId);
           }
 
-          const token = localStorage.getItem('adminToken');
-          if (!token) {
-            throw new Error('No authentication token found');
-          }
-
           const response = await fetch(url.toString(), {
+            credentials: 'include', // Send cookie automatically
             headers: {
-              "Authorization": `Bearer ${token}`,
               "Content-Type": "application/json"
             }
           });
@@ -589,16 +545,8 @@
       // Load flagged tickets
       async function loadFlaggedTickets() {
         try {
-          const token = localStorage.getItem('adminToken');
-          if (!token) {
-            throw new Error('No authentication token found');
-          }
-
           const response = await fetch('/api/admin/flagged-tickets?limit=50&offset=0', {
-            headers: {
-              "Authorization": `Bearer ${token}`,
-              "Content-Type": "application/json"
-            }
+            credentials: 'include'
           });
 
           if (!response.ok) {
@@ -756,13 +704,7 @@
         }
 
         try {
-          const token = localStorage.getItem('adminToken');
-          if (!token) {
-            throw new Error('No authentication token found');
-          }
-
           const headers = {
-            "Authorization": `Bearer ${token}`,
             "Content-Type": "application/json"
           };
 
@@ -773,6 +715,7 @@
 
           const response = await fetch(`/api/admin/flagged-tickets?ticketId=${encodeURIComponent(ticketId)}`, {
             method: 'PUT',
+            credentials: 'include',
             headers: headers,
             body: JSON.stringify({ action })
           });
@@ -797,16 +740,8 @@
       // Load flagged tickets analytics
       async function loadFlaggedTicketsAnalytics(period = '30d') {
         try {
-          const token = localStorage.getItem('adminToken');
-          if (!token) {
-            throw new Error('No authentication token found');
-          }
-
           const response = await fetch(`/api/admin/flagged-tickets-analytics?period=${period}&report_type=summary`, {
-            headers: {
-              "Authorization": `Bearer ${token}`,
-              "Content-Type": "application/json"
-            }
+            credentials: 'include'
           });
 
           if (!response.ok) {
@@ -1278,15 +1213,8 @@
         });
 
         try {
-          const token = localStorage.getItem('adminToken');
-          if (!token) {
-            throw new Error('No authentication token found');
-          }
           const response = await fetch(`/api/admin/registrations?${params}`, {
-            headers: {
-              "Authorization": `Bearer ${token}`,
-              "Content-Type": "application/json"
-            }
+            credentials: 'include'
           });
 
           const data = await response.json();
@@ -1460,16 +1388,11 @@
             headers["X-CSRF-Token"] = csrfToken;
           }
 
-          const token = localStorage.getItem('adminToken');
-          if (!token) {
-            throw new Error('No authentication token found');
-          }
-          headers["Authorization"] = `Bearer ${token}`;
-
           const response = await fetch(
             `/api/admin/registrations?ticketId=${encodeURIComponent(ticketId)}`,
             {
               method: "PUT",
+              credentials: 'include',
               headers: headers,
               body: JSON.stringify({ action: "checkin" }),
             },
@@ -1496,16 +1419,11 @@
             headers["X-CSRF-Token"] = csrfToken;
           }
 
-          const token = localStorage.getItem('adminToken');
-          if (!token) {
-            throw new Error('No authentication token found');
-          }
-          headers["Authorization"] = `Bearer ${token}`;
-
           const response = await fetch(
             `/api/admin/registrations?ticketId=${encodeURIComponent(ticketId)}`,
             {
               method: "PUT",
+              credentials: 'include',
               headers: headers,
               body: JSON.stringify({ action: "undo_checkin" }),
             },
@@ -1542,15 +1460,8 @@
         });
 
         try {
-          const token = localStorage.getItem('adminToken');
-          if (!token) {
-            throw new Error('No authentication token found');
-          }
           const response = await fetch(`/api/admin/registrations?${params}`, {
-            headers: {
-              "Authorization": `Bearer ${token}`,
-              "Content-Type": "application/json"
-            }
+            credentials: 'include'
           });
           const data = await response.json();
 
@@ -1637,17 +1548,13 @@
             headers["X-CSRF-Token"] = csrfToken;
           }
 
-          const token = localStorage.getItem('adminToken');
-          if (token) {
-            headers["Authorization"] = `Bearer ${token}`;
-          }
           await fetch("/api/admin/login", {
             method: "DELETE",
+            credentials: 'include',
             headers: headers,
           });
         } finally {
           // Clear client storage
-          localStorage.removeItem('adminToken');
           sessionStorage.clear();
           // Redirect
           window.location.href = '/admin/login';
@@ -1663,14 +1570,18 @@
         btn.textContent = "Syncing...";
 
         try {
-          const token = localStorage.getItem('adminToken');
+          const headers = {
+            "Content-Type": "application/json"
+          };
+          // Add CSRF token if available
+          if (csrfToken) {
+            headers["X-CSRF-Token"] = csrfToken;
+          }
+
           const response = await fetch("/api/sheets/sync", {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-CSRF-Token": csrfToken,
-              "Authorization": `Bearer ${token}`
-            },
+            credentials: 'include',
+            headers: headers,
           });
 
           const data = await response.json();

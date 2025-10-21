@@ -42,35 +42,7 @@
       document.documentElement.style.opacity = '0';
       document.documentElement.style.transition = 'opacity 0.2s ease-in';
 
-      // Quick token validation to prevent flash with invalid tokens
-      (async function() {
-        if (!window.location.pathname.includes('/admin/login')) {
-          const token = localStorage.getItem('adminToken');
-          if (!token) {
-            // No token - redirect immediately
-            window.location.replace('/admin/login');
-            return;
-          }
-
-          // Quick validation - check if token is expired client-side
-          try {
-            // Parse JWT to check expiration (basic check)
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            if (payload.exp && payload.exp * 1000 < Date.now()) {
-              // Token expired - clear and redirect
-              localStorage.removeItem('adminToken');
-              window.location.replace('/admin/login');
-              return;
-            }
-          } catch (e) {
-            // Invalid token format - clear and redirect
-            localStorage.removeItem('adminToken');
-            window.location.replace('/admin/login');
-            return;
-          }
-          // Valid token format - wait for server verification
-        }
-      })();
+      // Auth verified via cookie by backend
     </script>
 
     <meta charset="UTF-8" />
@@ -389,10 +361,29 @@
     <script type="module" src="/js/admin-donations.js"></script>
 
     <script>
-      // Logout function
-      function logout() {
-        localStorage.removeItem('adminToken');
-        window.location.href = '/admin/login';
+      // CSRF token for logout
+      let csrfToken = null;
+
+      // Logout function with proper server-side session termination
+      async function logout() {
+        try {
+          const headers = {};
+          // Add CSRF token if available
+          if (csrfToken) {
+            headers["X-CSRF-Token"] = csrfToken;
+          }
+
+          await fetch("/api/admin/login", {
+            method: "DELETE",
+            credentials: 'include',
+            headers: headers,
+          });
+        } catch (error) {
+          console.error('Logout error:', error);
+        } finally {
+          sessionStorage.clear();
+          window.location.href = '/admin/login';
+        }
       }
 
       // Update time display
@@ -409,6 +400,7 @@
       updateTime();
       setInterval(updateTime, 1000);
     </script>
+
 
     <!-- Mobile Navigation Controller -->
     <script src="/js/admin-mobile-nav.js"></script>

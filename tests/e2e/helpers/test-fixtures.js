@@ -69,9 +69,6 @@ export const RegistrationFixtures = {
         firstName: 'Maria',
         lastName: 'Rodriguez',
         phone: '+1-555-0123',
-        dietaryRestrictions: 'Vegetarian',
-        emergencyContact: 'Carlos Rodriguez',
-        emergencyPhone: '+1-555-0124',
         ...overrides.user
       },
       ...overrides
@@ -89,20 +86,9 @@ export const RegistrationFixtures = {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        phone: user.phone,
-        emergencyContact: user.emergencyContact,
-        emergencyPhone: user.emergencyPhone
+        phone: user.phone
       }
     };
-  },
-
-  /**
-   * Registration with special dietary needs
-   */
-  dietaryNeedsRegistration(testTitle, dietaryRestrictions = 'Gluten-free, Dairy-free') {
-    const registration = this.validRegistration(testTitle);
-    registration.user.dietaryRestrictions = dietaryRestrictions;
-    return registration;
   },
 
   /**
@@ -116,9 +102,7 @@ export const RegistrationFixtures = {
         ...registration.user,
         firstName: 'José',
         lastName: 'García',
-        phone: '+34-600-123-456',
-        emergencyContact: 'Carmen García',
-        emergencyPhone: '+34-600-123-457'
+        phone: '+34-600-123-456'
       }
     };
   }

@@ -266,29 +266,20 @@
       // Check authentication
       async function checkAuth() {
         try {
-          const token = localStorage.getItem('adminToken');
-          if (!token) {
-            window.location.href = "/admin/login";
-            return false;
-          }
-
           const response = await fetch("/api/admin/verify-session", {
             credentials: "include",
             headers: {
-              'Authorization': `Bearer ${token}`,
               'Cache-Control': 'no-cache'
             }
           });
 
           if (!response.ok) {
-            localStorage.removeItem('adminToken');
             window.location.href = "/admin/login";
             return false;
           }
 
           const data = await response.json();
           if (!data.valid) {
-            localStorage.removeItem('adminToken');
             window.location.href = "/admin/login";
             return false;
           }
@@ -298,7 +289,6 @@
           return true;
         } catch (error) {
           console.error("Auth check failed:", error);
-          localStorage.removeItem('adminToken');
           window.location.href = "/admin/login";
           return false;
         }
@@ -393,7 +383,7 @@
             credentials: "include"
           });
         } finally {
-          localStorage.removeItem('adminToken');
+          // Cookie cleared by server
           sessionStorage.clear();
           window.location.href = '/admin/login';
         }
