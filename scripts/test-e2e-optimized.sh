@@ -22,7 +22,7 @@ fi
 
 echo ""
 echo "📊 Configuration:"
-echo "  Config: playwright-e2e-optimized.config.js"
+echo "  Config: tests/config/playwright-e2e-optimized.config.js"
 echo "  Workers: 4 (parallel execution)"
 echo "  Target: $PLAYWRIGHT_BASE_URL"
 echo ""
@@ -30,7 +30,7 @@ echo ""
 # Run a quick test with just Chromium on core tests
 echo "🧪 Running core tests on Chromium only..."
 npx playwright test \
-  --config playwright-e2e-optimized.config.js \
+  --config tests/config/playwright-e2e-optimized.config.js \
   --project=chromium \
   tests/e2e/flows/basic-navigation.test.js \
   tests/e2e/flows/newsletter-simple.test.js \

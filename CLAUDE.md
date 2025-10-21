@@ -21,6 +21,76 @@ npm test && git commit
 npm test && git push
 ```
 
+## File Organization
+
+**CRITICAL: Keep the top-level directory clean and organized at all times.**
+
+### Strict .tmp/ Usage Policy
+
+**ALL temporary files, scratch work, analysis, and reports MUST go in `.tmp/` directory.**
+
+```bash
+# ✅ CORRECT - Use .tmp/ for all temporary work
+.tmp/plans/feature-analysis.md
+.tmp/reports/performance-audit.json
+.tmp/analysis/codebase-review.txt
+.tmp/scripts/one-time-migration.js
+.tmp/data/test-dataset.csv
+
+# ❌ FORBIDDEN - Never create temporary files in root or source directories
+/temp-analysis.md                    # Wrong - pollutes root
+/pages/test-page.html               # Wrong - pollutes source
+/scripts/debug-script.js            # Wrong - use .tmp/scripts/
+/performance-report.json            # Wrong - use .tmp/reports/
+```
+
+### .tmp/ Directory Structure
+
+Organize temporary files using these subdirectories:
+
+```text
+.tmp/
+├── plans/              # Task planning and strategy documents
+├── reports/            # Generated summaries and findings
+├── analysis/           # Investigation results and code analysis
+├── scripts/            # One-time automation and debug scripts
+├── data/               # Temporary data files and test datasets
+├── drafts/             # Work-in-progress documentation
+├── tests/              # Temporary test files and experiments
+├── logs/               # Execution logs and debug output
+└── exports/            # Data exports and file conversions
+```
+
+### Top-Level Directory Standards
+
+**Only these types of files are allowed in the root directory:**
+
+1. **Configuration files**: `.gitignore`, `.nvmrc`, `.npmrc.ci`, `.stylelintrc.json`, `.vercelignore`, `.coderabbit.yaml`, etc.
+2. **Documentation**: `README.md`, `CHANGELOG.md`, `CLAUDE.md`, `INSTALLATION.md`, `SECURITY.md`, `LICENSE`
+3. **Essential files**: `index.html`, `package.json`, `package-lock.json`, `vercel.json`, `vercel.dev.json`
+4. **Directories**: `api/`, `lib/`, `tests/`, `pages/`, `js/`, `css/`, `docs/`, `scripts/`, `config/`, etc.
+
+**The following are FORBIDDEN in the root directory:**
+
+- Temporary files (`.tmp`, `.temp`, `temp-*`, `debug-*`, etc.)
+- Database files (`*.db`, `local.db`, `dev.db`)
+- Cache files (`*-cache.json`, `.gallery-sync-cache.json`)
+- Test output (`*-test-results.xml`, `*-results.json`)
+- Build artifacts (`dist/`, `build/`, `reports/`)
+- Backup files (`*.backup`, `*.bak`, `*.orig`)
+- Log files (`*.log`)
+
+### Enforcement Rules
+
+**If you see temporary files in the root directory:**
+
+1. **Move to .tmp/** - Relocate the file to the appropriate `.tmp/` subdirectory
+2. **Delete if regenerable** - Remove cache files, test outputs, and build artifacts
+3. **Update .gitignore** - Ensure the file pattern is covered in `.gitignore`
+4. **Never commit** - Temporary files should never be committed to git
+
+**Exception**: Files explicitly referenced in `package.json` scripts or essential for Vercel deployment may remain in root.
+
 ## Common Commands
 
 ### Development

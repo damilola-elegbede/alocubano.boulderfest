@@ -807,7 +807,7 @@ vi.mock('slow-library', () => ({
 **Enable Tracing**:
 
 ```javascript
-// playwright-e2e-optimized.config.js
+// tests/config/playwright-e2e-optimized.config.js
 export default defineConfig({
   use: {
     trace: 'on-first-retry', // Capture trace on first retry
@@ -922,7 +922,7 @@ export default defineConfig({
 1. **Parallel Execution**:
 
 ```javascript
-// playwright-e2e-optimized.config.js
+// tests/config/playwright-e2e-optimized.config.js
 export default defineConfig({
   fullyParallel: true,
   workers: process.env.CI ? 2 : 4 // More workers locally
