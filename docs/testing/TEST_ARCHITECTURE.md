@@ -163,7 +163,7 @@ tests/e2e/flows/
 └── wallet-pass-google.test.js              # Google Wallet
 ```
 
-**Configuration**: `playwright-e2e-optimized.config.js`
+**Configuration**: `tests/config/playwright-e2e-optimized.config.js`
 
 **Execution**:
 
@@ -193,7 +193,6 @@ npm run test:e2e:ci        # CI-optimized execution
 │   ├── setup-unit.js      # Unit test setup
 │   ├── setup-integration.js
 │   └── vitest.config.js   # Main Vitest config (delegates to unit)
-├── playwright-e2e-optimized.config.js
 └── docs/testing/          # Testing documentation
     ├── TEST_ARCHITECTURE.md
     ├── PHASE_COMPLETION_REPORT.md
@@ -791,7 +790,7 @@ GitHub Actions automatically runs tests on every push and pull request:
 
 - Verify Vercel Preview Deployment is accessible
 - Check network connectivity
-- Review timeout configurations in `playwright-e2e-optimized.config.js`
+- Review timeout configurations in `tests/config/playwright-e2e-optimized.config.js`
 
 **Memory Issues**:
 

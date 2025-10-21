@@ -44,6 +44,14 @@ playwright-report-local/
 e2e-test-results.json
 *.test-results.json
 
+# Legacy playwright configs (only tests/config/playwright-e2e-optimized.config.js is used)
+playwright-e2e-ci.config.js
+playwright-e2e-preview.config.js
+playwright-e2e-vercel-main.config.js
+playwright-unified-browser.config.js
+playwright.config.js
+playwright.config.optimized.js
+
 # Build outputs
 dist/
 build/
@@ -104,6 +112,9 @@ certificates/
 *.tmp
 *.temp
 .cache/
+*-cache.json
+.gallery-sync-cache.json
+migration-log.json
 deployment-check-report.json
 :memory:
 .tmp/

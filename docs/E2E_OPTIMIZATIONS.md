@@ -42,7 +42,7 @@
 ## Configuration Changes
 
 ### New Optimized Config
-- File: `playwright-e2e-optimized.config.js`
+- File: `tests/config/playwright-e2e-optimized.config.js`
 - Parallel execution enabled
 - Smart test filtering
 - Optimized timeouts
@@ -50,8 +50,8 @@
 
 ### Updated Scripts
 ```json
-"test:e2e": "NODE_OPTIONS='--max-old-space-size=2048' npx playwright test --config playwright-e2e-optimized.config.js",
-"test:e2e:ci": "NODE_OPTIONS='--max-old-space-size=2048' npx playwright test --config playwright-e2e-optimized.config.js"
+"test:e2e": "NODE_OPTIONS='--max-old-space-size=2048' npx playwright test --config tests/config/playwright-e2e-optimized.config.js",
+"test:e2e:ci": "NODE_OPTIONS='--max-old-space-size=2048' npx playwright test --config tests/config/playwright-e2e-optimized.config.js"
 ```
 
 ## Performance Metrics

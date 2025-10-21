@@ -621,11 +621,11 @@ jobs:
             echo "🎯 Applying test pattern filter: $TEST_PATTERN"
             echo "📁 Test pattern: $TEST_PATTERN"
             # Run with grep pattern
-            npx playwright test --config playwright-e2e-optimized.config.js --project="$PROJECT_NAME" --grep "$TEST_PATTERN" 2>&1 | tee test_output.log
+            npx playwright test --config tests/config/playwright-e2e-optimized.config.js --project="$PROJECT_NAME" --grep "$TEST_PATTERN" 2>&1 | tee test_output.log
           else
             echo "🎯 Running all E2E tests (no pattern filter)"
             # Run without grep pattern
-            npx playwright test --config playwright-e2e-optimized.config.js --project="$PROJECT_NAME" 2>&1 | tee test_output.log
+            npx playwright test --config tests/config/playwright-e2e-optimized.config.js --project="$PROJECT_NAME" 2>&1 | tee test_output.log
           fi
 
           echo "🌐 Target URL: ${{ env.PREVIEW_URL }}"

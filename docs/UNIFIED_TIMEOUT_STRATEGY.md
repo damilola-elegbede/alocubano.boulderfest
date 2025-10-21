@@ -10,7 +10,7 @@ The unified timeout strategy makes the **Playwright configuration the single sou
 
 ### Single Source of Truth: Playwright Config
 
-All timeout values start from the main test timeout in `playwright-e2e-optimized.config.js`:
+All timeout values start from the main test timeout in `tests/config/playwright-e2e-optimized.config.js`:
 
 ```javascript
 // Base timeout that scales all other timeouts
@@ -187,7 +187,7 @@ test('debug timeouts', async ({ page }) => {
 ## Migration Guide
 
 ### Phase 1: Update Playwright Config ✅
-- Unified timeout hierarchy in `playwright-e2e-optimized.config.js`
+- Unified timeout hierarchy in `tests/config/playwright-e2e-optimized.config.js`
 - Removed browser-specific timeout overrides
 
 ### Phase 2: Update Global Setup ✅
