@@ -597,9 +597,25 @@
       }
 
       // Logout function
-      function logout() {
-        // Cookie cleared by server
-        window.location.href = '/admin/login';
+      async function logout() {
+        try {
+          const headers = {};
+          // Add CSRF token if available
+          if (typeof csrfToken !== 'undefined' && csrfToken) {
+            headers["X-CSRF-Token"] = csrfToken;
+          }
+
+          await fetch("/api/admin/login", {
+            method: "DELETE",
+            credentials: 'include',
+            headers: headers,
+          });
+        } catch (error) {
+          console.error('Logout error:', error);
+        } finally {
+          sessionStorage.clear();
+          window.location.href = '/admin/login';
+        }
       }
 
       // HTML escape helper
