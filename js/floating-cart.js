@@ -59,19 +59,6 @@ export function initializeFloatingCart(cartManager) {
         clearButton: document.querySelector('.cart-clear-btn')
     };
 
-    // Ensure cart panel starts in closed state (no .open class)
-    if (elements.panel) {
-        elements.panel.classList.remove('open');
-    }
-    if (elements.backdrop) {
-        elements.backdrop.classList.remove('active');
-    }
-
-    // E2E test markers (without forcing visibility)
-    if (window.navigator.userAgent.includes('Playwright') || window.location.search.includes('e2e')) {
-        console.log('🔧 E2E: Cart panel initialized for testing (hidden until opened)');
-    }
-
     // Initialize payment selector
     if (typeof getPaymentSelector === 'function') {
         try {
