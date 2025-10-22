@@ -76,6 +76,16 @@
     <!-- DNS prefetch for external resources -->
     <link rel="dns-prefetch" href="//fonts.googleapis.com" />
     <link rel="dns-prefetch" href="//fonts.gstatic.com" />
+    <!-- Preconnect to Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- Preload critical fonts -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Playfair+Display:ital,wght@0,400;0,900;1,400;1,900&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Playfair+Display:ital,wght@0,400;0,900;1,400;1,900&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" media="print" onload="this.media='all'">
+    <noscript>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Playfair+Display:ital,wght@0,400;0,900;1,400;1,900&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap">
+    </noscript>
 
     <!-- Performance optimizations -->
 
@@ -84,19 +94,14 @@
 
     <!-- Performance optimization system -->
     <script type="module" src="/js/performance-integration.js"></script>
+    <!-- Critical CSS (render-blocking) -->
+    <link rel="stylesheet" href="/css/bundle-critical.css" />
 
-    <link rel="stylesheet" href="/css/base.css" />
-    <link rel="stylesheet" href="/css/components.css" />
-    <link rel="stylesheet" href="/css/typography.css" />
-    <link rel="stylesheet" href="/css/floating-cart.css" />
-    <link rel="stylesheet" href="/css/floating-cart-dark.css" />
-    <link rel="stylesheet" href="/css/header-cart.css" />
-    <link rel="stylesheet" href="/css/checkout-loading.css" />
-    <link rel="stylesheet" href="/css/mobile-overrides.css" />
-    <!-- Theme styles -->
-    <link rel="stylesheet" href="/css/theme-toggle.css" />
-
-    <style>
+    <!-- Deferred CSS (lazy-loaded) -->
+    <link rel="stylesheet" href="/css/bundle-deferred.css" media="print" onload="this.media='all'">
+    <noscript>
+      <link rel="stylesheet" href="/css/bundle-deferred.css">
+    </noscript><style>
       /* Success Page Specific Styles */
       .success-container {
         min-height: 60vh;
@@ -177,7 +182,6 @@
         font-weight: bold;
         color: var(--color-red);
       }
-
 
       .success-details {
         background: var(--color-surface);
@@ -359,7 +363,6 @@
           font-size: var(--font-size-xs);
           padding: var(--space-sm) var(--space-md);
         }
-
 
         .success-actions {
           flex-direction: column;
@@ -550,15 +553,12 @@
             <a href="#" id="register-now-btn" class="success-btn accent" aria-label="Register your tickets now to complete attendee information">Register Now</a>
           </div>
 
-
-
           <div class="success-details" id="order-details" style="display: none">
             <h3>Order Details</h3>
             <p><strong>Order ID:</strong> <span id="order-id"></span></p>
             <p><strong>Amount:</strong> $<span id="order-amount"></span></p>
             <p><strong>Email:</strong> <span id="order-email"></span></p>
           </div>
-
 
           <!-- Registration will be handled on separate page -->
 
@@ -740,7 +740,6 @@
           if (loadingSubtext) loadingSubtext.textContent = 'Please wait while we confirm your transaction...';
         }
       }
-
 
       // Verify Stripe payment
       async function verifyStripePayment() {
@@ -958,7 +957,6 @@
                                 data.registrationUrl ||
                                 data.registrationToken;
 
-
         // Debug logging for ticket purchase detection
         console.log('Ticket purchase detection:', {
           isTicketPurchase,
@@ -998,7 +996,6 @@
             registerNowContainer.style.display = 'block';
             registerNowBtn.addEventListener('click', handleRegisterNow);
           }
-
 
           // Start countdown timer for ticket purchases
           startCountdown();
@@ -1109,7 +1106,6 @@
         announcer.textContent = message;
       }
 
-
       // Start verification when page loads
       verifyPayment();
 
@@ -1118,8 +1114,8 @@
       // Registration form submission handling removed - handled on separate page
     </script>
 
-    <script src="/js/navigation.js"></script>
-    <script src="/js/main.js"></script>
+    <script defer src="/js/navigation.js"></script>
+    <script defer src="/js/main.js"></script>
     <script src="/js/typography.js"></script>
 
     <!-- Cart system not needed on success page - cart is cleared after payment -->

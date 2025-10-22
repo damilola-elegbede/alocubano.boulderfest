@@ -248,6 +248,10 @@ function transformSummaryForFrontend(summary, trendData = null) {
 }
 
 async function handler(req, res) {
+  // Add cache headers for browser caching (30-second TTL)
+  res.setHeader('Cache-Control', 'private, max-age=30');
+  res.setHeader('Vary', 'Authorization');
+
   // Initialize database client
   await getDatabaseClient();
 

@@ -13,6 +13,7 @@
   },
   "scripts": {
     "build": "NODE_OPTIONS='--max-old-space-size=1024' node scripts/build.js",
+    "build:css": "node scripts/bundle-css.js",
     "dev": "node scripts/dev-server.js",
     "start": "npm run dev",
     "vercel:preview": "./node_modules/.bin/vercel --target preview",

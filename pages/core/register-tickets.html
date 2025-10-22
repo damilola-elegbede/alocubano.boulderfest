@@ -76,6 +76,16 @@
     <!-- DNS prefetch for external resources -->
     <link rel="dns-prefetch" href="//fonts.googleapis.com" />
     <link rel="dns-prefetch" href="//fonts.gstatic.com" />
+    <!-- Preconnect to Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- Preload critical fonts -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Playfair+Display:ital,wght@0,400;0,900;1,400;1,900&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Playfair+Display:ital,wght@0,400;0,900;1,400;1,900&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" media="print" onload="this.media='all'">
+    <noscript>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Playfair+Display:ital,wght@0,400;0,900;1,400;1,900&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap">
+    </noscript>
 
     <!-- Performance optimizations -->
     
@@ -89,16 +99,14 @@
     <script type="module" src="/js/qr-cache-manager.js"></script>
     <script type="module" src="/js/wallet-lazy-loader.js"></script>
     <script type="module" src="/js/performance-integration.js"></script>
+    <!-- Critical CSS (render-blocking) -->
+    <link rel="stylesheet" href="/css/bundle-critical.css" />
 
-    <link rel="stylesheet" href="/css/base.css" />
-    <link rel="stylesheet" href="/css/components.css" />
-    <link rel="stylesheet" href="/css/typography.css" />
-    <link rel="stylesheet" href="/css/forms.css" />
-    <link rel="stylesheet" href="/css/mobile-overrides.css" />
-    <!-- Theme styles -->
-    <link rel="stylesheet" href="/css/theme-toggle.css" />
-
-    <style>
+    <!-- Deferred CSS (lazy-loaded) -->
+    <link rel="stylesheet" href="/css/bundle-deferred.css" media="print" onload="this.media='all'">
+    <noscript>
+      <link rel="stylesheet" href="/css/bundle-deferred.css">
+    </noscript><style>
       /* Registration-specific styles */
       .registration-container {
         max-width: 800px;
@@ -644,8 +652,8 @@
     </footer>
 
     <!-- Scripts -->
-    <script src="/js/navigation.js"></script>
-    <script src="/js/main.js"></script>
+    <script defer src="/js/navigation.js"></script>
+    <script defer src="/js/main.js"></script>
     <script src="/js/typography.js"></script>
     <!-- Wallet buttons loaded lazily via wallet-lazy-loader -->
 
@@ -1249,7 +1257,6 @@
             </div>
           `;
         }
-
 
         showError(message) {
           document.getElementById('loading-state').style.display = 'none';

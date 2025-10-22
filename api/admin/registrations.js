@@ -11,6 +11,10 @@ import { processDatabaseResult } from "../../lib/bigint-serializer.js";
 import { getTicketColorService } from "../../lib/ticket-color-service.js";
 
 async function handler(req, res) {
+  // Add cache headers for browser caching (30-second TTL)
+  res.setHeader('Cache-Control', 'private, max-age=30');
+  res.setHeader('Vary', 'Authorization');
+
   let db;
 
   try {
@@ -177,11 +181,6 @@ async function handler(req, res) {
       }
 
       const countResult = await db.execute({ sql: countSql, args: countArgs });
-
-      // Set security headers to prevent caching of customer PII data
-      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
 
       // Enrich tickets with color data
       const colorService = getTicketColorService();
