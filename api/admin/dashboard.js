@@ -87,14 +87,17 @@ async function handler(req, res) {
         SELECT
           COALESCE(SUM(t.price_cents) FILTER (WHERE t.status = 'valid'
             AND tr.is_test = 0
+            AND t.is_test = 0
             AND COALESCE(tr.payment_processor, '') <> 'comp'
             AND tr.status = 'completed'), 0) / 100.0 as total_revenue,
           COALESCE(SUM(t.price_cents) FILTER (WHERE t.status = 'valid'
-            AND tr.is_test = 1
+            AND (tr.is_test = 1 OR t.is_test = 1)
             AND COALESCE(tr.payment_processor, '') <> 'comp'
             AND tr.status = 'completed'), 0) / 100.0 as test_revenue,
           COALESCE(SUM(t.price_cents) FILTER (WHERE t.status = 'valid'
             AND tr.source = 'manual_entry'
+            AND tr.is_test = 0
+            AND t.is_test = 0
             AND COALESCE(tr.payment_processor, '') <> 'comp'
             AND tr.status = 'completed'), 0) / 100.0 as manual_revenue,
           COUNT(*) FILTER (WHERE tr.source = 'manual_entry' AND t.status = 'valid') as manual_tickets,

@@ -1299,6 +1299,10 @@
                         ${registrations
                           .map(
                             (reg) => {
+                              const isTestTicket = reg.is_test === 1 || reg.ticket_id?.startsWith('TEST-');
+                              const rowClass = isTestTicket ? 'test-ticket-row' : '';
+                              // TEST badge removed - ticket type already shows test status
+
                               // Format payment processor information
                               const paymentProcessor = reg.payment_processor || 'stripe';
                               const processorIcon = paymentProcessor === 'paypal' ? '🅿️' : '💳';

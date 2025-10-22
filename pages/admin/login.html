@@ -450,8 +450,10 @@
             credentials: 'include' // Send cookie automatically
           });
           if (response.ok) {
-            // Already authenticated, redirect to dashboard
-            window.location.href = "/admin/dashboard";
+            // Already authenticated, redirect to return URL or dashboard
+            const urlParams = new URLSearchParams(window.location.search);
+            const returnUrl = urlParams.get('returnUrl') || '/admin/dashboard';
+            window.location.href = returnUrl;
           }
         } catch (error) {
           // Not authenticated, stay on login page
@@ -483,8 +485,10 @@
           const data = await response.json();
 
           if (response.ok) {
-            // Success - redirect to dashboard (session cookie set by server)
-            window.location.href = "/admin/dashboard";
+            // Success - redirect to return URL or dashboard (session cookie set by server)
+            const urlParams = new URLSearchParams(window.location.search);
+            const returnUrl = urlParams.get('returnUrl') || '/admin/dashboard';
+            window.location.href = returnUrl;
           } else {
             // Show error - use textContent for safe display
             errorDiv.textContent = data.error;

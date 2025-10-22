@@ -27,9 +27,10 @@
   // Quick sync check for token existence
   const hasToken = localStorage.getItem('adminToken');
 
-  // If no token at all and not on login page, redirect immediately
+  // If no token at all and not on login page, redirect immediately with return URL
   if (!hasToken && !isLoginPage) {
-    window.location.replace('/admin/login');
+    const returnUrl = encodeURIComponent(window.location.pathname);
+    window.location.replace(`/admin/login?returnUrl=${returnUrl}`);
     return;
   }
 
@@ -115,8 +116,9 @@
         // Clear invalid token
         localStorage.removeItem('adminToken');
         sessionStorage.clear();
-        // Redirect to login
-        window.location.replace('/admin/login');
+        // Redirect to login with return URL
+        const returnUrl = encodeURIComponent(window.location.pathname);
+        window.location.replace(`/admin/login?returnUrl=${returnUrl}`);
         return false;
       }
     },
