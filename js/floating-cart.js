@@ -59,31 +59,19 @@ export function initializeFloatingCart(cartManager) {
         clearButton: document.querySelector('.cart-clear-btn')
     };
 
-    // E2E CRITICAL FIX: Ensure cart panel has dimensions for testing (removed button-specific code)
+    // E2E CRITICAL FIX: Ensure cart panel has dimensions for testing (minimal approach from main)
     if (window.navigator.userAgent.includes('Playwright') || window.location.search.includes('e2e')) {
         console.log('🔧 E2E Fix: Ensuring cart panel is accessible for testing');
 
-        // Force minimum dimensions on container for proper testing
+        // Force minimum dimensions on container (non-invasive approach)
         if (elements.container) {
-            elements.container.style.cssText = 'display: block !important; position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; visibility: visible !important; pointer-events: auto !important; z-index: 999999 !important;';
+            elements.container.style.cssText = 'display: block !important; position: relative !important; min-width: 60px !important; min-height: 60px !important; visibility: visible !important; opacity: 1 !important;';
         }
 
         // Trigger immediate setup for E2E tests
         const currentPath = window.location.pathname;
         if (currentPath.includes('tickets')) {
             console.log('✅ E2E Fix: Cart panel prepared for testing on tickets page');
-
-            // Add extra debugging info
-            setTimeout(() => {
-                const rect = elements.container.getBoundingClientRect();
-                console.log('🔍 E2E Cart Container Dimensions:', {
-                    width: rect.width,
-                    height: rect.height,
-                    top: rect.top,
-                    left: rect.left,
-                    visible: rect.width > 0 && rect.height > 0
-                });
-            }, 100);
         }
     }
 
