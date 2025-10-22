@@ -460,10 +460,6 @@ async function handleCheckoutClick(cartManager) {
 // determineCartVisibility function removed - no longer needed without floating button
 function toggleCartPanel(elements, isOpen, cartManager) {
     if (isOpen) {
-        // Make container visible first
-        elements.container.style.display = 'block';
-
-        // Then open panel with animation
         elements.panel.classList.add('open');
         elements.backdrop.classList.add('active');
         document.body.style.overflow = 'hidden';
@@ -478,18 +474,11 @@ function toggleCartPanel(elements, isOpen, cartManager) {
             });
         }
     } else {
-        // Close panel with animation
         elements.panel.classList.remove('open');
         elements.backdrop.classList.remove('active');
         document.body.style.overflow = '';
 
-        // Hide container after animation completes (300ms transition)
-        setTimeout(() => {
-            // Only hide if panel is still closed (user didn't reopen during animation)
-            if (!elements.panel.classList.contains('open')) {
-                elements.container.style.display = 'none';
-            }
-        }, 350); // Slightly longer than CSS transition
+        // No button to return focus to - panel slides back up to header area
     }
 }
 
@@ -557,21 +546,22 @@ function performCartUIUpdate(elements, cartState) {
         elements.totalElement.textContent = `$${totalInDollars.toFixed(2)}`;
     });
 
-    // Update container data attributes for debugging
+    // Container is always available for panel functionality - no visibility logic needed
     const isE2ETest = window.navigator.userAgent.includes('Playwright');
 
     updates.push(() => {
-        // Only update data attributes, don't force visibility
-        // Container visibility is controlled by CSS and open/close actions
-        elements.container.setAttribute('data-cart-state', 'initialized');
+        // Container stays available for panel sliding
+        elements.container.style.display = 'block';
+        elements.container.setAttribute('data-cart-state', 'panel-available');
         elements.container.setAttribute('data-cart-items', totalItems.toString());
 
         // E2E DEBUGGING: Log cart state
         if (isE2ETest) {
-            console.log('✅ Cart state updated:', {
+            console.log('✅ Cart panel available:', {
                 totalItems,
                 currentPath: window.location.pathname,
-                isOpen: elements.panel.classList.contains('open')
+                containerDisplay: elements.container.style.display,
+                containerRect: elements.container.getBoundingClientRect()
             });
         }
     });
