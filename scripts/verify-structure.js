@@ -79,6 +79,11 @@ const expectedFiles = {
     "images/logo.png",
     "images/favicons/favicon-32x32.png",
   ],
+  "CSS Bundles (Generated)": [
+    "css/bundle-critical.css",
+    "css/bundle-deferred.css",
+    "css/bundle-admin.css",
+  ],
 };
 
 let allGood = true;
