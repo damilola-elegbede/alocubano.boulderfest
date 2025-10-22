@@ -1,9 +1,5 @@
 /* Reusable Components for A Lo Cubano Boulder Fest */
 
-/* Import modular CSS */
-@import url("/css/navigation.css");
-@import url("/css/forms.css");
-
 /* Loading Overlay Components */
 .hero-loading-overlay {
   position: absolute;

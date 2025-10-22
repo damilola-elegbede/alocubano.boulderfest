@@ -1,10 +1,5 @@
 /* A Lo Cubano Boulder Fest - Design 4: Typographic */
 
-/* Import base design system */
-@import url("/css/base.css");
-@import url("/css/navigation.css");
-@import url("/css/forms.css");
-
 /* Google Fonts loaded via preload in HTML head for optimal performance */
 
 /* Custom Font Faces for Display Typography */
