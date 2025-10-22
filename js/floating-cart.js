@@ -457,18 +457,12 @@ async function handleCheckoutClick(cartManager) {
     }
 }
 
-// determineCartVisibility function removed - no longer needed without floating button
+// Simple CSS-only animation approach (restored from main)
 function toggleCartPanel(elements, isOpen, cartManager) {
     if (isOpen) {
-        // Show container first for animation
-        elements.container.style.display = 'block';
-
-        // Small delay to ensure container is rendered before animation
-        requestAnimationFrame(() => {
-            elements.panel.classList.add('open');
-            elements.backdrop.classList.add('active');
-        });
-
+        // Just add CSS classes - let CSS handle animation
+        elements.panel.classList.add('open');
+        elements.backdrop.classList.add('active');
         document.body.style.overflow = 'hidden';
 
         // Focus management for accessibility
@@ -481,22 +475,10 @@ function toggleCartPanel(elements, isOpen, cartManager) {
             });
         }
     } else {
+        // Just remove CSS classes
         elements.panel.classList.remove('open');
         elements.backdrop.classList.remove('active');
         document.body.style.overflow = '';
-
-        // Hide container after animation (check if cart is empty)
-        const cartState = cartManager.getState();
-        const totalItems = (cartState.totals?.itemCount || 0) + (cartState.totals?.donationCount || 0);
-
-        if (totalItems === 0) {
-            // Wait for slide-out animation to complete
-            setTimeout(() => {
-                if (!elements.panel.classList.contains('open')) {
-                    elements.container.style.display = 'none';
-                }
-            }, 350);
-        }
     }
 }
 
@@ -564,31 +546,11 @@ function performCartUIUpdate(elements, cartState) {
         elements.totalElement.textContent = `$${totalInDollars.toFixed(2)}`;
     });
 
-    // Container visibility: only show when panel is open or cart has items
-    const isE2ETest = window.navigator.userAgent.includes('Playwright');
-    const isOpen = elements.panel.classList.contains('open');
-    const hasItems = totalItems > 0;
-
+    // Container visibility: Always visible, CSS handles animation
     updates.push(() => {
-        // Show container only if panel is open or cart has items
-        if (isOpen || hasItems) {
-            elements.container.style.display = 'block';
-            elements.container.setAttribute('data-cart-state', 'available');
-        } else {
-            elements.container.style.display = 'none';
-            elements.container.setAttribute('data-cart-state', 'hidden');
-        }
+        elements.container.style.display = 'block';
+        elements.container.setAttribute('data-cart-state', 'available');
         elements.container.setAttribute('data-cart-items', totalItems.toString());
-
-        // E2E DEBUGGING: Log cart state
-        if (isE2ETest) {
-            console.log('✅ Cart state updated:', {
-                totalItems,
-                isOpen,
-                hasItems,
-                containerDisplay: elements.container.style.display
-            });
-        }
     });
 
     // Execute all updates in a single animation frame

@@ -254,14 +254,16 @@ describe('Dashboard Query Consolidation', () => {
       ),
       revenue_stats AS (
         SELECT
+          -- Total revenue: ALL tickets (test + real) except comp
           COALESCE(SUM(t.price_cents) FILTER (WHERE t.status = 'valid'
-            AND tr.is_test = 0
             AND COALESCE(tr.payment_processor, '') <> 'comp'
             AND tr.status = 'completed'), 0) / 100.0 as total_revenue,
+          -- Test revenue breakdown (for reporting)
           COALESCE(SUM(t.price_cents) FILTER (WHERE t.status = 'valid'
-            AND tr.is_test = 1
+            AND (tr.is_test = 1 OR t.is_test = 1)
             AND COALESCE(tr.payment_processor, '') <> 'comp'
             AND tr.status = 'completed'), 0) / 100.0 as test_revenue,
+          -- Manual revenue: ALL manual tickets except comp
           COALESCE(SUM(t.price_cents) FILTER (WHERE t.status = 'valid'
             AND tr.source = 'manual_entry'
             AND COALESCE(tr.payment_processor, '') <> 'comp'
@@ -445,14 +447,16 @@ describe('Dashboard Query Consolidation', () => {
   test('consolidated query returns correct revenue calculations', async () => {
     const stats = await getConsolidatedDashboardStats(testEventId);
 
+    // Total revenue should include ALL tickets (test + real) except comp
     // Total revenue = (10 * 50) + (3 * 75) + (2 * 120) + (2 * 50) + (2 * 50) + (2 * 30)
     // = 500 + 225 + 240 + 100 + 100 + 60 = 1225
-    // Excluding test tickets (2 * 50 = 100): 1125
-    expect(stats.total_revenue).toBeCloseTo(1125, 2);
+    // ✅ CORRECT: Test tickets are real purchases and should be included
+    expect(stats.total_revenue).toBeCloseTo(1225, 2);
 
-    // Test revenue = 2 * 50 = 100
+    // Test revenue breakdown (for reporting) = 2 * 50 = 100
     expect(stats.test_revenue).toBeCloseTo(100, 2);
 
+    // Manual revenue should include ALL manual tickets (including test if any)
     // Manual revenue = 2 * 30 = 60
     expect(stats.manual_revenue).toBeCloseTo(60, 2);
   });
@@ -591,8 +595,9 @@ describe('Dashboard Query Consolidation', () => {
     // Comp tickets should be counted
     expect(stats.total_tickets).toBe(24); // 21 original + 3 comp
 
-    // But revenue should exclude comp tickets (should remain same as before)
-    expect(stats.total_revenue).toBeCloseTo(1125, 2);
+    // But revenue should exclude comp tickets (test tickets still included)
+    // Revenue = original 1225 (includes test tickets) + 0 comp = 1225
+    expect(stats.total_revenue).toBeCloseTo(1225, 2);
 
     // Manual comp tickets should be counted
     expect(stats.manual_comp_tickets).toBe(3);
@@ -600,5 +605,119 @@ describe('Dashboard Query Consolidation', () => {
     // Cleanup comp tickets
     await db.execute('DELETE FROM tickets WHERE transaction_id = ?', [compTransactionId]);
     await db.execute('DELETE FROM transactions WHERE id = ?', [compTransactionId]);
+  });
+
+  test('revenue includes test tickets - all test ticket scenario', async () => {
+    // Simulates real-world scenario like "November Salsa Weekender" with only test tickets
+    const testOnlyEventId = 9999;
+
+    // Create test-only event
+    await db.execute({
+      sql: `INSERT INTO events (id, name, slug, type, status, start_date, end_date, venue_name, venue_city, venue_state)
+            VALUES (?, 'All Test Tickets Event', 'all-test-event', 'festival', 'active', '2025-11-15', '2025-11-17', 'Test Venue', 'Boulder', 'CO')`,
+      args: [testOnlyEventId]
+    });
+
+    // Create test transaction
+    const testOnlyTransactionId = 'test-only-trans-001';
+    await db.execute({
+      sql: `INSERT INTO transactions (id, email, status, is_test, payment_processor, event_id)
+            VALUES (?, 'testuser@example.com', 'completed', 1, 'stripe', ?)`,
+      args: [testOnlyTransactionId, testOnlyEventId]
+    });
+
+    // Create 5 test tickets at $65 each
+    for (let i = 0; i < 5; i++) {
+      await db.execute({
+        sql: `INSERT INTO tickets (ticket_id, transaction_id, event_id, ticket_type, price_cents, status, is_test)
+              VALUES (?, ?, ?, 'weekend-pass', 6500, 'valid', 1)`,
+        args: [`TEST-TICKET-${i}`, testOnlyTransactionId, testOnlyEventId]
+      });
+    }
+
+    const stats = await getConsolidatedDashboardStats(testOnlyEventId);
+
+    // Revenue should include all test tickets: 5 × $65 = $325
+    expect(stats.total_revenue).toBeCloseTo(325, 2);
+    expect(stats.test_revenue).toBeCloseTo(325, 2);
+    expect(stats.total_tickets).toBe(5);
+    expect(stats.test_tickets).toBe(5);
+
+    // Clean up
+    await db.execute('DELETE FROM tickets WHERE event_id = ?', [testOnlyEventId]);
+    await db.execute('DELETE FROM transactions WHERE id = ?', [testOnlyTransactionId]);
+    await db.execute('DELETE FROM events WHERE id = ?', [testOnlyEventId]);
+  });
+
+  test('revenue excludes only comp tickets, includes test tickets', async () => {
+    // Test that comp tickets are excluded but test tickets are included
+    const mixedEventId = 9998;
+
+    // Create mixed event
+    await db.execute({
+      sql: `INSERT INTO events (id, name, slug, type, status, start_date, end_date, venue_name, venue_city, venue_state)
+            VALUES (?, 'Mixed Ticket Types Event', 'mixed-event', 'festival', 'active', '2025-12-01', '2025-12-03', 'Mixed Venue', 'Denver', 'CO')`,
+      args: [mixedEventId]
+    });
+
+    // Transaction 1: Regular (non-test) with stripe
+    await db.execute({
+      sql: `INSERT INTO transactions (id, email, status, is_test, payment_processor, event_id)
+            VALUES ('regular-trans', 'regular@example.com', 'completed', 0, 'stripe', ?)`,
+      args: [mixedEventId]
+    });
+
+    // Transaction 2: Test with paypal
+    await db.execute({
+      sql: `INSERT INTO transactions (id, email, status, is_test, payment_processor, event_id)
+            VALUES ('test-trans', 'test@example.com', 'completed', 1, 'paypal', ?)`,
+      args: [mixedEventId]
+    });
+
+    // Transaction 3: Comp (should be excluded)
+    await db.execute({
+      sql: `INSERT INTO transactions (id, email, status, is_test, payment_processor, event_id)
+            VALUES ('comp-trans', 'comp@example.com', 'completed', 0, 'comp', ?)`,
+      args: [mixedEventId]
+    });
+
+    // Create tickets: 2 regular ($50 each), 2 test ($50 each), 2 comp ($50 each)
+    for (let i = 0; i < 2; i++) {
+      await db.execute({
+        sql: `INSERT INTO tickets (ticket_id, transaction_id, event_id, ticket_type, price_cents, status, is_test)
+              VALUES (?, 'regular-trans', ?, 'general', 5000, 'valid', 0)`,
+        args: [`REGULAR-${i}`, mixedEventId]
+      });
+
+      await db.execute({
+        sql: `INSERT INTO tickets (ticket_id, transaction_id, event_id, ticket_type, price_cents, status, is_test)
+              VALUES (?, 'test-trans', ?, 'general', 5000, 'valid', 1)`,
+        args: [`TEST-${i}`, mixedEventId]
+      });
+
+      await db.execute({
+        sql: `INSERT INTO tickets (ticket_id, transaction_id, event_id, ticket_type, price_cents, status, is_test)
+              VALUES (?, 'comp-trans', ?, 'general', 5000, 'valid', 0)`,
+        args: [`COMP-${i}`, mixedEventId]
+      });
+    }
+
+    const stats = await getConsolidatedDashboardStats(mixedEventId);
+
+    // Revenue should include regular + test, exclude comp
+    // (2 regular × $50) + (2 test × $50) = $200
+    expect(stats.total_revenue).toBeCloseTo(200, 2);
+
+    // Test revenue breakdown = 2 × $50 = $100
+    expect(stats.test_revenue).toBeCloseTo(100, 2);
+
+    // Total tickets (all 6)
+    expect(stats.total_tickets).toBe(6);
+    expect(stats.test_tickets).toBe(2);
+
+    // Clean up
+    await db.execute('DELETE FROM tickets WHERE event_id = ?', [mixedEventId]);
+    await db.execute('DELETE FROM transactions WHERE event_id = ?', [mixedEventId]);
+    await db.execute('DELETE FROM events WHERE id = ?', [mixedEventId]);
   });
 });
