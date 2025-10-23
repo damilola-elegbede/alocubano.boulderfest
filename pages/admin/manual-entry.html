@@ -589,14 +589,20 @@
 
       // Initialize
       document.addEventListener('DOMContentLoaded', async () => {
+        // CRITICAL: Verify auth and show content first
+        if (window.AdminAuthGuard) {
+          const isAuthenticated = await window.AdminAuthGuard.verifyAndShow();
+          if (!isAuthenticated) return;
+        } else {
+          console.error('AdminAuthGuard not available');
+          return;
+        }
+
+        // Then proceed with page initialization
         await loadTicketTypes();
         await loadCashShifts();
         populateTicketTypeDropdown();
         setupEventListeners();
-
-        // Show content after initialization
-        document.documentElement.style.visibility = 'visible';
-        document.documentElement.style.opacity = '1';
       });
 
       // Load available ticket types
