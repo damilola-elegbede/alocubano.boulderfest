@@ -25,71 +25,55 @@ export default async function handler(req, res) {
   try {
     console.log('[REG_STATUS] Registration status check initiated');
 
-    // Verify JWT token with backwards compatibility for legacy tokens
-    // SECURITY FIX: Only accept REGISTRATION_SECRET and legacy QR_SECRET_KEY
-    // WALLET_AUTH_SECRET is removed to prevent QR tokens from accessing transaction data
-    const secrets = [
-      { name: 'REGISTRATION_SECRET', value: process.env.REGISTRATION_SECRET },
-      { name: 'QR_SECRET_KEY', value: process.env.QR_SECRET_KEY }
-    ].filter(s => s.value); // Only include secrets that are defined
-
-    if (secrets.length === 0) {
-      console.error('[REG_STATUS] No token secrets configured');
+    // Verify JWT token - ONLY accept REGISTRATION_SECRET
+    // SECURITY FIX: QR_SECRET_KEY removed to prevent QR tokens from accessing registration endpoints
+    // This enforces proper token scope separation between QR validation and registration
+    if (!process.env.REGISTRATION_SECRET) {
+      console.error('[REG_STATUS] REGISTRATION_SECRET not configured');
       return res.status(503).json({ error: 'Service misconfigured' });
     }
 
     let decoded = null;
-    let usedSecret = null;
     let lastError = null;
 
     // Token fix cutoff date: tokens created before this date have incorrect 72-hour expiration
     // Tokens created after this date have proper event-based expiration
     const TOKEN_FIX_CUTOFF = new Date('2025-10-24T00:00:00Z').getTime() / 1000;
 
-    // Try each secret until one works
-    for (const secret of secrets) {
-      try {
-        // First, try normal verification (for tokens with correct expiration)
-        decoded = jwt.verify(token, secret.value, {
-          algorithms: ['HS256']
-        });
-        usedSecret = secret.name;
-        break; // Success! Stop trying
-      } catch (err) {
-        // If expired, check if it's an old token that needs special handling
-        if (err.name === 'TokenExpiredError') {
-          try {
-            const payload = jwt.decode(token);
-            if (payload?.iat && payload.iat < TOKEN_FIX_CUTOFF) {
-              // Old token - ignore JWT exp, database will check registration_deadline
-              decoded = jwt.verify(token, secret.value, {
-                algorithms: ['HS256'],
-                ignoreExpiration: true
-              });
-              usedSecret = secret.name;
-              console.warn(`[REG_STATUS] Old token (iat: ${new Date(payload.iat * 1000).toISOString()}) - ignoring JWT exp, using database expiration`);
-              break; // Success! Stop trying
-            }
-          } catch (decodeError) {
-            // Failed to decode - continue to next secret
+    try {
+      // First, try normal verification (for tokens with correct expiration)
+      decoded = jwt.verify(token, process.env.REGISTRATION_SECRET, {
+        algorithms: ['HS256']
+      });
+      console.log('[REG_STATUS] Token validated with REGISTRATION_SECRET');
+    } catch (err) {
+      // If expired, check if it's an old token that needs special handling
+      if (err.name === 'TokenExpiredError') {
+        try {
+          const payload = jwt.decode(token);
+          if (payload?.iat && payload.iat < TOKEN_FIX_CUTOFF) {
+            // Old token - ignore JWT exp, database will check registration_deadline
+            decoded = jwt.verify(token, process.env.REGISTRATION_SECRET, {
+              algorithms: ['HS256'],
+              ignoreExpiration: true
+            });
+            console.warn(`[REG_STATUS] Old token (iat: ${new Date(payload.iat * 1000).toISOString()}) - ignoring JWT exp, using database expiration`);
+          } else {
+            lastError = err;
           }
+        } catch (decodeError) {
+          // Failed to decode - token is invalid
+          lastError = decodeError;
         }
+      } else {
         lastError = err;
-        // Continue to next secret
       }
     }
 
     if (!decoded) {
-      // All secrets failed
-      console.error('[REG_STATUS] Token validation failed with all available secrets');
+      // Token validation failed
+      console.error('[REG_STATUS] Token validation failed with REGISTRATION_SECRET');
       throw lastError; // Will be caught by outer catch block
-    }
-
-    // Log which secret was used (helps identify legacy token usage)
-    if (usedSecret !== 'REGISTRATION_SECRET') {
-      console.warn(`[REG_STATUS] Token validated with legacy secret: ${usedSecret} (expected REGISTRATION_SECRET)`);
-    } else {
-      console.log('[REG_STATUS] Token validated with current REGISTRATION_SECRET');
     }
 
     console.log('[REG_STATUS] Decoded JWT:', {

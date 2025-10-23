@@ -299,7 +299,9 @@ describe('Async Email Performance Tests', () => {
     });
 
     // All checkouts should complete regardless of email status
-    await expect(Promise.all(promises)).resolves.not.toThrow();
+    const results = await Promise.all(promises);
+    expect(results).toHaveLength(10);
+    expect(results.every(r => r && r.transaction)).toBe(true);
 
     // Wait for async processing
     await new Promise(resolve => setTimeout(resolve, 1000));

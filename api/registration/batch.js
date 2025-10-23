@@ -5,7 +5,7 @@ import auditService from "../../lib/audit-service.js";
 import { processDatabaseResult } from "../../lib/bigint-serializer.js";
 import { enhanceApiResponse } from "../../lib/time-utils.js";
 import { TRANSACTION_LIMITS } from "../../lib/ticket-config.js";
-import { getBaseUrl } from "../../lib/url-utils.js";
+import { getBaseUrl, buildQRCodeUrl, buildViewTicketsUrl, buildWalletPassUrls } from "../../lib/url-utils.js";
 
 // Input validation regex patterns
 const NAME_REGEX = /^[a-zA-Z\s\-']{2,50}$/;
@@ -877,12 +877,11 @@ export default async function handler(req, res) {
             eventName: task.ticket.event_name,
             eventLocation: `${task.ticket.venue_name}, ${task.ticket.venue_city}, ${task.ticket.venue_state}`,
             eventDate: eventDate,
-            qrCodeUrl: `${baseUrl}/api/qr/generate?token=${qrToken}`,
-            walletPassUrl: `${baseUrl}/api/tickets/apple-wallet/${task.registration.ticketId}`,
-            googleWalletUrl: `${baseUrl}/api/tickets/google-wallet/${task.registration.ticketId}`,
+            qrCodeUrl: buildQRCodeUrl(qrToken),
+            ...buildWalletPassUrls(task.registration.ticketId),
             appleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-apple.png`,
             googleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-google.png`,
-            viewTicketUrl: `${baseUrl}/view-tickets?token=${transactionInfo?.registration_token}&ticketId=${task.registration.ticketId}`
+            viewTicketUrl: buildViewTicketsUrl(transactionInfo?.registration_token, task.registration.ticketId)
           });
 
           // Send email using Brevo API with custom HTML

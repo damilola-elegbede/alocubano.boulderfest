@@ -129,10 +129,17 @@ async function benchmarkPage(browser, pageDef) {
   const results = [];
 
   for (let i = 0; i < TEST_ITERATIONS; i++) {
-    const page = await browser.newPage();
-    const metrics = await measurePagePerformance(page, `${BASE_URL}${pageDef.path}`);
-    results.push(metrics);
-    await page.close();
+    let page;
+    try {
+      page = await browser.newPage();
+      const metrics = await measurePagePerformance(page, `${BASE_URL}${pageDef.path}`);
+      results.push(metrics);
+    } finally {
+      // FIX: Always close page resource, even if error occurs
+      if (page) {
+        await page.close();
+      }
+    }
   }
 
   // Filter out null values and sort
@@ -175,44 +182,51 @@ async function main() {
   console.log('===============================');
   console.log(`Base URL: ${BASE_URL}\n`);
 
-  const browser = await chromium.launch();
+  let browser;
+  try {
+    browser = await chromium.launch();
 
-  const pageResults = [];
+    const pageResults = [];
+  
+    for (const pageDef of PAGES) {
+      const result = await benchmarkPage(browser, pageDef);
+      console.log(`  FCP: ${formatMetric(result.fcp.median)}ms (P95: ${formatMetric(result.fcp.p95)}ms)`);
+      console.log(`  LCP: ${formatMetric(result.lcp.median)}ms (P95: ${formatMetric(result.lcp.p95)}ms)`);
+      console.log(`  Resources: ${result.resourceCount.median !== null ? result.resourceCount.median : 'N/A'}`);
+      pageResults.push(result);
+    }
+  
 
-  for (const pageDef of PAGES) {
-    const result = await benchmarkPage(browser, pageDef);
-    console.log(`  FCP: ${formatMetric(result.fcp.median)}ms (P95: ${formatMetric(result.fcp.p95)}ms)`);
-    console.log(`  LCP: ${formatMetric(result.lcp.median)}ms (P95: ${formatMetric(result.lcp.p95)}ms)`);
-    console.log(`  Resources: ${result.resourceCount.median !== null ? result.resourceCount.median : 'N/A'}`);
-    pageResults.push(result);
+    // FIX: Validate pageResults array before using it
+    if (!Array.isArray(pageResults) || pageResults.length === 0) {
+      console.error('No benchmark results collected');
+      process.exit(1);
+    }
+  
+    const outputDir = path.join(process.cwd(), '.tmp', 'benchmarks');
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+  
+    const output = {
+      timestamp: new Date().toISOString(),
+      baseUrl: BASE_URL,
+      pages: pageResults,
+    };
+  
+    fs.writeFileSync(
+      path.join(outputDir, 'frontend-performance-results.json'),
+      JSON.stringify(output, null, 2)
+    );
+  
+    console.log('\nResults saved to .tmp/benchmarks/frontend-performance-results.json');
+    return output;
+  } finally {
+    // FIX: Always close browser resource, even if error occurs
+    if (browser) {
+      await browser.close();
+    }
   }
-
-  await browser.close();
-
-  // FIX: Validate pageResults array before using it
-  if (!Array.isArray(pageResults) || pageResults.length === 0) {
-    console.error('No benchmark results collected');
-    process.exit(1);
-  }
-
-  const outputDir = path.join(process.cwd(), '.tmp', 'benchmarks');
-  if (!fs.existsSync(outputDir)) {
-    fs.mkdirSync(outputDir, { recursive: true });
-  }
-
-  const output = {
-    timestamp: new Date().toISOString(),
-    baseUrl: BASE_URL,
-    pages: pageResults,
-  };
-
-  fs.writeFileSync(
-    path.join(outputDir, 'frontend-performance-results.json'),
-    JSON.stringify(output, null, 2)
-  );
-
-  console.log('\nResults saved to .tmp/benchmarks/frontend-performance-results.json');
-  return output;
 }
 
 main()
