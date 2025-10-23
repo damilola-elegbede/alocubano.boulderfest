@@ -194,11 +194,15 @@
             }
         });
 
-        // Start observing
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true
-        });
+        // Start observing (with defensive check for document.body)
+        if (document.body && document.body.nodeType === Node.ELEMENT_NODE) {
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+        } else {
+            console.warn('[LogoSwitcher] document.body not ready for observation');
+        }
     }
 
     // Initialize when DOM is ready
