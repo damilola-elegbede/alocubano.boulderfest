@@ -21,8 +21,9 @@ export default function handler(req, res) {
     });
   }
 
-  // Determine environment based on client ID pattern
-  const environment = clientId.includes('sandbox') || clientId.startsWith('sb-') ? 'sandbox' : 'live';
+  // Determine environment based on PAYPAL_MODE to match backend configuration
+  const paypalMode = process.env.PAYPAL_MODE || 'sandbox';
+  const environment = paypalMode === 'production' ? 'live' : 'sandbox';
 
   // Return the configuration
   // Note: Client IDs are safe to be public (they're designed for frontend use)
