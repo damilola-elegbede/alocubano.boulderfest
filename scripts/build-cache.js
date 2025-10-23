@@ -70,11 +70,12 @@ function getFileMetadata(filePath) {
 
 /**
  * Generate content-based checksum for a file
+ * Binary-safe: reads file as Buffer to handle all file types correctly
  * More reliable than mtime-based hashing, especially after Vercel cache restoration
  */
 async function hashFileContent(filePath) {
   try {
-    const content = await fs.readFile(filePath, 'utf-8');
+    const content = await fs.readFile(filePath); // Buffer (binary-safe)
     return crypto.createHash('sha256').update(content).digest('hex');
   } catch (error) {
     return `ERROR:${error.message}`;
