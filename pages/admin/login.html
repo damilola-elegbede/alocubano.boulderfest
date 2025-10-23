@@ -443,6 +443,43 @@
     </div>
 
     <script>
+      /**
+       * Sanitizes return URL to prevent open redirect vulnerabilities
+       * @param {string|null} url - The URL to sanitize
+       * @returns {string|null} - Sanitized URL or null if invalid
+       */
+      function sanitizeReturnUrl(url) {
+        // Return null for null/undefined/empty strings
+        if (!url || typeof url !== 'string' || url.trim() === '') {
+          return null;
+        }
+
+        const trimmedUrl = url.trim();
+
+        // Must start with '/' (relative path only)
+        if (!trimmedUrl.startsWith('/')) {
+          return null;
+        }
+
+        // Reject protocol-relative URLs (e.g., //evil.com)
+        if (trimmedUrl.startsWith('//')) {
+          return null;
+        }
+
+        // Reject URLs containing '@' (credential injection, e.g., /path@evil.com)
+        if (trimmedUrl.includes('@')) {
+          return null;
+        }
+
+        // Reject URLs that look like absolute URLs with protocols
+        // This catches edge cases like "/https://evil.com"
+        if (trimmedUrl.match(/^\/[a-z]+:\/\//i)) {
+          return null;
+        }
+
+        return trimmedUrl;
+      }
+
       // Check if already authenticated via cookie
       async function checkExistingAuth() {
         try {
@@ -452,8 +489,9 @@
           if (response.ok) {
             // Already authenticated, redirect to return URL or dashboard
             const urlParams = new URLSearchParams(window.location.search);
-            const returnUrl = urlParams.get('returnUrl') || '/admin/dashboard';
-            window.location.href = returnUrl;
+            const returnUrl = urlParams.get('returnUrl');
+            const safeReturnUrl = sanitizeReturnUrl(returnUrl);
+            window.location.href = safeReturnUrl || '/pages/admin/dashboard.html';
           }
         } catch (error) {
           // Not authenticated, stay on login page
@@ -487,8 +525,9 @@
           if (response.ok) {
             // Success - redirect to return URL or dashboard (session cookie set by server)
             const urlParams = new URLSearchParams(window.location.search);
-            const returnUrl = urlParams.get('returnUrl') || '/admin/dashboard';
-            window.location.href = returnUrl;
+            const returnUrl = urlParams.get('returnUrl');
+            const safeReturnUrl = sanitizeReturnUrl(returnUrl);
+            window.location.href = safeReturnUrl || '/pages/admin/dashboard.html';
           } else {
             // Show error - use textContent for safe display
             errorDiv.textContent = data.error;

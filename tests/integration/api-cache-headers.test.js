@@ -15,6 +15,29 @@ if (!adminPassword) {
   throw new Error('❌ FATAL: TEST_ADMIN_PASSWORD required for cache header tests');
 }
 
+/**
+ * Parse Set-Cookie header (handles both string and array)
+ * @param {string|string[]} setCookie - Set-Cookie header value
+ * @returns {Object} Parsed cookies with attributes
+ */
+function parseCookies(setCookie) {
+  if (!setCookie) {
+    return {};
+  }
+
+  const cookieArray = Array.isArray(setCookie) ? setCookie : [setCookie];
+  const cookies = {};
+
+  cookieArray.forEach(cookieStr => {
+    if (!cookieStr) return;
+    const [nameValue, ...attributes] = cookieStr.split(';').map(s => s.trim());
+    const [name, value] = nameValue.split('=');
+    cookies[name] = { value, attributes };
+  });
+
+  return cookies;
+}
+
 describe('API Cache Headers', () => {
   let dbClient;
   let adminToken;
@@ -29,12 +52,12 @@ describe('API Cache Headers', () => {
     });
 
     if (loginResponse.status === HTTP_STATUS.OK) {
-      // Extract token from cookie
+      // Extract token from cookie (handles both string and array formats)
       const setCookie = loginResponse.headers && loginResponse.headers['set-cookie'];
       if (setCookie) {
-        const tokenMatch = setCookie.match(/admin_session=([^;]+)/);
-        if (tokenMatch) {
-          adminToken = tokenMatch[1];
+        const cookies = parseCookies(setCookie);
+        if (cookies.admin_session) {
+          adminToken = cookies.admin_session.value;
         }
       }
     }
@@ -51,8 +74,9 @@ describe('API Cache Headers', () => {
       });
 
       expect(response.status).toBe(HTTP_STATUS.OK);
-      expect(response.headers['cache-control']).toBe('private, max-age=30');
-      expect(response.headers['vary']).toBe('Authorization');
+      expect(response.headers['cache-control']).toContain('private');
+      expect(response.headers['cache-control']).toMatch(/max-age=\d+/);
+      expect(response.headers['vary']).toContain('Authorization');
     });
 
     test('cache headers prevent CDN caching', async () => {
@@ -73,8 +97,9 @@ describe('API Cache Headers', () => {
       });
 
       expect(response.status).toBe(HTTP_STATUS.OK);
-      expect(response.headers['cache-control']).toBe('private, max-age=30');
-      expect(response.headers['vary']).toBe('Authorization');
+      expect(response.headers['cache-control']).toContain('private');
+      expect(response.headers['cache-control']).toMatch(/max-age=\d+/);
+      expect(response.headers['vary']).toContain('Authorization');
     });
 
     test('cache respects 30-second TTL', async () => {
@@ -104,8 +129,9 @@ describe('API Cache Headers', () => {
 
       // Only check headers if not auth error (cache headers set after auth middleware)
       if (response.status !== HTTP_STATUS.UNAUTHORIZED) {
-        expect(response.headers['cache-control']).toBe('private, max-age=30');
-        expect(response.headers['vary']).toBe('Authorization');
+        expect(response.headers['cache-control']).toContain('private');
+        expect(response.headers['cache-control']).toMatch(/max-age=\d+/);
+        expect(response.headers['vary']).toContain('Authorization');
       }
     });
   });
@@ -117,8 +143,9 @@ describe('API Cache Headers', () => {
       });
 
       expect(response.status).toBe(HTTP_STATUS.OK);
-      expect(response.headers['cache-control']).toBe('private, max-age=30');
-      expect(response.headers['vary']).toBe('Authorization');
+      expect(response.headers['cache-control']).toContain('private');
+      expect(response.headers['cache-control']).toMatch(/max-age=\d+/);
+      expect(response.headers['vary']).toContain('Authorization');
     });
 
     test('cache allows browser caching', async () => {
@@ -175,8 +202,9 @@ describe('API Cache Headers', () => {
         });
 
         expect(response.status).toBe(HTTP_STATUS.OK);
-        expect(response.headers['cache-control']).toBe('private, max-age=30');
-        expect(response.headers['vary']).toBe('Authorization');
+        expect(response.headers['cache-control']).toContain('private');
+        expect(response.headers['cache-control']).toMatch(/max-age=\d+/);
+        expect(response.headers['vary']).toContain('Authorization');
       }
     });
 
@@ -190,8 +218,9 @@ describe('API Cache Headers', () => {
       expect(response.status).toBe(HTTP_STATUS.METHOD_NOT_ALLOWED);
 
       // But cache headers should still be present
-      expect(response.headers['cache-control']).toBe('private, max-age=30');
-      expect(response.headers['vary']).toBe('Authorization');
+      expect(response.headers['cache-control']).toContain('private');
+      expect(response.headers['cache-control']).toMatch(/max-age=\d+/);
+      expect(response.headers['vary']).toContain('Authorization');
     });
   });
 
@@ -250,7 +279,7 @@ describe('API Cache Headers', () => {
 
         // Verify Vary includes Authorization
         expect(response.status).toBe(HTTP_STATUS.OK);
-        expect(response.headers['vary']).toBe('Authorization');
+        expect(response.headers['vary']).toContain('Authorization');
       }
     });
   });

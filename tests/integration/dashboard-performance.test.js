@@ -77,7 +77,7 @@ describe('Dashboard Performance', () => {
             qr_token, qr_access_method, is_test, created_at,
             last_scanned_at, checked_in_at,
             attendee_first_name, attendee_last_name, attendee_email
-          ) VALUES (?, ?, ?, ?, ?, 'valid', ?, ?, ?, datetime('now', '-' || ? || ' hours'), ${checkedInAt}, ${checkedInAt}, 'Perf', 'User', ?)`,
+          ) VALUES (?, ?, ?, ?, ?, 'valid', ?, ?, ?, datetime('now', '-' || ? || ' hours'), ${lastScannedAt}, ${checkedInAt}, 'Perf', 'User', ?)`,
           args: [
             `test_perf_ticket_${i}`,
             transactionId,

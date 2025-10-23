@@ -1,6 +1,39 @@
 #!/usr/bin/env node
 
-// Verify file structure matches Vercel expectations
+/**
+ * Verify File Structure for Vercel Deployment
+ * 
+ * This script validates that all required files exist for Vercel deployment
+ * and provides environment-aware validation for generated files like CSS bundles.
+ * 
+ * Environment-Aware CSS Bundle Validation:
+ * ----------------------------------------
+ * CSS bundles are generated during the build process and are required for production
+ * but optional during development.
+ * 
+ * - Development mode: Bundles are optional, warnings shown if missing
+ * - Production mode: Bundles are required, script fails if missing
+ * - CI mode: Bundles are required, script fails if missing
+ * 
+ * Environment Variables:
+ * ----------------------
+ * - NODE_ENV=production: Forces production mode (bundles required)
+ * - CI=true or GITHUB_ACTIONS=true: Forces CI mode (bundles required)
+ * - REQUIRE_CSS_BUNDLES=true: Override to require bundles in any environment
+ * 
+ * Exit Codes:
+ * -----------
+ * - 0: All required files present (or bundles optional in dev mode)
+ * - 1: Missing required files or bundles when required
+ * 
+ * Usage:
+ * ------
+ * Development: node scripts/verify-structure.js
+ * Production: NODE_ENV=production node scripts/verify-structure.js
+ * CI: CI=true node scripts/verify-structure.js
+ * Force bundles: REQUIRE_CSS_BUNDLES=true node scripts/verify-structure.js
+ */
+
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -9,10 +42,17 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.join(__dirname, "..");
 
+// Environment detection for conditional validation
+const isProduction = process.env.NODE_ENV === 'production';
+const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+const requireBundles = process.env.REQUIRE_CSS_BUNDLES === 'true' || isProduction || isCI;
+
 console.log("🔍 Verifying File Structure for Vercel Deployment");
 console.log("================================================");
 console.log("📁 Architecture: Organized directory structure with Vercel routing");
 console.log("🔄 Routing: Root (/) -> index.html -> /home via vercel.json rewrites");
+console.log(`🌍 Environment: ${isProduction ? 'Production' : isCI ? 'CI' : 'Development'}`);
+console.log(`📦 CSS Bundles: ${requireBundles ? 'Required' : 'Optional (development mode)'}`);
 console.log("");
 
 // Files that should exist for routing to work - Updated for organized structure
@@ -79,6 +119,11 @@ const expectedFiles = {
     "images/logo.png",
     "images/favicons/favicon-32x32.png",
   ],
+};
+
+// Generated files that are optional in development but required in production/CI
+// These files are created by the build process (npm run build)
+const generatedFiles = {
   "CSS Bundles (Generated)": [
     "css/bundle-critical.css",
     "css/bundle-deferred.css",
@@ -155,7 +200,6 @@ function validateEventStructure() {
 
   // Check gallery data files - OPTIONAL in CI/CD environments
   console.log(`  📸 Validating gallery data files:`);
-  const isCI = process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true";
 
   // Try multiple possible locations for gallery data
   const possibleGalleryPaths = [
@@ -207,7 +251,7 @@ function validateEventStructure() {
   return eventStructureValid;
 }
 
-// Check each category
+// Check each category of required files
 Object.entries(expectedFiles).forEach(([category, files]) => {
   console.log(`📂 ${category}:`);
 
@@ -225,6 +269,52 @@ Object.entries(expectedFiles).forEach(([category, files]) => {
       missingFiles.push(file);
     }
   });
+
+  console.log("");
+});
+
+// Check generated files (CSS bundles) with conditional validation
+// This is where environment-aware logic handles optional vs required bundles
+Object.entries(generatedFiles).forEach(([category, files]) => {
+  console.log(`📂 ${category}:`);
+
+  // Check if any bundles exist
+  const bundleExists = files.some(file => {
+    const filePath = path.join(projectRoot, file);
+    return fs.existsSync(filePath);
+  });
+
+  if (!bundleExists && !requireBundles) {
+    // Development mode - bundles are optional
+    console.log(`  ℹ️  CSS bundles not generated (development mode)`);
+    console.log(`  📝 Run 'npm run build' to generate CSS bundles`);
+    console.log(`  📝 Bundles are automatically generated during production builds`);
+  } else if (!bundleExists && requireBundles) {
+    // Production/CI mode - bundles are required
+    console.log(`  ❌ CSS bundles required but not found`);
+    console.log(`  📝 Run 'npm run build' to generate CSS bundles`);
+    allGood = false;
+    files.forEach(file => missingFiles.push(file));
+  } else {
+    // Validate each bundle individually
+    files.forEach((file) => {
+      const filePath = path.join(projectRoot, file);
+      const exists = fs.existsSync(filePath);
+
+      if (exists) {
+        const stats = fs.statSync(filePath);
+        const size = Math.round((stats.size / 1024) * 100) / 100; // KB with 2 decimals
+        console.log(`  ✅ ${file} (${size} KB)`);
+      } else {
+        // Show error in production/CI, warning in development
+        console.log(`  ${requireBundles ? '❌' : '⚠️'} ${file} - MISSING`);
+        if (requireBundles) {
+          allGood = false;
+          missingFiles.push(file);
+        }
+      }
+    });
+  }
 
   console.log("");
 });

@@ -120,7 +120,7 @@ describe('CSS Bundle Consolidation', () => {
         const criticalCount = (content.match(/bundle-critical\.css/g) || []).length;
         const deferredCount = (content.match(/bundle-deferred\.css/g) || []).length;
 
-        // Each bundle should appear exactly twice (one for link, one for noscript fallback for deferred)
+        // Critical bundle appears once (main link only), deferred appears twice (link + noscript fallback)
         expect(criticalCount).toBe(1);
         expect(deferredCount).toBe(2); // Once in main link, once in noscript
       });

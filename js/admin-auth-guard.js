@@ -102,8 +102,9 @@
         // Clear invalid token
         localStorage.removeItem('adminToken');
         sessionStorage.clear();
-        // Redirect to login with return URL
-        const returnUrl = encodeURIComponent(window.location.pathname);
+        // CRITICAL: Preserve query string and hash for deep links
+        // Example: /dashboard.html?filter=pending#analytics -> fully preserved
+        const returnUrl = encodeURIComponent(window.location.pathname + window.location.search + window.location.hash);
         window.location.replace(`/admin/login?returnUrl=${returnUrl}`);
         return false;
       }

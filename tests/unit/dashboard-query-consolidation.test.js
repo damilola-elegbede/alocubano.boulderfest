@@ -25,9 +25,10 @@ describe('Dashboard Query Consolidation', () => {
   });
 
   async function createTables() {
-    // Create events table
+    // Create temporary test tables (isolated from other tests)
+    // These tables mirror the actual schema but are session-scoped
     await db.execute(`
-      CREATE TABLE IF NOT EXISTS events (
+      CREATE TEMP TABLE temp_events (
         id INTEGER PRIMARY KEY,
         name TEXT NOT NULL,
         slug TEXT UNIQUE NOT NULL,
@@ -42,9 +43,8 @@ describe('Dashboard Query Consolidation', () => {
       )
     `);
 
-    // Create transactions table
     await db.execute(`
-      CREATE TABLE IF NOT EXISTS transactions (
+      CREATE TEMP TABLE temp_transactions (
         id TEXT PRIMARY KEY,
         email TEXT NOT NULL,
         status TEXT NOT NULL,
@@ -56,14 +56,13 @@ describe('Dashboard Query Consolidation', () => {
       )
     `);
 
-    // Create tickets table
     await db.execute(`
-      CREATE TABLE IF NOT EXISTS tickets (
+      CREATE TEMP TABLE temp_tickets (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         ticket_id TEXT UNIQUE NOT NULL,
-        transaction_id TEXT REFERENCES transactions(id),
+        transaction_id TEXT REFERENCES temp_transactions(id),
         ticket_type TEXT NOT NULL,
-        event_id INTEGER REFERENCES events(id),
+        event_id INTEGER REFERENCES temp_events(id),
         price_cents INTEGER NOT NULL,
         status TEXT DEFAULT 'valid',
         qr_token TEXT,
@@ -81,10 +80,11 @@ describe('Dashboard Query Consolidation', () => {
 
   async function cleanupTestData() {
     try {
-      // For in-memory database, drop and recreate tables to ensure clean state
-      await db.execute('DROP TABLE IF EXISTS tickets');
-      await db.execute('DROP TABLE IF EXISTS transactions');
-      await db.execute('DROP TABLE IF EXISTS events');
+      // Temporary tables automatically drop at connection close
+      // Explicit cleanup for clarity
+      await db.execute('DROP TABLE IF EXISTS temp_tickets');
+      await db.execute('DROP TABLE IF EXISTS temp_transactions');
+      await db.execute('DROP TABLE IF EXISTS temp_events');
     } catch (error) {
       console.warn('Cleanup warning:', error.message);
     }
@@ -94,13 +94,13 @@ describe('Dashboard Query Consolidation', () => {
     // Create test event
     testEventId = 9001;
     await db.execute({
-      sql: `INSERT INTO events (id, name, slug, type, status, start_date, end_date, venue_name, venue_city, venue_state, max_capacity)
+      sql: `INSERT INTO temp_events (id, name, slug, type, status, start_date, end_date, venue_name, venue_city, venue_state, max_capacity)
             VALUES (?, 'Test Event Dashboard', 'test-event-dashboard', 'festival', 'active', '2026-05-15', '2026-05-17', 'Test Venue', 'Boulder', 'CO', 500)`,
       args: [testEventId]
     });
 
     // Verify event was inserted
-    const eventCheck = await db.execute('SELECT COUNT(*) as count FROM events WHERE id = ?', [testEventId]);
+    const eventCheck = await db.execute('SELECT COUNT(*) as count FROM temp_events WHERE id = ?', [testEventId]);
     if (eventCheck.rows[0].count === 0) {
       throw new Error('Failed to insert test event');
     }
@@ -108,7 +108,7 @@ describe('Dashboard Query Consolidation', () => {
     // Create test transaction
     testTransactionId = 'test_consolidation_trans_1';
     await db.execute({
-      sql: `INSERT INTO transactions (id, email, status, source, payment_processor, is_test, event_id, created_at)
+      sql: `INSERT INTO temp_transactions (id, email, status, source, payment_processor, is_test, event_id, created_at)
             VALUES (?, 'consolidation@example.com', 'completed', 'online', 'stripe', 0, ?, datetime('now'))`,
       args: [testTransactionId, testEventId]
     });
@@ -116,7 +116,7 @@ describe('Dashboard Query Consolidation', () => {
     // Create 10 valid general tickets
     for (let i = 1; i <= 10; i++) {
       await db.execute({
-        sql: `INSERT INTO tickets (
+        sql: `INSERT INTO temp_tickets (
           ticket_id, transaction_id, ticket_type, event_id, price_cents, status,
           qr_token, qr_access_method, is_test, created_at,
           attendee_first_name, attendee_last_name, attendee_email
@@ -128,7 +128,7 @@ describe('Dashboard Query Consolidation', () => {
     // Create 3 workshop tickets
     for (let i = 11; i <= 13; i++) {
       await db.execute({
-        sql: `INSERT INTO tickets (
+        sql: `INSERT INTO temp_tickets (
           ticket_id, transaction_id, ticket_type, event_id, price_cents, status,
           qr_token, qr_access_method, is_test, created_at,
           attendee_first_name, attendee_last_name, attendee_email
@@ -140,7 +140,7 @@ describe('Dashboard Query Consolidation', () => {
     // Create 2 VIP tickets
     for (let i = 14; i <= 15; i++) {
       await db.execute({
-        sql: `INSERT INTO tickets (
+        sql: `INSERT INTO temp_tickets (
           ticket_id, transaction_id, ticket_type, event_id, price_cents, status,
           qr_token, qr_access_method, is_test, created_at,
           attendee_first_name, attendee_last_name, attendee_email
@@ -152,7 +152,7 @@ describe('Dashboard Query Consolidation', () => {
     // Create 2 checked-in tickets
     for (let i = 16; i <= 17; i++) {
       await db.execute({
-        sql: `INSERT INTO tickets (
+        sql: `INSERT INTO temp_tickets (
           ticket_id, transaction_id, ticket_type, event_id, price_cents, status,
           qr_token, qr_access_method, is_test, created_at,
           last_scanned_at, checked_in_at,
@@ -165,14 +165,14 @@ describe('Dashboard Query Consolidation', () => {
     // Create 2 test tickets
     const testTransactionId2 = 'test_consolidation_trans_2';
     await db.execute({
-      sql: `INSERT INTO transactions (id, email, status, source, payment_processor, is_test, event_id, created_at)
+      sql: `INSERT INTO temp_transactions (id, email, status, source, payment_processor, is_test, event_id, created_at)
             VALUES (?, 'test@example.com', 'completed', 'online', 'stripe', 1, ?, datetime('now'))`,
       args: [testTransactionId2, testEventId]
     });
 
     for (let i = 18; i <= 19; i++) {
       await db.execute({
-        sql: `INSERT INTO tickets (
+        sql: `INSERT INTO temp_tickets (
           ticket_id, transaction_id, ticket_type, event_id, price_cents, status,
           qr_token, qr_access_method, is_test, created_at,
           attendee_first_name, attendee_last_name, attendee_email
@@ -184,14 +184,14 @@ describe('Dashboard Query Consolidation', () => {
     // Create manual entry transaction and tickets
     const manualTransactionId = 'test_consolidation_manual_1';
     await db.execute({
-      sql: `INSERT INTO transactions (id, email, status, source, payment_processor, is_test, event_id, created_at)
+      sql: `INSERT INTO temp_transactions (id, email, status, source, payment_processor, is_test, event_id, created_at)
             VALUES (?, 'manual@example.com', 'completed', 'manual_entry', 'cash', 0, ?, datetime('now'))`,
       args: [manualTransactionId, testEventId]
     });
 
     for (let i = 20; i <= 21; i++) {
       await db.execute({
-        sql: `INSERT INTO tickets (
+        sql: `INSERT INTO temp_tickets (
           ticket_id, transaction_id, ticket_type, event_id, price_cents, status,
           qr_token, qr_access_method, is_test, created_at,
           attendee_first_name, attendee_last_name, attendee_email
@@ -201,8 +201,8 @@ describe('Dashboard Query Consolidation', () => {
     }
 
     // Verify data was seeded correctly
-    const ticketCount = await db.execute('SELECT COUNT(*) as count FROM tickets WHERE event_id = ?', [testEventId]);
-    const transCount = await db.execute('SELECT COUNT(*) as count FROM transactions WHERE event_id = ?', [testEventId]);
+    const ticketCount = await db.execute('SELECT COUNT(*) as count FROM temp_tickets WHERE event_id = ?', [testEventId]);
+    const transCount = await db.execute('SELECT COUNT(*) as count FROM temp_transactions WHERE event_id = ?', [testEventId]);
 
     if (ticketCount.rows[0].count !== 21) {
       console.error('Expected 21 tickets, got:', ticketCount.rows[0].count);
@@ -242,15 +242,15 @@ describe('Dashboard Query Consolidation', () => {
                            AND date(COALESCE(last_scanned_at, checked_in_at), ${mtOffset}) = date('now', ${mtOffset})) as today_checkins,
           COUNT(*) FILTER (WHERE (last_scanned_at IS NOT NULL OR checked_in_at IS NOT NULL)
                            AND qr_access_method IN ('apple_wallet', 'google_wallet', 'samsung_wallet')) as wallet_checkins
-        FROM tickets
+        FROM temp_tickets
         WHERE 1=1 ${ticketWhereClause}
       ),
       transaction_stats AS (
         SELECT
           COUNT(DISTINCT id) FILTER (WHERE source = 'manual_entry' AND status = 'completed') as manual_transactions,
           COUNT(DISTINCT id) FILTER (WHERE is_test = 1) as test_transactions
-        FROM transactions
-        WHERE id IN (SELECT DISTINCT transaction_id FROM tickets WHERE 1=1 ${ticketWhereClause})
+        FROM temp_transactions
+        WHERE id IN (SELECT DISTINCT transaction_id FROM temp_tickets WHERE 1=1 ${ticketWhereClause})
       ),
       revenue_stats AS (
         SELECT
@@ -273,8 +273,8 @@ describe('Dashboard Query Consolidation', () => {
           COUNT(*) FILTER (WHERE tr.source = 'manual_entry' AND tr.payment_processor = 'card_terminal' AND t.status = 'valid') as manual_card_tickets,
           COUNT(*) FILTER (WHERE tr.source = 'manual_entry' AND tr.payment_processor = 'venmo' AND t.status = 'valid') as manual_venmo_tickets,
           COUNT(*) FILTER (WHERE tr.source = 'manual_entry' AND tr.payment_processor = 'comp' AND t.status = 'valid') as manual_comp_tickets
-        FROM tickets t
-        JOIN transactions tr ON t.transaction_id = tr.id
+        FROM temp_tickets t
+        JOIN temp_transactions tr ON t.transaction_id = tr.id
         WHERE 1=1 ${ticketWhereClauseWithAlias}
       )
       SELECT
@@ -310,7 +310,7 @@ describe('Dashboard Query Consolidation', () => {
       sql: `SELECT
               COUNT(*) FILTER (WHERE status = 'valid') as valid_count,
               COUNT(*) FILTER (WHERE is_test = 1) as test_count
-            FROM tickets
+            FROM temp_tickets
             WHERE transaction_id LIKE 'test_consolidation_%'`
     });
 
@@ -322,7 +322,7 @@ describe('Dashboard Query Consolidation', () => {
     const simpleQuery = `
       WITH ticket_stats AS (
         SELECT COUNT(*) FILTER (WHERE status = 'valid') as total_tickets
-        FROM tickets
+        FROM temp_tickets
         WHERE event_id = ?
       )
       SELECT * FROM ticket_stats
@@ -476,14 +476,14 @@ describe('Dashboard Query Consolidation', () => {
     // Create a second event with tickets
     const secondEventId = 9002;
     await db.execute({
-      sql: `INSERT INTO events (id, name, slug, type, status, start_date, end_date, venue_name, venue_city, venue_state, max_capacity)
+      sql: `INSERT INTO temp_events (id, name, slug, type, status, start_date, end_date, venue_name, venue_city, venue_state, max_capacity)
             VALUES (?, 'Second Test Event', 'second-test-event', 'festival', 'active', '2026-06-15', '2026-06-17', 'Test Venue 2', 'Denver', 'CO', 300)`,
       args: [secondEventId]
     });
 
     const secondTransactionId = 'test_consolidation_second_trans';
     await db.execute({
-      sql: `INSERT INTO transactions (id, email, status, source, payment_processor, is_test, event_id, created_at)
+      sql: `INSERT INTO temp_transactions (id, email, status, source, payment_processor, is_test, event_id, created_at)
             VALUES (?, 'second@example.com', 'completed', 'online', 'stripe', 0, ?, datetime('now'))`,
       args: [secondTransactionId, secondEventId]
     });
@@ -491,7 +491,7 @@ describe('Dashboard Query Consolidation', () => {
     // Create 5 tickets for second event
     for (let i = 1; i <= 5; i++) {
       await db.execute({
-        sql: `INSERT INTO tickets (
+        sql: `INSERT INTO temp_tickets (
           ticket_id, transaction_id, ticket_type, event_id, price_cents, status,
           qr_token, qr_access_method, is_test, created_at,
           attendee_first_name, attendee_last_name, attendee_email
@@ -513,9 +513,9 @@ describe('Dashboard Query Consolidation', () => {
     expect(statsAll.total_tickets).toBeGreaterThanOrEqual(26); // At least our test tickets
 
     // Cleanup second event
-    await db.execute('DELETE FROM tickets WHERE event_id = ?', [secondEventId]);
-    await db.execute('DELETE FROM transactions WHERE event_id = ?', [secondEventId]);
-    await db.execute('DELETE FROM events WHERE id = ?', [secondEventId]);
+    await db.execute('DELETE FROM temp_tickets WHERE event_id = ?', [secondEventId]);
+    await db.execute('DELETE FROM temp_transactions WHERE event_id = ?', [secondEventId]);
+    await db.execute('DELETE FROM temp_events WHERE id = ?', [secondEventId]);
   });
 
   test('consolidated query handles empty results gracefully', async () => {
@@ -573,7 +573,7 @@ describe('Dashboard Query Consolidation', () => {
     // Create comp transaction
     const compTransactionId = 'test_consolidation_comp_1';
     await db.execute({
-      sql: `INSERT INTO transactions (id, email, status, source, payment_processor, is_test, event_id, created_at)
+      sql: `INSERT INTO temp_transactions (id, email, status, source, payment_processor, is_test, event_id, created_at)
             VALUES (?, 'comp@example.com', 'completed', 'manual_entry', 'comp', 0, ?, datetime('now'))`,
       args: [compTransactionId, testEventId]
     });
@@ -581,7 +581,7 @@ describe('Dashboard Query Consolidation', () => {
     // Create comp tickets
     for (let i = 1; i <= 3; i++) {
       await db.execute({
-        sql: `INSERT INTO tickets (
+        sql: `INSERT INTO temp_tickets (
           ticket_id, transaction_id, ticket_type, event_id, price_cents, status,
           qr_token, qr_access_method, is_test, created_at,
           attendee_first_name, attendee_last_name, attendee_email
@@ -603,8 +603,8 @@ describe('Dashboard Query Consolidation', () => {
     expect(stats.manual_comp_tickets).toBe(3);
 
     // Cleanup comp tickets
-    await db.execute('DELETE FROM tickets WHERE transaction_id = ?', [compTransactionId]);
-    await db.execute('DELETE FROM transactions WHERE id = ?', [compTransactionId]);
+    await db.execute('DELETE FROM temp_tickets WHERE transaction_id = ?', [compTransactionId]);
+    await db.execute('DELETE FROM temp_transactions WHERE id = ?', [compTransactionId]);
   });
 
   test('revenue includes test tickets - all test ticket scenario', async () => {
@@ -613,7 +613,7 @@ describe('Dashboard Query Consolidation', () => {
 
     // Create test-only event
     await db.execute({
-      sql: `INSERT INTO events (id, name, slug, type, status, start_date, end_date, venue_name, venue_city, venue_state)
+      sql: `INSERT INTO temp_events (id, name, slug, type, status, start_date, end_date, venue_name, venue_city, venue_state)
             VALUES (?, 'All Test Tickets Event', 'all-test-event', 'festival', 'active', '2025-11-15', '2025-11-17', 'Test Venue', 'Boulder', 'CO')`,
       args: [testOnlyEventId]
     });
@@ -621,7 +621,7 @@ describe('Dashboard Query Consolidation', () => {
     // Create test transaction
     const testOnlyTransactionId = 'test-only-trans-001';
     await db.execute({
-      sql: `INSERT INTO transactions (id, email, status, is_test, payment_processor, event_id)
+      sql: `INSERT INTO temp_transactions (id, email, status, is_test, payment_processor, event_id)
             VALUES (?, 'testuser@example.com', 'completed', 1, 'stripe', ?)`,
       args: [testOnlyTransactionId, testOnlyEventId]
     });
@@ -629,7 +629,7 @@ describe('Dashboard Query Consolidation', () => {
     // Create 5 test tickets at $65 each
     for (let i = 0; i < 5; i++) {
       await db.execute({
-        sql: `INSERT INTO tickets (ticket_id, transaction_id, event_id, ticket_type, price_cents, status, is_test)
+        sql: `INSERT INTO temp_tickets (ticket_id, transaction_id, event_id, ticket_type, price_cents, status, is_test)
               VALUES (?, ?, ?, 'weekend-pass', 6500, 'valid', 1)`,
         args: [`TEST-TICKET-${i}`, testOnlyTransactionId, testOnlyEventId]
       });
@@ -644,9 +644,9 @@ describe('Dashboard Query Consolidation', () => {
     expect(stats.test_tickets).toBe(5);
 
     // Clean up
-    await db.execute('DELETE FROM tickets WHERE event_id = ?', [testOnlyEventId]);
-    await db.execute('DELETE FROM transactions WHERE id = ?', [testOnlyTransactionId]);
-    await db.execute('DELETE FROM events WHERE id = ?', [testOnlyEventId]);
+    await db.execute('DELETE FROM temp_tickets WHERE event_id = ?', [testOnlyEventId]);
+    await db.execute('DELETE FROM temp_transactions WHERE id = ?', [testOnlyTransactionId]);
+    await db.execute('DELETE FROM temp_events WHERE id = ?', [testOnlyEventId]);
   });
 
   test('revenue excludes only comp tickets, includes test tickets', async () => {
@@ -655,28 +655,28 @@ describe('Dashboard Query Consolidation', () => {
 
     // Create mixed event
     await db.execute({
-      sql: `INSERT INTO events (id, name, slug, type, status, start_date, end_date, venue_name, venue_city, venue_state)
+      sql: `INSERT INTO temp_events (id, name, slug, type, status, start_date, end_date, venue_name, venue_city, venue_state)
             VALUES (?, 'Mixed Ticket Types Event', 'mixed-event', 'festival', 'active', '2025-12-01', '2025-12-03', 'Mixed Venue', 'Denver', 'CO')`,
       args: [mixedEventId]
     });
 
     // Transaction 1: Regular (non-test) with stripe
     await db.execute({
-      sql: `INSERT INTO transactions (id, email, status, is_test, payment_processor, event_id)
+      sql: `INSERT INTO temp_transactions (id, email, status, is_test, payment_processor, event_id)
             VALUES ('regular-trans', 'regular@example.com', 'completed', 0, 'stripe', ?)`,
       args: [mixedEventId]
     });
 
     // Transaction 2: Test with paypal
     await db.execute({
-      sql: `INSERT INTO transactions (id, email, status, is_test, payment_processor, event_id)
+      sql: `INSERT INTO temp_transactions (id, email, status, is_test, payment_processor, event_id)
             VALUES ('test-trans', 'test@example.com', 'completed', 1, 'paypal', ?)`,
       args: [mixedEventId]
     });
 
     // Transaction 3: Comp (should be excluded)
     await db.execute({
-      sql: `INSERT INTO transactions (id, email, status, is_test, payment_processor, event_id)
+      sql: `INSERT INTO temp_transactions (id, email, status, is_test, payment_processor, event_id)
             VALUES ('comp-trans', 'comp@example.com', 'completed', 0, 'comp', ?)`,
       args: [mixedEventId]
     });
@@ -684,19 +684,19 @@ describe('Dashboard Query Consolidation', () => {
     // Create tickets: 2 regular ($50 each), 2 test ($50 each), 2 comp ($50 each)
     for (let i = 0; i < 2; i++) {
       await db.execute({
-        sql: `INSERT INTO tickets (ticket_id, transaction_id, event_id, ticket_type, price_cents, status, is_test)
+        sql: `INSERT INTO temp_tickets (ticket_id, transaction_id, event_id, ticket_type, price_cents, status, is_test)
               VALUES (?, 'regular-trans', ?, 'general', 5000, 'valid', 0)`,
         args: [`REGULAR-${i}`, mixedEventId]
       });
 
       await db.execute({
-        sql: `INSERT INTO tickets (ticket_id, transaction_id, event_id, ticket_type, price_cents, status, is_test)
+        sql: `INSERT INTO temp_tickets (ticket_id, transaction_id, event_id, ticket_type, price_cents, status, is_test)
               VALUES (?, 'test-trans', ?, 'general', 5000, 'valid', 1)`,
         args: [`TEST-${i}`, mixedEventId]
       });
 
       await db.execute({
-        sql: `INSERT INTO tickets (ticket_id, transaction_id, event_id, ticket_type, price_cents, status, is_test)
+        sql: `INSERT INTO temp_tickets (ticket_id, transaction_id, event_id, ticket_type, price_cents, status, is_test)
               VALUES (?, 'comp-trans', ?, 'general', 5000, 'valid', 0)`,
         args: [`COMP-${i}`, mixedEventId]
       });
@@ -716,8 +716,8 @@ describe('Dashboard Query Consolidation', () => {
     expect(stats.test_tickets).toBe(2);
 
     // Clean up
-    await db.execute('DELETE FROM tickets WHERE event_id = ?', [mixedEventId]);
-    await db.execute('DELETE FROM transactions WHERE event_id = ?', [mixedEventId]);
-    await db.execute('DELETE FROM events WHERE id = ?', [mixedEventId]);
+    await db.execute('DELETE FROM temp_tickets WHERE event_id = ?', [mixedEventId]);
+    await db.execute('DELETE FROM temp_transactions WHERE event_id = ?', [mixedEventId]);
+    await db.execute('DELETE FROM temp_events WHERE id = ?', [mixedEventId]);
   });
 });

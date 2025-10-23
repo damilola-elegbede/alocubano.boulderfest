@@ -4,6 +4,7 @@ import rateLimit from "../../lib/rate-limit-middleware.js";
 import auditService from "../../lib/audit-service.js";
 import { processDatabaseResult } from "../../lib/bigint-serializer.js";
 import { enhanceApiResponse } from "../../lib/time-utils.js";
+import { TRANSACTION_LIMITS } from "../../lib/ticket-config.js";
 
 // Input validation regex patterns
 const NAME_REGEX = /^[a-zA-Z\s\-']{2,50}$/;
@@ -398,10 +399,10 @@ export default async function handler(req, res) {
     });
   }
 
-  if (registrations.length > 10) {
+  if (registrations.length > TRANSACTION_LIMITS.MAX_TICKETS_PER_TRANSACTION) {
     return res.status(400).json({
-      error: 'Maximum 10 tickets per batch',
-      details: `You attempted to register ${registrations.length} tickets. Please register in batches of 10 or fewer.`
+      error: `Maximum ${TRANSACTION_LIMITS.MAX_TICKETS_PER_TRANSACTION} tickets per batch`,
+      details: `You attempted to register ${registrations.length} tickets. Please register in batches of ${TRANSACTION_LIMITS.MAX_TICKETS_PER_TRANSACTION} or fewer.`
     });
   }
 

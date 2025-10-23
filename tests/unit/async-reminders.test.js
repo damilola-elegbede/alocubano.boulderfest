@@ -56,7 +56,10 @@ describe('Async Reminder Scheduling', () => {
       email: 'test@example.com',
       total_amount_cents: 5000,
       stripe_session_id: 'cs_test_async_reminders_123',
-      is_test: 1
+      is_test: 1,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      completed_at: new Date().toISOString()
     };
   });
 

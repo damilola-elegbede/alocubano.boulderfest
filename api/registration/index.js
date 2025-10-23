@@ -26,11 +26,11 @@ export default async function handler(req, res) {
     console.log('[REG_STATUS] Registration status check initiated');
 
     // Verify JWT token with backwards compatibility for legacy tokens
-    // Try secrets in order: REGISTRATION_SECRET (current) -> QR_SECRET_KEY (legacy) -> WALLET_AUTH_SECRET (fallback)
+    // SECURITY FIX: Only accept REGISTRATION_SECRET and legacy QR_SECRET_KEY
+    // WALLET_AUTH_SECRET is removed to prevent QR tokens from accessing transaction data
     const secrets = [
       { name: 'REGISTRATION_SECRET', value: process.env.REGISTRATION_SECRET },
-      { name: 'QR_SECRET_KEY', value: process.env.QR_SECRET_KEY },
-      { name: 'WALLET_AUTH_SECRET', value: process.env.WALLET_AUTH_SECRET }
+      { name: 'QR_SECRET_KEY', value: process.env.QR_SECRET_KEY }
     ].filter(s => s.value); // Only include secrets that are defined
 
     if (secrets.length === 0) {
@@ -99,6 +99,30 @@ export default async function handler(req, res) {
       type: decoded.type,
       exp: new Date(decoded.exp * 1000).toISOString()
     });
+
+    // SECURITY FIX: Validate token type and structure
+    // Registration tokens MUST have either 'txn' or 'transactionId' field
+    // QR/wallet tokens only have 'tid' (ticket ID) field - reject these
+    if (!decoded.txn && !decoded.transactionId) {
+      console.error('[REG_STATUS] Invalid token type - missing transaction identifier (txn/transactionId)', {
+        hasType: !!decoded.type,
+        type: decoded.type,
+        hasTid: !!decoded.tid
+      });
+      return res.status(401).json({
+        error: 'Invalid token type',
+        message: 'This token is not valid for registration access'
+      });
+    }
+
+    // Additional validation: If token has 'type' field, it must be 'registration'
+    if (decoded.type && decoded.type !== 'registration') {
+      console.error('[REG_STATUS] Invalid token type field:', decoded.type);
+      return res.status(401).json({
+        error: 'Invalid token type',
+        message: 'This token is not valid for registration access'
+      });
+    }
 
     // Get database client first
     const db = await getDatabaseClient();

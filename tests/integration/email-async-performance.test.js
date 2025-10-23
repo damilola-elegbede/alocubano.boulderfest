@@ -29,6 +29,12 @@ describe('Async Email Performance Tests', () => {
     });
   });
 
+  afterEach(() => {
+    // Clear mock call history and restore original implementations
+    vi.clearAllMocks();
+    vi.restoreAllMocks();
+  });
+
   test('checkout completes immediately without waiting for email', async () => {
     // Mock email service to simulate slow email sending (1500ms)
     const mockEmailService = {

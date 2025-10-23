@@ -45,9 +45,9 @@ describe('Database Index Performance', () => {
 
     // Create test transaction
     const transactionResult = await db.execute({
-      sql: `INSERT INTO transactions (transaction_id, type, status, amount_cents, customer_email, order_data, event_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      args: ['test-txn-001', 'tickets', 'completed', 5000, 'test@example.com', '{}', testEventId]
+      sql: `INSERT INTO transactions (transaction_id, uuid, type, status, amount_cents, customer_email, order_data, event_id, payment_processor, is_test, source, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+      args: ['test-txn-001', 'test-txn-001', 'tickets', 'completed', 5000, 'test@example.com', '{}', testEventId, 'stripe', 1, 'test']
     });
     testTransactionId = transactionResult.lastInsertRowid || transactionResult.lastInsertId;
   });

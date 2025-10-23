@@ -23,6 +23,45 @@ const PAGES = [
   { name: 'Admin Dashboard', path: '/pages/admin/dashboard.html' },
 ];
 
+/**
+ * Safely format metric value
+ * @param {number|null|undefined} value - Metric value
+ * @param {number} decimals - Decimal places (default: 2)
+ * @returns {string} Formatted value or 'N/A'
+ */
+function formatMetric(value, decimals = 2) {
+  if (value === null || value === undefined || !isFinite(value)) {
+    return 'N/A';
+  }
+  return value.toFixed(decimals);
+}
+
+/**
+ * Calculate median from sorted array
+ * @param {number[]} values - Sorted array of values
+ * @returns {number|null} Median value or null if empty
+ */
+function calculateMedian(values) {
+  if (!values || values.length === 0) {
+    return null;
+  }
+  return values[Math.floor(values.length / 2)];
+}
+
+/**
+ * Calculate percentile from sorted array
+ * @param {number[]} values - Sorted array of values
+ * @param {number} percentile - Percentile to calculate (0-1)
+ * @returns {number|null} Percentile value or null if empty
+ */
+function calculatePercentile(values, percentile) {
+  if (!values || values.length === 0) {
+    return null;
+  }
+  const index = Math.floor(values.length * percentile);
+  return values[Math.min(index, values.length - 1)];
+}
+
 async function measurePagePerformance(page, url) {
   await page.goto(url, { waitUntil: 'networkidle' });
 
@@ -59,23 +98,24 @@ async function benchmarkPage(browser, pageDef) {
     await page.close();
   }
 
-  const fcpValues = results.map(r => r.fcp).filter(Boolean).sort((a, b) => a - b);
-  const lcpValues = results.map(r => r.lcp).filter(Boolean).sort((a, b) => a - b);
-  const resourceCounts = results.map(r => r.resourceCount);
+  // Filter out null values and sort
+  const fcpValues = results.map(r => r.fcp).filter(v => v !== null && isFinite(v)).sort((a, b) => a - b);
+  const lcpValues = results.map(r => r.lcp).filter(v => v !== null && isFinite(v)).sort((a, b) => a - b);
+  const resourceCounts = results.map(r => r.resourceCount).filter(v => v !== null && isFinite(v)).sort((a, b) => a - b);
 
   return {
     name: pageDef.name,
     path: pageDef.path,
     fcp: {
-      median: fcpValues[Math.floor(fcpValues.length / 2)],
-      p95: fcpValues[Math.floor(fcpValues.length * 0.95)],
+      median: calculateMedian(fcpValues),
+      p95: calculatePercentile(fcpValues, 0.95),
     },
     lcp: {
-      median: lcpValues[Math.floor(lcpValues.length / 2)],
-      p95: lcpValues[Math.floor(lcpValues.length * 0.95)],
+      median: calculateMedian(lcpValues),
+      p95: calculatePercentile(lcpValues, 0.95),
     },
     resourceCount: {
-      median: resourceCounts.sort((a, b) => a - b)[Math.floor(resourceCounts.length / 2)],
+      median: calculateMedian(resourceCounts),
     },
     results,
   };
@@ -92,9 +132,9 @@ async function main() {
 
   for (const pageDef of PAGES) {
     const result = await benchmarkPage(browser, pageDef);
-    console.log(`  FCP: ${result.fcp.median.toFixed(2)}ms (P95: ${result.fcp.p95.toFixed(2)}ms)`);
-    console.log(`  LCP: ${result.lcp.median.toFixed(2)}ms (P95: ${result.lcp.p95.toFixed(2)}ms)`);
-    console.log(`  Resources: ${result.resourceCount.median}`);
+    console.log(`  FCP: ${formatMetric(result.fcp.median)}ms (P95: ${formatMetric(result.fcp.p95)}ms)`);
+    console.log(`  LCP: ${formatMetric(result.lcp.median)}ms (P95: ${formatMetric(result.lcp.p95)}ms)`);
+    console.log(`  Resources: ${result.resourceCount.median !== null ? result.resourceCount.median : 'N/A'}`);
     pageResults.push(result);
   }
 

@@ -212,19 +212,19 @@ describe('Font Loading Optimization', () => {
       }));
     });
 
-    // Find index of preload and typography.css
+    // Find index of preload and bundle-critical.css (which contains typography styles)
     const preloadIndex = linkOrder.findIndex(link =>
       link.rel === 'preload' && link.as === 'style' && link.href?.includes('fonts.googleapis.com')
     );
-    const typographyCssIndex = linkOrder.findIndex(link =>
-      link.rel === 'stylesheet' && link.href?.includes('typography.css')
+    const criticalCssIndex = linkOrder.findIndex(link =>
+      link.rel === 'stylesheet' && link.href?.includes('bundle-critical.css')
     );
 
     expect(preloadIndex).toBeGreaterThan(-1);
-    expect(typographyCssIndex).toBeGreaterThan(-1);
+    expect(criticalCssIndex).toBeGreaterThan(-1);
 
-    // Preload should come before typography.css
-    expect(preloadIndex).toBeLessThan(typographyCssIndex);
+    // Preload should come before critical CSS bundle
+    expect(preloadIndex).toBeLessThan(criticalCssIndex);
 
     await page.close();
   });
