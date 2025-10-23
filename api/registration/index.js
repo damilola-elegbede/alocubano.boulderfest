@@ -43,9 +43,14 @@ export default async function handler(req, res) {
     let lastError = null;
 
     // Try each secret until one works
+    // CRITICAL: Ignore JWT expiration - we check registration_deadline from database instead
+    // This prevents tickets from becoming inaccessible due to arbitrary 72-hour token expiration
     for (const secret of secrets) {
       try {
-        decoded = jwt.verify(token, secret.value, { algorithms: ['HS256'] });
+        decoded = jwt.verify(token, secret.value, {
+          algorithms: ['HS256'],
+          ignoreExpiration: true  // Event-based expiration checked via registration_deadline, not JWT exp
+        });
         usedSecret = secret.name;
         break; // Success! Stop trying
       } catch (err) {
