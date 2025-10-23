@@ -664,10 +664,25 @@ jobs:
           echo "🦊 Browser Project: $PROJECT_NAME"
           TEST_EXIT_CODE=${PIPESTATUS[0]}
 
-          # Extract test statistics from output
-          PASSED_TESTS=$(grep -oP '\d+(?= passed)' test_output.log 2>/dev/null | head -1 || echo "0")
-          FAILED_TESTS=$(grep -oP '\d+(?= failed)' test_output.log 2>/dev/null | head -1 || echo "0")
-          SKIPPED_TESTS=$(grep -oP '\d+(?= skipped)' test_output.log 2>/dev/null | head -1 || echo "0")
+          # FIX #3: Check if Playwright failed to load config
+          if grep -q "Cannot find module\|Error:" test_output.log; then
+            echo ""
+            echo "❌ CRITICAL: Playwright configuration error detected"
+            grep -A 5 "Cannot find module\|Error:" test_output.log
+            echo ""
+            echo "Tests cannot run with configuration errors"
+            exit 1
+          fi
+
+          # FIX #1: Extract test statistics with proper default values
+          PASSED_TESTS=$(grep -oP '\d+(?= passed)' test_output.log 2>/dev/null | head -1)
+          PASSED_TESTS=${PASSED_TESTS:-0}
+
+          FAILED_TESTS=$(grep -oP '\d+(?= failed)' test_output.log 2>/dev/null | head -1)
+          FAILED_TESTS=${FAILED_TESTS:-0}
+
+          SKIPPED_TESTS=$(grep -oP '\d+(?= skipped)' test_output.log 2>/dev/null | head -1)
+          SKIPPED_TESTS=${SKIPPED_TESTS:-0}
 
           echo ""
           echo "📊 Test Execution Summary:"
@@ -675,6 +690,19 @@ jobs:
           echo "  Tests Passed: $PASSED_TESTS"
           echo "  Tests Failed: $FAILED_TESTS"
           echo "  Tests Skipped: $SKIPPED_TESTS"
+
+          # FIX #2: Validate test count matches expected pattern
+          if [ -n "$TEST_PATTERN" ]; then
+            EXPECTED_FILES=$(echo "$TEST_PATTERN" | tr '|' '\n' | wc -l)
+            TOTAL_EXECUTED=$((PASSED_TESTS + FAILED_TESTS + SKIPPED_TESTS))
+
+            if [ "$TOTAL_EXECUTED" -lt "$EXPECTED_FILES" ]; then
+              echo ""
+              echo "❌ ERROR: Expected $EXPECTED_FILES test files but only $TOTAL_EXECUTED executed"
+              echo "This indicates a test configuration or loading issue"
+              exit 1
+            fi
+          fi
 
           # Determine if tests actually passed or failed
           if [ $TEST_EXIT_CODE -eq 0 ]; then
