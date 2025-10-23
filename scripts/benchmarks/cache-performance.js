@@ -1,10 +1,11 @@
 /**
  * Cache Performance Benchmark
- * 
+ *
  * Measures performance gains from:
  * - Wave 1, Optimization 3: API cache headers (80ms per cache hit, 60-70% hit rate target)
  */
 
+import { safeStringify } from '../../lib/bigint-serializer.js';
 import { performance } from 'perf_hooks';
 import fs from 'fs';
 import path from 'path';
@@ -113,7 +114,7 @@ async function main() {
 
   fs.writeFileSync(
     path.join(outputDir, 'cache-performance-results.json'),
-    JSON.stringify(output, null, 2)
+    safeStringify(output, 2)
   );
 
   console.log('\nResults saved to .tmp/benchmarks/cache-performance-results.json');

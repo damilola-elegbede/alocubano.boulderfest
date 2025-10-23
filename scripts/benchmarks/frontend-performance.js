@@ -1,14 +1,15 @@
 /**
  * Frontend Performance Benchmark
- * 
+ *
  * Measures performance gains from:
  * - Wave 1, Optimization 1: Font loading (100-200ms FCP improvement)
  * - Wave 1, Optimization 9: CSS bundling (300-500ms FCP, 108 fewer HTTP requests)
  * - Wave 1, Optimization 10: JavaScript deferral (50-75ms FCP)
- * 
+ *
  * Expected combined improvement: 450-775ms FCP
  */
 
+import { safeStringify } from '../../lib/bigint-serializer.js';
 import { chromium } from 'playwright';
 import fs from 'fs';
 import path from 'path';
@@ -216,7 +217,7 @@ async function main() {
   
     fs.writeFileSync(
       path.join(outputDir, 'frontend-performance-results.json'),
-      JSON.stringify(output, null, 2)
+      safeStringify(output, 2)
     );
   
     console.log('\nResults saved to .tmp/benchmarks/frontend-performance-results.json');

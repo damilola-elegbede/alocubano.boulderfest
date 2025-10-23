@@ -4,6 +4,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import { safeStringify } from '../../lib/bigint-serializer.js';
 
 const BENCHMARKS_DIR = path.join(process.cwd(), '.tmp', 'benchmarks');
 const REPORTS_DIR = path.join(process.cwd(), '.tmp', 'reports');
@@ -60,18 +61,23 @@ function generateSummary(results) {
   
   md += '## Key Results\n\n';
   
-  if (results.database_queries) {
+  if (results.database_queries?.dashboard) {
     const db = results.database_queries.dashboard;
     md += '### Database Query Consolidation (Wave 2, Opt 11)\n\n';
     md += '- **Median**: ' + formatMetric(db.median) + 'ms (target: <200ms)\n';
     md += '- **P95**: ' + formatMetric(db.p95) + 'ms\n';
     md += '- **Status**: ' + (db.targetMet ? '✅ Target Met' : '⚠️ Needs Improvement') + '\n\n';
-    
+  }
+
+  if (results.database_queries && Array.isArray(results.database_queries.indexedQueries)) {
     md += '### Database Indexed Queries (Wave 1, Opt 2)\n\n';
     results.database_queries.indexedQueries.forEach(q => {
       md += '- **' + q.name + '**: ' + formatMetric(q.median) + 'ms median\n';
     });
     md += '\n';
+  } else if (results.database_queries) {
+    md += '### Database Indexed Queries (Wave 1, Opt 2)\n\n';
+    md += '_No indexed query data available_\n\n';
   }
   
   if (results.frontend_performance && results.frontend_performance.pages) {
@@ -90,8 +96,8 @@ function generateSummary(results) {
   
   OPTIMIZATIONS.forEach(opt => {
     let status = '⚪ Not Tested';
-    
-    if (opt.id === 'queryConsolidation' && results.database_queries) {
+
+    if (opt.id === 'queryConsolidation' && results.database_queries?.dashboard) {
       status = results.database_queries.dashboard.targetMet ? '✅ Met' : '🟡 Partial';
     } else if (opt.id === 'databaseIndexes' && results.database_queries) {
       status = '✅ Met';
@@ -100,7 +106,7 @@ function generateSummary(results) {
     } else if (opt.id === 'cacheHeaders' && results.cache_performance) {
       status = '🔵 Tested';
     }
-    
+
     md += '| ' + opt.opt + ' | ' + opt.name + ' | ' + opt.wave + ' | ' + opt.target + ' | ' + status + ' |\n';
   });
   
@@ -113,7 +119,7 @@ function generateDetailed(results) {
   let md = '# Detailed Performance Benchmark Report\n\n';
   md += 'Generated: ' + new Date().toISOString() + '\n\n';
   
-  if (results.database_queries) {
+  if (results.database_queries?.dashboard) {
     md += '## Database Performance\n\n';
     md += '### Dashboard Query (CTE Consolidation)\n\n';
     const db = results.database_queries.dashboard;
@@ -123,7 +129,9 @@ function generateDetailed(results) {
     md += '- P99: ' + formatMetric(db.p99) + 'ms\n';
     md += '- Min: ' + formatMetric(db.min) + 'ms\n';
     md += '- Max: ' + formatMetric(db.max) + 'ms\n\n';
-    
+  }
+
+  if (Array.isArray(results.database_queries?.indexedQueries)) {
     md += '### Indexed Queries\n\n';
     results.database_queries.indexedQueries.forEach(q => {
       md += '#### ' + q.name + '\n\n';

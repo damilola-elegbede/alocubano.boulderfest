@@ -7,6 +7,7 @@
  */
 
 import { getDatabaseClient } from '../../lib/database.js';
+import { safeStringify } from '../../lib/bigint-serializer.js';
 import { performance } from 'perf_hooks';
 import fs from 'fs';
 import path from 'path';
@@ -156,7 +157,7 @@ async function main() {
 
   fs.writeFileSync(
     path.join(outputDir, 'database-queries-results.json'),
-    JSON.stringify(output, null, 2)
+    safeStringify(output, 2)
   );
 
   console.log('\nResults saved to .tmp/benchmarks/database-queries-results.json');

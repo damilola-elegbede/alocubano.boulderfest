@@ -1,14 +1,15 @@
 /**
  * Checkout Flow Performance Benchmark
- * 
+ *
  * Measures cumulative performance gains from:
  * - Wave 1, Optimization 4: Async reminder scheduling (200-500ms)
  * - Wave 1, Optimization 5: Fire-and-forget reservation fulfillment (50-100ms)
  * - Wave 1, Optimization 6: Async email sending (1,000-2,000ms - BIGGEST WIN)
- * 
+ *
  * Expected combined improvement: 1,400-2,800ms faster checkout
  */
 
+import { safeStringify } from '../../lib/bigint-serializer.js';
 import { performance } from 'perf_hooks';
 import fs from 'fs';
 import path from 'path';
@@ -111,7 +112,7 @@ async function main() {
 
   fs.writeFileSync(
     path.join(outputDir, 'checkout-flow-results.json'),
-    JSON.stringify(output, null, 2)
+    safeStringify(output, 2)
   );
 
   console.log('Results saved to .tmp/benchmarks/checkout-flow-results.json');

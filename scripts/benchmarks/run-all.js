@@ -2,6 +2,7 @@
  * Master Benchmark Runner
  */
 
+import { safeStringify } from '../../lib/bigint-serializer.js';
 import { spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
@@ -71,7 +72,7 @@ async function main() {
 
   fs.writeFileSync(
     path.join(outputDir, 'benchmark-suite-summary.json'),
-    JSON.stringify(summary, null, 2)
+    safeStringify(summary, 2)
   );
 
   const allSuccessful = successCount === results.length;
