@@ -18,17 +18,12 @@
 -- CURRENT BEHAVIOR: Full table scan (no index)
 -- EXPECTED BEHAVIOR: Index lookup O(log n)
 
--- Begin transaction for atomic index creation
-BEGIN TRANSACTION;
-
 -- Add index on stripe_payment_intent_id for webhook lookups
 -- Note: This column is NOT unique (one payment intent can appear in multiple transaction records
 -- during retry scenarios or when payment status changes)
+-- Transaction handled automatically by migration framework (Turso wraps each migration)
 CREATE INDEX IF NOT EXISTS idx_transactions_stripe_payment_intent
 ON transactions(stripe_payment_intent_id);
-
--- Commit transaction
-COMMIT;
 
 -- ============================================================================
 -- PERFORMANCE IMPACT ANALYSIS
