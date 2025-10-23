@@ -7,11 +7,10 @@
 -- PERFORMANCE INDEXES FOR DASHBOARD QUERIES
 -- ============================================================================
 
--- Note: If any CREATE INDEX fails, entire transaction rolls back
--- This ensures database remains in consistent state
-
--- Begin transaction for atomic index creation
-BEGIN TRANSACTION;
+-- Note: Transaction control is handled automatically by the migration system.
+-- Each CREATE INDEX statement uses IF NOT EXISTS for safe retry on partial failures.
+-- If any index creation fails, the migration runner will halt and not record this
+-- migration as applied, allowing safe retry on the next deployment.
 
 -- NOTE: idx_tickets_status_created_at already exists from migration 044, covering (status, created_at DESC)
 -- We create a more specific 3-column index for queries that also filter by registration_status
@@ -44,9 +43,6 @@ ON ticket_types(event_id, status);
 -- Critical for /api/cron/process-reminders performance
 CREATE INDEX IF NOT EXISTS idx_reminders_status_scheduled
 ON registration_reminders(status, scheduled_at);
-
--- Commit transaction
-COMMIT;
 
 -- ============================================================================
 -- ROLLBACK SCRIPT
