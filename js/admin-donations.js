@@ -5,6 +5,8 @@
 
 // Import time manager for Mountain Time formatting
 import timeManager from './time-manager.js';
+// Import error notifier for user-friendly error handling
+import errorNotifier from './lib/error-notifier.js';
 
 // State management
 const currentFilters = {
@@ -24,7 +26,14 @@ document.addEventListener('DOMContentLoaded', async() => {
         if (donationTypeFilter) {
             donationTypeFilter.addEventListener('change', async(e) => {
                 currentFilters.donationType = e.target.value;
-                await loadDonations();
+                try {
+                    await loadDonations();
+                } catch (error) {
+                    console.error('Failed to reload donations after filter change:', error);
+                    errorNotifier.showNetworkError('Failed to load donations. Please try again.', () => {
+                        loadDonations();
+                    });
+                }
             });
         }
 
@@ -37,7 +46,14 @@ document.addEventListener('DOMContentLoaded', async() => {
 
                 // Update filter
                 currentFilters.days = e.target.dataset.days;
-                await loadDonations();
+                try {
+                    await loadDonations();
+                } catch (error) {
+                    console.error('Failed to reload donations after time range change:', error);
+                    errorNotifier.showNetworkError('Failed to load donations. Please try again.', () => {
+                        loadDonations();
+                    });
+                }
             });
         });
 
