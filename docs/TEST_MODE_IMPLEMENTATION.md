@@ -5,11 +5,11 @@ This document describes the comprehensive test mode support implementation for t
 ## Overview
 
 The test mode system provides:
-- **Automatic test mode detection** from environment variables and request headers
-- **Test data isolation** with proper flagging and filtering
-- **Test-aware naming** with automatic prefixes for test data
+- **Automatic test mode detection** from environment variables and Stripe session metadata
+- **Test data isolation** with proper flagging and filtering via `is_test` column
 - **Comprehensive test data management** including cleanup capabilities
 - **Audit trail support** for test operations
+- **Equal validation security** - test transactions undergo same validation as production
 
 ## Components Implemented
 
@@ -48,13 +48,16 @@ const testMode = isTestMode(req); // Checks headers too
 - `VERCEL_ENV === 'preview'`
 - Request headers: `x-test-mode`, `x-e2e-test`, `x-integration-test`
 
-#### Test-Aware Naming
+#### Test Mode Metadata
 ```javascript
-import { generateTestAwareTicketName, generateTestAwareTransactionId } from './test-mode-utils.js';
+import { createTestModeMetadata } from './test-mode-utils.js';
 
-// Automatically adds TEST- prefix in test mode
-const ticketId = generateTestAwareTicketName('TICKET-123'); // TEST-TICKET-123 or TICKET-123
-const txnId = generateTestAwareTransactionId('TXN-456'); // TEST-TXN-456 or TXN-456
+// Creates metadata for test records
+const metadata = createTestModeMetadata(req, {
+  source: 'webhook',
+  session_id: 'cs_test_123'
+});
+// Returns: { is_test: 1, test_env: 'ci', test_source: 'webhook', ... }
 ```
 
 #### Test Mode Filtering
@@ -80,11 +83,11 @@ const testInfo = extractTestModeFromStripeSession(stripeSession);
 **Enhanced** with test mode support:
 
 #### Transaction Creation
-- Detects test mode from Stripe sessions and environment
+- Detects test mode from Stripe sessions (livemode flag and metadata)
 - Adds `is_test` flag to transaction records
-- Generates test-aware transaction IDs
 - Includes test mode metadata in order data
 - Logs test mode operations for debugging
+- **Security**: Test transactions undergo the same validation as production transactions
 
 #### Example Usage
 ```javascript
@@ -108,9 +111,9 @@ const transactions = await transactionService.getCustomerTransactions(email, req
 #### Ticket Creation
 - Inherits test mode from parent transaction
 - Validates test mode consistency
-- Generates test-aware ticket IDs with TEST- prefix
-- Skips wallet pass generation for test tickets in production
+- Marks tickets with `is_test` flag from transaction
 - Logs test mode operations
+- **Security**: All validation rules apply equally to test and production transactions
 
 #### Example Usage
 ```javascript
@@ -291,6 +294,44 @@ Comprehensive unit tests in `tests/unit/test-mode-utils.test.js`:
    - Built-in cleanup capabilities for old test data
    - Statistical views for monitoring
    - Compliance-ready audit logging
+
+## Security Behavior
+
+### Validation Consistency
+
+**Critical**: The `is_test` flag is used **only for data organization and cleanup**, NOT for bypassing security validation.
+
+```javascript
+// ✅ CORRECT: Test flag marks data for cleanup
+const isTestTransaction = testModeInfo.is_test === 1;
+
+// ❌ REMOVED: Test transactions NO LONGER bypass validation
+// const shouldBypassValidation = testModeInfo.is_test === 1;
+```
+
+**All transactions undergo the same validation regardless of test mode:**
+- ✅ Ticket availability checks (sold count, capacity limits)
+- ✅ Price validation (2% tolerance for rounding)
+- ✅ Transaction amount verification
+- ✅ Stripe session integrity checks
+- ✅ Payment status validation
+- ✅ Customer information validation
+
+**Purpose of `is_test` flag:**
+- Mark transactions/tickets for cleanup
+- Filter admin dashboard views
+- Provide test data statistics
+- Support integration test isolation
+- Enable test data export/analysis
+
+**Does NOT affect:**
+- Security validation logic
+- Price verification
+- Capacity enforcement
+- Fraud detection
+- Payment processing rules
+
+This ensures that integration tests accurately reflect production behavior and catch validation issues before deployment.
 
 ## Future Enhancements
 

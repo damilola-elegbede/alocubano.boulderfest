@@ -1,11 +1,10 @@
-import authService from "../../lib/auth-service.js";
-import { getDatabaseClient } from "../../lib/database.js";
-import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
-import { columnExists, safeParseInt } from "../../lib/db-utils.js";
-import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
-import { isTestMode } from "../../lib/test-mode-utils.js";
-import timeUtils from "../../lib/time-utils.js";
-import { processDatabaseResult } from "../../lib/bigint-serializer.js";
+import authService from '../../lib/auth-service.js';
+import { getDatabaseClient } from '../../lib/database.js';
+import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
+import { columnExists, safeParseInt } from '../../lib/db-utils.js';
+import { withAdminAudit } from '../../lib/admin-audit-middleware.js';
+import timeUtils from '../../lib/time-utils.js';
+import { processDatabaseResult } from '../../lib/bigint-serializer.js';
 
 async function handler(req, res) {
   let db;
@@ -27,7 +26,7 @@ async function handler(req, res) {
     if (!timezoneInfo || typeof timezoneInfo.offsetHours !== 'number') {
       throw new Error('Failed to get timezone information');
     }
-    
+
     const offsetHours = timezoneInfo.offsetHours; // Negative value: -6 or -7
 
     // Validate offset is within Mountain Time range (UTC-6 or UTC-7)
@@ -44,7 +43,6 @@ async function handler(req, res) {
 
     // Build WHERE clauses based on eventId parameter and column existence
     const ticketWhereClause = eventId && ticketsHasEventId ? 'AND event_id = ?' : '';
-    const transactionWhereClause = eventId && transactionsHasEventId ? 'AND event_id = ?' : '';
     // For JOIN queries that use table alias 't' for tickets
     const ticketWhereClauseWithAlias = eventId && ticketsHasEventId ? 'AND t.event_id = ?' : '';
 
@@ -67,10 +65,6 @@ async function handler(req, res) {
         (SELECT COUNT(*) FROM tickets WHERE qr_access_method = 'apple_wallet' ${ticketWhereClause}) as apple_wallet_users,
         (SELECT COUNT(*) FROM tickets WHERE qr_access_method = 'google_wallet' ${ticketWhereClause}) as google_wallet_users,
         (SELECT COUNT(*) FROM tickets WHERE qr_access_method = 'web' ${ticketWhereClause}) as web_only_users,
-        -- Test mode statistics
-        (SELECT COUNT(*) FROM tickets WHERE is_test = 1 ${ticketWhereClause}) as test_tickets,
-        (SELECT COUNT(*) FROM transactions WHERE is_test = 1 AND id IN (SELECT DISTINCT transaction_id FROM tickets WHERE 1=1 ${ticketWhereClause})) as test_transactions,
-        (SELECT COALESCE(SUM(t.price_cents), 0) / 100.0 FROM tickets t JOIN transactions tr ON t.transaction_id = tr.id WHERE t.status = 'valid' AND tr.is_test = 1 AND COALESCE(tr.payment_processor, '') <> 'comp' AND tr.status = 'completed' ${ticketWhereClauseWithAlias}) as test_revenue,
         -- Check-in statistics (using actual scan timestamps with Mountain Time, not UTC)
         (SELECT COUNT(*) FROM tickets WHERE (last_scanned_at IS NOT NULL OR checked_in_at IS NOT NULL) AND date(COALESCE(last_scanned_at, checked_in_at), ${mtOffset}) = date('now', ${mtOffset}) ${ticketWhereClause}) as today_checkins,
         (SELECT COUNT(*) FROM tickets WHERE (last_scanned_at IS NOT NULL OR checked_in_at IS NOT NULL) AND qr_access_method IN ('apple_wallet', 'google_wallet', 'samsung_wallet') ${ticketWhereClause}) as wallet_checkins,
@@ -98,20 +92,17 @@ async function handler(req, res) {
       // 9. apple_wallet_users
       // 10. google_wallet_users
       // 11. web_only_users
-      // 12. test_tickets
-      // 13. test_transactions (subquery: SELECT DISTINCT transaction_id FROM tickets...)
-      // 14. test_revenue (subquery: SELECT DISTINCT transaction_id FROM tickets...)
-      // 15. today_checkins
-      // 16. wallet_checkins
-      // 17. manual_transactions (subquery: SELECT DISTINCT transaction_id FROM tickets...)
-      // 18. manual_tickets (uses ticketWhereClauseWithAlias)
-      // 19. manual_cash_tickets (uses ticketWhereClauseWithAlias)
-      // 20. manual_card_tickets (uses ticketWhereClauseWithAlias)
-      // 21. manual_venmo_tickets (uses ticketWhereClauseWithAlias)
-      // 22. manual_comp_tickets (uses ticketWhereClauseWithAlias)
-      // 23. manual_revenue (subquery: SELECT DISTINCT transaction_id FROM tickets...)
-      // Total: 23 parameters needed
-      for (let i = 0; i < 23; i++) {
+      // 12. today_checkins
+      // 13. wallet_checkins
+      // 14. manual_transactions (subquery: SELECT DISTINCT transaction_id FROM tickets...)
+      // 15. manual_tickets (uses ticketWhereClauseWithAlias)
+      // 16. manual_cash_tickets (uses ticketWhereClauseWithAlias)
+      // 17. manual_card_tickets (uses ticketWhereClauseWithAlias)
+      // 18. manual_venmo_tickets (uses ticketWhereClauseWithAlias)
+      // 19. manual_comp_tickets (uses ticketWhereClauseWithAlias)
+      // 20. manual_revenue (uses ticketWhereClauseWithAlias)
+      // Total: 20 parameters needed (removed 3 test mode queries)
+      for (let i = 0; i < 20; i++) {
         statsParams.push(eventId);
       }
     }
@@ -201,9 +192,7 @@ async function handler(req, res) {
       SELECT
         t.ticket_type,
         COUNT(*) as count,
-        SUM(t.price_cents) / 100.0 as revenue,
-        SUM(CASE WHEN t.is_test = 1 THEN 1 ELSE 0 END) as test_count,
-        SUM(CASE WHEN t.is_test = 0 THEN 1 ELSE 0 END) as production_count
+        SUM(t.price_cents) / 100.0 as revenue
       FROM tickets t
       JOIN transactions tr ON t.transaction_id = tr.id
       WHERE ${breakdownConditions.join(' AND ')}
@@ -228,9 +217,7 @@ async function handler(req, res) {
       SELECT
         date(t.created_at, ${mtOffset}) as date,
         COUNT(*) as tickets_sold,
-        SUM(t.price_cents) / 100.0 as revenue,
-        SUM(CASE WHEN t.is_test = 1 THEN 1 ELSE 0 END) as test_tickets_sold,
-        SUM(CASE WHEN t.is_test = 0 THEN 1 ELSE 0 END) as production_tickets_sold
+        SUM(t.price_cents) / 100.0 as revenue
       FROM tickets t
       JOIN transactions tr ON t.transaction_id = tr.id
       WHERE ${dailySalesConditions.join(' AND ')}

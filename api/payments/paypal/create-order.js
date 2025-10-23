@@ -10,7 +10,6 @@ import { createPayPalOrder } from '../../../lib/paypal-service.js';
 import {
   isTestMode,
   getTestModeFlag,
-  generateTestAwareTransactionId,
   createTestModeMetadata,
   logTestModeOperation
 } from '../../../lib/test-mode-utils.js';
@@ -67,7 +66,6 @@ async function createOrderHandler(req, res) {
       req.headers['x-test-mode'] === 'true' ||
       cartItems?.some(item => item.isTestItem || item.name?.startsWith('TEST'));
 
-     
     console.log('PayPal: Request payload:', {
       cartItems,
       customerInfo,
@@ -147,7 +145,6 @@ async function createOrderHandler(req, res) {
       // Convert cents to dollars for PayPal (prices stored in cents internally)
       const priceInDollars = (item.price / 100).toFixed(2);
 
-       
       console.log('PayPal: Item processed:', {
         name: item.name,
         priceCents: item.price,
@@ -173,7 +170,6 @@ async function createOrderHandler(req, res) {
     // Validate total amount (totalAmount is in cents, convert to dollars for validation)
     const totalInDollars = totalAmount / 100;
 
-     
     console.log('PayPal: Final total validation:', {
       totalAmountCents: totalAmount,
       totalAmountDollars: totalInDollars,
@@ -195,9 +191,9 @@ async function createOrderHandler(req, res) {
       baseUrl = origin;
     }
 
-    // Generate transaction ID
+    // Generate transaction ID (no TEST- prefix)
     const transactionUuid = uuidv4();
-    transactionId = generateTestAwareTransactionId(`paypal_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`, req);
+    transactionId = `paypal_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
 
     // Initialize database connection
     dbClient = await getDatabaseClient();
@@ -253,7 +249,7 @@ async function createOrderHandler(req, res) {
     const eventId = firstEventId || null; // Use the numeric event ID directly (including -1, -2 for test events)
 
     // Store transaction in database BEFORE redirect
-    const insertResult = await dbClient.execute({
+    await dbClient.execute({
       sql: `INSERT INTO transactions (
         transaction_id, uuid, type, status, amount_cents, total_amount, currency,
         paypal_order_id, payment_processor, reference_id, cart_data,
@@ -284,7 +280,7 @@ async function createOrderHandler(req, res) {
         })),
         eventId, // Use dynamic event_id or null for test tickets
         'website',
-        getTestModeFlag(req),
+        isRequestTestMode ? 1 : 0,
         orderNumber  // User-friendly order number (ALO-YYYY-NNNN)
       ]
     });

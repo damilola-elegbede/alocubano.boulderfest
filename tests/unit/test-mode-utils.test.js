@@ -7,8 +7,6 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   isTestMode,
   getTestModeFlag,
-  generateTestAwareTicketName,
-  generateTestAwareTransactionId,
   createTestModeMetadata,
   validateTestModeConsistency,
   extractTestModeFromStripeSession,
@@ -74,27 +72,9 @@ describe('Test Mode Utils', () => {
     });
   });
 
-  describe('Test-Aware Name Generation', () => {
-    it('should add TEST- prefix in test mode', () => {
-      process.env.NODE_ENV = 'test';
-
-      const ticketName = generateTestAwareTicketName('TICKET-123');
-      const transactionId = generateTestAwareTransactionId('TXN-456');
-
-      expect(ticketName).toBe('TEST-TICKET-123');
-      expect(transactionId).toBe('TEST-TXN-456');
-    });
-
-    it('should not add TEST- prefix in production mode', () => {
-      process.env.NODE_ENV = 'production';
-
-      const ticketName = generateTestAwareTicketName('TICKET-123');
-      const transactionId = generateTestAwareTransactionId('TXN-456');
-
-      expect(ticketName).toBe('TICKET-123');
-      expect(transactionId).toBe('TXN-456');
-    });
-  });
+  // REMOVED: Test-Aware Name Generation tests
+  // Reason: generateTestAwareTicketName() and generateTestAwareTransactionId() functions removed
+  // No longer prefixing test IDs with TEST- - using event-based separation instead
 
   describe('Test Mode Metadata', () => {
     it('should create metadata with test mode information', () => {
