@@ -25,10 +25,11 @@ describe('Dashboard Query Consolidation', () => {
   });
 
   async function createTables() {
-    // Create temporary test tables (isolated from other tests)
-    // These tables mirror the actual schema but are session-scoped
+    // Create TEMP tables with unique test prefix for complete isolation
+    // TEMP tables are automatically session-scoped and won't affect other tests
+    // They are dropped automatically when the database connection closes
     await db.execute(`
-      CREATE TEMP TABLE temp_events (
+      CREATE TEMP TABLE IF NOT EXISTS temp_events (
         id INTEGER PRIMARY KEY,
         name TEXT NOT NULL,
         slug TEXT UNIQUE NOT NULL,
@@ -44,7 +45,7 @@ describe('Dashboard Query Consolidation', () => {
     `);
 
     await db.execute(`
-      CREATE TEMP TABLE temp_transactions (
+      CREATE TEMP TABLE IF NOT EXISTS temp_transactions (
         id TEXT PRIMARY KEY,
         email TEXT NOT NULL,
         status TEXT NOT NULL,
@@ -57,7 +58,7 @@ describe('Dashboard Query Consolidation', () => {
     `);
 
     await db.execute(`
-      CREATE TEMP TABLE temp_tickets (
+      CREATE TEMP TABLE IF NOT EXISTS temp_tickets (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         ticket_id TEXT UNIQUE NOT NULL,
         transaction_id TEXT REFERENCES temp_transactions(id),
@@ -80,13 +81,15 @@ describe('Dashboard Query Consolidation', () => {
 
   async function cleanupTestData() {
     try {
-      // Temporary tables automatically drop at connection close
-      // Explicit cleanup for clarity
+      // TEMP tables automatically drop at connection close
+      // Explicit cleanup between tests ensures complete isolation
+      // Order matters: drop child tables (with foreign keys) first
       await db.execute('DROP TABLE IF EXISTS temp_tickets');
       await db.execute('DROP TABLE IF EXISTS temp_transactions');
       await db.execute('DROP TABLE IF EXISTS temp_events');
     } catch (error) {
-      console.warn('Cleanup warning:', error.message);
+      // Ignore cleanup errors - tables may not exist yet on first run
+      console.warn('Cleanup warning (safe to ignore):', error.message);
     }
   }
 

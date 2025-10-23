@@ -32,6 +32,7 @@ describe('Async Reminder Scheduling', () => {
       },
       livemode: false,
       metadata: {},
+      mode: 'payment',
       line_items: {
         data: [
           {

@@ -220,9 +220,10 @@ describe('Webhook Parallelization', () => {
   }, 10000);
 
   test('webhook completes faster with parallelization', async () => {
-    const { default: stripeWebhookHandler } = await import('../../api/payments/stripe-webhook.js');
-
     const durations = [];
+
+    // Import handler AFTER test-specific mocks
+    const { default: stripeWebhookHandler } = await import('../../api/payments/stripe-webhook.js');
 
     // Run webhook 5 times to get average duration
     for (let i = 0; i < 5; i++) {
@@ -300,8 +301,6 @@ describe('Webhook Parallelization', () => {
       )`
     });
 
-    const { default: stripeWebhookHandler } = await import('../../api/payments/stripe-webhook.js');
-
     // Mock event logger to fail
     const paymentEventLoggerMock = {
       logStripeEvent: vi.fn(async () => ({ status: 'logged', eventId: 'evt_test_123' })),
@@ -314,8 +313,11 @@ describe('Webhook Parallelization', () => {
 
     vi.doMock('../../lib/payment-event-logger.js', () => ({ default: paymentEventLoggerMock }));
 
+    // Import handler AFTER mocks are set up
+    const { default: stripeWebhookHandler } = await import('../../api/payments/stripe-webhook.js');
+
     // Execute webhook - should NOT throw
-    await expect(stripeWebhookHandler(mockRequest, mockResponse)).resolves.not.toThrow();
+    await expect(stripeWebhookHandler(mockRequest, mockResponse)).resolves.toBeDefined();
 
     // Wait for async operations
     await new Promise(resolve => setTimeout(resolve, 300));
@@ -335,8 +337,6 @@ describe('Webhook Parallelization', () => {
   test('ticket creation waits for Stripe retrieve (dependency)', async () => {
     let retrieveCalled = false;
     let ticketsCreated = false;
-
-    const { default: stripeWebhookHandler } = await import('../../api/payments/stripe-webhook.js');
 
     // Mock Stripe retrieve to track when it's called
     const stripeMock = {
@@ -410,6 +410,9 @@ describe('Webhook Parallelization', () => {
     vi.doMock('../../lib/ticket-creation-service.js', () => ({
       createOrRetrieveTickets: ticketCreationServiceMock.createOrRetrieveTickets
     }));
+
+    // Import handler AFTER mocks are set up
+    const { default: stripeWebhookHandler } = await import('../../api/payments/stripe-webhook.js');
 
     await stripeWebhookHandler(mockRequest, mockResponse);
 

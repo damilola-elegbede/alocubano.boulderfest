@@ -268,11 +268,11 @@ describe('Font Loading Optimization', () => {
     await page.close();
   });
 
-  test('CSS @import removed from typography.css', async () => {
+  test('CSS @import removed from bundle CSS', async () => {
     const page = await context.newPage();
 
-    // Fetch typography.css directly
-    const response = await page.goto(`${BASE_URL}/css/typography.css`);
+    // Fetch bundle-critical.css which contains typography styles
+    const response = await page.goto(`${BASE_URL}/css/bundle-critical.css`);
     const cssContent = await response.text();
 
     // Should NOT contain @import for Google Fonts

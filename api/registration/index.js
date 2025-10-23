@@ -3,6 +3,7 @@ import { getDatabaseClient } from "../../lib/database.js";
 import timeUtils from "../../lib/time-utils.js";
 import { processDatabaseResult } from "../../lib/bigint-serializer.js";
 import { getTicketColorService } from "../../lib/ticket-color-service.js";
+import { TOKEN_FIX_CUTOFF } from "../../lib/qr-token-service.js";
 
 export default async function handler(req, res) {
   // Only allow GET requests
@@ -35,10 +36,6 @@ export default async function handler(req, res) {
 
     let decoded = null;
     let lastError = null;
-
-    // Token fix cutoff date: tokens created before this date have incorrect 72-hour expiration
-    // Tokens created after this date have proper event-based expiration
-    const TOKEN_FIX_CUTOFF = new Date('2025-10-24T00:00:00Z').getTime() / 1000;
 
     try {
       // First, try normal verification (for tokens with correct expiration)

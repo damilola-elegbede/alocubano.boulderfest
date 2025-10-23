@@ -31,11 +31,12 @@ ON transactions(event_id, status, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_ticket_reservations_lookup
 ON ticket_reservations(ticket_type_id, status, expires_at);
 
--- Index for ticket type validation queries with all filter columns
--- Optimizes queries like: SELECT * FROM ticket_types WHERE id = ? AND event_id = ? AND status = 'available'
--- Benefits ticket availability checks and price lookups
-CREATE INDEX IF NOT EXISTS idx_ticket_types_id_event_status
-ON ticket_types(id, event_id, status);
+-- Index for ticket type queries filtered by event and status
+-- Note: Removed 'id' column as it's already covered by PRIMARY KEY
+-- Optimizes queries like: SELECT * FROM ticket_types WHERE event_id = ? AND status = 'available'
+-- Benefits ticket availability checks across events
+CREATE INDEX IF NOT EXISTS idx_ticket_types_event_status
+ON ticket_types(event_id, status);
 
 -- Index for pending registration reminders (cron job)
 -- Optimizes queries like: SELECT * FROM registration_reminders
@@ -55,5 +56,5 @@ COMMIT;
 -- DROP INDEX IF EXISTS idx_tickets_status_created_registration;
 -- DROP INDEX IF EXISTS idx_transactions_event_status_created;
 -- DROP INDEX IF EXISTS idx_ticket_reservations_lookup;
--- DROP INDEX IF EXISTS idx_ticket_types_id_event_status;
+-- DROP INDEX IF EXISTS idx_ticket_types_event_status;
 -- DROP INDEX IF EXISTS idx_reminders_status_scheduled;

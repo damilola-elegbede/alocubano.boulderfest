@@ -22,6 +22,19 @@ const OPTIMIZATIONS = [
   { id: 'queryConsolidation', name: 'Query Consolidation', wave: 2, opt: 11, target: '160-400ms' },
 ];
 
+/**
+ * Safely format metric value
+ * @param {number|null|undefined} value - Metric value
+ * @param {number} decimals - Decimal places (default: 2)
+ * @returns {string} Formatted value or 'N/A'
+ */
+function formatMetric(value, decimals = 2) {
+  if (value === null || value === undefined || !isFinite(value)) {
+    return 'N/A';
+  }
+  return value.toFixed(decimals);
+}
+
 function loadResults() {
   const results = {};
   const files = ['database-queries-results.json', 'frontend-performance-results.json', 
@@ -40,7 +53,7 @@ function loadResults() {
 
 function generateSummary(results) {
   let md = '# Performance Benchmark Summary\n\n';
-  md += `Generated: ${new Date().toISOString()}\n\n`;
+  md += 'Generated: ' + new Date().toISOString() + '\n\n';
   
   md += '## Overview\n\n';
   md += 'Comprehensive benchmarking of 11 performance optimizations across 2 waves.\n\n';
@@ -50,13 +63,13 @@ function generateSummary(results) {
   if (results.database_queries) {
     const db = results.database_queries.dashboard;
     md += '### Database Query Consolidation (Wave 2, Opt 11)\n\n';
-    md += `- **Median**: ${db.median.toFixed(2)}ms (target: <200ms)\n`;
-    md += `- **P95**: ${db.p95.toFixed(2)}ms\n`;
-    md += `- **Status**: ${db.targetMet ? '✅ Target Met' : '⚠️ Needs Improvement'}\n\n`;
+    md += '- **Median**: ' + formatMetric(db.median) + 'ms (target: <200ms)\n';
+    md += '- **P95**: ' + formatMetric(db.p95) + 'ms\n';
+    md += '- **Status**: ' + (db.targetMet ? '✅ Target Met' : '⚠️ Needs Improvement') + '\n\n';
     
     md += '### Database Indexed Queries (Wave 1, Opt 2)\n\n';
     results.database_queries.indexedQueries.forEach(q => {
-      md += `- **${q.name}**: ${q.median.toFixed(2)}ms median\n`;
+      md += '- **' + q.name + '**: ' + formatMetric(q.median) + 'ms median\n';
     });
     md += '\n';
   }
@@ -66,7 +79,7 @@ function generateSummary(results) {
     md += '| Page | FCP (median) | LCP (median) | Resources |\n';
     md += '|------|--------------|--------------|-----------|\n';
     results.frontend_performance.pages.forEach(p => {
-      md += `| ${p.name} | ${p.fcp.median.toFixed(0)}ms | ${p.lcp.median.toFixed(0)}ms | ${p.resourceCount.median} |\n`;
+      md += '| ' + p.name + ' | ' + formatMetric(p.fcp.median, 0) + 'ms | ' + formatMetric(p.lcp.median, 0) + 'ms | ' + (p.resourceCount.median !== null ? p.resourceCount.median : 'N/A') + ' |\n';
     });
     md += '\n';
   }
@@ -88,7 +101,7 @@ function generateSummary(results) {
       status = '🔵 Tested';
     }
     
-    md += `| ${opt.opt} | ${opt.name} | ${opt.wave} | ${opt.target} | ${status} |\n`;
+    md += '| ' + opt.opt + ' | ' + opt.name + ' | ' + opt.wave + ' | ' + opt.target + ' | ' + status + ' |\n';
   });
   
   md += '\n**Legend**: ✅ Met | 🟡 Partial | 🔵 Tested | ⚪ Not Tested\n\n';
@@ -98,35 +111,35 @@ function generateSummary(results) {
 
 function generateDetailed(results) {
   let md = '# Detailed Performance Benchmark Report\n\n';
-  md += `Generated: ${new Date().toISOString()}\n\n`;
+  md += 'Generated: ' + new Date().toISOString() + '\n\n';
   
   if (results.database_queries) {
     md += '## Database Performance\n\n';
     md += '### Dashboard Query (CTE Consolidation)\n\n';
     const db = results.database_queries.dashboard;
-    md += `- Mean: ${db.mean.toFixed(2)}ms\n`;
-    md += `- Median: ${db.median.toFixed(2)}ms\n`;
-    md += `- P95: ${db.p95.toFixed(2)}ms\n`;
-    md += `- P99: ${db.p99.toFixed(2)}ms\n`;
-    md += `- Min: ${db.min.toFixed(2)}ms\n`;
-    md += `- Max: ${db.max.toFixed(2)}ms\n\n`;
+    md += '- Mean: ' + formatMetric(db.mean) + 'ms\n';
+    md += '- Median: ' + formatMetric(db.median) + 'ms\n';
+    md += '- P95: ' + formatMetric(db.p95) + 'ms\n';
+    md += '- P99: ' + formatMetric(db.p99) + 'ms\n';
+    md += '- Min: ' + formatMetric(db.min) + 'ms\n';
+    md += '- Max: ' + formatMetric(db.max) + 'ms\n\n';
     
     md += '### Indexed Queries\n\n';
     results.database_queries.indexedQueries.forEach(q => {
-      md += `#### ${q.name}\n\n`;
-      md += `- Index: \`${q.index}\`\n`;
-      md += `- Median: ${q.median.toFixed(2)}ms\n`;
-      md += `- P95: ${q.p95.toFixed(2)}ms\n\n`;
+      md += '#### ' + q.name + '\n\n';
+      md += '- Index: `' + q.index + '`\n';
+      md += '- Median: ' + formatMetric(q.median) + 'ms\n';
+      md += '- P95: ' + formatMetric(q.p95) + 'ms\n\n';
     });
   }
   
   if (results.frontend_performance && results.frontend_performance.pages) {
     md += '## Frontend Performance\n\n';
     results.frontend_performance.pages.forEach(p => {
-      md += `### ${p.name}\n\n`;
-      md += `- **FCP**: ${p.fcp.median.toFixed(2)}ms (P95: ${p.fcp.p95.toFixed(2)}ms)\n`;
-      md += `- **LCP**: ${p.lcp.median.toFixed(2)}ms (P95: ${p.lcp.p95.toFixed(2)}ms)\n`;
-      md += `- **Resources**: ${p.resourceCount.median} files\n\n`;
+      md += '### ' + p.name + '\n\n';
+      md += '- **FCP**: ' + formatMetric(p.fcp.median) + 'ms (P95: ' + formatMetric(p.fcp.p95) + 'ms)\n';
+      md += '- **LCP**: ' + formatMetric(p.lcp.median) + 'ms (P95: ' + formatMetric(p.lcp.p95) + 'ms)\n';
+      md += '- **Resources**: ' + (p.resourceCount.median !== null ? p.resourceCount.median : 'N/A') + ' files\n\n';
     });
   }
   

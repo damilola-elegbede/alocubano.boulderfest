@@ -30,9 +30,11 @@ describe('Async Email Performance Tests', () => {
   });
 
   afterEach(async () => {
-    // Clear mock call history and restore original implementations
-    vi.clearAllMocks();
+    // Restore original implementations (must happen BEFORE clearAllMocks)
     vi.restoreAllMocks();
+
+    // Clear mock call history
+    vi.clearAllMocks();
 
     // Cleanup any test transactions created during tests
     if (db) {

@@ -204,7 +204,17 @@ describe('Admin Dashboard Integration', () => {
       row.name.includes('tickets') || row.name.includes('transactions')
     );
 
-    expect(relevantIndexes.length).toBeGreaterThan(0);
+    // Verify specific critical indexes exist for dashboard performance
+    const indexNames = relevantIndexes.map(idx => idx.name);
+    const criticalIndexes = [
+      'idx_tickets_status_created_registration',
+      'idx_tickets_event_id',
+      'idx_tickets_transaction_id'
+    ];
+
+    criticalIndexes.forEach(indexName => {
+      expect(indexNames).toContain(indexName);
+    });
 
     console.log(`✓ Database Indexes Active: ${relevantIndexes.length} indexes`);
     relevantIndexes.forEach(idx => {
