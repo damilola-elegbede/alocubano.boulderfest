@@ -38,11 +38,20 @@ describe('QR Validation Logic - Unit Tests', () => {
     it('should generate JWT token for ticket ID', async () => {
       const ticketId = 'TEST-TICKET-001';
 
+      // Mock ticket with no existing token
+      const mockTicket = {
+        ticket_id: ticketId,
+        qr_token: null,
+        scan_count: 0,
+        max_scan_count: 10
+      };
+
       mockDb.execute
-        .mockResolvedValueOnce({ rows: [{ qr_token: null }] }) // No existing token
+        .mockResolvedValueOnce({ rows: [mockTicket] }) // Check existing token
+        .mockResolvedValueOnce({ rows: [] }) // Event lookup (no event found - fallback)
         .mockResolvedValueOnce({ rowsAffected: 1 }); // Token saved
 
-      // Override getDb method
+      // Override getDb method BEFORE calling getOrCreateToken
       qrService.getDb = vi.fn().mockResolvedValue(mockDb);
 
       const token = await qrService.getOrCreateToken(ticketId);
@@ -97,9 +106,18 @@ describe('QR Validation Logic - Unit Tests', () => {
     it('should store generated token in database', async () => {
       const ticketId = 'TEST-TICKET-005';
 
+      // Mock ticket with no existing token
+      const mockTicket = {
+        ticket_id: ticketId,
+        qr_token: null,
+        scan_count: 0,
+        max_scan_count: 10
+      };
+
       mockDb.execute
-        .mockResolvedValueOnce({ rows: [] })
-        .mockResolvedValueOnce({ rowsAffected: 1 });
+        .mockResolvedValueOnce({ rows: [mockTicket] }) // Check existing token
+        .mockResolvedValueOnce({ rows: [] }) // Event lookup (no event found - fallback)
+        .mockResolvedValueOnce({ rowsAffected: 1 }); // Token saved
 
       qrService.getDb = vi.fn().mockResolvedValue(mockDb);
 
@@ -120,9 +138,18 @@ describe('QR Validation Logic - Unit Tests', () => {
     it('should set max_scan_count when generating token', async () => {
       const ticketId = 'TEST-TICKET-006';
 
+      // Mock ticket with no existing token
+      const mockTicket = {
+        ticket_id: ticketId,
+        qr_token: null,
+        scan_count: 0,
+        max_scan_count: 10
+      };
+
       mockDb.execute
-        .mockResolvedValueOnce({ rows: [] })
-        .mockResolvedValueOnce({ rowsAffected: 1 });
+        .mockResolvedValueOnce({ rows: [mockTicket] }) // Check existing token
+        .mockResolvedValueOnce({ rows: [] }) // Event lookup (no event found - fallback)
+        .mockResolvedValueOnce({ rowsAffected: 1 }); // Token saved
 
       qrService.getDb = vi.fn().mockResolvedValue(mockDb);
 
