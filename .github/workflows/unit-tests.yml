@@ -116,6 +116,11 @@ jobs:
             fi
           fi
 
+          # CRITICAL: Rebuild better-sqlite3 native bindings after skipping postinstall scripts
+          # better-sqlite3 requires native module compilation which was skipped by --ignore-scripts
+          echo "🔨 Rebuilding better-sqlite3 native bindings..."
+          npm rebuild better-sqlite3
+
           echo "✅ Minimal dependencies installed (skipped postinstall scripts)"
 
       - name: "🧹 Optimize for Unit Tests"
