@@ -25,13 +25,47 @@ export default async function handler(req, res) {
   try {
     console.log('[REG_STATUS] Registration status check initiated');
 
-    // Verify JWT token strictly with the registration secret
-    const secret = process.env.REGISTRATION_SECRET;
-    if (!secret) {
-      console.error('[REG_STATUS] Missing REGISTRATION_SECRET');
+    // Verify JWT token with backwards compatibility for legacy tokens
+    // Try secrets in order: REGISTRATION_SECRET (current) -> QR_SECRET_KEY (legacy) -> WALLET_AUTH_SECRET (fallback)
+    const secrets = [
+      { name: 'REGISTRATION_SECRET', value: process.env.REGISTRATION_SECRET },
+      { name: 'QR_SECRET_KEY', value: process.env.QR_SECRET_KEY },
+      { name: 'WALLET_AUTH_SECRET', value: process.env.WALLET_AUTH_SECRET }
+    ].filter(s => s.value); // Only include secrets that are defined
+
+    if (secrets.length === 0) {
+      console.error('[REG_STATUS] No token secrets configured');
       return res.status(503).json({ error: 'Service misconfigured' });
     }
-    const decoded = jwt.verify(token, secret, { algorithms: ['HS256'] });
+
+    let decoded = null;
+    let usedSecret = null;
+    let lastError = null;
+
+    // Try each secret until one works
+    for (const secret of secrets) {
+      try {
+        decoded = jwt.verify(token, secret.value, { algorithms: ['HS256'] });
+        usedSecret = secret.name;
+        break; // Success! Stop trying
+      } catch (err) {
+        lastError = err;
+        // Continue to next secret
+      }
+    }
+
+    if (!decoded) {
+      // All secrets failed
+      console.error('[REG_STATUS] Token validation failed with all available secrets');
+      throw lastError; // Will be caught by outer catch block
+    }
+
+    // Log which secret was used (helps identify legacy token usage)
+    if (usedSecret !== 'REGISTRATION_SECRET') {
+      console.warn(`[REG_STATUS] Token validated with legacy secret: ${usedSecret} (expected REGISTRATION_SECRET)`);
+    } else {
+      console.log('[REG_STATUS] Token validated with current REGISTRATION_SECRET');
+    }
 
     console.log('[REG_STATUS] Decoded JWT:', {
       tid: decoded.tid,
