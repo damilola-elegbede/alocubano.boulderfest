@@ -90,9 +90,9 @@ describe('Database Triggers Tests', () => {
       // Insert initial transaction
       await db.execute(`
         INSERT INTO transactions (
-          transaction_id, stripe_payment_intent_id, amount_cents, currency, status, type, customer_email, order_data
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `, [testTransactionId, 'pi_test_123', 5000, 'USD', 'pending', 'tickets', 'test@example.com', JSON.stringify([{name: 'Test Ticket', quantity: 1}])]);
+          transaction_id, stripe_payment_intent_id, amount_cents, currency, status, type, customer_email, order_data, is_test
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `, [testTransactionId, 'pi_test_123', 5000, 'USD', 'pending', 'tickets', 'test@example.com', JSON.stringify([{name: 'Test Ticket', quantity: 1}]), 1]);
 
       // Get initial timestamp
       const initialResult = await db.execute(
@@ -293,9 +293,9 @@ describe('Database Triggers Tests', () => {
         await db.execute(`
           INSERT INTO transactions (
             transaction_id, stripe_payment_intent_id, amount_cents, currency, status, type,
-            registration_token
-          ) VALUES (?, ?, ?, ?, ?, ?, ?)
-        `, [testTransactionId, 'pi_test_123', 5000, 'USD', 'pending', 'tickets', 'invalid_token_no_expiry']);
+            registration_token, customer_email, order_data, is_test
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [testTransactionId, 'pi_test_123', 5000, 'USD', 'pending', 'tickets', 'invalid_token_no_expiry', 'test@example.com', '[]', 1]);
 
         // If we get here, the trigger didn't fire (might not be implemented)
         // Let's check if the record was actually inserted with invalid data
@@ -321,9 +321,9 @@ describe('Database Triggers Tests', () => {
       // First insert a valid transaction
       await db.execute(`
         INSERT INTO transactions (
-          transaction_id, stripe_payment_intent_id, amount_cents, currency, status, type, customer_email, order_data
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `, [testTransactionId, 'pi_test_123', 5000, 'USD', 'pending', 'tickets', 'test@example.com', JSON.stringify([{name: 'Test Ticket', quantity: 1}])]);
+          transaction_id, stripe_payment_intent_id, amount_cents, currency, status, type, customer_email, order_data, is_test
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `, [testTransactionId, 'pi_test_123', 5000, 'USD', 'pending', 'tickets', 'test@example.com', JSON.stringify([{name: 'Test Ticket', quantity: 1}]), 1]);
 
       // Test trigger: trg_transactions_token_upd_chk
       try {
@@ -443,9 +443,9 @@ describe('Database Triggers Tests', () => {
         // Insert
         await db.execute(`
           INSERT INTO transactions (
-            transaction_id, stripe_payment_intent_id, amount_cents, currency, status, type, customer_email, order_data
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `, [txnId, `pi_${i}`, 1000, 'USD', 'pending', 'tickets', 'test@example.com', JSON.stringify([{name: 'Test Ticket', quantity: 1}])]);
+            transaction_id, stripe_payment_intent_id, amount_cents, currency, status, type, customer_email, order_data, is_test
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [txnId, `pi_${i}`, 1000, 'USD', 'pending', 'tickets', 'test@example.com', JSON.stringify([{name: 'Test Ticket', quantity: 1}]), 1]);
 
         // Update (triggers the timestamp update trigger)
         await db.execute(`
@@ -481,9 +481,9 @@ describe('Database Triggers Tests', () => {
 
         await db.execute(`
           INSERT INTO transactions (
-            transaction_id, stripe_payment_intent_id, amount_cents, currency, status, type, customer_email, order_data
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `, [txnId, `pi_bulk_${i}`, 2000, 'USD', 'pending', 'tickets', 'test@example.com', JSON.stringify([{name: 'Test Ticket', quantity: 1}])]);
+            transaction_id, stripe_payment_intent_id, amount_cents, currency, status, type, customer_email, order_data, is_test
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [txnId, `pi_bulk_${i}`, 2000, 'USD', 'pending', 'tickets', 'test@example.com', JSON.stringify([{name: 'Test Ticket', quantity: 1}]), 1]);
       }
 
       // Bulk update (triggers fire for each row)
