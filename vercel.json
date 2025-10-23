@@ -279,6 +279,10 @@
       "source": "/(.*)",
       "headers": [
         {
+          "key": "x-vercel-skip-toolbar",
+          "value": "1"
+        },
+        {
           "key": "Link",
           "value": "<https://fonts.googleapis.com>; rel=dns-prefetch"
         },
