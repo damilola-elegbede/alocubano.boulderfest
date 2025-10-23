@@ -280,7 +280,7 @@ async function createOrderHandler(req, res) {
         })),
         eventId, // Use dynamic event_id or null for test tickets
         'website',
-        getTestModeFlag(req),
+        isRequestTestMode ? 1 : 0,
         orderNumber  // User-friendly order number (ALO-YYYY-NNNN)
       ]
     });
