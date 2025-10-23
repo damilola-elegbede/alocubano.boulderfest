@@ -349,9 +349,10 @@ Total: 1m 40s (52% faster)
 ## Files Modified
 
 1. **scripts/build-cache.js**
-   - Fixed cache location → `node_modules/.cache/alocubano-build/`
-   - Optimized checksum generation with metadata
-   - Added comprehensive logging
+   - Vercel output cache location: `.vercel/output/cache/build-checksums.json` (guaranteed preservation)
+   - Hybrid hashing strategy: content-based for small files (<10KB), size-based for large files (>10KB)
+   - Batched processing: 10 files concurrently for performance
+   - Environment-aware logging with cache metrics
 
 2. **scripts/migrate.js**
    - Batched migration verification queries
@@ -364,8 +365,10 @@ Total: 1m 40s (52% faster)
    - Maintained backward compatibility
 
 4. **scripts/parallel-build.js**
+   - Reuses pre-build checksums from build-cache.js
    - Integrated Vercel cache system
    - Added cache statistics logging
+   - Cache metadata tracking for build analytics
 
 5. **scripts/vercel-cache.js** (NEW)
    - Vercel output caching implementation

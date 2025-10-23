@@ -810,7 +810,7 @@ The build system uses a multi-layered caching strategy to minimize deployment ti
 node scripts/vercel-cache.js stats
 
 # Clear build cache
-rm -rf .vercel/output/cache/build-checksums.json
+rm -f .vercel/output/cache/build-checksums.json
 node scripts/vercel-cache.js clear
 
 # Validate cache

@@ -54,11 +54,20 @@ function execCommand(command, args, label) {
       child.kill('SIGTERM');
 
       // Give process 5s to cleanup before force killing
-      setTimeout(() => {
-        if (!child.killed) {
-          child.kill('SIGKILL');
+      const escalate = setTimeout(() => {
+        // Check if process is still running (exitCode and signalCode are null while running)
+        if (child.exitCode === null && child.signalCode === null) {
+          try {
+            child.kill('SIGKILL');
+          } catch (error) {
+            // Process may have exited between check and kill
+            console.error(`⚠️  Failed to send SIGKILL to ${label}:`, error.message);
+          }
         }
       }, 5000);
+
+      // Cleanup escalation timer when child exits
+      child.once('exit', () => clearTimeout(escalate));
 
       reject(new Error(`${label} timed out after ${TIMEOUT}ms`));
     }, TIMEOUT);

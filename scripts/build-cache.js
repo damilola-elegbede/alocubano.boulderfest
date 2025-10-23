@@ -219,8 +219,10 @@ export async function generateChecksums() {
   // Hash tracked files
   for (const file of TRACKED_FILES) {
     const filePath = path.join(rootDir, file);
-    checksums.files[file] = await hashFile(filePath);
-    console.log(`  ✅ ${file}`);
+    const checksum = await hashFile(filePath);
+    checksums.files[file] = checksum;
+    const isError = checksum.startsWith('ERROR:') || checksum === 'MISSING';
+    console.log(isError ? `  ⚠️  ${file} (error hashing)` : `  ✅ ${file}`);
   }
 
   return checksums;
