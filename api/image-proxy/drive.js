@@ -4,7 +4,7 @@
  * Used only for images not available in Vercel Blob Storage
  */
 
-import { setSecureCorsHeaders } from '../lib/cors-config.js';
+import { setSecureCorsHeaders } from '../../lib/cors-config.js';
 
 export default async function handler(req, res) {
   // Set CORS headers
