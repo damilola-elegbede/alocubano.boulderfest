@@ -220,7 +220,23 @@ jobs:
             echo "⚠️  WARNING: Unit tests exceeded ${performance_target}ms target"
           fi
 
-          exit $test_exit_code
+          # CRITICAL FIX: Explicit exit code based on test failures
+          # Don't just pass through test_exit_code - validate it matches our parsed results
+          if [ "$failing_tests" -gt 0 ]; then
+            echo ""
+            echo "❌ TESTS FAILED: $failing_tests test(s) failed"
+            echo "   Exiting with code 1"
+            exit 1
+          elif [ "$test_exit_code" -ne 0 ]; then
+            echo ""
+            echo "❌ TEST RUNNER EXITED WITH ERROR: exit code $test_exit_code"
+            echo "   Even though no test failures were detected"
+            exit $test_exit_code
+          else
+            echo ""
+            echo "✅ ALL TESTS PASSED"
+            exit 0
+          fi
 
       - name: "📤 Upload Test Results"
         if: always()
