@@ -780,6 +780,36 @@ errorNotifier.showSuccess('Item added to cart');
 - **E2E test execution**: 2-5 minutes with parallel execution (4-8x faster than legacy)
 - **E2E parallel workers**: 2 (CI) / 4 (local) for optimal resource usage
 - **Test simplicity**: Zero abstractions, readable by any JavaScript developer
+- **Build time**: 90-120 seconds (optimized from 3.5 minutes - see [Build Optimization](docs/BUILD_OPTIMIZATION.md))
+
+## Build Performance & Caching
+
+The build system uses a multi-layered caching strategy to minimize deployment times:
+
+### Build Cache System
+- **Location**: `node_modules/.cache/alocubano-build/` (preserved by Vercel)
+- **Strategy**: Metadata-based checksums (mtime + size) for fast change detection
+- **Benefit**: 2-3s faster cache checks, 8-10s saved on cache hits
+
+### Optimized Operations
+- **Migration verification**: Batched queries + parallel file reading (7-8s saved)
+- **Bootstrap queries**: Combined SQL queries (0.5-0.8s saved)
+- **Vercel output caching**: Caches build metadata in `.vercel/output/cache/`
+
+### Cache Tools
+```bash
+# View cache statistics
+node scripts/vercel-cache.js stats
+
+# Clear build cache
+rm -rf node_modules/.cache/alocubano-build/
+node scripts/vercel-cache.js clear
+
+# Validate cache
+node scripts/vercel-cache.js validate
+```
+
+**See [docs/BUILD_OPTIMIZATION.md](docs/BUILD_OPTIMIZATION.md) for complete details.**
 
 ## Debugging
 

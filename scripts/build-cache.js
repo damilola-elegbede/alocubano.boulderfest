@@ -21,11 +21,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.join(__dirname, '..');
 
-// Use .vercel/cache for persistence across builds (Vercel preserves this directory)
-// Fallback to .tmp if .vercel/cache doesn't exist (local development)
-const VERCEL_CACHE_DIR = path.join(rootDir, '.vercel', 'cache');
+// Use node_modules/.cache/alocubano-build/ for persistence across builds
+// Vercel preserves node_modules/ across builds, making this more reliable than .vercel/cache
+// Fallback to .tmp if node_modules doesn't exist (unlikely, but handle gracefully)
+const NPM_CACHE_DIR = path.join(rootDir, 'node_modules', '.cache', 'alocubano-build');
 const LOCAL_CACHE_DIR = path.join(rootDir, '.tmp');
-const CACHE_DIR = existsSync(VERCEL_CACHE_DIR) ? VERCEL_CACHE_DIR : LOCAL_CACHE_DIR;
+const CACHE_DIR = existsSync(path.join(rootDir, 'node_modules')) ? NPM_CACHE_DIR : LOCAL_CACHE_DIR;
 const CACHE_FILE = path.join(CACHE_DIR, 'build-cache.json');
 
 /**
@@ -52,12 +53,44 @@ const TRACKED_FILES = [
 ];
 
 /**
+ * Get file metadata for quick change detection
+ * Uses mtime (modification time) + size for fast comparison
+ */
+function getFileMetadata(filePath) {
+  try {
+    const stats = statSync(filePath);
+    return {
+      mtime: stats.mtimeMs,
+      size: stats.size,
+      path: filePath
+    };
+  } catch (error) {
+    return null;
+  }
+}
+
+/**
+ * Generate fast checksum using file metadata (mtime + size)
+ * Much faster than hashing file contents
+ */
+function hashFileMetadata(filePath) {
+  const metadata = getFileMetadata(filePath);
+  if (!metadata) {
+    return 'MISSING';
+  }
+
+  // Combine path, mtime, and size for unique identifier
+  const identifier = `${metadata.path}:${metadata.mtime}:${metadata.size}`;
+  return crypto.createHash('sha256').update(identifier).digest('hex');
+}
+
+/**
  * Generate checksum for a file
+ * Uses fast metadata-based hashing instead of reading entire file content
  */
 async function hashFile(filePath) {
   try {
-    const content = await fs.readFile(filePath, 'utf-8');
-    return crypto.createHash('sha256').update(content).digest('hex');
+    return hashFileMetadata(filePath);
   } catch (error) {
     // File doesn't exist or can't be read
     return `ERROR:${error.message}`;
@@ -66,6 +99,7 @@ async function hashFile(filePath) {
 
 /**
  * Generate checksum for a directory (recursive)
+ * Uses fast metadata-based hashing for performance
  */
 async function hashDirectory(dirPath) {
   const hash = crypto.createHash('sha256');
@@ -78,11 +112,16 @@ async function hashDirectory(dirPath) {
 
     for (const file of files) {
       try {
-        const content = await fs.readFile(file, 'utf-8');
-        // Include relative path in hash to detect file moves
-        const relativePath = path.relative(rootDir, file);
-        hash.update(relativePath);
-        hash.update(content);
+        // Use metadata-based hash instead of reading file content
+        // Much faster for large directories
+        const metadata = getFileMetadata(file);
+        if (metadata) {
+          const relativePath = path.relative(rootDir, file);
+          hash.update(relativePath);
+          hash.update(`${metadata.mtime}:${metadata.size}`);
+        } else {
+          hash.update(`MISSING:${file}`);
+        }
       } catch (error) {
         // Skip files that can't be read
         hash.update(`ERROR:${file}:${error.message}`);
@@ -245,23 +284,40 @@ export async function shouldRebuild() {
   console.log('');
   console.log('🔍 Checking build cache...');
 
+  const startTime = Date.now();
   const cachedChecksums = await loadCachedChecksums();
   const currentChecksums = await generateChecksums();
+  const cacheCheckDuration = Date.now() - startTime;
 
   const comparison = compareChecksums(cachedChecksums, currentChecksums);
 
+  // Cache metrics
+  const cacheAge = cachedChecksums ?
+    Math.round((Date.now() - new Date(cachedChecksums.timestamp).getTime()) / 1000 / 60) :
+    null;
+
   if (comparison.hasChanges) {
     console.log('');
-    console.log(`🔄 Rebuild required: ${comparison.reason}`);
+    console.log(`❌ Cache MISS: ${comparison.reason}`);
+    console.log(`⏱️  Cache check took ${cacheCheckDuration}ms`);
+    if (cacheAge !== null) {
+      console.log(`🕐 Cache age: ${cacheAge} minutes`);
+    }
     if (comparison.changes.length > 0) {
       console.log('📝 Changes detected:');
-      comparison.changes.forEach(change => console.log(`   - ${change}`));
+      comparison.changes.slice(0, 10).forEach(change => console.log(`   - ${change}`));
+      if (comparison.changes.length > 10) {
+        console.log(`   ... and ${comparison.changes.length - 10} more changes`);
+      }
     }
     console.log('');
   } else {
     console.log('');
-    console.log('✅ No changes detected - build can be skipped');
-    console.log('💾 Using cached build artifacts');
+    console.log('✅ Cache HIT - no rebuild needed!');
+    console.log(`⏱️  Cache check took ${cacheCheckDuration}ms`);
+    console.log(`🕐 Cache age: ${cacheAge} minutes`);
+    console.log(`💾 Cache location: ${CACHE_FILE}`);
+    console.log('⚡ Skipping expensive build operations');
     console.log('');
   }
 
@@ -269,7 +325,13 @@ export async function shouldRebuild() {
     shouldRebuild: comparison.hasChanges,
     reason: comparison.reason,
     changes: comparison.changes,
-    currentChecksums
+    currentChecksums,
+    cacheMetrics: {
+      checkDuration: cacheCheckDuration,
+      cacheAge: cacheAge,
+      cacheLocation: CACHE_FILE,
+      cacheHit: !comparison.hasChanges
+    }
   };
 }
 

@@ -17,6 +17,7 @@ import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { shouldRebuild, saveChecksums } from './build-cache.js';
+import { saveCacheMetadata, getCacheStats } from './vercel-cache.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -34,8 +35,11 @@ console.log('');
 
 /**
  * Execute a command and return a promise
+ * Includes timeout handling to prevent hung builds
  */
 function execCommand(command, args, label) {
+  const TIMEOUT = 5 * 60 * 1000; // 5 minutes timeout
+
   return new Promise((resolve, reject) => {
     const startTime = Date.now();
     const child = spawn(command, args, {
@@ -44,12 +48,29 @@ function execCommand(command, args, label) {
       cwd: process.cwd()
     });
 
+    // Set timeout to prevent hung processes
+    const timeout = setTimeout(() => {
+      console.error(`⏱️  ${label} timed out after ${TIMEOUT / 1000}s`);
+      child.kill('SIGTERM');
+
+      // Give process 5s to cleanup before force killing
+      setTimeout(() => {
+        if (!child.killed) {
+          child.kill('SIGKILL');
+        }
+      }, 5000);
+
+      reject(new Error(`${label} timed out after ${TIMEOUT}ms`));
+    }, TIMEOUT);
+
     child.on('error', (error) => {
+      clearTimeout(timeout);
       console.error(`❌ ${label} failed:`, error);
       reject(error);
     });
 
     child.on('exit', (code) => {
+      clearTimeout(timeout);
       const duration = Date.now() - startTime;
       if (code === 0) {
         console.log(`✅ ${label} completed (${duration}ms)`);
@@ -93,11 +114,24 @@ async function build() {
     console.log('📋 Step 2: Running parallel tasks (bootstrap + documentation + CSS)...');
     const parallelStartTime = Date.now();
 
-    await Promise.all([
+    // Use Promise.allSettled for better error handling - captures all results even if some fail
+    const results = await Promise.allSettled([
       execCommand('node', ['scripts/bootstrap.js'], 'Bootstrap'),
       execCommand('node', ['scripts/embed-docs.cjs'], 'Embed Documentation'),
       execCommand('node', ['scripts/bundle-css.js'], 'CSS Bundling')
     ]);
+
+    // Check if any tasks failed
+    const failures = results.filter(r => r.status === 'rejected');
+    if (failures.length > 0) {
+      console.error('');
+      console.error('❌ Some parallel tasks failed:');
+      failures.forEach((failure, index) => {
+        const taskNames = ['Bootstrap', 'Embed Documentation', 'CSS Bundling'];
+        console.error(`   - ${taskNames[results.findIndex(r => r === failure)]}: ${failure.reason.message}`);
+      });
+      throw new Error(`${failures.length} parallel task(s) failed`);
+    }
 
     const parallelDuration = Date.now() - parallelStartTime;
     console.log(`✅ Parallel tasks completed (${parallelDuration}ms)`);
@@ -130,6 +164,20 @@ async function build() {
       console.log('💾 Saving build cache...');
       const { currentChecksums } = await shouldRebuild();
       await saveChecksums(currentChecksums);
+
+      // Save Vercel output cache metadata
+      await saveCacheMetadata({
+        buildDuration: totalDuration,
+        environment: env,
+        platform: isVercel ? 'Vercel' : 'Local',
+        completedSteps: ['migrations', 'bootstrap', 'embed-docs', 'css-bundling', 'ticket-generation']
+      });
+
+      // Display cache statistics
+      if (isVercel) {
+        const cacheStats = await getCacheStats();
+        console.log(`📊 Cache stats: ${cacheStats.files.length} files, ${Math.round(cacheStats.totalSize / 1024)} KB`);
+      }
     }
 
     console.log('');
