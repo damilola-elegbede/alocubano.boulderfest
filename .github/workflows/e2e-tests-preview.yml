@@ -614,6 +614,37 @@ jobs:
           # Export NODE_OPTIONS for the Playwright process
           export NODE_OPTIONS="--max-old-space-size=2048"
 
+          # Validate test discovery before execution
+          echo "📋 Test Discovery Validation"
+          echo "=============================="
+          npx playwright test --config tests/config/playwright-e2e-optimized.config.js --project="$PROJECT_NAME" --list 2>&1 | tee test_plan.log
+
+          EXPECTED_TESTS=$(grep -oP '\d+(?= test)' test_plan.log | head -1 || echo "0")
+          echo "Expected tests to run: $EXPECTED_TESTS"
+          echo ""
+
+          if [ "$EXPECTED_TESTS" -eq 0 ]; then
+            echo "❌ CRITICAL: No tests found to execute!"
+            echo ""
+            echo "This indicates:"
+            echo "  - Test pattern filter matched no tests"
+            echo "  - Test files are not being discovered"
+            echo "  - Playwright configuration issue"
+            echo "  - testDir path is incorrect"
+            echo ""
+            echo "🔍 Debug Information:"
+            echo "  Project: $PROJECT_NAME"
+            echo "  Config: tests/config/playwright-e2e-optimized.config.js"
+            echo "  testDir: ./tests/e2e/flows"
+            echo ""
+            echo "📁 Available test files:"
+            find tests/e2e/flows -name "*.test.js" 2>/dev/null | head -10 || echo "  ERROR: Cannot find test directory!"
+            exit 1
+          fi
+
+          echo "✅ Test discovery successful: $EXPECTED_TESTS test(s) will be executed"
+          echo ""
+
           # Build the Playwright test command directly
           # Add test pattern filter if specified
           TEST_PATTERN="${{ needs.build-test-matrix.outputs.test-pattern }}"
@@ -663,16 +694,25 @@ jobs:
             if [ "$PASSED_TESTS" -eq 0 ] && [ "$FAILED_TESTS" -eq 0 ]; then
               echo ""
               echo "⚠️  WARNING: No tests were executed!"
-              echo "This might indicate a configuration issue or all tests were skipped."
-              echo "Skipped: $SKIPPED_TESTS tests"
 
-              # If tests were skipped due to missing dependencies, that's okay
-              # But if NO tests ran at all, that's a problem
               if [ "$SKIPPED_TESTS" -gt 0 ]; then
-                echo "✅ Tests were properly skipped (not an error)"
-                exit 0
+                echo "❌ CRITICAL: All $SKIPPED_TESTS tests were skipped!"
+                echo ""
+                echo "This indicates:"
+                echo "  - Missing required secrets in Preview environment"
+                echo "  - Preview deployment environment variables not configured"
+                echo "  - E2E_TEST_MODE not set to 'true' in Vercel Preview"
+                echo ""
+                echo "🔧 Required Actions:"
+                echo "  1. Go to Vercel Dashboard → Settings → Environment Variables"
+                echo "  2. Set E2E_TEST_MODE=true for Preview environment (NOT Production)"
+                echo "  3. Configure TEST_ADMIN_PASSWORD and ADMIN_SECRET for Preview"
+                echo "  4. Verify TURSO_DATABASE_URL and TURSO_AUTH_TOKEN are set for Preview"
+                echo ""
+                echo "💡 Note: All-skipped tests are NOT acceptable and indicate configuration issues"
+                exit 1  # FAIL the job - all skipped is NOT acceptable
               else
-                echo "❌ No tests executed and none skipped - this is an error!"
+                echo "❌ No tests executed and none skipped - configuration error!"
                 exit 1
               fi
             else
