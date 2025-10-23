@@ -33,41 +33,51 @@ This document describes the comprehensive build optimization system implemented 
 
 #### Optimizations Implemented
 
-**Fixed Cache Location:**
+**Fixed Cache Location (v2):**
 ```javascript
-// Before: Unreliable .vercel/cache
+// v1: Unreliable .vercel/cache
 const CACHE_DIR = '.vercel/cache';
 
-// After: Reliable node_modules cache
+// v2: Attempted node_modules cache (FAILED - mtime issue)
 const NPM_CACHE_DIR = path.join(rootDir, 'node_modules', '.cache', 'alocubano-build');
+
+// v3: Vercel-guaranteed output cache (CURRENT)
+const VERCEL_CACHE_DIR = path.join(rootDir, '.vercel', 'output', 'cache');
 ```
 
-Vercel preserves `node_modules/` across builds, making this location more reliable than custom directories.
+**Why v2 Failed**: Vercel restores `node_modules/` from cache, but all files get new mtimes during restoration, causing 100% cache miss rate with mtime-based hashing.
 
-**Metadata-Based Checksums:**
+**Hybrid Content Hashing Strategy:**
 ```javascript
-// Before: Hash entire file content
-async function hashFile(filePath) {
-  const content = await fs.readFile(filePath, 'utf-8');
-  return crypto.createHash('sha256').update(content).digest('hex');
-}
-
-// After: Fast metadata check (mtime + size)
+// v2 (FAILED): Fast mtime check - unreliable after cache restoration
 function hashFileMetadata(filePath) {
   const stats = statSync(filePath);
   const identifier = `${filePath}:${stats.mtimeMs}:${stats.size}`;
   return crypto.createHash('sha256').update(identifier).digest('hex');
 }
+
+// v3 (CURRENT): Content-based hashing for files
+async function hashFileContent(filePath) {
+  const content = await fs.readFile(filePath, 'utf-8');
+  return crypto.createHash('sha256').update(content).digest('hex');
+}
+
+// v3 (CURRENT): Hybrid directory hashing
+async function hashDirectory(dirPath) {
+  // Small files (<10KB): content hash for accuracy
+  // Large files (>10KB): size-based hash for performance
+  // Batch processing: 10 files concurrently
+}
 ```
 
-**Benefit**: 2-3x faster cache checking by avoiding file I/O for unchanged files.
+**Benefit**: Reliable cache hits across Vercel builds, eliminating the mtime invalidation issue.
 
 **Enhanced Logging:**
 ```bash
 ✅ Cache HIT - no rebuild needed!
 ⏱️  Cache check took 123ms
 🕐 Cache age: 15 minutes
-💾 Cache location: node_modules/.cache/alocubano-build/build-cache.json
+💾 Cache location: .vercel/output/cache/build-checksums.json
 ⚡ Skipping expensive build operations
 ```
 
@@ -247,7 +257,7 @@ console.log(`📊 Cache stats: ${cacheStats.files.length} files, ${Math.round(ca
 
 ```bash
 # Clear existing cache
-rm -rf node_modules/.cache/alocubano-build/
+rm -rf .vercel/output/cache/build-checksums.json
 
 # First build (full build - establishes cache)
 npm run build
@@ -286,7 +296,7 @@ node scripts/vercel-cache.js stats
 # ... build proceeds ...
 
 💾 Saving build cache...
-✅ Build cache saved: node_modules/.cache/alocubano-build/build-cache.json
+✅ Build cache saved to Vercel output cache: .vercel/output/cache/build-checksums.json
 📊 Cache stats: 3 files, 42 KB
 ```
 
@@ -383,14 +393,14 @@ Watch for these metrics in build logs:
 
 **Cache not working:**
 ```bash
-# Check cache location
-ls -la node_modules/.cache/alocubano-build/
+# Check cache location (Vercel)
+ls -la .vercel/output/cache/
 
 # Validate cache
 node scripts/vercel-cache.js validate
 
 # Clear and rebuild
-rm -rf node_modules/.cache/alocubano-build/
+rm -rf .vercel/output/cache/build-checksums.json
 npm run build
 ```
 

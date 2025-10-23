@@ -91,8 +91,9 @@ async function build() {
     const buildStartTime = Date.now();
 
     // Step 0: Check build cache (unless forced skip)
+    let cacheResult = null;
     if (!SKIP_CACHE) {
-      const cacheResult = await shouldRebuild();
+      cacheResult = await shouldRebuild();
 
       if (!cacheResult.shouldRebuild) {
         console.log('⚡ Build skipped - no changes detected');
@@ -162,8 +163,10 @@ async function build() {
     if (!SKIP_CACHE) {
       console.log('');
       console.log('💾 Saving build cache...');
-      const { currentChecksums } = await shouldRebuild();
-      await saveChecksums(currentChecksums);
+
+      // Reuse checksums from earlier if available, otherwise regenerate
+      const checksums = cacheResult?.currentChecksums || (await shouldRebuild()).currentChecksums;
+      await saveChecksums(checksums);
 
       // Save Vercel output cache metadata
       await saveCacheMetadata({
