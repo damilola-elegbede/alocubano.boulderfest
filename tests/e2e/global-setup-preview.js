@@ -78,6 +78,10 @@ async function globalSetupPreview() {
     console.log('\n🏥 Validating preview deployment health and environment...');
     await validateDeploymentHealth(previewUrl);
 
+    // Step 3.5: CRITICAL - Validate required E2E secrets are available locally
+    console.log('\n🔐 Validating required E2E secrets in test environment...');
+    validateRequiredSecrets();
+
     // Step 4: Verify deployment has required secrets configured
     console.log('\n🔐 Verifying deployment environment configuration...');
     await verifyDeploymentSecrets(previewUrl);
@@ -93,6 +97,28 @@ async function globalSetupPreview() {
     // Step 7: Create preview environment file
     console.log('\n📁 Creating preview environment configuration...');
     await createPreviewEnvironment(previewUrl);
+
+    // STRICT VALIDATION: Ensure preview URL is valid
+    if (!previewUrl || previewUrl === 'undefined' || previewUrl === 'null') {
+      throw new Error('Preview URL is invalid or undefined - cannot run tests');
+    }
+
+    // STRICT VALIDATION: Final health check before allowing tests
+    console.log('\n🔍 Final validation: Ensuring deployment is fully ready...');
+    try {
+      const finalHealthCheck = await fetch(`${previewUrl}/api/health/check`, {
+        headers: { 'User-Agent': 'E2E-Final-Validation' },
+        signal: AbortSignal.timeout(10000)
+      });
+
+      if (!finalHealthCheck.ok) {
+        throw new Error(`Final health check failed (${finalHealthCheck.status}) - deployment not ready`);
+      }
+      console.log('✅ Final health check passed');
+    } catch (healthError) {
+      console.error(`❌ Final health check failed: ${healthError.message}`);
+      throw new Error(`Deployment not healthy - cannot run E2E tests: ${healthError.message}`);
+    }
 
     console.log('\n📊 Preview Setup Summary:');
     console.log(`   Preview URL: ${previewUrl}`);
@@ -123,6 +149,47 @@ async function globalSetupPreview() {
 }
 
 /**
+ * Validate required E2E secrets are available in the test environment
+ * This runs BEFORE tests start to ensure we have all required configuration
+ */
+function validateRequiredSecrets() {
+  console.log('   🔍 Checking required E2E secrets...');
+
+  const requiredSecrets = [
+    { name: 'TEST_ADMIN_PASSWORD', value: process.env.TEST_ADMIN_PASSWORD, description: 'Admin password for E2E tests' },
+    { name: 'ADMIN_SECRET', value: process.env.ADMIN_SECRET, description: 'JWT signing secret for admin sessions' },
+    { name: 'TURSO_DATABASE_URL', value: process.env.TURSO_DATABASE_URL, description: 'Production database URL' },
+    { name: 'TURSO_AUTH_TOKEN', value: process.env.TURSO_AUTH_TOKEN, description: 'Database authentication token' },
+    { name: 'E2E_TEST_MODE', value: process.env.E2E_TEST_MODE, description: 'E2E test mode flag (must be "true")' }
+  ];
+
+  const missingSecrets = requiredSecrets.filter(s => !s.value || s.value === 'undefined' || s.value === 'null');
+
+  if (missingSecrets.length > 0) {
+    console.error('   ❌ CRITICAL: Required E2E secrets are missing in test environment:');
+    missingSecrets.forEach(s => {
+      console.error(`      - ${s.name}: ${s.description}`);
+    });
+    console.error('');
+    console.error('   🔧 These secrets MUST be configured:');
+    console.error('   1. In GitHub Actions: Repository → Settings → Secrets and variables → Actions');
+    console.error('   2. In Vercel Dashboard: Project → Settings → Environment Variables → Preview');
+    console.error('   3. Locally: Create .env.preview file with required values');
+    console.error('');
+    throw new Error(`Missing ${missingSecrets.length} required E2E secret(s) in test environment`);
+  }
+
+  // Validate E2E_TEST_MODE is explicitly set to 'true'
+  if (process.env.E2E_TEST_MODE !== 'true') {
+    console.error('   ❌ CRITICAL: E2E_TEST_MODE must be set to "true" (current value: ' + process.env.E2E_TEST_MODE + ')');
+    console.error('   💡 Set E2E_TEST_MODE=true in Vercel Preview environment variables');
+    throw new Error('E2E_TEST_MODE must be set to "true" for E2E tests to run');
+  }
+
+  console.log('   ✅ All required E2E secrets are configured in test environment');
+}
+
+/**
  * Verify the deployment has required secrets configured - more resilient approach
  */
 async function verifyDeploymentSecrets(previewUrl) {
@@ -145,13 +212,15 @@ async function verifyDeploymentSecrets(previewUrl) {
 
     if (!response.ok) {
       if (response.status === 404) {
-        console.warn(`   ⚠️ Debug endpoint not available - this is expected in production`);
-        console.warn(`   ⚠️ Tests will use feature detection instead of environment checking`);
-        return { success: true, status: 'debug_endpoint_disabled', message: 'Using feature detection' };
+        // Debug endpoint missing - this is CRITICAL for E2E tests
+        console.error(`   ❌ Debug endpoint not available (404)`);
+        console.error(`   ❌ E2E tests require debug endpoint for secret validation`);
+        console.error(`   💡 Set E2E_TEST_MODE=true in Vercel Preview environment variables`);
+        throw new Error('E2E tests require debug endpoint. Set E2E_TEST_MODE=true in Vercel Preview environment.');
       } else {
-        console.warn(`   ⚠️ Could not verify deployment environment (${response.status})`);
-        console.warn(`   ⚠️ Tests will proceed but may fail if secrets are missing`);
-        return { success: false, status: 'environment_check_failed', statusCode: response.status };
+        console.error(`   ❌ Could not verify deployment environment (${response.status})`);
+        console.error(`   ❌ Tests cannot run without environment validation`);
+        throw new Error(`Environment check failed with status ${response.status}`);
       }
     }
 
@@ -234,13 +303,12 @@ async function verifyDeploymentSecrets(previewUrl) {
 
   } catch (error) {
     if (error.name === 'AbortError') {
-      console.warn(`   ⚠️ Debug endpoint timed out - this is expected in production`);
-      console.warn(`   ⚠️ Tests will use feature detection instead`);
-      return { success: true, status: 'debug_endpoint_timeout', message: 'Using feature detection' };
+      console.error(`   ❌ Debug endpoint timed out - deployment may not be ready`);
+      console.error(`   ❌ E2E tests cannot run without environment validation`);
+      throw new Error('Debug endpoint timeout - deployment not ready for E2E tests');
     } else {
-      console.warn(`   ⚠️ Failed to verify deployment environment: ${error.message}`);
-      console.warn(`   ⚠️ Tests will proceed with feature detection`);
-      return { success: false, status: 'verification_error', error: error.message };
+      console.error(`   ❌ Failed to verify deployment environment: ${error.message}`);
+      throw error; // Re-throw to fail setup
     }
   }
 }
@@ -325,13 +393,14 @@ async function validateCriticalEndpoints(previewUrl) {
     endpoints.map(endpoint => validateEndpointWithRetries(previewUrl, endpoint))
   );
 
-  // Circuit breaker: count failures - use 50% threshold instead of 66%
+  // Circuit breaker: count failures - use 80% threshold (stricter)
   const failures = results.filter(result => result.status === 'rejected').length;
-  const criticalFailureThreshold = Math.ceil(endpoints.length * 0.5); // 50% threshold for better reliability
+  const criticalFailureThreshold = Math.ceil(endpoints.length * 0.8); // 80% threshold - must have most endpoints healthy
 
   if (failures >= criticalFailureThreshold) {
-    console.warn(`   ⚠️ Circuit breaker triggered: ${failures}/${endpoints.length} critical endpoints failed (threshold: ${criticalFailureThreshold})`);
-    console.warn(`   ⚠️ Tests will use graceful degradation for affected services`);
+    console.error(`   ❌ Circuit breaker triggered: ${failures}/${endpoints.length} critical endpoints failed (threshold: ${criticalFailureThreshold})`);
+    console.error(`   ❌ Too many critical endpoints are unhealthy - cannot run tests`);
+    throw new Error(`Critical endpoint failure: ${failures}/${endpoints.length} endpoints failed (threshold: ${criticalFailureThreshold})`);
   } else {
     console.log(`   ✅ Critical endpoints validation completed: ${endpoints.length - failures}/${endpoints.length} healthy`);
   }

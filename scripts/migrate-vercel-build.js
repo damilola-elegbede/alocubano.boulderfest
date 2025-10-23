@@ -437,13 +437,21 @@ async function runVercelBuild() {
       try {
         const verification = await globalMigrationSystem.verifyMigrations();
 
+        // Report auto-cleaned ghost records (informational)
+        if (verification.cleanedGhostRecords > 0) {
+          log(`🔄 Auto-cleaned ${verification.cleanedGhostRecords} ghost record(s) from renamed migrations`, colors.cyan);
+        }
+
+        // Check for real integrity issues
         if (verification.checksumErrors > 0 || verification.missingFiles.length > 0) {
           log("❌ CRITICAL: Migration verification failed!", colors.red);
           if (verification.checksumErrors > 0) {
             log(`   - Checksum errors: ${verification.checksumErrors}`, colors.red);
+            log(`   - This indicates migration files were modified after execution`, colors.red);
           }
           if (verification.missingFiles.length > 0) {
             log(`   - Missing files: ${verification.missingFiles.join(", ")}`, colors.red);
+            log(`   - These migrations were executed but files are now deleted (not renamed)`, colors.red);
           }
           log("");
           log("🛑 Failing build due to migration integrity issues", colors.red);
@@ -453,7 +461,11 @@ async function runVercelBuild() {
           await cleanupResources();
           process.exit(1);
         } else {
-          log("✅ Migration integrity verified", colors.green);
+          if (verification.cleanedGhostRecords > 0) {
+            log("✅ Migration integrity verified (with auto-cleanup)", colors.green);
+          } else {
+            log("✅ Migration integrity verified", colors.green);
+          }
         }
       } catch (verificationError) {
         log("⚠️  Migration verification failed with error:", colors.yellow);

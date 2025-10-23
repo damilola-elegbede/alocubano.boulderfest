@@ -64,8 +64,9 @@ export default defineConfig({
   workers: isCI ? 2 : 4,   // Increased parallelism
 
   reporter: [
-    ['list'],
+    ['list', { printSteps: true }],
     ['html', { outputFolder: 'playwright-report', open: 'never' }],
+    ['github'], // GitHub Actions annotations for better error visibility
     ...(isCI ? [
       ['junit', { outputFile: 'test-results/junit.xml' }],
       ['json', { outputFile: 'test-results/results.json' }]

@@ -6,6 +6,7 @@
 import { promises as fs } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { spawnSync } from "child_process";
 import { ensureDatabaseUrl } from '../lib/database-defaults.js';
 import { getDatabaseClient } from "../lib/database.js";
 
@@ -843,6 +844,138 @@ class MigrationSystem {
   }
 
   /**
+   * Detect if "missing" migrations were actually renamed
+   * Uses git log to track file renames and prevent false positives
+   *
+   * @param {string[]} missingFiles - Array of migration filenames that appear to be missing
+   * @returns {Map<string, string>} Map of oldName -> newName for renamed migrations
+   */
+  async detectRenamedMigrations(missingFiles) {
+    const renamedMigrations = new Map();
+
+    // Secure git command executor using spawnSync with args array
+    // Prevents shell injection by not interpolating filenames into shell commands
+    const repoRoot = path.join(__dirname, '..');
+    const git = (...args) => {
+      const result = spawnSync('git', args, {
+        encoding: 'utf8',
+        cwd: repoRoot,
+        stdio: ['pipe', 'pipe', 'pipe']
+      });
+
+      if (result.status !== 0) {
+        throw new Error(result.stderr || 'git command failed');
+      }
+
+      return result.stdout || '';
+    };
+
+    for (const missingFile of missingFiles) {
+      try {
+        // Check if this file exists in git history
+        const gitLog = git(
+          'log',
+          '--all',
+          '--full-history',
+          '--follow',
+          '--format=%H',
+          '--',
+          `migrations/${missingFile}`
+        ).trim();
+
+        if (gitLog) {
+          // Strategy 1: Check for git-tracked renames (git mv)
+          const renameCheck = git(
+            'log',
+            '--all',
+            '--full-history',
+            '--follow',
+            '--name-status',
+            '--format=',
+            '--',
+            `migrations/${missingFile}`
+          );
+
+          // Look for rename operation (R followed by similarity percentage)
+          const renameMatch = renameCheck.match(/R\d+\s+migrations\/([^\s]+)\s+migrations\/([^\s]+)/);
+          if (renameMatch) {
+            const oldName = renameMatch[1];
+            const newName = renameMatch[2];
+
+            if (oldName === missingFile || missingFile === oldName) {
+              renamedMigrations.set(missingFile, newName);
+              console.log(`🔄 Detected rename (git mv): ${missingFile} → ${newName}`);
+              continue;
+            }
+          }
+
+          // Strategy 2: Check for manual renames (delete + add in same commit)
+          // Find the commit that deleted this file
+          const deleteCommit = git(
+            'log',
+            '--all',
+            '--diff-filter=D',
+            '--format=%H',
+            '--',
+            `migrations/${missingFile}`
+          ).trim().split('\n')[0];
+
+          if (deleteCommit) {
+            // Check commit message for rename indicators
+            const commitMessage = git(
+              'log',
+              '--format=%s',
+              '-n',
+              '1',
+              deleteCommit
+            ).trim().toLowerCase();
+
+            // Look for rename-related keywords
+            if (commitMessage.includes('rename') || commitMessage.includes('renumber')) {
+              // Extract the base name (without number prefix)
+              const baseMatch = missingFile.match(/^\d+_(.+)$/);
+              if (baseMatch) {
+                const baseName = baseMatch[1];
+
+                // Check what files were added in the same commit
+                const addedFiles = git(
+                  'diff-tree',
+                  '--no-commit-id',
+                  '--name-only',
+                  '--diff-filter=A',
+                  '-r',
+                  deleteCommit
+                ).trim().split('\n');
+
+                // Look for a similar filename in migrations directory
+                const matchingFile = addedFiles.find(file =>
+                  file.startsWith('migrations/') &&
+                  file.includes(baseName) &&
+                  file !== `migrations/${missingFile}`
+                );
+
+                if (matchingFile) {
+                  const newName = matchingFile.replace('migrations/', '');
+                  renamedMigrations.set(missingFile, newName);
+                  console.log(`🔄 Detected rename (manual): ${missingFile} → ${newName}`);
+                  continue;
+                }
+              }
+            }
+          }
+        }
+      } catch (error) {
+        // Git command failed or not in a git repository
+        // This is expected for truly deleted files or non-git environments
+        this.debugLog(`   Could not check git history for ${missingFile}: ${error.message}`);
+        continue;
+      }
+    }
+
+    return renamedMigrations;
+  }
+
+  /**
    * Verify migration integrity
    */
   async verifyMigrations() {
@@ -865,13 +998,60 @@ class MigrationSystem {
       ]);
 
       // Check for executed migrations that no longer exist
-      const missingFiles = executedMigrations.filter(
+      let missingFiles = executedMigrations.filter(
         (migration) => !availableMigrations.includes(migration),
       );
+
+      let cleanedGhostRecords = 0;
 
       if (missingFiles.length > 0) {
         console.warn("⚠️  Warning: Some executed migrations no longer exist:");
         missingFiles.forEach((file) => console.warn(`  - ${file}`));
+
+        // Check if these are renames rather than deletions
+        const renamedMigrations = await this.detectRenamedMigrations(missingFiles);
+
+        if (renamedMigrations.size > 0) {
+          console.log("🔄 Auto-cleaning ghost records from renamed migrations...");
+          const client = await this.ensureDbClient();
+
+          for (const [oldName, newName] of renamedMigrations.entries()) {
+            try {
+              // Verify the new migration was executed
+              const newExists = await client.execute(
+                "SELECT COUNT(*) as count FROM migrations WHERE filename = ?",
+                [newName]
+              );
+
+              if (newExists.rows[0].count > 0) {
+                // Safe to delete ghost record - the renamed migration was executed
+                await client.execute(
+                  "DELETE FROM migrations WHERE filename = ?",
+                  [oldName]
+                );
+                console.log(`✅ Cleaned ghost record: ${oldName} (renamed to ${newName})`);
+                cleanedGhostRecords++;
+
+                // Remove from missingFiles list since it's not truly missing
+                const index = missingFiles.indexOf(oldName);
+                if (index > -1) {
+                  missingFiles.splice(index, 1);
+                }
+              } else {
+                console.warn(`⚠️  Migration ${oldName} was renamed to ${newName}, but ${newName} has not been executed yet`);
+              }
+            } catch (cleanupError) {
+              console.error(`❌ Failed to clean ghost record ${oldName}:`, cleanupError.message);
+              // Continue with other cleanups
+            }
+          }
+        }
+
+        // Report truly missing files (not just renames)
+        if (missingFiles.length > 0) {
+          console.error("❌ Migrations truly missing (not renamed):");
+          missingFiles.forEach((file) => console.error(`  - ${file}`));
+        }
       }
 
       // Verify checksums for existing files
@@ -955,14 +1135,20 @@ class MigrationSystem {
         }
       }
 
-      if (checksumErrors === 0 && missingFiles.length === 0) {
-        console.log("✅ All migrations verified successfully");
+      const ok = checksumErrors === 0 && missingFiles.length === 0;
+      if (ok) {
+        if (cleanedGhostRecords > 0) {
+          console.log(`✅ All migrations verified successfully (auto-cleaned ${cleanedGhostRecords} ghost record(s))`);
+        } else {
+          console.log("✅ All migrations verified successfully");
+        }
       }
 
       return {
-        verified: true,
+        verified: ok,
         missingFiles,
         checksumErrors,
+        cleanedGhostRecords,
       };
     } catch (error) {
       console.error("❌ Migration verification failed:", error.message);
