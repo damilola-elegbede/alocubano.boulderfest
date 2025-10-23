@@ -499,11 +499,16 @@
 }
 
 /* Hardware acceleration for smooth animations */
-.floating-cart-panel,
 .cart-backdrop,
 .cart-success-toast {
   will-change: transform;
   transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Cart panel uses translateX() for slide animation, so can't use translateZ() */
+.floating-cart-panel {
+  will-change: transform;
   backface-visibility: hidden;
 }
 
