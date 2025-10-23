@@ -41,28 +41,58 @@ jobs:
     env:
       DATABASE_URL: ":memory:"
       PHASE3_PERFORMANCE_TARGET_MS: ${{ vars.PHASE3_PERFORMANCE_TARGET_MS || '2000' }}
-      VITEST_TEST_TIMEOUT: ${{ vars.VITEST_TEST_TIMEOUT || '10000' }}
-      VITEST_HOOK_TIMEOUT: ${{ vars.VITEST_HOOK_TIMEOUT || '15000' }}
-      VITEST_SETUP_TIMEOUT: ${{ vars.VITEST_SETUP_TIMEOUT || '15000' }}
+      # Increased timeouts for stability (matching local config)
+      VITEST_TEST_TIMEOUT: ${{ vars.VITEST_TEST_TIMEOUT || '15000' }}
+      VITEST_HOOK_TIMEOUT: ${{ vars.VITEST_HOOK_TIMEOUT || '18000' }}
+      VITEST_SETUP_TIMEOUT: ${{ vars.VITEST_SETUP_TIMEOUT || '20000' }}
       VITEST_CLEANUP_TIMEOUT: ${{ vars.VITEST_CLEANUP_TIMEOUT || '10000' }}
-      # Critical API secrets configuration - required for services to initialize
-      QR_SECRET_KEY: ${{ secrets.QR_SECRET_KEY || 'test-qr-secret-key-minimum-32-characters-long-for-security-compliance' }}
-      ADMIN_SECRET: ${{ secrets.ADMIN_SECRET || 'test-admin-jwt-secret-minimum-32-characters-for-security' }}
-      WALLET_AUTH_SECRET: ${{ secrets.WALLET_AUTH_SECRET || 'test-wallet-auth-secret-key-for-testing-purposes-32-chars' }}
-      APPLE_PASS_KEY: ${{ secrets.APPLE_PASS_KEY || 'dGVzdC1hcHBsZS1wYXNzLWtleQ==' }}
-      INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY || 'test-internal-api-key-32-chars-min' }}
-      TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD || 'test-admin-password-123' }}
-      ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD || '$2b$10$test.bcrypt.hash.for.testing.purposes.only' }}
+      # Critical API secrets configuration - REQUIRED (no fallbacks for unit/integration tests)
+      # These must match local .env.vercel for consistent behavior
+      QR_SECRET_KEY: ${{ secrets.QR_SECRET_KEY }}
+      ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
+      WALLET_AUTH_SECRET: ${{ secrets.WALLET_AUTH_SECRET }}
+      APPLE_PASS_KEY: ${{ secrets.APPLE_PASS_KEY }}
+      INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY }}
+      TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
+      ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+      REGISTRATION_SECRET: ${{ secrets.REGISTRATION_SECRET }}
       # Brevo service configuration - required for unit tests
-      BREVO_API_KEY: ${{ secrets.BREVO_API_KEY || 'test-brevo-api-key-for-ci-unit-tests' }}
+      BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
       BREVO_NEWSLETTER_LIST_ID: ${{ vars.BREVO_NEWSLETTER_LIST_ID || '1' }}
-      BREVO_WEBHOOK_SECRET: ${{ secrets.BREVO_WEBHOOK_SECRET || 'test-brevo-webhook-secret' }}
+      BREVO_WEBHOOK_SECRET: ${{ secrets.BREVO_WEBHOOK_SECRET }}
 
     steps:
       - name: "📥 Checkout Code"
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: "🔐 Validate Required Secrets"
+        run: |
+          echo "🔍 Validating required secrets for unit/integration tests..."
+          missing_secrets=()
+
+          # Check critical secrets
+          [ -z "$QR_SECRET_KEY" ] && missing_secrets+=("QR_SECRET_KEY")
+          [ -z "$ADMIN_SECRET" ] && missing_secrets+=("ADMIN_SECRET")
+          [ -z "$WALLET_AUTH_SECRET" ] && missing_secrets+=("WALLET_AUTH_SECRET")
+          [ -z "$REGISTRATION_SECRET" ] && missing_secrets+=("REGISTRATION_SECRET")
+          [ -z "$INTERNAL_API_KEY" ] && missing_secrets+=("INTERNAL_API_KEY")
+          [ -z "$BREVO_API_KEY" ] && missing_secrets+=("BREVO_API_KEY")
+          [ -z "$BREVO_WEBHOOK_SECRET" ] && missing_secrets+=("BREVO_WEBHOOK_SECRET")
+
+          if [ ${#missing_secrets[@]} -gt 0 ]; then
+            echo "❌ Missing required secrets: ${missing_secrets[*]}"
+            echo ""
+            echo "📋 Please configure these secrets in GitHub repository settings:"
+            echo "   Settings → Secrets and variables → Actions → Repository secrets"
+            echo ""
+            echo "💡 These secrets must match your local .env.vercel for consistent behavior"
+            exit 1
+          fi
+
+          echo "✅ All required secrets configured"
+          echo "🔒 Secrets validated: QR_SECRET_KEY, ADMIN_SECRET, WALLET_AUTH_SECRET, REGISTRATION_SECRET, +"
 
       - name: "🔧 Setup Node.js ${{ matrix.node-version }}"
         uses: actions/setup-node@v4
