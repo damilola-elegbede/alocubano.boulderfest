@@ -146,6 +146,12 @@ if (typeof LazyLoader === 'undefined') {
      * @returns {HTMLPictureElement} The new picture element
      */
         replaceWithResponsiveImage(imgElement) {
+            // Defensive check: ensure element has parent node
+            if (!imgElement.parentNode) {
+                console.warn('[LazyLoading] Cannot replace image - element has no parent');
+                return null;
+            }
+
             const baseSrc = imgElement.dataset.src || imgElement.src;
             const alt = imgElement.alt || '';
             const className = imgElement.className || '';

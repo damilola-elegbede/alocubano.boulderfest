@@ -11,7 +11,7 @@
  * - Offline fallbacks with SVG placeholders
  */
 
-const CACHE_VERSION = 'v2.2.0';
+const CACHE_VERSION = 'v2.3.0';
 const STATIC_CACHE = `alocubano-static-${CACHE_VERSION}`;
 const IMAGE_CACHE = `alocubano-images-${CACHE_VERSION}`;
 const API_CACHE = `alocubano-api-${CACHE_VERSION}`;
@@ -37,11 +37,9 @@ const CACHE_CONFIG = {
 
 // Critical resources to precache
 const STATIC_RESOURCES = [
-    '/css/base.css',
-    '/css/components.css',
-    '/css/typography.css',
-    '/css/navigation.css',
-    '/css/mobile-overrides.css',
+    '/css/bundle-critical.css',
+    '/css/bundle-deferred.css',
+    '/css/bundle-admin.css',
     '/js/main.js',
     '/js/navigation.js',
     '/js/components/lightbox.js',
