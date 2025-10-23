@@ -134,6 +134,11 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
+    // Skip Google Fonts (CSP restriction in service worker context)
+    if (url.hostname.includes('fonts.googleapis.com') || url.hostname.includes('fonts.gstatic.com')) {
+        return;
+    }
+
     // Route to appropriate strategy
     if (isImageRequest(url)) {
         event.respondWith(handleImageRequest(request));
