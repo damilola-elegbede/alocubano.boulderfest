@@ -363,20 +363,6 @@ if (typeof Lightbox === 'undefined') {
                 img.parentElement.appendChild(retryBtn);
             };
 
-            // Use stored categoryIndex if available, otherwise calculate it
-            let categoryIndex;
-            if (item.categoryIndex !== undefined) {
-                categoryIndex = item.categoryIndex;
-            } else {
-                // Fallback: calculate position within category
-                categoryIndex = 0;
-                for (let i = 0; i < this.currentIndex; i++) {
-                    if (this.categories[i] === category) {
-                        categoryIndex++;
-                    }
-                }
-            }
-
             // Update caption
             if (this.showCaption && item.name) {
                 title.textContent = item.name;
@@ -386,13 +372,11 @@ if (typeof Lightbox === 'undefined') {
             }
 
             if (this.showCounter) {
-                const categoryCount =
-          this.categoryCounts[category] || this.items.length;
                 const categoryLabel =
           category && typeof category === 'string'
               ? category.charAt(0).toUpperCase() + category.slice(1)
               : 'Gallery';
-                counter.textContent = `${categoryLabel}: ${categoryIndex + 1} / ${categoryCount}`;
+                counter.textContent = `${categoryLabel}: ${this.currentIndex + 1} / ${this.items.length}`;
             }
         }
 
