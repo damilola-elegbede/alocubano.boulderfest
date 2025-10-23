@@ -863,7 +863,8 @@ export default async function handler(req, res) {
           // Generate QR token for the ticket
           const { getQRTokenService } = await import('../../lib/qr-token-service.js');
           const qrService = getQRTokenService();
-          const qrToken = await qrService.getOrCreateToken(task.registration.ticketId);
+          // Convert BigInt ticketId to string for QR token generation
+          const qrToken = await qrService.getOrCreateToken(String(task.registration.ticketId));
 
           // Format event date
           const eventDate = task.ticket.start_date && task.ticket.end_date
