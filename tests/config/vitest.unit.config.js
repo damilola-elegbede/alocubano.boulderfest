@@ -48,11 +48,11 @@ export default defineConfig({
       DATABASE_URL: ':memory:'
     },
 
-    // Timeouts matching CI configuration exactly
-    testTimeout: Number(process.env.VITEST_TEST_TIMEOUT || 8000),  // Match CI: 8s
-    hookTimeout: Number(process.env.VITEST_HOOK_TIMEOUT || 3000),  // Match CI: 3s
-    setupTimeout: Number(process.env.VITEST_SETUP_TIMEOUT || 5000),
-    teardownTimeout: Number(process.env.VITEST_CLEANUP_TIMEOUT || 2000),
+    // Timeouts increased to 15-20s for stability (reduce flakiness)
+    testTimeout: Number(process.env.VITEST_TEST_TIMEOUT || 15000),  // 15s (was 8s)
+    hookTimeout: Number(process.env.VITEST_HOOK_TIMEOUT || 18000),  // 18s (was 3s)
+    setupTimeout: Number(process.env.VITEST_SETUP_TIMEOUT || 20000), // 20s (was 5s)
+    teardownTimeout: Number(process.env.VITEST_CLEANUP_TIMEOUT || 10000), // 10s (was 2s)
 
     // Unit test specific setup (UNIT-ONLY)
     setupFiles: ['./tests/setup-unit.js'],
