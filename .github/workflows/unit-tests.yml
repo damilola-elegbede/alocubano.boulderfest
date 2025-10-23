@@ -148,7 +148,7 @@ jobs:
           # - Verbose output goes to stdout → tee → unit-test-output.log
           # - JSON output goes directly to unit-test-results-raw.json (clean, no mixing)
           set +e  # Allow command to fail without stopping script
-          CI=true npm test -- --reporter=verbose --reporter=json --outputFile.json=./unit-test-results-raw.json --no-color 2>&1 | tee unit-test-output.log
+          CI=true npm test -- --reporter=verbose --reporter=json --outputFile=./unit-test-results-raw.json --no-color 2>&1 | tee unit-test-output.log
           test_exit_code=$?
           set -e  # Re-enable exit on error
 
