@@ -10,7 +10,7 @@ import transactionService from '../../lib/transaction-service.js';
 import { getPayPalService, createPayPalOrder, capturePayPalOrder } from '../../lib/paypal-service.js';
 import auditService from '../../lib/audit-service.js';
 // Database setup is handled automatically by the integration test framework
-import { createTestModeMetadata, generateTestAwareTransactionId } from '../../lib/test-mode-utils.js';
+import { createTestModeMetadata } from '../../lib/test-mode-utils.js';
 
 describe('PayPal Integration Flow', () => {
   let dbClient;
@@ -132,8 +132,8 @@ describe('PayPal Integration Flow', () => {
       expect(paypalOrder.id).toMatch(/^TEST-EC-\d+-[a-z0-9]+$/);
       expect(paypalOrder.status).toBe('CREATED');
 
-      // Step 3: Store transaction in database
-      const transactionId = generateTestAwareTransactionId(`paypal_${Date.now()}`);
+      // Step 3: Store transaction in database (no TEST- prefix)
+      const transactionId = `paypal_${Date.now()}`;
       const uuid = `test-uuid-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 
       // Get a test event ID for foreign key constraint (nullable)

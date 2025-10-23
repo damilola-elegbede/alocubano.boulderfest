@@ -1283,10 +1283,6 @@
                         ${registrations
                           .map(
                             (reg) => {
-                              const isTestTicket = reg.is_test === 1 || reg.ticket_id?.startsWith('TEST-');
-                              const rowClass = isTestTicket ? 'test-ticket-row' : '';
-                              const testBadge = isTestTicket ? '<span class="test-badge">TEST</span>' : '';
-
                               // Format payment processor information
                               const paymentProcessor = reg.payment_processor || 'stripe';
                               const processorIcon = paymentProcessor === 'paypal' ? '🅿️' : '💳';
@@ -1294,7 +1290,7 @@
                               const transactionId = reg.paypal_order_id || reg.stripe_session_id || reg.transaction_id;
 
                               return `
-                            <tr class="${rowClass}">
+                            <tr>
                                 <td>
                                     <a href="/admin/ticket-detail?ticketId=${encodeURIComponent(reg.ticket_id)}"
                                        target="_blank"
@@ -1304,11 +1300,9 @@
                                        style="text-decoration: none;">
                                       <code class="admin-p-xs" style="background: var(--color-background-secondary); border-radius: var(--radius-sm); cursor: pointer;">${escapeHtml(reg.ticket_id)}</code>
                                     </a>
-                                    ${testBadge}
                                 </td>
                                 <td>
                                     ${escapeHtml(formatTicketType(reg.ticket_type))}
-                                    ${isTestTicket ? '<small class="test-indicator">🧪 Test</small>' : ''}
                                 </td>
                                 <td>
                                     <span class="status-badge ${reg.checked_in_at ? "success" : reg.status === "valid" ? "info" : "warning"}">
