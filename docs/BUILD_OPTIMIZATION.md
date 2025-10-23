@@ -77,7 +77,7 @@ async function hashDirectory(dirPath) {
 ✅ Cache HIT - no rebuild needed!
 ⏱️  Cache check took 123ms
 🕐 Cache age: 15 minutes
-💾 Cache location: .vercel/output/cache/build-checksums.json
+💾 Cache location: node_modules/.cache/alocubano-build/build-checksums.json
 ⚡ Skipping expensive build operations
 ```
 
@@ -257,7 +257,7 @@ console.log(`📊 Cache stats: ${cacheStats.files.length} files, ${Math.round(ca
 
 ```bash
 # Clear existing cache
-rm -rf .vercel/output/cache/build-checksums.json
+rm -rf node_modules/.cache/alocubano-build/build-checksums.json
 
 # First build (full build - establishes cache)
 npm run build
@@ -296,7 +296,7 @@ node scripts/vercel-cache.js stats
 # ... build proceeds ...
 
 💾 Saving build cache...
-✅ Build cache saved to Vercel output cache: .vercel/output/cache/build-checksums.json
+✅ Build cache saved to Vercel build cache (node_modules/.cache): node_modules/.cache/alocubano-build/build-checksums.json
 📊 Cache stats: 3 files, 42 KB
 ```
 
@@ -349,8 +349,9 @@ Total: 1m 40s (52% faster)
 ## Files Modified
 
 1. **scripts/build-cache.js**
-   - Vercel output cache location: `.vercel/output/cache/build-checksums.json` (guaranteed preservation)
-   - Hybrid hashing strategy: content-based for small files (<10KB), size-based for large files (>10KB)
+   - Vercel build cache location: `node_modules/.cache/alocubano-build/build-checksums.json` (preserved by Vercel)
+   - Binary-safe content-based hashing for small files (<10KB)
+   - Size-based hashing for large files (>10KB)
    - Batched processing: 10 files concurrently for performance
    - Environment-aware logging with cache metrics
 
@@ -397,13 +398,13 @@ Watch for these metrics in build logs:
 **Cache not working:**
 ```bash
 # Check cache location (Vercel)
-ls -la .vercel/output/cache/
+ls -la node_modules/.cache/alocubano-build/
 
 # Validate cache
 node scripts/vercel-cache.js validate
 
 # Clear and rebuild
-rm -rf .vercel/output/cache/build-checksums.json
+rm -rf node_modules/.cache/alocubano-build/build-checksums.json
 npm run build
 ```
 

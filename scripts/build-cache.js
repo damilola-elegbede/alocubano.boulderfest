@@ -21,9 +21,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.join(__dirname, '..');
 
-// Use .vercel/output/cache/ for Vercel builds (guaranteed to be preserved)
-// Fallback to .tmp for local builds
-const VERCEL_CACHE_DIR = path.join(rootDir, '.vercel', 'output', 'cache');
+// Use node_modules/.cache/ for Vercel builds (preserved by Vercel build cache)
+// This directory exists BEFORE build starts (created by npm install)
+// and is included in Vercel's build cache restoration
+const VERCEL_CACHE_DIR = path.join(rootDir, 'node_modules', '.cache', 'alocubano-build');
 const LOCAL_CACHE_DIR = path.join(rootDir, '.tmp');
 const isVercel = process.env.VERCEL === '1';
 const CACHE_DIR = isVercel ? VERCEL_CACHE_DIR : LOCAL_CACHE_DIR;
@@ -276,7 +277,7 @@ export async function saveChecksums(checksums) {
     }
 
     await fs.writeFile(CACHE_FILE, JSON.stringify(checksums, null, 2));
-    const cacheLocation = isVercel ? 'Vercel output cache' : 'local cache';
+    const cacheLocation = isVercel ? 'Vercel build cache (node_modules/.cache)' : 'local cache';
     console.log(`✅ Build cache saved to ${cacheLocation}: ${CACHE_FILE}`);
   } catch (error) {
     console.error('Error saving cache:', error.message);
