@@ -3,7 +3,7 @@ name: 🎭 E2E Tests - Preview Deployments
 
 # Modern E2E testing workflow using Vercel Preview Deployments
 # - Triggers ONLY on successful Vercel deployments to prevent duplicate runs
-# - Real production environment testing with serverless functions  
+# - Real production environment testing with serverless functions
 # - No local server management or port conflicts
 # - Improved reliability and faster execution
 # - Single run per deployment with deployment_status trigger
@@ -87,7 +87,7 @@ jobs:
           elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             # Manual trigger without URL - auto-discover from GitHub deployments
             echo "🔍 Auto-discovering preview URL for current commit..."
-            
+
             # Find the most recent Preview deployment for this commit, then its latest successful status
             DEPLOYMENT_ID=$(gh api "/repos/${{ github.repository }}/deployments?sha=${{ github.sha }}&environment=Preview&per_page=1" | jq -r '.[0].id // empty')
             if [ -n "$DEPLOYMENT_ID" ]; then
@@ -108,7 +108,7 @@ jobs:
                     | jq -r "map(select(.state==\"success\")) | first | .target_url // empty" | head -1' \
                   | grep -m1 .
                 )
-                
+
                 if [ -n "$PREVIEW_URL" ]; then
                   echo "preview-url=$PREVIEW_URL" >> $GITHUB_OUTPUT
                   echo "⚠️ Using recent preview deployment (may not match current commit): $PREVIEW_URL"
@@ -156,20 +156,20 @@ jobs:
           # Set defaults with proper fallback
           TEST_SUITE="${{ inputs.test_suite }}"
           BROWSERS="${{ inputs.browsers }}"
-          
+
           # Apply defaults if empty or null
           if [ -z "$TEST_SUITE" ] || [ "$TEST_SUITE" = "null" ]; then
             TEST_SUITE="standard"
           fi
-          
+
           if [ -z "$BROWSERS" ] || [ "$BROWSERS" = "null" ]; then
             BROWSERS="standard"
           fi
-          
+
           echo "🔧 Input Processing:"
           echo "  Test Suite: $TEST_SUITE (from: '${{ inputs.test_suite }}')"
           echo "  Browsers: $BROWSERS (from: '${{ inputs.browsers }}')"
-          
+
           # Build browser matrix with validation
           BROWSER_LIST=""
           case "$BROWSERS" in
@@ -191,7 +191,7 @@ jobs:
               BROWSER_LIST="chromium firefox"
               ;;
           esac
-          
+
           # Convert to JSON array
           BROWSER_JSON_ARRAY=""
           for browser in $BROWSER_LIST; do
@@ -201,9 +201,9 @@ jobs:
               BROWSER_JSON_ARRAY="$BROWSER_JSON_ARRAY, \"$browser\""
             fi
           done
-          
+
           BROWSER_MATRIX="{\"browser\": [$BROWSER_JSON_ARRAY]}"
-          
+
           # Determine test pattern for file filtering
           TEST_PATTERN=""
           case "$TEST_SUITE" in
@@ -227,29 +227,29 @@ jobs:
               TEST_PATTERN="basic-navigation|cart-functionality|newsletter-simple|admin-auth|gallery-basic|registration-flow"
               ;;
           esac
-          
+
           # Validate JSON structure
           if ! echo "$BROWSER_MATRIX" | jq . > /dev/null 2>&1; then
             echo "❌ Invalid JSON generated for browser matrix: $BROWSER_MATRIX"
             exit 1
           fi
-          
+
           # Output results
           echo "matrix=$BROWSER_MATRIX" >> $GITHUB_OUTPUT
           echo "test-pattern=$TEST_PATTERN" >> $GITHUB_OUTPUT
           echo "browsers-json=[$BROWSER_JSON_ARRAY]" >> $GITHUB_OUTPUT
           echo "test-suite=$TEST_SUITE" >> $GITHUB_OUTPUT
-          
+
           echo "📋 Test Matrix Configuration:"
           echo "  Browser Matrix JSON: $BROWSER_MATRIX"
           echo "  Browser List: $BROWSER_LIST"
           echo "  Test Pattern: $TEST_PATTERN"
           echo "  Test Suite: $TEST_SUITE"
-          
+
           # Validate matrix will work
           BROWSER_COUNT=$(echo "$BROWSER_MATRIX" | jq '.browser | length')
           echo "  Browser Count: $BROWSER_COUNT"
-          
+
           if [ "$BROWSER_COUNT" -eq 0 ]; then
             echo "❌ No browsers in matrix!"
             exit 1
@@ -307,13 +307,13 @@ jobs:
         id: target-url
         run: |
           TARGET_URL="${{ needs.get-preview-url.outputs.preview-url }}"
-          
+
           # Validate we have a URL
           if [ -z "$TARGET_URL" ] || [ "$TARGET_URL" = "null" ]; then
             echo "❌ No valid preview URL available"
             exit 1
           fi
-          
+
           echo "target-url=$TARGET_URL" >> $GITHUB_OUTPUT
           echo "PLAYWRIGHT_BASE_URL=$TARGET_URL" >> $GITHUB_ENV
           echo "PREVIEW_URL=$TARGET_URL" >> $GITHUB_ENV
@@ -357,11 +357,11 @@ jobs:
           # Fixed: Map mobile browsers to actual Playwright browser names
           BROWSER="${{ matrix.browser }}"
           case "$BROWSER" in
-            mobile-chrome) 
+            mobile-chrome)
               INSTALL_BROWSER="chromium"
               echo "📱 Mobile Chrome will use Chromium with mobile device emulation"
               ;;
-            mobile-safari) 
+            mobile-safari)
               INSTALL_BROWSER="webkit"
               echo "📱 Mobile Safari will use WebKit with mobile device emulation"
               ;;
@@ -467,7 +467,7 @@ jobs:
           echo "==============================="
           echo "Target URL: ${{ env.PREVIEW_URL }}"
           echo ""
-          
+
           # Basic connectivity test
           echo "🔍 Testing basic connectivity..."
           if curl -s --connect-timeout 10 --max-time 30 "${{ env.PREVIEW_URL }}" > /dev/null; then
@@ -476,11 +476,11 @@ jobs:
             echo "❌ Preview URL is NOT accessible"
             echo "This may cause E2E test failures"
           fi
-          
+
           # Test specific endpoints critical for E2E tests
           echo ""
           echo "🔍 Testing critical API endpoints..."
-          
+
           # Health check endpoint
           HEALTH_URL="${{ env.PREVIEW_URL }}/api/health/check"
           echo "Testing: $HEALTH_URL"
@@ -489,18 +489,18 @@ jobs:
           else
             echo "⚠️ Health endpoint not responding properly"
           fi
-          
+
           # Gallery API (for gallery tests)
           GALLERY_URL="${{ env.PREVIEW_URL }}/api/gallery"
-          echo "Testing: $GALLERY_URL" 
+          echo "Testing: $GALLERY_URL"
           GALLERY_RESPONSE=$(curl -s --connect-timeout 5 --max-time 15 "$GALLERY_URL" || echo "FAILED")
           if echo "$GALLERY_RESPONSE" | grep -q -E '(\[|\{|"photos"|"error")'; then
             echo "✅ Gallery API responding"
           else
             echo "⚠️ Gallery API not responding properly"
           fi
-          
-          # Admin login page (for admin tests)  
+
+          # Admin login page (for admin tests)
           ADMIN_URL="${{ env.PREVIEW_URL }}/pages/admin/login.html"
           echo "Testing: $ADMIN_URL"
           if curl -s --connect-timeout 5 --max-time 15 "$ADMIN_URL" | grep -q -i "admin\|login\|password"; then
@@ -508,7 +508,7 @@ jobs:
           else
             echo "⚠️ Admin login page not accessible"
           fi
-          
+
           echo ""
           echo "==============================="
 
@@ -517,14 +517,14 @@ jobs:
           echo "🔬 Secrets Configuration Debug"
           echo "============================="
           echo ""
-          
+
           echo "🎭 Playwright Configuration:"
           echo "  PLAYWRIGHT_BASE_URL: $PLAYWRIGHT_BASE_URL"
           echo "  PREVIEW_URL: $PREVIEW_URL"
           echo "  E2E_TEST_MODE: $E2E_TEST_MODE"
           echo "  NODE_ENV: $NODE_ENV"
           echo "  CI: $CI"
-          
+
           echo ""
           echo "🔐 Authentication Secrets (masked):"
           if [ -n "$TEST_ADMIN_PASSWORD" ]; then
@@ -532,13 +532,13 @@ jobs:
           else
             echo "  TEST_ADMIN_PASSWORD: ❌ NOT SET"
           fi
-          
+
           if [ -n "$ADMIN_SECRET" ]; then
             echo "  ADMIN_SECRET: ${ADMIN_SECRET:0:3}***${ADMIN_SECRET: -3}"
           else
             echo "  ADMIN_SECRET: ❌ NOT SET"
           fi
-          
+
           echo ""
           echo "🗄️ Database Secrets (masked):"
           if [ -n "$TURSO_DATABASE_URL" ]; then
@@ -546,13 +546,13 @@ jobs:
           else
             echo "  TURSO_DATABASE_URL: ❌ NOT SET"
           fi
-          
+
           if [ -n "$TURSO_AUTH_TOKEN" ]; then
             echo "  TURSO_AUTH_TOKEN: ${TURSO_AUTH_TOKEN:0:5}***${TURSO_AUTH_TOKEN: -5}"
           else
             echo "  TURSO_AUTH_TOKEN: ❌ NOT SET"
           fi
-          
+
           echo ""
           echo "☁️ Google Drive Secrets (masked):"
           if [ -n "$GOOGLE_SERVICE_ACCOUNT_EMAIL" ]; then
@@ -560,19 +560,19 @@ jobs:
           else
             echo "  GOOGLE_SERVICE_ACCOUNT_EMAIL: ❌ NOT SET"
           fi
-          
+
           if [ -n "$GOOGLE_PRIVATE_KEY" ]; then
             echo "  GOOGLE_PRIVATE_KEY: ${GOOGLE_PRIVATE_KEY:0:10}***[PRIVATE_KEY]"
           else
             echo "  GOOGLE_PRIVATE_KEY: ❌ NOT SET"
           fi
-          
+
           if [ -n "$GOOGLE_DRIVE_GALLERY_FOLDER_ID" ]; then
             echo "  GOOGLE_DRIVE_GALLERY_FOLDER_ID: ${GOOGLE_DRIVE_GALLERY_FOLDER_ID:0:3}***${GOOGLE_DRIVE_GALLERY_FOLDER_ID: -3}"
           else
             echo "  GOOGLE_DRIVE_GALLERY_FOLDER_ID: ❌ NOT SET"
           fi
-          
+
           echo ""
           echo "============================="
 
@@ -619,7 +619,7 @@ jobs:
           echo "=============================="
           npx playwright test --config tests/config/playwright-e2e-optimized.config.js --project="$PROJECT_NAME" --list 2>&1 | tee test_plan.log
 
-          EXPECTED_TESTS=$(grep -oP '\d+(?= test)' test_plan.log | head -1 || echo "0")
+          EXPECTED_TESTS=$(grep -oP '\d+(?=\s+tests?)' test_plan.log | head -1 || echo "0")
           echo "Expected tests to run: $EXPECTED_TESTS"
           echo ""
 
@@ -785,7 +785,7 @@ jobs:
           echo "  Test Status: ${{ job.status }}"
           echo "  Browser: ${{ matrix.browser }}"
           echo "  Test Suite: ${{ needs.build-test-matrix.outputs.test-suite }}"
-          
+
           # Browser-specific debugging information
           case "${{ matrix.browser }}" in
             firefox)
@@ -802,16 +802,16 @@ jobs:
               echo "  Using device emulation for mobile testing"
               ;;
           esac
-          
+
           # Fixed: Check if test-results is a directory, not a file
           if [ -d "test-results" ]; then
             echo "  Timeout errors:"
             find test-results -name "*.txt" -exec grep -l "timeout\|TimeoutError" {} \; 2>/dev/null || echo "    No timeout errors found"
           fi
-          
+
           if [ -f "playwright-report/index.html" ]; then
             echo "  Report: Available in artifacts"
-            
+
             # Count test results for summary
             TOTAL_TESTS=$(find test-results -name "*.zip" 2>/dev/null | wc -l || echo "0")
             echo "  Test artifacts: $TOTAL_TESTS"

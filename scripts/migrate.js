@@ -6,6 +6,7 @@
 import { promises as fs } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { spawnSync } from "child_process";
 import { ensureDatabaseUrl } from '../lib/database-defaults.js';
 import { getDatabaseClient } from "../lib/database.js";
 
@@ -851,21 +852,48 @@ class MigrationSystem {
    */
   async detectRenamedMigrations(missingFiles) {
     const renamedMigrations = new Map();
-    const { execSync } = await import('child_process');
+
+    // Secure git command executor using spawnSync with args array
+    // Prevents shell injection by not interpolating filenames into shell commands
+    const repoRoot = path.join(__dirname, '..');
+    const git = (...args) => {
+      const result = spawnSync('git', args, {
+        encoding: 'utf8',
+        cwd: repoRoot,
+        stdio: ['pipe', 'pipe', 'pipe']
+      });
+
+      if (result.status !== 0) {
+        throw new Error(result.stderr || 'git command failed');
+      }
+
+      return result.stdout || '';
+    };
 
     for (const missingFile of missingFiles) {
       try {
         // Check if this file exists in git history
-        const gitLog = execSync(
-          `git log --all --full-history --follow --format="%H" -- "migrations/${missingFile}"`,
-          { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] }
+        const gitLog = git(
+          'log',
+          '--all',
+          '--full-history',
+          '--follow',
+          '--format=%H',
+          '--',
+          `migrations/${missingFile}`
         ).trim();
 
         if (gitLog) {
           // Strategy 1: Check for git-tracked renames (git mv)
-          const renameCheck = execSync(
-            `git log --all --full-history --follow --name-status --format="" -- "migrations/${missingFile}"`,
-            { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] }
+          const renameCheck = git(
+            'log',
+            '--all',
+            '--full-history',
+            '--follow',
+            '--name-status',
+            '--format=',
+            '--',
+            `migrations/${missingFile}`
           );
 
           // Look for rename operation (R followed by similarity percentage)
@@ -883,16 +911,23 @@ class MigrationSystem {
 
           // Strategy 2: Check for manual renames (delete + add in same commit)
           // Find the commit that deleted this file
-          const deleteCommit = execSync(
-            `git log --all --diff-filter=D --format="%H" -- "migrations/${missingFile}"`,
-            { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] }
+          const deleteCommit = git(
+            'log',
+            '--all',
+            '--diff-filter=D',
+            '--format=%H',
+            '--',
+            `migrations/${missingFile}`
           ).trim().split('\n')[0];
 
           if (deleteCommit) {
             // Check commit message for rename indicators
-            const commitMessage = execSync(
-              `git log --format="%s" -n 1 ${deleteCommit}`,
-              { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] }
+            const commitMessage = git(
+              'log',
+              '--format=%s',
+              '-n',
+              '1',
+              deleteCommit
             ).trim().toLowerCase();
 
             // Look for rename-related keywords
@@ -903,9 +938,13 @@ class MigrationSystem {
                 const baseName = baseMatch[1];
 
                 // Check what files were added in the same commit
-                const addedFiles = execSync(
-                  `git diff-tree --no-commit-id --name-only --diff-filter=A -r ${deleteCommit}`,
-                  { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] }
+                const addedFiles = git(
+                  'diff-tree',
+                  '--no-commit-id',
+                  '--name-only',
+                  '--diff-filter=A',
+                  '-r',
+                  deleteCommit
                 ).trim().split('\n');
 
                 // Look for a similar filename in migrations directory
@@ -1048,7 +1087,8 @@ class MigrationSystem {
         }
       }
 
-      if (checksumErrors === 0 && missingFiles.length === 0) {
+      const ok = checksumErrors === 0 && missingFiles.length === 0;
+      if (ok) {
         if (cleanedGhostRecords > 0) {
           console.log(`✅ All migrations verified successfully (auto-cleaned ${cleanedGhostRecords} ghost record(s))`);
         } else {
@@ -1057,7 +1097,7 @@ class MigrationSystem {
       }
 
       return {
-        verified: true,
+        verified: ok,
         missingFiles,
         checksumErrors,
         cleanedGhostRecords,

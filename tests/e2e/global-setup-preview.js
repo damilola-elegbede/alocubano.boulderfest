@@ -107,7 +107,8 @@ async function globalSetupPreview() {
     console.log('\n🔍 Final validation: Ensuring deployment is fully ready...');
     try {
       const finalHealthCheck = await fetch(`${previewUrl}/api/health/check`, {
-        headers: { 'User-Agent': 'E2E-Final-Validation' }
+        headers: { 'User-Agent': 'E2E-Final-Validation' },
+        signal: AbortSignal.timeout(10000)
       });
 
       if (!finalHealthCheck.ok) {
