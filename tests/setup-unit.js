@@ -160,38 +160,6 @@ beforeAll(async () => {
   console.log(`🗄️ Database: ${config.database.description}`);
   console.log(`⚡ Optimizations: Threads, reduced timeouts, no migrations`);
   console.log(`🔧 Memory: 2GB allocation, size-optimized`);
-
-  // CREATE DATABASE SCHEMA once per worker
-  // Unit tests skip full migrations for speed, but need minimal schema
-  // Overhead: ~100-200ms per worker, amortized across all tests
-  try {
-    const { getDatabaseClient } = await import('../lib/database.js');
-    const db = await getDatabaseClient();
-
-    console.log('🔄 Creating database schema (one-time setup)...');
-
-    // Use TestDatabaseManager's approach for creating minimal schema
-    const { getTestDatabaseManager } = await import('./helpers/test-database-manager.js');
-    const dbManager = getTestDatabaseManager();
-
-    // Create schema using the minimal schema method (faster than full migrations)
-    await dbManager._createMinimalSchema(db);
-
-    console.log('✅ Database schema ready');
-
-    // SEED BASE TEST DATA for stability and to prevent "not found" errors
-    // Provides minimal shared data: 1 event, 1 transaction, 2 tickets
-    // Overhead: ~50ms amortized across all tests in worker
-    const { seedBaseTestData } = await import('./fixtures/seed-base-data.js');
-    await seedBaseTestData(db);
-
-    console.log('✅ Base test data seeded: 1 event, 2 tickets, 1 transaction');
-  } catch (error) {
-    console.error('⚠️ Failed to setup test database:', error.message);
-    console.error('   Tests requiring database records may fail');
-    // Don't throw - allow tests to run even if setup fails
-    // Tests that need data will fail with clear error messages
-  }
 }, config.timeouts.setup);
 
 afterAll(async () => {
