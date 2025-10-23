@@ -1,7 +1,6 @@
 {
   "outputDirectory": ".",
   "framework": null,
-  "toolbar": false,
   "cleanUrls": true,
   "trailingSlash": false,
   "buildCommand": "node scripts/parallel-build.js",
