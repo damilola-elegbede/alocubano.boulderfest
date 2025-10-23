@@ -24,14 +24,9 @@
     document.documentElement.style.transition = 'opacity 0.2s ease-in-out';
   }
 
-  // Quick sync check for token existence
-  const hasToken = localStorage.getItem('adminToken');
-
-  // If no token at all and not on login page, redirect immediately
-  if (!hasToken && !isLoginPage) {
-    window.location.replace('/admin/login');
-    return;
-  }
+  // Note: We rely on cookies for authentication (set by /api/admin/login)
+  // Don't redirect here - let verifyAndShow() check the session via API
+  // The API will verify the session using the admin_session cookie
 
   // Add auth-checking class to body when ready
   if (document.body) {
@@ -55,18 +50,11 @@
           return true;
         }
 
-        // Get the token from localStorage
-        const token = localStorage.getItem('adminToken');
-        if (!token) {
-          throw new Error('No auth token found');
-        }
-
-        // Verify token with server
+        // Verify session with server (uses admin_session cookie)
         const response = await fetch('/api/admin/verify-session', {
           method: 'GET',
           credentials: 'include',
           headers: {
-            'Authorization': `Bearer ${token}`,
             'Cache-Control': 'no-cache'
           }
         });
@@ -79,7 +67,6 @@
               method: 'GET',
               credentials: 'include',
               headers: {
-                'Authorization': `Bearer ${token}`,
                 'Cache-Control': 'no-cache'
               }
             });
@@ -115,8 +102,10 @@
         // Clear invalid token
         localStorage.removeItem('adminToken');
         sessionStorage.clear();
-        // Redirect to login
-        window.location.replace('/admin/login');
+        // CRITICAL: Preserve query string and hash for deep links
+        // Example: /dashboard.html?filter=pending#analytics -> fully preserved
+        const returnUrl = encodeURIComponent(window.location.pathname + window.location.search + window.location.hash);
+        window.location.replace(`/admin/login?returnUrl=${returnUrl}`);
         return false;
       }
     },

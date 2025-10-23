@@ -42,7 +42,7 @@ export async function createTestTicket(ticketData) {
     });
 
     if (existingEvent.rows.length > 0) {
-      eventId = existingEvent.rows[0].id;
+      eventId = String(existingEvent.rows[0].id);
     } else {
       // Create test event
       await client.execute({
@@ -70,7 +70,7 @@ export async function createTestTicket(ticketData) {
         sql: 'SELECT id FROM events WHERE slug = ?',
         args: ['test-event-helper']
       });
-      eventId = newEvent.rows[0].id;
+      eventId = String(newEvent.rows[0].id);
     }
   }
 
@@ -145,9 +145,9 @@ export async function createTestTicket(ticketData) {
     const { QRTokenService } = await import('../../lib/qr-token-service.js');
     const qrService = new QRTokenService();
     qrToken = await qrService.generateToken({
-      tid: ticketId,  // Use 'tid' to match QR service convention
-      ticketId,       // Also include ticketId for backwards compatibility
-      eventId,
+      tid: String(ticketId),  // Use 'tid' to match QR service convention
+      ticketId: String(ticketId),       // Also include ticketId for backwards compatibility
+      eventId: String(eventId),
       isTest: true,
       metadata: {
         testMode: true,
@@ -185,9 +185,9 @@ export async function generateTestQRCode(payload) {
   const { ticketId, eventId, isTest = true, metadata = {} } = payload;
 
   const tokenPayload = {
-    tid: ticketId,  // Use 'tid' to match QR service convention
-    ticketId,       // Also include for backwards compatibility
-    eventId,
+    tid: String(ticketId),  // Use 'tid' to match QR service convention
+    ticketId: String(ticketId),       // Also include for backwards compatibility
+    eventId: String(eventId),
     isTest,
     metadata: {
       testMode: true,

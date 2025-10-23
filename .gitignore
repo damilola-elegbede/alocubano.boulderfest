@@ -168,3 +168,12 @@ test_constraint.js
 data/boulderfest.db
 # Generated at build time by scripts/generate-ticket-html.js
 public/generated/tickets.html
+
+# Generated CSS bundles
+css/bundle-critical.css
+
+# Generated CSS bundles
+css/bundle-deferred.css
+
+# Generated CSS bundles
+css/bundle-admin.css

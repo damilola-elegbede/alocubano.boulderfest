@@ -44,16 +44,11 @@ class CSRFService {
    */
   async _fetchNewToken() {
     try {
-      const adminToken = localStorage.getItem('adminToken');
-
-      if (!adminToken) {
-        throw new Error('Admin authentication token not found');
-      }
-
+      // Use cookie-based authentication (admin_session cookie)
       const response = await fetch('/api/admin/csrf-token', {
         method: 'GET',
+        credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${adminToken}`,
           'Content-Type': 'application/json'
         }
       });
@@ -61,7 +56,6 @@ class CSRFService {
       if (!response.ok) {
         if (response.status === 401) {
           // Unauthorized - redirect to login
-          localStorage.removeItem('adminToken');
           window.location.href = '/admin/login';
           throw new Error('Session expired. Please log in again.');
         }

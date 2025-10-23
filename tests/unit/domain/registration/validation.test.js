@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import jwt from 'jsonwebtoken';
+import { TRANSACTION_LIMITS } from '../../../../lib/ticket-config.js';
 
 const JWT_SECRET = 'test_secret_min_32_chars_for_testing_only';
 const NAME_REGEX = /^[a-zA-Z\s\-']{2,50}$/;
@@ -31,9 +32,8 @@ describe('Registration API', () => {
   });
 
   it('enforces batch limits', () => {
-    const MAX_BATCH = 10;
-    expect([1,2,3,4,5].length).toBeLessThanOrEqual(MAX_BATCH);
-    expect(Array(11).fill(0).length).toBeGreaterThan(MAX_BATCH);
+    expect([1,2,3,4,5].length).toBeLessThanOrEqual(TRANSACTION_LIMITS.MAX_TICKETS_PER_TRANSACTION);
+    expect(Array(11).fill(0).length).toBeGreaterThan(TRANSACTION_LIMITS.MAX_TICKETS_PER_TRANSACTION);
   });
 
   it('validates security requirements', () => {

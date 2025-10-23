@@ -20,6 +20,15 @@ let donationsData = null;
 document.addEventListener('DOMContentLoaded', async() => {
     console.log('📊 Initializing Donations Dashboard...');
 
+    // CRITICAL: Verify auth and show content first
+    if (window.AdminAuthGuard) {
+        const isAuthenticated = await window.AdminAuthGuard.verifyAndShow();
+        if (!isAuthenticated) return;
+    } else {
+        console.error('AdminAuthGuard not available');
+        return;
+    }
+
     try {
     // Setup donation type filter
         const donationTypeFilter = document.getElementById('donation-type-filter');
@@ -60,10 +69,6 @@ document.addEventListener('DOMContentLoaded', async() => {
         // Load initial data
         await loadDonations();
 
-        // Show content after successful initialization
-        document.documentElement.style.visibility = 'visible';
-        document.documentElement.style.opacity = '1';
-
         console.log('✅ Donations Dashboard initialized');
     } catch (error) {
         console.error('❌ Failed to initialize donations dashboard:', error);
@@ -76,10 +81,6 @@ document.addEventListener('DOMContentLoaded', async() => {
         </td>
       </tr>
     `;
-
-        // Show content even on error
-        document.documentElement.style.visibility = 'visible';
-        document.documentElement.style.opacity = '1';
     }
 });
 

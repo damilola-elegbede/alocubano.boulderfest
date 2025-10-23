@@ -44,14 +44,26 @@
     <link rel="icon" type="image/x-icon" href="/images/favicon.ico" />
 
     <!-- Core Styles -->
-    <link rel="stylesheet" href="/css/base.css" />
-    <link rel="stylesheet" href="/css/components.css" />
-    <link rel="stylesheet" href="/css/typography.css" />
-    <link rel="stylesheet" href="/css/forms.css" />
-    <link rel="stylesheet" href="/css/mobile-overrides.css" />
-    <link rel="stylesheet" href="/css/theme-toggle.css" />
+    
+    <!-- Preconnect to Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-    <style>
+    <!-- Preload critical fonts -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Playfair+Display:ital,wght@0,400;0,900;1,400;1,900&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Playfair+Display:ital,wght@0,400;0,900;1,400;1,900&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" media="print" onload="this.media='all'">
+    <noscript>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Playfair+Display:ital,wght@0,400;0,900;1,400;1,900&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap">
+    </noscript>
+    <!-- Critical CSS (render-blocking) -->
+    <link rel="stylesheet" href="/css/bundle-critical.css" />
+
+    <!-- Deferred CSS (lazy-loaded) -->
+    <link rel="stylesheet" href="/css/bundle-deferred.css" media="print" onload="this.media='all'">
+    <noscript>
+      <link rel="stylesheet" href="/css/bundle-deferred.css">
+    </noscript>
+  <style>
       .view-tickets-container {
         max-width: 960px;
         margin: 0 auto;
@@ -471,6 +483,23 @@
                       </li>
                     </ul>
                   </li>
+                  <li class="dropdown-category" role="group">
+                    <span class="dropdown-category-title" role="presentation"
+                      >Weekenders</span
+                    >
+                    <ul class="dropdown-submenu">
+                      <li>
+                        <a
+                          href="/weekender-2025-11"
+                          class="dropdown-link"
+                          role="menuitem"
+                          data-event="weekender-2025-11"
+                          data-event-status="upcoming"
+                          >November 2025</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
                 </ul>
               </li>
               <li>
@@ -595,8 +624,8 @@
     </footer>
 
     <!-- Scripts -->
-    <script src="/js/navigation.js"></script>
-    <script src="/js/main.js"></script>
+    <script defer src="/js/navigation.js"></script>
+    <script defer src="/js/main.js"></script>
     <script src="/js/typography.js"></script>
 
     <!-- Theme Management -->

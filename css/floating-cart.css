@@ -15,7 +15,7 @@
   --cart-text-secondary: var(--color-gray-600);
   --cart-radius: var(--radius-lg);
   --cart-transition: var(--transition-base);
-  display: none; /* Hidden by default, shown when items added */
+  /* Container is always present - children (panel/backdrop) control their own visibility */
 }
 
 /* Backdrop */

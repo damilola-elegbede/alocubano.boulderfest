@@ -17,14 +17,14 @@
  */
 
 import Stripe from 'stripe';
-import transactionService from "../../lib/transaction-service.js";
-import paymentEventLogger from "../../lib/payment-event-logger.js";
-import ticketService from "../../lib/ticket-service.js";
-import { getDatabaseClient } from "../../lib/database.js";
-import auditService from "../../lib/audit-service.js";
-import { createOrRetrieveTickets } from "../../lib/ticket-creation-service.js";
-import { fulfillReservation, releaseReservation } from "../../lib/ticket-availability-service.js";
-import { extractTestModeFromStripeSession } from "../../lib/test-mode-utils.js";
+import transactionService from '../../lib/transaction-service.js';
+import paymentEventLogger from '../../lib/payment-event-logger.js';
+import ticketService from '../../lib/ticket-service.js';
+// import { getDatabaseClient } from '../../lib/database.js'; // Not used in this optimization
+import auditService from '../../lib/audit-service.js';
+import { createOrRetrieveTickets } from '../../lib/ticket-creation-service.js';
+import { fulfillReservation, releaseReservation } from '../../lib/ticket-availability-service.js';
+import { extractTestModeFromStripeSession } from '../../lib/test-mode-utils.js';
 
 // Initialize Stripe with strict error handling
 if (!process.env.STRIPE_SECRET_KEY) {
@@ -136,21 +136,32 @@ export default async function handler(req, res) {
       console.log(`Processing ${isTestTransaction ? 'TEST ' : ''}checkout.session.completed for ${session.id}`);
 
       try {
-        // Expand the session to get line items and payment method details
-        const fullSession = await stripe.checkout.sessions.retrieve(
-          session.id,
-          {
-            expand: [
-              'line_items',
-              'line_items.data.price.product',
-              'payment_intent',
-              'payment_intent.payment_method'
-            ]
-          }
-        );
+        // STEP 1: Parallelize independent operations (Stripe retrieve + event logger placeholder update)
+        // These operations don't depend on each other and can run simultaneously
+        // Target: Save 50-100ms by running in parallel instead of sequentially
+        const [fullSession] = await Promise.all([
+          // Retrieve Stripe session with expanded data (200-300ms)
+          stripe.checkout.sessions.retrieve(
+            session.id,
+            {
+              expand: [
+                'line_items',
+                'line_items.data.price.product',
+                'payment_intent',
+                'payment_intent.payment_method'
+              ]
+            }
+          ),
+          // Update event logger with placeholder (50-100ms)
+          // This is fire-and-forget - errors are caught and logged, don't block webhook
+          paymentEventLogger.updateEventTransactionId(event.id, null)
+            .catch(error => {
+              console.error('Event logger placeholder update failed (non-blocking):', error.message);
+            })
+        ]);
 
         // Extract payment method details for receipt
-        let paymentMethodData = {
+        const paymentMethodData = {
           card_brand: null,
           card_last4: null,
           payment_wallet: null
@@ -171,7 +182,8 @@ export default async function handler(req, res) {
           console.log('Payment method details:', paymentMethodData);
         }
 
-        // Use centralized ticket creation service for idempotency
+        // STEP 2: Sequential dependent operation - ticket creation needs fullSession
+        // Use centralized ticket creation service for idempotency (1,500-2,500ms)
         try {
           const result = await createOrRetrieveTickets(fullSession, paymentMethodData);
           const transaction = result.transaction;
@@ -179,25 +191,34 @@ export default async function handler(req, res) {
           console.log(`Webhook: Transaction ${result.created ? 'created' : 'already exists'}: ${transaction.uuid}`);
           console.log(`Webhook: ${result.ticketCount} tickets ${result.created ? 'created' : 'found'}`);
 
-          // Update the payment event with transaction ID
-          await paymentEventLogger.updateEventTransactionId(
-            event.id,
-            transaction.id
-          );
+          // STEP 3: Fire-and-forget operations (non-blocking)
+          // Update event logger with actual transaction ID (50-100ms - non-blocking)
+          paymentEventLogger.updateEventTransactionId(event.id, transaction.id)
+            .catch(error => {
+              console.error('Event logger transaction ID update failed (non-blocking):', error.message);
+            });
 
-          // Fulfill reservation - mark as completed
+          // Fulfill reservation - mark as completed (fire-and-forget for faster webhook response)
           // Try both actual session ID and temp session ID (from metadata)
-          try {
-            await fulfillReservation(session.id, transaction.id);
+          fulfillReservation(session.id, transaction.id)
+            .then(() => {
+              console.log(`✅ Reservation fulfilled for session: ${session.id}, transaction: ${transaction.id}`);
+            })
+            .catch(fulfillError => {
+              // Non-critical - tickets are already created
+              console.error(`❌ Reservation fulfillment failed for session: ${session.id}`, fulfillError);
+            });
 
-            // Also try temp session ID if it exists in metadata
-            const tempSessionId = fullSession.metadata?.tempSessionId;
-            if (tempSessionId) {
-              await fulfillReservation(tempSessionId, transaction.id);
-            }
-          } catch (fulfillError) {
-            // Non-critical - tickets are already created
-            console.warn('Failed to fulfill reservation (non-critical):', fulfillError.message);
+          // Also try temp session ID if it exists in metadata
+          const tempSessionId = fullSession.metadata?.tempSessionId;
+          if (tempSessionId) {
+            fulfillReservation(tempSessionId, transaction.id)
+              .then(() => {
+                console.log(`✅ Temp reservation fulfilled for session: ${tempSessionId}, transaction: ${transaction.id}`);
+              })
+              .catch(fulfillError => {
+                console.error(`❌ Temp reservation fulfillment failed for session: ${tempSessionId}`, fulfillError);
+              });
           }
 
           // Log financial audit for successful payment

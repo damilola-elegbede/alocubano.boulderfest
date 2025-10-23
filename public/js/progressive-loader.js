@@ -170,7 +170,13 @@ class ProgressiveImageLoader {
     }
 
     showBlurredPreview(imageElement, blurredDataUrl) {
-    // Create or update blur overlay
+        // Defensive check: ensure element has parent node
+        if (!imageElement.parentNode) {
+            console.warn('[Progressive] Image element has no parent node');
+            return;
+        }
+
+        // Create or update blur overlay
         let blurOverlay = imageElement.parentNode.querySelector('.blur-overlay');
         if (!blurOverlay) {
             blurOverlay = document.createElement('div');
@@ -223,7 +229,13 @@ class ProgressiveImageLoader {
     }
 
     transitionToFullImage(imageElement, fullImg) {
-    // Set the full image source
+        // Defensive check: ensure element has parent node
+        if (!imageElement.parentNode) {
+            console.warn('[Progressive] Image element detached from DOM');
+            return;
+        }
+
+        // Set the full image source
         imageElement.src = fullImg.src;
         imageElement.style.opacity = '1';
 
@@ -254,7 +266,13 @@ class ProgressiveImageLoader {
     }
 
     handleImageLoadError(imageElement, metadata) {
-    // Show error placeholder
+        // Defensive check: ensure element has parent node
+        if (!imageElement.parentNode) {
+            console.warn('[Progressive] Image element detached from DOM during error handling');
+            return;
+        }
+
+        // Show error placeholder
         const errorPlaceholder = this.createErrorPlaceholder(metadata);
         imageElement.src = errorPlaceholder;
         imageElement.style.opacity = '1';

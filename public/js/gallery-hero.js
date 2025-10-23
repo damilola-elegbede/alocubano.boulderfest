@@ -121,6 +121,12 @@
 
         // Add loading state management
         heroElement.addEventListener('load', function() {
+            // Defensive check: ensure element is still valid
+            if (!this || !this.src) {
+                console.warn('⚠️ Hero element invalid in load handler');
+                return;
+            }
+
             console.log('✅ Hero image loaded successfully:', this.src);
 
             // Remove loading class and add loaded class to parent container
@@ -133,6 +139,12 @@
 
         // Error handling
         heroElement.addEventListener('error', function() {
+            // Defensive check: ensure element is still valid
+            if (!this || !this.src) {
+                console.warn('⚠️ Hero element invalid in error handler');
+                return;
+            }
+
             console.warn('⚠️ Hero image failed to load:', this.src);
 
             // Fallback to default hero image if not already using it

@@ -59,31 +59,34 @@ export function initializeFloatingCart(cartManager) {
         clearButton: document.querySelector('.cart-clear-btn')
     };
 
-    // E2E CRITICAL FIX: Ensure cart panel has dimensions for testing (removed button-specific code)
+    // Ensure cart panel starts in closed state (no .open class)
+    if (elements.panel) {
+        elements.panel.classList.remove('open');
+        console.log('🔧 DEBUG: Removed .open class from panel on init');
+    }
+    if (elements.backdrop) {
+        elements.backdrop.classList.remove('active');
+        console.log('🔧 DEBUG: Removed .active class from backdrop on init');
+    }
+
+    // Debug: Check initial transform
+    setTimeout(() => {
+        const computedTransform = getComputedStyle(elements.panel).transform;
+        const hasOpenClass = elements.panel.classList.contains('open');
+        console.log('🔍 DEBUG: Initial cart state:', {
+            panelTransform: computedTransform,
+            hasOpenClass,
+            backdropActive: elements.backdrop.classList.contains('active')
+        });
+    }, 100);
+
+    // E2E test markers for debugging
     if (window.navigator.userAgent.includes('Playwright') || window.location.search.includes('e2e')) {
-        console.log('🔧 E2E Fix: Ensuring cart panel is accessible for testing');
+        console.log('🔧 E2E: Cart panel initialized for testing (starts closed)');
 
-        // Force minimum dimensions on container for proper testing
-        if (elements.container) {
-            elements.container.style.cssText = 'display: block !important; position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; visibility: visible !important; pointer-events: auto !important; z-index: 999999 !important;';
-        }
-
-        // Trigger immediate setup for E2E tests
         const currentPath = window.location.pathname;
         if (currentPath.includes('tickets')) {
-            console.log('✅ E2E Fix: Cart panel prepared for testing on tickets page');
-
-            // Add extra debugging info
-            setTimeout(() => {
-                const rect = elements.container.getBoundingClientRect();
-                console.log('🔍 E2E Cart Container Dimensions:', {
-                    width: rect.width,
-                    height: rect.height,
-                    top: rect.top,
-                    left: rect.left,
-                    visible: rect.width > 0 && rect.height > 0
-                });
-            }, 100);
+            console.log('✅ E2E: Cart available on tickets page');
         }
     }
 
@@ -474,7 +477,10 @@ async function handleCheckoutClick(cartManager) {
 
 // determineCartVisibility function removed - no longer needed without floating button
 function toggleCartPanel(elements, isOpen, cartManager) {
+    console.log('🔧 DEBUG: toggleCartPanel called with isOpen =', isOpen);
+
     if (isOpen) {
+        console.log('🔧 DEBUG: Opening cart panel...');
         elements.panel.classList.add('open');
         elements.backdrop.classList.add('active');
         document.body.style.overflow = 'hidden';
@@ -489,11 +495,18 @@ function toggleCartPanel(elements, isOpen, cartManager) {
             });
         }
     } else {
+        console.log('🔧 DEBUG: Closing cart panel...');
         elements.panel.classList.remove('open');
         elements.backdrop.classList.remove('active');
         document.body.style.overflow = '';
 
-        // No button to return focus to - panel slides back up to header area
+        // Debug: Confirm classes removed
+        setTimeout(() => {
+            console.log('🔍 DEBUG: After close - panel has .open?', elements.panel.classList.contains('open'));
+            console.log('🔍 DEBUG: After close - transform:', getComputedStyle(elements.panel).transform);
+        }, 50);
+
+        // Panel slides off-screen via CSS transform - no need to hide container
     }
 }
 
@@ -561,11 +574,11 @@ function performCartUIUpdate(elements, cartState) {
         elements.totalElement.textContent = `$${totalInDollars.toFixed(2)}`;
     });
 
-    // Container is always available for panel functionality - no visibility logic needed
+    // Container is always available for panel functionality - panel slides off-screen when closed
     const isE2ETest = window.navigator.userAgent.includes('Playwright');
 
     updates.push(() => {
-        // Container stays available for panel sliding
+        // Container stays available for panel sliding (fixed children control their own visibility)
         elements.container.style.display = 'block';
         elements.container.setAttribute('data-cart-state', 'panel-available');
         elements.container.setAttribute('data-cart-items', totalItems.toString());
@@ -575,8 +588,7 @@ function performCartUIUpdate(elements, cartState) {
             console.log('✅ Cart panel available:', {
                 totalItems,
                 currentPath: window.location.pathname,
-                containerDisplay: elements.container.style.display,
-                containerRect: elements.container.getBoundingClientRect()
+                containerDisplay: elements.container.style.display
             });
         }
     });

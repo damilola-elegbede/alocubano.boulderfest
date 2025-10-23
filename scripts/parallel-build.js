@@ -88,14 +88,15 @@ async function build() {
     console.log('📋 Step 1: Running migrations...');
     await execCommand('node', ['scripts/migrate-vercel-build.js'], 'Migrations');
 
-    // Step 2: Run bootstrap and embed-docs in parallel (independent tasks)
+    // Step 2: Run bootstrap, embed-docs, and CSS bundling in parallel (independent tasks)
     console.log('');
-    console.log('📋 Step 2: Running parallel tasks (bootstrap + documentation)...');
+    console.log('📋 Step 2: Running parallel tasks (bootstrap + documentation + CSS)...');
     const parallelStartTime = Date.now();
 
     await Promise.all([
       execCommand('node', ['scripts/bootstrap.js'], 'Bootstrap'),
-      execCommand('node', ['scripts/embed-docs.cjs'], 'Embed Documentation')
+      execCommand('node', ['scripts/embed-docs.cjs'], 'Embed Documentation'),
+      execCommand('node', ['scripts/bundle-css.js'], 'CSS Bundling')
     ]);
 
     const parallelDuration = Date.now() - parallelStartTime;

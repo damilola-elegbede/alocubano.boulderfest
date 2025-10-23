@@ -7,6 +7,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vites
 import { getDbClient } from '../setup-integration.js';
 import { registrationTokenService } from '../../lib/registration-token-service.js';
 import { createTestEvent, testRequest } from './handler-test-helper.js';
+import { TRANSACTION_LIMITS } from '../../lib/ticket-config.js';
 
 describe('Registration Complete Flow - Integration Tests', () => {
   let db;
@@ -235,8 +236,8 @@ describe('Registration Complete Flow - Integration Tests', () => {
       }
     }, 30000); // 30 second timeout for batch registration with emails
 
-    it('should enforce maximum 10 tickets per batch', async () => {
-      const tooManyTickets = Array(11).fill(null).map((_, i) => ({
+    it('should enforce maximum tickets per batch based on TRANSACTION_LIMITS', async () => {
+      const tooManyTickets = Array(TRANSACTION_LIMITS.MAX_TICKETS_PER_TRANSACTION + 1).fill(null).map((_, i) => ({
         ticketId: `TICKET-${i}`,
         firstName: 'Test',
         lastName: 'User',
@@ -248,7 +249,7 @@ describe('Registration Complete Flow - Integration Tests', () => {
       expect(response.status).toBe(400);
 
       const data = response.data;
-      expect(data.error).toBe('Maximum 10 tickets per batch');
+      expect(data.error).toBe(`Maximum ${TRANSACTION_LIMITS.MAX_TICKETS_PER_TRANSACTION} tickets per batch`);
     });
 
     it('should handle batch with mix of valid and invalid tickets', async () => {

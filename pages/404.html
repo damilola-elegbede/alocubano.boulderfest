@@ -192,12 +192,15 @@
     <script type="module" src="/js/theme-manager.js"></script>
 
     <!-- Stylesheets -->
-    <link rel="stylesheet" href="/css/base.css" />
-    <link rel="stylesheet" href="/css/floating-cart.css" />
-    <link rel="stylesheet" href="/css/floating-cart-dark.css" />
-    <link rel="stylesheet" href="/css/header-cart.css" />
-    <link rel="stylesheet" href="/css/theme-toggle.css" />
-    <style>
+    <!-- Critical CSS (render-blocking) -->
+    <link rel="stylesheet" href="/css/bundle-critical.css" />
+
+    <!-- Deferred CSS (lazy-loaded) -->
+    <link rel="stylesheet" href="/css/bundle-deferred.css" media="print" onload="this.media='all'">
+    <noscript>
+      <link rel="stylesheet" href="/css/bundle-deferred.css">
+    </noscript>
+  <style>
       body {
         min-height: 100vh;
         display: flex;

@@ -131,6 +131,14 @@
       "destination": "/images/:path*"
     },
     {
+      "source": "/css/:path*",
+      "destination": "/css/:path*"
+    },
+    {
+      "source": "/js/:path*",
+      "destination": "/js/:path*"
+    },
+    {
       "source": "/wallet/:path*",
       "destination": "/public/wallet/:path*"
     },
@@ -195,7 +203,7 @@
       "destination": "/pages/admin/index"
     },
     {
-      "source": "/admin/(login|dashboard|manual-entry|checkin|analytics|donations|mfa-settings|registrations|tickets|ticket-detail|api-endpoints|test-dashboard|test|audit-logs)",
+      "source": "/admin/(login|dashboard|manual-entry|checkin|analytics|donations|mfa-settings|registrations|tickets|ticket-detail|api-endpoints|database-dashboard|test-dashboard|test|audit-logs)",
       "destination": "/pages/admin/$1"
     }
   ],
@@ -270,6 +278,10 @@
     {
       "source": "/(.*)",
       "headers": [
+        {
+          "key": "x-vercel-skip-toolbar",
+          "value": "1"
+        },
         {
           "key": "Link",
           "value": "<https://fonts.googleapis.com>; rel=dns-prefetch"

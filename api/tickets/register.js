@@ -1,4 +1,5 @@
 import { getDatabaseClient } from "../../lib/database.js";
+import { buildQRCodeUrl, buildViewTicketsUrl, buildWalletPassUrls } from "../../lib/url-utils.js";
 import { getBrevoClient } from "../../lib/brevo-client.js";
 import rateLimit from "../../lib/rate-limit-middleware.js";
 import auditService from "../../lib/audit-service.js";
@@ -298,7 +299,8 @@ export default async function handler(req, res) {
       // Generate QR token for the ticket
       const { getQRTokenService } = await import('../../lib/qr-token-service.js');
       const qrService = getQRTokenService();
-      const qrToken = await qrService.getOrCreateToken(ticketId);
+      // Convert BigInt ticketId to string for QR token generation
+      const qrToken = await qrService.getOrCreateToken(String(ticketId));
 
       // Format event date
       const eventDate = ticket.start_date && ticket.end_date
@@ -316,12 +318,11 @@ export default async function handler(req, res) {
         eventName: ticket.event_name,
         eventLocation: `${ticket.venue_name}, ${ticket.venue_city}, ${ticket.venue_state}`,
         eventDate: eventDate,
-        qrCodeUrl: `${baseUrl}/api/qr/generate?token=${qrToken}`,
-        walletPassUrl: `${baseUrl}/api/tickets/apple-wallet/${ticketId}`,
-        googleWalletUrl: `${baseUrl}/api/tickets/google-wallet/${ticketId}`,
+        qrCodeUrl: buildQRCodeUrl(qrToken),
+        ...buildWalletPassUrls(ticketId),
         appleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-apple.png`,
         googleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-google.png`,
-        viewTicketUrl: `${baseUrl}/view-tickets?token=${ticket.registration_token}&ticketId=${ticketId}`
+        viewTicketUrl: buildViewTicketsUrl(ticket.registration_token, ticketId)
       });
 
       await brevo.sendTransactionalEmail({

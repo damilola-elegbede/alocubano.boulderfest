@@ -4,6 +4,8 @@ import rateLimit from "../../lib/rate-limit-middleware.js";
 import auditService from "../../lib/audit-service.js";
 import { processDatabaseResult } from "../../lib/bigint-serializer.js";
 import { enhanceApiResponse } from "../../lib/time-utils.js";
+import { TRANSACTION_LIMITS } from "../../lib/ticket-config.js";
+import { getBaseUrl, buildQRCodeUrl, buildViewTicketsUrl, buildWalletPassUrls } from "../../lib/url-utils.js";
 
 // Input validation regex patterns
 const NAME_REGEX = /^[a-zA-Z\s\-']{2,50}$/;
@@ -398,10 +400,10 @@ export default async function handler(req, res) {
     });
   }
 
-  if (registrations.length > 10) {
+  if (registrations.length > TRANSACTION_LIMITS.MAX_TICKETS_PER_TRANSACTION) {
     return res.status(400).json({
-      error: 'Maximum 10 tickets per batch',
-      details: `You attempted to register ${registrations.length} tickets. Please register in batches of 10 or fewer.`
+      error: `Maximum ${TRANSACTION_LIMITS.MAX_TICKETS_PER_TRANSACTION} tickets per batch`,
+      details: `You attempted to register ${registrations.length} tickets. Please register in batches of ${TRANSACTION_LIMITS.MAX_TICKETS_PER_TRANSACTION} or fewer.`
     });
   }
 
@@ -850,20 +852,14 @@ export default async function handler(req, res) {
             console.log(`[BATCH_REG] Sending email for ticket ${task.registration.ticketId}`);
           }
 
-          // Determine base URL for email links
-          let baseUrl;
-          if (process.env.VERCEL_ENV === 'production') {
-            baseUrl = "https://www.alocubanoboulderfest.org";
-          } else if (process.env.VERCEL_URL) {
-            baseUrl = `https://${process.env.VERCEL_URL}`;
-          } else {
-            baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://alocubanoboulderfest.org";
-          }
+          // Use centralized base URL utility
+          const baseUrl = getBaseUrl();
 
           // Generate QR token for the ticket
           const { getQRTokenService } = await import('../../lib/qr-token-service.js');
           const qrService = getQRTokenService();
-          const qrToken = await qrService.getOrCreateToken(task.registration.ticketId);
+          // Convert BigInt ticketId to string for QR token generation
+          const qrToken = await qrService.getOrCreateToken(String(task.registration.ticketId));
 
           // Format event date
           const eventDate = task.ticket.start_date && task.ticket.end_date
@@ -881,12 +877,11 @@ export default async function handler(req, res) {
             eventName: task.ticket.event_name,
             eventLocation: `${task.ticket.venue_name}, ${task.ticket.venue_city}, ${task.ticket.venue_state}`,
             eventDate: eventDate,
-            qrCodeUrl: `${baseUrl}/api/qr/generate?token=${qrToken}`,
-            walletPassUrl: `${baseUrl}/api/tickets/apple-wallet/${task.registration.ticketId}`,
-            googleWalletUrl: `${baseUrl}/api/tickets/google-wallet/${task.registration.ticketId}`,
+            qrCodeUrl: buildQRCodeUrl(qrToken),
+            ...buildWalletPassUrls(task.registration.ticketId),
             appleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-apple.png`,
             googleWalletButtonUrl: `${baseUrl}/images/add-to-wallet-google.png`,
-            viewTicketUrl: `${baseUrl}/view-tickets?token=${transactionInfo?.registration_token}&ticketId=${task.registration.ticketId}`
+            viewTicketUrl: buildViewTicketsUrl(transactionInfo?.registration_token, task.registration.ticketId)
           });
 
           // Send email using Brevo API with custom HTML

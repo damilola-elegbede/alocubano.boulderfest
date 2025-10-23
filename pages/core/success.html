@@ -76,6 +76,15 @@
     <!-- DNS prefetch for external resources -->
     <link rel="dns-prefetch" href="//fonts.googleapis.com" />
     <link rel="dns-prefetch" href="//fonts.gstatic.com" />
+    <!-- Preconnect to Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- Preload critical fonts -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Playfair+Display:ital,wght@0,400;0,900;1,400;1,900&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" media="print" onload="this.media='all'">
+    <noscript>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Playfair+Display:ital,wght@0,400;0,900;1,400;1,900&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap">
+    </noscript>
 
     <!-- Performance optimizations -->
 
@@ -84,19 +93,14 @@
 
     <!-- Performance optimization system -->
     <script type="module" src="/js/performance-integration.js"></script>
+    <!-- Critical CSS (render-blocking) -->
+    <link rel="stylesheet" href="/css/bundle-critical.css" />
 
-    <link rel="stylesheet" href="/css/base.css" />
-    <link rel="stylesheet" href="/css/components.css" />
-    <link rel="stylesheet" href="/css/typography.css" />
-    <link rel="stylesheet" href="/css/floating-cart.css" />
-    <link rel="stylesheet" href="/css/floating-cart-dark.css" />
-    <link rel="stylesheet" href="/css/header-cart.css" />
-    <link rel="stylesheet" href="/css/checkout-loading.css" />
-    <link rel="stylesheet" href="/css/mobile-overrides.css" />
-    <!-- Theme styles -->
-    <link rel="stylesheet" href="/css/theme-toggle.css" />
-
-    <style>
+    <!-- Deferred CSS (lazy-loaded) -->
+    <link rel="stylesheet" href="/css/bundle-deferred.css" media="print" onload="this.media='all'">
+    <noscript>
+      <link rel="stylesheet" href="/css/bundle-deferred.css">
+    </noscript><style>
       /* Success Page Specific Styles */
       .success-container {
         min-height: 60vh;
@@ -177,7 +181,6 @@
         font-weight: bold;
         color: var(--color-red);
       }
-
 
       .success-details {
         background: var(--color-surface);
@@ -360,7 +363,6 @@
           padding: var(--space-sm) var(--space-md);
         }
 
-
         .success-actions {
           flex-direction: column;
           width: 100%;
@@ -453,6 +455,23 @@
                           data-event="boulder-fest-2025"
                           data-event-status="current"
                           >2025 Festival</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                  <li class="dropdown-category" role="group">
+                    <span class="dropdown-category-title" role="presentation"
+                      >Weekenders</span
+                    >
+                    <ul class="dropdown-submenu">
+                      <li>
+                        <a
+                          href="/weekender-2025-11"
+                          class="dropdown-link"
+                          role="menuitem"
+                          data-event="weekender-2025-11"
+                          data-event-status="upcoming"
+                          >November 2025</a
                         >
                       </li>
                     </ul>
@@ -550,15 +569,12 @@
             <a href="#" id="register-now-btn" class="success-btn accent" aria-label="Register your tickets now to complete attendee information">Register Now</a>
           </div>
 
-
-
           <div class="success-details" id="order-details" style="display: none">
             <h3>Order Details</h3>
             <p><strong>Order ID:</strong> <span id="order-id"></span></p>
             <p><strong>Amount:</strong> $<span id="order-amount"></span></p>
             <p><strong>Email:</strong> <span id="order-email"></span></p>
           </div>
-
 
           <!-- Registration will be handled on separate page -->
 
@@ -692,7 +708,11 @@
           if (remainingSeconds <= 0) {
             clearInterval(countdownInterval);
             // Use registrationUrl if available, otherwise fallback to home
-            const redirectUrl = registrationUrl || '/home';
+            // Validate URL before redirect to prevent XSS
+            let redirectUrl = '/home';
+            if (registrationUrl && (registrationUrl.startsWith('/') || registrationUrl.startsWith('./'))) {
+              redirectUrl = registrationUrl;
+            }
             window.location.href = redirectUrl;
           }
         }, 1000);
@@ -711,9 +731,12 @@
       // Handle register now button click
       function handleRegisterNow(event) {
         event.preventDefault(); // Prevent default link behavior
-        if (registrationUrl) {
+        // Validate URL before redirect to prevent XSS
+        if (registrationUrl && (registrationUrl.startsWith('/') || registrationUrl.startsWith('./'))) {
           stopCountdown();
           window.location.href = registrationUrl;
+        } else {
+          console.error('Invalid registration URL, cannot redirect');
         }
       }
 
@@ -741,12 +764,20 @@
         }
       }
 
-
       // Verify Stripe payment
       async function verifyStripePayment() {
         try {
+          // Validate and sanitize session_id
+          const sanitizedSessionId = String(sessionId || '').trim();
+          if (!sanitizedSessionId) {
+            console.error('Invalid session ID');
+            return false;
+          }
+
+          // Encode session_id for safe URL use
+          const encodedSessionId = encodeURIComponent(sanitizedSessionId);
           const response = await fetch(
-            `/api/payments/checkout-success?session_id=${sessionId}`,
+            `/api/payments/checkout-success?session_id=${encodedSessionId}`,
           );
           const data = await response.json();
 
@@ -804,6 +835,13 @@
       // Capture and verify PayPal payment
       async function capturePayPalPayment() {
         try {
+          // Sanitize token before sending to API
+          const sanitizedToken = String(token || '').trim();
+          if (!sanitizedToken) {
+            console.error('Invalid PayPal token');
+            return false;
+          }
+
           // First capture the PayPal order
           const captureResponse = await fetch('/api/payments/paypal/capture-order', {
             method: 'POST',
@@ -811,7 +849,7 @@
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              orderId: token
+              orderId: sanitizedToken
             })
           });
 
@@ -958,7 +996,6 @@
                                 data.registrationUrl ||
                                 data.registrationToken;
 
-
         // Debug logging for ticket purchase detection
         console.log('Ticket purchase detection:', {
           isTicketPurchase,
@@ -981,10 +1018,19 @@
         if (isTicketPurchase) {
           // Set registration URL - use provided URL or fallback to registration page
           if (data.registrationUrl) {
-            registrationUrl = data.registrationUrl;
+            // Sanitize URL from API response to prevent XSS
+            // Only accept URLs that start with / or are relative paths
+            const url = String(data.registrationUrl);
+            if (url.startsWith('/') || url.startsWith('./')) {
+              registrationUrl = url;
+            } else {
+              console.warn('Invalid registration URL from API, using fallback');
+              registrationUrl = '/register-tickets';
+            }
           } else if (data.registrationToken) {
-            // Use the expected query parameter format
-            registrationUrl = `/register-tickets?token=${data.registrationToken}`;
+            // Sanitize and encode the registration token for URL use
+            const encodedToken = encodeURIComponent(String(data.registrationToken));
+            registrationUrl = `/register-tickets?token=${encodedToken}`;
           } else {
             // Fallback to basic registration page
             registrationUrl = '/register-tickets';
@@ -994,11 +1040,15 @@
 
           // Show register now button with its container
           if (registerNowBtn && registerNowContainer) {
-            registerNowBtn.href = registrationUrl;
-            registerNowContainer.style.display = 'block';
-            registerNowBtn.addEventListener('click', handleRegisterNow);
+            // Validate URL before setting href to prevent XSS
+            if (registrationUrl && (registrationUrl.startsWith('/') || registrationUrl.startsWith('./'))) {
+              registerNowBtn.href = registrationUrl;
+              registerNowContainer.style.display = 'block';
+              registerNowBtn.addEventListener('click', handleRegisterNow);
+            } else {
+              console.error('Invalid registration URL, cannot display register button');
+            }
           }
-
 
           // Start countdown timer for ticket purchases
           startCountdown();
@@ -1109,7 +1159,6 @@
         announcer.textContent = message;
       }
 
-
       // Start verification when page loads
       verifyPayment();
 
@@ -1118,9 +1167,9 @@
       // Registration form submission handling removed - handled on separate page
     </script>
 
-    <script src="/js/navigation.js"></script>
-    <script src="/js/main.js"></script>
-    <script src="/js/typography.js"></script>
+    <script defer src="/js/navigation.js"></script>
+    <script defer src="/js/main.js"></script>
+    <script defer src="/js/typography.js"></script>
 
     <!-- Cart system not needed on success page - cart is cleared after payment -->
     

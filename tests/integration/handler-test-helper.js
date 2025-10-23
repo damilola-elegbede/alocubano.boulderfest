@@ -165,6 +165,7 @@ export const HTTP_STATUS = {
   UNAUTHORIZED: 401,
   FORBIDDEN: 403,
   NOT_FOUND: 404,
+  METHOD_NOT_ALLOWED: 405,
   CONFLICT: 409,
   GONE: 410,
   UNPROCESSABLE_ENTITY: 422,
@@ -185,15 +186,31 @@ export function createMockRequest(method, url, body = null, headers = {}) {
   const randomOctet = Math.floor(Math.random() * 254) + 1; // 1-255
   const testIP = `127.0.${uniqueOctet}.${randomOctet}`;
 
+  // Parse query parameters from URL
+  const query = {};
+  urlObj.searchParams.forEach((value, key) => {
+    query[key] = value;
+  });
+
+  // Ensure Cookie header is lowercase for consistency
+  const finalHeaders = {
+    'content-type': 'application/json',
+    'x-forwarded-for': testIP,  // Valid IP address for rate limiting
+    'x-real-ip': testIP,  // Fallback IP header
+    ...headers
+  };
+
+  // Normalize cookie header to lowercase
+  if (finalHeaders.Cookie && !finalHeaders.cookie) {
+    finalHeaders.cookie = finalHeaders.Cookie;
+    delete finalHeaders.Cookie;
+  }
+
   return {
     method: method.toUpperCase(),
     url: urlObj.toString(),
-    headers: {
-      'content-type': 'application/json',
-      'x-forwarded-for': testIP,  // Valid IP address for rate limiting
-      'x-real-ip': testIP,  // Fallback IP header
-      ...headers
-    },
+    query: query,
+    headers: finalHeaders,
     body: body,  // Pass body as-is, not stringified
     json: async () => body,
     text: async () => body ? JSON.stringify(body) : '',
@@ -337,6 +354,8 @@ export async function testRequest(method, path, data = null, headers = {}) {
     '/api/admin/verify-session': 'api/admin/verify-session',
     '/api/admin/dashboard': 'api/admin/dashboard',
     '/api/admin/registrations': 'api/admin/registrations',
+    '/api/admin/donations': 'api/admin/donations',
+    '/api/admin/analytics': 'api/admin/analytics',
     '/api/admin/transactions': 'api/admin/transactions',
     '/api/admin/audit-logs': 'api/admin/audit-logs',
     '/api/admin/search': 'api/admin/search',
