@@ -64,6 +64,29 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: "🔐 Validate Required Secrets"
+        run: |
+          echo "🔍 Checking secrets configuration for unit tests..."
+          missing_secrets=()
+
+          # Unit tests use in-memory SQLite and test defaults
+          # Only validate truly critical secrets that can't be defaulted
+          [ -z "$BREVO_API_KEY" ] && missing_secrets+=("BREVO_API_KEY")
+          [ -z "$BREVO_WEBHOOK_SECRET" ] && missing_secrets+=("BREVO_WEBHOOK_SECRET")
+
+          if [ ${#missing_secrets[@]} -gt 0 ]; then
+            echo "⚠️  Warning: Missing secrets: ${missing_secrets[*]}"
+            echo "   Some email-related unit tests may be skipped"
+            echo ""
+            echo "📋 Optional: Configure these secrets in GitHub repository settings:"
+            echo "   Settings → Secrets and variables → Actions → Repository secrets"
+          else
+            echo "✅ All critical secrets configured for unit tests"
+          fi
+
+          # NOTE: QR_SECRET_KEY, REGISTRATION_SECRET, INTERNAL_API_KEY are optional
+          # Unit tests set their own test secrets in beforeEach/setup hooks
+
       - name: "🔧 Setup Node.js ${{ matrix.node-version }}"
         uses: actions/setup-node@v4
         with:
