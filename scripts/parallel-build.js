@@ -16,6 +16,8 @@
 import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { existsSync } from 'fs';
+import path from 'path';
 import { shouldRebuild, saveChecksums } from './build-cache.js';
 import { saveCacheMetadata, getCacheStats } from './vercel-cache.js';
 
@@ -93,6 +95,32 @@ function execCommand(command, args, label) {
 }
 
 /**
+ * Check if required build artifacts exist
+ * These files are gitignored and must be generated during build
+ */
+function checkRequiredArtifacts() {
+  const rootDir = process.cwd();
+  const required = [
+    'css/bundle-critical.css',
+    'css/bundle-deferred.css',
+    'css/bundle-admin.css',
+    'public/generated/tickets.html'
+  ];
+
+  const missing = [];
+  for (const file of required) {
+    if (!existsSync(path.join(rootDir, file))) {
+      missing.push(file);
+    }
+  }
+
+  return {
+    allExist: missing.length === 0,
+    missing
+  };
+}
+
+/**
  * Main build process
  */
 async function build() {
@@ -105,10 +133,23 @@ async function build() {
       cacheResult = await shouldRebuild();
 
       if (!cacheResult.shouldRebuild) {
-        console.log('⚡ Build skipped - no changes detected');
-        console.log('💡 To force rebuild, set SKIP_BUILD_CACHE=true');
-        console.log('');
-        process.exit(0);
+        // Check if required artifacts exist
+        const artifacts = checkRequiredArtifacts();
+
+        if (artifacts.allExist) {
+          // Safe to skip - all artifacts present
+          console.log('✅ Cache HIT + all artifacts present');
+          console.log('⚡ Build skipped - no changes detected');
+          console.log('💡 To force rebuild, set SKIP_BUILD_CACHE=true');
+          console.log('');
+          process.exit(0);
+        } else {
+          // Not safe to skip - missing artifacts
+          console.log('✅ Cache HIT but missing artifacts:', artifacts.missing.join(', '));
+          console.log('🔧 Force full build to regenerate artifacts');
+          console.log('');
+          // Continue with full build
+        }
       }
     } else {
       console.log('⚠️  Build cache check skipped (SKIP_BUILD_CACHE=true)');
@@ -145,6 +186,11 @@ async function build() {
 
     const parallelDuration = Date.now() - parallelStartTime;
     console.log(`✅ Parallel tasks completed (${parallelDuration}ms)`);
+
+    // Step 2.5: Compress static assets (depends on CSS bundling from Step 2)
+    console.log('');
+    console.log('📋 Step 2.5: Compressing static assets...');
+    await execCommand('node', ['scripts/compress-assets.js'], 'Asset Compression');
 
     // Step 3: Run ticket generation (depends on bootstrap.json from Step 2)
     console.log('');

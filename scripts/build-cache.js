@@ -235,25 +235,6 @@ export async function generateChecksums() {
  */
 export async function loadCachedChecksums() {
   try {
-    // Debug logging for Vercel cache investigation
-    if (isVercel) {
-      console.log(`🔍 Cache lookup on Vercel:`);
-      console.log(`   Cache directory: ${CACHE_DIR}`);
-      console.log(`   Cache file: ${CACHE_FILE}`);
-      console.log(`   Directory exists: ${existsSync(CACHE_DIR)}`);
-      console.log(`   File exists: ${existsSync(CACHE_FILE)}`);
-
-      // List contents of .vercel/output/cache if it exists
-      if (existsSync(CACHE_DIR)) {
-        try {
-          const files = readdirSync(CACHE_DIR);
-          console.log(`   Files in cache dir: ${files.length ? files.join(', ') : '(empty)'}`);
-        } catch (e) {
-          console.log(`   Could not list cache dir: ${e.message}`);
-        }
-      }
-    }
-
     if (!existsSync(CACHE_FILE)) {
       return null;
     }
