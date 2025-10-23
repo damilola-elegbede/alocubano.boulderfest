@@ -42,18 +42,38 @@ export default async function handler(req, res) {
     let usedSecret = null;
     let lastError = null;
 
+    // Token fix cutoff date: tokens created before this date have incorrect 72-hour expiration
+    // Tokens created after this date have proper event-based expiration
+    const TOKEN_FIX_CUTOFF = new Date('2025-10-24T00:00:00Z').getTime() / 1000;
+
     // Try each secret until one works
-    // CRITICAL: Ignore JWT expiration - we check registration_deadline from database instead
-    // This prevents tickets from becoming inaccessible due to arbitrary 72-hour token expiration
     for (const secret of secrets) {
       try {
+        // First, try normal verification (for tokens with correct expiration)
         decoded = jwt.verify(token, secret.value, {
-          algorithms: ['HS256'],
-          ignoreExpiration: true  // Event-based expiration checked via registration_deadline, not JWT exp
+          algorithms: ['HS256']
         });
         usedSecret = secret.name;
         break; // Success! Stop trying
       } catch (err) {
+        // If expired, check if it's an old token that needs special handling
+        if (err.name === 'TokenExpiredError') {
+          try {
+            const payload = jwt.decode(token);
+            if (payload?.iat && payload.iat < TOKEN_FIX_CUTOFF) {
+              // Old token - ignore JWT exp, database will check registration_deadline
+              decoded = jwt.verify(token, secret.value, {
+                algorithms: ['HS256'],
+                ignoreExpiration: true
+              });
+              usedSecret = secret.name;
+              console.warn(`[REG_STATUS] Old token (iat: ${new Date(payload.iat * 1000).toISOString()}) - ignoring JWT exp, using database expiration`);
+              break; // Success! Stop trying
+            }
+          } catch (decodeError) {
+            // Failed to decode - continue to next secret
+          }
+        }
         lastError = err;
         // Continue to next secret
       }
