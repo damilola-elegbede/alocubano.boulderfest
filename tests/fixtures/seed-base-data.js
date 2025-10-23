@@ -44,18 +44,20 @@ export const BASE_EVENT = {
 export const BASE_TRANSACTION = {
   id: 1,
   transaction_id: 'TXN_BASE_001',
-  stripe_session_id: 'cs_test_base_session_001',
-  stripe_payment_intent: 'pi_test_base_001',
-  email: 'test@example.com',
+  type: 'ticket_purchase',
   status: 'completed',
-  amount: 12000, // $120.00
-  currency: 'usd',
-  ticket_count: 1,
-  event_id: 1,
-  metadata: JSON.stringify({
+  amount_cents: 12000, // $120.00
+  currency: 'USD',
+  customer_email: 'test@example.com',
+  customer_name: 'Test User',
+  order_data: JSON.stringify({
     test_data: true,
-    source: 'unit_test_base_seed'
+    source: 'unit_test_base_seed',
+    items: [{ type: 'ticket', quantity: 1, price: 12000 }]
   }),
+  stripe_session_id: 'cs_test_base_session_001',
+  event_id: 1,
+  is_test: 1,
   created_at: '2025-01-15T12:00:00.000Z',
   updated_at: '2025-01-15T12:00:00.000Z'
 };
@@ -64,34 +66,30 @@ export const BASE_TICKETS = [
   {
     ticket_id: 'TEST_TICKET_001',
     event_id: 1,
-    transaction_id: 'TXN_BASE_001',
-    status: 'active',
+    transaction_id: 1, // Foreign key to transactions.id
     ticket_type: 'Full Festival Pass',
-    price: 12000,
+    price_cents: 12000,
+    status: 'active',
+    registration_status: 'pending',
     attendee_first_name: 'Test',
     attendee_last_name: 'User',
     attendee_email: 'test@example.com',
-    qr_token: null, // Generated on demand by tests
-    registration_token: null, // Generated on demand by tests
-    registered_at: null,
-    registration_deadline: '2026-05-14T23:59:59.000Z',
+    is_test: 1,
     created_at: '2025-01-15T12:00:00.000Z',
     updated_at: '2025-01-15T12:00:00.000Z'
   },
   {
     ticket_id: 'TEST_TICKET_002',
     event_id: 1,
-    transaction_id: 'TXN_BASE_001',
-    status: 'active',
+    transaction_id: 1, // Foreign key to transactions.id
     ticket_type: 'Single Day Pass',
-    price: 5000,
+    price_cents: 5000,
+    status: 'active',
+    registration_status: 'pending',
     attendee_first_name: 'Test',
     attendee_last_name: 'Attendee',
     attendee_email: 'test2@example.com',
-    qr_token: null,
-    registration_token: null,
-    registered_at: null,
-    registration_deadline: '2026-05-14T23:59:59.000Z',
+    is_test: 1,
     created_at: '2025-01-15T12:00:00.000Z',
     updated_at: '2025-01-15T12:00:00.000Z'
   }
@@ -141,21 +139,22 @@ export async function seedBaseTestData(db) {
     // Insert base transaction (ignore if already exists)
     await db.execute({
       sql: `INSERT OR IGNORE INTO transactions
-            (id, transaction_id, stripe_session_id, stripe_payment_intent, email, status,
-             amount, currency, ticket_count, event_id, metadata, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            (id, transaction_id, type, status, amount_cents, currency, customer_email, customer_name,
+             order_data, stripe_session_id, event_id, is_test, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       args: [
         BASE_TRANSACTION.id,
         BASE_TRANSACTION.transaction_id,
-        BASE_TRANSACTION.stripe_session_id,
-        BASE_TRANSACTION.stripe_payment_intent,
-        BASE_TRANSACTION.email,
+        BASE_TRANSACTION.type,
         BASE_TRANSACTION.status,
-        BASE_TRANSACTION.amount,
+        BASE_TRANSACTION.amount_cents,
         BASE_TRANSACTION.currency,
-        BASE_TRANSACTION.ticket_count,
+        BASE_TRANSACTION.customer_email,
+        BASE_TRANSACTION.customer_name,
+        BASE_TRANSACTION.order_data,
+        BASE_TRANSACTION.stripe_session_id,
         BASE_TRANSACTION.event_id,
-        BASE_TRANSACTION.metadata,
+        BASE_TRANSACTION.is_test,
         BASE_TRANSACTION.created_at,
         BASE_TRANSACTION.updated_at
       ]
@@ -165,25 +164,22 @@ export async function seedBaseTestData(db) {
     for (const ticket of BASE_TICKETS) {
       await db.execute({
         sql: `INSERT OR IGNORE INTO tickets
-              (ticket_id, event_id, transaction_id, status, ticket_type, price,
-               attendee_first_name, attendee_last_name, attendee_email,
-               qr_token, registration_token, registered_at, registration_deadline,
-               created_at, updated_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              (ticket_id, event_id, transaction_id, ticket_type, price_cents, status,
+               registration_status, attendee_first_name, attendee_last_name, attendee_email,
+               is_test, created_at, updated_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
           ticket.ticket_id,
           ticket.event_id,
           ticket.transaction_id,
-          ticket.status,
           ticket.ticket_type,
-          ticket.price,
+          ticket.price_cents,
+          ticket.status,
+          ticket.registration_status,
           ticket.attendee_first_name,
           ticket.attendee_last_name,
           ticket.attendee_email,
-          ticket.qr_token,
-          ticket.registration_token,
-          ticket.registered_at,
-          ticket.registration_deadline,
+          ticket.is_test,
           ticket.created_at,
           ticket.updated_at
         ]
