@@ -5,19 +5,18 @@
 
 -- Update registration_token_expires for all existing tokens
 -- Set expiration to 7 days after the event ends
+-- Uses direct event_id lookup with NULL handling to prevent constraint violations
 UPDATE transactions
 SET registration_token_expires = datetime(
-  (
-    SELECT e.end_date
-    FROM tickets t
-    JOIN events e ON t.event_id = e.id
-    WHERE t.transaction_id = transactions.id
-    LIMIT 1
+  COALESCE(
+    (SELECT end_date FROM events WHERE id = transactions.event_id),
+    CURRENT_TIMESTAMP
   ),
   '+7 days'
 )
 WHERE registration_token IS NOT NULL
-  AND registration_token != '';
+  AND registration_token != ''
+  AND event_id IS NOT NULL;
 
 -- Verify the update
 -- This comment documents expected results:
