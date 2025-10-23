@@ -692,7 +692,11 @@
           if (remainingSeconds <= 0) {
             clearInterval(countdownInterval);
             // Use registrationUrl if available, otherwise fallback to home
-            const redirectUrl = registrationUrl || '/home';
+            // Validate URL before redirect to prevent XSS
+            let redirectUrl = '/home';
+            if (registrationUrl && (registrationUrl.startsWith('/') || registrationUrl.startsWith('./'))) {
+              redirectUrl = registrationUrl;
+            }
             window.location.href = redirectUrl;
           }
         }, 1000);
@@ -711,9 +715,12 @@
       // Handle register now button click
       function handleRegisterNow(event) {
         event.preventDefault(); // Prevent default link behavior
-        if (registrationUrl) {
+        // Validate URL before redirect to prevent XSS
+        if (registrationUrl && (registrationUrl.startsWith('/') || registrationUrl.startsWith('./'))) {
           stopCountdown();
           window.location.href = registrationUrl;
+        } else {
+          console.error('Invalid registration URL, cannot redirect');
         }
       }
 
@@ -744,8 +751,17 @@
       // Verify Stripe payment
       async function verifyStripePayment() {
         try {
+          // Validate and sanitize session_id
+          const sanitizedSessionId = String(sessionId || '').trim();
+          if (!sanitizedSessionId) {
+            console.error('Invalid session ID');
+            return false;
+          }
+
+          // Encode session_id for safe URL use
+          const encodedSessionId = encodeURIComponent(sanitizedSessionId);
           const response = await fetch(
-            `/api/payments/checkout-success?session_id=${sessionId}`,
+            `/api/payments/checkout-success?session_id=${encodedSessionId}`,
           );
           const data = await response.json();
 
@@ -803,6 +819,13 @@
       // Capture and verify PayPal payment
       async function capturePayPalPayment() {
         try {
+          // Sanitize token before sending to API
+          const sanitizedToken = String(token || '').trim();
+          if (!sanitizedToken) {
+            console.error('Invalid PayPal token');
+            return false;
+          }
+
           // First capture the PayPal order
           const captureResponse = await fetch('/api/payments/paypal/capture-order', {
             method: 'POST',
@@ -810,7 +833,7 @@
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              orderId: token
+              orderId: sanitizedToken
             })
           });
 
@@ -979,10 +1002,19 @@
         if (isTicketPurchase) {
           // Set registration URL - use provided URL or fallback to registration page
           if (data.registrationUrl) {
-            registrationUrl = data.registrationUrl;
+            // Sanitize URL from API response to prevent XSS
+            // Only accept URLs that start with / or are relative paths
+            const url = String(data.registrationUrl);
+            if (url.startsWith('/') || url.startsWith('./')) {
+              registrationUrl = url;
+            } else {
+              console.warn('Invalid registration URL from API, using fallback');
+              registrationUrl = '/register-tickets';
+            }
           } else if (data.registrationToken) {
-            // Use the expected query parameter format
-            registrationUrl = `/register-tickets?token=${data.registrationToken}`;
+            // Sanitize and encode the registration token for URL use
+            const encodedToken = encodeURIComponent(String(data.registrationToken));
+            registrationUrl = `/register-tickets?token=${encodedToken}`;
           } else {
             // Fallback to basic registration page
             registrationUrl = '/register-tickets';
@@ -992,9 +1024,14 @@
 
           // Show register now button with its container
           if (registerNowBtn && registerNowContainer) {
-            registerNowBtn.href = registrationUrl;
-            registerNowContainer.style.display = 'block';
-            registerNowBtn.addEventListener('click', handleRegisterNow);
+            // Validate URL before setting href to prevent XSS
+            if (registrationUrl && (registrationUrl.startsWith('/') || registrationUrl.startsWith('./'))) {
+              registerNowBtn.href = registrationUrl;
+              registerNowContainer.style.display = 'block';
+              registerNowBtn.addEventListener('click', handleRegisterNow);
+            } else {
+              console.error('Invalid registration URL, cannot display register button');
+            }
           }
 
           // Start countdown timer for ticket purchases

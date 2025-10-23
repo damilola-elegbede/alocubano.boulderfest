@@ -5,6 +5,7 @@ import auditService from "../../lib/audit-service.js";
 import { processDatabaseResult } from "../../lib/bigint-serializer.js";
 import { enhanceApiResponse } from "../../lib/time-utils.js";
 import { TRANSACTION_LIMITS } from "../../lib/ticket-config.js";
+import { getBaseUrl } from "../../lib/url-utils.js";
 
 // Input validation regex patterns
 const NAME_REGEX = /^[a-zA-Z\s\-']{2,50}$/;
@@ -851,15 +852,8 @@ export default async function handler(req, res) {
             console.log(`[BATCH_REG] Sending email for ticket ${task.registration.ticketId}`);
           }
 
-          // Determine base URL for email links
-          let baseUrl;
-          if (process.env.VERCEL_ENV === 'production') {
-            baseUrl = "https://www.alocubanoboulderfest.org";
-          } else if (process.env.VERCEL_URL) {
-            baseUrl = `https://${process.env.VERCEL_URL}`;
-          } else {
-            baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://alocubanoboulderfest.org";
-          }
+          // Use centralized base URL utility
+          const baseUrl = getBaseUrl();
 
           // Generate QR token for the ticket
           const { getQRTokenService } = await import('../../lib/qr-token-service.js');

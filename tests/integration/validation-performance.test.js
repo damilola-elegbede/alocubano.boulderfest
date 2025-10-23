@@ -65,7 +65,7 @@ describe('Validation Performance', () => {
       price: {
         product: {
           metadata: {
-            ticket_type: ticketTypeId,
+            ticket_type_id: ticketTypeId, // Use correct metadata key
             event_id: String(testEventId),
             event_date: '2026-05-15'
           }
@@ -125,7 +125,7 @@ describe('Validation Performance', () => {
             price: {
               product: {
                 metadata: {
-                  ticket_type: ticketTypeIds[0],
+                  ticket_type_id: ticketTypeIds[0], // Use correct metadata key
                   event_id: String(testEventId),
                   event_date: '2026-05-15'
                 }
@@ -169,7 +169,7 @@ describe('Validation Performance', () => {
       price: {
         product: {
           metadata: {
-            ticket_type: ticketTypeId,
+            ticket_type_id: ticketTypeId, // Use correct metadata key
             event_id: String(testEventId),
             event_date: '2026-05-15'
           }
@@ -235,7 +235,7 @@ describe('Validation Performance', () => {
         price: {
           product: {
             metadata: {
-              ticket_type: ticketTypeId,
+              ticket_type_id: ticketTypeId, // Use correct metadata key
               event_id: String(testEventId),
               event_date: '2026-05-15'
             }
@@ -294,7 +294,7 @@ describe('Validation Performance', () => {
         price: {
           product: {
             metadata: {
-              ticket_type: ticketTypeIds[0],
+              ticket_type_id: ticketTypeIds[0], // Use correct metadata key
               event_id: String(testEventId),
               event_date: '2026-05-15'
             }
@@ -308,7 +308,7 @@ describe('Validation Performance', () => {
         price: {
           product: {
             metadata: {
-              ticket_type: ticketTypeIds[1],
+              ticket_type_id: ticketTypeIds[1], // Use correct metadata key
               event_id: String(testEventId),
               event_date: '2026-05-15'
             }
@@ -356,7 +356,7 @@ describe('Validation Performance', () => {
         price: {
           product: {
             metadata: {
-              ticket_type: ticketTypeIds[0],
+              ticket_type_id: ticketTypeIds[0], // Use correct metadata key
               event_id: String(testEventId),
               event_date: '2026-05-15'
             }
@@ -370,7 +370,7 @@ describe('Validation Performance', () => {
         price: {
           product: {
             metadata: {
-              ticket_type: 'nonexistent-ticket-999',
+              ticket_type_id: 'nonexistent-ticket-999', // Use correct metadata key
               event_id: String(testEventId),
               event_date: '2026-05-15'
             }
@@ -384,7 +384,7 @@ describe('Validation Performance', () => {
         price: {
           product: {
             metadata: {
-              ticket_type: ticketTypeIds[1],
+              ticket_type_id: ticketTypeIds[1], // Use correct metadata key
               event_id: String(testEventId),
               event_date: '2026-05-15'
             }

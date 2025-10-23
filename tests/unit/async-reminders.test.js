@@ -24,6 +24,7 @@ describe('Async Reminder Scheduling', () => {
 
     mockSession = {
       id: 'cs_test_async_reminders_123',
+      created: Math.floor(Date.now() / 1000), // REQUIRED: Stripe timestamp in seconds
       amount_total: 5000,
       customer_details: {
         email: 'test@example.com',

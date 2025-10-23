@@ -90,11 +90,9 @@ describe('Webhook Parallelization', () => {
   });
 
   test('Stripe retrieve and event logger run in parallel', async () => {
-    // Mock Stripe and payment event logger with timing instrumentation
-    const { default: stripeWebhookHandler } = await import('../../api/payments/stripe-webhook.js');
+    // CRITICAL: Set up all mocks BEFORE importing the handler
+    // This ensures mocks are in place when handler is loaded
 
-    // Import Stripe module and spy on it
-    const Stripe = (await import('stripe')).default;
     const stripeMock = {
       webhooks: {
         constructEvent: vi.fn((body, signature, secret) => {
@@ -150,9 +148,11 @@ describe('Webhook Parallelization', () => {
 
     // Mock payment event logger
     const paymentEventLoggerMock = {
-      logStripeEvent: vi.fn(async () => ({ status: 'logged', eventId: 'evt_test_123' })),
-      updateEventTransactionId: vi.fn(async (eventId, transactionId) => {
+      logStripeEvent: vi.fn(async () => {
         timings.loggerStart = Date.now();
+        return { status: 'logged', eventId: 'evt_test_123' };
+      }),
+      updateEventTransactionId: vi.fn(async (eventId, transactionId) => {
         // Simulate database write latency (100ms)
         await new Promise(resolve => setTimeout(resolve, 100));
         timings.loggerEnd = Date.now();
@@ -201,6 +201,9 @@ describe('Webhook Parallelization', () => {
     }));
     vi.doMock('../../lib/audit-service.js', () => ({ default: auditServiceMock }));
     vi.doMock('../../lib/ticket-service.js', () => ({ default: ticketServiceMock }));
+
+    // NOW import webhook handler after all mocks are set up
+    const { default: stripeWebhookHandler } = await import('../../api/payments/stripe-webhook.js');
 
     // Execute webhook handler
     await stripeWebhookHandler(mockRequest, mockResponse);

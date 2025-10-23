@@ -42,7 +42,7 @@ function formatMetric(value, decimals = 2) {
  * @returns {number|null} Median value or null if empty
  */
 function calculateMedian(values) {
-  if (!values || values.length === 0) {
+  if (!Array.isArray(values) || values.length === 0) {
     return null;
   }
   return values[Math.floor(values.length / 2)];
@@ -55,13 +55,28 @@ function calculateMedian(values) {
  * @returns {number|null} Percentile value or null if empty
  */
 function calculatePercentile(values, percentile) {
-  if (!values || values.length === 0) {
+  if (!Array.isArray(values) || values.length === 0) {
     return null;
   }
   const index = Math.floor(values.length * percentile);
   return values[Math.min(index, values.length - 1)];
 }
 
+/**
+ * Measure performance metrics for a single page load
+ * @param {import('playwright').Page} page - Playwright page instance
+ * @param {string} url - URL to measure
+ * @returns {Promise<Object>} Performance metrics object
+ * @property {number|null} fcp - First Contentful Paint time in ms
+ * @property {number|null} lcp - Largest Contentful Paint time in ms
+ * @property {number|null} domContentLoaded - DOMContentLoaded event time in ms
+ * @property {number|null} loadComplete - Load event completion time in ms
+ * @property {number} resourceCount - Total number of resources loaded
+ * @property {number} transferSize - Total transfer size in bytes
+ * @example
+ * const metrics = await measurePagePerformance(page, 'http://localhost:3000/pages/core/home.html');
+ * console.log(`FCP: ${metrics.fcp}ms, LCP: ${metrics.lcp}ms`);
+ */
 async function measurePagePerformance(page, url) {
   await page.goto(url, { waitUntil: 'networkidle' });
 
@@ -86,6 +101,28 @@ async function measurePagePerformance(page, url) {
   return metrics;
 }
 
+/**
+ * Run performance benchmark for a specific page
+ * @param {import('playwright').Browser} browser - Playwright browser instance
+ * @param {Object} pageDef - Page definition object
+ * @param {string} pageDef.name - Display name of the page
+ * @param {string} pageDef.path - Relative path to the page
+ * @returns {Promise<Object>} Benchmark results object
+ * @property {string} name - Page name
+ * @property {string} path - Page path
+ * @property {Object} fcp - First Contentful Paint statistics
+ * @property {number|null} fcp.median - Median FCP time in ms
+ * @property {number|null} fcp.p95 - 95th percentile FCP time in ms
+ * @property {Object} lcp - Largest Contentful Paint statistics
+ * @property {number|null} lcp.median - Median LCP time in ms
+ * @property {number|null} lcp.p95 - 95th percentile LCP time in ms
+ * @property {Object} resourceCount - Resource count statistics
+ * @property {number|null} resourceCount.median - Median resource count
+ * @property {Array<Object>} results - Raw measurement results
+ * @example
+ * const result = await benchmarkPage(browser, { name: 'Home', path: '/pages/core/home.html' });
+ * console.log(`Median FCP: ${result.fcp.median}ms`);
+ */
 async function benchmarkPage(browser, pageDef) {
   console.log(`\nBenchmarking ${pageDef.name}...`);
   
@@ -121,6 +158,18 @@ async function benchmarkPage(browser, pageDef) {
   };
 }
 
+/**
+ * Main benchmark execution function
+ * Launches browser, runs benchmarks for all defined pages, and saves results
+ * @returns {Promise<Object>} Benchmark results object
+ * @property {string} timestamp - ISO 8601 timestamp of benchmark execution
+ * @property {string} baseUrl - Base URL used for testing
+ * @property {Array<Object>} pages - Array of page benchmark results
+ * @throws {Error} When browser launch fails or page benchmarking errors occur
+ * @example
+ * const results = await main();
+ * console.log(`Benchmarked ${results.pages.length} pages`);
+ */
 async function main() {
   console.log('Frontend Performance Benchmark');
   console.log('===============================');
@@ -139,6 +188,12 @@ async function main() {
   }
 
   await browser.close();
+
+  // FIX: Validate pageResults array before using it
+  if (!Array.isArray(pageResults) || pageResults.length === 0) {
+    console.error('No benchmark results collected');
+    process.exit(1);
+  }
 
   const outputDir = path.join(process.cwd(), '.tmp', 'benchmarks');
   if (!fs.existsSync(outputDir)) {

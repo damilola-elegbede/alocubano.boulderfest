@@ -29,10 +29,22 @@ describe('Async Email Performance Tests', () => {
     });
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     // Clear mock call history and restore original implementations
     vi.clearAllMocks();
     vi.restoreAllMocks();
+
+    // Cleanup any test transactions created during tests
+    if (db) {
+      await db.execute({
+        sql: 'DELETE FROM tickets WHERE transaction_id IN (SELECT id FROM transactions WHERE is_test = 1)',
+        args: []
+      });
+      await db.execute({
+        sql: 'DELETE FROM transactions WHERE is_test = 1',
+        args: []
+      });
+    }
   });
 
   test('checkout completes immediately without waiting for email', async () => {

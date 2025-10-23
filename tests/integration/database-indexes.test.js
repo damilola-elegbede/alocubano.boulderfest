@@ -50,6 +50,13 @@ describe('Database Index Performance', () => {
       args: ['test-txn-001', 'test-txn-001', 'tickets', 'completed', 5000, 'test@example.com', '{}', testEventId, 'stripe', 1, 'test']
     });
     testTransactionId = transactionResult.lastInsertRowid || transactionResult.lastInsertId;
+
+    // Create a test ticket linked to this transaction for JOIN testing
+    await db.execute({
+      sql: `INSERT INTO tickets (ticket_id, transaction_id, ticket_type, event_id, price_cents, status, registration_status, attendee_email, is_test, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+      args: ['test-ticket-001', testTransactionId, 'Test Ticket', testEventId, 5000, 'valid', 'completed', 'test@example.com', 1]
+    });
   });
 
   afterAll(async () => {
