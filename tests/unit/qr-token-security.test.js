@@ -171,21 +171,22 @@ describe('QR Token Security', () => {
 
     it('should handle timezone correctly (UTC)', () => {
       const ticketId = 'TKT-007';
-      
+
       // Generate token with current UTC time
       const token = qrService.generateToken({ tid: ticketId });
-      
+
       // Decode to verify UTC timestamps
       const decoded = jwt.decode(token);
-      
+
       // Check iat is recent (within last minute)
       const now = Math.floor(Date.now() / 1000);
       expect(decoded.iat).toBeGreaterThanOrEqual(now - 60);
       expect(decoded.iat).toBeLessThanOrEqual(now);
-      
-      // Check exp is 90 days from iat
-      const expectedExp = decoded.iat + (90 * 24 * 60 * 60);
-      expect(decoded.exp).toBe(expectedExp);
+
+      // Check exp is 1 year from iat (default when no exp provided)
+      const expectedExp = decoded.iat + (365 * 24 * 60 * 60);
+      expect(decoded.exp).toBeGreaterThanOrEqual(expectedExp - 60);
+      expect(decoded.exp).toBeLessThanOrEqual(expectedExp + 60);
       
       // Validation should succeed
       const result = qrService.validateToken(token);
@@ -366,8 +367,8 @@ describe('QR Token Security', () => {
     });
 
     it('should have secure default configuration', () => {
-      // Verify default expiry (90 days)
-      expect(qrService.expiryDays).toBe(90);
+      // expiryDays property was removed - service now uses event-based expiry
+      expect(qrService.expiryDays).toBeUndefined();
 
       // Verify default max scans (3) - changed from 10 in migration 047
       expect(qrService.maxScans).toBe(3);

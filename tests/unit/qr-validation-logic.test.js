@@ -78,16 +78,18 @@ describe('QR Validation Logic - Unit Tests', () => {
       expect(decoded.tid).toBe(ticketId);
     });
 
-    it('should set token expiration to 90 days by default', () => {
+    it('should set token expiration to 1 year when no exp provided', () => {
       const ticketId = 'TEST-TICKET-004';
       const beforeTime = Math.floor(Date.now() / 1000);
       const token = qrService.generateToken({ tid: ticketId });
       const afterTime = Math.floor(Date.now() / 1000);
 
       const decoded = jwt.verify(token, TEST_QR_SECRET);
-      const expectedExpiry = 90 * 24 * 60 * 60; // 90 days in seconds
+      const expectedExpiry = 365 * 24 * 60 * 60; // 1 year in seconds (default fallback)
 
-      expect(decoded.exp - decoded.iat).toBe(expectedExpiry);
+      // Allow small tolerance for timing
+      expect(decoded.exp - decoded.iat).toBeGreaterThanOrEqual(expectedExpiry - 60);
+      expect(decoded.exp - decoded.iat).toBeLessThanOrEqual(expectedExpiry + 60);
       expect(decoded.iat).toBeGreaterThanOrEqual(beforeTime);
       expect(decoded.iat).toBeLessThanOrEqual(afterTime);
     });
@@ -534,8 +536,10 @@ describe('QR Validation Logic - Unit Tests', () => {
       expect(isConfigured).toBe(false);
     });
 
-    it('should use default expiry of 90 days', () => {
-      expect(qrService.expiryDays).toBe(90);
+    it('should use event-based expiry (removed fixed 90-day default)', () => {
+      // expiryDays property was removed - service now uses event-based expiry
+      // (7 days after event end, or 1 year fallback if event not found)
+      expect(qrService.expiryDays).toBeUndefined();
     });
 
     it('should use default max scans of 10', () => {

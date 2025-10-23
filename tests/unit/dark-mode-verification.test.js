@@ -286,10 +286,11 @@ describe("Dark Mode Verification Tests", () => {
     });
 
     it("should use consistent CSS imports", () => {
+      // Admin pages use CSS bundles for performance
       const expectedCSS = [
-        "/css/base.css",
-        "/css/forms.css",
-        "/css/admin-overrides.css"
+        "/css/bundle-critical.css",
+        "/css/bundle-admin.css",
+        "/css/bundle-deferred.css"
       ];
 
       expectedCSS.forEach(css => {
