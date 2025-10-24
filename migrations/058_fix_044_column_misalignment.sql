@@ -189,26 +189,40 @@ DROP TABLE IF EXISTS transaction_items_fixed;
 
 CREATE TABLE transaction_items_fixed (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    transaction_id INTEGER NOT NULL,
-    item_type TEXT NOT NULL DEFAULT 'ticket' CHECK (item_type IN ('ticket', 'donation', 'merchandise', 'service')),
+    transaction_id INTEGER NOT NULL REFERENCES transactions(id) ON DELETE CASCADE,
+    item_type TEXT NOT NULL CHECK (item_type IN ('ticket', 'donation', 'merchandise')),
     item_name TEXT NOT NULL,
-    quantity INTEGER NOT NULL DEFAULT 1,
-    unit_price_cents INTEGER NOT NULL,
-    total_price_cents INTEGER NOT NULL,
-    metadata TEXT DEFAULT '{}',
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    item_description TEXT,
+    unit_price_cents INTEGER NOT NULL CHECK (unit_price_cents >= 0),
+    quantity INTEGER DEFAULT 1 CHECK (quantity > 0),
+    total_price_cents INTEGER NOT NULL CHECK (total_price_cents >= 0),
+    ticket_type TEXT,
+    event_id INTEGER REFERENCES events(id) ON DELETE SET NULL,
+    donation_category TEXT,
+    sku TEXT,
+    product_metadata TEXT,
+    fulfillment_status TEXT DEFAULT 'pending' CHECK (
+        fulfillment_status IN ('pending', 'fulfilled', 'cancelled', 'refunded')
+    ),
+    fulfilled_at TIMESTAMP,
     is_test INTEGER NOT NULL DEFAULT 0 CHECK (is_test IN (0, 1)),
-    FOREIGN KEY (transaction_id) REFERENCES transactions(id) ON DELETE CASCADE
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Copy with explicit column mapping
+-- Copy with explicit column mapping (matching Migration 044 schema)
 INSERT INTO transaction_items_fixed (
-    id, transaction_id, item_type, item_name, quantity, unit_price_cents,
-    total_price_cents, metadata, created_at, is_test
+    id, transaction_id, item_type, item_name, item_description,
+    unit_price_cents, quantity, total_price_cents,
+    ticket_type, event_id, donation_category, sku, product_metadata,
+    fulfillment_status, fulfilled_at,
+    created_at, is_test
 )
 SELECT
-    id, transaction_id, item_type, item_name, quantity, unit_price_cents,
-    total_price_cents, metadata, created_at,
+    id, transaction_id, item_type, item_name, item_description,
+    unit_price_cents, quantity, total_price_cents,
+    ticket_type, event_id, donation_category, sku, product_metadata,
+    fulfillment_status, fulfilled_at,
+    created_at,
     COALESCE(is_test, 0) as is_test  -- Handle missing or NULL is_test column
 FROM transaction_items;
 
