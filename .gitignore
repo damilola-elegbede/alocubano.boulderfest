@@ -177,7 +177,3 @@ css/bundle-deferred.css
 
 # Generated CSS bundles
 css/bundle-admin.css
-
-# Compressed static assets (gzip and brotli)
-*.gz
-*.br

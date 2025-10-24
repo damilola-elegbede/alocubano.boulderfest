@@ -187,11 +187,6 @@ async function build() {
     const parallelDuration = Date.now() - parallelStartTime;
     console.log(`✅ Parallel tasks completed (${parallelDuration}ms)`);
 
-    // Step 2.5: Compress static assets (depends on CSS bundling from Step 2)
-    console.log('');
-    console.log('📋 Step 2.5: Compressing static assets...');
-    await execCommand('node', ['scripts/compress-assets.js'], 'Asset Compression');
-
     // Step 3: Run ticket generation (depends on bootstrap.json from Step 2)
     console.log('');
     console.log('📋 Step 3: Running ticket generation...');
