@@ -12,6 +12,11 @@
 
 BEGIN TRANSACTION;
 
+-- Drop views that depend on tickets table (from Migration 044)
+DROP VIEW IF EXISTS v_data_mode_statistics;
+DROP VIEW IF EXISTS v_test_data_cleanup_candidates;
+DROP VIEW IF EXISTS test_ticket_sales_view;
+
 DROP TABLE IF EXISTS tickets_fixed;
 
 -- Create new table with correct schema (from Migration 044)
