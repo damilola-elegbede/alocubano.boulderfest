@@ -5,12 +5,13 @@
 -- to be missing or misaligned in production.
 --
 -- SOLUTION: Rebuild tables with explicit column mapping to ensure correct alignment.
+--
+-- NOTE: Transaction control is handled automatically by the migration system.
+-- Do not include BEGIN TRANSACTION or COMMIT statements.
 
 -- ============================================================================
 -- FIX 1: TICKETS TABLE
 -- ============================================================================
-
-BEGIN TRANSACTION;
 
 -- Drop views that depend on tickets table (from Migration 044)
 DROP VIEW IF EXISTS v_data_mode_statistics;
@@ -122,13 +123,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_tickets_apple_pass_serial ON tickets(apple
 CREATE UNIQUE INDEX IF NOT EXISTS idx_tickets_google_pass_id ON tickets(google_pass_id) WHERE google_pass_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_tickets_is_test ON tickets(is_test);
 
-COMMIT;
-
 -- ============================================================================
 -- FIX 2: TRANSACTIONS TABLE
 -- ============================================================================
-
-BEGIN TRANSACTION;
 
 DROP TABLE IF EXISTS transactions_fixed;
 
@@ -177,13 +174,9 @@ CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(type);
 CREATE INDEX IF NOT EXISTS idx_transactions_is_test ON transactions(is_test);
 CREATE INDEX IF NOT EXISTS idx_transactions_created_at ON transactions(created_at);
 
-COMMIT;
-
 -- ============================================================================
 -- FIX 3: TRANSACTION_ITEMS TABLE
 -- ============================================================================
-
-BEGIN TRANSACTION;
 
 DROP TABLE IF EXISTS transaction_items_fixed;
 
@@ -233,7 +226,5 @@ ALTER TABLE transaction_items_fixed RENAME TO transaction_items;
 CREATE INDEX IF NOT EXISTS idx_transaction_items_transaction_id ON transaction_items(transaction_id);
 CREATE INDEX IF NOT EXISTS idx_transaction_items_item_type ON transaction_items(item_type);
 CREATE INDEX IF NOT EXISTS idx_transaction_items_is_test ON transaction_items(is_test);
-
-COMMIT;
 
 SELECT 'Migration 058 completed successfully' as result;
