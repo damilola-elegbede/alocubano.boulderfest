@@ -168,28 +168,36 @@ jobs:
           # Parse test results from Vitest summary line
           echo "🔍 Parsing integration test results..."
 
-          # Extract from Vitest summary line: "Tests  X passed (Y)"
+          # Extract from Vitest summary line: "Tests  X failed | Y passed | Z skipped (Total)"
           if grep -q "Tests.*passed" integration-test-output.log; then
             # Get the summary line
             summary_line=$(grep "Tests.*passed" integration-test-output.log | tail -1)
             echo "📋 Summary line: $summary_line"
 
-            # Parse passed tests
-            passing_tests=$(echo "$summary_line" | grep -oE "Tests[[:space:]]+[0-9]+" | grep -oE "[0-9]+" || echo "0")
+            # Parse passed tests: "1062 passed"
+            passing_tests=$(echo "$summary_line" | grep -oE "[0-9]+[[:space:]]+passed" | grep -oE "[0-9]+" || echo "0")
 
-            # Parse failed tests if present
+            # Parse failed tests if present: "75 failed"
             if echo "$summary_line" | grep -q "failed"; then
               failing_tests=$(echo "$summary_line" | grep -oE "[0-9]+[[:space:]]+failed" | grep -oE "[0-9]+" || echo "0")
             else
               failing_tests="0"
             fi
 
-            total_tests=$((passing_tests + failing_tests))
-            parsing_method="vitest_summary"
+            # Parse skipped tests if present: "51 skipped"
+            if echo "$summary_line" | grep -q "skipped"; then
+              skipped_tests=$(echo "$summary_line" | grep -oE "[0-9]+[[:space:]]+skipped" | grep -oE "[0-9]+" || echo "0")
+            else
+              skipped_tests="0"
+            fi
+
+            total_tests=$((passing_tests + failing_tests + skipped_tests))
+            parsing_method="vitest_summary_fixed"
           else
             echo "❌ Could not find Vitest summary line"
             passing_tests="0"
             failing_tests="0"
+            skipped_tests="0"
             total_tests="0"
             parsing_method="not_found"
           fi
@@ -199,6 +207,7 @@ jobs:
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "✅ Tests Passed: $passing_tests"
           echo "❌ Tests Failed: $failing_tests"
+          echo "⏭️  Tests Skipped: $skipped_tests"
           echo "📈 Total Tests: $total_tests"
           echo "⏱️  Duration: ${duration}ms"
           echo "🔍 Parsing Method: $parsing_method"

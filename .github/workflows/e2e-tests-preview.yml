@@ -122,8 +122,8 @@ jobs:
               exit 1
             fi
           elif [ "${{ github.event_name }}" = "deployment_status" ]; then
-            # Deployment trigger
-            PREVIEW_URL="${{ github.event.deployment_status.target_url }}"
+            # Deployment trigger - FIX: Use environment_url with fallback to target_url
+            PREVIEW_URL="${{ github.event.deployment_status.environment_url || github.event.deployment_status.target_url }}"
             echo "preview-url=$PREVIEW_URL" >> $GITHUB_OUTPUT
             echo "📍 Using deployment status URL: $PREVIEW_URL"
           else
