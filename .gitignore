@@ -38,6 +38,10 @@ test-result.json
 local.db
 dev.db
 
+# Database backup files
+*.sql
+!migrations/*.sql
+
 # Playwright test artifacts
 playwright-report/
 playwright-report-local/

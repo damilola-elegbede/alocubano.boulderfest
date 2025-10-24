@@ -1,10 +1,10 @@
--- Migration 061: Fix Migration 044 Column Misalignment Bug
+-- Migration 058: Fix Migration 044 Column Misalignment Bug
 --
 -- PROBLEM: Migration 044 used "INSERT INTO tickets_new SELECT * FROM tickets"
 -- which copies columns by POSITION, not by NAME. This caused is_test column
 -- to be missing or misaligned in production.
 --
--- SOLUTION: Rebuild tables with explicit column mapping, handling missing columns.
+-- SOLUTION: Rebuild tables with explicit column mapping to ensure correct alignment.
 
 -- ============================================================================
 -- FIX 1: TICKETS TABLE
@@ -67,9 +67,8 @@ CREATE TABLE tickets_fixed (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Copy data with explicit column mapping (only if tickets table exists)
--- Use 0 as default for is_test if column doesn't exist
--- Skip if tickets doesn't exist (migration already ran)
+-- Copy data with explicit column mapping
+-- This ensures is_test column is correctly aligned regardless of source table column order
 INSERT INTO tickets_fixed (
     id, ticket_id, transaction_id, ticket_type, ticket_type_id, event_id,
     event_date, event_time, event_end_date, price_cents,
@@ -98,9 +97,8 @@ SELECT
     wallet_pass_revoked_at, wallet_pass_revoked_reason,
     registration_status, registered_at, registration_deadline,
     ticket_metadata, created_at, updated_at,
-    0 as is_test  -- Default to production data (not test)
-FROM tickets
-WHERE EXISTS (SELECT 1 FROM sqlite_master WHERE type='table' AND name='tickets');
+    COALESCE(is_test, 0) as is_test  -- Handle missing or NULL is_test column
+FROM tickets;
 
 -- Only drop if tickets exists
 DROP TABLE IF EXISTS tickets;
@@ -155,7 +153,7 @@ CREATE TABLE transactions_fixed (
     FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE SET NULL
 );
 
--- Copy with explicit column mapping (only if transactions table exists)
+-- Copy with explicit column mapping
 INSERT INTO transactions_fixed (
     id, transaction_id, uuid, type, stripe_session_id, customer_email,
     customer_name, amount_cents, currency, status, payment_processor,
@@ -165,9 +163,8 @@ SELECT
     id, transaction_id, uuid, type, stripe_session_id, customer_email,
     customer_name, amount_cents, currency, status, payment_processor,
     order_data, metadata, created_at, updated_at, event_id,
-    0 as is_test  -- Default to production
-FROM transactions
-WHERE EXISTS (SELECT 1 FROM sqlite_master WHERE type='table' AND name='transactions');
+    COALESCE(is_test, 0) as is_test  -- Handle missing or NULL is_test column
+FROM transactions;
 
 DROP TABLE IF EXISTS transactions;
 ALTER TABLE transactions_fixed RENAME TO transactions;
@@ -204,7 +201,7 @@ CREATE TABLE transaction_items_fixed (
     FOREIGN KEY (transaction_id) REFERENCES transactions(id) ON DELETE CASCADE
 );
 
--- Copy with explicit column mapping (only if transaction_items table exists)
+-- Copy with explicit column mapping
 INSERT INTO transaction_items_fixed (
     id, transaction_id, item_type, item_name, quantity, unit_price_cents,
     total_price_cents, metadata, created_at, is_test
@@ -212,9 +209,8 @@ INSERT INTO transaction_items_fixed (
 SELECT
     id, transaction_id, item_type, item_name, quantity, unit_price_cents,
     total_price_cents, metadata, created_at,
-    0 as is_test  -- Default to production
-FROM transaction_items
-WHERE EXISTS (SELECT 1 FROM sqlite_master WHERE type='table' AND name='transaction_items');
+    COALESCE(is_test, 0) as is_test  -- Handle missing or NULL is_test column
+FROM transaction_items;
 
 DROP TABLE IF EXISTS transaction_items;
 ALTER TABLE transaction_items_fixed RENAME TO transaction_items;
@@ -226,4 +222,4 @@ CREATE INDEX IF NOT EXISTS idx_transaction_items_is_test ON transaction_items(is
 
 COMMIT;
 
-SELECT 'Migration 061 completed successfully' as result;
+SELECT 'Migration 058 completed successfully' as result;
