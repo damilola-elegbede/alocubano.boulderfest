@@ -89,7 +89,7 @@ describe('Cross-Optimization Integration', () => {
 
     const testTransactionId = 'test_index_trans';
     await db.execute({
-      sql: `INSERT INTO transactions (id, uuid, type, stripe_session_id, customer_email, customer_name,
+      sql: `INSERT INTO transactions (transaction_id, uuid, type, stripe_session_id, customer_email, customer_name,
                                       amount_cents, currency, status, payment_processor, is_test, order_data, created_at, updated_at)
             VALUES (?, ?, 'tickets', 'cs_test', 'index@example.com', 'Index Test', 5000, 'USD', 'completed', 'stripe', 1, '{}', datetime('now'), datetime('now'))`,
       args: [testTransactionId, testTransactionId]
