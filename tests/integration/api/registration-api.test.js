@@ -117,9 +117,7 @@ describe('Registration API Integration', () => {
 
     try {
       await dbClient.execute(`
-        INSERT INTO transactions (
-          transaction_id, type, stripe_session_id, customer_email, amount_cents, order_data, status, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        INSERT INTO transactions (transaction_id, type, stripe_session_id, customer_email, amount_cents, order_data, status, created_at, is_test) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now', 1))
       `, ['TXN_' + testSessionId, 'tickets', testSessionId, testEmail, 25000, '{"test": true}', 'completed']);
 
       const transactionResult = await dbClient.execute(
@@ -212,9 +210,7 @@ describe('Registration API Integration', () => {
 
     try {
       await dbClient.execute(`
-        INSERT INTO transactions (
-          transaction_id, stripe_session_id, customer_email, amount_cents, order_data, status, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+        INSERT INTO transactions (transaction_id, stripe_session_id, customer_email, amount_cents, order_data, status, created_at, is_test) VALUES (?, ?, ?, ?, ?, ?, datetime('now', 1))
       `, ['TXN-' + testSessionId, testSessionId, testEmail, 12500, '{}', 'completed']);
 
       const transactionResult = await dbClient.execute(

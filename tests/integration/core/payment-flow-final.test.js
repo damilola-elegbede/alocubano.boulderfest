@@ -463,10 +463,8 @@ describe('Payment Integration Tests - Final Implementation', () => {
       const transactionId = 'TXN-INVALID-' + Date.now();
       const invalidTypeInsert = async () => {
         return db.execute({
-          sql: `INSERT INTO transactions (
-            transaction_id, uuid, type, status, amount_cents, total_amount,
-            currency, customer_email, order_data, source
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          sql: `INSERT INTO transactions (transaction_id, uuid, type, status, amount_cents, total_amount,
+            currency, customer_email, order_data, source, is_test) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
           args: [
             transactionId,
             'uuid-invalid-' + Date.now(),
@@ -672,11 +670,9 @@ describe('Payment Integration Tests - Final Implementation', () => {
     const data = { ...defaults, ...overrides };
 
     const result = await db.execute({
-      sql: `INSERT INTO transactions (
-        transaction_id, uuid, type, status, amount_cents, total_amount, currency,
+      sql: `INSERT INTO transactions (transaction_id, uuid, type, status, amount_cents, total_amount, currency,
         stripe_session_id, stripe_payment_intent_id, customer_email, customer_name,
-        order_data, source
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        order_data, source, is_test) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
       args: [
         data.transaction_id, data.uuid, data.type, data.status,
         data.amount_cents, data.total_amount, data.currency,

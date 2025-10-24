@@ -104,10 +104,8 @@ describe('Integration: Tickets API', () => {
     const testTransactionId = `test-tx-${timestamp}`;
     const transactionResult = await db.execute({
       sql: `
-        INSERT INTO transactions (
-          transaction_id, type, amount_cents, currency, status,
-          customer_email, order_data, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO transactions (transaction_id, type, amount_cents, currency, status,
+          customer_email, order_data, created_at, is_test) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
       `,
       args: [
         testTransactionId,
@@ -452,10 +450,8 @@ describe('Integration: Tickets API', () => {
     const cancelledTxId = `test-tx-cancelled-${timestamp}`;
     const cancelledTxResult = await db.execute({
       sql: `
-        INSERT INTO transactions (
-          transaction_id, type, amount_cents, currency, status,
-          customer_email, order_data, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO transactions (transaction_id, type, amount_cents, currency, status,
+          customer_email, order_data, created_at, is_test) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
       `,
       args: [
         cancelledTxId,
