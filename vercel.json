@@ -3,7 +3,12 @@
   "framework": null,
   "cleanUrls": true,
   "trailingSlash": false,
-  "buildCommand": "node scripts/parallel-build.js",
+  "buildCommand": "NODE_ENV=production node scripts/parallel-build.js",
+  "build": {
+    "env": {
+      "NODE_ENV": "production"
+    }
+  },
   "functions": {
     "api/docs.js": {
       "maxDuration": 10,

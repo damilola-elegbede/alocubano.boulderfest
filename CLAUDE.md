@@ -786,15 +786,28 @@ errorNotifier.showSuccess('Item added to cart');
 
 The build system uses a multi-layered caching strategy to minimize deployment times:
 
-### Build Cache System
-- **Location**: `node_modules/.cache/alocubano-build/` (preserved by Vercel)
-- **Strategy**: Metadata-based checksums (mtime + size) for fast change detection
-- **Benefit**: 2-3s faster cache checks, 8-10s saved on cache hits
+### Build Cache System (v3)
+- **Location**: `node_modules/.cache/alocubano-build/build-checksums.json` (preserved by Vercel build cache)
+- **Strategy**: Hybrid content-based hashing for reliability
+  - Small files (<10KB): Full content hash (binary-safe)
+  - Large files (>10KB): Size-based hash
+  - Batch processing: 10 files concurrently
+- **Benefit**: Reliable cache hits across Vercel builds, 8-10s saved on cache hits
+
+**Previous Issues (v2):**
+- Used `node_modules/.cache/` with mtime-based hashing
+- Vercel cache restoration changed all mtimes → 100% cache miss rate
+- **Fixed in v3** with binary-safe content-based hashing and proper cache location
+
+**Why node_modules/.cache/?**
+- Directory exists BEFORE build starts (created by npm install)
+- Included in Vercel's build cache restoration
+- Standard location for build tool caches (Babel, ESLint, etc.)
 
 ### Optimized Operations
 - **Migration verification**: Batched queries + parallel file reading (7-8s saved)
 - **Bootstrap queries**: Combined SQL queries (0.5-0.8s saved)
-- **Vercel output caching**: Caches build metadata in `.vercel/output/cache/`
+- **Build metadata caching**: Stored in `node_modules/.cache/alocubano-build/`
 
 ### Cache Tools
 ```bash
@@ -802,7 +815,7 @@ The build system uses a multi-layered caching strategy to minimize deployment ti
 node scripts/vercel-cache.js stats
 
 # Clear build cache
-rm -rf node_modules/.cache/alocubano-build/
+rm -f node_modules/.cache/alocubano-build/build-checksums.json
 node scripts/vercel-cache.js clear
 
 # Validate cache

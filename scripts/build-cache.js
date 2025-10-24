@@ -21,13 +21,14 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.join(__dirname, '..');
 
-// Use node_modules/.cache/alocubano-build/ for persistence across builds
-// Vercel preserves node_modules/ across builds, making this more reliable than .vercel/cache
-// Fallback to .tmp if node_modules doesn't exist (unlikely, but handle gracefully)
-const NPM_CACHE_DIR = path.join(rootDir, 'node_modules', '.cache', 'alocubano-build');
+// Use node_modules/.cache/ for Vercel builds (preserved by Vercel build cache)
+// This directory exists BEFORE build starts (created by npm install)
+// and is included in Vercel's build cache restoration
+const VERCEL_CACHE_DIR = path.join(rootDir, 'node_modules', '.cache', 'alocubano-build');
 const LOCAL_CACHE_DIR = path.join(rootDir, '.tmp');
-const CACHE_DIR = existsSync(path.join(rootDir, 'node_modules')) ? NPM_CACHE_DIR : LOCAL_CACHE_DIR;
-const CACHE_FILE = path.join(CACHE_DIR, 'build-cache.json');
+const isVercel = process.env.VERCEL === '1';
+const CACHE_DIR = isVercel ? VERCEL_CACHE_DIR : LOCAL_CACHE_DIR;
+const CACHE_FILE = path.join(CACHE_DIR, 'build-checksums.json');
 
 /**
  * Directories to track for changes
@@ -54,13 +55,12 @@ const TRACKED_FILES = [
 
 /**
  * Get file metadata for quick change detection
- * Uses mtime (modification time) + size for fast comparison
+ * Uses size only (mtime is unreliable due to Vercel cache restoration)
  */
 function getFileMetadata(filePath) {
   try {
     const stats = statSync(filePath);
     return {
-      mtime: stats.mtimeMs,
       size: stats.size,
       path: filePath
     };
@@ -70,27 +70,26 @@ function getFileMetadata(filePath) {
 }
 
 /**
- * Generate fast checksum using file metadata (mtime + size)
- * Much faster than hashing file contents
+ * Generate content-based checksum for a file
+ * Binary-safe: reads file as Buffer to handle all file types correctly
+ * More reliable than mtime-based hashing, especially after Vercel cache restoration
  */
-function hashFileMetadata(filePath) {
-  const metadata = getFileMetadata(filePath);
-  if (!metadata) {
-    return 'MISSING';
+async function hashFileContent(filePath) {
+  try {
+    const content = await fs.readFile(filePath); // Buffer (binary-safe)
+    return crypto.createHash('sha256').update(content).digest('hex');
+  } catch (error) {
+    return `ERROR:${error.message}`;
   }
-
-  // Combine path, mtime, and size for unique identifier
-  const identifier = `${metadata.path}:${metadata.mtime}:${metadata.size}`;
-  return crypto.createHash('sha256').update(identifier).digest('hex');
 }
 
 /**
  * Generate checksum for a file
- * Uses fast metadata-based hashing instead of reading entire file content
+ * Uses content-based hashing for reliability (critical files are small)
  */
 async function hashFile(filePath) {
   try {
-    return hashFileMetadata(filePath);
+    return await hashFileContent(filePath);
   } catch (error) {
     // File doesn't exist or can't be read
     return `ERROR:${error.message}`;
@@ -99,7 +98,7 @@ async function hashFile(filePath) {
 
 /**
  * Generate checksum for a directory (recursive)
- * Uses fast metadata-based hashing for performance
+ * Uses hybrid strategy: content hashing for reliability with smart batching
  */
 async function hashDirectory(dirPath) {
   const hash = crypto.createHash('sha256');
@@ -110,21 +109,42 @@ async function hashDirectory(dirPath) {
     // Sort files to ensure consistent ordering
     files.sort();
 
-    for (const file of files) {
-      try {
-        // Use metadata-based hash instead of reading file content
-        // Much faster for large directories
-        const metadata = getFileMetadata(file);
-        if (metadata) {
-          const relativePath = path.relative(rootDir, file);
-          hash.update(relativePath);
-          hash.update(`${metadata.mtime}:${metadata.size}`);
+    // Process files in batches for performance
+    const BATCH_SIZE = 10;
+    for (let i = 0; i < files.length; i += BATCH_SIZE) {
+      const batch = files.slice(i, i + BATCH_SIZE);
+
+      const batchResults = await Promise.allSettled(
+        batch.map(async (file) => {
+          try {
+            const relativePath = path.relative(rootDir, file);
+            const metadata = getFileMetadata(file);
+
+            if (!metadata) {
+              return `MISSING:${relativePath}`;
+            }
+
+            // For small files (<10KB), use content hash for accuracy
+            // For larger files, use size-based hash to avoid mtime issues
+            if (metadata.size < 10 * 1024) {
+              const contentHash = await hashFileContent(file);
+              return `${relativePath}:content:${contentHash}`;
+            } else {
+              return `${relativePath}:size:${metadata.size}`;
+            }
+          } catch (error) {
+            return `ERROR:${path.relative(rootDir, file)}:${error.message}`;
+          }
+        })
+      );
+
+      // Add batch results to hash
+      for (const result of batchResults) {
+        if (result.status === 'fulfilled') {
+          hash.update(result.value);
         } else {
-          hash.update(`MISSING:${file}`);
+          hash.update(`REJECTED:${result.reason}`);
         }
-      } catch (error) {
-        // Skip files that can't be read
-        hash.update(`ERROR:${file}:${error.message}`);
       }
     }
 
@@ -201,8 +221,10 @@ export async function generateChecksums() {
   // Hash tracked files
   for (const file of TRACKED_FILES) {
     const filePath = path.join(rootDir, file);
-    checksums.files[file] = await hashFile(filePath);
-    console.log(`  ✅ ${file}`);
+    const checksum = await hashFile(filePath);
+    checksums.files[file] = checksum;
+    const isError = checksum.startsWith('ERROR:') || checksum === 'MISSING';
+    console.log(isError ? `  ⚠️  ${file} (error hashing)` : `  ✅ ${file}`);
   }
 
   return checksums;
@@ -236,7 +258,8 @@ export async function saveChecksums(checksums) {
     }
 
     await fs.writeFile(CACHE_FILE, JSON.stringify(checksums, null, 2));
-    console.log(`✅ Build cache saved: ${CACHE_FILE}`);
+    const cacheLocation = isVercel ? 'Vercel build cache (node_modules/.cache)' : 'local cache';
+    console.log(`✅ Build cache saved to ${cacheLocation}: ${CACHE_FILE}`);
   } catch (error) {
     console.error('Error saving cache:', error.message);
   }

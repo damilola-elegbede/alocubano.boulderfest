@@ -19,6 +19,7 @@ This document describes the comprehensive build optimization system implemented 
 | **Cache Hit Scenario** | Skip entire rebuild | **8-10s additional** |
 
 **Expected Results:**
+
 - **Best Case** (cache hit): ~100-110s (50% faster)
 - **Typical Case** (cache miss): ~120-130s (40% faster)
 
@@ -27,53 +28,68 @@ This document describes the comprehensive build optimization system implemented 
 ### 1. Build Cache System (`scripts/build-cache.js`)
 
 #### Previous Implementation
+
 - Cache location: `.vercel/cache/` (not reliably preserved by Vercel)
 - Full file content hashing for every file
 - No cache metrics or logging
 
 #### Optimizations Implemented
 
-**Fixed Cache Location:**
+**Fixed Cache Location (v2):**
+
 ```javascript
-// Before: Unreliable .vercel/cache
+// v1: Unreliable .vercel/cache
 const CACHE_DIR = '.vercel/cache';
 
-// After: Reliable node_modules cache
+// v2: Attempted node_modules cache with mtime (FAILED - mtime invalidation issue)
+const NPM_CACHE_DIR = path.join(rootDir, 'node_modules', '.cache', 'alocubano-build');
+
+// v3: node_modules/.cache with content-based hashing (CURRENT)
 const NPM_CACHE_DIR = path.join(rootDir, 'node_modules', '.cache', 'alocubano-build');
 ```
 
-Vercel preserves `node_modules/` across builds, making this location more reliable than custom directories.
+**Why v2 Failed**: Vercel restores `node_modules/` from cache, but all files get new mtimes during restoration, causing 100% cache miss rate with mtime-based hashing. V3 fixes this with binary-safe content-based hashing.
 
-**Metadata-Based Checksums:**
+**Hybrid Content Hashing Strategy:**
+
 ```javascript
-// Before: Hash entire file content
-async function hashFile(filePath) {
-  const content = await fs.readFile(filePath, 'utf-8');
-  return crypto.createHash('sha256').update(content).digest('hex');
-}
-
-// After: Fast metadata check (mtime + size)
+// v2 (FAILED): Fast mtime check - unreliable after cache restoration
 function hashFileMetadata(filePath) {
   const stats = statSync(filePath);
   const identifier = `${filePath}:${stats.mtimeMs}:${stats.size}`;
   return crypto.createHash('sha256').update(identifier).digest('hex');
 }
+
+// v3 (CURRENT): Content-based hashing for files
+async function hashFileContent(filePath) {
+  const content = await fs.readFile(filePath, 'utf-8');
+  return crypto.createHash('sha256').update(content).digest('hex');
+}
+
+// v3 (CURRENT): Hybrid directory hashing
+async function hashDirectory(dirPath) {
+  // Small files (<10KB): content hash for accuracy
+  // Large files (>10KB): size-based hash for performance
+  // Batch processing: 10 files concurrently
+}
 ```
 
-**Benefit**: 2-3x faster cache checking by avoiding file I/O for unchanged files.
+**Benefit**: Reliable cache hits across Vercel builds, eliminating the mtime invalidation issue.
 
 **Enhanced Logging:**
+
 ```bash
 ✅ Cache HIT - no rebuild needed!
 ⏱️  Cache check took 123ms
 🕐 Cache age: 15 minutes
-💾 Cache location: node_modules/.cache/alocubano-build/build-cache.json
+💾 Cache location: node_modules/.cache/alocubano-build/build-checksums.json
 ⚡ Skipping expensive build operations
 ```
 
 ### 2. Migration Verification (`scripts/migrate.js`)
 
 #### Previous Implementation
+
 - 60 individual SELECT queries (one per migration)
 - Sequential file reading
 - ~10s verification time
@@ -81,6 +97,7 @@ function hashFileMetadata(filePath) {
 #### Optimizations Implemented
 
 **Batched Database Queries:**
+
 ```javascript
 // Before: 60 individual queries
 for (const migrationFile of availableMigrations) {
@@ -102,6 +119,7 @@ const result = await client.execute(
 **Benefit**: Reduces 60 round trips to database to just 1, saving ~7s.
 
 **Parallel File Reading:**
+
 ```javascript
 // Process migrations in batches of 10 concurrently
 const BATCH_SIZE = 10;
@@ -123,6 +141,7 @@ for (let i = 0; i < migrationsToVerify.length; i += BATCH_SIZE) {
 **Benefit**: Parallelizes I/O operations, saving an additional ~1-2s.
 
 **Fallback Handling:**
+
 ```javascript
 try {
   // Attempt batch processing
@@ -138,12 +157,14 @@ try {
 ### 3. Bootstrap Service (`lib/bootstrap-service.js`)
 
 #### Previous Implementation
+
 - 3 separate queries for initialization check
 - 4 separate queries for status retrieval
 
 #### Optimizations Implemented
 
 **Combined Initialization Query:**
+
 ```javascript
 // Before: 3 queries
 const dataCheck = await this.checkDataExists();        // Query 1, 2
@@ -165,6 +186,7 @@ const result = await db.execute({
 **Benefit**: Reduces 3 queries to 1, saving ~0.5s.
 
 **Combined Status Query:**
+
 ```javascript
 // Before: 4 queries
 const lastBootstrap = await db.execute(...);     // Query 1
@@ -192,15 +214,17 @@ const result = await db.execute({
 
 #### New Implementation
 
-**Purpose**: Leverage Vercel's `.vercel/output/` directory (preserved across builds) to cache expensive build operation results.
+**Purpose**: Leverage Vercel's build cache (stored in `node_modules/.cache/`) to cache expensive build operation results.
 
 **Features:**
+
 - Migration verification results caching
 - Bootstrap checksum caching
 - Build metadata storage
 - Cache validation and TTL (24 hours)
 
 **API:**
+
 ```javascript
 // Cache migration verification
 await cacheMigrationVerification(migrationResults);
@@ -216,6 +240,7 @@ const stats = await getCacheStats();
 ```
 
 **CLI Tools:**
+
 ```bash
 # View cache statistics
 node scripts/vercel-cache.js stats
@@ -228,6 +253,7 @@ node scripts/vercel-cache.js validate
 ```
 
 **Integration:**
+
 ```javascript
 // In scripts/parallel-build.js
 await saveCacheMetadata({
@@ -247,7 +273,7 @@ console.log(`📊 Cache stats: ${cacheStats.files.length} files, ${Math.round(ca
 
 ```bash
 # Clear existing cache
-rm -rf node_modules/.cache/alocubano-build/
+rm -rf node_modules/.cache/alocubano-build/build-checksums.json
 
 # First build (full build - establishes cache)
 npm run build
@@ -286,7 +312,7 @@ node scripts/vercel-cache.js stats
 # ... build proceeds ...
 
 💾 Saving build cache...
-✅ Build cache saved: node_modules/.cache/alocubano-build/build-cache.json
+✅ Build cache saved to Vercel build cache (node_modules/.cache): node_modules/.cache/alocubano-build/build-checksums.json
 📊 Cache stats: 3 files, 42 KB
 ```
 
@@ -339,9 +365,11 @@ Total: 1m 40s (52% faster)
 ## Files Modified
 
 1. **scripts/build-cache.js**
-   - Fixed cache location → `node_modules/.cache/alocubano-build/`
-   - Optimized checksum generation with metadata
-   - Added comprehensive logging
+   - Vercel build cache location: `node_modules/.cache/alocubano-build/build-checksums.json` (preserved by Vercel)
+   - Binary-safe content-based hashing for small files (<10KB)
+   - Size-based hashing for large files (>10KB)
+   - Batched processing: 10 files concurrently for performance
+   - Environment-aware logging with cache metrics
 
 2. **scripts/migrate.js**
    - Batched migration verification queries
@@ -354,8 +382,10 @@ Total: 1m 40s (52% faster)
    - Maintained backward compatibility
 
 4. **scripts/parallel-build.js**
+   - Reuses pre-build checksums from build-cache.js
    - Integrated Vercel cache system
    - Added cache statistics logging
+   - Cache metadata tracking for build analytics
 
 5. **scripts/vercel-cache.js** (NEW)
    - Vercel output caching implementation
@@ -367,6 +397,7 @@ Total: 1m 40s (52% faster)
 ### Cache Invalidation
 
 Caches automatically invalidate when:
+
 - **Build cache**: Any tracked file changes (migrations, api, lib, etc.)
 - **Vercel cache**: 24 hours since last write
 - **Manual**: Run `node scripts/vercel-cache.js clear`
@@ -374,6 +405,7 @@ Caches automatically invalidate when:
 ### Monitoring
 
 Watch for these metrics in build logs:
+
 - Cache HIT/MISS rate
 - Cache check duration (should be <500ms)
 - Migration verification time (should be <3s)
@@ -382,19 +414,21 @@ Watch for these metrics in build logs:
 ### Troubleshooting
 
 **Cache not working:**
+
 ```bash
-# Check cache location
+# Check cache location (Vercel)
 ls -la node_modules/.cache/alocubano-build/
 
 # Validate cache
 node scripts/vercel-cache.js validate
 
 # Clear and rebuild
-rm -rf node_modules/.cache/alocubano-build/
+rm -rf node_modules/.cache/alocubano-build/build-checksums.json
 npm run build
 ```
 
 **Slower than expected:**
+
 ```bash
 # Check if cache is being used
 npm run build | grep "Cache HIT"

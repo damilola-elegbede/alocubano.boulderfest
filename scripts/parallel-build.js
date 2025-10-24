@@ -16,6 +16,8 @@
 import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { existsSync } from 'fs';
+import path from 'path';
 import { shouldRebuild, saveChecksums } from './build-cache.js';
 import { saveCacheMetadata, getCacheStats } from './vercel-cache.js';
 
@@ -54,11 +56,20 @@ function execCommand(command, args, label) {
       child.kill('SIGTERM');
 
       // Give process 5s to cleanup before force killing
-      setTimeout(() => {
-        if (!child.killed) {
-          child.kill('SIGKILL');
+      const escalate = setTimeout(() => {
+        // Check if process is still running (exitCode and signalCode are null while running)
+        if (child.exitCode === null && child.signalCode === null) {
+          try {
+            child.kill('SIGKILL');
+          } catch (error) {
+            // Process may have exited between check and kill
+            console.error(`⚠️  Failed to send SIGKILL to ${label}:`, error.message);
+          }
         }
       }, 5000);
+
+      // Cleanup escalation timer when child exits
+      child.once('exit', () => clearTimeout(escalate));
 
       reject(new Error(`${label} timed out after ${TIMEOUT}ms`));
     }, TIMEOUT);
@@ -84,6 +95,32 @@ function execCommand(command, args, label) {
 }
 
 /**
+ * Check if required build artifacts exist
+ * These files are gitignored and must be generated during build
+ */
+function checkRequiredArtifacts() {
+  const rootDir = process.cwd();
+  const required = [
+    'css/bundle-critical.css',
+    'css/bundle-deferred.css',
+    'css/bundle-admin.css',
+    'public/generated/tickets.html'
+  ];
+
+  const missing = [];
+  for (const file of required) {
+    if (!existsSync(path.join(rootDir, file))) {
+      missing.push(file);
+    }
+  }
+
+  return {
+    allExist: missing.length === 0,
+    missing
+  };
+}
+
+/**
  * Main build process
  */
 async function build() {
@@ -91,14 +128,28 @@ async function build() {
     const buildStartTime = Date.now();
 
     // Step 0: Check build cache (unless forced skip)
+    let cacheResult = null;
     if (!SKIP_CACHE) {
-      const cacheResult = await shouldRebuild();
+      cacheResult = await shouldRebuild();
 
       if (!cacheResult.shouldRebuild) {
-        console.log('⚡ Build skipped - no changes detected');
-        console.log('💡 To force rebuild, set SKIP_BUILD_CACHE=true');
-        console.log('');
-        process.exit(0);
+        // Check if required artifacts exist
+        const artifacts = checkRequiredArtifacts();
+
+        if (artifacts.allExist) {
+          // Safe to skip - all artifacts present
+          console.log('✅ Cache HIT + all artifacts present');
+          console.log('⚡ Build skipped - no changes detected');
+          console.log('💡 To force rebuild, set SKIP_BUILD_CACHE=true');
+          console.log('');
+          process.exit(0);
+        } else {
+          // Not safe to skip - missing artifacts
+          console.log('✅ Cache HIT but missing artifacts:', artifacts.missing.join(', '));
+          console.log('🔧 Force full build to regenerate artifacts');
+          console.log('');
+          // Continue with full build
+        }
       }
     } else {
       console.log('⚠️  Build cache check skipped (SKIP_BUILD_CACHE=true)');
@@ -162,8 +213,10 @@ async function build() {
     if (!SKIP_CACHE) {
       console.log('');
       console.log('💾 Saving build cache...');
-      const { currentChecksums } = await shouldRebuild();
-      await saveChecksums(currentChecksums);
+
+      // Reuse checksums from earlier if available, otherwise regenerate
+      const checksums = cacheResult?.currentChecksums || (await shouldRebuild()).currentChecksums;
+      await saveChecksums(checksums);
 
       // Save Vercel output cache metadata
       await saveCacheMetadata({

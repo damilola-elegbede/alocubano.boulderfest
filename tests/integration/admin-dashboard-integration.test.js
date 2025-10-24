@@ -50,7 +50,7 @@ describe('Admin Dashboard Integration', () => {
     // Create test transaction
     testTransactionId = `test_admin_trans_${Date.now()}`;
     await db.execute({
-      sql: `INSERT INTO transactions (id, uuid, type, stripe_session_id, customer_email, customer_name,
+      sql: `INSERT INTO transactions (transaction_id, uuid, type, stripe_session_id, customer_email, customer_name,
                                       amount_cents, currency, status, payment_processor, is_test, order_data, created_at, updated_at)
             VALUES (?, ?, 'tickets', 'cs_test', 'admin@example.com', 'Admin Test', 10000, 'USD', 'completed', 'stripe', 1, '{}', datetime('now'), datetime('now'))`,
       args: [testTransactionId, testTransactionId]
@@ -298,7 +298,7 @@ describe('Admin Dashboard Integration', () => {
 
     const secondTransactionId = `test_admin_trans_2_${Date.now()}`;
     await db.execute({
-      sql: `INSERT INTO transactions (id, uuid, type, stripe_session_id, customer_email, customer_name,
+      sql: `INSERT INTO transactions (transaction_id, uuid, type, stripe_session_id, customer_email, customer_name,
                                       amount_cents, currency, status, payment_processor, is_test, order_data, created_at, updated_at)
             VALUES (?, ?, 'tickets', 'cs_test_2', 'admin2@example.com', 'Admin Test 2', 5000, 'USD', 'completed', 'stripe', 1, '{}', datetime('now'), datetime('now'))`,
       args: [secondTransactionId, secondTransactionId]

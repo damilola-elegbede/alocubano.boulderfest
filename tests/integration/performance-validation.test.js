@@ -107,7 +107,7 @@ describe('Performance Validation', () => {
     // Create test data
     const transactionId = `perf_index_${Date.now()}`;
     await db.execute({
-      sql: `INSERT INTO transactions (id, uuid, type, customer_email, customer_name, amount_cents, currency, status, payment_processor, is_test, order_data, created_at, updated_at)
+      sql: `INSERT INTO transactions (transaction_id, uuid, type, customer_email, customer_name, amount_cents, currency, status, payment_processor, is_test, order_data, created_at, updated_at)
             VALUES (?, ?, 'tickets', 'index@example.com', 'Index Test', 5000, 'USD', 'completed', 'stripe', 1, '{}', datetime('now'), datetime('now'))`,
       args: [transactionId, transactionId]
     });
@@ -411,7 +411,7 @@ describe('Performance Validation', () => {
     // Create test data for dashboard
     const transactionId = `perf_dashboard_${Date.now()}`;
     await db.execute({
-      sql: `INSERT INTO transactions (id, uuid, type, customer_email, customer_name, amount_cents, currency, status, payment_processor, is_test, order_data, created_at, updated_at)
+      sql: `INSERT INTO transactions (transaction_id, uuid, type, customer_email, customer_name, amount_cents, currency, status, payment_processor, is_test, order_data, created_at, updated_at)
             VALUES (?, ?, 'tickets', 'dashboard@example.com', 'Dashboard Test', 10000, 'USD', 'completed', 'stripe', 1, '{}', datetime('now'), datetime('now'))`,
       args: [transactionId, transactionId]
     });
