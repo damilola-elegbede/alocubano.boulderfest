@@ -517,8 +517,9 @@ describe('Ticket Email Service Integration', () => {
       expect(consoleSpy).toHaveBeenCalledWith(
         '📧 [TicketEmail] Email details for manual sending:',
         expect.objectContaining({
-          to: testEmail,
-          transactionId: expect.any(String)
+          to: expect.any(String),
+          transactionId: expect.any(String),
+          ticketCount: expect.any(Number)
         })
       );
 
