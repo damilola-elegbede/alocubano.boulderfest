@@ -8,6 +8,13 @@
 --
 -- NOTE: Transaction control is handled automatically by the migration system.
 -- Do not include BEGIN TRANSACTION or COMMIT statements.
+--
+-- IMPORTANT: We must disable foreign key checks during table recreation because
+-- tickets, transactions, and transaction_items all have FK relationships.
+-- This follows the same pattern as Migration 044.
+
+-- Disable foreign key checks during table recreation
+PRAGMA foreign_keys = OFF;
 
 -- ============================================================================
 -- FIX 1: TICKETS TABLE
@@ -226,5 +233,8 @@ ALTER TABLE transaction_items_fixed RENAME TO transaction_items;
 CREATE INDEX IF NOT EXISTS idx_transaction_items_transaction_id ON transaction_items(transaction_id);
 CREATE INDEX IF NOT EXISTS idx_transaction_items_item_type ON transaction_items(item_type);
 CREATE INDEX IF NOT EXISTS idx_transaction_items_is_test ON transaction_items(is_test);
+
+-- Re-enable foreign key checks
+PRAGMA foreign_keys = ON;
 
 SELECT 'Migration 058 completed successfully' as result;
