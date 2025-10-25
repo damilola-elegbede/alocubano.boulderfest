@@ -195,6 +195,9 @@ describe('Email Retry Queue - Integration Tests', () => {
 
       const originalTimestamp = check1.rows[0].sent_at;
 
+      // Wait 1.2 seconds to ensure different timestamp (SQLite has 1-second precision + safety margin)
+      await new Promise(resolve => setTimeout(resolve, 1200));
+
       // Reset and fail again
       await testDb.execute({
         sql: `UPDATE registration_reminders
@@ -210,7 +213,7 @@ describe('Email Retry Queue - Integration Tests', () => {
         args: [reminderId]
       });
 
-      // Timestamp should be updated
+      // Timestamp should be updated (wait ensures different timestamp due to SQLite 1-second precision)
       expect(check2.rows[0].sent_at).toBeTruthy();
       expect(check2.rows[0].sent_at).not.toBe(originalTimestamp);
     });
