@@ -45,8 +45,10 @@ describe('End-to-End Checkout Integration', () => {
   afterAll(async () => {
     // Cleanup
     await db.execute({ sql: 'DELETE FROM tickets WHERE is_test = 1' });
+    await db.execute({
+      sql: 'DELETE FROM registration_reminders WHERE transaction_id IN (SELECT id FROM transactions WHERE is_test = 1)'
+    });
     await db.execute({ sql: 'DELETE FROM transactions WHERE is_test = 1' });
-    await db.execute({ sql: 'DELETE FROM registration_reminders WHERE is_test = 1' });
     await db.execute({ sql: 'DELETE FROM ticket_reservations WHERE ticket_type_id = ?', args: [testTicketTypeId] });
     await db.execute({ sql: 'DELETE FROM ticket_types WHERE id = ?', args: [testTicketTypeId] });
     if (testEventId) {
@@ -57,8 +59,10 @@ describe('End-to-End Checkout Integration', () => {
   beforeEach(async () => {
     // Clean test data before each test
     await db.execute({ sql: 'DELETE FROM tickets WHERE is_test = 1' });
+    await db.execute({
+      sql: 'DELETE FROM registration_reminders WHERE transaction_id IN (SELECT id FROM transactions WHERE is_test = 1)'
+    });
     await db.execute({ sql: 'DELETE FROM transactions WHERE is_test = 1' });
-    await db.execute({ sql: 'DELETE FROM registration_reminders WHERE is_test = 1' });
     await db.execute({ sql: 'DELETE FROM ticket_reservations WHERE ticket_type_id = ?', args: [testTicketTypeId] });
   });
 

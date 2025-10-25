@@ -17,15 +17,20 @@
 
 import { describe, test, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { getDatabaseClient } from '../../lib/database.js';
-import { chromium } from 'playwright';
 
-describe('Cross-Optimization Integration', () => {
+// Skip in integration test mode (Playwright not installed)
+const skipPlaywrightTests = process.env.INTEGRATION_TEST_MODE === 'true';
+
+describe.skipIf(skipPlaywrightTests)('Cross-Optimization Integration', () => {
   let db;
   let browser;
   let context;
+  let chromium;
   const BASE_URL = process.env.TEST_BASE_URL || 'http://localhost:3000';
 
   beforeAll(async () => {
+    // Dynamically import Playwright when not skipped
+    chromium = (await import('playwright')).chromium;
     db = await getDatabaseClient();
     browser = await chromium.launch({ headless: true });
     context = await browser.newContext();

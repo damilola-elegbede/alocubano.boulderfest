@@ -11,16 +11,14 @@ import * as ticketEmailServiceModule from '../../lib/ticket-email-service-brevo.
 
 describe('Async Email Performance Tests', () => {
   let db;
-  let originalGetTicketEmailService;
 
   beforeAll(async () => {
     db = await getDatabaseClient();
-    originalGetTicketEmailService = ticketEmailServiceModule.getTicketEmailService;
   });
 
   afterAll(async () => {
-    // Restore original function
-    ticketEmailServiceModule.getTicketEmailService = originalGetTicketEmailService;
+    // Restore all mocks
+    vi.restoreAllMocks();
 
     // Cleanup test data
     await db.execute({
