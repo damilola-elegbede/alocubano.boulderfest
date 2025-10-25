@@ -232,7 +232,8 @@ async function verifyDeploymentSecrets(previewUrl) {
       'ADMIN_SECRET',
       'TEST_ADMIN_PASSWORD',
       'TURSO_DATABASE_URL',
-      'TURSO_AUTH_TOKEN'
+      'TURSO_AUTH_TOKEN',
+      'E2E_TEST_MODE'  // CRITICAL: Required for admin auth tests (bypasses MFA)
     ];
 
     const missingCritical = [];

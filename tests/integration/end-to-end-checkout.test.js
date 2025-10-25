@@ -100,7 +100,7 @@ describe('End-to-End Checkout Integration', () => {
               unit_amount: 5000,
               product: {
                 metadata: {
-                  ticket_type_id: testTicketTypeId,
+                  ticket_type: testTicketTypeId,
                   event_id: String(testEventId),
                   event_date: '2026-05-15'
                 }
@@ -225,7 +225,7 @@ describe('End-to-End Checkout Integration', () => {
               unit_amount: 5000,
               product: {
                 metadata: {
-                  ticket_type_id: testTicketTypeId,
+                  ticket_type: testTicketTypeId,
                   event_id: String(testEventId),
                   event_date: '2026-05-15'
                 }
@@ -238,7 +238,7 @@ describe('End-to-End Checkout Integration', () => {
               unit_amount: 7500,
               product: {
                 metadata: {
-                  ticket_type_id: ticketType2Id,
+                  ticket_type: ticketType2Id,
                   event_id: String(testEventId),
                   event_date: '2026-05-16'
                 }
@@ -297,7 +297,7 @@ describe('End-to-End Checkout Integration', () => {
               unit_amount: 5000,
               product: {
                 metadata: {
-                  ticket_type_id: testTicketTypeId,
+                  ticket_type: testTicketTypeId,
                   event_id: String(testEventId),
                   event_date: '2026-05-15'
                 }
@@ -353,7 +353,7 @@ describe('End-to-End Checkout Integration', () => {
               unit_amount: 5000,
               product: {
                 metadata: {
-                  ticket_type_id: testTicketTypeId,
+                  ticket_type: testTicketTypeId,
                   event_id: String(testEventId),
                   event_date: '2026-05-15'
                 }
@@ -495,7 +495,7 @@ describe('End-to-End Checkout Integration', () => {
               unit_amount: 5000,
               product: {
                 metadata: {
-                  ticket_type_id: testTicketTypeId,
+                  ticket_type: testTicketTypeId,
                   event_id: String(testEventId),
                   event_date: '2026-05-15'
                 }
@@ -553,7 +553,7 @@ describe('End-to-End Checkout Integration', () => {
               unit_amount: 2500,
               product: {
                 metadata: {
-                  ticket_type_id: testTicketTypeId,
+                  ticket_type: testTicketTypeId,
                   event_id: String(testEventId),
                   event_date: '2026-05-15'
                 }
@@ -622,7 +622,7 @@ describe('End-to-End Checkout Integration', () => {
               unit_amount: 5000,
               product: {
                 metadata: {
-                  ticket_type_id: testTicketTypeId,
+                  ticket_type: testTicketTypeId,
                   event_id: String(testEventId),
                   event_date: '2026-05-15'
                 }
