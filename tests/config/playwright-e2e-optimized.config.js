@@ -53,7 +53,7 @@ const testIgnorePatterns = [
 ];
 
 export default defineConfig({
-  testDir: './tests/e2e/flows',
+  testDir: '../e2e/flows',
   testMatch: '**/*.test.js',
   testIgnore: testIgnorePatterns,
 
@@ -153,6 +153,6 @@ export default defineConfig({
   ],
 
   // Always use preview setup/teardown (no local mode)
-  globalSetup: './tests/e2e/global-setup-preview.js',
-  globalTeardown: './tests/e2e/global-teardown-preview.js',
+  globalSetup: '../e2e/global-setup-preview.js',
+  globalTeardown: '../e2e/global-teardown-preview.js',
 });
