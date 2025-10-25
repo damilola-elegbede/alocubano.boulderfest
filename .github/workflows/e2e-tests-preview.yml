@@ -646,17 +646,40 @@ jobs:
           echo "✅ Test discovery successful: $EXPECTED_TESTS test(s) will be executed"
           echo ""
 
-          # Build the Playwright test command directly
-          # Add test pattern filter if specified
-          TEST_PATTERN="${{ needs.build-test-matrix.outputs.test-pattern }}"
-          if [ -n "$TEST_PATTERN" ] && [ "$TEST_PATTERN" != "" ]; then
-            echo "🎯 Applying test pattern filter: $TEST_PATTERN"
-            echo "📁 Test pattern: $TEST_PATTERN"
-            # Run with grep pattern
-            npx playwright test --config tests/config/playwright-e2e-optimized.config.js --project="$PROJECT_NAME" --grep "$TEST_PATTERN" 2>&1 | tee test_output.log
+          # Build Playwright test command with explicit file paths (not grep pattern)
+          TEST_SUITE="${{ needs.build-test-matrix.outputs.test-suite }}"
+
+          # Map test suite to explicit file paths
+          TEST_FILES=""
+          case "$TEST_SUITE" in
+            "standard")
+              TEST_FILES="tests/e2e/flows/basic-navigation.test.js tests/e2e/flows/cart-functionality.test.js tests/e2e/flows/newsletter-simple.test.js tests/e2e/flows/admin-auth.test.js tests/e2e/flows/gallery-basic.test.js tests/e2e/flows/registration-flow.test.js"
+              ;;
+            "advanced"|"")
+              TEST_FILES="" # Run all tests - no filter
+              ;;
+            "performance")
+              TEST_FILES="tests/e2e/flows/gallery-browsing.test.js tests/e2e/flows/user-engagement.test.js"
+              ;;
+            "accessibility")
+              TEST_FILES="tests/e2e/flows/mobile-registration-experience.test.js"
+              ;;
+            "security")
+              TEST_FILES="tests/e2e/flows/admin-auth.test.js tests/e2e/flows/admin-dashboard.test.js tests/e2e/flows/ticket-validation.test.js"
+              ;;
+            *)
+              echo "⚠️ Unknown test suite: $TEST_SUITE, defaulting to standard"
+              TEST_FILES="tests/e2e/flows/basic-navigation.test.js tests/e2e/flows/cart-functionality.test.js tests/e2e/flows/newsletter-simple.test.js tests/e2e/flows/admin-auth.test.js tests/e2e/flows/gallery-basic.test.js tests/e2e/flows/registration-flow.test.js"
+              ;;
+          esac
+
+          # Run Playwright with explicit file paths
+          if [ -n "$TEST_FILES" ]; then
+            echo "🎯 Running specific test files for suite: $TEST_SUITE"
+            echo "📁 Files: $(echo $TEST_FILES | tr ' ' '\n' | wc -l) test files"
+            npx playwright test --config tests/config/playwright-e2e-optimized.config.js --project="$PROJECT_NAME" $TEST_FILES 2>&1 | tee test_output.log
           else
-            echo "🎯 Running all E2E tests (no pattern filter)"
-            # Run without grep pattern
+            echo "🎯 Running all E2E tests (no file filter)"
             npx playwright test --config tests/config/playwright-e2e-optimized.config.js --project="$PROJECT_NAME" 2>&1 | tee test_output.log
           fi
 

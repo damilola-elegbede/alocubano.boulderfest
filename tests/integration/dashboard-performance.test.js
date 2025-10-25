@@ -1,5 +1,6 @@
 import { describe, test, expect, beforeAll, afterAll } from 'vitest';
 import { getDatabaseClient } from '../../lib/database.js';
+import crypto from 'crypto';
 
 describe('Dashboard Performance', () => {
   let db;
@@ -48,14 +49,17 @@ describe('Dashboard Performance', () => {
           ? (i % 2 === 0 ? 'cash' : 'card_terminal')
           : 'stripe';
 
+        // Generate manual_entry_id for manual payment methods (required by constraint)
+        const manualEntryId = source === 'manual_entry' ? crypto.randomUUID() : null;
+
         // Create transaction with correct schema
         const txResult = await db.execute({
           sql: `INSERT INTO transactions (
             transaction_id, uuid, type, customer_email, customer_name, amount_cents, currency,
-            status, payment_processor, is_test, event_id, order_data, created_at
-          ) VALUES (?, ?, 'tickets', ?, 'Perf User', 5000, 'USD', 'completed', ?, ?, ?, '{}', datetime('now', '-' || ? || ' hours'))
+            status, payment_processor, is_test, event_id, order_data, created_at, source, manual_entry_id
+          ) VALUES (?, ?, 'tickets', ?, 'Perf User', 5000, 'USD', 'completed', ?, ?, ?, '{}', datetime('now', '-' || ? || ' hours'), ?, ?)
           RETURNING id`,
-          args: [transactionBusinessId, transactionBusinessId, `perf${i}@example.com`, paymentProcessor, isTest, testEventId, i % 24]
+          args: [transactionBusinessId, transactionBusinessId, `perf${i}@example.com`, paymentProcessor, isTest, testEventId, i % 24, source, manualEntryId]
         });
         const transactionDbId = txResult.rows[0].id; // INTEGER database ID for FK
 
@@ -106,8 +110,8 @@ describe('Dashboard Performance', () => {
 
   async function cleanupLargeDataset() {
     console.log('Cleaning up performance test dataset...');
-    await db.execute('DELETE FROM tickets WHERE ticket_id LIKE "test_perf_%"');
-    await db.execute('DELETE FROM transactions WHERE transaction_id LIKE "test_perf_%"'); // Use transaction_id (TEXT) not id (INTEGER)
+    await db.execute('DELETE FROM tickets WHERE ticket_id LIKE \'test_perf_%\'');
+    await db.execute('DELETE FROM transactions WHERE transaction_id LIKE \'test_perf_%\''); // Use transaction_id (TEXT) not id (INTEGER)
     await db.execute('DELETE FROM events WHERE id = ?', [testEventId]);
     console.log('✓ Cleanup complete');
   }
