@@ -76,12 +76,12 @@ export async function createTestTransaction(data) {
 
   const placeholders = fields.map(() => '?').join(', ');
   const result = await db.execute({
-    sql: `INSERT INTO transactions (${fields.join(', ')}) VALUES (${placeholders}) RETURNING id`,
+    sql: `INSERT INTO transactions (${fields.join(', ')}) VALUES (${placeholders})`,
     args: values
   });
 
   return {
-    id: result.rows[0].id,
+    id: Number(result.lastInsertRowid),
     transaction_id: txData.transaction_id
   };
 }
@@ -137,12 +137,12 @@ export async function createTestTicket(data) {
 
   const placeholders = fields.map(() => '?').join(', ');
   const result = await db.execute({
-    sql: `INSERT INTO tickets (${fields.join(', ')}) VALUES (${placeholders}) RETURNING id`,
+    sql: `INSERT INTO tickets (${fields.join(', ')}) VALUES (${placeholders})`,
     args: values
   });
 
   return {
-    id: result.rows[0].id,
+    id: Number(result.lastInsertRowid),
     ticket_id: ticketData.ticket_id
   };
 }
@@ -193,12 +193,12 @@ export async function createTestTransactionItem(data) {
 
   const placeholders = fields.map(() => '?').join(', ');
   const result = await db.execute({
-    sql: `INSERT INTO transaction_items (${fields.join(', ')}) VALUES (${placeholders}) RETURNING id`,
+    sql: `INSERT INTO transaction_items (${fields.join(', ')}) VALUES (${placeholders})`,
     args: values
   });
 
   return {
-    id: result.rows[0].id
+    id: Number(result.lastInsertRowid)
   };
 }
 
@@ -264,13 +264,13 @@ export async function createTestEvent(data) {
 
   const result = await db.execute({
     sql: `INSERT INTO events (slug, name, type, status, start_date, end_date)
-          VALUES (?, ?, ?, ?, ?, ?) RETURNING id`,
+          VALUES (?, ?, ?, ?, ?, ?)`,
     args: [eventData.slug, eventData.name, eventData.type, eventData.status,
            eventData.start_date, eventData.end_date]
   });
 
   return {
-    id: result.rows[0].id,
+    id: Number(result.lastInsertRowid),
     slug: eventData.slug
   };
 }
