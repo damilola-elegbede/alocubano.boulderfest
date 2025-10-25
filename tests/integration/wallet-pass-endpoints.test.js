@@ -88,8 +88,8 @@ describe('Wallet Pass Endpoints - Integration Tests', () => {
       sql: `
         INSERT INTO transactions (
           transaction_id, uuid, type, stripe_session_id, status, amount_cents,
-          total_amount, currency, customer_email, customer_name, order_data, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+          total_amount, currency, customer_email, customer_name, order_data, created_at, is_test
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?)
       `,
       args: [
         'TXN-WALLET-001',
@@ -102,7 +102,8 @@ describe('Wallet Pass Endpoints - Integration Tests', () => {
         'USD',
         'alice.wallet@example.com',
         'Alice Wallet',
-        '{"items":[]}'
+        '{"items":[]}',
+        1
       ]
     });
 
@@ -167,8 +168,8 @@ describe('Wallet Pass Endpoints - Integration Tests', () => {
       sql: `
         INSERT INTO transactions (
           transaction_id, uuid, type, stripe_session_id, status, amount_cents,
-          total_amount, currency, customer_email, customer_name, order_data, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+          total_amount, currency, customer_email, customer_name, order_data, created_at, is_test
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?)
       `,
       args: [
         'TXN-WALLET-001',
@@ -181,7 +182,8 @@ describe('Wallet Pass Endpoints - Integration Tests', () => {
         'USD',
         'alice.wallet@example.com',
         'Alice Wallet',
-        '{"items":[]}'
+        '{"items":[]}',
+        1
       ]
     });
 
@@ -398,8 +400,8 @@ describe('Wallet Pass Endpoints - Integration Tests', () => {
         sql: `
           INSERT INTO transactions (
             transaction_id, uuid, type, stripe_session_id, status, amount_cents,
-            total_amount, currency, customer_email, customer_name, order_data, created_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+            total_amount, currency, customer_email, customer_name, order_data, created_at, is_test
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?)
         `,
         args: [
           'TXN-UNREG-001',
@@ -412,7 +414,8 @@ describe('Wallet Pass Endpoints - Integration Tests', () => {
           'USD',
           'unreg@example.com',
           'Unreg Test',
-          '{"items":[]}'
+          '{"items":[]}',
+          1
         ]
       });
 
@@ -555,8 +558,8 @@ describe('Wallet Pass Endpoints - Integration Tests', () => {
         sql: `
           INSERT INTO transactions (
             transaction_id, uuid, type, stripe_session_id, status, amount_cents,
-            total_amount, currency, customer_email, customer_name, order_data, created_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+            total_amount, currency, customer_email, customer_name, order_data, created_at, is_test
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?)
         `,
         args: [
           'TXN-CANCELLED-001',
@@ -569,7 +572,8 @@ describe('Wallet Pass Endpoints - Integration Tests', () => {
           'USD',
           'cancel@example.com',
           'Cancel Test',
-          '{"items":[]}'
+          '{"items":[]}',
+          1
         ]
       });
 

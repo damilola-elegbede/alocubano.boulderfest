@@ -324,7 +324,7 @@ describe('Ticket Validation Test Mode', () => {
 
       expect(capturedPayload).toMatchObject({
         ticketId: 'TEST-TICKET-12345',
-        eventId: 1,
+        eventId: "1", // String because it comes from database TEXT field
         isTest: true,
         metadata: {
           testMode: true,
