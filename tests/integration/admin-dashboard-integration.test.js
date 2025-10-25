@@ -13,11 +13,12 @@
 
 import { describe, test, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { getDatabaseClient } from '../../lib/database.js';
+import { createTestTransaction } from '../helpers/test-data-factory.js';
 
 describe('Admin Dashboard Integration', () => {
   let db;
   let testEventId;
-  let testTransactionId;
+  let testTransactionDbId; // INTEGER database ID for FK references
 
   beforeAll(async () => {
     db = await getDatabaseClient();
@@ -47,14 +48,20 @@ describe('Admin Dashboard Integration', () => {
   });
 
   async function seedDashboardData() {
-    // Create test transaction
-    testTransactionId = `test_admin_trans_${Date.now()}`;
-    await db.execute({
-      sql: `INSERT INTO transactions (transaction_id, uuid, type, stripe_session_id, customer_email, customer_name,
-                                      amount_cents, currency, status, payment_processor, is_test, order_data, created_at, updated_at)
-            VALUES (?, ?, 'tickets', 'cs_test', 'admin@example.com', 'Admin Test', 10000, 'USD', 'completed', 'stripe', 1, '{}', datetime('now'), datetime('now'))`,
-      args: [testTransactionId, testTransactionId]
+    // Create test transaction using factory (returns INTEGER id for FK references)
+    const transaction = await createTestTransaction({
+      transaction_id: `test_admin_trans_${Date.now()}`,
+      type: 'tickets',
+      stripe_session_id: 'cs_test',
+      customer_email: 'admin@example.com',
+      customer_name: 'Admin Test',
+      amount_cents: 10000,
+      currency: 'USD',
+      status: 'completed',
+      payment_processor: 'stripe',
+      order_data: '{}'
     });
+    testTransactionDbId = transaction.id; // INTEGER database ID
 
     // Create diverse ticket data
     const ticketTypes = [
@@ -85,7 +92,7 @@ describe('Admin Dashboard Integration', () => {
           ) VALUES (?, ?, ?, ?, ?, 'valid', ?, ?, 1, datetime('now'), 'Test', 'User', 'test@example.com'${checkedInValues})`,
           args: [
             `test_admin_ticket_${ticketIndex}`,
-            testTransactionId,
+            testTransactionDbId, // Use INTEGER database ID for FK
             ticketType.type,
             testEventId,
             ticketType.price,

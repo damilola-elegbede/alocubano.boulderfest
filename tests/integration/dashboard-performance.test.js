@@ -41,19 +41,23 @@ describe('Dashboard Performance', () => {
       const batchEnd = Math.min(batchStart + batchSize, ticketCount);
 
       for (let i = batchStart; i < batchEnd; i++) {
-        const transactionId = `test_perf_trans_${i}`;
+        const transactionBusinessId = `test_perf_trans_${i}`;
         const isTest = i % 10 === 0 ? 1 : 0;
         const source = i % 5 === 0 ? 'manual_entry' : 'online';
         const paymentProcessor = source === 'manual_entry'
           ? (i % 2 === 0 ? 'cash' : 'card_terminal')
           : 'stripe';
 
-        // Create transaction
-        await db.execute({
-          sql: `INSERT OR IGNORE INTO transactions (id, email, status, source, payment_processor, is_test, event_id, created_at)
-                VALUES (?, ?, 'completed', ?, ?, ?, ?, datetime('now', '-' || ? || ' hours'))`,
-          args: [transactionId, `perf${i}@example.com`, source, paymentProcessor, isTest, testEventId, i % 24]
+        // Create transaction with correct schema
+        const txResult = await db.execute({
+          sql: `INSERT INTO transactions (
+            transaction_id, uuid, type, customer_email, customer_name, amount_cents, currency,
+            status, payment_processor, is_test, event_id, order_data, created_at
+          ) VALUES (?, ?, 'tickets', ?, 'Perf User', 5000, 'USD', 'completed', ?, ?, ?, '{}', datetime('now', '-' || ? || ' hours'))
+          RETURNING id`,
+          args: [transactionBusinessId, transactionBusinessId, `perf${i}@example.com`, paymentProcessor, isTest, testEventId, i % 24]
         });
+        const transactionDbId = txResult.rows[0].id; // INTEGER database ID for FK
 
         // Determine ticket type
         let ticketType = 'General Admission';
@@ -79,7 +83,7 @@ describe('Dashboard Performance', () => {
           ) VALUES (?, ?, ?, ?, ?, 'valid', ?, ?, ?, datetime('now', '-' || ? || ' hours'), ${checkedInAt}, ${checkedInAt}, 'Perf', 'User', ?)`,
           args: [
             `test_perf_ticket_${i}`,
-            transactionId,
+            transactionDbId, // Use INTEGER database ID for FK
             ticketType,
             testEventId,
             ticketType === 'VIP Pass' ? 12000 : (ticketType === 'Workshop Pass' ? 7500 : 5000),
@@ -103,7 +107,7 @@ describe('Dashboard Performance', () => {
   async function cleanupLargeDataset() {
     console.log('Cleaning up performance test dataset...');
     await db.execute('DELETE FROM tickets WHERE ticket_id LIKE "test_perf_%"');
-    await db.execute('DELETE FROM transactions WHERE id LIKE "test_perf_%"');
+    await db.execute('DELETE FROM transactions WHERE transaction_id LIKE "test_perf_%"'); // Use transaction_id (TEXT) not id (INTEGER)
     await db.execute('DELETE FROM events WHERE id = ?', [testEventId]);
     console.log('✓ Cleanup complete');
   }

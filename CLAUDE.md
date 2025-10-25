@@ -613,6 +613,68 @@ Features:
 - Handles comments and multi-line statements
 - Tracks status in `migrations` table
 
+### Database Foreign Key Pattern - Dual-Key Design
+
+The database implements a **dual-key pattern** (industry standard) for optimal performance and flexibility:
+
+#### Pattern Overview
+
+**transactions table:**
+```sql
+transactions (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,  -- Surrogate key for FKs
+    transaction_id  TEXT UNIQUE NOT NULL                -- Business identifier
+)
+```
+
+**Child tables reference `transactions.id` (INTEGER), NOT `transaction_id` (TEXT):**
+```sql
+tickets (
+    transaction_id  INTEGER REFERENCES transactions(id)  -- FK to transactions.id
+)
+
+transaction_items (
+    transaction_id  INTEGER REFERENCES transactions(id)  -- FK to transactions.id
+)
+```
+
+#### Important Naming Convention
+
+**The column name `transaction_id` has different meanings in different tables:**
+
+- **In transactions table:** TEXT business identifier (e.g., 'TXN-1759961839144-awn1n8a')
+- **In child tables:** INTEGER foreign key to `transactions.id`
+
+This naming can be confusing but is architecturally correct. Child tables use INTEGER FKs for performance while preserving TEXT business identifiers for external references.
+
+#### Why This Design?
+
+**Performance Benefits:**
+- **2-3x faster JOINs:** INTEGER comparisons vs TEXT string matching
+- **10x smaller storage:** 4 bytes (INTEGER) vs 30-50 bytes (TEXT) per FK
+- **Better indexing:** B-tree optimization for fixed-width integers
+- **Immutable relationships:** Business IDs can change without breaking FKs
+
+**Practical Example:**
+```sql
+-- ✅ CORRECT: FK references transactions.id (INTEGER)
+SELECT t.*, tx.transaction_id
+FROM tickets t
+JOIN transactions tx ON t.transaction_id = tx.id;
+
+-- ❌ INCORRECT: Don't compare FKs to business IDs
+SELECT t.* FROM tickets t
+WHERE t.transaction_id = 'TXN-1759961839144-awn1n8a';  -- Wrong type!
+```
+
+#### Migration References
+
+See these migrations for implementation details:
+- **004_transactions.sql**: Creates dual-key transactions table
+- **005_tickets.sql**: References `transactions(id)` with INTEGER FK
+- **008_transaction_items.sql**: References `transactions(id)` with INTEGER FK
+- **044_critical_constraints.sql**: Fixes incorrect TEXT FKs to INTEGER
+
 ## CI/CD Configuration
 
 ### GitHub Actions

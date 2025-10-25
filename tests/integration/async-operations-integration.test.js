@@ -25,11 +25,9 @@ describe('Async Operations Integration', () => {
   let db;
   let testEventId;
   let testTicketTypeId;
-  let originalGetTicketEmailService;
 
   beforeAll(async () => {
     db = await getDatabaseClient();
-    originalGetTicketEmailService = ticketEmailServiceModule.getTicketEmailService;
 
     // Create test event and ticket type
     const eventResult = await db.execute({
@@ -48,8 +46,8 @@ describe('Async Operations Integration', () => {
   });
 
   afterAll(async () => {
-    // Restore original function
-    ticketEmailServiceModule.getTicketEmailService = originalGetTicketEmailService;
+    // Restore all mocks
+    vi.restoreAllMocks();
 
     // Cleanup
     await db.execute({ sql: 'DELETE FROM tickets WHERE is_test = 1' });

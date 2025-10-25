@@ -63,7 +63,7 @@ describe('Checkout Performance with Async Reminders', () => {
               product: {
                 metadata: {
                   ticket_type: '1',
-                  event_id: '1',
+                  event_id: 1, // Must be INTEGER, not STRING
                   event_date: '2026-05-15'
                 }
               }
@@ -176,7 +176,7 @@ describe('Checkout Performance with Async Reminders', () => {
               product: {
                 metadata: {
                   ticket_type: '1',
-                  event_id: '1',
+                  event_id: 1, // Must be INTEGER, not STRING
                   event_date: '2026-05-15'
                 }
               }
@@ -234,7 +234,7 @@ describe('Checkout Performance with Async Reminders', () => {
               product: {
                 metadata: {
                   ticket_type: '1',
-                  event_id: '1',
+                  event_id: 1, // Must be INTEGER, not STRING
                   event_date: '2026-05-15'
                 }
               }
@@ -367,7 +367,7 @@ describe('Checkout Performance with Async Reminders', () => {
               product: {
                 metadata: {
                   ticket_type: '1',
-                  event_id: '1',
+                  event_id: 1, // Must be INTEGER, not STRING
                   event_date: '2026-05-15'
                 }
               }

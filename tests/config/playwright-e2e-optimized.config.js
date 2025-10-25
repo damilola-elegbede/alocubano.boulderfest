@@ -158,6 +158,6 @@ export default defineConfig({
   ],
 
   // Always use preview setup/teardown (no local mode)
-  globalSetup: '../e2e/global-setup-preview.js',
-  globalTeardown: '../e2e/global-teardown-preview.js',
+  globalSetup: './tests/e2e/global-setup-preview.js',
+  globalTeardown: './tests/e2e/global-teardown-preview.js',
 });

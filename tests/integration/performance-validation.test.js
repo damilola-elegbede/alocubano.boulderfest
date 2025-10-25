@@ -24,17 +24,22 @@ import { describe, test, expect, beforeAll, afterAll, beforeEach, vi } from 'vit
 import { getDatabaseClient } from '../../lib/database.js';
 import { createOrRetrieveTickets } from '../../lib/ticket-creation-service.js';
 import * as ticketEmailServiceModule from '../../lib/ticket-email-service-brevo.js';
-import { chromium } from 'playwright';
 
-describe('Performance Validation', () => {
+// Skip in integration test mode (Playwright not installed)
+const skipPlaywrightTests = process.env.INTEGRATION_TEST_MODE === 'true';
+
+describe.skipIf(skipPlaywrightTests)('Performance Validation', () => {
   let db;
   let browser;
   let context;
+  let chromium;
   let testEventId;
   let testTicketTypeId;
   const BASE_URL = process.env.TEST_BASE_URL || 'http://localhost:3000';
 
   beforeAll(async () => {
+    // Dynamically import Playwright when not skipped
+    chromium = (await import('playwright')).chromium;
     db = await getDatabaseClient();
     browser = await chromium.launch({ headless: true });
     context = await browser.newContext();

@@ -12,14 +12,19 @@
  */
 
 import { describe, test, expect, beforeAll, afterAll } from 'vitest';
-import { chromium } from 'playwright';
 
-describe('Font Loading Optimization', () => {
+// Skip in integration test mode (Playwright not installed)
+const skipPlaywrightTests = process.env.INTEGRATION_TEST_MODE === 'true';
+
+describe.skipIf(skipPlaywrightTests)('Font Loading Optimization', () => {
   let browser;
   let context;
+  let chromium;
   const BASE_URL = process.env.TEST_BASE_URL || 'http://localhost:3000';
 
   beforeAll(async () => {
+    // Dynamically import Playwright when not skipped
+    chromium = (await import('playwright')).chromium;
     browser = await chromium.launch({
       headless: true,
       args: ['--disable-gpu', '--disable-dev-shm-usage']
