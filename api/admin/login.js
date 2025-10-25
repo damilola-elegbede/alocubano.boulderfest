@@ -526,10 +526,11 @@ async function handlePasswordStep(req, res, username, password, clientIP) {
   // Skip MFA in E2E test environment
   if (!mfaRequired || !mfaStatus.isEnabled || isE2ETest) {
     // No MFA required - complete login
-    if (isE2ETest && (mfaRequired || mfaStatus.isEnabled)) {
+    const mfaBypassed = isE2ETest && (mfaRequired || mfaStatus.isEnabled);
+    if (mfaBypassed) {
       console.log('[Login] Bypassing MFA requirement for E2E test environment');
     }
-    return await completeLogin(req, res, adminId, clientIP, false);
+    return await completeLogin(req, res, adminId, clientIP, false, null, mfaBypassed);
   }
 
   // MFA is required - create temporary session and request MFA
@@ -688,7 +689,8 @@ async function completeLogin(
   adminId,
   clientIP,
   mfaUsed = false,
-  existingToken = null
+  existingToken = null,
+  mfaBypassed = false
 ) {
   const db = await getDatabaseClient();
 
@@ -824,6 +826,11 @@ async function completeLogin(
     mfaUsed,
     adminId
   };
+
+  // Add message field when MFA was bypassed for E2E testing
+  if (mfaBypassed) {
+    responseData.message = 'MFA bypassed for E2E test environment';
+  }
 
   res.status(200).json(processDatabaseResult(responseData));
 }

@@ -286,6 +286,11 @@ test.describe('Admin Authentication', () => {
     }
 
     // Navigate away and back - should remain logged in
+    // Firefox requires stabilization wait to prevent NS_BINDING_ABORTED errors
+    const browserName = page.context().browser()?.browserType()?.name();
+    if (browserName === 'firefox') {
+      await page.waitForTimeout(1000);
+    }
     await page.goto('/tickets');
     await page.goto('/admin/dashboard');
 
