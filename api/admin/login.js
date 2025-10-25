@@ -819,6 +819,7 @@ async function completeLogin(
   res.setHeader('Set-Cookie', cookie);
   const responseData = {
     success: true,
+    token: token, // Include token in response body for integration tests
     expiresIn: authService.sessionDuration,
     mfaUsed,
     adminId
