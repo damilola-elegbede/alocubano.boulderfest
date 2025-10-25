@@ -20,9 +20,9 @@ describe('Fraud Detection Alert System', () => {
     return await dbClient.execute({
       sql: `INSERT INTO transactions (
               uuid, transaction_id, customer_email, customer_name, amount_cents,
-              payment_processor, manual_entry_id, type, status, order_data, created_at
+              payment_processor, manual_entry_id, type, status, order_data, created_at, is_test
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       args: [
         `uuid_${index}`,
         `tx_${index}`,
@@ -34,7 +34,8 @@ describe('Fraud Detection Alert System', () => {
         'tickets', // Required by migration 041
         'completed', // Status
         JSON.stringify({ items: [] }), // Required NOT NULL field
-        now.toISOString()
+        now.toISOString(),
+        1
       ]
     });
   }
@@ -197,9 +198,9 @@ describe('Fraud Detection Alert System', () => {
           const txResult = await dbClient.execute({
             sql: `INSERT INTO transactions (
                     uuid, transaction_id, customer_email, customer_name, amount_cents,
-                    payment_processor, manual_entry_id, type, status, order_data, created_at
+                    payment_processor, manual_entry_id, type, status, order_data, created_at, is_test
                   )
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             args: [
               `uuid_batch${batch}_${i}`,
               `tx_batch${batch}_${i}`,
@@ -211,7 +212,8 @@ describe('Fraud Detection Alert System', () => {
               'tickets',
               'completed',
               JSON.stringify({ items: [] }),
-              now.toISOString()
+              now.toISOString(),
+              1
             ]
           });
 

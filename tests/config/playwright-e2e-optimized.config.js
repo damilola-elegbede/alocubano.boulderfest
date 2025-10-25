@@ -53,7 +53,7 @@ const testIgnorePatterns = [
 ];
 
 export default defineConfig({
-  testDir: './tests/e2e/flows',
+  testDir: '../e2e/flows',
   testMatch: '**/*.test.js',
   testIgnore: testIgnorePatterns,
 

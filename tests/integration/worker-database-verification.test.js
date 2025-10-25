@@ -60,9 +60,9 @@ describe('Integration: Worker Database Verification', () => {
     const insertResult = await db.execute({
       sql: `INSERT INTO transactions (
         transaction_id, type, stripe_payment_intent_id, stripe_session_id, amount_cents,
-        currency, status, customer_email, order_data, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
-      args: ['test-tx-1', 'tickets', 'pi_test', 'cs_test', 5000, 'USD', 'completed', 'test@example.com', '{"test": true}']
+        currency, status, customer_email, order_data, created_at, updated_at, is_test
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'), ?)`,
+      args: ['test-tx-1', 'tickets', 'pi_test', 'cs_test', 5000, 'USD', 'completed', 'test@example.com', '{"test": true}', 1]
     });
 
     console.log('✅ Insert successful, lastInsertRowid:', insertResult.lastInsertRowid);

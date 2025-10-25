@@ -2,12 +2,22 @@ import { describe, test, expect, beforeAll } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { execSync } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, '../..');
 
 describe('CSS Bundle Consolidation', () => {
+  beforeAll(() => {
+    // Build CSS bundles if they don't exist
+    const bundlePath = path.join(projectRoot, 'css/bundle-critical.css');
+    if (!fs.existsSync(bundlePath)) {
+      console.log('Building CSS bundles for testing...');
+      execSync('npm run build:css', { cwd: projectRoot, stdio: 'inherit' });
+    }
+  });
+
   describe('Bundle Files', () => {
     test('critical CSS bundle exists and contains all required files', () => {
       const bundlePath = path.join(projectRoot, 'css/bundle-critical.css');

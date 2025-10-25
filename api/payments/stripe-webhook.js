@@ -26,17 +26,46 @@ import { createOrRetrieveTickets } from '../../lib/ticket-creation-service.js';
 import { fulfillReservation, releaseReservation } from '../../lib/ticket-availability-service.js';
 import { extractTestModeFromStripeSession } from '../../lib/test-mode-utils.js';
 
-// Initialize Stripe with strict error handling
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('❌ FATAL: STRIPE_SECRET_KEY secret not configured');
-}
+// Lazy initialization pattern - validate environment variables when handler is called
+// This allows integration tests to import the module without errors
+let stripe;
+let webhookSecret;
+let initialized = false;
 
-if (!process.env.STRIPE_WEBHOOK_SECRET) {
-  throw new Error('❌ FATAL: STRIPE_WEBHOOK_SECRET secret not configured');
-}
+/**
+ * Ensures Stripe is initialized with proper secrets.
+ * In production: Fails fast if secrets are missing.
+ * In test environments: Allows fallback values for integration testing.
+ * @throws {Error} If secrets are missing in production environment
+ */
+function ensureStripeInitialized() {
+  if (initialized) return;
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  // Detect test environment (integration tests or explicit test mode)
+  const isTestEnv = process.env.INTEGRATION_TEST_MODE === 'true' ||
+                    process.env.NODE_ENV === 'test';
+
+  // Use environment variables or test fallbacks
+  const stripeKey = process.env.STRIPE_SECRET_KEY ||
+    (isTestEnv ? 'sk_test_integration_fallback_key' : null);
+
+  const webhookKey = process.env.STRIPE_WEBHOOK_SECRET ||
+    (isTestEnv ? 'whsec_integration_fallback_secret' : null);
+
+  // Validate that secrets are present (either real or test fallbacks)
+  if (!stripeKey || !webhookKey) {
+    throw new Error('❌ FATAL: Stripe secrets not configured (STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET required)');
+  }
+
+  // Initialize Stripe with validated secrets
+  stripe = new Stripe(stripeKey);
+  webhookSecret = webhookKey;
+  initialized = true;
+
+  if (isTestEnv) {
+    console.log('⚠️  Stripe initialized with test fallback values (integration test mode)');
+  }
+}
 
 // Note: Customer name parsing moved to ticket-creation-service.js
 
@@ -80,6 +109,9 @@ async function getRawBody(req) {
  * @param {import('express').Response} res - HTTP response used to acknowledge the webhook and send status codes.
  */
 export default async function handler(req, res) {
+  // Ensure Stripe is initialized (lazy initialization)
+  ensureStripeInitialized();
+
   // Ensure all services are initialized to prevent race conditions
   if (auditService.ensureInitialized) {
     await auditService.ensureInitialized();

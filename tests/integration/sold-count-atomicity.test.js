@@ -464,9 +464,9 @@ describe('sold_count Atomicity Integration Tests', () => {
       const typeId = `test-atomicity-max-${Date.now()}`;
 
       await db.execute({
-        sql: `INSERT INTO ticket_types (id, event_id, name, price_cents, max_quantity, sold_count, status)
-              VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        args: [typeId, testEventId, 'Max Capacity Test', 5000, 10, 10, 'test']
+        sql: `INSERT INTO ticket_types (id, event_id, name, price_cents, max_quantity, sold_count, test_sold_count, status)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [typeId, testEventId, 'Max Capacity Test', 5000, 10, 0, 10, 'test']
       });
 
       // Try to purchase more

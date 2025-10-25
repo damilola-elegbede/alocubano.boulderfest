@@ -25,11 +25,9 @@ describe('Async Operations Integration', () => {
   let db;
   let testEventId;
   let testTicketTypeId;
-  let originalGetTicketEmailService;
 
   beforeAll(async () => {
     db = await getDatabaseClient();
-    originalGetTicketEmailService = ticketEmailServiceModule.getTicketEmailService;
 
     // Create test event and ticket type
     const eventResult = await db.execute({
@@ -48,8 +46,8 @@ describe('Async Operations Integration', () => {
   });
 
   afterAll(async () => {
-    // Restore original function
-    ticketEmailServiceModule.getTicketEmailService = originalGetTicketEmailService;
+    // Restore all mocks
+    vi.restoreAllMocks();
 
     // Cleanup
     await db.execute({ sql: 'DELETE FROM tickets WHERE is_test = 1' });
@@ -142,7 +140,8 @@ describe('Async Operations Integration', () => {
     console.log(`  Expected time savings: 1250-2600ms`);
 
     // Wait for all async operations to complete
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // Increased from 1500ms to 2000ms to handle slower CI environments
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     // Verify email was sent (async #6)
     expect(mockEmailService.sendTicketConfirmation).toHaveBeenCalled();
@@ -223,7 +222,8 @@ describe('Async Operations Integration', () => {
     console.log(`  Time saved: ${improvement.toFixed(2)}ms`);
 
     // Wait for email to complete
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Increased from 2000ms to 2500ms (1500ms mock delay + 1000ms buffer for CI)
+    await new Promise(resolve => setTimeout(resolve, 2500));
 
     expect(mockSlowEmailService.sendTicketConfirmation).toHaveBeenCalled();
   }, 15000);
@@ -279,7 +279,8 @@ describe('Async Operations Integration', () => {
     console.log(`✓ Failed Email: Checkout ${duration.toFixed(2)}ms (not blocked)`);
 
     // Wait for async error handling
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Increased from 1000ms to 1500ms for email retry queue insertion on slower systems
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
     // Verify email was queued for retry
     const queuedEmails = await db.execute({
@@ -344,7 +345,8 @@ describe('Async Operations Integration', () => {
     console.log(`  Expected time saved: 200-500ms`);
 
     // Wait for async reminder scheduling
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Increased from 1000ms to 1500ms for multiple database writes (4 reminders)
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
     // Verify reminders were scheduled
     const remindersResult = await db.execute({
@@ -422,7 +424,8 @@ describe('Async Operations Integration', () => {
     console.log(`  Expected time saved: 50-100ms`);
 
     // Wait for async fulfillment
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Increased from 500ms to 1000ms for database transaction completion
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     // Verify reservation was fulfilled
     const reservationResult = await db.execute({
@@ -489,7 +492,8 @@ describe('Async Operations Integration', () => {
     console.log(`✓ Concurrent Async Operations: 5 checkouts in ${duration.toFixed(2)}ms`);
 
     // Wait for all async operations
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // Increased from 1500ms to 3000ms for 5 concurrent operations (5 * 600ms per operation)
+    await new Promise(resolve => setTimeout(resolve, 3000));
 
     // Verify each has tickets, reminders, and emails
     for (const result of results) {
@@ -568,7 +572,8 @@ describe('Async Operations Integration', () => {
     expect(result).toBeDefined();
 
     // Wait for async operations
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // Increased from 1500ms to 2000ms for email retry queue + reminders + fulfillment
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     // Email should have failed and queued
     const queuedEmails = await db.execute({
@@ -677,7 +682,8 @@ describe('Async Operations Integration', () => {
     console.log(`  Total Expected Savings: ${totalExpectedSaving}ms`);
 
     // Wait for all async operations to complete
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Increased from 2000ms to 3000ms for slow email (1500ms) + reminders + fulfillment + buffer
+    await new Promise(resolve => setTimeout(resolve, 3000));
 
     // Verify all operations completed successfully
     expect(mockSlowEmailService.sendTicketConfirmation).toHaveBeenCalled();

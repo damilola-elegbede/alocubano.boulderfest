@@ -8,6 +8,7 @@ import { getDatabaseClient } from '../../../lib/database.js';
 import authService from '../../../lib/auth-service.js';
 import auditService from '../../../lib/audit-service.js';
 import { createTestEvent } from '../handler-test-helper.js';
+import { createTestTransaction, createTestTransactionItem } from '../../helpers/test-data-factory.js';
 import jwt from 'jsonwebtoken';
 
 describe('Admin Donations Dashboard API', () => {
@@ -159,20 +160,29 @@ describe('Admin Donations Dashboard API', () => {
       ];
 
       for (const data of testData) {
-        // Insert transaction and get its auto-generated ID
-        const txResult = await db.execute({
-          sql: `INSERT INTO transactions (transaction_id, type, status, amount_cents, customer_email, customer_name, order_data, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                RETURNING id`,
-          args: [data.transactionId, 'donation', 'completed', data.amountCents, data.email, data.name, '{}', data.createdAt]
+        // Create transaction using test data factory (override is_test based on test data)
+        const transaction = await createTestTransaction({
+          transaction_id: data.transactionId,
+          type: 'donation',
+          status: 'completed',
+          amount_cents: data.amountCents,
+          customer_email: data.email,
+          customer_name: data.name,
+          order_data: '{}',
+          created_at: data.createdAt,
+          is_test: data.isTest // Override with test-specific value
         });
-        const transactionDbId = txResult.rows[0].id;
 
-        // Insert transaction item with the INTEGER transaction ID
-        await db.execute({
-          sql: `INSERT INTO transaction_items (transaction_id, item_type, item_name, quantity, unit_price_cents, total_price_cents, is_test, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          args: [transactionDbId, 'donation', data.itemName, 1, data.amountCents, data.amountCents, data.isTest, data.createdAt]
+        // Create transaction item using test data factory (override is_test to match transaction)
+        await createTestTransactionItem({
+          transaction_id: transaction.id,
+          item_type: 'donation',
+          item_name: data.itemName,
+          quantity: 1,
+          unit_price_cents: data.amountCents,
+          total_price_cents: data.amountCents,
+          created_at: data.createdAt,
+          is_test: data.isTest // Override with test-specific value
         });
       }
     });
@@ -305,8 +315,7 @@ describe('Admin Donations Dashboard API', () => {
       for (const donation of donations) {
         // Insert transaction and get its auto-generated ID
         const txResult = await db.execute({
-          sql: `INSERT INTO transactions (transaction_id, type, status, amount_cents, customer_email, customer_name, order_data, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          sql: `INSERT INTO transactions (transaction_id, type, status, amount_cents, customer_email, customer_name, order_data, created_at, is_test) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
                 RETURNING id`,
           args: [donation.transactionId, 'donation', 'completed', donation.amount, 'metrics@test.com', 'Metrics Test', '{}', new Date().toISOString()]
         });
@@ -397,8 +406,7 @@ describe('Admin Donations Dashboard API', () => {
       // Create a donation
       // Insert transaction and get its auto-generated ID
       const txResult = await db.execute({
-        sql: `INSERT INTO transactions (transaction_id, type, status, amount_cents, customer_email, customer_name, order_data, created_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        sql: `INSERT INTO transactions (transaction_id, type, status, amount_cents, customer_email, customer_name, order_data, created_at, is_test) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
               RETURNING id`,
         args: ['MT-TEST-001', 'donation', 'completed', 5000, 'mt@test.com', 'MT Test', '{}', new Date().toISOString()]
       });
@@ -447,8 +455,7 @@ describe('Admin Donations Dashboard API', () => {
 
       // Insert transaction and get its auto-generated ID
       const txResult = await db.execute({
-        sql: `INSERT INTO transactions (transaction_id, type, status, amount_cents, customer_email, customer_name, order_data, created_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        sql: `INSERT INTO transactions (transaction_id, type, status, amount_cents, customer_email, customer_name, order_data, created_at, is_test) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
               RETURNING id`,
         args: ['BIGINT-001', 'donation', 'completed', largeAmount, 'bigint@test.com', 'BigInt Test', '{}', new Date().toISOString()]
       });
@@ -528,8 +535,7 @@ describe('Admin Donations Dashboard API', () => {
 
         // Insert transaction and get its auto-generated ID
         const txResult = await db.execute({
-          sql: `INSERT INTO transactions (transaction_id, type, status, amount_cents, customer_email, customer_name, order_data, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          sql: `INSERT INTO transactions (transaction_id, type, status, amount_cents, customer_email, customer_name, order_data, created_at, is_test) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
                 RETURNING id`,
           args: [transactionId, 'donation', 'completed', amount, `perf${i}@test.com`, `Perf Test ${i}`, '{}', new Date().toISOString()]
         });
@@ -586,8 +592,7 @@ describe('Admin Donations Dashboard API', () => {
 
         // Insert transaction and get its auto-generated ID
         const txResult = await db.execute({
-          sql: `INSERT INTO transactions (transaction_id, type, status, amount_cents, customer_email, customer_name, order_data, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          sql: `INSERT INTO transactions (transaction_id, type, status, amount_cents, customer_email, customer_name, order_data, created_at, is_test) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
                 RETURNING id`,
           args: [transactionId, 'donation', 'completed', 5000, `sort${i}@test.com`, `Sort Test ${i}`, '{}', dates[i].toISOString()]
         });

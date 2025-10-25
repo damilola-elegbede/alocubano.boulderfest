@@ -534,6 +534,240 @@ export function generateTestData(type, overrides = {}) {
   }
 }
 
+/**
+ * Database Test Helpers - Create test data in database
+ * Use these helpers when tests need specific database records beyond base seed data
+ */
+
+// Re-export base data for tests that need to reference it
+export { BASE_EVENT, BASE_TICKETS, BASE_TRANSACTION } from '../fixtures/seed-base-data.js';
+
+/**
+ * Create test event with unique data
+ * Use this when tests need a specific event beyond the BASE_EVENT
+ *
+ * @param {Object} db - Database client (@libsql/client)
+ * @param {Object} overrides - Override default event values
+ * @returns {Promise<Object>} Created event with id
+ */
+export async function createTestEvent(db, overrides = {}) {
+  const uniqueId = Date.now() + Math.floor(Math.random() * 10000);
+  const event = {
+    slug: `test-event-${uniqueId}`,
+    name: `Test Event ${uniqueId}`,
+    type: 'festival',
+    status: 'active',
+    description: 'Test event for unit testing',
+    venue_name: 'Test Venue',
+    venue_address: '123 Test St',
+    venue_city: 'Boulder',
+    venue_state: 'CO',
+    venue_zip: '80301',
+    start_date: '2026-06-01',
+    end_date: '2026-06-03',
+    max_capacity: 200,
+    early_bird_end_date: '2026-05-01',
+    regular_price_start_date: '2026-05-02',
+    display_order: 0,
+    is_featured: false,
+    is_visible: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    ...overrides
+  };
+
+  const result = await db.execute({
+    sql: `INSERT INTO events
+          (slug, name, type, status, description, venue_name, venue_address, venue_city, venue_state, venue_zip,
+           start_date, end_date, max_capacity, early_bird_end_date, regular_price_start_date,
+           display_order, is_featured, is_visible, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          RETURNING id`,
+    args: [
+      event.slug,
+      event.name,
+      event.type,
+      event.status,
+      event.description,
+      event.venue_name,
+      event.venue_address,
+      event.venue_city,
+      event.venue_state,
+      event.venue_zip,
+      event.start_date,
+      event.end_date,
+      event.max_capacity,
+      event.early_bird_end_date,
+      event.regular_price_start_date,
+      event.display_order,
+      event.is_featured ? 1 : 0,
+      event.is_visible ? 1 : 0,
+      event.created_at,
+      event.updated_at
+    ]
+  });
+
+  return { ...event, id: result.rows[0].id };
+}
+
+/**
+ * Create test transaction with unique data
+ * Use this when tests need a specific transaction
+ *
+ * @param {Object} db - Database client
+ * @param {Object} overrides - Override default transaction values
+ * @returns {Promise<Object>} Created transaction
+ */
+export async function createTestTransaction(db, overrides = {}) {
+  const uniqueId = Date.now() + Math.floor(Math.random() * 10000);
+  const transaction = {
+    transaction_id: `TXN_TEST_${uniqueId}`,
+    stripe_session_id: `cs_test_${uniqueId}`,
+    stripe_payment_intent: `pi_test_${uniqueId}`,
+    email: `test-${uniqueId}@example.com`,
+    status: 'completed',
+    amount: 10000,
+    currency: 'usd',
+    ticket_count: 1,
+    event_id: 1, // Use base event by default
+    metadata: JSON.stringify({ test: true, unique_id: uniqueId }),
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    ...overrides
+  };
+
+  const result = await db.execute({
+    sql: `INSERT INTO transactions
+          (transaction_id, stripe_session_id, stripe_payment_intent, email, status,
+           amount, currency, ticket_count, event_id, metadata, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          RETURNING id`,
+    args: [
+      transaction.transaction_id,
+      transaction.stripe_session_id,
+      transaction.stripe_payment_intent,
+      transaction.email,
+      transaction.status,
+      transaction.amount,
+      transaction.currency,
+      transaction.ticket_count,
+      transaction.event_id,
+      transaction.metadata,
+      transaction.created_at,
+      transaction.updated_at
+    ]
+  });
+
+  return { ...transaction, id: result.rows[0].id };
+}
+
+/**
+ * Create test ticket with unique data
+ * Use this when tests need a specific ticket beyond BASE_TICKETS
+ *
+ * @param {Object} db - Database client
+ * @param {Object} overrides - Override default ticket values
+ * @returns {Promise<Object>} Created ticket
+ */
+export async function createTestTicket(db, overrides = {}) {
+  const uniqueId = Date.now() + Math.floor(Math.random() * 10000);
+  const ticket = {
+    ticket_id: `TEST_${uniqueId}`,
+    event_id: 1, // Use base event by default
+    transaction_id: 'TXN_BASE_001', // Use base transaction by default
+    status: 'active',
+    ticket_type: 'Test Pass',
+    price: 10000,
+    attendee_first_name: 'Test',
+    attendee_last_name: 'Attendee',
+    attendee_email: `test-${uniqueId}@example.com`,
+    qr_token: null,
+    registration_token: null,
+    registered_at: null,
+    registration_deadline: '2026-05-14T23:59:59.000Z',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    ...overrides
+  };
+
+  await db.execute({
+    sql: `INSERT INTO tickets
+          (ticket_id, event_id, transaction_id, status, ticket_type, price,
+           attendee_first_name, attendee_last_name, attendee_email,
+           qr_token, registration_token, registered_at, registration_deadline,
+           created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [
+      ticket.ticket_id,
+      ticket.event_id,
+      ticket.transaction_id,
+      ticket.status,
+      ticket.ticket_type,
+      ticket.price,
+      ticket.attendee_first_name,
+      ticket.attendee_last_name,
+      ticket.attendee_email,
+      ticket.qr_token,
+      ticket.registration_token,
+      ticket.registered_at,
+      ticket.registration_deadline,
+      ticket.created_at,
+      ticket.updated_at
+    ]
+  });
+
+  return ticket;
+}
+
+/**
+ * Get database client for testing
+ * Convenience function to get the database client
+ *
+ * @returns {Promise<Object>} Database client
+ */
+export async function getTestDatabaseClient() {
+  const { getDatabaseClient } = await import('../../lib/database.js');
+  return await getDatabaseClient();
+}
+
+/**
+ * Clean up test data
+ * Delete test records created during a test
+ *
+ * @param {Object} db - Database client
+ * @param {Object} options - Cleanup options
+ * @param {Array<string>} options.ticketIds - Ticket IDs to delete
+ * @param {Array<string>} options.transactionIds - Transaction IDs to delete
+ * @param {Array<number>} options.eventIds - Event IDs to delete
+ */
+export async function cleanupTestData(db, options = {}) {
+  const { ticketIds = [], transactionIds = [], eventIds = [] } = options;
+
+  // Delete tickets
+  for (const ticketId of ticketIds) {
+    await db.execute({
+      sql: 'DELETE FROM tickets WHERE ticket_id = ?',
+      args: [ticketId]
+    });
+  }
+
+  // Delete transactions
+  for (const transactionId of transactionIds) {
+    await db.execute({
+      sql: 'DELETE FROM transactions WHERE transaction_id = ?',
+      args: [transactionId]
+    });
+  }
+
+  // Delete events (be careful - may have FK constraints)
+  for (const eventId of eventIds) {
+    await db.execute({
+      sql: 'DELETE FROM events WHERE id = ? AND id > 1', // Protect BASE_EVENT (id=1)
+      args: [eventId]
+    });
+  }
+}
+
 // Export all utilities
 export default {
   MockFactory,
@@ -542,5 +776,11 @@ export default {
   TestEnvironment,
   waitForCondition,
   createSpy,
-  generateTestData
+  generateTestData,
+  // Database helpers
+  createTestEvent,
+  createTestTransaction,
+  createTestTicket,
+  getTestDatabaseClient,
+  cleanupTestData
 };

@@ -34,6 +34,8 @@
     "migrate:vercel": "node scripts/migrate-vercel-build.js",
     "db:drop-tables": "node scripts/drop-all-tables.js",
     "db:drop-tables:prod": "node scripts/drop-all-tables-prod.js",
+    "db:restore": "node scripts/restore-backup.js",
+    "db:restore:prod": "node scripts/restore-backup.js --prod",
     "bootstrap": "node scripts/bootstrap.js",
     "verify-structure": "node scripts/verify-structure.js",
     "verify-production-readiness": "node scripts/verify-production-readiness.js",

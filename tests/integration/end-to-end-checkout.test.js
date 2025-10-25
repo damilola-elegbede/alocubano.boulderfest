@@ -25,8 +25,11 @@ describe('End-to-End Checkout Integration', () => {
 
   beforeAll(async () => {
     db = await getDatabaseClient();
+  });
 
-    // Create test event and ticket type
+  beforeEach(async () => {
+    // Create test event and ticket type for each test
+    // (AfterEach cleanup from setup-integration.js deletes ALL table data)
     const eventResult = await db.execute({
       sql: `INSERT INTO events (slug, name, type, status, start_date, end_date)
             VALUES ('e2e-test-event', 'E2E Test Event', 'festival', 'active', '2026-05-15', '2026-05-17')`,
@@ -42,25 +45,7 @@ describe('End-to-End Checkout Integration', () => {
     });
   });
 
-  afterAll(async () => {
-    // Cleanup
-    await db.execute({ sql: 'DELETE FROM tickets WHERE is_test = 1' });
-    await db.execute({ sql: 'DELETE FROM transactions WHERE is_test = 1' });
-    await db.execute({ sql: 'DELETE FROM registration_reminders WHERE is_test = 1' });
-    await db.execute({ sql: 'DELETE FROM ticket_reservations WHERE ticket_type_id = ?', args: [testTicketTypeId] });
-    await db.execute({ sql: 'DELETE FROM ticket_types WHERE id = ?', args: [testTicketTypeId] });
-    if (testEventId) {
-      await db.execute({ sql: 'DELETE FROM events WHERE id = ?', args: [testEventId] });
-    }
-  });
-
-  beforeEach(async () => {
-    // Clean test data before each test
-    await db.execute({ sql: 'DELETE FROM tickets WHERE is_test = 1' });
-    await db.execute({ sql: 'DELETE FROM transactions WHERE is_test = 1' });
-    await db.execute({ sql: 'DELETE FROM registration_reminders WHERE is_test = 1' });
-    await db.execute({ sql: 'DELETE FROM ticket_reservations WHERE ticket_type_id = ?', args: [testTicketTypeId] });
-  });
+  // No cleanup needed - afterEach in setup-integration.js handles it
 
   test('complete checkout flow: reservation → payment → tickets → email → reminders', async () => {
     const sessionId = `cs_e2e_complete_${Date.now()}`;
@@ -96,7 +81,7 @@ describe('End-to-End Checkout Integration', () => {
               unit_amount: 5000,
               product: {
                 metadata: {
-                  ticket_type_id: testTicketTypeId,
+                  ticket_type: testTicketTypeId,
                   event_id: String(testEventId),
                   event_date: '2026-05-15'
                 }
@@ -221,7 +206,7 @@ describe('End-to-End Checkout Integration', () => {
               unit_amount: 5000,
               product: {
                 metadata: {
-                  ticket_type_id: testTicketTypeId,
+                  ticket_type: testTicketTypeId,
                   event_id: String(testEventId),
                   event_date: '2026-05-15'
                 }
@@ -234,7 +219,7 @@ describe('End-to-End Checkout Integration', () => {
               unit_amount: 7500,
               product: {
                 metadata: {
-                  ticket_type_id: ticketType2Id,
+                  ticket_type: ticketType2Id,
                   event_id: String(testEventId),
                   event_date: '2026-05-16'
                 }
@@ -293,7 +278,7 @@ describe('End-to-End Checkout Integration', () => {
               unit_amount: 5000,
               product: {
                 metadata: {
-                  ticket_type_id: testTicketTypeId,
+                  ticket_type: testTicketTypeId,
                   event_id: String(testEventId),
                   event_date: '2026-05-15'
                 }
@@ -349,7 +334,7 @@ describe('End-to-End Checkout Integration', () => {
               unit_amount: 5000,
               product: {
                 metadata: {
-                  ticket_type_id: testTicketTypeId,
+                  ticket_type: testTicketTypeId,
                   event_id: String(testEventId),
                   event_date: '2026-05-15'
                 }
@@ -491,7 +476,7 @@ describe('End-to-End Checkout Integration', () => {
               unit_amount: 5000,
               product: {
                 metadata: {
-                  ticket_type_id: testTicketTypeId,
+                  ticket_type: testTicketTypeId,
                   event_id: String(testEventId),
                   event_date: '2026-05-15'
                 }
@@ -549,7 +534,7 @@ describe('End-to-End Checkout Integration', () => {
               unit_amount: 2500,
               product: {
                 metadata: {
-                  ticket_type_id: testTicketTypeId,
+                  ticket_type: testTicketTypeId,
                   event_id: String(testEventId),
                   event_date: '2026-05-15'
                 }
@@ -618,7 +603,7 @@ describe('End-to-End Checkout Integration', () => {
               unit_amount: 5000,
               product: {
                 metadata: {
-                  ticket_type_id: testTicketTypeId,
+                  ticket_type: testTicketTypeId,
                   event_id: String(testEventId),
                   event_date: '2026-05-15'
                 }

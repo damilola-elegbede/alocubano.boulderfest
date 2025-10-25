@@ -45,10 +45,10 @@ describe.sequential('QR Validation Flow - Integration Tests', () => {
       sql: `
         INSERT INTO transactions (
           transaction_id, type, status, amount_cents, currency,
-          customer_email, customer_name, order_data, event_id, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+          customer_email, customer_name, order_data, event_id, created_at, is_test
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?)
       `,
-      args: [`tx-qr-001-${timestamp}`, 'tickets', 'completed', 10000, 'USD', 'test@example.com', 'Test User', '{}', testEventId]
+      args: [`tx-qr-001-${timestamp}`, 'tickets', 'completed', 10000, 'USD', 'test@example.com', 'Test User', '{}', testEventId, 1]
     });
     tx1Id = tx1Result.lastInsertRowid;
 
@@ -56,10 +56,10 @@ describe.sequential('QR Validation Flow - Integration Tests', () => {
       sql: `
         INSERT INTO transactions (
           transaction_id, type, status, amount_cents, currency,
-          customer_email, customer_name, order_data, event_id, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+          customer_email, customer_name, order_data, event_id, created_at, is_test
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?)
       `,
-      args: [`tx-qr-002-${timestamp}`, 'tickets', 'completed', 10000, 'USD', 'test@example.com', 'Test User', '{}', testEventId]
+      args: [`tx-qr-002-${timestamp}`, 'tickets', 'completed', 10000, 'USD', 'test@example.com', 'Test User', '{}', testEventId, 1]
     });
     tx2Id = tx2Result.lastInsertRowid;
 
@@ -67,10 +67,10 @@ describe.sequential('QR Validation Flow - Integration Tests', () => {
       sql: `
         INSERT INTO transactions (
           transaction_id, type, status, amount_cents, currency,
-          customer_email, customer_name, order_data, event_id, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+          customer_email, customer_name, order_data, event_id, created_at, is_test
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?)
       `,
-      args: [`tx-qr-003-${timestamp}`, 'tickets', 'completed', 10000, 'USD', 'test@example.com', 'Test User', '{}', testEventId]
+      args: [`tx-qr-003-${timestamp}`, 'tickets', 'completed', 10000, 'USD', 'test@example.com', 'Test User', '{}', testEventId, 1]
     });
     tx3Id = tx3Result.lastInsertRowid;
 
@@ -81,10 +81,10 @@ describe.sequential('QR Validation Flow - Integration Tests', () => {
         sql: `
           INSERT INTO transactions (
             transaction_id, type, status, amount_cents, currency,
-            customer_email, customer_name, order_data, event_id, created_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+            customer_email, customer_name, order_data, event_id, created_at, is_test
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?)
         `,
-        args: [`tx-qr-extra-${i}-${timestamp}`, 'tickets', 'completed', 10000, 'USD', 'test@example.com', 'Test User', '{}', testEventId]
+        args: [`tx-qr-extra-${i}-${timestamp}`, 'tickets', 'completed', 10000, 'USD', 'test@example.com', 'Test User', '{}', testEventId, 1]
       });
       txExtraIds.push(result.lastInsertRowid);
     }
