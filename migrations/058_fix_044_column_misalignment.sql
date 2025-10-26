@@ -15,8 +15,8 @@
 -- ============================================================================
 -- SINGLE ATOMIC TRANSACTION - All operations succeed or all fail
 -- ============================================================================
-
-BEGIN TRANSACTION;
+-- NOTE: Transaction handling is managed by the migration runner (scripts/migrate.js)
+-- The runner wraps each migration in a transaction automatically.
 
 -- Disable FK constraints temporarily for table recreation
 PRAGMA foreign_keys = OFF;
@@ -87,8 +87,8 @@ PRAGMA foreign_keys = ON;
 -- This will fail the transaction if there are any FK violations
 PRAGMA foreign_key_check;
 
--- Commit the transaction - all changes become permanent
-COMMIT;
+-- NOTE: COMMIT is handled automatically by the migration runner
+-- Each migration is wrapped in a transaction that commits on success or rolls back on failure
 
 -- ============================================================================
 -- MIGRATION NOTES
@@ -119,10 +119,9 @@ COMMIT;
 -- ROLLBACK INSTRUCTIONS:
 -- If this migration needs to be rolled back:
 /*
-BEGIN TRANSACTION;
 DROP VIEW IF EXISTS test_ticket_sales_view;
-COMMIT;
 */
+-- NOTE: Transaction wrapping is handled by migration runner
 --
 -- However, this migration is purely additive (recreating views).
 -- Rollback should only be needed if the view definition is incorrect.
