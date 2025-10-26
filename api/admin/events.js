@@ -3,32 +3,15 @@ import { getDatabaseClient } from "../../lib/database.js";
 import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
 import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
 import { processDatabaseResult } from "../../lib/bigint-serializer.js";
-import { getAdminTestEvents } from "../../lib/test-events.js";
 import timeUtils from "../../lib/time-utils.js";
 
 /**
- * Mock events data for development when events table doesn't exist yet
+ * Events API - Single Event Mode
+ * Returns the current event information (not multi-event support)
+ *
+ * NOTE: This endpoint returns the single active event for the festival.
+ * Multi-event architecture (event switching, multiple events) has been removed.
  */
-const MOCK_EVENTS = [
-  {
-    id: 1,
-    slug: 'boulderfest-2026',
-    name: '[Mock] Boulder Fest 2026',
-    type: 'festival',
-    status: 'upcoming',
-    start_date: '2026-05-15',
-    end_date: '2026-05-17'
-  },
-  {
-    id: 2,
-    slug: 'weekender-09-2026',
-    name: '[Mock] Weekender 09/2026',
-    type: 'weekender',
-    status: 'upcoming',
-    start_date: '2026-09-18',
-    end_date: '2026-09-20'
-  }
-];
 
 async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -39,8 +22,8 @@ async function handler(req, res) {
   try {
     const db = await getDatabaseClient();
 
-    // Check if events table exists by trying to query it
-    let events;
+    // Query the events table for the current event
+    let events = [];
     try {
       const result = await db.execute(`
         SELECT
@@ -50,39 +33,38 @@ async function handler(req, res) {
           type,
           status,
           start_date,
-          end_date
+          end_date,
+          venue_name,
+          venue_city,
+          venue_state
         FROM events
         WHERE is_visible = TRUE
         ORDER BY start_date DESC
+        LIMIT 1
       `);
 
-      // Process database results to handle BigInt values
-      events = processDatabaseResult(result.rows);
+      if (result.rows && result.rows.length > 0) {
+        // Process database results to handle BigInt values
+        events = processDatabaseResult(result.rows);
 
-      // Enhance with Mountain Time fields
-      events = timeUtils.enhanceApiResponse(events,
-        ['start_date', 'end_date'],
-        { includeDeadline: false }
-      );
-
-      // Add test events for admin event selector (always available)
-      const testEvents = getAdminTestEvents();
-      events = [...testEvents, ...events];
-    } catch (error) {
-      // If events table doesn't exist yet, return mock data
-      if (error.message.includes('no such table: events') ||
-          error.message.includes('table events doesn\'t exist')) {
-        console.log('Events table not found, returning mock data for development');
-        events = MOCK_EVENTS;
-      } else {
-        // Re-throw other database errors
-        throw error;
+        // Enhance with Mountain Time fields
+        events = timeUtils.enhanceApiResponse(events,
+          ['start_date', 'end_date'],
+          { includeDeadline: false }
+        );
       }
+    } catch (error) {
+      // If events table doesn't exist or query fails, log but don't crash
+      console.error('Events query error:', error);
+
+      // Return empty array - consuming code should handle gracefully
+      events = [];
     }
 
     const responseData = {
       events: events,
       total: events.length,
+      mode: 'single-event', // Indicate this is single-event mode, not multi-event
       timestamp: new Date().toISOString()
     };
 
@@ -98,8 +80,7 @@ async function handler(req, res) {
 
     // SECURITY: Return generic error message to prevent information disclosure
     res.status(500).json({
-      error: 'Failed to fetch events',
-      // SECURITY: Remove error.message to prevent DB schema/structure leakage
+      error: 'Failed to fetch event information',
       timestamp: new Date().toISOString()
     });
   }
@@ -109,5 +90,5 @@ async function handler(req, res) {
 export default withSecurityHeaders(authService.requireAuth(withAdminAudit(handler, {
   logBody: false, // Events GET requests don't need body logging
   logMetadata: true,
-  skipMethods: [] // Log all event management access
+  skipMethods: [] // Log all event access
 })));

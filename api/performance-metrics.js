@@ -1,5 +1,6 @@
 import { setSecureCorsHeaders } from '../lib/cors-config.js';
 import crypto from 'crypto';
+import { getDatabaseClient } from '../lib/database.js';
 
 /**
  * Unified Performance Metrics API Endpoint
@@ -358,45 +359,158 @@ function generatePerformanceInsights(data) {
 }
 
 /**
- * Stores metrics data (currently logs to console, ready for database integration)
+ * Stores metrics data to the database
  * @param {Object} processedData - The processed metrics data to store
  */
 async function storeMetrics(processedData) {
-  // TODO: Implement actual database storage
-  // For now, log to console for debugging and development
+  try {
+    const db = await getDatabaseClient();
 
-  console.log('=== Performance Metrics Stored ===');
-  console.log('Type:', processedData.metricType);
-  console.log('Timestamp:', new Date(processedData.timestamp).toISOString());
-  console.log('Page:', processedData.page || processedData.url || 'unknown');
-  console.log('Session ID:', processedData.sessionId);
-  console.log('User Agent:', processedData.userAgent?.substring(0, 50) + '...');
+    // Log summary to console for debugging
+    console.log('=== Performance Metrics Stored ===');
+    console.log('Type:', processedData.metricType);
+    console.log('Timestamp:', new Date(processedData.timestamp).toISOString());
+    console.log('Page:', processedData.page || processedData.url || 'unknown');
+    console.log('Session ID:', processedData.sessionId);
 
-  if (processedData.aggregatedMetrics) {
-    console.log(
-      'Aggregated Metrics:',
-      JSON.stringify(processedData.aggregatedMetrics, null, 2)
-    );
+    // Prepare metadata
+    const metadata = {
+      sessionId: processedData.sessionId,
+      clientIP: processedData.clientIP,
+      insights: processedData.insights || [],
+      alerts: processedData.alerts || [],
+      metricType: processedData.metricType
+    };
+
+    // Insert aggregated metrics into database
+    if (processedData.aggregatedMetrics) {
+      const insertPromises = [];
+
+      for (const [metricName, metricData] of Object.entries(processedData.aggregatedMetrics)) {
+        // Insert avg, min, max, p95 as separate records
+        insertPromises.push(
+          db.execute({
+            sql: `INSERT INTO performance_metrics
+                  (metric_name, metric_value, metric_type, endpoint, request_id, user_agent, metadata)
+                  VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            args: [
+              metricName + '_avg',
+              metricData.avg,
+              processedData.metricType || 'standard',
+              processedData.page || processedData.url || null,
+              processedData.sessionId,
+              processedData.userAgent?.substring(0, 255) || null,
+              JSON.stringify({
+                ...metadata,
+                aggregation: 'avg',
+                count: metricData.count
+              })
+            ]
+          }),
+          db.execute({
+            sql: `INSERT INTO performance_metrics
+                  (metric_name, metric_value, metric_type, endpoint, request_id, user_agent, metadata)
+                  VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            args: [
+              metricName + '_p95',
+              metricData.p95,
+              processedData.metricType || 'standard',
+              processedData.page || processedData.url || null,
+              processedData.sessionId,
+              processedData.userAgent?.substring(0, 255) || null,
+              JSON.stringify({
+                ...metadata,
+                aggregation: 'p95',
+                min: metricData.min,
+                max: metricData.max
+              })
+            ]
+          })
+        );
+      }
+
+      await Promise.all(insertPromises);
+      console.log(`✅ Inserted ${insertPromises.length} aggregated metrics`);
+    }
+
+    // Insert raw metrics if available
+    if (processedData.rawMetrics) {
+      const rawInserts = [];
+
+      for (const [metricName, metricValue] of Object.entries(processedData.rawMetrics)) {
+        if (typeof metricValue === 'number' && !isNaN(metricValue)) {
+          rawInserts.push(
+            db.execute({
+              sql: `INSERT INTO performance_metrics
+                    (metric_name, metric_value, metric_type, endpoint, request_id, user_agent, metadata)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)`,
+              args: [
+                metricName,
+                metricValue,
+                'raw',
+                processedData.page || processedData.url || null,
+                processedData.sessionId,
+                processedData.userAgent?.substring(0, 255) || null,
+                JSON.stringify(metadata)
+              ]
+            })
+          );
+        }
+      }
+
+      if (rawInserts.length > 0) {
+        await Promise.all(rawInserts);
+        console.log(`✅ Inserted ${rawInserts.length} raw metrics`);
+      }
+    }
+
+    // Insert Core Web Vitals if available
+    if (processedData.coreWebVitals) {
+      const vitalsInserts = [];
+
+      for (const [vitalName, vitalValue] of Object.entries(processedData.coreWebVitals)) {
+        if (typeof vitalValue === 'number' && !isNaN(vitalValue)) {
+          vitalsInserts.push(
+            db.execute({
+              sql: `INSERT INTO performance_metrics
+                    (metric_name, metric_value, metric_type, endpoint, request_id, user_agent, metadata)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)`,
+              args: [
+                'cwv_' + vitalName,
+                vitalValue,
+                'core_web_vitals',
+                processedData.url || null,
+                processedData.sessionId,
+                processedData.userAgent?.substring(0, 255) || null,
+                JSON.stringify(metadata)
+              ]
+            })
+          );
+        }
+      }
+
+      if (vitalsInserts.length > 0) {
+        await Promise.all(vitalsInserts);
+        console.log(`✅ Inserted ${vitalsInserts.length} Core Web Vitals metrics`);
+      }
+    }
+
+    // Log alerts if triggered
+    if (processedData.alerts && processedData.alerts.length > 0) {
+      console.log('🚨 ALERTS TRIGGERED:');
+      processedData.alerts.forEach((alert) => {
+        console.log(
+          `  [${alert.severity.toUpperCase()}] ${alert.type}: ${alert.message}`
+        );
+      });
+    }
+
+    console.log('=====================================');
+
+  } catch (error) {
+    console.error('❌ Failed to store performance metrics:', error);
+    // Don't throw - metrics collection failures should not break the app
   }
-
-  if (processedData.insights && processedData.insights.length > 0) {
-    console.log('Insights:', processedData.insights);
-  }
-
-  if (processedData.alerts && processedData.alerts.length > 0) {
-    console.log('🚨 ALERTS TRIGGERED:');
-    processedData.alerts.forEach((alert) => {
-      console.log(
-        `  [${alert.severity.toUpperCase()}] ${alert.type}: ${alert.message}`
-      );
-    });
-  }
-
-  console.log('=====================================');
-
-  // In a real implementation, this would be something like:
-  // await database.collection('performance_metrics').insertOne(processedData);
-  // await alertingService.sendAlerts(processedData.alerts);
 }
 
 /**

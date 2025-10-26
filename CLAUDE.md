@@ -613,6 +613,34 @@ Features:
 - Handles comments and multi-line statements
 - Tracks status in `migrations` table
 
+### Database Table Notes
+
+#### `registrations` Table
+
+**Status:** Table exists but is NOT actively used for current registration flow
+
+**Purpose:** Designed for enhanced registration workflows with detailed attendee information:
+- Accessibility needs
+- Marketing consent
+- Registration completion tracking
+- Post-purchase registration data
+
+**Current Implementation:**
+- Registration data is stored directly in `tickets` table (attendee_first_name, attendee_last_name, attendee_email, attendee_phone)
+- Check-in status tracked via `tickets.checked_in_at` (api/admin/registrations.js:270, 286)
+- Registration completion tracked via `transactions.all_tickets_registered` (lib/registration-token-service.js:172)
+- This is a **simplified architecture** that works for basic ticket sales
+
+**Why It Exists:**
+- Required by GDPR compliance service (lib/gdpr-compliance-service.js:385-393)
+- Reserved for future enhanced registration features
+- Table schema supports detailed attendee preferences and consent tracking
+
+**Recommendation:**
+- ✅ **KEEP** - GDPR dependency
+- 📋 **FUTURE** - Consider using for enhanced registration flow with pre-event data collection
+- ⚠️ **NOTE** - If registration features are not planned, update GDPR service to read from tickets table directly
+
 ## CI/CD Configuration
 
 ### GitHub Actions
