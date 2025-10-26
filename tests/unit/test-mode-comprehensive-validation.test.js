@@ -722,7 +722,7 @@ describe('Test Mode Comprehensive Validation', () => {
 
       // Validate schema structure
       expect(expectedSchema.transactions.columns).toContain('is_test');
-      expect(expectedSchema.tickets.columns).toContain('is_test');
+      expect(expectedSchema.tickets.columns).toContain('is_test'); // DEPRECATED: Use events.status instead for test filtering
       expect(expectedSchema.transactions.constraints[0]).toContain('is_test IN (0, 1)');
 
       console.log('✅ Database schema integrity validated');

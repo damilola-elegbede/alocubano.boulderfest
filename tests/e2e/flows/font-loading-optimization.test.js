@@ -1,5 +1,5 @@
 /**
- * Font Loading Optimization Tests
+ * E2E Test: Font Loading Optimization
  *
  * Validates that Google Fonts are preloaded correctly to eliminate render-blocking
  * and achieve 100-200ms FCP improvement.
@@ -11,45 +11,26 @@
  * - FCP improved with preload
  */
 
-import { describe, test, expect, beforeAll, afterAll } from 'vitest';
-import { chromium } from 'playwright';
+import { test, expect } from '@playwright/test';
 
-describe('Font Loading Optimization', () => {
-  let browser;
-  let context;
-  const BASE_URL = process.env.TEST_BASE_URL || 'http://localhost:3000';
-
-  beforeAll(async () => {
-    browser = await chromium.launch({
-      headless: true,
-      args: ['--disable-gpu', '--disable-dev-shm-usage']
-    });
-    context = await browser.newContext();
-  });
-
-  afterAll(async () => {
-    await context?.close();
-    await browser?.close();
-  });
-
-  test('fonts preload before CSS parse', async () => {
-    const page = await context.newPage();
-    await page.goto(`${BASE_URL}/home`);
+test.describe('Font Loading Optimization', () => {
+  test('fonts preload before CSS parse', async ({ page }) => {
+    await page.goto('/home');
 
     // Verify preconnect links exist
-    const preconnectLinks = await page.$$('link[rel="preconnect"]');
-    expect(preconnectLinks.length).toBeGreaterThanOrEqual(2);
+    const preconnectLinks = await page.locator('link[rel="preconnect"]').count();
+    expect(preconnectLinks).toBeGreaterThanOrEqual(2);
 
     // Verify preconnect to Google Fonts
-    const googleFontsPreconnect = await page.$('link[rel="preconnect"][href*="fonts.googleapis.com"]');
-    expect(googleFontsPreconnect).toBeTruthy();
+    const googleFontsPreconnect = await page.locator('link[rel="preconnect"][href*="fonts.googleapis.com"]');
+    await expect(googleFontsPreconnect).toHaveCount(1);
 
-    const gstaticPreconnect = await page.$('link[rel="preconnect"][href*="fonts.gstatic.com"]');
-    expect(gstaticPreconnect).toBeTruthy();
+    const gstaticPreconnect = await page.locator('link[rel="preconnect"][href*="fonts.gstatic.com"]');
+    await expect(gstaticPreconnect).toHaveCount(1);
 
     // Verify preload link exists
-    const preloadLink = await page.$('link[rel="preload"][as="style"]');
-    expect(preloadLink).toBeTruthy();
+    const preloadLink = await page.locator('link[rel="preload"][as="style"]').first();
+    await expect(preloadLink).toHaveCount(1);
 
     // Verify preload link has correct font families
     const preloadHref = await preloadLink.getAttribute('href');
@@ -57,28 +38,22 @@ describe('Font Loading Optimization', () => {
     expect(preloadHref).toContain('Playfair+Display');
     expect(preloadHref).toContain('Space+Mono');
     expect(preloadHref).toContain('display=swap');
-
-    await page.close();
   });
 
-  test('stylesheet uses media="print" trick for async loading', async () => {
-    const page = await context.newPage();
-    await page.goto(`${BASE_URL}/home`);
+  test('stylesheet uses media="print" trick for async loading', async ({ page }) => {
+    await page.goto('/home');
 
     // Verify async loading stylesheet
-    const stylesheetLink = await page.$('link[rel="stylesheet"][href*="fonts.googleapis.com"][media="print"]');
-    expect(stylesheetLink).toBeTruthy();
+    const stylesheetLink = await page.locator('link[rel="stylesheet"][href*="fonts.googleapis.com"][media="print"]').first();
+    await expect(stylesheetLink).toHaveCount(1);
 
     // Verify onload attribute exists
     const onload = await stylesheetLink.getAttribute('onload');
     expect(onload).toContain("this.media='all'");
-
-    await page.close();
   });
 
-  test('noscript fallback exists', async () => {
-    const page = await context.newPage();
-    await page.goto(`${BASE_URL}/home`);
+  test('noscript fallback exists', async ({ page }) => {
+    await page.goto('/home');
 
     // Verify noscript fallback
     const noscriptContent = await page.evaluate(() => {
@@ -89,18 +64,14 @@ describe('Font Loading Optimization', () => {
     expect(noscriptContent).toBeTruthy();
     expect(noscriptContent).toContain('fonts.googleapis.com');
     expect(noscriptContent).toContain('Bebas+Neue');
-
-    await page.close();
   });
 
-  test('fallback fonts render immediately when Google Fonts blocked', async () => {
-    const page = await context.newPage();
-
+  test('fallback fonts render immediately when Google Fonts blocked', async ({ page }) => {
     // Block Google Fonts
     await page.route('**/*fonts.googleapis.com*', route => route.abort());
     await page.route('**/*fonts.gstatic.com*', route => route.abort());
 
-    await page.goto(`${BASE_URL}/home`, { waitUntil: 'domcontentloaded' });
+    await page.goto('/home', { waitUntil: 'domcontentloaded' });
 
     // Verify body is visible (using fallback fonts)
     const bodyOpacity = await page.$eval('body', el => window.getComputedStyle(el).opacity);
@@ -117,13 +88,9 @@ describe('Font Loading Optimization', () => {
                         h1FontFamily.toLowerCase().includes('serif') ||
                         h1FontFamily.toLowerCase().includes('monospace');
     expect(hasFallback).toBe(true);
-
-    await page.close();
   });
 
-  test('no FOUT on slow 3G connections', async () => {
-    const page = await context.newPage();
-
+  test('no FOUT on slow 3G connections', async ({ page }) => {
     // Simulate slow 3G network
     const client = await page.context().newCDPSession(page);
     await client.send('Network.emulateNetworkConditions', {
@@ -133,7 +100,7 @@ describe('Font Loading Optimization', () => {
       latency: 400 // 400ms latency
     });
 
-    await page.goto(`${BASE_URL}/home`, { waitUntil: 'domcontentloaded' });
+    await page.goto('/home', { waitUntil: 'domcontentloaded' });
 
     // Verify no invisible text period (font-display: swap prevents this)
     const h1Visibility = await page.$eval('h1', el => window.getComputedStyle(el).visibility);
@@ -143,14 +110,10 @@ describe('Font Loading Optimization', () => {
     const h1Text = await page.$eval('h1', el => el.textContent);
     expect(h1Text).toBeTruthy();
     expect(h1Text.length).toBeGreaterThan(0);
-
-    await page.close();
   });
 
-  test('FCP improved with preload (target < 1500ms)', async () => {
-    const page = await context.newPage();
-
-    await page.goto(`${BASE_URL}/home`, { waitUntil: 'domcontentloaded' });
+  test('FCP improved with preload (target < 1500ms)', async ({ page }) => {
+    await page.goto('/home', { waitUntil: 'domcontentloaded' });
 
     // Get First Contentful Paint metric
     const metrics = await page.evaluate(() => {
@@ -169,11 +132,9 @@ describe('Font Loading Optimization', () => {
     expect(metrics.fcp).toBeLessThan(1500);
 
     console.log(`✓ FCP: ${metrics.fcp.toFixed(2)}ms (target: <1500ms)`);
-
-    await page.close();
   });
 
-  test('font preload on all key pages', async () => {
+  test('font preload on all key pages', async ({ page }) => {
     const pagesToTest = [
       '/home',
       '/about',
@@ -183,24 +144,20 @@ describe('Font Loading Optimization', () => {
     ];
 
     for (const pagePath of pagesToTest) {
-      const page = await context.newPage();
-      await page.goto(`${BASE_URL}${pagePath}`);
+      await page.goto(pagePath);
 
       // Verify preload exists
-      const preloadLink = await page.$('link[rel="preload"][as="style"]');
-      expect(preloadLink, `${pagePath} should have font preload`).toBeTruthy();
+      const preloadLink = await page.locator('link[rel="preload"][as="style"]').first();
+      await expect(preloadLink, `${pagePath} should have font preload`).toHaveCount(1);
 
       // Verify display=swap parameter
       const href = await preloadLink.getAttribute('href');
       expect(href, `${pagePath} should use display=swap`).toContain('display=swap');
-
-      await page.close();
     }
   });
 
-  test('preload ordering: before CSS parse', async () => {
-    const page = await context.newPage();
-    await page.goto(`${BASE_URL}/home`);
+  test('preload ordering: before CSS parse', async ({ page }) => {
+    await page.goto('/home');
 
     // Get all link elements in order
     const linkOrder = await page.evaluate(() => {
@@ -225,13 +182,10 @@ describe('Font Loading Optimization', () => {
 
     // Preload should come before critical CSS bundle
     expect(preloadIndex).toBeLessThan(criticalCssIndex);
-
-    await page.close();
   });
 
-  test('font metrics: ensure fonts load successfully', async () => {
-    const page = await context.newPage();
-    await page.goto(`${BASE_URL}/home`, { waitUntil: 'networkidle' });
+  test('font metrics: ensure fonts load successfully', async ({ page }) => {
+    await page.goto('/home', { waitUntil: 'networkidle' });
 
     // Wait a bit for fonts to load
     await page.waitForTimeout(1000);
@@ -264,15 +218,11 @@ describe('Font Loading Optimization', () => {
       expect(fontStatus.loaded).toBeGreaterThan(0);
       console.log(`✓ Fonts loaded: ${fontStatus.loaded}/${fontStatus.total}`);
     }
-
-    await page.close();
   });
 
-  test('CSS @import removed from bundle CSS', async () => {
-    const page = await context.newPage();
-
+  test('CSS @import removed from bundle CSS', async ({ page, baseURL }) => {
     // Fetch bundle-critical.css which contains typography styles
-    const response = await page.goto(`${BASE_URL}/css/bundle-critical.css`);
+    const response = await page.goto(`${baseURL}/css/bundle-critical.css`);
     const cssContent = await response.text();
 
     // Should NOT contain @import for Google Fonts
@@ -280,7 +230,5 @@ describe('Font Loading Optimization', () => {
 
     // Should contain comment about preload
     expect(cssContent.toLowerCase()).toContain('preload');
-
-    await page.close();
   });
 });

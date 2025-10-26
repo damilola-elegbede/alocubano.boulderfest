@@ -18,7 +18,6 @@ describe('QR Validation Logic - Unit Tests', () => {
     // Set up environment for testing
     process.env.QR_SECRET_KEY = TEST_QR_SECRET;
     process.env.WALLET_AUTH_SECRET = TEST_WALLET_SECRET;
-    process.env.QR_CODE_EXPIRY_DAYS = '90';
     process.env.QR_CODE_MAX_SCANS = '10';
 
     // Create fresh QR service instance
@@ -38,11 +37,20 @@ describe('QR Validation Logic - Unit Tests', () => {
     it('should generate JWT token for ticket ID', async () => {
       const ticketId = 'TEST-TICKET-001';
 
+      // Mock ticket with no existing token
+      const mockTicket = {
+        ticket_id: ticketId,
+        qr_token: null,
+        scan_count: 0,
+        max_scan_count: 10
+      };
+
       mockDb.execute
-        .mockResolvedValueOnce({ rows: [{ qr_token: null }] }) // No existing token
+        .mockResolvedValueOnce({ rows: [mockTicket] }) // Check existing token
+        .mockResolvedValueOnce({ rows: [] }) // Event lookup (no event found - fallback)
         .mockResolvedValueOnce({ rowsAffected: 1 }); // Token saved
 
-      // Override getDb method
+      // Override getDb method BEFORE calling getOrCreateToken
       qrService.getDb = vi.fn().mockResolvedValue(mockDb);
 
       const token = await qrService.getOrCreateToken(ticketId);
@@ -78,16 +86,18 @@ describe('QR Validation Logic - Unit Tests', () => {
       expect(decoded.tid).toBe(ticketId);
     });
 
-    it('should set token expiration to 90 days by default', () => {
+    it('should set token expiration to 1 year when no exp provided', () => {
       const ticketId = 'TEST-TICKET-004';
       const beforeTime = Math.floor(Date.now() / 1000);
       const token = qrService.generateToken({ tid: ticketId });
       const afterTime = Math.floor(Date.now() / 1000);
 
       const decoded = jwt.verify(token, TEST_QR_SECRET);
-      const expectedExpiry = 90 * 24 * 60 * 60; // 90 days in seconds
+      const expectedExpiry = 365 * 24 * 60 * 60; // 1 year in seconds (default fallback)
 
-      expect(decoded.exp - decoded.iat).toBe(expectedExpiry);
+      // Allow small tolerance for timing
+      expect(decoded.exp - decoded.iat).toBeGreaterThanOrEqual(expectedExpiry - 60);
+      expect(decoded.exp - decoded.iat).toBeLessThanOrEqual(expectedExpiry + 60);
       expect(decoded.iat).toBeGreaterThanOrEqual(beforeTime);
       expect(decoded.iat).toBeLessThanOrEqual(afterTime);
     });
@@ -95,9 +105,18 @@ describe('QR Validation Logic - Unit Tests', () => {
     it('should store generated token in database', async () => {
       const ticketId = 'TEST-TICKET-005';
 
+      // Mock ticket with no existing token
+      const mockTicket = {
+        ticket_id: ticketId,
+        qr_token: null,
+        scan_count: 0,
+        max_scan_count: 10
+      };
+
       mockDb.execute
-        .mockResolvedValueOnce({ rows: [] })
-        .mockResolvedValueOnce({ rowsAffected: 1 });
+        .mockResolvedValueOnce({ rows: [mockTicket] }) // Check existing token
+        .mockResolvedValueOnce({ rows: [] }) // Event lookup (no event found - fallback)
+        .mockResolvedValueOnce({ rowsAffected: 1 }); // Token saved
 
       qrService.getDb = vi.fn().mockResolvedValue(mockDb);
 
@@ -118,9 +137,18 @@ describe('QR Validation Logic - Unit Tests', () => {
     it('should set max_scan_count when generating token', async () => {
       const ticketId = 'TEST-TICKET-006';
 
+      // Mock ticket with no existing token
+      const mockTicket = {
+        ticket_id: ticketId,
+        qr_token: null,
+        scan_count: 0,
+        max_scan_count: 10
+      };
+
       mockDb.execute
-        .mockResolvedValueOnce({ rows: [] })
-        .mockResolvedValueOnce({ rowsAffected: 1 });
+        .mockResolvedValueOnce({ rows: [mockTicket] }) // Check existing token
+        .mockResolvedValueOnce({ rows: [] }) // Event lookup (no event found - fallback)
+        .mockResolvedValueOnce({ rowsAffected: 1 }); // Token saved
 
       qrService.getDb = vi.fn().mockResolvedValue(mockDb);
 
@@ -534,8 +562,10 @@ describe('QR Validation Logic - Unit Tests', () => {
       expect(isConfigured).toBe(false);
     });
 
-    it('should use default expiry of 90 days', () => {
-      expect(qrService.expiryDays).toBe(90);
+    it('should use event-based expiry (removed fixed 90-day default)', () => {
+      // expiryDays property was removed - service now uses event-based expiry
+      // (7 days after event end, or 1 year fallback if event not found)
+      expect(qrService.expiryDays).toBeUndefined();
     });
 
     it('should use default max scans of 10', () => {

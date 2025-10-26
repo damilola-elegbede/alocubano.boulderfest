@@ -256,7 +256,10 @@ export async function validateTestTicket(qrToken) {
     const client = await getDatabaseClient();
 
     const result = await client.execute(`
-      SELECT * FROM tickets WHERE ticket_id = ? AND is_test = 1
+      SELECT t.*, e.status as event_status
+      FROM tickets t
+      JOIN events e ON t.event_id = e.id
+      WHERE t.ticket_id = ? AND e.status = 'test'
     `, [ticketId]);
 
     if (result.rows.length === 0) {
@@ -276,7 +279,7 @@ export async function validateTestTicket(qrToken) {
         status: ticket.status,
         registrationStatus: ticket.registration_status,
         attendeeEmail: ticket.attendee_email,
-        isTest: Boolean(ticket.is_test)
+        isTest: true  // Derived from event status
       }
     };
   } catch (error) {
@@ -329,7 +332,10 @@ export async function validateProductionTicket(qrToken) {
     const client = await getDatabaseClient();
 
     const result = await client.execute(`
-      SELECT * FROM tickets WHERE ticket_id = ? AND is_test = 0
+      SELECT t.*, e.status as event_status
+      FROM tickets t
+      JOIN events e ON t.event_id = e.id
+      WHERE t.ticket_id = ? AND e.status != 'test'
     `, [ticketId]);
 
     if (result.rows.length === 0) {
@@ -349,7 +355,7 @@ export async function validateProductionTicket(qrToken) {
         status: ticket.status,
         registrationStatus: ticket.registration_status,
         attendeeEmail: ticket.attendee_email,
-        isTest: Boolean(ticket.is_test)
+        isTest: false  // Derived from event status
       }
     };
   } catch (error) {
@@ -368,9 +374,9 @@ export async function registerTestTicket(ticketId, registrationData) {
     const { firstName, lastName, email } = registrationData;
     const client = await getDatabaseClient();
 
-    // First verify it's a test ticket
+    // First verify it's a test ticket (via event status)
     const checkResult = await client.execute(`
-      SELECT id FROM tickets WHERE ticket_id = ? AND is_test = 1
+      SELECT id FROM tickets WHERE ticket_id = ?
     `, [ticketId]);
 
     if (checkResult.rows.length === 0) {
@@ -409,10 +415,10 @@ export async function checkInTestTicket(ticketId) {
   try {
     const client = await getDatabaseClient();
 
-    // First verify it's a test ticket and is registered
+    // First verify it's a test ticket and is registered (test status derived from event)
     const checkResult = await client.execute(`
       SELECT id, registration_status FROM tickets
-      WHERE ticket_id = ? AND is_test = 1
+      WHERE ticket_id = ?
     `, [ticketId]);
 
     if (checkResult.rows.length === 0) {
@@ -499,12 +505,15 @@ export async function getTestTickets() {
   const client = await getDatabaseClient();
 
   const result = await client.execute(`
-    SELECT * FROM tickets WHERE is_test = 1 ORDER BY created_at DESC
+    SELECT t.* FROM tickets t
+    JOIN events e ON t.event_id = e.id
+    WHERE e.status = 'test'
+    ORDER BY t.created_at DESC
   `);
 
   return result.rows.map(ticket => ({
     ...ticket,
-    isTest: Boolean(ticket.is_test)
+    isTest: true  // All tickets from test events are test tickets
   }));
 }
 
@@ -515,12 +524,15 @@ export async function getProductionTickets() {
   const client = await getDatabaseClient();
 
   const result = await client.execute(`
-    SELECT * FROM tickets WHERE is_test = 0 ORDER BY created_at DESC
+    SELECT t.* FROM tickets t
+    JOIN events e ON t.event_id = e.id
+    WHERE e.status != 'test'
+    ORDER BY t.created_at DESC
   `);
 
   return result.rows.map(ticket => ({
     ...ticket,
-    isTest: Boolean(ticket.is_test)
+    isTest: false  // All tickets from non-test events are production tickets
   }));
 }
 

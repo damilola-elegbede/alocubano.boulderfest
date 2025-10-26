@@ -135,10 +135,8 @@ describe('Integration: Database Data Integrity', () => {
     // Create transaction first
     await db.execute({
       sql: `
-        INSERT INTO transactions (
-          transaction_id, type, status, amount_cents,
-          customer_email, customer_name, order_data
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO transactions (transaction_id, type, status, amount_cents,
+          customer_email, customer_name, order_data, is_test) VALUES (?, ?, ?, ?, ?, ?, ?, 1)
       `,
       args: [
         transactionId,
@@ -255,10 +253,8 @@ describe('Integration: Database Data Integrity', () => {
     // Create transaction first
     await db.execute({
       sql: `
-        INSERT INTO transactions (
-          transaction_id, type, status, amount_cents,
-          customer_email, customer_name, order_data
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO transactions (transaction_id, type, status, amount_cents,
+          customer_email, customer_name, order_data, is_test) VALUES (?, ?, ?, ?, ?, ?, ?, 1)
       `,
       args: [
         transactionId,
@@ -365,10 +361,8 @@ describe('Integration: Database Data Integrity', () => {
     // MUST create transaction first to respect foreign key constraints
     await db.execute({
       sql: `
-        INSERT INTO transactions (
-          transaction_id, type, status, amount_cents,
-          customer_email, customer_name, order_data
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO transactions (transaction_id, type, status, amount_cents,
+          customer_email, customer_name, order_data, is_test) VALUES (?, ?, ?, ?, ?, ?, ?, 1)
       `,
       args: [
         transactionId,
@@ -654,10 +648,8 @@ describe('Integration: Database Data Integrity', () => {
     // Create transaction first
     await db.execute({
       sql: `
-        INSERT INTO transactions (
-          transaction_id, type, status, amount_cents,
-          customer_email, customer_name, order_data
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO transactions (transaction_id, type, status, amount_cents,
+          customer_email, customer_name, order_data, is_test) VALUES (?, ?, ?, ?, ?, ?, ?, 1)
       `,
       args: [
         transactionId,

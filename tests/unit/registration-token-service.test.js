@@ -93,19 +93,39 @@ describe('RegistrationTokenService - Unit Tests', () => {
       expect(decoded1.tid).not.toBe(decoded2.tid);
     });
 
-    it('should set token expiration to 72 hours by default', async () => {
-      mockDb.execute.mockResolvedValueOnce({ rows: [], rowsAffected: 1 });
+    it('should set token expiration to 7 days after event end', async () => {
+      const DAY_IN_SECONDS = 24 * 60 * 60;
 
-      const beforeTime = Math.floor(Date.now() / 1000);
-      const token = await service.createToken(123);
-      const afterTime = Math.floor(Date.now() / 1000);
+      // Freeze time for deterministic testing
+      const fixedTime = new Date('2026-05-01T12:00:00Z');
+      vi.useFakeTimers();
+      vi.setSystemTime(fixedTime);
 
-      const decoded = jwt.verify(token, TEST_SECRET);
-      const expectedExpiry = 72 * 60 * 60; // 72 hours in seconds
+      try {
+        // Mock event lookup to return event ending tomorrow (relative to frozen time)
+        const tomorrow = new Date(fixedTime);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const eventEndDate = tomorrow.toISOString().split('T')[0];
 
-      expect(decoded.exp - decoded.iat).toBe(expectedExpiry);
-      expect(decoded.iat).toBeGreaterThanOrEqual(beforeTime);
-      expect(decoded.iat).toBeLessThanOrEqual(afterTime);
+        mockDb.execute
+          .mockResolvedValueOnce({ rows: [{ end_date: eventEndDate }], rowsAffected: 1 }) // Event lookup
+          .mockResolvedValueOnce({ rows: [], rowsAffected: 1 }); // UPDATE transaction
+
+        const token = await service.createToken(123);
+        const decoded = jwt.verify(token, TEST_SECRET);
+        const expectedIat = Math.floor(fixedTime.getTime() / 1000);
+
+        // Check iat matches frozen time exactly
+        expect(decoded.iat).toBe(expectedIat);
+
+        // Token should expire 7 days after event end
+        // Event ends tomorrow (2026-05-02), expiry is 7 days later (2026-05-09 00:00:00)
+        // From 2026-05-01 12:00:00 to 2026-05-09 00:00:00 = 7.5 days
+        // Exact calculation: 7.5 days = 648000 seconds
+        expect(decoded.exp - decoded.iat).toBe(7.5 * DAY_IN_SECONDS);
+      } finally {
+        vi.useRealTimers();
+      }
     });
 
     it('should update transaction record with token and expiration', async () => {
@@ -293,15 +313,22 @@ describe('RegistrationTokenService - Unit Tests', () => {
   });
 
   describe('Token Expiration', () => {
-    it('should respect custom expiration time if configured', async () => {
-      service.tokenExpiry = 48 * 60 * 60; // 48 hours
-
-      mockDb.execute.mockResolvedValueOnce({ rows: [], rowsAffected: 1 });
+    it('should use 1-year fallback when event lookup fails', async () => {
+      // Mock event lookup returning no results (event not found)
+      mockDb.execute
+        .mockResolvedValueOnce({ rows: [], rowsAffected: 1 }) // Empty event lookup
+        .mockResolvedValueOnce({ rows: [], rowsAffected: 1 }); // UPDATE transaction
 
       const token = await service.createToken(123);
       const decoded = jwt.verify(token, TEST_SECRET);
 
-      expect(decoded.exp - decoded.iat).toBe(48 * 60 * 60);
+      // Should fall back to 1 year expiry
+      const oneYearInSeconds = 365 * 24 * 60 * 60;
+      const actualExpiry = decoded.exp - decoded.iat;
+
+      // Allow some tolerance for timing
+      expect(actualExpiry).toBeGreaterThanOrEqual(oneYearInSeconds - 60);
+      expect(actualExpiry).toBeLessThanOrEqual(oneYearInSeconds + 60);
     });
 
     it('should validate token within expiration window', async () => {

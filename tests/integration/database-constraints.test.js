@@ -171,10 +171,10 @@ describe('Database Constraints Integration Tests', () => {
       const testTxnId = `test-constraint-txn-${Date.now()}`;
       const txnResult = await db.execute({
         sql: `INSERT INTO transactions (
-          transaction_id, type, status, amount_cents, currency, customer_email, order_data, event_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          transaction_id, type, status, amount_cents, currency, customer_email, order_data, event_id, is_test
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         RETURNING id`,
-        args: [testTxnId, 'tickets', 'completed', 5000, 'USD', 'test@example.com', '[]', testEventId]
+        args: [testTxnId, 'tickets', 'completed', 5000, 'USD', 'test@example.com', '[]', testEventId, 1]
       });
 
       const transactionId = txnResult.rows[0].id;
@@ -204,10 +204,10 @@ describe('Database Constraints Integration Tests', () => {
       const testTxnId = `test-constraint-cascade-${Date.now()}`;
       const txnResult = await db.execute({
         sql: `INSERT INTO transactions (
-          transaction_id, type, status, amount_cents, currency, customer_email, order_data, event_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          transaction_id, type, status, amount_cents, currency, customer_email, order_data, event_id, is_test
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         RETURNING id`,
-        args: [testTxnId, 'tickets', 'completed', 5000, 'USD', 'cascade@example.com', '[]', testEventId]
+        args: [testTxnId, 'tickets', 'completed', 5000, 'USD', 'cascade@example.com', '[]', testEventId, 1]
       });
 
       const transactionId = txnResult.rows[0].id;
@@ -244,8 +244,8 @@ describe('Database Constraints Integration Tests', () => {
         await db.execute({
           sql: `INSERT INTO transactions (
             transaction_id, type, status, amount_cents, customer_email,
-            order_data, payment_processor, cash_shift_id, manual_entry_id
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            order_data, payment_processor, cash_shift_id, manual_entry_id, is_test
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           args: [
             `test-constraint-${Date.now()}`,
             'tickets',
@@ -255,7 +255,8 @@ describe('Database Constraints Integration Tests', () => {
             '[]',
             'cash',
             99999999, // Invalid shift ID
-            crypto.randomUUID()
+            crypto.randomUUID(),
+            1
           ]
         });
       }).rejects.toThrow(/FOREIGN KEY constraint failed/i);
@@ -277,8 +278,8 @@ describe('Database Constraints Integration Tests', () => {
       await db.execute({
         sql: `INSERT INTO transactions (
           transaction_id, type, status, amount_cents, currency, customer_email,
-          order_data, payment_processor, cash_shift_id, manual_entry_id, event_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          order_data, payment_processor, cash_shift_id, manual_entry_id, event_id, is_test
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
           `test-constraint-${Date.now()}`,
           'tickets',
@@ -290,7 +291,8 @@ describe('Database Constraints Integration Tests', () => {
           'cash',
           shiftId,
           crypto.randomUUID(),
-          testEventId
+          testEventId,
+          1
         ]
       });
 
@@ -313,9 +315,9 @@ describe('Database Constraints Integration Tests', () => {
       await db.execute({
         sql: `INSERT INTO transactions (
           transaction_id, type, status, amount_cents, currency, customer_email,
-          order_data, payment_processor, cash_shift_id, manual_entry_id, event_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        args: [txnId, 'tickets', 'completed', 5000, 'USD', 'null-test@example.com', '[]', 'cash', shiftId, crypto.randomUUID(), testEventId]
+          order_data, payment_processor, cash_shift_id, manual_entry_id, event_id, is_test
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [txnId, 'tickets', 'completed', 5000, 'USD', 'null-test@example.com', '[]', 'cash', shiftId, crypto.randomUUID(), testEventId, 1]
       });
 
       // Delete cash shift
@@ -518,8 +520,8 @@ describe('Database Constraints Integration Tests', () => {
       await db.execute({
         sql: `INSERT INTO transactions (
           transaction_id, type, status, amount_cents, currency, customer_email,
-          order_data, payment_processor, manual_entry_id, event_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          order_data, payment_processor, manual_entry_id, event_id, is_test
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
           `test-constraint-${Date.now()}-1`,
           'tickets',
@@ -530,7 +532,8 @@ describe('Database Constraints Integration Tests', () => {
           '[]',
           'card_terminal',
           manualEntryId,
-          testEventId
+          testEventId,
+          1
         ]
       });
 
@@ -539,8 +542,8 @@ describe('Database Constraints Integration Tests', () => {
         await db.execute({
           sql: `INSERT INTO transactions (
             transaction_id, type, status, amount_cents, currency, customer_email,
-            order_data, payment_processor, manual_entry_id, event_id
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            order_data, payment_processor, manual_entry_id, event_id, is_test
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           args: [
             `test-constraint-${Date.now()}-2`,
             'tickets',
@@ -551,7 +554,8 @@ describe('Database Constraints Integration Tests', () => {
             '[]',
             'card_terminal',
             manualEntryId, // Duplicate!
-            testEventId
+            testEventId,
+            1
           ]
         });
       }).rejects.toThrow(/UNIQUE constraint failed|unique/i);
@@ -562,8 +566,8 @@ describe('Database Constraints Integration Tests', () => {
       await db.execute({
         sql: `INSERT INTO transactions (
           transaction_id, type, status, amount_cents, currency, customer_email,
-          order_data, payment_processor, event_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          order_data, payment_processor, event_id, is_test
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
           `test-constraint-null-1-${Date.now()}`,
           'tickets',
@@ -573,15 +577,16 @@ describe('Database Constraints Integration Tests', () => {
           'null1@example.com',
           '[]',
           'stripe',
-          testEventId
+          testEventId,
+          1
         ]
       });
 
       await db.execute({
         sql: `INSERT INTO transactions (
           transaction_id, type, status, amount_cents, currency, customer_email,
-          order_data, payment_processor, event_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          order_data, payment_processor, event_id, is_test
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
           `test-constraint-null-2-${Date.now()}`,
           'tickets',
@@ -591,7 +596,8 @@ describe('Database Constraints Integration Tests', () => {
           'null2@example.com',
           '[]',
           'stripe',
-          testEventId
+          testEventId,
+          1
         ]
       });
 
@@ -646,8 +652,8 @@ describe('Database Constraints Integration Tests', () => {
       await db.execute({
         sql: `INSERT INTO transactions (
           transaction_id, type, status, amount_cents, currency, customer_email,
-          order_data, payment_processor, manual_entry_id, event_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          order_data, payment_processor, manual_entry_id, event_id, is_test
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
           `test-constraint-${Date.now()}`,
           'tickets',
@@ -658,7 +664,8 @@ describe('Database Constraints Integration Tests', () => {
           '[]',
           'card_terminal',
           manualEntryId,
-          testEventId
+          testEventId,
+          1
         ]
       });
 
@@ -666,8 +673,8 @@ describe('Database Constraints Integration Tests', () => {
         await db.execute({
           sql: `INSERT INTO transactions (
             transaction_id, type, status, amount_cents, currency, customer_email,
-            order_data, payment_processor, manual_entry_id, event_id
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            order_data, payment_processor, manual_entry_id, event_id, is_test
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           args: [
             `test-constraint-${Date.now()}-dup`,
             'tickets',
@@ -678,7 +685,8 @@ describe('Database Constraints Integration Tests', () => {
             '[]',
             'card_terminal',
             manualEntryId,
-            testEventId
+            testEventId,
+            1
           ]
         });
         expect.fail('Should have thrown UNIQUE error');
@@ -699,9 +707,9 @@ describe('Database Constraints Integration Tests', () => {
         // First operation: valid transaction
         await db.execute({
           sql: `INSERT INTO transactions (
-            transaction_id, type, status, amount_cents, currency, customer_email, order_data, event_id
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          args: [txnId, 'tickets', 'completed', 5000, 'USD', 'rollback@example.com', '[]', testEventId]
+            transaction_id, type, status, amount_cents, currency, customer_email, order_data, event_id, is_test
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          args: [txnId, 'tickets', 'completed', 5000, 'USD', 'rollback@example.com', '[]', testEventId, 1]
         });
 
         // Second operation: invalid ticket (FK violation)

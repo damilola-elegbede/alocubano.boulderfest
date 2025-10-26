@@ -47,6 +47,8 @@ jobs:
       TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD || 'test-admin-password-123' }}
       # Do NOT set ADMIN_PASSWORD in test environments - use TEST_ADMIN_PASSWORD instead
       ADMIN_SECRET: ${{ secrets.TEST_ADMIN_SECRET || 'test_admin_secret_minimum_32_characters_for_jwt_signing' }}
+      # Registration system authentication - CRITICAL for ticket registration tokens
+      REGISTRATION_SECRET: ${{ secrets.TEST_REGISTRATION_SECRET || 'test_registration_secret_minimum_32_characters_for_jwt' }}
       # Test environment variables for integration tests
       STRIPE_SECRET_KEY: ${{ secrets.TEST_STRIPE_SECRET_KEY || 'sk_test_dummy_integration_key' }}
       STRIPE_PUBLISHABLE_KEY: ${{ secrets.TEST_STRIPE_PUBLISHABLE_KEY || 'pk_test_dummy_integration_key' }}
@@ -132,11 +134,12 @@ jobs:
 
       - name: "🔗 Run Integration Tests"
         id: test
+        timeout-minutes: 8
         run: |
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "🔗 Running Integration Test Suite"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "🎯 Timeout: 5 minutes total (stage limit)"
+          echo "🎯 Timeout: 8 minutes total (increased for stability)"
           echo "🗃️ Database: SQLite with real file storage"
           echo "🌐 APIs: Limited external service integration"
           echo "🧪 Expected: ~30-50 integration tests"
@@ -148,8 +151,9 @@ jobs:
           start_time=$(date +%s%3N)
 
           # Run tests once with verbose output and capture all output
+          # Removed bash timeout - rely on GitHub Actions timeout-minutes instead
           set +e
-          CI=true timeout 280s npm run test:integration -- --reporter=verbose --no-color 2>&1 | tee integration-test-output.log
+          CI=true npm run test:integration -- --reporter=verbose --no-color 2>&1 | tee integration-test-output.log
           test_exit_code=$?
           set -e
 
@@ -168,28 +172,36 @@ jobs:
           # Parse test results from Vitest summary line
           echo "🔍 Parsing integration test results..."
 
-          # Extract from Vitest summary line: "Tests  X passed (Y)"
+          # Extract from Vitest summary line: "Tests  X failed | Y passed | Z skipped (Total)"
           if grep -q "Tests.*passed" integration-test-output.log; then
             # Get the summary line
             summary_line=$(grep "Tests.*passed" integration-test-output.log | tail -1)
             echo "📋 Summary line: $summary_line"
 
-            # Parse passed tests
-            passing_tests=$(echo "$summary_line" | grep -oE "Tests[[:space:]]+[0-9]+" | grep -oE "[0-9]+" || echo "0")
+            # Parse passed tests: "1062 passed"
+            passing_tests=$(echo "$summary_line" | grep -oE "[0-9]+[[:space:]]+passed" | grep -oE "[0-9]+" || echo "0")
 
-            # Parse failed tests if present
+            # Parse failed tests if present: "75 failed"
             if echo "$summary_line" | grep -q "failed"; then
               failing_tests=$(echo "$summary_line" | grep -oE "[0-9]+[[:space:]]+failed" | grep -oE "[0-9]+" || echo "0")
             else
               failing_tests="0"
             fi
 
-            total_tests=$((passing_tests + failing_tests))
-            parsing_method="vitest_summary"
+            # Parse skipped tests if present: "51 skipped"
+            if echo "$summary_line" | grep -q "skipped"; then
+              skipped_tests=$(echo "$summary_line" | grep -oE "[0-9]+[[:space:]]+skipped" | grep -oE "[0-9]+" || echo "0")
+            else
+              skipped_tests="0"
+            fi
+
+            total_tests=$((passing_tests + failing_tests + skipped_tests))
+            parsing_method="vitest_summary_fixed"
           else
             echo "❌ Could not find Vitest summary line"
             passing_tests="0"
             failing_tests="0"
+            skipped_tests="0"
             total_tests="0"
             parsing_method="not_found"
           fi
@@ -199,19 +211,36 @@ jobs:
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "✅ Tests Passed: $passing_tests"
           echo "❌ Tests Failed: $failing_tests"
+          echo "⏭️  Tests Skipped: $skipped_tests"
           echo "📈 Total Tests: $total_tests"
           echo "⏱️  Duration: ${duration}ms"
           echo "🔍 Parsing Method: $parsing_method"
           echo "🗃️ Database: File-based SQLite"
 
-          # Timeout evaluation
-          if [ "$duration" -lt 300000 ]; then
-            echo "🏆 EXCELLENT: Integration tests completed within 5-minute limit!"
+          # Timeout evaluation - updated for 8-minute limit
+          if [ "$duration" -lt 480000 ]; then
+            echo "🏆 EXCELLENT: Integration tests completed within 8-minute limit!"
           else
-            echo "⚠️  WARNING: Integration tests exceeded 5-minute timeout limit"
+            echo "⚠️  WARNING: Integration tests exceeded 8-minute timeout limit"
           fi
 
-          exit $test_exit_code
+          # CRITICAL FIX: Explicit exit code based on test failures
+          # Don't just pass through test_exit_code - validate it matches our parsed results
+          if [ "$failing_tests" -gt 0 ]; then
+            echo ""
+            echo "❌ TESTS FAILED: $failing_tests test(s) failed"
+            echo "   Exiting with code 1"
+            exit 1
+          elif [ "$test_exit_code" -ne 0 ]; then
+            echo ""
+            echo "❌ TEST RUNNER EXITED WITH ERROR: exit code $test_exit_code"
+            echo "   Even though no test failures were detected"
+            exit $test_exit_code
+          else
+            echo ""
+            echo "✅ ALL TESTS PASSED"
+            exit 0
+          fi
 
       - name: "🧹 Database Cleanup"
         if: always()

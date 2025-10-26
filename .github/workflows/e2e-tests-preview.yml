@@ -122,8 +122,8 @@ jobs:
               exit 1
             fi
           elif [ "${{ github.event_name }}" = "deployment_status" ]; then
-            # Deployment trigger
-            PREVIEW_URL="${{ github.event.deployment_status.target_url }}"
+            # Deployment trigger - FIX: Use environment_url with fallback to target_url
+            PREVIEW_URL="${{ github.event.deployment_status.environment_url || github.event.deployment_status.target_url }}"
             echo "preview-url=$PREVIEW_URL" >> $GITHUB_OUTPUT
             echo "📍 Using deployment status URL: $PREVIEW_URL"
           else
@@ -646,17 +646,40 @@ jobs:
           echo "✅ Test discovery successful: $EXPECTED_TESTS test(s) will be executed"
           echo ""
 
-          # Build the Playwright test command directly
-          # Add test pattern filter if specified
-          TEST_PATTERN="${{ needs.build-test-matrix.outputs.test-pattern }}"
-          if [ -n "$TEST_PATTERN" ] && [ "$TEST_PATTERN" != "" ]; then
-            echo "🎯 Applying test pattern filter: $TEST_PATTERN"
-            echo "📁 Test pattern: $TEST_PATTERN"
-            # Run with grep pattern
-            npx playwright test --config tests/config/playwright-e2e-optimized.config.js --project="$PROJECT_NAME" --grep "$TEST_PATTERN" 2>&1 | tee test_output.log
+          # Build Playwright test command with explicit file paths (not grep pattern)
+          TEST_SUITE="${{ needs.build-test-matrix.outputs.test-suite }}"
+
+          # Map test suite to explicit file paths
+          TEST_FILES=""
+          case "$TEST_SUITE" in
+            "standard")
+              TEST_FILES="tests/e2e/flows/basic-navigation.test.js tests/e2e/flows/cart-functionality.test.js tests/e2e/flows/newsletter-simple.test.js tests/e2e/flows/admin-auth.test.js tests/e2e/flows/gallery-basic.test.js tests/e2e/flows/registration-flow.test.js"
+              ;;
+            "advanced"|"")
+              TEST_FILES="" # Run all tests - no filter
+              ;;
+            "performance")
+              TEST_FILES="tests/e2e/flows/gallery-browsing.test.js tests/e2e/flows/user-engagement.test.js"
+              ;;
+            "accessibility")
+              TEST_FILES="tests/e2e/flows/mobile-registration-experience.test.js"
+              ;;
+            "security")
+              TEST_FILES="tests/e2e/flows/admin-auth.test.js tests/e2e/flows/admin-dashboard.test.js tests/e2e/flows/ticket-validation.test.js"
+              ;;
+            *)
+              echo "⚠️ Unknown test suite: $TEST_SUITE, defaulting to standard"
+              TEST_FILES="tests/e2e/flows/basic-navigation.test.js tests/e2e/flows/cart-functionality.test.js tests/e2e/flows/newsletter-simple.test.js tests/e2e/flows/admin-auth.test.js tests/e2e/flows/gallery-basic.test.js tests/e2e/flows/registration-flow.test.js"
+              ;;
+          esac
+
+          # Run Playwright with explicit file paths
+          if [ -n "$TEST_FILES" ]; then
+            echo "🎯 Running specific test files for suite: $TEST_SUITE"
+            echo "📁 Files: $(echo $TEST_FILES | tr ' ' '\n' | wc -l) test files"
+            npx playwright test --config tests/config/playwright-e2e-optimized.config.js --project="$PROJECT_NAME" $TEST_FILES 2>&1 | tee test_output.log
           else
-            echo "🎯 Running all E2E tests (no pattern filter)"
-            # Run without grep pattern
+            echo "🎯 Running all E2E tests (no file filter)"
             npx playwright test --config tests/config/playwright-e2e-optimized.config.js --project="$PROJECT_NAME" 2>&1 | tee test_output.log
           fi
 
@@ -664,10 +687,25 @@ jobs:
           echo "🦊 Browser Project: $PROJECT_NAME"
           TEST_EXIT_CODE=${PIPESTATUS[0]}
 
-          # Extract test statistics from output
-          PASSED_TESTS=$(grep -oP '\d+(?= passed)' test_output.log 2>/dev/null | head -1 || echo "0")
-          FAILED_TESTS=$(grep -oP '\d+(?= failed)' test_output.log 2>/dev/null | head -1 || echo "0")
-          SKIPPED_TESTS=$(grep -oP '\d+(?= skipped)' test_output.log 2>/dev/null | head -1 || echo "0")
+          # FIX #3: Check if Playwright failed to load config
+          if grep -q "Cannot find module\|Error:" test_output.log; then
+            echo ""
+            echo "❌ CRITICAL: Playwright configuration error detected"
+            grep -A 5 "Cannot find module\|Error:" test_output.log
+            echo ""
+            echo "Tests cannot run with configuration errors"
+            exit 1
+          fi
+
+          # FIX #1: Extract test statistics with proper default values
+          PASSED_TESTS=$(grep -oP '\d+(?= passed)' test_output.log 2>/dev/null | head -1)
+          PASSED_TESTS=${PASSED_TESTS:-0}
+
+          FAILED_TESTS=$(grep -oP '\d+(?= failed)' test_output.log 2>/dev/null | head -1)
+          FAILED_TESTS=${FAILED_TESTS:-0}
+
+          SKIPPED_TESTS=$(grep -oP '\d+(?= skipped)' test_output.log 2>/dev/null | head -1)
+          SKIPPED_TESTS=${SKIPPED_TESTS:-0}
 
           echo ""
           echo "📊 Test Execution Summary:"
@@ -675,6 +713,19 @@ jobs:
           echo "  Tests Passed: $PASSED_TESTS"
           echo "  Tests Failed: $FAILED_TESTS"
           echo "  Tests Skipped: $SKIPPED_TESTS"
+
+          # FIX #2: Validate test count matches expected pattern
+          if [ -n "$TEST_PATTERN" ]; then
+            EXPECTED_FILES=$(echo "$TEST_PATTERN" | tr '|' '\n' | wc -l)
+            TOTAL_EXECUTED=$((PASSED_TESTS + FAILED_TESTS + SKIPPED_TESTS))
+
+            if [ "$TOTAL_EXECUTED" -lt "$EXPECTED_FILES" ]; then
+              echo ""
+              echo "❌ ERROR: Expected $EXPECTED_FILES test files but only $TOTAL_EXECUTED executed"
+              echo "This indicates a test configuration or loading issue"
+              exit 1
+            fi
+          fi
 
           # Determine if tests actually passed or failed
           if [ $TEST_EXIT_CODE -eq 0 ]; then

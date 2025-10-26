@@ -18,7 +18,7 @@
  * - Token replay scenarios
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import jwt from 'jsonwebtoken';
 import { QRTokenService } from '../../lib/qr-token-service.js';
 
@@ -171,25 +171,33 @@ describe('QR Token Security', () => {
 
     it('should handle timezone correctly (UTC)', () => {
       const ticketId = 'TKT-007';
-      
-      // Generate token with current UTC time
-      const token = qrService.generateToken({ tid: ticketId });
-      
-      // Decode to verify UTC timestamps
-      const decoded = jwt.decode(token);
-      
-      // Check iat is recent (within last minute)
-      const now = Math.floor(Date.now() / 1000);
-      expect(decoded.iat).toBeGreaterThanOrEqual(now - 60);
-      expect(decoded.iat).toBeLessThanOrEqual(now);
-      
-      // Check exp is 90 days from iat
-      const expectedExp = decoded.iat + (90 * 24 * 60 * 60);
-      expect(decoded.exp).toBe(expectedExp);
-      
-      // Validation should succeed
-      const result = qrService.validateToken(token);
-      expect(result.valid).toBe(true);
+      const YEAR_IN_SECONDS = 365 * 24 * 60 * 60;
+
+      // Freeze time for deterministic testing
+      const fixedTime = new Date('2026-01-01T00:00:00Z');
+      vi.useFakeTimers();
+      vi.setSystemTime(fixedTime);
+
+      try {
+        // Generate token with frozen time
+        const token = qrService.generateToken({ tid: ticketId });
+
+        // Decode to verify UTC timestamps
+        const decoded = jwt.decode(token);
+        const expectedIat = Math.floor(fixedTime.getTime() / 1000);
+
+        // Check iat matches frozen time exactly
+        expect(decoded.iat).toBe(expectedIat);
+
+        // Check exp is exactly 1 year from iat (default when no exp provided)
+        expect(decoded.exp - decoded.iat).toBe(YEAR_IN_SECONDS);
+
+        // Validation should succeed
+        const result = qrService.validateToken(token);
+        expect(result.valid).toBe(true);
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 
@@ -366,8 +374,8 @@ describe('QR Token Security', () => {
     });
 
     it('should have secure default configuration', () => {
-      // Verify default expiry (90 days)
-      expect(qrService.expiryDays).toBe(90);
+      // expiryDays property was removed - service now uses event-based expiry
+      expect(qrService.expiryDays).toBeUndefined();
 
       // Verify default max scans (3) - changed from 10 in migration 047
       expect(qrService.maxScans).toBe(3);

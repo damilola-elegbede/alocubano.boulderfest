@@ -109,6 +109,11 @@ const validateIntegrationSecrets = () => {
       description: 'Cron job authentication secret',
       validator: (value) => value && value.length >= 32,
       fallback: 'test-cron-secret-for-integration-testing-32-chars'
+    },
+    REGISTRATION_SECRET: {
+      description: 'Registration token JWT signing secret',
+      validator: (value) => value && value.length >= 32,
+      fallback: 'test-registration-secret-minimum-32-chars-long-for-integration'
     }
   };
 
@@ -561,41 +566,49 @@ beforeEach(async (context) => {
     }
   }
 
-  // Clean database data between tests (keep structure)
-  await cleanDatabase();
+  // Check if test/suite wants to skip auto-cleanup (for performance tests that manage their own data)
+  const skipCleanup = context?.task?.meta?.skipAutoCleanup ||
+                      context?.task?.suite?.meta?.skipAutoCleanup;
 
-  // CRITICAL FIX: Reset all services after database cleanup to prevent stale connections
-  try {
-    // Import and reset all services with fresh database connections
-    const { resetAllServices } = await import('./integration/reset-services.js');
-    await resetAllServices();
-  } catch (error) {
-    console.warn(`⚠️ Service reset failed: ${error.message}`);
-    // Continue - tests may still work with existing service state
-  }
+  // Clean database data between tests (keep structure) unless test opts out
+  if (!skipCleanup) {
+    await cleanDatabase();
 
-  // CRITICAL VERIFICATION: Ensure core tables still exist after cleanup
-  if (testCounter === 1) {
+    // CRITICAL FIX: Reset all services after database cleanup to prevent stale connections
     try {
-      const dbClient = await isolationManager.getScopedDatabaseClient();
-      const coreTablesCheck = await dbClient.execute(`
-        SELECT name FROM sqlite_master
-        WHERE type='table' AND name IN ('tickets', 'qr_validations', 'transactions')
-        ORDER BY name
-      `);
-      const existingCoreTables = coreTablesCheck.rows.map(row => row.name || row[0]);
-
-      // CRITICAL FIX 5: Ensure qr_validations table exists
-      if (existingCoreTables.length < 3 || !existingCoreTables.includes('qr_validations')) {
-        console.error(`❌ CRITICAL: Core tables missing after cleanup!`, existingCoreTables);
-        throw new Error(`Core tables missing after cleanup: expected 3 including qr_validations, found ${existingCoreTables.length}`);
-      } else {
-        console.log(`✅ Core tables verified after cleanup:`, existingCoreTables);
-      }
+      // Import and reset all services with fresh database connections
+      const { resetAllServices } = await import('./integration/reset-services.js');
+      await resetAllServices();
     } catch (error) {
-      console.error(`❌ Table verification failed:`, error.message);
-      throw error;
+      console.warn(`⚠️ Service reset failed: ${error.message}`);
+      // Continue - tests may still work with existing service state
     }
+
+    // CRITICAL VERIFICATION: Ensure core tables still exist after cleanup
+    if (testCounter === 1) {
+      try {
+        const dbClient = await isolationManager.getScopedDatabaseClient();
+        const coreTablesCheck = await dbClient.execute(`
+          SELECT name FROM sqlite_master
+          WHERE type='table' AND name IN ('tickets', 'qr_validations', 'transactions')
+          ORDER BY name
+        `);
+        const existingCoreTables = coreTablesCheck.rows.map(row => row.name || row[0]);
+
+        // CRITICAL FIX 5: Ensure qr_validations table exists
+        if (existingCoreTables.length < 3 || !existingCoreTables.includes('qr_validations')) {
+          console.error(`❌ CRITICAL: Core tables missing after cleanup!`, existingCoreTables);
+          throw new Error(`Core tables missing after cleanup: expected 3 including qr_validations, found ${existingCoreTables.length}`);
+        } else {
+          console.log(`✅ Core tables verified after cleanup:`, existingCoreTables);
+        }
+      } catch (error) {
+        console.error(`❌ Table verification failed:`, error.message);
+        throw error;
+      }
+    }
+  } else {
+    console.log(`⏭️ Skipping auto-cleanup for test: ${testName}`);
   }
 }, config.timeouts.hook);
 

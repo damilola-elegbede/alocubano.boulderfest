@@ -42,8 +42,8 @@ describe('Registration Complete Flow - Integration Tests', () => {
         INSERT INTO transactions (
           id, transaction_id, type, stripe_session_id, stripe_payment_intent_id,
           customer_email, customer_name, amount_cents, currency, status,
-          order_number, order_data, event_id, completed_at, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+          order_number, order_data, event_id, completed_at, created_at, is_test
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'), ?)
       `,
       args: [
         1000,
@@ -58,7 +58,8 @@ describe('Registration Complete Flow - Integration Tests', () => {
         'completed',
         'ALO-2026-1000',
         JSON.stringify({ tickets: [], subtotal: 15000, total: 15000 }),
-        testEventId
+        testEventId,
+        1
       ]
     });
 

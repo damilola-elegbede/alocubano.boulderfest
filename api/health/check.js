@@ -287,21 +287,7 @@ export default async function handler(req, res) {
     return handleSimpleMode(req, res);
   }
 
-  // Quick non-blocking health check option - handle this first before test mode
-  if (req.query?.quick === 'true') {
-    const now = new Date().toISOString();
-    return res.status(200).json({
-      status: 'healthy',
-      service: 'a-lo-cubano-boulder-fest',
-      timestamp: now,
-      uptime: process.uptime(),
-      version: process.env.npm_package_version || 'unknown',
-      environment: process.env.NODE_ENV || 'development',
-      message: 'Quick health check - no external services tested'
-    });
-  }
-
-  // Test mode detection - return healthy mock response for integration tests
+  // Test mode detection - handle before quick mode to ensure test mode takes priority
   const isTestMode = process.env.NODE_ENV === 'test' || process.env.INTEGRATION_TEST_MODE === 'true';
 
   if (isTestMode) {
@@ -323,6 +309,20 @@ export default async function handler(req, res) {
       responseTime: `${Date.now() - startTime}ms`,
       deployment_mode: false,
       testMode: true
+    });
+  }
+
+  // Quick non-blocking health check option - placed after test mode check
+  if (req.query?.quick === 'true') {
+    const now = new Date().toISOString();
+    return res.status(200).json({
+      status: 'healthy',
+      service: 'a-lo-cubano-boulder-fest',
+      timestamp: now,
+      uptime: process.uptime(),
+      version: process.env.npm_package_version || 'unknown',
+      environment: process.env.NODE_ENV || 'development',
+      message: 'Quick health check - no external services tested'
     });
   }
 

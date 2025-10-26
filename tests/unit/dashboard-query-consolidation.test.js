@@ -4,6 +4,7 @@ import { getDatabaseClient } from '../../lib/database.js';
 describe('Dashboard Query Consolidation', () => {
   let db;
   let testEventId;
+  let testStatusEventId;
   let testTransactionId;
 
   beforeEach(async () => {
@@ -68,7 +69,6 @@ describe('Dashboard Query Consolidation', () => {
         status TEXT DEFAULT 'valid',
         qr_token TEXT,
         qr_access_method TEXT,
-        is_test INTEGER DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         last_scanned_at TIMESTAMP,
         checked_in_at TIMESTAMP,
@@ -94,12 +94,20 @@ describe('Dashboard Query Consolidation', () => {
   }
 
   async function seedDashboardData() {
-    // Create test event
+    // Create test event (active status - real tickets)
     testEventId = 9001;
     await db.execute({
       sql: `INSERT INTO temp_events (id, name, slug, type, status, start_date, end_date, venue_name, venue_city, venue_state, max_capacity)
             VALUES (?, 'Test Event Dashboard', 'test-event-dashboard', 'festival', 'active', '2026-05-15', '2026-05-17', 'Test Venue', 'Boulder', 'CO', 500)`,
       args: [testEventId]
+    });
+
+    // Create event with test status for test tickets
+    testStatusEventId = 9003;
+    await db.execute({
+      sql: `INSERT INTO temp_events (id, name, slug, type, status, start_date, end_date, venue_name, venue_city, venue_state, max_capacity)
+            VALUES (?, 'Test Status Event', 'test-status-event', 'festival', 'test', '2026-05-15', '2026-05-17', 'Test Venue', 'Boulder', 'CO', 500)`,
+      args: [testStatusEventId]
     });
 
     // Verify event was inserted
@@ -121,9 +129,9 @@ describe('Dashboard Query Consolidation', () => {
       await db.execute({
         sql: `INSERT INTO temp_tickets (
           ticket_id, transaction_id, ticket_type, event_id, price_cents, status,
-          qr_token, qr_access_method, is_test, created_at,
+          qr_token, qr_access_method, created_at,
           attendee_first_name, attendee_last_name, attendee_email
-        ) VALUES (?, ?, 'General Admission', ?, 5000, 'valid', ?, 'web', 0, datetime('now'), 'Test', 'User', 'test@example.com')`,
+        ) VALUES (?, ?, 'General Admission', ?, 5000, 'valid', ?, 'web', datetime('now'), 'Test', 'User', 'test@example.com')`,
         args: [`test_consolidation_ticket_${i}`, testTransactionId, testEventId, `qr_${i}`]
       });
     }
@@ -133,9 +141,9 @@ describe('Dashboard Query Consolidation', () => {
       await db.execute({
         sql: `INSERT INTO temp_tickets (
           ticket_id, transaction_id, ticket_type, event_id, price_cents, status,
-          qr_token, qr_access_method, is_test, created_at,
+          qr_token, qr_access_method, created_at,
           attendee_first_name, attendee_last_name, attendee_email
-        ) VALUES (?, ?, 'Workshop Pass', ?, 7500, 'valid', ?, 'web', 0, datetime('now'), 'Workshop', 'User', 'workshop@example.com')`,
+        ) VALUES (?, ?, 'Workshop Pass', ?, 7500, 'valid', ?, 'web', datetime('now'), 'Workshop', 'User', 'workshop@example.com')`,
         args: [`test_consolidation_ticket_${i}`, testTransactionId, testEventId, `qr_${i}`]
       });
     }
@@ -145,9 +153,9 @@ describe('Dashboard Query Consolidation', () => {
       await db.execute({
         sql: `INSERT INTO temp_tickets (
           ticket_id, transaction_id, ticket_type, event_id, price_cents, status,
-          qr_token, qr_access_method, is_test, created_at,
+          qr_token, qr_access_method, created_at,
           attendee_first_name, attendee_last_name, attendee_email
-        ) VALUES (?, ?, 'VIP Pass', ?, 12000, 'valid', ?, 'apple_wallet', 0, datetime('now'), 'VIP', 'User', 'vip@example.com')`,
+        ) VALUES (?, ?, 'VIP Pass', ?, 12000, 'valid', ?, 'apple_wallet', datetime('now'), 'VIP', 'User', 'vip@example.com')`,
         args: [`test_consolidation_ticket_${i}`, testTransactionId, testEventId, `qr_${i}`]
       });
     }
@@ -157,30 +165,30 @@ describe('Dashboard Query Consolidation', () => {
       await db.execute({
         sql: `INSERT INTO temp_tickets (
           ticket_id, transaction_id, ticket_type, event_id, price_cents, status,
-          qr_token, qr_access_method, is_test, created_at,
+          qr_token, qr_access_method, created_at,
           last_scanned_at, checked_in_at,
           attendee_first_name, attendee_last_name, attendee_email
-        ) VALUES (?, ?, 'General Admission', ?, 5000, 'valid', ?, 'google_wallet', 0, datetime('now'), datetime('now'), datetime('now'), 'CheckedIn', 'User', 'checkedin@example.com')`,
+        ) VALUES (?, ?, 'General Admission', ?, 5000, 'valid', ?, 'google_wallet', datetime('now'), datetime('now'), datetime('now'), 'CheckedIn', 'User', 'checkedin@example.com')`,
         args: [`test_consolidation_ticket_${i}`, testTransactionId, testEventId, `qr_${i}`]
       });
     }
 
-    // Create 2 test tickets
+    // Create 2 test tickets (using test status event created above)
     const testTransactionId2 = 'test_consolidation_trans_2';
     await db.execute({
       sql: `INSERT INTO temp_transactions (id, email, status, source, payment_processor, is_test, event_id, created_at)
             VALUES (?, 'test@example.com', 'completed', 'online', 'stripe', 1, ?, datetime('now'))`,
-      args: [testTransactionId2, testEventId]
+      args: [testTransactionId2, testStatusEventId]
     });
 
     for (let i = 18; i <= 19; i++) {
       await db.execute({
         sql: `INSERT INTO temp_tickets (
           ticket_id, transaction_id, ticket_type, event_id, price_cents, status,
-          qr_token, qr_access_method, is_test, created_at,
+          qr_token, qr_access_method, created_at,
           attendee_first_name, attendee_last_name, attendee_email
-        ) VALUES (?, ?, 'General Admission', ?, 5000, 'valid', ?, 'web', 1, datetime('now'), 'Test', 'Mode', 'testmode@example.com')`,
-        args: [`test_consolidation_ticket_${i}`, testTransactionId2, testEventId, `qr_${i}`]
+        ) VALUES (?, ?, 'General Admission', ?, 5000, 'valid', ?, 'web', datetime('now'), 'Test', 'Mode', 'testmode@example.com')`,
+        args: [`test_consolidation_ticket_${i}`, testTransactionId2, testStatusEventId, `qr_${i}`]
       });
     }
 
@@ -196,24 +204,38 @@ describe('Dashboard Query Consolidation', () => {
       await db.execute({
         sql: `INSERT INTO temp_tickets (
           ticket_id, transaction_id, ticket_type, event_id, price_cents, status,
-          qr_token, qr_access_method, is_test, created_at,
+          qr_token, qr_access_method, created_at,
           attendee_first_name, attendee_last_name, attendee_email
-        ) VALUES (?, ?, 'General Admission', ?, 3000, 'valid', ?, 'web', 0, datetime('now'), 'Manual', 'Entry', 'manual@example.com')`,
+        ) VALUES (?, ?, 'General Admission', ?, 3000, 'valid', ?, 'web', datetime('now'), 'Manual', 'Entry', 'manual@example.com')`,
         args: [`test_consolidation_ticket_${i}`, manualTransactionId, testEventId, `qr_${i}`]
       });
     }
 
     // Verify data was seeded correctly
     const ticketCount = await db.execute('SELECT COUNT(*) as count FROM temp_tickets WHERE event_id = ?', [testEventId]);
+    const testStatusTicketCount = await db.execute('SELECT COUNT(*) as count FROM temp_tickets WHERE event_id = ?', [testStatusEventId]);
     const transCount = await db.execute('SELECT COUNT(*) as count FROM temp_transactions WHERE event_id = ?', [testEventId]);
+    const testStatusTransCount = await db.execute('SELECT COUNT(*) as count FROM temp_transactions WHERE event_id = ?', [testStatusEventId]);
 
-    if (ticketCount.rows[0].count !== 21) {
-      console.error('Expected 21 tickets, got:', ticketCount.rows[0].count);
-      throw new Error(`Expected 21 tickets, got ${ticketCount.rows[0].count}`);
+    // testEventId should have 19 tickets (10 general + 3 workshop + 2 VIP + 2 checked-in + 2 manual)
+    if (ticketCount.rows[0].count !== 19) {
+      console.error('Expected 19 tickets for active event, got:', ticketCount.rows[0].count);
+      throw new Error(`Expected 19 tickets for active event, got ${ticketCount.rows[0].count}`);
     }
-    if (transCount.rows[0].count !== 3) {
-      console.error('Expected 3 transactions, got:', transCount.rows[0].count);
-      throw new Error(`Expected 3 transactions, got ${transCount.rows[0].count}`);
+    // testStatusEventId should have 2 test tickets
+    if (testStatusTicketCount.rows[0].count !== 2) {
+      console.error('Expected 2 tickets for test event, got:', testStatusTicketCount.rows[0].count);
+      throw new Error(`Expected 2 tickets for test event, got ${testStatusTicketCount.rows[0].count}`);
+    }
+    // testEventId should have 2 transactions (main + manual)
+    if (transCount.rows[0].count !== 2) {
+      console.error('Expected 2 transactions for active event, got:', transCount.rows[0].count);
+      throw new Error(`Expected 2 transactions for active event, got ${transCount.rows[0].count}`);
+    }
+    // testStatusEventId should have 1 test transaction
+    if (testStatusTransCount.rows[0].count !== 1) {
+      console.error('Expected 1 transaction for test event, got:', testStatusTransCount.rows[0].count);
+      throw new Error(`Expected 1 transaction for test event, got ${testStatusTransCount.rows[0].count}`);
     }
   }
 
@@ -230,30 +252,31 @@ describe('Dashboard Query Consolidation', () => {
     const statsQuery = `
       WITH ticket_stats AS (
         SELECT
-          COUNT(*) FILTER (WHERE status = 'valid') as total_tickets,
-          COUNT(*) FILTER (WHERE last_scanned_at IS NOT NULL OR checked_in_at IS NOT NULL) as checked_in,
-          COUNT(DISTINCT transaction_id) as total_orders,
-          COUNT(*) FILTER (WHERE ticket_type LIKE '%workshop%') as workshop_tickets,
-          COUNT(*) FILTER (WHERE ticket_type LIKE '%vip%') as vip_tickets,
-          COUNT(*) FILTER (WHERE date(created_at, ${mtOffset}) = date('now', ${mtOffset})) as today_sales,
-          COUNT(*) FILTER (WHERE qr_token IS NOT NULL) as qr_generated,
-          COUNT(*) FILTER (WHERE qr_access_method = 'apple_wallet') as apple_wallet_users,
-          COUNT(*) FILTER (WHERE qr_access_method = 'google_wallet') as google_wallet_users,
-          COUNT(*) FILTER (WHERE qr_access_method = 'web') as web_only_users,
-          COUNT(*) FILTER (WHERE is_test = 1) as test_tickets,
-          COUNT(*) FILTER (WHERE (last_scanned_at IS NOT NULL OR checked_in_at IS NOT NULL)
-                           AND date(COALESCE(last_scanned_at, checked_in_at), ${mtOffset}) = date('now', ${mtOffset})) as today_checkins,
-          COUNT(*) FILTER (WHERE (last_scanned_at IS NOT NULL OR checked_in_at IS NOT NULL)
-                           AND qr_access_method IN ('apple_wallet', 'google_wallet', 'samsung_wallet')) as wallet_checkins
-        FROM temp_tickets
-        WHERE 1=1 ${ticketWhereClause}
+          COUNT(*) FILTER (WHERE t.status = 'valid') as total_tickets,
+          COUNT(*) FILTER (WHERE t.last_scanned_at IS NOT NULL OR t.checked_in_at IS NOT NULL) as checked_in,
+          COUNT(DISTINCT t.transaction_id) as total_orders,
+          COUNT(*) FILTER (WHERE t.ticket_type LIKE '%workshop%') as workshop_tickets,
+          COUNT(*) FILTER (WHERE t.ticket_type LIKE '%vip%') as vip_tickets,
+          COUNT(*) FILTER (WHERE date(t.created_at, ${mtOffset}) = date('now', ${mtOffset})) as today_sales,
+          COUNT(*) FILTER (WHERE t.qr_token IS NOT NULL) as qr_generated,
+          COUNT(*) FILTER (WHERE t.qr_access_method = 'apple_wallet') as apple_wallet_users,
+          COUNT(*) FILTER (WHERE t.qr_access_method = 'google_wallet') as google_wallet_users,
+          COUNT(*) FILTER (WHERE t.qr_access_method = 'web') as web_only_users,
+          COUNT(*) FILTER (WHERE e.status = 'test') as test_tickets,
+          COUNT(*) FILTER (WHERE (t.last_scanned_at IS NOT NULL OR t.checked_in_at IS NOT NULL)
+                           AND date(COALESCE(t.last_scanned_at, t.checked_in_at), ${mtOffset}) = date('now', ${mtOffset})) as today_checkins,
+          COUNT(*) FILTER (WHERE (t.last_scanned_at IS NOT NULL OR t.checked_in_at IS NOT NULL)
+                           AND t.qr_access_method IN ('apple_wallet', 'google_wallet', 'samsung_wallet')) as wallet_checkins
+        FROM temp_tickets t
+        JOIN temp_events e ON t.event_id = e.id
+        WHERE 1=1 ${ticketWhereClauseWithAlias}
       ),
       transaction_stats AS (
         SELECT
-          COUNT(DISTINCT id) FILTER (WHERE source = 'manual_entry' AND status = 'completed') as manual_transactions,
-          COUNT(DISTINCT id) FILTER (WHERE is_test = 1) as test_transactions
-        FROM temp_transactions
-        WHERE id IN (SELECT DISTINCT transaction_id FROM temp_tickets WHERE 1=1 ${ticketWhereClause})
+          COUNT(DISTINCT tr.id) FILTER (WHERE tr.source = 'manual_entry' AND tr.status = 'completed') as manual_transactions,
+          COUNT(DISTINCT tr.id) FILTER (WHERE tr.is_test = 1) as test_transactions
+        FROM temp_transactions tr
+        WHERE tr.id IN (SELECT DISTINCT t.transaction_id FROM temp_tickets t WHERE 1=1 ${ticketWhereClause})
       ),
       revenue_stats AS (
         SELECT
@@ -263,7 +286,7 @@ describe('Dashboard Query Consolidation', () => {
             AND tr.status = 'completed'), 0) / 100.0 as total_revenue,
           -- Test revenue breakdown (for reporting)
           COALESCE(SUM(t.price_cents) FILTER (WHERE t.status = 'valid'
-            AND (tr.is_test = 1 OR t.is_test = 1)
+            AND (tr.is_test = 1 OR e.status = 'test')
             AND COALESCE(tr.payment_processor, '') <> 'comp'
             AND tr.status = 'completed'), 0) / 100.0 as test_revenue,
           -- Manual revenue: ALL manual tickets except comp
@@ -278,6 +301,7 @@ describe('Dashboard Query Consolidation', () => {
           COUNT(*) FILTER (WHERE tr.source = 'manual_entry' AND tr.payment_processor = 'comp' AND t.status = 'valid') as manual_comp_tickets
         FROM temp_tickets t
         JOIN temp_transactions tr ON t.transaction_id = tr.id
+        JOIN temp_events e ON t.event_id = e.id
         WHERE 1=1 ${ticketWhereClauseWithAlias}
       )
       SELECT
@@ -311,10 +335,11 @@ describe('Dashboard Query Consolidation', () => {
   test('COUNT(*) FILTER syntax works correctly', async () => {
     const result = await db.execute({
       sql: `SELECT
-              COUNT(*) FILTER (WHERE status = 'valid') as valid_count,
-              COUNT(*) FILTER (WHERE is_test = 1) as test_count
-            FROM temp_tickets
-            WHERE transaction_id LIKE 'test_consolidation_%'`
+              COUNT(*) FILTER (WHERE t.status = 'valid') as valid_count,
+              COUNT(*) FILTER (WHERE e.status = 'test') as test_count
+            FROM temp_tickets t
+            JOIN temp_events e ON t.event_id = e.id
+            WHERE t.transaction_id LIKE 'test_consolidation_%'`
     });
 
     expect(result.rows[0].valid_count).toBeGreaterThan(0);
@@ -335,14 +360,15 @@ describe('Dashboard Query Consolidation', () => {
     console.log('Simple CTE result:', result);
 
     expect(result.rows).toHaveLength(1);
-    expect(result.rows[0].total_tickets).toBe(21);
+    expect(result.rows[0].total_tickets).toBe(19); // Only active event tickets
   });
 
   test('consolidated query returns correct total_tickets count', async () => {
     const stats = await getConsolidatedDashboardStats(testEventId);
 
-    // We created 21 valid tickets total (10 general + 3 workshop + 2 VIP + 2 checked-in + 2 test + 2 manual)
-    expect(stats.total_tickets).toBe(21);
+    // We created 19 valid tickets for active event (10 general + 3 workshop + 2 VIP + 2 checked-in + 2 manual)
+    // Test tickets (2) are in a separate test event
+    expect(stats.total_tickets).toBe(19);
   });
 
   test('consolidated query returns correct checked_in count', async () => {
@@ -355,8 +381,8 @@ describe('Dashboard Query Consolidation', () => {
   test('consolidated query returns correct total_orders count', async () => {
     const stats = await getConsolidatedDashboardStats(testEventId);
 
-    // We created 3 distinct transactions
-    expect(stats.total_orders).toBe(3);
+    // We created 2 distinct transactions for active event (main + manual)
+    expect(stats.total_orders).toBe(2);
   });
 
   test('consolidated query returns correct workshop_tickets count', async () => {
@@ -376,15 +402,15 @@ describe('Dashboard Query Consolidation', () => {
   test('consolidated query returns correct today_sales count', async () => {
     const stats = await getConsolidatedDashboardStats(testEventId);
 
-    // All tickets were created today
-    expect(stats.today_sales).toBe(21);
+    // All active event tickets were created today
+    expect(stats.today_sales).toBe(19);
   });
 
   test('consolidated query returns correct qr_generated count', async () => {
     const stats = await getConsolidatedDashboardStats(testEventId);
 
-    // All tickets have qr_token
-    expect(stats.qr_generated).toBe(21);
+    // All active event tickets have qr_token
+    expect(stats.qr_generated).toBe(19);
   });
 
   test('consolidated query returns correct wallet user counts', async () => {
@@ -394,22 +420,22 @@ describe('Dashboard Query Consolidation', () => {
     expect(stats.apple_wallet_users).toBe(2);
     // 2 checked-in tickets use google_wallet
     expect(stats.google_wallet_users).toBe(2);
-    // Remaining tickets use web
-    expect(stats.web_only_users).toBe(17);
+    // Remaining active event tickets use web (19 - 2 - 2 = 15)
+    expect(stats.web_only_users).toBe(15);
   });
 
   test('consolidated query returns correct test_tickets count', async () => {
     const stats = await getConsolidatedDashboardStats(testEventId);
 
-    // We created 2 test tickets
-    expect(stats.test_tickets).toBe(2);
+    // Test tickets (2) are in a separate test event, not in active event
+    expect(stats.test_tickets).toBe(0);
   });
 
   test('consolidated query returns correct test_transactions count', async () => {
     const stats = await getConsolidatedDashboardStats(testEventId);
 
-    // We created 1 test transaction
-    expect(stats.test_transactions).toBe(1);
+    // Test transaction is in a separate test event, not in active event
+    expect(stats.test_transactions).toBe(0);
   });
 
   test('consolidated query returns correct today_checkins count', async () => {
@@ -450,16 +476,15 @@ describe('Dashboard Query Consolidation', () => {
   test('consolidated query returns correct revenue calculations', async () => {
     const stats = await getConsolidatedDashboardStats(testEventId);
 
-    // Total revenue should include ALL tickets (test + real) except comp
-    // Total revenue = (10 * 50) + (3 * 75) + (2 * 120) + (2 * 50) + (2 * 50) + (2 * 30)
-    // = 500 + 225 + 240 + 100 + 100 + 60 = 1225
-    // ✅ CORRECT: Test tickets are real purchases and should be included
-    expect(stats.total_revenue).toBeCloseTo(1225, 2);
+    // Total revenue for active event (test tickets are in separate event)
+    // Total revenue = (10 * 50) + (3 * 75) + (2 * 120) + (2 * 50) + (2 * 30)
+    // = 500 + 225 + 240 + 100 + 60 = 1125
+    expect(stats.total_revenue).toBeCloseTo(1125, 2);
 
-    // Test revenue breakdown (for reporting) = 2 * 50 = 100
-    expect(stats.test_revenue).toBeCloseTo(100, 2);
+    // Test revenue breakdown (test tickets are in separate event)
+    expect(stats.test_revenue).toBeCloseTo(0, 2);
 
-    // Manual revenue should include ALL manual tickets (including test if any)
+    // Manual revenue should include ALL manual tickets
     // Manual revenue = 2 * 30 = 60
     expect(stats.manual_revenue).toBeCloseTo(60, 2);
   });
@@ -496,16 +521,16 @@ describe('Dashboard Query Consolidation', () => {
       await db.execute({
         sql: `INSERT INTO temp_tickets (
           ticket_id, transaction_id, ticket_type, event_id, price_cents, status,
-          qr_token, qr_access_method, is_test, created_at,
+          qr_token, qr_access_method, created_at,
           attendee_first_name, attendee_last_name, attendee_email
-        ) VALUES (?, ?, 'General Admission', ?, 5000, 'valid', ?, 'web', 0, datetime('now'), 'Second', 'Event', 'second@example.com')`,
+        ) VALUES (?, ?, 'General Admission', ?, 5000, 'valid', ?, 'web', datetime('now'), 'Second', 'Event', 'second@example.com')`,
         args: [`test_consolidation_second_${i}`, secondTransactionId, secondEventId, `qr_second_${i}`]
       });
     }
 
     // Get stats for first event only
     const statsEvent1 = await getConsolidatedDashboardStats(testEventId);
-    expect(statsEvent1.total_tickets).toBe(21);
+    expect(statsEvent1.total_tickets).toBe(19); // Active event only (no test tickets)
 
     // Get stats for second event only
     const statsEvent2 = await getConsolidatedDashboardStats(secondEventId);
@@ -513,7 +538,7 @@ describe('Dashboard Query Consolidation', () => {
 
     // Get stats for all events (no filter)
     const statsAll = await getConsolidatedDashboardStats(null);
-    expect(statsAll.total_tickets).toBeGreaterThanOrEqual(26); // At least our test tickets
+    expect(statsAll.total_tickets).toBeGreaterThanOrEqual(26); // 19 (event1) + 5 (event2) + 2 (test) = 26
 
     // Cleanup second event
     await db.execute('DELETE FROM temp_tickets WHERE event_id = ?', [secondEventId]);
@@ -586,9 +611,9 @@ describe('Dashboard Query Consolidation', () => {
       await db.execute({
         sql: `INSERT INTO temp_tickets (
           ticket_id, transaction_id, ticket_type, event_id, price_cents, status,
-          qr_token, qr_access_method, is_test, created_at,
+          qr_token, qr_access_method, created_at,
           attendee_first_name, attendee_last_name, attendee_email
-        ) VALUES (?, ?, 'General Admission', ?, 0, 'valid', ?, 'web', 0, datetime('now'), 'Comp', 'User', 'comp@example.com')`,
+        ) VALUES (?, ?, 'General Admission', ?, 0, 'valid', ?, 'web', datetime('now'), 'Comp', 'User', 'comp@example.com')`,
         args: [`test_consolidation_comp_${i}`, compTransactionId, testEventId, `qr_comp_${i}`]
       });
     }
@@ -596,11 +621,11 @@ describe('Dashboard Query Consolidation', () => {
     const stats = await getConsolidatedDashboardStats(testEventId);
 
     // Comp tickets should be counted
-    expect(stats.total_tickets).toBe(24); // 21 original + 3 comp
+    expect(stats.total_tickets).toBe(22); // 19 active event + 3 comp
 
-    // But revenue should exclude comp tickets (test tickets still included)
-    // Revenue = original 1225 (includes test tickets) + 0 comp = 1225
-    expect(stats.total_revenue).toBeCloseTo(1225, 2);
+    // But revenue should exclude comp tickets
+    // Revenue = original 1125 (active event only) + 0 comp = 1125
+    expect(stats.total_revenue).toBeCloseTo(1125, 2);
 
     // Manual comp tickets should be counted
     expect(stats.manual_comp_tickets).toBe(3);
@@ -614,10 +639,10 @@ describe('Dashboard Query Consolidation', () => {
     // Simulates real-world scenario like "November Salsa Weekender" with only test tickets
     const testOnlyEventId = 9999;
 
-    // Create test-only event
+    // Create test-only event (with test status)
     await db.execute({
       sql: `INSERT INTO temp_events (id, name, slug, type, status, start_date, end_date, venue_name, venue_city, venue_state)
-            VALUES (?, 'All Test Tickets Event', 'all-test-event', 'festival', 'active', '2025-11-15', '2025-11-17', 'Test Venue', 'Boulder', 'CO')`,
+            VALUES (?, 'All Test Tickets Event', 'all-test-event', 'festival', 'test', '2025-11-15', '2025-11-17', 'Test Venue', 'Boulder', 'CO')`,
       args: [testOnlyEventId]
     });
 
@@ -632,8 +657,8 @@ describe('Dashboard Query Consolidation', () => {
     // Create 5 test tickets at $65 each
     for (let i = 0; i < 5; i++) {
       await db.execute({
-        sql: `INSERT INTO temp_tickets (ticket_id, transaction_id, event_id, ticket_type, price_cents, status, is_test)
-              VALUES (?, ?, ?, 'weekend-pass', 6500, 'valid', 1)`,
+        sql: `INSERT INTO temp_tickets (ticket_id, transaction_id, event_id, ticket_type, price_cents, status)
+              VALUES (?, ?, ?, 'weekend-pass', 6500, 'valid')`,
         args: [`TEST-TICKET-${i}`, testOnlyTransactionId, testOnlyEventId]
       });
     }
@@ -655,12 +680,20 @@ describe('Dashboard Query Consolidation', () => {
   test('revenue excludes only comp tickets, includes test tickets', async () => {
     // Test that comp tickets are excluded but test tickets are included
     const mixedEventId = 9998;
+    const mixedTestEventId = 9997;
 
-    // Create mixed event
+    // Create mixed event (active status for regular tickets)
     await db.execute({
       sql: `INSERT INTO temp_events (id, name, slug, type, status, start_date, end_date, venue_name, venue_city, venue_state)
             VALUES (?, 'Mixed Ticket Types Event', 'mixed-event', 'festival', 'active', '2025-12-01', '2025-12-03', 'Mixed Venue', 'Denver', 'CO')`,
       args: [mixedEventId]
+    });
+
+    // Create test event (test status for test tickets)
+    await db.execute({
+      sql: `INSERT INTO temp_events (id, name, slug, type, status, start_date, end_date, venue_name, venue_city, venue_state)
+            VALUES (?, 'Mixed Test Event', 'mixed-test-event', 'festival', 'test', '2025-12-01', '2025-12-03', 'Mixed Venue', 'Denver', 'CO')`,
+      args: [mixedTestEventId]
     });
 
     // Transaction 1: Regular (non-test) with stripe
@@ -674,7 +707,7 @@ describe('Dashboard Query Consolidation', () => {
     await db.execute({
       sql: `INSERT INTO temp_transactions (id, email, status, is_test, payment_processor, event_id)
             VALUES ('test-trans', 'test@example.com', 'completed', 1, 'paypal', ?)`,
-      args: [mixedEventId]
+      args: [mixedTestEventId]
     });
 
     // Transaction 3: Comp (should be excluded)
@@ -687,40 +720,48 @@ describe('Dashboard Query Consolidation', () => {
     // Create tickets: 2 regular ($50 each), 2 test ($50 each), 2 comp ($50 each)
     for (let i = 0; i < 2; i++) {
       await db.execute({
-        sql: `INSERT INTO temp_tickets (ticket_id, transaction_id, event_id, ticket_type, price_cents, status, is_test)
-              VALUES (?, 'regular-trans', ?, 'general', 5000, 'valid', 0)`,
+        sql: `INSERT INTO temp_tickets (ticket_id, transaction_id, event_id, ticket_type, price_cents, status)
+              VALUES (?, 'regular-trans', ?, 'general', 5000, 'valid')`,
         args: [`REGULAR-${i}`, mixedEventId]
       });
 
       await db.execute({
-        sql: `INSERT INTO temp_tickets (ticket_id, transaction_id, event_id, ticket_type, price_cents, status, is_test)
-              VALUES (?, 'test-trans', ?, 'general', 5000, 'valid', 1)`,
-        args: [`TEST-${i}`, mixedEventId]
+        sql: `INSERT INTO temp_tickets (ticket_id, transaction_id, event_id, ticket_type, price_cents, status)
+              VALUES (?, 'test-trans', ?, 'general', 5000, 'valid')`,
+        args: [`TEST-${i}`, mixedTestEventId]
       });
 
       await db.execute({
-        sql: `INSERT INTO temp_tickets (ticket_id, transaction_id, event_id, ticket_type, price_cents, status, is_test)
-              VALUES (?, 'comp-trans', ?, 'general', 5000, 'valid', 0)`,
+        sql: `INSERT INTO temp_tickets (ticket_id, transaction_id, event_id, ticket_type, price_cents, status)
+              VALUES (?, 'comp-trans', ?, 'general', 5000, 'valid')`,
         args: [`COMP-${i}`, mixedEventId]
       });
     }
 
-    const stats = await getConsolidatedDashboardStats(mixedEventId);
+    // Query for mixedEventId only (regular + comp tickets)
+    const statsMixedEvent = await getConsolidatedDashboardStats(mixedEventId);
 
-    // Revenue should include regular + test, exclude comp
-    // (2 regular × $50) + (2 test × $50) = $200
-    expect(stats.total_revenue).toBeCloseTo(200, 2);
+    // Revenue should only include regular tickets (2 × $50), exclude comp
+    expect(statsMixedEvent.total_revenue).toBeCloseTo(100, 2);
+    expect(statsMixedEvent.test_revenue).toBeCloseTo(0, 2);
+    expect(statsMixedEvent.total_tickets).toBe(4); // 2 regular + 2 comp
+    expect(statsMixedEvent.test_tickets).toBe(0);
 
-    // Test revenue breakdown = 2 × $50 = $100
-    expect(stats.test_revenue).toBeCloseTo(100, 2);
+    // Query for test event
+    const statsTestEvent = await getConsolidatedDashboardStats(mixedTestEventId);
+    expect(statsTestEvent.total_revenue).toBeCloseTo(100, 2); // 2 test × $50
+    expect(statsTestEvent.test_revenue).toBeCloseTo(100, 2);
+    expect(statsTestEvent.total_tickets).toBe(2);
+    expect(statsTestEvent.test_tickets).toBe(2);
 
-    // Total tickets (all 6)
-    expect(stats.total_tickets).toBe(6);
-    expect(stats.test_tickets).toBe(2);
+    // Query all events to verify total
+    const statsAll = await getConsolidatedDashboardStats(null);
+    // Should include regular + test, exclude comp: (2 × $50) + (2 × $50) = $200
+    expect(statsAll.total_revenue).toBeGreaterThanOrEqual(200);
 
     // Clean up
-    await db.execute('DELETE FROM temp_tickets WHERE event_id = ?', [mixedEventId]);
-    await db.execute('DELETE FROM temp_transactions WHERE event_id = ?', [mixedEventId]);
-    await db.execute('DELETE FROM temp_events WHERE id = ?', [mixedEventId]);
+    await db.execute('DELETE FROM temp_tickets WHERE event_id IN (?, ?)', [mixedEventId, mixedTestEventId]);
+    await db.execute('DELETE FROM temp_transactions WHERE event_id IN (?, ?)', [mixedEventId, mixedTestEventId]);
+    await db.execute('DELETE FROM temp_events WHERE id IN (?, ?)', [mixedEventId, mixedTestEventId]);
   });
 });

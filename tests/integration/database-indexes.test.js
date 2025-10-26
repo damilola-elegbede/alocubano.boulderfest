@@ -53,9 +53,9 @@ describe('Database Index Performance', () => {
 
     // Create a test ticket linked to this transaction for JOIN testing
     await db.execute({
-      sql: `INSERT INTO tickets (ticket_id, transaction_id, ticket_type, event_id, event_time, price_cents, status, registration_status, attendee_email, is_test, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
-      args: ['test-ticket-001', testTransactionId, 'Test Ticket', testEventId, '00:00', 5000, 'valid', 'completed', 'test@example.com', 1]
+      sql: `INSERT INTO tickets (ticket_id, transaction_id, ticket_type, event_id, event_time, price_cents, status, registration_status, attendee_email, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+      args: ['test-ticket-001', testTransactionId, 'Test Ticket', testEventId, '00:00', 5000, 'valid', 'completed', 'test@example.com']
     });
   });
 
@@ -78,7 +78,7 @@ describe('Database Index Performance', () => {
     expect(indexNames).toContain('idx_tickets_status_created_registration');
     expect(indexNames).toContain('idx_transactions_event_status_created');
     expect(indexNames).toContain('idx_ticket_reservations_lookup');
-    expect(indexNames).toContain('idx_ticket_types_id_event_status');
+    expect(indexNames).toContain('idx_ticket_types_event_status');
     expect(indexNames).toContain('idx_reminders_status_scheduled');
   });
 

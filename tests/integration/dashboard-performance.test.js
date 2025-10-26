@@ -1,7 +1,8 @@
 import { describe, test, expect, beforeAll, afterAll } from 'vitest';
 import { getDatabaseClient } from '../../lib/database.js';
+import crypto from 'crypto';
 
-describe('Dashboard Performance', () => {
+describe('Dashboard Performance', { meta: { skipAutoCleanup: true } }, () => {
   let db;
   let testEventId;
   let adminToken;
@@ -41,19 +42,26 @@ describe('Dashboard Performance', () => {
       const batchEnd = Math.min(batchStart + batchSize, ticketCount);
 
       for (let i = batchStart; i < batchEnd; i++) {
-        const transactionId = `test_perf_trans_${i}`;
+        const transactionBusinessId = `test_perf_trans_${i}`;
         const isTest = i % 10 === 0 ? 1 : 0;
         const source = i % 5 === 0 ? 'manual_entry' : 'online';
         const paymentProcessor = source === 'manual_entry'
           ? (i % 2 === 0 ? 'cash' : 'card_terminal')
           : 'stripe';
 
-        // Create transaction
-        await db.execute({
-          sql: `INSERT OR IGNORE INTO transactions (id, email, status, source, payment_processor, is_test, event_id, created_at)
-                VALUES (?, ?, 'completed', ?, ?, ?, ?, datetime('now', '-' || ? || ' hours'))`,
-          args: [transactionId, `perf${i}@example.com`, source, paymentProcessor, isTest, testEventId, i % 24]
+        // Generate manual_entry_id for manual payment methods (required by constraint)
+        const manualEntryId = source === 'manual_entry' ? crypto.randomUUID() : null;
+
+        // Create transaction with correct schema
+        const txResult = await db.execute({
+          sql: `INSERT INTO transactions (
+            transaction_id, uuid, type, customer_email, customer_name, amount_cents, currency,
+            status, payment_processor, is_test, event_id, order_data, created_at, source, manual_entry_id
+          ) VALUES (?, ?, 'tickets', ?, 'Perf User', 5000, 'USD', 'completed', ?, ?, ?, '{}', datetime('now', '-' || ? || ' hours'), ?, ?)
+          RETURNING id`,
+          args: [transactionBusinessId, transactionBusinessId, `perf${i}@example.com`, paymentProcessor, isTest, testEventId, i % 24, source, manualEntryId]
         });
+        const transactionDbId = txResult.rows[0].id; // INTEGER database ID for FK
 
         // Determine ticket type
         let ticketType = 'General Admission';
@@ -79,7 +87,7 @@ describe('Dashboard Performance', () => {
           ) VALUES (?, ?, ?, ?, ?, 'valid', ?, ?, ?, datetime('now', '-' || ? || ' hours'), ${checkedInAt}, ${checkedInAt}, 'Perf', 'User', ?)`,
           args: [
             `test_perf_ticket_${i}`,
-            transactionId,
+            transactionDbId, // Use INTEGER database ID for FK
             ticketType,
             testEventId,
             ticketType === 'VIP Pass' ? 12000 : (ticketType === 'Workshop Pass' ? 7500 : 5000),
@@ -102,8 +110,8 @@ describe('Dashboard Performance', () => {
 
   async function cleanupLargeDataset() {
     console.log('Cleaning up performance test dataset...');
-    await db.execute('DELETE FROM tickets WHERE ticket_id LIKE "test_perf_%"');
-    await db.execute('DELETE FROM transactions WHERE id LIKE "test_perf_%"');
+    await db.execute('DELETE FROM tickets WHERE ticket_id LIKE \'test_perf_%\'');
+    await db.execute('DELETE FROM transactions WHERE transaction_id LIKE \'test_perf_%\''); // Use transaction_id (TEXT) not id (INTEGER)
     await db.execute('DELETE FROM events WHERE id = ?', [testEventId]);
     console.log('✓ Cleanup complete');
   }
@@ -209,13 +217,14 @@ describe('Dashboard Performance', () => {
     expect(stats.total_orders).toBe(1000);
     expect(stats.qr_generated).toBe(1000);
 
-    // Workshop tickets (every 20th ticket)
-    expect(stats.workshop_tickets).toBeGreaterThan(40);
-    expect(stats.workshop_tickets).toBeLessThan(60);
+    // Workshop tickets (every 20th ticket: 0, 20, 40, ..., 980 = 50 tickets)
+    expect(stats.workshop_tickets).toBeGreaterThanOrEqual(50);
+    expect(stats.workshop_tickets).toBeLessThanOrEqual(50);
 
-    // VIP tickets (every 15th ticket, excluding workshop overlap)
-    expect(stats.vip_tickets).toBeGreaterThan(50);
-    expect(stats.vip_tickets).toBeLessThan(80);
+    // VIP tickets (every 15th ticket, excluding workshop overlap at multiples of 60)
+    // Divisible by 15: 67 tickets, minus overlap with workshop (divisible by 60): 17 tickets = 50 VIP
+    expect(stats.vip_tickets).toBeGreaterThanOrEqual(50);
+    expect(stats.vip_tickets).toBeLessThanOrEqual(50);
 
     // Test tickets (every 10th ticket)
     expect(stats.test_tickets).toBe(100);

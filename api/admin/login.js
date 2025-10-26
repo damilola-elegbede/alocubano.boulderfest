@@ -526,10 +526,11 @@ async function handlePasswordStep(req, res, username, password, clientIP) {
   // Skip MFA in E2E test environment
   if (!mfaRequired || !mfaStatus.isEnabled || isE2ETest) {
     // No MFA required - complete login
-    if (isE2ETest && (mfaRequired || mfaStatus.isEnabled)) {
+    const mfaBypassed = isE2ETest && (mfaRequired || mfaStatus.isEnabled);
+    if (mfaBypassed) {
       console.log('[Login] Bypassing MFA requirement for E2E test environment');
     }
-    return await completeLogin(req, res, adminId, clientIP, false);
+    return await completeLogin(req, res, adminId, clientIP, false, null, mfaBypassed);
   }
 
   // MFA is required - create temporary session and request MFA
@@ -688,7 +689,8 @@ async function completeLogin(
   adminId,
   clientIP,
   mfaUsed = false,
-  existingToken = null
+  existingToken = null,
+  mfaBypassed = false
 ) {
   const db = await getDatabaseClient();
 
@@ -817,12 +819,26 @@ async function completeLogin(
   }
 
   res.setHeader('Set-Cookie', cookie);
+  
+  // SECURITY: Never expose token in response body in production
+  // Token should ONLY be in HttpOnly cookie to prevent XSS attacks
   const responseData = {
     success: true,
     expiresIn: authService.sessionDuration,
     mfaUsed,
     adminId
   };
+  
+  // DEPRECATED: Only include token for integration tests
+  // Integration tests should extract from Set-Cookie header instead
+  if (process.env.NODE_ENV === 'test') {
+    responseData.token = token;
+  }
+
+  // Add message field when MFA was bypassed for E2E testing
+  if (mfaBypassed) {
+    responseData.message = 'MFA bypassed for E2E test environment';
+  }
 
   res.status(200).json(processDatabaseResult(responseData));
 }

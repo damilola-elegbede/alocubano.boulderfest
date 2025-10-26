@@ -495,7 +495,8 @@ describe('Gallery API Integration Tests', () => {
       if (response2025.status === HTTP_STATUS.OK) {
         // Gallery API doesn't return eventId in production
         // Year filtering should be reflected if data exists
-        if (response2025.data.year) expect(response2025.data.year).toBe(2025);
+        // Note: HTTP query parameters are always strings, not numbers
+        if (response2025.data.year) expect(response2025.data.year).toBe('2025');
       } else {
         // Server not available or year doesn't exist - both are acceptable
         expect([0, 404, 500].includes(response2025.status)).toBe(true);

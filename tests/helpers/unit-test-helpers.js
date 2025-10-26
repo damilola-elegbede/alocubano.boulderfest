@@ -534,6 +534,332 @@ export function generateTestData(type, overrides = {}) {
   }
 }
 
+/**
+ * Database Test Helpers - Create test data in database
+ * Use these helpers when tests need specific database records
+ */
+
+/**
+ * Create test event with unique data
+ * Use this when tests need a specific event
+ *
+ * @param {Object} db - Database client (@libsql/client)
+ * @param {Object} overrides - Override default event values
+ * @returns {Promise<Object>} Created event with id
+ */
+export async function createTestEvent(db, overrides = {}) {
+  const uniqueId = Date.now() + Math.floor(Math.random() * 10000);
+  const event = {
+    slug: `test-event-${uniqueId}`,
+    name: `Test Event ${uniqueId}`,
+    type: 'festival',
+    status: 'test',
+    description: 'Test event for unit testing',
+    venue_name: 'Test Venue',
+    venue_address: '123 Test St',
+    venue_city: 'Boulder',
+    venue_state: 'CO',
+    venue_zip: '80301',
+    start_date: '2026-06-01',
+    end_date: '2026-06-03',
+    max_capacity: 200,
+    early_bird_end_date: '2026-05-01',
+    regular_price_start_date: '2026-05-02',
+    display_order: 0,
+    is_featured: false,
+    is_visible: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    ...overrides
+  };
+
+  const result = await db.execute({
+    sql: `INSERT INTO events
+          (slug, name, type, status, description, venue_name, venue_address, venue_city, venue_state, venue_zip,
+           start_date, end_date, max_capacity, early_bird_end_date, regular_price_start_date,
+           display_order, is_featured, is_visible, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          RETURNING id`,
+    args: [
+      event.slug,
+      event.name,
+      event.type,
+      event.status,
+      event.description,
+      event.venue_name,
+      event.venue_address,
+      event.venue_city,
+      event.venue_state,
+      event.venue_zip,
+      event.start_date,
+      event.end_date,
+      event.max_capacity,
+      event.early_bird_end_date,
+      event.regular_price_start_date,
+      event.display_order,
+      event.is_featured ? 1 : 0,
+      event.is_visible ? 1 : 0,
+      event.created_at,
+      event.updated_at
+    ]
+  });
+
+  return { ...event, id: result.rows[0].id };
+}
+
+/**
+ * Create test transaction with unique data
+ * Use this when tests need a specific transaction
+ *
+ * @param {Object} db - Database client
+ * @param {Object} overrides - Override default transaction values
+ * @returns {Promise<Object>} Created transaction
+ */
+export async function createTestTransaction(db, overrides = {}) {
+  const uniqueId = Date.now() + Math.floor(Math.random() * 10000);
+  const transaction = {
+    // Core fields
+    transaction_id: `TXN_TEST_${uniqueId}`,
+    type: 'tickets',
+    status: 'completed',
+    amount_cents: 10000,
+    total_amount: 10000,
+    currency: 'USD',
+    
+    // Stripe fields
+    stripe_session_id: `cs_test_${uniqueId}`,
+    stripe_payment_intent_id: `pi_test_${uniqueId}`,
+    payment_processor: 'stripe',
+    
+    // Customer information
+    customer_email: `test-${uniqueId}@example.com`,
+    customer_name: 'Test User',
+    
+    // Order data
+    order_data: JSON.stringify({ items: [{ type: 'ticket', quantity: 1 }] }),
+    
+    // Event reference
+    event_id: 1,
+    
+    // Source and registration
+    source: 'website',
+    all_tickets_registered: 0,
+    
+    // Test mode
+    is_test: 1,
+    
+    // Metadata
+    metadata: JSON.stringify({ test: true, unique_id: uniqueId }),
+    
+    ...overrides
+  };
+
+  const result = await db.execute({
+    sql: `INSERT INTO transactions
+          (transaction_id, type, status, amount_cents, total_amount, currency,
+           stripe_session_id, stripe_payment_intent_id, payment_processor,
+           customer_email, customer_name, order_data, event_id, source,
+           all_tickets_registered, is_test, metadata)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          RETURNING id`,
+    args: [
+      transaction.transaction_id,
+      transaction.type,
+      transaction.status,
+      transaction.amount_cents,
+      transaction.total_amount,
+      transaction.currency,
+      transaction.stripe_session_id,
+      transaction.stripe_payment_intent_id,
+      transaction.payment_processor,
+      transaction.customer_email,
+      transaction.customer_name,
+      transaction.order_data,
+      transaction.event_id,
+      transaction.source,
+      transaction.all_tickets_registered,
+      transaction.is_test,
+      transaction.metadata,
+    ]
+  });
+
+  return { ...transaction, id: result.rows[0].id };
+}
+
+/**
+ * Create test ticket with unique data
+ * Automatically creates a transaction if transaction_id is not provided in overrides
+ *
+ * Schema matches tickets table in migration 044_critical_constraints.sql
+ * - transaction_id: INTEGER (references transactions.id)
+ * - price_cents: INTEGER (not price)
+ * - status: 'valid' (default, not 'active')
+ * - validation_status: 'active' (separate from status)
+ * - All wallet, scan, registration, and check-in fields included
+ *
+ * @param {Object} db - Database client
+ * @param {Object} overrides - Override default ticket values
+ * @returns {Promise<Object>} Created ticket with all schema fields
+ */
+export async function createTestTicket(db, overrides = {}) {
+  const uniqueId = Date.now() + Math.floor(Math.random() * 10000);
+
+  // Create a default test transaction if not provided
+  let transactionId = overrides.transaction_id;
+  if (!transactionId) {
+    // Use createTestTransaction helper which has correct schema
+    const txn = await createTestTransaction(db, { event_id: overrides.event_id || 1 });
+    transactionId = txn.id;
+  }
+
+  const ticket = {
+    ticket_id: `TEST_${uniqueId}`,
+    event_id: 1,
+    transaction_id: transactionId,
+    ticket_type: 'Test Pass',
+    ticket_type_id: null,
+    event_date: null,
+    event_time: '00:00',
+    event_end_date: null,
+    price_cents: 10000,
+    attendee_first_name: 'Test',
+    attendee_last_name: 'Attendee',
+    attendee_email: `test-${uniqueId}@example.com`,
+    attendee_phone: null,
+    status: 'valid',
+    validation_status: 'active',
+    validation_code: `VAL_${uniqueId}`,
+    validation_signature: null,
+    cancellation_reason: null,
+    qr_token: null,
+    qr_code_data: null,
+    qr_code_generated_at: null,
+    qr_access_method: null,
+    scan_count: 0,
+    max_scan_count: 10,
+    first_scanned_at: null,
+    last_scanned_at: null,
+    checked_in_at: null,
+    checked_in_by: null,
+    check_in_location: null,
+    wallet_source: null,
+    apple_pass_serial: null,
+    google_pass_id: null,
+    wallet_pass_generated_at: null,
+    wallet_pass_updated_at: null,
+    wallet_pass_revoked_at: null,
+    wallet_pass_revoked_reason: null,
+    registration_status: 'pending',
+    registered_at: null,
+    registration_deadline: '2026-05-14T23:59:59.000Z',
+    is_test: 0,
+    ticket_metadata: null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    ...overrides,
+    transaction_id: transactionId
+  };
+
+  await db.execute({
+    sql: `INSERT INTO tickets
+          (ticket_id, transaction_id, ticket_type, ticket_type_id, event_id, event_date, event_time, event_end_date,
+           price_cents, attendee_first_name, attendee_last_name, attendee_email, attendee_phone,
+           status, validation_status, validation_code, validation_signature, cancellation_reason,
+           qr_token, qr_code_data, qr_code_generated_at, qr_access_method,
+           scan_count, max_scan_count, first_scanned_at, last_scanned_at,
+           checked_in_at, checked_in_by, check_in_location,
+           wallet_source, apple_pass_serial, google_pass_id,
+           wallet_pass_generated_at, wallet_pass_updated_at, wallet_pass_revoked_at, wallet_pass_revoked_reason,
+           registration_status, registered_at, registration_deadline,
+           is_test, ticket_metadata, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [
+      ticket.ticket_id,
+      ticket.transaction_id,
+      ticket.ticket_type,
+      ticket.ticket_type_id,
+      ticket.event_id,
+      ticket.event_date,
+      ticket.event_time,
+      ticket.event_end_date,
+      ticket.price_cents,
+      ticket.attendee_first_name,
+      ticket.attendee_last_name,
+      ticket.attendee_email,
+      ticket.attendee_phone,
+      ticket.status,
+      ticket.validation_status,
+      ticket.validation_code,
+      ticket.validation_signature,
+      ticket.cancellation_reason,
+      ticket.qr_token,
+      ticket.qr_code_data,
+      ticket.qr_code_generated_at,
+      ticket.qr_access_method,
+      ticket.scan_count,
+      ticket.max_scan_count,
+      ticket.first_scanned_at,
+      ticket.last_scanned_at,
+      ticket.checked_in_at,
+      ticket.checked_in_by,
+      ticket.check_in_location,
+      ticket.wallet_source,
+      ticket.apple_pass_serial,
+      ticket.google_pass_id,
+      ticket.wallet_pass_generated_at,
+      ticket.wallet_pass_updated_at,
+      ticket.wallet_pass_revoked_at,
+      ticket.wallet_pass_revoked_reason,
+      ticket.registration_status,
+      ticket.registered_at,
+      ticket.registration_deadline,
+      ticket.is_test,
+      ticket.ticket_metadata,
+      ticket.created_at,
+      ticket.updated_at
+    ]
+  });
+
+  return ticket;
+}
+
+/**
+ * Get database client for testing
+ * Convenience function to get the database client
+ *
+ * @returns {Promise<Object>} Database client
+ */
+export async function getTestDatabaseClient() {
+  const { getDatabaseClient } = await import('../../lib/database.js');
+  return await getDatabaseClient();
+}
+
+/**
+ * Clean up test data
+ * Delete test records created during a test
+ *
+ * @param {Object} db - Database client
+ * @param {Object} options - Cleanup options
+ * @param {Array<string>} options.ticketIds - Ticket IDs to delete
+ * @param {Array<string>} options.transactionIds - Transaction IDs to delete
+ * @param {Array<number>} options.eventIds - Event IDs to delete
+ */
+export async function cleanupTestData(db, options = {}) {
+  const { ticketIds = [], transactionIds = [], eventIds = [] } = options;
+
+  // Use is_test flag for robust cleanup (future-proof)
+  if (ticketIds.length > 0) {
+    await db.execute('DELETE FROM tickets WHERE is_test = 1');
+  }
+  if (transactionIds.length > 0) {
+    await db.execute('DELETE FROM transactions WHERE is_test = 1');
+  }
+  // Events: protect BASE_EVENT (id=1)
+  if (eventIds.length > 0) {
+    await db.execute('DELETE FROM events WHERE is_test = 1 AND id > 1');
+  }
+}
+
 // Export all utilities
 export default {
   MockFactory,
@@ -542,5 +868,11 @@ export default {
   TestEnvironment,
   waitForCondition,
   createSpy,
-  generateTestData
+  generateTestData,
+  // Database helpers
+  createTestEvent,
+  createTestTransaction,
+  createTestTicket,
+  getTestDatabaseClient,
+  cleanupTestData
 };
