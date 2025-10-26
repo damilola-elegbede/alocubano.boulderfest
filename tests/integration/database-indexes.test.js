@@ -53,9 +53,9 @@ describe('Database Index Performance', () => {
 
     // Create a test ticket linked to this transaction for JOIN testing
     await db.execute({
-      sql: `INSERT INTO tickets (ticket_id, transaction_id, ticket_type, event_id, event_time, price_cents, status, registration_status, attendee_email, is_test, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
-      args: ['test-ticket-001', testTransactionId, 'Test Ticket', testEventId, '00:00', 5000, 'valid', 'completed', 'test@example.com', 1]
+      sql: `INSERT INTO tickets (ticket_id, transaction_id, ticket_type, event_id, event_time, price_cents, status, registration_status, attendee_email, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+      args: ['test-ticket-001', testTransactionId, 'Test Ticket', testEventId, '00:00', 5000, 'valid', 'completed', 'test@example.com']
     });
   });
 

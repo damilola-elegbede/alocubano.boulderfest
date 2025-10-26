@@ -89,7 +89,7 @@ describe('Ticket Validation Test Mode', () => {
       expect(testTicket.isTest).toBe(true);
     });
 
-    it('should create test tickets in database with is_test flag', async () => {
+    it('should create test tickets in database for test events', async () => {
       process.env = {
         ...originalProcessEnv,
         NODE_ENV: 'test'
@@ -373,7 +373,7 @@ describe('Ticket Validation Test Mode', () => {
 
       // Should verify test ticket first
       expect(mockDatabase.execute).toHaveBeenCalledWith(
-        expect.stringContaining("SELECT id FROM tickets WHERE ticket_id = ? AND is_test = 1"),
+        expect.stringContaining("SELECT id FROM tickets WHERE ticket_id = ?"),
         ['TEST-TICKET-12345']
       );
 
@@ -472,9 +472,12 @@ describe('Ticket Validation Test Mode', () => {
       const tickets = await getTestTickets();
 
       // Should query for test tickets only
-      expect(mockDatabase.execute).toHaveBeenCalledWith(
-        expect.stringContaining('SELECT * FROM tickets WHERE is_test = 1 ORDER BY created_at DESC')
-      );
+      const call = mockDatabase.execute.mock.calls[0][0];
+      expect(call).toContain('SELECT t.*');
+      expect(call).toContain('FROM tickets t');
+      expect(call).toContain('JOIN events e ON t.event_id = e.id');
+      expect(call).toContain('WHERE e.status = \'test\'');
+      expect(call).toContain('ORDER BY t.created_at DESC');
 
       expect(tickets).toHaveLength(1);
       expect(tickets[0].isTest).toBe(true);
@@ -506,9 +509,12 @@ describe('Ticket Validation Test Mode', () => {
       const tickets = await getProductionTickets();
 
       // Should query for production tickets only
-      expect(mockDatabase.execute).toHaveBeenCalledWith(
-        expect.stringContaining('SELECT * FROM tickets WHERE is_test = 0 ORDER BY created_at DESC')
-      );
+      const call = mockDatabase.execute.mock.calls[0][0];
+      expect(call).toContain('SELECT t.*');
+      expect(call).toContain('FROM tickets t');
+      expect(call).toContain('JOIN events e ON t.event_id = e.id');
+      expect(call).toContain('WHERE e.status != \'test\'');
+      expect(call).toContain('ORDER BY t.created_at DESC');
 
       expect(tickets).toHaveLength(1);
       expect(tickets[0].isTest).toBe(false);

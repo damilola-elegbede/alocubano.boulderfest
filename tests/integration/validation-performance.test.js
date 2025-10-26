@@ -21,7 +21,10 @@ describe('Validation Performance', () => {
     db = await getDatabaseClient();
 
     // Clean up test data
-    await db.execute({ sql: 'DELETE FROM tickets WHERE is_test = 1' });
+    await db.execute({
+      sql: `DELETE FROM tickets
+            WHERE event_id IN (SELECT id FROM events WHERE status = 'test')`
+    });
     await db.execute({ sql: 'DELETE FROM transactions WHERE is_test = 1' });
     await db.execute({ sql: 'DELETE FROM ticket_types WHERE id LIKE \'perf-test-%\'' });
     await db.execute({ sql: 'DELETE FROM events WHERE id > 1000' });
@@ -48,7 +51,10 @@ describe('Validation Performance', () => {
 
   afterEach(async () => {
     // Clean up test data
-    await db.execute({ sql: 'DELETE FROM tickets WHERE is_test = 1' });
+    await db.execute({
+      sql: `DELETE FROM tickets
+            WHERE event_id IN (SELECT id FROM events WHERE status = 'test')`
+    });
     await db.execute({ sql: 'DELETE FROM transactions WHERE is_test = 1' });
     await db.execute({ sql: 'DELETE FROM ticket_types WHERE id LIKE \'perf-test-%\'' });
     if (testEventId) {

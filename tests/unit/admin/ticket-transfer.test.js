@@ -200,8 +200,8 @@ describe('Admin Ticket Transfer - Unit Tests', () => {
       // Create a cancelled ticket
       const ticketId = 'TEST-CANCELLED-001';
       await testDb.execute({
-        sql: `INSERT INTO tickets (ticket_id, transaction_id, ticket_type, ticket_type_id, event_id, price_cents, status, is_test)
-              VALUES (?, 1, 'weekend-pass', 'wp-1', 1, 5000, 'cancelled', 1)`,
+        sql: `INSERT INTO tickets (ticket_id, transaction_id, ticket_type, ticket_type_id, event_id, price_cents, status)
+              VALUES (?, 1, 'weekend-pass', 'wp-1', 1, 5000, 'cancelled')`,
         args: [ticketId]
       });
 
@@ -222,8 +222,8 @@ describe('Admin Ticket Transfer - Unit Tests', () => {
       // Create a refunded ticket
       const ticketId = 'TEST-REFUNDED-001';
       await testDb.execute({
-        sql: `INSERT INTO tickets (ticket_id, transaction_id, ticket_type, ticket_type_id, event_id, price_cents, status, is_test)
-              VALUES (?, 1, 'weekend-pass', 'wp-1', 1, 5000, 'refunded', 1)`,
+        sql: `INSERT INTO tickets (ticket_id, transaction_id, ticket_type, ticket_type_id, event_id, price_cents, status)
+              VALUES (?, 1, 'weekend-pass', 'wp-1', 1, 5000, 'refunded')`,
         args: [ticketId]
       });
 

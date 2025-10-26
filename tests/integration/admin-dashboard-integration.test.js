@@ -23,10 +23,10 @@ describe('Admin Dashboard Integration', () => {
   beforeAll(async () => {
     db = await getDatabaseClient();
 
-    // Create test event
+    // Create test event (marked as 'test' status for cleanup and metrics)
     const eventResult = await db.execute({
       sql: `INSERT INTO events (slug, name, type, status, start_date, end_date, venue_name, venue_city, venue_state, max_capacity)
-            VALUES ('admin-test-event', 'Admin Test Event', 'festival', 'active', '2026-05-15', '2026-05-17', 'Test Venue', 'Boulder', 'CO', 500)`,
+            VALUES ('admin-test-event', 'Admin Test Event', 'festival', 'test', '2026-05-15', '2026-05-17', 'Test Venue', 'Boulder', 'CO', 500)`,
       args: []
     });
     testEventId = Number(eventResult.lastInsertRowid);
@@ -34,7 +34,10 @@ describe('Admin Dashboard Integration', () => {
 
   afterAll(async () => {
     // Cleanup
-    await db.execute({ sql: 'DELETE FROM tickets WHERE is_test = 1' });
+    await db.execute({
+      sql: `DELETE FROM tickets
+            WHERE event_id IN (SELECT id FROM events WHERE status = 'test')`
+    });
     await db.execute({ sql: 'DELETE FROM transactions WHERE is_test = 1' });
     if (testEventId) {
       await db.execute({ sql: 'DELETE FROM events WHERE id = ?', args: [testEventId] });
@@ -43,7 +46,10 @@ describe('Admin Dashboard Integration', () => {
 
   beforeEach(async () => {
     // Clean test data
-    await db.execute({ sql: 'DELETE FROM tickets WHERE is_test = 1' });
+    await db.execute({
+      sql: `DELETE FROM tickets
+            WHERE event_id IN (SELECT id FROM events WHERE status = 'test')`
+    });
     await db.execute({ sql: 'DELETE FROM transactions WHERE is_test = 1' });
   });
 
@@ -55,10 +61,10 @@ describe('Admin Dashboard Integration', () => {
     });
 
     if (eventCheck.rows.length === 0) {
-      // Event doesn't exist in this worker's database, create it
+      // Event doesn't exist in this worker's database, create it (marked as 'test' status)
       const eventResult = await db.execute({
         sql: `INSERT INTO events (slug, name, type, status, start_date, end_date, venue_name, venue_city, venue_state, max_capacity)
-              VALUES ('admin-test-event', 'Admin Test Event', 'festival', 'active', '2026-05-15', '2026-05-17', 'Test Venue', 'Boulder', 'CO', 500)`,
+              VALUES ('admin-test-event', 'Admin Test Event', 'festival', 'test', '2026-05-15', '2026-05-17', 'Test Venue', 'Boulder', 'CO', 500)`,
         args: []
       });
       testEventId = Number(eventResult.lastInsertRowid);
@@ -106,10 +112,10 @@ describe('Admin Dashboard Integration', () => {
         await db.execute({
           sql: `INSERT INTO tickets (
             ticket_id, transaction_id, ticket_type, event_id, price_cents, status,
-            qr_token, qr_access_method, is_test, created_at,
+            qr_token, qr_access_method, created_at,
             attendee_first_name, attendee_last_name, attendee_email
             ${checkedInFields}
-          ) VALUES (?, ?, ?, ?, ?, 'valid', ?, ?, 1, datetime('now'), 'Test', 'User', 'test@example.com'${checkedInValues})`,
+          ) VALUES (?, ?, ?, ?, ?, 'valid', ?, ?, datetime('now'), 'Test', 'User', 'test@example.com'${checkedInValues})`,
           args: [
             `test_admin_ticket_${ticketIndex}`,
             testTransactionDbId, // Use INTEGER database ID for FK
@@ -136,19 +142,20 @@ describe('Admin Dashboard Integration', () => {
     const statsQuery = `
       WITH ticket_stats AS (
         SELECT
-          COUNT(*) FILTER (WHERE status = 'valid') as total_tickets,
-          COUNT(*) FILTER (WHERE last_scanned_at IS NOT NULL OR checked_in_at IS NOT NULL) as checked_in,
-          COUNT(DISTINCT transaction_id) as total_orders,
-          COUNT(*) FILTER (WHERE ticket_type LIKE '%workshop%') as workshop_tickets,
-          COUNT(*) FILTER (WHERE ticket_type LIKE '%vip%') as vip_tickets,
-          COUNT(*) FILTER (WHERE date(created_at, ${mtOffset}) = date('now', ${mtOffset})) as today_sales,
-          COUNT(*) FILTER (WHERE qr_token IS NOT NULL) as qr_generated,
-          COUNT(*) FILTER (WHERE qr_access_method = 'apple_wallet') as apple_wallet_users,
-          COUNT(*) FILTER (WHERE qr_access_method = 'google_wallet') as google_wallet_users,
-          COUNT(*) FILTER (WHERE qr_access_method = 'web') as web_only_users,
-          COUNT(*) FILTER (WHERE is_test = 1) as test_tickets
-        FROM tickets
-        WHERE 1=1 ${ticketWhereClause}
+          COUNT(*) FILTER (WHERE t.status = 'valid') as total_tickets,
+          COUNT(*) FILTER (WHERE t.last_scanned_at IS NOT NULL OR t.checked_in_at IS NOT NULL) as checked_in,
+          COUNT(DISTINCT t.transaction_id) as total_orders,
+          COUNT(*) FILTER (WHERE t.ticket_type LIKE '%workshop%') as workshop_tickets,
+          COUNT(*) FILTER (WHERE t.ticket_type LIKE '%vip%') as vip_tickets,
+          COUNT(*) FILTER (WHERE date(t.created_at, ${mtOffset}) = date('now', ${mtOffset})) as today_sales,
+          COUNT(*) FILTER (WHERE t.qr_token IS NOT NULL) as qr_generated,
+          COUNT(*) FILTER (WHERE t.qr_access_method = 'apple_wallet') as apple_wallet_users,
+          COUNT(*) FILTER (WHERE t.qr_access_method = 'google_wallet') as google_wallet_users,
+          COUNT(*) FILTER (WHERE t.qr_access_method = 'web') as web_only_users,
+          COUNT(*) FILTER (WHERE e.status = 'test') as test_tickets
+        FROM tickets t
+        LEFT JOIN events e ON t.event_id = e.id
+        WHERE 1=1 ${ticketWhereClauseWithAlias}
       ),
       transaction_stats AS (
         SELECT
@@ -275,6 +282,8 @@ describe('Admin Dashboard Integration', () => {
     expect(stats.apple_wallet_users).toBe(2);
     expect(stats.google_wallet_users).toBe(2);
     expect(stats.web_only_users).toBe(13);
+
+    // All 17 tickets are in a test event (status='test'), so they're ALL test tickets
     expect(stats.test_tickets).toBe(17);
     expect(stats.test_transactions).toBe(1);
 
@@ -335,8 +344,8 @@ describe('Admin Dashboard Integration', () => {
     // Create 5 tickets for second event
     for (let i = 1; i <= 5; i++) {
       await db.execute({
-        sql: `INSERT INTO tickets (ticket_id, transaction_id, ticket_type, event_id, price_cents, status, qr_token, qr_access_method, is_test, created_at, attendee_first_name, attendee_last_name, attendee_email)
-              VALUES (?, ?, 'General Admission', ?, 5000, 'valid', ?, 'web', 1, datetime('now'), 'Second', 'Event', 'second@example.com')`,
+        sql: `INSERT INTO tickets (ticket_id, transaction_id, ticket_type, event_id, price_cents, status, qr_token, qr_access_method, created_at, attendee_first_name, attendee_last_name, attendee_email)
+              VALUES (?, ?, 'General Admission', ?, 5000, 'valid', ?, 'web', datetime('now'), 'Second', 'Event', 'second@example.com')`,
         args: [`test_admin_second_${i}`, secondTransactionDbId, secondEventId, `qr_second_${i}`]
       });
     }
