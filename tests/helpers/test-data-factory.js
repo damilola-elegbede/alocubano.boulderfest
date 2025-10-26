@@ -63,7 +63,7 @@ export async function createTestTransaction(data) {
   // Add optional fields if provided
   if (txData.event_id !== undefined) {
     fields.push('event_id');
-    values.push(txData.event_id);
+    values.push(Number(txData.event_id));  // Wrap with Number() to handle BigInt
   }
   if (txData.stripe_session_id) {
     fields.push('stripe_session_id');
@@ -94,6 +94,7 @@ export async function createTestTransaction(data) {
  * @param {number} data.transaction_id - Transaction database ID (INTEGER)
  * @param {number} data.event_id - Event ID
  * @param {string} [data.ticket_type='Test Ticket'] - Ticket type name
+ * @param {string} [data.ticket_type_id] - Ticket type ID (must exist in ticket_types table)
  * @param {number} [data.price_cents=0] - Price in cents
  * @param {string} [data.status='valid'] - Ticket status
  * @param {string} [data.validation_status='active'] - Validation status
@@ -120,6 +121,12 @@ export async function createTestTicket(data) {
   const values = [ticketData.ticket_id, ticketData.transaction_id, ticketData.event_id,
                   ticketData.ticket_type, ticketData.price_cents, ticketData.status,
                   ticketData.validation_status, 1];
+
+  // Add ticket_type_id if provided (must reference existing ticket_types.id due to FK constraint)
+  if (ticketData.ticket_type_id) {
+    fields.push('ticket_type_id');
+    values.push(ticketData.ticket_type_id);
+  }
 
   // Add optional fields if provided
   if (ticketData.attendee_email) {

@@ -78,7 +78,7 @@ describe('Database Index Performance', () => {
     expect(indexNames).toContain('idx_tickets_status_created_registration');
     expect(indexNames).toContain('idx_transactions_event_status_created');
     expect(indexNames).toContain('idx_ticket_reservations_lookup');
-    expect(indexNames).toContain('idx_ticket_types_id_event_status');
+    expect(indexNames).toContain('idx_ticket_types_event_status');
     expect(indexNames).toContain('idx_reminders_status_scheduled');
   });
 

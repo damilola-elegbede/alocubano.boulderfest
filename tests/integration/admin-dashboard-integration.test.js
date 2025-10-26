@@ -29,7 +29,7 @@ describe('Admin Dashboard Integration', () => {
             VALUES ('admin-test-event', 'Admin Test Event', 'festival', 'active', '2026-05-15', '2026-05-17', 'Test Venue', 'Boulder', 'CO', 500)`,
       args: []
     });
-    testEventId = eventResult.lastInsertRowid;
+    testEventId = Number(eventResult.lastInsertRowid);
   });
 
   afterAll(async () => {
@@ -48,10 +48,30 @@ describe('Admin Dashboard Integration', () => {
   });
 
   async function seedDashboardData() {
+    // Ensure test event exists in this worker's database
+    const eventCheck = await db.execute({
+      sql: `SELECT id FROM events WHERE slug = 'admin-test-event'`,
+      args: []
+    });
+
+    if (eventCheck.rows.length === 0) {
+      // Event doesn't exist in this worker's database, create it
+      const eventResult = await db.execute({
+        sql: `INSERT INTO events (slug, name, type, status, start_date, end_date, venue_name, venue_city, venue_state, max_capacity)
+              VALUES ('admin-test-event', 'Admin Test Event', 'festival', 'active', '2026-05-15', '2026-05-17', 'Test Venue', 'Boulder', 'CO', 500)`,
+        args: []
+      });
+      testEventId = Number(eventResult.lastInsertRowid);
+    } else {
+      // Event exists, use its ID
+      testEventId = Number(eventCheck.rows[0].id);
+    }
+
     // Create test transaction using factory (returns INTEGER id for FK references)
     const transaction = await createTestTransaction({
       transaction_id: `test_admin_trans_${Date.now()}`,
       type: 'tickets',
+      event_id: testEventId,
       stripe_session_id: 'cs_test',
       customer_email: 'admin@example.com',
       customer_name: 'Admin Test',
@@ -301,22 +321,23 @@ describe('Admin Dashboard Integration', () => {
             VALUES ('admin-test-event-2', 'Admin Test Event 2', 'festival', 'active', '2026-06-15', '2026-06-17')`,
       args: []
     });
-    const secondEventId = secondEventResult.lastInsertRowid;
+    const secondEventId = Number(secondEventResult.lastInsertRowid);
 
     const secondTransactionId = `test_admin_trans_2_${Date.now()}`;
-    await db.execute({
+    const secondTransactionResult = await db.execute({
       sql: `INSERT INTO transactions (transaction_id, uuid, type, stripe_session_id, customer_email, customer_name,
                                       amount_cents, currency, status, payment_processor, is_test, order_data, created_at, updated_at)
             VALUES (?, ?, 'tickets', 'cs_test_2', 'admin2@example.com', 'Admin Test 2', 5000, 'USD', 'completed', 'stripe', 1, '{}', datetime('now'), datetime('now'))`,
       args: [secondTransactionId, secondTransactionId]
     });
+    const secondTransactionDbId = Number(secondTransactionResult.lastInsertRowid);
 
     // Create 5 tickets for second event
     for (let i = 1; i <= 5; i++) {
       await db.execute({
         sql: `INSERT INTO tickets (ticket_id, transaction_id, ticket_type, event_id, price_cents, status, qr_token, qr_access_method, is_test, created_at, attendee_first_name, attendee_last_name, attendee_email)
               VALUES (?, ?, 'General Admission', ?, 5000, 'valid', ?, 'web', 1, datetime('now'), 'Second', 'Event', 'second@example.com')`,
-        args: [`test_admin_second_${i}`, secondTransactionId, secondEventId, `qr_second_${i}`]
+        args: [`test_admin_second_${i}`, secondTransactionDbId, secondEventId, `qr_second_${i}`]
       });
     }
 
@@ -339,7 +360,7 @@ describe('Admin Dashboard Integration', () => {
 
     // Cleanup second event
     await db.execute({ sql: 'DELETE FROM tickets WHERE event_id = ?', args: [secondEventId] });
-    await db.execute({ sql: 'DELETE FROM transactions WHERE id = ?', args: [secondTransactionId] });
+    await db.execute({ sql: 'DELETE FROM transactions WHERE id = ?', args: [secondTransactionDbId] });
     await db.execute({ sql: 'DELETE FROM events WHERE id = ?', args: [secondEventId] });
   });
 

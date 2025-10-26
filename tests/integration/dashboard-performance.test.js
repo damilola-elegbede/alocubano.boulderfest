@@ -2,7 +2,7 @@ import { describe, test, expect, beforeAll, afterAll } from 'vitest';
 import { getDatabaseClient } from '../../lib/database.js';
 import crypto from 'crypto';
 
-describe('Dashboard Performance', () => {
+describe('Dashboard Performance', { meta: { skipAutoCleanup: true } }, () => {
   let db;
   let testEventId;
   let adminToken;
@@ -217,13 +217,14 @@ describe('Dashboard Performance', () => {
     expect(stats.total_orders).toBe(1000);
     expect(stats.qr_generated).toBe(1000);
 
-    // Workshop tickets (every 20th ticket)
-    expect(stats.workshop_tickets).toBeGreaterThan(40);
-    expect(stats.workshop_tickets).toBeLessThan(60);
+    // Workshop tickets (every 20th ticket: 0, 20, 40, ..., 980 = 50 tickets)
+    expect(stats.workshop_tickets).toBeGreaterThanOrEqual(50);
+    expect(stats.workshop_tickets).toBeLessThanOrEqual(50);
 
-    // VIP tickets (every 15th ticket, excluding workshop overlap)
-    expect(stats.vip_tickets).toBeGreaterThan(50);
-    expect(stats.vip_tickets).toBeLessThan(80);
+    // VIP tickets (every 15th ticket, excluding workshop overlap at multiples of 60)
+    // Divisible by 15: 67 tickets, minus overlap with workshop (divisible by 60): 17 tickets = 50 VIP
+    expect(stats.vip_tickets).toBeGreaterThanOrEqual(50);
+    expect(stats.vip_tickets).toBeLessThanOrEqual(50);
 
     // Test tickets (every 10th ticket)
     expect(stats.test_tickets).toBe(100);

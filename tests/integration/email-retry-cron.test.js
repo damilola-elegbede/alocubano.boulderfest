@@ -227,7 +227,7 @@ describe('Email Retry Cron Tests', () => {
           (transaction_id, uuid, type, customer_email, customer_name, amount_cents, currency, status, order_data, is_test)
           VALUES (?, ?, 'tickets', ?, ?, ?, ?, ?, '{}', ?)
         `,
-        args: [`trans_batch_${i}`, `batch-${i}@example.com`, `Batch ${i}`, 1000, 'usd', 'completed', 1]
+        args: [`trans_batch_${i}`, `trans_batch_${i}`, `batch-${i}@example.com`, `Batch ${i}`, 1000, 'usd', 'completed', 1]
       });
 
       transactionIds.push(transactionResult.lastInsertRowid);
@@ -437,7 +437,7 @@ describe('Email Retry Cron Tests', () => {
           (transaction_id, uuid, type, customer_email, customer_name, amount_cents, currency, status, order_data, is_test)
           VALUES (?, ?, 'tickets', ?, ?, ?, ?, ?, '{}', ?)
         `,
-        args: [`trans_delivery_${i}`, `delivery-${i}@example.com`, `Delivery ${i}`, 1000, 'usd', 'completed', 1]
+        args: [`trans_delivery_${i}`, `trans_delivery_${i}`, `delivery-${i}@example.com`, `Delivery ${i}`, 1000, 'usd', 'completed', 1]
       });
 
       transactionIds.push(transactionResult.lastInsertRowid);
@@ -464,18 +464,25 @@ describe('Email Retry Cron Tests', () => {
       setHeader: vi.fn()
     };
 
-    // Run cron job 3 times (simulating retries)
-    for (let retry = 0; retry < 3; retry++) {
-      await processEmailQueueHandler(mockReq, mockRes);
+    // Run cron job multiple times to process all 100 emails through retries
+    // Since cron processes 10 emails per run, and emails need 3 attempts each:
+    // - Retry round 1: 10 runs to process all 100 (all fail, attempt 1)
+    // - Retry round 2: 10 runs to process all 100 (all fail, attempt 2)
+    // - Retry round 3: 10 runs to process all 100 (all succeed, attempt 3)
+    for (let retryRound = 0; retryRound < 3; retryRound++) {
+      // Process all batches in this retry round
+      for (let batch = 0; batch < 10; batch++) {
+        await processEmailQueueHandler(mockReq, mockRes);
 
-      // Reset mock for next iteration
-      mockRes = {
-        status: vi.fn().mockReturnThis(),
-        json: vi.fn().mockReturnThis(),
-        setHeader: vi.fn()
-      };
+        // Reset mock for next iteration
+        mockRes = {
+          status: vi.fn().mockReturnThis(),
+          json: vi.fn().mockReturnThis(),
+          setHeader: vi.fn()
+        };
+      }
 
-      // Update next_retry_at for failed emails
+      // After each retry round, update next_retry_at for pending emails
       await db.execute({
         sql: `
           UPDATE email_retry_queue
