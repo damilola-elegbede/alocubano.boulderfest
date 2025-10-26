@@ -66,7 +66,7 @@ jobs:
     if: >-
       (github.event_name == 'deployment_status' &&
        github.event.deployment_status.state == 'success' &&
-       contains(fromJson('["Preview","Production"]'), github.event.deployment.environment)) ||
+       github.event.deployment.environment == 'Preview') ||
       (github.event_name == 'workflow_dispatch')
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -893,7 +893,7 @@ jobs:
           echo "json=$(jq -c . test-results-summary.json 2>/dev/null || echo '{}')" >> "$GITHUB_OUTPUT"
 
       - name: 💬 Post Results to PR
-        if: github.event_name == 'deployment_status' && (github.event.deployment.environment == 'Preview' || github.event.deployment.environment == 'Production')
+        if: github.event_name == 'deployment_status' && github.event.deployment.environment == 'Preview'
         uses: ./.github/actions/post-test-comment
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
