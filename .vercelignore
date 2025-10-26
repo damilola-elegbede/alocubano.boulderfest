@@ -121,4 +121,4 @@ lib/**/*.spec.js
 
 # Migration test files
 migrations/**/*.test.js
-migrations/**/*.spec.js# Trigger new deployment to pick up E2E_TEST_MODE
+migrations/**/*.spec.js  # Trigger new deployment to pick up E2E_TEST_MODE

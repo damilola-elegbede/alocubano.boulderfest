@@ -54,8 +54,9 @@ const testIgnorePatterns = [
 
 export default defineConfig({
   // Path is relative to this config file location (tests/config/)
-  // To reach tests/e2e/flows: go up one level (../), then to e2e/flows/
-  testDir: '../e2e/flows',
+  // To reach tests/e2e: go up one level (../), then to e2e/
+  // This includes all E2E tests: flows/, simple/, advanced/, examples/
+  testDir: '../e2e',
   testMatch: '**/*.test.js',
   testIgnore: testIgnorePatterns,
 
