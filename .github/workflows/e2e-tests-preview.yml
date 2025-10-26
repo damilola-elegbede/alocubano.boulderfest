@@ -205,26 +205,27 @@ jobs:
           BROWSER_MATRIX="{\"browser\": [$BROWSER_JSON_ARRAY]}"
 
           # Determine test pattern for file filtering
+          # NOTE: Patterns match test.describe() titles, not filenames
           TEST_PATTERN=""
           case "$TEST_SUITE" in
             "standard")
-              TEST_PATTERN="basic-navigation|cart-functionality|newsletter-simple|admin-auth|gallery-basic|registration-flow"
+              TEST_PATTERN="Basic Navigation|Cart Functionality|Admin Authentication|Gallery Basic Browsing|Registration Process"
               ;;
             "advanced")
               TEST_PATTERN="" # Run all tests - no filter
               ;;
             "performance")
-              TEST_PATTERN="gallery-browsing|user-engagement"
+              TEST_PATTERN="Gallery Performance & Functionality|User Engagement Metrics"
               ;;
             "accessibility")
-              TEST_PATTERN="mobile-registration-experience"
+              TEST_PATTERN="Mobile Registration Experience"
               ;;
             "security")
-              TEST_PATTERN="admin-auth|admin-dashboard|ticket-validation"
+              TEST_PATTERN="Admin Authentication|Admin Dashboard & Security|Ticket Validation"
               ;;
             *)
               echo "⚠️ Unknown test suite: $TEST_SUITE, defaulting to standard"
-              TEST_PATTERN="basic-navigation|cart-functionality|newsletter-simple|admin-auth|gallery-basic|registration-flow"
+              TEST_PATTERN="Basic Navigation|Cart Functionality|Admin Authentication|Gallery Basic Browsing|Registration Process"
               ;;
           esac
 
