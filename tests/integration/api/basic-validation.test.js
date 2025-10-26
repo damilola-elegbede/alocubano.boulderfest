@@ -1,17 +1,11 @@
 /**
  * Basic Validation Tests - Input validation and error handling
- *
- * In CI: Tests basic connectivity and response structure only
- * Locally: Tests full business logic validation
  */
 import { test, expect } from 'vitest';
 import { getDbClient } from '../../setup-integration.js';
 import { testRequest, generateTestEmail, HTTP_STATUS } from '../handler-test-helper.js';
 
-// Skip business logic validation tests in CI - these need real API logic
-const skipInCI = process.env.CI ? test.skip : test;
-
-skipInCI('APIs validate required fields and reject malformed requests', async () => {
+test('APIs validate required fields and reject malformed requests', async () => {
   const testCases = [
     { method: 'POST', path: '/api/payments/create-checkout-session', data: { invalid: 'structure' }, expected: /cart items|required/i },
     { method: 'POST', path: '/api/email/subscribe', data: { email: 'invalid-email' }, expected: /valid email|email format/i },
@@ -47,7 +41,7 @@ async function testApiValidation({ method, path, data, expected }) {
   expect(response.data.error).toMatch(expected);
 }
 
-skipInCI('ticket validation handles invalid QR codes', async () => {
+test('ticket validation handles invalid QR codes', async () => {
   const testCases = ['', 'invalid-format-123', 'x'.repeat(1000), 'ticket-does-not-exist-456'];
 
   for (const qr_code of testCases) {
@@ -62,7 +56,7 @@ skipInCI('ticket validation handles invalid QR codes', async () => {
   }
 });
 
-skipInCI('payment validation rejects invalid amounts and malformed items', async () => {
+test('payment validation rejects invalid amounts and malformed items', async () => {
   const invalidPayments = [
     { cartItems: [{ name: 'Test', price: -50.00, quantity: 1 }], customerInfo: { email: generateTestEmail() } },
     { cartItems: [{ name: 'Test', price: 'not-a-number', quantity: 1 }], customerInfo: { email: generateTestEmail() } },
@@ -90,7 +84,7 @@ skipInCI('payment validation rejects invalid amounts and malformed items', async
   }
 });
 
-skipInCI('admin endpoints enforce authentication validation', async () => {
+test('admin endpoints enforce authentication validation', async () => {
   const testCases = [
     { data: {}, desc: 'no credentials' },
     { data: { username: 'admin', password: 'wrong-password' }, desc: 'invalid credentials' }
@@ -139,7 +133,7 @@ test('APIs handle SQL injection attempts safely', async () => {
   }
 });
 
-skipInCI('registration validates inputs and prevents attacks', async () => {
+test('registration validates inputs and prevents attacks', async () => {
   // Test invalid name (too short)
   let response = await testRequest('POST', '/api/tickets/register', {
     ticketId: 'TKT-VALIDATE',

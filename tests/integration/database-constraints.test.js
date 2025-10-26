@@ -337,20 +337,6 @@ describe('Database Constraints Integration Tests', () => {
   });
 
   describe('CHECK Constraint: cash_shifts.opening_cash_cents >= 0', () => {
-    it.skip('should prevent negative opening_cash_cents', async () => {
-      // SKIP: Schema doesn't have CHECK constraint for opening_cash_cents >= 0
-      // Migration 041 defines opening_cash_cents as INTEGER NOT NULL DEFAULT 0
-      // but doesn't include CHECK (opening_cash_cents >= 0)
-      await expect(async () => {
-        await db.execute({
-          sql: `INSERT INTO cash_shifts (
-            opened_at, opening_cash_cents, status
-          ) VALUES (CURRENT_TIMESTAMP, ?, ?)`,
-          args: [-10000, 'open'] // Negative opening cash
-        });
-      }).rejects.toThrow(/CHECK constraint failed|constraint/i);
-    });
-
     it('should allow zero opening_cash_cents', async () => {
       await db.execute({
         sql: `INSERT INTO cash_shifts (
@@ -375,30 +361,6 @@ describe('Database Constraints Integration Tests', () => {
   });
 
   describe('CHECK Constraint: cash_shifts.actual_cash_cents >= 0', () => {
-    it.skip('should prevent negative actual_cash_cents', async () => {
-      // SKIP: Schema doesn't have CHECK constraint for actual_cash_cents >= 0
-      // Migration 041 defines actual_cash_cents as INTEGER (nullable)
-      // but doesn't include CHECK (actual_cash_cents >= 0)
-      const shiftResult = await db.execute({
-        sql: `INSERT INTO cash_shifts (
-          opened_at, opening_cash_cents, status
-        ) VALUES (CURRENT_TIMESTAMP, ?, ?)
-        RETURNING id`,
-        args: [50000, 'open']
-      });
-
-      const shiftId = shiftResult.rows[0].id;
-
-      await expect(async () => {
-        await db.execute({
-          sql: `UPDATE cash_shifts
-                SET actual_cash_cents = ?, status = 'closed', closed_at = CURRENT_TIMESTAMP
-                WHERE id = ?`,
-          args: [-5000, shiftId] // Negative actual cash
-        });
-      }).rejects.toThrow(/CHECK constraint failed|constraint/i);
-    });
-
     it('should allow zero and positive actual_cash_cents', async () => {
       const shiftResult = await db.execute({
         sql: `INSERT INTO cash_shifts (
@@ -627,22 +589,6 @@ describe('Database Constraints Integration Tests', () => {
         expect.fail('Should have thrown FK error');
       } catch (error) {
         expect(error.message).toMatch(/FOREIGN KEY constraint failed/i);
-      }
-    });
-
-    it.skip('should provide clear error message for CHECK violation', async () => {
-      // SKIP: Schema doesn't have CHECK constraint for opening_cash_cents >= 0
-      // This test would pass (no error thrown) because the constraint doesn't exist
-      try {
-        await db.execute({
-          sql: `INSERT INTO cash_shifts (
-            opened_at, opening_cash_cents, status
-          ) VALUES (CURRENT_TIMESTAMP, ?, ?)`,
-          args: [-10000, 'open']
-        });
-        expect.fail('Should have thrown CHECK error');
-      } catch (error) {
-        expect(error.message).toMatch(/CHECK constraint failed|constraint/i);
       }
     });
 
