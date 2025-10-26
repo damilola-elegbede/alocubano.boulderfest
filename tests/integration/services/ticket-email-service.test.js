@@ -514,12 +514,16 @@ describe('Ticket Email Service Integration', () => {
         // Expected to fail
       }
 
+      // Calculate expected masked email format: first 2 chars + '***@' + domain
+      // Example: "test.123.abc@example.com" -> "te***@example.com"
+      const expectedMaskedEmail = testEmail.slice(0, 2) + '***@' + testEmail.split('@')[1];
+
       expect(consoleSpy).toHaveBeenCalledWith(
         '📧 [TicketEmail] Email details for manual sending:',
         expect.objectContaining({
-          to: expect.any(String),
+          to: expectedMaskedEmail, // Validate exact masked format to catch email logging bugs
           transactionId: expect.any(String),
-          ticketCount: expect.any(Number)
+          ticketCount: 1 // Exact count validation - we created 1 ticket
         })
       );
 

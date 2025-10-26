@@ -100,7 +100,7 @@ describe('Checkout Performance with Async Reminders', () => {
               product: {
                 metadata: {
                   ticket_type: 'test-vip-pass',
-                  event_id: String(testEventId1),
+                  event_id: testEventId1,
                   event_date: '2028-01-07'
                 }
               }
@@ -159,7 +159,7 @@ describe('Checkout Performance with Async Reminders', () => {
                 product: {
                   metadata: {
                     ticket_type: 'test-vip-pass',
-                    event_id: String(testEventId1),
+                    event_id: testEventId1,
                     event_date: '2028-01-07'
                   }
                 }
@@ -217,7 +217,7 @@ describe('Checkout Performance with Async Reminders', () => {
               product: {
                 metadata: {
                   ticket_type: 'test-vip-pass',
-                  event_id: String(testEventId1),
+                  event_id: testEventId1,
                   event_date: '2028-01-07'
                 }
               }
@@ -276,7 +276,7 @@ describe('Checkout Performance with Async Reminders', () => {
               product: {
                 metadata: {
                   ticket_type: 'test-vip-pass',
-                  event_id: String(testEventId1),
+                  event_id: testEventId1,
                   event_date: '2028-01-07'
                 }
               }
@@ -290,7 +290,7 @@ describe('Checkout Performance with Async Reminders', () => {
               product: {
                 metadata: {
                   ticket_type: 'test-weekender-pass',
-                  event_id: String(testEventId2),
+                  event_id: testEventId2,
                   event_date: '2028-01-07'
                 }
               }
@@ -349,7 +349,7 @@ describe('Checkout Performance with Async Reminders', () => {
                 product: {
                   metadata: {
                     ticket_type: 'test-vip-pass',
-                    event_id: String(testEventId1),
+                    event_id: testEventId1,
                     event_date: '2028-01-07'
                   }
                 }
@@ -414,7 +414,7 @@ describe('Checkout Performance with Async Reminders', () => {
               product: {
                 metadata: {
                   ticket_type: 'test-vip-pass',
-                  event_id: String(testEventId1),
+                  event_id: testEventId1,
                   event_date: '2028-01-07'
                 }
               }

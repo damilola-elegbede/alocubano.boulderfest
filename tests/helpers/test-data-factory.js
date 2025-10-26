@@ -16,10 +16,50 @@
 import { getDatabaseClient } from '../../lib/database.js';
 
 /**
+ * Validate required fields and throw descriptive errors
+ * @param {Object} data - Data object to validate
+ * @param {Array<string>} requiredFields - Array of required field names
+ * @param {string} factoryName - Name of the factory function for error messages
+ * @throws {Error} If any required field is missing or invalid
+ */
+function validateRequiredFields(data, requiredFields, factoryName) {
+  if (!data || typeof data !== 'object') {
+    throw new Error(`${factoryName}: data parameter must be an object, received ${typeof data}`);
+  }
+
+  const missingFields = [];
+  const invalidFields = [];
+
+  for (const field of requiredFields) {
+    if (!(field in data)) {
+      missingFields.push(field);
+    } else if (data[field] === null || data[field] === undefined) {
+      invalidFields.push(`${field} (value is null or undefined)`);
+    } else if (typeof data[field] === 'string' && data[field].trim() === '') {
+      invalidFields.push(`${field} (empty string)`);
+    } else if (typeof data[field] === 'number' && isNaN(data[field])) {
+      invalidFields.push(`${field} (NaN)`);
+    }
+  }
+
+  const errors = [];
+  if (missingFields.length > 0) {
+    errors.push(`Missing required fields: ${missingFields.join(', ')}`);
+  }
+  if (invalidFields.length > 0) {
+    errors.push(`Invalid values for: ${invalidFields.join(', ')}`);
+  }
+
+  if (errors.length > 0) {
+    throw new Error(`${factoryName} validation failed:\n  ${errors.join('\n  ')}`);
+  }
+}
+
+/**
  * Create a test transaction with automatic is_test flag
  *
  * @param {Object} data - Transaction data
- * @param {string} data.transaction_id - Unique transaction ID
+ * @param {string} data.transaction_id - Unique transaction ID (REQUIRED)
  * @param {string} [data.type='tickets'] - Transaction type
  * @param {string} [data.status='completed'] - Transaction status
  * @param {number} [data.amount_cents=0] - Amount in cents
@@ -34,8 +74,11 @@ import { getDatabaseClient } from '../../lib/database.js';
  * @param {string} [data.created_at] - Created timestamp (optional)
  * @param {number} [data.is_test=1] - Test mode flag (defaults to 1, can override for specific test scenarios)
  * @returns {Promise<{id: number, transaction_id: string}>} Created transaction with database ID
+ * @throws {Error} If required fields are missing or invalid
  */
 export async function createTestTransaction(data) {
+  validateRequiredFields(data, ['transaction_id'], 'createTestTransaction');
+
   const db = await getDatabaseClient();
 
   const defaults = {
@@ -75,24 +118,29 @@ export async function createTestTransaction(data) {
   }
 
   const placeholders = fields.map(() => '?').join(', ');
-  const result = await db.execute({
-    sql: `INSERT INTO transactions (${fields.join(', ')}) VALUES (${placeholders})`,
-    args: values
-  });
+  
+  try {
+    const result = await db.execute({
+      sql: `INSERT INTO transactions (${fields.join(', ')}) VALUES (${placeholders})`,
+      args: values
+    });
 
-  return {
-    id: Number(result.lastInsertRowid),
-    transaction_id: txData.transaction_id
-  };
+    return {
+      id: Number(result.lastInsertRowid),
+      transaction_id: txData.transaction_id
+    };
+  } catch (error) {
+    throw new Error(`createTestTransaction failed for transaction_id="${txData.transaction_id}": ${error.message}`);
+  }
 }
 
 /**
  * Create a test ticket with automatic is_test flag
  *
  * @param {Object} data - Ticket data
- * @param {string} data.ticket_id - Unique ticket ID
- * @param {number} data.transaction_id - Transaction database ID (INTEGER)
- * @param {number} data.event_id - Event ID
+ * @param {string} data.ticket_id - Unique ticket ID (REQUIRED)
+ * @param {number} data.transaction_id - Transaction database ID (INTEGER) (REQUIRED)
+ * @param {number} data.event_id - Event ID (REQUIRED)
  * @param {string} [data.ticket_type='Test Ticket'] - Ticket type name
  * @param {string} [data.ticket_type_id] - Ticket type ID (must exist in ticket_types table)
  * @param {number} [data.price_cents=0] - Price in cents
@@ -102,8 +150,19 @@ export async function createTestTransaction(data) {
  * @param {string} [data.attendee_first_name] - Attendee first name (optional)
  * @param {string} [data.attendee_last_name] - Attendee last name (optional)
  * @returns {Promise<{id: number, ticket_id: string}>} Created ticket with database ID
+ * @throws {Error} If required fields are missing or invalid
  */
 export async function createTestTicket(data) {
+  validateRequiredFields(data, ['ticket_id', 'transaction_id', 'event_id'], 'createTestTicket');
+
+  // Additional type validation for numeric IDs
+  if (typeof data.transaction_id !== 'number' || data.transaction_id <= 0) {
+    throw new Error('createTestTicket: transaction_id must be a positive number (database ID from transactions.id)');
+  }
+  if (typeof data.event_id !== 'number' || data.event_id <= 0) {
+    throw new Error('createTestTicket: event_id must be a positive number');
+  }
+
   const db = await getDatabaseClient();
 
   const defaults = {
@@ -143,22 +202,27 @@ export async function createTestTicket(data) {
   }
 
   const placeholders = fields.map(() => '?').join(', ');
-  const result = await db.execute({
-    sql: `INSERT INTO tickets (${fields.join(', ')}) VALUES (${placeholders})`,
-    args: values
-  });
+  
+  try {
+    const result = await db.execute({
+      sql: `INSERT INTO tickets (${fields.join(', ')}) VALUES (${placeholders})`,
+      args: values
+    });
 
-  return {
-    id: Number(result.lastInsertRowid),
-    ticket_id: ticketData.ticket_id
-  };
+    return {
+      id: Number(result.lastInsertRowid),
+      ticket_id: ticketData.ticket_id
+    };
+  } catch (error) {
+    throw new Error(`createTestTicket failed for ticket_id="${ticketData.ticket_id}": ${error.message}`);
+  }
 }
 
 /**
  * Create a test transaction item with automatic is_test flag
  *
  * @param {Object} data - Transaction item data
- * @param {number} data.transaction_id - Transaction database ID (INTEGER)
+ * @param {number} data.transaction_id - Transaction database ID (INTEGER) (REQUIRED)
  * @param {string} [data.item_type='donation'] - Item type
  * @param {string} [data.item_name='Test Item'] - Item name
  * @param {number} [data.quantity=1] - Quantity
@@ -167,8 +231,16 @@ export async function createTestTicket(data) {
  * @param {string} [data.created_at] - Created timestamp (optional)
  * @param {number} [data.is_test=1] - Test mode flag (defaults to 1, can override for specific test scenarios)
  * @returns {Promise<{id: number}>} Created transaction item with database ID
+ * @throws {Error} If required fields are missing or invalid
  */
 export async function createTestTransactionItem(data) {
+  validateRequiredFields(data, ['transaction_id'], 'createTestTransactionItem');
+
+  // Additional type validation for numeric ID
+  if (typeof data.transaction_id !== 'number' || data.transaction_id <= 0) {
+    throw new Error('createTestTransactionItem: transaction_id must be a positive number (database ID from transactions.id)');
+  }
+
   const db = await getDatabaseClient();
 
   const defaults = {
@@ -199,14 +271,19 @@ export async function createTestTransactionItem(data) {
   }
 
   const placeholders = fields.map(() => '?').join(', ');
-  const result = await db.execute({
-    sql: `INSERT INTO transaction_items (${fields.join(', ')}) VALUES (${placeholders})`,
-    args: values
-  });
+  
+  try {
+    const result = await db.execute({
+      sql: `INSERT INTO transaction_items (${fields.join(', ')}) VALUES (${placeholders})`,
+      args: values
+    });
 
-  return {
-    id: Number(result.lastInsertRowid)
-  };
+    return {
+      id: Number(result.lastInsertRowid)
+    };
+  } catch (error) {
+    throw new Error(`createTestTransactionItem failed for transaction_id=${itemData.transaction_id}: ${error.message}`);
+  }
 }
 
 /**
@@ -214,49 +291,68 @@ export async function createTestTransactionItem(data) {
  * Convenience method that combines transaction and item creation
  *
  * @param {Object} data - Purchase data
- * @param {string} data.transaction_id - Unique transaction ID
+ * @param {string} data.transaction_id - Unique transaction ID (REQUIRED)
  * @param {Array<Object>} [data.items=[]] - Array of item data objects
  * @param {Object} [data.transaction] - Additional transaction fields
  * @returns {Promise<{transaction: Object, items: Array<Object>}>} Created transaction and items
+ * @throws {Error} If required fields are missing or invalid
  */
 export async function createTestPurchase(data) {
+  validateRequiredFields(data, ['transaction_id'], 'createTestPurchase');
+
   const { transaction_id, items = [], transaction: txData = {} } = data;
 
-  // Create transaction
-  const transaction = await createTestTransaction({
-    transaction_id,
-    ...txData
-  });
-
-  // Create items
-  const createdItems = [];
-  for (const itemData of items) {
-    const item = await createTestTransactionItem({
-      transaction_id: transaction.id, // Use database ID
-      ...itemData
-    });
-    createdItems.push(item);
+  // Validate items array if provided
+  if (!Array.isArray(items)) {
+    throw new Error('createTestPurchase: items must be an array');
   }
 
-  return {
-    transaction,
-    items: createdItems
-  };
+  // Create transaction
+  try {
+    const transaction = await createTestTransaction({
+      transaction_id,
+      ...txData
+    });
+
+    // Create items
+    const createdItems = [];
+    for (let i = 0; i < items.length; i++) {
+      try {
+        const item = await createTestTransactionItem({
+          transaction_id: transaction.id, // Use database ID
+          ...items[i]
+        });
+        createdItems.push(item);
+      } catch (error) {
+        throw new Error(`Failed to create item at index ${i}: ${error.message}`);
+      }
+    }
+
+    return {
+      transaction,
+      items: createdItems
+    };
+  } catch (error) {
+    throw new Error(`createTestPurchase failed for transaction_id="${transaction_id}": ${error.message}`);
+  }
 }
 
 /**
  * Create test event
  *
  * @param {Object} data - Event data
- * @param {string} data.slug - Event slug
+ * @param {string} data.slug - Event slug (REQUIRED)
  * @param {string} [data.name='Test Event'] - Event name
  * @param {string} [data.type='festival'] - Event type
  * @param {string} [data.status='active'] - Event status
  * @param {string} [data.start_date='2026-05-15'] - Start date
  * @param {string} [data.end_date='2026-05-17'] - End date
  * @returns {Promise<{id: number, slug: string}>} Created event with database ID
+ * @throws {Error} If required fields are missing or invalid
  */
 export async function createTestEvent(data) {
+  validateRequiredFields(data, ['slug'], 'createTestEvent');
+
   const db = await getDatabaseClient();
 
   const defaults = {
@@ -269,33 +365,45 @@ export async function createTestEvent(data) {
 
   const eventData = { ...defaults, ...data };
 
-  const result = await db.execute({
-    sql: `INSERT INTO events (slug, name, type, status, start_date, end_date)
-          VALUES (?, ?, ?, ?, ?, ?)`,
-    args: [eventData.slug, eventData.name, eventData.type, eventData.status,
-           eventData.start_date, eventData.end_date]
-  });
+  try {
+    const result = await db.execute({
+      sql: `INSERT INTO events (slug, name, type, status, start_date, end_date)
+            VALUES (?, ?, ?, ?, ?, ?)`,
+      args: [eventData.slug, eventData.name, eventData.type, eventData.status,
+             eventData.start_date, eventData.end_date]
+    });
 
-  return {
-    id: Number(result.lastInsertRowid),
-    slug: eventData.slug
-  };
+    return {
+      id: Number(result.lastInsertRowid),
+      slug: eventData.slug
+    };
+  } catch (error) {
+    throw new Error(`createTestEvent failed for slug="${eventData.slug}": ${error.message}`);
+  }
 }
 
 /**
  * Create test ticket type
  *
  * @param {Object} data - Ticket type data
- * @param {string} data.id - Ticket type ID
- * @param {number} data.event_id - Event database ID
+ * @param {string} data.id - Ticket type ID (REQUIRED)
+ * @param {number} data.event_id - Event database ID (REQUIRED)
  * @param {string} [data.name='Test Ticket Type'] - Ticket type name
  * @param {number} [data.price_cents=5000] - Price in cents
  * @param {number} [data.max_quantity=100] - Max quantity
  * @param {number} [data.sold_count=0] - Sold count
  * @param {string} [data.status='available'] - Status
  * @returns {Promise<{id: string}>} Created ticket type
+ * @throws {Error} If required fields are missing or invalid
  */
 export async function createTestTicketType(data) {
+  validateRequiredFields(data, ['id', 'event_id'], 'createTestTicketType');
+
+  // Additional type validation for numeric event_id
+  if (typeof data.event_id !== 'number' || data.event_id <= 0) {
+    throw new Error('createTestTicketType: event_id must be a positive number');
+  }
+
   const db = await getDatabaseClient();
 
   const defaults = {
@@ -308,16 +416,20 @@ export async function createTestTicketType(data) {
 
   const typeData = { ...defaults, ...data };
 
-  await db.execute({
-    sql: `INSERT INTO ticket_types (id, name, price_cents, max_quantity, sold_count, status, event_id)
-          VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    args: [typeData.id, typeData.name, typeData.price_cents, typeData.max_quantity,
-           typeData.sold_count, typeData.status, typeData.event_id]
-  });
+  try {
+    await db.execute({
+      sql: `INSERT INTO ticket_types (id, name, price_cents, max_quantity, sold_count, status, event_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      args: [typeData.id, typeData.name, typeData.price_cents, typeData.max_quantity,
+             typeData.sold_count, typeData.status, typeData.event_id]
+    });
 
-  return {
-    id: typeData.id
-  };
+    return {
+      id: typeData.id
+    };
+  } catch (error) {
+    throw new Error(`createTestTicketType failed for id="${typeData.id}": ${error.message}`);
+  }
 }
 
 export default {

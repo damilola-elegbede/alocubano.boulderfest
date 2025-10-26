@@ -28,8 +28,8 @@ describe('Ticket Validation Integration', () => {
     try {
       // Create transaction
       await dbClient.execute(`
-        INSERT INTO transactions (transaction_id, type, stripe_session_id, customer_email, amount_cents, order_data, status, created_at, is_test) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now', 1))
-      `, ['TXN_' + testSessionId, 'tickets', testSessionId, testEmail, 12500, '{"test": true}', 'completed']);
+        INSERT INTO transactions (transaction_id, type, stripe_session_id, customer_email, amount_cents, order_data, status, created_at, is_test) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'), ?)
+      `, ['TXN_' + testSessionId, 'tickets', testSessionId, testEmail, 12500, '{"test": true}', 'completed', 1]);
 
       const transactionResult = await dbClient.execute(
         'SELECT id FROM transactions WHERE stripe_session_id = ?',

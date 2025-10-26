@@ -116,12 +116,22 @@ jobs:
             fi
           fi
 
-          # CRITICAL: Rebuild better-sqlite3 native bindings after skipping postinstall scripts
-          # better-sqlite3 requires native module compilation which was skipped by --ignore-scripts
-          echo "🔨 Rebuilding better-sqlite3 native bindings..."
-          npm rebuild better-sqlite3
-
           echo "✅ Minimal dependencies installed (skipped postinstall scripts)"
+
+      - name: "🔨 Rebuild Native Modules"
+        # CRITICAL: Rebuild better-sqlite3 native bindings after skipping postinstall scripts
+        # better-sqlite3 requires native module compilation which was skipped by --ignore-scripts
+        # This step MUST succeed - native module failures will break all database tests
+        continue-on-error: false
+        run: |
+          echo "🔨 Rebuilding better-sqlite3 native bindings..."
+          if ! npm rebuild better-sqlite3 --build-from-source; then
+            echo "❌ ERROR: Failed to rebuild better-sqlite3 native module"
+            echo "   This is a critical failure - database tests cannot run without it"
+            echo "   Check Node.js version compatibility and build tools availability"
+            exit 1
+          fi
+          echo "✅ Native modules rebuilt successfully"
 
       - name: "🧹 Optimize for Unit Tests"
         run: |
@@ -149,9 +159,11 @@ jobs:
 
           start_time=$(date +%s%3N)
 
-          # CRITICAL FIX: Use Vitest's outputFile to separate JSON from verbose output
-          # - Verbose output goes to stdout → tee → unit-test-output.log
-          # - JSON output goes directly to unit-test-results-raw.json (clean, no mixing)
+          # DUAL REPORTER CONFIGURATION:
+          # --reporter=verbose: Human-readable output to stdout (captured in logs)
+          # --reporter=json --outputFile: Machine-parseable JSON to separate file
+          # This allows both human review and reliable automated parsing
+          # Vitest supports multiple reporters simultaneously - they don't conflict
           set +e  # Allow command to fail without stopping script
           CI=true npm test -- --reporter=verbose --reporter=json --outputFile=./unit-test-results-raw.json --no-color 2>&1 | tee unit-test-output.log
           test_exit_code=$?

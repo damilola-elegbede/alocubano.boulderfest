@@ -17,7 +17,8 @@ import { createReadStream, createWriteStream, readFileSync, unlinkSync, existsSy
 import { pipeline } from 'stream/promises';
 import { createGunzip } from 'zlib';
 import { get } from 'https';
-import { basename } from 'path';
+import { basename, join } from 'path';
+import { tmpdir } from 'os';
 
 const args = process.argv.slice(2);
 const isProd = args.includes('--prod');
@@ -66,9 +67,9 @@ if (isProd) {
   await new Promise(resolve => setTimeout(resolve, 10000));
 }
 
-// Download backup
+// Download backup - FIX #3: Use os.tmpdir() for cross-platform compatibility
 const filename = basename(backupUrl);
-const compressedFile = `/tmp/${filename}`;
+const compressedFile = join(tmpdir(), filename);
 const sqlFile = compressedFile.replace(/\.gz$/, '');
 
 console.log('📥 Downloading backup...');
@@ -120,11 +121,93 @@ if (compressedFile.endsWith('.gz')) {
 console.log('📖 Reading SQL backup...');
 const sqlContent = readFileSync(sqlFile, 'utf8');
 
-// Split into statements
-const statements = sqlContent
-  .split(';')
-  .map(stmt => stmt.trim())
-  .filter(stmt => stmt.length > 0 && !stmt.startsWith('--'));
+// FIX #2: Proper SQL statement parsing that respects strings and comments
+function parseSQL(sql) {
+  const statements = [];
+  let current = '';
+  let inString = false;
+  let stringChar = null;
+  let inComment = false;
+  let inMultilineComment = false;
+  
+  for (let i = 0; i < sql.length; i++) {
+    const char = sql[i];
+    const nextChar = sql[i + 1];
+    
+    // Handle multiline comments /* ... */
+    if (!inString && !inComment && char === '/' && nextChar === '*') {
+      inMultilineComment = true;
+      current += char;
+      continue;
+    }
+    if (inMultilineComment && char === '*' && nextChar === '/') {
+      inMultilineComment = false;
+      current += char;
+      i++; // Skip the '/'
+      current += sql[i];
+      continue;
+    }
+    if (inMultilineComment) {
+      current += char;
+      continue;
+    }
+    
+    // Handle single-line comments --
+    if (!inString && char === '-' && nextChar === '-') {
+      inComment = true;
+      current += char;
+      continue;
+    }
+    if (inComment && char === '\n') {
+      inComment = false;
+      current += char;
+      continue;
+    }
+    if (inComment) {
+      current += char;
+      continue;
+    }
+    
+    // Handle strings
+    if (!inComment && !inMultilineComment && (char === "'" || char === '"')) {
+      if (!inString) {
+        inString = true;
+        stringChar = char;
+      } else if (char === stringChar) {
+        // Check for escaped quotes
+        if (nextChar === stringChar) {
+          current += char + nextChar;
+          i++; // Skip next char
+          continue;
+        }
+        inString = false;
+        stringChar = null;
+      }
+    }
+    
+    // Handle semicolons (only when not in strings or comments)
+    if (!inString && !inComment && !inMultilineComment && char === ';') {
+      const stmt = current.trim();
+      if (stmt.length > 0 && !stmt.startsWith('--')) {
+        statements.push(stmt);
+      }
+      current = '';
+      continue;
+    }
+    
+    current += char;
+  }
+  
+  // Add final statement if exists
+  const finalStmt = current.trim();
+  if (finalStmt.length > 0 && !finalStmt.startsWith('--')) {
+    statements.push(finalStmt);
+  }
+  
+  return statements;
+}
+
+const statements = parseSQL(sqlContent);
 
 console.log(`📊 Found ${statements.length.toLocaleString()} SQL statements\n`);
 
@@ -152,8 +235,9 @@ for (const statement of statements) {
 
     // Progress indicator every 100 statements
     if (executed % 100 === 0) {
-      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-      const rate = (executed / elapsed).toFixed(0);
+      const elapsed = (Date.now() - startTime) / 1000;
+      // FIX #1: Add zero-check before division to prevent crash
+      const rate = elapsed > 0 ? (executed / elapsed).toFixed(0) : executed;
       console.log(`  ⏳ Progress: ${executed.toLocaleString()}/${statements.length.toLocaleString()} (${rate} stmt/sec)`);
     }
   } catch (error) {

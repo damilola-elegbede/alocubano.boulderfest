@@ -77,9 +77,9 @@ test.describe('Cross-Optimization Integration', () => {
       return scripts.some(s => s.defer === true);
     });
 
-    expect(hasPreload).toBeGreaterThan(0);
-    expect(hasCssBundle).toBeGreaterThan(0);
-    expect(hasDefer).toBe(true);
+    expect(hasPreload, `Font preload optimization should be active (found ${hasPreload} preload links)`).toBeGreaterThan(0);
+    expect(hasCssBundle, `CSS bundling optimization should be active (found ${hasCssBundle} bundle links)`).toBeGreaterThan(0);
+    expect(hasDefer, 'JS deferral optimization should be active (navigation.js should have defer attribute)').toBe(true);
 
     // Combined frontend optimizations should achieve fast load
     console.log(`✓ Frontend Optimizations Combined:`);
@@ -104,11 +104,13 @@ test.describe('Cross-Optimization Integration', () => {
 
       // Verify fonts load correctly (no FOUT)
       const bodyFontFamily = await page.$eval('body', el => window.getComputedStyle(el).fontFamily);
-      expect(bodyFontFamily).toBeTruthy();
+      expect(bodyFontFamily, `${pagePath}: Font family should be loaded (found: "${bodyFontFamily}")`).toBeTruthy();
+      expect(bodyFontFamily, `${pagePath}: Font family should not be generic fallback`).not.toMatch(/^(serif|sans-serif|monospace|cursive|fantasy)$/);
 
       // Verify page is visually rendered (CSS loaded)
       const bodyBackgroundColor = await page.$eval('body', el => window.getComputedStyle(el).backgroundColor);
-      expect(bodyBackgroundColor).toBeTruthy();
+      expect(bodyBackgroundColor, `${pagePath}: Background color should be defined (found: "${bodyBackgroundColor}")`).toBeTruthy();
+      expect(bodyBackgroundColor, `${pagePath}: CSS should be loaded - background color should not be transparent`).not.toBe('rgba(0, 0, 0, 0)');
 
       // Verify no render-blocking scripts delay content
       const hasVisibleContent = await page.evaluate(() => {
@@ -168,11 +170,11 @@ test.describe('Cross-Optimization Integration', () => {
       link.rel === 'stylesheet' && link.href?.includes('bundle-critical.css')
     );
 
-    expect(preloadIndex).toBeGreaterThan(-1);
-    expect(criticalCssIndex).toBeGreaterThan(-1);
+    expect(preloadIndex, `Font preload link should exist in <head> (index: ${preloadIndex})`).toBeGreaterThan(-1);
+    expect(criticalCssIndex, `Critical CSS bundle should exist in <head> (index: ${criticalCssIndex})`).toBeGreaterThan(-1);
 
     // Preload should come before critical CSS to avoid blocking
-    expect(preloadIndex).toBeLessThan(criticalCssIndex);
+    expect(preloadIndex, `Font preload (index ${preloadIndex}) should come before critical CSS (index ${criticalCssIndex}) to prevent blocking`).toBeLessThan(criticalCssIndex);
 
     console.log(`✓ Font preload correctly positioned before critical CSS`);
   });

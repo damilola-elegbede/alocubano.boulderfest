@@ -819,13 +819,21 @@ async function completeLogin(
   }
 
   res.setHeader('Set-Cookie', cookie);
+  
+  // SECURITY: Never expose token in response body in production
+  // Token should ONLY be in HttpOnly cookie to prevent XSS attacks
   const responseData = {
     success: true,
-    token: token, // Include token in response body for integration tests
     expiresIn: authService.sessionDuration,
     mfaUsed,
     adminId
   };
+  
+  // DEPRECATED: Only include token for integration tests
+  // Integration tests should extract from Set-Cookie header instead
+  if (process.env.NODE_ENV === 'test') {
+    responseData.token = token;
+  }
 
   // Add message field when MFA was bypassed for E2E testing
   if (mfaBypassed) {

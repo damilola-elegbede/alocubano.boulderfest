@@ -14,7 +14,12 @@ describe('CSS Bundle Consolidation', () => {
     const bundlePath = path.join(projectRoot, 'css/bundle-critical.css');
     if (!fs.existsSync(bundlePath)) {
       console.log('Building CSS bundles for testing...');
-      execSync('npm run build:css', { cwd: projectRoot, stdio: 'inherit' });
+      try {
+        execSync('npm run build:css', { cwd: projectRoot, encoding: 'utf8' });
+      } catch (error) {
+        const errorMessage = error.stderr || error.stdout || error.message;
+        throw new Error(`CSS build failed: ${errorMessage}\n\nEnsure bundle-css.js script is working correctly.`);
+      }
     }
   });
 
