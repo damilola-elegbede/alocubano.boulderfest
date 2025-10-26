@@ -116,6 +116,11 @@ jobs:
             fi
           fi
 
+          # CRITICAL: Rebuild better-sqlite3 native bindings after skipping postinstall scripts
+          # better-sqlite3 requires native module compilation which was skipped by --ignore-scripts
+          echo "🔨 Rebuilding better-sqlite3 native bindings..."
+          npm rebuild better-sqlite3
+
           echo "✅ Minimal dependencies installed (skipped postinstall scripts)"
 
       - name: "🔨 Rebuild Native Modules"
@@ -161,65 +166,72 @@ jobs:
 
           start_time=$(date +%s%3N)
 
-          # DUAL REPORTER CONFIGURATION:
-          # --reporter=verbose: Human-readable output to stdout (captured in logs)
-          # --reporter=json --outputFile: Machine-parseable JSON to separate file
-          # This allows both human review and reliable automated parsing
-          # Vitest supports multiple reporters simultaneously - they don't conflict
+          # CRITICAL FIX: Use Vitest's outputFile to separate JSON from verbose output
+          # - Verbose output goes to stdout → tee → unit-test-output.log
+          # - JSON output goes directly to unit-test-results-raw.json (clean, no mixing)
           set +e  # Allow command to fail without stopping script
-          CI=true npm test -- --reporter=verbose --reporter=json --outputFile.json=./unit-test-results-raw.json --no-color 2>&1 | tee unit-test-output.log
+          CI=true npm test -- --reporter=verbose --reporter=json --outputFile=./unit-test-results-raw.json --no-color 2>&1 | tee unit-test-output.log
           test_exit_code=$?
           set -e  # Re-enable exit on error
 
           end_time=$(date +%s%3N)
           duration=$((end_time - start_time))
 
-          # FIXED: Improved test parsing using JSON output + robust fallback patterns
-          echo "🔍 Parsing test results using JSON reporter with fallbacks..."
+          # CRITICAL FIX: Reliable test result parsing with fail-fast on JSON errors
+          echo "🔍 Parsing test results from JSON reporter..."
 
-          # Method 1: Parse JSON output (most reliable)
-          if [ -f "unit-test-results-raw.json" ] && jq empty unit-test-results-raw.json 2>/dev/null; then
-            echo "✅ Using JSON test results"
-            total_tests=$(jq -r '.numTotalTests // 0' unit-test-results-raw.json 2>/dev/null || echo "0")
-            passing_tests=$(jq -r '.numPassedTests // 0' unit-test-results-raw.json 2>/dev/null || echo "0")
-            failing_tests=$(jq -r '.numFailedTests // 0' unit-test-results-raw.json 2>/dev/null || echo "0")
-            parsing_method="json_primary"
-          else
-            echo "🔄 JSON parsing failed, using robust fallback patterns..."
+          # Parse JSON output (REQUIRED - no fallback)
+          if [ ! -f "unit-test-results-raw.json" ]; then
+            echo "❌ FATAL: unit-test-results-raw.json not found"
+            echo "   Test output may have been corrupted or test command failed to generate JSON"
+            echo "   Check unit-test-output.log for errors"
+            exit 1
+          fi
 
-            # Method 2: Standard Vitest output pattern "Tests X passed"
-            passing_tests=$(grep -E "Tests[[:space:]]+[0-9]+[[:space:]]+passed" unit-test-output.log | sed -E "s/.*Tests[[:space:]]+([0-9]+)[[:space:]]+passed.*/\1/" | head -1 || echo "0")
-            failing_tests=$(grep -E "Tests[[:space:]]+[0-9]+[[:space:]]+failed" unit-test-output.log | sed -E "s/.*Tests[[:space:]]+([0-9]+)[[:space:]]+failed.*/\1/" | head -1 || echo "0")
+          # Validate JSON is parseable
+          if ! jq empty unit-test-results-raw.json 2>/dev/null; then
+            echo "❌ FATAL: JSON test results are corrupted or invalid"
+            echo "   Cannot reliably parse test results"
+            echo "   This usually indicates a test infrastructure problem"
+            cat unit-test-results-raw.json | head -20
+            exit 1
+          fi
 
-            # Method 3: Alternative patterns if standard fails
-            if [ "$passing_tests" = "0" ] && [ "$failing_tests" = "0" ]; then
-              echo "🔄 Trying alternative test result patterns..."
-              passing_tests=$(grep -E "[0-9]+[[:space:]]+tests?[[:space:]]+passed" unit-test-output.log | sed -E "s/.*([0-9]+)[[:space:]]+tests?[[:space:]]+passed.*/\1/" | head -1 || echo "0")
-              failing_tests=$(grep -E "[0-9]+[[:space:]]+tests?[[:space:]]+failed" unit-test-output.log | sed -E "s/.*([0-9]+)[[:space:]]+tests?[[:space:]]+failed.*/\1/" | head -1 || echo "0")
-            fi
+          # Parse results from JSON
+          echo "✅ JSON test results validated - parsing..."
+          total_tests=$(jq -r '.numTotalTests // 0' unit-test-results-raw.json)
+          passing_tests=$(jq -r '.numPassedTests // 0' unit-test-results-raw.json)
+          failing_tests=$(jq -r '.numFailedTests // 0' unit-test-results-raw.json)
+          skipped_tests=$(jq -r '.numPendingTests // 0' unit-test-results-raw.json)
 
-            # Method 4: Checkmark patterns
-            if [ "$passing_tests" = "0" ] && [ "$failing_tests" = "0" ]; then
-              echo "🔄 Trying checkmark patterns..."
-              passing_tests=$(grep -E "✓[[:space:]]+[0-9]+[[:space:]]+tests?" unit-test-output.log | sed -E "s/.*✓[[:space:]]+([0-9]+)[[:space:]]+tests?.*/\1/" | head -1 || echo "0")
-              failing_tests=$(grep -E "✗[[:space:]]+[0-9]+[[:space:]]+tests?" unit-test-output.log | sed -E "s/.*✗[[:space:]]+([0-9]+)[[:space:]]+tests?.*/\1/" | head -1 || echo "0")
-            fi
+          # CRITICAL VALIDATION: Ensure parsed values are valid
+          if [ -z "$passing_tests" ] || [ "$passing_tests" = "null" ]; then
+            echo "❌ FATAL: Failed to parse passing test count"
+            echo "   JSON structure may have changed"
+            exit 1
+          fi
 
-            # Method 5: Final summary pattern parsing
-            if [ "$passing_tests" = "0" ] && [ "$failing_tests" = "0" ]; then
-              echo "🔄 Trying final summary patterns..."
-              # Look for summary line like "Test Files  2 passed, 2 total"
-              passing_tests=$(grep -E "Test Files[[:space:]]+[0-9]+" unit-test-output.log | sed -E "s/.*Test Files[[:space:]]+([0-9]+)[[:space:]]+passed.*/\1/" | head -1 || echo "0")
-              # Look for any numeric patterns in test results
-              if [ "$passing_tests" = "0" ]; then
-                passing_tests=$(grep -oE "[0-9]+[[:space:]]*passed" unit-test-output.log | grep -oE "[0-9]+" | head -1 || echo "0")
-              fi
-              failing_tests=$(grep -oE "[0-9]+[[:space:]]*failed" unit-test-output.log | grep -oE "[0-9]+" | head -1 || echo "0")
-            fi
+          if [ -z "$failing_tests" ] || [ "$failing_tests" = "null" ]; then
+            echo "❌ FATAL: Failed to parse failing test count"
+            echo "   JSON structure may have changed"
+            exit 1
+          fi
 
-            # Calculate total as sum
-            total_tests=$((passing_tests + failing_tests))
-            parsing_method="fallback_patterns"
+          # Validate results make mathematical sense
+          calculated_total=$((passing_tests + failing_tests + skipped_tests))
+          if [ "$calculated_total" -ne "$total_tests" ]; then
+            echo "⚠️  WARNING: Test count mismatch"
+            echo "   Passed: $passing_tests, Failed: $failing_tests, Skipped: $skipped_tests"
+            echo "   Calculated: $calculated_total, Reported: $total_tests"
+            echo "   Using calculated total for accuracy"
+            total_tests=$calculated_total
+          fi
+
+          # Ensure we actually ran tests
+          if [ "$total_tests" -eq 0 ]; then
+            echo "❌ FATAL: No tests were executed"
+            echo "   This indicates a test infrastructure problem"
+            exit 1
           fi
 
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -227,9 +239,10 @@ jobs:
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "✅ Tests Passed: $passing_tests"
           echo "❌ Tests Failed: $failing_tests"
+          echo "⏭️  Tests Skipped: $skipped_tests"
           echo "📈 Total Tests: $total_tests"
           echo "⏱️  Duration: ${duration}ms"
-          echo "🔍 Parsing Method: $parsing_method"
+          echo "🔍 Parsing Method: json_validated"
 
           # Performance evaluation with environment variable fallback
           performance_target=${PHASE3_PERFORMANCE_TARGET_MS:-2000}
@@ -250,6 +263,7 @@ jobs:
             echo ""
             echo "❌ TEST RUNNER EXITED WITH ERROR: exit code $test_exit_code"
             echo "   Even though no test failures were detected"
+            echo "   This may indicate infrastructure issues"
             exit $test_exit_code
           else
             echo ""
