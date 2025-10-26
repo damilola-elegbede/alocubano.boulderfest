@@ -18,7 +18,7 @@
  * - Token replay scenarios
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import jwt from 'jsonwebtoken';
 import { QRTokenService } from '../../lib/qr-token-service.js';
 
@@ -171,26 +171,33 @@ describe('QR Token Security', () => {
 
     it('should handle timezone correctly (UTC)', () => {
       const ticketId = 'TKT-007';
+      const YEAR_IN_SECONDS = 365 * 24 * 60 * 60;
 
-      // Generate token with current UTC time
-      const token = qrService.generateToken({ tid: ticketId });
+      // Freeze time for deterministic testing
+      const fixedTime = new Date('2026-01-01T00:00:00Z');
+      vi.useFakeTimers();
+      vi.setSystemTime(fixedTime);
 
-      // Decode to verify UTC timestamps
-      const decoded = jwt.decode(token);
+      try {
+        // Generate token with frozen time
+        const token = qrService.generateToken({ tid: ticketId });
 
-      // Check iat is recent (within last minute)
-      const now = Math.floor(Date.now() / 1000);
-      expect(decoded.iat).toBeGreaterThanOrEqual(now - 60);
-      expect(decoded.iat).toBeLessThanOrEqual(now);
+        // Decode to verify UTC timestamps
+        const decoded = jwt.decode(token);
+        const expectedIat = Math.floor(fixedTime.getTime() / 1000);
 
-      // Check exp is 1 year from iat (default when no exp provided)
-      const expectedExp = decoded.iat + (365 * 24 * 60 * 60);
-      expect(decoded.exp).toBeGreaterThanOrEqual(expectedExp - 60);
-      expect(decoded.exp).toBeLessThanOrEqual(expectedExp + 60);
-      
-      // Validation should succeed
-      const result = qrService.validateToken(token);
-      expect(result.valid).toBe(true);
+        // Check iat matches frozen time exactly
+        expect(decoded.iat).toBe(expectedIat);
+
+        // Check exp is exactly 1 year from iat (default when no exp provided)
+        expect(decoded.exp - decoded.iat).toBe(YEAR_IN_SECONDS);
+
+        // Validation should succeed
+        const result = qrService.validateToken(token);
+        expect(result.valid).toBe(true);
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 

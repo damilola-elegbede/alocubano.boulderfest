@@ -37,8 +37,8 @@ for (const filePath of testFiles) {
   let fileInsertionsFixed = 0;
 
   // Pattern 1: INSERT INTO transactions with explicit column list (missing is_test)
-  // Match: INSERT INTO transactions (...) VALUES (...) but only if is_test is NOT in the column list
-  const insertPattern = /INSERT INTO transactions\s*\(([^)]+)\)\s*VALUES\s*\(([^)]+)\)/gi;
+  // Use balanced parenthesis matching to handle nested function calls like datetime('now', 1)
+  const insertPattern = /INSERT INTO transactions\s*\(((?:[^()]+|\([^)]*\))+)\)\s*VALUES\s*\(((?:[^()]+|\([^)]*\))+)\)/gi;
 
   content = content.replace(insertPattern, (match, columns, values) => {
     // Check if is_test is already in the column list
@@ -49,19 +49,9 @@ for (const filePath of testFiles) {
     // Add is_test to columns
     const newColumns = columns.trim() + ', is_test';
 
-    // Count the number of placeholders (?)
-    const placeholderCount = (values.match(/\?/g) || []).length;
-
-    // Add is_test value (1 for test mode)
-    let newValues;
-    if (values.trim().endsWith('?')) {
-      newValues = values.trim() + ', 1';
-    } else {
-      newValues = values.trim() + ', ?';
-      // Note: When using ?, the calling code needs to add 1 to the args array
-      // But since we can't modify the args array from regex, we'll use literal 1
-      newValues = values.trim() + ', 1';
-    }
+    // Add is_test value (1 for test mode) - always use literal 1
+    // This preserves any nested function calls like datetime('now', 1)
+    const newValues = values.trim() + ', 1';
 
     modified = true;
     fileInsertionsFixed++;

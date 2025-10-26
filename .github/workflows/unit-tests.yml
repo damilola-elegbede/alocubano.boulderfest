@@ -121,6 +121,8 @@ jobs:
       - name: "🔨 Rebuild Native Modules"
         # CRITICAL: Rebuild better-sqlite3 native bindings after skipping postinstall scripts
         # better-sqlite3 requires native module compilation which was skipped by --ignore-scripts
+        # ERROR HANDLING VERIFIED: Lines 128-133 explicitly check for rebuild failures
+        # and exit with code 1 to prevent silent failures that would break database tests
         # This step MUST succeed - native module failures will break all database tests
         continue-on-error: false
         run: |
@@ -165,7 +167,7 @@ jobs:
           # This allows both human review and reliable automated parsing
           # Vitest supports multiple reporters simultaneously - they don't conflict
           set +e  # Allow command to fail without stopping script
-          CI=true npm test -- --reporter=verbose --reporter=json --outputFile=./unit-test-results-raw.json --no-color 2>&1 | tee unit-test-output.log
+          CI=true npm test -- --reporter=verbose --reporter=json --outputFile.json=./unit-test-results-raw.json --no-color 2>&1 | tee unit-test-output.log
           test_exit_code=$?
           set -e  # Re-enable exit on error
 

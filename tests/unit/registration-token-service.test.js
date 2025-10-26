@@ -94,30 +94,38 @@ describe('RegistrationTokenService - Unit Tests', () => {
     });
 
     it('should set token expiration to 7 days after event end', async () => {
-      // Mock event lookup to return event ending tomorrow
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const eventEndDate = tomorrow.toISOString().split('T')[0];
+      const DAY_IN_SECONDS = 24 * 60 * 60;
 
-      mockDb.execute
-        .mockResolvedValueOnce({ rows: [{ end_date: eventEndDate }], rowsAffected: 1 }) // Event lookup
-        .mockResolvedValueOnce({ rows: [], rowsAffected: 1 }); // UPDATE transaction
+      // Freeze time for deterministic testing
+      const fixedTime = new Date('2026-05-01T12:00:00Z');
+      vi.useFakeTimers();
+      vi.setSystemTime(fixedTime);
 
-      const beforeTime = Math.floor(Date.now() / 1000);
-      const token = await service.createToken(123);
-      const afterTime = Math.floor(Date.now() / 1000);
+      try {
+        // Mock event lookup to return event ending tomorrow (relative to frozen time)
+        const tomorrow = new Date(fixedTime);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const eventEndDate = tomorrow.toISOString().split('T')[0];
 
-      const decoded = jwt.verify(token, TEST_SECRET);
+        mockDb.execute
+          .mockResolvedValueOnce({ rows: [{ end_date: eventEndDate }], rowsAffected: 1 }) // Event lookup
+          .mockResolvedValueOnce({ rows: [], rowsAffected: 1 }); // UPDATE transaction
 
-      // Token should expire 7 days after event end (8 days from now)
-      const expectedExpiry = 8 * 24 * 60 * 60; // 8 days in seconds
-      const actualExpiry = decoded.exp - decoded.iat;
+        const token = await service.createToken(123);
+        const decoded = jwt.verify(token, TEST_SECRET);
+        const expectedIat = Math.floor(fixedTime.getTime() / 1000);
 
-      // Allow 1 day tolerance for timing differences
-      expect(actualExpiry).toBeGreaterThanOrEqual(expectedExpiry - (24 * 60 * 60));
-      expect(actualExpiry).toBeLessThanOrEqual(expectedExpiry + (24 * 60 * 60));
-      expect(decoded.iat).toBeGreaterThanOrEqual(beforeTime);
-      expect(decoded.iat).toBeLessThanOrEqual(afterTime);
+        // Check iat matches frozen time exactly
+        expect(decoded.iat).toBe(expectedIat);
+
+        // Token should expire 7 days after event end
+        // Event ends tomorrow (2026-05-02), expiry is 7 days later (2026-05-09 00:00:00)
+        // From 2026-05-01 12:00:00 to 2026-05-09 00:00:00 = 7.5 days
+        // Exact calculation: 7.5 days = 648000 seconds
+        expect(decoded.exp - decoded.iat).toBe(7.5 * DAY_IN_SECONDS);
+      } finally {
+        vi.useRealTimers();
+      }
     });
 
     it('should update transaction record with token and expiration', async () => {

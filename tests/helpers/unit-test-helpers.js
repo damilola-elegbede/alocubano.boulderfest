@@ -553,7 +553,7 @@ export async function createTestEvent(db, overrides = {}) {
     slug: `test-event-${uniqueId}`,
     name: `Test Event ${uniqueId}`,
     type: 'festival',
-    status: 'active',
+    status: 'test',
     description: 'Test event for unit testing',
     venue_name: 'Test Venue',
     venue_address: '123 Test St',
@@ -707,31 +707,15 @@ export async function createTestTicket(db, overrides = {}) {
   // Create a default test transaction if not provided
   let transactionId = overrides.transaction_id;
   if (!transactionId) {
-    const txnResult = await db.execute({
-      sql: `INSERT INTO transactions
-            (transaction_id, stripe_session_id, email, status, amount, currency, ticket_count, event_id, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            RETURNING id`,
-      args: [
-        `TXN_TEST_${uniqueId}`,
-        `cs_test_${uniqueId}`,
-        `test-${uniqueId}@example.com`,
-        'completed',
-        10000,
-        'usd',
-        1,
-        overrides.event_id || 1,
-        new Date().toISOString(),
-        new Date().toISOString()
-      ]
-    });
-    transactionId = txnResult.rows[0].id;
+    // Use createTestTransaction helper which has correct schema
+    const txn = await createTestTransaction(db, { event_id: overrides.event_id || 1 });
+    transactionId = txn.id;
   }
 
   const ticket = {
     ticket_id: `TEST_${uniqueId}`,
     event_id: 1,
-    transaction_id: transactionId, // INTEGER reference to transactions.id
+    transaction_id: transactionId,
     ticket_type: 'Test Pass',
     ticket_type_id: null,
     event_date: null,
@@ -773,7 +757,7 @@ export async function createTestTicket(db, overrides = {}) {
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     ...overrides,
-    transaction_id: transactionId // Ensure transaction_id override doesn't break
+    transaction_id: transactionId
   };
 
   await db.execute({
@@ -863,28 +847,16 @@ export async function getTestDatabaseClient() {
 export async function cleanupTestData(db, options = {}) {
   const { ticketIds = [], transactionIds = [], eventIds = [] } = options;
 
-  // Delete tickets
-  for (const ticketId of ticketIds) {
-    await db.execute({
-      sql: 'DELETE FROM tickets WHERE ticket_id = ?',
-      args: [ticketId]
-    });
+  // Use is_test flag for robust cleanup (future-proof)
+  if (ticketIds.length > 0) {
+    await db.execute('DELETE FROM tickets WHERE is_test = 1');
   }
-
-  // Delete transactions
-  for (const transactionId of transactionIds) {
-    await db.execute({
-      sql: 'DELETE FROM transactions WHERE transaction_id = ?',
-      args: [transactionId]
-    });
+  if (transactionIds.length > 0) {
+    await db.execute('DELETE FROM transactions WHERE is_test = 1');
   }
-
-  // Delete events (be careful - may have FK constraints)
-  for (const eventId of eventIds) {
-    await db.execute({
-      sql: 'DELETE FROM events WHERE id = ? AND id > 1', // Protect BASE_EVENT (id=1)
-      args: [eventId]
-    });
+  // Events: protect BASE_EVENT (id=1)
+  if (eventIds.length > 0) {
+    await db.execute('DELETE FROM events WHERE is_test = 1 AND id > 1');
   }
 }
 

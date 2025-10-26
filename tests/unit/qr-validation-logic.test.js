@@ -18,7 +18,6 @@ describe('QR Validation Logic - Unit Tests', () => {
     // Set up environment for testing
     process.env.QR_SECRET_KEY = TEST_QR_SECRET;
     process.env.WALLET_AUTH_SECRET = TEST_WALLET_SECRET;
-    process.env.QR_CODE_EXPIRY_DAYS = '90';
     process.env.QR_CODE_MAX_SCANS = '10';
 
     // Create fresh QR service instance
