@@ -38,7 +38,9 @@ PRAGMA foreign_keys = OFF;
 -- First ensure it doesn't exist (clean slate)
 DROP VIEW IF EXISTS test_ticket_sales_view;
 
--- Recreate with original definition from migration 043
+-- Recreate with CORRECTED definition - derive test status from event.status
+-- ARCHITECTURE: Test vs production is determined by event.status, not tickets.is_test
+-- This view now correctly counts tickets for test events (events.status = 'test')
 CREATE VIEW IF NOT EXISTS test_ticket_sales_view AS
 SELECT
     tt.id,
@@ -50,8 +52,10 @@ SELECT
     MIN(t.created_at) as first_test_sale,
     MAX(t.created_at) as last_test_sale
 FROM ticket_types tt
-LEFT JOIN tickets t ON t.ticket_type_id = tt.id AND t.is_test = 1
-WHERE tt.test_sold_count > 0 OR t.id IS NOT NULL
+LEFT JOIN tickets t ON t.ticket_type_id = tt.id
+LEFT JOIN events e ON tt.event_id = e.id
+WHERE (tt.test_sold_count > 0 OR t.id IS NOT NULL)
+  AND e.status = 'test'  -- Filter to test events only
 GROUP BY tt.id;
 
 -- ============================================================================

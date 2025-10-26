@@ -4,22 +4,28 @@
 -- Date: 2025-10-25
 -- Author: Database Admin (Wave 2 - Schema Fix Specialist)
 --
--- Issue: Migration 043 added is_test columns to transactions, tickets, and transaction_items,
---        but Migration 053 recreated registration_reminders table WITHOUT the is_test column.
---        This causes test cleanup queries to fail with "SQLITE_ERROR: no such column: is_test"
+-- Issue: Migration 053 recreated registration_reminders table WITHOUT the is_test column,
+--        breaking reminder scheduling logic that depends on test vs production distinction.
 --
 -- Root Cause: Migration 053 (2025-10-18) recreated registration_reminders to fix CHECK constraints,
---             but did not include the is_test column that's required for test data isolation.
+--             but did not include the is_test column needed for adaptive reminder scheduling.
 --
--- Solution: Add is_test column to registration_reminders table to match other tables in the
---          test data isolation system (transactions, tickets, transaction_items, email_retry_queue).
+-- ARCHITECTURE CLARIFICATION:
+--   The is_test column serves TWO critical purposes:
+--   1. Reminder Scheduling: Test reminders use 5-min cadence, production uses adaptive (hours/days)
+--   2. Cleanup Eligibility: Test data can be safely deleted after 7 days
 --
--- Related Tables:
---   ✅ transactions.is_test (added in 004_transactions.sql)
---   ✅ tickets.is_test (added in 005_tickets.sql)
---   ✅ email_retry_queue.is_test (added in 033_email_retry_queue_schema_update.sql)
---   ✅ transaction_items.is_test (added in 008_transaction_items.sql)
---   ❌ registration_reminders.is_test (MISSING - fixed by this migration)
+--   NOTE: For analytics/metrics, test vs production is determined by events.status = 'test',
+--   NOT by is_test columns. This migration only adds is_test where functionally required.
+--
+-- Related Tables (with is_test):
+--   ✅ transactions.is_test (NEEDED: for donations without event_id, and reminder logic)
+--   ✅ registration_reminders.is_test (NEEDED: for scheduling cadence - FIXED BY THIS MIGRATION)
+--   ✅ email_retry_queue.is_test (NEEDED: for cleanup eligibility)
+--
+-- Related Tables (WITHOUT is_test - derive from event.status instead):
+--   ⚠️  tickets.is_test (DEPRECATED: should use events.status via tickets.event_id)
+--   ⚠️  transaction_items.is_test (DEPRECATED: should derive from transaction or event)
 
 -- ============================================================================
 -- STEP 1: Add is_test column to registration_reminders
@@ -77,27 +83,32 @@ END as migration_status;
 -- SELECT id, 'initial', datetime('now', '+1 hour'), is_test
 -- FROM transactions WHERE transaction_id = ?;
 --
--- ❌ INCORRECT: Hardcode is_test = 0 (breaks test isolation)
+-- ❌ INCORRECT: Hardcode is_test = 0 (breaks reminder scheduling)
 -- INSERT INTO registration_reminders (transaction_id, reminder_type, scheduled_at)
 -- VALUES (?, 'initial', datetime('now', '+1 hour'));
 --
--- For test cleanup (already used in tests):
--- DELETE FROM registration_reminders WHERE is_test = 1;
+-- REMINDER SCHEDULING USAGE:
+-- - Test reminders (is_test = 1): 5-minute cadence for fast testing
+-- - Production reminders (is_test = 0): Adaptive schedule based on deadline
 --
--- For production queries (exclude test data):
--- SELECT * FROM registration_reminders WHERE is_test = 0 AND status = 'scheduled';
+-- CLEANUP USAGE:
+-- DELETE FROM registration_reminders WHERE is_test = 1 AND created_at < datetime('now', '-7 days');
 --
 -- ============================================================================
--- SCHEMA CONSISTENCY VERIFICATION
+-- ARCHITECTURE SUMMARY
 -- ============================================================================
--- After this migration, all transactional tables have is_test columns:
---   1. transactions.is_test           (payment transactions)
---   2. tickets.is_test                (ticket records)
---   3. transaction_items.is_test      (line items in cart)
---   4. email_retry_queue.is_test      (email retry tracking)
---   5. registration_reminders.is_test (reminder scheduling) ← FIXED BY THIS MIGRATION
+-- After this migration, is_test columns exist ONLY where functionally required:
 --
--- This ensures complete test data isolation across the entire purchase workflow.
+-- TABLES WITH is_test (for scheduling/cleanup):
+--   1. transactions.is_test           ✅ NEEDED (donations lack event_id)
+--   2. registration_reminders.is_test ✅ NEEDED (scheduling cadence)
+--   3. email_retry_queue.is_test      ✅ NEEDED (cleanup eligibility)
+--
+-- TABLES WITHOUT is_test (derive from event.status instead):
+--   4. tickets                        ⚠️  Use JOIN events ON event_id WHERE status != 'test'
+--   5. transaction_items              ⚠️  Derive from transaction or event
+--
+-- For analytics/metrics: Filter by events.status = 'test', NOT by is_test columns.
 --
 -- ============================================================================
 -- ROLLBACK INSTRUCTIONS (if needed)
