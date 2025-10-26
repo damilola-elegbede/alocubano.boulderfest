@@ -315,18 +315,6 @@ describe('Registration Complete Flow - Integration Tests', () => {
   });
 
   describe('Registration Token Validation', () => {
-    it.skip('should validate registration token before processing', async () => {
-      // This would require token-based registration endpoint
-      // Placeholder for token validation test
-      expect(true).toBe(true);
-    });
-
-    it.skip('should reject expired registration token', async () => {
-      // Create expired token (requires token service)
-      // Placeholder for expiration test
-      expect(true).toBe(true);
-    });
-
     it('should consume token after successful registration', async () => {
       // Verify token is nullified in database after use
       const result = await db.execute({
@@ -475,18 +463,6 @@ describe('Registration Complete Flow - Integration Tests', () => {
       expect(emailLog.rows.length).toBeGreaterThan(0);
     }, 30000); // 30 second timeout for email test
 
-    it.skip('should include QR code in confirmation email', async () => {
-      // QR codes should be generated and included in emails
-      // This is tested via email template integration
-      expect(true).toBe(true);
-    });
-
-    it.skip('should include wallet pass links in email', async () => {
-      // Email should contain Apple Wallet and Google Wallet links
-      // This is tested via email template integration
-      expect(true).toBe(true);
-    });
-
     it('should continue registration even if email fails', async () => {
       // Email failures should not block registration success
       const registrations = [{
@@ -631,21 +607,4 @@ describe('Registration Complete Flow - Integration Tests', () => {
     });
   });
 
-  describe('Audit Logging', () => {
-    it.skip('should log registration changes to audit trail', async () => {
-      // Audit logs should be created for registration changes
-      // This is tested via audit service integration
-      expect(true).toBe(true);
-    });
-
-    it.skip('should include IP address in audit logs', async () => {
-      // IP should be tracked in registration audit logs
-      expect(true).toBe(true);
-    });
-
-    it.skip('should track batch position in audit metadata', async () => {
-      // Each registration in batch should track its position
-      expect(true).toBe(true);
-    });
-  });
 });

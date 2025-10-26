@@ -528,41 +528,5 @@ describe('Test Mode End-to-End Workflow', () => {
       expect(transactionStats.test_amount_cents).toBeGreaterThanOrEqual(5000);
       expect(transactionStats.production_amount_cents).toBeGreaterThanOrEqual(7500);
     });
-
-    // SKIPPED: v_active_test_data view does not exist in database schema
-    // The view was not found in any migration files
-    // If this view is needed, it should be created in a new migration
-    it.skip('should provide active test data summary', async () => {
-      // Create test tickets for today
-      const today = new Date().toISOString().split('T')[0];
-
-      await createTestTicket({
-        ticketType: 'general',
-        eventId: testEventId,
-        attendeeEmail: 'active1@test.com',
-        priceInCents: 5000
-      });
-
-      await createTestTicket({
-        ticketType: 'vip',
-        eventId: testEventId,
-        attendeeEmail: 'active2@test.com',
-        priceInCents: 10000
-      });
-
-      // Query active test data
-      const activeData = await client.execute(`
-        SELECT * FROM v_active_test_data
-        WHERE test_date = ?
-      `, [today]);
-
-      expect(activeData.rows).toHaveLength(1);
-      const todayData = activeData.rows[0];
-
-      expect(todayData.test_transactions).toBeGreaterThanOrEqual(2);
-      expect(todayData.test_tickets).toBeGreaterThanOrEqual(2);
-      expect(todayData.test_amount_cents).toBeGreaterThanOrEqual(15000);
-      expect(todayData.unique_test_customers).toBeGreaterThanOrEqual(2);
-    });
   });
 });
