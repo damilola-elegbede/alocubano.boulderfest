@@ -13,6 +13,7 @@ import { generateTicketId } from '../../../lib/ticket-id-generator.js';
 import { processDatabaseResult } from '../../../lib/bigint-serializer.js';
 import timeUtils from '../../../lib/time-utils.js';
 import { getTicketEmailService } from '../../../lib/ticket-email-service-brevo.js';
+import { detectPaymentProcessor, extractPaymentSourceDetails } from '../../../lib/paypal-payment-source-detector.js';
 
 // PayPal API base URL configuration
 const PAYPAL_API_URL =
@@ -152,6 +153,16 @@ async function captureOrderHandler(req, res) {
       });
     }
 
+    // Detect payment processor from funding source (Venmo vs PayPal)
+    const paymentProcessor = detectPaymentProcessor(captureResult);
+    const sourceDetails = extractPaymentSourceDetails(captureResult);
+
+    console.log('Payment source detected:', {
+      processor: paymentProcessor,
+      sourceType: sourceDetails.type,
+      accountId: sourceDetails.accountId
+    });
+
     // Extract capture details
     const capture = captureResult.purchase_units?.[0]?.payments?.captures?.[0];
 
@@ -237,7 +248,7 @@ async function captureOrderHandler(req, res) {
           orderNumber,
           customerEmail,
           customerName,
-          'paypal',
+          paymentProcessor, // Use detected processor (venmo or paypal)
           captureId,
           payerId,
           new Date().toISOString(), // completed_at
@@ -297,7 +308,7 @@ async function captureOrderHandler(req, res) {
           paypalOrderId, // paypal_order_id
           captureId, // paypal_capture_id
           payerId, // paypal_payer_id
-          'paypal', // payment_processor
+          paymentProcessor, // payment_processor (venmo or paypal)
           orderNumber, // reference_id
           'paypal', // payment_method_type
           customerEmail, // customer_email

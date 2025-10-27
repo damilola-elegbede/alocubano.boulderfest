@@ -127,18 +127,21 @@ class PaymentSelector {
                             <span id="stripe-description" class="sr-only">Secure payment processing with Stripe. Supports all major credit cards, Apple Pay, and Google Pay.</span>
                         </button>
 
-                        <!-- PayPal Option -->
-                        <!-- Payment logo sourced from: https://github.com/payrexx/payment-logos -->
+                        <!-- PayPal & Venmo Option -->
+                        <!-- Payment logos sourced from: https://github.com/payrexx/payment-logos (PayPal), UXWing (Venmo) -->
                         <button class="payment-method-option"
                                 data-method="paypal"
-                                aria-label="Pay with PayPal - redirects to PayPal secure website"
-                                aria-describedby="paypal-description"
+                                aria-label="Pay with PayPal or Venmo - redirects to PayPal secure website"
+                                aria-describedby="paypal-venmo-description"
                                 id="paypal-payment-option">
-                            <img src="/images/payment-icons/card_paypal.svg" alt="PayPal" class="paypal-icon">
+                            <div class="payment-card-icons">
+                                <img src="/images/payment-icons/card_paypal.svg" alt="PayPal" class="card-icon paypal-icon">
+                                <img src="/images/payment-icons/card_venmo.svg" alt="Venmo" class="card-icon venmo-icon">
+                            </div>
                             <div class="payment-method-status" data-status="loading" style="display: none;" aria-live="polite">
                                 <span class="status-text">Checking PayPal availability...</span>
                             </div>
-                            <span id="paypal-description" class="sr-only">Pay securely using your PayPal account or PayPal guest checkout. You will be redirected to PayPal to complete payment.</span>
+                            <span id="paypal-venmo-description" class="sr-only">Pay securely using your PayPal account, Venmo, or PayPal guest checkout. Venmo is available for US-based customers on mobile devices. You will be redirected to PayPal to complete payment.</span>
                         </button>
                     </div>
 

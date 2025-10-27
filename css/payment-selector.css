@@ -259,6 +259,35 @@
   object-fit: contain;
 }
 
+/* PayPal/Venmo dual-logo layout - override single icon style */
+.payment-method-option[data-method="paypal"] .payment-card-icons {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: nowrap;
+}
+
+.payment-method-option[data-method="paypal"] .payment-card-icons .card-icon {
+  height: 24px;
+  width: auto;
+  max-width: 80px;
+  object-fit: contain;
+}
+
+.payment-method-option[data-method="paypal"] .payment-card-icons .paypal-icon {
+  height: 24px;
+  width: auto;
+  max-width: none; /* Override single icon max-width */
+  margin: 0; /* Remove auto margin from single icon style */
+}
+
+.payment-method-option[data-method="paypal"] .payment-card-icons .venmo-icon {
+  height: 24px;
+  width: auto;
+  max-width: 80px;
+}
+
 /* Payment Method Info */
 .payment-method-info {
   flex: 1;
@@ -825,6 +854,21 @@
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 480px) {
+  /* Tighter spacing for PayPal/Venmo on mobile */
+  .payment-method-option[data-method="paypal"] .payment-card-icons {
+    gap: 8px;
+  }
+
+  /* Slightly smaller icons on mobile */
+  .payment-method-option[data-method="paypal"] .payment-card-icons .card-icon,
+  .payment-method-option[data-method="paypal"] .payment-card-icons .paypal-icon,
+  .payment-method-option[data-method="paypal"] .payment-card-icons .venmo-icon {
+    height: 20px;
+  }
 }
 
 /* Print Styles */

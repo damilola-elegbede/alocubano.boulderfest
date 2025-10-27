@@ -173,6 +173,8 @@ class PayPalSDKLoader {
         // Environment-specific parameters
         if (this.config.environment === 'sandbox') {
             params.set('debug', 'true');
+            // Enable Venmo testing in sandbox - requires US buyer country
+            params.set('buyer-country', 'US');
         }
 
         // Mobile-specific optimizations

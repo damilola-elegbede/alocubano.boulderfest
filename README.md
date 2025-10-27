@@ -142,7 +142,7 @@ alocubano.boulderfest/
 - ✅ Serverless functions on Vercel
 - ✅ Floating cart system with intelligent page-specific visibility
 - ✅ Donations system with preset/custom amounts and admin analytics
-- ✅ Stripe Checkout Sessions for secure, streamlined payments (tickets + donations)
+- ✅ Multiple payment options: Stripe Checkout and PayPal (with Venmo support) for tickets + donations
 - ✅ PCI-compliant payment processing with built-in fraud protection
 
 ## 🆕 New Ticket Payment Features (2024)
@@ -492,7 +492,7 @@ GitHub Repository Variables (Settings → Secrets and variables → Actions → 
 - **Performance Optimization**: Advanced caching, lazy loading, and monitoring
 - **Registration System**: JWT-based ticket registration with 72-hour window
 - **Email Integration**: Brevo/SendinBlue for transactional emails with QR codes and donation acknowledgments
-- **Payment Processing**: Stripe Checkout with webhook handling for tickets and donations
+- **Payment Processing**: Stripe Checkout and PayPal (with Venmo) - webhook handling and payment source detection
 - **Gallery System**: Google Drive integration with AVIF/WebP optimization
 - **E2E Testing**: Comprehensive browser automation with Vercel Preview Deployments
 - **Admin Panel**: Complete administration dashboard with donations tracking, registrations, and analytics
@@ -546,7 +546,7 @@ openssl rand -base64 32
 ### Optional Service Variables
 
 - **Email**: `BREVO_API_KEY`, `BREVO_NEWSLETTER_LIST_ID`
-- **Payments**: `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`
+- **Payments**: `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`
 - **Gallery**: `GOOGLE_DRIVE_FOLDER_ID`, `GOOGLE_SERVICE_ACCOUNT_EMAIL`
 - **Wallet Passes**: `APPLE_PASS_TYPE_ID`, `GOOGLE_WALLET_ISSUER_ID`
 - **Backups**: `BLOB_READ_WRITE_TOKEN` (Vercel Blob storage for database backups)
