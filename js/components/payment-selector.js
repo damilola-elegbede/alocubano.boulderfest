@@ -136,7 +136,7 @@ class PaymentSelector {
                                 id="paypal-payment-option">
                             <div class="payment-card-icons">
                                 <img src="/images/payment-icons/card_paypal.svg" alt="PayPal" class="card-icon paypal-icon">
-                                <img src="/images/payment-icons/card_venmo.svg" alt="Venmo" class="card-icon venmo-icon">
+                                <img src="/images/payment-icons/venmo.png" alt="Venmo" class="card-icon venmo-icon">
                             </div>
                             <div class="payment-method-status" data-status="loading" style="display: none;" aria-live="polite">
                                 <span class="status-text">Checking PayPal availability...</span>
