@@ -10,18 +10,10 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { vercelPreviewUrl } from '../../config/vercel-preview.js';
 
 test.describe('Venmo Payment Flow via PayPal', () => {
-  let baseUrl;
-
-  test.beforeAll(async () => {
-    baseUrl = await vercelPreviewUrl();
-    console.log(`Testing Venmo payments on: ${baseUrl}`);
-  });
-
   test('should display PayPal button with Venmo branding on tickets page', async ({ page }) => {
-    await page.goto(`${baseUrl}/tickets`);
+    await page.goto('/tickets');
 
     // Wait for payment selector to load
     await page.waitForSelector('.payment-selector', { timeout: 10000 });
@@ -44,7 +36,7 @@ test.describe('Venmo Payment Flow via PayPal', () => {
   });
 
   test('should show Venmo option in PayPal SDK (sandbox)', async ({ page }) => {
-    await page.goto(`${baseUrl}/tickets`);
+    await page.goto('/tickets');
 
     // Add ticket to cart
     await page.click('[data-ticket-type="weekend-pass"]');
@@ -62,7 +54,7 @@ test.describe('Venmo Payment Flow via PayPal', () => {
   });
 
   test('should complete mock payment with Venmo payment_source', async ({ page }) => {
-    await page.goto(`${baseUrl}/tickets`);
+    await page.goto('/tickets');
 
     // Add ticket to cart
     const addButton = page.locator('[data-ticket-type="weekend-pass"]');
@@ -93,7 +85,7 @@ test.describe('Venmo Payment Flow via PayPal', () => {
   });
 
   test('should store Venmo payment_processor in database', async ({ page, request }) => {
-    await page.goto(`${baseUrl}/tickets`);
+    await page.goto('/tickets');
 
     // Add ticket
     await page.click('[data-ticket-type="weekend-pass"]');
@@ -118,7 +110,7 @@ test.describe('Venmo Payment Flow via PayPal', () => {
 
   test('should display Venmo icon in admin dashboard for Venmo payments', async ({ page, context }) => {
     // This test requires admin login
-    await page.goto(`${baseUrl}/admin/login`);
+    await page.goto('/admin/login');
 
     // Admin login (if E2E_TEST_MODE is enabled)
     const adminPassword = process.env.TEST_ADMIN_PASSWORD || 'admin123';
@@ -126,7 +118,7 @@ test.describe('Venmo Payment Flow via PayPal', () => {
     await page.click('button[type="submit"]');
 
     // Wait for dashboard
-    await page.waitForURL(`${baseUrl}/admin/dashboard`, { timeout: 10000 });
+    await page.waitForURL('/admin/dashboard', { timeout: 10000 });
 
     // Check for payment processor filter
     const paymentFilter = page.locator('#paymentMethodFilter');
@@ -147,7 +139,7 @@ test.describe('Venmo Payment Flow via PayPal', () => {
     // Set mobile viewport (Venmo is mobile-optimized)
     await page.setViewportSize({ width: 375, height: 667 });
 
-    await page.goto(`${baseUrl}/tickets`);
+    await page.goto('/tickets');
 
     // Verify PayPal/Venmo button responsive design
     const paypalButton = page.locator('[data-method="paypal"]');
@@ -166,14 +158,8 @@ test.describe('Venmo Payment Flow via PayPal', () => {
 });
 
 test.describe('Venmo Payment Source Detection', () => {
-  let baseUrl;
-
-  test.beforeAll(async () => {
-    baseUrl = await vercelPreviewUrl();
-  });
-
   test('should handle payment_source in capture responses', async ({ page }) => {
-    await page.goto(`${baseUrl}/tickets`);
+    await page.goto('/tickets');
 
     // This test verifies the payment_source detection utility is used
     // Mock PayPal includes payment_source in capture responses

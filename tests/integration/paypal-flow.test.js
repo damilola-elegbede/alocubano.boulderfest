@@ -847,11 +847,11 @@ describe('PayPal Integration Flow', () => {
 
       await dbClient.execute({
         sql: `INSERT INTO transactions
-              (transaction_id, uuid, type, amount_cents, currency, payment_processor, status, order_number, is_test)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              (transaction_id, uuid, type, amount_cents, currency, payment_processor, status, order_number, is_test, paypal_order_id, paypal_capture_id, customer_email, order_data)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
-          venmoUuid, venmoUuid, 'tickets', 5000, 'USD', 'venmo', 'completed', 'ORD-VENMO-TEST-001', 1,
-          paypalUuid, paypalUuid, 'tickets', 5000, 'USD', 'paypal', 'completed', 'ORD-PAYPAL-TEST-001', 1
+          venmoUuid, venmoUuid, 'tickets', 5000, 'USD', 'venmo', 'completed', 'ORD-VENMO-TEST-001', 1, 'ORDER-TEST-VENMO-001', 'CAPTURE-TEST-VENMO-001', 'test@example.com', '{}',
+          paypalUuid, paypalUuid, 'tickets', 5000, 'USD', 'paypal', 'completed', 'ORD-PAYPAL-TEST-001', 1, 'ORDER-TEST-PAYPAL-001', 'CAPTURE-TEST-PAYPAL-001', 'test@example.com', '{}'
         ]
       });
 
@@ -881,11 +881,17 @@ describe('PayPal Integration Flow', () => {
       ];
 
       for (const tx of transactions) {
+        // Add PayPal credentials for venmo/paypal processors to satisfy migration 051a trigger
+        const isPayPalFamily = tx.processor === 'venmo' || tx.processor === 'paypal';
         await dbClient.execute({
           sql: `INSERT INTO transactions
-                (transaction_id, uuid, type, amount_cents, currency, payment_processor, status, order_number, is_test)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          args: [tx.uuid, tx.uuid, 'tickets', 5000, 'USD', tx.processor, 'completed', tx.order, 1]
+                (transaction_id, uuid, type, amount_cents, currency, payment_processor, status, order_number, is_test, paypal_order_id, paypal_capture_id, customer_email, order_data)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          args: [tx.uuid, tx.uuid, 'tickets', 5000, 'USD', tx.processor, 'completed', tx.order, 1,
+                 isPayPalFamily ? `ORDER-TEST-${tx.order}` : null,
+                 isPayPalFamily ? `CAPTURE-TEST-${tx.order}` : null,
+                 'test@example.com',
+                 '{}']
         });
       }
 
@@ -907,13 +913,13 @@ describe('PayPal Integration Flow', () => {
     });
 
     it('should handle updatePayPalCapture with optional payment_processor parameter', async () => {
-      // Create initial transaction
+      // Create initial transaction with PayPal credentials (required by migration 051a trigger)
       const uuid = crypto.randomUUID();
       await dbClient.execute({
         sql: `INSERT INTO transactions
-              (transaction_id, uuid, type, amount_cents, currency, payment_processor, status, order_number, is_test)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        args: [uuid, uuid, 'tickets', 5000, 'USD', 'paypal', 'pending', 'ORD-UPDATE-001', 1]
+              (transaction_id, uuid, type, amount_cents, currency, payment_processor, status, order_number, is_test, paypal_order_id, paypal_capture_id, customer_email, order_data)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [uuid, uuid, 'tickets', 5000, 'USD', 'paypal', 'pending', 'ORD-UPDATE-001', 1, 'ORDER-TEST-UPDATE-001', 'CAPTURE-TEST-UPDATE-001', 'test@example.com', '{}']
       });
 
       // Update with Venmo payment processor
@@ -936,13 +942,13 @@ describe('PayPal Integration Flow', () => {
     });
 
     it('should preserve payment_processor when updatePayPalCapture called without it', async () => {
-      // Create transaction with Venmo
+      // Create transaction with Venmo and PayPal credentials (required by migration 051a trigger)
       const uuid = crypto.randomUUID();
       await dbClient.execute({
         sql: `INSERT INTO transactions
-              (transaction_id, uuid, type, amount_cents, currency, payment_processor, status, order_number, is_test)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        args: [uuid, uuid, 'tickets', 5000, 'USD', 'venmo', 'pending', 'ORD-PRESERVE-001', 1]
+              (transaction_id, uuid, type, amount_cents, currency, payment_processor, status, order_number, is_test, paypal_order_id, paypal_capture_id, customer_email, order_data)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [uuid, uuid, 'tickets', 5000, 'USD', 'venmo', 'pending', 'ORD-PRESERVE-001', 1, 'ORDER-TEST-PRESERVE-001', 'CAPTURE-TEST-PRESERVE-001', 'test@example.com', '{}']
       });
 
       // Update without payment_processor parameter

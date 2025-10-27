@@ -128,7 +128,7 @@ class PaymentSelector {
                         </button>
 
                         <!-- PayPal & Venmo Option -->
-                        <!-- Payment logos sourced from: https://github.com/payrexx/payment-logos (PayPal), UXWing (Venmo) -->
+                        <!-- Payment logos sourced from: https://github.com/payrexx/payment-logos (PayPal), Venmo wordmark (custom SVG) -->
                         <button class="payment-method-option"
                                 data-method="paypal"
                                 aria-label="Pay with PayPal or Venmo - redirects to PayPal secure website"
