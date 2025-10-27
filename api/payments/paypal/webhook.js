@@ -353,7 +353,18 @@ export default async function handler(req, res) {
 
           // Check if already processed
           if (transaction.status === 'completed' && transaction.paypal_capture_id === captureId) {
-            console.log(`Transaction already completed: ${transaction.uuid}`);
+            // If payment processor detection differs, correct it even for completed transactions
+            if (paymentProcessor && transaction.payment_processor !== paymentProcessor) {
+              await transactionService.updatePayPalCapture(
+                transaction.uuid,
+                captureId,
+                'completed',
+                paymentProcessor
+              );
+              console.log(`Processor corrected for ${transaction.uuid}: ${transaction.payment_processor} -> ${paymentProcessor}`);
+            } else {
+              console.log(`Transaction already completed: ${transaction.uuid}`);
+            }
             await updateWebhookEventStatus(event.id, 'processed', null);
             return res.json({ received: true, status: 'already_processed' });
           }

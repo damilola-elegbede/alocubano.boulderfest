@@ -157,10 +157,15 @@ async function captureOrderHandler(req, res) {
     const paymentProcessor = detectPaymentProcessor(captureResult);
     const sourceDetails = extractPaymentSourceDetails(captureResult);
 
+    // Mask sensitive account identifier for security
+    const maskedAccountId = sourceDetails.accountId
+      ? `${String(sourceDetails.accountId).slice(0, 3)}***${String(sourceDetails.accountId).slice(-2)}`
+      : undefined;
+
     console.log('Payment source detected:', {
       processor: paymentProcessor,
       sourceType: sourceDetails.type,
-      accountId: sourceDetails.accountId
+      accountId: maskedAccountId
     });
 
     // Extract capture details

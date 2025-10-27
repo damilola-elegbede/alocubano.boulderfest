@@ -762,7 +762,7 @@ test.describe('Payment Processing Flow', () => {
   });
 
   test('should display PayPal payment option with Venmo branding', async ({ page }) => {
-    await page.goto(`${baseUrl}/tickets`);
+    await page.goto('/tickets');
 
     // Wait for page to load
     await page.waitForSelector('h1', { state: 'visible', timeout: 10000 });
@@ -800,7 +800,7 @@ test.describe('Payment Processing Flow', () => {
   test('should support Venmo payment processor in database', async ({ page }) => {
     // This E2E test verifies the complete flow including database storage
 
-    await page.goto(`${baseUrl}/tickets`);
+    await page.goto('/tickets');
 
     // Add ticket to cart
     const ticketButton = page.locator('[data-ticket-type]').first();
