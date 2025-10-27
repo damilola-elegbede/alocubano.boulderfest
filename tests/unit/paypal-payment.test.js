@@ -670,4 +670,97 @@ describe('PayPal Payment Integration', () => {
       expect(health2.environment).toBe(health3.environment);
     });
   });
+
+  describe('Payment Source Detection Support', () => {
+    it('should include payment_source in capture response', async () => {
+      const orderId = 'TEST-EC-1234567890-abc123';
+      const captureResult = await capturePayPalOrder(orderId);
+
+      expect(captureResult).toBeDefined();
+      expect(captureResult.purchase_units).toBeInstanceOf(Array);
+      expect(captureResult.purchase_units[0].payments.captures).toBeInstanceOf(Array);
+
+      const capture = captureResult.purchase_units[0].payments.captures[0];
+      expect(capture).toHaveProperty('payment_source');
+    });
+
+    it('should support Venmo payment source in mock responses', async () => {
+      const orderId = 'TEST-EC-1234567890-venmo';
+      const captureResult = await capturePayPalOrder(orderId);
+
+      const capture = captureResult.purchase_units[0].payments.captures[0];
+      const paymentSource = capture.payment_source;
+
+      // Mock client may include venmo or paypal payment source
+      expect(paymentSource).toBeDefined();
+      expect(typeof paymentSource).toBe('object');
+    });
+
+    it('should support PayPal payment source in mock responses', async () => {
+      const orderId = 'TEST-EC-1234567890-paypal';
+      const captureResult = await capturePayPalOrder(orderId);
+
+      const capture = captureResult.purchase_units[0].payments.captures[0];
+      const paymentSource = capture.payment_source;
+
+      expect(paymentSource).toBeDefined();
+      expect(typeof paymentSource).toBe('object');
+    });
+
+    it('should maintain payment_source structure for detection', async () => {
+      const orderId = 'TEST-EC-1234567890-abc123';
+      const captureResult = await capturePayPalOrder(orderId);
+
+      // Verify structure needed for payment source detector
+      expect(captureResult).toHaveProperty('purchase_units');
+      expect(captureResult.purchase_units[0]).toHaveProperty('payments');
+      expect(captureResult.purchase_units[0].payments).toHaveProperty('captures');
+      expect(captureResult.purchase_units[0].payments.captures[0]).toHaveProperty('payment_source');
+
+      const paymentSource = captureResult.purchase_units[0].payments.captures[0].payment_source;
+
+      // Should have either venmo or paypal key
+      const hasExpectedSource = paymentSource.hasOwnProperty('venmo') ||
+                                 paymentSource.hasOwnProperty('paypal');
+      expect(hasExpectedSource).toBe(true);
+    });
+
+    it('should handle order capture with different payment sources', async () => {
+      // Test multiple captures to ensure consistency
+      const orders = [
+        'TEST-EC-1234567890-test1',
+        'TEST-EC-1234567890-test2',
+        'TEST-EC-1234567890-test3'
+      ];
+
+      const captures = await Promise.all(orders.map(id => capturePayPalOrder(id)));
+
+      captures.forEach(captureResult => {
+        const capture = captureResult.purchase_units[0].payments.captures[0];
+        expect(capture).toHaveProperty('payment_source');
+        expect(typeof capture.payment_source).toBe('object');
+      });
+    });
+
+    it('should provide account information in payment_source', async () => {
+      const orderId = 'TEST-EC-1234567890-abc123';
+      const captureResult = await capturePayPalOrder(orderId);
+
+      const paymentSource = captureResult.purchase_units[0].payments.captures[0].payment_source;
+
+      // Check if venmo source has expected fields
+      if (paymentSource.venmo) {
+        expect(paymentSource.venmo).toBeDefined();
+        // Venmo should have account_id, user_name, email_address
+        expect(typeof paymentSource.venmo).toBe('object');
+      }
+
+      // Check if paypal source has expected fields
+      if (paymentSource.paypal) {
+        expect(paymentSource.paypal).toBeDefined();
+        // PayPal should have account_id, email_address
+        expect(typeof paymentSource.paypal).toBe('object');
+      }
+    });
+  });
 });

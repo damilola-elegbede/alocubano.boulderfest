@@ -15,6 +15,7 @@ import crypto from 'crypto';
 import transactionService from "../../../lib/transaction-service.js";
 import { getDatabaseClient } from "../../../lib/database.js";
 import auditService from "../../../lib/audit-service.js";
+import { detectPaymentProcessor, extractPaymentSourceDetails } from "../../../lib/paypal-payment-source-detector.js";
 
 // PayPal webhook verification URL
 const PAYPAL_API_URL = process.env.PAYPAL_API_URL || 'https://api-m.sandbox.paypal.com';
@@ -289,6 +290,31 @@ export default async function handler(req, res) {
           const amountCents = Math.round(parseFloat(resource.amount.value) * 100);
           const currency = resource.amount.currency_code;
 
+          // Detect payment processor from webhook resource
+          // Webhook resource may have payment_source directly or need reconstruction
+          let paymentProcessor = 'paypal'; // Default
+          if (resource.payment_source) {
+            // Construct capture-like response for detector
+            const captureResponse = {
+              purchase_units: [{
+                payments: {
+                  captures: [{
+                    payment_source: resource.payment_source
+                  }]
+                }
+              }]
+            };
+            paymentProcessor = detectPaymentProcessor(captureResponse);
+            const sourceDetails = extractPaymentSourceDetails(captureResponse);
+            console.log('Webhook payment source detected:', {
+              processor: paymentProcessor,
+              sourceType: sourceDetails.type,
+              webhookEventId: event.id
+            });
+          } else {
+            console.log('Webhook resource missing payment_source, defaulting to paypal');
+          }
+
           // Find transaction by PayPal order ID or capture ID
           let transaction = null;
           if (orderId) {
@@ -327,16 +353,28 @@ export default async function handler(req, res) {
 
           // Check if already processed
           if (transaction.status === 'completed' && transaction.paypal_capture_id === captureId) {
-            console.log(`Transaction already completed: ${transaction.uuid}`);
+            // If payment processor detection differs, correct it even for completed transactions
+            if (paymentProcessor && transaction.payment_processor !== paymentProcessor) {
+              await transactionService.updatePayPalCapture(
+                transaction.uuid,
+                captureId,
+                'completed',
+                paymentProcessor
+              );
+              console.log(`Processor corrected for ${transaction.uuid}: ${transaction.payment_processor} -> ${paymentProcessor}`);
+            } else {
+              console.log(`Transaction already completed: ${transaction.uuid}`);
+            }
             await updateWebhookEventStatus(event.id, 'processed', null);
             return res.json({ received: true, status: 'already_processed' });
           }
 
-          // Update transaction status to completed
+          // Update transaction status to completed with detected payment processor
           await transactionService.updatePayPalCapture(
             transaction.uuid,
             captureId,
-            'completed'
+            'completed',
+            paymentProcessor
           );
 
           // Log financial audit for capture completion
@@ -356,6 +394,7 @@ export default async function handler(req, res) {
               transaction_id: transaction.id,
               capture_status: resource.status,
               final_capture: resource.final_capture,
+              payment_processor: paymentProcessor,
               test_mode: transaction.is_test === 1
             },
             severity: transaction.is_test ? 'debug' : 'info'

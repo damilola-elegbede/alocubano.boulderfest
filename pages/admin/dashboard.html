@@ -394,6 +394,7 @@
             <option value="">All Payment Methods</option>
             <option value="stripe">Stripe</option>
             <option value="paypal">PayPal</option>
+            <option value="venmo">Venmo</option>
           </select>
           <select 
             id="checkinFilter" 
@@ -1305,8 +1306,17 @@
 
                               // Format payment processor information
                               const paymentProcessor = reg.payment_processor || 'stripe';
-                              const processorIcon = paymentProcessor === 'paypal' ? '🅿️' : '💳';
-                              const processorBadge = paymentProcessor === 'paypal' ? 'paypal-badge' : 'stripe-badge';
+                              let processorIcon, processorBadge;
+                              if (paymentProcessor === 'venmo') {
+                                processorIcon = '💙';
+                                processorBadge = 'venmo-badge';
+                              } else if (paymentProcessor === 'paypal') {
+                                processorIcon = '🅿️';
+                                processorBadge = 'paypal-badge';
+                              } else {
+                                processorIcon = '💳';
+                                processorBadge = 'stripe-badge';
+                              }
                               const transactionId = reg.paypal_order_id || reg.stripe_session_id || reg.transaction_id;
 
                               return `

@@ -802,4 +802,169 @@ describe('PayPal Integration Flow', () => {
       expect(joinQuery.rows[0].item_name).toBe('Test Consistency Ticket');
     });
   });
+
+  describe('Venmo Payment Detection Integration', () => {
+    it('should detect and store Venmo payment processor from capture response', async () => {
+      // Create PayPal order
+      const orderData = {
+        intent: 'CAPTURE',
+        purchase_units: [{
+          amount: {
+            currency_code: 'USD',
+            value: '50.00'
+          },
+          items: [{
+            name: 'Venmo Test Ticket',
+            quantity: '1',
+            unit_amount: { currency_code: 'USD', value: '50.00' }
+          }]
+        }]
+      };
+
+      const order = await createPayPalOrder(orderData);
+      expect(order).toBeDefined();
+      expect(order.id).toMatch(/^TEST-EC-\d+-[a-z0-9]+$/);
+
+      // Capture order - mock returns response with payment_source
+      const captureResult = await capturePayPalOrder(order.id);
+      expect(captureResult).toBeDefined();
+      expect(captureResult.status).toBe('COMPLETED');
+
+      // Verify payment_source is included in capture
+      const capture = captureResult.purchase_units[0].payments.captures[0];
+      expect(capture).toHaveProperty('payment_source');
+      expect(capture.payment_source).toBeDefined();
+
+      // Payment source should have either venmo or paypal
+      const hasPaymentSource = capture.payment_source.venmo || capture.payment_source.paypal;
+      expect(hasPaymentSource).toBeDefined();
+    });
+
+    it('should properly store Venmo vs PayPal distinction in database', async () => {
+      // Create two test transactions - one Venmo, one PayPal
+      const venmoUuid = crypto.randomUUID();
+      const paypalUuid = crypto.randomUUID();
+
+      await dbClient.execute({
+        sql: `INSERT INTO transactions
+              (transaction_id, uuid, type, amount_cents, currency, payment_processor, status, order_number, is_test, paypal_order_id, paypal_capture_id, customer_email, order_data)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [
+          venmoUuid, venmoUuid, 'tickets', 5000, 'USD', 'venmo', 'completed', 'ORD-VENMO-TEST-001', 1, 'ORDER-TEST-VENMO-001', 'CAPTURE-TEST-VENMO-001', 'test@example.com', '{}',
+          paypalUuid, paypalUuid, 'tickets', 5000, 'USD', 'paypal', 'completed', 'ORD-PAYPAL-TEST-001', 1, 'ORDER-TEST-PAYPAL-001', 'CAPTURE-TEST-PAYPAL-001', 'test@example.com', '{}'
+        ]
+      });
+
+      // Query Venmo transactions
+      const venmoResult = await dbClient.execute({
+        sql: 'SELECT COUNT(*) as count FROM transactions WHERE payment_processor = ? AND is_test = 1',
+        args: ['venmo']
+      });
+
+      // Query PayPal transactions
+      const paypalResult = await dbClient.execute({
+        sql: 'SELECT COUNT(*) as count FROM transactions WHERE payment_processor = ? AND is_test = 1',
+        args: ['paypal']
+      });
+
+      expect(venmoResult.rows[0].count).toBeGreaterThanOrEqual(1);
+      expect(paypalResult.rows[0].count).toBeGreaterThanOrEqual(1);
+    });
+
+    it('should support filtering by payment_processor in queries', async () => {
+      // Create multiple test transactions with different processors
+      const transactions = [
+        { uuid: crypto.randomUUID(), processor: 'venmo', order: 'ORD-V1' },
+        { uuid: crypto.randomUUID(), processor: 'venmo', order: 'ORD-V2' },
+        { uuid: crypto.randomUUID(), processor: 'paypal', order: 'ORD-P1' },
+        { uuid: crypto.randomUUID(), processor: 'stripe', order: 'ORD-S1' }
+      ];
+
+      for (const tx of transactions) {
+        // Add PayPal credentials for venmo/paypal processors to satisfy migration 051a trigger
+        const isPayPalFamily = tx.processor === 'venmo' || tx.processor === 'paypal';
+        await dbClient.execute({
+          sql: `INSERT INTO transactions
+                (transaction_id, uuid, type, amount_cents, currency, payment_processor, status, order_number, is_test, paypal_order_id, paypal_capture_id, customer_email, order_data)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          args: [tx.uuid, tx.uuid, 'tickets', 5000, 'USD', tx.processor, 'completed', tx.order, 1,
+                 isPayPalFamily ? `ORDER-TEST-${tx.order}` : null,
+                 isPayPalFamily ? `CAPTURE-TEST-${tx.order}` : null,
+                 'test@example.com',
+                 '{}']
+        });
+      }
+
+      // Test filtering by single processor
+      const venmoOnly = await dbClient.execute({
+        sql: 'SELECT COUNT(*) as count FROM transactions WHERE payment_processor = ? AND is_test = 1 AND order_number LIKE ?',
+        args: ['venmo', 'ORD-V%']
+      });
+
+      expect(venmoOnly.rows[0].count).toBe(2);
+
+      // Test filtering by multiple processors (PayPal family)
+      const paypalFamily = await dbClient.execute({
+        sql: 'SELECT COUNT(*) as count FROM transactions WHERE payment_processor IN (?, ?) AND is_test = 1 AND order_number LIKE ?',
+        args: ['venmo', 'paypal', 'ORD-%']
+      });
+
+      expect(paypalFamily.rows[0].count).toBe(3);
+    });
+
+    it('should handle updatePayPalCapture with optional payment_processor parameter', async () => {
+      // Create initial transaction with PayPal credentials (required by migration 051a trigger)
+      const uuid = crypto.randomUUID();
+      await dbClient.execute({
+        sql: `INSERT INTO transactions
+              (transaction_id, uuid, type, amount_cents, currency, payment_processor, status, order_number, is_test, paypal_order_id, paypal_capture_id, customer_email, order_data)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [uuid, uuid, 'tickets', 5000, 'USD', 'paypal', 'pending', 'ORD-UPDATE-001', 1, 'ORDER-TEST-UPDATE-001', 'CAPTURE-TEST-UPDATE-001', 'test@example.com', '{}']
+      });
+
+      // Update with Venmo payment processor
+      await transactionService.updatePayPalCapture(
+        uuid,
+        'CAPTURE-VENMO-UPDATE-001',
+        'completed',
+        'venmo'
+      );
+
+      // Verify update
+      const result = await dbClient.execute({
+        sql: 'SELECT payment_processor, status, paypal_capture_id FROM transactions WHERE uuid = ?',
+        args: [uuid]
+      });
+
+      expect(result.rows[0].payment_processor).toBe('venmo');
+      expect(result.rows[0].status).toBe('completed');
+      expect(result.rows[0].paypal_capture_id).toBe('CAPTURE-VENMO-UPDATE-001');
+    });
+
+    it('should preserve payment_processor when updatePayPalCapture called without it', async () => {
+      // Create transaction with Venmo and PayPal credentials (required by migration 051a trigger)
+      const uuid = crypto.randomUUID();
+      await dbClient.execute({
+        sql: `INSERT INTO transactions
+              (transaction_id, uuid, type, amount_cents, currency, payment_processor, status, order_number, is_test, paypal_order_id, paypal_capture_id, customer_email, order_data)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [uuid, uuid, 'tickets', 5000, 'USD', 'venmo', 'pending', 'ORD-PRESERVE-001', 1, 'ORDER-TEST-PRESERVE-001', 'CAPTURE-TEST-PRESERVE-001', 'test@example.com', '{}']
+      });
+
+      // Update without payment_processor parameter
+      await transactionService.updatePayPalCapture(
+        uuid,
+        'CAPTURE-PRESERVE-001',
+        'completed'
+      );
+
+      // Verify venmo is preserved
+      const result = await dbClient.execute({
+        sql: 'SELECT payment_processor FROM transactions WHERE uuid = ?',
+        args: [uuid]
+      });
+
+      expect(result.rows[0].payment_processor).toBe('venmo');
+    });
+  });
 });

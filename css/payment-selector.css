@@ -259,6 +259,36 @@
   object-fit: contain;
 }
 
+/* PayPal/Venmo dual-logo layout - override single icon style */
+.payment-method-option[data-method="paypal"] .payment-card-icons {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: nowrap;
+}
+
+.payment-method-option[data-method="paypal"] .payment-card-icons .card-icon {
+  height: 48px;
+  width: auto;
+  max-width: 120px;
+  object-fit: contain;
+}
+
+.payment-method-option[data-method="paypal"] .payment-card-icons .paypal-icon {
+  width: 120px;
+  height: auto;
+  max-width: none; /* Override single icon max-width */
+  margin: 0; /* Remove auto margin from single icon style */
+}
+
+.payment-method-option[data-method="paypal"] .payment-card-icons .venmo-icon {
+  height: 48px;
+  width: auto;
+  max-width: 160px; /* Increased from 120px for better visibility */
+  display: none; /* Hide on desktop - Venmo requires mobile device */
+}
+
 /* Payment Method Info */
 .payment-method-info {
   flex: 1;
@@ -466,7 +496,7 @@
   .payment-method-option .paypal-icon {
     width: 140px; /* Optimized size for mobile screens */
     height: auto;
-    max-height: 40px;
+    max-height: none; /* Allow logo to scale naturally */
   }
 
   /* Card icons optimization for mobile */
@@ -825,6 +855,36 @@
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+  /* Spacing for PayPal/Venmo on mobile */
+  .payment-method-option[data-method="paypal"] .payment-card-icons {
+    gap: 12px;
+  }
+
+  /* Show Venmo icon on mobile (where it actually works) */
+  .payment-method-option[data-method="paypal"] .payment-card-icons .venmo-icon {
+    display: block;
+  }
+
+  /* Adjust icon sizes for mobile - override general .card-icon rule */
+  .payment-method-option[data-method="paypal"] .payment-card-icons .card-icon {
+    height: auto; /* Override the 48px from desktop */
+  }
+
+  .payment-method-option[data-method="paypal"] .payment-card-icons .paypal-icon {
+    width: 140px !important;
+    height: auto !important;
+    max-width: none !important;
+  }
+
+  .payment-method-option[data-method="paypal"] .payment-card-icons .venmo-icon {
+    width: auto;
+    height: auto;
+    max-width: 120px;
+  }
 }
 
 /* Print Styles */

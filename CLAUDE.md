@@ -68,7 +68,7 @@ npm run verify-structure        # Verify project structure
 - SQLite database with Turso for production
 - Async services using Promise-Based Lazy Singleton pattern
 - Email via Brevo with webhook processing
-- Payments via Stripe Checkout (tickets + donations)
+- Payments via Stripe Checkout and PayPal (with Venmo support) for tickets + donations
 - Wallet passes for Apple/Google with JWT auth
 - Admin panel with bcrypt auth and JWT sessions
 - Registration system with adaptive reminder scheduling
@@ -199,7 +199,8 @@ Vercel auto-generates when you add cron config to vercel.json. Used to authentic
 ## API Endpoints
 
 **Email**: subscribe, unsubscribe, brevo-webhook
-**Payments**: create-checkout-session, stripe-webhook, checkout-success
+**Payments (Stripe)**: create-checkout-session, stripe-webhook, checkout-success
+**Payments (PayPal)**: paypal/create-order, paypal/capture-order, paypal/webhook
 **Tickets**: [ticketId], validate, register, apple-wallet/[ticketId], google-wallet/[ticketId]
 **Registration**: [token], batch, health
 **Admin**: login, dashboard, registrations, donations
@@ -234,6 +235,45 @@ JOIN transactions tx ON t.transaction_id = tx.id;
 ```
 
 See migrations: 004_transactions.sql, 005_tickets.sql, 008_transaction_items.sql, 044_critical_constraints.sql
+
+## PayPal and Venmo Payment Detection
+
+Venmo is integrated as a **funding source within PayPal checkout**, not a standalone payment processor.
+
+**Architecture:**
+- Frontend: PayPal SDK with `enable-funding=venmo` parameter
+- Backend: Detect payment source from PayPal API `payment_source` field
+- Database: Store as separate `payment_processor` values ('paypal' vs 'venmo')
+- Dashboard: Display with distinct icons and filters
+
+**Detection Flow:**
+1. User completes PayPal/Venmo payment on frontend
+2. `api/payments/paypal/capture-order.js` captures payment
+3. `lib/paypal-payment-source-detector.js` analyzes `payment_source.venmo` or `payment_source.paypal`
+4. Transaction stored with correct `payment_processor` value
+5. Webhook updates also detect and record payment source
+
+**Key Files:**
+- `lib/paypal-payment-source-detector.js` - Detection utility (3 exports)
+- `api/payments/paypal/capture-order.js` - Capture with detection
+- `api/payments/paypal/webhook.js` - Webhook with detection
+- `lib/transaction-service.js` - `updatePayPalCapture(uuid, captureId, status, paymentProcessor?)`
+- `js/lib/paypal-sdk-loader.js` - Includes `buyer-country=US` for sandbox testing
+
+**Testing:**
+- Sandbox: Use `buyer-country=US` parameter to enable Venmo
+- Mock: `lib/mock-paypal.js` includes payment_source in capture responses
+- Unit: `tests/unit/venmo-payment-source-detector.test.js` (25 tests)
+- Integration: PayPal flow tests verify detection and storage
+
+**Geographic Restrictions:**
+- Venmo: US-only, USD currency
+- Mobile-optimized but works on desktop
+
+**Database Schema:**
+```sql
+transactions.payment_processor: 'venmo' | 'paypal' | 'stripe' | 'cash' | 'card_terminal' | 'comp'
+```
 
 ## Mobile UI
 
