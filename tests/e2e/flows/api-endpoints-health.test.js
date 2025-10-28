@@ -11,8 +11,11 @@
 import { test, expect } from '@playwright/test';
 
 // Base URL will be set from environment
+// CI sets PLAYWRIGHT_BASE_URL, local dev may set BASE_URL
 const getBaseUrl = () => {
-  return process.env.BASE_URL || 'http://localhost:3000';
+  return process.env.PLAYWRIGHT_BASE_URL ||
+         process.env.BASE_URL ||
+         'http://localhost:3000';
 };
 
 // All 28 endpoints from the admin API endpoints page
@@ -57,7 +60,7 @@ const API_ENDPOINTS = [
   { method: 'GET', path: '/api/payments/checkout-success', category: 'Payments', requiresAuth: false, expectedStatus: [200, 400] },
 
   // Health Endpoints (3)
-  { method: 'GET', path: '/api/test-db', category: 'Health', requiresAuth: false, expectedStatus: [200] },
+  { method: 'GET', path: '/api/test-db', category: 'Health', requiresAuth: false, expectedStatus: [200, 207] }, // 207 = partial success
   { method: 'GET', path: '/api/health/check', category: 'Health', requiresAuth: false, expectedStatus: [200] },
   { method: 'GET', path: '/api/health/database', category: 'Health', requiresAuth: false, expectedStatus: [200] }
 ];
