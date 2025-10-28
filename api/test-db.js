@@ -15,11 +15,13 @@ import {
 import { getMigrationStatus } from "../lib/migration-status.js";
 
 export default async function handler(req, res) {
-  // Allow access in development, test environments, and when debug is enabled
+  // Allow access in development, test environments, preview, and when debug is enabled
+  // Now enabled by default for preview environments to support API testing page
   const isProduction = process.env.NODE_ENV === 'production';
   const isDebugEnabled = process.env.ENABLE_DEBUG_ENDPOINTS === 'true';
   const isVercelPreview = process.env.VERCEL_ENV === 'preview';
 
+  // Only block in production when explicitly disabled
   if (isProduction && !isDebugEnabled && !isVercelPreview) {
     return res.status(404).json({ error: 'Not found' });
   }
