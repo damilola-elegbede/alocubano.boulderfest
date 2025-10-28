@@ -1547,7 +1547,16 @@
         const content = document.getElementById('responseContent');
 
         tabs.forEach(tab => tab.classList.remove('active'));
-        eventTarget?.classList.add('active') || document.querySelector(`[onclick="switchTab('${tabName}', this)"]`).classList.add('active');
+
+        // Safe activation with null checks
+        if (eventTarget) {
+          eventTarget.classList.add('active');
+        } else {
+          const targetTab = document.querySelector(`.modal-tab[onclick*="switchTab('${tabName}')"]`);
+          if (targetTab) {
+            targetTab.classList.add('active');
+          }
+        }
 
         if (!currentModal) return;
 
