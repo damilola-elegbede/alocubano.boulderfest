@@ -23,7 +23,7 @@ const API_ENDPOINTS = [
   { method: 'GET', path: '/api/admin/registrations', category: 'Admin', requiresAuth: true, expectedStatus: [200, 401] },
   { method: 'GET', path: '/api/admin/transactions', category: 'Admin', requiresAuth: true, expectedStatus: [200, 401] },
   { method: 'GET', path: '/api/admin/analytics', category: 'Admin', requiresAuth: true, expectedStatus: [200, 401] },
-  { method: 'GET', path: '/api/admin/events', category: 'Admin', requiresAuth: false, expectedStatus: [200] },
+  { method: 'GET', path: '/api/admin/events', category: 'Admin', requiresAuth: true, expectedStatus: [200, 401] },
   { method: 'GET', path: '/api/admin/generate-report', category: 'Admin', requiresAuth: true, expectedStatus: [200, 401] },
   { method: 'GET', path: '/api/admin/csrf-token', category: 'Admin', requiresAuth: true, expectedStatus: [200, 401] },
 
