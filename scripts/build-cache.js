@@ -22,8 +22,8 @@ const __dirname = path.dirname(__filename);
 const rootDir = path.join(__dirname, '..');
 
 // Use node_modules/.cache/ for Vercel builds (preserved by Vercel build cache)
-// This directory exists BEFORE build starts (created by npm install)
-// and is included in Vercel's build cache restoration
+// Vercel automatically caches the entire node_modules/ directory between builds
+// This is the standard location used by tools like Turborepo, webpack, etc.
 const VERCEL_CACHE_DIR = path.join(rootDir, 'node_modules', '.cache', 'alocubano-build');
 const LOCAL_CACHE_DIR = path.join(rootDir, '.tmp');
 const isVercel = process.env.VERCEL === '1';
