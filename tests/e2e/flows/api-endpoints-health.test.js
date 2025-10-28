@@ -517,8 +517,17 @@ test.describe('API Endpoints Health Check', () => {
               if (status === 200 && endpoint.validateResponse) {
                 const contentType = response.headers()['content-type'];
                 if (contentType && contentType.includes('application/json')) {
-                  const jsonData = await response.json();
-                  endpoint.validateResponse(jsonData);
+                  try {
+                    const jsonData = await response.json();
+                    endpoint.validateResponse(jsonData);
+                  } catch (parseError) {
+                    // Distinguish JSON parse errors from validation errors
+                    const errorMsg = `${endpoint.method} ${resolvedPath} returned malformed JSON: ${parseError.message}`;
+                    testResults.errors.push(errorMsg);
+                    testResults.failed++;
+                    testResults.passed--; // Correct the earlier increment
+                    throw new Error(errorMsg);
+                  }
                 }
               }
             }
@@ -562,24 +571,36 @@ test.describe('API Endpoints Health Check', () => {
       const response = await request.get(`${baseUrl}/api/health/check`);
       expect(response.status()).toBe(200);
 
-      const data = await response.json();
-      expect(data.status).toBe('healthy');
+      try {
+        const data = await response.json();
+        expect(data.status).toBe('healthy');
+      } catch (parseError) {
+        throw new Error(`GET /api/health/check returned malformed JSON: ${parseError.message}`);
+      }
     });
 
     test('Database health endpoint must be available', async ({ request }) => {
       const response = await request.get(`${baseUrl}/api/health/database`);
       expect(response.status()).toBe(200);
 
-      const data = await response.json();
-      expect(data.status).toBe('healthy');
+      try {
+        const data = await response.json();
+        expect(data.status).toBe('healthy');
+      } catch (parseError) {
+        throw new Error(`GET /api/health/database returned malformed JSON: ${parseError.message}`);
+      }
     });
 
     test('Registration health endpoint must be available', async ({ request }) => {
       const response = await request.get(`${baseUrl}/api/registration/health`);
       expect(response.status()).toBe(200);
 
-      const data = await response.json();
-      expect(data.status).toBe('healthy');
+      try {
+        const data = await response.json();
+        expect(data.status).toBe('healthy');
+      } catch (parseError) {
+        throw new Error(`GET /api/registration/health returned malformed JSON: ${parseError.message}`);
+      }
     });
   });
 });
