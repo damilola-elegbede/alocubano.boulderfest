@@ -34,6 +34,10 @@
       "maxDuration": 5,
       "includeFiles": "lib/database.js"
     },
+    "api/test-db.js": {
+      "maxDuration": 10,
+      "includeFiles": "lib/{database,email-subscriber-service,cors-config,sql-security,migration-status}.js"
+    },
     "api/wallet/[ticketId].js": {
       "maxDuration": 20,
       "includeFiles": "lib/{database,wallet-service,ticket-service,logger}.js"

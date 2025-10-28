@@ -850,6 +850,84 @@
           border-width: 3px;
         }
       }
+
+      /* Parameter Input Styles */
+      .endpoint-params {
+        margin-top: var(--space-md);
+        padding: var(--space-md);
+        background: var(--gray-700);
+        border: 1px solid var(--gray-600);
+        border-radius: var(--radius-md);
+      }
+
+      .param-section {
+        margin-bottom: var(--space-md);
+      }
+
+      .param-section:last-child {
+        margin-bottom: 0;
+      }
+
+      .param-label {
+        display: block;
+        margin-bottom: var(--space-xs);
+        font-weight: 500;
+        font-size: 0.875rem;
+        color: var(--gray-200);
+      }
+
+      .param-input {
+        width: 100%;
+        padding: var(--space-sm);
+        background: var(--gray-800);
+        border: 1px solid var(--gray-600);
+        border-radius: var(--radius-sm);
+        color: var(--gray-100);
+        font-family: 'Monaco', 'Courier New', monospace;
+        font-size: 0.875rem;
+        resize: vertical;
+        transition: border-color 0.2s ease;
+      }
+
+      .param-input:focus {
+        outline: none;
+        border-color: var(--blue-400);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      }
+
+      .param-input::placeholder {
+        color: var(--gray-500);
+      }
+
+      textarea.param-input {
+        min-height: 80px;
+      }
+
+      /* Endpoint icons */
+      .endpoint-note,
+      .endpoint-danger {
+        margin-left: var(--space-xs);
+        cursor: help;
+        font-size: 1rem;
+      }
+
+      .endpoint-note {
+        color: var(--blue-400);
+      }
+
+      .endpoint-danger {
+        color: var(--orange-400);
+      }
+
+      /* Params button */
+      .endpoint-btn.params {
+        background: var(--blue-600);
+        margin-right: var(--space-xs);
+      }
+
+      .endpoint-btn.params:hover {
+        background: var(--blue-500);
+      }
     </style>
 
     <!-- Theme Manager -->
@@ -1053,26 +1131,32 @@
     <script>
       // API Endpoints Configuration
       const API_ENDPOINTS = [
+        // Admin Endpoints
         {
           method: 'GET',
           path: '/api/admin/dashboard',
           category: 'Admin',
           description: 'Retrieve admin dashboard data including registrations and analytics overview',
-          requiresAuth: true
+          requiresAuth: true,
+          queryParams: { eventId: 1 }
         },
         {
           method: 'POST',
           path: '/api/admin/login',
           category: 'Admin',
           description: 'Unified admin authentication - supports standard, simple (test only), and mobile modes via "mode" parameter',
-          requiresAuth: false
+          requiresAuth: false,
+          body: { username: '', password: '', mode: 'simple' },
+          dangerous: true,
+          dangerMessage: '⚠️ Testing login may log you out of your current session.'
         },
         {
           method: 'GET',
           path: '/api/admin/registrations',
           category: 'Admin',
           description: 'Fetch all ticket registrations with filtering and pagination support',
-          requiresAuth: true
+          requiresAuth: true,
+          queryParams: { limit: 10, sortBy: 'created_at', sortOrder: 'DESC' }
         },
         {
           method: 'GET',
@@ -1086,7 +1170,8 @@
           path: '/api/admin/analytics',
           category: 'Admin',
           description: 'Get comprehensive analytics data for charts and insights',
-          requiresAuth: true
+          requiresAuth: true,
+          queryParams: { type: 'summary', eventId: 1 }
         },
         {
           method: 'GET',
@@ -1100,7 +1185,8 @@
           path: '/api/admin/generate-report',
           category: 'Admin',
           description: 'Generate and download comprehensive admin reports in CSV or JSON',
-          requiresAuth: true
+          requiresAuth: true,
+          queryParams: { format: 'json', type: 'tickets' }
         },
         {
           method: 'GET',
@@ -1109,12 +1195,16 @@
           description: 'Get CSRF token for state-changing operations',
           requiresAuth: true
         },
+        // Sheets Endpoints
         {
           method: 'POST',
           path: '/api/sheets/sync',
           category: 'Sheets',
           description: 'Synchronize registration data to Google Sheets',
-          requiresAuth: true
+          requiresAuth: true,
+          body: {},
+          dangerous: true,
+          dangerMessage: '⚠️ This will trigger an actual Google Sheets sync operation.'
         },
         {
           method: 'GET',
@@ -1123,40 +1213,56 @@
           description: 'Check status of scheduled Google Sheets synchronization',
           requiresAuth: true
         },
+        // Tickets Endpoints
         {
           method: 'POST',
           path: '/api/tickets/validate',
           category: 'Tickets',
           description: 'Validate QR code and check-in attendee at event',
-          requiresAuth: true
+          requiresAuth: true,
+          body: { token: '' },
+          note: 'Requires valid ticket token from QR code'
         },
         {
           method: 'GET',
           path: '/api/tickets/[ticketId]',
           category: 'Tickets',
           description: 'Retrieve specific ticket details by ID',
-          requiresAuth: false
+          requiresAuth: false,
+          dynamicPath: true,
+          pathParam: 'ticketId',
+          note: 'Replace [ticketId] with actual ticket ID'
         },
+        // Registration Endpoints
         {
           method: 'POST',
           path: '/api/tickets/register',
           category: 'Registration',
           description: 'Register attendee information for purchased ticket',
-          requiresAuth: false
+          requiresAuth: false,
+          body: { ticketId: '', attendee_first_name: '', attendee_last_name: '', attendee_email: '' },
+          dangerous: true,
+          dangerMessage: '⚠️ This will register a real ticket and consume it.'
         },
         {
           method: 'GET',
           path: '/api/registration/[token]',
           category: 'Registration',
           description: 'Get registration status for all tickets associated with token',
-          requiresAuth: false
+          requiresAuth: false,
+          dynamicPath: true,
+          pathParam: 'token',
+          note: 'Replace [token] with registration JWT token'
         },
         {
           method: 'POST',
           path: '/api/registration/batch',
           category: 'Registration',
           description: 'Register multiple tickets in a single batch operation',
-          requiresAuth: false
+          requiresAuth: false,
+          body: { registrations: [] },
+          dangerous: true,
+          dangerMessage: '⚠️ This will register real tickets and consume them.'
         },
         {
           method: 'GET',
@@ -1165,12 +1271,14 @@
           description: 'Check health status of registration system',
           requiresAuth: false
         },
+        // Gallery Endpoints
         {
           method: 'GET',
           path: '/api/gallery',
           category: 'Gallery',
           description: 'Retrieve Google Drive photos and videos with caching',
-          requiresAuth: false
+          requiresAuth: false,
+          queryParams: { year: 2024, limit: 5 }
         },
         {
           method: 'GET',
@@ -1184,55 +1292,72 @@
           path: '/api/featured-photos',
           category: 'Gallery',
           description: 'Retrieve curated featured photos for homepage',
-          requiresAuth: false
+          requiresAuth: false,
+          queryParams: { limit: 3 }
         },
+        // Email Endpoints
         {
           method: 'POST',
           path: '/api/email/subscribe',
           category: 'Email',
           description: 'Subscribe email to newsletter list via Brevo integration',
-          requiresAuth: false
+          requiresAuth: false,
+          body: { email: 'test@alocubano.test' },
+          note: 'Uses .test domain to avoid sending real emails'
         },
         {
           method: 'GET',
           path: '/api/email/unsubscribe',
           category: 'Email',
           description: 'Unsubscribe from newsletter using secure token',
-          requiresAuth: false
+          requiresAuth: false,
+          note: 'Requires valid unsubscribe token in query params'
         },
         {
           method: 'POST',
           path: '/api/email/brevo-webhook',
           category: 'Email',
           description: 'Process Brevo webhook events for email tracking',
-          requiresAuth: false
+          requiresAuth: false,
+          body: {},
+          dangerous: true,
+          dangerMessage: '⚠️ Webhook-only endpoint. Cannot be tested manually (requires Brevo signature).'
         },
+        // Payments Endpoints
         {
           method: 'POST',
           path: '/api/payments/create-checkout-session',
           category: 'Payments',
           description: 'Create Stripe checkout session for ticket purchase',
-          requiresAuth: false
+          requiresAuth: false,
+          body: { items: [], customer_email: '', customer_name: '' },
+          dangerous: true,
+          dangerMessage: '⚠️ This will create a real Stripe checkout session.'
         },
         {
           method: 'POST',
           path: '/api/payments/stripe-webhook',
           category: 'Payments',
           description: 'Handle Stripe webhook events for payment processing',
-          requiresAuth: false
+          requiresAuth: false,
+          body: {},
+          dangerous: true,
+          dangerMessage: '⚠️ Webhook-only endpoint. Cannot be tested manually (requires Stripe signature).'
         },
         {
           method: 'GET',
           path: '/api/payments/checkout-success',
           category: 'Payments',
           description: 'Process successful payment and generate tickets',
-          requiresAuth: false
+          requiresAuth: false,
+          note: 'Requires valid Stripe session_id query parameter'
         },
+        // Health Endpoints
         {
           method: 'GET',
           path: '/api/test-db',
           category: 'Health',
-          description: 'Test database connectivity and performance',
+          description: 'Test database connectivity and performance - Available in development and preview environments',
           requiresAuth: false
         },
         {
@@ -1416,16 +1541,30 @@
           return;
         }
 
-        const endpointsHTML = filteredEndpoints.map(endpoint => `
-          <div class="endpoint-card fade-in" data-endpoint="${endpoint.path}">
+        const endpointsHTML = filteredEndpoints.map((endpoint, index) => {
+          const hasParams = endpoint.queryParams || endpoint.body || endpoint.dynamicPath;
+          const paramsId = `params-${index}`;
+          const queryParamsId = `query-params-${index}`;
+          const bodyParamsId = `body-params-${index}`;
+          const pathParamId = `path-param-${index}`;
+
+          return `
+          <div class="endpoint-card fade-in" data-endpoint="${endpoint.path}" data-index="${index}">
             <div class="endpoint-category">${endpoint.category}</div>
             <div class="endpoint-header">
               <div class="endpoint-method-path">
                 <span class="endpoint-method ${endpoint.method.toLowerCase()}">${endpoint.method}</span>
                 <code class="endpoint-path">${endpoint.path}</code>
+                ${endpoint.note ? `<span class="endpoint-note" title="${endpoint.note}">ℹ️</span>` : ''}
+                ${endpoint.dangerous ? `<span class="endpoint-danger" title="${endpoint.dangerMessage}">⚠️</span>` : ''}
               </div>
               <div class="endpoint-actions">
-                <button class="endpoint-btn test" onclick="testEndpoint('${endpoint.path}', '${endpoint.method}')"
+                ${hasParams ? `
+                  <button class="endpoint-btn params" onclick="toggleParams('${paramsId}')" title="Edit Parameters">
+                    ⚙️
+                  </button>
+                ` : ''}
+                <button class="endpoint-btn test" onclick="testEndpointWithParams(${index})"
                         ${endpoint.requiresAuth ? 'data-requires-auth="true"' : ''}>
                   Test
                 </button>
@@ -1433,18 +1572,121 @@
               </div>
             </div>
             <div class="endpoint-description">${endpoint.description}</div>
+
+            ${hasParams ? `
+              <div id="${paramsId}" class="endpoint-params" style="display: none;">
+                ${endpoint.queryParams ? `
+                  <div class="param-section">
+                    <label class="param-label">Query Parameters (JSON):</label>
+                    <textarea id="${queryParamsId}" class="param-input" rows="3" placeholder='{"key": "value"}'>${JSON.stringify(endpoint.queryParams, null, 2)}</textarea>
+                  </div>
+                ` : ''}
+
+                ${endpoint.body !== undefined ? `
+                  <div class="param-section">
+                    <label class="param-label">Request Body (JSON):</label>
+                    <textarea id="${bodyParamsId}" class="param-input" rows="5" placeholder='{"key": "value"}'>${JSON.stringify(endpoint.body, null, 2)}</textarea>
+                  </div>
+                ` : ''}
+
+                ${endpoint.dynamicPath ? `
+                  <div class="param-section">
+                    <label class="param-label">Path Parameter (${endpoint.pathParam}):</label>
+                    <input id="${pathParamId}" type="text" class="param-input" placeholder="e.g., ticket ID or token">
+                  </div>
+                ` : ''}
+              </div>
+            ` : ''}
+
             <div class="endpoint-status">
               <span class="endpoint-status-text">Ready</span>
               <span class="endpoint-response-time" id="time-${endpoint.path.replace(/[^a-zA-Z0-9]/g, '_')}">-</span>
             </div>
           </div>
-        `).join('');
+        `;
+        }).join('');
 
         container.innerHTML = endpointsHTML;
       }
 
+      // Toggle parameter inputs
+      function toggleParams(paramsId) {
+        const paramsDiv = document.getElementById(paramsId);
+        if (paramsDiv.style.display === 'none') {
+          paramsDiv.style.display = 'block';
+        } else {
+          paramsDiv.style.display = 'none';
+        }
+      }
+
+      // Test endpoint with parameters
+      async function testEndpointWithParams(endpointIndex) {
+        const endpoint = filteredEndpoints[endpointIndex];
+
+        // Check for dangerous operations
+        if (endpoint.dangerous) {
+          const confirmed = confirm(
+            `${endpoint.dangerMessage}\n\nAre you sure you want to continue?`
+          );
+          if (!confirmed) {
+            showToast('info', 'Test Cancelled', 'Operation cancelled by user');
+            return;
+          }
+        }
+
+        // Read parameters from UI
+        const queryParams = endpoint.queryParams ? getQueryParams(endpointIndex) : null;
+        const body = endpoint.body !== undefined ? getBodyParams(endpointIndex) : null;
+        const pathParam = endpoint.dynamicPath ? getPathParam(endpointIndex) : null;
+
+        // Build path with path parameter if needed
+        let path = endpoint.path;
+        if (endpoint.dynamicPath && pathParam) {
+          path = path.replace(`[${endpoint.pathParam}]`, pathParam);
+        } else if (endpoint.dynamicPath && !pathParam) {
+          showToast('error', 'Missing Parameter', `Please provide ${endpoint.pathParam} in the path parameter field`);
+          return;
+        }
+
+        // Call the test function
+        await testEndpoint(path, endpoint.method, queryParams, body);
+      }
+
+      // Get query parameters from UI
+      function getQueryParams(endpointIndex) {
+        const textarea = document.getElementById(`query-params-${endpointIndex}`);
+        if (!textarea) return null;
+
+        try {
+          return JSON.parse(textarea.value);
+        } catch (e) {
+          showToast('error', 'Invalid JSON', 'Query parameters must be valid JSON');
+          throw e;
+        }
+      }
+
+      // Get body parameters from UI
+      function getBodyParams(endpointIndex) {
+        const textarea = document.getElementById(`body-params-${endpointIndex}`);
+        if (!textarea) return null;
+
+        try {
+          return JSON.parse(textarea.value);
+        } catch (e) {
+          showToast('error', 'Invalid JSON', 'Request body must be valid JSON');
+          throw e;
+        }
+      }
+
+      // Get path parameter from UI
+      function getPathParam(endpointIndex) {
+        const input = document.getElementById(`path-param-${endpointIndex}`);
+        if (!input) return null;
+        return input.value.trim();
+      }
+
       // Test endpoint
-      async function testEndpoint(path, method) {
+      async function testEndpoint(path, method, queryParams = null, body = null) {
         const card = document.querySelector(`[data-endpoint="${path}"]`);
         const timeElement = document.getElementById(`time-${path.replace(/[^a-zA-Z0-9]/g, '_')}`);
 
@@ -1452,6 +1694,13 @@
         const startTime = performance.now();
 
         try {
+          // Build URL with query parameters
+          let url = path;
+          if (queryParams) {
+            const searchParams = new URLSearchParams(queryParams);
+            url = `${path}?${searchParams.toString()}`;
+          }
+
           let requestOptions = {
             method: method,
             credentials: 'include',
@@ -1459,6 +1708,11 @@
               'Content-Type': 'application/json'
             }
           };
+
+          // Add request body for POST/PUT/PATCH
+          if (body !== null && ['POST', 'PUT', 'PATCH'].includes(method)) {
+            requestOptions.body = JSON.stringify(body);
+          }
 
           // Add CSRF token for state-changing operations
           if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
@@ -1475,7 +1729,7 @@
             }
           }
 
-          const response = await fetch(path, requestOptions);
+          const response = await fetch(url, requestOptions);
           const endTime = performance.now();
           const responseTime = Math.round(endTime - startTime);
 
@@ -1547,7 +1801,16 @@
         const content = document.getElementById('responseContent');
 
         tabs.forEach(tab => tab.classList.remove('active'));
-        eventTarget?.classList.add('active') || document.querySelector(`[onclick="switchTab('${tabName}', this)"]`).classList.add('active');
+
+        // Safe activation with null checks
+        if (eventTarget) {
+          eventTarget.classList.add('active');
+        } else {
+          const targetTab = document.querySelector(`.modal-tab[onclick*="switchTab('${tabName}')"]`);
+          if (targetTab) {
+            targetTab.classList.add('active');
+          }
+        }
 
         if (!currentModal) return;
 

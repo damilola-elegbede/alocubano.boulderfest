@@ -209,7 +209,7 @@ jobs:
           TEST_PATTERN=""
           case "$TEST_SUITE" in
             "standard")
-              TEST_PATTERN="Basic Navigation|Cart Functionality|Admin Authentication|Gallery Basic Browsing|Registration Process"
+              TEST_PATTERN="Basic Navigation|Cart Functionality|Admin Authentication|Gallery Basic Browsing|Registration Process|API Endpoints Health Check"
               ;;
             "advanced")
               TEST_PATTERN="" # Run all tests - no filter
@@ -221,11 +221,11 @@ jobs:
               TEST_PATTERN="Mobile Registration Experience"
               ;;
             "security")
-              TEST_PATTERN="Admin Authentication|Admin Dashboard & Security|Ticket Validation"
+              TEST_PATTERN="Admin Authentication|Admin Dashboard & Security|Ticket Validation|API Endpoints Health Check"
               ;;
             *)
               echo "⚠️ Unknown test suite: $TEST_SUITE, defaulting to standard"
-              TEST_PATTERN="Basic Navigation|Cart Functionality|Admin Authentication|Gallery Basic Browsing|Registration Process"
+              TEST_PATTERN="Basic Navigation|Cart Functionality|Admin Authentication|Gallery Basic Browsing|Registration Process|API Endpoints Health Check"
               ;;
           esac
 

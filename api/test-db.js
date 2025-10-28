@@ -13,13 +13,16 @@ import {
   filterApplicationTables
 } from "../lib/sql-security.js";
 import { getMigrationStatus } from "../lib/migration-status.js";
+import { processDatabaseResult } from "../lib/bigint-serializer.js";
 
 export default async function handler(req, res) {
-  // Allow access in development, test environments, and when debug is enabled
+  // Allow access in development, test environments, preview, and when debug is enabled
+  // Now enabled by default for preview environments to support API testing page
   const isProduction = process.env.NODE_ENV === 'production';
   const isDebugEnabled = process.env.ENABLE_DEBUG_ENDPOINTS === 'true';
   const isVercelPreview = process.env.VERCEL_ENV === 'preview';
 
+  // Only block in production when explicitly disabled
   if (isProduction && !isDebugEnabled && !isVercelPreview) {
     return res.status(404).json({ error: 'Not found' });
   }
@@ -262,7 +265,7 @@ export default async function handler(req, res) {
           ? 207
           : 503; // 207 = Multi-Status (partial success)
 
-    return res.status(httpStatus).json(testResults);
+    return res.status(httpStatus).json(processDatabaseResult(testResults));
   } catch (error) {
     console.error('Database test endpoint error:', error);
 
@@ -284,6 +287,6 @@ export default async function handler(req, res) {
       }
     };
 
-    return res.status(500).json(errorResponse);
+    return res.status(500).json(processDatabaseResult(errorResponse));
   }
 }

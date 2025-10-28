@@ -106,9 +106,11 @@ public/js/
 # Note: public/images/ is needed for wallet buttons and other assets
 
 # API test and debug files (reduce bundle analysis)
+# Note: Keep api/test-db.js (database testing endpoint) - it's not a test file
 api/**/*.test.js
 api/**/*.spec.js
 api/**/test-*.js
+!api/test-db.js
 api/admin/test-*.js
 api/admin/debug-*.js
 api/monitoring/*.js

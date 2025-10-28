@@ -1,12 +1,11 @@
 import { setSecureCorsHeaders } from '../../lib/cors-config.js';
 import { JWT } from 'google-auth-library';
+import { google } from 'googleapis';
 
 /**
  * Gallery Years API Endpoint
  * Provides available gallery years with statistics and metadata
  */
-
-const { google } = require('googleapis');
 
 // Google Drive configuration
 const FOLDER_CONFIGS = {
