@@ -13,6 +13,7 @@ import {
   filterApplicationTables
 } from "../lib/sql-security.js";
 import { getMigrationStatus } from "../lib/migration-status.js";
+import { processDatabaseResult } from "../lib/bigint-serializer.js";
 
 export default async function handler(req, res) {
   // Allow access in development, test environments, preview, and when debug is enabled
@@ -264,7 +265,7 @@ export default async function handler(req, res) {
           ? 207
           : 503; // 207 = Multi-Status (partial success)
 
-    return res.status(httpStatus).json(testResults);
+    return res.status(httpStatus).json(processDatabaseResult(testResults));
   } catch (error) {
     console.error('Database test endpoint error:', error);
 
@@ -286,6 +287,6 @@ export default async function handler(req, res) {
       }
     };
 
-    return res.status(500).json(errorResponse);
+    return res.status(500).json(processDatabaseResult(errorResponse));
   }
 }
