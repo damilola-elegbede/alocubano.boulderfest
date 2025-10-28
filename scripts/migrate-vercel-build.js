@@ -317,6 +317,10 @@ async function runVercelBuild() {
       log(`   Executed migrations: ${status.executed}`, colors.cyan);
       log(`   Pending migrations: ${status.pending}`, colors.cyan);
 
+      // Set flag to skip migration verification since no new migrations were executed
+      process.env.SKIP_MIGRATION_VERIFICATION = 'true';
+      log("ℹ️  No migrations executed - verification will be skipped", colors.cyan);
+
       // Only verify consistency if we have NO pending migrations AND some executed
       // If we have pending migrations, let them run first before checking
       if (status.executed > 0 && status.pending === 0) {
