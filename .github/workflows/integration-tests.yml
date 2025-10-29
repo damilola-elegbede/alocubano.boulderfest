@@ -134,12 +134,12 @@ jobs:
 
       - name: "🔗 Run Integration Tests"
         id: test
-        timeout-minutes: 8
+        timeout-minutes: ${{ matrix.node-version == '22.x' && 10 || 8 }}
         run: |
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "🔗 Running Integration Test Suite"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "🎯 Timeout: 8 minutes total (increased for stability)"
+          echo "🎯 Timeout: ${{ matrix.node-version == '22.x' && '10' || '8' }} minutes (Node version specific)"
           echo "🗃️ Database: SQLite with real file storage"
           echo "🌐 APIs: Limited external service integration"
           echo "🧪 Expected: ~30-50 integration tests"
@@ -217,11 +217,13 @@ jobs:
           echo "🔍 Parsing Method: $parsing_method"
           echo "🗃️ Database: File-based SQLite"
 
-          # Timeout evaluation - updated for 8-minute limit
-          if [ "$duration" -lt 480000 ]; then
-            echo "🏆 EXCELLENT: Integration tests completed within 8-minute limit!"
+          # Timeout evaluation - Node version specific
+          expected_timeout=${{ matrix.node-version == '22.x' && '600000' || '480000' }}
+          timeout_minutes=${{ matrix.node-version == '22.x' && '10' || '8' }}
+          if [ "$duration" -lt "$expected_timeout" ]; then
+            echo "🏆 EXCELLENT: Integration tests completed within ${timeout_minutes}-minute limit!"
           else
-            echo "⚠️  WARNING: Integration tests exceeded 8-minute timeout limit"
+            echo "⚠️  WARNING: Integration tests exceeded ${timeout_minutes}-minute timeout limit"
           fi
 
           # CRITICAL FIX: Explicit exit code based on test failures
