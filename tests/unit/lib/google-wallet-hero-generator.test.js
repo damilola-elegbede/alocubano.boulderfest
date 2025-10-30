@@ -12,7 +12,7 @@ describe('Google Wallet Hero Generator - Unit Tests', () => {
   let mockColorService;
   let mockFetch;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // Set up environment
     process.env.VERCEL_ENV = 'preview';
     process.env.VERCEL_URL = 'test-preview.vercel.app';
@@ -27,11 +27,27 @@ describe('Google Wallet Hero Generator - Unit Tests', () => {
       })
     };
 
+    // Create a valid PNG image buffer for mocking background image
+    // This is required because Sharp validates the input buffer
+    const mockImageBuffer = await sharp({
+      create: {
+        width: 1032,
+        height: 336,
+        channels: 4,
+        background: { r: 0, g: 0, b: 0, alpha: 1 }
+      }
+    })
+      .png()
+      .toBuffer();
+
     // Mock global fetch for background image
     mockFetch = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
-      arrayBuffer: () => Promise.resolve(new ArrayBuffer(1000))
+      arrayBuffer: () => Promise.resolve(mockImageBuffer.buffer.slice(
+        mockImageBuffer.byteOffset,
+        mockImageBuffer.byteOffset + mockImageBuffer.byteLength
+      ))
     });
     global.fetch = mockFetch;
 
