@@ -233,6 +233,10 @@ test.describe('Navigation Links - Weekender 2025-11 Sub-Navigation', () => {
     // Verify page content shows artists information
     await expect(page.getByRole('heading', { name: /instructor/i })).toBeVisible();
 
+    // ✨ CRITICAL: Verify complete page structure loaded (catches broken HTML)
+    await expect(page.locator('footer')).toBeVisible();
+    await expect(page.locator('.artist-card')).toBeVisible();
+
     // Check for JavaScript errors
     expect(jsErrors, `JavaScript errors detected:\n${JSON.stringify(jsErrors, null, 2)}`).toHaveLength(0);
   });
@@ -249,6 +253,15 @@ test.describe('Navigation Links - Weekender 2025-11 Sub-Navigation', () => {
     // Verify page content shows schedule information
     await expect(page.getByRole('heading', { name: /schedule/i })).toBeVisible();
 
+    // ✨ CRITICAL: Verify complete page structure loaded (catches broken HTML)
+    await expect(page.locator('.schedule-day')).toBeVisible();
+    await expect(page.locator('.schedule-item').first()).toBeVisible();
+    await expect(page.locator('footer')).toBeVisible(); // Would fail if HTML breaks before footer
+
+    // Verify schedule items actually rendered
+    const scheduleItems = await page.locator('.schedule-item').count();
+    expect(scheduleItems, 'Schedule page should have schedule items').toBeGreaterThan(0);
+
     // Check for JavaScript errors
     expect(jsErrors, `JavaScript errors detected:\n${JSON.stringify(jsErrors, null, 2)}`).toHaveLength(0);
   });
@@ -264,6 +277,9 @@ test.describe('Navigation Links - Weekender 2025-11 Sub-Navigation', () => {
 
     // Verify page content shows gallery
     await expect(page.getByRole('heading', { name: /gallery/i })).toBeVisible();
+
+    // ✨ CRITICAL: Verify complete page structure loaded (catches broken HTML)
+    await expect(page.locator('footer')).toBeVisible();
 
     // Check for JavaScript errors
     expect(jsErrors, `JavaScript errors detected:\n${JSON.stringify(jsErrors, null, 2)}`).toHaveLength(0);
@@ -490,6 +506,9 @@ test.describe('Navigation Links - Comprehensive Smoke Test', () => {
       // Page should have meaningful content (not empty or error)
       const headings = page.getByRole('heading');
       await expect(headings.first()).toBeVisible();
+
+      // ✨ CRITICAL: Verify complete page structure loaded (catches broken HTML)
+      await expect(page.locator('footer'), `Footer should be visible on ${eventPage}`).toBeVisible();
     }
 
     // Check for JavaScript errors across all pages
