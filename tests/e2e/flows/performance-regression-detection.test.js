@@ -3,32 +3,22 @@
  * Tests to detect performance degradation over releases
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
-import { setupPreviewEnvironment, cleanupPreviewEnvironment } from '../../config/preview-deployment.js';
+import { test, expect } from '@playwright/test';
 import fs from 'fs/promises';
 import path from 'path';
 
-describe('Performance Regression Detection E2E', () => {
-  let previewUrl;
-  let page;
+test.describe('Performance Regression Detection E2E', () => {
+  const baseUrl = process.env.PLAYWRIGHT_BASE_URL || process.env.PREVIEW_URL || 'http://localhost:3000';
   const BASELINE_FILE = path.join(process.cwd(), '.tmp/performance-baseline.json');
 
-  beforeAll(async () => {
-    const setup = await setupPreviewEnvironment();
-    previewUrl = setup.url;
-    page = setup.page;
-
+  test.beforeAll(async () => {
     // Ensure .tmp directory exists
     await fs.mkdir('.tmp', { recursive: true });
-  }, 300000);
-
-  afterAll(async () => {
-    await cleanupPreviewEnvironment();
   });
 
-  describe('Baseline Comparison', () => {
-    it('should establish or compare against performance baseline', async () => {
-      const currentMetrics = await collectPerformanceMetrics(page, previewUrl);
+  test.describe('Baseline Comparison', () => {
+    test('should establish or compare against performance baseline', async ({ page }) => {
+      const currentMetrics = await collectPerformanceMetrics(page, baseUrl);
 
       let baseline;
 
@@ -62,12 +52,12 @@ describe('Performance Regression Detection E2E', () => {
         console.log('Performance improvements detected:', improvements);
         await fs.writeFile(BASELINE_FILE, JSON.stringify(currentMetrics, null, 2));
       }
-    }, 60000);
+    });
   });
 
-  describe('Core Web Vitals Tracking', () => {
-    it('should measure and track Largest Contentful Paint (LCP)', async () => {
-      await page.goto(previewUrl, { waitUntil: 'networkidle' });
+  test.describe('Core Web Vitals Tracking', () => {
+    test('should measure and track Largest Contentful Paint (LCP)', async ({ page }) => {
+      await page.goto(baseUrl, { waitUntil: 'networkidle' });
 
       const lcp = await measureLCP(page);
 
@@ -75,10 +65,10 @@ describe('Performance Regression Detection E2E', () => {
       expect(lcp).toBeLessThan(2500);
 
       console.log(`LCP: ${lcp}ms`);
-    }, 20000);
+    });
 
-    it('should measure and track First Input Delay (FID)', async () => {
-      await page.goto(previewUrl);
+    test('should measure and track First Input Delay (FID)', async ({ page }) => {
+      await page.goto(baseUrl);
 
       const fid = await measureFID(page);
 
@@ -87,10 +77,10 @@ describe('Performance Regression Detection E2E', () => {
         expect(fid).toBeLessThan(100);
         console.log(`FID: ${fid}ms`);
       }
-    }, 20000);
+    });
 
-    it('should measure and track Cumulative Layout Shift (CLS)', async () => {
-      await page.goto(previewUrl, { waitUntil: 'networkidle' });
+    test('should measure and track Cumulative Layout Shift (CLS)', async ({ page }) => {
+      await page.goto(baseUrl, { waitUntil: 'networkidle' });
 
       const cls = await measureCLS(page);
 
@@ -98,10 +88,10 @@ describe('Performance Regression Detection E2E', () => {
       expect(cls).toBeLessThan(0.1);
 
       console.log(`CLS: ${cls}`);
-    }, 20000);
+    });
 
-    it('should measure First Contentful Paint (FCP)', async () => {
-      await page.goto(previewUrl);
+    test('should measure First Contentful Paint (FCP)', async ({ page }) => {
+      await page.goto(baseUrl);
 
       const fcp = await measureFCP(page);
 
@@ -109,12 +99,12 @@ describe('Performance Regression Detection E2E', () => {
       expect(fcp).toBeLessThan(1800);
 
       console.log(`FCP: ${fcp}ms`);
-    }, 15000);
+    });
 
-    it('should measure Time to First Byte (TTFB)', async () => {
+    test('should measure Time to First Byte (TTFB)', async ({ request }) => {
       const startTime = Date.now();
 
-      const response = await page.request.get(previewUrl);
+      const response = await request.get(baseUrl);
 
       const ttfb = Date.now() - startTime;
 
@@ -122,12 +112,12 @@ describe('Performance Regression Detection E2E', () => {
       expect(ttfb).toBeLessThan(800);
 
       console.log(`TTFB: ${ttfb}ms`);
-    }, 10000);
+    });
   });
 
-  describe('Resource Timing Analysis', () => {
-    it('should track CSS load times', async () => {
-      await page.goto(previewUrl);
+  test.describe('Resource Timing Analysis', () => {
+    test('should track CSS load times', async ({ page }) => {
+      await page.goto(baseUrl);
 
       const cssMetrics = await page.evaluate(() => {
         const cssResources = performance.getEntriesByType('resource')
@@ -144,10 +134,10 @@ describe('Performance Regression Detection E2E', () => {
         expect(css.duration).toBeLessThan(500);
         console.log(`CSS ${css.name}: ${css.duration.toFixed(2)}ms, ${css.size} bytes`);
       });
-    }, 15000);
+    });
 
-    it('should track JavaScript load times', async () => {
-      await page.goto(previewUrl);
+    test('should track JavaScript load times', async ({ page }) => {
+      await page.goto(baseUrl);
 
       const jsMetrics = await page.evaluate(() => {
         const jsResources = performance.getEntriesByType('resource')
@@ -164,9 +154,9 @@ describe('Performance Regression Detection E2E', () => {
         expect(js.duration).toBeLessThan(1000);
         console.log(`JS ${js.name}: ${js.duration.toFixed(2)}ms, ${js.size} bytes`);
       });
-    }, 15000);
+    });
 
-    it('should track API response times', async () => {
+    test('should track API response times', async ({ request }) => {
       const apiEndpoints = [
         '/api/health/check',
         '/api/health/database',
@@ -176,7 +166,7 @@ describe('Performance Regression Detection E2E', () => {
 
       for (const endpoint of apiEndpoints) {
         const startTime = Date.now();
-        await page.request.get(`${previewUrl}${endpoint}`);
+        await request.get(`${baseUrl}${endpoint}`);
         const responseTime = Date.now() - startTime;
 
         apiMetrics.push({
@@ -190,12 +180,12 @@ describe('Performance Regression Detection E2E', () => {
       apiMetrics.forEach(metric => {
         expect(metric.responseTime).toBeLessThan(200);
       });
-    }, 20000);
+    });
   });
 
-  describe('Performance Budget Enforcement', () => {
-    it('should enforce JavaScript bundle size budget', async () => {
-      await page.goto(previewUrl);
+  test.describe('Performance Budget Enforcement', () => {
+    test('should enforce JavaScript bundle size budget', async ({ page }) => {
+      await page.goto(baseUrl);
 
       const totalJsSize = await page.evaluate(() => {
         const jsResources = performance.getEntriesByType('resource')
@@ -208,10 +198,10 @@ describe('Performance Regression Detection E2E', () => {
       expect(totalJsSize).toBeLessThan(300 * 1024);
 
       console.log(`Total JS size: ${(totalJsSize / 1024).toFixed(2)}KB`);
-    }, 15000);
+    });
 
-    it('should enforce CSS bundle size budget', async () => {
-      await page.goto(previewUrl);
+    test('should enforce CSS bundle size budget', async ({ page }) => {
+      await page.goto(baseUrl);
 
       const totalCssSize = await page.evaluate(() => {
         const cssResources = performance.getEntriesByType('resource')
@@ -224,10 +214,10 @@ describe('Performance Regression Detection E2E', () => {
       expect(totalCssSize).toBeLessThan(100 * 1024);
 
       console.log(`Total CSS size: ${(totalCssSize / 1024).toFixed(2)}KB`);
-    }, 15000);
+    });
 
-    it('should enforce total page weight budget', async () => {
-      await page.goto(previewUrl, { waitUntil: 'networkidle' });
+    test('should enforce total page weight budget', async ({ page }) => {
+      await page.goto(baseUrl, { waitUntil: 'networkidle' });
 
       const totalPageWeight = await page.evaluate(() => {
         const allResources = performance.getEntriesByType('resource');
@@ -238,10 +228,10 @@ describe('Performance Regression Detection E2E', () => {
       expect(totalPageWeight).toBeLessThan(2 * 1024 * 1024);
 
       console.log(`Total page weight: ${(totalPageWeight / 1024 / 1024).toFixed(2)}MB`);
-    }, 15000);
+    });
 
-    it('should enforce request count budget', async () => {
-      await page.goto(previewUrl, { waitUntil: 'networkidle' });
+    test('should enforce request count budget', async ({ page }) => {
+      await page.goto(baseUrl, { waitUntil: 'networkidle' });
 
       const requestCount = await page.evaluate(() => {
         return performance.getEntriesByType('resource').length;
@@ -251,12 +241,12 @@ describe('Performance Regression Detection E2E', () => {
       expect(requestCount).toBeLessThan(30);
 
       console.log(`Total requests: ${requestCount}`);
-    }, 15000);
+    });
   });
 
-  describe('Rendering Performance', () => {
-    it('should measure rendering performance', async () => {
-      await page.goto(previewUrl);
+  test.describe('Rendering Performance', () => {
+    test('should measure rendering performance', async ({ page }) => {
+      await page.goto(baseUrl);
 
       const renderMetrics = await page.evaluate(() => {
         const paintEntries = performance.getEntriesByType('paint');
@@ -270,10 +260,10 @@ describe('Performance Regression Detection E2E', () => {
       expect(renderMetrics.firstContentfulPaint).toBeLessThan(1800);
 
       console.log('Render metrics:', renderMetrics);
-    }, 15000);
+    });
 
-    it('should measure DOM processing time', async () => {
-      await page.goto(previewUrl);
+    test('should measure DOM processing time', async ({ page }) => {
+      await page.goto(baseUrl);
 
       const domMetrics = await page.evaluate(() => {
         const navigation = performance.getEntriesByType('navigation')[0];
@@ -293,16 +283,16 @@ describe('Performance Regression Detection E2E', () => {
 
         console.log('DOM metrics:', domMetrics);
       }
-    }, 15000);
+    });
   });
 
-  describe('Long-term Performance Tracking', () => {
-    it('should track performance over multiple page loads', async () => {
+  test.describe('Long-term Performance Tracking', () => {
+    test('should track performance over multiple page loads', async ({ page }) => {
       const loadTimes = [];
 
       for (let i = 0; i < 10; i++) {
         const startTime = Date.now();
-        await page.goto(previewUrl, { waitUntil: 'domcontentloaded' });
+        await page.goto(baseUrl, { waitUntil: 'domcontentloaded' });
         const loadTime = Date.now() - startTime;
 
         loadTimes.push(loadTime);
@@ -322,16 +312,16 @@ describe('Performance Regression Detection E2E', () => {
 
       // Max should not be excessive
       expect(max).toBeLessThan(3000);
-    }, 60000);
+    });
 
-    it('should maintain consistent performance', async () => {
+    test('should maintain consistent performance', async ({ page }) => {
       const metrics = [];
 
       for (let i = 0; i < 5; i++) {
+        await page.goto(baseUrl, { waitUntil: 'networkidle' });
         const lcp = await measureLCP(page);
         metrics.push(lcp);
 
-        await page.reload();
         await page.waitForTimeout(1000);
       }
 
@@ -345,16 +335,16 @@ describe('Performance Regression Detection E2E', () => {
 
       // Coefficient of variation should be under 20%
       expect(cv).toBeLessThan(20);
-    }, 60000);
+    });
   });
 
-  describe('Anomaly Detection', () => {
-    it('should detect sudden performance spikes', async () => {
+  test.describe('Anomaly Detection', () => {
+    test('should detect sudden performance spikes', async ({ page }) => {
       const measurements = [];
 
       for (let i = 0; i < 10; i++) {
         const startTime = Date.now();
-        await page.goto(previewUrl, { waitUntil: 'domcontentloaded' });
+        await page.goto(baseUrl, { waitUntil: 'domcontentloaded' });
         const loadTime = Date.now() - startTime;
 
         measurements.push(loadTime);
@@ -378,11 +368,12 @@ describe('Performance Regression Detection E2E', () => {
 
       // Should have minimal outliers
       expect(outliers.length).toBeLessThan(2);
-    }, 60000);
+    });
   });
 
-  describe('Regression Alert Thresholds', () => {
-    it('should alert on >10% LCP regression', async () => {
+  test.describe('Regression Alert Thresholds', () => {
+    test('should alert on >10% LCP regression', async ({ page }) => {
+      await page.goto(baseUrl, { waitUntil: 'networkidle' });
       const currentLCP = await measureLCP(page);
       const threshold = 2000; // Baseline threshold
 
@@ -393,10 +384,10 @@ describe('Performance Regression Detection E2E', () => {
       }
 
       expect(regression).toBeLessThan(10);
-    }, 20000);
+    });
 
-    it('should alert on >15% page weight increase', async () => {
-      await page.goto(previewUrl, { waitUntil: 'networkidle' });
+    test('should alert on >15% page weight increase', async ({ page }) => {
+      await page.goto(baseUrl, { waitUntil: 'networkidle' });
 
       const currentWeight = await page.evaluate(() => {
         return performance.getEntriesByType('resource')
@@ -411,7 +402,7 @@ describe('Performance Regression Detection E2E', () => {
       }
 
       expect(increase).toBeLessThan(15);
-    }, 15000);
+    });
   });
 });
 

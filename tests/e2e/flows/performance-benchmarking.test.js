@@ -3,92 +3,80 @@
  * Tests performance targets with real deployment environment
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
-import { setupPreviewEnvironment, cleanupPreviewEnvironment } from '../../config/preview-deployment.js';
+import { test, expect } from '@playwright/test';
 
-describe('Performance Benchmarking E2E', () => {
-  let previewUrl;
-  let page;
+test.describe('Performance Benchmarking E2E', () => {
+  const baseUrl = process.env.PLAYWRIGHT_BASE_URL || process.env.PREVIEW_URL || 'http://localhost:3000';
 
-  beforeAll(async () => {
-    const setup = await setupPreviewEnvironment();
-    previewUrl = setup.url;
-    page = setup.page;
-  }, 300000); // 5 minutes timeout for deployment
-
-  afterAll(async () => {
-    await cleanupPreviewEnvironment();
-  });
-
-  describe('Page Load Performance', () => {
-    it('should load home page under 3 seconds', async () => {
+  test.describe('Page Load Performance', () => {
+    test('should load home page under 3 seconds', async ({ page }) => {
       const startTime = Date.now();
 
-      await page.goto(previewUrl, { waitUntil: 'networkidle' });
+      await page.goto(baseUrl, { waitUntil: 'networkidle' });
 
       const loadTime = Date.now() - startTime;
 
       expect(loadTime).toBeLessThan(3000);
-    }, 15000);
+    });
 
-    it('should load tickets page under 3 seconds', async () => {
+    test('should load tickets page under 3 seconds', async ({ page }) => {
       const startTime = Date.now();
 
-      await page.goto(`${previewUrl}/pages/tickets.html`, { waitUntil: 'networkidle' });
+      await page.goto(`${baseUrl}/pages/tickets.html`, { waitUntil: 'networkidle' });
 
       const loadTime = Date.now() - startTime;
 
       expect(loadTime).toBeLessThan(3000);
-    }, 15000);
+    });
 
-    it('should load admin dashboard under 3 seconds', async () => {
+    test('should load admin dashboard under 3 seconds', async ({ page }) => {
       // Login first
-      await page.goto(`${previewUrl}/pages/admin/login.html`);
+      await page.goto(`${baseUrl}/pages/admin/login.html`);
 
       await page.fill('input[name="password"]', process.env.TEST_ADMIN_PASSWORD || 'test-password');
       await page.click('button[type="submit"]');
 
-      await page.waitForNavigation({ waitUntil: 'networkidle' });
+      await page.waitForLoadState('networkidle');
 
       const startTime = Date.now();
-      await page.goto(`${previewUrl}/pages/admin/dashboard.html`, { waitUntil: 'networkidle' });
+      await page.goto(`${baseUrl}/pages/admin/dashboard.html`, { waitUntil: 'networkidle' });
 
       const loadTime = Date.now() - startTime;
 
       expect(loadTime).toBeLessThan(3000);
-    }, 30000);
+    });
   });
 
-  describe('API Performance', () => {
-    it('should respond to health check under 100ms', async () => {
+  test.describe('API Performance', () => {
+    test('should respond to health check under 100ms', async ({ request }) => {
       const startTime = Date.now();
 
-      const response = await page.request.get(`${previewUrl}/api/health/check`);
+      const response = await request.get(`${baseUrl}/api/health/check`);
 
       const responseTime = Date.now() - startTime;
 
       expect(response.ok()).toBe(true);
       expect(responseTime).toBeLessThan(100);
-    }, 10000);
+    });
 
-    it('should return database health under 200ms', async () => {
+    test('should return database health under 200ms', async ({ request }) => {
       const startTime = Date.now();
 
-      const response = await page.request.get(`${previewUrl}/api/health/database`);
+      const response = await request.get(`${baseUrl}/api/health/database`);
 
       const responseTime = Date.now() - startTime;
 
       expect(response.ok()).toBe(true);
       expect(responseTime).toBeLessThan(200);
-    }, 10000);
+    });
 
-    it('should fetch registration data under 200ms (p95)', async () => {
+    test('should fetch registration data under 200ms (p95)', async ({ request }) => {
       const responseTimes = [];
 
       for (let i = 0; i < 20; i++) {
         const startTime = Date.now();
 
-        await page.request.get(`${previewUrl}/api/admin/registrations`);
+        await request.get(`${baseUrl}/api/admin/registrations`);
 
         const responseTime = Date.now() - startTime;
         responseTimes.push(responseTime);
@@ -100,16 +88,16 @@ describe('Performance Benchmarking E2E', () => {
       const p95 = responseTimes[p95Index];
 
       expect(p95).toBeLessThan(200);
-    }, 60000);
+    });
 
-    it('should handle concurrent API requests efficiently', async () => {
+    test('should handle concurrent API requests efficiently', async ({ request }) => {
       const concurrentRequests = 10;
       const promises = [];
 
       const startTime = Date.now();
 
       for (let i = 0; i < concurrentRequests; i++) {
-        promises.push(page.request.get(`${previewUrl}/api/health/check`));
+        promises.push(request.get(`${baseUrl}/api/health/check`));
       }
 
       await Promise.all(promises);
@@ -118,13 +106,13 @@ describe('Performance Benchmarking E2E', () => {
 
       // Should handle 10 concurrent requests in under 1 second
       expect(totalTime).toBeLessThan(1000);
-    }, 15000);
+    });
   });
 
-  describe('Database Query Performance', () => {
-    it('should query ticket by ID under 50ms', async () => {
+  test.describe('Database Query Performance', () => {
+    test('should query ticket by ID under 50ms', async ({ request }) => {
       // First, need to get a valid ticket ID
-      const response = await page.request.get(`${previewUrl}/api/admin/registrations`);
+      const response = await request.get(`${baseUrl}/api/admin/registrations`);
       const data = await response.json();
 
       if (data.registrations && data.registrations.length > 0) {
@@ -132,35 +120,35 @@ describe('Performance Benchmarking E2E', () => {
 
         const startTime = Date.now();
 
-        await page.request.get(`${previewUrl}/api/tickets/${ticketId}`);
+        await request.get(`${baseUrl}/api/tickets/${ticketId}`);
 
         const queryTime = Date.now() - startTime;
 
         // API overhead + query should be under 50ms
         expect(queryTime).toBeLessThan(100);
       }
-    }, 10000);
+    });
 
-    it('should handle batch queries efficiently', async () => {
+    test('should handle batch queries efficiently', async ({ request }) => {
       const startTime = Date.now();
 
       // Fetch multiple endpoints in parallel
       await Promise.all([
-        page.request.get(`${previewUrl}/api/admin/registrations`),
-        page.request.get(`${previewUrl}/api/admin/donations`),
-        page.request.get(`${previewUrl}/api/health/database`),
+        request.get(`${baseUrl}/api/admin/registrations`),
+        request.get(`${baseUrl}/api/admin/donations`),
+        request.get(`${baseUrl}/api/health/database`),
       ]);
 
       const totalTime = Date.now() - startTime;
 
       // All three queries should complete under 500ms
       expect(totalTime).toBeLessThan(500);
-    }, 15000);
+    });
   });
 
-  describe('Frontend Performance Metrics', () => {
-    it('should measure First Contentful Paint (FCP)', async () => {
-      await page.goto(previewUrl);
+  test.describe('Frontend Performance Metrics', () => {
+    test('should measure First Contentful Paint (FCP)', async ({ page }) => {
+      await page.goto(baseUrl);
 
       const fcp = await page.evaluate(() => {
         const entries = performance.getEntriesByType('paint');
@@ -170,10 +158,10 @@ describe('Performance Benchmarking E2E', () => {
 
       // FCP should be under 1.8s (good rating)
       expect(fcp).toBeLessThan(1800);
-    }, 15000);
+    });
 
-    it('should measure Largest Contentful Paint (LCP)', async () => {
-      await page.goto(previewUrl, { waitUntil: 'networkidle' });
+    test('should measure Largest Contentful Paint (LCP)', async ({ page }) => {
+      await page.goto(baseUrl, { waitUntil: 'networkidle' });
 
       const lcp = await page.evaluate(() => {
         return new Promise(resolve => {
@@ -192,10 +180,10 @@ describe('Performance Benchmarking E2E', () => {
         // LCP should be under 2.5s (good rating)
         expect(lcp).toBeLessThan(2500);
       }
-    }, 20000);
+    });
 
-    it('should measure Time to Interactive (TTI)', async () => {
-      await page.goto(previewUrl);
+    test('should measure Time to Interactive (TTI)', async ({ page }) => {
+      await page.goto(baseUrl);
 
       const tti = await page.evaluate(() => {
         return new Promise(resolve => {
@@ -224,12 +212,12 @@ describe('Performance Benchmarking E2E', () => {
 
       // TTI should be under 3.8s (good rating)
       expect(tti).toBeLessThan(3800);
-    }, 20000);
+    });
   });
 
-  describe('Resource Loading Performance', () => {
-    it('should load CSS under 500ms', async () => {
-      await page.goto(previewUrl);
+  test.describe('Resource Loading Performance', () => {
+    test('should load CSS under 500ms', async ({ page }) => {
+      await page.goto(baseUrl);
 
       const cssLoadTime = await page.evaluate(() => {
         const cssResources = performance.getEntriesByType('resource')
@@ -243,10 +231,10 @@ describe('Performance Benchmarking E2E', () => {
       });
 
       expect(cssLoadTime).toBeLessThan(500);
-    }, 15000);
+    });
 
-    it('should load JavaScript under 1000ms', async () => {
-      await page.goto(previewUrl);
+    test('should load JavaScript under 1000ms', async ({ page }) => {
+      await page.goto(baseUrl);
 
       const jsLoadTime = await page.evaluate(() => {
         const jsResources = performance.getEntriesByType('resource')
@@ -260,11 +248,11 @@ describe('Performance Benchmarking E2E', () => {
       });
 
       expect(jsLoadTime).toBeLessThan(1000);
-    }, 15000);
+    });
 
-    it('should leverage browser caching', async () => {
+    test('should leverage browser caching', async ({ page }) => {
       // First visit
-      await page.goto(previewUrl);
+      await page.goto(baseUrl);
 
       await page.waitForTimeout(1000);
 
@@ -275,12 +263,12 @@ describe('Performance Benchmarking E2E', () => {
 
       // Cached reload should be faster
       expect(reloadTime).toBeLessThan(1500);
-    }, 20000);
+    });
   });
 
-  describe('Image Loading Performance', () => {
-    it('should load hero images efficiently', async () => {
-      await page.goto(previewUrl);
+  test.describe('Image Loading Performance', () => {
+    test('should load hero images efficiently', async ({ page }) => {
+      await page.goto(baseUrl);
 
       const imageLoadTime = await page.evaluate(() => {
         const images = performance.getEntriesByType('resource')
@@ -295,10 +283,10 @@ describe('Performance Benchmarking E2E', () => {
 
       // Images should load under 2 seconds
       expect(imageLoadTime).toBeLessThan(2000);
-    }, 15000);
+    });
 
-    it('should lazy load gallery images', async () => {
-      await page.goto(`${previewUrl}/pages/gallery.html`);
+    test('should lazy load gallery images', async ({ page }) => {
+      await page.goto(`${baseUrl}/pages/gallery.html`);
 
       // Wait for initial render
       await page.waitForSelector('.gallery-container', { timeout: 5000 });
@@ -309,12 +297,12 @@ describe('Performance Benchmarking E2E', () => {
 
       // Should not load all images immediately
       expect(initialImageCount).toBeLessThan(50);
-    }, 15000);
+    });
   });
 
-  describe('Network Performance', () => {
-    it('should minimize total request count', async () => {
-      await page.goto(previewUrl, { waitUntil: 'networkidle' });
+  test.describe('Network Performance', () => {
+    test('should minimize total request count', async ({ page }) => {
+      await page.goto(baseUrl, { waitUntil: 'networkidle' });
 
       const requestCount = await page.evaluate(() => {
         return performance.getEntriesByType('resource').length;
@@ -322,10 +310,10 @@ describe('Performance Benchmarking E2E', () => {
 
       // Should keep requests under 30 for initial load
       expect(requestCount).toBeLessThan(30);
-    }, 15000);
+    });
 
-    it('should minimize total page weight', async () => {
-      await page.goto(previewUrl, { waitUntil: 'networkidle' });
+    test('should minimize total page weight', async ({ page }) => {
+      await page.goto(baseUrl, { waitUntil: 'networkidle' });
 
       const totalSize = await page.evaluate(() => {
         const resources = performance.getEntriesByType('resource');
@@ -334,28 +322,27 @@ describe('Performance Benchmarking E2E', () => {
 
       // Total transfer size should be under 2MB
       expect(totalSize).toBeLessThan(2 * 1024 * 1024);
-    }, 15000);
+    });
   });
 
-  describe('Mobile Performance', () => {
-    beforeAll(async () => {
-      // Emulate mobile device
-      await page.setViewportSize({ width: 375, height: 667 });
-      await page.setUserAgent('Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X)');
+  test.describe('Mobile Performance', () => {
+    test.use({
+      viewport: { width: 375, height: 667 },
+      userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X)'
     });
 
-    it('should load on mobile under 3 seconds', async () => {
+    test('should load on mobile under 3 seconds', async ({ page }) => {
       const startTime = Date.now();
 
-      await page.goto(previewUrl, { waitUntil: 'networkidle' });
+      await page.goto(baseUrl, { waitUntil: 'networkidle' });
 
       const loadTime = Date.now() - startTime;
 
       expect(loadTime).toBeLessThan(3000);
-    }, 15000);
+    });
 
-    it('should be responsive on mobile', async () => {
-      await page.goto(previewUrl);
+    test('should be responsive on mobile', async ({ page }) => {
+      await page.goto(baseUrl);
 
       const isMobileOptimized = await page.evaluate(() => {
         const viewport = document.querySelector('meta[name="viewport"]');
@@ -363,11 +350,11 @@ describe('Performance Benchmarking E2E', () => {
       });
 
       expect(isMobileOptimized).toBe(true);
-    }, 10000);
+    });
   });
 
-  describe('Scalability Testing', () => {
-    it('should handle multiple page navigations efficiently', async () => {
+  test.describe('Scalability Testing', () => {
+    test('should handle multiple page navigations efficiently', async ({ page }) => {
       const pages = [
         '',
         '/pages/tickets.html',
@@ -379,17 +366,17 @@ describe('Performance Benchmarking E2E', () => {
       const startTime = Date.now();
 
       for (const pagePath of pages) {
-        await page.goto(`${previewUrl}${pagePath}`, { waitUntil: 'domcontentloaded' });
+        await page.goto(`${baseUrl}${pagePath}`, { waitUntil: 'domcontentloaded' });
       }
 
       const totalTime = Date.now() - startTime;
 
       // Should navigate all pages under 10 seconds
       expect(totalTime).toBeLessThan(10000);
-    }, 60000);
+    });
 
-    it('should maintain performance with session storage', async () => {
-      await page.goto(previewUrl);
+    test('should maintain performance with session storage', async ({ page }) => {
+      await page.goto(baseUrl);
 
       // Add items to cart
       await page.evaluate(() => {
@@ -410,16 +397,16 @@ describe('Performance Benchmarking E2E', () => {
 
       // Should still load quickly with cart data
       expect(reloadTime).toBeLessThan(2000);
-    }, 15000);
+    });
   });
 
-  describe('Performance Regression Detection', () => {
-    it('should track performance metrics over time', async () => {
+  test.describe('Performance Regression Detection', () => {
+    test('should track performance metrics over time', async ({ page }) => {
       const metrics = [];
 
       for (let i = 0; i < 5; i++) {
         const startTime = Date.now();
-        await page.goto(previewUrl, { waitUntil: 'networkidle' });
+        await page.goto(baseUrl, { waitUntil: 'networkidle' });
         const loadTime = Date.now() - startTime;
 
         metrics.push(loadTime);
@@ -437,11 +424,11 @@ describe('Performance Benchmarking E2E', () => {
 
       // Standard deviation should be low (consistent performance)
       expect(stdDev).toBeLessThan(500);
-    }, 60000);
+    });
 
-    it('should not degrade with repeated use', async () => {
+    test('should not degrade with repeated use', async ({ page }) => {
       const firstLoad = Date.now();
-      await page.goto(previewUrl);
+      await page.goto(baseUrl);
       const firstLoadTime = Date.now() - firstLoad;
 
       // Perform multiple interactions
@@ -451,17 +438,17 @@ describe('Performance Benchmarking E2E', () => {
       }
 
       const lastLoad = Date.now();
-      await page.goto(previewUrl);
+      await page.goto(baseUrl);
       const lastLoadTime = Date.now() - lastLoad;
 
       // Performance should not degrade significantly
       expect(lastLoadTime).toBeLessThan(firstLoadTime * 1.5);
-    }, 60000);
+    });
   });
 
-  describe('Memory Performance', () => {
-    it('should not have memory leaks', async () => {
-      await page.goto(previewUrl);
+  test.describe('Memory Performance', () => {
+    test('should not have memory leaks', async ({ page }) => {
+      await page.goto(baseUrl);
 
       const initialMemory = await page.evaluate(() => {
         if (performance.memory) {
@@ -486,6 +473,6 @@ describe('Performance Benchmarking E2E', () => {
         // Memory should not grow excessively (allow 2x growth)
         expect(finalMemory).toBeLessThan(initialMemory * 2);
       }
-    }, 60000);
+    });
   });
 });

@@ -246,7 +246,7 @@ describe('Image Caching E2E Flow', () => {
 
       // Verify cache cleared
       cacheExists = await page.evaluate(() => {
-        const localStorage Data = localStorage.getItem('alocubano_image_data_cache_v3');
+        const localStorageData = localStorage.getItem('alocubano_image_data_cache_v3');
         const sessionData = sessionStorage.getItem('alocubano_image_cache_v3');
         return localStorageData !== null || sessionData !== null;
       });
