@@ -41,18 +41,31 @@ describe('DatabasePerformanceService', () => {
   let service;
   let mockDb;
   let mockOptimizer;
+  let originalExecuteSpy;
+  let originalBatchSpy;
 
   beforeEach(() => {
     vi.clearAllMocks();
 
+    // Create spy references that we can track
+    originalExecuteSpy = vi.fn().mockResolvedValue({ rows: [], rowCount: 0 });
+    originalBatchSpy = vi.fn().mockResolvedValue([]);
+
     mockDb = {
-      execute: vi.fn().mockResolvedValue({ rows: [], rowCount: 0 }),
-      batch: vi.fn().mockResolvedValue([]),
+      execute: originalExecuteSpy,
+      batch: originalBatchSpy,
     };
 
     mockOptimizer = {
       on: vi.fn(),
-      executeWithTracking: vi.fn().mockResolvedValue({ rows: [], rowCount: 0 }),
+      originalExecute: null, // Will be set by service
+      executeWithTracking: vi.fn(async (queryOrObject, params) => {
+        // Forward calls to the original spy
+        if (mockOptimizer.originalExecute) {
+          return mockOptimizer.originalExecute(queryOrObject, params);
+        }
+        return originalExecuteSpy(queryOrObject, params);
+      }),
       performDeepAnalysis: vi.fn().mockReturnValue({
         timestamp: new Date(),
         optimizationOpportunities: [],
@@ -69,6 +82,7 @@ describe('DatabasePerformanceService', () => {
       estimateMemoryUsage: vi.fn().mockReturnValue({ mb: 5 }),
     };
 
+    // Ensure getDatabaseClient always returns the same mock instance
     getDatabaseClient.mockResolvedValue(mockDb);
     createQueryOptimizer.mockReturnValue(mockOptimizer);
 
@@ -123,8 +137,15 @@ describe('DatabasePerformanceService', () => {
     it('should run initial optimizations', async () => {
       await service.initialize();
 
-      // Should have attempted to create indexes
-      expect(mockDb.execute).toHaveBeenCalled();
+      // Should have attempted to create indexes using the original spy
+      expect(originalExecuteSpy).toHaveBeenCalled();
+
+      // Verify index creation was attempted
+      const calls = originalExecuteSpy.mock.calls;
+      const indexCalls = calls.filter(call =>
+        typeof call[0] === 'string' && call[0].includes('CREATE INDEX')
+      );
+      expect(indexCalls.length).toBeGreaterThan(0);
     });
   });
 
@@ -257,10 +278,11 @@ describe('DatabasePerformanceService', () => {
     });
 
     it('should track batch failures', async () => {
-      mockDb.batch.mockRejectedValueOnce(new Error('Batch failed'));
-
       const batchFailSpy = vi.fn();
       service.on('batch-failed', batchFailSpy);
+
+      // Make the original batch spy fail
+      originalBatchSpy.mockRejectedValueOnce(new Error('Batch failed'));
 
       await expect(mockDb.batch([])).rejects.toThrow('Batch failed');
 
@@ -273,16 +295,16 @@ describe('DatabasePerformanceService', () => {
       await service.initialize();
 
       // Should create multiple indexes
-      const executeCalls = mockDb.execute.mock.calls;
+      const executeCalls = originalExecuteSpy.mock.calls;
       const indexCalls = executeCalls.filter(call =>
-        call[0].includes('CREATE INDEX')
+        call[0] && call[0].includes('CREATE INDEX')
       );
 
       expect(indexCalls.length).toBeGreaterThan(0);
     });
 
     it('should handle index creation errors gracefully', async () => {
-      mockDb.execute.mockRejectedValueOnce(new Error('Index already exists'));
+      originalExecuteSpy.mockRejectedValueOnce(new Error('Index already exists'));
 
       await expect(service.initialize()).resolves.not.toThrow();
     });
@@ -291,7 +313,7 @@ describe('DatabasePerformanceService', () => {
       await service.initialize();
       await service.updateDatabaseStatistics();
 
-      const analyzeCalls = mockDb.execute.mock.calls.filter(call =>
+      const analyzeCalls = originalExecuteSpy.mock.calls.filter(call =>
         call[0] === 'ANALYZE'
       );
 
@@ -320,8 +342,8 @@ describe('DatabasePerformanceService', () => {
 
       await service.triggerEmergencyOptimization();
 
-      const indexCalls = mockDb.execute.mock.calls.filter(call =>
-        call[0].includes('CREATE INDEX')
+      const indexCalls = originalExecuteSpy.mock.calls.filter(call =>
+        call[0] && call[0].includes('CREATE INDEX')
       );
 
       expect(indexCalls.length).toBeGreaterThan(0);
@@ -332,7 +354,7 @@ describe('DatabasePerformanceService', () => {
         indexRecommendations: ['CREATE INDEX idx_test ON tickets(id)'],
       };
 
-      mockDb.execute.mockRejectedValueOnce(new Error('Index error'));
+      originalExecuteSpy.mockRejectedValueOnce(new Error('Index error'));
 
       await expect(service.triggerEmergencyOptimization()).resolves.not.toThrow();
     });
@@ -340,7 +362,7 @@ describe('DatabasePerformanceService', () => {
     it('should update statistics after emergency optimization', async () => {
       await service.triggerEmergencyOptimization();
 
-      const analyzeCalls = mockDb.execute.mock.calls.filter(call =>
+      const analyzeCalls = originalExecuteSpy.mock.calls.filter(call =>
         call[0] === 'ANALYZE'
       );
 
@@ -366,17 +388,19 @@ describe('DatabasePerformanceService', () => {
       expect(service.reportingInterval).toBeNull();
     });
 
-    it('should generate periodic reports', done => {
-      service.on('performance-report', report => {
-        expect(report).toBeDefined();
-        expect(report.status).toBeDefined();
-        done();
-      });
+    it('should generate periodic reports', () => {
+      return new Promise((resolve) => {
+        service.on('performance-report', report => {
+          expect(report).toBeDefined();
+          expect(report.status).toBeDefined();
+          resolve();
+        });
 
-      service.startAutomaticReporting();
-      // Manually trigger to avoid waiting
-      const report = service.generateQuickReport();
-      service.emit('performance-report', report);
+        service.startAutomaticReporting();
+        // Manually trigger to avoid waiting
+        const report = service.generateQuickReport();
+        service.emit('performance-report', report);
+      });
     });
   });
 
@@ -409,7 +433,8 @@ describe('DatabasePerformanceService', () => {
     });
 
     it('should detect CRITICAL status', () => {
-      // Add many issues
+      // Add enough issues to reach CRITICAL status (need 3+ issues)
+      // Issue 1: More than 5 slow queries
       for (let i = 0; i < 10; i++) {
         service.performanceAlerts.push({
           type: 'SLOW_QUERY',
@@ -417,8 +442,15 @@ describe('DatabasePerformanceService', () => {
         });
       }
 
+      // Issue 2: Performance degradation
       service.performanceAlerts.push({
         type: 'PERFORMANCE_DEGRADATION',
+        timestamp: new Date(),
+      });
+
+      // Issue 3: Query errors
+      service.performanceAlerts.push({
+        type: 'QUERY_ERROR',
         timestamp: new Date(),
       });
 
@@ -598,7 +630,9 @@ describe('DatabasePerformanceService', () => {
     });
 
     it('should handle optimization errors', async () => {
-      mockOptimizer.performDeepAnalysis.mockRejectedValueOnce(new Error('Analysis failed'));
+      mockOptimizer.performDeepAnalysis.mockImplementationOnce(() => {
+        throw new Error('Analysis failed');
+      });
 
       await expect(service.optimizeNow()).rejects.toThrow('Analysis failed');
     });
@@ -695,21 +729,27 @@ describe('DatabasePerformanceService', () => {
     it('should update SQLite statistics', async () => {
       mockOptimizer.dbType = 'sqlite';
 
+      // Clear calls from initialization
+      originalExecuteSpy.mockClear();
+
       await service.updateDatabaseStatistics();
 
-      expect(mockDb.execute).toHaveBeenCalledWith('ANALYZE');
+      expect(originalExecuteSpy).toHaveBeenCalledWith('ANALYZE', []);
     });
 
     it('should update PostgreSQL statistics', async () => {
       mockOptimizer.dbType = 'postgresql';
 
+      // Clear calls from initialization
+      originalExecuteSpy.mockClear();
+
       await service.updateDatabaseStatistics();
 
-      expect(mockDb.execute).toHaveBeenCalledWith('ANALYZE');
+      expect(originalExecuteSpy).toHaveBeenCalledWith('ANALYZE', []);
     });
 
     it('should handle statistics update errors', async () => {
-      mockDb.execute.mockRejectedValueOnce(new Error('ANALYZE failed'));
+      originalExecuteSpy.mockRejectedValueOnce(new Error('ANALYZE failed'));
 
       await expect(service.updateDatabaseStatistics()).resolves.not.toThrow();
     });

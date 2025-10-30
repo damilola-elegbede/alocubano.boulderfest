@@ -114,11 +114,19 @@ describe('MemoryCache', () => {
     });
 
     it('should return -1 for key with no expiration', () => {
-      cache.set('test-key', { data: 'test' }, { ttl: 0 });
+      // Create a cache with no default TTL
+      const noTtlCache = new MemoryCache({
+        maxSize: 100,
+        maxMemoryMB: 10,
+        defaultTtl: 0,
+        checkInterval: 60
+      });
+      noTtlCache.set('test-key', { data: 'test' }, { ttl: 0 });
 
-      const ttl = cache.ttl('test-key');
+      const ttl = noTtlCache.ttl('test-key');
 
       expect(ttl).toBe(-1);
+      noTtlCache.close();
     });
 
     it('should extend TTL with expire', () => {
@@ -253,18 +261,18 @@ describe('MemoryCache', () => {
       smallCache.close();
     });
 
-    it('should update access order on get', () => {
+    it('should update access order on get', async () => {
       cache.set('key1', { data: '1' });
 
       const firstAccess = cache.accessOrder.get(cache.buildKey('key1'));
 
       // Wait a bit
-      setTimeout(() => {
-        cache.get('key1');
-        const secondAccess = cache.accessOrder.get(cache.buildKey('key1'));
+      await new Promise(resolve => setTimeout(resolve, 10));
 
-        expect(secondAccess).toBeGreaterThan(firstAccess);
-      }, 10);
+      cache.get('key1');
+      const secondAccess = cache.accessOrder.get(cache.buildKey('key1'));
+
+      expect(secondAccess).toBeGreaterThan(firstAccess);
     });
   });
 

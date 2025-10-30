@@ -739,6 +739,7 @@ describe('VirtualGalleryManager', () => {
     it('should retry failed loads', async () => {
       const mockImages = [{ id: '1', name: 'image1.jpg', url: '/images/1.jpg' }];
 
+      // Mock for initial load
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({ images: mockImages })
@@ -750,6 +751,12 @@ describe('VirtualGalleryManager', () => {
       });
 
       await galleryInstance.init();
+
+      // Mock for retry load
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ images: mockImages })
+      });
 
       await expect(galleryInstance.retryLoad()).resolves.not.toThrow();
     });

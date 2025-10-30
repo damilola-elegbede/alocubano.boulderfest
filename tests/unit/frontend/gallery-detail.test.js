@@ -248,7 +248,11 @@ describe('Gallery Detail', () => {
       const mockClipboard = {
         writeText: vi.fn().mockResolvedValue(undefined)
       };
-      global.navigator.clipboard = mockClipboard;
+      Object.defineProperty(global.navigator, 'clipboard', {
+        value: mockClipboard,
+        writable: true,
+        configurable: true
+      });
 
       navigator.clipboard.writeText(link);
       expect(mockClipboard.writeText).toHaveBeenCalledWith(link);

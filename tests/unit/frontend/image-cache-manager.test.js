@@ -35,8 +35,9 @@ describe('ImageCacheManager', () => {
 
     // Load ImageCacheManager class
     const module = await import('../../../public/js/image-cache-manager.js');
-    ImageCacheManager = window.ImageCacheManager;
-    manager = new ImageCacheManager.constructor();
+    // window.ImageCacheManager is the instance, get the class from it
+    ImageCacheManager = window.ImageCacheManager.constructor;
+    manager = new ImageCacheManager();
   });
 
   afterEach(() => {

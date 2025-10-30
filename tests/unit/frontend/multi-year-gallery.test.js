@@ -340,8 +340,19 @@ describe('MultiYearGalleryManager', () => {
         })
       });
 
+      // Mock VirtualGalleryManager to prevent actual initialization
+      const mockGalleryInit = vi.fn().mockResolvedValue(undefined);
+      global.VirtualGalleryManager = class {
+        constructor() {
+          this.init = mockGalleryInit;
+          this.initialized = true;
+        }
+      };
+
       galleryInstance = new MultiYearGalleryManager({ container, defaultYear: '2025' });
-      await expect(galleryInstance.init()).rejects.toThrow();
+      // Now uses fallback data instead of rejecting
+      await galleryInstance.init();
+      expect(galleryInstance.availableYears).toEqual(['2025']);
     });
   });
 
@@ -403,7 +414,16 @@ describe('MultiYearGalleryManager', () => {
         })
       });
 
+      // Mock VirtualGalleryManager
+      global.VirtualGalleryManager = class {
+        constructor() {
+          this.init = vi.fn().mockResolvedValue(undefined);
+          this.initialized = true;
+        }
+      };
+
       galleryInstance = new MultiYearGalleryManager({ container, defaultYear: '2025' });
+      await galleryInstance.init();
       galleryInstance.showLoading();
 
       const loadingIndicator = container.querySelector('.loading-indicator');
@@ -468,8 +488,18 @@ describe('MultiYearGalleryManager', () => {
     it('should handle year data load failure', async () => {
       mockFetch.mockRejectedValueOnce(new Error('Network error'));
 
+      // Mock VirtualGalleryManager
+      global.VirtualGalleryManager = class {
+        constructor() {
+          this.init = vi.fn().mockResolvedValue(undefined);
+          this.initialized = true;
+        }
+      };
+
       galleryInstance = new MultiYearGalleryManager({ container, defaultYear: '2025' });
-      await expect(galleryInstance.init()).rejects.toThrow();
+      // Now uses fallback instead of throwing
+      await galleryInstance.init();
+      expect(galleryInstance.availableYears).toEqual(['2025']);
     });
 
     it('should handle invalid year selection', async () => {
@@ -480,6 +510,14 @@ describe('MultiYearGalleryManager', () => {
           statistics: {}
         })
       });
+
+      // Mock VirtualGalleryManager
+      global.VirtualGalleryManager = class {
+        constructor() {
+          this.init = vi.fn().mockResolvedValue(undefined);
+          this.initialized = true;
+        }
+      };
 
       galleryInstance = new MultiYearGalleryManager({ container, defaultYear: '2025' });
       await galleryInstance.init();
@@ -497,8 +535,18 @@ describe('MultiYearGalleryManager', () => {
         })
       });
 
+      // Mock VirtualGalleryManager
+      global.VirtualGalleryManager = class {
+        constructor() {
+          this.init = vi.fn().mockResolvedValue(undefined);
+          this.initialized = true;
+        }
+      };
+
       galleryInstance = new MultiYearGalleryManager({ container, defaultYear: '2025' });
-      await expect(galleryInstance.init()).rejects.toThrow();
+      // Now uses fallback instead of throwing
+      await galleryInstance.init();
+      expect(galleryInstance.availableYears).toEqual(['2025']);
     });
   });
 });

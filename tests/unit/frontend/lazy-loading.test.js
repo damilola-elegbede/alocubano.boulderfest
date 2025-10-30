@@ -303,7 +303,8 @@ describe('LazyLoader Component', () => {
       document.body.innerHTML = '<img data-src="/images/1.jpg" style="background-color: #f0f0f0;" alt="Test">';
       lazyLoaderInstance = new LazyLoader();
       const img = document.querySelector('img');
-      expect(img.style.backgroundColor).toBe('rgb(240, 240, 240)');
+      // Happy-DOM preserves hex colors, not converting to rgb
+      expect(img.style.backgroundColor).toBe('#f0f0f0');
     });
 
     it('should use skeleton screen', () => {

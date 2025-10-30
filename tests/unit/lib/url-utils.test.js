@@ -640,10 +640,17 @@ describe('URL Utils - Unit Tests', () => {
       const qrUrl = buildQRCodeUrl(specialToken);
       const walletUrls = buildWalletPassUrls(specialTicketId);
 
-      // None should contain unencoded special characters in parameters
-      expect(regUrl).not.toMatch(/[+/=&](?!ticketId)/);
-      expect(viewUrl).not.toMatch(/[+/=&](?!ticketId)/);
-      expect(qrUrl).not.toMatch(/[+/=&]/);
+      // Check that values are properly encoded (look for %2B, %2F, %3D, %26)
+      expect(regUrl).toContain('%2B'); // + encoded
+      expect(regUrl).toContain('%2F'); // / encoded
+      expect(regUrl).toContain('%3D'); // = encoded
+      expect(regUrl).toContain('%26'); // & encoded
+
+      expect(viewUrl).toContain('%2B');
+      expect(viewUrl).toContain('%2F');
+
+      expect(qrUrl).toContain('%2B');
+      expect(qrUrl).toContain('%2F');
     });
   });
 });

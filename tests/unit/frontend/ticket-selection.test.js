@@ -471,9 +471,10 @@ describe('Ticket Selection Component', () => {
       expect(card.getAttribute('data-selected')).toBe('true');
     });
 
-    it('should emit ticket-quantity-changed event on quantity change', (done) => {
+    it('should emit ticket-quantity-changed event on quantity change', () => {
       const card = document.querySelector('[data-ticket-id="weekend-pass"]');
       const plusBtn = card.querySelector('.qty-btn.plus');
+      let eventFired = false;
 
       document.addEventListener('ticket-quantity-changed', (event) => {
         expect(event.detail).toMatchObject({
@@ -483,10 +484,11 @@ describe('Ticket Selection Component', () => {
           name: 'Weekend Pass',
           eventId: 'alocubano-boulderfest-2026'
         });
-        done();
+        eventFired = true;
       });
 
       plusBtn.click();
+      expect(eventFired).toBe(true);
     });
   });
 
@@ -520,15 +522,17 @@ describe('Ticket Selection Component', () => {
       expect(addToCartBtn.getAttribute('data-action-state')).toBe('ready');
     });
 
-    it('should emit event when adding to cart', (done) => {
+    it('should emit event when adding to cart', () => {
       const addToCartBtn = document.querySelector('[data-ticket-id="weekend-pass"].add-to-cart-btn');
+      let eventFired = false;
 
       document.addEventListener('ticket-quantity-changed', (event) => {
         expect(event.detail.ticketType).toBe('weekend-pass');
-        done();
+        eventFired = true;
       });
 
       addToCartBtn.click();
+      expect(eventFired).toBe(true);
     });
 
     it('should handle missing ticket data gracefully', () => {
@@ -793,9 +797,10 @@ describe('Ticket Selection Component', () => {
   });
 
   describe('Event Emission', () => {
-    it('should emit complete event detail on quantity change', (done) => {
+    it('should emit complete event detail on quantity change', () => {
       const card = document.querySelector('[data-ticket-id="friday-only"]');
       const plusBtn = card.querySelector('.qty-btn.plus');
+      let eventFired = false;
 
       document.addEventListener('ticket-quantity-changed', (event) => {
         expect(event.detail).toEqual({
@@ -805,13 +810,14 @@ describe('Ticket Selection Component', () => {
           name: 'Friday Only',
           eventId: 'alocubano-boulderfest-2026'
         });
-        done();
+        eventFired = true;
       });
 
       plusBtn.click();
+      expect(eventFired).toBe(true);
     });
 
-    it('should emit event with updated quantity on multiple increments', (done) => {
+    it('should emit event with updated quantity on multiple increments', () => {
       const card = document.querySelector('[data-ticket-id="weekend-pass"]');
       const plusBtn = card.querySelector('.qty-btn.plus');
 
@@ -821,15 +827,15 @@ describe('Ticket Selection Component', () => {
         eventCount++;
         if (eventCount === 2) {
           expect(event.detail.quantity).toBe(2);
-          done();
         }
       });
 
       plusBtn.click();
       plusBtn.click();
+      expect(eventCount).toBe(2);
     });
 
-    it('should emit event with quantity 0 when removing ticket', (done) => {
+    it('should emit event with quantity 0 when removing ticket', () => {
       const card = document.querySelector('[data-ticket-id="weekend-pass"]');
       const plusBtn = card.querySelector('.qty-btn.plus');
       const minusBtn = card.querySelector('.qty-btn.minus');
@@ -840,12 +846,12 @@ describe('Ticket Selection Component', () => {
         eventCount++;
         if (eventCount === 2) {
           expect(event.detail.quantity).toBe(0);
-          done();
         }
       });
 
       plusBtn.click();
       minusBtn.click();
+      expect(eventCount).toBe(2);
     });
   });
 

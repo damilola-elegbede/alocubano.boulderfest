@@ -359,7 +359,8 @@ describe('Google Wallet Hero Generator - Unit Tests', () => {
       const circleBuffer = await generator.generateCircle('rgb(255, 128, 64)');
       const metadata = await sharp(circleBuffer).metadata();
 
-      expect(metadata.hasAlpha).toBe(false); // Circle is solid, no alpha needed
+      // SVG to PNG conversion includes alpha channel by default in sharp
+      expect(metadata.hasAlpha).toBe(true);
     });
   });
 

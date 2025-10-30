@@ -257,6 +257,19 @@ describe('Connection Health Monitor - Unit Tests', () => {
 
     it('should return healthy status when all components healthy', async () => {
       const monitor = new ConnectionHealthMonitor();
+
+      // Mock the internal health check methods to return healthy status
+      vi.spyOn(monitor, '_checkCircuitBreakerHealth').mockResolvedValue({
+        status: HealthStatus.HEALTHY,
+        alerts: [],
+        metrics: {}
+      });
+      vi.spyOn(monitor, '_checkStateMachineHealth').mockResolvedValue({
+        status: HealthStatus.HEALTHY,
+        alerts: [],
+        metrics: {}
+      });
+
       const result = await monitor.performHealthCheck();
 
       expect(result.status).toBe(HealthStatus.HEALTHY);
@@ -687,6 +700,18 @@ describe('Connection Health Monitor - Unit Tests', () => {
 
     it('should monitor healthy system', async () => {
       const monitor = new ConnectionHealthMonitor();
+
+      // Mock the internal health check methods to return healthy status
+      vi.spyOn(monitor, '_checkCircuitBreakerHealth').mockResolvedValue({
+        status: HealthStatus.HEALTHY,
+        alerts: [],
+        metrics: {}
+      });
+      vi.spyOn(monitor, '_checkStateMachineHealth').mockResolvedValue({
+        status: HealthStatus.HEALTHY,
+        alerts: [],
+        metrics: {}
+      });
 
       for (let i = 0; i < 5; i++) {
         const result = await monitor.performHealthCheck();

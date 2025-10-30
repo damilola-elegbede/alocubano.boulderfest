@@ -578,31 +578,35 @@ describe('Navigation Component', () => {
       expect(menu.classList.contains('is-open')).toBe(false);
     });
 
-    it('should emit dropdownOpened event when dropdown opens', (done) => {
+    it('should emit dropdownOpened event when dropdown opens', () => {
       const trigger = document.querySelector('.dropdown-trigger');
+      let eventFired = false;
 
       navigationInstance.eventBus.on('dropdownOpened', (data) => {
         expect(data).toBeDefined();
         expect(data.trigger).toBe(trigger);
         expect(data.timestamp).toBeGreaterThan(0);
-        done();
+        eventFired = true;
       });
 
       trigger.click();
+      expect(eventFired).toBe(true);
     });
 
-    it('should emit dropdownClosed event when dropdown closes', (done) => {
+    it('should emit dropdownClosed event when dropdown closes', () => {
       const trigger = document.querySelector('.dropdown-trigger');
+      let eventFired = false;
 
       trigger.click();
 
       navigationInstance.eventBus.on('dropdownClosed', (data) => {
         expect(data).toBeDefined();
         expect(data.timestamp).toBeGreaterThan(0);
-        done();
+        eventFired = true;
       });
 
       trigger.click();
+      expect(eventFired).toBe(true);
     });
 
     it('should track dropdown usage in performance metrics', () => {

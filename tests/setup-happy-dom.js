@@ -70,10 +70,12 @@ if (typeof document !== 'undefined' && typeof window !== 'undefined') {
   afterEach(() => {
     // Clear all timers to prevent "document is not defined" errors after teardown
     // This fixes issues where setTimeout/setInterval continue running after tests complete
-    const highestTimeoutId = setTimeout(() => {}, 0);
-    for (let i = 0; i < highestTimeoutId; i++) {
-      clearTimeout(i);
-      clearInterval(i);
+    if (typeof setTimeout !== 'undefined') {
+      const highestTimeoutId = setTimeout(() => {}, 0);
+      for (let i = 0; i < highestTimeoutId; i++) {
+        clearTimeout(i);
+        clearInterval(i);
+      }
     }
 
     // Clean up DOM between tests

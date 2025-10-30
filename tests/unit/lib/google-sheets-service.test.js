@@ -11,26 +11,38 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { GoogleSheetsService } from '../../../lib/google-sheets-service.js';
 
-// Mock dependencies
-vi.mock('@googleapis/sheets');
-vi.mock('google-auth-library');
-vi.mock('../../../lib/database.js');
-vi.mock('../../../lib/bigint-serializer.js');
+// Mock dependencies first (hoisted)
+vi.mock('@googleapis/sheets', () => ({
+  sheets: vi.fn(() => ({ spreadsheets: { values: {} } }))
+}));
+vi.mock('google-auth-library', () => ({
+  JWT: vi.fn()
+}));
+vi.mock('../../../lib/database.js', () => ({
+  getDatabaseClient: vi.fn()
+}));
+vi.mock('../../../lib/bigint-serializer.js', () => ({
+  processDatabaseResult: vi.fn(result => result)
+}));
 
 describe('GoogleSheetsService Unit Tests', () => {
+  let GoogleSheetsService;
   let service;
   let mockSheets;
   let mockAuth;
   let mockDb;
 
   beforeEach(async () => {
-    // Set up environment variables
+    // Set environment variables before importing the module
     process.env.GOOGLE_SHEET_ID = 'test-sheet-id-123';
     process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL = 'test@service-account.com';
     process.env.GOOGLE_SHEETS_PRIVATE_KEY = 'test-private-key\\nwith\\nnewlines';
     process.env.SHEETS_TIMEZONE = 'America/Denver';
+
+    // Dynamically import after env is set
+    const module = await import('../../../lib/google-sheets-service.js');
+    GoogleSheetsService = module.GoogleSheetsService;
 
     // Mock Google Sheets API
     mockSheets = {

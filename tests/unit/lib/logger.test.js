@@ -4,13 +4,13 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { logger } from '../../../lib/logger.js';
 
 describe('Logger - Unit Tests', () => {
   let originalEnv;
   let consoleSpies;
+  let logger;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // Save original environment
     originalEnv = { ...process.env };
 
@@ -30,12 +30,18 @@ describe('Logger - Unit Tests', () => {
 
     // Restore all console methods
     Object.values(consoleSpies).forEach(spy => spy.mockRestore());
+
+    // Clear module cache to allow re-import with new env
+    vi.resetModules();
   });
 
   describe('log method', () => {
     describe('Debug Mode Enabled', () => {
-      beforeEach(() => {
+      beforeEach(async () => {
         process.env.DEBUG = 'true';
+        vi.resetModules();
+        const loggerModule = await import('../../../lib/logger.js');
+        logger = loggerModule.logger;
       });
 
       it('should log messages when DEBUG is true', () => {
@@ -66,9 +72,12 @@ describe('Logger - Unit Tests', () => {
     });
 
     describe('Development Environment', () => {
-      beforeEach(() => {
+      beforeEach(async () => {
         delete process.env.DEBUG;
         process.env.NODE_ENV = 'development';
+        vi.resetModules();
+        const loggerModule = await import('../../../lib/logger.js');
+        logger = loggerModule.logger;
       });
 
       it('should log messages in development mode', () => {
@@ -79,9 +88,12 @@ describe('Logger - Unit Tests', () => {
     });
 
     describe('Production Mode', () => {
-      beforeEach(() => {
+      beforeEach(async () => {
         delete process.env.DEBUG;
         process.env.NODE_ENV = 'production';
+        vi.resetModules();
+        const loggerModule = await import('../../../lib/logger.js');
+        logger = loggerModule.logger;
       });
 
       it('should not log messages in production', () => {
@@ -98,9 +110,12 @@ describe('Logger - Unit Tests', () => {
     });
 
     describe('Test Mode', () => {
-      beforeEach(() => {
+      beforeEach(async () => {
         delete process.env.DEBUG;
         process.env.NODE_ENV = 'test';
+        vi.resetModules();
+        const loggerModule = await import('../../../lib/logger.js');
+        logger = loggerModule.logger;
       });
 
       it('should not log messages in test mode', () => {
@@ -112,6 +127,12 @@ describe('Logger - Unit Tests', () => {
   });
 
   describe('error method', () => {
+    beforeEach(async () => {
+      // Load logger once for this suite
+      const loggerModule = await import('../../../lib/logger.js');
+      logger = loggerModule.logger;
+    });
+
     it('should always log errors regardless of environment', () => {
       process.env.NODE_ENV = 'production';
       delete process.env.DEBUG;
@@ -160,8 +181,11 @@ describe('Logger - Unit Tests', () => {
 
   describe('debug method', () => {
     describe('Debug Mode Enabled', () => {
-      beforeEach(() => {
+      beforeEach(async () => {
         process.env.DEBUG = 'true';
+        vi.resetModules();
+        const loggerModule = await import('../../../lib/logger.js');
+        logger = loggerModule.logger;
       });
 
       it('should log debug messages with [DEBUG] prefix', () => {
@@ -198,9 +222,12 @@ describe('Logger - Unit Tests', () => {
     });
 
     describe('Production Mode', () => {
-      beforeEach(() => {
+      beforeEach(async () => {
         delete process.env.DEBUG;
         process.env.NODE_ENV = 'production';
+        vi.resetModules();
+        const loggerModule = await import('../../../lib/logger.js');
+        logger = loggerModule.logger;
       });
 
       it('should not log debug messages in production', () => {
@@ -212,6 +239,11 @@ describe('Logger - Unit Tests', () => {
   });
 
   describe('warn method', () => {
+    beforeEach(async () => {
+      const loggerModule = await import('../../../lib/logger.js');
+      logger = loggerModule.logger;
+    });
+
     describe('Standard Warning Behavior', () => {
       it('should log warnings in production', () => {
         process.env.NODE_ENV = 'production';
@@ -261,8 +293,11 @@ describe('Logger - Unit Tests', () => {
         expect(consoleSpies.warn).toHaveBeenCalledWith('Regular test warning');
       });
 
-      it('should log SessionMonitor warnings when ENABLE_TEST_MONITORING is set', () => {
+      it('should log SessionMonitor warnings when ENABLE_TEST_MONITORING is set', async () => {
         process.env.ENABLE_TEST_MONITORING = 'true';
+        vi.resetModules();
+        const loggerModule = await import('../../../lib/logger.js');
+        const logger = loggerModule.logger;
 
         logger.warn('[SessionMonitor] Test monitoring enabled');
 
@@ -317,8 +352,11 @@ describe('Logger - Unit Tests', () => {
 
   describe('info method', () => {
     describe('Debug Mode Enabled', () => {
-      beforeEach(() => {
+      beforeEach(async () => {
         process.env.DEBUG = 'true';
+        vi.resetModules();
+        const loggerModule = await import('../../../lib/logger.js');
+        logger = loggerModule.logger;
       });
 
       it('should log info messages when DEBUG is true', () => {
@@ -335,9 +373,12 @@ describe('Logger - Unit Tests', () => {
     });
 
     describe('Development Environment', () => {
-      beforeEach(() => {
+      beforeEach(async () => {
         delete process.env.DEBUG;
         process.env.NODE_ENV = 'development';
+        vi.resetModules();
+        const loggerModule = await import('../../../lib/logger.js');
+        logger = loggerModule.logger;
       });
 
       it('should log info messages in development', () => {
@@ -348,9 +389,12 @@ describe('Logger - Unit Tests', () => {
     });
 
     describe('Production Mode', () => {
-      beforeEach(() => {
+      beforeEach(async () => {
         delete process.env.DEBUG;
         process.env.NODE_ENV = 'production';
+        vi.resetModules();
+        const loggerModule = await import('../../../lib/logger.js');
+        logger = loggerModule.logger;
       });
 
       it('should not log info messages in production', () => {
@@ -362,8 +406,11 @@ describe('Logger - Unit Tests', () => {
   });
 
   describe('logWithLevel method', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
       process.env.DEBUG = 'true';
+      vi.resetModules();
+      const loggerModule = await import('../../../lib/logger.js');
+      logger = loggerModule.logger;
     });
 
     describe('Level Routing', () => {
@@ -433,9 +480,12 @@ describe('Logger - Unit Tests', () => {
     });
 
     describe('Environment Respect', () => {
-      beforeEach(() => {
+      beforeEach(async () => {
         delete process.env.DEBUG;
         process.env.NODE_ENV = 'production';
+        vi.resetModules();
+        const loggerModule = await import('../../../lib/logger.js');
+        logger = loggerModule.logger;
       });
 
       it('should respect environment for info level', () => {
@@ -459,8 +509,11 @@ describe('Logger - Unit Tests', () => {
   });
 
   describe('Proxy Behavior', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
       process.env.DEBUG = 'true';
+      vi.resetModules();
+      const loggerModule = await import('../../../lib/logger.js');
+      logger = loggerModule.logger;
     });
 
     describe('Dynamic Property Access', () => {
@@ -544,8 +597,11 @@ describe('Logger - Unit Tests', () => {
   });
 
   describe('Real-World Usage', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
       process.env.DEBUG = 'true';
+      vi.resetModules();
+      const loggerModule = await import('../../../lib/logger.js');
+      logger = loggerModule.logger;
     });
 
     it('should log API request details', () => {
@@ -592,36 +648,48 @@ describe('Logger - Unit Tests', () => {
   });
 
   describe('Environment Combinations', () => {
-    it('should prioritize DEBUG over NODE_ENV', () => {
+    it('should prioritize DEBUG over NODE_ENV', async () => {
       process.env.DEBUG = 'true';
       process.env.NODE_ENV = 'production';
+      vi.resetModules();
+      const loggerModule = await import('../../../lib/logger.js');
+      const logger = loggerModule.logger;
 
       logger.log('Should log');
 
       expect(consoleSpies.log).toHaveBeenCalledWith('Should log');
     });
 
-    it('should handle missing environment variables', () => {
+    it('should handle missing environment variables', async () => {
       delete process.env.DEBUG;
       delete process.env.NODE_ENV;
+      vi.resetModules();
+      const loggerModule = await import('../../../lib/logger.js');
+      const logger = loggerModule.logger;
 
       logger.log('Default environment');
 
       expect(consoleSpies.log).not.toHaveBeenCalled();
     });
 
-    it('should handle DEBUG=false explicitly', () => {
+    it('should handle DEBUG=false explicitly', async () => {
       process.env.DEBUG = 'false';
       process.env.NODE_ENV = 'development';
+      vi.resetModules();
+      const loggerModule = await import('../../../lib/logger.js');
+      const logger = loggerModule.logger;
 
       logger.log('Should still log in development');
 
       expect(consoleSpies.log).toHaveBeenCalledWith('Should still log in development');
     });
 
-    it('should handle empty DEBUG variable', () => {
+    it('should handle empty DEBUG variable', async () => {
       process.env.DEBUG = '';
       process.env.NODE_ENV = 'development';
+      vi.resetModules();
+      const loggerModule = await import('../../../lib/logger.js');
+      const logger = loggerModule.logger;
 
       logger.log('Development mode');
 
@@ -630,8 +698,11 @@ describe('Logger - Unit Tests', () => {
   });
 
   describe('Performance', () => {
-    it('should handle high-frequency logging in debug mode', () => {
+    it('should handle high-frequency logging in debug mode', async () => {
       process.env.DEBUG = 'true';
+      vi.resetModules();
+      const loggerModule = await import('../../../lib/logger.js');
+      const logger = loggerModule.logger;
 
       const start = Date.now();
       for (let i = 0; i < 1000; i++) {
@@ -643,9 +714,12 @@ describe('Logger - Unit Tests', () => {
       expect(consoleSpies.log).toHaveBeenCalledTimes(1000);
     });
 
-    it('should have minimal overhead when logging is disabled', () => {
+    it('should have minimal overhead when logging is disabled', async () => {
       delete process.env.DEBUG;
       process.env.NODE_ENV = 'production';
+      vi.resetModules();
+      const loggerModule = await import('../../../lib/logger.js');
+      const logger = loggerModule.logger;
 
       const start = Date.now();
       for (let i = 0; i < 10000; i++) {
