@@ -1,4 +1,8 @@
 /**
+ * @vitest-environment happy-dom
+ */
+
+/**
  * Gallery Detail Tests
  * Tests the gallery detail page functionality including:
  * - Detail view display and metadata
@@ -8,7 +12,7 @@
  * - Social sharing functionality
  * - Accessibility (ARIA, keyboard, screen reader)
  * - Error handling (image load failure, invalid detail ID)
- * 
+ *
  * TODO: MAJOR REFACTOR NEEDED
  * These tests currently use static fixtures and mock data structures that don't
  * exercise the real implementation code paths. To properly test gallery detail
