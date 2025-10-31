@@ -4,7 +4,7 @@
  *
  * This file runs for tests with @vitest-environment happy-dom
  */
-import { beforeAll, afterEach } from 'vitest';
+import { afterEach } from 'vitest';
 
 // Only run this setup for Happy-DOM environment tests
 // Skip if running in node environment (default)
@@ -13,10 +13,12 @@ if (typeof document !== 'undefined' && typeof window !== 'undefined') {
    * Global fetch mock for CSS and static assets
    * Happy-DOM automatically tries to fetch external resources (CSS, images, etc.)
    * We need to mock these to prevent network errors in tests
+   *
+   * CRITICAL: This MUST be set up immediately (not in beforeAll) because Happy-DOM
+   * fetches resources during test file loading, before any hooks run
    */
   const originalFetch = globalThis.fetch;
 
-  beforeAll(() => {
   // Mock fetch to handle CSS files and other static assets
   globalThis.fetch = async (url, options) => {
     const urlString = url.toString();
@@ -62,10 +64,9 @@ if (typeof document !== 'undefined' && typeof window !== 'undefined') {
       return originalFetch(url, options);
     }
 
-      // Fallback: return 404
-      return new Response('Not Found', { status: 404 });
-    };
-  });
+    // Fallback: return 404
+    return new Response('Not Found', { status: 404 });
+  };
 
   afterEach(() => {
     // Clear all timers to prevent "document is not defined" errors after teardown
