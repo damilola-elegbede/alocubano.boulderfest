@@ -3,40 +3,22 @@
  * Tests end-to-end metrics collection, query, and visualization
  */
 
-import { describe, test, expect, beforeAll } from 'vitest';
-import { chromium } from 'playwright';
-import { VercelDeploymentManager } from '../../../scripts/vercel-deployment-manager.js';
+import { test, expect } from '@playwright/test';
 
-describe('Monitoring Metrics Flow E2E', () => {
-  let browser;
-  let context;
-  let page;
+test.describe('Monitoring Metrics Flow E2E', () => {
   let deploymentUrl;
-  const deploymentManager = new VercelDeploymentManager();
   const METRICS_API_KEY = process.env.METRICS_API_KEY || 'test_metrics_key';
 
-  beforeAll(async () => {
+  test.beforeAll(async () => {
     // Set environment variable for testing
     process.env.METRICS_API_KEY = METRICS_API_KEY;
 
-    // Get or create preview deployment
-    const deployment = await deploymentManager.getOrCreatePreviewDeployment();
-    deploymentUrl = deployment.url;
-
-    // Launch browser
-    browser = await chromium.launch();
-    context = await browser.newContext();
-    page = await context.newPage();
-
+    deploymentUrl = process.env.E2E_BASE_URL || 'http://localhost:3000';
     console.log(`Testing monitoring metrics flow on: ${deploymentUrl}`);
-  }, 300000); // 5 minute timeout for deployment
-
-  afterAll(async () => {
-    await browser?.close();
   });
 
-  describe('Metrics Collection via API', () => {
-    test('should collect system metrics', async () => {
+  test.describe('Metrics Collection via API', () => {
+    test('should collect system metrics', async ({ page }) => {
       const metricsUrl = `${deploymentUrl}/api/monitoring/metrics?category=system`;
 
       const response = await page.request.get(metricsUrl, {
@@ -53,7 +35,7 @@ describe('Monitoring Metrics Flow E2E', () => {
       expect(data.process).toBeDefined();
     });
 
-    test('should collect business metrics', async () => {
+    test('should collect business metrics', async ({ page }) => {
       const metricsUrl = `${deploymentUrl}/api/monitoring/metrics?category=business`;
 
       const response = await page.request.get(metricsUrl, {
@@ -71,7 +53,7 @@ describe('Monitoring Metrics Flow E2E', () => {
       expect(data.revenue).toBeDefined();
     });
 
-    test('should collect performance metrics', async () => {
+    test('should collect performance metrics', async ({ page }) => {
       const metricsUrl = `${deploymentUrl}/api/monitoring/metrics?category=performance`;
 
       const response = await page.request.get(metricsUrl, {
@@ -88,8 +70,8 @@ describe('Monitoring Metrics Flow E2E', () => {
     });
   });
 
-  describe('Metrics Display in Dashboard', () => {
-    test('should view metrics in monitoring dashboard', async () => {
+  test.describe('Metrics Display in Dashboard', () => {
+    test('should view metrics in monitoring dashboard', async ({ page }) => {
       const dashboardUrl = `${deploymentUrl}/api/monitoring/dashboard`;
 
       const response = await page.request.get(dashboardUrl);
@@ -103,7 +85,7 @@ describe('Monitoring Metrics Flow E2E', () => {
       expect(data.infrastructure).toBeDefined();
     });
 
-    test('should display performance metrics', async () => {
+    test('should display performance metrics', async ({ page }) => {
       const dashboardUrl = `${deploymentUrl}/api/monitoring/dashboard`;
 
       const response = await page.request.get(dashboardUrl);
@@ -115,7 +97,7 @@ describe('Monitoring Metrics Flow E2E', () => {
       expect(data.performance.percentiles).toBeDefined();
     });
 
-    test('should display business metrics', async () => {
+    test('should display business metrics', async ({ page }) => {
       const dashboardUrl = `${deploymentUrl}/api/monitoring/dashboard`;
 
       const response = await page.request.get(dashboardUrl);
@@ -126,7 +108,7 @@ describe('Monitoring Metrics Flow E2E', () => {
       expect(data.business.tickets).toBeDefined();
     });
 
-    test('should display infrastructure metrics', async () => {
+    test('should display infrastructure metrics', async ({ page }) => {
       const dashboardUrl = `${deploymentUrl}/api/monitoring/dashboard`;
 
       const response = await page.request.get(dashboardUrl);
@@ -137,8 +119,8 @@ describe('Monitoring Metrics Flow E2E', () => {
     });
   });
 
-  describe('Metrics Aggregation', () => {
-    test('should verify aggregated metrics are correct', async () => {
+  test.describe('Metrics Aggregation', () => {
+    test('should verify aggregated metrics are correct', async ({ page }) => {
       const metricsUrl = `${deploymentUrl}/api/monitoring/metrics`;
 
       const response = await page.request.get(metricsUrl, {
@@ -156,8 +138,8 @@ describe('Monitoring Metrics Flow E2E', () => {
     });
   });
 
-  describe('Time Range Filtering', () => {
-    test('should filter metrics by time range', async () => {
+  test.describe('Time Range Filtering', () => {
+    test('should filter metrics by time range', async ({ page }) => {
       // Dashboard endpoint supports time filtering
       const dashboardUrl = `${deploymentUrl}/api/monitoring/dashboard`;
 
@@ -175,8 +157,8 @@ describe('Monitoring Metrics Flow E2E', () => {
     });
   });
 
-  describe('Metrics Export Formats', () => {
-    test('should export metrics in JSON format', async () => {
+  test.describe('Metrics Export Formats', () => {
+    test('should export metrics in JSON format', async ({ page }) => {
       const metricsUrl = `${deploymentUrl}/api/monitoring/metrics?format=json`;
 
       const response = await page.request.get(metricsUrl, {
@@ -189,7 +171,7 @@ describe('Monitoring Metrics Flow E2E', () => {
       expect(response.headers()['content-type']).toContain('application/json');
     });
 
-    test('should export metrics in Prometheus format', async () => {
+    test('should export metrics in Prometheus format', async ({ page }) => {
       const metricsUrl = `${deploymentUrl}/api/monitoring/metrics?format=prometheus`;
 
       const response = await page.request.get(metricsUrl, {
@@ -205,7 +187,7 @@ describe('Monitoring Metrics Flow E2E', () => {
       expect(data).toContain('# TYPE');
     });
 
-    test('should export metrics in Datadog format', async () => {
+    test('should export metrics in Datadog format', async ({ page }) => {
       const metricsUrl = `${deploymentUrl}/api/monitoring/metrics?format=datadog`;
 
       const response = await page.request.get(metricsUrl, {
@@ -221,7 +203,7 @@ describe('Monitoring Metrics Flow E2E', () => {
       expect(Array.isArray(data.series)).toBe(true);
     });
 
-    test('should export metrics in New Relic format', async () => {
+    test('should export metrics in New Relic format', async ({ page }) => {
       const metricsUrl = `${deploymentUrl}/api/monitoring/metrics?format=newrelic`;
 
       const response = await page.request.get(metricsUrl, {
@@ -237,7 +219,7 @@ describe('Monitoring Metrics Flow E2E', () => {
       expect(data.agent).toBeDefined();
     });
 
-    test('should export metrics in CloudWatch format', async () => {
+    test('should export metrics in CloudWatch format', async ({ page }) => {
       const metricsUrl = `${deploymentUrl}/api/monitoring/metrics?format=cloudwatch`;
 
       const response = await page.request.get(metricsUrl, {
@@ -254,8 +236,8 @@ describe('Monitoring Metrics Flow E2E', () => {
     });
   });
 
-  describe('Real-time Updates', () => {
-    test('should provide fresh metrics on each request', async () => {
+  test.describe('Real-time Updates', () => {
+    test('should provide fresh metrics on each request', async ({ page }) => {
       const metricsUrl = `${deploymentUrl}/api/monitoring/metrics`;
 
       // First request
@@ -287,8 +269,8 @@ describe('Monitoring Metrics Flow E2E', () => {
     });
   });
 
-  describe('Uptime Tracking', () => {
-    test('should track system uptime', async () => {
+  test.describe('Uptime Tracking', () => {
+    test('should track system uptime', async ({ page }) => {
       const uptimeUrl = `${deploymentUrl}/api/monitoring/uptime`;
 
       const response = await page.request.get(uptimeUrl);
@@ -302,7 +284,7 @@ describe('Monitoring Metrics Flow E2E', () => {
       expect(data.uptime.uptime.formatted).toBeDefined();
     });
 
-    test('should track request success rate', async () => {
+    test('should track request success rate', async ({ page }) => {
       const uptimeUrl = `${deploymentUrl}/api/monitoring/uptime`;
 
       const response = await page.request.get(uptimeUrl);
@@ -314,7 +296,7 @@ describe('Monitoring Metrics Flow E2E', () => {
       expect(data.uptime.requests.successRate).toBeLessThanOrEqual(100);
     });
 
-    test('should calculate SLA compliance', async () => {
+    test('should calculate SLA compliance', async ({ page }) => {
       const uptimeUrl = `${deploymentUrl}/api/monitoring/uptime`;
 
       const response = await page.request.get(uptimeUrl);
@@ -327,8 +309,8 @@ describe('Monitoring Metrics Flow E2E', () => {
     });
   });
 
-  describe('Platform-Specific Dashboards', () => {
-    test('should generate Grafana dashboard', async () => {
+  test.describe('Platform-Specific Dashboards', () => {
+    test('should generate Grafana dashboard', async ({ page }) => {
       const dashboardUrl = `${deploymentUrl}/api/monitoring/dashboard?platform=grafana`;
 
       const response = await page.request.get(dashboardUrl);
@@ -341,7 +323,7 @@ describe('Monitoring Metrics Flow E2E', () => {
       expect(data.data_source).toBeDefined();
     });
 
-    test('should generate Datadog dashboard', async () => {
+    test('should generate Datadog dashboard', async ({ page }) => {
       const dashboardUrl = `${deploymentUrl}/api/monitoring/dashboard?platform=datadog`;
 
       const response = await page.request.get(dashboardUrl);

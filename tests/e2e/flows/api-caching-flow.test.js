@@ -6,27 +6,13 @@
  * Run with: npm run test:e2e
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { chromium } from 'playwright';
+import { test, expect } from '@playwright/test';
 
-describe('API Caching E2E Flow', () => {
-  let browser;
-  let context;
-  let page;
+test.describe('API Caching E2E Flow', () => {
   const baseURL = process.env.E2E_BASE_URL || 'http://localhost:3000';
 
-  beforeAll(async () => {
-    browser = await chromium.launch();
-    context = await browser.newContext();
-    page = await context.newPage();
-  });
-
-  afterAll(async () => {
-    await browser.close();
-  });
-
-  describe('Health Check Endpoint', () => {
-    it('should return cache headers on repeated requests', async () => {
+  test.describe('Health Check Endpoint', () => {
+    test('should return cache headers on repeated requests', async ({ page }) => {
       // First request
       const response1 = await page.goto(`${baseURL}/api/health/check`);
       const headers1 = response1.headers();
@@ -46,8 +32,8 @@ describe('API Caching E2E Flow', () => {
     });
   });
 
-  describe('Gallery API Caching', () => {
-    it('should cache gallery years data', async () => {
+  test.describe('Gallery API Caching', () => {
+    test('should cache gallery years data', async ({ page }) => {
       const apiPath = `${baseURL}/api/gallery/years`;
 
       // First request
@@ -72,7 +58,7 @@ describe('API Caching E2E Flow', () => {
       expect(elapsed).toBeLessThan(500);
     });
 
-    it('should cache featured photos data', async () => {
+    test('should cache featured photos data', async ({ page }) => {
       const apiPath = `${baseURL}/api/featured-photos`;
 
       const response1 = await page.goto(apiPath);
@@ -87,8 +73,8 @@ describe('API Caching E2E Flow', () => {
     });
   });
 
-  describe('Cache Control Headers', () => {
-    it('should include proper cache-control headers', async () => {
+  test.describe('Cache Control Headers', () => {
+    test('should include proper cache-control headers', async ({ page }) => {
       const response = await page.goto(`${baseURL}/api/health/check`);
       const headers = response.headers();
 
@@ -96,7 +82,7 @@ describe('API Caching E2E Flow', () => {
       expect(cacheControl).toBeDefined();
     });
 
-    it('should respect no-cache for dynamic endpoints', async () => {
+    test('should respect no-cache for dynamic endpoints', async ({ page }) => {
       // Ticket availability is dynamic - should not be heavily cached
       const response = await page.goto(`${baseURL}/api/tickets/availability`);
 
@@ -116,8 +102,8 @@ describe('API Caching E2E Flow', () => {
     });
   });
 
-  describe('API Response Consistency', () => {
-    it('should return consistent data across multiple requests', async () => {
+  test.describe('API Response Consistency', () => {
+    test('should return consistent data across multiple requests', async ({ page }) => {
       const apiPath = `${baseURL}/api/gallery/years`;
       const responses = [];
 
@@ -140,8 +126,8 @@ describe('API Caching E2E Flow', () => {
     });
   });
 
-  describe('Cache Invalidation', () => {
-    it('should get fresh data after cache invalidation', async () => {
+  test.describe('Cache Invalidation', () => {
+    test('should get fresh data after cache invalidation', async ({ page }) => {
       const apiPath = `${baseURL}/api/health/check`;
 
       // First request
@@ -163,8 +149,8 @@ describe('API Caching E2E Flow', () => {
     });
   });
 
-  describe('Performance Under Load', () => {
-    it('should handle concurrent API requests efficiently', async () => {
+  test.describe('Performance Under Load', () => {
+    test('should handle concurrent API requests efficiently', async ({ page }) => {
       const apiPath = `${baseURL}/api/health/check`;
 
       const startTime = Date.now();
@@ -186,7 +172,7 @@ describe('API Caching E2E Flow', () => {
       expect(elapsed).toBeLessThan(2000);
     });
 
-    it('should measure cache hit ratio', async () => {
+    test('should measure cache hit ratio', async ({ page }) => {
       const apiPath = `${baseURL}/api/health/check`;
       let cacheHits = 0;
       let cacheMisses = 0;
@@ -214,8 +200,8 @@ describe('API Caching E2E Flow', () => {
     });
   });
 
-  describe('Different HTTP Methods', () => {
-    it('should not cache POST requests', async () => {
+  test.describe('Different HTTP Methods', () => {
+    test('should not cache POST requests', async ({ page }) => {
       // POST requests should not be cached
       const response1 = await page.evaluate(async (url) => {
         const res = await fetch(url, {
@@ -250,7 +236,7 @@ describe('API Caching E2E Flow', () => {
       expect(hasCache2).toBe(false);
     });
 
-    it('should cache GET requests by default', async () => {
+    test('should cache GET requests by default', async ({ page }) => {
       const apiPath = `${baseURL}/api/health/check`;
 
       // First GET
@@ -266,8 +252,8 @@ describe('API Caching E2E Flow', () => {
     });
   });
 
-  describe('Query Parameter Handling', () => {
-    it('should cache responses with different query params separately', async () => {
+  test.describe('Query Parameter Handling', () => {
+    test('should cache responses with different query params separately', async ({ page }) => {
       const baseApiPath = `${baseURL}/api/gallery`;
 
       // Request with param 1
@@ -284,7 +270,7 @@ describe('API Caching E2E Flow', () => {
       }
     });
 
-    it('should normalize query parameter order for caching', async () => {
+    test('should normalize query parameter order for caching', async ({ page }) => {
       // Create URL with params in different order
       const url1 = `${baseURL}/api/gallery?year=2024&page=1`;
       const url2 = `${baseURL}/api/gallery?page=1&year=2024`;
@@ -302,8 +288,8 @@ describe('API Caching E2E Flow', () => {
     });
   });
 
-  describe('Error Response Caching', () => {
-    it('should not cache error responses', async () => {
+  test.describe('Error Response Caching', () => {
+    test('should not cache error responses', async ({ page }) => {
       // Request non-existent endpoint
       const response1 = await page.goto(`${baseURL}/api/non-existent`, {
         waitUntil: 'networkidle'
@@ -326,8 +312,8 @@ describe('API Caching E2E Flow', () => {
     });
   });
 
-  describe('Cache Expiration', () => {
-    it('should refresh expired cache entries', async () => {
+  test.describe('Cache Expiration', () => {
+    test('should refresh expired cache entries', async ({ page }) => {
       const apiPath = `${baseURL}/api/health/check`;
 
       // First request
@@ -349,8 +335,8 @@ describe('API Caching E2E Flow', () => {
     });
   });
 
-  describe('Cache Statistics', () => {
-    it('should expose cache statistics via admin endpoint (if available)', async () => {
+  test.describe('Cache Statistics', () => {
+    test('should expose cache statistics via admin endpoint (if available)', async ({ page }) => {
       // This would require authentication
       // Placeholder for cache stats endpoint test
       const statsPath = `${baseURL}/api/cache/stats`;

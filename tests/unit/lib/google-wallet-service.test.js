@@ -378,12 +378,14 @@ describe('Google Wallet Service - Unit Tests', () => {
 
     it('should format multi-day event across months', () => {
       const formatted = service.formatEventDate('2026-05-30', '2026-06-02');
-      expect(formatted).toMatch(/May [23]\d - Jun [01]\d?, 2026/);
+      // Now uses UTC parsing, so always produces "May 30 - Jun 2, 2026"
+      expect(formatted).toBe('May 30 - Jun 2, 2026');
     });
 
     it('should format multi-day event across years', () => {
       const formatted = service.formatEventDate('2026-12-30', '2027-01-02');
-      expect(formatted).toMatch(/Dec [23]\d - Jan [01]\d?, 2027/);
+      // Now uses UTC parsing, so always produces "Dec 30 - Jan 2, 2027"
+      expect(formatted).toBe('Dec 30 - Jan 2, 2027');
     });
 
     it('should throw error when start date is missing', () => {

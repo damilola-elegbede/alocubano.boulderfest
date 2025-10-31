@@ -3,36 +3,18 @@
  * Tests complete alert lifecycle from trigger to resolution
  */
 
-import { describe, test, expect, beforeAll } from 'vitest';
-import { chromium } from 'playwright';
-import { VercelDeploymentManager } from '../../../scripts/vercel-deployment-manager.js';
+import { test, expect } from '@playwright/test';
 
-describe('Monitoring Alert Flow E2E', () => {
-  let browser;
-  let context;
-  let page;
+test.describe('Monitoring Alert Flow E2E', () => {
   let deploymentUrl;
-  const deploymentManager = new VercelDeploymentManager();
 
-  beforeAll(async () => {
-    // Get or create preview deployment
-    const deployment = await deploymentManager.getOrCreatePreviewDeployment();
-    deploymentUrl = deployment.url;
-
-    // Launch browser
-    browser = await chromium.launch();
-    context = await browser.newContext();
-    page = await context.newPage();
-
+  test.beforeAll(async () => {
+    deploymentUrl = process.env.E2E_BASE_URL || 'http://localhost:3000';
     console.log(`Testing monitoring alert flow on: ${deploymentUrl}`);
-  }, 300000); // 5 minute timeout for deployment
-
-  afterAll(async () => {
-    await browser?.close();
   });
 
-  describe('Alert Trigger and Creation', () => {
-    test('should trigger high error rate alert', async () => {
+  test.describe('Alert Trigger and Creation', () => {
+    test('should trigger high error rate alert', async ({ page }) => {
       // Navigate to monitoring dashboard (admin required)
       await page.goto(`${deploymentUrl}/pages/admin/login.html`);
 
@@ -54,7 +36,7 @@ describe('Monitoring Alert Flow E2E', () => {
       expect(Array.isArray(data.alerts)).toBe(true);
     });
 
-    test('should manually trigger test alert', async () => {
+    test('should manually trigger test alert', async ({ page }) => {
       const testAlertUrl = `${deploymentUrl}/api/monitoring/alerts`;
 
       const response = await page.request.post(testAlertUrl, {
@@ -83,8 +65,8 @@ describe('Monitoring Alert Flow E2E', () => {
     });
   });
 
-  describe('Alert Display in Dashboard', () => {
-    test('should display active alerts in monitoring dashboard', async () => {
+  test.describe('Alert Display in Dashboard', () => {
+    test('should display active alerts in monitoring dashboard', async ({ page }) => {
       const dashboardUrl = `${deploymentUrl}/api/monitoring/dashboard`;
 
       const response = await page.request.get(dashboardUrl);
@@ -97,7 +79,7 @@ describe('Monitoring Alert Flow E2E', () => {
       expect(data.alerts.by_severity).toBeDefined();
     });
 
-    test('should show alert statistics', async () => {
+    test('should show alert statistics', async ({ page }) => {
       const statusUrl = `${deploymentUrl}/api/monitoring/alerts?action=status`;
 
       const response = await page.request.get(statusUrl, {
@@ -115,8 +97,8 @@ describe('Monitoring Alert Flow E2E', () => {
     });
   });
 
-  describe('Alert Acknowledgment', () => {
-    test('should be able to view alert configuration', async () => {
+  test.describe('Alert Acknowledgment', () => {
+    test('should be able to view alert configuration', async ({ page }) => {
       const configUrl = `${deploymentUrl}/api/monitoring/alerts?action=configuration`;
 
       const response = await page.request.get(configUrl, {
@@ -134,8 +116,8 @@ describe('Monitoring Alert Flow E2E', () => {
     });
   });
 
-  describe('Alert Resolution', () => {
-    test('should clear specific alert', async () => {
+  test.describe('Alert Resolution', () => {
+    test('should clear specific alert', async ({ page }) => {
       const clearUrl = `${deploymentUrl}/api/monitoring/alerts`;
 
       const response = await page.request.post(clearUrl, {
@@ -154,7 +136,7 @@ describe('Monitoring Alert Flow E2E', () => {
       expect(data.success).toBe(true);
     });
 
-    test('should verify alert is cleared', async () => {
+    test('should verify alert is cleared', async ({ page }) => {
       const activeUrl = `${deploymentUrl}/api/monitoring/alerts?action=active`;
 
       const response = await page.request.get(activeUrl);
@@ -168,8 +150,8 @@ describe('Monitoring Alert Flow E2E', () => {
     });
   });
 
-  describe('Alert Types', () => {
-    test('should handle performance degradation alert', async () => {
+  test.describe('Alert Types', () => {
+    test('should handle performance degradation alert', async ({ page }) => {
       const triggerUrl = `${deploymentUrl}/api/monitoring/alerts`;
 
       const response = await page.request.post(triggerUrl, {
@@ -197,7 +179,7 @@ describe('Monitoring Alert Flow E2E', () => {
       expect(data.alert.description).toContain('response time');
     });
 
-    test('should handle error rate spike alert', async () => {
+    test('should handle error rate spike alert', async ({ page }) => {
       const triggerUrl = `${deploymentUrl}/api/monitoring/alerts`;
 
       const response = await page.request.post(triggerUrl, {

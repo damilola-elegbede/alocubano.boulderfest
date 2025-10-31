@@ -6,21 +6,13 @@
  * Run with: npm run test:e2e
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { chromium } from 'playwright';
+import { test, expect } from '@playwright/test';
 
-describe('Image Caching E2E Flow', () => {
-  let browser;
-  let context;
-  let page;
+test.describe('Image Caching E2E Flow', () => {
   const baseURL = process.env.E2E_BASE_URL || 'http://localhost:3000';
 
-  beforeAll(async () => {
-    browser = await chromium.launch();
-    context = await browser.newContext();
-    page = await context.newPage();
-
-    // Clear storage before tests
+  test.beforeEach(async ({ page, context }) => {
+    // Clear storage before each test
     await context.clearCookies();
     await page.goto(baseURL);
     await page.evaluate(() => {
@@ -29,12 +21,8 @@ describe('Image Caching E2E Flow', () => {
     });
   });
 
-  afterAll(async () => {
-    await browser.close();
-  });
-
-  describe('Initial Page Load', () => {
-    it('should load page with hero image', async () => {
+  test.describe('Initial Page Load', () => {
+    test('should load page with hero image', async ({ page }) => {
       await page.goto(`${baseURL}/`);
       await page.waitForLoadState('networkidle');
 
@@ -49,7 +37,7 @@ describe('Image Caching E2E Flow', () => {
       expect(managerExists).toBe(true);
     });
 
-    it('should cache image assignment in sessionStorage', async () => {
+    test('should cache image assignment in sessionStorage', async ({ page }) => {
       await page.goto(`${baseURL}/`);
       await page.waitForLoadState('networkidle');
 
@@ -62,7 +50,7 @@ describe('Image Caching E2E Flow', () => {
       expect(parsed).toHaveProperty('home');
     });
 
-    it('should cache image data in localStorage', async () => {
+    test('should cache image data in localStorage', async ({ page }) => {
       await page.goto(`${baseURL}/`);
       await page.waitForLoadState('networkidle');
 
@@ -77,8 +65,8 @@ describe('Image Caching E2E Flow', () => {
     });
   });
 
-  describe('Page Navigation', () => {
-    it('should load different images on different pages', async () => {
+  test.describe('Page Navigation', () => {
+    test('should load different images on different pages', async ({ page }) => {
       // Home page
       await page.goto(`${baseURL}/`);
       await page.waitForLoadState('networkidle');
@@ -104,7 +92,7 @@ describe('Image Caching E2E Flow', () => {
       expect(ticketsImageSrc).toBeTruthy();
     });
 
-    it('should maintain session assignments across navigation', async () => {
+    test('should maintain session assignments across navigation', async ({ page }) => {
       await page.goto(`${baseURL}/`);
       await page.waitForLoadState('networkidle');
 
@@ -123,8 +111,8 @@ describe('Image Caching E2E Flow', () => {
     });
   });
 
-  describe('Cache Reload', () => {
-    it('should load images from cache on page reload', async () => {
+  test.describe('Cache Reload', () => {
+    test('should load images from cache on page reload', async ({ page }) => {
       await page.goto(`${baseURL}/`);
       await page.waitForLoadState('networkidle');
       await page.waitForTimeout(2000);
@@ -154,8 +142,8 @@ describe('Image Caching E2E Flow', () => {
     });
   });
 
-  describe('Cache Size Management', () => {
-    it('should respect cache size limits', async () => {
+  test.describe('Cache Size Management', () => {
+    test('should respect cache size limits', async ({ page }) => {
       await page.goto(`${baseURL}/`);
       await page.waitForLoadState('networkidle');
 
@@ -177,8 +165,8 @@ describe('Image Caching E2E Flow', () => {
     });
   });
 
-  describe('Format-Aware Caching', () => {
-    it('should cache different format variants separately', async () => {
+  test.describe('Format-Aware Caching', () => {
+    test('should cache different format variants separately', async ({ page }) => {
       await page.goto(`${baseURL}/`);
       await page.waitForLoadState('networkidle');
 
@@ -202,7 +190,7 @@ describe('Image Caching E2E Flow', () => {
       expect(jpegResult.url).toContain('format=jpeg');
     });
 
-    it('should cache different width variants separately', async () => {
+    test('should cache different width variants separately', async ({ page }) => {
       await page.goto(`${baseURL}/`);
       await page.waitForLoadState('networkidle');
 
@@ -225,8 +213,8 @@ describe('Image Caching E2E Flow', () => {
     });
   });
 
-  describe('Cache Clearing', () => {
-    it('should clear cache when requested', async () => {
+  test.describe('Cache Clearing', () => {
+    test('should clear cache when requested', async ({ page }) => {
       await page.goto(`${baseURL}/`);
       await page.waitForLoadState('networkidle');
       await page.waitForTimeout(2000);
@@ -255,8 +243,8 @@ describe('Image Caching E2E Flow', () => {
     });
   });
 
-  describe('WebP Support Detection', () => {
-    it('should detect WebP support in browser', async () => {
+  test.describe('WebP Support Detection', () => {
+    test('should detect WebP support in browser', async ({ page }) => {
       await page.goto(`${baseURL}/`);
       await page.waitForLoadState('networkidle');
 
@@ -268,7 +256,7 @@ describe('Image Caching E2E Flow', () => {
       expect(supportsWebP).toBe(true);
     });
 
-    it('should use best format for browser', async () => {
+    test('should use best format for browser', async ({ page }) => {
       await page.goto(`${baseURL}/`);
       await page.waitForLoadState('networkidle');
 
@@ -280,8 +268,8 @@ describe('Image Caching E2E Flow', () => {
     });
   });
 
-  describe('Error Handling', () => {
-    it('should fallback to default image on error', async () => {
+  test.describe('Error Handling', () => {
+    test('should fallback to default image on error', async ({ page }) => {
       await page.goto(`${baseURL}/`);
       await page.waitForLoadState('networkidle');
 
@@ -294,7 +282,7 @@ describe('Image Caching E2E Flow', () => {
       expect(result.url).toContain('hero-default.jpg');
     });
 
-    it('should handle corrupt cache data gracefully', async () => {
+    test('should handle corrupt cache data gracefully', async ({ page }) => {
       await page.goto(`${baseURL}/`);
       await page.waitForLoadState('networkidle');
 
@@ -315,8 +303,8 @@ describe('Image Caching E2E Flow', () => {
     });
   });
 
-  describe('Performance', () => {
-    it('should load images quickly from cache', async () => {
+  test.describe('Performance', () => {
+    test('should load images quickly from cache', async ({ page }) => {
       await page.goto(`${baseURL}/`);
       await page.waitForLoadState('networkidle');
       await page.waitForTimeout(2000);
