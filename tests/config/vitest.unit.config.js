@@ -55,7 +55,10 @@ export default defineConfig({
     teardownTimeout: Number(process.env.VITEST_CLEANUP_TIMEOUT || 2000),
 
     // Unit test specific setup (UNIT-ONLY)
-    setupFiles: ['./tests/setup-unit.js'],
+    setupFiles: [
+      './tests/setup-unit.js',        // General unit test setup
+      './tests/setup-happy-dom.js'    // Happy-DOM environment setup for frontend tests
+    ],
     globals: true,
 
     // Include ONLY unit tests (Integration and E2E excluded)

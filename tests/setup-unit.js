@@ -35,7 +35,7 @@ const forceCleanup = async () => {
   }
 
   // Clear any timers/intervals
-  if (typeof clearInterval !== 'undefined') {
+  if (typeof clearInterval !== 'undefined' && typeof setTimeout !== 'undefined') {
     // Clear any lingering intervals
     const highestId = setTimeout(() => {}, 0);
     for (let i = 0; i < highestId; i++) {

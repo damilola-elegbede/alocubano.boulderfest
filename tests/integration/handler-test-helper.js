@@ -375,7 +375,12 @@ export async function testRequest(method, path, data = null, headers = {}) {
     '/api/health/brevo': 'api/health/brevo',
     '/api/health/stripe': 'api/health/stripe',
     '/api/gallery': 'api/gallery',
-    '/api/featured-photos': 'api/featured-photos'
+    '/api/featured-photos': 'api/featured-photos',
+    '/api/cron/process-reminders': 'api/cron/process-reminders',
+    '/api/cron/cleanup-expired-reservations': 'api/cron/cleanup-expired-reservations',
+    '/api/cron/cleanup-scan-logs': 'api/cron/cleanup-scan-logs',
+    '/api/cron/audit-retention': 'api/cron/audit-retention',
+    '/api/cron/update-event-status': 'api/cron/update-event-status'
   };
 
   // Extract base path without query params

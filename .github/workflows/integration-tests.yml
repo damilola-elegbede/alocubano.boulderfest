@@ -31,6 +31,14 @@ jobs:
     name: "🔗 Integration Tests (Node ${{ matrix.node-version }})"
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    outputs:
+      test_exit_code: ${{ steps.test.outputs.test_exit_code }}
+      parsing_method: ${{ steps.test.outputs.parsing_method }}
+      total_tests: ${{ steps.test.outputs.total_tests }}
+      passed_tests: ${{ steps.test.outputs.passing_tests }}
+      failed_tests: ${{ steps.test.outputs.failing_tests }}
+      skipped_tests: ${{ steps.test.outputs.skipped_tests }}
+      duration_ms: ${{ steps.test.outputs.duration }}
 
     strategy:
       # FIXED: Proper fail-fast configuration
@@ -206,6 +214,15 @@ jobs:
             parsing_method="not_found"
           fi
 
+          # Set outputs for downstream jobs
+          echo "test_exit_code=$test_exit_code" >> $GITHUB_OUTPUT
+          echo "parsing_method=$parsing_method" >> $GITHUB_OUTPUT
+          echo "total_tests=$total_tests" >> $GITHUB_OUTPUT
+          echo "passing_tests=$passing_tests" >> $GITHUB_OUTPUT
+          echo "failing_tests=$failing_tests" >> $GITHUB_OUTPUT
+          echo "skipped_tests=$skipped_tests" >> $GITHUB_OUTPUT
+          echo "duration=$duration" >> $GITHUB_OUTPUT
+
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "📊 Integration Test Results"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -244,6 +261,33 @@ jobs:
             exit 0
           fi
 
+      - name: "📊 Create Test Metadata"
+        if: always()
+        run: |
+          cat <<EOF > test-metadata.json
+          {
+            "workflow": "${{ github.workflow }}",
+            "job": "${{ github.job }}",
+            "run_id": "${{ github.run_id }}",
+            "run_attempt": "${{ github.run_attempt }}",
+            "test_type": "integration",
+            "matrix": $(echo '${{ toJSON(matrix) }}' | jq -c),
+            "exit_code": ${{ steps.test.outputs.test_exit_code || 'null' }},
+            "parsing_method": "${{ steps.test.outputs.parsing_method || 'unknown' }}",
+            "counts": {
+              "total": ${{ steps.test.outputs.total_tests || '0' }},
+              "passed": ${{ steps.test.outputs.passing_tests || '0' }},
+              "failed": ${{ steps.test.outputs.failing_tests || '0' }},
+              "skipped": ${{ steps.test.outputs.skipped_tests || '0' }}
+            },
+            "duration_ms": ${{ steps.test.outputs.duration || '0' }},
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          }
+          EOF
+
+          echo "Metadata created:"
+          cat test-metadata.json | jq '.'
+
       - name: "🧹 Database Cleanup"
         if: always()
         run: |
@@ -255,7 +299,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: integration-test-results-node-${{ matrix.node-version }}
-          path: integration-test-output.log
+          path: |
+            integration-test-output.log
+            test-metadata.json
           retention-days: 7
 
       - name: "📊 Report to PR"

@@ -47,6 +47,7 @@
     "validate-deployment:development": "node scripts/validate-deployment-readiness.js development",
     "test-deployment-pipeline": "node scripts/test-deployment-pipeline.js",
     "validate-ci-fixes": "node scripts/validate-ci-fixes.js",
+    "validate:test-results": "node scripts/validate-test-results.js",
     "drift:check": "node scripts/detect-package-drift.js",
     "sync-gallery": "node scripts/sync-gallery-images.js",
     "sync-gallery:force": "node scripts/sync-gallery-images.js --force",
