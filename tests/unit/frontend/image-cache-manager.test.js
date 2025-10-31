@@ -1,53 +1,34 @@
 /**
+ * @vitest-environment happy-dom
+ *
  * Unit Tests for Image Cache Manager
  * Tests frontend image caching with format-aware optimization
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { JSDOM } from 'jsdom';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import ImageCacheManager from '../../../public/js/image-cache-manager.js';
 
 describe('ImageCacheManager', () => {
-  let dom;
-  let window;
-  let ImageCacheManager;
   let manager;
 
-  beforeEach(async () => {
-    // Create DOM environment
-    dom = new JSDOM('<!DOCTYPE html><html><body></body></html>', {
-      url: 'http://localhost/'
-    });
-    window = dom.window;
-    global.window = window;
-    global.document = window.document;
-    global.localStorage = {
-      getItem: vi.fn(),
-      setItem: vi.fn(),
-      removeItem: vi.fn()
-    };
-    global.sessionStorage = {
-      getItem: vi.fn(),
-      setItem: vi.fn(),
-      removeItem: vi.fn()
-    };
-    global.fetch = vi.fn();
-    global.Image = window.Image;
+  beforeEach(() => {
+    // Mock localStorage and sessionStorage directly
+    vi.spyOn(localStorage, 'getItem').mockReturnValue(null);
+    vi.spyOn(localStorage, 'setItem').mockReturnValue(undefined);
+    vi.spyOn(localStorage, 'removeItem').mockReturnValue(undefined);
+    vi.spyOn(sessionStorage, 'getItem').mockReturnValue(null);
+    vi.spyOn(sessionStorage, 'setItem').mockReturnValue(undefined);
+    vi.spyOn(sessionStorage, 'removeItem').mockReturnValue(undefined);
 
-    // Load ImageCacheManager class
-    const module = await import('../../../public/js/image-cache-manager.js');
-    // window.ImageCacheManager is the instance, get the class from it
-    ImageCacheManager = window.ImageCacheManager.constructor;
+    // Mock fetch
+    global.fetch = vi.fn();
+
+    // Create fresh manager instance
     manager = new ImageCacheManager();
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
-    delete global.window;
-    delete global.document;
-    delete global.localStorage;
-    delete global.sessionStorage;
-    delete global.fetch;
-    delete global.Image;
+    vi.restoreAllMocks();
   });
 
   describe('Initialization', () => {
@@ -61,20 +42,20 @@ describe('ImageCacheManager', () => {
 
     it('should load image data cache from localStorage', () => {
       const cachedData = { 'test-id': { url: 'test.jpg', timestamp: Date.now() } };
-      global.localStorage.getItem.mockReturnValue(JSON.stringify(cachedData));
+      localStorage.getItem.mockReturnValue(JSON.stringify(cachedData));
 
-      const newManager = new ImageCacheManager.constructor();
+      const newManager = new ImageCacheManager();
 
-      expect(global.localStorage.getItem).toHaveBeenCalledWith(
+      expect(localStorage.getItem).toHaveBeenCalledWith(
         'alocubano_image_data_cache_v3'
       );
       expect(newManager.imageDataCache).toEqual(cachedData);
     });
 
     it('should handle corrupt cache data gracefully', () => {
-      global.localStorage.getItem.mockReturnValue('invalid-json');
+      localStorage.getItem.mockReturnValue('invalid-json');
 
-      const newManager = new ImageCacheManager.constructor();
+      const newManager = new ImageCacheManager();
 
       expect(newManager.imageDataCache).toEqual({});
     });
@@ -178,7 +159,7 @@ describe('ImageCacheManager', () => {
         width: 600
       });
 
-      expect(global.localStorage.setItem).toHaveBeenCalledWith(
+      expect(localStorage.setItem).toHaveBeenCalledWith(
         'alocubano_image_data_cache_v3',
         expect.any(String)
       );
@@ -328,7 +309,7 @@ describe('ImageCacheManager', () => {
 
     it('should load assignments from sessionStorage', async () => {
       const assignments = { home: { id: 'img1', name: 'Image 1' } };
-      global.sessionStorage.getItem.mockReturnValue(JSON.stringify(assignments));
+      sessionStorage.getItem.mockReturnValue(JSON.stringify(assignments));
 
       await manager.ensureSessionAssignments();
 
@@ -337,7 +318,8 @@ describe('ImageCacheManager', () => {
     });
 
     it('should fetch assignments if not cached', async () => {
-      global.sessionStorage.getItem.mockReturnValue(null);
+      // manager already initialized with null from beforeEach, ensure session is null
+      manager.sessionAssignments = null;
 
       await manager.ensureSessionAssignments();
 
@@ -346,29 +328,31 @@ describe('ImageCacheManager', () => {
     });
 
     it('should create random assignments from image pool', async () => {
-      global.sessionStorage.getItem.mockReturnValue(null);
+      // manager already initialized with null from beforeEach, ensure session is null
+      manager.sessionAssignments = null;
 
       await manager.ensureSessionAssignments();
 
-      const pages = Object.keys(manager.pageMapping);
-      pages.forEach(page => {
-        expect(manager.sessionAssignments[manager.pageMapping[page]]).toBeDefined();
+      const uniquePages = [...new Set(Object.values(manager.pageMapping))];
+      uniquePages.forEach(pageId => {
+        expect(manager.sessionAssignments[pageId]).toBeDefined();
       });
     });
 
     it('should cache assignments in sessionStorage', async () => {
-      global.sessionStorage.getItem.mockReturnValue(null);
+      // manager already initialized with null from beforeEach, ensure session is null
+      manager.sessionAssignments = null;
 
       await manager.ensureSessionAssignments();
 
-      expect(global.sessionStorage.setItem).toHaveBeenCalledWith(
+      expect(sessionStorage.setItem).toHaveBeenCalledWith(
         'alocubano_image_cache_v3',
         expect.any(String)
       );
     });
 
     it('should handle fetch errors gracefully', async () => {
-      global.sessionStorage.getItem.mockReturnValue(null);
+      manager.sessionAssignments = null;
       global.fetch.mockRejectedValue(new Error('Fetch failed'));
 
       await expect(manager.ensureSessionAssignments()).rejects.toThrow();
@@ -382,13 +366,10 @@ describe('ImageCacheManager', () => {
         writable: true
       });
 
-      global.sessionStorage.getItem.mockReturnValue(
-        JSON.stringify({
-          tickets: { id: 'img123', name: 'Tickets Image' }
-        })
-      );
-
-      await manager.ensureSessionAssignments();
+      // Set up session assignments directly
+      manager.sessionAssignments = {
+        tickets: { id: 'img123', name: 'Tickets Image' }
+      };
     });
 
     it('should return optimized image with specified options', async () => {
@@ -428,6 +409,23 @@ describe('ImageCacheManager', () => {
 
   describe('WebP Support Detection', () => {
     it('should detect WebP support', async () => {
+      // Mock Image to immediately call onload
+      const mockImage = {
+        height: 2,
+        onload: null,
+        onerror: null,
+        src: null
+      };
+
+      global.Image = vi.fn(() => mockImage);
+
+      // Trigger onload immediately when src is set
+      Object.defineProperty(mockImage, 'src', {
+        set(value) {
+          setTimeout(() => mockImage.onload && mockImage.onload(), 0);
+        }
+      });
+
       const supportsWebP = await manager.supportsWebP();
 
       expect(typeof supportsWebP).toBe('boolean');
@@ -459,16 +457,16 @@ describe('ImageCacheManager', () => {
 
       expect(manager.imageDataCache).toEqual({});
       expect(manager.sessionAssignments).toBeNull();
-      expect(global.localStorage.removeItem).toHaveBeenCalledWith(
+      expect(localStorage.removeItem).toHaveBeenCalledWith(
         'alocubano_image_data_cache_v3'
       );
-      expect(global.sessionStorage.removeItem).toHaveBeenCalledWith(
+      expect(sessionStorage.removeItem).toHaveBeenCalledWith(
         'alocubano_image_cache_v3'
       );
     });
 
     it('should handle clear errors gracefully', () => {
-      global.localStorage.removeItem.mockImplementation(() => {
+      localStorage.removeItem.mockImplementation(() => {
         throw new Error('Clear failed');
       });
 
@@ -511,13 +509,10 @@ describe('ImageCacheManager', () => {
         writable: true
       });
 
-      global.sessionStorage.getItem.mockReturnValue(
-        JSON.stringify({
-          tickets: { id: 'img123', name: 'Tickets Image' }
-        })
-      );
-
-      await manager.ensureSessionAssignments();
+      // Set up session assignments directly
+      manager.sessionAssignments = {
+        tickets: { id: 'img123', name: 'Tickets Image' }
+      };
     });
 
     it('should support legacy getImageForPage method', async () => {
@@ -578,14 +573,28 @@ describe('ImageCacheManager', () => {
         { id: 'img3' }
       ];
 
+      // Mock Math.random to control randomness and avoid flaky tests
+      const randomValues1 = [0.1, 0.5, 0.9, 0.2, 0.7, 0.3, 0.8];
+      const randomValues2 = [0.9, 0.2, 0.4, 0.8, 0.1, 0.6, 0.5];
+      let callCount = 0;
+
+      const mockRandom = vi.spyOn(Math, 'random');
+
+      // First call sequence
+      mockRandom.mockImplementation(() => randomValues1[callCount++ % randomValues1.length]);
       const assignments1 = manager.createRandomAssignments(imagePool);
+
+      // Reset for second call sequence
+      callCount = 0;
+      mockRandom.mockImplementation(() => randomValues2[callCount++ % randomValues2.length]);
       const assignments2 = manager.createRandomAssignments(imagePool);
 
-      // Likely to be different due to randomization
+      mockRandom.mockRestore();
+
+      // With different random sequences, we should get different assignments
       const values1 = Object.values(assignments1).map(a => a.id).join(',');
       const values2 = Object.values(assignments2).map(a => a.id).join(',');
 
-      // This might occasionally fail due to random chance, but very unlikely
       expect(values1).not.toBe(values2);
     });
   });

@@ -22,8 +22,12 @@ describe('Ticket Selection Component', () => {
   let TicketSelection;
   let ticketSelectionInstance;
   let mockCartManager;
+  let testEventListeners = []; // Track event listeners added in tests
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    // Clear previous test listeners array
+    testEventListeners = [];
+
     // Mock cart manager
     mockCartManager = {
       getState: vi.fn(() => ({
@@ -131,14 +135,39 @@ describe('Ticket Selection Component', () => {
     TicketSelection = class TicketSelection {
       constructor() {
         this.selectedTickets = new Map();
-        this.init();
+        this._initPromise = null;
+        this._boundHandlers = {
+          quantityChange: null,
+          addToCart: null,
+          cardClick: null,
+          cardKeydown: null,
+          cartUpdated: null,
+          storage: null
+        };
       }
       async init() {
+        if (this._initPromise) return this._initPromise;
+        this._initPromise = this._performInit();
+        return this._initPromise;
+      }
+      async _performInit() {
         this.initializeTicketCards();
         this.bindEvents();
         await this.waitForCartManager();
         this.syncWithCartState();
         this.updateDisplay();
+      }
+      destroy() {
+        // Remove document-level event listeners
+        if (this._boundHandlers.cartUpdated) {
+          document.removeEventListener('cart:updated', this._boundHandlers.cartUpdated);
+          document.removeEventListener('cart:ticket:added', this._boundHandlers.cartUpdated);
+          document.removeEventListener('cart:ticket:removed', this._boundHandlers.cartUpdated);
+          document.removeEventListener('cart:ticket:updated', this._boundHandlers.cartUpdated);
+        }
+        if (this._boundHandlers.storage) {
+          window.removeEventListener('storage', this._boundHandlers.storage);
+        }
       }
       initializeTicketCards() {
         document.querySelectorAll('.ticket-card').forEach((card) => {
@@ -147,7 +176,8 @@ describe('Ticket Selection Component', () => {
           card.setAttribute('aria-pressed', 'false');
           card.setAttribute('data-initialized', 'true');
           const quantitySpan = card.querySelector('.quantity');
-          if (quantitySpan && !quantitySpan.textContent) {
+          if (quantitySpan) {
+            // Always set to '0' to ensure consistent state
             quantitySpan.textContent = '0';
           }
           const addToCartBtn = card.querySelector('.add-to-cart-btn');
@@ -180,6 +210,14 @@ describe('Ticket Selection Component', () => {
         });
       }
       bindEvents() {
+        // Store bound handlers for cleanup
+        this._boundHandlers.cartUpdated = () => this.syncWithCartState();
+        this._boundHandlers.storage = (event) => {
+          if (event.key === 'alocubano_cart') {
+            this.syncWithCartState();
+          }
+        };
+
         document.querySelectorAll('.qty-btn').forEach((btn) => {
           btn.addEventListener('click', (e) => this.handleQuantityChange(e));
         });
@@ -208,15 +246,11 @@ describe('Ticket Selection Component', () => {
             }
           });
         });
-        document.addEventListener('cart:updated', () => this.syncWithCartState());
-        document.addEventListener('cart:ticket:added', () => this.syncWithCartState());
-        document.addEventListener('cart:ticket:removed', () => this.syncWithCartState());
-        document.addEventListener('cart:ticket:updated', () => this.syncWithCartState());
-        window.addEventListener('storage', (event) => {
-          if (event.key === 'alocubano_cart') {
-            this.syncWithCartState();
-          }
-        });
+        document.addEventListener('cart:updated', this._boundHandlers.cartUpdated);
+        document.addEventListener('cart:ticket:added', this._boundHandlers.cartUpdated);
+        document.addEventListener('cart:ticket:removed', this._boundHandlers.cartUpdated);
+        document.addEventListener('cart:ticket:updated', this._boundHandlers.cartUpdated);
+        window.addEventListener('storage', this._boundHandlers.storage);
       }
       handleQuantityChange(event) {
         event.stopPropagation();
@@ -229,13 +263,16 @@ describe('Ticket Selection Component', () => {
         const price = parseInt(card.dataset.price);
         const action = btn.dataset.action;
         const quantitySpan = card.querySelector('.quantity');
+        if (!quantitySpan) {
+          return; // Handle missing quantity span gracefully
+        }
         let currentQuantity = parseInt(quantitySpan.textContent) || 0;
         if (action === 'increase') {
           currentQuantity++;
         } else if (action === 'decrease' && currentQuantity > 0) {
           currentQuantity--;
         }
-        quantitySpan.textContent = currentQuantity;
+        quantitySpan.textContent = currentQuantity.toString();
         if (currentQuantity > 0) {
           this.selectedTickets.set(ticketType, {
             quantity: currentQuantity,
@@ -278,9 +315,12 @@ describe('Ticket Selection Component', () => {
           return;
         }
         const quantitySpan = card.querySelector('.quantity');
+        if (!quantitySpan) {
+          return;
+        }
         let currentQuantity = parseInt(quantitySpan.textContent) || 0;
         currentQuantity++;
-        quantitySpan.textContent = currentQuantity;
+        quantitySpan.textContent = currentQuantity.toString();
         this.selectedTickets.set(ticketType, {
           quantity: currentQuantity,
           price: price,
@@ -301,11 +341,11 @@ describe('Ticket Selection Component', () => {
         document.dispatchEvent(new CustomEvent('ticket-quantity-changed', { detail: eventDetail }));
         btn.textContent = 'Added!';
         btn.setAttribute('data-action-state', 'added');
-        btn.style.backgroundColor = 'var(--color-green, #28a745)';
+        btn.style.backgroundColor = '#28a745';
         setTimeout(() => {
           btn.textContent = 'Add to Cart';
           btn.setAttribute('data-action-state', 'ready');
-          btn.style.backgroundColor = 'var(--color-blue)';
+          btn.style.backgroundColor = '';
         }, 1000);
       }
       handleTicketCardClick(event) {
@@ -317,7 +357,7 @@ describe('Ticket Selection Component', () => {
         const currentQuantity = parseInt(quantitySpan.textContent) || 0;
         if (currentQuantity === 0) {
           const plusBtn = card.querySelector('.qty-btn.plus');
-          plusBtn.click();
+          plusBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
         }
       }
       updateDisplay() {}
@@ -326,9 +366,30 @@ describe('Ticket Selection Component', () => {
 
     // Initialize ticket selection
     ticketSelectionInstance = new TicketSelection();
+    await ticketSelectionInstance.init();
+
+    // NOW wrap document.addEventListener to track listeners added by tests (after instance init)
+    const originalAddEventListener = document.addEventListener.bind(document);
+    document.addEventListener = function(type, listener, options) {
+      testEventListeners.push({ type, listener, options });
+      return originalAddEventListener(type, listener, options);
+    };
   });
 
   afterEach(() => {
+    // Remove all event listeners added during the test
+    testEventListeners.forEach(({ type, listener, options }) => {
+      document.removeEventListener(type, listener, options);
+    });
+    testEventListeners = [];
+
+    // Restore original addEventListener
+    delete document.addEventListener;
+
+    // Clean up instance event listeners
+    if (ticketSelectionInstance && ticketSelectionInstance.destroy) {
+      ticketSelectionInstance.destroy();
+    }
     document.body.innerHTML = '';
     vi.restoreAllMocks();
     vi.clearAllTimers();
@@ -374,11 +435,16 @@ describe('Ticket Selection Component', () => {
     });
 
     it('should wait for cart manager initialization', async () => {
-      const waitSpy = vi.spyOn(ticketSelectionInstance, 'waitForCartManager');
+      // Create a fresh instance to test init flow
+      const freshInstance = new TicketSelection();
+      const waitSpy = vi.spyOn(freshInstance, 'waitForCartManager');
 
-      await ticketSelectionInstance.init();
+      await freshInstance.init();
 
       expect(waitSpy).toHaveBeenCalled();
+
+      // Clean up
+      freshInstance.destroy();
     });
   });
 
@@ -388,7 +454,7 @@ describe('Ticket Selection Component', () => {
       const plusBtn = card.querySelector('.qty-btn.plus');
       const quantitySpan = card.querySelector('.quantity');
 
-      plusBtn.click();
+      plusBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
 
       expect(quantitySpan.textContent).toBe('1');
       expect(card.classList.contains('selected')).toBe(true);
@@ -400,11 +466,11 @@ describe('Ticket Selection Component', () => {
       const minusBtn = card.querySelector('.qty-btn.minus');
       const quantitySpan = card.querySelector('.quantity');
 
-      plusBtn.click();
-      plusBtn.click();
+      plusBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      plusBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
       expect(quantitySpan.textContent).toBe('2');
 
-      minusBtn.click();
+      minusBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
       expect(quantitySpan.textContent).toBe('1');
     });
 
@@ -413,7 +479,9 @@ describe('Ticket Selection Component', () => {
       const minusBtn = card.querySelector('.qty-btn.minus');
       const quantitySpan = card.querySelector('.quantity');
 
-      minusBtn.click();
+      // Manually trigger the handler since event listeners are attached
+      minusBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+
       expect(quantitySpan.textContent).toBe('0');
       expect(card.classList.contains('selected')).toBe(false);
     });
@@ -422,7 +490,7 @@ describe('Ticket Selection Component', () => {
       const card = document.querySelector('[data-ticket-id="weekend-pass"]');
       const plusBtn = card.querySelector('.qty-btn.plus');
 
-      plusBtn.click();
+      plusBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
 
       expect(ticketSelectionInstance.selectedTickets.has('weekend-pass')).toBe(true);
       expect(ticketSelectionInstance.selectedTickets.get('weekend-pass').quantity).toBe(1);
@@ -433,10 +501,10 @@ describe('Ticket Selection Component', () => {
       const plusBtn = card.querySelector('.qty-btn.plus');
       const minusBtn = card.querySelector('.qty-btn.minus');
 
-      plusBtn.click();
+      plusBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
       expect(ticketSelectionInstance.selectedTickets.has('weekend-pass')).toBe(true);
 
-      minusBtn.click();
+      minusBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
       expect(ticketSelectionInstance.selectedTickets.has('weekend-pass')).toBe(false);
     });
 
@@ -444,7 +512,7 @@ describe('Ticket Selection Component', () => {
       const card = document.querySelector('[data-ticket-id="weekend-pass"]');
       const plusBtn = card.querySelector('.qty-btn.plus');
 
-      plusBtn.click();
+      plusBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
 
       expect(card.classList.contains('selected')).toBe(true);
     });
@@ -454,8 +522,8 @@ describe('Ticket Selection Component', () => {
       const plusBtn = card.querySelector('.qty-btn.plus');
       const minusBtn = card.querySelector('.qty-btn.minus');
 
-      plusBtn.click();
-      minusBtn.click();
+      plusBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      minusBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
 
       expect(card.classList.contains('selected')).toBe(false);
     });
@@ -464,7 +532,7 @@ describe('Ticket Selection Component', () => {
       const card = document.querySelector('[data-ticket-id="weekend-pass"]');
       const plusBtn = card.querySelector('.qty-btn.plus');
 
-      plusBtn.click();
+      plusBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
 
       expect(card.getAttribute('aria-pressed')).toBe('true');
       expect(card.getAttribute('data-quantity')).toBe('1');
@@ -487,7 +555,7 @@ describe('Ticket Selection Component', () => {
         eventFired = true;
       });
 
-      plusBtn.click();
+      plusBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
       expect(eventFired).toBe(true);
     });
   });
@@ -497,7 +565,7 @@ describe('Ticket Selection Component', () => {
       const addToCartBtn = document.querySelector('[data-ticket-id="weekend-pass"].add-to-cart-btn');
       const quantitySpan = document.querySelector('[data-ticket-id="weekend-pass"] .quantity');
 
-      addToCartBtn.click();
+      addToCartBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
 
       expect(quantitySpan.textContent).toBe('1');
     });
@@ -505,17 +573,17 @@ describe('Ticket Selection Component', () => {
     it('should show visual feedback after adding to cart', () => {
       const addToCartBtn = document.querySelector('[data-ticket-id="weekend-pass"].add-to-cart-btn');
 
-      addToCartBtn.click();
+      addToCartBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
 
       expect(addToCartBtn.textContent).toBe('Added!');
       expect(addToCartBtn.getAttribute('data-action-state')).toBe('added');
-      expect(addToCartBtn.style.backgroundColor).toContain('green');
+      expect(addToCartBtn.style.backgroundColor).toBe('#28a745'); // Happy-DOM stores as hex
     });
 
     it('should reset button text after 1 second', () => {
       const addToCartBtn = document.querySelector('[data-ticket-id="weekend-pass"].add-to-cart-btn');
 
-      addToCartBtn.click();
+      addToCartBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
       vi.advanceTimersByTime(1000);
 
       expect(addToCartBtn.textContent).toBe('Add to Cart');
@@ -531,7 +599,7 @@ describe('Ticket Selection Component', () => {
         eventFired = true;
       });
 
-      addToCartBtn.click();
+      addToCartBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
       expect(eventFired).toBe(true);
     });
 
@@ -541,7 +609,7 @@ describe('Ticket Selection Component', () => {
 
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      addToCartBtn.click();
+      addToCartBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
 
       expect(consoleSpy).toHaveBeenCalledWith('Missing ticket data for add to cart button');
 
@@ -554,7 +622,7 @@ describe('Ticket Selection Component', () => {
       const card = document.querySelector('[data-ticket-id="weekend-pass"]');
       const quantitySpan = card.querySelector('.quantity');
 
-      card.click();
+      card.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
 
       expect(quantitySpan.textContent).toBe('1');
     });
@@ -564,10 +632,10 @@ describe('Ticket Selection Component', () => {
       const plusBtn = card.querySelector('.qty-btn.plus');
       const quantitySpan = card.querySelector('.quantity');
 
-      plusBtn.click();
+      plusBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
       const quantity = quantitySpan.textContent;
 
-      card.click();
+      card.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
 
       expect(quantitySpan.textContent).toBe(quantity);
     });
@@ -578,7 +646,7 @@ describe('Ticket Selection Component', () => {
 
       const clickSpy = vi.spyOn(ticketSelectionInstance, 'handleTicketCardClick');
 
-      minusBtn.click();
+      minusBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
 
       expect(clickSpy).not.toHaveBeenCalled();
 
@@ -600,7 +668,7 @@ describe('Ticket Selection Component', () => {
 
       const plusBtn = unavailableCard.querySelector('.qty-btn.plus');
       if (plusBtn && !plusBtn.disabled) {
-        plusBtn.click();
+        plusBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
       }
 
       expect(quantitySpan.textContent).toBe(initialQuantity);
@@ -609,7 +677,7 @@ describe('Ticket Selection Component', () => {
     it('should not add selected class to unavailable tickets', () => {
       const unavailableCard = document.querySelector('.ticket-card.unavailable');
 
-      unavailableCard.click();
+      unavailableCard.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
 
       expect(unavailableCard.classList.contains('selected')).toBe(false);
     });
@@ -734,8 +802,8 @@ describe('Ticket Selection Component', () => {
       const weekendPlusBtn = weekendCard.querySelector('.qty-btn.plus');
       const fridayPlusBtn = fridayCard.querySelector('.qty-btn.plus');
 
-      weekendPlusBtn.click();
-      fridayPlusBtn.click();
+      weekendPlusBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      fridayPlusBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
 
       expect(ticketSelectionInstance.selectedTickets.size).toBe(2);
       expect(ticketSelectionInstance.selectedTickets.has('weekend-pass')).toBe(true);
@@ -749,9 +817,9 @@ describe('Ticket Selection Component', () => {
       const weekendPlusBtn = weekendCard.querySelector('.qty-btn.plus');
       const fridayPlusBtn = fridayCard.querySelector('.qty-btn.plus');
 
-      weekendPlusBtn.click();
-      weekendPlusBtn.click();
-      fridayPlusBtn.click();
+      weekendPlusBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      weekendPlusBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      fridayPlusBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
 
       expect(ticketSelectionInstance.selectedTickets.get('weekend-pass').quantity).toBe(2);
       expect(ticketSelectionInstance.selectedTickets.get('friday-only').quantity).toBe(1);
@@ -763,7 +831,7 @@ describe('Ticket Selection Component', () => {
       const card = document.querySelector('[data-ticket-id="weekend-pass"]');
       const plusBtn = card.querySelector('.qty-btn.plus');
 
-      plusBtn.click();
+      plusBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
 
       const ticketData = ticketSelectionInstance.selectedTickets.get('weekend-pass');
 
@@ -778,8 +846,8 @@ describe('Ticket Selection Component', () => {
       const card = document.querySelector('[data-ticket-id="weekend-pass"]');
       const plusBtn = card.querySelector('.qty-btn.plus');
 
-      plusBtn.click();
-      plusBtn.click();
+      plusBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      plusBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
 
       expect(card.getAttribute('data-quantity')).toBe('2');
     });
@@ -790,7 +858,7 @@ describe('Ticket Selection Component', () => {
 
       expect(card.getAttribute('data-selected')).toBe('false');
 
-      plusBtn.click();
+      plusBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
 
       expect(card.getAttribute('data-selected')).toBe('true');
     });
@@ -813,7 +881,7 @@ describe('Ticket Selection Component', () => {
         eventFired = true;
       });
 
-      plusBtn.click();
+      plusBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
       expect(eventFired).toBe(true);
     });
 
@@ -830,8 +898,8 @@ describe('Ticket Selection Component', () => {
         }
       });
 
-      plusBtn.click();
-      plusBtn.click();
+      plusBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      plusBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
       expect(eventCount).toBe(2);
     });
 
@@ -849,8 +917,8 @@ describe('Ticket Selection Component', () => {
         }
       });
 
-      plusBtn.click();
-      minusBtn.click();
+      plusBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      minusBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
       expect(eventCount).toBe(2);
     });
   });
@@ -861,9 +929,9 @@ describe('Ticket Selection Component', () => {
       const plusBtn = card.querySelector('.qty-btn.plus');
       const quantitySpan = card.querySelector('.quantity');
 
-      plusBtn.click();
-      plusBtn.click();
-      plusBtn.click();
+      plusBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      plusBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      plusBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
 
       expect(quantitySpan.textContent).toBe('3');
       expect(ticketSelectionInstance.selectedTickets.get('weekend-pass').quantity).toBe(3);
@@ -873,9 +941,9 @@ describe('Ticket Selection Component', () => {
       const addToCartBtn = document.querySelector('[data-ticket-id="weekend-pass"].add-to-cart-btn');
       const quantitySpan = document.querySelector('[data-ticket-id="weekend-pass"] .quantity');
 
-      addToCartBtn.click();
-      addToCartBtn.click();
-      addToCartBtn.click();
+      addToCartBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      addToCartBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      addToCartBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
 
       expect(quantitySpan.textContent).toBe('3');
     });
@@ -887,7 +955,7 @@ describe('Ticket Selection Component', () => {
 
       const plusBtn = card.querySelector('.qty-btn.plus');
 
-      expect(() => plusBtn.click()).not.toThrow();
+      expect(() => plusBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))).not.toThrow();
     });
   });
 });

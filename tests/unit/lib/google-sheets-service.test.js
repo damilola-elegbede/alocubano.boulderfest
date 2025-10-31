@@ -735,12 +735,13 @@ describe('GoogleSheetsService Unit Tests', () => {
     });
 
     it('should sync daily sales with running total', async () => {
+      // Mock returns DESC order (newest first) to match SQL: ORDER BY sale_date DESC
       mockDb.execute.mockResolvedValue({
         rows: [
           {
-            sale_date: '2026-01-15',
-            tickets_sold: 10,
-            revenue: 1000.00,
+            sale_date: '2026-01-17',
+            tickets_sold: 20,
+            revenue: 2000.00,
           },
           {
             sale_date: '2026-01-16',
@@ -748,9 +749,9 @@ describe('GoogleSheetsService Unit Tests', () => {
             revenue: 1500.00,
           },
           {
-            sale_date: '2026-01-17',
-            tickets_sold: 20,
-            revenue: 2000.00,
+            sale_date: '2026-01-15',
+            tickets_sold: 10,
+            revenue: 1000.00,
           },
         ],
       });

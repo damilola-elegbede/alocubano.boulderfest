@@ -494,6 +494,9 @@ class ImageCacheManager {
     }
 }
 
+// Export for testing
+export default ImageCacheManager;
+
 // Create global instance
 window.ImageCacheManager = new ImageCacheManager();
 console.log(
