@@ -289,8 +289,65 @@ jobs:
     runs-on: ubuntu-latest
     needs: [code-quality, security-scan]
     if: always()
+    outputs:
+      test_exit_code: ${{ steps.aggregate.outputs.test_exit_code }}
+      parsing_method: ${{ steps.aggregate.outputs.parsing_method }}
+      total_tests: ${{ steps.aggregate.outputs.total_tests }}
+      passed_tests: ${{ steps.aggregate.outputs.passing_tests }}
+      failed_tests: ${{ steps.aggregate.outputs.failing_tests }}
+      skipped_tests: ${{ steps.aggregate.outputs.skipped_tests }}
+      duration_ms: ${{ steps.aggregate.outputs.duration }}
 
     steps:
+      - name: "📊 Aggregate Quality Metrics"
+        id: aggregate
+        run: |
+          # Calculate aggregate metrics from code-quality and security-scan jobs
+          CODE_QUALITY_STATUS="${{ needs.code-quality.result }}"
+          SECURITY_STATUS="${{ needs.security-scan.result }}"
+
+          # Aggregate test counts (quality checks as "tests")
+          # Each quality check (ESLint, HTMLHint, Markdown, Structure, Formatting, Security) counts as a test
+          TOTAL_CHECKS=6
+          PASSED_CHECKS=0
+          FAILED_CHECKS=0
+
+          # Code quality checks (5 checks)
+          if [ "$CODE_QUALITY_STATUS" = "success" ]; then
+            PASSED_CHECKS=$((PASSED_CHECKS + 5))
+          else
+            FAILED_CHECKS=$((FAILED_CHECKS + 5))
+          fi
+
+          # Security check (1 check)
+          if [ "$SECURITY_STATUS" = "success" ]; then
+            PASSED_CHECKS=$((PASSED_CHECKS + 1))
+          else
+            FAILED_CHECKS=$((FAILED_CHECKS + 1))
+          fi
+
+          # Overall exit code
+          if [ "$FAILED_CHECKS" -gt 0 ]; then
+            EXIT_CODE=1
+          else
+            EXIT_CODE=0
+          fi
+
+          # Set outputs
+          echo "test_exit_code=$EXIT_CODE" >> $GITHUB_OUTPUT
+          echo "parsing_method=aggregate_quality_checks" >> $GITHUB_OUTPUT
+          echo "total_tests=$TOTAL_CHECKS" >> $GITHUB_OUTPUT
+          echo "passing_tests=$PASSED_CHECKS" >> $GITHUB_OUTPUT
+          echo "failing_tests=$FAILED_CHECKS" >> $GITHUB_OUTPUT
+          echo "skipped_tests=0" >> $GITHUB_OUTPUT
+          echo "duration=0" >> $GITHUB_OUTPUT
+
+          echo "📊 Quality Metrics Aggregated:"
+          echo "  Total Checks: $TOTAL_CHECKS"
+          echo "  Passed: $PASSED_CHECKS"
+          echo "  Failed: $FAILED_CHECKS"
+          echo "  Exit Code: $EXIT_CODE"
+
       - name: "📊 Generate Quality Report"
         continue-on-error: true
         uses: actions/github-script@v7
@@ -369,3 +426,40 @@ jobs:
                 body: comment
               });
             }
+
+      - name: "📊 Create Test Metadata"
+        if: always()
+        run: |
+          cat <<EOF > test-metadata.json
+          {
+            "workflow": "${{ github.workflow }}",
+            "job": "${{ github.job }}",
+            "run_id": "${{ github.run_id }}",
+            "run_attempt": "${{ github.run_attempt }}",
+            "test_type": "quality",
+            "matrix": {},
+            "exit_code": ${{ steps.aggregate.outputs.test_exit_code || 'null' }},
+            "parsing_method": "${{ steps.aggregate.outputs.parsing_method || 'unknown' }}",
+            "counts": {
+              "total": ${{ steps.aggregate.outputs.total_tests || '0' }},
+              "passed": ${{ steps.aggregate.outputs.passing_tests || '0' }},
+              "failed": ${{ steps.aggregate.outputs.failing_tests || '0' }},
+              "skipped": ${{ steps.aggregate.outputs.skipped_tests || '0' }}
+            },
+            "duration_ms": ${{ steps.aggregate.outputs.duration || '0' }},
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "code_quality_status": "${{ needs.code-quality.result }}",
+            "security_status": "${{ needs.security-scan.result }}"
+          }
+          EOF
+
+          echo "Metadata created:"
+          cat test-metadata.json | jq '.'
+
+      - name: "📤 Upload Quality Metadata"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-gates-metadata
+          path: test-metadata.json
+          retention-days: 7

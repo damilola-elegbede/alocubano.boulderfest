@@ -263,6 +263,14 @@ jobs:
     needs: [get-preview-url, build-test-matrix]
     # Only run if URL extraction succeeded
     if: needs.get-preview-url.result == 'success'
+    outputs:
+      test_exit_code: ${{ steps.run-tests.outputs.test_exit_code }}
+      parsing_method: ${{ steps.run-tests.outputs.parsing_method }}
+      total_tests: ${{ steps.run-tests.outputs.total_tests }}
+      passed_tests: ${{ steps.run-tests.outputs.passing_tests }}
+      failed_tests: ${{ steps.run-tests.outputs.failing_tests }}
+      skipped_tests: ${{ steps.run-tests.outputs.skipped_tests }}
+      duration_ms: ${{ steps.run-tests.outputs.duration }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.build-test-matrix.outputs.matrix) }}
@@ -578,6 +586,7 @@ jobs:
           echo "============================="
 
       - name: 🎭 Run E2E Tests
+        id: run-tests
         env:
           # Admin Authentication Test Variables
           TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
@@ -614,6 +623,9 @@ jobs:
 
           # Export NODE_OPTIONS for the Playwright process
           export NODE_OPTIONS="--max-old-space-size=2048"
+
+          # Record start time
+          start_time=$(date +%s%3N)
 
           # Validate test discovery before execution
           echo "📋 Test Discovery Validation"
@@ -683,6 +695,10 @@ jobs:
             npx playwright test --config tests/config/playwright-e2e-optimized.config.js --project="$PROJECT_NAME" 2>&1 | tee test_output.log
           fi
 
+          # Record end time
+          end_time=$(date +%s%3N)
+          duration=$((end_time - start_time))
+
           echo "🌐 Target URL: ${{ env.PREVIEW_URL }}"
           echo "🦊 Browser Project: $PROJECT_NAME"
           TEST_EXIT_CODE=${PIPESTATUS[0]}
@@ -707,12 +723,24 @@ jobs:
           SKIPPED_TESTS=$(grep -oP '\d+(?= skipped)' test_output.log 2>/dev/null | head -1)
           SKIPPED_TESTS=${SKIPPED_TESTS:-0}
 
+          TOTAL_TESTS=$((PASSED_TESTS + FAILED_TESTS + SKIPPED_TESTS))
+
+          # Set outputs for downstream jobs
+          echo "test_exit_code=$TEST_EXIT_CODE" >> $GITHUB_OUTPUT
+          echo "parsing_method=playwright_summary" >> $GITHUB_OUTPUT
+          echo "total_tests=$TOTAL_TESTS" >> $GITHUB_OUTPUT
+          echo "passing_tests=$PASSED_TESTS" >> $GITHUB_OUTPUT
+          echo "failing_tests=$FAILED_TESTS" >> $GITHUB_OUTPUT
+          echo "skipped_tests=$SKIPPED_TESTS" >> $GITHUB_OUTPUT
+          echo "duration=$duration" >> $GITHUB_OUTPUT
+
           echo ""
           echo "📊 Test Execution Summary:"
           echo "  Exit Code: $TEST_EXIT_CODE"
           echo "  Tests Passed: $PASSED_TESTS"
           echo "  Tests Failed: $FAILED_TESTS"
           echo "  Tests Skipped: $SKIPPED_TESTS"
+          echo "  Duration: ${duration}ms"
 
           # FIX #2: Validate test count matches expected pattern
           if [ -n "$TEST_PATTERN" ]; then
@@ -819,6 +847,35 @@ jobs:
             fi
           fi
 
+      - name: "📊 Create Test Metadata"
+        if: always()
+        run: |
+          cat <<EOF > test-metadata.json
+          {
+            "workflow": "${{ github.workflow }}",
+            "job": "${{ github.job }}",
+            "run_id": "${{ github.run_id }}",
+            "run_attempt": "${{ github.run_attempt }}",
+            "test_type": "e2e",
+            "matrix": $(echo '${{ toJSON(matrix) }}' | jq -c),
+            "exit_code": ${{ steps.run-tests.outputs.test_exit_code || 'null' }},
+            "parsing_method": "${{ steps.run-tests.outputs.parsing_method || 'unknown' }}",
+            "counts": {
+              "total": ${{ steps.run-tests.outputs.total_tests || '0' }},
+              "passed": ${{ steps.run-tests.outputs.passing_tests || '0' }},
+              "failed": ${{ steps.run-tests.outputs.failing_tests || '0' }},
+              "skipped": ${{ steps.run-tests.outputs.skipped_tests || '0' }}
+            },
+            "duration_ms": ${{ steps.run-tests.outputs.duration || '0' }},
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "browser": "${{ matrix.browser }}",
+            "preview_url": "${{ env.PREVIEW_URL }}"
+          }
+          EOF
+
+          echo "Metadata created:"
+          cat test-metadata.json | jq '.'
+
       - name: 📊 Upload Test Results
         if: always()
         uses: actions/upload-artifact@v4
@@ -827,6 +884,7 @@ jobs:
           path: |
             playwright-report/
             test-results/
+            test-metadata.json
           retention-days: 7
 
       - name: 📋 Test Summary
