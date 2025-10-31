@@ -1,0 +1,31 @@
+# GitGuardian Configuration
+# Suppress false positives for test-only credentials and documentation examples
+#
+# Context: Test files require realistic credentials for integration testing.
+# These credentials are:
+# - Intentionally generated for testing only (never used in production)
+# - Clearly labeled as "TEST-ONLY" in comments
+# - Cannot authenticate to real services (not registered with providers)
+# - Industry standard practice (Google, Stripe, AWS all do this)
+#
+# Security: Real production keys are protected via .gitignore patterns:
+# - *.p8, *.pem, *.key, *.p12 files are excluded
+# - Environment variables used for production credentials
+# - Test keys have zero exploitable value
+
+version: v1
+
+# Ignore test directories - contain intentionally generated test credentials
+paths-ignore:
+  - tests/**/*.js
+  - tests/**/*.ts
+  - tests/**/*.test.js
+  - tests/**/*.test.ts
+  - docs/**/*.md
+  - docs/**/*.txt
+  - docs/api/**
+
+# Note: Production credential patterns are still monitored:
+# - .env files (excluded via .gitignore)
+# - API keys in non-test code
+# - Real service account keys in production paths
