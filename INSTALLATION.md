@@ -75,6 +75,24 @@ npm ls --depth=0
 vercel --version  # Should show Vercel CLI version
 ```
 
+**Note:** `npm install` automatically installs git hooks via a `postinstall` script. This ensures code quality gates (linting, HTML validation) run automatically on commits and pushes.
+
+**Git Hooks Installed:**
+- **pre-commit**: Runs linters (ESLint, HTMLHint, Markdown), checks for package drift, and scans for sensitive data
+- **pre-push**: Quick lint verification, configuration validation, and project structure checks
+
+If hooks fail to install automatically, you can manually install them:
+
+```bash
+node scripts/install-git-hooks.js
+```
+
+To verify hooks are installed:
+
+```bash
+ls -la .git/hooks/pre-commit .git/hooks/pre-push
+```
+
 ### 3. Environment Configuration
 
 #### Link to Vercel Project
