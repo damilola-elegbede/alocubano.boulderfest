@@ -13,7 +13,8 @@ test.describe('Monitoring Alert Flow E2E', () => {
     console.log(`Testing monitoring alert flow on: ${deploymentUrl}`);
   });
 
-  test.describe('Alert Trigger and Creation', () => {
+  // Run tests serially to prevent concurrent interference with alert state
+  test.describe.serial('Alert Trigger and Creation', () => {
     test('should trigger high error rate alert', async ({ page }) => {
       // Navigate to monitoring dashboard (admin required)
       await page.goto(`${deploymentUrl}/pages/admin/login.html`);
@@ -65,7 +66,7 @@ test.describe('Monitoring Alert Flow E2E', () => {
     });
   });
 
-  test.describe('Alert Display in Dashboard', () => {
+  test.describe.serial('Alert Display in Dashboard', () => {
     test('should display active alerts in monitoring dashboard', async ({ page }) => {
       const dashboardUrl = `${deploymentUrl}/api/monitoring/dashboard`;
 
@@ -97,7 +98,7 @@ test.describe('Monitoring Alert Flow E2E', () => {
     });
   });
 
-  test.describe('Alert Acknowledgment', () => {
+  test.describe.serial('Alert Acknowledgment', () => {
     test('should be able to view alert configuration', async ({ page }) => {
       const configUrl = `${deploymentUrl}/api/monitoring/alerts?action=configuration`;
 
@@ -116,7 +117,7 @@ test.describe('Monitoring Alert Flow E2E', () => {
     });
   });
 
-  test.describe('Alert Resolution', () => {
+  test.describe.serial('Alert Resolution', () => {
     test('should clear specific alert', async ({ page }) => {
       const clearUrl = `${deploymentUrl}/api/monitoring/alerts`;
 
@@ -150,7 +151,7 @@ test.describe('Monitoring Alert Flow E2E', () => {
     });
   });
 
-  test.describe('Alert Types', () => {
+  test.describe.serial('Alert Types', () => {
     test('should handle performance degradation alert', async ({ page }) => {
       const triggerUrl = `${deploymentUrl}/api/monitoring/alerts`;
 

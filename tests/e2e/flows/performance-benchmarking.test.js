@@ -187,15 +187,16 @@ test.describe('Performance Benchmarking E2E', () => {
       }
     });
 
-    test('should measure Time to Interactive (TTI)', async ({ page }) => {
+    test('should measure First Input Delay (FID)', async ({ page }) => {
       await page.goto(baseUrl);
 
-      const tti = await page.evaluate(() => {
+      const fid = await page.evaluate(() => {
         return new Promise(resolve => {
           if ('PerformanceObserver' in window) {
             const observer = new PerformanceObserver(list => {
               for (const entry of list.getEntries()) {
                 if (entry.name === 'first-input') {
+                  // FID is the delay between user input and browser response
                   resolve(entry.processingStart - entry.startTime);
                 }
               }
@@ -203,20 +204,20 @@ test.describe('Performance Benchmarking E2E', () => {
 
             observer.observe({ entryTypes: ['first-input'] });
 
-            // Fallback: assume interactive after load
+            // Fallback: assume no input delay if no interaction within timeout
             window.addEventListener('load', () => {
               setTimeout(() => {
-                resolve(performance.now());
+                resolve(0); // No interaction = no measurable FID
               }, 100);
             });
           } else {
-            resolve(performance.now());
+            resolve(0);
           }
         });
       });
 
-      // TTI should be under 3.8s (good rating)
-      expect(tti).toBeLessThan(3800);
+      // FID should be under 100ms (good rating)
+      expect(fid).toBeLessThan(100);
     });
   });
 

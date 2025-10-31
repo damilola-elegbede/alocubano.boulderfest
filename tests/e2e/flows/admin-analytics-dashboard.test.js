@@ -11,9 +11,14 @@ import { getTestMFACode } from '../helpers/totp-generator.js';
 const testConstants = getTestDataConstants();
 
 test.describe('Admin Analytics Dashboard', () => {
+  // Skip all tests if TEST_ADMIN_PASSWORD not set - security requirement
+  if (!process.env.TEST_ADMIN_PASSWORD) {
+    test.skip();
+  }
+
   const adminCredentials = {
     email: testConstants.admin.email,
-    password: process.env.TEST_ADMIN_PASSWORD || 'test-admin-password'
+    password: process.env.TEST_ADMIN_PASSWORD
   };
 
   // Helper function to login as admin

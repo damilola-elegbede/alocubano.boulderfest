@@ -115,8 +115,10 @@ describe('Performance Monitoring Integration', () => {
         LIMIT 1
       `);
 
-      // Note: May or may not trigger depending on data size
-      // This is more of a capability test
+      // Verify alert handler was registered (capability test)
+      // Note: Actual triggering depends on data size and query performance
+      expect(slowQueryHandler).toBeInstanceOf(Function);
+      expect(performanceService.listenerCount('performance-alert')).toBeGreaterThan(0);
     });
   });
 

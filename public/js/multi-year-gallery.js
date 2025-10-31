@@ -193,6 +193,7 @@ class MultiYearGalleryManager {
             try {
                 this.createYearSelectorButtons();
             } catch (btnError) {
+                console.error('Failed to create gallery button:', btnError);
                 console.warn('Could not create year selector buttons:', btnError.message);
             }
 

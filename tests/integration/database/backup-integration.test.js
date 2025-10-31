@@ -29,10 +29,11 @@ describe('Backup Integration Full-Cycle Tests', () => {
     testBackupDir = path.join(process.cwd(), '.tmp', 'test-backups', `integration-${Date.now()}`);
     backupManager = new BackupManager(null, testBackupDir);
 
-    // Create test event for foreign key requirements
+    // Create test event for foreign key requirements with unique slug
+    const uniqueSlug = `backup-test-${Date.now()}-${Math.random().toString(36).substring(7)}`;
     testEventId = await createTestEvent(dbClient, {
-      slug: 'backup-test-2026',
-      name: 'Backup Test Event 2026',
+      slug: uniqueSlug,
+      name: `Backup Test Event ${uniqueSlug}`,
       startDate: '2026-05-15',
       endDate: '2026-05-17'
     });

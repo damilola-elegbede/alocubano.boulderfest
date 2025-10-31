@@ -345,16 +345,39 @@ describe('Google Sheets Scheduled Sync Integration Tests', () => {
   });
 
   describe('Sync Execution with Mock', () => {
+    let nestedOriginalEnvVars = {};
+
     beforeEach(() => {
+      // Snapshot original env vars for nested describe
+      nestedOriginalEnvVars = {
+        GOOGLE_SHEET_ID: process.env.GOOGLE_SHEET_ID,
+        GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL: process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL,
+        GOOGLE_SHEETS_PRIVATE_KEY: process.env.GOOGLE_SHEETS_PRIVATE_KEY
+      };
+
       process.env.GOOGLE_SHEET_ID = 'test-sheet-id';
       process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL = 'test@service-account.com';
       process.env.GOOGLE_SHEETS_PRIVATE_KEY = 'test-key';
     });
 
     afterEach(() => {
-      delete process.env.GOOGLE_SHEET_ID;
-      delete process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL;
-      delete process.env.GOOGLE_SHEETS_PRIVATE_KEY;
+      // Restore original env vars for nested describe (with safety check)
+      if (!nestedOriginalEnvVars || typeof nestedOriginalEnvVars !== 'object') return;
+      if (nestedOriginalEnvVars.GOOGLE_SHEET_ID !== undefined) {
+        process.env.GOOGLE_SHEET_ID = nestedOriginalEnvVars.GOOGLE_SHEET_ID;
+      } else {
+        delete process.env.GOOGLE_SHEET_ID;
+      }
+      if (nestedOriginalEnvVars.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL !== undefined) {
+        process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL = nestedOriginalEnvVars.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL;
+      } else {
+        delete process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL;
+      }
+      if (nestedOriginalEnvVars.GOOGLE_SHEETS_PRIVATE_KEY !== undefined) {
+        process.env.GOOGLE_SHEETS_PRIVATE_KEY = nestedOriginalEnvVars.GOOGLE_SHEETS_PRIVATE_KEY;
+      } else {
+        delete process.env.GOOGLE_SHEETS_PRIVATE_KEY;
+      }
     });
 
     it('should execute scheduled sync successfully', async () => {
@@ -508,16 +531,39 @@ describe('Google Sheets Scheduled Sync Integration Tests', () => {
   });
 
   describe('Error Handling', () => {
+    let nestedOriginalEnvVars = {};
+
     beforeEach(() => {
+      // Snapshot original env vars for nested describe
+      nestedOriginalEnvVars = {
+        GOOGLE_SHEET_ID: process.env.GOOGLE_SHEET_ID,
+        GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL: process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL,
+        GOOGLE_SHEETS_PRIVATE_KEY: process.env.GOOGLE_SHEETS_PRIVATE_KEY
+      };
+
       process.env.GOOGLE_SHEET_ID = 'test-sheet-id';
       process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL = 'test@service-account.com';
       process.env.GOOGLE_SHEETS_PRIVATE_KEY = 'test-key';
     });
 
     afterEach(() => {
-      delete process.env.GOOGLE_SHEET_ID;
-      delete process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL;
-      delete process.env.GOOGLE_SHEETS_PRIVATE_KEY;
+      // Restore original env vars for nested describe (with safety check)
+      if (!nestedOriginalEnvVars || typeof nestedOriginalEnvVars !== 'object') return;
+      if (nestedOriginalEnvVars.GOOGLE_SHEET_ID !== undefined) {
+        process.env.GOOGLE_SHEET_ID = nestedOriginalEnvVars.GOOGLE_SHEET_ID;
+      } else {
+        delete process.env.GOOGLE_SHEET_ID;
+      }
+      if (nestedOriginalEnvVars.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL !== undefined) {
+        process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL = nestedOriginalEnvVars.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL;
+      } else {
+        delete process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL;
+      }
+      if (nestedOriginalEnvVars.GOOGLE_SHEETS_PRIVATE_KEY !== undefined) {
+        process.env.GOOGLE_SHEETS_PRIVATE_KEY = nestedOriginalEnvVars.GOOGLE_SHEETS_PRIVATE_KEY;
+      } else {
+        delete process.env.GOOGLE_SHEETS_PRIVATE_KEY;
+      }
     });
 
     it('should handle sync failures gracefully', async () => {
@@ -713,16 +759,39 @@ describe('Google Sheets Scheduled Sync Integration Tests', () => {
   });
 
   describe('Incremental Sync Logic', () => {
+    let nestedOriginalEnvVars = {};
+
     beforeEach(() => {
+      // Snapshot original env vars for nested describe
+      nestedOriginalEnvVars = {
+        GOOGLE_SHEET_ID: process.env.GOOGLE_SHEET_ID,
+        GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL: process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL,
+        GOOGLE_SHEETS_PRIVATE_KEY: process.env.GOOGLE_SHEETS_PRIVATE_KEY
+      };
+
       process.env.GOOGLE_SHEET_ID = 'test-sheet-id';
       process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL = 'test@service-account.com';
       process.env.GOOGLE_SHEETS_PRIVATE_KEY = 'test-key';
     });
 
     afterEach(() => {
-      delete process.env.GOOGLE_SHEET_ID;
-      delete process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL;
-      delete process.env.GOOGLE_SHEETS_PRIVATE_KEY;
+      // Restore original env vars for nested describe (with safety check)
+      if (!nestedOriginalEnvVars || typeof nestedOriginalEnvVars !== 'object') return;
+      if (nestedOriginalEnvVars.GOOGLE_SHEET_ID !== undefined) {
+        process.env.GOOGLE_SHEET_ID = nestedOriginalEnvVars.GOOGLE_SHEET_ID;
+      } else {
+        delete process.env.GOOGLE_SHEET_ID;
+      }
+      if (nestedOriginalEnvVars.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL !== undefined) {
+        process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL = nestedOriginalEnvVars.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL;
+      } else {
+        delete process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL;
+      }
+      if (nestedOriginalEnvVars.GOOGLE_SHEETS_PRIVATE_KEY !== undefined) {
+        process.env.GOOGLE_SHEETS_PRIVATE_KEY = nestedOriginalEnvVars.GOOGLE_SHEETS_PRIVATE_KEY;
+      } else {
+        delete process.env.GOOGLE_SHEETS_PRIVATE_KEY;
+      }
     });
 
     it('should sync all data on each run', async () => {

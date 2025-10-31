@@ -43,7 +43,8 @@ test.describe('Google Sheets Sync', () => {
 
   test('should display sync button when Google Sheets is configured', async ({ page, request }) => {
     // Check if Google Sheets is configured via API
-    const response = await request.post(`${page.url().replace('/admin/login', '')}/api/sheets/sync`, {
+    const baseUrl = page.url().replace('/admin/login', '');
+    const response = await request.post(`${baseUrl}/api/sheets/sync`, {
       headers: {
         'Authorization': 'Bearer test-token',
       },
@@ -58,9 +59,33 @@ test.describe('Google Sheets Sync', () => {
       return;
     }
 
-    // Login first (simplified for test - in real scenario would need full auth flow)
-    // For E2E test mode, we can use simplified login if E2E_TEST_MODE is enabled
-    console.log('📝 Note: This test requires admin dashboard access');
+    // Login to admin dashboard (E2E_TEST_MODE bypasses MFA)
+    console.log('Logging in to admin dashboard...');
+
+    await page.fill('input[name="username"]', adminCredentials.email);
+    await page.fill('input[name="password"]', adminCredentials.password);
+    await page.click('button[type="submit"]');
+
+    // Wait for dashboard to load
+    await page.waitForURL(/\/admin\/dashboard/, { timeout: 30000 });
+    console.log('✅ Admin dashboard loaded');
+
+    // Verify sync button is visible
+    const syncButton = page.locator('button:has-text("Sync")').or(page.locator('button[id*="sync"]')).or(page.locator('[data-testid="sheets-sync-button"]'));
+
+    // Check if sync button exists
+    const syncButtonCount = await syncButton.count();
+
+    if (syncButtonCount > 0) {
+      expect(await syncButton.first().isVisible()).toBe(true);
+      console.log('✅ Google Sheets sync button is visible in admin dashboard');
+    } else {
+      console.log('⚠️ Sync button not found - may be in a different location or under a different selector');
+      // Verify alternative: check for Google Sheets related text or links
+      const sheetsText = page.locator('text=/google.*sheets/i');
+      const hasGoogleSheetsUI = (await sheetsText.count()) > 0;
+      expect(hasGoogleSheetsUI).toBe(true);
+    }
   });
 
   test('should trigger manual sync via API', async ({ request, page }) => {

@@ -436,16 +436,27 @@ async function collectPerformanceMetrics(page, url) {
 function detectRegressions(baseline, current, threshold = 10) {
   const regressions = [];
 
-  // Compare navigation timing
-  const domContentLoadedBaseline = baseline.navigationTiming.domContentLoaded;
-  const domContentLoadedCurrent = current.navigationTiming.domContentLoaded;
+  // Validate baseline and current objects exist
+  if (!baseline || !current) {
+    throw new Error('Baseline and current metrics are required');
+  }
 
-  if (!isNaN(domContentLoadedBaseline) && !isNaN(domContentLoadedCurrent) &&
-      domContentLoadedBaseline > 0 && domContentLoadedCurrent > domContentLoadedBaseline) {
+  // Compare navigation timing
+  const domContentLoadedBaseline = baseline.navigationTiming?.domContentLoaded;
+  const domContentLoadedCurrent = current.navigationTiming?.domContentLoaded;
+
+  // Add NaN guards before arithmetic operations
+  if (domContentLoadedBaseline == null || domContentLoadedCurrent == null ||
+      isNaN(domContentLoadedBaseline) || isNaN(domContentLoadedCurrent)) {
+    console.warn('Invalid domContentLoaded values - skipping navigation timing comparison');
+  } else if (domContentLoadedBaseline > 0 && domContentLoadedCurrent > domContentLoadedBaseline) {
     const percentChange = ((domContentLoadedCurrent - domContentLoadedBaseline) /
       domContentLoadedBaseline) * 100;
 
-    if (percentChange > threshold) {
+    // Verify percentChange is valid before using it
+    if (isNaN(percentChange)) {
+      console.warn('Calculated percentChange is NaN - skipping');
+    } else if (percentChange > threshold) {
       regressions.push({
         metric: 'domContentLoaded',
         baseline: domContentLoadedBaseline,
@@ -465,14 +476,20 @@ function detectRegressions(baseline, current, threshold = 10) {
   }
 
   // Compare paint timing
-  const fcpBaseline = baseline.paintTiming.firstContentfulPaint;
-  const fcpCurrent = current.paintTiming.firstContentfulPaint;
+  const fcpBaseline = baseline.paintTiming?.firstContentfulPaint;
+  const fcpCurrent = current.paintTiming?.firstContentfulPaint;
 
-  if (!isNaN(fcpBaseline) && !isNaN(fcpCurrent) &&
-      fcpBaseline > 0 && fcpCurrent > fcpBaseline) {
+  // Add NaN guards before arithmetic operations
+  if (fcpBaseline == null || fcpCurrent == null ||
+      isNaN(fcpBaseline) || isNaN(fcpCurrent)) {
+    console.warn('Invalid firstContentfulPaint values - skipping paint timing comparison');
+  } else if (fcpBaseline > 0 && fcpCurrent > fcpBaseline) {
     const percentChange = ((fcpCurrent - fcpBaseline) / fcpBaseline) * 100;
 
-    if (percentChange > threshold) {
+    // Verify percentChange is valid before using it
+    if (isNaN(percentChange)) {
+      console.warn('Calculated percentChange is NaN - skipping');
+    } else if (percentChange > threshold) {
       regressions.push({
         metric: 'firstContentfulPaint',
         baseline: fcpBaseline,

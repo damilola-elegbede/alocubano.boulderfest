@@ -270,16 +270,16 @@ test.describe('API Caching E2E Flow', () => {
       }
     });
 
-    test('should normalize query parameter order for caching', async ({ page }) => {
+    test('should normalize query parameter order for caching', async ({ request }) => {
       // Create URL with params in different order
       const url1 = `${baseURL}/api/gallery?year=2024&page=1`;
       const url2 = `${baseURL}/api/gallery?page=1&year=2024`;
 
-      const response1 = await page.goto(url1);
+      const response1 = await request.get(url1);
       expect(response1.status()).toBe(200);
       const data1 = await response1.json();
 
-      const response2 = await page.goto(url2);
+      const response2 = await request.get(url2);
       expect(response2.status()).toBe(200);
       const data2 = await response2.json();
 

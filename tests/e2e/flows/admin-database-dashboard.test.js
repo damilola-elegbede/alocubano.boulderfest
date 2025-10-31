@@ -323,8 +323,12 @@ test.describe('Admin Database Dashboard', () => {
     // Record initial health value
     const initialHealth = await page.locator('#overallHealth').textContent();
 
-    // Wait for potential refresh (30 seconds)
-    await page.waitForTimeout(31000);
+    // Wait for dashboard auto-refresh API call (30 seconds interval)
+    // Instead of waiting 31s, wait for the API request to be triggered
+    await page.waitForResponse(
+      response => response.url().includes('/api/admin/database-health') && response.status() === 200,
+      { timeout: 35000 }
+    );
 
     // Should still be showing data (may or may not change)
     const currentHealth = await page.locator('#overallHealth').textContent();

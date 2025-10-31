@@ -448,7 +448,7 @@ describe('Google Sheets Manual Sync Integration Tests', () => {
   });
 
   describe('Sync Execution with Mock', () => {
-    let nestedOriginalEnvVars;
+    let nestedOriginalEnvVars = {};
 
     beforeEach(() => {
       // Snapshot original env vars for nested describe
@@ -465,7 +465,8 @@ describe('Google Sheets Manual Sync Integration Tests', () => {
     });
 
     afterEach(() => {
-      // Restore original env vars for nested describe
+      // Restore original env vars for nested describe (with safety check)
+      if (!nestedOriginalEnvVars || typeof nestedOriginalEnvVars !== 'object') return;
       if (nestedOriginalEnvVars.GOOGLE_SHEET_ID !== undefined) {
         process.env.GOOGLE_SHEET_ID = nestedOriginalEnvVars.GOOGLE_SHEET_ID;
       } else {
@@ -590,7 +591,7 @@ describe('Google Sheets Manual Sync Integration Tests', () => {
   });
 
   describe('Error Responses', () => {
-    let nestedOriginalEnvVars;
+    let nestedOriginalEnvVars = {};
 
     beforeEach(() => {
       // Snapshot original env vars for nested describe
@@ -606,7 +607,8 @@ describe('Google Sheets Manual Sync Integration Tests', () => {
     });
 
     afterEach(() => {
-      // Restore original env vars for nested describe
+      // Restore original env vars for nested describe (with safety check)
+      if (!nestedOriginalEnvVars || typeof nestedOriginalEnvVars !== 'object') return;
       if (nestedOriginalEnvVars.GOOGLE_SHEET_ID !== undefined) {
         process.env.GOOGLE_SHEET_ID = nestedOriginalEnvVars.GOOGLE_SHEET_ID;
       } else {
