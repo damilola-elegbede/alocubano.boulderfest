@@ -160,7 +160,11 @@ test.describe('Navigation Links - Events Dropdown', () => {
 });
 
 test.describe('Navigation Links - Boulder Fest 2026 Sub-Navigation', () => {
+  let jsErrors = [];
+
   test.beforeEach(async ({ page }) => {
+    jsErrors = [];
+    setupErrorDetection(page, jsErrors);
     await page.goto('/boulder-fest-2026');
     await page.waitForLoadState('networkidle');
   });
@@ -182,11 +186,18 @@ test.describe('Navigation Links - Boulder Fest 2026 Sub-Navigation', () => {
       // Verify URL changed correctly
       await expect(page).toHaveURL(link.expectedUrl);
     }
+
+    // Check for JavaScript errors
+    expect(jsErrors, `JavaScript errors detected:\n${JSON.stringify(jsErrors, null, 2)}`).toHaveLength(0);
   });
 });
 
 test.describe('Navigation Links - Boulder Fest 2025 Sub-Navigation', () => {
+  let jsErrors = [];
+
   test.beforeEach(async ({ page }) => {
+    jsErrors = [];
+    setupErrorDetection(page, jsErrors);
     await page.goto('/boulder-fest-2025');
     await page.waitForLoadState('networkidle');
   });
@@ -208,6 +219,9 @@ test.describe('Navigation Links - Boulder Fest 2025 Sub-Navigation', () => {
       // Verify URL changed correctly
       await expect(page).toHaveURL(link.expectedUrl);
     }
+
+    // Check for JavaScript errors
+    expect(jsErrors, `JavaScript errors detected:\n${JSON.stringify(jsErrors, null, 2)}`).toHaveLength(0);
   });
 });
 
@@ -307,7 +321,11 @@ test.describe('Navigation Links - Weekender 2025-11 Sub-Navigation', () => {
 });
 
 test.describe('Navigation Links - Mobile Navigation', () => {
+  let jsErrors = [];
+
   test.beforeEach(async ({ page }) => {
+    jsErrors = [];
+    setupErrorDetection(page, jsErrors);
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
     await page.goto('/home');
@@ -331,6 +349,9 @@ test.describe('Navigation Links - Mobile Navigation', () => {
 
     // Verify navigation
     await expect(page).toHaveURL(/\/about/);
+
+    // Check for JavaScript errors
+    expect(jsErrors, `JavaScript errors detected:\n${JSON.stringify(jsErrors, null, 2)}`).toHaveLength(0);
   });
 
   test('should navigate to Weekender from mobile dropdown', async ({ page }) => {
@@ -354,11 +375,19 @@ test.describe('Navigation Links - Mobile Navigation', () => {
 
     // Verify navigation to weekender, NOT tickets
     await expect(page).toHaveURL(/\/weekender-2025-11/);
+
+    // Check for JavaScript errors
+    expect(jsErrors, `JavaScript errors detected:\n${JSON.stringify(jsErrors, null, 2)}`).toHaveLength(0);
   });
 });
 
 test.describe('Navigation Links - Broken Link Prevention', () => {
+  let jsErrors = [];
+
   test('Weekender dropdown should NOT go to tickets page on ANY page', async ({ page }) => {
+    jsErrors = [];
+    setupErrorDetection(page, jsErrors);
+
     const pagesToCheck = [
       '/home',
       '/about',
@@ -397,9 +426,15 @@ test.describe('Navigation Links - Broken Link Prevention', () => {
       // Should be on weekender page
       await expect(page, `Should go to weekender from ${pagePath}`).toHaveURL(/\/weekender-2025-11/);
     }
+
+    // Check for JavaScript errors
+    expect(jsErrors, `JavaScript errors detected:\n${JSON.stringify(jsErrors, null, 2)}`).toHaveLength(0);
   });
 
   test('Weekender sub-navigation should NOT redirect to home', async ({ page }) => {
+    jsErrors = [];
+    setupErrorDetection(page, jsErrors);
+
     await page.goto('/weekender-2025-11');
     await page.waitForLoadState('networkidle');
 
@@ -419,11 +454,19 @@ test.describe('Navigation Links - Broken Link Prevention', () => {
       // Should be on correct weekender sub-page
       await expect(page).toHaveURL(new RegExp(`/weekender-2025-11/${linkText.toLowerCase()}`));
     }
+
+    // Check for JavaScript errors
+    expect(jsErrors, `JavaScript errors detected:\n${JSON.stringify(jsErrors, null, 2)}`).toHaveLength(0);
   });
 });
 
 test.describe('Navigation Links - Weekender Link Consistency', () => {
+  let jsErrors = [];
+
   test('Weekender dropdown should exist and link correctly on all pages', async ({ page }) => {
+    jsErrors = [];
+    setupErrorDetection(page, jsErrors);
+
     const pagesToCheck = [
       '/home',
       '/about',
@@ -470,6 +513,9 @@ test.describe('Navigation Links - Weekender Link Consistency', () => {
       // Close dropdown before moving to next page
       await eventsButton.click();
     }
+
+    // Check for JavaScript errors
+    expect(jsErrors, `JavaScript errors detected:\n${JSON.stringify(jsErrors, null, 2)}`).toHaveLength(0);
   });
 });
 
