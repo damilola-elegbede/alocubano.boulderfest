@@ -134,6 +134,14 @@ jobs:
             echo "✅ Markdown: Well-formatted"
           fi
 
+      - name: "📏 CLAUDE.md Size Check"
+        id: claude_md_size
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📏 Checking CLAUDE.md File Size"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          npm run lint:claude-md
+
       - name: "🏗️ Project Structure Validation"
         id: structure
         run: |
