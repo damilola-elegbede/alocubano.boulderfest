@@ -150,14 +150,14 @@ test.describe('API Caching E2E Flow', () => {
   });
 
   test.describe('Performance Under Load', () => {
-    test('should handle concurrent API requests efficiently', async ({ page }) => {
+    test('should handle concurrent API requests efficiently', async ({ request }) => {
       const apiPath = `${baseURL}/api/health/check`;
 
       const startTime = Date.now();
 
-      // Make 10 concurrent requests
+      // Make 10 concurrent requests using request context
       const promises = Array(10).fill(null).map(() =>
-        page.goto(apiPath)
+        request.get(apiPath)
       );
 
       const responses = await Promise.all(promises);
@@ -276,15 +276,15 @@ test.describe('API Caching E2E Flow', () => {
       const url2 = `${baseURL}/api/gallery?page=1&year=2024`;
 
       const response1 = await page.goto(url1);
-      const data1 = response1.status() === 200 ? await response1.json() : null;
+      expect(response1.status()).toBe(200);
+      const data1 = await response1.json();
 
       const response2 = await page.goto(url2);
-      const data2 = response2.status() === 200 ? await response2.json() : null;
+      expect(response2.status()).toBe(200);
+      const data2 = await response2.json();
 
       // Should return same data (params normalized)
-      if (data1 && data2) {
-        expect(data2).toEqual(data1);
-      }
+      expect(data2).toEqual(data1);
     });
   });
 

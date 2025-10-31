@@ -437,31 +437,56 @@ function detectRegressions(baseline, current, threshold = 10) {
   const regressions = [];
 
   // Compare navigation timing
-  if (current.navigationTiming.domContentLoaded > baseline.navigationTiming.domContentLoaded) {
-    const percentChange = ((current.navigationTiming.domContentLoaded - baseline.navigationTiming.domContentLoaded) /
-      baseline.navigationTiming.domContentLoaded) * 100;
+  const domContentLoadedBaseline = baseline.navigationTiming.domContentLoaded;
+  const domContentLoadedCurrent = current.navigationTiming.domContentLoaded;
+
+  if (!isNaN(domContentLoadedBaseline) && !isNaN(domContentLoadedCurrent) &&
+      domContentLoadedBaseline > 0 && domContentLoadedCurrent > domContentLoadedBaseline) {
+    const percentChange = ((domContentLoadedCurrent - domContentLoadedBaseline) /
+      domContentLoadedBaseline) * 100;
 
     if (percentChange > threshold) {
       regressions.push({
         metric: 'domContentLoaded',
-        baseline: baseline.navigationTiming.domContentLoaded,
-        current: current.navigationTiming.domContentLoaded,
+        baseline: domContentLoadedBaseline,
+        current: domContentLoadedCurrent,
         percentChange,
+      });
+    } else if (percentChange < -10) {
+      // Track improvements (negative percentChange means faster)
+      regressions.push({
+        metric: 'domContentLoaded',
+        baseline: domContentLoadedBaseline,
+        current: domContentLoadedCurrent,
+        percentChange,
+        isImprovement: true,
       });
     }
   }
 
   // Compare paint timing
-  if (current.paintTiming.firstContentfulPaint > baseline.paintTiming.firstContentfulPaint) {
-    const percentChange = ((current.paintTiming.firstContentfulPaint - baseline.paintTiming.firstContentfulPaint) /
-      baseline.paintTiming.firstContentfulPaint) * 100;
+  const fcpBaseline = baseline.paintTiming.firstContentfulPaint;
+  const fcpCurrent = current.paintTiming.firstContentfulPaint;
+
+  if (!isNaN(fcpBaseline) && !isNaN(fcpCurrent) &&
+      fcpBaseline > 0 && fcpCurrent > fcpBaseline) {
+    const percentChange = ((fcpCurrent - fcpBaseline) / fcpBaseline) * 100;
 
     if (percentChange > threshold) {
       regressions.push({
         metric: 'firstContentfulPaint',
-        baseline: baseline.paintTiming.firstContentfulPaint,
-        current: current.paintTiming.firstContentfulPaint,
+        baseline: fcpBaseline,
+        current: fcpCurrent,
         percentChange,
+      });
+    } else if (percentChange < -10) {
+      // Track improvements
+      regressions.push({
+        metric: 'firstContentfulPaint',
+        baseline: fcpBaseline,
+        current: fcpCurrent,
+        percentChange,
+        isImprovement: true,
       });
     }
   }
@@ -480,15 +505,23 @@ async function measureLCP(page) {
         lcp = lastEntry.renderTime || lastEntry.loadTime;
       });
 
-      observer.observe({ entryTypes: ['largest-contentful-paint'] });
+      observer.observe({ type: 'largest-contentful-paint', buffered: true });
 
-      // Resolve after load
-      window.addEventListener('load', () => {
+      // Check if page already loaded
+      if (document.readyState === 'complete') {
         setTimeout(() => {
           observer.disconnect();
           resolve(lcp);
         }, 2000);
-      });
+      } else {
+        // Resolve after load
+        window.addEventListener('load', () => {
+          setTimeout(() => {
+            observer.disconnect();
+            resolve(lcp);
+          }, 2000);
+        });
+      }
     });
   });
 }

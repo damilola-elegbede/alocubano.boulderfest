@@ -40,15 +40,14 @@ test.describe('Admin Ticket Detail Page', () => {
       await page.fill('input[name="mfaCode"]', mfaCode);
       await page.click('button[type="submit"]');
 
-      await Promise.race([
-        page.waitForURL('**/admin/dashboard', { timeout: navTimeout }),
-        page.waitForSelector('#errorMessage', { state: 'visible', timeout: actionTimeout })
-      ]);
-
-      const currentUrl = page.url();
-      if (!currentUrl.includes('/admin/dashboard')) {
+      // Wait for either success or error with longer timeout for error selector
+      try {
+        await page.waitForURL('**/admin/dashboard', { timeout: navTimeout });
+      } catch (error) {
+        // Check if error message appeared
         const errorMessage = page.locator('#errorMessage');
-        if (await errorMessage.isVisible()) {
+        const isErrorVisible = await errorMessage.isVisible().catch(() => false);
+        if (isErrorVisible) {
           const errorText = await errorMessage.textContent();
           if (errorText.includes('locked') || errorText.includes('rate limit')) {
             if (skipOnRateLimit) {
@@ -58,6 +57,11 @@ test.describe('Admin Ticket Detail Page', () => {
           }
           throw new Error(`Login failed: ${errorText}`);
         }
+        throw error;
+      }
+
+      const currentUrl = page.url();
+      if (!currentUrl.includes('/admin/dashboard')) {
         return false;
       }
 

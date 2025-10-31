@@ -22,6 +22,7 @@ describe('Google Sheets Sync Error Scenarios', () => {
   let db;
   let adminToken;
   let handler;
+  let originalEnvVars;
 
   beforeEach(async () => {
     db = await getDatabaseClient();
@@ -33,6 +34,13 @@ describe('Google Sheets Sync Error Scenarios', () => {
 
     // Create admin JWT token
     adminToken = await authService.createSessionToken('admin');
+
+    // Snapshot original env vars
+    originalEnvVars = {
+      GOOGLE_SHEET_ID: process.env.GOOGLE_SHEET_ID,
+      GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL: process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL,
+      GOOGLE_SHEETS_PRIVATE_KEY: process.env.GOOGLE_SHEETS_PRIVATE_KEY
+    };
 
     // Set up Google Sheets credentials
     process.env.GOOGLE_SHEET_ID = 'test-sheet-id';
@@ -57,9 +65,22 @@ describe('Google Sheets Sync Error Scenarios', () => {
       console.warn('Cleanup warning:', error.message);
     }
 
-    delete process.env.GOOGLE_SHEET_ID;
-    delete process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL;
-    delete process.env.GOOGLE_SHEETS_PRIVATE_KEY;
+    // Restore original env vars
+    if (originalEnvVars.GOOGLE_SHEET_ID !== undefined) {
+      process.env.GOOGLE_SHEET_ID = originalEnvVars.GOOGLE_SHEET_ID;
+    } else {
+      delete process.env.GOOGLE_SHEET_ID;
+    }
+    if (originalEnvVars.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL !== undefined) {
+      process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL = originalEnvVars.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL;
+    } else {
+      delete process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL;
+    }
+    if (originalEnvVars.GOOGLE_SHEETS_PRIVATE_KEY !== undefined) {
+      process.env.GOOGLE_SHEETS_PRIVATE_KEY = originalEnvVars.GOOGLE_SHEETS_PRIVATE_KEY;
+    } else {
+      delete process.env.GOOGLE_SHEETS_PRIVATE_KEY;
+    }
 
     vi.restoreAllMocks();
   });

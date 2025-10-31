@@ -30,10 +30,15 @@ test.describe('Performance Benchmarking E2E', () => {
     });
 
     test('should load admin dashboard under 3 seconds', async ({ page }) => {
+      // Require TEST_ADMIN_PASSWORD to be set
+      if (!process.env.TEST_ADMIN_PASSWORD) {
+        test.skip('TEST_ADMIN_PASSWORD environment variable not set');
+      }
+
       // Login first
       await page.goto(`${baseUrl}/pages/admin/login.html`);
 
-      await page.fill('input[name="password"]', process.env.TEST_ADMIN_PASSWORD || 'test-password');
+      await page.fill('input[name="password"]', process.env.TEST_ADMIN_PASSWORD);
       await page.click('button[type="submit"]');
 
       await page.waitForLoadState('networkidle');
@@ -124,7 +129,7 @@ test.describe('Performance Benchmarking E2E', () => {
 
         const queryTime = Date.now() - startTime;
 
-        // API overhead + query should be under 50ms
+        // API overhead + query should be under 100ms
         expect(queryTime).toBeLessThan(100);
       }
     });
@@ -375,7 +380,7 @@ test.describe('Performance Benchmarking E2E', () => {
       expect(totalTime).toBeLessThan(10000);
     });
 
-    test('should maintain performance with session storage', async ({ page }) => {
+    test('should maintain performance with localStorage', async ({ page }) => {
       await page.goto(baseUrl);
 
       // Add items to cart
@@ -411,7 +416,7 @@ test.describe('Performance Benchmarking E2E', () => {
 
         metrics.push(loadTime);
 
-        // Clear cache between runs
+        // Clear resource timing data between runs
         await page.evaluate(() => {
           performance.clearResourceTimings();
         });

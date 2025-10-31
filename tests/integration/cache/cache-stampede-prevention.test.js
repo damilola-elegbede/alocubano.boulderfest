@@ -251,9 +251,8 @@ describe('Cache Stampede Prevention', () => {
       const rateLimiter = {
         requests: new Map(),
         limit: 10,
-        window: 1000 // 1 second
+        window: 1000, // 1 second
 
-        ,
         canProceed(clientId) {
           const now = Date.now();
           const clientRequests = this.requests.get(clientId) || [];

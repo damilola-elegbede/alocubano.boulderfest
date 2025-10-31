@@ -296,7 +296,7 @@ describe('Performance Monitoring Integration', () => {
     it('should trigger emergency optimization', async () => {
       const result = await performanceService.triggerEmergencyOptimization();
 
-      expect(result).not.toThrow;
+      expect(() => result).not.toThrow();
     });
 
     it('should perform deep analysis during emergency', async () => {

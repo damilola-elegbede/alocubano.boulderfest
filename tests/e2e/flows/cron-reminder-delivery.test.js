@@ -25,23 +25,10 @@ test.describe('Cron Reminder Delivery E2E', () => {
     const baseUrl = getBaseUrl();
 
     // Step 1: Create a test transaction with tickets (simulating ticket purchase)
-    // In production, this would be done via Stripe webhook
-    const transactionData = {
-      transaction_id: `test-reminder-txn-${Date.now()}`,
-      amount: 5000,
-      customer_email: 'test-reminder@example.com',
-      customer_name: 'Test Reminder User',
-      payment_processor: 'stripe',
-      registration_token: `test-token-${Date.now()}`,
-      order_number: `ORD-${Date.now()}`,
-      status: 'completed'
-    };
-
-    console.log('Creating test transaction for reminder flow...');
-
-    // In E2E tests, we need to use the actual API to create data
-    // This would normally be done through a test data setup endpoint
-    // For now, we'll test the cron job directly
+    // Note: In a real E2E environment, this would be persisted via API
+    // For now, we validate that the cron job handles the scenario where
+    // reminders exist (or don't exist) gracefully
+    console.log('Testing cron reminder processing flow...');
 
     // Step 2: Trigger the process-reminders cron job
     console.log('Triggering process-reminders cron job...');

@@ -86,6 +86,7 @@ class MultiYearGalleryManager {
             this.dispatchEvent('initialized', { year: this.currentYear });
         } catch (error) {
             console.error('MultiYearGalleryManager initialization failed:', error);
+            this._initPromise = null;
 
             // Instead of showing error, dispatch event to trigger fallback
             this.dispatchEvent('initializationError', {
