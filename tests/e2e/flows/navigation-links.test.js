@@ -6,13 +6,45 @@
  * - Event dropdown navigation
  * - Event sub-navigation for all events
  * - Mobile navigation menu
+ * - JavaScript error detection on all pages
  *
- * This test will FAIL if any navigation links are broken.
+ * This test will FAIL if any navigation links are broken or if any JavaScript errors occur.
  */
 import { test, expect } from '@playwright/test';
 
+/**
+ * Helper function to set up JavaScript error detection
+ * Collects all console errors and page errors during test execution
+ */
+function setupErrorDetection(page, errors) {
+  // Capture page errors (uncaught exceptions)
+  page.on('pageerror', (error) => {
+    errors.push({
+      type: 'pageerror',
+      message: error.message,
+      stack: error.stack,
+      url: page.url(),
+    });
+  });
+
+  // Capture console errors
+  page.on('console', (msg) => {
+    if (msg.type() === 'error') {
+      errors.push({
+        type: 'console.error',
+        message: msg.text(),
+        url: page.url(),
+      });
+    }
+  });
+}
+
 test.describe('Navigation Links - Main Navigation', () => {
+  let jsErrors = [];
+
   test.beforeEach(async ({ page }) => {
+    jsErrors = [];
+    setupErrorDetection(page, jsErrors);
     await page.goto('/home');
     await page.waitForLoadState('networkidle');
   });
@@ -38,11 +70,18 @@ test.describe('Navigation Links - Main Navigation', () => {
       await page.getByRole('link', { name: 'Home' }).first().click();
       await expect(page).toHaveURL(/\/home/);
     }
+
+    // Check for JavaScript errors
+    expect(jsErrors, `JavaScript errors detected:\n${JSON.stringify(jsErrors, null, 2)}`).toHaveLength(0);
   });
 });
 
 test.describe('Navigation Links - Events Dropdown', () => {
+  let jsErrors = [];
+
   test.beforeEach(async ({ page }) => {
+    jsErrors = [];
+    setupErrorDetection(page, jsErrors);
     await page.goto('/home');
     await page.waitForLoadState('networkidle');
   });
@@ -66,6 +105,9 @@ test.describe('Navigation Links - Events Dropdown', () => {
 
     // Verify page content
     await expect(page.getByRole('heading', { name: /Boulder Fest 2026/i })).toBeVisible();
+
+    // Check for JavaScript errors
+    expect(jsErrors, `JavaScript errors detected:\n${JSON.stringify(jsErrors, null, 2)}`).toHaveLength(0);
   });
 
   test('should navigate to Boulder Fest 2025 from dropdown', async ({ page }) => {
@@ -87,6 +129,9 @@ test.describe('Navigation Links - Events Dropdown', () => {
 
     // Verify page content
     await expect(page.getByRole('heading', { name: /Boulder Fest 2025/i })).toBeVisible();
+
+    // Check for JavaScript errors
+    expect(jsErrors, `JavaScript errors detected:\n${JSON.stringify(jsErrors, null, 2)}`).toHaveLength(0);
   });
 
   test('should navigate to Weekender November 2025 from dropdown', async ({ page }) => {
@@ -108,11 +153,18 @@ test.describe('Navigation Links - Events Dropdown', () => {
 
     // Verify page content - should show weekender content
     await expect(page.getByRole('heading', { name: /Weekender.*November 2025/i })).toBeVisible();
+
+    // Check for JavaScript errors
+    expect(jsErrors, `JavaScript errors detected:\n${JSON.stringify(jsErrors, null, 2)}`).toHaveLength(0);
   });
 });
 
 test.describe('Navigation Links - Boulder Fest 2026 Sub-Navigation', () => {
+  let jsErrors = [];
+
   test.beforeEach(async ({ page }) => {
+    jsErrors = [];
+    setupErrorDetection(page, jsErrors);
     await page.goto('/boulder-fest-2026');
     await page.waitForLoadState('networkidle');
   });
@@ -134,11 +186,18 @@ test.describe('Navigation Links - Boulder Fest 2026 Sub-Navigation', () => {
       // Verify URL changed correctly
       await expect(page).toHaveURL(link.expectedUrl);
     }
+
+    // Check for JavaScript errors
+    expect(jsErrors, `JavaScript errors detected:\n${JSON.stringify(jsErrors, null, 2)}`).toHaveLength(0);
   });
 });
 
 test.describe('Navigation Links - Boulder Fest 2025 Sub-Navigation', () => {
+  let jsErrors = [];
+
   test.beforeEach(async ({ page }) => {
+    jsErrors = [];
+    setupErrorDetection(page, jsErrors);
     await page.goto('/boulder-fest-2025');
     await page.waitForLoadState('networkidle');
   });
@@ -160,11 +219,18 @@ test.describe('Navigation Links - Boulder Fest 2025 Sub-Navigation', () => {
       // Verify URL changed correctly
       await expect(page).toHaveURL(link.expectedUrl);
     }
+
+    // Check for JavaScript errors
+    expect(jsErrors, `JavaScript errors detected:\n${JSON.stringify(jsErrors, null, 2)}`).toHaveLength(0);
   });
 });
 
 test.describe('Navigation Links - Weekender 2025-11 Sub-Navigation', () => {
+  let jsErrors = [];
+
   test.beforeEach(async ({ page }) => {
+    jsErrors = [];
+    setupErrorDetection(page, jsErrors);
     await page.goto('/weekender-2025-11');
     await page.waitForLoadState('networkidle');
   });
@@ -180,6 +246,13 @@ test.describe('Navigation Links - Weekender 2025-11 Sub-Navigation', () => {
 
     // Verify page content shows artists information
     await expect(page.getByRole('heading', { name: /instructor/i })).toBeVisible();
+
+    // ✨ CRITICAL: Verify complete page structure loaded (catches broken HTML)
+    await expect(page.locator('footer')).toBeVisible();
+    await expect(page.locator('.artist-card')).toBeVisible();
+
+    // Check for JavaScript errors
+    expect(jsErrors, `JavaScript errors detected:\n${JSON.stringify(jsErrors, null, 2)}`).toHaveLength(0);
   });
 
   test('should navigate to Weekender schedule page', async ({ page }) => {
@@ -193,6 +266,18 @@ test.describe('Navigation Links - Weekender 2025-11 Sub-Navigation', () => {
 
     // Verify page content shows schedule information
     await expect(page.getByRole('heading', { name: /schedule/i })).toBeVisible();
+
+    // ✨ CRITICAL: Verify complete page structure loaded (catches broken HTML)
+    await expect(page.locator('.schedule-day')).toBeVisible();
+    await expect(page.locator('.schedule-item').first()).toBeVisible();
+    await expect(page.locator('footer')).toBeVisible(); // Would fail if HTML breaks before footer
+
+    // Verify schedule items actually rendered
+    const scheduleItems = await page.locator('.schedule-item').count();
+    expect(scheduleItems, 'Schedule page should have schedule items').toBeGreaterThan(0);
+
+    // Check for JavaScript errors
+    expect(jsErrors, `JavaScript errors detected:\n${JSON.stringify(jsErrors, null, 2)}`).toHaveLength(0);
   });
 
   test('should navigate to Weekender gallery page', async ({ page }) => {
@@ -206,6 +291,12 @@ test.describe('Navigation Links - Weekender 2025-11 Sub-Navigation', () => {
 
     // Verify page content shows gallery
     await expect(page.getByRole('heading', { name: /gallery/i })).toBeVisible();
+
+    // ✨ CRITICAL: Verify complete page structure loaded (catches broken HTML)
+    await expect(page.locator('footer')).toBeVisible();
+
+    // Check for JavaScript errors
+    expect(jsErrors, `JavaScript errors detected:\n${JSON.stringify(jsErrors, null, 2)}`).toHaveLength(0);
   });
 
   test('should navigate to Weekender overview from sub-pages', async ({ page }) => {
@@ -223,11 +314,18 @@ test.describe('Navigation Links - Weekender 2025-11 Sub-Navigation', () => {
 
     // Verify page content shows weekender overview
     await expect(page.getByRole('heading', { name: /Weekender.*November 2025/i })).toBeVisible();
+
+    // Check for JavaScript errors
+    expect(jsErrors, `JavaScript errors detected:\n${JSON.stringify(jsErrors, null, 2)}`).toHaveLength(0);
   });
 });
 
 test.describe('Navigation Links - Mobile Navigation', () => {
+  let jsErrors = [];
+
   test.beforeEach(async ({ page }) => {
+    jsErrors = [];
+    setupErrorDetection(page, jsErrors);
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
     await page.goto('/home');
@@ -251,6 +349,9 @@ test.describe('Navigation Links - Mobile Navigation', () => {
 
     // Verify navigation
     await expect(page).toHaveURL(/\/about/);
+
+    // Check for JavaScript errors
+    expect(jsErrors, `JavaScript errors detected:\n${JSON.stringify(jsErrors, null, 2)}`).toHaveLength(0);
   });
 
   test('should navigate to Weekender from mobile dropdown', async ({ page }) => {
@@ -274,11 +375,19 @@ test.describe('Navigation Links - Mobile Navigation', () => {
 
     // Verify navigation to weekender, NOT tickets
     await expect(page).toHaveURL(/\/weekender-2025-11/);
+
+    // Check for JavaScript errors
+    expect(jsErrors, `JavaScript errors detected:\n${JSON.stringify(jsErrors, null, 2)}`).toHaveLength(0);
   });
 });
 
 test.describe('Navigation Links - Broken Link Prevention', () => {
+  let jsErrors = [];
+
   test('Weekender dropdown should NOT go to tickets page on ANY page', async ({ page }) => {
+    jsErrors = [];
+    setupErrorDetection(page, jsErrors);
+
     const pagesToCheck = [
       '/home',
       '/about',
@@ -317,9 +426,15 @@ test.describe('Navigation Links - Broken Link Prevention', () => {
       // Should be on weekender page
       await expect(page, `Should go to weekender from ${pagePath}`).toHaveURL(/\/weekender-2025-11/);
     }
+
+    // Check for JavaScript errors
+    expect(jsErrors, `JavaScript errors detected:\n${JSON.stringify(jsErrors, null, 2)}`).toHaveLength(0);
   });
 
   test('Weekender sub-navigation should NOT redirect to home', async ({ page }) => {
+    jsErrors = [];
+    setupErrorDetection(page, jsErrors);
+
     await page.goto('/weekender-2025-11');
     await page.waitForLoadState('networkidle');
 
@@ -339,11 +454,19 @@ test.describe('Navigation Links - Broken Link Prevention', () => {
       // Should be on correct weekender sub-page
       await expect(page).toHaveURL(new RegExp(`/weekender-2025-11/${linkText.toLowerCase()}`));
     }
+
+    // Check for JavaScript errors
+    expect(jsErrors, `JavaScript errors detected:\n${JSON.stringify(jsErrors, null, 2)}`).toHaveLength(0);
   });
 });
 
 test.describe('Navigation Links - Weekender Link Consistency', () => {
+  let jsErrors = [];
+
   test('Weekender dropdown should exist and link correctly on all pages', async ({ page }) => {
+    jsErrors = [];
+    setupErrorDetection(page, jsErrors);
+
     const pagesToCheck = [
       '/home',
       '/about',
@@ -390,10 +513,20 @@ test.describe('Navigation Links - Weekender Link Consistency', () => {
       // Close dropdown before moving to next page
       await eventsButton.click();
     }
+
+    // Check for JavaScript errors
+    expect(jsErrors, `JavaScript errors detected:\n${JSON.stringify(jsErrors, null, 2)}`).toHaveLength(0);
   });
 });
 
 test.describe('Navigation Links - Comprehensive Smoke Test', () => {
+  let jsErrors = [];
+
+  test.beforeEach(async ({ page }) => {
+    jsErrors = [];
+    setupErrorDetection(page, jsErrors);
+  });
+
   test('all event pages should be accessible from any starting point', async ({ page }) => {
     const eventPages = [
       '/boulder-fest-2026',
@@ -419,6 +552,12 @@ test.describe('Navigation Links - Comprehensive Smoke Test', () => {
       // Page should have meaningful content (not empty or error)
       const headings = page.getByRole('heading');
       await expect(headings.first()).toBeVisible();
+
+      // ✨ CRITICAL: Verify complete page structure loaded (catches broken HTML)
+      await expect(page.locator('footer'), `Footer should be visible on ${eventPage}`).toBeVisible();
     }
+
+    // Check for JavaScript errors across all pages
+    expect(jsErrors, `JavaScript errors detected:\n${JSON.stringify(jsErrors, null, 2)}`).toHaveLength(0);
   });
 });

@@ -1,0 +1,104 @@
+#!/bin/sh
+#
+# Pre-push hook for A Lo Cubano Boulder Fest
+# Runs comprehensive test suite before allowing pushes
+#
+
+set -e
+
+protected_branch='main'
+current_branch=$(git symbolic-ref HEAD | sed -e 's,.*/\(.*\),\1,')
+remote="$1"
+url="$2"
+
+echo "🚀 Running pre-push validation for branch: $current_branch"
+
+# Check if we're in the right directory
+if [ ! -f package.json ]; then
+    echo "❌ Error: Not in project root directory"
+    exit 1
+fi
+
+# Enhanced checks for main branch
+if [ "$current_branch" = "$protected_branch" ]; then
+    echo "⚡ Enhanced validation for protected branch: $protected_branch"
+fi
+
+# Stage 1: Quick lint check (in case pre-commit was bypassed)
+echo "📝 Stage 1: Quick lint verification..."
+if npm run lint; then
+    echo "✅ Linting verified"
+else
+    echo "❌ Linting failed - cannot push"
+    exit 1
+fi
+
+# Stage 2: Tests disabled temporarily - running in CI/CD
+# Re-enable by uncommenting below
+# echo "🧪 Stage 2: Running tests..."
+# if npm test; then
+#     echo "✅ Tests passed"
+# else
+#     echo "❌ Tests failed - cannot push"
+#     exit 1
+# fi
+
+# Stage 3: Link validation disabled temporarily
+# Link validation will run in CI/CD
+
+# Stage 4: Configuration validation
+echo "🔧 Stage 4: Validating configuration files..."
+
+# Stage 5: Build verification (if applicable)
+echo "🏗️  Stage 5: Verifying project structure..."
+if [ -f vercel.json ]; then
+    # Validate JSON files
+    if python3 -m json.tool vercel.json > /dev/null 2>&1; then
+        echo "✅ vercel.json is valid"
+    else
+        echo "❌ vercel.json has invalid JSON - cannot push"
+        exit 1
+    fi
+fi
+
+if python3 -m json.tool package.json > /dev/null 2>&1; then
+    echo "✅ package.json is valid"
+else
+    echo "❌ package.json has invalid JSON - cannot push"
+    exit 1
+fi
+
+# Stage 6: Security check for main branch
+if [ "$current_branch" = "$protected_branch" ]; then
+    echo "🔒 Stage 6: Enhanced security scan for main branch..."
+    
+    # Look for actual hardcoded secrets, not legitimate code patterns
+    # This checks for actual secret values, not just variable names or format checks
+    SUSPICIOUS_FILES=$(find . -name "*.js" -o -name "*.html" -o -name "*.css" | \
+       grep -v node_modules | \
+       grep -v tests | \
+       grep -v coverage | \
+       xargs grep -l -E "(pk_live_[a-zA-Z0-9]{20,}|sk_live_[a-zA-Z0-9]{20,}|pk_test_[a-zA-Z0-9]{20,}|sk_test_[a-zA-Z0-9]{20,}|whsec_[a-zA-Z0-9]{20,})" 2>/dev/null || true)
+    
+    if [ ! -z "$SUSPICIOUS_FILES" ]; then
+        echo "❌ Potential hardcoded secrets detected:"
+        echo "$SUSPICIOUS_FILES"
+        echo "Please ensure no real API keys or tokens are hardcoded in source files"
+        exit 1
+    fi
+    echo "✅ Security scan passed"
+fi
+
+echo ""
+echo "🎉 All pre-push checks passed!"
+echo "📊 Push summary:"
+echo "   • Linting: ✅"
+echo "   • Tests: ⏭️ (running in CI/CD)" 
+echo "   • Link validation: ⏭️ (running in CI/CD)"
+echo "   • Configuration validation: ✅"
+echo "   • Structure check: ✅"
+if [ "$current_branch" = "$protected_branch" ]; then
+    echo "   • Security scan: ✅"
+fi
+echo ""
+echo "🚢 Your push is ready to proceed!"

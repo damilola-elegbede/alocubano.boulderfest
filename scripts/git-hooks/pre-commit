@@ -1,0 +1,58 @@
+#!/bin/sh
+#
+# Pre-commit hook for A Lo Cubano Boulder Fest
+# Runs linting and unit tests before allowing commits
+#
+
+set -e
+
+echo "🚀 Running pre-commit checks..."
+
+# Check if we're in the right directory
+if [ ! -f package.json ]; then
+    echo "❌ Error: Not in project root directory"
+    exit 1
+fi
+
+# Stage 1: Package drift detection
+echo "📊 Stage 1: Checking for package drift..."
+if node scripts/detect-package-drift.js; then
+    echo "✅ No package drift detected"
+else
+    echo "❌ Package drift detected - please synchronize package.json and package-lock.json"
+    echo "💡 Quick fix: rm -rf node_modules package-lock.json && npm install"
+    exit 1
+fi
+
+# Stage 2: Linting
+echo "📝 Stage 2: Running linter..."
+if npm run lint; then
+    echo "✅ Linting passed"
+else
+    echo "❌ Linting failed - please fix errors before committing"
+    exit 1
+fi
+
+# Stage 3: Tests disabled for now (running in CI/CD)
+# Tests can be re-enabled by uncommenting below
+# echo "🧪 Stage 3: Running tests..."
+# if npm test; then
+#     echo "✅ Tests passed"
+# else
+#     echo "❌ Tests failed - please fix tests before committing"
+#     exit 1
+# fi
+
+# Stage 4: Check for sensitive data (basic check)
+echo "🔒 Stage 4: Checking for sensitive data..."
+# Look for actual API keys and secrets with specific patterns
+SENSITIVE_FILES=$(git diff --cached --name-only | grep -v -E "(package*.json|jest*.js|README.md|\.md$|\.githooks|\.github|install-hooks\.sh|\.template$|test|mock|config|example)" | xargs grep -l -E "(sk_live_[a-zA-Z0-9]{99}|pk_live_[a-zA-Z0-9]{99}|SG\.[a-zA-Z0-9]{22}\.[a-zA-Z0-9]{43})" 2>/dev/null || true)
+if [ -n "$SENSITIVE_FILES" ]; then
+    echo "⚠️  WARNING: Actual sensitive data found in staged files"
+    echo "Files: $SENSITIVE_FILES"
+    echo "Please review your changes and remove any secrets or API keys"
+    exit 1
+fi
+
+echo "✅ All pre-commit checks passed!"
+echo "💡 Your commit is ready to proceed"
