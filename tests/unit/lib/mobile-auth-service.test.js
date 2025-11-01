@@ -609,9 +609,10 @@ describe('Mobile Auth Service - Unit Tests', () => {
 
     it('should recommend refresh when exactly 24 hours left', () => {
       const oneDayMs = 86400000;
+      const now = Date.now(); // Use single timestamp to avoid timing drift
       const decodedToken = {
-        loginTime: Date.now(),
-        expiresAt: Date.now() + oneDayMs // Exactly 24 hours
+        loginTime: now,
+        expiresAt: now + oneDayMs // Exactly 24 hours
       };
 
       const shouldRefresh = service.shouldRefreshToken(decodedToken);

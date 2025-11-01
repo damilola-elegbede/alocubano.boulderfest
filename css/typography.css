@@ -214,6 +214,18 @@ body {
   border-radius: 8px;
   margin-bottom: var(--space-lg);
   box-shadow: var(--shadow-lg);
+  cursor: pointer;
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+
+.team-member-photo:hover {
+  transform: scale(1.05);
+  box-shadow: var(--shadow-xl);
+}
+
+.team-member-photo:focus {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 /* Text-focused Form Elements */
