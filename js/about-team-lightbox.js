@@ -116,7 +116,9 @@
 
         // Create items array for lightbox (all team members)
         const lightboxItems = teamMembers.map(m => ({
-            image: m.image,
+            viewUrl: m.image,         // Full resolution image URL
+            thumbnailUrl: m.image,    // Use same image as thumbnail
+            name: m.name,             // For image alt text
             title: m.name,
             subtitle: m.title
         }));
