@@ -56,12 +56,12 @@
             return;
         }
 
-        // Initialize lightbox in simple mode (just photos, no complex gallery features)
+        // Initialize lightbox with advanced mode for navigation between team members
         lightbox = new Lightbox({
             lightboxId: 'team-lightbox',
             showCaption: true,
             showCounter: false,
-            advanced: false
+            advanced: true
         });
 
         // Get all team member photo elements
@@ -74,9 +74,6 @@
 
         // Add click event listeners to each photo
         teamPhotos.forEach((photo, index) => {
-            // Make photo clickable with pointer cursor
-            photo.style.cursor = 'pointer';
-
             // Add click event
             photo.addEventListener('click', () => {
                 openTeamMemberLightbox(index);
