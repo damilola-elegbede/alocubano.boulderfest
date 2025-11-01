@@ -268,7 +268,7 @@ describe('GoogleSheetsService Unit Tests', () => {
             { properties: { title: 'Check-in Status' } },
             { properties: { title: 'Summary by Type' } },
             { properties: { title: 'Daily Sales' } },
-            { properties: { title: 'Wallet Analytics' } },
+            { properties: { title: 'Digital Wallet Adoption' } },
           ],
         },
       });
@@ -788,58 +788,78 @@ describe('GoogleSheetsService Unit Tests', () => {
     });
   });
 
-  describe('Sync Wallet Analytics', () => {
+  describe('Sync Digital Wallet Adoption', () => {
     beforeEach(async () => {
       service = new GoogleSheetsService();
       await service.initialize();
     });
 
-    it('should sync wallet analytics when columns exist', async () => {
+    it('should sync digital wallet adoption statistics', async () => {
       mockDb.execute.mockResolvedValue({
-        rows: [
-          {
-            checkin_date: '2026-05-15',
-            total_checkins: 100,
-            wallet_checkins: 75,
-            qr_checkins: 25,
-            jwt_tokens: 75,
-            traditional_qr: 25,
-          },
-        ],
+        rows: [{
+          total_tickets: 100,
+          apple_wallet: 30,
+          google_wallet: 25,
+          total_wallets: 55,
+          email_qr_only: 45,
+        }],
       });
 
       mockSheets.spreadsheets.values.clear.mockResolvedValue({});
       mockSheets.spreadsheets.values.update.mockResolvedValue({});
 
-      await service.syncWalletAnalytics(mockDb);
+      await service.syncDigitalWalletAdoption(mockDb);
 
       const updateCall = mockSheets.spreadsheets.values.update.mock.calls[0][0];
       const values = updateCall.requestBody.values;
 
       expect(values.length).toBe(1);
-      expect(values[0][4]).toBe('75%'); // Wallet adoption percentage
+      expect(values[0][0]).toBe('Pass Distribution');
+      expect(values[0][1]).toBe(30);  // Apple Wallet
+      expect(values[0][2]).toBe(25);  // Google Wallet
+      expect(values[0][3]).toBe(55);  // Total Wallets
+      expect(values[0][4]).toBe(45);  // Email/QR Only
+      expect(values[0][5]).toBe(100); // Total Tickets
+      expect(values[0][6]).toBe('55%'); // Adoption percentage
     });
 
-    it('should handle missing wallet columns', async () => {
-      mockDb.execute
-        .mockRejectedValueOnce(new Error('no such column: wallet_source'))
-        .mockResolvedValueOnce({
-          rows: [
-            {
-              checkin_date: '2026-05-15',
-              total_checkins: 50,
-              wallet_checkins: 0,
-              qr_checkins: 50,
-              jwt_tokens: 0,
-              traditional_qr: 0,
-            },
-          ],
-        });
+    it('should handle zero tickets gracefully', async () => {
+      mockDb.execute.mockResolvedValue({
+        rows: [{
+          total_tickets: 0,
+          apple_wallet: 0,
+          google_wallet: 0,
+          total_wallets: 0,
+          email_qr_only: 0,
+        }],
+      });
 
       mockSheets.spreadsheets.values.clear.mockResolvedValue({});
       mockSheets.spreadsheets.values.update.mockResolvedValue({});
 
-      await expect(service.syncWalletAnalytics(mockDb)).resolves.not.toThrow();
+      await expect(service.syncDigitalWalletAdoption(mockDb)).resolves.not.toThrow();
+    });
+
+    it('should calculate adoption percentage correctly', async () => {
+      mockDb.execute.mockResolvedValue({
+        rows: [{
+          total_tickets: 200,
+          apple_wallet: 80,
+          google_wallet: 60,
+          total_wallets: 140,
+          email_qr_only: 60,
+        }],
+      });
+
+      mockSheets.spreadsheets.values.clear.mockResolvedValue({});
+      mockSheets.spreadsheets.values.update.mockResolvedValue({});
+
+      await service.syncDigitalWalletAdoption(mockDb);
+
+      const updateCall = mockSheets.spreadsheets.values.update.mock.calls[0][0];
+      const values = updateCall.requestBody.values;
+
+      expect(values[0][6]).toBe('70%'); // 140/200 = 70%
     });
   });
 
