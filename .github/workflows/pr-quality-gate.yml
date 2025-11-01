@@ -41,10 +41,6 @@ jobs:
       matrix:
         node-version: ['20.x', '22.x']
 
-    outputs:
-      node-20-status: ${{ steps.test-20.outcome }}
-      node-22-status: ${{ steps.test-22.outcome }}
-
     steps:
       - name: 📥 Checkout Code
         uses: actions/checkout@v4
@@ -83,10 +79,6 @@ jobs:
       fail-fast: false
       matrix:
         node-version: ['20.x', '22.x']
-
-    outputs:
-      node-20-status: ${{ steps.test-20.outcome }}
-      node-22-status: ${{ steps.test-22.outcome }}
 
     steps:
       - name: 📥 Checkout Code
@@ -177,7 +169,7 @@ jobs:
         uses: lewagon/wait-on-check-action@v1.3.1
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          check-name: 'e2e-results (chromium)' # Primary E2E job name
+          check-name: '🎭 E2E Tests (chromium)' # Primary E2E job name from e2e-tests-preview.yml
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 30 # Check every 30 seconds
           allowed-conclusions: success,failure,cancelled,skipped,timed_out
@@ -273,40 +265,52 @@ jobs:
         run: |
           echo "🔍 Running test result validation..."
 
-          # Run validation script
-          node scripts/validate-test-results.js > .tmp/validation-report.json 2>&1 || true
+          # Run validation script with explicit error handling
+          if ! node scripts/validate-test-results.js > .tmp/validation-report.json 2>&1; then
+            echo "❌ Validation script failed to execute"
+            echo "exit_code=1" >> $GITHUB_OUTPUT
+            echo "status=ERROR" >> $GITHUB_OUTPUT
+            echo "p1_issues=0" >> $GITHUB_OUTPUT
+            echo "p2_issues=0" >> $GITHUB_OUTPUT
+            echo "block_merge=true" >> $GITHUB_OUTPUT
+            exit 0  # Don't fail the step, let outputs control behavior
+          fi
 
-          if [ -f .tmp/validation-report.json ]; then
-            echo "📊 Validation report generated"
-            cat .tmp/validation-report.json
-
-            # Extract validation results
-            EXIT_CODE=$(jq -r '.exit_code // 1' .tmp/validation-report.json)
-            STATUS=$(jq -r '.validation_status // "UNKNOWN"' .tmp/validation-report.json)
-            P1_COUNT=$(jq -r '.summary.priority1_issues // 0' .tmp/validation-report.json)
-            P2_COUNT=$(jq -r '.summary.priority2_issues // 0' .tmp/validation-report.json)
-
-            echo "exit_code=${EXIT_CODE}" >> $GITHUB_OUTPUT
-            echo "status=${STATUS}" >> $GITHUB_OUTPUT
-            echo "p1_issues=${P1_COUNT}" >> $GITHUB_OUTPUT
-            echo "p2_issues=${P2_COUNT}" >> $GITHUB_OUTPUT
-
-            # Determine if we should block merge
-            if [ "${P1_COUNT}" -gt 0 ]; then
-              echo "❌ Priority 1 issues detected - will block merge"
-              echo "block_merge=true" >> $GITHUB_OUTPUT
-            elif [ "${P2_COUNT}" -gt 0 ]; then
-              echo "⚠️ Priority 2 issues detected - will block merge"
-              echo "block_merge=true" >> $GITHUB_OUTPUT
-            else
-              echo "✅ No blocking issues detected"
-              echo "block_merge=false" >> $GITHUB_OUTPUT
-            fi
-          else
+          # Verify report was generated and is valid
+          if [ ! -f .tmp/validation-report.json ]; then
             echo "❌ Validation report not generated"
             echo "exit_code=1" >> $GITHUB_OUTPUT
             echo "status=ERROR" >> $GITHUB_OUTPUT
+            echo "p1_issues=0" >> $GITHUB_OUTPUT
+            echo "p2_issues=0" >> $GITHUB_OUTPUT
             echo "block_merge=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "📊 Validation report generated"
+          cat .tmp/validation-report.json
+
+          # Extract validation results
+          EXIT_CODE=$(jq -r '.exit_code // 1' .tmp/validation-report.json)
+          STATUS=$(jq -r '.validation_status // "UNKNOWN"' .tmp/validation-report.json)
+          P1_COUNT=$(jq -r '.summary.priority1_issues // 0' .tmp/validation-report.json)
+          P2_COUNT=$(jq -r '.summary.priority2_issues // 0' .tmp/validation-report.json)
+
+          echo "exit_code=${EXIT_CODE}" >> $GITHUB_OUTPUT
+          echo "status=${STATUS}" >> $GITHUB_OUTPUT
+          echo "p1_issues=${P1_COUNT}" >> $GITHUB_OUTPUT
+          echo "p2_issues=${P2_COUNT}" >> $GITHUB_OUTPUT
+
+          # Determine if we should block merge
+          if [ "${P1_COUNT}" -gt 0 ]; then
+            echo "❌ Priority 1 issues detected - will block merge"
+            echo "block_merge=true" >> $GITHUB_OUTPUT
+          elif [ "${P2_COUNT}" -gt 0 ]; then
+            echo "⚠️ Priority 2 issues detected - will block merge"
+            echo "block_merge=true" >> $GITHUB_OUTPUT
+          else
+            echo "✅ No blocking issues detected"
+            echo "block_merge=false" >> $GITHUB_OUTPUT
           fi
 
       - name: 💬 Post Validation Comment to PR
