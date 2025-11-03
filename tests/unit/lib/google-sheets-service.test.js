@@ -269,6 +269,10 @@ describe('GoogleSheetsService Unit Tests', () => {
             { properties: { title: 'Summary by Type' } },
             { properties: { title: 'Daily Sales' } },
             { properties: { title: 'Digital Wallet Adoption' } },
+            { properties: { title: 'Pivot: Revenue Analysis' } },
+            { properties: { title: 'Pivot: Attendance Tracking' } },
+            { properties: { title: 'Pivot: Wallet Adoption' } },
+            { properties: { title: 'Pivot: Customer Behavior' } },
           ],
         },
       });
@@ -882,6 +886,20 @@ describe('GoogleSheetsService Unit Tests', () => {
 
       mockSheets.spreadsheets.values.clear.mockResolvedValue({});
       mockSheets.spreadsheets.values.update.mockResolvedValue({});
+
+      // Mock sheets.get() for setupFiltersAndSorting()
+      mockSheets.spreadsheets.get.mockResolvedValue({
+        data: {
+          sheets: [
+            { properties: { sheetId: 1, title: 'All Registrations' } },
+            { properties: { sheetId: 2, title: 'Check-in Status' } },
+            { properties: { sheetId: 3, title: 'Daily Sales' } },
+          ],
+        },
+      });
+
+      // Mock batchUpdate for filters and sorting
+      mockSheets.spreadsheets.batchUpdate.mockResolvedValue({});
     });
 
     it('should sync all data successfully', async () => {
@@ -1135,6 +1153,412 @@ describe('GoogleSheetsService Unit Tests', () => {
       mockSheets.spreadsheets.values.update.mockResolvedValue({});
 
       await expect(service.syncRegistrations(mockDb)).resolves.not.toThrow();
+    });
+  });
+
+  describe('Payment Method Formatting', () => {
+    beforeEach(() => {
+      service = new GoogleSheetsService();
+    });
+
+    it('should format payment methods correctly', () => {
+      expect(service.formatPaymentMethod('stripe')).toBe('Stripe');
+      expect(service.formatPaymentMethod('paypal')).toBe('PayPal');
+      expect(service.formatPaymentMethod('venmo')).toBe('Venmo');
+      expect(service.formatPaymentMethod('cash')).toBe('Cash');
+      expect(service.formatPaymentMethod('card_terminal')).toBe('Card Terminal');
+      expect(service.formatPaymentMethod('comp')).toBe('Comp');
+    });
+
+    it('should handle unknown payment methods', () => {
+      expect(service.formatPaymentMethod('unknown-method')).toBe('unknown-method');
+      expect(service.formatPaymentMethod(null)).toBe('Unknown');
+      expect(service.formatPaymentMethod(undefined)).toBe('Unknown');
+      expect(service.formatPaymentMethod('')).toBe('Unknown');
+    });
+  });
+
+  describe('Get Sheet ID', () => {
+    beforeEach(async () => {
+      service = new GoogleSheetsService();
+      await service.initialize();
+    });
+
+    it('should return sheet ID for existing sheet', async () => {
+      mockSheets.spreadsheets.get.mockResolvedValue({
+        data: {
+          sheets: [
+            { properties: { sheetId: 0, title: 'Overview' } },
+            { properties: { sheetId: 123, title: 'All Registrations' } },
+            { properties: { sheetId: 456, title: 'Check-in Status' } },
+          ],
+        },
+      });
+
+      const sheetId = await service.getSheetId('All Registrations');
+      expect(sheetId).toBe(123);
+    });
+
+    it('should return null for non-existent sheet', async () => {
+      mockSheets.spreadsheets.get.mockResolvedValue({
+        data: {
+          sheets: [
+            { properties: { sheetId: 0, title: 'Overview' } },
+          ],
+        },
+      });
+
+      const sheetId = await service.getSheetId('Non-Existent Sheet');
+      expect(sheetId).toBeNull();
+    });
+
+    it('should return 0 for sheet with ID 0', async () => {
+      mockSheets.spreadsheets.get.mockResolvedValue({
+        data: {
+          sheets: [
+            { properties: { sheetId: 0, title: 'Overview' } },
+          ],
+        },
+      });
+
+      const sheetId = await service.getSheetId('Overview');
+      expect(sheetId).toBe(0);
+    });
+  });
+
+  describe('Setup Filters and Sorting', () => {
+    beforeEach(async () => {
+      service = new GoogleSheetsService();
+      await service.initialize();
+
+      mockSheets.spreadsheets.get.mockResolvedValue({
+        data: {
+          sheets: [
+            { properties: { sheetId: 1, title: 'All Registrations' } },
+            { properties: { sheetId: 2, title: 'Check-in Status' } },
+            { properties: { sheetId: 3, title: 'Daily Sales' } },
+          ],
+        },
+      });
+    });
+
+    it('should setup filters and sorting for all target sheets', async () => {
+      mockSheets.spreadsheets.batchUpdate.mockResolvedValue({});
+
+      await service.setupFiltersAndSorting();
+
+      expect(mockSheets.spreadsheets.batchUpdate).toHaveBeenCalled();
+      const batchCall = mockSheets.spreadsheets.batchUpdate.mock.calls[0][0];
+      const requests = batchCall.requestBody.requests;
+
+      // Should have requests for filters, data validation, sorting, and freezing for 3 sheets
+      expect(requests.length).toBeGreaterThan(0);
+
+      // Check for setBasicFilter requests
+      const filterRequests = requests.filter(r => r.setBasicFilter);
+      expect(filterRequests.length).toBe(3); // One for each sheet
+
+      // Check for sortRange requests
+      const sortRequests = requests.filter(r => r.sortRange);
+      expect(sortRequests.length).toBe(3); // One for each sheet
+
+      // Check for updateSheetProperties (freeze) requests
+      const freezeRequests = requests.filter(r => r.updateSheetProperties);
+      expect(freezeRequests.length).toBe(3); // One for each sheet
+    });
+
+    it('should add data validation dropdowns', async () => {
+      mockSheets.spreadsheets.batchUpdate.mockResolvedValue({});
+
+      await service.setupFiltersAndSorting();
+
+      const batchCall = mockSheets.spreadsheets.batchUpdate.mock.calls[0][0];
+      const requests = batchCall.requestBody.requests;
+
+      // Check for data validation requests
+      const validationRequests = requests.filter(r => r.setDataValidation);
+      expect(validationRequests.length).toBeGreaterThan(0);
+
+      // Check that validations have ONE_OF_LIST condition
+      validationRequests.forEach(request => {
+        expect(request.setDataValidation.rule.condition.type).toBe('ONE_OF_LIST');
+        expect(request.setDataValidation.rule.showCustomUi).toBe(true);
+        expect(request.setDataValidation.rule.strict).toBe(false);
+      });
+    });
+
+    it('should handle missing sheets gracefully', async () => {
+      mockSheets.spreadsheets.get.mockResolvedValue({
+        data: {
+          sheets: [
+            { properties: { sheetId: 1, title: 'All Registrations' } },
+            // Missing Check-in Status and Daily Sales
+          ],
+        },
+      });
+
+      mockSheets.spreadsheets.batchUpdate.mockResolvedValue({});
+
+      await expect(service.setupFiltersAndSorting()).resolves.not.toThrow();
+    });
+
+    it('should handle API errors', async () => {
+      mockSheets.spreadsheets.batchUpdate.mockRejectedValue(new Error('API Error'));
+
+      await expect(service.setupFiltersAndSorting()).rejects.toThrow('API Error');
+    });
+  });
+
+  describe('Setup Pivot Tables', () => {
+    beforeEach(async () => {
+      service = new GoogleSheetsService();
+      await service.initialize();
+    });
+
+    it('should setup all pivot tables', async () => {
+      mockDb.execute.mockResolvedValue({ rows: [] });
+      mockSheets.spreadsheets.values.clear.mockResolvedValue({});
+      mockSheets.spreadsheets.values.update.mockResolvedValue({});
+
+      await service.setupPivotTables();
+
+      // Should call replaceSheetData for each of the 4 pivot sheets
+      expect(mockSheets.spreadsheets.values.clear).toHaveBeenCalled();
+      expect(mockDb.execute).toHaveBeenCalled();
+    });
+
+    it('should handle database errors gracefully', async () => {
+      mockDb.execute.mockRejectedValue(new Error('Database error'));
+
+      await expect(service.setupPivotTables()).rejects.toThrow('Database error');
+    });
+  });
+
+  describe('Setup Revenue Pivots', () => {
+    beforeEach(async () => {
+      service = new GoogleSheetsService();
+      await service.initialize();
+    });
+
+    it('should create revenue analysis data', async () => {
+      // Mock revenue by type
+      mockDb.execute
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              ticket_type: 'weekend-pass',
+              total_revenue: 5000.00,
+              tickets_sold: 50,
+              avg_price: 100.00,
+            },
+          ],
+        })
+        // Mock revenue by payment method
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              payment_processor: 'stripe',
+              total_revenue: 3000.00,
+              transactions: 30,
+            },
+            {
+              payment_processor: 'paypal',
+              total_revenue: 2000.00,
+              transactions: 20,
+            },
+          ],
+        })
+        // Mock revenue over time
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              month: '2026-01',
+              revenue: 5000.00,
+              tickets_sold: 50,
+            },
+          ],
+        });
+
+      mockSheets.spreadsheets.values.clear.mockResolvedValue({});
+      mockSheets.spreadsheets.values.update.mockResolvedValue({});
+
+      await service.setupRevenuePivots(mockDb);
+
+      const updateCall = mockSheets.spreadsheets.values.update.mock.calls[0][0];
+      const values = updateCall.requestBody.values;
+
+      // Should have headers and data rows
+      expect(values.length).toBeGreaterThan(0);
+
+      // Check for section headers
+      const headers = values.map(row => row[0]);
+      expect(headers).toContain('=== REVENUE BY TICKET TYPE ===');
+      expect(headers).toContain('=== REVENUE BY PAYMENT METHOD ===');
+      expect(headers).toContain('=== REVENUE OVER TIME (MONTHLY) ===');
+    });
+  });
+
+  describe('Setup Attendance Pivots', () => {
+    beforeEach(async () => {
+      service = new GoogleSheetsService();
+      await service.initialize();
+    });
+
+    it('should create attendance tracking data', async () => {
+      mockDb.execute
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              ticket_type: 'weekend-pass',
+              total_sold: 100,
+              checked_in: 75,
+              not_checked_in: 25,
+            },
+          ],
+        })
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              event_date: '2026-05-15',
+              total_tickets: 100,
+              checked_in: 75,
+            },
+          ],
+        })
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              hour: '18:00',
+              checkins: 30,
+            },
+          ],
+        });
+
+      mockSheets.spreadsheets.values.clear.mockResolvedValue({});
+      mockSheets.spreadsheets.values.update.mockResolvedValue({});
+
+      await service.setupAttendancePivots(mockDb);
+
+      const updateCall = mockSheets.spreadsheets.values.update.mock.calls[0][0];
+      const values = updateCall.requestBody.values;
+
+      expect(values.length).toBeGreaterThan(0);
+
+      const headers = values.map(row => row[0]);
+      expect(headers).toContain('=== CHECK-INS BY TICKET TYPE ===');
+      expect(headers).toContain('=== CHECK-INS BY EVENT DATE ===');
+      expect(headers).toContain('=== CHECK-IN TIMELINE (BY HOUR) ===');
+    });
+  });
+
+  describe('Setup Wallet Pivots', () => {
+    beforeEach(async () => {
+      service = new GoogleSheetsService();
+      await service.initialize();
+    });
+
+    it('should create wallet adoption data', async () => {
+      mockDb.execute
+        .mockResolvedValueOnce({
+          rows: [
+            { wallet_type: 'Apple Wallet', count: 50 },
+            { wallet_type: 'Google Wallet', count: 30 },
+            { wallet_type: 'No Wallet', count: 20 },
+          ],
+        })
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              week: '2026-W01',
+              total_tickets: 100,
+              with_wallet: 80,
+            },
+          ],
+        })
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              ticket_type: 'weekend-pass',
+              total_tickets: 100,
+              with_wallet: 80,
+            },
+          ],
+        });
+
+      mockSheets.spreadsheets.values.clear.mockResolvedValue({});
+      mockSheets.spreadsheets.values.update.mockResolvedValue({});
+
+      await service.setupWalletPivots(mockDb);
+
+      const updateCall = mockSheets.spreadsheets.values.update.mock.calls[0][0];
+      const values = updateCall.requestBody.values;
+
+      expect(values.length).toBeGreaterThan(0);
+
+      const headers = values.map(row => row[0]);
+      expect(headers).toContain('=== WALLET TYPE DISTRIBUTION ===');
+      expect(headers).toContain('=== WALLET ADOPTION OVER TIME (WEEKLY) ===');
+      expect(headers).toContain('=== WALLET ADOPTION BY TICKET TYPE ===');
+    });
+  });
+
+  describe('Setup Customer Behavior Pivots', () => {
+    beforeEach(async () => {
+      service = new GoogleSheetsService();
+      await service.initialize();
+    });
+
+    it('should create customer behavior data', async () => {
+      mockDb.execute
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              ticket_count: 1,
+              order_count: 50,
+              avg_order_value: 100.00,
+            },
+            {
+              ticket_count: 2,
+              order_count: 30,
+              avg_order_value: 180.00,
+            },
+          ],
+        })
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              day_of_week: 'Friday',
+              orders: 40,
+              avg_order_value: 120.00,
+              total_revenue: 4800.00,
+            },
+          ],
+        })
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              order_number: 'ORD-001',
+              ticket_types: 'weekend-pass,workshop-beginner',
+              ticket_count: 2,
+              order_value: 150.00,
+            },
+          ],
+        });
+
+      mockSheets.spreadsheets.values.clear.mockResolvedValue({});
+      mockSheets.spreadsheets.values.update.mockResolvedValue({});
+
+      await service.setupCustomerBehaviorPivots(mockDb);
+
+      const updateCall = mockSheets.spreadsheets.values.update.mock.calls[0][0];
+      const values = updateCall.requestBody.values;
+
+      expect(values.length).toBeGreaterThan(0);
+
+      const headers = values.map(row => row[0]);
+      expect(headers).toContain('=== TICKETS PER ORDER ===');
+      expect(headers).toContain('=== PURCHASE DAY PATTERNS ===');
+      expect(headers).toContain('=== TOP TICKET TYPE COMBINATIONS (MULTI-TICKET ORDERS) ===');
     });
   });
 });
