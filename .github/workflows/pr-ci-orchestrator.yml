@@ -24,6 +24,7 @@ permissions:
   actions: read
   checks: write
   deployments: read
+  security-events: write
 
 env:
   NODE_VERSION: "20.19.5"
