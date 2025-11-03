@@ -1,0 +1,175 @@
+name: 🎯 PR CI Orchestrator
+
+# Orchestrates all CI checks for pull requests in a coordinated workflow:
+# - Phase 1: Parallel test execution via reusable workflows (unit, integration, quality)
+# - Phase 2: Wait for deployment-triggered E2E tests to complete
+# - Phase 3: Validate all test results using reusable validator
+# - Phase 4: Make final merge gate decision based on all results
+#
+# This workflow acts as a single point of control for PR quality gates.
+# Set "✅ PR Gate Status" as a required status check in branch protection.
+
+on:
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: pr-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  actions: read
+  checks: write
+  deployments: read
+
+env:
+  NODE_VERSION: "20.19.5"
+
+jobs:
+  # ========================================
+  # Phase 1: Parallel Test Execution
+  # ========================================
+  # Run all test suites in parallel via reusable workflows
+  # This phase completes when all three test types finish
+
+  unit-tests:
+    name: 🧪 Unit Tests
+    uses: ./.github/workflows/unit-tests.yml
+    secrets: inherit
+
+  integration-tests:
+    name: 🔗 Integration Tests
+    uses: ./.github/workflows/integration-tests.yml
+    secrets: inherit
+
+  quality-gates:
+    name: 🛡️ Quality Gates
+    uses: ./.github/workflows/quality-gates.yml
+    secrets: inherit
+
+  # ========================================
+  # Phase 2: Wait for E2E Tests
+  # ========================================
+  # E2E tests run in a separate workflow (e2e-tests-preview.yml)
+  # triggered by Vercel deployment_status events.
+  # This job waits for that external workflow to complete.
+
+  wait-for-e2e:
+    name: ⏳ Wait for E2E Tests
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests, quality-gates]
+    if: success() || failure()  # Run even if some tests failed (validator needs all results)
+    timeout-minutes: 30
+
+    steps:
+      - name: 💬 E2E Wait Info
+        run: |
+          echo "⏳ Waiting for E2E tests to complete..."
+          echo "E2E tests are triggered by Vercel deployment and run separately"
+          echo "Checking for: 🎭 E2E Tests - Preview Deployments"
+
+      - name: ⏳ Wait for E2E Test Completion
+        uses: lewagon/wait-on-check-action@v1.3.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          check-name: '🎭 E2E Tests (chromium)'  # Primary E2E job from e2e-tests-preview.yml
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 30  # Check every 30 seconds
+          allowed-conclusions: success,failure,cancelled,skipped,timed_out
+
+      - name: 📊 E2E Status
+        run: |
+          echo "✅ E2E tests completed (or timed out)"
+          echo "Proceeding to validation phase..."
+
+  # ========================================
+  # Phase 3: Validation
+  # ========================================
+  # Validate all test results using dedicated reusable workflow
+  # Downloads artifacts, checks for false positives, posts PR comments
+
+  validate:
+    name: 🔍 Validate Results
+    needs: [unit-tests, integration-tests, quality-gates, wait-for-e2e]
+    if: always()  # Always validate whatever tests completed
+    uses: ./.github/workflows/test-result-validator.yml
+    with:
+      commit-sha: ${{ github.event.pull_request.head.sha }}
+      pr-number: ${{ github.event.pull_request.number }}
+    secrets: inherit
+
+  # ========================================
+  # Phase 4: Final Gate Decision
+  # ========================================
+  # Aggregate all results and make final pass/fail decision
+  # This is the job that should be set as a required status check
+
+  pr-gate-status:
+    name: ✅ PR Gate Status
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests, quality-gates, validate]
+    if: always()
+
+    steps:
+      - name: 📊 Aggregate Status
+        run: |
+          echo "=== PR CI Orchestrator Status Check ==="
+          echo ""
+
+          # Get results from all phases
+          UNIT_STATUS="${{ needs.unit-tests.result }}"
+          INTEGRATION_STATUS="${{ needs.integration-tests.result }}"
+          QUALITY_STATUS="${{ needs.quality-gates.result }}"
+          VALIDATION_STATUS="${{ needs.validate.result }}"
+
+          # Get validation details
+          BLOCK_MERGE="${{ needs.validate.outputs.block-merge }}"
+          P1_ISSUES="${{ needs.validate.outputs.p1-issues }}"
+          P2_ISSUES="${{ needs.validate.outputs.p2-issues }}"
+
+          echo "📊 Test Results:"
+          echo "  Unit Tests: $UNIT_STATUS"
+          echo "  Integration Tests: $INTEGRATION_STATUS"
+          echo "  Quality Gates: $QUALITY_STATUS"
+          echo "  Validation: $VALIDATION_STATUS"
+          echo ""
+          echo "🔍 Validation Details:"
+          echo "  P1 Issues: $P1_ISSUES"
+          echo "  P2 Issues: $P2_ISSUES"
+          echo "  Block Merge: $BLOCK_MERGE"
+          echo ""
+
+          # Validation is the most critical check (catches false positives)
+          if [ "$VALIDATION_STATUS" != "success" ]; then
+            echo "❌ GATE FAILED: Validation detected issues or failed to complete"
+            echo "Review the validation report for details"
+            exit 1
+          fi
+
+          # Check if validation wants to block merge
+          if [ "$BLOCK_MERGE" = "true" ]; then
+            echo "❌ GATE FAILED: Validation detected blocking issues"
+            echo "P1 Issues: $P1_ISSUES, P2 Issues: $P2_ISSUES"
+            exit 1
+          fi
+
+          # Check if core test suites passed
+          if [ "$UNIT_STATUS" != "success" ] || [ "$INTEGRATION_STATUS" != "success" ]; then
+            echo "❌ GATE FAILED: Test failures detected"
+            echo "Review the failed test logs above"
+            exit 1
+          fi
+
+          # Quality gates are important but not blocking
+          if [ "$QUALITY_STATUS" != "success" ]; then
+            echo "⚠️  WARNING: Quality gates had issues"
+            echo "Consider addressing quality issues before merge"
+            # Don't fail - quality issues are warnings only
+          fi
+
+          echo ""
+          echo "✅ GATE PASSED: All checks successful"
+          echo "PR is approved for merge"

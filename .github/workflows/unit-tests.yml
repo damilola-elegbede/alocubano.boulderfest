@@ -1,6 +1,20 @@
 name: "🧪 Unit Tests"
 
 on:
+  workflow_call:
+    outputs:
+      test_exit_code:
+        description: "Test exit code"
+        value: ${{ jobs.test.outputs.test_exit_code }}
+      total_tests:
+        description: "Total number of tests"
+        value: ${{ jobs.test.outputs.total_tests }}
+      passed_tests:
+        description: "Number of passed tests"
+        value: ${{ jobs.test.outputs.passed_tests }}
+      failed_tests:
+        description: "Number of failed tests"
+        value: ${{ jobs.test.outputs.failed_tests }}
   pull_request:
     branches: [main, develop]
     types: [opened, synchronize, reopened, ready_for_review]
