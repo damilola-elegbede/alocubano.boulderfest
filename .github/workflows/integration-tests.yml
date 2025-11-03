@@ -15,9 +15,6 @@ on:
       failed_tests:
         description: "Number of failed tests"
         value: ${{ jobs.test.outputs.failed_tests }}
-  pull_request:
-    branches: [main, develop]
-    types: [opened, synchronize, reopened, ready_for_review]
   push:
     branches: [main, develop]
   workflow_dispatch:
