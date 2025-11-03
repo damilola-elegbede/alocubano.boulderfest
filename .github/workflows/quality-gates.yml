@@ -11,10 +11,10 @@ on:
         value: ${{ jobs.summary.outputs.total_tests }}
       passed_tests:
         description: "Passed quality checks"
-        value: ${{ jobs.summary.outputs.passing_tests }}
+        value: ${{ jobs.summary.outputs.passed_tests }}
       failed_tests:
         description: "Failed quality checks"
-        value: ${{ jobs.summary.outputs.failing_tests }}
+        value: ${{ jobs.summary.outputs.failed_tests }}
   pull_request:
     branches: [main, develop]
     types: [opened, synchronize, reopened, ready_for_review]

@@ -214,7 +214,7 @@ jobs:
 
             comment += '---\n';
             comment += `*Validation completed at ${new Date().toISOString()}*\n`;
-            comment += `*Commit: ${{ inputs.commit-sha }}.substring(0, 7)*`;
+            comment += `*Commit: ${{ inputs.commit-sha }}*`.substring(0, 67);
 
             // Find existing validation comment
             const { data: comments } = await github.rest.issues.listComments({
