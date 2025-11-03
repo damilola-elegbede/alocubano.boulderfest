@@ -384,12 +384,6 @@ GOOGLE_SHEETS_PRIVATE_KEY=<base64-private-key>
 SHEETS_TIMEZONE=America/Denver  # Default timezone for date formatting
 ```
 
-**Feature Toggles (Optional):**
-```bash
-GOOGLE_SHEETS_ENABLE_PIVOTS=true   # Enable/disable pivot sheets
-GOOGLE_SHEETS_ENABLE_FILTERS=true  # Enable/disable filters and sorting
-```
-
 ---
 
 ## FAQ

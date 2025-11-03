@@ -488,11 +488,8 @@ test.describe('Google Sheets Sync - Integration with Admin Dashboard', () => {
       }
     }
 
-    if (!timestampFound) {
-      console.log('⚠️ Sync timestamp not visible - may require triggering sync first');
-      // This is okay - timestamp may only show after a sync has been triggered
-      // The test passes as long as the dashboard loads correctly
-    }
+    // Timestamp should always be present if Google Sheets is configured
+    expect(timestampFound).toBe(true);
   });
 
   test('should display error messages when sync fails', async ({ page, request, baseURL }) => {
@@ -523,14 +520,12 @@ test.describe('Google Sheets Sync - Integration with Admin Dashboard', () => {
     ];
 
     // Verify that error UI infrastructure exists
-    // We don't need to trigger an error - just verify the UI can display errors
     const hasErrorUI = await page.locator(errorMessageSelectors.join(',')).count() > 0;
 
     if (hasErrorUI) {
       console.log('✅ Error message UI infrastructure exists');
     } else {
-      console.log('⚠️ No dedicated error message UI found - errors may be shown via alerts or notifications');
-      // This is okay - errors might be shown via browser alerts or toast notifications
+      console.log('⚠️ No dedicated error message UI found - checking notification system...');
     }
 
     // Verify console/notification system exists
@@ -540,8 +535,8 @@ test.describe('Google Sheets Sync - Integration with Admin Dashboard', () => {
       console.log('✅ Notification system available for error display');
     }
 
-    // The test passes as long as the dashboard has some mechanism to display feedback
-    expect(true).toBe(true);
+    // At minimum, the dashboard must have some error feedback mechanism
+    expect(hasErrorUI || hasNotificationUI).toBe(true);
   });
 });
 
