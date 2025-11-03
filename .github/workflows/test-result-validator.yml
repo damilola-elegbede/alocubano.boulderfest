@@ -120,7 +120,7 @@ jobs:
           echo "🔍 Running test result validation..."
 
           # Run validation script with explicit error handling
-          if ! node scripts/validate-test-results.js > .tmp/validation-report.json 2>&1; then
+          if ! node scripts/validate-test-results.js > .tmp/validation-report.json 2> .tmp/validation-debug.log; then
             echo "❌ Validation script failed to execute"
             echo "exit_code=1" >> $GITHUB_OUTPUT
             echo "status=ERROR" >> $GITHUB_OUTPUT
@@ -253,6 +253,14 @@ jobs:
           name: validation-report
           path: .tmp/validation-report.json
           retention-days: 30
+
+      - name: 📤 Upload Debug Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-debug-logs
+          path: .tmp/validation-debug.log
+          retention-days: 7
 
       - name: ❌ Block Merge on Critical Issues
         if: steps.validate.outputs.block_merge == 'true'
