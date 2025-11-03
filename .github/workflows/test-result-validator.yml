@@ -1,0 +1,274 @@
+name: 🔍 Test Result Validator
+
+# Reusable workflow for validating test results and detecting false positives
+# Downloads artifacts from test runs, validates results, posts PR comments
+# Can be called by any workflow that needs test validation
+
+on:
+  workflow_call:
+    inputs:
+      commit-sha:
+        description: 'Commit SHA to validate tests for'
+        required: true
+        type: string
+      pr-number:
+        description: 'Pull request number (0 if not applicable)'
+        required: false
+        type: number
+        default: 0
+    outputs:
+      validation-status:
+        description: 'Validation status: PASS, WARN, FAIL, or ERROR'
+        value: ${{ jobs.validate.outputs.status }}
+      p1-issues:
+        description: 'Count of Priority 1 (critical) issues'
+        value: ${{ jobs.validate.outputs.p1_issues }}
+      p2-issues:
+        description: 'Count of Priority 2 (high) issues'
+        value: ${{ jobs.validate.outputs.p2_issues }}
+      block-merge:
+        description: 'true if merge should be blocked due to issues'
+        value: ${{ jobs.validate.outputs.block_merge }}
+
+env:
+  NODE_VERSION: "20.19.5"
+
+jobs:
+  validate:
+    name: 🔍 Validate All Test Results
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      status: ${{ steps.validate.outputs.status }}
+      p1_issues: ${{ steps.validate.outputs.p1_issues }}
+      p2_issues: ${{ steps.validate.outputs.p2_issues }}
+      block_merge: ${{ steps.validate.outputs.block_merge }}
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.commit-sha }}
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install Dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: 📁 Create Validation Directory
+        run: mkdir -p .tmp/test-validation
+
+      - name: 📥 Download Unit Test Artifacts
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          pattern: 'unit-test-results-*'
+          path: .tmp/test-validation
+          merge-multiple: true
+
+      - name: 📥 Download Integration Test Artifacts
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          pattern: 'integration-test-results-*'
+          path: .tmp/test-validation
+          merge-multiple: true
+
+      - name: 📥 Download Quality Gates Artifacts
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: 'quality-gates-metadata'
+          path: .tmp/test-validation
+
+      - name: 📥 Download E2E Test Artifacts (Cross-Workflow)
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "🔍 Searching for E2E workflow run for commit ${{ inputs.commit-sha }}"
+
+          # Find the most recent E2E workflow run for this commit
+          WORKFLOW_RUN_ID=$(gh api "/repos/${{ github.repository }}/actions/runs" \
+            --jq ".workflow_runs[] | select(.head_sha==\"${{ inputs.commit-sha }}\" and .name==\"🎭 E2E Tests - Preview Deployments\") | .id" \
+            | head -1)
+
+          if [ -n "$WORKFLOW_RUN_ID" ]; then
+            echo "✅ Found E2E workflow run: $WORKFLOW_RUN_ID"
+            echo "📥 Downloading E2E artifacts..."
+            gh run download "$WORKFLOW_RUN_ID" --pattern 'e2e-results-*' --dir .tmp/test-validation || echo "⚠️ No E2E artifacts found"
+          else
+            echo "⚠️ No E2E workflow run found for this commit"
+            echo "This is expected if Vercel deployment hasn't completed yet"
+          fi
+
+      - name: 📊 List Downloaded Artifacts
+        run: |
+          echo "=== Artifacts Directory Structure ==="
+          ls -la .tmp/test-validation/ || echo "No artifacts directory"
+          echo ""
+          echo "=== Test Metadata Files ==="
+          find .tmp/test-validation -name "test-metadata.json" -exec echo "Found: {}" \; || echo "No metadata files"
+
+      - name: 🔍 Run Validation
+        id: validate
+        run: |
+          echo "🔍 Running test result validation..."
+
+          # Run validation script with explicit error handling
+          if ! node scripts/validate-test-results.js > .tmp/validation-report.json 2>&1; then
+            echo "❌ Validation script failed to execute"
+            echo "exit_code=1" >> $GITHUB_OUTPUT
+            echo "status=ERROR" >> $GITHUB_OUTPUT
+            echo "p1_issues=0" >> $GITHUB_OUTPUT
+            echo "p2_issues=0" >> $GITHUB_OUTPUT
+            echo "block_merge=true" >> $GITHUB_OUTPUT
+            exit 0  # Don't fail the step, let outputs control behavior
+          fi
+
+          # Verify report was generated and is valid
+          if [ ! -f .tmp/validation-report.json ]; then
+            echo "❌ Validation report not generated"
+            echo "exit_code=1" >> $GITHUB_OUTPUT
+            echo "status=ERROR" >> $GITHUB_OUTPUT
+            echo "p1_issues=0" >> $GITHUB_OUTPUT
+            echo "p2_issues=0" >> $GITHUB_OUTPUT
+            echo "block_merge=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "📊 Validation report generated"
+          cat .tmp/validation-report.json
+
+          # Extract validation results
+          EXIT_CODE=$(jq -r '.exit_code // 1' .tmp/validation-report.json)
+          STATUS=$(jq -r '.validation_status // "UNKNOWN"' .tmp/validation-report.json)
+          P1_COUNT=$(jq -r '.summary.priority1_issues // 0' .tmp/validation-report.json)
+          P2_COUNT=$(jq -r '.summary.priority2_issues // 0' .tmp/validation-report.json)
+
+          echo "exit_code=${EXIT_CODE}" >> $GITHUB_OUTPUT
+          echo "status=${STATUS}" >> $GITHUB_OUTPUT
+          echo "p1_issues=${P1_COUNT}" >> $GITHUB_OUTPUT
+          echo "p2_issues=${P2_COUNT}" >> $GITHUB_OUTPUT
+
+          # Determine if we should block merge
+          if [ "${P1_COUNT}" -gt 0 ]; then
+            echo "❌ Priority 1 issues detected - will block merge"
+            echo "block_merge=true" >> $GITHUB_OUTPUT
+          elif [ "${P2_COUNT}" -gt 0 ]; then
+            echo "⚠️ Priority 2 issues detected - will block merge"
+            echo "block_merge=true" >> $GITHUB_OUTPUT
+          else
+            echo "✅ No blocking issues detected"
+            echo "block_merge=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 💬 Post Validation Comment to PR
+        if: always() && inputs.pr-number > 0
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+
+            if (!fs.existsSync('.tmp/validation-report.json')) {
+              console.log('⚠️ No validation report found');
+              return;
+            }
+
+            const report = JSON.parse(fs.readFileSync('.tmp/validation-report.json', 'utf8'));
+
+            // Build validation comment
+            let comment = '## 🔍 Test Result Validation Report\n\n';
+
+            const status = report.validation_status || 'UNKNOWN';
+            const badge = status === 'FAIL' ? '🔴 FAIL' :
+                         status === 'WARN' ? '🟡 WARN' :
+                         status === 'PASS' ? '🟢 PASS' : '⚪ UNKNOWN';
+
+            comment += `**Status:** ${badge}\n\n`;
+
+            if (report.summary) {
+              comment += '### Summary\n\n';
+              comment += `- **Total Issues:** ${report.summary.total_issues || 0}\n`;
+              comment += `- **Priority 1 (Critical):** ${report.summary.priority1_issues || 0}\n`;
+              comment += `- **Priority 2 (High):** ${report.summary.priority2_issues || 0}\n`;
+              comment += `- **Priority 3 (Low):** ${report.summary.priority3_issues || 0}\n\n`;
+            }
+
+            if (report.issues && report.issues.length > 0) {
+              comment += '### Issues Detected\n\n';
+              report.issues.forEach((issue, index) => {
+                const priorityBadge = issue.priority === 1 ? '🔴 P1' :
+                                      issue.priority === 2 ? '🟡 P2' : '🔵 P3';
+                comment += `${index + 1}. ${priorityBadge} **${issue.pattern}**\n`;
+                comment += `   - ${issue.message}\n`;
+                if (issue.file) comment += `   - File: \`${issue.file}\`\n`;
+                comment += '\n';
+              });
+            }
+
+            comment += '---\n';
+            comment += `*Validation completed at ${new Date().toISOString()}*\n`;
+            comment += `*Commit: ${{ inputs.commit-sha }}.substring(0, 7)*`;
+
+            // Find existing validation comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ inputs.pr-number }}
+            });
+
+            const existingComment = comments.find(c =>
+              c.user.type === 'Bot' &&
+              c.body.includes('🔍 Test Result Validation Report')
+            );
+
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body: comment
+              });
+              console.log('✅ Updated existing validation comment');
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: ${{ inputs.pr-number }},
+                body: comment
+              });
+              console.log('✅ Created new validation comment');
+            }
+
+      - name: 📤 Upload Validation Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-report
+          path: .tmp/validation-report.json
+          retention-days: 30
+
+      - name: ❌ Block Merge on Critical Issues
+        if: steps.validate.outputs.block_merge == 'true'
+        run: |
+          echo "❌ Test validation detected blocking issues"
+          echo "Status: ${{ steps.validate.outputs.status }}"
+          echo "P1 Issues: ${{ steps.validate.outputs.p1_issues }}"
+          echo "P2 Issues: ${{ steps.validate.outputs.p2_issues }}"
+          echo ""
+          echo "This PR cannot be merged until these issues are resolved."
+          exit 1
+
+      - name: ✅ Validation Passed
+        if: steps.validate.outputs.block_merge == 'false'
+        run: |
+          echo "✅ All test results validated successfully"
+          echo "Status: ${{ steps.validate.outputs.status }}"
+          echo "No blocking issues detected"
+          echo "PR is ready for merge"
