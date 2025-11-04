@@ -3912,7 +3912,7 @@
           } catch (error) {
             console.error('Error pausing scanner:', error);
             // Fallback: full stop if pause fails
-            stopScanner();
+            await stopScanner();
           }
 
         } else {
