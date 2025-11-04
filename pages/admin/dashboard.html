@@ -547,7 +547,7 @@
 
           displayStats(data.stats);
           displayEvents(data.events || []);
-          displayTicketTypes(data.ticketTypes || []);
+          displayTicketTypes(data.ticketTypes || [], data.events || []);
 
           await loadFlaggedTickets();
           await loadRegistrations();
@@ -1098,7 +1098,7 @@
       }
 
       // Display ticket types with availability
-      function displayTicketTypes(ticketTypes) {
+      function displayTicketTypes(ticketTypes, events) {
         const ticketTypesTable = document.getElementById('ticketTypesTable');
         const ticketTypesCount = document.getElementById('ticket-types-count');
 
@@ -1109,6 +1109,12 @@
         }
 
         ticketTypesCount.textContent = `${ticketTypes.length} type${ticketTypes.length !== 1 ? 's' : ''}`;
+
+        // Create event lookup map for capacity info
+        const eventMap = {};
+        (events || []).forEach(event => {
+          eventMap[event.name] = event;
+        });
 
         // Group by event
         const byEvent = {};
@@ -1123,6 +1129,11 @@
         const sections = Object.entries(byEvent).map(([eventName, tickets]) => {
           // Calculate total tickets sold for this event
           const totalEventTicketsSold = tickets.reduce((sum, t) => sum + (t.sold_count || 0), 0);
+
+          // Get event capacity info
+          const event = eventMap[eventName];
+          const maxCapacity = event?.max_capacity || 0;
+          const capacityPercentage = maxCapacity > 0 ? Math.round((totalEventTicketsSold / maxCapacity) * 100) : 0;
 
           const rows = tickets.map(tt => {
             const soldCount = tt.sold_count || 0;
@@ -1178,14 +1189,6 @@
                     `;
                   })()}
                 </td>
-                <td>
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                    <div style="flex: 1; background: #e0e0e0; height: 8px; border-radius: 4px; overflow: hidden;">
-                      <div style="width: ${percentage}%; background: ${percentage >= 75 ? '#ef4444' : percentage >= 50 ? '#f59e0b' : 'var(--color-success)'}; height: 100%;"></div>
-                    </div>
-                    <span style="min-width: 50px; text-align: right;">${percentage.toFixed(1)}%</span>
-                  </div>
-                </td>
                 <td>${maxQuantity > 0 ? remaining : 'N/A'}</td>
                 <td>$${revenue.toFixed(2)}</td>
               </tr>
@@ -1194,8 +1197,16 @@
 
           return `
             <div style="margin-bottom: 24px;">
-              <h3 style="margin: 16px 0 8px 0; padding: 8px 12px; background: var(--color-background-secondary); border-radius: 4px;">
-                ${escapeHtml(eventName)}
+              <h3 style="margin: 16px 0 8px 0; padding: 8px 12px; background: var(--color-background-secondary); border-radius: 4px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                <span>${escapeHtml(eventName)}</span>
+                ${maxCapacity > 0 ? `
+                  <div style="display: flex; align-items: center; gap: 12px; font-size: 0.9em; font-weight: normal;">
+                    <span>${totalEventTicketsSold} / ${maxCapacity} tickets (${capacityPercentage}% full)</span>
+                    <div style="width: 120px; background: var(--color-background-tertiary, #e5e7eb); height: 10px; border-radius: 5px; overflow: hidden;">
+                      <div style="width: ${capacityPercentage}%; height: 100%; background: ${capacityPercentage >= 90 ? '#ef4444' : capacityPercentage >= 75 ? '#f59e0b' : 'var(--color-primary)'}; transition: width 0.3s ease;"></div>
+                    </div>
+                  </div>
+                ` : ''}
               </h3>
               <div class="admin-table-responsive">
                 <table class="admin-table">
@@ -1205,7 +1216,6 @@
                       <th>Price</th>
                       <th>Status</th>
                       <th>% of Total Sales</th>
-                      <th>Availability</th>
                       <th>Remaining</th>
                       <th>Revenue</th>
                     </tr>
