@@ -77,7 +77,7 @@
   "crons": [
     {
       "path": "/api/sheets/scheduled-sync",
-      "schedule": "0 */6 * * *"
+      "schedule": "*/30 * * * *"
     },
     {
       "path": "/api/email/process-retry-queue",
