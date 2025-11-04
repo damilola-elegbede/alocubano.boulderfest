@@ -91,7 +91,7 @@
   --color-secondary-active: #a41e28;               /* Secondary active state */
 
   /* State Colors - Standard feedback colors for UI states */
-  --color-success: #22c55e;                        /* Success states and confirmations */
+  --color-success: #047857;                        /* Success states and confirmations - Deep green with 5.24:1 contrast (WCAG AA) */
   --color-success-light: #dcfce7;                  /* Success background tints */
   --color-warning: #d97706;                        /* Warning and caution states - 4.17:1 contrast (WCAG AA) */
   --color-warning-light: #fef3c7;                  /* Warning background tints */
@@ -284,7 +284,6 @@
 
   /* State Colors - Consolidated alpha values
    * Adjusted for dark theme visibility with consistent alpha transparency */
-  --color-success: #34d399;                            /* Brighter success green */
   --color-success-light: rgba(52, 211, 153, 0.1);     /* Success background */
   --color-warning: #fbbf24;                            /* Brighter warning amber */
   --color-warning-light: rgba(251, 191, 36, 0.1);     /* Warning background */
@@ -386,7 +385,6 @@
     --color-secondary-active: #e13f52;
 
     /* State Colors - Adjusted for dark backgrounds */
-    --color-success: #34d399;
     --color-success-light: rgba(52, 211, 153, 0.1);
     --color-warning: #fbbf24;
     --color-warning-light: rgba(251, 191, 36, 0.1);

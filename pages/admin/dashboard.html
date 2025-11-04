@@ -790,7 +790,7 @@
             <div style="font-size: 1.875rem; font-weight: bold; color: #111827;">${summary.total_flagged || 0}</div>
             <div style="font-size: 0.75rem; color: #9ca3af; margin-top: 4px;">$${summary.total_flagged_value || '0.00'} total value</div>
           </div>
-          <div style="background: white; padding: 16px; border-radius: 8px; border-left: 4px solid #10b981;">
+          <div style="background: white; padding: 16px; border-radius: 8px; border-left: 4px solid var(--color-success);">
             <div style="font-size: 0.875rem; color: #6b7280; margin-bottom: 4px;">Pass Rate</div>
             <div style="font-size: 1.875rem; font-weight: bold; color: #111827;">${summary.validation_pass_rate || 'N/A'}</div>
             <div style="font-size: 0.75rem; color: #9ca3af; margin-top: 4px;">${summary.total_validations || 0} total validations</div>
@@ -833,7 +833,7 @@
 
           if (insights.trending) {
             const trend = insights.trending;
-            const trendColor = trend.direction === 'increasing' ? '#ef4444' : trend.direction === 'decreasing' ? '#10b981' : '#6b7280';
+            const trendColor = trend.direction === 'increasing' ? '#ef4444' : trend.direction === 'decreasing' ? 'var(--color-success)' : '#6b7280';
             const trendIcon = trend.direction === 'increasing' ? '📈' : trend.direction === 'decreasing' ? '📉' : '➡️';
 
             insightsHTML += `
@@ -891,7 +891,7 @@
             const percentage = totalDelays > 0 ? ((count / totalDelays) * 100).toFixed(1) : 0;
             const barWidth = percentage + '%';
             const isLenient = delayType === 'delayed' || delayType === 'very_delayed';
-            const barColor = isLenient ? '#10b981' : '#6366f1';
+            const barColor = isLenient ? 'var(--color-success)' : '#6366f1';
 
             delayChartHTML += `
               <div>
@@ -1164,7 +1164,7 @@
                 <td>
                   <div style="display: flex; align-items: center; gap: 8px;">
                     <div style="flex: 1; background: #e0e0e0; height: 8px; border-radius: 4px; overflow: hidden;">
-                      <div style="width: ${percentage}%; background: ${percentage >= 75 ? '#ef4444' : percentage >= 50 ? '#f59e0b' : '#10b981'}; height: 100%;"></div>
+                      <div style="width: ${percentage}%; background: ${percentage >= 75 ? '#ef4444' : percentage >= 50 ? '#f59e0b' : 'var(--color-success)'}; height: 100%;"></div>
                     </div>
                     <span style="min-width: 50px; text-align: right;">${percentage.toFixed(1)}%</span>
                   </div>

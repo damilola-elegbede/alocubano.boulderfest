@@ -267,8 +267,8 @@
 
       /* Scanner state: QR code locked on (green border) */
       .scan-region.locked {
-        border-color: #10b981;
-        box-shadow: 0 0 40px rgba(16, 185, 129, 0.5);
+        border-color: var(--color-success);
+        box-shadow: 0 0 40px rgba(4, 120, 87, 0.5);
       }
 
       /* Scan corners removed for cleaner appearance - full-screen scanner uses simple borders */
@@ -360,9 +360,9 @@
       }
 
       .badge-success {
-        background: rgba(16, 185, 129, 0.2);
-        color: #10b981;
-        border: 1px solid rgba(16, 185, 129, 0.3);
+        background: rgba(4, 120, 87, 0.2);
+        color: var(--color-success);
+        border: 1px solid rgba(4, 120, 87, 0.3);
       }
 
       .badge-error {
@@ -726,6 +726,31 @@
         margin-bottom: var(--space-xl);
         white-space: pre-line;
         line-height: var(--line-height-relaxed);
+      }
+
+      .countdown-timer {
+        margin-top: var(--space-lg);
+        margin-bottom: var(--space-md);
+        padding: var(--space-sm) var(--space-md);
+        background: rgba(0, 0, 0, 0.1);
+        border-radius: var(--radius-md);
+        font-family: var(--font-mono);
+        font-size: var(--font-size-sm);
+        opacity: 0.8;
+      }
+
+      .countdown-timer #countdownSeconds {
+        font-weight: 700;
+        font-size: 1.1em;
+        color: currentColor;
+      }
+
+      .result-content.success .countdown-timer {
+        background: rgba(255, 255, 255, 0.15);
+      }
+
+      .result-content.error .countdown-timer {
+        background: rgba(255, 255, 255, 0.15);
       }
 
       .result-btn {
@@ -1559,7 +1584,7 @@
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        background: rgba(76, 175, 80, 0.95);
+        background: rgba(4, 120, 87, 0.95);
         color: var(--color-white);
         border-radius: var(--radius-xl);
         padding: var(--space-lg) var(--space-xl);
@@ -1669,8 +1694,8 @@
       }
 
       .fullscreen-scan-region.locked {
-        border-color: #10b981;
-        box-shadow: 0 0 60px rgba(16, 185, 129, 0.6);
+        border-color: var(--color-success);
+        box-shadow: 0 0 60px rgba(4, 120, 87, 0.6);
       }
 
       #fullscreenReader {
@@ -2022,6 +2047,9 @@
           id="resultDetails"
           data-testid="ticket-info"
         ></div>
+        <div class="countdown-timer" id="countdownTimer" style="display: none;">
+          Returning to scanner in <span id="countdownSeconds">10</span>s
+        </div>
         <button class="result-btn admin-btn admin-btn-primary" onclick="closeResult()">
           Continue Scanning
         </button>
@@ -2145,6 +2173,11 @@
       let isScanning = false;
       let timeManager = null;
 
+      // Countdown timer variables for result modal
+      let countdownInterval = null;
+      let countdownTimeout = null;
+      let countdownSeconds = 10;
+
       // Import timeManager
       import('/js/time-manager.js').then(module => {
         timeManager = module.default;
@@ -2217,6 +2250,12 @@
         invalid: 0,
         validationTimes: [],
 
+        // NEW: Session-level category increments for accurate card display
+        sessionValidIncrement: 0,
+        sessionFailedIncrement: 0,
+        sessionRateLimitedIncrement: 0,
+        sessionAlreadyScannedIncrement: 0,
+
         // Session metadata
         sessionStart: Date.now(),
         lastActivity: Date.now()
@@ -2247,6 +2286,13 @@
           stats.failed = data.failed || 0;
           stats.invalid = data.invalid || 0;
           stats.validationTimes = data.validationTimes || [];
+
+          // Restore new session category increments
+          stats.sessionValidIncrement = data.sessionValidIncrement || 0;
+          stats.sessionFailedIncrement = data.sessionFailedIncrement || 0;
+          stats.sessionRateLimitedIncrement = data.sessionRateLimitedIncrement || 0;
+          stats.sessionAlreadyScannedIncrement = data.sessionAlreadyScannedIncrement || 0;
+
           stats.sessionStart = data.sessionStart;
           console.log('Restored session stats:', { session: stats.session, todayIncrement: stats.todayIncrement });
         } catch (error) {
@@ -2266,6 +2312,13 @@
             failed: stats.failed,
             invalid: stats.invalid,
             validationTimes: stats.validationTimes.slice(-100), // Keep last 100
+
+            // New session category increments
+            sessionValidIncrement: stats.sessionValidIncrement,
+            sessionFailedIncrement: stats.sessionFailedIncrement,
+            sessionRateLimitedIncrement: stats.sessionRateLimitedIncrement,
+            sessionAlreadyScannedIncrement: stats.sessionAlreadyScannedIncrement,
+
             sessionStart: stats.sessionStart,
             lastActivity: Date.now()
           }));
@@ -3842,23 +3895,51 @@
       }
 
       // Add visibility change handler for mobile browser background behavior
-      document.addEventListener('visibilitychange', function() {
-        if (scanner) {
-          if (document.hidden) {
-            // Page hidden, stop scanner to free camera resources
-            console.log('Page hidden, stopping scanner for', deviceInfo.isIOS ? 'iOS' : deviceInfo.isAndroid ? 'Android' : 'unknown device');
-            stopScanner();
-          } else {
-            // Page visible again, restart scanner if needed
-            const restartDelay = deviceInfo.isIOS ? 500 : deviceInfo.isAndroid ? 300 : 400;
+      document.addEventListener('visibilitychange', async function() {
+        if (!scanner) return;
 
-            setTimeout(() => {
-              if (!isScanning) {
-                console.log('Page visible, restarting scanner for', deviceInfo.isIOS ? 'iOS' : deviceInfo.isAndroid ? 'Android' : 'unknown device');
-                initScanner();
-              }
-            }, restartDelay);
+        if (document.hidden) {
+          // Page hidden, pause scanner (keeps camera alive, stops scanning)
+          console.log('Page backgrounded, pausing scanner (camera stays warm)');
+
+          try {
+            // Check scanner state before pausing
+            const state = scanner.getState();
+            if (state === Html5QrcodeScannerState.SCANNING) {
+              scanner.pause(false);  // Stop scanning, keep camera alive
+              console.log('Scanner paused successfully');
+            }
+          } catch (error) {
+            console.error('Error pausing scanner:', error);
+            // Fallback: full stop if pause fails
+            await stopScanner();
           }
+
+        } else {
+          // Page visible, resume scanner
+          console.log('Page visible, resuming scanner');
+
+          const delay = deviceInfo.isIOS ? 500 : deviceInfo.isAndroid ? 300 : 400;
+
+          setTimeout(async () => {
+            try {
+              const state = scanner.getState();
+
+              if (state === Html5QrcodeScannerState.PAUSED) {
+                // Resume from pause
+                scanner.resume();
+                console.log('Scanner resumed successfully');
+              } else if (!isScanning) {
+                // Fallback: reinitialize if needed
+                console.log('Scanner not paused, reinitializing...');
+                await initScanner();
+              }
+            } catch (error) {
+              console.error('Error resuming scanner:', error);
+              // Last resort: full reinit
+              await initScanner();
+            }
+          }, delay);
         }
       });
 
@@ -3867,10 +3948,18 @@
         window.addEventListener('blur', function() {
           if (scanner && isScanning) {
             console.log('Android: Window lost focus, pausing scanner');
-            // Android Chrome might need explicit camera release when switching apps
+            // Android Chrome: pause scanner instead of full stop
             setTimeout(() => {
-              if (document.hidden && isScanning) {
-                stopScanner();
+              if (document.hidden && scanner) {
+                try {
+                  const state = scanner.getState();
+                  if (state === Html5QrcodeScannerState.SCANNING) {
+                    scanner.pause(false);  // Use pause instead of stop
+                    console.log('Android blur: Scanner paused');
+                  }
+                } catch (error) {
+                  console.error('Android blur: Error pausing scanner:', error);
+                }
               }
             }, 1000);
           }
@@ -3964,7 +4053,11 @@
 
       // Handle successful scan with performance tracking
       async function onScanSuccess(decodedText) {
-        if (!isScanning) return;
+        // Safety check: ignore scans when scanner is inactive or page is hidden
+        if (!isScanning || document.hidden) {
+          console.log('Ignoring scan: scanner inactive or page hidden');
+          return;
+        }
 
         const scanStartTime = performance.now();
 
@@ -4067,6 +4160,9 @@
             const waitTime = retryAfter ? parseInt(retryAfter) : 60; // Default to 60 seconds if not specified
 
             stats.failed++;
+            stats.sessionRateLimitedIncrement++;
+            stats.session++;
+            stats.todayIncrement++;
             updateStats();
 
             showResult(
@@ -4083,6 +4179,26 @@
             return;
           }
 
+          // Check for scan limit exceeded (410) before parsing JSON
+          if (response.status === 410) {
+            const data = await response.json();
+            console.warn('[SCAN-LIMIT] 410 response received - scan limit exceeded');
+
+            stats.failed++;
+            stats.sessionAlreadyScannedIncrement++;  // Count scan-limit failures separately
+            stats.session++;
+            stats.todayIncrement++;
+            updateStats();
+
+            showResult(
+              "error",
+              "Scan Limit Exceeded",
+              data.error || "This ticket has reached its maximum scan limit",
+            );
+
+            return;
+          }
+
           const data = await response.json();
 
           if (data.offline) {
@@ -4094,9 +4210,13 @@
               `Check-in saved offline (${stats.queued} in queue)`,
             );
           } else if (data.valid) {
-            // Success
+            // Success - categorize based on scan type
             stats.session++;
             stats.todayIncrement++;  // Increment session overlay, not baseline
+
+            // All successful scans (first or rescan) count as valid
+            // Backend returns scanType for informational purposes only
+            stats.sessionValidIncrement++;
 
             // Store scan log ID for session tracking
             if (data.scanLogId !== null && data.scanLogId !== undefined) {
@@ -4160,6 +4280,9 @@
           } else {
             // Invalid ticket
             stats.invalid++;
+            stats.sessionFailedIncrement++;
+            stats.session++;
+            stats.todayIncrement++;
             showResult(
               "error",
               "Invalid Ticket",
@@ -4188,6 +4311,9 @@
 
           // Track failed validation (network/system error)
           stats.failed++;
+          stats.sessionFailedIncrement++;
+          stats.session++;
+          stats.todayIncrement++;
 
           // Queue for offline sync
           stats.queued++;
@@ -4273,15 +4399,71 @@
         // Show modal
         modal.classList.add("show");
 
-        // Auto-close after 30 seconds
-        setTimeout(() => {
-          closeResult();
-        }, 30000);
+        // Start 10-second countdown
+        startCountdown();
       }
 
       // Close result modal
       function closeResult() {
+        // Clear countdown timers
+        if (countdownInterval) {
+          clearInterval(countdownInterval);
+          countdownInterval = null;
+        }
+        if (countdownTimeout) {
+          clearTimeout(countdownTimeout);
+          countdownTimeout = null;
+        }
+
+        // Hide countdown element
+        const countdownTimer = document.getElementById("countdownTimer");
+        if (countdownTimer) {
+          countdownTimer.style.display = "none";
+        }
+
         document.getElementById("resultModal").classList.remove("show");
+      }
+
+      // Start countdown for result modal auto-close
+      function startCountdown() {
+        // Clear any existing countdown
+        if (countdownInterval) {
+          clearInterval(countdownInterval);
+        }
+        if (countdownTimeout) {
+          clearTimeout(countdownTimeout);
+        }
+
+        // Reset countdown
+        countdownSeconds = 10;
+        const countdownSecondsEl = document.getElementById("countdownSeconds");
+        const countdownTimer = document.getElementById("countdownTimer");
+
+        if (countdownSecondsEl && countdownTimer) {
+          countdownSecondsEl.textContent = countdownSeconds;
+          countdownTimer.style.display = "block";
+
+          // Start countdown interval
+          countdownInterval = setInterval(() => {
+            countdownSeconds--;
+            countdownSecondsEl.textContent = countdownSeconds;
+
+            if (countdownSeconds <= 0) {
+              clearInterval(countdownInterval);
+              countdownInterval = null;
+              closeResult();
+            }
+          }, 1000);
+
+          // Backup timeout in case interval fails
+          countdownTimeout = setTimeout(() => {
+            if (countdownInterval) {
+              clearInterval(countdownInterval);
+              countdownInterval = null;
+            }
+            closeResult();
+          }, 10000);
+        }
       }
 
       // Full-Screen Scanner Functions
@@ -4448,6 +4630,13 @@
           stats.failed = 0;
           stats.invalid = 0;
           stats.validationTimes = [];
+
+          // Reset new session category increments
+          stats.sessionValidIncrement = 0;
+          stats.sessionFailedIncrement = 0;
+          stats.sessionRateLimitedIncrement = 0;
+          stats.sessionAlreadyScannedIncrement = 0;
+
           stats.sessionStart = Date.now();
           stats.lastActivity = Date.now();
           console.log('[SESSION-CLEAR] Reset session counters');
@@ -4573,10 +4762,12 @@
         const todayCount = (stats.todayBaseline || 0) + (stats.todayIncrement || 0);
         const sessionCount = stats.session;
         const totalCount = stats.totalBaseline + stats.session;
-        const validCount = stats.validBaseline || 0;
-        const failedCount = stats.failedBaseline || 0;
-        const rateLimitedCount = stats.rateLimitedBaseline || 0;
-        const alreadyScannedCount = stats.alreadyScannedBaseline || 0;
+
+        // FIX: Include session increments for accurate real-time display
+        const validCount = (stats.validBaseline || 0) + (stats.sessionValidIncrement || 0);
+        const failedCount = (stats.failedBaseline || 0) + (stats.sessionFailedIncrement || 0);
+        const rateLimitedCount = (stats.rateLimitedBaseline || 0) + (stats.sessionRateLimitedIncrement || 0);
+        const alreadyScannedCount = (stats.alreadyScannedBaseline || 0) + (stats.sessionAlreadyScannedIncrement || 0);
 
         // Calculate average time
         let avgTime = "0ms";
