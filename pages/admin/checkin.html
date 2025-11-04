@@ -4179,6 +4179,26 @@
             return;
           }
 
+          // Check for scan limit exceeded (410) before parsing JSON
+          if (response.status === 410) {
+            const data = await response.json();
+            console.warn('[SCAN-LIMIT] 410 response received - scan limit exceeded');
+
+            stats.failed++;
+            stats.sessionAlreadyScannedIncrement++;  // Count scan-limit failures separately
+            stats.session++;
+            stats.todayIncrement++;
+            updateStats();
+
+            showResult(
+              "error",
+              "Scan Limit Exceeded",
+              data.error || "This ticket has reached its maximum scan limit",
+            );
+
+            return;
+          }
+
           const data = await response.json();
 
           if (data.offline) {
@@ -4194,17 +4214,9 @@
             stats.session++;
             stats.todayIncrement++;  // Increment session overlay, not baseline
 
-            // Categorize scan based on backend scanType
-            if (data.scanType === 'first_scan') {
-              // First scan of this ticket
-              stats.sessionValidIncrement++;
-            } else if (data.scanType === 'rescan_within_limit') {
-              // Rescan within max_scan_count limit
-              stats.sessionAlreadyScannedIncrement++;
-            } else {
-              // Fallback: treat as valid if scanType is unknown
-              stats.sessionValidIncrement++;
-            }
+            // All successful scans (first or rescan) count as valid
+            // Backend returns scanType for informational purposes only
+            stats.sessionValidIncrement++;
 
             // Store scan log ID for session tracking
             if (data.scanLogId !== null && data.scanLogId !== undefined) {
