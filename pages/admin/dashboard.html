@@ -1181,7 +1181,7 @@
                     return `
                       <div style="display: flex; align-items: center; gap: 8px;">
                         <span style="min-width: 45px; font-weight: 500;">${salesPercentage}%</span>
-                        <div style="flex: 1; background: var(--color-background-secondary); border-radius: 4px; height: 20px; overflow: hidden; min-width: 100px;">
+                        <div style="flex: 1; background: var(--color-background-secondary); border-radius: 4px; height: 20px; overflow: hidden; min-width: 100px;" role="progressbar" aria-valuenow="${salesPercentage}" aria-valuemin="0" aria-valuemax="100" aria-label="${escapeHtml(tt.name)}: ${salesPercentage}% of total event sales (${soldCount} sold)">
                           <div style="width: ${barWidth}%; height: 100%; background: linear-gradient(90deg, var(--color-primary), var(--color-accent)); transition: width 0.3s ease;"></div>
                         </div>
                         <span style="min-width: 60px; color: var(--color-text-secondary); font-size: 0.9em;">${soldCount} sold</span>
@@ -1202,7 +1202,7 @@
                 ${maxCapacity > 0 ? `
                   <div style="display: flex; align-items: center; gap: 12px; font-size: 0.9em; font-weight: normal;">
                     <span>${totalEventTicketsSold} / ${maxCapacity} tickets (${capacityPercentage}% full)</span>
-                    <div style="width: 120px; background: var(--color-background-tertiary, #e5e7eb); height: 10px; border-radius: 5px; overflow: hidden;">
+                    <div style="width: 120px; background: var(--color-background-tertiary, #e5e7eb); height: 10px; border-radius: 5px; overflow: hidden;" role="progressbar" aria-valuenow="${capacityPercentage}" aria-valuemin="0" aria-valuemax="100" aria-label="${escapeHtml(eventName)}: ${capacityPercentage}% full (${totalEventTicketsSold} of ${maxCapacity} tickets)">
                       <div style="width: ${capacityPercentage}%; height: 100%; background: ${capacityPercentage >= 90 ? '#ef4444' : capacityPercentage >= 75 ? '#f59e0b' : 'var(--color-primary)'}; transition: width 0.3s ease;"></div>
                     </div>
                   </div>
