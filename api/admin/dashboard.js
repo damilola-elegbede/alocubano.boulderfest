@@ -305,17 +305,44 @@ async function handler(req, res) {
           tt.currency,
           tt.status,
           tt.max_quantity,
-          tt.sold_count,
+          COALESCE(
+            (SELECT COUNT(*)
+             FROM tickets t
+             JOIN transactions tr ON t.transaction_id = tr.id
+             WHERE t.ticket_type_id = tt.id
+             AND t.status = 'valid'
+             AND COALESCE(tr.payment_processor, '') <> 'comp'
+             AND tr.status = 'completed'),
+            0
+          ) as sold_count,
           tt.display_order,
           e.name as event_name,
           e.slug as event_slug,
           CASE
             WHEN tt.max_quantity > 0 THEN
-              ROUND((CAST(tt.sold_count AS REAL) / CAST(tt.max_quantity AS REAL)) * 100, 2)
+              ROUND((CAST(COALESCE(
+                (SELECT COUNT(*)
+                 FROM tickets t
+                 JOIN transactions tr ON t.transaction_id = tr.id
+                 WHERE t.ticket_type_id = tt.id
+                 AND t.status = 'valid'
+                 AND COALESCE(tr.payment_processor, '') <> 'comp'
+                 AND tr.status = 'completed'),
+                0
+              ) AS REAL) / CAST(tt.max_quantity AS REAL)) * 100, 2)
             ELSE 0
           END as availability_percentage,
           CASE
-            WHEN tt.max_quantity > 0 THEN (tt.max_quantity - tt.sold_count)
+            WHEN tt.max_quantity > 0 THEN (tt.max_quantity - COALESCE(
+              (SELECT COUNT(*)
+               FROM tickets t
+               JOIN transactions tr ON t.transaction_id = tr.id
+               WHERE t.ticket_type_id = tt.id
+               AND t.status = 'valid'
+               AND COALESCE(tr.payment_processor, '') <> 'comp'
+               AND tr.status = 'completed'),
+              0
+            ))
             ELSE NULL
           END as remaining_quantity,
           COALESCE(
