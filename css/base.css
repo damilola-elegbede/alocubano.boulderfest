@@ -91,7 +91,7 @@
   --color-secondary-active: #a41e28;               /* Secondary active state */
 
   /* State Colors - Standard feedback colors for UI states */
-  --color-success: #22c55e;                        /* Success states and confirmations */
+  --color-success: #047857;                        /* Success states and confirmations - Deep green with 5.24:1 contrast (WCAG AA) */
   --color-success-light: #dcfce7;                  /* Success background tints */
   --color-warning: #d97706;                        /* Warning and caution states - 4.17:1 contrast (WCAG AA) */
   --color-warning-light: #fef3c7;                  /* Warning background tints */
