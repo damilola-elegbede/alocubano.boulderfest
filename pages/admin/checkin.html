@@ -4190,10 +4190,21 @@
               `Check-in saved offline (${stats.queued} in queue)`,
             );
           } else if (data.valid) {
-            // Success
+            // Success - categorize based on scan type
             stats.session++;
             stats.todayIncrement++;  // Increment session overlay, not baseline
-            stats.sessionValidIncrement++;
+
+            // Categorize scan based on backend scanType
+            if (data.scanType === 'first_scan') {
+              // First scan of this ticket
+              stats.sessionValidIncrement++;
+            } else if (data.scanType === 'rescan_within_limit') {
+              // Rescan within max_scan_count limit
+              stats.sessionAlreadyScannedIncrement++;
+            } else {
+              // Fallback: treat as valid if scanType is unknown
+              stats.sessionValidIncrement++;
+            }
 
             // Store scan log ID for session tracking
             if (data.scanLogId !== null && data.scanLogId !== undefined) {

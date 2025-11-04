@@ -420,9 +420,14 @@ async function validateTicket(db, validationCode, source, isJWT = false) {
         throw new Error('Event has ended');
       }
 
-      // Check scan limits
-      if (ticket.scan_count >= ticket.max_scan_count) {
-        throw new Error('Maximum scans exceeded');
+      // Check scan limits and determine scan type
+      const isFirstScan = ticket.scan_count === 0;
+      const isRescanWithinLimit = ticket.scan_count > 0 && ticket.scan_count < ticket.max_scan_count;
+      const isBeyondLimit = ticket.scan_count >= ticket.max_scan_count;
+
+      if (isBeyondLimit) {
+        // Scans at/beyond limit → treated as failed/invalid
+        throw new Error('Scan limit exceeded - ticket already scanned maximum times');
       }
 
       // Atomic update with condition check (prevents race condition)
@@ -456,7 +461,8 @@ async function validateTicket(db, validationCode, source, isJWT = false) {
         ticket: {
           ...ticket,
           scan_count: ticket.scan_count + 1
-        }
+        },
+        scanType: isFirstScan ? 'first_scan' : (isRescanWithinLimit ? 'rescan_within_limit' : 'unknown')
       };
     } catch (error) {
       // Ensure rollback if transaction was started
@@ -1171,6 +1177,7 @@ async function handler(req, res) {
       ticketId: ticket.ticket_id, // Top-level ticket ID for easy access
       scanLogId: safeScanLogId, // Scan logs ID for session tracking (converted from BigInt)
       wallet_source: source, // Wallet source for tracking
+      scanType: validationResult.scanType || 'unknown', // Scan categorization for frontend
       ticket: {
         ticket_id: ticket.ticket_id, // For UI compatibility (checkin.html)
         id: ticket.ticket_id,
@@ -1272,7 +1279,14 @@ async function handler(req, res) {
       validationStatus = 'invalid';
       httpStatusCode = 404;
       logDetails.category = 'ticket_not_found';
+    } else if (error.message.includes('Scan limit exceeded')) {
+      // Scans beyond maximum limit → invalid/failed
+      safeErrorMessage = 'Ticket has reached maximum scan limit';
+      validationStatus = 'invalid';
+      httpStatusCode = 410;
+      logDetails.category = 'scan_limit_exceeded';
     } else if (error.message.includes('Maximum scans exceeded')) {
+      // Legacy error message support
       safeErrorMessage = 'Maximum scans exceeded';
       validationStatus = 'already_scanned';
       httpStatusCode = 410;
