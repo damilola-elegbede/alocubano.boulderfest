@@ -284,7 +284,6 @@
 
   /* State Colors - Consolidated alpha values
    * Adjusted for dark theme visibility with consistent alpha transparency */
-  --color-success: #34d399;                            /* Brighter success green */
   --color-success-light: rgba(52, 211, 153, 0.1);     /* Success background */
   --color-warning: #fbbf24;                            /* Brighter warning amber */
   --color-warning-light: rgba(251, 191, 36, 0.1);     /* Warning background */
@@ -386,7 +385,6 @@
     --color-secondary-active: #e13f52;
 
     /* State Colors - Adjusted for dark backgrounds */
-    --color-success: #34d399;
     --color-success-light: rgba(52, 211, 153, 0.1);
     --color-warning: #fbbf24;
     --color-warning-light: rgba(251, 191, 36, 0.1);
