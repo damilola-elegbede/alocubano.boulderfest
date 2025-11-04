@@ -312,7 +312,6 @@ async function handler(req, res) {
              WHERE t.ticket_type_id = tt.id
              AND t.status = 'valid'
              AND COALESCE(tr.payment_processor, '') <> 'comp'
-             AND COALESCE(tr.is_test, 0) = 0
              AND tr.status = 'completed'),
             0
           ) as sold_count,
@@ -328,7 +327,6 @@ async function handler(req, res) {
                  WHERE t.ticket_type_id = tt.id
                  AND t.status = 'valid'
                  AND COALESCE(tr.payment_processor, '') <> 'comp'
-                 AND COALESCE(tr.is_test, 0) = 0
                  AND tr.status = 'completed'),
                 0
               ) AS REAL) / CAST(tt.max_quantity AS REAL)) * 100, 2)
@@ -342,7 +340,6 @@ async function handler(req, res) {
                WHERE t.ticket_type_id = tt.id
                AND t.status = 'valid'
                AND COALESCE(tr.payment_processor, '') <> 'comp'
-               AND COALESCE(tr.is_test, 0) = 0
                AND tr.status = 'completed'),
               0
             ))
