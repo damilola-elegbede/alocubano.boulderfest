@@ -230,15 +230,30 @@ export default async function handler(req, res) {
     // Send both emails with proper error handling
     // Team notification is CRITICAL (ensures data isn't lost)
     // Volunteer acknowledgement is optional (nice-to-have UX)
-    try {
-      const [volunteerResult, teamResult] = await Promise.allSettled([
-        brevoService.sendTransactionalEmail(volunteerEmailParams),
-        brevoService.sendTransactionalEmail(teamEmailParams)
-      ]);
 
-      // Team notification is critical - fail if it doesn't send
+    // In E2E test mode, skip team notification to prevent test data pollution
+    const isE2ETestMode = process.env.E2E_TEST_MODE === 'true';
+
+    try {
+      // Build email promises array
+      const emailPromises = [
+        brevoService.sendTransactionalEmail(volunteerEmailParams)
+      ];
+
+      // Only send team notification in non-test environments
+      if (!isE2ETestMode) {
+        emailPromises.push(brevoService.sendTransactionalEmail(teamEmailParams));
+      } else {
+        console.log('[E2E Test Mode] Skipping team notification email for volunteer submission');
+      }
+
+      const results = await Promise.allSettled(emailPromises);
+      const volunteerResult = results[0];
+      const teamResult = results[1]; // Will be undefined in E2E test mode
+
+      // Team notification is critical - fail if it doesn't send (production only)
       // This ensures at least the team receives the application data
-      if (teamResult.status === 'rejected') {
+      if (!isE2ETestMode && teamResult && teamResult.status === 'rejected') {
         throw new Error('Failed to send team notification: ' + teamResult.reason.message);
       }
 

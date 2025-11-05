@@ -7,6 +7,13 @@
  * - Validation error handling
  * - Accessibility audit
  * - Form reset after submission
+ *
+ * Email Behavior in E2E Test Mode:
+ * - Team notification email (to alocubanoboulderfest@gmail.com) is SKIPPED
+ *   to prevent test data pollution in production inbox
+ * - Volunteer acknowledgement email is still sent to test applicant
+ * - This behavior is controlled by E2E_TEST_MODE environment variable
+ * - Production mode sends both emails normally
  */
 
 import { test, expect } from '@playwright/test';
