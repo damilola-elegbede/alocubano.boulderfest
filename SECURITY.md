@@ -43,6 +43,70 @@ We provide security updates for the following versions:
 - **Secure token generation** for unsubscribe links
 - **Data retention policies** - automatic cleanup after events
 
+#### PII-Safe Logging
+
+**Automated Protection:**
+- **Pre-commit PII scanner** - Detects PII exposure in code before commits
+- **CI/CD quality gate** - Blocks merges with PII violations
+- **Sentry sanitization** - Automatic PII redaction in error reports
+- **Audit middleware** - Sanitizes all admin panel logs
+
+**Logging Best Practices:**
+
+✅ **DO:**
+```javascript
+// Use maskEmail() for email addresses
+import { maskEmail } from './lib/volunteer-helpers.js';
+console.log('User registered:', maskEmail(user.email));  // Output: "jo***@example.com"
+
+// Use sanitization utilities
+import { sanitizePaymentField } from './lib/payment-sanitization.js';
+logger.info('Payment processed:', sanitizePaymentField(paymentData));
+
+// Log IDs instead of PII
+console.log('User updated:', { userId: user.id, timestamp: Date.now() });
+
+// Use object destructuring to exclude PII
+const { email, firstName, lastName, ...safeData } = user;
+logger.debug('User data:', safeData);
+```
+
+❌ **DON'T:**
+```javascript
+// Direct logging of PII
+console.log('User email:', user.email);  // ❌ Exposes full email
+logger.info('User:', user);  // ❌ May contain firstName, lastName, etc.
+
+// Template literals with PII
+console.log(`Welcome ${user.firstName} ${user.lastName}`);  // ❌ Logs full name
+
+// Unmasked variables
+const email = user.email;
+console.log(email);  // ❌ No sanitization
+```
+
+**Quality Gate Protection:**
+
+The PII quality gate automatically scans for:
+- Direct property access: `user.email`, `data.password`, `customer.phone`
+- PII variables in logging: `console.log(email)`, `logger.info(firstName)`
+- Template literals: `${user.email}`
+
+Violations are caught at:
+1. **Commit time** (pre-commit hook) - Blocks local commits
+2. **PR time** (CI/CD) - Blocks merges to main
+
+**Available Utilities:**
+- `maskEmail(email)` - Email masking (lib/volunteer-helpers.js)
+- `sanitizePaymentField(data)` - Payment data sanitization (lib/payment-sanitization.js)
+- Sentry's `beforeSend` - Automatic PII redaction in errors (lib/monitoring/sentry-config.js)
+
+**Testing with PII:**
+
+Test files are excluded from PII scanning to allow realistic test data:
+- Files matching: `*test*.js`, `*spec*.js`, `*mock*.js`, `*fixture*.js`
+- Still use sanitization in test assertions to model good practices
+
 ### Payment Security
 
 #### Stripe Integration

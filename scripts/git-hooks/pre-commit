@@ -54,5 +54,22 @@ if [ -n "$SENSITIVE_FILES" ]; then
     exit 1
 fi
 
+# Stage 5: Check for PII exposure in code
+echo "🔐 Stage 5: Checking for PII exposure..."
+if node scripts/check-pii-exposure.js --staged; then
+    echo "✅ No PII exposure detected"
+else
+    PII_EXIT_CODE=$?
+    if [ $PII_EXIT_CODE -eq 1 ]; then
+        # Blocking violations found
+        echo "❌ PII exposure detected - please fix before committing"
+        exit 1
+    elif [ $PII_EXIT_CODE -eq 2 ]; then
+        # Warnings only - allow commit but notify
+        echo "⚠️  PII warnings detected - please review"
+        echo "✅ Commit allowed to proceed"
+    fi
+fi
+
 echo "✅ All pre-commit checks passed!"
 echo "💡 Your commit is ready to proceed"

@@ -207,6 +207,8 @@ jobs:
       vuln_high: ${{ steps.security.outputs.vuln_high }}
       vuln_moderate: ${{ steps.security.outputs.vuln_moderate }}
       vuln_low: ${{ steps.security.outputs.vuln_low }}
+      pii_errors: ${{ steps.pii_scan.outputs.pii_errors }}
+      pii_warnings: ${{ steps.pii_scan.outputs.pii_warnings }}
 
     steps:
       - name: "📥 Checkout Code"
@@ -293,6 +295,48 @@ jobs:
             echo "⚠️ Warning: Potential secrets detected. Please review."
           else
             echo "✅ Secrets: No hardcoded secrets detected"
+          fi
+
+      - name: "🔐 PII Exposure Scan"
+        id: pii_scan
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🔐 Scanning for PII Exposure in Code"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+          # Run PII exposure scanner
+          node scripts/check-pii-exposure.js --json > pii-scan-results.json || true
+
+          # Parse results
+          pii_errors=$(jq -r '.errors' pii-scan-results.json || echo "0")
+          pii_warnings=$(jq -r '.warnings' pii-scan-results.json || echo "0")
+          pii_total=$(jq -r '.violations' pii-scan-results.json || echo "0")
+
+          echo "pii_errors=$pii_errors" >> $GITHUB_OUTPUT
+          echo "pii_warnings=$pii_warnings" >> $GITHUB_OUTPUT
+
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🔐 PII Exposure Scan Results:"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🔴 Errors: $pii_errors"
+          echo "⚠️  Warnings: $pii_warnings"
+          echo "📊 Total violations: $pii_total"
+
+          if [ "$pii_total" -gt 0 ]; then
+            echo ""
+            echo "Details:"
+            jq -r '.details[] | "  \(.file):\(.line) - \(.message)"' pii-scan-results.json
+            echo ""
+          fi
+
+          if [ "$pii_errors" -gt 0 ]; then
+            echo "❌ PII Exposure: Blocking violations detected in code!"
+            echo "   Please use maskEmail() or sanitization utilities"
+            exit 1
+          elif [ "$pii_warnings" -gt 0 ]; then
+            echo "⚠️  PII Exposure: Warnings detected - please review"
+          else
+            echo "✅ PII Exposure: No hardcoded PII detected in logging"
           fi
 
   summary:
