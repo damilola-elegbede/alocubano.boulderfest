@@ -7,6 +7,13 @@ import { getBrevoService } from "../../lib/brevo-service.js";
 import { setSecureCorsHeaders } from '../../lib/cors-config.js';
 import { generateVolunteerAcknowledgementEmail } from '../../lib/email-templates/volunteer-acknowledgement.js';
 import { validateVolunteerSubmission } from '../../lib/validators/form-validators.js';
+import {
+  escapeHtml,
+  getClientIp,
+  maskEmail,
+  formatAreasOfInterest,
+  formatAvailability
+} from '../../lib/volunteer-helpers.js';
 
 // Rate limiting storage (in production, use Redis or similar)
 const rateLimitMap = new Map();
@@ -48,83 +55,7 @@ function rateLimit(req, res) {
 }
 
 // Validation functions removed - now using centralized validators from lib/validators/form-validators.js
-
-/**
- * Escape HTML to prevent XSS attacks
- * @param {string} text - Text to escape
- * @returns {string} HTML-escaped text
- */
-function escapeHtml(text) {
-  if (!text) return '';
-  const map = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#039;'
-  };
-  return String(text).replace(/[&<>"']/g, m => map[m]);
-}
-
-/**
- * Get client IP address
- */
-function getClientIp(req) {
-  return (
-    req.headers['x-forwarded-for'] ||
-    req.connection?.remoteAddress ||
-    req.socket?.remoteAddress ||
-    req.connection?.socket?.remoteAddress ||
-    '127.0.0.1'
-  );
-}
-
-/**
- * Mask email for logging (PII protection)
- * @param {string} email - Email address
- * @returns {string} Masked email (e.g., "ab***@domain.com")
- */
-function maskEmail(email) {
-  if (!email || typeof email !== 'string') return '[invalid-email]';
-  const parts = email.split('@');
-  const user = parts[0];
-  const domain = parts[1] || '';
-  if (!user || !domain) return '[malformed-email]';
-  return user.slice(0, 2) + '***@' + domain;
-}
-
-/**
- * Format areas of interest for email
- */
-function formatAreasOfInterest(areas) {
-  if (!areas || areas.length === 0) return 'None specified';
-
-  const areaLabels = {
-    'setup': 'Event Setup/Breakdown',
-    'registration': 'Registration Desk',
-    'artist': 'Artist Support',
-    'merchandise': 'Merchandise Sales',
-    'info': 'Information Booth',
-    'social': 'Social Media Team'
-  };
-
-  return areas.map(area => areaLabels[area] || area).join(', ');
-}
-
-/**
- * Format availability for email
- */
-function formatAvailability(days) {
-  if (!days || days.length === 0) return 'None specified';
-
-  const dayLabels = {
-    'friday': 'Friday, May 15',
-    'saturday': 'Saturday, May 16',
-    'sunday': 'Sunday, May 17'
-  };
-
-  return days.map(day => dayLabels[day] || day).join(', ');
-}
+// Helper functions moved to lib/volunteer-helpers.js for testability
 
 /**
  * Main handler function

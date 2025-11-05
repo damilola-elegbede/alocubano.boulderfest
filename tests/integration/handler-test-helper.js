@@ -364,6 +364,7 @@ export async function testRequest(method, path, data = null, headers = {}) {
     '/api/email/subscribe': 'api/email/subscribe',
     '/api/email/unsubscribe': 'api/email/unsubscribe',
     '/api/email/brevo-webhook': 'api/email/brevo-webhook',
+    '/api/volunteer/submit': 'api/volunteer/submit',
     '/api/payments/create-checkout-session': 'api/payments/create-checkout-session',
     '/api/payments/stripe-webhook': 'api/payments/stripe-webhook',
     '/api/tickets/validate': 'api/tickets/validate',
