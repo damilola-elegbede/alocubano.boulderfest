@@ -1032,6 +1032,47 @@
           message: formData.get("message") || ""
         };
 
+        // Helper function to show error message
+        function showErrorMessage(message, field = null) {
+          if (field) {
+            // Show field-specific error
+            const hintElement = document.getElementById(`${field}-hint`);
+            if (hintElement) {
+              hintElement.textContent = message;
+              hintElement.style.display = 'block';
+              hintElement.style.color = '#dc2626';
+              hintElement.style.marginTop = '4px';
+              hintElement.style.fontSize = '0.875rem';
+
+              // Scroll to and focus the field
+              const fieldElement = document.getElementById(field);
+              if (fieldElement) {
+                fieldElement.style.borderColor = '#dc2626';
+                fieldElement.setAttribute('aria-invalid', 'true');
+                setTimeout(() => {
+                  fieldElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  fieldElement.focus();
+                }, 100);
+              }
+            }
+          } else {
+            // Show generic error as alert
+            alert(message);
+          }
+        }
+
+        // Helper function to clear all errors
+        function clearAllErrors() {
+          document.querySelectorAll('.form-hint').forEach(hint => {
+            hint.style.display = 'none';
+            hint.textContent = '';
+          });
+          document.querySelectorAll('.form-input-type').forEach(input => {
+            input.style.borderColor = '';
+            input.setAttribute('aria-invalid', 'false');
+          });
+        }
+
         // Disable submit button and show loading state
         submitBtn.disabled = true;
         submitBtn.textContent = 'SUBMITTING...';
@@ -1046,47 +1087,6 @@
           });
 
           const result = await response.json();
-
-          // Helper function to show error message
-          function showErrorMessage(message, field = null) {
-            if (field) {
-              // Show field-specific error
-              const hintElement = document.getElementById(`${field}-hint`);
-              if (hintElement) {
-                hintElement.textContent = message;
-                hintElement.style.display = 'block';
-                hintElement.style.color = '#dc2626';
-                hintElement.style.marginTop = '4px';
-                hintElement.style.fontSize = '0.875rem';
-
-                // Scroll to and focus the field
-                const fieldElement = document.getElementById(field);
-                if (fieldElement) {
-                  fieldElement.style.borderColor = '#dc2626';
-                  fieldElement.setAttribute('aria-invalid', 'true');
-                  setTimeout(() => {
-                    fieldElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    fieldElement.focus();
-                  }, 100);
-                }
-              }
-            } else {
-              // Show generic error as alert
-              alert(message);
-            }
-          }
-
-          // Helper function to clear all errors
-          function clearAllErrors() {
-            document.querySelectorAll('.form-hint').forEach(hint => {
-              hint.style.display = 'none';
-              hint.textContent = '';
-            });
-            document.querySelectorAll('.form-input-type').forEach(input => {
-              input.style.borderColor = '';
-              input.setAttribute('aria-invalid', 'false');
-            });
-          }
 
           if (response.ok) {
             // Success - show confirmation message
