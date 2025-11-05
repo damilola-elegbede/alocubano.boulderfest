@@ -618,7 +618,7 @@
 
             <div class="form-grid-type">
               <div class="form-group-type">
-                <label class="form-label-type font-mono">FIRST NAME *</label>
+                <label class="form-label-type font-mono" for="firstName">FIRST NAME *</label>
                 <input
                   type="text"
                   name="firstName"
@@ -626,10 +626,16 @@
                   class="form-input-type"
                   placeholder="Your first name"
                   required
+                  minlength="2"
+                  maxlength="100"
+                  autocomplete="given-name"
+                  aria-required="true"
+                  aria-describedby="firstName-hint"
                 />
+                <span id="firstName-hint" class="form-hint" style="display: none; color: var(--color-text-secondary); font-size: 0.875rem; margin-top: 4px;"></span>
               </div>
               <div class="form-group-type">
-                <label class="form-label-type font-mono">LAST NAME *</label>
+                <label class="form-label-type font-mono" for="lastName">LAST NAME *</label>
                 <input
                   type="text"
                   name="lastName"
@@ -637,12 +643,18 @@
                   class="form-input-type"
                   placeholder="Your last name"
                   required
+                  minlength="2"
+                  maxlength="100"
+                  autocomplete="family-name"
+                  aria-required="true"
+                  aria-describedby="lastName-hint"
                 />
+                <span id="lastName-hint" class="form-hint" style="display: none; color: var(--color-text-secondary); font-size: 0.875rem; margin-top: 4px;"></span>
               </div>
             </div>
 
             <div class="form-group-type">
-              <label class="form-label-type font-mono">EMAIL *</label>
+              <label class="form-label-type font-mono" for="email">EMAIL *</label>
               <input
                 type="email"
                 name="email"
@@ -650,16 +662,26 @@
                 class="form-input-type"
                 placeholder="your@email.com"
                 required
+                maxlength="254"
+                autocomplete="email"
+                inputmode="email"
+                aria-required="true"
+                aria-describedby="email-hint"
               />
+              <span id="email-hint" class="form-hint" style="display: none; color: var(--color-text-secondary); font-size: 0.875rem; margin-top: 4px;"></span>
             </div>
 
             <div class="form-group-type">
-              <label class="form-label-type font-mono">PHONE</label>
+              <label class="form-label-type font-mono" for="phone">PHONE</label>
               <input
                 type="tel"
                 name="phone"
+                id="phone"
                 class="form-input-type"
                 placeholder="(303) 555-0123"
+                maxlength="50"
+                autocomplete="tel"
+                inputmode="tel"
               />
             </div>
 
@@ -876,9 +898,34 @@
             alert(`Thank you, ${data.firstName}! We've received your volunteer application and sent you a confirmation email. We'll be in touch as we approach the festival!`);
             form.reset();
             submitBtn.textContent = 'SUBMIT APPLICATION';
+            // Clear any previous error messages
+            document.querySelectorAll('.form-hint').forEach(hint => {
+              hint.style.display = 'none';
+              hint.textContent = '';
+            });
           } else {
-            // Error from API
-            throw new Error(result.error || 'Failed to submit application');
+            // Error from API - show field-specific error
+            if (result.field && result.error) {
+              // Display error under specific field
+              const hintElement = document.getElementById(`${result.field}-hint`);
+              if (hintElement) {
+                hintElement.textContent = result.error;
+                hintElement.style.display = 'block';
+                hintElement.style.color = '#dc2626'; // Red color for errors
+
+                // Scroll to the field with error
+                const fieldElement = document.getElementById(result.field);
+                if (fieldElement) {
+                  fieldElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  fieldElement.focus();
+                }
+              }
+            } else {
+              // Generic error
+              throw new Error(result.error || 'Failed to submit application');
+            }
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'SUBMIT APPLICATION';
           }
         } catch (error) {
           console.error('Error submitting form:', error);

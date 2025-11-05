@@ -6,6 +6,7 @@
 import { getBrevoService } from "../../lib/brevo-service.js";
 import { setSecureCorsHeaders } from '../../lib/cors-config.js';
 import { generateVolunteerAcknowledgementEmail } from '../../lib/email-templates/volunteer-acknowledgement.js';
+import { validateVolunteerSubmission } from '../../lib/validators/form-validators.js';
 
 // Rate limiting storage (in production, use Redis or similar)
 const rateLimitMap = new Map();
@@ -46,61 +47,7 @@ function rateLimit(req, res) {
   return null;
 }
 
-/**
- * Validate email format
- */
-function isValidEmail(email) {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-}
-
-/**
- * Sanitize input data
- */
-function sanitizeInput(data) {
-  const sanitized = {};
-
-  if (data.firstName) {
-    sanitized.firstName = data.firstName.trim().slice(0, 100);
-  }
-
-  if (data.lastName) {
-    sanitized.lastName = data.lastName.trim().slice(0, 100);
-  }
-
-  if (data.email) {
-    sanitized.email = data.email.toLowerCase().trim();
-  }
-
-  if (data.phone) {
-    sanitized.phone = data.phone.trim().slice(0, 50);
-  }
-
-  if (data.message) {
-    sanitized.message = data.message.trim().slice(0, 1000);
-  }
-
-  // Sanitize arrays
-  if (Array.isArray(data.areasOfInterest)) {
-    sanitized.areasOfInterest = data.areasOfInterest
-      .map(area => area.trim())
-      .filter(area => area.length > 0)
-      .slice(0, 10); // Max 10 areas
-  } else {
-    sanitized.areasOfInterest = [];
-  }
-
-  if (Array.isArray(data.availability)) {
-    sanitized.availability = data.availability
-      .map(day => day.trim())
-      .filter(day => day.length > 0)
-      .slice(0, 10); // Max 10 days
-  } else {
-    sanitized.availability = [];
-  }
-
-  return sanitized;
-}
+// Validation functions removed - now using centralized validators from lib/validators/form-validators.js
 
 /**
  * Escape HTML to prevent XSS attacks
@@ -216,31 +163,29 @@ export default async function handler(req, res) {
       });
     }
 
-    // Sanitize input
-    const sanitized = sanitizeInput(req.body);
+    // Comprehensive validation using centralized validator
+    // Includes: spam detection, SQL injection prevention, disposable email blocking, MX verification
+    const validation = await validateVolunteerSubmission(req.body, {
+      verifyMX: true  // Enable MX record verification for email validation
+    });
 
-    // Validate required fields
-    if (!sanitized.firstName) {
+    if (!validation.valid) {
+      // Return first error for simplicity (frontend shows one error at a time)
+      const firstError = validation.errors[0];
       return res.status(400).json({
-        error: 'First name is required'
+        error: firstError.message,
+        field: firstError.field,
+        allErrors: validation.errors  // Include all errors for debugging
       });
     }
 
-    if (!sanitized.lastName) {
-      return res.status(400).json({
-        error: 'Last name is required'
-      });
-    }
+    const sanitized = validation.sanitized;
 
-    if (!sanitized.email) {
-      return res.status(400).json({
-        error: 'Email address is required'
-      });
-    }
-
-    if (!isValidEmail(sanitized.email)) {
-      return res.status(400).json({
-        error: 'Please enter a valid email address'
+    // Log any warnings (e.g., email typo suggestions)
+    if (validation.warnings && validation.warnings.length > 0) {
+      console.log('Volunteer submission warnings:', {
+        email: maskEmail(sanitized.email),
+        warnings: validation.warnings.map(w => w.message)
       });
     }
 
