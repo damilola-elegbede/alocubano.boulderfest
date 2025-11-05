@@ -105,7 +105,8 @@ describe('Volunteer Helper Functions', () => {
         }
       };
       const result = getClientIp(req);
-      expect(result).toBe('203.0.113.195, 70.41.3.18, 150.172.238.178');
+      // Security fix: Only use first IP to prevent spoofing
+      expect(result).toBe('203.0.113.195');
     });
 
     it('should fall back to connection.remoteAddress when x-forwarded-for is missing', () => {
@@ -149,6 +150,39 @@ describe('Volunteer Helper Functions', () => {
       };
       const result = getClientIp(req);
       expect(result).toBe('127.0.0.1');
+    });
+
+    it('should use X-Real-IP header when X-Forwarded-For is not present', () => {
+      const req = {
+        headers: {
+          'x-real-ip': '198.51.100.42'
+        },
+        connection: {
+          remoteAddress: '192.168.1.1'
+        }
+      };
+      const result = getClientIp(req);
+      expect(result).toBe('198.51.100.42');
+    });
+
+    it('should trim whitespace from X-Forwarded-For IP', () => {
+      const req = {
+        headers: {
+          'x-forwarded-for': '  203.0.113.195  '
+        }
+      };
+      const result = getClientIp(req);
+      expect(result).toBe('203.0.113.195');
+    });
+
+    it('should trim whitespace from X-Real-IP', () => {
+      const req = {
+        headers: {
+          'x-real-ip': '  198.51.100.42  '
+        }
+      };
+      const result = getClientIp(req);
+      expect(result).toBe('198.51.100.42');
     });
 
     it('should prioritize x-forwarded-for over connection.remoteAddress', () => {

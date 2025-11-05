@@ -22,10 +22,7 @@ const rateLimitMap = new Map();
  * Rate limiting middleware
  */
 function rateLimit(req, res) {
-  const ip =
-    req.headers['x-forwarded-for'] ||
-    req.connection?.remoteAddress ||
-    '127.0.0.1';
+  const ip = getClientIp(req); // Use centralized IP extraction to prevent spoofing
   const limit = 20; // 20 requests per window
   const windowMs = 15 * 60 * 1000; // 15 minutes
 
