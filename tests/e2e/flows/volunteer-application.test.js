@@ -42,7 +42,7 @@ test.describe('Volunteer Application E2E Flow', () => {
     await expect(page.locator('#volunteer-form')).toBeVisible({ timeout: 5000 });
   });
 
-  test('should complete successful volunteer application with all fields', async ({ page }) => {
+  test('should complete successful volunteer application with all fields', async ({ page, browserName }) => {
     // Generate unique email to avoid rate limiting
     const uniqueEmail = `maria.test.${Date.now()}@gmail.com`;
 
@@ -82,7 +82,9 @@ test.describe('Volunteer Application E2E Flow', () => {
     await expect(submitBtn).toBeEnabled({ timeout: 2000 });
 
     // Setup dialog handler before submitting
-    const dialogPromise = page.waitForEvent('dialog', { timeout: 10000 });
+    // Firefox requires longer timeout due to async timing differences
+    const dialogTimeout = browserName === 'firefox' ? 15000 : 10000;
+    const dialogPromise = page.waitForEvent('dialog', { timeout: dialogTimeout });
 
     // Submit form
     await submitBtn.click();
@@ -395,7 +397,7 @@ test.describe('Volunteer Application E2E Flow', () => {
     await expect(submitBtn).toBeEnabled({ timeout: 2000 });
   });
 
-  test('should support multiple areas of interest and availability selections', async ({ page }) => {
+  test('should support multiple areas of interest and availability selections', async ({ page, browserName }) => {
     // Fill required fields
     await page.fill('#firstName', 'Robert');
     await page.fill('#lastName', 'Martinez');
@@ -428,7 +430,9 @@ test.describe('Volunteer Application E2E Flow', () => {
     await expect(submitBtn).toBeEnabled({ timeout: 2000 });
 
     // Setup dialog handler
-    const dialogPromise = page.waitForEvent('dialog', { timeout: 10000 });
+    // Firefox requires longer timeout due to async timing differences
+    const dialogTimeout = browserName === 'firefox' ? 15000 : 10000;
+    const dialogPromise = page.waitForEvent('dialog', { timeout: dialogTimeout });
 
     await submitBtn.click();
 
