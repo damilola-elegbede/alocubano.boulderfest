@@ -299,21 +299,37 @@ export default async function handler(req, res) {
       }
     };
 
-    // Send both emails
+    // Send both emails with proper error handling
+    // Team notification is CRITICAL (ensures data isn't lost)
+    // Volunteer acknowledgement is optional (nice-to-have UX)
     try {
-      await Promise.all([
+      const [volunteerResult, teamResult] = await Promise.allSettled([
         brevoService.sendTransactionalEmail(volunteerEmailParams),
         brevoService.sendTransactionalEmail(teamEmailParams)
       ]);
-    } catch (emailError) {
-      console.error('Error sending emails:', emailError);
 
-      // Still return success to user if the application was received
-      // but log the email failure
-      return res.status(201).json({
-        success: true,
-        message: 'Application received, but there was an issue sending confirmation emails. We have your information and will contact you soon.',
-        warning: 'Email delivery issue'
+      // Team notification is critical - fail if it doesn't send
+      // This ensures at least the team receives the application data
+      if (teamResult.status === 'rejected') {
+        throw new Error('Failed to send team notification: ' + teamResult.reason.message);
+      }
+
+      // Volunteer acknowledgement failure is acceptable (log but don't fail)
+      if (volunteerResult.status === 'rejected') {
+        console.error('Failed to send volunteer acknowledgement:', volunteerResult.reason);
+        return res.status(201).json({
+          success: true,
+          message: 'Application received! We will contact you soon.',
+          warning: 'Confirmation email could not be sent'
+        });
+      }
+    } catch (emailError) {
+      console.error('Critical: Team notification failed:', emailError);
+
+      // If team notification fails, the application is effectively lost (no database)
+      // Return error to user so they can retry
+      return res.status(500).json({
+        error: 'Unable to process your application. Please try again or email us directly at alocubanoboulderfest@gmail.com'
       });
     }
 

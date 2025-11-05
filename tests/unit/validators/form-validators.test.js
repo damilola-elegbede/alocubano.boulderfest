@@ -3,7 +3,20 @@
  * Tests: Name validation, email validation, phone validation, volunteer submission
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+// Mock DNS to prevent real network calls in tests
+vi.mock('dns', () => ({
+  default: {
+    resolveMx: vi.fn((domain, callback) => {
+      // Simulate DNS lookup failure for graceful degradation testing
+      const error = new Error('queryMx ENOTFOUND ' + domain);
+      error.code = 'ENOTFOUND';
+      callback(error);
+    })
+  }
+}));
+
 import {
   validateName,
   validateEmail,
