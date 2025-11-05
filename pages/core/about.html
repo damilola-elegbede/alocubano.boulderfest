@@ -491,11 +491,21 @@
               </p>
             </div>
             <div class="gallery-item-type team-member-card">
+              <img src="/images/team/yolanda.jpeg" alt="Yolanda Meiler" class="team-member-photo" />
+              <h3 class="gallery-type-title font-display">
+                YOLANDA MEILER
+              </h3>
+              <p class="gallery-type-meta">SECRETARY</p>
+              <p class="gallery-type-description">
+                Arts champion and supporter. Festival experience architect. Creating unforgettable moments. Yolanda is an accomplished DJ who has been active in the Boulder dance community and has contributed her musical expertise to our past events.
+              </p>
+            </div>
+            <div class="gallery-item-type team-member-card">
               <img src="/images/team/analis.jpeg" alt="Analis Ledesma" class="team-member-photo" />
               <h3 class="gallery-type-title font-display">
                 ANALIS LEDESMA
               </h3>
-              <p class="gallery-type-meta">SECRETARY</p>
+              <p class="gallery-type-meta">BOARD MEMBER</p>
               <p class="gallery-type-description">
                 Keeper of our stories and records. Community connector. The voice of our collective journey. Analis also manages much of our social media presence, helping to build and engage our community online.
               </p>
@@ -506,16 +516,6 @@
               <p class="gallery-type-meta">BOARD MEMBER</p>
               <p class="gallery-type-description">
                 Cultural advocate and advisor. Bridging communities. Expanding our reach and impact. Donal is an experienced dancer who brings valuable insight into how our events are run, ensuring they meet the needs of dancers at all levels.
-              </p>
-            </div>
-            <div class="gallery-item-type team-member-card">
-              <img src="/images/team/yolanda.jpeg" alt="Yolanda Meiler" class="team-member-photo" />
-              <h3 class="gallery-type-title font-display">
-                YOLANDA MEILER
-              </h3>
-              <p class="gallery-type-meta">BOARD MEMBER</p>
-              <p class="gallery-type-description">
-                Arts champion and supporter. Festival experience architect. Creating unforgettable moments. Yolanda is an accomplished DJ who has been active in the Boulder dance community and has contributed her musical expertise to our past events.
               </p>
             </div>
           </div>
@@ -618,20 +618,22 @@
 
             <div class="form-grid-type">
               <div class="form-group-type">
-                <label class="form-label-type font-mono">FIRST NAME</label>
+                <label class="form-label-type font-mono">FIRST NAME *</label>
                 <input
                   type="text"
                   name="firstName"
+                  id="firstName"
                   class="form-input-type"
                   placeholder="Your first name"
                   required
                 />
               </div>
               <div class="form-group-type">
-                <label class="form-label-type font-mono">LAST NAME</label>
+                <label class="form-label-type font-mono">LAST NAME *</label>
                 <input
                   type="text"
                   name="lastName"
+                  id="lastName"
                   class="form-input-type"
                   placeholder="Your last name"
                   required
@@ -640,10 +642,11 @@
             </div>
 
             <div class="form-group-type">
-              <label class="form-label-type font-mono">EMAIL</label>
+              <label class="form-label-type font-mono">EMAIL *</label>
               <input
                 type="email"
                 name="email"
+                id="email"
                 class="form-input-type"
                 placeholder="your@email.com"
                 required
@@ -721,7 +724,7 @@
             </div>
 
             <div class="form-actions-type">
-              <button type="submit" class="form-button-type volunteer-submit">
+              <button type="submit" id="volunteerSubmitBtn" class="form-button-type volunteer-submit" disabled>
                 SUBMIT APPLICATION
               </button>
             </div>
@@ -801,45 +804,88 @@
     <script type="module" src="/js/global-cart.js"></script>
     
     <script>
-      function handleVolunteerForm(event) {
+      // Submit button state management
+      document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('volunteer-form');
+        const submitBtn = document.getElementById('volunteerSubmitBtn');
+        const firstNameInput = document.getElementById('firstName');
+        const lastNameInput = document.getElementById('lastName');
+        const emailInput = document.getElementById('email');
+
+        // Function to check if all mandatory fields are filled
+        function checkMandatoryFields() {
+          const firstName = firstNameInput.value.trim();
+          const lastName = lastNameInput.value.trim();
+          const email = emailInput.value.trim();
+
+          // Enable button only if all three mandatory fields are filled
+          if (firstName && lastName && email) {
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = '1';
+            submitBtn.style.cursor = 'pointer';
+          } else {
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.5';
+            submitBtn.style.cursor = 'not-allowed';
+          }
+        }
+
+        // Add event listeners to mandatory fields
+        firstNameInput.addEventListener('input', checkMandatoryFields);
+        lastNameInput.addEventListener('input', checkMandatoryFields);
+        emailInput.addEventListener('input', checkMandatoryFields);
+
+        // Initial check on page load
+        checkMandatoryFields();
+      });
+
+      async function handleVolunteerForm(event) {
         event.preventDefault();
         const form = event.target;
+        const submitBtn = document.getElementById('volunteerSubmitBtn');
         const formData = new FormData(form);
 
         // Collect form data
-        const name = formData.get("name") || "";
-        const email = formData.get("email") || "";
-        const phone = formData.get("phone") || "";
-        const experience = formData.get("experience") || "";
-        const role = formData.get("role") || "";
-        const availability = formData.get("availability") || "";
-        const message = formData.get("message") || "";
+        const data = {
+          firstName: formData.get("firstName") || "",
+          lastName: formData.get("lastName") || "",
+          email: formData.get("email") || "",
+          phone: formData.get("phone") || "",
+          areasOfInterest: formData.getAll("area"),
+          availability: formData.getAll("day"),
+          message: formData.get("message") || ""
+        };
 
-        // Create email body
-        const emailBody = `Volunteer Application - A Lo Cubano Boulder Fest
+        // Disable submit button and show loading state
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'SUBMITTING...';
 
-Name: ${name}
-Email: ${email}
-Phone: ${phone}
-Experience Level: ${experience}
-Preferred Role: ${role}
-Availability: ${availability}
+        try {
+          const response = await fetch('/api/volunteer/submit', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+          });
 
-Additional Message:
-${message}
+          const result = await response.json();
 
----
-Sent from A Lo Cubano Boulder Fest website`;
-
-        // Create mailto URL
-        const subject = encodeURIComponent(
-          "Volunteer Application - A Lo Cubano Boulder Fest",
-        );
-        const body = encodeURIComponent(emailBody);
-        const mailtoUrl = `mailto:alocubanoboulderfest@gmail.com?subject=${subject}&body=${body}`;
-
-        // Open email client
-        window.location.href = mailtoUrl;
+          if (response.ok) {
+            // Success - show confirmation message
+            alert(`Thank you, ${data.firstName}! We've received your volunteer application and sent you a confirmation email. We'll be in touch as we approach the festival!`);
+            form.reset();
+            submitBtn.textContent = 'SUBMIT APPLICATION';
+          } else {
+            // Error from API
+            throw new Error(result.error || 'Failed to submit application');
+          }
+        } catch (error) {
+          console.error('Error submitting form:', error);
+          alert('Sorry, there was an error submitting your application. Please try again or email us directly at alocubanoboulderfest@gmail.com');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'SUBMIT APPLICATION';
+        }
       }
     </script>
     
