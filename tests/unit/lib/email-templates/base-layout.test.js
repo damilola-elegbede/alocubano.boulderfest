@@ -536,7 +536,8 @@ describe('Base Email Layout Template', () => {
       const title = 'Order #123 & Receipt';
       const html = wrapInBaseLayout(sampleContent, title);
 
-      expect(html).toContain('<title>Order #123 & Receipt</title>');
+      // Title should be HTML-escaped for security
+      expect(html).toContain('<title>Order #123 &amp; Receipt</title>');
     });
   });
 

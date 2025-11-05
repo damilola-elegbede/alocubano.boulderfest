@@ -110,7 +110,8 @@ describe('Brevo Email Templates', () => {
       const html = generateBrevoOrderConfirmationEmail();
 
       expect(html).toContain('<!DOCTYPE html>');
-      expect(html).toContain('<title>Order Confirmation & Receipt</title>');
+      // Title should be HTML-escaped
+      expect(html).toContain('<title>Order Confirmation &amp; Receipt</title>');
     });
   });
 

@@ -491,11 +491,21 @@
               </p>
             </div>
             <div class="gallery-item-type team-member-card">
+              <img src="/images/team/yolanda.jpeg" alt="Yolanda Meiler" class="team-member-photo" />
+              <h3 class="gallery-type-title font-display">
+                YOLANDA MEILER
+              </h3>
+              <p class="gallery-type-meta">SECRETARY</p>
+              <p class="gallery-type-description">
+                Arts champion and supporter. Festival experience architect. Creating unforgettable moments. Yolanda is an accomplished DJ who has been active in the Boulder dance community and has contributed her musical expertise to our past events.
+              </p>
+            </div>
+            <div class="gallery-item-type team-member-card">
               <img src="/images/team/analis.jpeg" alt="Analis Ledesma" class="team-member-photo" />
               <h3 class="gallery-type-title font-display">
                 ANALIS LEDESMA
               </h3>
-              <p class="gallery-type-meta">SECRETARY</p>
+              <p class="gallery-type-meta">BOARD MEMBER</p>
               <p class="gallery-type-description">
                 Keeper of our stories and records. Community connector. The voice of our collective journey. Analis also manages much of our social media presence, helping to build and engage our community online.
               </p>
@@ -506,16 +516,6 @@
               <p class="gallery-type-meta">BOARD MEMBER</p>
               <p class="gallery-type-description">
                 Cultural advocate and advisor. Bridging communities. Expanding our reach and impact. Donal is an experienced dancer who brings valuable insight into how our events are run, ensuring they meet the needs of dancers at all levels.
-              </p>
-            </div>
-            <div class="gallery-item-type team-member-card">
-              <img src="/images/team/yolanda.jpeg" alt="Yolanda Meiler" class="team-member-photo" />
-              <h3 class="gallery-type-title font-display">
-                YOLANDA MEILER
-              </h3>
-              <p class="gallery-type-meta">BOARD MEMBER</p>
-              <p class="gallery-type-description">
-                Arts champion and supporter. Festival experience architect. Creating unforgettable moments. Yolanda is an accomplished DJ who has been active in the Boulder dance community and has contributed her musical expertise to our past events.
               </p>
             </div>
           </div>
@@ -618,45 +618,70 @@
 
             <div class="form-grid-type">
               <div class="form-group-type">
-                <label class="form-label-type font-mono">FIRST NAME</label>
+                <label class="form-label-type font-mono" for="firstName">FIRST NAME *</label>
                 <input
                   type="text"
                   name="firstName"
+                  id="firstName"
                   class="form-input-type"
                   placeholder="Your first name"
                   required
+                  minlength="2"
+                  maxlength="100"
+                  autocomplete="given-name"
+                  aria-required="true"
+                  aria-describedby="firstName-hint"
                 />
+                <span id="firstName-hint" class="form-hint" style="display: none; color: var(--color-text-secondary); font-size: 0.875rem; margin-top: 4px;"></span>
               </div>
               <div class="form-group-type">
-                <label class="form-label-type font-mono">LAST NAME</label>
+                <label class="form-label-type font-mono" for="lastName">LAST NAME *</label>
                 <input
                   type="text"
                   name="lastName"
+                  id="lastName"
                   class="form-input-type"
                   placeholder="Your last name"
                   required
+                  minlength="2"
+                  maxlength="100"
+                  autocomplete="family-name"
+                  aria-required="true"
+                  aria-describedby="lastName-hint"
                 />
+                <span id="lastName-hint" class="form-hint" style="display: none; color: var(--color-text-secondary); font-size: 0.875rem; margin-top: 4px;"></span>
               </div>
             </div>
 
             <div class="form-group-type">
-              <label class="form-label-type font-mono">EMAIL</label>
+              <label class="form-label-type font-mono" for="email">EMAIL *</label>
               <input
                 type="email"
                 name="email"
+                id="email"
                 class="form-input-type"
                 placeholder="your@email.com"
                 required
+                maxlength="254"
+                autocomplete="email"
+                inputmode="email"
+                aria-required="true"
+                aria-describedby="email-hint"
               />
+              <span id="email-hint" class="form-hint" style="display: none; color: var(--color-text-secondary); font-size: 0.875rem; margin-top: 4px;"></span>
             </div>
 
             <div class="form-group-type">
-              <label class="form-label-type font-mono">PHONE</label>
+              <label class="form-label-type font-mono" for="phone">PHONE</label>
               <input
                 type="tel"
                 name="phone"
+                id="phone"
                 class="form-input-type"
                 placeholder="(303) 555-0123"
+                maxlength="50"
+                autocomplete="tel"
+                inputmode="tel"
               />
             </div>
 
@@ -721,7 +746,7 @@
             </div>
 
             <div class="form-actions-type">
-              <button type="submit" class="form-button-type volunteer-submit">
+              <button type="submit" id="volunteerSubmitBtn" class="form-button-type volunteer-submit" disabled>
                 SUBMIT APPLICATION
               </button>
             </div>
@@ -801,45 +826,306 @@
     <script type="module" src="/js/global-cart.js"></script>
     
     <script>
-      function handleVolunteerForm(event) {
+      // Submit button state management and real-time validation
+      document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('volunteer-form');
+        const submitBtn = document.getElementById('volunteerSubmitBtn');
+        const firstNameInput = document.getElementById('firstName');
+        const lastNameInput = document.getElementById('lastName');
+        const emailInput = document.getElementById('email');
+
+        // Validation patterns
+        const NAME_PATTERN = /^[\p{L}\p{M}\s'\-\.]{2,100}$/u;
+        const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const SPAM_PATTERNS = [
+          /^test$/i,
+          /^asdf+$/i,
+          /^qwerty$/i,
+          /^\d+$/,
+          /^(.)\1{4,}$/,
+          /^http/i
+        ];
+        const DISPOSABLE_DOMAINS = [
+          '10minutemail.com', 'guerrillamail.com', 'mailinator.com',
+          'temp-mail.org', 'throwaway.email', 'yopmail.com', 'tempmail.com',
+          'trashmail.com', 'getnada.com', 'maildrop.cc'
+        ];
+
+        // Helper to show field error
+        function showFieldError(fieldId, message) {
+          const hintElement = document.getElementById(`${fieldId}-hint`);
+          const fieldElement = document.getElementById(fieldId);
+          if (hintElement && fieldElement) {
+            hintElement.textContent = message;
+            hintElement.style.display = 'block';
+            hintElement.style.color = '#dc2626';
+            fieldElement.style.borderColor = '#dc2626';
+            fieldElement.setAttribute('aria-invalid', 'true');
+          }
+        }
+
+        // Helper to clear field error
+        function clearFieldError(fieldId) {
+          const hintElement = document.getElementById(`${fieldId}-hint`);
+          const fieldElement = document.getElementById(fieldId);
+          if (hintElement && fieldElement) {
+            hintElement.textContent = '';
+            hintElement.style.display = 'none';
+            fieldElement.style.borderColor = '';
+            fieldElement.setAttribute('aria-invalid', 'false');
+          }
+        }
+
+        // Validate name field
+        function validateName(value, fieldName, fieldId) {
+          const trimmed = value.trim();
+
+          if (trimmed.length === 0) {
+            return null; // Don't show error for empty field (required will handle it)
+          }
+
+          if (trimmed.length < 2) {
+            return `${fieldName} must be at least 2 characters`;
+          }
+
+          if (trimmed.length > 100) {
+            return `${fieldName} must not exceed 100 characters`;
+          }
+
+          if (!NAME_PATTERN.test(trimmed)) {
+            return `${fieldName} can only contain letters, spaces, hyphens, apostrophes, and periods`;
+          }
+
+          // Check spam patterns
+          for (const pattern of SPAM_PATTERNS) {
+            if (pattern.test(trimmed)) {
+              return `Please enter a valid ${fieldName.toLowerCase()}`;
+            }
+          }
+
+          return null; // Valid
+        }
+
+        // Validate email field
+        function validateEmailField(value) {
+          const trimmed = value.toLowerCase().trim();
+
+          if (trimmed.length === 0) {
+            return null; // Don't show error for empty field
+          }
+
+          if (!EMAIL_PATTERN.test(trimmed)) {
+            return 'Please enter a valid email address (e.g., name@example.com)';
+          }
+
+          if (trimmed.includes('..')) {
+            return 'Email address cannot contain consecutive dots';
+          }
+
+          const domain = trimmed.split('@')[1];
+          if (domain && DISPOSABLE_DOMAINS.includes(domain)) {
+            return 'Disposable email addresses are not allowed. Please use a permanent email.';
+          }
+
+          // Check for common typos
+          const typos = {
+            'gmai.com': 'gmail.com',
+            'gmial.com': 'gmail.com',
+            'yaho.com': 'yahoo.com',
+            'hotmai.com': 'hotmail.com',
+            'outlok.com': 'outlook.com'
+          };
+
+          if (domain && typos[domain]) {
+            return `Did you mean ${trimmed.replace(domain, typos[domain])}?`;
+          }
+
+          return null; // Valid
+        }
+
+        // Real-time validation on blur (when user leaves field)
+        firstNameInput.addEventListener('blur', function() {
+          const error = validateName(this.value, 'First name', 'firstName');
+          if (error) {
+            showFieldError('firstName', error);
+          } else {
+            clearFieldError('firstName');
+          }
+        });
+
+        lastNameInput.addEventListener('blur', function() {
+          const error = validateName(this.value, 'Last name', 'lastName');
+          if (error) {
+            showFieldError('lastName', error);
+          } else {
+            clearFieldError('lastName');
+          }
+        });
+
+        emailInput.addEventListener('blur', function() {
+          const error = validateEmailField(this.value);
+          if (error) {
+            showFieldError('email', error);
+          } else {
+            clearFieldError('email');
+          }
+        });
+
+        // Clear errors as user types
+        firstNameInput.addEventListener('input', function() {
+          if (this.value.trim().length > 0) {
+            clearFieldError('firstName');
+          }
+          checkMandatoryFields();
+        });
+
+        lastNameInput.addEventListener('input', function() {
+          if (this.value.trim().length > 0) {
+            clearFieldError('lastName');
+          }
+          checkMandatoryFields();
+        });
+
+        emailInput.addEventListener('input', function() {
+          if (this.value.trim().length > 0) {
+            clearFieldError('email');
+          }
+          checkMandatoryFields();
+        });
+
+        // Function to check if all mandatory fields are filled
+        function checkMandatoryFields() {
+          const firstName = firstNameInput.value.trim();
+          const lastName = lastNameInput.value.trim();
+          const email = emailInput.value.trim();
+
+          // Enable button only if all three mandatory fields are filled
+          if (firstName && lastName && email) {
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = '1';
+            submitBtn.style.cursor = 'pointer';
+          } else {
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.5';
+            submitBtn.style.cursor = 'not-allowed';
+          }
+        }
+
+        // Initial check on page load
+        checkMandatoryFields();
+      });
+
+      async function handleVolunteerForm(event) {
         event.preventDefault();
         const form = event.target;
+        const submitBtn = document.getElementById('volunteerSubmitBtn');
         const formData = new FormData(form);
 
         // Collect form data
-        const name = formData.get("name") || "";
-        const email = formData.get("email") || "";
-        const phone = formData.get("phone") || "";
-        const experience = formData.get("experience") || "";
-        const role = formData.get("role") || "";
-        const availability = formData.get("availability") || "";
-        const message = formData.get("message") || "";
+        const data = {
+          firstName: formData.get("firstName") || "",
+          lastName: formData.get("lastName") || "",
+          email: formData.get("email") || "",
+          phone: formData.get("phone") || "",
+          areasOfInterest: formData.getAll("area"),
+          availability: formData.getAll("day"),
+          message: formData.get("message") || ""
+        };
 
-        // Create email body
-        const emailBody = `Volunteer Application - A Lo Cubano Boulder Fest
+        // Helper function to show error message
+        function showErrorMessage(message, field = null) {
+          if (field) {
+            // Show field-specific error
+            const hintElement = document.getElementById(`${field}-hint`);
+            if (hintElement) {
+              hintElement.textContent = message;
+              hintElement.style.display = 'block';
+              hintElement.style.color = '#dc2626';
+              hintElement.style.marginTop = '4px';
+              hintElement.style.fontSize = '0.875rem';
 
-Name: ${name}
-Email: ${email}
-Phone: ${phone}
-Experience Level: ${experience}
-Preferred Role: ${role}
-Availability: ${availability}
+              // Scroll to and focus the field
+              const fieldElement = document.getElementById(field);
+              if (fieldElement) {
+                fieldElement.style.borderColor = '#dc2626';
+                fieldElement.setAttribute('aria-invalid', 'true');
+                setTimeout(() => {
+                  fieldElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  fieldElement.focus();
+                }, 100);
+              }
+            }
+          } else {
+            // Show generic error as alert
+            alert(message);
+          }
+        }
 
-Additional Message:
-${message}
+        // Helper function to clear all errors
+        function clearAllErrors() {
+          document.querySelectorAll('.form-hint').forEach(hint => {
+            hint.style.display = 'none';
+            hint.textContent = '';
+          });
+          document.querySelectorAll('.form-input-type').forEach(input => {
+            input.style.borderColor = '';
+            input.setAttribute('aria-invalid', 'false');
+          });
+        }
 
----
-Sent from A Lo Cubano Boulder Fest website`;
+        // Disable submit button and show loading state
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'SUBMITTING...';
 
-        // Create mailto URL
-        const subject = encodeURIComponent(
-          "Volunteer Application - A Lo Cubano Boulder Fest",
-        );
-        const body = encodeURIComponent(emailBody);
-        const mailtoUrl = `mailto:alocubanoboulderfest@gmail.com?subject=${subject}&body=${body}`;
+        try {
+          const response = await fetch('/api/volunteer/submit', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+          });
 
-        // Open email client
-        window.location.href = mailtoUrl;
+          const result = await response.json();
+
+          if (response.ok) {
+            // Success - show confirmation message
+            clearAllErrors();
+            alert(`Thank you, ${data.firstName}! We've received your volunteer application and sent you a confirmation email. We'll be in touch as we approach the festival!`);
+            form.reset();
+            submitBtn.textContent = 'SUBMIT APPLICATION';
+          } else {
+            // Error from API - show specific error message
+            clearAllErrors();
+
+            if (result.field && result.error) {
+              // Field-specific validation error
+              showErrorMessage(result.error, result.field);
+            } else if (result.error) {
+              // Generic error with message from server
+              showErrorMessage(result.error);
+            } else {
+              // Unknown error
+              showErrorMessage('Unable to submit application. Please check your information and try again.');
+            }
+
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'SUBMIT APPLICATION';
+          }
+        } catch (error) {
+          console.error('Error submitting form:', error);
+          clearAllErrors();
+
+          // Network error or other exception
+          if (error.message && error.message !== 'Failed to fetch') {
+            showErrorMessage(`Error: ${error.message}\n\nIf this problem persists, please email us at alocubanoboulderfest@gmail.com`);
+          } else {
+            showErrorMessage('Network error. Please check your internet connection and try again.\n\nIf this problem persists, please email us at alocubanoboulderfest@gmail.com');
+          }
+
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'SUBMIT APPLICATION';
+        }
       }
     </script>
     

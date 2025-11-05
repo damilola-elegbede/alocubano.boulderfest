@@ -160,7 +160,8 @@ describe('Attendee Confirmation Email Template', () => {
 
       const html = generateAttendeeConfirmationEmail(data);
 
-      expect(html).toContain("O'Connor");
+      // Apostrophes are HTML-escaped for security
+      expect(html).toContain("O&#039;Connor");
       expect(html).toContain("Smith-Jones");
     });
 
@@ -374,7 +375,8 @@ describe('Attendee Confirmation Email Template', () => {
       const html = generateAttendeeConfirmationEmail(data);
 
       expect(html).toBeTruthy();
-      expect(html).toContain('Hi undefined,');
+      // With HTML escaping, undefined becomes empty string (better than "undefined")
+      expect(html).toContain('Hi ,');
     });
 
     it('should handle missing lastName', () => {
