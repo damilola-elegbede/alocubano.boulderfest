@@ -329,26 +329,28 @@ describe('Registration Reminder Email Template', () => {
   });
 
   describe('XSS Prevention', () => {
-    it('should render customer name as-is (caller must sanitize)', () => {
+    it('should escape XSS attempts in customer name', () => {
       const data = {
         ...baseData,
         customerName: '<script>alert("xss")</script>Jane'
       };
       const html = generateRegistrationReminderEmail(data);
 
-      // Template renders content directly; sanitization is caller's responsibility
-      expect(html).toContain('<script>alert("xss")</script>Jane');
+      // Template now auto-escapes HTML to prevent XSS
+      expect(html).toContain('&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;Jane');
+      expect(html).not.toContain('<script>alert("xss")</script>');
     });
 
-    it('should render order number as-is (caller must sanitize)', () => {
+    it('should escape XSS attempts in order number', () => {
       const data = {
         ...baseData,
         orderNumber: 'ORD-<test>'
       };
       const html = generateRegistrationReminderEmail(data);
 
-      // Template renders HTML directly
-      expect(html).toContain('ORD-<test>');
+      // Template escapes HTML tags
+      expect(html).toContain('ORD-&lt;test&gt;');
+      expect(html).not.toContain('ORD-<test>');
     });
 
     it('should safely render URLs', () => {
@@ -358,7 +360,8 @@ describe('Registration Reminder Email Template', () => {
       };
       const html = generateRegistrationReminderEmail(data);
 
-      // URL is rendered as-is; email clients won't execute javascript: URLs anyway
+      // URL is rendered as-is in href attributes (email clients block javascript: URLs)
+      // Note: href attributes don't need HTML escaping, but dangerous protocols should be validated at input
       expect(html).toContain('href="javascript:alert(1)"');
     });
   });

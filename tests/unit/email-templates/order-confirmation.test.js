@@ -55,8 +55,8 @@ describe('Order Confirmation Email Template', () => {
     it('should have proper title tag', () => {
       const html = generateOrderConfirmationEmail(baseData);
 
-      // Title tag doesn't need HTML entity encoding (& is fine in title)
-      expect(html).toContain('<title>Order Confirmation & Receipt</title>');
+      // Title tag should have HTML entity encoding for XSS protection
+      expect(html).toContain('<title>Order Confirmation &amp; Receipt</title>');
     });
 
     it('should include responsive media queries', () => {
@@ -314,27 +314,28 @@ describe('Order Confirmation Email Template', () => {
   });
 
   describe('XSS Prevention and Security', () => {
-    it('should render customer name as-is (caller must sanitize)', () => {
+    it('should escape XSS attempts in customer name', () => {
       const data = {
         ...baseData,
         customerName: '<script>alert("xss")</script>John'
       };
       const html = generateOrderConfirmationEmail(data);
 
-      // Template doesn't auto-escape; it renders the string directly
-      // This is expected - sanitization should happen at the data layer
-      expect(html).toContain('<script>alert("xss")</script>John');
+      // Template now auto-escapes HTML to prevent XSS
+      expect(html).toContain('&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;John');
+      expect(html).not.toContain('<script>alert("xss")</script>');
     });
 
-    it('should render order number as-is (caller must sanitize)', () => {
+    it('should escape XSS attempts in order number', () => {
       const data = {
         ...baseData,
         orderNumber: 'ORD-<img src=x onerror=alert(1)>'
       };
       const html = generateOrderConfirmationEmail(data);
 
-      // Template renders HTML directly; validation should occur before template generation
-      expect(html).toContain('ORD-<img src=x onerror=alert(1)>');
+      // Template escapes dangerous HTML
+      expect(html).toContain('ORD-&lt;img src=x onerror=alert(1)&gt;');
+      expect(html).not.toContain('ORD-<img src=x onerror=alert(1)>');
     });
 
     it('should handle special characters in customer name', () => {
@@ -344,21 +345,20 @@ describe('Order Confirmation Email Template', () => {
       };
       const html = generateOrderConfirmationEmail(data);
 
-      // Apostrophes and ampersands render correctly
-      expect(html).toContain('O\'Brien');
-      expect(html).toContain('&');
+      // Apostrophes and ampersands are properly escaped
+      expect(html).toContain('O&#039;Brien &amp; Sons');
     });
 
-    it('should render billing email as-is (validation at data layer)', () => {
+    it('should escape XSS attempts in billing email', () => {
       const data = {
         ...baseData,
         billingEmail: 'test@example.com<script>alert(1)</script>'
       };
       const html = generateOrderConfirmationEmail(data);
 
-      // Email clients will not execute JavaScript in emails anyway
-      // HTML is rendered as-is; input validation is caller's responsibility
-      expect(html).toContain('test@example.com<script>alert(1)</script>');
+      // Email is escaped to prevent any XSS risk
+      expect(html).toContain('test@example.com&lt;script&gt;alert(1)&lt;/script&gt;');
+      expect(html).not.toContain('test@example.com<script>alert(1)</script>');
     });
   });
 
@@ -472,7 +472,7 @@ describe('Order Confirmation Email Template', () => {
       };
       const html = generateOrderConfirmationEmail(data);
 
-      expect(html).toContain('O\'Brien');
+      expect(html).toContain('O&#039;Brien');
     });
 
     it('should handle hyphenated names', () => {

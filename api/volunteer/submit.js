@@ -103,6 +103,23 @@ function sanitizeInput(data) {
 }
 
 /**
+ * Escape HTML to prevent XSS attacks
+ * @param {string} text - Text to escape
+ * @returns {string} HTML-escaped text
+ */
+function escapeHtml(text) {
+  if (!text) return '';
+  const map = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  };
+  return String(text).replace(/[&<>"']/g, m => map[m]);
+}
+
+/**
  * Get client IP address
  */
 function getClientIp(req) {
@@ -113,6 +130,20 @@ function getClientIp(req) {
     req.connection?.socket?.remoteAddress ||
     '127.0.0.1'
   );
+}
+
+/**
+ * Mask email for logging (PII protection)
+ * @param {string} email - Email address
+ * @returns {string} Masked email (e.g., "ab***@domain.com")
+ */
+function maskEmail(email) {
+  if (!email || typeof email !== 'string') return '[invalid-email]';
+  const parts = email.split('@');
+  const user = parts[0];
+  const domain = parts[1] || '';
+  if (!user || !domain) return '[malformed-email]';
+  return user.slice(0, 2) + '***@' + domain;
 }
 
 /**
@@ -286,19 +317,19 @@ export default async function handler(req, res) {
     const teamEmailBody = `
       <h2>New Volunteer Application Received</h2>
 
-      <p><strong>Name:</strong> ${sanitized.firstName} ${sanitized.lastName}</p>
-      <p><strong>Email:</strong> ${sanitized.email}</p>
-      <p><strong>Phone:</strong> ${sanitized.phone || 'Not provided'}</p>
+      <p><strong>Name:</strong> ${escapeHtml(sanitized.firstName)} ${escapeHtml(sanitized.lastName)}</p>
+      <p><strong>Email:</strong> ${escapeHtml(sanitized.email)}</p>
+      <p><strong>Phone:</strong> ${escapeHtml(sanitized.phone || 'Not provided')}</p>
 
-      <p><strong>Areas of Interest:</strong><br>${formatAreasOfInterest(sanitized.areasOfInterest)}</p>
+      <p><strong>Areas of Interest:</strong><br>${escapeHtml(formatAreasOfInterest(sanitized.areasOfInterest))}</p>
 
-      <p><strong>Availability:</strong><br>${formatAvailability(sanitized.availability)}</p>
+      <p><strong>Availability:</strong><br>${escapeHtml(formatAvailability(sanitized.availability))}</p>
 
-      ${sanitized.message ? `<p><strong>Why They Want to Volunteer:</strong><br>${sanitized.message.replace(/\n/g, '<br>')}</p>` : ''}
+      ${sanitized.message ? `<p><strong>Why They Want to Volunteer:</strong><br>${escapeHtml(sanitized.message).replace(/\n/g, '<br>')}</p>` : ''}
 
       <hr>
       <p style="font-size: 12px; color: #666;">
-        Submitted from: ${getClientIp(req)}<br>
+        Submitted from: ${escapeHtml(getClientIp(req))}<br>
         Timestamp: ${new Date().toISOString()}
       </p>
     `;
@@ -312,7 +343,7 @@ export default async function handler(req, res) {
         email: 'alocubanoboulderfest@gmail.com',
         name: 'A Lo Cubano Boulder Fest Team'
       }],
-      subject: `New Volunteer Application - ${sanitized.firstName} ${sanitized.lastName}`,
+      subject: `New Volunteer Application - ${escapeHtml(sanitized.firstName)} ${escapeHtml(sanitized.lastName)}`,
       htmlContent: teamEmailBody,
       headers: {
         'X-Mailin-Tag': 'volunteer-notification',
@@ -350,7 +381,7 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error('Volunteer submission error:', {
       error: error.message,
-      email: req.body?.email,
+      email: maskEmail(req.body?.email),
       ip: getClientIp(req),
       timestamp: new Date().toISOString()
     });
