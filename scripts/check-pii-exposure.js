@@ -19,13 +19,13 @@ import { execSync } from 'child_process';
 // PII patterns to detect in logging statements
 const PII_PATTERNS = {
   // Direct property access on objects (e.g., user.email, data.password)
-  directAccess: /\.(email|password|phone|ssn|creditCard|credit_card|firstName|first_name|lastName|last_name|dob|dateOfBirth|address)/gi,
+  directAccess: /\.(email|password|phone|ssn|creditCard|credit_card|firstName|first_name|lastName|last_name|dob|dateOfBirth|address)/i,
 
   // Variable names that likely contain PII
-  variableNames: /\b(email|password|phone|ssn|creditCard|userEmail|userPhone|customerEmail)\b/gi,
+  variableNames: /\b(email|password|phone|ssn|creditCard|userEmail|userPhone|customerEmail)\b/i,
 
   // Template literals with PII fields
-  templateLiterals: /\$\{[^}]*\.(email|password|phone|firstName|lastName)[^}]*\}/gi,
+  templateLiterals: /\$\{[^}]*\.(email|password|phone|firstName|lastName)[^}]*\}/i,
 };
 
 // Patterns that indicate safe PII handling
@@ -45,13 +45,11 @@ const SAFE_PATTERNS = {
 
 // Files/directories to exclude from scanning
 const EXCLUDE_PATTERNS = [
-  /node_modules/,
-  /\.git\//,
-  /test/i,
-  /spec/i,
-  /mock/i,
-  /fixture/i,
-  /__tests__/,
+  /(^|[\\\/])node_modules[\\\/]/,
+  /(^|[\\\/])\.git[\\\/]/,
+  /(^|[\\\/])__tests__[\\\/]/,
+  /(^|[\\\/])(tests?|specs?|mocks?|fixtures?)[\\\/]/i,
+  /\.(test|spec|mock|fixture)\.(js|jsx|ts|tsx)$/i,
   /sentry-config\.js$/,  // Sentry config handles PII by design
   /gdpr-compliance-service\.js$/,  // GDPR service handles PII by design
   /volunteer-helpers\.js$/,  // Contains maskEmail() utility with examples

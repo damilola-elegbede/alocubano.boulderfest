@@ -68,6 +68,10 @@ else
         # Warnings only - allow commit but notify
         echo "⚠️  PII warnings detected - please review"
         echo "✅ Commit allowed to proceed"
+    else
+        echo "❌ PII scan failed (exit code $PII_EXIT_CODE) - aborting commit"
+        echo "   Run: node scripts/check-pii-exposure.js --staged --json for details"
+        exit 1
     fi
 fi
 
