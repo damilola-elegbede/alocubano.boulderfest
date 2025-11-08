@@ -120,7 +120,7 @@
       "event_date": "2025-11-08",
       "event_time": "13:00",
       "price_cents": 6500,
-      "status": "available",
+      "status": "unavailable",
       "display_order": 1
     },
     {
@@ -131,7 +131,7 @@
       "event_date": "2025-11-08",
       "event_time": "13:00",
       "price_cents": 2500,
-      "status": "available",
+      "status": "unavailable",
       "display_order": 2
     },
     {
@@ -333,7 +333,7 @@
     "currency": "USD",
     "timezone": "America/Denver",
     "max_tickets_per_transaction": 100,
-    "ticket_statuses": ["available", "sold-out", "coming-soon", "closed", "test"],
+    "ticket_statuses": ["available", "sold-out", "coming-soon", "closed", "test", "unavailable"],
     "event_statuses": ["draft", "upcoming", "active", "completed", "cancelled", "test"]
   }
 }

@@ -352,8 +352,9 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Coming Soon Ribbon - Diagonal corner badge */
-.ticket-status-banner.coming-soon {
+/* Coming Soon / Not Available Ribbons - Diagonal corner badge (shared container) */
+.ticket-status-banner.coming-soon,
+.ticket-status-banner.unavailable {
   position: absolute;
   top: 0;      /* Aligned with card border (banner now inside .flip-card-front) */
   left: 0;     /* Aligned with card border (banner now inside .flip-card-front) */
@@ -389,6 +390,26 @@
 .ticket-status-banner.sold-out {
   background: var(--color-text-secondary, #6b7280);
   color: var(--color-white, #ffffff);
+}
+
+/* Not Available Ribbon - Pseudo-element content */
+.ticket-status-banner.unavailable::before {
+  content: 'NOT AVAILABLE';
+  position: absolute;
+  width: 200px;
+  background: var(--color-error, #dc2626); /* Red background */
+  color: var(--color-white, #ffffff);
+  text-align: center;
+  line-height: 40px;
+  font-size: 14px;
+  font-family: var(--font-display, 'Bebas Neue', sans-serif);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  transform: rotate(-45deg);
+  /* Positioned to stay completely within white card border */
+  top: 35px;
+  left: -48px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
 /* ========================================
