@@ -169,14 +169,14 @@ async function handler(req, res) {
     // ========================================================================
     // STEP 2: Get Admin Info (from JWT token)
     // ========================================================================
-    // Validate admin email exists in authentication context
-    if (!req.user?.email) {
+    // Validate admin ID exists in authentication context
+    if (!req.admin?.id) {
       return res.status(401).json({
         error: 'Authentication required',
-        details: 'Admin email not found in authentication context'
+        details: 'Admin ID not found in authentication context'
       });
     }
-    const adminEmail = req.user.email;
+    const adminId = req.admin.id;
 
     // ========================================================================
     // STEP 3: Get Current Ticket Info
@@ -311,7 +311,7 @@ async function handler(req, res) {
           sanitizedNewFirstName,
           sanitizedNewLastName,
           sanitizedNewPhone,
-          adminEmail,
+          adminId,
           sanitizedTransferReason,
           'admin_manual',
           ticket.is_test ? 1 : 0
@@ -327,7 +327,7 @@ async function handler(req, res) {
       console.error('Transaction rollback due to error:', error);
       throw error;
     }
-    console.log(`Ticket ${ticketId} transferred from ${ticket.attendee_email || 'unassigned'} to ${sanitizedNewEmail} by ${adminEmail}`);
+    console.log(`Ticket ${ticketId} transferred from ${ticket.attendee_email || 'unassigned'} to ${sanitizedNewEmail} by ${adminId}`);
 
     // ========================================================================
     // STEP 7: Get Updated Ticket
@@ -405,7 +405,7 @@ async function handler(req, res) {
             lastName: sanitizedNewLastName,
             phone: sanitizedNewPhone
           },
-          transferredBy: adminEmail,
+          transferredBy: adminId,
           transferredAt: new Date().toISOString()
         }
       })
