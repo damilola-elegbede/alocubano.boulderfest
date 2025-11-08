@@ -1080,7 +1080,12 @@
           const result = await response.json();
 
           if (!response.ok) {
-            throw new Error(result.error || 'Failed to transfer ticket');
+            // Create error object with metadata for better handling
+            const error = new Error(result.error || 'Failed to transfer ticket');
+            error.status = response.status;
+            error.details = result.details;
+            error.isValidation = response.status >= 400 && response.status < 500;
+            throw error;
           }
 
           // Show success message
@@ -1101,16 +1106,77 @@
         } catch (error) {
           console.error('Transfer error:', error);
 
-          // Show error message
-          alertContainer.innerHTML = `
-            <div class="alert alert-error">
-              <strong>Error:</strong> ${escapeHtml(error.message || 'Failed to transfer ticket')}
-            </div>
-          `;
+          // Determine error type for better user feedback
+          const isNetworkError = error.name === 'TypeError' ||
+                                 error.message.includes('fetch') ||
+                                 error.message.includes('network') ||
+                                 error.message.includes('timeout') ||
+                                 error.message.includes('connection');
 
-          // Re-enable submit button
-          submitBtn.disabled = false;
-          submitBtn.innerHTML = '<span>Confirm Transfer</span>';
+          const isServerError = error.status === 500 || error.status === 502 || error.status === 503;
+          const isValidationError = error.isValidation && !isServerError;
+
+          // Build error message based on error type
+          let errorMessage = '';
+          let showRetryButton = false;
+
+          if (isNetworkError) {
+            errorMessage = `
+              <div class="alert alert-error">
+                <strong>Connection Error:</strong> Unable to reach the server. Please check your internet connection and try again.
+                <br><br>
+                <button onclick="document.getElementById('transfer-submit-btn').click()" class="btn-retry" style="margin-top: 8px; padding: 6px 12px; background: var(--color-accent-red); color: white; border: none; border-radius: 4px; cursor: pointer;">
+                  Retry Transfer
+                </button>
+              </div>
+            `;
+            showRetryButton = true;
+          } else if (isServerError) {
+            const detailsText = error.details || error.message || 'The server encountered an error while processing your request';
+            errorMessage = `
+              <div class="alert alert-error">
+                <strong>Server Error:</strong> ${escapeHtml(detailsText)}
+                <br><br>
+                This may be a temporary issue. Please try again in a moment.
+                <br><br>
+                <button onclick="document.getElementById('transfer-submit-btn').click()" class="btn-retry" style="margin-top: 8px; padding: 6px 12px; background: var(--color-accent-red); color: white; border: none; border-radius: 4px; cursor: pointer;">
+                  Retry Transfer
+                </button>
+              </div>
+            `;
+            showRetryButton = true;
+          } else if (isValidationError) {
+            const detailsText = error.details || error.message;
+            errorMessage = `
+              <div class="alert alert-error">
+                <strong>Validation Error:</strong> ${escapeHtml(detailsText)}
+                <br><br>
+                Please review the form and try again.
+              </div>
+            `;
+          } else {
+            // Generic error
+            errorMessage = `
+              <div class="alert alert-error">
+                <strong>Error:</strong> ${escapeHtml(error.message || 'Failed to transfer ticket')}
+                <br><br>
+                If this persists, please contact support.
+              </div>
+            `;
+          }
+
+          // Show error message
+          alertContainer.innerHTML = errorMessage;
+
+          // Only re-enable submit button if not showing retry button
+          if (!showRetryButton) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span>Confirm Transfer</span>';
+          } else {
+            // Reset button for retry
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span>Confirm Transfer</span>';
+          }
         }
       }
 
