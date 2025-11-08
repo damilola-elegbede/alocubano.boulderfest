@@ -119,7 +119,7 @@
       "description": "Full weekend access to workshops and socials",
       "event_date": "2025-11-08",
       "event_time": "13:00",
-      "price_cents": 7500,
+      "price_cents": 6500,
       "status": "unavailable",
       "display_order": 1
     },
@@ -133,6 +133,17 @@
       "price_cents": 2500,
       "status": "unavailable",
       "display_order": 2
+    },
+    {
+      "id": "weekender-2025-11-full-in-person",
+      "event_id": 2,
+      "name": "Full Pass - In Person",
+      "description": "Full weekend access to workshops and socials (in-person purchase)",
+      "event_date": "2025-11-08",
+      "event_time": "13:00",
+      "price_cents": 7500,
+      "status": "unavailable",
+      "display_order": 3
     },
     {
       "id": "boulderfest-2026-early-bird-full",
