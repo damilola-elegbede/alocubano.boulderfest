@@ -14,6 +14,7 @@ import { processDatabaseResult } from '../../../lib/bigint-serializer.js';
 import timeUtils from '../../../lib/time-utils.js';
 import { getTicketEmailService } from '../../../lib/ticket-email-service-brevo.js';
 import { detectPaymentProcessor, extractPaymentSourceDetails } from '../../../lib/paypal-payment-source-detector.js';
+import { diagnoseAuthError, getPayPalEnvironmentInfo } from '../../../lib/paypal-config-validator.js';
 
 // PayPal API base URL configuration
 const PAYPAL_API_URL =
@@ -68,10 +69,15 @@ async function captureOrderHandler(req, res) {
 
     // Check if PayPal credentials are configured
     if (!process.env.PAYPAL_CLIENT_ID || !process.env.PAYPAL_CLIENT_SECRET) {
-      console.error('PayPal credentials not configured');
+      const env = getPayPalEnvironmentInfo();
+      console.error('PayPal credentials not configured:', {
+        mode: env.mode,
+        apiUrl: env.apiUrl,
+        hasCredentials: env.hasCredentials
+      });
       return res.status(503).json({
         error: 'PayPal payment processing unavailable',
-        message: 'PayPal service is temporarily unavailable',
+        message: 'PayPal service is temporarily unavailable. Please contact support.',
         code: 'PAYPAL_UNAVAILABLE',
         timestamp: new Date().toISOString()
       });
@@ -92,7 +98,10 @@ async function captureOrderHandler(req, res) {
     });
 
     if (!tokenResponse.ok) {
-      throw new Error('Failed to authenticate with PayPal');
+      // Use diagnostic utility to provide helpful error message
+      const diagnosis = await diagnoseAuthError(tokenResponse);
+      console.error('PayPal authentication failed:', diagnosis);
+      throw new Error(`Failed to authenticate with PayPal\n${diagnosis}`);
     }
 
     const { access_token } = await tokenResponse.json();

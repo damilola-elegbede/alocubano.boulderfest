@@ -12,15 +12,15 @@ import timeUtils from "../../lib/time-utils.js";
 // Enhanced rate limiting configuration
 const TICKET_RATE_LIMIT = {
   window: 60000, // 1 minute
-  maxAttempts: 50, // Reduced from 100 for better security
-  lockoutDuration: 300000 // 5 minutes lockout after exceeding limit
+  maxAttempts: 5000, // Increased from 50 to support high-volume events (100x increase)
+  lockoutDuration: 60000 // 1 minute lockout (reduced from 5 min for faster recovery)
 };
 
-// Per-ticket rate limiting (max 10 scans per hour per ticket)
+// Per-ticket rate limiting (max 100 scans per hour per ticket)
 const PER_TICKET_RATE_LIMIT = {
   window: 3600000, // 1 hour
-  maxAttempts: 10,
-  lockoutDuration: 1800000 // 30 minutes lockout after exceeding limit
+  maxAttempts: 100, // Increased from 10 to allow re-entry, testing, retries (10x increase)
+  lockoutDuration: 300000 // 5 minutes lockout (reduced from 30 min for faster recovery)
 };
 
 /**

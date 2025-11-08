@@ -149,10 +149,17 @@ BREVO_PURCHASER_CONFIRMATION_TEMPLATE_ID=
 BREVO_ATTENDEE_CONFIRMATION_TEMPLATE_ID=
 BREVO_BATCH_REGISTRATION_TEMPLATE_ID=
 
-# Payments
+# Payments - Stripe
 STRIPE_PUBLISHABLE_KEY=
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
+
+# Payments - PayPal
+PAYPAL_CLIENT_ID=              # PayPal REST API client ID
+PAYPAL_CLIENT_SECRET=          # PayPal REST API client secret
+PAYPAL_API_URL=                # Production: https://api-m.paypal.com, Sandbox: https://api-m.sandbox.paypal.com
+PAYPAL_MODE=                   # 'production' or 'sandbox'
+PAYPAL_WEBHOOK_ID=             # PayPal webhook ID (optional, for verification)
 
 # Database
 TURSO_DATABASE_URL=
