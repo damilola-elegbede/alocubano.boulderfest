@@ -709,8 +709,10 @@
           return;
         }
 
-        // Group tickets by event - include both available and test tickets
-        const availableTickets = ticketTypes.filter(tt => tt.status === 'available' || tt.status === 'test');
+        // Group tickets by event - include available, test, and unavailable tickets
+        const availableTickets = ticketTypes.filter(tt =>
+          tt.status === 'available' || tt.status === 'test' || tt.status === 'unavailable'
+        );
         const ticketsByEvent = {};
 
         availableTickets.forEach(tt => {
