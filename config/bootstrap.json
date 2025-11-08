@@ -333,7 +333,7 @@
     "currency": "USD",
     "timezone": "America/Denver",
     "max_tickets_per_transaction": 100,
-    "ticket_statuses": ["available", "sold-out", "coming-soon", "closed", "test"],
+    "ticket_statuses": ["available", "sold-out", "coming-soon", "closed", "test", "unavailable"],
     "event_statuses": ["draft", "upcoming", "active", "completed", "cancelled", "test"]
   }
 }
