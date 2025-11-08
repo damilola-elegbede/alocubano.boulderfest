@@ -179,74 +179,73 @@ async function handler(req, res) {
     const adminId = req.admin.id;
 
     // ========================================================================
-    // STEP 3: Get Current Ticket Info
+    // STEP 3-6: Get Ticket Info, Validate, and Perform Transfer (ATOMIC)
     // ========================================================================
+    // Start transaction FIRST to ensure SELECT and UPDATE operate on same snapshot
     const db = await getDatabaseClient();
-
-    const ticketResult = await db.execute({
-      sql: `SELECT
-              t.id,
-              t.ticket_id,
-              t.transaction_id,
-              t.ticket_type,
-              t.ticket_type_id,
-              t.event_id,
-              t.price_cents,
-              t.attendee_first_name,
-              t.attendee_last_name,
-              t.attendee_email,
-              t.attendee_phone,
-              t.status,
-              t.is_test,
-              t.created_at,
-              tr.customer_email as transaction_email,
-              tr.customer_name as transaction_name
-            FROM tickets t
-            LEFT JOIN transactions tr ON t.transaction_id = tr.id
-            WHERE t.ticket_id = ?`,
-      args: [ticketId]
-    });
-
-    if (!ticketResult.rows || ticketResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Ticket not found' });
-    }
-
-    const ticket = ticketResult.rows[0];
-
-    // ========================================================================
-    // STEP 4: Validate Ticket Status
-    // ========================================================================
-    // Prevent transfers of cancelled, refunded, or already transferred tickets
-    if (ticket.status === 'cancelled') {
-      return res.status(400).json({
-        error: 'Cannot transfer cancelled ticket',
-        details: 'This ticket has been cancelled and cannot be transferred'
-      });
-    }
-
-    if (ticket.status === 'refunded') {
-      return res.status(400).json({
-        error: 'Cannot transfer refunded ticket',
-        details: 'This ticket has been refunded and cannot be transferred'
-      });
-    }
-
-    // Check if already being transferred to the same email
-    if (ticket.attendee_email && ticket.attendee_email.toLowerCase() === sanitizedNewEmail) {
-      return res.status(400).json({
-        error: 'Ticket already belongs to this email',
-        details: `This ticket is already assigned to ${sanitizedNewEmail}`
-      });
-    }
-
-    // ========================================================================
-    // ========================================================================
-    // STEP 5 & 6: Perform Transfer - Update Ticket & Record History (ATOMIC)
-    // ========================================================================
-    // Wrap UPDATE and INSERT in explicit transaction for atomicity
     const tx = await db.transaction();
-    
+
     try {
+      // STEP 3: Get Current Ticket Info (inside transaction)
+      const ticketResult = await tx.execute({
+        sql: `SELECT
+                t.id,
+                t.ticket_id,
+                t.transaction_id,
+                t.ticket_type,
+                t.ticket_type_id,
+                t.event_id,
+                t.price_cents,
+                t.attendee_first_name,
+                t.attendee_last_name,
+                t.attendee_email,
+                t.attendee_phone,
+                t.status,
+                t.is_test,
+                t.created_at,
+                tr.customer_email as transaction_email,
+                tr.customer_name as transaction_name
+              FROM tickets t
+              LEFT JOIN transactions tr ON t.transaction_id = tr.id
+              WHERE t.ticket_id = ?`,
+        args: [ticketId]
+      });
+
+      if (!ticketResult.rows || ticketResult.rows.length === 0) {
+        await tx.rollback();
+        return res.status(404).json({ error: 'Ticket not found' });
+      }
+
+      const ticket = ticketResult.rows[0];
+
+      // STEP 4: Validate Ticket Status
+      // Prevent transfers of cancelled, refunded, or already transferred tickets
+      if (ticket.status === 'cancelled') {
+        await tx.rollback();
+        return res.status(400).json({
+          error: 'Cannot transfer cancelled ticket',
+          details: 'This ticket has been cancelled and cannot be transferred'
+        });
+      }
+
+      if (ticket.status === 'refunded') {
+        await tx.rollback();
+        return res.status(400).json({
+          error: 'Cannot transfer refunded ticket',
+          details: 'This ticket has been refunded and cannot be transferred'
+        });
+      }
+
+      // Check if already being transferred to the same email
+      if (ticket.attendee_email && ticket.attendee_email.toLowerCase() === sanitizedNewEmail) {
+        await tx.rollback();
+        return res.status(400).json({
+          error: 'Ticket already belongs to this email',
+          details: `This ticket is already assigned to ${sanitizedNewEmail}`
+        });
+      }
+
+      // STEP 5 & 6: Update Ticket & Record History (already in transaction)
       // Update ticket ownership
       const updateResult = await tx.execute(
         `UPDATE tickets
