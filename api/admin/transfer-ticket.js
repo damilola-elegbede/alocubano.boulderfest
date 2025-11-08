@@ -183,6 +183,7 @@ async function handler(req, res) {
     // ========================================================================
     // Start transaction FIRST to ensure SELECT and UPDATE operate on same snapshot
     const db = await getDatabaseClient();
+    let ticket; // Declare in outer scope for use after transaction
     const tx = await db.transaction();
 
     try {
@@ -216,7 +217,7 @@ async function handler(req, res) {
         return res.status(404).json({ error: 'Ticket not found' });
       }
 
-      const ticket = ticketResult.rows[0];
+      ticket = ticketResult.rows[0];
 
       // STEP 4: Validate Ticket Status
       // Prevent transfers of cancelled, refunded, or already transferred tickets
@@ -299,9 +300,8 @@ async function handler(req, res) {
            transferred_by,
            transfer_reason,
            transfer_method,
-           is_test,
-           transferred_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+           is_test
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           ticketId,
           ticket.transaction_id,
