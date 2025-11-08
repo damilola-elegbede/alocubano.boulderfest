@@ -1,6 +1,6 @@
 {
   "version": "1.0.1",
-  "generated": "2025-01-28T00:00:00Z",
+  "generated": "2025-11-08T00:00:00Z",
   "description": "Bootstrap configuration for A Lo Cubano events and ticket types",
 
   "events": [
@@ -133,6 +133,17 @@
       "price_cents": 2500,
       "status": "unavailable",
       "display_order": 2
+    },
+    {
+      "id": "weekender-2025-11-full-in-person",
+      "event_id": 2,
+      "name": "Full Pass - In Person",
+      "description": "Full weekend access to workshops and socials (in-person purchase)",
+      "event_date": "2025-11-08",
+      "event_time": "13:00",
+      "price_cents": 7500,
+      "status": "unavailable",
+      "display_order": 3
     },
     {
       "id": "boulderfest-2026-early-bird-full",
