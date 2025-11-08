@@ -141,6 +141,7 @@ function generateQuantitySelector() {
 function generateTicketCard(ticketType, event) {
   const isComingSoon = ticketType.status === 'coming-soon';
   const isSoldOut = ticketType.status === 'sold-out';
+  const isUnavailable = ticketType.status === 'unavailable';
   const isTest = ticketType.status === 'test';
   const isAvailable = ticketType.status === 'available' || isTest;
 
@@ -163,12 +164,18 @@ function generateTicketCard(ticketType, event) {
         SOLD OUT
       </div>
     `;
+  } else if (isUnavailable) {
+    statusBanner = `
+      <div class="ticket-status-banner unavailable">
+        NOT AVAILABLE
+      </div>
+    `;
   }
 
-  // Disable styling ONLY for coming-soon tickets
-  const disabledClass = isComingSoon ? 'ticket-disabled' : '';
-  const pointerEvents = isComingSoon ? 'pointer-events: none;' : '';
-  const ariaDisabled = isComingSoon ? 'aria-disabled="true"' : '';
+  // Disable styling for coming-soon and unavailable tickets
+  const disabledClass = (isComingSoon || isUnavailable) ? 'ticket-disabled' : '';
+  const pointerEvents = (isComingSoon || isUnavailable) ? 'pointer-events: none;' : '';
+  const ariaDisabled = (isComingSoon || isUnavailable) ? 'aria-disabled="true"' : '';
 
   const ticketColor = getTicketColor(ticketType.id);
   const dateRange = formatDateRange(event.start_date, event.end_date);

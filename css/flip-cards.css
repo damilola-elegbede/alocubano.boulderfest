@@ -391,6 +391,11 @@
   color: var(--color-white, #ffffff);
 }
 
+.ticket-status-banner.unavailable {
+  background: var(--color-text-secondary, #6b7280);
+  color: var(--color-white, #ffffff);
+}
+
 /* ========================================
    Disabled Ticket Styling
    ======================================== */

@@ -120,7 +120,7 @@
       "event_date": "2025-11-08",
       "event_time": "13:00",
       "price_cents": 6500,
-      "status": "available",
+      "status": "sold-out",
       "display_order": 1
     },
     {
@@ -131,7 +131,7 @@
       "event_date": "2025-11-08",
       "event_time": "13:00",
       "price_cents": 2500,
-      "status": "available",
+      "status": "sold-out",
       "display_order": 2
     },
     {
