@@ -167,7 +167,7 @@ function generateTicketCard(ticketType, event) {
   } else if (isUnavailable) {
     statusBanner = `
       <div class="ticket-status-banner unavailable">
-        NOT AVAILABLE
+        <span class="sr-only">NOT AVAILABLE</span>
       </div>
     `;
   }
