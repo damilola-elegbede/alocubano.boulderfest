@@ -391,9 +391,38 @@
   color: var(--color-white, #ffffff);
 }
 
+/* Not Available Ribbon - Diagonal corner badge (red) */
 .ticket-status-banner.unavailable {
-  background: var(--color-text-secondary, #6b7280);
+  position: absolute;
+  top: 0;      /* Aligned with card border */
+  left: 0;     /* Aligned with card border */
+  width: 150px;
+  height: 150px;
+  overflow: hidden;
+  z-index: 20;
+  background: transparent;
+  border-radius: 12px 0 0 0; /* Match card's border radius */
+  padding: 0;
+  box-shadow: none;
+}
+
+.ticket-status-banner.unavailable::before {
+  content: 'NOT AVAILABLE';
+  position: absolute;
+  width: 200px;
+  background: var(--color-error, #dc2626); /* Red background */
   color: var(--color-white, #ffffff);
+  text-align: center;
+  line-height: 40px;
+  font-size: 14px;
+  font-family: var(--font-display, 'Bebas Neue', sans-serif);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  transform: rotate(-45deg);
+  /* Positioned to stay completely within white card border */
+  top: 35px;
+  left: -48px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
 /* ========================================
