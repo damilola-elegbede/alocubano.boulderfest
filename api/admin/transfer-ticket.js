@@ -264,7 +264,10 @@ async function handler(req, res) {
         ]
       );
 
-      if (!updateResult || updateResult.rowsAffected === 0) {
+      // Use portable rows changed check for different database implementations
+      // libSQL transactions may return 'changes' instead of 'rowsAffected'
+      const rowsChanged = updateResult?.rowsAffected ?? updateResult?.changes ?? 0;
+      if (!updateResult || rowsChanged === 0) {
         await tx.rollback();
         return res.status(500).json({
           error: 'Failed to update ticket',
