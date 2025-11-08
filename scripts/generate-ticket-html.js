@@ -334,7 +334,7 @@ try {
   const eventTickets = new Map();
   const filteredTickets = bootstrap.ticket_types.filter(t => {
     if (isProduction && t.status === 'test') return false;
-    if (isProduction && t.status === 'coming-soon') return false;
+    if (isProduction && t.status === 'closed') return false;
     return true;
   });
 
