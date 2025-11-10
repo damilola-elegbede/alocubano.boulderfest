@@ -183,6 +183,7 @@ async function handler(req, res) {
     // ========================================================================
     // Start transaction FIRST to ensure SELECT and UPDATE operate on same snapshot
     const db = await getDatabaseClient();
+    let ticket; // Declare in outer scope for use after transaction
     const tx = await db.transaction();
 
     try {
@@ -216,7 +217,7 @@ async function handler(req, res) {
         return res.status(404).json({ error: 'Ticket not found' });
       }
 
-      const ticket = ticketResult.rows[0];
+      ticket = ticketResult.rows[0];
 
       // STEP 4: Validate Ticket Status
       // Prevent transfers of cancelled, refunded, or already transferred tickets
@@ -247,24 +248,36 @@ async function handler(req, res) {
 
       // STEP 5 & 6: Update Ticket & Record History (already in transaction)
       // Update ticket ownership
-      const updateResult = await tx.execute(
-        `UPDATE tickets
-         SET attendee_first_name = ?,
-             attendee_last_name = ?,
-             attendee_email = ?,
-             attendee_phone = ?,
-             updated_at = CURRENT_TIMESTAMP
-         WHERE ticket_id = ?`,
-        [
+      console.log(`[TRANSFER DEBUG] Attempting UPDATE for ticket_id: ${ticketId}, new email: ${sanitizedNewEmail}`);
+
+      const updateResult = await tx.execute({
+        sql: `UPDATE tickets
+              SET attendee_first_name = ?,
+                  attendee_last_name = ?,
+                  attendee_email = ?,
+                  attendee_phone = ?,
+                  updated_at = CURRENT_TIMESTAMP
+              WHERE ticket_id = ?`,
+        args: [
           sanitizedNewFirstName,
           sanitizedNewLastName,
           sanitizedNewEmail,
           sanitizedNewPhone,
           ticketId
         ]
-      );
+      });
 
-      if (!updateResult || updateResult.rowsAffected === 0) {
+      // Use portable rows changed check for different database implementations
+      // libSQL transactions may return 'changes' instead of 'rowsAffected'
+      const rowsChanged = updateResult?.rowsAffected ?? updateResult?.changes ?? 0;
+      console.log(`[TRANSFER DEBUG] UPDATE result:`, {
+        rowsAffected: updateResult?.rowsAffected,
+        changes: updateResult?.changes,
+        rowsChanged,
+        hasResult: !!updateResult
+      });
+
+      if (!updateResult || rowsChanged === 0) {
         await tx.rollback();
         return res.status(500).json({
           error: 'Failed to update ticket',
@@ -281,25 +294,24 @@ async function handler(req, res) {
       const auditFromEmail = fromEmail || 'unknown@system';
 
       // Record transfer history
-      await tx.execute(
-        `INSERT INTO ticket_transfers (
-           ticket_id,
-           transaction_id,
-           from_email,
-           from_first_name,
-           from_last_name,
-           from_phone,
-           to_email,
-           to_first_name,
-           to_last_name,
-           to_phone,
-           transferred_by,
-           transfer_reason,
-           transfer_method,
-           is_test,
-           transferred_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
-        [
+      await tx.execute({
+        sql: `INSERT INTO ticket_transfers (
+                ticket_id,
+                transaction_id,
+                from_email,
+                from_first_name,
+                from_last_name,
+                from_phone,
+                to_email,
+                to_first_name,
+                to_last_name,
+                to_phone,
+                transferred_by,
+                transfer_reason,
+                transfer_method,
+                is_test
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [
           ticketId,
           ticket.transaction_id,
           auditFromEmail,
@@ -315,7 +327,7 @@ async function handler(req, res) {
           'admin_manual',
           ticket.is_test ? 1 : 0
         ]
-      );
+      });
 
       // Commit transaction - both operations succeed together
       await tx.commit();
@@ -343,29 +355,55 @@ async function handler(req, res) {
     // ========================================================================
     try {
       const ticketEmailService = getTicketEmailService();
+      const transferDate = timeUtils.formatDateTime(new Date());
+      const previousOwnerName = ticket.attendee_first_name && ticket.attendee_last_name
+        ? `${ticket.attendee_first_name} ${ticket.attendee_last_name}`.trim()
+        : ticket.transaction_name || 'Previous Owner';
+      const newOwnerName = `${sanitizedNewFirstName} ${sanitizedNewLastName}`.trim();
 
-      // Send email to new owner
-      // Note: This uses the existing ticket confirmation email
-      // You may want to create a custom "ticket transferred to you" template
-      await ticketEmailService.sendTicketConfirmation({
-        id: ticket.transaction_id,
-        transaction_id: ticket.ticket_id,
-        customer_email: sanitizedNewEmail,
-        customer_name: `${sanitizedNewFirstName} ${sanitizedNewLastName}`.trim(),
-        order_number: `TRANSFER-${ticketId}`,
-        amount_cents: ticket.price_cents,
-        created_at: new Date().toISOString()
+      // Send transfer notification to NEW owner
+      await ticketEmailService.sendTransferNotification({
+        newOwnerName,
+        newOwnerEmail: sanitizedNewEmail,
+        previousOwnerName,
+        ticketId,
+        ticketType: ticket.ticket_type,
+        transferDate,
+        transferReason: sanitizedTransferReason || '',
+        transactionId: ticket.transaction_id
       });
 
-      console.log(`Transfer notification sent to new owner: ${sanitizedNewEmail}`);
+      console.log(`✅ Transfer notification sent to new owner: ${sanitizedNewEmail}`);
 
-      // Optionally send notification to previous owner
-      if (ticket.attendee_email) {
-        // You may want to create a custom "your ticket was transferred" template
-        console.log(`Previous owner notification: ${ticket.attendee_email} (not implemented yet)`);
+      // Send transfer confirmation to ORIGINAL owner
+      // Use fallback: attendee_email → transaction_email
+      const originalOwnerEmail = ticket.attendee_email || ticket.transaction_email;
+
+      if (originalOwnerEmail) {
+        await ticketEmailService.sendTransferConfirmation({
+          originalOwnerName: previousOwnerName,
+          originalOwnerEmail: originalOwnerEmail,
+          newOwnerName,
+          newOwnerEmail: sanitizedNewEmail,
+          ticketId,
+          ticketType: ticket.ticket_type,
+          transferDate,
+          transferReason: sanitizedTransferReason || '',
+          transferredBy: adminId || 'Admin'
+        });
+
+        console.log(`✅ Transfer confirmation sent to original owner: ${originalOwnerEmail}`);
+      } else {
+        console.warn(`⚠️ Transfer ${ticketId}: No email available for original owner (attendee_email and transaction_email both null)`);
       }
     } catch (emailError) {
-      console.error('Failed to send transfer notification (non-critical):', emailError);
+      console.error('❌ Failed to send transfer emails (non-critical):', {
+        error: emailError.message,
+        stack: emailError.stack,
+        ticketId,
+        newOwnerEmail: sanitizedNewEmail,
+        originalOwnerEmail: ticket.attendee_email || ticket.transaction_email || 'none'
+      });
       // Continue - transfer was successful even if email fails
     }
 

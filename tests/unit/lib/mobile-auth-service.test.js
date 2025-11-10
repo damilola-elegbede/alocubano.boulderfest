@@ -607,16 +607,23 @@ describe('Mobile Auth Service - Unit Tests', () => {
       expect(shouldRefresh).toBe(false);
     });
 
-    it('should recommend refresh when exactly 24 hours left', () => {
+    it('should not recommend refresh when exactly 24 hours left', () => {
       const oneDayMs = 86400000;
-      const now = Date.now(); // Use single timestamp to avoid timing drift
+      const mockNow = 1699999999000; // Fixed timestamp
+
+      // Mock Date.now() to prevent timing drift in Node 22.x
+      vi.spyOn(Date, 'now').mockReturnValue(mockNow);
+
       const decodedToken = {
-        loginTime: now,
-        expiresAt: now + oneDayMs // Exactly 24 hours
+        loginTime: mockNow,
+        expiresAt: mockNow + oneDayMs // Exactly 24 hours
       };
 
       const shouldRefresh = service.shouldRefreshToken(decodedToken);
       expect(shouldRefresh).toBe(false); // >= 24 hours, no refresh needed
+
+      // Restore Date.now()
+      vi.restoreAllMocks();
     });
 
     it('should recommend refresh when expired', () => {
