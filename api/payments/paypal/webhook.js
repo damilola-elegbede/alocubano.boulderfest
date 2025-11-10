@@ -16,6 +16,7 @@ import transactionService from "../../../lib/transaction-service.js";
 import { getDatabaseClient } from "../../../lib/database.js";
 import auditService from "../../../lib/audit-service.js";
 import { detectPaymentProcessor, extractPaymentSourceDetails } from "../../../lib/paypal-payment-source-detector.js";
+import { diagnoseAuthError, getPayPalEnvironmentInfo } from "../../../lib/paypal-config-validator.js";
 
 // PayPal webhook verification URL
 const PAYPAL_API_URL = process.env.PAYPAL_API_URL || 'https://api-m.sandbox.paypal.com';
@@ -28,7 +29,12 @@ if (!process.env.PAYPAL_WEBHOOK_ID) {
 // Helper to get PayPal access token for webhook verification
 async function getPayPalAccessToken() {
   if (!process.env.PAYPAL_CLIENT_ID || !process.env.PAYPAL_CLIENT_SECRET) {
-    throw new Error('PayPal credentials not configured');
+    const env = getPayPalEnvironmentInfo();
+    throw new Error(
+      'PayPal credentials not configured. ' +
+      `Current environment: ${env.mode}, API URL: ${env.apiUrl}. ` +
+      'Set PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET in Vercel environment variables.'
+    );
   }
 
   const auth = Buffer.from(
@@ -45,7 +51,9 @@ async function getPayPalAccessToken() {
   });
 
   if (!tokenResponse.ok) {
-    throw new Error('Failed to authenticate with PayPal for webhook verification');
+    // Use diagnostic utility to provide helpful error message
+    const diagnosis = await diagnoseAuthError(tokenResponse);
+    throw new Error(`Failed to authenticate with PayPal for webhook verification\n${diagnosis}`);
   }
 
   const { access_token } = await tokenResponse.json();

@@ -149,10 +149,17 @@ BREVO_PURCHASER_CONFIRMATION_TEMPLATE_ID=
 BREVO_ATTENDEE_CONFIRMATION_TEMPLATE_ID=
 BREVO_BATCH_REGISTRATION_TEMPLATE_ID=
 
-# Payments
+# Payments - Stripe
 STRIPE_PUBLISHABLE_KEY=
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
+
+# Payments - PayPal
+PAYPAL_CLIENT_ID=              # PayPal REST API client ID
+PAYPAL_CLIENT_SECRET=          # PayPal REST API client secret
+PAYPAL_API_URL=                # Production: https://api-m.paypal.com, Sandbox: https://api-m.sandbox.paypal.com
+PAYPAL_MODE=                   # 'production' or 'sandbox'
+PAYPAL_WEBHOOK_ID=             # PayPal webhook ID (optional, for verification)
 
 # Database
 TURSO_DATABASE_URL=
@@ -311,6 +318,47 @@ errorNotifier.showSuccess('Item added to cart');
 - Loading spinners, skeleton screens
 - Cuban flag gradient accents (blue-to-red)
 - Dark mode support, reduced motion support
+
+## Ticket Scanning Limits
+
+### Scan Limit Policy
+
+**Simple Lifetime Limit**: Each ticket can be scanned **3 times total** (not per hour/day).
+
+**Use Case**:
+- Ticket scan → Attendee receives bracelet → Bracelet worn for entire event
+- Ideally 1 scan per ticket, but 3 scans allows margin for:
+  - Scanning errors/retries
+  - Lost bracelet replacement
+  - Staff verification
+
+**Behavior**:
+- Scans 1-3: ✅ Allowed, bracelet issued
+- Scan 4+: ❌ Blocked with error "Scan limit exceeded"
+
+**No Time-Based Rate Limiting**:
+- No limits on scans per minute/hour
+- No IP-based rate limiting
+- No lockout periods
+- Optimized for high-volume event check-in
+
+**Technical Implementation**:
+- `tickets.scan_count` tracks total scans
+- `tickets.max_scan_count` = 3 (configurable in migrations)
+- Atomic increment in transaction prevents race conditions
+- Audit trail in `scan_logs` table
+
+**API Response When Limit Hit**:
+```json
+{
+  "valid": false,
+  "error": "Ticket has reached maximum scan limit",
+  "validation": {
+    "status": "invalid",
+    "message": "Ticket has reached maximum scan limit"
+  }
+}
+```
 
 ## Performance Targets
 - Gallery: Virtual scrolling 1000+ images
