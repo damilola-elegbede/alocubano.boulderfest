@@ -942,22 +942,35 @@
             throw new Error(result.error || 'Failed to transfer ticket');
           }
 
-          // Show success message
+          // Show success message with countdown
+          let countdown = 20;
           alertContainer.innerHTML = `
             <div class="alert alert-success">
               <strong>Success!</strong> Ticket transferred successfully.<br>
               From: ${escapeHtml(result.transfer.from.email)}<br>
-              To: ${escapeHtml(result.transfer.to.email)}
+              To: ${escapeHtml(result.transfer.to.email)}<br><br>
+              <span style="font-size: 0.9em; opacity: 0.9;">
+                Refreshing in <strong id="countdown-timer-list">${countdown}</strong> seconds...
+              </span>
             </div>
           `;
 
-          // Reload tickets list after 2 seconds
-          setTimeout(() => {
-            closeTransferModal();
-            // Reload current page
-            const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
-            loadTickets(selectedEventId, currentPage);
-          }, 2000);
+          // Update countdown every second
+          const countdownInterval = setInterval(() => {
+            countdown--;
+            const timerElement = document.getElementById('countdown-timer-list');
+            if (timerElement) {
+              timerElement.textContent = countdown;
+            }
+
+            if (countdown <= 0) {
+              clearInterval(countdownInterval);
+              closeTransferModal();
+              // Reload current page
+              const selectedEventId = window.eventSelector ? window.eventSelector.getSelectedEventId() : null;
+              loadTickets(selectedEventId, currentPage);
+            }
+          }, 1000);
 
         } catch (error) {
           console.error('Transfer error:', error);
