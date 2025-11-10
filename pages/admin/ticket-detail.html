@@ -1129,6 +1129,14 @@
               <span style="font-size: 0.9em; opacity: 0.9;">
                 Refreshing in <strong id="countdown-timer-detail">${countdown}</strong> seconds...
               </span>
+              <br><br>
+              <button
+                onclick="refreshNow()"
+                class="admin-btn admin-btn-primary"
+                style="padding: 8px 16px; font-size: 0.9em;"
+              >
+                Refresh Now
+              </button>
             </div>
           `;
 
@@ -1149,6 +1157,13 @@
               location.reload();
             }
           }, 1000);
+
+          // Function to refresh immediately
+          window.refreshNow = () => {
+            clearInterval(countdownInterval);
+            closeTransferModal();
+            location.reload();
+          };
 
         } catch (error) {
           console.error('Transfer error:', error);
