@@ -607,7 +607,7 @@ describe('Mobile Auth Service - Unit Tests', () => {
       expect(shouldRefresh).toBe(false);
     });
 
-    it('should recommend refresh when exactly 24 hours left', () => {
+    it('should not recommend refresh when exactly 24 hours left', () => {
       const oneDayMs = 86400000;
       const mockNow = 1699999999000; // Fixed timestamp
 
