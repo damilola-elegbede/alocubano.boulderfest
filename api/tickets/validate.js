@@ -39,6 +39,41 @@ function getTestModeValidationIndicator(isTest) {
 }
 
 /**
+ * Validate ticket scan limit
+ * Checks if a ticket has reached its maximum scan count (3-scan lifetime limit)
+ *
+ * @param {Object} ticket - Ticket record with scan_count and max_scan_count
+ * @returns {Object} Validation result with scan status flags
+ * @property {boolean} isFirstScan - True if scan_count === 0
+ * @property {boolean} isRescanWithinLimit - True if 0 < scan_count < max_scan_count
+ * @property {boolean} isBeyondLimit - True if scan_count >= max_scan_count
+ * @property {number} scanCount - Current scan count
+ * @property {number} maxScanCount - Maximum allowed scans
+ * @property {boolean} isValid - True if ticket can be scanned (not beyond limit)
+ */
+export function validateScanLimit(ticket) {
+  if (!ticket) {
+    throw new Error('Ticket object is required for scan limit validation');
+  }
+
+  const scanCount = ticket.scan_count ?? 0;
+  const maxScanCount = ticket.max_scan_count ?? 3;
+
+  const isFirstScan = scanCount === 0;
+  const isRescanWithinLimit = scanCount > 0 && scanCount < maxScanCount;
+  const isBeyondLimit = scanCount >= maxScanCount;
+
+  return {
+    isFirstScan,
+    isRescanWithinLimit,
+    isBeyondLimit,
+    scanCount,
+    maxScanCount,
+    isValid: !isBeyondLimit
+  };
+}
+
+/**
  * Enhanced input validation for ticket tokens
  * @param {any} token - Token to validate
  * @returns {Object} Validation result
@@ -363,9 +398,8 @@ async function validateTicket(db, validationCode, source, isJWT = false) {
       }
 
       // Check scan limits and determine scan type
-      const isFirstScan = ticket.scan_count === 0;
-      const isRescanWithinLimit = ticket.scan_count > 0 && ticket.scan_count < ticket.max_scan_count;
-      const isBeyondLimit = ticket.scan_count >= ticket.max_scan_count;
+      const scanLimitValidation = validateScanLimit(ticket);
+      const { isFirstScan, isRescanWithinLimit, isBeyondLimit } = scanLimitValidation;
 
       if (isBeyondLimit) {
         // Scans at/beyond limit → treated as failed/invalid

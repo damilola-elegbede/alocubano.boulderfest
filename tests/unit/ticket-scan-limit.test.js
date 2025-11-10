@@ -4,63 +4,61 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { validateScanLimit } from '../../api/tickets/validate.js';
 
 describe('Ticket Scan Limit', () => {
   describe('3-Scan Lifetime Limit Logic', () => {
     it('should allow first scan (scan_count = 0)', () => {
       const ticket = { scan_count: 0, max_scan_count: 3 };
 
-      const isFirstScan = ticket.scan_count === 0;
-      const isRescanWithinLimit = ticket.scan_count > 0 && ticket.scan_count < ticket.max_scan_count;
-      const isBeyondLimit = ticket.scan_count >= ticket.max_scan_count;
+      const result = validateScanLimit(ticket);
 
-      expect(isFirstScan).toBe(true);
-      expect(isRescanWithinLimit).toBe(false);
-      expect(isBeyondLimit).toBe(false);
+      expect(result.isFirstScan).toBe(true);
+      expect(result.isRescanWithinLimit).toBe(false);
+      expect(result.isBeyondLimit).toBe(false);
+      expect(result.isValid).toBe(true);
     });
 
     it('should allow second scan (scan_count = 1)', () => {
       const ticket = { scan_count: 1, max_scan_count: 3 };
 
-      const isFirstScan = ticket.scan_count === 0;
-      const isRescanWithinLimit = ticket.scan_count > 0 && ticket.scan_count < ticket.max_scan_count;
-      const isBeyondLimit = ticket.scan_count >= ticket.max_scan_count;
+      const result = validateScanLimit(ticket);
 
-      expect(isFirstScan).toBe(false);
-      expect(isRescanWithinLimit).toBe(true);
-      expect(isBeyondLimit).toBe(false);
+      expect(result.isFirstScan).toBe(false);
+      expect(result.isRescanWithinLimit).toBe(true);
+      expect(result.isBeyondLimit).toBe(false);
+      expect(result.isValid).toBe(true);
     });
 
     it('should allow third scan (scan_count = 2)', () => {
       const ticket = { scan_count: 2, max_scan_count: 3 };
 
-      const isFirstScan = ticket.scan_count === 0;
-      const isRescanWithinLimit = ticket.scan_count > 0 && ticket.scan_count < ticket.max_scan_count;
-      const isBeyondLimit = ticket.scan_count >= ticket.max_scan_count;
+      const result = validateScanLimit(ticket);
 
-      expect(isFirstScan).toBe(false);
-      expect(isRescanWithinLimit).toBe(true);
-      expect(isBeyondLimit).toBe(false);
+      expect(result.isFirstScan).toBe(false);
+      expect(result.isRescanWithinLimit).toBe(true);
+      expect(result.isBeyondLimit).toBe(false);
+      expect(result.isValid).toBe(true);
     });
 
     it('should block fourth scan (scan_count = 3)', () => {
       const ticket = { scan_count: 3, max_scan_count: 3 };
 
-      const isFirstScan = ticket.scan_count === 0;
-      const isRescanWithinLimit = ticket.scan_count > 0 && ticket.scan_count < ticket.max_scan_count;
-      const isBeyondLimit = ticket.scan_count >= ticket.max_scan_count;
+      const result = validateScanLimit(ticket);
 
-      expect(isFirstScan).toBe(false);
-      expect(isRescanWithinLimit).toBe(false);
-      expect(isBeyondLimit).toBe(true);
+      expect(result.isFirstScan).toBe(false);
+      expect(result.isRescanWithinLimit).toBe(false);
+      expect(result.isBeyondLimit).toBe(true);
+      expect(result.isValid).toBe(false);
     });
 
     it('should block fifth scan and beyond (scan_count >= 4)', () => {
       const ticket = { scan_count: 4, max_scan_count: 3 };
 
-      const isBeyondLimit = ticket.scan_count >= ticket.max_scan_count;
+      const result = validateScanLimit(ticket);
 
-      expect(isBeyondLimit).toBe(true);
+      expect(result.isBeyondLimit).toBe(true);
+      expect(result.isValid).toBe(false);
     });
   });
 
@@ -70,14 +68,21 @@ describe('Ticket Scan Limit', () => {
       const ticketB = { ticket_id: 'TKT-B', scan_count: 2, max_scan_count: 3 };
       const ticketC = { ticket_id: 'TKT-C', scan_count: 3, max_scan_count: 3 };
 
+      const resultA = validateScanLimit(ticketA);
+      const resultB = validateScanLimit(ticketB);
+      const resultC = validateScanLimit(ticketC);
+
       // Ticket A: First scan allowed
-      expect(ticketA.scan_count < ticketA.max_scan_count).toBe(true);
+      expect(resultA.isValid).toBe(true);
+      expect(resultA.isFirstScan).toBe(true);
 
       // Ticket B: Third scan allowed
-      expect(ticketB.scan_count < ticketB.max_scan_count).toBe(true);
+      expect(resultB.isValid).toBe(true);
+      expect(resultB.isRescanWithinLimit).toBe(true);
 
       // Ticket C: Fourth scan blocked
-      expect(ticketC.scan_count >= ticketC.max_scan_count).toBe(true);
+      expect(resultC.isValid).toBe(false);
+      expect(resultC.isBeyondLimit).toBe(true);
     });
   });
 
@@ -105,17 +110,18 @@ describe('Ticket Scan Limit', () => {
       const ticket = { scan_count: 0, max_scan_count: 3 };
 
       // Simulate successful scan
-      const isBeyondLimit = ticket.scan_count >= ticket.max_scan_count;
-      expect(isBeyondLimit).toBe(false);
+      const beforeScan = validateScanLimit(ticket);
+      expect(beforeScan.isBeyondLimit).toBe(false);
+      expect(beforeScan.isValid).toBe(true);
 
       // Increment scan count
       ticket.scan_count++;
-
       expect(ticket.scan_count).toBe(1);
 
       // Next scan should still be allowed
-      const nextScanAllowed = ticket.scan_count < ticket.max_scan_count;
-      expect(nextScanAllowed).toBe(true);
+      const afterScan = validateScanLimit(ticket);
+      expect(afterScan.isValid).toBe(true);
+      expect(afterScan.isRescanWithinLimit).toBe(true);
     });
 
     it('should reach limit after 3 successful scans', () => {
@@ -124,21 +130,22 @@ describe('Ticket Scan Limit', () => {
       // First scan
       ticket.scan_count++;
       expect(ticket.scan_count).toBe(1);
-      expect(ticket.scan_count < ticket.max_scan_count).toBe(true);
+      expect(validateScanLimit(ticket).isValid).toBe(true);
 
       // Second scan
       ticket.scan_count++;
       expect(ticket.scan_count).toBe(2);
-      expect(ticket.scan_count < ticket.max_scan_count).toBe(true);
+      expect(validateScanLimit(ticket).isValid).toBe(true);
 
       // Third scan
       ticket.scan_count++;
       expect(ticket.scan_count).toBe(3);
-      expect(ticket.scan_count < ticket.max_scan_count).toBe(false);
+      expect(validateScanLimit(ticket).isValid).toBe(false);
 
       // Fourth scan blocked
-      const isBeyondLimit = ticket.scan_count >= ticket.max_scan_count;
-      expect(isBeyondLimit).toBe(true);
+      const result = validateScanLimit(ticket);
+      expect(result.isBeyondLimit).toBe(true);
+      expect(result.isValid).toBe(false);
     });
   });
 
@@ -149,24 +156,21 @@ describe('Ticket Scan Limit', () => {
       const ticket = { scan_count: 0, max_scan_count: 3 };
 
       // Simulate rapid scans (no time delays)
-      const scan1Allowed = ticket.scan_count < ticket.max_scan_count;
-      expect(scan1Allowed).toBe(true);
+      expect(validateScanLimit(ticket).isValid).toBe(true);
       ticket.scan_count++;
 
-      const scan2Allowed = ticket.scan_count < ticket.max_scan_count;
-      expect(scan2Allowed).toBe(true);
+      expect(validateScanLimit(ticket).isValid).toBe(true);
       ticket.scan_count++;
 
-      const scan3Allowed = ticket.scan_count < ticket.max_scan_count;
-      expect(scan3Allowed).toBe(true);
+      expect(validateScanLimit(ticket).isValid).toBe(true);
       ticket.scan_count++;
 
       // Fourth scan blocked (by count, not time)
-      const scan4Allowed = ticket.scan_count < ticket.max_scan_count;
-      expect(scan4Allowed).toBe(false);
+      const result = validateScanLimit(ticket);
+      expect(result.isValid).toBe(false);
 
       // Key assertion: No time-based logic exists
-      expect(scan4Allowed).toBe(false); // Blocked by count, not time
+      expect(result.isBeyondLimit).toBe(true); // Blocked by count, not time
     });
 
     it('should have no IP-based rate limiting', () => {
@@ -180,8 +184,8 @@ describe('Ticket Scan Limit', () => {
 
       // All tickets from same IP can be scanned
       tickets.forEach(ticket => {
-        const allowed = ticket.scan_count < ticket.max_scan_count;
-        expect(allowed).toBe(true);
+        const result = validateScanLimit(ticket);
+        expect(result.isValid).toBe(true);
       });
     });
   });
