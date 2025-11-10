@@ -248,26 +248,35 @@ async function handler(req, res) {
 
       // STEP 5 & 6: Update Ticket & Record History (already in transaction)
       // Update ticket ownership
-      const updateResult = await tx.execute(
-        `UPDATE tickets
-         SET attendee_first_name = ?,
-             attendee_last_name = ?,
-             attendee_email = ?,
-             attendee_phone = ?,
-             updated_at = CURRENT_TIMESTAMP
-         WHERE ticket_id = ?`,
-        [
+      console.log(`[TRANSFER DEBUG] Attempting UPDATE for ticket_id: ${ticketId}, new email: ${sanitizedNewEmail}`);
+
+      const updateResult = await tx.execute({
+        sql: `UPDATE tickets
+              SET attendee_first_name = ?,
+                  attendee_last_name = ?,
+                  attendee_email = ?,
+                  attendee_phone = ?,
+                  updated_at = CURRENT_TIMESTAMP
+              WHERE ticket_id = ?`,
+        args: [
           sanitizedNewFirstName,
           sanitizedNewLastName,
           sanitizedNewEmail,
           sanitizedNewPhone,
           ticketId
         ]
-      );
+      });
 
       // Use portable rows changed check for different database implementations
       // libSQL transactions may return 'changes' instead of 'rowsAffected'
       const rowsChanged = updateResult?.rowsAffected ?? updateResult?.changes ?? 0;
+      console.log(`[TRANSFER DEBUG] UPDATE result:`, {
+        rowsAffected: updateResult?.rowsAffected,
+        changes: updateResult?.changes,
+        rowsChanged,
+        hasResult: !!updateResult
+      });
+
       if (!updateResult || rowsChanged === 0) {
         await tx.rollback();
         return res.status(500).json({
@@ -285,24 +294,24 @@ async function handler(req, res) {
       const auditFromEmail = fromEmail || 'unknown@system';
 
       // Record transfer history
-      await tx.execute(
-        `INSERT INTO ticket_transfers (
-           ticket_id,
-           transaction_id,
-           from_email,
-           from_first_name,
-           from_last_name,
-           from_phone,
-           to_email,
-           to_first_name,
-           to_last_name,
-           to_phone,
-           transferred_by,
-           transfer_reason,
-           transfer_method,
-           is_test
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
+      await tx.execute({
+        sql: `INSERT INTO ticket_transfers (
+                ticket_id,
+                transaction_id,
+                from_email,
+                from_first_name,
+                from_last_name,
+                from_phone,
+                to_email,
+                to_first_name,
+                to_last_name,
+                to_phone,
+                transferred_by,
+                transfer_reason,
+                transfer_method,
+                is_test
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [
           ticketId,
           ticket.transaction_id,
           auditFromEmail,
@@ -318,7 +327,7 @@ async function handler(req, res) {
           'admin_manual',
           ticket.is_test ? 1 : 0
         ]
-      );
+      });
 
       // Commit transaction - both operations succeed together
       await tx.commit();
