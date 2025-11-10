@@ -886,6 +886,7 @@
         // Store QR token for reveal
         window.ticketQRToken = ticket.qr_token;
         window.ticketId = ticket.ticket_id;
+        window.currentTicket = ticket; // Store full ticket for transfer modal
 
         // Check-in Information
         const checkinInfoGrid = document.getElementById('checkin-info-grid');
@@ -982,12 +983,17 @@
         const transferTicketId = document.getElementById('transfer-ticket-id');
         const transferFromEmail = document.getElementById('transfer-from-email');
 
-        // Get current ticket info from displayed data
+        // Get current ticket info from stored ticket data
         const ticketId = window.ticketId || getTicketId();
-        const attendeeEmail = document.querySelector('#attendee-info-grid .detail-value')?.textContent || 'Not set';
+        const attendeeEmail = window.currentTicket?.attendee_email || 'Not set';
+        const attendeeFirstName = window.currentTicket?.attendee_first_name || '';
+        const attendeeLastName = window.currentTicket?.attendee_last_name || '';
 
-        // Update current owner info
-        currentOwnerInfo.textContent = `${attendeeEmail}`;
+        // Update current owner info with name and email
+        const ownerName = attendeeFirstName && attendeeLastName
+          ? `${attendeeFirstName} ${attendeeLastName}`
+          : (attendeeFirstName || 'Not registered');
+        currentOwnerInfo.textContent = `${ownerName} (${attendeeEmail})`;
 
         // Update transfer summary
         transferTicketId.textContent = ticketId;
