@@ -107,6 +107,24 @@
         to { transform: rotate(360deg); }
       }
 
+      /* Inline spinner for buttons */
+      .btn-spinner {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        border: 2px solid #ffffff;
+        border-top: 2px solid transparent;
+        border-radius: 50%;
+        animation: spin 0.6s linear infinite;
+        margin-right: 6px;
+        vertical-align: middle;
+      }
+
+      .admin-btn.loading {
+        cursor: wait;
+        opacity: 0.8;
+      }
+
       .detail-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -654,7 +672,7 @@
             <button type="submit" class="admin-btn admin-btn-primary" style="flex: 1;" id="transfer-submit-btn">
               <span>Confirm Transfer</span>
             </button>
-            <button type="button" class="admin-btn admin-btn-secondary" style="flex: 1;" onclick="closeTransferModal()">
+            <button type="button" class="admin-btn admin-btn-secondary" style="flex: 1;" id="transfer-cancel-btn" onclick="closeTransferModal()">
               <span>Cancel</span>
             </button>
           </div>
@@ -1042,6 +1060,7 @@
         event.preventDefault();
 
         const submitBtn = document.getElementById('transfer-submit-btn');
+        const cancelBtn = document.getElementById('transfer-cancel-btn');
         const alertContainer = document.getElementById('transfer-alert-container');
 
         // Clear previous alerts
@@ -1055,9 +1074,15 @@
         const newPhone = formData.get('newPhone');
         const transferReason = formData.get('transferReason');
 
-        // Disable submit button
+        // Disable submit button and show loading state
         submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span>Transferring...</span>';
+        submitBtn.classList.add('loading');
+        submitBtn.innerHTML = '<span class="btn-spinner"></span><span>Transferring...</span>';
+
+        // Disable cancel button during transfer
+        cancelBtn.disabled = true;
+        cancelBtn.style.opacity = '0.5';
+        cancelBtn.style.cursor = 'not-allowed';
 
         try {
           // Import CSRF service
@@ -1106,6 +1131,9 @@
               </span>
             </div>
           `;
+
+          // Hide cancel button during countdown (transfer complete)
+          cancelBtn.style.display = 'none';
 
           // Update countdown every second
           const countdownInterval = setInterval(() => {
@@ -1187,15 +1215,15 @@
           // Show error message
           alertContainer.innerHTML = errorMessage;
 
-          // Only re-enable submit button if not showing retry button
-          if (!showRetryButton) {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<span>Confirm Transfer</span>';
-          } else {
-            // Reset button for retry
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<span>Confirm Transfer</span>';
-          }
+          // Re-enable cancel button on error
+          cancelBtn.disabled = false;
+          cancelBtn.style.opacity = '1';
+          cancelBtn.style.cursor = 'pointer';
+
+          // Re-enable submit button and remove loading state
+          submitBtn.disabled = false;
+          submitBtn.classList.remove('loading');
+          submitBtn.innerHTML = '<span>Confirm Transfer</span>';
         }
       }
 
