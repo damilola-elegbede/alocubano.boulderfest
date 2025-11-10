@@ -346,29 +346,44 @@ async function handler(req, res) {
     // ========================================================================
     try {
       const ticketEmailService = getTicketEmailService();
+      const transferDate = timeUtils.formatDateTime(new Date());
+      const previousOwnerName = ticket.attendee_first_name && ticket.attendee_last_name
+        ? `${ticket.attendee_first_name} ${ticket.attendee_last_name}`.trim()
+        : ticket.transaction_name || 'Previous Owner';
+      const newOwnerName = `${sanitizedNewFirstName} ${sanitizedNewLastName}`.trim();
 
-      // Send email to new owner
-      // Note: This uses the existing ticket confirmation email
-      // You may want to create a custom "ticket transferred to you" template
-      await ticketEmailService.sendTicketConfirmation({
-        id: ticket.transaction_id,
-        transaction_id: ticket.ticket_id,
-        customer_email: sanitizedNewEmail,
-        customer_name: `${sanitizedNewFirstName} ${sanitizedNewLastName}`.trim(),
-        order_number: `TRANSFER-${ticketId}`,
-        amount_cents: ticket.price_cents,
-        created_at: new Date().toISOString()
+      // Send transfer notification to NEW owner
+      await ticketEmailService.sendTransferNotification({
+        newOwnerName,
+        newOwnerEmail: sanitizedNewEmail,
+        previousOwnerName,
+        ticketId,
+        ticketType: ticket.ticket_type,
+        transferDate,
+        transferReason: sanitizedTransferReason || '',
+        transactionId: ticket.transaction_id
       });
 
-      console.log(`Transfer notification sent to new owner: ${sanitizedNewEmail}`);
+      console.log(`✅ Transfer notification sent to new owner: ${sanitizedNewEmail}`);
 
-      // Optionally send notification to previous owner
+      // Send transfer confirmation to ORIGINAL owner
       if (ticket.attendee_email) {
-        // You may want to create a custom "your ticket was transferred" template
-        console.log(`Previous owner notification: ${ticket.attendee_email} (not implemented yet)`);
+        await ticketEmailService.sendTransferConfirmation({
+          originalOwnerName: previousOwnerName,
+          originalOwnerEmail: ticket.attendee_email,
+          newOwnerName,
+          newOwnerEmail: sanitizedNewEmail,
+          ticketId,
+          ticketType: ticket.ticket_type,
+          transferDate,
+          transferReason: sanitizedTransferReason || '',
+          transferredBy: adminId || 'Admin'
+        });
+
+        console.log(`✅ Transfer confirmation sent to original owner: ${ticket.attendee_email}`);
       }
     } catch (emailError) {
-      console.error('Failed to send transfer notification (non-critical):', emailError);
+      console.error('❌ Failed to send transfer emails (non-critical):', emailError);
       // Continue - transfer was successful even if email fails
     }
 
