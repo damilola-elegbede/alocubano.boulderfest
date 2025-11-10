@@ -376,10 +376,13 @@ async function handler(req, res) {
       console.log(`✅ Transfer notification sent to new owner: ${sanitizedNewEmail}`);
 
       // Send transfer confirmation to ORIGINAL owner
-      if (ticket.attendee_email) {
+      // Use fallback: attendee_email → transaction_email
+      const originalOwnerEmail = ticket.attendee_email || ticket.transaction_email;
+
+      if (originalOwnerEmail) {
         await ticketEmailService.sendTransferConfirmation({
           originalOwnerName: previousOwnerName,
-          originalOwnerEmail: ticket.attendee_email,
+          originalOwnerEmail: originalOwnerEmail,
           newOwnerName,
           newOwnerEmail: sanitizedNewEmail,
           ticketId,
@@ -389,10 +392,18 @@ async function handler(req, res) {
           transferredBy: adminId || 'Admin'
         });
 
-        console.log(`✅ Transfer confirmation sent to original owner: ${ticket.attendee_email}`);
+        console.log(`✅ Transfer confirmation sent to original owner: ${originalOwnerEmail}`);
+      } else {
+        console.warn(`⚠️ Transfer ${ticketId}: No email available for original owner (attendee_email and transaction_email both null)`);
       }
     } catch (emailError) {
-      console.error('❌ Failed to send transfer emails (non-critical):', emailError);
+      console.error('❌ Failed to send transfer emails (non-critical):', {
+        error: emailError.message,
+        stack: emailError.stack,
+        ticketId,
+        newOwnerEmail: sanitizedNewEmail,
+        originalOwnerEmail: ticket.attendee_email || ticket.transaction_email || 'none'
+      });
       // Continue - transfer was successful even if email fails
     }
 
