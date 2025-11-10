@@ -319,6 +319,47 @@ errorNotifier.showSuccess('Item added to cart');
 - Cuban flag gradient accents (blue-to-red)
 - Dark mode support, reduced motion support
 
+## Ticket Scanning Limits
+
+### Scan Limit Policy
+
+**Simple Lifetime Limit**: Each ticket can be scanned **3 times total** (not per hour/day).
+
+**Use Case**:
+- Ticket scan → Attendee receives bracelet → Bracelet worn for entire event
+- Ideally 1 scan per ticket, but 3 scans allows margin for:
+  - Scanning errors/retries
+  - Lost bracelet replacement
+  - Staff verification
+
+**Behavior**:
+- Scans 1-3: ✅ Allowed, bracelet issued
+- Scan 4+: ❌ Blocked with error "Scan limit exceeded"
+
+**No Time-Based Rate Limiting**:
+- No limits on scans per minute/hour
+- No IP-based rate limiting
+- No lockout periods
+- Optimized for high-volume event check-in
+
+**Technical Implementation**:
+- `tickets.scan_count` tracks total scans
+- `tickets.max_scan_count` = 3 (configurable in migrations)
+- Atomic increment in transaction prevents race conditions
+- Audit trail in `scan_logs` table
+
+**API Response When Limit Hit**:
+```json
+{
+  "valid": false,
+  "error": "Ticket has reached maximum scan limit",
+  "validation": {
+    "status": "invalid",
+    "message": "Ticket has reached maximum scan limit"
+  }
+}
+```
+
 ## Performance Targets
 - Gallery: Virtual scrolling 1000+ images
 - Images: Progressive loading (AVIF → WebP → JPEG)

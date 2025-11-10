@@ -1,6 +1,5 @@
 import jwt from "jsonwebtoken";
 import { getDatabaseClient } from "../../lib/database.js";
-import { getRateLimitService } from "../../lib/rate-limit-service.js";
 import { withSecurityHeaders } from "../../lib/security-headers.js";
 import auditService from "../../lib/audit-service.js";
 import { isTestMode, getTestModeFlag } from "../../lib/test-mode-utils.js";
@@ -8,20 +7,6 @@ import { getQRTokenService } from "../../lib/qr-token-service.js";
 import { processDatabaseResult, sanitizeBigInt } from "../../lib/bigint-serializer.js";
 import { getTicketColorService } from "../../lib/ticket-color-service.js";
 import timeUtils from "../../lib/time-utils.js";
-
-// Enhanced rate limiting configuration
-const TICKET_RATE_LIMIT = {
-  window: 60000, // 1 minute
-  maxAttempts: 5000, // Increased from 50 to support high-volume events (100x increase)
-  lockoutDuration: 60000 // 1 minute lockout (reduced from 5 min for faster recovery)
-};
-
-// Per-ticket rate limiting (max 100 scans per hour per ticket)
-const PER_TICKET_RATE_LIMIT = {
-  window: 3600000, // 1 hour
-  maxAttempts: 100, // Increased from 10 to allow re-entry, testing, retries (10x increase)
-  lockoutDuration: 300000 // 5 minutes lockout (reduced from 30 min for faster recovery)
-};
 
 /**
  * Detect if a ticket is a test ticket
@@ -120,26 +105,6 @@ function validateTicketToken(token) {
 }
 
 /**
- * Enhanced rate limiting using the centralized rate limit service
- * @param {string} clientIP - Client IP address
- * @returns {Promise<Object>} Rate limit status
- */
-async function checkEnhancedRateLimit(clientIP) {
-  const rateLimitService = getRateLimitService();
-
-  const result = await rateLimitService.checkLimit(clientIP, 'ticket_validation', {
-    maxAttempts: TICKET_RATE_LIMIT.maxAttempts,
-    windowMs: TICKET_RATE_LIMIT.window
-  });
-
-  return {
-    isAllowed: result.allowed,
-    remaining: result.remaining,
-    retryAfter: result.retryAfter
-  };
-}
-
-/**
  * Extract validation code from token with enhanced security using QRTokenService
  * @param {string} token - JWT token or raw validation code
  * @returns {Object} - Extraction result with security validation
@@ -186,29 +151,6 @@ function extractValidationCode(token) {
     issueTime: null,
     expirationTime: null,
     tokenPayload: null
-  };
-}
-
-/**
- * Check per-ticket rate limiting to prevent abuse
- * @param {string} ticketId - Ticket ID to check
- * @returns {Promise<Object>} Rate limit status
- */
-async function checkPerTicketRateLimit(ticketId) {
-  if (!ticketId) {
-    return { isAllowed: true, remaining: PER_TICKET_RATE_LIMIT.maxAttempts };
-  }
-
-  const rateLimitService = getRateLimitService();
-  const result = await rateLimitService.checkLimit(`ticket:${ticketId}`, 'ticket_validation_per_ticket', {
-    maxAttempts: PER_TICKET_RATE_LIMIT.maxAttempts,
-    windowMs: PER_TICKET_RATE_LIMIT.window
-  });
-
-  return {
-    isAllowed: result.allowed,
-    remaining: result.remaining,
-    retryAfter: result.retryAfter
   };
 }
 
@@ -824,38 +766,6 @@ async function handler(req, res) {
     userAgentLength: userAgent.length
   });
 
-  if (clientIP === 'unknown') {
-    console.warn('Unable to determine client IP address for rate limiting');
-  }
-
-  // Enhanced rate limiting check (skip only in test environment)
-  if (process.env.NODE_ENV !== 'test') {
-    console.log('[TICKET-VALIDATE] Checking rate limit', { clientIP });
-
-    try {
-      const rateLimitResult = await checkEnhancedRateLimit(clientIP);
-
-      console.log('[TICKET-VALIDATE] Rate limit check result', {
-        isAllowed: rateLimitResult.isAllowed,
-        remaining: rateLimitResult.remaining,
-        retryAfter: rateLimitResult.retryAfter
-      });
-
-      if (!rateLimitResult.isAllowed) {
-        return res.status(429).json({
-          error: 'Rate limit exceeded. Please try again later.',
-          retryAfter: rateLimitResult.retryAfter,
-          remaining: rateLimitResult.remaining
-        });
-      }
-    } catch (rateLimitError) {
-      console.error('[TICKET-VALIDATE] Rate limiting service error:', rateLimitError);
-      // Continue processing but log the error - don't block legitimate requests
-    }
-  } else {
-    console.log('[TICKET-VALIDATE] Skipping rate limit check (test mode)');
-  }
-
   const { token, validateOnly } = req.body || {};
 
   console.log('[TICKET-VALIDATE] Request body parsed', {
@@ -919,43 +829,6 @@ async function handler(req, res) {
     ticketId = extractionResult.isJWT ? validationCode : null;
 
     console.log('[TICKET-VALIDATE] Ticket ID extracted', { ticketId });
-
-    // Per-ticket rate limiting (only if we have a ticket ID)
-    if (ticketId && process.env.NODE_ENV !== 'test') {
-      console.log('[TICKET-VALIDATE] Checking per-ticket rate limit', { ticketId });
-      const ticketRateLimit = await checkPerTicketRateLimit(ticketId);
-
-      console.log('[TICKET-VALIDATE] Per-ticket rate limit result', {
-        isAllowed: ticketRateLimit.isAllowed,
-        remaining: ticketRateLimit.remaining,
-        retryAfter: ticketRateLimit.retryAfter
-      });
-      if (!ticketRateLimit.isAllowed) {
-        // Log rate limit exceeded
-        await logScanAttempt(db, {
-          ticketId: ticketId,
-          scanStatus: 'rate_limited',
-          ipAddress: clientIP,
-          userAgent: userAgent,
-          validationSource: source,
-          tokenType: extractionResult.isJWT ? 'JWT' : 'direct',
-          failureReason: 'Per-ticket rate limit exceeded',
-          requestId: requestId,
-          scanDurationMs: Date.now() - startTime,
-          securityFlags: { rate_limited: true, per_ticket: true }
-        });
-
-        return res.status(429).json({
-          valid: false,
-          error: 'Too many validation attempts for this ticket. Please try again later.',
-          validation: {
-            status: 'rate_limited',
-            message: 'Rate limit exceeded for this ticket'
-          },
-          retryAfter: ticketRateLimit.retryAfter
-        });
-      }
-    }
 
     if (validateOnly) {
       console.log('[TICKET-VALIDATE] Preview-only validation (no scan count update)');
