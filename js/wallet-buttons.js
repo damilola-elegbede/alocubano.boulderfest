@@ -444,13 +444,12 @@ const walletStyles = `
   /* Mobile optimization */
   @media (max-width: 640px) {
     .wallet-buttons {
-      flex-direction: column;
       gap: 8px;
     }
 
     .wallet-button {
-      width: 100%;
-      max-width: 280px;
+      flex: 1;
+      max-width: 48%;
     }
   }
 

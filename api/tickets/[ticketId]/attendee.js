@@ -7,6 +7,7 @@ import { getDatabaseClient } from "../../../lib/database.js";
 import { setSecureCorsHeaders } from '../../../lib/cors-config.js';
 import { getBrevoService } from '../../../lib/brevo-service.js';
 import { generateAttendeeInfoChangedEmail } from '../../../lib/email-templates/attendee-info-changed.js';
+import { getClientIp } from '../../../lib/volunteer-helpers.js';
 import jwt from 'jsonwebtoken';
 import timeUtils from '../../../lib/time-utils.js';
 
@@ -62,18 +63,6 @@ function getTokenFromRequest(req) {
 function isValidEmail(email) {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
-}
-
-/**
- * Get client IP address
- */
-function getClientIp(req) {
-  return (
-    req.headers['x-forwarded-for'] ||
-    req.connection?.remoteAddress ||
-    req.socket?.remoteAddress ||
-    '127.0.0.1'
-  );
 }
 
 /**

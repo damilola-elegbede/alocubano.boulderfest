@@ -157,6 +157,40 @@ export default async function handler(req, res) {
     });
 
     if (result.rows.length === 0) {
+      // Track failed attempts for the latest pending code to prevent brute force
+      const pendingResult = await client.execute({
+        sql: `
+          SELECT id, attempts, max_attempts
+          FROM email_verification_codes
+          WHERE email = ?
+            AND status = 'pending'
+          ORDER BY created_at DESC
+          LIMIT 1
+        `,
+        args: [sanitizedEmail]
+      });
+
+      if (pendingResult.rows.length > 0) {
+        const pending = processDatabaseResult(pendingResult.rows[0]);
+        const newAttempts = pending.attempts + 1;
+        const exceeded = newAttempts > pending.max_attempts;
+
+        await client.execute({
+          sql: `
+            UPDATE email_verification_codes
+            SET attempts = ?, status = CASE WHEN ? THEN 'failed' ELSE status END
+            WHERE id = ?
+          `,
+          args: [newAttempts, exceeded ? 1 : 0, pending.id]
+        });
+
+        if (exceeded) {
+          return res.status(400).json({
+            error: 'Too many verification attempts. Please request a new code.'
+          });
+        }
+      }
+
       return res.status(400).json({
         error: 'Invalid or expired verification code'
       });

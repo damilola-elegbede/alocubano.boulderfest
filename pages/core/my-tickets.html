@@ -1030,7 +1030,8 @@
           if (remaining <= 0) {
             clearInterval(resendInterval);
             btn.disabled = false;
-            btn.innerHTML = 'Resend Code';
+            // Restore original HTML structure to preserve timer span for next use
+            btn.innerHTML = 'Resend Code (<span id="resendTimer">60</span>s)';
           }
           remaining--;
         };
@@ -1202,7 +1203,6 @@
             const ticketId = container.getAttribute('data-ticket-id');
             if (ticketId) {
               window.walletLazyLoader.observeWalletContainer(container, ticketId, {
-                title: 'Add to Wallet',
                 size: 'small',
                 showBothOnDesktop: true,
                 className: 'wallet-buttons-ticket-list'

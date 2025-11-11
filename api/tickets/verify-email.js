@@ -7,6 +7,7 @@ import { getDatabaseClient } from "../../lib/database.js";
 import { setSecureCorsHeaders } from '../../lib/cors-config.js';
 import { getBrevoService } from '../../lib/brevo-service.js';
 import { generateVerificationCodeEmail } from '../../lib/email-templates/verification-code.js';
+import { getClientIp, maskEmail } from '../../lib/volunteer-helpers.js';
 import crypto from 'crypto';
 
 // Rate limiting storage (in production, use Redis or similar)
@@ -22,6 +23,15 @@ function rateLimit(email) {
 
   const key = `verify_${email.toLowerCase()}`;
   const now = Date.now();
+
+  // Periodic cleanup of expired entries (1% probability per call)
+  if (Math.random() < 0.01) {
+    for (const [k, v] of rateLimitMap.entries()) {
+      if (now > v.resetTime + windowMs) {
+        rateLimitMap.delete(k);
+      }
+    }
+  }
 
   if (!rateLimitMap.has(key)) {
     rateLimitMap.set(key, { count: 0, resetTime: now + windowMs });
@@ -59,18 +69,6 @@ function isValidEmail(email) {
  */
 function generateVerificationCode() {
   return crypto.randomInt(100000, 999999).toString();
-}
-
-/**
- * Get client IP address
- */
-function getClientIp(req) {
-  return (
-    req.headers['x-forwarded-for'] ||
-    req.connection?.remoteAddress ||
-    req.socket?.remoteAddress ||
-    '127.0.0.1'
-  );
 }
 
 /**
@@ -181,7 +179,7 @@ export default async function handler(req, res) {
       }
     });
 
-    console.log(`[VerifyEmail] Verification code sent to ${sanitizedEmail}`);
+    console.log(`[VerifyEmail] Verification code sent to ${maskEmail(sanitizedEmail)}`);
 
     return res.status(200).json({
       success: true,
