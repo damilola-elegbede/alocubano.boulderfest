@@ -1299,7 +1299,7 @@
                                 <img src="/api/tickets/qr-image?ticketId=${encodeURIComponent(ticketIdRaw)}"
                                      alt="Ticket QR Code for ${ticketId}"
                                      style="width: 200px; height: 200px; display: block;"
-                                     onerror="this.parentElement.innerHTML='<div style=\\"padding: 20px; background: var(--color-error-light); border: 1px solid var(--color-error); border-radius: 8px; text-align: center;\\"><p style=\\"color: var(--color-error); margin: 0; font-weight: 600;\\">⚠️ QR Code Unavailable</p><p style=\\"color: var(--color-text-secondary); font-size: var(--text-sm); margin: 8px 0 0 0;\\">Please contact support</p></div>'">
+                                     onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=\"padding: 20px; background-color: #fee; border: 1px solid #f00; border-radius: 8px; text-align: center;\"><p style=\"color: #c00; margin: 0; font-weight: 600;\">⚠️ QR Code Unavailable</p><p style=\"color: #666; font-size: 14px; margin: 8px 0 0 0;\">Please contact support</p></div>'">
                             </div>
                             <p style="margin-top: var(--space-md); font-family: var(--font-body); color: var(--color-text-secondary); font-size: var(--text-sm);">
                                 📱 Screenshot this QR code or scan at entry
@@ -1324,16 +1324,14 @@
                         ${currentAccessToken ? `
                         <div class="transfer-action">
                             <button class="btn-small btn-primary" onclick="initiateTransfer('${ticketIdRaw}')">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <line x1="7" y1="17" x2="17" y2="7"></line>
-                                    <polyline points="7 7 17 7 17 17"></polyline>
-                                </svg>
                                 Transfer Ticket
                             </button>
                         </div>
                         ` : ''}
+
+                        <!-- Divider (inside ticket card, below transfer button) -->
+                        ${index < tickets.length - 1 ? '<div style="margin-top: var(--space-lg); padding-top: var(--space-lg); border-top: 1px solid var(--color-border);"></div>' : ''}
                     </div>
-                    ${index < tickets.length - 1 ? '<div class="ticket-divider"></div>' : ''}
                 `;
           })
           .join("");
