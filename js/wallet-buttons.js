@@ -99,7 +99,7 @@ class WalletButtons {
 
     // Add Apple logo and text
     button.innerHTML = `
-      <img src="/images/payment-icons/apple-pay.svg" alt="Apple" class="wallet-icon" />
+      <img src="/images/add-to-wallet-apple.svg" alt="Add to Apple Wallet" class="wallet-icon" />
       <span class="wallet-text">Add to Apple Wallet</span>
     `;
 
@@ -122,7 +122,7 @@ class WalletButtons {
 
     // Add Google logo and text
     button.innerHTML = `
-      <img src="/images/payment-icons/card_google-pay.svg" alt="Google" class="wallet-icon" />
+      <img src="/images/add-to-wallet-google.png" alt="Add to Google Wallet" class="wallet-icon" />
       <span class="wallet-text">Add to Google Wallet</span>
     `;
 
@@ -370,9 +370,8 @@ const walletStyles = `
   }
 
   .wallet-icon {
-    width: 20px;
-    height: 20px;
-    filter: brightness(0) invert(1); /* Make icons white */
+    height: 40px;
+    width: auto; /* Maintain aspect ratio */
   }
 
   .wallet-text {
