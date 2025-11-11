@@ -367,7 +367,7 @@
 
     <div class="manual-entry-container">
       <!-- Alert Messages -->
-      <div id="alert-container"></div>
+      <div id="alert-container" role="status" aria-live="polite" aria-atomic="true"></div>
 
       <!-- Manual Entry Form -->
       <form id="manual-entry-form" class="admin-card">
@@ -953,6 +953,12 @@
             })
           });
 
+          // Debug logging for email flags
+          console.log('📧 Email flags being sent:', {
+            skipOrderEmail: document.getElementById('skip-order-email').checked,
+            skipAttendeeEmails: document.getElementById('skip-attendee-emails').checked
+          });
+
           const result = await response.json();
 
           if (!response.ok) {
@@ -1016,7 +1022,17 @@
         const container = document.getElementById('alert-container');
         const alert = document.createElement('div');
         alert.className = `alert alert-${type}`;
-        alert.textContent = message;
+        alert.setAttribute('role', 'alert');
+
+        // Add icon prefix for visual distinction (not relying on color alone)
+        const iconMap = {
+          success: '✓',
+          error: '✕',
+          warning: '⚠',
+          info: 'ℹ'
+        };
+        const icon = iconMap[type] || '';
+        alert.textContent = icon ? `${icon} ${message}` : message;
 
         container.appendChild(alert);
 
@@ -1025,8 +1041,12 @@
           alert.remove();
         }, 8000);
 
-        // Scroll to top to show alert
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        // Scroll to top to show alert (respect prefers-reduced-motion)
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        window.scrollTo({
+          top: 0,
+          behavior: prefersReducedMotion ? 'auto' : 'smooth'
+        });
       }
 
       // Logout
