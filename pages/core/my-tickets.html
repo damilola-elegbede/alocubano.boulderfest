@@ -146,6 +146,29 @@
     <script type="module" src="/js/qr-cache-manager.js"></script>
     <script type="module" src="/js/wallet-lazy-loader.js"></script>
     <script type="module" src="/js/performance-integration.js"></script>
+
+    <!-- Hero Image Preload -->
+    <script>
+      // Inline critical path optimization - Event hero images
+      (function() {
+        const heroPath = "/images/hero/tickets.jpg";
+
+        if ('connection' in navigator) {
+          const conn = navigator.connection;
+          if (conn.saveData || conn.effectiveType === 'slow-2g' || conn.effectiveType === '2g') {
+            return; // Skip preload on slow connections
+          }
+        }
+
+        const heroPreload = document.createElement('link');
+        heroPreload.rel = 'preload';
+        heroPreload.as = 'image';
+        heroPreload.href = heroPath;
+        heroPreload.fetchpriority = 'high';
+        document.head.appendChild(heroPreload);
+      })();
+    </script>
+
     <!-- Critical CSS (render-blocking) -->
     <link rel="stylesheet" href="/css/bundle-critical.css" />
 
@@ -687,8 +710,7 @@
       </section>
 
       <section class="section-typographic">
-        <div class="container">
-          <div class="ticket-lookup">
+          <div class="ticket-lookup" style="max-width: 960px; margin: 0 auto; padding: 0 var(--space-lg);">
       <h1>My Tickets</h1>
 
       <!-- Step 1: Email Input -->
@@ -752,7 +774,6 @@
       <div id="messageContainer"></div>
       <div id="ticketContainer"></div>
           </div>
-        </div>
       </section>
     </main>
 
@@ -1278,7 +1299,7 @@
                                 <img src="/api/tickets/qr-image?ticketId=${encodeURIComponent(ticketIdRaw)}"
                                      alt="Ticket QR Code for ${ticketId}"
                                      style="width: 200px; height: 200px; display: block;"
-                                     onerror="this.parentElement.innerHTML='<p style=\\"color: var(--color-error); padding: 20px;\\">QR Code unavailable</p>'">
+                                     onerror="this.parentElement.innerHTML='<div style=\\"padding: 20px; background: var(--color-error-light); border: 1px solid var(--color-error); border-radius: 8px; text-align: center;\\"><p style=\\"color: var(--color-error); margin: 0; font-weight: 600;\\">⚠️ QR Code Unavailable</p><p style=\\"color: var(--color-text-secondary); font-size: var(--text-sm); margin: 8px 0 0 0;\\">Please contact support</p></div>'">
                             </div>
                             <p style="margin-top: var(--space-md); font-family: var(--font-body); color: var(--color-text-secondary); font-size: var(--text-sm);">
                                 📱 Screenshot this QR code or scan at entry
@@ -1319,7 +1340,7 @@
 
         ticketContainer.innerHTML = `
                 <div class="ticket-list">
-                    <h2>Your Tickets (${tickets.length})</h2>
+                    <h2 style="margin-bottom: var(--space-xl);">You have ${tickets.length} ticket${tickets.length === 1 ? '' : 's'}</h2>
                     ${ticketsHtml}
                 </div>
             `;
