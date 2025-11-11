@@ -367,7 +367,7 @@
 
     <div class="manual-entry-container">
       <!-- Alert Messages -->
-      <div id="alert-container"></div>
+      <div id="alert-container" role="status" aria-live="polite" aria-atomic="true"></div>
 
       <!-- Manual Entry Form -->
       <form id="manual-entry-form" class="admin-card">
@@ -466,6 +466,39 @@
                 </select>
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- Email Settings -->
+        <div class="form-section">
+          <h2 class="section-title">Email Settings</h2>
+
+          <div class="admin-form-group" style="background: rgba(91, 107, 181, 0.1); border: 1px solid rgba(91, 107, 181, 0.3); border-radius: var(--radius-md); padding: var(--space-md);">
+            <label style="display: block; margin-bottom: var(--space-sm); font-weight: 600;">Email Notifications</label>
+
+            <label style="display: flex; align-items: center; margin-bottom: var(--space-sm); cursor: pointer;">
+              <input
+                type="checkbox"
+                id="skip-order-email"
+                name="skipOrderEmail"
+                style="width: 20px; height: 20px; margin-right: var(--space-sm); cursor: pointer;"
+              />
+              <span>Skip order confirmation email (to purchaser)</span>
+            </label>
+
+            <label style="display: flex; align-items: center; margin-bottom: var(--space-sm); cursor: pointer;">
+              <input
+                type="checkbox"
+                id="skip-attendee-emails"
+                name="skipAttendeeEmails"
+                style="width: 20px; height: 20px; margin-right: var(--space-sm); cursor: pointer;"
+              />
+              <span>Skip attendee confirmation emails (to ticket holders)</span>
+            </label>
+
+            <small style="color: var(--color-text-secondary); display: block; margin-top: var(--space-sm);">
+              By default, both emails are sent. Check boxes to skip specific emails.
+            </small>
           </div>
         </div>
 
@@ -914,8 +947,16 @@
               customerLastName,
               customerPhone: customerPhone || null,
               cashShiftId: cashShiftId || null,
-              isTest: false
+              isTest: false,
+              skipOrderEmail: document.getElementById('skip-order-email').checked,
+              skipAttendeeEmails: document.getElementById('skip-attendee-emails').checked
             })
+          });
+
+          // Debug logging for email flags
+          console.log('📧 Email flags being sent:', {
+            skipOrderEmail: document.getElementById('skip-order-email').checked,
+            skipAttendeeEmails: document.getElementById('skip-attendee-emails').checked
           });
 
           const result = await response.json();
@@ -930,8 +971,17 @@
             'success'
           );
 
-          // Show email error if emails failed
-          if (result.emailError) {
+          // Show email status
+          if (result.emailsSkipped?.orderEmail || result.emailsSkipped?.attendeeEmails) {
+            const skippedEmails = [];
+            if (result.emailsSkipped.orderEmail) skippedEmails.push('order confirmation');
+            if (result.emailsSkipped.attendeeEmails) skippedEmails.push('attendee confirmations');
+
+            showAlert(
+              `ℹ️ Email notifications skipped: ${skippedEmails.join(', ')}`,
+              'warning'
+            );
+          } else if (result.emailError) {
             showAlert(
               `⚠️ Ticket created successfully BUT emails failed to send!
               Error: ${result.emailError.message}
@@ -972,7 +1022,17 @@
         const container = document.getElementById('alert-container');
         const alert = document.createElement('div');
         alert.className = `alert alert-${type}`;
-        alert.textContent = message;
+        alert.setAttribute('role', 'alert');
+
+        // Add icon prefix for visual distinction (not relying on color alone)
+        const iconMap = {
+          success: '✓',
+          error: '✕',
+          warning: '⚠',
+          info: 'ℹ'
+        };
+        const icon = iconMap[type] || '';
+        alert.textContent = icon ? `${icon} ${message}` : message;
 
         container.appendChild(alert);
 
@@ -981,8 +1041,12 @@
           alert.remove();
         }, 8000);
 
-        // Scroll to top to show alert
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        // Scroll to top to show alert (respect prefers-reduced-motion)
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        window.scrollTo({
+          top: 0,
+          behavior: prefersReducedMotion ? 'auto' : 'smooth'
+        });
       }
 
       // Logout

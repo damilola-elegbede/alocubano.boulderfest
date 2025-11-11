@@ -65,6 +65,16 @@ const INPUT_VALIDATION = {
     required: false,
     type: 'boolean',
     error: 'isTest must be a boolean'
+  },
+  skipOrderEmail: {
+    required: false,
+    type: 'boolean',
+    error: 'skipOrderEmail must be a boolean'
+  },
+  skipAttendeeEmails: {
+    required: false,
+    type: 'boolean',
+    error: 'skipAttendeeEmails must be a boolean'
   }
 };
 
@@ -172,7 +182,9 @@ async function handler(req, res) {
       customerLastName,
       customerPhone,
       cashShiftId,
-      isTest = false
+      isTest = false,
+      skipOrderEmail = false,
+      skipAttendeeEmails = false
     } = req.body || {};
 
     // Validate required fields
@@ -185,7 +197,9 @@ async function handler(req, res) {
       customerLastName: validateField(customerLastName, 'customerLastName', INPUT_VALIDATION.customerLastName),
       customerPhone: validateField(customerPhone, 'customerPhone', INPUT_VALIDATION.customerPhone),
       cashShiftId: validateField(cashShiftId, 'cashShiftId', INPUT_VALIDATION.cashShiftId),
-      isTest: validateField(isTest, 'isTest', INPUT_VALIDATION.isTest)
+      isTest: validateField(isTest, 'isTest', INPUT_VALIDATION.isTest),
+      skipOrderEmail: validateField(skipOrderEmail, 'skipOrderEmail', INPUT_VALIDATION.skipOrderEmail),
+      skipAttendeeEmails: validateField(skipAttendeeEmails, 'skipAttendeeEmails', INPUT_VALIDATION.skipAttendeeEmails)
     };
 
     // Check for validation errors
@@ -286,7 +300,9 @@ async function handler(req, res) {
       customerLastName,
       customerPhone: customerPhone || null,
       cashShiftId: cashShiftId ? parseInt(cashShiftId, 10) : null,
-      isTest
+      isTest,
+      skipOrderEmail,
+      skipAttendeeEmails
     });
 
     // ========================================================================
@@ -334,6 +350,10 @@ async function handler(req, res) {
         tickets: enhancedTickets,
         ticketCount: result.ticketCount,
         emailError: result.emailError, // Include email error if present
+        emailsSkipped: {
+          orderEmail: skipOrderEmail,
+          attendeeEmails: skipAttendeeEmails
+        },
         fraudCheck: {
           recentTickets: fraudCheck.count,
           threshold: 20,

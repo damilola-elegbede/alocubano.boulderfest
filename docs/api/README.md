@@ -52,6 +52,116 @@ export default async function handler(req, res) {
 }
 ```
 
+### Database Batch Operations & Transaction Patterns
+
+#### Two-Step Parent-Child Insert Pattern
+
+When inserting parent and child records, always use a two-step pattern with the `RETURNING` clause:
+
+```javascript
+// ✅ CORRECT: Two-step pattern with RETURNING
+const db = await getDatabaseClient();
+
+// STEP 1: Insert parent record and get its ID
+const parentResult = await db.execute({
+  sql: `INSERT INTO transactions (...) VALUES (...) RETURNING id`,
+  args: [...]
+});
+const transactionId = parentResult.rows[0].id;
+
+// STEP 2: Build batch operations for child records using the parent ID
+const batchOperations = [];
+for (const item of items) {
+  batchOperations.push({
+    sql: `INSERT INTO tickets (..., transaction_id, ...) VALUES (?, ?, ...)`,
+    args: [ticketId, transactionId, ...]  // Direct ID reference
+  });
+}
+
+// STEP 3: Execute child inserts atomically
+await db.batch(batchOperations);
+```
+
+#### Anti-Pattern: Subqueries in Batch Operations
+
+**DO NOT** use subqueries to reference recently-inserted rows within the same batch:
+
+```javascript
+// ❌ INCORRECT: Subquery for uncommitted row in same batch
+const batchOperations = [];
+
+// Add parent insert
+batchOperations.push({
+  sql: `INSERT INTO transactions (...) VALUES (...)`,
+  args: [transactionUuid, ...]
+});
+
+// Add child insert with subquery
+batchOperations.push({
+  sql: `INSERT INTO tickets (..., transaction_id, ...)
+        VALUES (..., (SELECT id FROM transactions WHERE uuid = ?), ...)`,
+  args: [ticketId, transactionUuid, ...]  // Subquery fails!
+});
+
+// Execute batch - WILL FAIL
+await db.batch(batchOperations);
+```
+
+**Why This Fails:**
+- Batch operations are executed atomically
+- The parent INSERT hasn't been committed when the subquery runs
+- SQLite cannot see the uncommitted parent row
+- Results in cryptic errors like "no such table" or "not found"
+
+#### Best Practices
+
+1. **Use RETURNING Clause**: Always use `RETURNING id` when inserting parent records
+2. **Direct ID References**: Use the returned ID directly in child inserts (no subqueries)
+3. **Separate Steps**: Insert parents first, then children in a separate batch
+4. **Atomic Updates**: Group related child operations in a single batch for atomicity
+5. **Dual-Key Design**: Follow the Foreign Key Pattern (see CLAUDE.md):
+   - Parent table: `id INTEGER PRIMARY KEY AUTOINCREMENT` (for FKs)
+   - Parent table: `uuid TEXT UNIQUE` (for business logic)
+   - Child tables: Reference `parent.id` (INTEGER FK, not UUID)
+
+#### Example: Manual Ticket Creation
+
+```javascript
+// Correct implementation from manual-ticket-creation-service.js
+
+// STEP 1: Insert transaction with RETURNING
+const txResult = await db.execute({
+  sql: `INSERT INTO transactions (...) VALUES (...) RETURNING id`,
+  args: [...]
+});
+const transactionId = txResult.rows[0].id;
+
+// STEP 2: Build ticket batch using transactionId
+const batchOps = [];
+for (const item of validatedItems) {
+  batchOps.push({
+    sql: `INSERT INTO tickets (..., transaction_id) VALUES (?, ?, ...)`,
+    args: [ticketId, transactionId, ...]  // ✅ Direct reference
+  });
+}
+
+// STEP 3: Execute ticket batch
+await db.batch(batchOps);
+```
+
+#### Performance Considerations
+
+- **RETURNING Support**: Fully supported by SQLite/Turso (used in production since 2024)
+- **Batch Atomicity**: `db.batch()` executes all operations atomically
+- **Transaction Safety**: Failures trigger automatic rollback
+- **Race Conditions**: Atomic batch operations prevent concurrent modification issues
+
+#### Related Patterns
+
+- **Sold Count Updates**: Prepend counter updates to batch before ticket inserts
+- **Order Number Generation**: Use `RETURNING` with UPDATE for atomic increments
+- **Registration Tokens**: Create after parent transaction for referential integrity
+
 ## API Endpoints
 
 ### Email Services

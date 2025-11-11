@@ -436,6 +436,85 @@ PRAGMA foreign_keys = ON;
 PRAGMA foreign_key_check;
 ```
 
+### Foreign Key Safety During Parent Table Recreation
+
+**Critical Insight**: `PRAGMA foreign_keys = OFF` disables FK **enforcement** but NOT FK **schema auto-updates** during `ALTER TABLE RENAME`.
+
+**The Problem**: Migration 060
+
+```sql
+-- ❌ UNSAFE PATTERN - Orphans child FK constraints
+PRAGMA foreign_keys = OFF;
+
+ALTER TABLE ticket_types RENAME TO ticket_types_backup;  -- ← Child FKs auto-update to "_backup"
+CREATE TABLE ticket_types (...);
+INSERT INTO ticket_types SELECT * FROM ticket_types_backup;
+DROP TABLE ticket_types_backup;  -- ← Orphans the child FK permanently!
+
+PRAGMA foreign_keys = ON;
+```
+
+**Root Cause**: SQLite automatically updates FK references in child tables during `ALTER TABLE RENAME` regardless of `PRAGMA foreign_keys = OFF`. When you later `DROP` the backup table, child table FK constraints point to a non-existent table.
+
+**The Fix**: Migration 061 (SAFE Pattern)
+
+```sql
+-- ✅ SAFE PATTERN - Allows SQLite to auto-reconnect child FKs
+PRAGMA foreign_keys = OFF;
+
+-- Step 1: Create new table with correct schema
+CREATE TABLE tickets_new (...
+  ticket_type_id TEXT REFERENCES ticket_types(id) ON DELETE SET NULL,
+  ...
+);
+
+-- Step 2: Copy all data
+INSERT INTO tickets_new SELECT * FROM tickets;
+
+-- Step 3: Drop old table (temporarily orphans child FKs)
+DROP TABLE tickets;
+
+-- Step 4: Rename new table (SQLite auto-fixes orphaned child FKs)
+ALTER TABLE tickets_new RENAME TO tickets;
+
+-- Step 5: Re-enable and verify
+PRAGMA foreign_keys = ON;
+PRAGMA foreign_key_check;
+```
+
+**Why This Works**:
+1. `DROP TABLE tickets` orphans child FK constraints (e.g., `scan_logs.ticket_id`)
+2. `RENAME tickets_new TO tickets` triggers SQLite's FK auto-update
+3. SQLite automatically reconnects orphaned child FKs to the renamed table
+
+**Migration Pattern Summary**:
+
+| Pattern | Steps | Child FK Behavior | Result |
+|---------|-------|-------------------|--------|
+| UNSAFE | RENAME → DROP | Auto-updates then orphans | ❌ Broken FKs |
+| SAFE | CREATE → DROP → RENAME | Orphans then auto-reconnects | ✅ Fixed FKs |
+
+**Real-World Impact**: Manual ticket creation was completely broken for weeks because `tickets.ticket_type_id` pointed to deleted `ticket_types_backup` table.
+
+**Verification Queries**:
+
+```sql
+-- Check for orphaned backup tables
+SELECT name FROM sqlite_master
+WHERE type='table' AND name LIKE '%backup%';
+-- Should return 0 rows
+
+-- Check FK constraint target
+PRAGMA foreign_key_list(tickets);
+-- tickets.ticket_type_id should reference "ticket_types", not "ticket_types_backup"
+
+-- Verify no FK violations
+PRAGMA foreign_key_check;
+-- Should return 0 rows
+```
+
+**Reference**: See migrations/061_fix_orphaned_ticket_type_fk.sql for complete implementation.
+
 ### Transaction Behavior
 
 **SQLite Characteristics**:
