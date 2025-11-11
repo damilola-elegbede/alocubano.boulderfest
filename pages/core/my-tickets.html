@@ -38,10 +38,89 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>My Tickets - A Lo Cubano Boulder Fest</title>
+    <!-- Favicons -->
+    <link
+      rel="icon"
+      type="image/png"
+      href="/images/favicons/favicon-32x32.png"
+    />
     <link rel="icon" type="image/x-icon" href="/images/favicon.ico" />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/images/favicons/favicon-16x16.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/images/favicons/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="192x192"
+      href="/images/favicons/favicon-192x192.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="192x192"
+      href="/images/favicons/favicon-192x192.png"
+    />
+
+    <!-- Critical resource preloading -->
+    <script>
+      // Inline critical path optimization - Event hero images with responsive variants
+      (function () {
+        // Check if optimized variants exist for event heroes
+        const heroPath = "/images/hero/tickets.jpg";
+        const isEventHero = false;
+
+        if (isEventHero) {
+          // Preload optimized variants for event heroes (WebP first, then JPEG fallback)
+          const isMobile = window.innerWidth <= 768;
+          const variant = isMobile ? "mobile" : "desktop";
+          const baseName = "tickets";
+
+          // Preload WebP variant
+          const webpPreload = document.createElement("link");
+          webpPreload.rel = "preload";
+          webpPreload.as = "image";
+          webpPreload.href = `/images/hero-optimized/${variant}/${baseName}.webp`;
+          webpPreload.type = "image/webp";
+          document.head.appendChild(webpPreload);
+
+          // Preload AVIF variant for supported browsers
+          if (typeof window !== "undefined" && "OffscreenCanvas" in window) {
+            const avifPreload = document.createElement("link");
+            avifPreload.rel = "preload";
+            avifPreload.as = "image";
+            avifPreload.href = `/images/hero-optimized/${variant}/${baseName}.avif`;
+            avifPreload.type = "image/avif";
+            document.head.appendChild(avifPreload);
+          }
+
+          // Fallback JPEG preload
+          const jpegPreload = document.createElement("link");
+          jpegPreload.rel = "preload";
+          jpegPreload.as = "image";
+          jpegPreload.href = `/images/hero-optimized/${variant}/${baseName}.jpg`;
+          jpegPreload.type = "image/jpeg";
+          document.head.appendChild(jpegPreload);
+        } else {
+          // Standard hero image preload for top-level pages
+          const heroPreload = document.createElement("link");
+          heroPreload.rel = "preload";
+          heroPreload.as = "image";
+          heroPreload.href = heroPath;
+          document.head.appendChild(heroPreload);
+        }
+      })();
+    </script>
 
     <!-- Performance optimizations -->
-    
+
     <link rel="preconnect" href="https://wallet.apple.com">
     <link rel="preconnect" href="https://pay.google.com">
 
@@ -343,31 +422,221 @@
       }
     </style>
   </head>
-  <body>
-    <nav class="main-nav">
-      <a href="/" class="nav-logo">A Lo Cubano</a>
-    </nav>
+  <body class="typographic">
+    <header class="header">
+      <div class="container">
+        <div class="grid">
+          <div class="header-left">
+            <a href="/home" class="logo-link" aria-label="Go to home page">
+              <img
+                src="/images/logo.png"
+                alt="A Lo Cubano Boulder Fest Logo"
+                class="site-logo"
+                data-light-src="/images/logo.png"
+                data-dark-src="/images/logo-dark.png"
+              />
+              <div class="logo-text">
+                <span class="logo-main">A LO CUBANO</span>
+                <span class="logo-separator">|</span>
+                <span class="logo-sub">Boulder Fest</span>
+              </div>
+            </a>
+          </div>
+          <nav class="main-nav">
+            <button
+              class="menu-toggle"
+              aria-label="Toggle menu"
+              aria-expanded="false"
+              aria-controls="main-navigation"
+            >
+              <div class="menu-icon">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </button>
+            <ul class="nav-list" id="main-navigation">
+              <li>
+                <a href="/home" class="nav-link" data-text="Home">Home</a>
+              </li>
+              <li>
+                <a href="/about" class="nav-link" data-text="About">About</a>
+              </li>
+              <li class="nav-item has-dropdown">
+                <button
+                  class="nav-trigger"
+                  aria-expanded="false"
+                  aria-haspopup="true"
+                  data-dropdown="events"
+                  data-text="Events"
+                >
+                  Events
+                  <span class="dropdown-arrow" aria-hidden="true">▼</span>
+                </button>
+                <ul
+                  class="dropdown-menu"
+                  aria-hidden="true"
+                  role="menu"
+                  data-dropdown-content="events"
+                >
+                  <li class="dropdown-category" role="group">
+                    <span class="dropdown-category-title" role="presentation"
+                      >Boulder Fest</span
+                    >
+                    <ul class="dropdown-submenu">
+                      <li>
+                        <a
+                          href="/boulder-fest-2026"
+                          class="dropdown-link"
+                          role="menuitem"
+                          data-event="boulder-fest-2026"
+                          data-event-status="upcoming"
+                          >2026 Festival</a
+                        >
+                      </li>
+                      <li>
+                        <a
+                          href="/boulder-fest-2025"
+                          class="dropdown-link"
+                          role="menuitem"
+                          data-event="boulder-fest-2025"
+                          data-event-status="current"
+                          >2025 Festival</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                  <li class="dropdown-category" role="group">
+                    <span class="dropdown-category-title" role="presentation"
+                      >Weekenders</span
+                    >
+                    <ul class="dropdown-submenu">
+                      <li>
+                        <a
+                          href="/weekender-2025-11"
+                          class="dropdown-link"
+                          role="menuitem"
+                          data-event="weekender-2025-11"
+                          data-event-status="upcoming"
+                          >November 2025</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+              <li>
+                <a href="/tickets" class="nav-link" data-text="Tickets"
+                  >Tickets</a
+                >
+              </li>
+              <li>
+                <a href="/donations" class="nav-link" data-text="Donate"
+                  >Donate</a
+                >
+              </li>
+              <li>
+                <a href="/contact" class="nav-link" data-text="Contact"
+                  >Contact</a
+                >
+              </li>
+            </ul>
+            <div class="nav-cart-item">
+              <button class="nav-cart-button" aria-label="View cart" data-testid="view-cart">
+                <svg class="nav-cart-icon" viewBox="0 0 24 24" width="20" height="20">
+                  <path d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12L8.1 13h7.45c.75 0 1.41-.41 1.75-1.03L21.7 4H5.21l-.94-2H1zm16 16c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+                </svg>
+                <span class="nav-cart-badge" style="display: none;" data-testid="cart-counter">0</span>
+              </button>
+            </div>
+          </nav>
+        </div>
+      </div>
+    </header>
 
-    <div class="ticket-lookup">
+    <main>
+      <!-- Hero Splash Image -->
+      <section class="gallery-hero-splash">
+        <div class="hero-image-container">
+          <img
+            id="hero-splash-image"
+            src="/images/hero/tickets.jpg"
+            alt="Excited festival attendees enjoying A Lo Cubano Boulder Fest events"
+            class="hero-splash-img"
+            style="object-position: top center !important"
+          />
+        </div>
+      </section>
+
+      <section class="section-typographic">
+        <div class="container">
+          <div class="ticket-lookup">
       <h1>My Tickets</h1>
-      <p>
-        Enter your email address to view your tickets for A Lo Cubano Boulder
-        Fest.
-      </p>
 
-      <form class="lookup-form" id="ticketLookupForm">
-        <input
-          type="email"
-          id="emailInput"
-          placeholder="Enter your email address"
-          required
-        />
-        <button type="submit">Find Tickets</button>
-      </form>
+      <!-- Step 1: Email Input -->
+      <div id="emailStep" class="verification-step">
+        <p>
+          Enter your email address to receive a verification code.
+        </p>
+        <form class="lookup-form" id="emailForm">
+          <input
+            type="email"
+            id="emailInput"
+            placeholder="Enter your email address"
+            required
+            aria-label="Email address"
+          />
+          <button type="submit" class="btn-primary">Send Code</button>
+        </form>
+      </div>
+
+      <!-- Step 2: Code Verification -->
+      <div id="codeStep" class="verification-step" style="display: none;">
+        <p>
+          <strong>Check your email!</strong> We've sent a 6-digit verification code to <span id="emailDisplay" class="highlight-email"></span>
+        </p>
+        <p class="code-expiry-info">
+          Code expires in <span id="expiryTimer">5:00</span> minutes
+        </p>
+        <form class="verification-form" id="codeForm">
+          <div class="form-group">
+            <label for="codeInput">Verification Code</label>
+            <input
+              type="text"
+              id="codeInput"
+              placeholder="000000"
+              required
+              maxlength="6"
+              pattern="[0-9]{6}"
+              inputmode="numeric"
+              autocomplete="one-time-code"
+              aria-label="6-digit verification code"
+            />
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-primary">Verify Code</button>
+            <button type="button" id="resendCodeBtn" class="btn-secondary" disabled>
+              Resend Code (<span id="resendTimer">60</span>s)
+            </button>
+          </div>
+        </form>
+        <button type="button" id="changeEmailBtn" class="btn-link">Use different email</button>
+      </div>
+
+      <!-- Step 3: Authenticated View -->
+      <div id="authenticatedView" style="display: none;">
+        <div class="session-info">
+          <p>Viewing tickets for <span id="authenticatedEmail" class="highlight-email"></span></p>
+          <button type="button" id="logoutBtn" class="btn-link">Sign out</button>
+        </div>
+      </div>
 
       <div id="messageContainer"></div>
       <div id="ticketContainer"></div>
-    </div>
+          </div>
+        </div>
+      </section>
+    </main>
 
     <!-- QR Code Modal -->
     <div id="qrModal" class="modal" role="dialog" aria-labelledby="qrModalTitle" aria-modal="true">
@@ -465,114 +734,358 @@
       </div>
     </div>
 
+    <footer class="footer-typographic">
+      <div class="container">
+        <p class="footer-credits">
+          YOUR PASS TO THE DANCE FLOOR •
+          <a
+            href="mailto:alocubanoboulderfest@gmail.com?subject=A Lo Cubano Boulder Fest Inquiry"
+            style="color: inherit; text-decoration: underline"
+            >alocubanoboulderfest@gmail.com</a
+          >
+        </p>
+        <div class="footer-social">
+          <a
+            href="https://www.instagram.com/alocubano.boulderfest/"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="social-link-type"
+            aria-label="Follow us on Instagram"
+          >
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+              <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+            </svg>
+          </a>
+          <a
+            href="https://chat.whatsapp.com/KadIVdb24RWKdIKGtipnLH"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="social-link-type"
+            aria-label="Join us on WhatsApp"
+          >
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"
+              ></path>
+            </svg>
+          </a>
+        </div>
+        <div id="theme-toggle-container" class="footer-theme-toggle"></div>
+      </div>
+    </footer>
+
     <script type="module">
       import { setSafeTextContent, displayMessage, createElementWithContent, escapeHtml } from '/js/lib/dom-security.js';
       import timeManager from '/js/time-manager.js';
 
-      // Check for token or email in URL parameters
-      const urlParams = new URLSearchParams(window.location.search);
-      const token = urlParams.get("token");
-      const emailParam = urlParams.get("email");
+      // State management
+      let currentEmail = '';
+      let currentAccessToken = '';
+      let expiryInterval = null;
+      let resendInterval = null;
+      let currentTickets = [];
+      let editingTicketId = null;
 
-      if (token) {
-        // Use secure token-based access
-        lookupTicketsByToken(token);
-      } else if (emailParam) {
-        // Fallback to email-based lookup (legacy)
-        document.getElementById("emailInput").value = emailParam;
-        lookupTickets(emailParam);
+      // Check for existing session
+      const storedToken = localStorage.getItem('ticketAccessToken');
+      const storedEmail = localStorage.getItem('ticketAccessEmail');
+      const tokenExpiry = localStorage.getItem('ticketAccessTokenExpiry');
+
+      if (storedToken && storedEmail && tokenExpiry) {
+        const now = Date.now();
+        if (now < parseInt(tokenExpiry)) {
+          // Token still valid
+          currentAccessToken = storedToken;
+          currentEmail = storedEmail;
+          showAuthenticatedView();
+          loadTickets();
+        } else {
+          // Token expired, clear storage
+          clearSession();
+        }
       }
 
-      // Handle form submission
-      document
-        .getElementById("ticketLookupForm")
-        .addEventListener("submit", async (e) => {
-          e.preventDefault();
-          const email = document.getElementById("emailInput").value;
-          await lookupTickets(email);
-        });
+      // Email form submission
+      document.getElementById("emailForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        await sendVerificationCode();
+      });
 
-      async function lookupTicketsByToken(token) {
-        const messageContainer = document.getElementById("messageContainer");
-        const ticketContainer = document.getElementById("ticketContainer");
+      // Code form submission
+      document.getElementById("codeForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        await verifyCode();
+      });
 
-        // Show loading with secure DOM manipulation
+      // Resend code button
+      document.getElementById("resendCodeBtn").addEventListener("click", async () => {
+        await sendVerificationCode(true);
+      });
+
+      // Change email button
+      document.getElementById("changeEmailBtn").addEventListener("click", () => {
+        resetToEmailStep();
+      });
+
+      // Logout button
+      document.getElementById("logoutBtn").addEventListener("click", () => {
+        clearSession();
+        resetToEmailStep();
+        showMessage('You have been signed out.', 'info');
+      });
+
+      // Session management
+      function clearSession() {
+        localStorage.removeItem('ticketAccessToken');
+        localStorage.removeItem('ticketAccessEmail');
+        localStorage.removeItem('ticketAccessTokenExpiry');
+        currentAccessToken = '';
+        currentEmail = '';
+        currentTickets = [];
+      }
+
+      function saveSession(token, email, expiresIn) {
+        const expiry = Date.now() + (expiresIn * 1000);
+        localStorage.setItem('ticketAccessToken', token);
+        localStorage.setItem('ticketAccessEmail', email);
+        localStorage.setItem('ticketAccessTokenExpiry', expiry.toString());
+        currentAccessToken = token;
+        currentEmail = email;
+      }
+
+      // UI state management
+      function showEmailStep() {
+        document.getElementById('emailStep').style.display = 'block';
+        document.getElementById('codeStep').style.display = 'none';
+        document.getElementById('authenticatedView').style.display = 'none';
+      }
+
+      function showCodeStep() {
+        document.getElementById('emailStep').style.display = 'none';
+        document.getElementById('codeStep').style.display = 'block';
+        document.getElementById('authenticatedView').style.display = 'none';
+        document.getElementById('codeInput').focus();
+      }
+
+      function showAuthenticatedView() {
+        document.getElementById('emailStep').style.display = 'none';
+        document.getElementById('codeStep').style.display = 'none';
+        document.getElementById('authenticatedView').style.display = 'block';
+        setSafeTextContent(document.getElementById('authenticatedEmail'), currentEmail);
+      }
+
+      function resetToEmailStep() {
+        showEmailStep();
+        document.getElementById('emailInput').value = '';
+        document.getElementById('codeInput').value = '';
+        clearMessage();
+        document.getElementById('ticketContainer').innerHTML = '';
+        if (expiryInterval) clearInterval(expiryInterval);
+        if (resendInterval) clearInterval(resendInterval);
+      }
+
+      // Verification flow
+      async function sendVerificationCode(isResend = false) {
+        const email = document.getElementById('emailInput').value.trim();
+        if (!email) {
+          showMessage('Please enter your email address.', 'error');
+          return;
+        }
+
+        currentEmail = email;
+
+        const btn = isResend ? document.getElementById('resendCodeBtn') : document.querySelector('#emailForm button[type="submit"]');
+        const originalText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Sending...';
+
+        try {
+          const response = await fetch('/api/tickets/verify-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || 'Failed to send verification code');
+          }
+
+          setSafeTextContent(document.getElementById('emailDisplay'), email);
+          showCodeStep();
+          startExpiryTimer(data.expiresIn || 300); // 5 minutes default
+          startResendTimer();
+          showMessage('Verification code sent! Check your email.', 'success');
+        } catch (error) {
+          console.error('Error sending verification code:', error);
+          showMessage(error.message, 'error');
+        } finally {
+          btn.disabled = false;
+          btn.textContent = originalText;
+        }
+      }
+
+      async function verifyCode() {
+        const code = document.getElementById('codeInput').value.trim();
+        if (!code || !/^\d{6}$/.test(code)) {
+          showMessage('Please enter a valid 6-digit code.', 'error');
+          return;
+        }
+
+        const btn = document.querySelector('#codeForm button[type="submit"]');
+        const originalText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Verifying...';
+
+        try {
+          const response = await fetch('/api/tickets/verify-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: currentEmail, code })
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || 'Invalid verification code');
+          }
+
+          // Save session
+          saveSession(data.accessToken, currentEmail, data.expiresIn || 3600);
+
+          // Clear timers
+          if (expiryInterval) clearInterval(expiryInterval);
+          if (resendInterval) clearInterval(resendInterval);
+
+          // Show authenticated view and load tickets
+          showAuthenticatedView();
+          await loadTickets();
+          showMessage('Verification successful! Loading your tickets...', 'success');
+
+        } catch (error) {
+          console.error('Error verifying code:', error);
+          showMessage(error.message, 'error');
+        } finally {
+          btn.disabled = false;
+          btn.textContent = originalText;
+        }
+      }
+
+      // Timer management
+      function startExpiryTimer(seconds) {
+        if (expiryInterval) clearInterval(expiryInterval);
+
+        let remaining = seconds;
+        const timerEl = document.getElementById('expiryTimer');
+
+        const updateTimer = () => {
+          const minutes = Math.floor(remaining / 60);
+          const secs = remaining % 60;
+          setSafeTextContent(timerEl, `${minutes}:${secs.toString().padStart(2, '0')}`);
+
+          if (remaining <= 0) {
+            clearInterval(expiryInterval);
+            showMessage('Verification code expired. Please request a new code.', 'warning');
+          }
+          remaining--;
+        };
+
+        updateTimer();
+        expiryInterval = setInterval(updateTimer, 1000);
+      }
+
+      function startResendTimer() {
+        if (resendInterval) clearInterval(resendInterval);
+
+        let remaining = 60;
+        const btn = document.getElementById('resendCodeBtn');
+        const timerEl = document.getElementById('resendTimer');
+        btn.disabled = true;
+
+        const updateTimer = () => {
+          setSafeTextContent(timerEl, remaining.toString());
+
+          if (remaining <= 0) {
+            clearInterval(resendInterval);
+            btn.disabled = false;
+            btn.innerHTML = 'Resend Code';
+          }
+          remaining--;
+        };
+
+        updateTimer();
+        resendInterval = setInterval(updateTimer, 1000);
+      }
+
+      // Load tickets with authentication
+      async function loadTickets() {
+        const ticketContainer = document.getElementById('ticketContainer');
+
         ticketContainer.innerHTML = '';
         const loadingElement = createElementWithContent('div', 'Loading your tickets...', {
           className: 'loading'
         });
         ticketContainer.appendChild(loadingElement);
-        messageContainer.innerHTML = "";
 
         try {
-          const response = await fetch(
-            `/api/tickets?token=${encodeURIComponent(token)}`,
-          );
+          const response = await fetch(`/api/tickets?email=${encodeURIComponent(currentEmail)}`, {
+            headers: {
+              'Authorization': `Bearer ${currentAccessToken}`
+            }
+          });
+
           const data = await response.json();
 
           if (!response.ok) {
-            throw new Error(data.error || "Failed to fetch tickets");
+            if (response.status === 401) {
+              // Token expired
+              clearSession();
+              resetToEmailStep();
+              showMessage('Your session has expired. Please sign in again.', 'warning');
+              return;
+            }
+            throw new Error(data.error || 'Failed to load tickets');
           }
 
-          if (data.tickets.length === 0) {
-            displayMessage(messageContainer, 'No tickets found. Please contact support if you believe this is an error.', 'info');
-            ticketContainer.innerHTML = "";
+          currentTickets = data.tickets || [];
+
+          if (currentTickets.length === 0) {
+            ticketContainer.innerHTML = '<p class="no-tickets">No tickets found for this email.</p>';
             return;
           }
 
-          // Try to extract email from first ticket for session management
-          if (data.tickets && data.tickets.length > 0) {
-            currentUserEmail =
-              data.tickets[0].attendee_email || data.tickets[0].email;
-          }
-
-          // Display tickets with enhanced functionality
-          displayTickets(data.tickets, token);
+          displayTickets(currentTickets);
         } catch (error) {
-          console.error("Error fetching tickets:", error);
-          displayMessage(messageContainer, escapeHtml(error.message) || 'Failed to load tickets. Please try again.', 'error');
-          ticketContainer.innerHTML = "";
+          console.error('Error loading tickets:', error);
+          showMessage(error.message, 'error');
+          ticketContainer.innerHTML = '';
         }
       }
 
-      async function lookupTickets(email) {
-        const messageContainer = document.getElementById("messageContainer");
-        const ticketContainer = document.getElementById("ticketContainer");
-
-        // Show loading
-        ticketContainer.innerHTML =
-          '<div class="loading">Looking up your tickets...</div>';
-        messageContainer.innerHTML = "";
-
-        try {
-          const response = await fetch(
-            `/api/tickets?email=${encodeURIComponent(email)}`,
-          );
-          const data = await response.json();
-
-          if (!response.ok) {
-            throw new Error(data.error || "Failed to fetch tickets");
-          }
-
-          if (data.tickets.length === 0) {
-            displayMessage(messageContainer, 'No tickets found for ' + escapeHtml(email) + '. Please check your email address or contact support.', 'info');
-            ticketContainer.innerHTML = "";
-            return;
-          }
-
-          // Store current user email for token operations
-          currentUserEmail = email;
-
-          // Display tickets (legacy mode without enhanced features)
-          displayTickets(data.tickets);
-        } catch (error) {
-          console.error("Error fetching tickets:", error);
-          displayMessage(messageContainer, escapeHtml(error.message) || 'Failed to load tickets. Please try again.', 'error');
-          ticketContainer.innerHTML = "";
-        }
-      }
-
-      function displayTickets(tickets, accessToken = null) {
+      function displayTickets(tickets) {
         const ticketContainer = document.getElementById("ticketContainer");
 
         const ticketsHtml = tickets
@@ -583,58 +1096,102 @@
             const ticketStatus = escapeHtml(ticket.status || '');
             const attendeeFirstName = escapeHtml(ticket.attendee_first_name || '');
             const attendeeLastName = escapeHtml(ticket.attendee_last_name || '');
+            const attendeeEmail = escapeHtml(ticket.attendee_email || '');
             const formattedDate = escapeHtml(ticket.formatted_date || timeManager.formatDate(ticket.event_date, true) || '');
             const orderNumber = escapeHtml(ticket.order_number || 'N/A');
-            const escapedAccessToken = escapeHtml(accessToken || '');
-
-            const actionsHtml = accessToken
-              ? `
-                    <div class="ticket-actions" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
-                        <button class="btn-small" onclick="generateQRCode('${ticketId}', '${escapedAccessToken}')">Generate QR Code</button>
-                        <button class="btn-small btn-warning" onclick="initiateTransfer('${ticketId}')">Transfer</button>
-                        <button class="btn-small btn-danger" onclick="initiateCancel('${ticketId}')">Cancel</button>
-                    </div>
-                `
-              : "";
+            const scanCount = ticket.scan_count || 0;
+            const canEdit = scanCount === 0 && currentAccessToken;
 
             return `
-                    <div class="ticket-card" id="ticket-${ticketId}">
-                        <h3>${ticketType}</h3>
-                        <span class="status-badge status-${ticketStatus}">${ticketStatus}</span>
-                        
+                    <div class="ticket-card" id="ticket-${ticketId}" data-ticket-id="${ticketId}">
+                        <div class="ticket-header">
+                            <div>
+                                <h3>${ticketType}</h3>
+                                <span class="status-badge status-${ticketStatus}">${ticketStatus}</span>
+                            </div>
+                        </div>
+
                         <dl class="ticket-details">
                             <dt>Ticket ID:</dt>
                             <dd><span class="ticket-id">${ticketId}</span></dd>
-                            
-                            <dt>Attendee:</dt>
-                            <dd>${attendeeFirstName} ${attendeeLastName}</dd>
-                            
+
+                            <dt>Attendee Name:</dt>
+                            <dd class="attendee-info">
+                                <span class="attendee-display" id="display-${ticketId}">
+                                    ${attendeeFirstName} ${attendeeLastName}
+                                    ${canEdit ? `<button class="btn-icon" onclick="startEditingTicket('${ticketId}')" aria-label="Edit attendee information" title="Edit attendee information">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                        </svg>
+                                    </button>` : ''}
+                                </span>
+                                <form class="attendee-edit-form" id="edit-form-${ticketId}" style="display: none;">
+                                    <div class="edit-fields">
+                                        <div class="form-group-inline">
+                                            <label for="edit-first-${ticketId}">First Name</label>
+                                            <input type="text" id="edit-first-${ticketId}" value="${attendeeFirstName}" required />
+                                        </div>
+                                        <div class="form-group-inline">
+                                            <label for="edit-last-${ticketId}">Last Name</label>
+                                            <input type="text" id="edit-last-${ticketId}" value="${attendeeLastName}" />
+                                        </div>
+                                        <div class="form-group-inline">
+                                            <label for="edit-email-${ticketId}">Email</label>
+                                            <input type="email" id="edit-email-${ticketId}" value="${attendeeEmail}" required />
+                                        </div>
+                                    </div>
+                                    <div class="edit-actions">
+                                        <button type="button" class="btn-small btn-primary" onclick="saveTicketEdit('${ticketId}')">Save</button>
+                                        <button type="button" class="btn-small btn-secondary" onclick="cancelTicketEdit('${ticketId}')">Cancel</button>
+                                    </div>
+                                </form>
+                            </dd>
+
+                            <dt>Email:</dt>
+                            <dd id="email-display-${ticketId}">${attendeeEmail}</dd>
+
                             <dt>Event:</dt>
                             <dd>A Lo Cubano Boulder Fest 2026</dd>
-                            
+
                             <dt>Date:</dt>
                             <dd>${formattedDate}</dd>
-                            
+
                             <dt>Order:</dt>
                             <dd>${orderNumber}</dd>
                         </dl>
-                        
+
                         <!-- Lazy-loaded wallet buttons -->
                         <div class="wallet-lazy-container" data-ticket-id="${ticketId}" data-lazy-wallet="true"></div>
-                        
-                        ${actionsHtml}
+
+                        ${currentAccessToken ? `
+                        <div class="ticket-actions">
+                            <button class="btn-small" onclick="generateQRCode('${ticketId}')">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="3" width="7" height="7"></rect>
+                                    <rect x="14" y="3" width="7" height="7"></rect>
+                                    <rect x="14" y="14" width="7" height="7"></rect>
+                                    <rect x="3" y="14" width="7" height="7"></rect>
+                                </svg>
+                                QR Code
+                            </button>
+                            <button class="btn-small btn-warning" onclick="initiateTransfer('${ticketId}')">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="7" y1="17" x2="17" y2="7"></line>
+                                    <polyline points="7 7 17 7 17 17"></polyline>
+                                </svg>
+                                Transfer
+                            </button>
+                        </div>
+                        ` : ''}
                     </div>
                 `;
           })
           .join("");
 
-        const headerText = accessToken
-          ? `Your Tickets (${tickets.length}) - Secure Access`
-          : `Your Tickets (${tickets.length})`;
-
         ticketContainer.innerHTML = `
                 <div class="ticket-list">
-                    <h2>${escapeHtml(headerText)}</h2>
+                    <h2>Your Tickets (${tickets.length})</h2>
                     ${ticketsHtml}
                 </div>
             `;
@@ -681,50 +1238,113 @@
         return typeMap[type] || type;
       }
 
+      // Message helpers
+      function showMessage(message, type = 'info') {
+        const messageContainer = document.getElementById("messageContainer");
+        displayMessage(messageContainer, escapeHtml(message), type, {
+          clearPrevious: true,
+          autoHide: type === 'success' || type === 'info',
+          hideDelay: 5000
+        });
+      }
+
+      function clearMessage() {
+        document.getElementById("messageContainer").innerHTML = '';
+      }
+
+      // Inline editing functions
+      window.startEditingTicket = function(ticketId) {
+        editingTicketId = ticketId;
+        document.getElementById(`display-${ticketId}`).style.display = 'none';
+        document.getElementById(`edit-form-${ticketId}`).style.display = 'block';
+        document.getElementById(`edit-first-${ticketId}`).focus();
+      };
+
+      window.cancelTicketEdit = function(ticketId) {
+        document.getElementById(`display-${ticketId}`).style.display = 'inline';
+        document.getElementById(`edit-form-${ticketId}`).style.display = 'none';
+        editingTicketId = null;
+      };
+
+      window.saveTicketEdit = async function(ticketId) {
+        const firstName = document.getElementById(`edit-first-${ticketId}`).value.trim();
+        const lastName = document.getElementById(`edit-last-${ticketId}`).value.trim();
+        const email = document.getElementById(`edit-email-${ticketId}`).value.trim();
+
+        if (!firstName || !email) {
+          showMessage('First name and email are required.', 'error');
+          return;
+        }
+
+        const btn = document.querySelector(`#edit-form-${ticketId} .btn-primary`);
+        const originalText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Saving...';
+
+        try {
+          const response = await fetch(`/api/tickets/${encodeURIComponent(ticketId)}/attendee`, {
+            method: 'PATCH',
+            headers: {
+              'Authorization': `Bearer ${currentAccessToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ firstName, lastName, email })
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            if (response.status === 401) {
+              clearSession();
+              resetToEmailStep();
+              showMessage('Your session has expired. Please sign in again.', 'warning');
+              return;
+            }
+            throw new Error(data.error || 'Failed to update ticket');
+          }
+
+          // Update ticket in current list
+          const ticketIndex = currentTickets.findIndex(t => t.ticket_id === ticketId);
+          if (ticketIndex !== -1) {
+            currentTickets[ticketIndex].attendee_first_name = data.ticket.attendee_first_name;
+            currentTickets[ticketIndex].attendee_last_name = data.ticket.attendee_last_name;
+            currentTickets[ticketIndex].attendee_email = data.ticket.attendee_email;
+          }
+
+          // Update display - need to preserve the edit button
+          const displayEl = document.querySelector(`#display-${ticketId}`);
+          const editBtn = displayEl.querySelector('.btn-icon');
+          displayEl.textContent = `${data.ticket.attendee_first_name} ${data.ticket.attendee_last_name} `;
+          if (editBtn) {
+            displayEl.appendChild(editBtn);
+          }
+          setSafeTextContent(
+            document.getElementById(`email-display-${ticketId}`),
+            data.ticket.attendee_email
+          );
+
+          // Cancel edit mode
+          cancelTicketEdit(ticketId);
+
+          showMessage('Ticket information updated successfully! Check your email for confirmation.', 'success');
+
+        } catch (error) {
+          console.error('Error updating ticket:', error);
+          showMessage(error.message, 'error');
+        } finally {
+          btn.disabled = false;
+          btn.textContent = originalText;
+        }
+      };
+
       // Modal management
       let currentTicketId = null;
-      let currentAccessToken = null;
-      let currentUserEmail = null;
-
-      function getCurrentUserEmail() {
-        // Try to get from URL parameter first
-        const urlParams = new URLSearchParams(window.location.search);
-        const emailFromUrl = urlParams.get("email");
-        if (emailFromUrl) return emailFromUrl;
-
-        // Try to get from the email input field
-        const emailInput = document.getElementById("emailInput");
-        if (emailInput && emailInput.value) return emailInput.value;
-
-        // If we've stored it globally
-        if (currentUserEmail) return currentUserEmail;
-
-        return null;
-      }
-
-      function showError(message) {
-        const messageContainer = document.getElementById("messageContainer");
-        displayMessage(messageContainer, escapeHtml(message), 'error', {
-          clearPrevious: true,
-          autoHide: true,
-          hideDelay: 5000
-        });
-      }
-
-      function showSuccess(message) {
-        const messageContainer = document.getElementById("messageContainer");
-        displayMessage(messageContainer, escapeHtml(message), 'success', {
-          clearPrevious: true,
-          autoHide: true,
-          hideDelay: 5000
-        });
-      }
 
       function openModal(modalId) {
         document.getElementById(modalId).style.display = "block";
       }
 
-      function closeModal(modalId) {
+      window.closeModal = function(modalId) {
         document.getElementById(modalId).style.display = "none";
         if (modalId === "transferModal") {
           document.getElementById("transferForm").reset();
@@ -732,36 +1352,38 @@
         if (modalId === "cancelModal") {
           document.getElementById("cancelReason").value = "";
         }
-      }
+      };
 
       // Close modal when clicking outside
-      window.onclick = function (event) {
+      document.addEventListener('click', function (event) {
         const modals = document.querySelectorAll(".modal");
         modals.forEach((modal) => {
           if (event.target === modal) {
-            modal.style.display = "none";
+            window.closeModal(modal.id);
           }
         });
-      };
+      });
 
       // Enhanced ticket management functions
-      async function generateQRCode(ticketId, accessToken) {
+      window.generateQRCode = async function(ticketId) {
         try {
-          // Get QR token for this ticket
-          const qrToken = await getQRTokenForTicket(ticketId, accessToken);
-
-          if (!qrToken) {
-            throw new Error('Unable to get QR token for ticket');
+          const ticket = currentTickets.find(t => t.ticket_id === ticketId);
+          if (!ticket) {
+            throw new Error('Ticket not found');
           }
 
           // Create a container for the QR code
           const qrContainer = document.createElement('div');
 
-          // Load QR code using cache manager
-          await window.qrCacheManager.loadQRCode(qrToken, qrContainer, {
-            showSkeleton: true,
-            retryOnError: true
-          });
+          // Load QR code using cache manager with the ticket's qr_token
+          if (ticket.qr_token) {
+            await window.qrCacheManager.loadQRCode(ticket.qr_token, qrContainer, {
+              showSkeleton: true,
+              retryOnError: true
+            });
+          } else {
+            throw new Error('QR code not available for this ticket');
+          }
 
           // Display QR code in modal
           document.getElementById("qrCodeContainer").innerHTML = `
@@ -774,47 +1396,20 @@
 
           openModal("qrModal");
         } catch (error) {
-          showError('Failed to generate QR code: ' + escapeHtml(error.message));
+          showMessage('Failed to generate QR code: ' + error.message, 'error');
         }
-      }
+      };
 
-      async function getQRTokenForTicket(ticketId, accessToken) {
-        try {
-          const response = await fetch("/api/tickets/qr-token", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ticketId, accessToken }),
-          });
-
-          const data = await response.json();
-
-          if (!response.ok) {
-            throw new Error(data.error || 'Failed to get QR token');
-          }
-
-          return data.qrToken;
-        } catch (error) {
-          console.error('Error getting QR token:', error);
-          return null;
-        }
-      }
-
-      function initiateTransfer(ticketId) {
+      window.initiateTransfer = function(ticketId) {
         currentTicketId = ticketId;
         openModal("transferModal");
-      }
+      };
 
-      function initiateCancel(ticketId) {
-        currentTicketId = ticketId;
-        openModal("cancelModal");
-      }
-
-      function confirmCancel() {
-        const reason =
-          document.getElementById("cancelReason").value || "Customer request";
+      window.confirmCancel = function() {
+        const reason = document.getElementById("cancelReason").value || "Customer request";
         performTicketCancel(currentTicketId, reason);
         closeModal("cancelModal");
-      }
+      };
 
       // Handle transfer form submission
       document
@@ -833,12 +1428,8 @@
 
       async function performTicketTransfer(ticketId, newAttendee) {
         try {
-          // Get current user email from the lookup
-          const userEmail = getCurrentUserEmail();
-          if (!userEmail) {
-            throw new Error(
-              "Unable to determine current user. Please refresh the page and try again.",
-            );
+          if (!currentEmail) {
+            throw new Error("Unable to determine current user. Please refresh the page and try again.");
           }
 
           // First get action token
@@ -848,7 +1439,7 @@
             body: JSON.stringify({
               action: "transfer",
               targetId: ticketId,
-              email: userEmail,
+              email: currentEmail,
             }),
           });
 
@@ -869,55 +1460,10 @@
           const transferData = await transferResponse.json();
           if (!transferResponse.ok) throw new Error(transferData.error);
 
-          showSuccess("Ticket transferred successfully!");
-          setTimeout(() => location.reload(), 2000);
+          showMessage("Ticket transferred successfully!", 'success');
+          setTimeout(() => loadTickets(), 2000);
         } catch (error) {
-          showError('Transfer failed: ' + escapeHtml(error.message));
-        }
-      }
-
-      async function performTicketCancel(ticketId, reason) {
-        try {
-          // Get current user email from the lookup
-          const userEmail = getCurrentUserEmail();
-          if (!userEmail) {
-            throw new Error(
-              "Unable to determine current user. Please refresh the page and try again.",
-            );
-          }
-
-          // First get action token
-          const tokenResponse = await fetch("/api/tickets/action-token", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              action: "cancel",
-              targetId: ticketId,
-              email: userEmail,
-            }),
-          });
-
-          const tokenData = await tokenResponse.json();
-          if (!tokenResponse.ok) throw new Error(tokenData.error);
-
-          // Perform cancellation
-          const cancelResponse = await fetch("/api/tickets/cancel", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              ticketId,
-              actionToken: tokenData.actionToken,
-              reason,
-            }),
-          });
-
-          const cancelData = await cancelResponse.json();
-          if (!cancelResponse.ok) throw new Error(cancelData.error);
-
-          showSuccess("Ticket cancelled successfully!");
-          setTimeout(() => location.reload(), 2000);
-        } catch (error) {
-          showError('Cancellation failed: ' + escapeHtml(error.message));
+          showMessage('Transfer failed: ' + error.message, 'error');
         }
       }
 
@@ -926,22 +1472,27 @@
         return timeManager.formatDate(dateStr, true) + " (Mountain Time)";
       }
     </script>
-    
+
     <!-- Theme Management -->
     <script type="module">
       import { initializeThemeToggle } from '/js/theme-toggle.js';
       import themeManager from '/js/theme-manager.js';
-      
+
       // Initialize theme system
       document.addEventListener('DOMContentLoaded', () => {
         themeManager.initializeTheme();
-        // Add floating theme toggle for special page
-        const toggleContainer = document.createElement('div');
-        toggleContainer.id = 'theme-toggle-container';
-        toggleContainer.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 1000;';
-        document.body.appendChild(toggleContainer);
         initializeThemeToggle('#theme-toggle-container');
       });
     </script>
+
+    <!-- Navigation and Gallery Scripts -->
+    <script defer src="/js/navigation.js"></script>
+    <script src="/js/gallery-hero.js"></script>
+
+    <!-- Global Cart System -->
+    <script type="module" src="/js/global-cart.js"></script>
+
+    <!-- Logo Switcher -->
+    <script src="/js/logo-switcher.js"></script>
   </body>
 </html>
