@@ -129,7 +129,7 @@ export default async function handler(req, res) {
         OR EXISTS (
           SELECT 1 FROM transactions t
           WHERE t.id = tickets.transaction_id
-          AND LOWER(t.purchaser_email) = LOWER(?)
+          AND LOWER(t.customer_email) = LOWER(?)
         )
       `,
       args: [sanitizedEmail, sanitizedEmail]
