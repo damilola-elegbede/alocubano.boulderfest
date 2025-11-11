@@ -5,7 +5,7 @@
 
 import { getDatabaseClient } from "../../lib/database.js";
 import { setSecureCorsHeaders } from '../../lib/cors-config.js';
-import { sendEmail } from '../../lib/email-service.js';
+import { getBrevoService } from '../../lib/brevo-service.js';
 import { generateVerificationCodeEmail } from '../../lib/email-templates/verification-code.js';
 import crypto from 'crypto';
 
@@ -167,10 +167,18 @@ export default async function handler(req, res) {
       expiryMinutes
     });
 
-    await sendEmail({
-      to: sanitizedEmail,
+    const brevo = await getBrevoService().ensureInitialized();
+    await brevo.sendTransactionalEmail({
+      to: [{ email: sanitizedEmail }],
       subject: 'Your Verification Code for A Lo Cubano Boulder Fest',
-      html: emailHtml
+      htmlContent: emailHtml,
+      sender: {
+        email: process.env.BREVO_SENDER_EMAIL || "noreply@alocubano.com",
+        name: "A Lo Cubano Boulder Fest"
+      },
+      replyTo: {
+        email: process.env.BREVO_REPLY_TO || "alocubanoboulderfest@gmail.com"
+      }
     });
 
     console.log(`[VerifyEmail] Verification code sent to ${sanitizedEmail}`);

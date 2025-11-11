@@ -5,7 +5,7 @@
 
 import { getDatabaseClient } from "../../../lib/database.js";
 import { setSecureCorsHeaders } from '../../../lib/cors-config.js';
-import { sendEmail } from '../../../lib/email-service.js';
+import { getBrevoService } from '../../../lib/brevo-service.js';
 import { generateAttendeeInfoChangedEmail } from '../../../lib/email-templates/attendee-info-changed.js';
 import jwt from 'jsonwebtoken';
 import timeUtils from '../../../lib/time-utils.js';
@@ -284,10 +284,18 @@ export default async function handler(req, res) {
         isRecipient: false
       });
 
-      await sendEmail({
-        to: oldEmailChange.oldValue,
+      const brevo = await getBrevoService().ensureInitialized();
+      await brevo.sendTransactionalEmail({
+        to: [{ email: oldEmailChange.oldValue }],
         subject: 'Ticket Transferred - A Lo Cubano Boulder Fest',
-        html: oldEmailHtml
+        htmlContent: oldEmailHtml,
+        sender: {
+          email: process.env.BREVO_SENDER_EMAIL || "noreply@alocubano.com",
+          name: "A Lo Cubano Boulder Fest"
+        },
+        replyTo: {
+          email: process.env.BREVO_REPLY_TO || "alocubanoboulderfest@gmail.com"
+        }
       });
 
       // Send to new email
@@ -301,10 +309,17 @@ export default async function handler(req, res) {
         isRecipient: true
       });
 
-      await sendEmail({
-        to: oldEmailChange.newValue,
+      await brevo.sendTransactionalEmail({
+        to: [{ email: oldEmailChange.newValue }],
         subject: 'Ticket Information Updated - A Lo Cubano Boulder Fest',
-        html: newEmailHtml
+        htmlContent: newEmailHtml,
+        sender: {
+          email: process.env.BREVO_SENDER_EMAIL || "noreply@alocubano.com",
+          name: "A Lo Cubano Boulder Fest"
+        },
+        replyTo: {
+          email: process.env.BREVO_REPLY_TO || "alocubanoboulderfest@gmail.com"
+        }
       });
     } else {
       // Just name changes, send single email
@@ -318,10 +333,18 @@ export default async function handler(req, res) {
         isRecipient: true
       });
 
-      await sendEmail({
-        to: userEmail,
+      const brevo = await getBrevoService().ensureInitialized();
+      await brevo.sendTransactionalEmail({
+        to: [{ email: userEmail }],
         subject: 'Ticket Information Updated - A Lo Cubano Boulder Fest',
-        html: emailHtml
+        htmlContent: emailHtml,
+        sender: {
+          email: process.env.BREVO_SENDER_EMAIL || "noreply@alocubano.com",
+          name: "A Lo Cubano Boulder Fest"
+        },
+        replyTo: {
+          email: process.env.BREVO_REPLY_TO || "alocubanoboulderfest@gmail.com"
+        }
       });
     }
 
