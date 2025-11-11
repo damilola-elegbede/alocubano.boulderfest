@@ -5,6 +5,7 @@
 
 import { getDatabaseClient } from "../../lib/database.js";
 import { setSecureCorsHeaders } from '../../lib/cors-config.js';
+import { processDatabaseResult } from "../../lib/bigint-serializer.js";
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 
@@ -161,7 +162,7 @@ export default async function handler(req, res) {
       });
     }
 
-    const verification = result.rows[0];
+    const verification = processDatabaseResult(result.rows[0]);
 
     // Check if code has expired
     const now = new Date();
