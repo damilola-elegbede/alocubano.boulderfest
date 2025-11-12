@@ -463,15 +463,11 @@
         display: none;
         position: fixed;
         z-index: 1000;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.5);
+        /* Positioning handled by base.css: left: 50%, top: 50%, transform: translate(-50%, -50%) */
       }
 
       .modal-content {
-        background-color: white;
+        background-color: var(--color-surface-elevated);
         margin: 5% auto;
         padding: 30px;
         border-radius: 10px;
@@ -488,7 +484,7 @@
       }
 
       .close {
-        color: #aaa;
+        color: var(--color-text-secondary);
         font-size: 28px;
         font-weight: bold;
         cursor: pointer;
@@ -497,13 +493,13 @@
       }
 
       .close:hover {
-        color: #000;
+        color: var(--color-text-primary);
       }
 
       .qr-code-display {
         text-align: center;
         padding: 20px;
-        background: #f8f9fa;
+        background: var(--color-background-secondary);
         border-radius: 8px;
         margin: 20px 0;
       }
@@ -530,9 +526,11 @@
       .form-group input {
         width: 100%;
         padding: 10px;
-        border: 1px solid #ddd;
+        border: 1px solid var(--color-border);
         border-radius: 5px;
         font-size: 14px;
+        background: var(--color-background);
+        color: var(--color-text-primary);
       }
 
       .modal-actions {
@@ -543,8 +541,8 @@
       }
 
       .btn-primary {
-        background: #667eea;
-        color: white;
+        background: var(--color-primary);
+        color: var(--color-text-on-primary);
         border: none;
         padding: 10px 20px;
         border-radius: 5px;
@@ -552,8 +550,8 @@
       }
 
       .btn-secondary {
-        background: #6c757d;
-        color: white;
+        background: var(--color-text-secondary);
+        color: var(--color-white);
         border: none;
         padding: 10px 20px;
         border-radius: 5px;
