@@ -61,6 +61,13 @@ export default async function handler(req, res) {
     // Get original owner email from validated token
     const originalOwnerEmail = tokenValidation.email;
 
+    if (!originalOwnerEmail) {
+      console.error('Token validation missing email:', tokenValidation);
+      return res.status(500).json({
+        error: 'Token validation failed: missing email'
+      });
+    }
+
     // Sanitize and validate inputs
     const sanitizedAttendee = {
       firstName: newAttendee.firstName.trim().substring(0, 100),
@@ -148,7 +155,11 @@ export default async function handler(req, res) {
       message: 'Ticket successfully transferred'
     });
   } catch (error) {
-    console.error('Ticket transfer error:', error);
+    console.error('Ticket transfer error:', {
+      message: error.message,
+      stack: error.stack,
+      ticketId: req.body.ticketId
+    });
     return res.status(500).json({ error: 'Internal server error' });
   }
 }

@@ -3,6 +3,7 @@
 import { readFileSync, readdirSync, existsSync, statSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { execSync } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -565,7 +566,6 @@ function checkPlaceholderTests(results) {
  */
 function checkPIIExposure(results) {
   try {
-    const { execSync } = require('child_process');
     const output = execSync('node scripts/check-pii-exposure.js --json', {
       encoding: 'utf8',
       cwd: join(__dirname, '..')
