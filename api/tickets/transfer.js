@@ -2,7 +2,6 @@ import ticketService from "../../lib/ticket-service.js";
 import tokenService from "../../lib/token-service.js";
 import { TOKEN_ACTIONS } from "../../lib/ticket-config.js";
 import { getDatabaseClient } from "../../lib/database.js";
-import jwt from "jsonwebtoken";
 import timeUtils from "../../lib/time-utils.js";
 import { maskEmail } from "../../lib/volunteer-helpers.js";
 
@@ -59,6 +58,9 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: tokenValidation.error });
     }
 
+    // Get original owner email from validated token
+    const originalOwnerEmail = tokenValidation.email;
+
     // Sanitize and validate inputs
     const sanitizedAttendee = {
       firstName: newAttendee.firstName.trim().substring(0, 100),
@@ -80,8 +82,6 @@ export default async function handler(req, res) {
     const ticketEmailService = await import('../../lib/ticket-email-service-brevo.js');
     const emailService = ticketEmailService.default;
 
-    // Decode token to get original owner info
-    const decodedToken = jwt.verify(actionToken, process.env.REGISTRATION_SECRET);
     const transferDate = timeUtils.formatDateTime(new Date());
 
     // Prepare names
@@ -90,7 +90,7 @@ export default async function handler(req, res) {
 
     console.log('🎫 [Transfer] Sending notification emails...', {
       newOwnerEmail: maskEmail(sanitizedAttendee.email),
-      originalOwnerEmail: maskEmail(decodedToken.email),
+      originalOwnerEmail: maskEmail(originalOwnerEmail),
       ticketId,
       transactionId: transferredTicket.transaction_id
     });
@@ -110,7 +110,7 @@ export default async function handler(req, res) {
     // Confirm with original owner
     await emailService.sendTransferConfirmation({
       originalOwnerName: previousOwnerName,
-      originalOwnerEmail: decodedToken.email,
+      originalOwnerEmail: originalOwnerEmail,
       newOwnerName,
       newOwnerEmail: sanitizedAttendee.email,
       ticketId: ticketId,
@@ -138,7 +138,7 @@ export default async function handler(req, res) {
         sanitizedAttendee.firstName,
         sanitizedAttendee.lastName || null,
         sanitizedAttendee.phone || null,
-        decodedToken.email
+        originalOwnerEmail
       ]
     });
 
