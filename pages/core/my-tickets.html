@@ -1240,7 +1240,7 @@
               '<span class="ticket-status-badge" style="background: var(--color-warning-light); color: var(--color-warning-700); border-color: var(--color-warning);">'+ticketStatus+'</span>';
 
             return `
-                    <div class="ticket-card" id="ticket-${ticketIdRaw}" data-ticket-id="${ticketIdRaw}">
+                    <div class="ticket-card" id="ticket-${escapeHtml(ticketIdRaw)}" data-ticket-id="${escapeHtml(ticketIdRaw)}">
                         <!-- Header Row: Type/ID | Color Circle | Status -->
                         <div class="ticket-header-row">
                             <div class="ticket-header-left">
@@ -1265,13 +1265,13 @@
                         <div class="attendee-info">
                             <div class="info-group left-align">
                                 <span class="info-label">Attendee Name</span>
-                                <span class="info-value attendee-display" id="display-${ticketIdRaw}">
+                                <span class="info-value attendee-display" id="display-${escapeHtml(ticketIdRaw)}">
                                     ${attendeeFirstName} ${attendeeLastName}
                                 </span>
                             </div>
                             <div class="info-group center-align">
                                 <span class="info-label">Email</span>
-                                <span class="info-value" id="email-display-${ticketIdRaw}">${attendeeEmail}</span>
+                                <span class="info-value" id="email-display-${escapeHtml(ticketIdRaw)}">${attendeeEmail}</span>
                             </div>
                             <div class="info-group right-align">
                                 <span class="info-label">Event Date</span>
@@ -1299,10 +1299,10 @@
                         <!-- Wallet Buttons (Inline) -->
                         <div class="wallet-section">
                             <p style="text-align: center; width: 100%; margin-bottom: var(--space-md); font-family: var(--font-body); color: var(--color-text-secondary);">Or add to your mobile wallet:</p>
-                            <a href="/api/tickets/apple-wallet/${ticketIdRaw}" class="wallet-button" aria-label="Add ticket ${ticketId} to Apple Wallet">
+                            <a href="/api/tickets/apple-wallet/${escapeHtml(ticketIdRaw)}" class="wallet-button" aria-label="Add ticket ${ticketId} to Apple Wallet">
                                 <img src="${window.location.origin}/images/add-to-wallet-apple.svg" alt="Add to Apple Wallet" style="height: 40px; width: auto;">
                             </a>
-                            <a href="/api/tickets/google-wallet/${ticketIdRaw}" class="wallet-button" aria-label="Add ticket ${ticketId} to Google Wallet">
+                            <a href="/api/tickets/google-wallet/${escapeHtml(ticketIdRaw)}" class="wallet-button" aria-label="Add ticket ${ticketId} to Google Wallet">
                                 <img src="${window.location.origin}/images/add-to-wallet-google.png" alt="Add to Google Wallet" style="height: 40px; width: auto;">
                             </a>
                         </div>
@@ -1310,7 +1310,7 @@
                         <!-- Transfer Button (Centered) -->
                         ${currentAccessToken ? `
                         <div class="transfer-action">
-                            <button class="btn-small btn-primary btn-transfer" data-ticket-id="${ticketIdRaw}">
+                            <button class="btn-small btn-primary btn-transfer" data-ticket-id="${escapeHtml(ticketIdRaw)}">
                                 Transfer Ticket
                             </button>
                         </div>
@@ -1460,6 +1460,47 @@
           loadTickets();
         } catch (error) {
           showMessage('Transfer failed: ' + error.message, 'error');
+        }
+      }
+
+      async function performTicketCancel(ticketId, reason) {
+        try {
+          if (!currentEmail) {
+            throw new Error("Unable to determine current user. Please refresh the page and try again.");
+          }
+
+          // First get action token
+          const tokenResponse = await fetch("/api/tickets/action-token", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "cancel",
+              targetId: ticketId,
+              email: currentEmail,
+            }),
+          });
+
+          const tokenData = await tokenResponse.json();
+          if (!tokenResponse.ok) throw new Error(tokenData.error);
+
+          // Perform cancellation
+          const cancelResponse = await fetch("/api/tickets/cancel", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ticketId,
+              actionToken: tokenData.actionToken,
+              reason: reason || 'Customer request',
+            }),
+          });
+
+          const cancelData = await cancelResponse.json();
+          if (!cancelResponse.ok) throw new Error(cancelData.error);
+
+          showMessage("Ticket cancelled successfully!", 'success');
+          loadTickets();
+        } catch (error) {
+          showMessage('Cancellation failed: ' + error.message, 'error');
         }
       }
 

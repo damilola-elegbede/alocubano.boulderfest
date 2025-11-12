@@ -27,7 +27,7 @@ function rateLimit(email) {
   // Periodic cleanup of expired entries (1% probability per call)
   if (Math.random() < 0.01) {
     for (const [k, v] of rateLimitMap.entries()) {
-      if (now > v.resetTime + windowMs) {
+      if (now > v.resetTime) {
         rateLimitMap.delete(k);
       }
     }

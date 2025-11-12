@@ -6,7 +6,7 @@
 import { getDatabaseClient } from "../../lib/database.js";
 import { setSecureCorsHeaders } from '../../lib/cors-config.js';
 import { processDatabaseResult } from "../../lib/bigint-serializer.js";
-import { maskEmail } from '../../lib/volunteer-helpers.js';
+import { getClientIp, maskEmail } from '../../lib/volunteer-helpers.js';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 
@@ -45,18 +45,6 @@ function rateLimit(ip) {
 
   rateData.count++;
   return { allowed: true };
-}
-
-/**
- * Get client IP address
- */
-function getClientIp(req) {
-  return (
-    req.headers['x-forwarded-for'] ||
-    req.connection?.remoteAddress ||
-    req.socket?.remoteAddress ||
-    '127.0.0.1'
-  );
 }
 
 /**

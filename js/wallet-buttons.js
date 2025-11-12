@@ -91,7 +91,7 @@ class WalletButtons {
    */
   createAppleWalletButton(ticketId, size = 'default') {
     const button = document.createElement('a');
-    button.href = `/api/tickets/apple-wallet/${ticketId}`;
+    button.href = `/api/tickets/apple-wallet/${encodeURIComponent(ticketId)}`;
     button.className = `wallet-button wallet-button-apple wallet-button-${size}`;
     button.setAttribute('data-wallet-type', 'apple');
     button.setAttribute('data-ticket-id', ticketId);
@@ -114,7 +114,7 @@ class WalletButtons {
    */
   createGoogleWalletButton(ticketId, size = 'default') {
     const button = document.createElement('a');
-    button.href = `/api/tickets/google-wallet/${ticketId}`;
+    button.href = `/api/tickets/google-wallet/${encodeURIComponent(ticketId)}`;
     button.className = `wallet-button wallet-button-google wallet-button-${size}`;
     button.setAttribute('data-wallet-type', 'google');
     button.setAttribute('data-ticket-id', ticketId);

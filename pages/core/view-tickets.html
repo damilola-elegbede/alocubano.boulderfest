@@ -877,7 +877,7 @@
 
               <div class="wallet-section">
                 <p class="wallet-label" style="text-align: center; margin-bottom: var(--space-md); font-family: var(--font-body); color: var(--color-text-secondary);">Or add to your mobile wallet:</p>
-                <a href="/api/tickets/apple-wallet/${ticket.ticketId}"
+                <a href="/api/tickets/apple-wallet/${encodeURIComponent(ticket.ticketId)}"
                    class="wallet-button"
                    aria-label="Add ticket ${ticket.ticketId} to Apple Wallet">
                   <img src="${window.location.origin}/images/add-to-wallet-apple.svg"
@@ -885,7 +885,7 @@
                        style="height: 40px; width: auto;"
                        onerror="console.error('Failed to load Apple Wallet image')">
                 </a>
-                <a href="/api/tickets/google-wallet/${ticket.ticketId}"
+                <a href="/api/tickets/google-wallet/${encodeURIComponent(ticket.ticketId)}"
                    class="wallet-button"
                    aria-label="Add ticket ${ticket.ticketId} to Google Pay">
                   <img src="${window.location.origin}/images/add-to-wallet-google.png"
