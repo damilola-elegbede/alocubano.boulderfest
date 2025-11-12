@@ -891,10 +891,19 @@
 
       // Modal management functions (module scope)
       function openModal(modalId) {
-        document.getElementById(modalId).style.display = "block";
+        console.log('[Transfer Debug] openModal called with:', modalId);
+        const modalElement = document.getElementById(modalId);
+        console.log('[Transfer Debug] Modal element found?', !!modalElement);
+        if (modalElement) {
+          modalElement.style.display = "block";
+          console.log('[Transfer Debug] Modal display set to block');
+        } else {
+          console.error('[Transfer Debug] Modal element NOT FOUND:', modalId);
+        }
       }
 
       function closeModal(modalId) {
+        console.log('[Transfer Debug] closeModal called with:', modalId);
         document.getElementById(modalId).style.display = "none";
         if (modalId === "transferModal") {
           document.getElementById("transferForm").reset();
@@ -1305,11 +1314,19 @@
             `;
 
         // Add event listeners for transfer buttons
-        document.querySelectorAll('.btn-transfer').forEach(btn => {
+        console.log('[Transfer Debug] Searching for .btn-transfer buttons...');
+        const transferButtons = document.querySelectorAll('.btn-transfer');
+        console.log('[Transfer Debug] Found', transferButtons.length, 'transfer buttons');
+
+        transferButtons.forEach((btn, index) => {
+          console.log('[Transfer Debug] Attaching listener to button', index, 'with ticket ID:', btn.dataset.ticketId);
           btn.addEventListener('click', () => {
             const ticketId = btn.dataset.ticketId;
+            console.log('[Transfer Debug] Transfer button clicked! Ticket ID:', ticketId);
+            console.log('[Transfer Debug] openModal function exists?', typeof openModal);
             currentTicketId = ticketId;
             openModal("transferModal");
+            console.log('[Transfer Debug] openModal called');
           });
         });
 
