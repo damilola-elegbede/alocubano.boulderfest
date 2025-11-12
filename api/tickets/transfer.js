@@ -67,10 +67,55 @@ export default async function handler(req, res) {
     };
 
     // Perform transfer
+    const originalTicket = await ticketService.getByTicketId(ticketId);
     const transferredTicket = await ticketService.transferTicket(
       ticketId,
       sanitizedAttendee
     );
+
+    // Send email notifications to both parties
+    const ticketEmailService = await import('../lib/ticket-email-service-brevo.js');
+    const emailService = ticketEmailService.default;
+
+    // Notify new owner
+    await emailService.sendTransferNotification({
+      email: sanitizedAttendee.email,
+      firstName: sanitizedAttendee.firstName,
+      ticketId: ticketId,
+      ticketType: transferredTicket.ticket_type,
+      eventDate: transferredTicket.event_date
+    });
+
+    // Confirm with original owner
+    const decodedToken = jwt.verify(actionToken, process.env.REGISTRATION_SECRET);
+    await emailService.sendTransferConfirmation({
+      email: decodedToken.email,
+      ticketId: ticketId,
+      newOwnerEmail: sanitizedAttendee.email,
+      newOwnerName: `${sanitizedAttendee.firstName} ${sanitizedAttendee.lastName || ''}`.trim()
+    });
+
+    // Record transfer in audit table
+    const db = await getDatabaseClient();
+    await db.execute({
+      sql: `INSERT INTO ticket_transfers
+            (ticket_id, transaction_id, from_email, from_first_name, from_last_name,
+             to_email, to_first_name, to_last_name, to_phone,
+             transferred_by, transfer_method, transferred_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'user_self_service', CURRENT_TIMESTAMP)`,
+      args: [
+        ticketId,
+        transferredTicket.transaction_id,
+        originalTicket.attendee_email,
+        originalTicket.attendee_first_name,
+        originalTicket.attendee_last_name,
+        sanitizedAttendee.email,
+        sanitizedAttendee.firstName,
+        sanitizedAttendee.lastName || null,
+        sanitizedAttendee.phone || null,
+        decodedToken.email
+      ]
+    });
 
     return res.status(200).json({
       success: true,

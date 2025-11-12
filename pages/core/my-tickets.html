@@ -318,7 +318,6 @@
         flex-wrap: wrap;
         gap: var(--space-md);
         padding-top: var(--space-lg);
-        border-top: 1px solid var(--color-border);
         justify-content: center;
       }
 
@@ -344,7 +343,6 @@
         justify-content: center;
         margin-top: var(--space-lg);
         padding-top: var(--space-lg);
-        border-top: 1px solid var(--color-border);
       }
 
       /* Mobile responsiveness */
@@ -817,41 +815,6 @@
       </div>
     </div>
 
-    <!-- Cancel Modal -->
-    <div id="cancelModal" class="modal" role="dialog" aria-labelledby="cancelModalTitle" aria-modal="true">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2 id="cancelModalTitle">Cancel Ticket</h2>
-          <button class="close" onclick="closeModal('cancelModal')" aria-label="Close cancel modal">
-            &times;
-          </button>
-        </div>
-        <p>Are you sure you want to cancel this ticket?</p>
-        <div class="form-group">
-          <label for="cancelReason">Cancellation Reason (optional)</label>
-          <input
-            type="text"
-            id="cancelReason"
-            placeholder="e.g., Unable to attend"
-            aria-describedby="cancelReasonHint"
-          />
-          <span id="cancelReasonHint" class="visually-hidden">Providing a reason is optional but helps us improve our service</span>
-        </div>
-        <div class="modal-actions">
-          <button
-            type="button"
-            class="btn-secondary"
-            onclick="closeModal('cancelModal')"
-          >
-            No, Keep Ticket
-          </button>
-          <button type="button" class="btn-primary" onclick="confirmCancel()">
-            Yes, Cancel Ticket
-          </button>
-        </div>
-      </div>
-    </div>
-
     <footer class="footer-typographic">
       <div class="container">
         <p class="footer-credits">
@@ -924,6 +887,24 @@
       let expiryInterval = null;
       let resendInterval = null;
       let currentTickets = [];
+      let currentTicketId = null;
+
+      // Modal management functions (exposed to global for onclick handlers)
+      window.openModal = function(modalId) {
+        document.getElementById(modalId).style.display = "block";
+      };
+
+      window.closeModal = function(modalId) {
+        document.getElementById(modalId).style.display = "none";
+        if (modalId === "transferModal") {
+          document.getElementById("transferForm").reset();
+        }
+      };
+
+      window.initiateTransfer = function(ticketId) {
+        currentTicketId = ticketId;
+        window.openModal("transferModal");
+      };
 
       // Check for existing session
       const storedToken = localStorage.getItem('ticketAccessToken');
@@ -1381,13 +1362,7 @@
         });
       });
 
-      // Ticket management functions (initiateTransfer moved to global scope)
-
-      window.confirmCancel = function() {
-        const reason = document.getElementById("cancelReason").value || "Customer request";
-        performTicketCancel(currentTicketId, reason);
-        closeModal("cancelModal");
-      };
+      // Ticket management functions (initiateTransfer moved to module scope)
 
       // Handle transfer form submission
       document
@@ -1472,30 +1447,5 @@
 
     <!-- Logo Switcher -->
     <script src="/js/logo-switcher.js"></script>
-
-    <!-- Global Functions for Inline Event Handlers -->
-    <script>
-      // These functions must be in global scope to be accessible from inline onclick handlers
-      let currentTicketId = null;
-
-      window.openModal = function(modalId) {
-        document.getElementById(modalId).style.display = "block";
-      };
-
-      window.closeModal = function(modalId) {
-        document.getElementById(modalId).style.display = "none";
-        if (modalId === "transferModal") {
-          document.getElementById("transferForm").reset();
-        }
-        if (modalId === "cancelModal") {
-          document.getElementById("cancelReason").value = "";
-        }
-      };
-
-      window.initiateTransfer = function(ticketId) {
-        currentTicketId = ticketId;
-        window.openModal("transferModal");
-      };
-    </script>
   </body>
 </html>
