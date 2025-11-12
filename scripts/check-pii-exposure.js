@@ -376,16 +376,22 @@ function main() {
   const jsonOutput = args.includes('--json');
   const projectRoot = resolve(process.cwd());
 
-  console.error('🔐 Scanning for PII exposure in code...\n');
+  if (!jsonOutput) {
+    console.error('🔐 Scanning for PII exposure in code...\n');
+  }
 
   const files = getFilesToScan(stagedOnly);
 
   if (files.length === 0) {
-    console.error('ℹ️  No JavaScript files to scan\n');
+    if (!jsonOutput) {
+      console.error('ℹ️  No JavaScript files to scan\n');
+    }
     process.exit(0);
   }
 
-  console.error(`📊 Scanning ${files.length} files...\n`);
+  if (!jsonOutput) {
+    console.error(`📊 Scanning ${files.length} files...\n`);
+  }
 
   const allViolations = [];
 
