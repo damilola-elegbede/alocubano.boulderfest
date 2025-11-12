@@ -7,7 +7,7 @@ import { getDatabaseClient } from "../../../lib/database.js";
 import { setSecureCorsHeaders } from '../../../lib/cors-config.js';
 import { getBrevoService } from '../../../lib/brevo-service.js';
 import { generateAttendeeInfoChangedEmail } from '../../../lib/email-templates/attendee-info-changed.js';
-import { getClientIp } from '../../../lib/volunteer-helpers.js';
+import { getClientIp, maskEmail } from '../../../lib/volunteer-helpers.js';
 import jwt from 'jsonwebtoken';
 import timeUtils from '../../../lib/time-utils.js';
 
@@ -337,7 +337,7 @@ export default async function handler(req, res) {
       });
     }
 
-    console.log(`[AttendeeEdit] Ticket ${ticket.ticket_id} updated by ${userEmail}`);
+    console.log(`[AttendeeEdit] Ticket ${ticket.ticket_id} updated by ${maskEmail(userEmail)}`);
 
     // Return updated ticket info
     return res.status(200).json({

@@ -6,6 +6,7 @@
 import { getDatabaseClient } from "../../lib/database.js";
 import { setSecureCorsHeaders } from '../../lib/cors-config.js';
 import { processDatabaseResult } from "../../lib/bigint-serializer.js";
+import { maskEmail } from '../../lib/volunteer-helpers.js';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 
@@ -252,7 +253,7 @@ export default async function handler(req, res) {
     // Create JWT access token
     const accessToken = createAccessToken(sanitizedEmail);
 
-    console.log(`[VerifyCode] Code verified successfully for ${sanitizedEmail}`);
+    console.log(`[VerifyCode] Code verified successfully for ${maskEmail(sanitizedEmail)}`);
 
     return res.status(200).json({
       success: true,

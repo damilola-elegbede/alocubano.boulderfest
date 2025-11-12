@@ -138,8 +138,8 @@ function checkLineForPII(line, lineNumber) {
         line: lineNumber,
         code: line.trim(),
         pattern: 'variable-name',
-        severity: 'warning',
-        message: 'Variable name suggests PII in logging statement',
+        severity: 'error',
+        message: 'PII variable in logging statement - use maskEmail() or sanitization utility',
       };
     }
 
