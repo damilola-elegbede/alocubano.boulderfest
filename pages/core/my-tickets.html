@@ -201,8 +201,8 @@
         padding: var(--space-xl);
         margin-bottom: var(--space-xl);
         position: relative;
-        overflow: hidden;
         cursor: default !important; /* Override components.css cursor: pointer */
+        border-left: 4px solid var(--color-primary);
       }
 
       /* Override clickable appearance from components.css */
@@ -1299,7 +1299,7 @@
                                 <img src="/api/tickets/qr-image?ticketId=${encodeURIComponent(ticketIdRaw)}"
                                      alt="Ticket QR Code for ${ticketId}"
                                      style="width: 200px; height: 200px; display: block;"
-                                     onerror="this.parentElement.innerHTML='<div style=\"padding: 20px; background-color: #fee; border: 1px solid #f00; border-radius: 8px; text-align: center;\"><p style=\"color: #c00; margin: 0; font-weight: 600;\">⚠️ QR Code Unavailable</p><p style=\"color: #666; font-size: 14px; margin: 8px 0 0 0;\">Please contact support</p></div>'">
+                                     onerror="console.error('Failed to load QR code image')">
                             </div>
                             <p style="margin-top: var(--space-md); font-family: var(--font-body); color: var(--color-text-secondary); font-size: var(--text-sm);">
                                 📱 Screenshot this QR code or scan at entry
