@@ -780,7 +780,7 @@
       <div class="modal-content">
         <div class="modal-header">
           <h2 id="transferModalTitle">Transfer Ticket</h2>
-          <button class="close" onclick="closeModal('transferModal')" aria-label="Close transfer modal">
+          <button class="close close-transfer-modal" aria-label="Close transfer modal">
             &times;
           </button>
         </div>
@@ -889,22 +889,17 @@
       let currentTickets = [];
       let currentTicketId = null;
 
-      // Modal management functions (exposed to global for onclick handlers)
-      window.openModal = function(modalId) {
+      // Modal management functions (module scope)
+      function openModal(modalId) {
         document.getElementById(modalId).style.display = "block";
-      };
+      }
 
-      window.closeModal = function(modalId) {
+      function closeModal(modalId) {
         document.getElementById(modalId).style.display = "none";
         if (modalId === "transferModal") {
           document.getElementById("transferForm").reset();
         }
-      };
-
-      window.initiateTransfer = function(ticketId) {
-        currentTicketId = ticketId;
-        window.openModal("transferModal");
-      };
+      }
 
       // Check for existing session
       const storedToken = localStorage.getItem('ticketAccessToken');
@@ -924,6 +919,11 @@
           clearSession();
         }
       }
+
+      // Close button for transfer modal
+      document.querySelector('.close-transfer-modal').addEventListener('click', () => {
+        closeModal('transferModal');
+      });
 
       // Email form submission
       document.getElementById("emailForm").addEventListener("submit", async (e) => {
@@ -1285,7 +1285,7 @@
                         <!-- Transfer Button (Centered) -->
                         ${currentAccessToken ? `
                         <div class="transfer-action">
-                            <button class="btn-small btn-primary" onclick="initiateTransfer('${ticketIdRaw}')">
+                            <button class="btn-small btn-primary btn-transfer" data-ticket-id="${ticketIdRaw}">
                                 Transfer Ticket
                             </button>
                         </div>
@@ -1303,6 +1303,15 @@
                     ${ticketsHtml}
                 </div>
             `;
+
+        // Add event listeners for transfer buttons
+        document.querySelectorAll('.btn-transfer').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const ticketId = btn.dataset.ticketId;
+            currentTicketId = ticketId;
+            openModal("transferModal");
+          });
+        });
 
         // No longer need lazy-loaded wallet buttons - they're inline now
         // Preload QR codes for first few tickets
@@ -1357,7 +1366,7 @@
         const modals = document.querySelectorAll(".modal");
         modals.forEach((modal) => {
           if (event.target === modal) {
-            window.closeModal(modal.id);
+            closeModal(modal.id);
           }
         });
       });

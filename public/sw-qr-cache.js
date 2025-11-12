@@ -12,6 +12,21 @@ const CACHE_NAME = 'alocubano-qr-cache-v1.2.0';
 const QR_API_PATTERN = /\/api\/qr\/generate/;
 const CACHE_EXPIRY_DAYS = 7;
 
+/**
+ * Helper function to add cache headers to Response
+ * Response headers are immutable, so we must create a new Response
+ */
+function addCacheHeaders(response, status, source) {
+  const headers = new Headers(response.headers);
+  headers.set('X-Cache-Status', status);
+  headers.set('X-Cache-Source', source || 'ServiceWorker');
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: headers
+  });
+}
+
 // Assets to precache
 const STATIC_ASSETS = [
   '/js/qr-cache-manager.js',
@@ -93,11 +108,7 @@ async function handleQRRequest(request) {
       console.log('[SW] QR cache hit:', cacheKey);
 
       // Add performance headers
-      const response = cachedResponse.clone();
-      response.headers.set('X-Cache-Status', 'HIT');
-      response.headers.set('X-Cache-Source', 'ServiceWorker');
-
-      return response;
+      return addCacheHeaders(cachedResponse, 'HIT', 'ServiceWorker');
     }
 
     // Fetch from network
@@ -105,32 +116,29 @@ async function handleQRRequest(request) {
     const networkResponse = await fetch(request);
 
     if (networkResponse.ok) {
-      // Clone the response for caching
-      const responseToCache = networkResponse.clone();
+      // Clone the response and add metadata headers for caching
+      const headers = new Headers(networkResponse.headers);
+      headers.set('X-Cache-Timestamp', Date.now().toString());
+      headers.set('X-Cache-Version', CACHE_NAME);
 
-      // Add metadata headers
-      responseToCache.headers.set('X-Cache-Timestamp', Date.now().toString());
-      responseToCache.headers.set('X-Cache-Version', CACHE_NAME);
+      const responseToCache = new Response(networkResponse.clone().body, {
+        status: networkResponse.status,
+        statusText: networkResponse.statusText,
+        headers: headers
+      });
 
       // Cache the response
       await cache.put(cacheKey, responseToCache);
       console.log('[SW] QR cached:', cacheKey);
 
       // Add performance headers to returned response
-      const response = networkResponse.clone();
-      response.headers.set('X-Cache-Status', 'MISS');
-      response.headers.set('X-Cache-Source', 'Network');
-
-      return response;
+      return addCacheHeaders(networkResponse, 'MISS', 'Network');
     }
 
     // Network failed, try to return stale cache
     if (cachedResponse) {
       console.log('[SW] Network failed, returning stale cache:', cacheKey);
-      const response = cachedResponse.clone();
-      response.headers.set('X-Cache-Status', 'STALE');
-      response.headers.set('X-Cache-Source', 'ServiceWorker-Stale');
-      return response;
+      return addCacheHeaders(cachedResponse, 'STALE', 'ServiceWorker-Stale');
     }
 
     // No cache available, return network error
@@ -143,10 +151,7 @@ async function handleQRRequest(request) {
     const cachedResponse = await cache.match(cacheKey);
     if (cachedResponse) {
       console.log('[SW] Error fallback to cache:', cacheKey);
-      const response = cachedResponse.clone();
-      response.headers.set('X-Cache-Status', 'ERROR-FALLBACK');
-      response.headers.set('X-Cache-Source', 'ServiceWorker-Error');
-      return response;
+      return addCacheHeaders(cachedResponse, 'ERROR-FALLBACK', 'ServiceWorker-Error');
     }
 
     // Re-throw if no cache available
