@@ -1207,7 +1207,7 @@
         const ticketContainer = document.getElementById("ticketContainer");
 
         // Filter tickets to only show those belonging to the verified email
-        const verifiedEmail = currentUser?.email;
+        const verifiedEmail = currentEmail;
         const filteredTickets = verifiedEmail
           ? tickets.filter(ticket => ticket.attendee_email === verifiedEmail)
           : tickets;
