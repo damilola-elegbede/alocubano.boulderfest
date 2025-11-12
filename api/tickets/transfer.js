@@ -2,6 +2,7 @@ import ticketService from "../../lib/ticket-service.js";
 import tokenService from "../../lib/token-service.js";
 import { TOKEN_ACTIONS } from "../../lib/ticket-config.js";
 import { getDatabaseClient } from "../../lib/database.js";
+import jwt from "jsonwebtoken";
 
 export default async function handler(req, res) {
   // Initialize database client
@@ -74,7 +75,7 @@ export default async function handler(req, res) {
     );
 
     // Send email notifications to both parties
-    const ticketEmailService = await import('../lib/ticket-email-service-brevo.js');
+    const ticketEmailService = await import('../../lib/ticket-email-service-brevo.js');
     const emailService = ticketEmailService.default;
 
     // Notify new owner
