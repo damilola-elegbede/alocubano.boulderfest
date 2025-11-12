@@ -21,8 +21,8 @@ const PII_PATTERNS = {
   // Direct property access on objects (e.g., user.email, data.password)
   directAccess: /\.(email|password|phone|ssn|creditCard|credit_card|firstName|first_name|lastName|last_name|dob|dateOfBirth|address)/i,
 
-  // Variable names that likely contain PII
-  variableNames: /\b(email|password|phone|ssn|creditCard|userEmail|userPhone|customerEmail)\b/i,
+  // Variable names that likely contain PII (only in template literals or concatenations)
+  variableNames: /\$\{[^}]*(email|password|phone|ssn|creditCard|userEmail|userPhone|customerEmail)[^}]*\}|`[^`]*\$\{[^}]*(email|password|phone|ssn|creditCard)[^}]*\}[^`]*`/i,
 
   // Template literals with PII fields
   templateLiterals: /\$\{[^}]*\.(email|password|phone|firstName|lastName)[^}]*\}/i,
@@ -41,6 +41,9 @@ const SAFE_PATTERNS = {
 
   // Already masked/redacted
   masked: /\[REDACTED\]|\[EMAIL\]|\[PHONE\]|\*\*\*/,
+
+  // Non-PII email variables (booleans, counts, IDs)
+  nonPII: /\$\{(skipOrderEmail|skipAttendeeEmails|attendeeEmailsSent|emailTasks\.length|email\.id)\}/,
 };
 
 // Files/directories to exclude from scanning
