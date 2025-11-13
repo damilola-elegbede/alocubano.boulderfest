@@ -4483,6 +4483,16 @@
         }
 
         document.getElementById("resultModal").classList.remove("show");
+
+        // Auto-resume scanning if scanner is still open
+        if (fullscreenScanner && document.getElementById('fullscreenScannerModal').classList.contains('active')) {
+          isFullscreenScanning = true;
+          const scanRegion = document.getElementById('fullscreenScanRegion');
+          if (scanRegion) {
+            scanRegion.classList.remove('locked');
+            scanRegion.classList.add('scanning');
+          }
+        }
       }
 
       // Start countdown for result modal auto-close
@@ -4495,8 +4505,8 @@
           clearTimeout(countdownTimeout);
         }
 
-        // Reset countdown
-        countdownSeconds = 10;
+        // Reset countdown (reduced to 3 seconds for faster scanning)
+        countdownSeconds = 3;
         const countdownSecondsEl = document.getElementById("countdownSeconds");
         const countdownTimer = document.getElementById("countdownTimer");
 
@@ -4523,7 +4533,7 @@
               countdownInterval = null;
             }
             closeResult();
-          }, 10000);
+          }, 3000);
         }
       }
 
@@ -4616,11 +4626,7 @@
         // Validate ticket
         try {
           await validateTicket(extractTokenFromQR(decodedText));
-
-          // Close scanner after short delay
-          setTimeout(async () => {
-            await closeFullscreenScanner();
-          }, 500);
+          // Scanner stays open, will auto-resume after result dismissal
 
         } catch (error) {
           console.error('Validation error:', error);
