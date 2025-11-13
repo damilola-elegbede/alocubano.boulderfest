@@ -2842,6 +2842,11 @@
           // Disable flip for 2x performance boost (QR codes never mirrored)
           disableFlip: true,
 
+          // Enable native BarcodeDetector API for 2x speed on Chrome/Edge
+          experimentalFeatures: {
+            useBarCodeDetectorIfSupported: true
+          },
+
           // Optimized camera constraints
           videoConstraints: {
             facingMode: "environment",
@@ -2862,6 +2867,7 @@
           fps: config.fps,
           qrbox: 'Dynamic (75% of viewport)',
           disableFlip: true,
+          barcodeDetector: true,
           videoResolution: '1280x720',
           formatsToSupport: 'QR_CODE only',
           isLowPowerMode: performanceMonitor.isLowPowerMode
