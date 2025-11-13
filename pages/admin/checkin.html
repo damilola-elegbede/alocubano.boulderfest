@@ -2823,11 +2823,12 @@
        *
        * TUNABLE SCANNING PARAMETERS:
        *
-       * 1. qrbox - Scan region size
-       *    Current: 55% of viewport width, max 550px
-       *    Impact: Smaller = faster processing (fewer pixels), harder to align
-       *            Larger = slower processing, easier for users
-       *    Range: 150px - 600px recommended
+       * 1. qrbox - Scan region size [REMOVED]
+       *    Previous: 55% of viewport width, required precise QR alignment
+       *    Current: REMOVED - scans entire camera frame
+       *    Reason: Zero margin of error caused UX issues. QR codes had to be
+       *            precisely within box boundaries. Full-frame scanning is more
+       *            forgiving and matches user expectations.
        *
        * 2. fps - Frames per second for scanning
        *    Current: 30 for Android, 20 for iOS
@@ -2851,15 +2852,17 @@
        * - disableFlip: Skip horizontal flip detection (may speed up 2x)
        * - experimentalFeatures.useBarCodeDetectorIfSupported:
        *     Use native BarcodeDetector API (Chrome only, much faster)
+       * - qrbox: { width: number, height: number }
+       *     Restricts scanning to specific region (NOT recommended - zero tolerance)
        */
       function getFullscreenScannerConfig() {
-        // Calculate responsive scan box size (55% of viewport width, max 550px)
-        const viewportWidth = window.innerWidth;
-        const scanBoxSize = Math.min(viewportWidth * 0.55, 550);
+        // No qrbox - scans entire camera frame for maximum detection area
+        // This eliminates the need for precise QR code alignment
 
         const config = {
-          // Large responsive scan region
-          qrbox: { width: scanBoxSize, height: scanBoxSize },
+          // qrbox removed - entire camera frame is now scannable
+          // Previous: Required QR code to be precisely within box boundaries
+          // Current: QR codes detected anywhere in camera view
 
           // FPS will be set below based on power mode
           fps: 30,
@@ -2880,7 +2883,7 @@
 
         console.log('Full-screen scanner config:', {
           fps: config.fps,
-          qrbox: config.qrbox,
+          scanRegion: 'entire camera frame',
           formatsToSupport: 'QR_CODE only',
           isLowPowerMode: performanceMonitor.isLowPowerMode
         });
@@ -4647,8 +4650,9 @@
       async function onFullscreenScanSuccess(decodedText) {
         if (!isFullscreenScanning) return;
 
-        // DON'T pause scanner - keep it running while result overlay displays
-        // isFullscreenScanning stays true
+        // PAUSE scanner to prevent duplicate scans during result display
+        // This prevents hitting scan limits by rescanning the same QR code
+        isFullscreenScanning = false;
 
         const scanRegion = document.getElementById('fullscreenScanRegion');
 
@@ -4661,17 +4665,20 @@
           navigator.vibrate(200);
         }
 
-        // Validate ticket - result will overlay on camera view
+        // Validate ticket - result will overlay on camera view for 5 seconds
         try {
           await validateTicket(extractTokenFromQR(decodedText));
-          // Scanner continues running, result overlays for 5 seconds
+          // Scanner paused, will resume when result dismisses
 
         } catch (error) {
           console.error('Validation error:', error);
 
-          // Visual feedback for error
-          scanRegion.classList.remove('locked');
-          scanRegion.classList.add('scanning');
+          // Resume scanning after error (2 second delay)
+          setTimeout(() => {
+            isFullscreenScanning = true;
+            scanRegion.classList.remove('locked');
+            scanRegion.classList.add('scanning');
+          }, 2000);
         }
       }
 
