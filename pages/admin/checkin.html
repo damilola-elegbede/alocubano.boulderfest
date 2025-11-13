@@ -652,12 +652,14 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(0, 0, 0, 0.95);
+        background: rgba(0, 0, 0, 0.3);
         display: none;
-        align-items: center;
+        align-items: flex-start;
         justify-content: center;
-        z-index: var(--z-modal);
+        padding-top: 10vh;
+        z-index: 10001; /* Higher than fullscreen scanner modal to overlay on camera */
         animation: fadeIn 0.3s ease-out;
+        pointer-events: none; /* Allow camera interaction beneath */
       }
 
       @keyframes fadeIn {
@@ -682,6 +684,7 @@
         text-align: center;
         animation: slideUp 0.3s ease-out;
         box-shadow: var(--shadow-2xl);
+        pointer-events: auto; /* Enable interaction with result card */
       }
 
       @keyframes slideUp {
@@ -2048,7 +2051,7 @@
           data-testid="ticket-info"
         ></div>
         <div class="countdown-timer" id="countdownTimer" style="display: none;">
-          Returning to scanner in <span id="countdownSeconds">10</span>s
+          Returning to scanner in <span id="countdownSeconds">5</span>s
         </div>
         <button class="result-btn admin-btn admin-btn-primary" onclick="closeResult()">
           Continue Scanning
@@ -2815,7 +2818,40 @@
         }
       }
 
-      // Get optimized scanner configuration for full-screen modal
+      /**
+       * Get optimized scanner configuration for full-screen modal
+       *
+       * TUNABLE SCANNING PARAMETERS:
+       *
+       * 1. qrbox - Scan region size
+       *    Current: 55% of viewport width, max 550px
+       *    Impact: Smaller = faster processing (fewer pixels), harder to align
+       *            Larger = slower processing, easier for users
+       *    Range: 150px - 600px recommended
+       *
+       * 2. fps - Frames per second for scanning
+       *    Current: 30 for Android, 20 for iOS
+       *    Impact: Higher = faster detection, more battery/CPU usage
+       *            Lower = slower detection, better battery life
+       *    Range: 5-30 fps (10 minimum recommended for good UX)
+       *
+       * 3. formatsToSupport - Barcode formats to detect
+       *    Current: QR_CODE only
+       *    Impact: Fewer formats = faster recognition
+       *            More formats = slower but more versatile
+       *    Options: QR_CODE, CODE_128, EAN_13, etc.
+       *
+       * OPTIONAL PARAMETERS (not currently used):
+       *
+       * - aspectRatio: Camera aspect ratio (default: 1.0)
+       * - videoConstraints: Advanced camera settings
+       *     { width: { min: 640, ideal: 1280, max: 1920 },
+       *       height: { min: 480, ideal: 720, max: 1080 },
+       *       facingMode: "environment" }
+       * - disableFlip: Skip horizontal flip detection (may speed up 2x)
+       * - experimentalFeatures.useBarCodeDetectorIfSupported:
+       *     Use native BarcodeDetector API (Chrome only, much faster)
+       */
       function getFullscreenScannerConfig() {
         // Calculate responsive scan box size (55% of viewport width, max 550px)
         const viewportWidth = window.innerWidth;
@@ -4484,14 +4520,15 @@
 
         document.getElementById("resultModal").classList.remove("show");
 
-        // Auto-resume scanning if scanner is still open
+        // Resume visual scanning state (scanner never stopped)
         if (fullscreenScanner && document.getElementById('fullscreenScannerModal').classList.contains('active')) {
-          isFullscreenScanning = true;
           const scanRegion = document.getElementById('fullscreenScanRegion');
           if (scanRegion) {
             scanRegion.classList.remove('locked');
             scanRegion.classList.add('scanning');
           }
+          // Ensure scanning flag is set (should already be true)
+          isFullscreenScanning = true;
         }
       }
 
@@ -4505,8 +4542,8 @@
           clearTimeout(countdownTimeout);
         }
 
-        // Reset countdown (reduced to 3 seconds for faster scanning)
-        countdownSeconds = 3;
+        // Reset countdown (5 seconds to display result while camera continues)
+        countdownSeconds = 5;
         const countdownSecondsEl = document.getElementById("countdownSeconds");
         const countdownTimer = document.getElementById("countdownTimer");
 
@@ -4533,7 +4570,7 @@
               countdownInterval = null;
             }
             closeResult();
-          }, 3000);
+          }, 5000);
         }
       }
 
@@ -4610,7 +4647,8 @@
       async function onFullscreenScanSuccess(decodedText) {
         if (!isFullscreenScanning) return;
 
-        isFullscreenScanning = false;
+        // DON'T pause scanner - keep it running while result overlay displays
+        // isFullscreenScanning stays true
 
         const scanRegion = document.getElementById('fullscreenScanRegion');
 
@@ -4623,20 +4661,17 @@
           navigator.vibrate(200);
         }
 
-        // Validate ticket
+        // Validate ticket - result will overlay on camera view
         try {
           await validateTicket(extractTokenFromQR(decodedText));
-          // Scanner stays open, will auto-resume after result dismissal
+          // Scanner continues running, result overlays for 5 seconds
 
         } catch (error) {
           console.error('Validation error:', error);
 
-          // Resume scanning after error
-          setTimeout(() => {
-            isFullscreenScanning = true;
-            scanRegion.classList.remove('locked');
-            scanRegion.classList.add('scanning');
-          }, 2000);
+          // Visual feedback for error
+          scanRegion.classList.remove('locked');
+          scanRegion.classList.add('scanning');
         }
       }
 
