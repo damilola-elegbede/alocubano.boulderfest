@@ -2817,19 +2817,13 @@
 
       // Get optimized scanner configuration for full-screen modal
       function getFullscreenScannerConfig() {
-        // Dynamic qrbox function for responsive sizing (75% of viewport)
-        const qrboxFunction = (viewfinderWidth, viewfinderHeight) => {
-          const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-          const size = Math.floor(minEdge * 0.75);
-          return {
-            width: size,
-            height: size
-          };
-        };
+        // Calculate responsive scan box size (55% of viewport width, max 550px)
+        const viewportWidth = window.innerWidth;
+        const scanBoxSize = Math.min(viewportWidth * 0.55, 550);
 
         const config = {
-          // Dynamic responsive scan region
-          qrbox: qrboxFunction,
+          // Large responsive scan region
+          qrbox: { width: scanBoxSize, height: scanBoxSize },
 
           // FPS will be set below based on power mode
           fps: 30,
@@ -2837,22 +2831,7 @@
           // QR_CODE format only for faster recognition
           formatsToSupport: typeof Html5QrcodeSupportedFormats !== 'undefined'
             ? [Html5QrcodeSupportedFormats.QR_CODE]
-            : undefined,
-
-          // Disable flip for 2x performance boost (QR codes never mirrored)
-          disableFlip: true,
-
-          // Enable native BarcodeDetector API for 2x speed on Chrome/Edge
-          experimentalFeatures: {
-            useBarCodeDetectorIfSupported: true
-          },
-
-          // Optimized camera constraints
-          videoConstraints: {
-            facingMode: "environment",
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-          }
+            : undefined
         };
 
         // Apply FPS based on power mode
@@ -2865,10 +2844,7 @@
 
         console.log('Full-screen scanner config:', {
           fps: config.fps,
-          qrbox: 'Dynamic (75% of viewport)',
-          disableFlip: true,
-          barcodeDetector: true,
-          videoResolution: '1280x720',
+          qrbox: config.qrbox,
           formatsToSupport: 'QR_CODE only',
           isLowPowerMode: performanceMonitor.isLowPowerMode
         });
