@@ -11,6 +11,7 @@ import { getDatabaseClient } from "../../lib/database.js";
 import { processDatabaseResult } from "../../lib/bigint-serializer.js";
 import timeUtils from "../../lib/time-utils.js";
 import { getTicketEmailService } from "../../lib/ticket-email-service-brevo.js";
+import { maskEmail } from "../../lib/volunteer-helpers.js";
 
 /**
  * Input validation schemas
@@ -248,7 +249,7 @@ async function handler(req, res) {
 
       // STEP 5 & 6: Update Ticket & Record History (already in transaction)
       // Update ticket ownership
-      console.log(`[TRANSFER DEBUG] Attempting UPDATE for ticket_id: ${ticketId}, new email: ${sanitizedNewEmail}`);
+      console.log(`[TRANSFER DEBUG] Attempting UPDATE for ticket_id: ${ticketId}, new email: ${maskEmail(sanitizedNewEmail)}`);
 
       const updateResult = await tx.execute({
         sql: `UPDATE tickets
@@ -338,7 +339,7 @@ async function handler(req, res) {
       console.error('Transaction rollback due to error:', error);
       throw error;
     }
-    console.log(`Ticket ${ticketId} transferred from ${ticket.attendee_email || 'unassigned'} to ${sanitizedNewEmail} by ${adminId}`);
+    console.log(`Ticket ${ticketId} transferred from ${maskEmail(ticket.attendee_email || 'unassigned')} to ${maskEmail(sanitizedNewEmail)} by ${adminId}`);
 
     // ========================================================================
     // STEP 7: Get Updated Ticket
@@ -373,7 +374,7 @@ async function handler(req, res) {
         transactionId: ticket.transaction_id
       });
 
-      console.log(`✅ Transfer notification sent to new owner: ${sanitizedNewEmail}`);
+      console.log(`✅ Transfer notification sent to new owner: ${maskEmail(sanitizedNewEmail)}`);
 
       // Send transfer confirmation to ORIGINAL owner
       // Use fallback: attendee_email → transaction_email
@@ -392,7 +393,7 @@ async function handler(req, res) {
           transferredBy: adminId || 'Admin'
         });
 
-        console.log(`✅ Transfer confirmation sent to original owner: ${originalOwnerEmail}`);
+        console.log(`✅ Transfer confirmation sent to original owner: ${maskEmail(originalOwnerEmail)}`);
       } else {
         console.warn(`⚠️ Transfer ${ticketId}: No email available for original owner (attendee_email and transaction_email both null)`);
       }

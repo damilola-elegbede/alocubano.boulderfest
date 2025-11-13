@@ -91,7 +91,7 @@ class WalletButtons {
    */
   createAppleWalletButton(ticketId, size = 'default') {
     const button = document.createElement('a');
-    button.href = `/api/tickets/apple-wallet/${ticketId}`;
+    button.href = `/api/tickets/apple-wallet/${encodeURIComponent(ticketId)}`;
     button.className = `wallet-button wallet-button-apple wallet-button-${size}`;
     button.setAttribute('data-wallet-type', 'apple');
     button.setAttribute('data-ticket-id', ticketId);
@@ -99,7 +99,7 @@ class WalletButtons {
 
     // Add Apple logo and text
     button.innerHTML = `
-      <img src="/images/payment-icons/apple-pay.svg" alt="Apple" class="wallet-icon" />
+      <img src="/images/add-to-wallet-apple.svg" alt="Add to Apple Wallet" class="wallet-icon" />
       <span class="wallet-text">Add to Apple Wallet</span>
     `;
 
@@ -114,7 +114,7 @@ class WalletButtons {
    */
   createGoogleWalletButton(ticketId, size = 'default') {
     const button = document.createElement('a');
-    button.href = `/api/tickets/google-wallet/${ticketId}`;
+    button.href = `/api/tickets/google-wallet/${encodeURIComponent(ticketId)}`;
     button.className = `wallet-button wallet-button-google wallet-button-${size}`;
     button.setAttribute('data-wallet-type', 'google');
     button.setAttribute('data-ticket-id', ticketId);
@@ -122,7 +122,7 @@ class WalletButtons {
 
     // Add Google logo and text
     button.innerHTML = `
-      <img src="/images/payment-icons/card_google-pay.svg" alt="Google" class="wallet-icon" />
+      <img src="/images/add-to-wallet-google.png" alt="Add to Google Wallet" class="wallet-icon" />
       <span class="wallet-text">Add to Google Wallet</span>
     `;
 
@@ -370,9 +370,8 @@ const walletStyles = `
   }
 
   .wallet-icon {
-    width: 20px;
-    height: 20px;
-    filter: brightness(0) invert(1); /* Make icons white */
+    height: 40px;
+    width: auto; /* Maintain aspect ratio */
   }
 
   .wallet-text {
@@ -445,13 +444,12 @@ const walletStyles = `
   /* Mobile optimization */
   @media (max-width: 640px) {
     .wallet-buttons {
-      flex-direction: column;
       gap: 8px;
     }
 
     .wallet-button {
-      width: 100%;
-      max-width: 280px;
+      flex: 1;
+      max-width: 48%;
     }
   }
 

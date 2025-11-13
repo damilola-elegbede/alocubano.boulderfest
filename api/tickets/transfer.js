@@ -2,6 +2,8 @@ import ticketService from "../../lib/ticket-service.js";
 import tokenService from "../../lib/token-service.js";
 import { TOKEN_ACTIONS } from "../../lib/ticket-config.js";
 import { getDatabaseClient } from "../../lib/database.js";
+import timeUtils from "../../lib/time-utils.js";
+import { maskEmail } from "../../lib/volunteer-helpers.js";
 
 export default async function handler(req, res) {
   // Initialize database client
@@ -56,6 +58,16 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: tokenValidation.error });
     }
 
+    // Get original owner email from validated token
+    const originalOwnerEmail = tokenValidation.email;
+
+    if (!originalOwnerEmail) {
+      console.error('Token validation missing email:', tokenValidation);
+      return res.status(500).json({
+        error: 'Token validation failed: missing email'
+      });
+    }
+
     // Sanitize and validate inputs
     const sanitizedAttendee = {
       firstName: newAttendee.firstName.trim().substring(0, 100),
@@ -67,10 +79,75 @@ export default async function handler(req, res) {
     };
 
     // Perform transfer
+    const originalTicket = await ticketService.getByTicketId(ticketId);
     const transferredTicket = await ticketService.transferTicket(
       ticketId,
       sanitizedAttendee
     );
+
+    // Send email notifications to both parties
+    const ticketEmailService = await import('../../lib/ticket-email-service-brevo.js');
+    const emailService = ticketEmailService.default;
+
+    const transferDate = timeUtils.formatDateTime(new Date());
+
+    // Prepare names
+    const newOwnerName = `${sanitizedAttendee.firstName} ${sanitizedAttendee.lastName || ''}`.trim();
+    const previousOwnerName = `${originalTicket.attendee_first_name || ''} ${originalTicket.attendee_last_name || ''}`.trim() || 'Previous Owner';
+
+    console.log('🎫 [Transfer] Sending notification emails...', {
+      newOwnerEmail: maskEmail(sanitizedAttendee.email),
+      originalOwnerEmail: maskEmail(originalOwnerEmail),
+      ticketId,
+      transactionId: transferredTicket.transaction_id
+    });
+
+    // Notify new owner
+    await emailService.sendTransferNotification({
+      newOwnerName,
+      newOwnerEmail: sanitizedAttendee.email,
+      previousOwnerName,
+      ticketId: ticketId,
+      ticketType: transferredTicket.ticket_type,
+      transferDate,
+      transferReason: '',
+      transactionId: transferredTicket.transaction_id
+    });
+
+    // Confirm with original owner
+    await emailService.sendTransferConfirmation({
+      originalOwnerName: previousOwnerName,
+      originalOwnerEmail: originalOwnerEmail,
+      newOwnerName,
+      newOwnerEmail: sanitizedAttendee.email,
+      ticketId: ticketId,
+      ticketType: transferredTicket.ticket_type,
+      transferDate,
+      transferReason: '',
+      transferredBy: 'Self-Service'
+    });
+
+    // Record transfer in audit table
+    const db = await getDatabaseClient();
+    await db.execute({
+      sql: `INSERT INTO ticket_transfers
+            (ticket_id, transaction_id, from_email, from_first_name, from_last_name,
+             to_email, to_first_name, to_last_name, to_phone,
+             transferred_by, transfer_method, transferred_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'user_self_service', CURRENT_TIMESTAMP)`,
+      args: [
+        ticketId,
+        transferredTicket.transaction_id,
+        originalTicket.attendee_email,
+        originalTicket.attendee_first_name,
+        originalTicket.attendee_last_name,
+        sanitizedAttendee.email,
+        sanitizedAttendee.firstName,
+        sanitizedAttendee.lastName || null,
+        sanitizedAttendee.phone || null,
+        originalOwnerEmail
+      ]
+    });
 
     return res.status(200).json({
       success: true,
@@ -78,7 +155,11 @@ export default async function handler(req, res) {
       message: 'Ticket successfully transferred'
     });
   } catch (error) {
-    console.error('Ticket transfer error:', error);
+    console.error('Ticket transfer error:', {
+      message: error.message,
+      stack: error.stack,
+      ticketId: req.body.ticketId
+    });
     return res.status(500).json({ error: 'Internal server error' });
   }
 }

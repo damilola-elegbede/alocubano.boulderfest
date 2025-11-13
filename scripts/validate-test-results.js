@@ -3,6 +3,7 @@
 import { readFileSync, readdirSync, existsSync, statSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { execSync } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -512,6 +513,114 @@ function checkRetrySuccess(metadata, results) {
 }
 
 /**
+ * Pattern 11: Placeholder Tests
+ * Tests that don't actually test anything (expect(true).toBe(true))
+ */
+function checkPlaceholderTests(results) {
+  const testFiles = [
+    'tests/unit/api/ticket-verification.test.js'
+  ];
+
+  for (const file of testFiles) {
+    const filePath = join(__dirname, '..', file);
+
+    if (!existsSync(filePath)) continue;
+
+    try {
+      const content = readFileSync(filePath, 'utf8');
+      const lines = content.split('\n');
+      const placeholders = [];
+
+      lines.forEach((line, index) => {
+        if (line.includes('expect(true).toBe(true)')) {
+          placeholders.push({
+            line: index + 1,
+            content: line.trim()
+          });
+        }
+      });
+
+      if (placeholders.length > 0) {
+        results.priority1.push({
+          severity: PRIORITY.CRITICAL,
+          pattern: 'placeholder_tests',
+          file,
+          description: `${placeholders.length} placeholder test(s) detected with expect(true).toBe(true)`,
+          recommendation: 'Implement real tests with actual assertions. Placeholder tests provide no coverage and can mask bugs.',
+          details: {
+            count: placeholders.length,
+            locations: placeholders.slice(0, 5).map(p => `Line ${p.line}: ${p.content}`),
+            total_placeholders: placeholders.length
+          }
+        });
+      }
+    } catch (error) {
+      console.error(`Failed to check ${file} for placeholders:`, error.message);
+    }
+  }
+}
+
+/**
+ * Pattern 12: PII Exposure in Code
+ * Scans for PII leaks in logging statements
+ */
+function checkPIIExposure(results) {
+  try {
+    const output = execSync('node scripts/check-pii-exposure.js --json', {
+      encoding: 'utf8',
+      cwd: join(__dirname, '..')
+    });
+
+    const piiResults = JSON.parse(output);
+    const errors = piiResults.errors || 0;
+    const warnings = piiResults.warnings || 0;
+
+    if (errors > 0) {
+      results.priority1.push({
+        severity: PRIORITY.CRITICAL,
+        pattern: 'pii_exposure',
+        description: `${errors} PII exposure error(s) detected in code`,
+        recommendation: 'Use maskEmail() or sanitization utilities for all PII in logging statements.',
+        details: {
+          errors,
+          warnings,
+          violations: piiResults.violations || 0,
+          files: (piiResults.details || []).filter(d => d.severity === 'error').map(d => ({
+            file: d.file,
+            line: d.line,
+            message: d.message
+          }))
+        }
+      });
+    }
+
+    if (warnings > 10) {
+      results.priority2.push({
+        severity: PRIORITY.WARNING,
+        pattern: 'pii_exposure_warnings',
+        description: `${warnings} PII exposure warning(s) detected in code`,
+        recommendation: 'Review and fix PII warnings. High warning count may indicate systematic issues.',
+        details: {
+          warnings,
+          threshold: 10
+        }
+      });
+    }
+  } catch (error) {
+    // PII scanner failed - treat as critical
+    results.priority1.push({
+      severity: PRIORITY.CRITICAL,
+      pattern: 'pii_scan_failure',
+      description: 'PII exposure scanner failed to execute',
+      recommendation: 'Fix PII scanner before proceeding. This is a critical quality gate.',
+      details: {
+        error: error.message
+      }
+    });
+  }
+}
+
+/**
  * Main validation function
  */
 async function validateTestResults() {
@@ -539,7 +648,7 @@ async function validateTestResults() {
     metadata: allMetadata
   };
 
-  // Run all 10 validation patterns
+  // Run all 12 validation patterns
   checkExitCodeDiscrepancy(allMetadata, results);
   checkTestCountAnomaly(allMetadata, results);
   checkAllTestsSkipped(allMetadata, results);
@@ -550,6 +659,8 @@ async function validateTestResults() {
   checkBrowserSpecificFailures(allMetadata, results);
   checkFlakyTests(allMetadata, results);
   checkRetrySuccess(allMetadata, results);
+  checkPlaceholderTests(results);
+  checkPIIExposure(results);
 
   return results;
 }

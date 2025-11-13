@@ -133,8 +133,8 @@ async function sendPlainTextSummaryEmail(brevo, db, transactionInfo, results, re
     return `• ${registration.firstName} ${registration.lastName} (${registration.email})
   Ticket Type: ${ticket?.ticket_type || 'Festival Pass'}
   Ticket ID: ${result.ticketId}
-  Apple Wallet: ${process.env.NEXT_PUBLIC_BASE_URL}/api/tickets/apple-wallet/${result.ticketId}
-  Google Pay: ${process.env.NEXT_PUBLIC_BASE_URL}/api/tickets/google-wallet/${result.ticketId}`;
+  Apple Wallet: ${process.env.NEXT_PUBLIC_BASE_URL}/api/tickets/apple-wallet/${encodeURIComponent(result.ticketId)}
+  Google Pay: ${process.env.NEXT_PUBLIC_BASE_URL}/api/tickets/google-wallet/${encodeURIComponent(result.ticketId)}`;
   }).join('\n\n');
 
   const emailSubject = `Registration Complete - Order #${orderNumber}`;
@@ -205,11 +205,11 @@ This is an automated confirmation email for your ticket registration.`;
             <p><strong>Ticket Type:</strong> ${ticket?.ticket_type || 'Festival Pass'}</p>
             <p><strong>Ticket ID:</strong> ${result.ticketId}</p>
             <p>
-              <a href="${process.env.NEXT_PUBLIC_BASE_URL}/api/tickets/apple-wallet/${result.ticketId}"
+              <a href="${process.env.NEXT_PUBLIC_BASE_URL}/api/tickets/apple-wallet/${encodeURIComponent(result.ticketId)}"
                  style="background: #000; color: white; padding: 8px 12px; text-decoration: none; border-radius: 4px; margin-right: 10px;">
                 📱 Add to Apple Wallet
               </a>
-              <a href="${process.env.NEXT_PUBLIC_BASE_URL}/api/tickets/google-wallet/${result.ticketId}"
+              <a href="${process.env.NEXT_PUBLIC_BASE_URL}/api/tickets/google-wallet/${encodeURIComponent(result.ticketId)}"
                  style="background: #4285f4; color: white; padding: 8px 12px; text-decoration: none; border-radius: 4px;">
                 📱 Add to Google Pay
               </a>

@@ -152,6 +152,10 @@
       "destination": "/public/wallet/:path*"
     },
     {
+      "source": "/sw-qr-cache.js",
+      "destination": "/public/sw-qr-cache.js"
+    },
+    {
       "source": "/api/:path*",
       "destination": "/api/:path*"
     },

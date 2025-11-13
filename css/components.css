@@ -2129,13 +2129,7 @@
   border-radius: 8px;
   background: var(--color-surface);
   transition: all 0.3s ease;
-  cursor: pointer;
   position: relative;
-}
-
-.ticket-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px var(--shadow-color);
 }
 
 
