@@ -654,9 +654,8 @@
         bottom: 0;
         background: rgba(0, 0, 0, 0.3);
         display: none;
-        align-items: flex-start;
+        align-items: center;
         justify-content: center;
-        padding-top: 10vh;
         z-index: 10001; /* Higher than fullscreen scanner modal to overlay on camera */
         animation: fadeIn 0.3s ease-out;
         pointer-events: none; /* Allow camera interaction beneath */
@@ -678,9 +677,11 @@
       .result-content {
         background: var(--color-white);
         border-radius: var(--radius-xl);
-        padding: var(--space-3xl);
+        padding: var(--space-xl);
         max-width: 90%;
         width: 350px;
+        max-height: 85vh;
+        overflow-y: auto;
         text-align: center;
         animation: slideUp 0.3s ease-out;
         box-shadow: var(--shadow-2xl);
@@ -708,9 +709,15 @@
         color: var(--color-white);
       }
 
+      .result-content.validating {
+        background: var(--color-white);
+        color: var(--color-text-primary);
+        border: 3px solid var(--color-blue);
+      }
+
       .result-icon {
-        font-size: 60px;
-        margin-bottom: var(--space-xl);
+        font-size: 48px;
+        margin-bottom: var(--space-md);
       }
 
       .result-title {
@@ -2051,7 +2058,7 @@
           data-testid="ticket-info"
         ></div>
         <div class="countdown-timer" id="countdownTimer" style="display: none;">
-          Returning to scanner in <span id="countdownSeconds">5</span>s
+          Returning to scanner in <span id="countdownSeconds">12</span>s
         </div>
         <button class="result-btn admin-btn admin-btn-primary" onclick="closeResult()">
           Continue Scanning
@@ -2870,7 +2877,11 @@
           // QR_CODE format only for faster recognition
           formatsToSupport: typeof Html5QrcodeSupportedFormats !== 'undefined'
             ? [Html5QrcodeSupportedFormats.QR_CODE]
-            : undefined
+            : undefined,
+
+          // Enable native BarcodeDetector API (Chrome/Edge only, 2-3x faster)
+          // Automatically falls back to ZXing.js on unsupported browsers
+          useBarCodeDetectorIfSupported: true
         };
 
         // Apply FPS based on power mode
@@ -4193,6 +4204,40 @@
         // Ignore scan errors
       }
 
+      // CSRF Token Cache (5-minute TTL)
+      let cachedCSRFToken = null;
+      let csrfTokenExpiry = 0;
+
+      async function getCSRFToken() {
+        // Return cached token if still valid
+        if (cachedCSRFToken && Date.now() < csrfTokenExpiry) {
+          console.log('Using cached CSRF token');
+          return cachedCSRFToken;
+        }
+
+        // Fetch new token
+        try {
+          const response = await fetch("/api/admin/csrf-token", {
+            credentials: "include"
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+
+            // Cache for 5 minutes
+            cachedCSRFToken = data.token;
+            csrfTokenExpiry = Date.now() + (5 * 60 * 1000);
+
+            console.log('CSRF token fetched and cached');
+            return cachedCSRFToken;
+          }
+        } catch (error) {
+          console.log("Failed to fetch CSRF token:", error);
+        }
+
+        return null;
+      }
+
       // Validate ticket (QR code or JWT wallet token) with caching
       async function validateTicket(token) {
         const validationStartTime = performance.now();
@@ -4211,19 +4256,11 @@
           const isWalletToken = token.includes(".") && token.length > 100;
 
           // Scanner is event-agnostic - no event filtering
-          // Get CSRF token for admin operations (only if admin authenticated)
+          // Get CSRF token for admin operations (cached for 5 minutes)
           let headers = { "Content-Type": "application/json" };
-          try {
-            const csrfResponse = await fetch("/api/admin/csrf-token", {
-              credentials: "include"
-            });
-            if (csrfResponse.ok) {
-              const csrfData = await csrfResponse.json();
-              headers["X-CSRF-Token"] = csrfData.token;
-            }
-          } catch (error) {
-            // Not admin authenticated, continue without CSRF token
-            console.log("Not admin authenticated, continuing without CSRF token");
+          const csrfToken = await getCSRFToken();
+          if (csrfToken) {
+            headers["X-CSRF-Token"] = csrfToken;
           }
 
           const response = await fetch("/api/tickets/validate", {
@@ -4420,6 +4457,27 @@
         }
       }
 
+      // Show validating screen (optimistic UI - instant feedback)
+      function showValidatingScreen(token) {
+        const modal = document.getElementById("resultModal");
+        const content = document.getElementById("resultContent");
+        const icon = document.getElementById("resultIcon");
+        const titleEl = document.getElementById("resultTitle");
+        const detailsEl = document.getElementById("resultDetails");
+
+        // White screen with validating message
+        content.className = "result-content validating";
+        icon.textContent = "⏳";
+        titleEl.textContent = "VALIDATING";
+
+        // Show ticket ID from QR code
+        const displayToken = token.length > 20 ? token.substring(0, 20) + '...' : token;
+        detailsEl.textContent = `Ticket ID: ${displayToken}\n\nVerifying ticket...`;
+
+        // Show modal immediately
+        modal.classList.add("show");
+      }
+
       // Show result modal
       function showResult(type, title, details, isTestTicket = false, ticketId = null, walletSource = null) {
         const modal = document.getElementById("resultModal");
@@ -4545,8 +4603,8 @@
           clearTimeout(countdownTimeout);
         }
 
-        // Reset countdown (5 seconds to display result while camera continues)
-        countdownSeconds = 5;
+        // Reset countdown (12 seconds to display result)
+        countdownSeconds = 12;
         const countdownSecondsEl = document.getElementById("countdownSeconds");
         const countdownTimer = document.getElementById("countdownTimer");
 
@@ -4573,7 +4631,7 @@
               countdownInterval = null;
             }
             closeResult();
-          }, 5000);
+          }, 12000);
         }
       }
 
@@ -4665,13 +4723,22 @@
           navigator.vibrate(200);
         }
 
-        // Validate ticket - result will overlay on camera view for 5 seconds
+        // Extract token from QR code
+        const token = extractTokenFromQR(decodedText);
+
+        // OPTIMISTIC UI: Show white validating screen IMMEDIATELY
+        showValidatingScreen(token);
+
+        // Validate ticket in background - result will update the screen
         try {
-          await validateTicket(extractTokenFromQR(decodedText));
-          // Scanner paused, will resume when result dismisses
+          await validateTicket(token);
+          // Scanner paused, will resume when result dismisses after 12 seconds
 
         } catch (error) {
           console.error('Validation error:', error);
+
+          // Show error result
+          showResult("error", "Validation Failed", error.message);
 
           // Resume scanning after error (2 second delay)
           setTimeout(() => {
