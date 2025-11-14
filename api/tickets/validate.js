@@ -382,8 +382,8 @@ async function validateTicket(db, validationCode, source, isJWT = false) {
         throw new Error('Ticket not found');
       }
 
-      // Check ticket status
-      if (ticket.status !== 'valid') {
+      // Check ticket status - allow 'valid' or 'used' (scan limit check below will handle rescans)
+      if (ticket.status !== 'valid' && ticket.status !== 'used') {
         throw new Error(`Ticket is ${ticket.status}`);
       }
 
