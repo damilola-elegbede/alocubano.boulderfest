@@ -255,6 +255,9 @@
                 socials: 0
             };
 
+            // Clear displayedItemIds since DOM is fresh after page load
+            state.displayedItemIds.clear();
+
             console.log('✅ Gallery state restored from sessionStorage', {
                 itemsDisplayed: state.itemsDisplayed,
                 loadedPages: state.loadedPages,
@@ -276,6 +279,9 @@
         if (!contentEl || state.displayOrder.length === 0) {
             return;
         }
+
+        // Clear displayedItemIds since we're rebuilding DOM from scratch
+        state.displayedItemIds.clear();
 
         console.log('🔄 Restoring DOM from saved state...');
 
@@ -664,6 +670,9 @@
             content: document.getElementById('gallery-detail-content'),
             static: document.getElementById('gallery-detail-static')
         });
+
+        // Clear displayedItemIds on every page load
+        state.displayedItemIds.clear();
 
         // Initialize preloading optimizations
         setupHoverPreloading(); // Desktop hover preloading
