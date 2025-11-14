@@ -412,12 +412,14 @@ async function validateTicket(db, validationCode, source, isJWT = false) {
         sql: `
           UPDATE tickets
           SET scan_count = scan_count + 1,
+              status = 'used',
+              checked_in_at = COALESCE(checked_in_at, CURRENT_TIMESTAMP),
               qr_access_method = ?,
               first_scanned_at = COALESCE(first_scanned_at, CURRENT_TIMESTAMP),
               last_scanned_at = CURRENT_TIMESTAMP
           WHERE ${updateField} = ?
             AND scan_count < max_scan_count
-            AND status = 'valid'
+            AND status IN ('valid', 'used')
             AND validation_status = 'active'
         `,
         args: [source, validationCode]
