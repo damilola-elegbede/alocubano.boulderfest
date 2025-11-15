@@ -20,9 +20,9 @@ import Stripe from 'stripe';
 import transactionService from '../../lib/transaction-service.js';
 import paymentEventLogger from '../../lib/payment-event-logger.js';
 import ticketService from '../../lib/ticket-service.js';
-// import { getDatabaseClient } from '../../lib/database.js'; // Not used in this optimization
+import { getDatabaseClient } from '../../lib/database.js';
 import auditService from '../../lib/audit-service.js';
-import { createOrRetrieveTickets } from '../../lib/ticket-creation-service.js';
+import { getTicketEmailService } from '../../lib/ticket-email-service-brevo.js';
 import { fulfillReservation, releaseReservation } from '../../lib/ticket-availability-service.js';
 import { extractTestModeFromStripeSession } from '../../lib/test-mode-utils.js';
 
@@ -168,127 +168,93 @@ export default async function handler(req, res) {
       console.log(`Processing ${isTestTransaction ? 'TEST ' : ''}checkout.session.completed for ${session.id}`);
 
       try {
-        // STEP 1: Parallelize independent operations (Stripe retrieve + event logger placeholder update)
-        // These operations don't depend on each other and can run simultaneously
-        // Target: Save 50-100ms by running in parallel instead of sequentially
-        const [fullSession] = await Promise.all([
-          // Retrieve Stripe session with expanded data (200-300ms)
-          stripe.checkout.sessions.retrieve(
-            session.id,
-            {
-              expand: [
-                'line_items',
-                'line_items.data.price.product',
-                'payment_intent',
-                'payment_intent.payment_method'
-              ]
-            }
-          ),
-          // Update event logger with placeholder (50-100ms)
-          // This is fire-and-forget - errors are caught and logged, don't block webhook
-          paymentEventLogger.updateEventTransactionId(event.id, null)
-            .catch(error => {
-              console.error('Event logger placeholder update failed (non-blocking):', error.message);
-            })
-        ]);
+        // Find existing transaction by Stripe session ID
+        const db = await getDatabaseClient();
+        const txResult = await db.execute({
+          sql: 'SELECT * FROM transactions WHERE stripe_session_id = ? LIMIT 1',
+          args: [session.id]
+        });
 
-        // Extract payment method details for receipt
-        const paymentMethodData = {
-          card_brand: null,
-          card_last4: null,
-          payment_wallet: null
-        };
-
-        if (fullSession.payment_intent) {
-          const paymentIntent = fullSession.payment_intent;
-          const paymentMethod = typeof paymentIntent === 'string'
-            ? null
-            : paymentIntent.payment_method;
-
-          if (paymentMethod && typeof paymentMethod === 'object' && paymentMethod.card) {
-            paymentMethodData.card_brand = paymentMethod.card.brand;
-            paymentMethodData.card_last4 = paymentMethod.card.last4;
-            paymentMethodData.payment_wallet = paymentMethod.card.wallet?.type || null;
-          }
-
-          console.log('Payment method details:', paymentMethodData);
+        if (!txResult.rows || txResult.rows.length === 0) {
+          console.error('Transaction not found for session:', session.id);
+          await paymentEventLogger.logError(event, new Error('Transaction not found'));
+          return res.json({ received: true, status: 'transaction_not_found' });
         }
 
-        // STEP 2: Sequential dependent operation - ticket creation needs fullSession
-        // Use centralized ticket creation service for idempotency (1,500-2,500ms)
-        try {
-          const result = await createOrRetrieveTickets(fullSession, paymentMethodData);
-          const transaction = result.transaction;
+        const transaction = txResult.rows[0];
+        console.log(`Webhook: Found transaction ${transaction.uuid} for session ${session.id}`);
 
-          console.log(`Webhook: Transaction ${result.created ? 'created' : 'already exists'}: ${transaction.uuid}`);
-          console.log(`Webhook: ${result.ticketCount} tickets ${result.created ? 'created' : 'found'}`);
+        // Update transaction payment_status and status to completed
+        await db.execute({
+          sql: `UPDATE transactions
+                SET payment_status = ?, status = ?, completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?`,
+          args: ['completed', 'completed', transaction.id]
+        });
 
-          // STEP 3: Fire-and-forget operations (non-blocking)
-          // Update event logger with actual transaction ID (50-100ms - non-blocking)
-          paymentEventLogger.updateEventTransactionId(event.id, transaction.id)
-            .catch(error => {
-              console.error('Event logger transaction ID update failed (non-blocking):', error.message);
-            });
+        // Update all tickets for this transaction to completed status
+        const ticketUpdateResult = await db.execute({
+          sql: `UPDATE tickets
+                SET registration_status = ?, registered_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+                WHERE transaction_id = ? AND registration_status = ?`,
+          args: ['completed', transaction.id, 'pending_payment']
+        });
 
-          // Fulfill reservation - mark as completed (fire-and-forget for faster webhook response)
-          // Try both actual session ID and temp session ID (from metadata)
-          fulfillReservation(session.id, transaction.id)
-            .then(() => {
-              console.log(`✅ Reservation fulfilled for session: ${session.id}, transaction: ${transaction.id}`);
-            })
-            .catch(fulfillError => {
-              // Non-critical - tickets are already created
-              console.error(`❌ Reservation fulfillment failed for session: ${session.id}`, fulfillError);
-            });
+        console.log(`Webhook: Updated ${ticketUpdateResult.rowsAffected || 0} tickets to completed status`);
 
-          // Also try temp session ID if it exists in metadata
-          const tempSessionId = fullSession.metadata?.tempSessionId;
-          if (tempSessionId) {
-            fulfillReservation(tempSessionId, transaction.id)
-              .then(() => {
-                console.log(`✅ Temp reservation fulfilled for session: ${tempSessionId}, transaction: ${transaction.id}`);
-              })
-              .catch(fulfillError => {
-                console.error(`❌ Temp reservation fulfillment failed for session: ${tempSessionId}`, fulfillError);
-              });
-          }
-
-          // Log financial audit for successful payment
-          await logFinancialAudit({
-            requestId: `stripe_${event.id}`,
-            action: isTestTransaction ? 'TEST_PAYMENT_SUCCESSFUL' : 'PAYMENT_SUCCESSFUL',
-            amountCents: fullSession.amount_total,
-            currency: fullSession.currency?.toUpperCase() || 'USD',
-            transactionReference: transaction.uuid,
-            paymentStatus: 'completed',
-            targetType: 'stripe_session',
-            targetId: session.id,
-            metadata: {
-              stripe_event_id: event.id,
-              stripe_session_id: session.id,
-              payment_intent_id: fullSession.payment_intent,
-              customer_email: fullSession.customer_details?.email,
-              customer_name: fullSession.customer_details?.name,
-              payment_method_types: fullSession.payment_method_types,
-              mode: fullSession.mode,
-              line_items_count: fullSession.line_items?.data?.length || 0,
-              checkout_url: fullSession.url,
-              test_mode: isTestTransaction,
-              test_transaction: isTestTransaction,
-              tickets_created: result.created,
-              ticket_count: result.ticketCount
-            },
-            severity: isTestTransaction ? 'debug' : 'info'
+        // Update event logger with transaction ID (non-blocking)
+        paymentEventLogger.updateEventTransactionId(event.id, transaction.id)
+          .catch(error => {
+            console.error('Event logger transaction ID update failed (non-blocking):', error.message);
           });
 
-          // Return success - tickets were created or already existed
-          return res.json({ received: true, status: result.created ? 'created' : 'already_exists' });
+        // Fulfill reservation - mark as completed (fire-and-forget)
+        fulfillReservation(session.id, transaction.id)
+          .then(() => {
+            console.log(`✅ Reservation fulfilled for session: ${session.id}`);
+          })
+          .catch(fulfillError => {
+            console.error(`❌ Reservation fulfillment failed for session: ${session.id}`, fulfillError);
+          });
 
-        } catch (ticketError) {
-          console.error('Webhook: Failed to process checkout:', ticketError);
-          await paymentEventLogger.logError(event, ticketError);
-          throw ticketError; // Let top-level catch return non-2xx for retry
+        // Send attendee confirmation emails
+        try {
+          const emailService = getTicketEmailService();
+          const updatedTransaction = await transactionService.getByUUID(transaction.uuid);
+          await emailService.sendTicketConfirmation(updatedTransaction);
+          console.log(`Webhook: Sent confirmation emails for transaction ${transaction.uuid}`);
+        } catch (emailError) {
+          console.error('Webhook: Failed to send confirmation emails:', emailError);
+          // Don't fail webhook - emails can be resent
         }
+
+        // Log financial audit for successful payment
+        await logFinancialAudit({
+          requestId: `stripe_${event.id}`,
+          action: isTestTransaction ? 'TEST_PAYMENT_SUCCESSFUL' : 'PAYMENT_SUCCESSFUL',
+          amountCents: session.amount_total,
+          currency: session.currency?.toUpperCase() || 'USD',
+          transactionReference: transaction.uuid,
+          paymentStatus: 'completed',
+          targetType: 'stripe_session',
+          targetId: session.id,
+          metadata: {
+            stripe_event_id: event.id,
+            stripe_session_id: session.id,
+            payment_intent_id: session.payment_intent,
+            customer_email: session.customer_details?.email,
+            customer_name: session.customer_details?.name,
+            payment_method_types: session.payment_method_types,
+            mode: session.mode,
+            test_mode: isTestTransaction,
+            test_transaction: isTestTransaction
+          },
+          severity: isTestTransaction ? 'debug' : 'info'
+        });
+
+        // Return success
+        return res.json({ received: true, status: 'completed' });
+
       } catch (error) {
         console.error('Failed to process checkout session:', error);
         await paymentEventLogger.logError(event, error);
@@ -308,52 +274,72 @@ export default async function handler(req, res) {
 
       // Process similar to checkout.session.completed
       try {
-        const fullSession = await stripe.checkout.sessions.retrieve(
-          session.id,
-          {
-            expand: ['line_items', 'line_items.data.price.product']
-          }
-        );
+        // Find existing transaction by Stripe session ID
+        const db = await getDatabaseClient();
+        const txResult = await db.execute({
+          sql: 'SELECT * FROM transactions WHERE stripe_session_id = ? LIMIT 1',
+          args: [session.id]
+        });
 
-        // Use centralized ticket creation service for async payments too
-        try {
-          const result = await createOrRetrieveTickets(fullSession);
-          const transaction = result.transaction;
-
-          console.log(`Async payment: Transaction ${result.created ? 'created' : 'already exists'}: ${transaction.uuid}`);
-          console.log(`Async payment: ${result.ticketCount} tickets ${result.created ? 'created' : 'found'}`);
-
-          // Log financial audit for async payment success
-          await logFinancialAudit({
-            requestId: `stripe_${event.id}`,
-            action: isTestTransaction ? 'TEST_ASYNC_PAYMENT_SUCCESSFUL' : 'ASYNC_PAYMENT_SUCCESSFUL',
-            amountCents: fullSession.amount_total,
-            currency: fullSession.currency?.toUpperCase() || 'USD',
-            transactionReference: transaction.uuid,
-            paymentStatus: 'completed',
-            targetType: 'stripe_session',
-            targetId: session.id,
-            metadata: {
-              stripe_event_id: event.id,
-              stripe_session_id: session.id,
-              payment_intent_id: fullSession.payment_intent,
-              customer_email: fullSession.customer_details?.email,
-              customer_name: fullSession.customer_details?.name,
-              payment_method_types: fullSession.payment_method_types,
-              mode: fullSession.mode,
-              async_payment: true,
-              test_mode: isTestTransaction,
-              test_transaction: isTestTransaction,
-              tickets_created: result.created,
-              ticket_count: result.ticketCount
-            },
-            severity: isTestTransaction ? 'debug' : 'info'
-          });
-        } catch (ticketError) {
-          console.error('Failed to process async payment:', ticketError);
-          await paymentEventLogger.logError(event, ticketError);
-          throw ticketError; // Let top-level catch return non-2xx for retry
+        if (!txResult.rows || txResult.rows.length === 0) {
+          console.error('Transaction not found for async payment session:', session.id);
+          await paymentEventLogger.logError(event, new Error('Transaction not found'));
+          return res.json({ received: true, status: 'transaction_not_found' });
         }
+
+        const transaction = txResult.rows[0];
+        console.log(`Async payment: Found transaction ${transaction.uuid} for session ${session.id}`);
+
+        // Update transaction to completed
+        await db.execute({
+          sql: `UPDATE transactions
+                SET payment_status = ?, status = ?, completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?`,
+          args: ['completed', 'completed', transaction.id]
+        });
+
+        // Update all tickets to completed
+        await db.execute({
+          sql: `UPDATE tickets
+                SET registration_status = ?, registered_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+                WHERE transaction_id = ? AND registration_status = ?`,
+          args: ['completed', transaction.id, 'pending_payment']
+        });
+
+        // Send confirmation emails
+        try {
+          const emailService = getTicketEmailService();
+          const updatedTransaction = await transactionService.getByUUID(transaction.uuid);
+          await emailService.sendTicketConfirmation(updatedTransaction);
+          console.log(`Async payment: Sent confirmation emails for transaction ${transaction.uuid}`);
+        } catch (emailError) {
+          console.error('Async payment: Failed to send confirmation emails:', emailError);
+        }
+
+        // Log financial audit for async payment success
+        await logFinancialAudit({
+          requestId: `stripe_${event.id}`,
+          action: isTestTransaction ? 'TEST_ASYNC_PAYMENT_SUCCESSFUL' : 'ASYNC_PAYMENT_SUCCESSFUL',
+          amountCents: session.amount_total,
+          currency: session.currency?.toUpperCase() || 'USD',
+          transactionReference: transaction.uuid,
+          paymentStatus: 'completed',
+          targetType: 'stripe_session',
+          targetId: session.id,
+          metadata: {
+            stripe_event_id: event.id,
+            stripe_session_id: session.id,
+            payment_intent_id: session.payment_intent,
+            customer_email: session.customer_details?.email,
+            customer_name: session.customer_details?.name,
+            payment_method_types: session.payment_method_types,
+            mode: session.mode,
+            async_payment: true,
+            test_mode: isTestTransaction,
+            test_transaction: isTestTransaction
+          },
+          severity: isTestTransaction ? 'debug' : 'info'
+        });
       } catch (error) {
         console.error('Failed to process async payment:', error);
         await paymentEventLogger.logError(event, error);
