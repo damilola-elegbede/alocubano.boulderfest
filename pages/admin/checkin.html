@@ -2076,9 +2076,9 @@
           data-testid="ticket-info"
         ></div>
         <div class="countdown-timer" id="countdownTimer" style="display: none;">
-          Returning to scanner in <span id="countdownSeconds">12</span>s
+          Returning to scanner in <span id="countdownSeconds">30</span>s
         </div>
-        <button class="result-btn admin-btn admin-btn-primary" onclick="closeResult()">
+        <button class="result-btn" onclick="closeResult()" style="background: var(--color-blue) !important; color: #FFFFFF !important; border-color: var(--color-blue) !important;">
           Continue Scanning
         </button>
       </div>
@@ -2204,7 +2204,7 @@
       // Countdown timer variables for result modal
       let countdownInterval = null;
       let countdownTimeout = null;
-      let countdownSeconds = 10;
+      let countdownSeconds = 30;
 
       // Import timeManager
       import('/js/time-manager.js').then(module => {
@@ -4510,7 +4510,7 @@
         // Set content with test mode awareness
         if (type === "success") {
           content.className = `result-content success ${isTestScan ? 'test-scan-result' : ''}`;
-          icon.textContent = isTestScan ? "🧪" : "✅";
+          icon.textContent = "✅";  // Always use green checkmark for success
           content.setAttribute("data-testid", "checkin-success");
 
           // Multi-modal feedback for successful scan
@@ -4561,6 +4561,7 @@
           titleEl.style.display = 'none';
 
           // XSS Fix: Escape user-provided data before injecting into innerHTML
+          // Use green checkmark emoji for success (no beaker icon)
           detailsEl.innerHTML = `
             <div class="success-icon" style="font-size: 72px; margin-bottom: var(--space-lg);">✅</div>
             <div class="attendee-name">${escapeHtml(attendeeName)}</div>
@@ -4633,8 +4634,8 @@
           clearTimeout(countdownTimeout);
         }
 
-        // Reset countdown (12 seconds to display result)
-        countdownSeconds = 12;
+        // Reset countdown (30 seconds to display result)
+        countdownSeconds = 30;
         const countdownSecondsEl = document.getElementById("countdownSeconds");
         const countdownTimer = document.getElementById("countdownTimer");
 
