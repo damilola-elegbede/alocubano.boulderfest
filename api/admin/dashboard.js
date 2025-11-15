@@ -59,7 +59,7 @@ async function handler(req, res) {
       WITH ticket_stats AS (
         SELECT
           COUNT(*) FILTER (WHERE status = 'valid') as total_tickets,
-          COUNT(*) FILTER (WHERE last_scanned_at IS NOT NULL OR checked_in_at IS NOT NULL) as checked_in,
+          COUNT(*) FILTER (WHERE status = 'used') as checked_in,
           COUNT(DISTINCT transaction_id) as total_orders,
           COUNT(*) FILTER (WHERE ticket_type LIKE '%workshop%') as workshop_tickets,
           COUNT(*) FILTER (WHERE ticket_type LIKE '%vip%') as vip_tickets,
@@ -69,9 +69,9 @@ async function handler(req, res) {
           COUNT(*) FILTER (WHERE qr_access_method = 'google_wallet') as google_wallet_users,
           COUNT(*) FILTER (WHERE qr_access_method = 'web') as web_only_users,
           COUNT(*) FILTER (WHERE is_test = 1) as test_tickets,
-          COUNT(*) FILTER (WHERE (last_scanned_at IS NOT NULL OR checked_in_at IS NOT NULL)
-                           AND date(COALESCE(last_scanned_at, checked_in_at), ${mtOffset}) = date('now', ${mtOffset})) as today_checkins,
-          COUNT(*) FILTER (WHERE (last_scanned_at IS NOT NULL OR checked_in_at IS NOT NULL)
+          COUNT(*) FILTER (WHERE status = 'used'
+                           AND date(checked_in_at, ${mtOffset}) = date('now', ${mtOffset})) as today_checkins,
+          COUNT(*) FILTER (WHERE status = 'used'
                            AND qr_access_method IN ('apple_wallet', 'google_wallet', 'samsung_wallet')) as wallet_checkins
         FROM tickets
         WHERE 1=1 ${ticketWhereClause}

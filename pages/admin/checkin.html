@@ -652,12 +652,13 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(0, 0, 0, 0.95);
+        background: rgba(0, 0, 0, 0.3);
         display: none;
         align-items: center;
         justify-content: center;
-        z-index: var(--z-modal);
+        z-index: 10001; /* Higher than fullscreen scanner modal to overlay on camera */
         animation: fadeIn 0.3s ease-out;
+        pointer-events: none; /* Allow camera interaction beneath */
       }
 
       @keyframes fadeIn {
@@ -676,12 +677,19 @@
       .result-content {
         background: var(--color-white);
         border-radius: var(--radius-xl);
-        padding: var(--space-3xl);
+        padding: var(--space-xl);
         max-width: 90%;
         width: 350px;
+        min-height: 600px;
+        max-height: 85vh;
+        overflow-y: auto;
         text-align: center;
         animation: slideUp 0.3s ease-out;
         box-shadow: var(--shadow-2xl);
+        pointer-events: auto; /* Enable interaction with result card */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
       }
 
       @keyframes slideUp {
@@ -696,7 +704,7 @@
       }
 
       .result-content.success {
-        background: var(--color-success);
+        background: var(--color-success-700, #15803d);
         color: var(--color-white);
       }
 
@@ -705,9 +713,17 @@
         color: var(--color-white);
       }
 
+      .result-content.validating {
+        background: rgba(255, 255, 255, 0.95);
+        color: var(--color-text-primary);
+        border: 3px solid var(--color-blue);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+      }
+
       .result-icon {
-        font-size: 60px;
-        margin-bottom: var(--space-xl);
+        font-size: 48px;
+        margin-bottom: var(--space-md);
       }
 
       .result-title {
@@ -754,9 +770,9 @@
       }
 
       .result-btn {
-        background: rgba(255, 255, 255, 0.2) !important;
-        color: currentColor !important;
-        border: 2px solid rgba(255, 255, 255, 0.3) !important;
+        background: var(--color-blue) !important;
+        color: var(--color-white) !important;
+        border: 2px solid var(--color-blue) !important;
         padding: var(--space-md) var(--space-xl);
         border-radius: var(--radius-lg);
         font-family: var(--font-display);
@@ -765,28 +781,40 @@
         text-transform: uppercase;
         letter-spacing: var(--letter-spacing-wide);
         min-height: 44px;
+        cursor: pointer;
+        transition: all 0.2s ease;
       }
 
-      .result-content.success .result-btn {
-        background: rgba(255, 255, 255, 0.2) !important;
-        color: var(--color-white) !important;
-        border-color: rgba(255, 255, 255, 0.3) !important;
+      .result-btn:hover {
+        background: var(--color-primary-hover) !important;
+        border-color: var(--color-primary-hover) !important;
+        transform: translateY(-1px);
       }
 
-      .result-content.success .result-btn:hover {
-        background: rgba(255, 255, 255, 0.3) !important;
-        color: var(--color-white) !important;
+      /* Success modal specific styling */
+      .result-content.success .attendee-name {
+        font-size: var(--font-size-3xl);
+        font-weight: 700;
+        font-family: var(--font-display);
+        margin-bottom: var(--space-xs);
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
       }
 
-      .result-content.error .result-btn {
-        background: rgba(255, 255, 255, 0.2) !important;
-        color: var(--color-white) !important;
-        border-color: rgba(255, 255, 255, 0.3) !important;
+      .result-content.success .event-name {
+        font-size: calc(var(--font-size-3xl) * 0.8);
+        font-weight: 600;
+        font-family: var(--font-display);
+        opacity: 0.9;
+        margin-bottom: var(--space-lg);
       }
 
-      .result-content.error .result-btn:hover {
-        background: rgba(255, 255, 255, 0.3) !important;
-        color: var(--color-white) !important;
+      .result-content.success .scans-remaining {
+        font-size: calc(var(--font-size-3xl) * 0.4);
+        opacity: 0.7;
+        margin-top: var(--space-lg);
+        margin-bottom: var(--space-md);
+        font-family: var(--font-sans);
       }
 
       /* Checked-In Tickets Overlay */
@@ -2048,9 +2076,9 @@
           data-testid="ticket-info"
         ></div>
         <div class="countdown-timer" id="countdownTimer" style="display: none;">
-          Returning to scanner in <span id="countdownSeconds">10</span>s
+          Returning to scanner in <span id="countdownSeconds">30</span>s
         </div>
-        <button class="result-btn admin-btn admin-btn-primary" onclick="closeResult()">
+        <button class="result-btn" onclick="closeResult()" style="background: var(--color-blue) !important; color: #FFFFFF !important; border-color: var(--color-blue) !important;">
           Continue Scanning
         </button>
       </div>
@@ -2176,7 +2204,7 @@
       // Countdown timer variables for result modal
       let countdownInterval = null;
       let countdownTimeout = null;
-      let countdownSeconds = 10;
+      let countdownSeconds = 30;
 
       // Import timeManager
       import('/js/time-manager.js').then(module => {
@@ -2505,6 +2533,59 @@
         }
       };
 
+      // Audio feedback using Web Audio API
+      const audioFeedback = {
+        audioContext: null,
+        initialized: false,
+
+        init() {
+          if (this.initialized) return;
+          try {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            this.initialized = true;
+          } catch (error) {
+            console.warn('Web Audio API not supported:', error);
+          }
+        },
+
+        playBeep(frequency, duration, type = 'sine') {
+          if (!this.initialized) this.init();
+          if (!this.audioContext) return;
+
+          try {
+            const oscillator = this.audioContext.createOscillator();
+            const gainNode = this.audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(this.audioContext.destination);
+
+            oscillator.frequency.value = frequency;
+            oscillator.type = type;
+
+            // Fade out to prevent clicking
+            gainNode.gain.setValueAtTime(0.3, this.audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
+
+            oscillator.start(this.audioContext.currentTime);
+            oscillator.stop(this.audioContext.currentTime + duration);
+          } catch (error) {
+            console.warn('Error playing beep:', error);
+          }
+        },
+
+        playSuccess() {
+          // Pleasant ascending tone (C5 to E5)
+          this.playBeep(523, 0.1, 'sine');
+          setTimeout(() => this.playBeep(659, 0.1, 'sine'), 100);
+        },
+
+        playError() {
+          // Lower tone pattern (indicates error)
+          this.playBeep(200, 0.15, 'square');
+          setTimeout(() => this.playBeep(180, 0.15, 'square'), 150);
+        }
+      };
+
       // Memory and resource management
       const resourceManager = {
         videoElement: null,
@@ -2762,15 +2843,51 @@
         }
       }
 
-      // Get optimized scanner configuration for full-screen modal
+      /**
+       * Get optimized scanner configuration for full-screen modal
+       *
+       * TUNABLE SCANNING PARAMETERS:
+       *
+       * 1. qrbox - Scan region size [REMOVED]
+       *    Previous: 55% of viewport width, required precise QR alignment
+       *    Current: REMOVED - scans entire camera frame
+       *    Reason: Zero margin of error caused UX issues. QR codes had to be
+       *            precisely within box boundaries. Full-frame scanning is more
+       *            forgiving and matches user expectations.
+       *
+       * 2. fps - Frames per second for scanning
+       *    Current: 30 for Android, 20 for iOS
+       *    Impact: Higher = faster detection, more battery/CPU usage
+       *            Lower = slower detection, better battery life
+       *    Range: 5-30 fps (10 minimum recommended for good UX)
+       *
+       * 3. formatsToSupport - Barcode formats to detect
+       *    Current: QR_CODE only
+       *    Impact: Fewer formats = faster recognition
+       *            More formats = slower but more versatile
+       *    Options: QR_CODE, CODE_128, EAN_13, etc.
+       *
+       * OPTIONAL PARAMETERS (not currently used):
+       *
+       * - aspectRatio: Camera aspect ratio (default: 1.0)
+       * - videoConstraints: Advanced camera settings
+       *     { width: { min: 640, ideal: 1280, max: 1920 },
+       *       height: { min: 480, ideal: 720, max: 1080 },
+       *       facingMode: "environment" }
+       * - disableFlip: Skip horizontal flip detection (may speed up 2x)
+       * - experimentalFeatures.useBarCodeDetectorIfSupported:
+       *     Use native BarcodeDetector API (Chrome only, much faster)
+       * - qrbox: { width: number, height: number }
+       *     Restricts scanning to specific region (NOT recommended - zero tolerance)
+       */
       function getFullscreenScannerConfig() {
-        // Calculate responsive scan box size (80% of viewport width, max 500px)
-        const viewportWidth = window.innerWidth;
-        const scanBoxSize = Math.min(viewportWidth * 0.8, 500);
+        // No qrbox - scans entire camera frame for maximum detection area
+        // This eliminates the need for precise QR code alignment
 
         const config = {
-          // Large responsive scan region
-          qrbox: { width: scanBoxSize, height: scanBoxSize },
+          // qrbox removed - entire camera frame is now scannable
+          // Previous: Required QR code to be precisely within box boundaries
+          // Current: QR codes detected anywhere in camera view
 
           // FPS will be set below based on power mode
           fps: 30,
@@ -2780,10 +2897,9 @@
             ? [Html5QrcodeSupportedFormats.QR_CODE]
             : undefined,
 
-          // Simple camera constraints
-          videoConstraints: {
-            facingMode: "environment"
-          }
+          // Enable native BarcodeDetector API (Chrome/Edge only, 2-3x faster)
+          // Automatically falls back to ZXing.js on unsupported browsers
+          useBarCodeDetectorIfSupported: true
         };
 
         // Apply FPS based on power mode
@@ -2796,7 +2912,7 @@
 
         console.log('Full-screen scanner config:', {
           fps: config.fps,
-          qrbox: config.qrbox,
+          scanRegion: 'entire camera frame',
           formatsToSupport: 'QR_CODE only',
           isLowPowerMode: performanceMonitor.isLowPowerMode
         });
@@ -4106,6 +4222,40 @@
         // Ignore scan errors
       }
 
+      // CSRF Token Cache (5-minute TTL)
+      let cachedCSRFToken = null;
+      let csrfTokenExpiry = 0;
+
+      async function getCSRFToken() {
+        // Return cached token if still valid
+        if (cachedCSRFToken && Date.now() < csrfTokenExpiry) {
+          console.log('Using cached CSRF token');
+          return cachedCSRFToken;
+        }
+
+        // Fetch new token
+        try {
+          const response = await fetch("/api/admin/csrf-token", {
+            credentials: "include"
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+
+            // Cache for 5 minutes
+            cachedCSRFToken = data.token;
+            csrfTokenExpiry = Date.now() + (5 * 60 * 1000);
+
+            console.log('CSRF token fetched and cached');
+            return cachedCSRFToken;
+          }
+        } catch (error) {
+          console.log("Failed to fetch CSRF token:", error);
+        }
+
+        return null;
+      }
+
       // Validate ticket (QR code or JWT wallet token) with caching
       async function validateTicket(token) {
         const validationStartTime = performance.now();
@@ -4124,19 +4274,11 @@
           const isWalletToken = token.includes(".") && token.length > 100;
 
           // Scanner is event-agnostic - no event filtering
-          // Get CSRF token for admin operations (only if admin authenticated)
+          // Get CSRF token for admin operations (cached for 5 minutes)
           let headers = { "Content-Type": "application/json" };
-          try {
-            const csrfResponse = await fetch("/api/admin/csrf-token", {
-              credentials: "include"
-            });
-            if (csrfResponse.ok) {
-              const csrfData = await csrfResponse.json();
-              headers["X-CSRF-Token"] = csrfData.token;
-            }
-          } catch (error) {
-            // Not admin authenticated, continue without CSRF token
-            console.log("Not admin authenticated, continuing without CSRF token");
+          const csrfToken = await getCSRFToken();
+          if (csrfToken) {
+            headers["X-CSRF-Token"] = csrfToken;
           }
 
           const response = await fetch("/api/tickets/validate", {
@@ -4333,6 +4475,27 @@
         }
       }
 
+      // Show validating screen (optimistic UI - instant feedback)
+      function showValidatingScreen(token) {
+        const modal = document.getElementById("resultModal");
+        const content = document.getElementById("resultContent");
+        const icon = document.getElementById("resultIcon");
+        const titleEl = document.getElementById("resultTitle");
+        const detailsEl = document.getElementById("resultDetails");
+
+        // White screen with validating message
+        content.className = "result-content validating";
+        icon.textContent = "⏳";
+        titleEl.textContent = "VALIDATING";
+
+        // Show ticket ID from QR code
+        const displayToken = token.length > 20 ? token.substring(0, 20) + '...' : token;
+        detailsEl.textContent = `Ticket ID: ${displayToken}\n\nVerifying ticket...`;
+
+        // Show modal immediately
+        modal.classList.add("show");
+      }
+
       // Show result modal
       function showResult(type, title, details, isTestTicket = false, ticketId = null, walletSource = null) {
         const modal = document.getElementById("resultModal");
@@ -4347,42 +4510,70 @@
         // Set content with test mode awareness
         if (type === "success") {
           content.className = `result-content success ${isTestScan ? 'test-scan-result' : ''}`;
-          icon.textContent = isTestScan ? "🧪" : "✅";
+          icon.textContent = "✅";  // Always use green checkmark for success
           content.setAttribute("data-testid", "checkin-success");
 
-          // Haptic feedback for successful scan
+          // Multi-modal feedback for successful scan
           if (navigator.vibrate) {
-            navigator.vibrate([50, 30, 50]); // Double tap pattern
+            navigator.vibrate(200); // Short success buzz
           }
+          audioFeedback.playSuccess(); // Pleasant ascending tone
         } else if (type === "error") {
           content.className = `result-content error ${isTestScan ? 'test-scan-result' : ''}`;
           icon.textContent = isTestScan ? "🧪❌" : "❌";
           content.setAttribute("data-testid", "validation-error");
+
+          // Multi-modal feedback for error
+          if (navigator.vibrate) {
+            navigator.vibrate([100, 50, 100]); // Double buzz pattern
+          }
+          audioFeedback.playError(); // Error tone
         } else if (type === "queued") {
           content.className = `result-content ${isTestScan ? 'test-scan-result' : ''}`;
           icon.textContent = isTestScan ? "🧪📥" : "📥";
           content.setAttribute("data-testid", "network-error");
+
+          // Feedback for queued (network issue)
+          if (navigator.vibrate) {
+            navigator.vibrate([100, 50, 100]); // Same as error
+          }
+          audioFeedback.playError(); // Error tone (network issue)
         }
 
-        // Update title and details with test mode indicators
-        titleEl.textContent = isTestScan && !title.includes('🧪') ? `🧪 ${title}` : title;
-
-        // For success scans, enhance display with prominent attendee name
+        // For success scans, use clean focused layout
         if (type === 'success' && details.includes('\n')) {
           const lines = details.split('\n');
           const attendeeName = lines[0];
-          const otherDetails = lines.slice(1).join('\n');
+          const eventName = lines[1] || '';
+          const scanInfo = lines[2] || '';
+
+          // Calculate scans remaining
+          const scanMatch = scanInfo.match(/Scan (\d+)\/(\d+)/);
+          let scansRemaining = '';
+          if (scanMatch) {
+            const current = parseInt(scanMatch[1]);
+            const max = parseInt(scanMatch[2]);
+            const remaining = max - current;
+            scansRemaining = remaining > 0 ? `${remaining} scan${remaining === 1 ? '' : 's'} remaining` : 'No scans remaining';
+          }
+
+          // Hide title and icon, use custom layout with single large checkmark
+          titleEl.style.display = 'none';
+          icon.style.display = 'none';
 
           // XSS Fix: Escape user-provided data before injecting into innerHTML
+          // Use green checkmark emoji for success (no beaker icon)
           detailsEl.innerHTML = `
-            <div style="font-size: var(--font-size-xl); font-weight: 700; margin-bottom: var(--space-sm); font-family: var(--font-display);">
-              ${escapeHtml(attendeeName)}
-            </div>
-            <div style="opacity: 0.85;">
-              ${escapeHtml(otherDetails)}
-            </div>
+            <div class="success-icon" style="font-size: 72px; margin-bottom: var(--space-lg);">✅</div>
+            <div class="attendee-name">${escapeHtml(attendeeName)}</div>
+            <div class="event-name">${escapeHtml(eventName)}</div>
+            ${scansRemaining ? `<div class="scans-remaining">${escapeHtml(scansRemaining)}</div>` : ''}
           `;
         } else {
+          // For error and other states, show title and icon normally
+          titleEl.style.display = '';
+          icon.style.display = '';
+          titleEl.textContent = isTestScan && !title.includes('🧪') ? `🧪 ${title}` : title;
           detailsEl.textContent = details;
         }
 
@@ -4422,6 +4613,17 @@
         }
 
         document.getElementById("resultModal").classList.remove("show");
+
+        // Resume visual scanning state (scanner never stopped)
+        if (fullscreenScanner && document.getElementById('fullscreenScannerModal').classList.contains('active')) {
+          const scanRegion = document.getElementById('fullscreenScanRegion');
+          if (scanRegion) {
+            scanRegion.classList.remove('locked');
+            scanRegion.classList.add('scanning');
+          }
+          // Ensure scanning flag is set (should already be true)
+          isFullscreenScanning = true;
+        }
       }
 
       // Start countdown for result modal auto-close
@@ -4434,8 +4636,8 @@
           clearTimeout(countdownTimeout);
         }
 
-        // Reset countdown
-        countdownSeconds = 10;
+        // Reset countdown (30 seconds to display result)
+        countdownSeconds = 30;
         const countdownSecondsEl = document.getElementById("countdownSeconds");
         const countdownTimer = document.getElementById("countdownTimer");
 
@@ -4462,7 +4664,7 @@
               countdownInterval = null;
             }
             closeResult();
-          }, 10000);
+          }, 12000);
         }
       }
 
@@ -4539,6 +4741,8 @@
       async function onFullscreenScanSuccess(decodedText) {
         if (!isFullscreenScanning) return;
 
+        // PAUSE scanner to prevent duplicate scans during result display
+        // This prevents hitting scan limits by rescanning the same QR code
         isFullscreenScanning = false;
 
         const scanRegion = document.getElementById('fullscreenScanRegion');
@@ -4552,19 +4756,24 @@
           navigator.vibrate(200);
         }
 
-        // Validate ticket
-        try {
-          await validateTicket(extractTokenFromQR(decodedText));
+        // Extract token from QR code
+        const token = extractTokenFromQR(decodedText);
 
-          // Close scanner after short delay
-          setTimeout(async () => {
-            await closeFullscreenScanner();
-          }, 500);
+        // OPTIMISTIC UI: Show white validating screen IMMEDIATELY
+        showValidatingScreen(token);
+
+        // Validate ticket in background - result will update the screen
+        try {
+          await validateTicket(token);
+          // Scanner paused, will resume when result dismisses after 12 seconds
 
         } catch (error) {
           console.error('Validation error:', error);
 
-          // Resume scanning after error
+          // Show error result
+          showResult("error", "Validation Failed", error.message);
+
+          // Resume scanning after error (2 second delay)
           setTimeout(() => {
             isFullscreenScanning = true;
             scanRegion.classList.remove('locked');

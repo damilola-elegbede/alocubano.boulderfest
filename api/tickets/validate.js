@@ -382,14 +382,17 @@ async function validateTicket(db, validationCode, source, isJWT = false) {
         throw new Error('Ticket not found');
       }
 
-      // Check ticket status
-      if (ticket.status !== 'valid') {
+      // Check ticket status - allow 'valid' or 'used' (scan limit check below will handle rescans)
+      if (ticket.status !== 'valid' && ticket.status !== 'used') {
         throw new Error(`Ticket is ${ticket.status}`);
       }
 
       // Check validation status
       if (ticket.validation_status !== 'active') {
-        throw new Error(`Ticket validation is ${ticket.validation_status}`);
+        const message = ticket.validation_status === 'expired'
+          ? 'Ticket expired - event has ended'
+          : `Ticket validation is ${ticket.validation_status}`;
+        throw new Error(message);
       }
 
       // Check if event has ended
@@ -412,12 +415,14 @@ async function validateTicket(db, validationCode, source, isJWT = false) {
         sql: `
           UPDATE tickets
           SET scan_count = scan_count + 1,
+              status = 'used',
+              checked_in_at = COALESCE(checked_in_at, CURRENT_TIMESTAMP),
               qr_access_method = ?,
               first_scanned_at = COALESCE(first_scanned_at, CURRENT_TIMESTAMP),
               last_scanned_at = CURRENT_TIMESTAMP
           WHERE ${updateField} = ?
             AND scan_count < max_scan_count
-            AND status = 'valid'
+            AND status IN ('valid', 'used')
             AND validation_status = 'active'
         `,
         args: [source, validationCode]
@@ -908,12 +913,16 @@ async function handler(req, res) {
         throw new Error('Ticket not found');
       }
 
-      if (ticket.status !== 'valid') {
+      // Check ticket status - allow 'valid' or 'used' (matching main validation path)
+      if (ticket.status !== 'valid' && ticket.status !== 'used') {
         throw new Error(`Ticket is ${ticket.status}`);
       }
 
       if (ticket.validation_status !== 'active') {
-        throw new Error(`Ticket validation is ${ticket.validation_status}`);
+        const message = ticket.validation_status === 'expired'
+          ? 'Ticket expired - event has ended'
+          : `Ticket validation is ${ticket.validation_status}`;
+        throw new Error(message);
       }
 
       if (isEventEnded(ticket)) {
