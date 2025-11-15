@@ -680,12 +680,16 @@
         padding: var(--space-xl);
         max-width: 90%;
         width: 350px;
+        min-height: 600px;
         max-height: 85vh;
         overflow-y: auto;
         text-align: center;
         animation: slideUp 0.3s ease-out;
         box-shadow: var(--shadow-2xl);
         pointer-events: auto; /* Enable interaction with result card */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
       }
 
       @keyframes slideUp {
@@ -766,9 +770,9 @@
       }
 
       .result-btn {
-        background: rgba(255, 255, 255, 0.9) !important;
-        color: var(--color-text-primary) !important;
-        border: 2px solid rgba(255, 255, 255, 1) !important;
+        background: var(--color-blue) !important;
+        color: var(--color-white) !important;
+        border: 2px solid var(--color-blue) !important;
         padding: var(--space-md) var(--space-xl);
         border-radius: var(--radius-lg);
         font-family: var(--font-display);
@@ -777,28 +781,40 @@
         text-transform: uppercase;
         letter-spacing: var(--letter-spacing-wide);
         min-height: 44px;
+        cursor: pointer;
+        transition: all 0.2s ease;
       }
 
-      .result-content.success .result-btn {
-        background: rgba(255, 255, 255, 0.9) !important;
-        color: var(--color-success-700, #15803d) !important;
-        border-color: rgba(255, 255, 255, 1) !important;
+      .result-btn:hover {
+        background: var(--color-primary-hover) !important;
+        border-color: var(--color-primary-hover) !important;
+        transform: translateY(-1px);
       }
 
-      .result-content.success .result-btn:hover {
-        background: rgba(255, 255, 255, 1) !important;
-        color: var(--color-success-700, #15803d) !important;
+      /* Success modal specific styling */
+      .result-content.success .attendee-name {
+        font-size: var(--font-size-3xl);
+        font-weight: 700;
+        font-family: var(--font-display);
+        margin-bottom: var(--space-xs);
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
       }
 
-      .result-content.error .result-btn {
-        background: rgba(255, 255, 255, 0.9) !important;
-        color: var(--color-error) !important;
-        border-color: rgba(255, 255, 255, 1) !important;
+      .result-content.success .event-name {
+        font-size: calc(var(--font-size-3xl) * 0.8);
+        font-weight: 600;
+        font-family: var(--font-display);
+        opacity: 0.9;
+        margin-bottom: var(--space-lg);
       }
 
-      .result-content.error .result-btn:hover {
-        background: rgba(255, 255, 255, 1) !important;
-        color: var(--color-error) !important;
+      .result-content.success .scans-remaining {
+        font-size: calc(var(--font-size-3xl) * 0.4);
+        opacity: 0.7;
+        margin-top: var(--space-lg);
+        margin-bottom: var(--space-md);
+        font-family: var(--font-sans);
       }
 
       /* Checked-In Tickets Overlay */
@@ -4524,25 +4540,37 @@
           audioFeedback.playError(); // Error tone (network issue)
         }
 
-        // Update title and details with test mode indicators
-        titleEl.textContent = isTestScan && !title.includes('🧪') ? `🧪 ${title}` : title;
-
-        // For success scans, enhance display with prominent attendee name
+        // For success scans, use clean focused layout
         if (type === 'success' && details.includes('\n')) {
           const lines = details.split('\n');
           const attendeeName = lines[0];
-          const otherDetails = lines.slice(1).join('\n');
+          const eventName = lines[1] || '';
+          const scanInfo = lines[2] || '';
+
+          // Calculate scans remaining
+          const scanMatch = scanInfo.match(/Scan (\d+)\/(\d+)/);
+          let scansRemaining = '';
+          if (scanMatch) {
+            const current = parseInt(scanMatch[1]);
+            const max = parseInt(scanMatch[2]);
+            const remaining = max - current;
+            scansRemaining = remaining > 0 ? `${remaining} scan${remaining === 1 ? '' : 's'} remaining` : 'No scans remaining';
+          }
+
+          // Hide title, use custom layout
+          titleEl.style.display = 'none';
 
           // XSS Fix: Escape user-provided data before injecting into innerHTML
           detailsEl.innerHTML = `
-            <div style="font-size: var(--font-size-xl); font-weight: 700; margin-bottom: var(--space-sm); font-family: var(--font-display);">
-              ${escapeHtml(attendeeName)}
-            </div>
-            <div style="opacity: 0.85;">
-              ${escapeHtml(otherDetails)}
-            </div>
+            <div class="success-icon" style="font-size: 72px; margin-bottom: var(--space-lg);">✅</div>
+            <div class="attendee-name">${escapeHtml(attendeeName)}</div>
+            <div class="event-name">${escapeHtml(eventName)}</div>
+            ${scansRemaining ? `<div class="scans-remaining">${escapeHtml(scansRemaining)}</div>` : ''}
           `;
         } else {
+          // For error and other states, show title normally
+          titleEl.style.display = '';
+          titleEl.textContent = isTestScan && !title.includes('🧪') ? `🧪 ${title}` : title;
           detailsEl.textContent = details;
         }
 

@@ -389,7 +389,10 @@ async function validateTicket(db, validationCode, source, isJWT = false) {
 
       // Check validation status
       if (ticket.validation_status !== 'active') {
-        throw new Error(`Ticket validation is ${ticket.validation_status}`);
+        const message = ticket.validation_status === 'expired'
+          ? 'Ticket expired - event has ended'
+          : `Ticket validation is ${ticket.validation_status}`;
+        throw new Error(message);
       }
 
       // Check if event has ended
@@ -915,7 +918,10 @@ async function handler(req, res) {
       }
 
       if (ticket.validation_status !== 'active') {
-        throw new Error(`Ticket validation is ${ticket.validation_status}`);
+        const message = ticket.validation_status === 'expired'
+          ? 'Ticket expired - event has ended'
+          : `Ticket validation is ${ticket.validation_status}`;
+        throw new Error(message);
       }
 
       if (isEventEnded(ticket)) {

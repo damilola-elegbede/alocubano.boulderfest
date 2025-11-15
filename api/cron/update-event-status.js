@@ -104,6 +104,8 @@ export default async function handler(req, res) {
 
     const completedCount = completeResult.rowsAffected || 0;
 
+    let ticketsExpiredCount = 0;
+
     if (completedCount > 0) {
       // Log which events were completed
       const completedEvents = await db.execute({
@@ -126,6 +128,30 @@ export default async function handler(req, res) {
           endDate: e.end_date
         }))
       });
+
+      // Expire tickets for completed events (1 day after event end)
+      // Only expire tickets with status 'valid' or 'used'
+      const expireTicketsResult = await db.execute({
+        sql: `
+          UPDATE tickets
+          SET validation_status = 'expired', updated_at = CURRENT_TIMESTAMP
+          WHERE event_id IN (
+            SELECT id FROM events
+            WHERE status = 'completed'
+              AND date(end_date) < date(?)
+              AND id > 0
+          )
+          AND status IN ('valid', 'used')
+          AND validation_status != 'expired'
+        `,
+        args: [currentDateMT]
+      });
+
+      ticketsExpiredCount = expireTicketsResult.rowsAffected || 0;
+
+      if (ticketsExpiredCount > 0) {
+        logger.info(`Expired ${ticketsExpiredCount} ticket(s) for completed events`);
+      }
     }
 
     const duration = Date.now() - startTime;
@@ -133,6 +159,7 @@ export default async function handler(req, res) {
     logger.info('Event status updates completed:', {
       activatedCount,
       completedCount,
+      ticketsExpiredCount,
       duration: `${duration}ms`
     });
 
@@ -140,7 +167,8 @@ export default async function handler(req, res) {
       success: true,
       updates: {
         activated: activatedCount,
-        completed: completedCount
+        completed: completedCount,
+        tickets_expired: ticketsExpiredCount
       },
       currentDateMT,
       duration: `${duration}ms`,

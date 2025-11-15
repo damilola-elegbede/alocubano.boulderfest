@@ -530,3 +530,182 @@ test('should handle database errors gracefully', async () => {
   expect(response.data.success).toBe(false);
   expect(response.data).toHaveProperty('error');
 });
+
+test('should expire tickets when event completes', async () => {
+  const db = await getDbClient();
+
+  // Create an event that ended yesterday
+  const eventResult = await db.execute({
+    sql: `INSERT INTO events (
+      slug, name, type, status, start_date, end_date,
+      venue_name, venue_city, venue_state, venue_address
+    ) VALUES (?, ?, ?, ?, date('now', '-3 days'), date('now', '-1 day'), ?, ?, ?, ?)`,
+    args: [
+      'expire-tickets-event',
+      'Expire Tickets Test Event',
+      'festival',
+      'active',
+      'Test Venue',
+      'Boulder',
+      'CO',
+      '123 Test St'
+    ]
+  });
+
+  // Get the event ID
+  const eventId = eventResult.lastInsertRowid;
+
+  // Create a transaction for the tickets
+  const txResult = await db.execute({
+    sql: `INSERT INTO transactions (
+      uuid, customer_email, amount_total, payment_status,
+      payment_processor, created_at
+    ) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+    args: ['test-tx-expire-123', 'test@example.com', 5000, 'paid', 'stripe']
+  });
+
+  const transactionId = txResult.lastInsertRowid;
+
+  // Create tickets with different statuses
+  await db.execute({
+    sql: `INSERT INTO tickets (
+      ticket_id, transaction_id, event_id, ticket_type_id,
+      first_name, last_name, attendee_email,
+      status, validation_status, validation_code,
+      event_date, event_end_date
+    ) VALUES
+      (?, ?, ?, 1, 'John', 'Valid', 'john@example.com', 'valid', 'active', 'CODE1', date('now', '-1 day'), date('now', '-1 day')),
+      (?, ?, ?, 1, 'Jane', 'Used', 'jane@example.com', 'used', 'active', 'CODE2', date('now', '-1 day'), date('now', '-1 day')),
+      (?, ?, ?, 1, 'Bob', 'Cancelled', 'bob@example.com', 'cancelled', 'active', 'CODE3', date('now', '-1 day'), date('now', '-1 day')),
+      (?, ?, ?, 1, 'Alice', 'Refunded', 'alice@example.com', 'refunded', 'active', 'CODE4', date('now', '-1 day'), date('now', '-1 day'))`,
+    args: [
+      'TICKET-VALID-1', transactionId, eventId,
+      'TICKET-USED-1', transactionId, eventId,
+      'TICKET-CANCELLED-1', transactionId, eventId,
+      'TICKET-REFUNDED-1', transactionId, eventId
+    ]
+  });
+
+  // Run the cron job
+  const response = await testApiHandler(
+    'api/cron/update-event-status',
+    'POST',
+    '/api/cron/update-event-status',
+    null,
+    {
+      'Authorization': `Bearer ${CRON_SECRET}`
+    }
+  );
+
+  expect(response.status).toBe(HTTP_STATUS.OK);
+  expect(response.data.success).toBe(true);
+  expect(response.data.updates.completed).toBe(1);
+  expect(response.data.updates.tickets_expired).toBe(2); // Only 'valid' and 'used' tickets
+
+  // Verify event status
+  const eventCheck = await db.execute({
+    sql: 'SELECT status FROM events WHERE slug = ?',
+    args: ['expire-tickets-event']
+  });
+  expect(eventCheck.rows[0].status).toBe('completed');
+
+  // Verify ticket validation_status updates
+  const ticketsCheck = await db.execute({
+    sql: `SELECT ticket_id, status, validation_status
+          FROM tickets
+          WHERE transaction_id = ?
+          ORDER BY ticket_id`,
+    args: [transactionId]
+  });
+
+  expect(ticketsCheck.rows).toHaveLength(4);
+
+  // Valid ticket should be expired
+  expect(ticketsCheck.rows[0].validation_status).toBe('expired');
+
+  // Used ticket should be expired
+  expect(ticketsCheck.rows[1].validation_status).toBe('expired');
+
+  // Cancelled ticket should remain active (not expired)
+  expect(ticketsCheck.rows[2].validation_status).toBe('active');
+
+  // Refunded ticket should remain active (not expired)
+  expect(ticketsCheck.rows[3].validation_status).toBe('active');
+});
+
+test('should not expire tickets twice (idempotent)', async () => {
+  const db = await getDbClient();
+
+  // Create an event that ended yesterday
+  const eventResult = await db.execute({
+    sql: `INSERT INTO events (
+      slug, name, type, status, start_date, end_date,
+      venue_name, venue_city, venue_state, venue_address
+    ) VALUES (?, ?, ?, ?, date('now', '-3 days'), date('now', '-1 day'), ?, ?, ?, ?)`,
+    args: [
+      'idempotent-expire-event',
+      'Idempotent Expire Test',
+      'festival',
+      'active',
+      'Test Venue',
+      'Boulder',
+      'CO',
+      '123 Test St'
+    ]
+  });
+
+  const eventId = eventResult.lastInsertRowid;
+
+  const txResult = await db.execute({
+    sql: `INSERT INTO transactions (
+      uuid, customer_email, amount_total, payment_status,
+      payment_processor, created_at
+    ) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+    args: ['test-tx-idem-456', 'test2@example.com', 5000, 'paid', 'stripe']
+  });
+
+  const transactionId = txResult.lastInsertRowid;
+
+  await db.execute({
+    sql: `INSERT INTO tickets (
+      ticket_id, transaction_id, event_id, ticket_type_id,
+      first_name, last_name, attendee_email,
+      status, validation_status, validation_code,
+      event_date, event_end_date
+    ) VALUES (?, ?, ?, 1, 'Test', 'User', 'test@example.com', 'valid', 'active', 'CODE5', date('now', '-1 day'), date('now', '-1 day'))`,
+    args: ['TICKET-IDEM-1', transactionId, eventId]
+  });
+
+  // First run
+  const response1 = await testApiHandler(
+    'api/cron/update-event-status',
+    'POST',
+    '/api/cron/update-event-status',
+    null,
+    {
+      'Authorization': `Bearer ${CRON_SECRET}`
+    }
+  );
+
+  expect(response1.data.updates.tickets_expired).toBe(1);
+
+  // Second run - should not expire again
+  const response2 = await testApiHandler(
+    'api/cron/update-event-status',
+    'POST',
+    '/api/cron/update-event-status',
+    null,
+    {
+      'Authorization': `Bearer ${CRON_SECRET}`
+    }
+  );
+
+  expect(response2.data.updates.tickets_expired).toBe(0);
+
+  // Verify ticket is still expired (not changed)
+  const ticketCheck = await db.execute({
+    sql: 'SELECT validation_status FROM tickets WHERE ticket_id = ?',
+    args: ['TICKET-IDEM-1']
+  });
+  expect(ticketCheck.rows[0].validation_status).toBe('expired');
+});
