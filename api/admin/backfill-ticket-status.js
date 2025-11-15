@@ -24,6 +24,14 @@ import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
 import { withAdminAudit } from '../../lib/admin-audit-middleware.js';
 
 async function handler(req, res) {
+  // Production environment guard
+  if (process.env.NODE_ENV !== 'production') {
+    return res.status(403).json({
+      error: 'This endpoint is disabled outside production',
+      message: 'Backfill operations can only be executed in production environment'
+    });
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -38,8 +46,8 @@ async function handler(req, res) {
     // 4. Check current state
     const preCheck = await db.execute(`
       SELECT
-        COUNT(*) FILTER (WHERE scan_count > 0 AND status = 'valid') as needs_update,
-        COUNT(*) FILTER (WHERE scan_count > 0 AND status = 'used') as already_updated
+        SUM(CASE WHEN scan_count > 0 AND status = 'valid' THEN 1 ELSE 0 END) AS needs_update,
+        SUM(CASE WHEN scan_count > 0 AND status = 'used' THEN 1 ELSE 0 END) AS already_updated
       FROM tickets
     `);
 
@@ -80,9 +88,9 @@ async function handler(req, res) {
     // 7. Verify results
     const verification = await db.execute(`
       SELECT
-        COUNT(*) FILTER (WHERE scan_count > 0 AND status = 'valid') as still_needs_update,
-        COUNT(*) FILTER (WHERE scan_count > 0 AND status = 'used') as now_updated,
-        COUNT(*) FILTER (WHERE checked_in_at IS NOT NULL) as has_checked_in
+        SUM(CASE WHEN scan_count > 0 AND status = 'valid' THEN 1 ELSE 0 END) AS still_needs_update,
+        SUM(CASE WHEN scan_count > 0 AND status = 'used' THEN 1 ELSE 0 END) AS now_updated,
+        SUM(CASE WHEN checked_in_at IS NOT NULL THEN 1 ELSE 0 END) AS has_checked_in
       FROM tickets
       WHERE scan_count > 0
     `);
