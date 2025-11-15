@@ -316,7 +316,7 @@ async function createPendingTransaction(client, { cartItems, customerInfo, regis
           ticketType.ticket_type_name,
           ticketType.event_id,
           item.price_cents,
-          'active',
+          'valid',
           registration.firstName,
           registration.lastName,
           registration.email,

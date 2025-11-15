@@ -45,7 +45,7 @@ CREATE TABLE tickets_new (
     ticket_type TEXT NOT NULL,
     event_id INTEGER NOT NULL,
     price_cents INTEGER NOT NULL,
-    status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'cancelled', 'refunded', 'upgraded', 'unavailable')),
+    status TEXT NOT NULL DEFAULT 'valid' CHECK (status IN ('valid', 'used', 'cancelled', 'refunded', 'transferred', 'flagged_for_review')),
 
     -- Attendee Information (now collected during checkout)
     attendee_first_name TEXT,
