@@ -913,7 +913,8 @@ async function handler(req, res) {
         throw new Error('Ticket not found');
       }
 
-      if (ticket.status !== 'valid') {
+      // Check ticket status - allow 'valid' or 'used' (matching main validation path)
+      if (ticket.status !== 'valid' && ticket.status !== 'used') {
         throw new Error(`Ticket is ${ticket.status}`);
       }
 

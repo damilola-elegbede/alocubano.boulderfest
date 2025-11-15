@@ -4557,8 +4557,9 @@
             scansRemaining = remaining > 0 ? `${remaining} scan${remaining === 1 ? '' : 's'} remaining` : 'No scans remaining';
           }
 
-          // Hide title, use custom layout
+          // Hide title and icon, use custom layout with single large checkmark
           titleEl.style.display = 'none';
+          icon.style.display = 'none';
 
           // XSS Fix: Escape user-provided data before injecting into innerHTML
           // Use green checkmark emoji for success (no beaker icon)
@@ -4569,8 +4570,9 @@
             ${scansRemaining ? `<div class="scans-remaining">${escapeHtml(scansRemaining)}</div>` : ''}
           `;
         } else {
-          // For error and other states, show title normally
+          // For error and other states, show title and icon normally
           titleEl.style.display = '';
+          icon.style.display = '';
           titleEl.textContent = isTestScan && !title.includes('🧪') ? `🧪 ${title}` : title;
           detailsEl.textContent = details;
         }

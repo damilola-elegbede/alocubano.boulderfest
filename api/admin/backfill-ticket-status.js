@@ -18,48 +18,21 @@
  */
 
 import { getDatabaseClient } from '../../lib/database.js';
-import { verifyAdminToken } from '../../lib/session-manager.js';
-import { getCorsHeaders } from '../../lib/cors-config.js';
+import authService from '../../lib/auth-service.js';
+import csrfService from '../../lib/csrf-service.js';
+import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
+import { withAdminAudit } from '../../lib/admin-audit-middleware.js';
 
-export default async function handler(req, res) {
-  // CORS headers
-  const corsHeaders = getCorsHeaders(req);
-  Object.entries(corsHeaders).forEach(([key, value]) => {
-    res.setHeader(key, value);
-  });
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
+async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    // 1. Verify admin authentication
-    const cookies = req.headers.cookie || '';
-    const sessionToken = cookies
-      .split(';')
-      .find(c => c.trim().startsWith('admin_session='))
-      ?.split('=')[1];
+    // Admin user already verified by authService middleware
+    const adminUser = req.admin;
 
-    if (!sessionToken) {
-      return res.status(401).json({ error: 'Unauthorized - no session' });
-    }
-
-    const adminUser = verifyAdminToken(sessionToken);
-    if (!adminUser) {
-      return res.status(401).json({ error: 'Unauthorized - invalid session' });
-    }
-
-    // 2. Verify CSRF token
-    const csrfToken = req.headers['x-csrf-token'];
-    if (!csrfToken) {
-      return res.status(403).json({ error: 'CSRF token required' });
-    }
-
-    // 3. Get database client
+    // Get database client
     const db = await getDatabaseClient();
 
     // 4. Check current state
@@ -145,3 +118,22 @@ export default async function handler(req, res) {
     });
   }
 }
+
+// Build middleware chain for security and audit
+const securedHandler = withSecurityHeaders(
+  withAdminAudit(
+    authService.requireAuth(
+      csrfService.validateCSRF(handler, {
+        skipOriginValidation: false,
+        requireHttps: process.env.NODE_ENV === 'production'
+      })
+    ),
+    {
+      logBody: true,
+      logMetadata: true,
+      skipMethods: []
+    }
+  )
+);
+
+export default securedHandler;

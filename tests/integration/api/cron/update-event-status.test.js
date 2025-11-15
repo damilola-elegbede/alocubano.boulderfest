@@ -613,24 +613,29 @@ test('should expire tickets when event completes', async () => {
   const ticketsCheck = await db.execute({
     sql: `SELECT ticket_id, status, validation_status
           FROM tickets
-          WHERE transaction_id = ?
-          ORDER BY ticket_id`,
+          WHERE transaction_id = ?`,
     args: [transactionId]
   });
 
   expect(ticketsCheck.rows).toHaveLength(4);
 
+  // Convert to map for reliable assertions (no reliance on sort order)
+  const ticketMap = {};
+  ticketsCheck.rows.forEach(row => {
+    ticketMap[row.ticket_id] = row;
+  });
+
   // Valid ticket should be expired
-  expect(ticketsCheck.rows[0].validation_status).toBe('expired');
+  expect(ticketMap['TICKET-VALID-1'].validation_status).toBe('expired');
 
   // Used ticket should be expired
-  expect(ticketsCheck.rows[1].validation_status).toBe('expired');
+  expect(ticketMap['TICKET-USED-1'].validation_status).toBe('expired');
 
   // Cancelled ticket should remain active (not expired)
-  expect(ticketsCheck.rows[2].validation_status).toBe('active');
+  expect(ticketMap['TICKET-CANCELLED-1'].validation_status).toBe('active');
 
   // Refunded ticket should remain active (not expired)
-  expect(ticketsCheck.rows[3].validation_status).toBe('active');
+  expect(ticketMap['TICKET-REFUNDED-1'].validation_status).toBe('active');
 });
 
 test('should not expire tickets twice (idempotent)', async () => {
