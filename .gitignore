@@ -97,6 +97,7 @@ k6-report.html
 .env.local
 .env.*.local
 .env.vercel
+.env.vercel.*
 .env.production
 
 # Apple private keys - NEVER commit these!
