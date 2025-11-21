@@ -57,12 +57,14 @@ export default defineConfig({
     // Unit test specific setup (UNIT-ONLY)
     setupFiles: [
       './tests/setup-unit.js',        // General unit test setup
-      './tests/setup-happy-dom.js'    // Happy-DOM environment setup for frontend tests
+      './tests/setup-happy-dom.js',   // Happy-DOM environment setup for frontend tests
+      './tests/setup-react.js'        // React Testing Library setup
     ],
     globals: true,
 
     // Include ONLY unit tests (Integration and E2E excluded)
-    include: ['tests/unit/**/*.test.js'],
+    // Supports both .js and .jsx test files for React components
+    include: ['tests/unit/**/*.test.js', 'tests/unit/**/*.test.jsx'],
     exclude: [
       'node_modules/**',
       'tests/e2e/**',         // E2E tests excluded (disabled)
@@ -81,12 +83,13 @@ export default defineConfig({
       forks: {
         singleFork: false,      // Use multiple forks for parallelism
         isolate: true,          // Isolate tests for safety
-        execArgv: ['--max-old-space-size=4096']  // Match CI: 4GB memory
+        execArgv: ['--max-old-space-size=2048'],  // Optimized: 2GB (reduced from 4GB)
+        exitTimeout: 5000       // Force kill hanging workers after 5 seconds
       }
     },
 
-    // Match CI concurrency settings
-    maxConcurrency: 4,  // Match CI exactly
+    // Optimized concurrency to prevent CPU/memory saturation
+    maxConcurrency: 2,  // Reduced from 4 to improve stability
 
     // Zero retry for maximum speed (unit tests should be deterministic)
     retry: 0,
