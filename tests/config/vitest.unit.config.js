@@ -57,12 +57,14 @@ export default defineConfig({
     // Unit test specific setup (UNIT-ONLY)
     setupFiles: [
       './tests/setup-unit.js',        // General unit test setup
-      './tests/setup-happy-dom.js'    // Happy-DOM environment setup for frontend tests
+      './tests/setup-happy-dom.js',   // Happy-DOM environment setup for frontend tests
+      './tests/setup-react.js'        // React Testing Library setup
     ],
     globals: true,
 
     // Include ONLY unit tests (Integration and E2E excluded)
-    include: ['tests/unit/**/*.test.js'],
+    // Supports both .js and .jsx test files for React components
+    include: ['tests/unit/**/*.test.js', 'tests/unit/**/*.test.jsx'],
     exclude: [
       'node_modules/**',
       'tests/e2e/**',         // E2E tests excluded (disabled)
