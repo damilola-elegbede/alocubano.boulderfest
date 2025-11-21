@@ -14,6 +14,10 @@
   "scripts": {
     "postinstall": "node scripts/install-git-hooks.js",
     "build": "NODE_OPTIONS='--max-old-space-size=1024' node scripts/build.js",
+    "build:vite": "vite build",
+    "build:inject": "node scripts/inject-vite-assets.js",
+    "build:inject:rollback": "node scripts/inject-vite-assets.js --rollback",
+    "build:full": "npm run build:vite && npm run build:inject",
     "build:css": "node scripts/bundle-css.js",
     "dev": "node scripts/dev-server.js",
     "start": "npm run dev",
@@ -91,6 +95,7 @@
     "@babel/core": "^7.28.3",
     "@babel/preset-env": "^7.28.3",
     "@playwright/test": "^1.55.0",
+    "@vitejs/plugin-react": "^5.1.1",
     "@vitest/coverage-v8": "^3.2.4",
     "axe-playwright": "^2.2.2",
     "better-sqlite3": "^12.2.0",
@@ -106,7 +111,10 @@
     "ngrok": "^5.0.0-beta.2",
     "nodemon": "^3.1.10",
     "prettier": "^3.6.2",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
     "vercel": "^48.2.9",
+    "vite": "^7.2.4",
     "vitest": "^3.2.4"
   },
   "optionalDependencies": {
