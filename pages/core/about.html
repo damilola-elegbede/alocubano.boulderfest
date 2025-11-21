@@ -160,7 +160,13 @@
     <link rel="stylesheet" href="/css/bundle-deferred.css" media="print" onload="this.media='all'">
     <noscript>
       <link rel="stylesheet" href="/css/bundle-deferred.css">
-    </noscript></head>
+    </noscript>
+
+    <!-- INJECTED VITE ASSETS -->
+
+    <script type="module" src="/dist/assets/main-CYcTmygr.js"></script>
+    <!-- END INJECTED VITE ASSETS -->
+  </head>
   <body class="typographic">
     <header class="header">
       <div class="container">
@@ -292,6 +298,9 @@
         </div>
       </div>
     </header>
+
+    <!-- React Root Mount Point (for future React migration) -->
+    <div id="react-root" data-component="AboutPage"></div>
 
     <main>
       <!-- Hero Splash Image -->
