@@ -194,8 +194,8 @@ describe('CartContext', () => {
                 expect(screen.getByTestId('is-initialized')).toHaveTextContent('true');
             });
 
-            // Dispatch cart:updated event
-            window.dispatchEvent(new CustomEvent('cart:updated'));
+            // Dispatch cart:updated event (CartManager emits to document)
+            document.dispatchEvent(new CustomEvent('cart:updated'));
 
             await waitFor(() => {
                 expect(screen.getByTestId('item-count')).toHaveTextContent('1');
@@ -205,8 +205,10 @@ describe('CartContext', () => {
 
     describe('Cleanup', () => {
         it('should cleanup event listeners on unmount', () => {
-            const addEventListenerSpy = vi.spyOn(window, 'addEventListener');
-            const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener');
+            const windowAddSpy = vi.spyOn(window, 'addEventListener');
+            const windowRemoveSpy = vi.spyOn(window, 'removeEventListener');
+            const documentAddSpy = vi.spyOn(document, 'addEventListener');
+            const documentRemoveSpy = vi.spyOn(document, 'removeEventListener');
 
             const { unmount } = render(
                 <CartProvider>
@@ -216,11 +218,16 @@ describe('CartContext', () => {
 
             unmount();
 
-            expect(removeEventListenerSpy).toHaveBeenCalledWith('cart:initialized', expect.any(Function));
-            expect(removeEventListenerSpy).toHaveBeenCalledWith('cart:updated', expect.any(Function));
+            // Verify window listener cleanup (cart:initialized only)
+            expect(windowRemoveSpy).toHaveBeenCalledWith('cart:initialized', expect.any(Function));
 
-            addEventListenerSpy.mockRestore();
-            removeEventListenerSpy.mockRestore();
+            // Verify document listener cleanup (cart:updated)
+            expect(documentRemoveSpy).toHaveBeenCalledWith('cart:updated', expect.any(Function));
+
+            windowAddSpy.mockRestore();
+            windowRemoveSpy.mockRestore();
+            documentAddSpy.mockRestore();
+            documentRemoveSpy.mockRestore();
         });
     });
 });
