@@ -440,39 +440,18 @@ async function handleCheckoutClick(cartManager) {
         }
     }
 
-    // Show payment method selector
-    const paymentSelector = getPaymentSelector();
-
-    try {
     // Close cart panel first for better UX
-        const panel = document.querySelector('.floating-cart-panel');
-        const backdrop = document.querySelector('.cart-backdrop');
-        if (panel && panel.classList.contains('open')) {
-            panel.classList.remove('open');
-            backdrop.classList.remove('active');
-            document.body.style.overflow = '';
-        }
-
-        // Show payment selector and let it handle the rest
-        await paymentSelector.show((selectedMethod) => {
-            // Track payment method selection
-            if (window.gtag) {
-                try {
-                    window.gtag('event', 'payment_method_selected', {
-                        payment_method: selectedMethod,
-                        value: cartState.totals.total
-                    });
-                } catch {
-                    // Analytics tracking failed - continue silently
-                }
-            }
-        });
-    } catch (error) {
-    // Show error if payment selection fails
-        showCheckoutError(
-            error.message || 'Payment processing failed. Please try again.'
-        );
+    const panel = document.querySelector('.floating-cart-panel');
+    const backdrop = document.querySelector('.cart-backdrop');
+    if (panel && panel.classList.contains('open')) {
+        panel.classList.remove('open');
+        backdrop.classList.remove('active');
+        document.body.style.overflow = '';
     }
+
+    // Redirect to registration page for inline registration
+    // Registration must happen before payment in the new flow
+    window.location.href = '/pages/core/checkout-registration.html';
 }
 
 // determineCartVisibility function removed - no longer needed without floating button

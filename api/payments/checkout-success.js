@@ -5,16 +5,17 @@ import { processDatabaseResult } from '../../lib/bigint-serializer.js';
 
 /**
  * Checkout Success API Endpoint
- * Handles successful Stripe Checkout returns and creates tickets immediately
- * Option 2 Implementation: Move ticket creation from webhook to checkout success
+ * Handles successful Stripe Checkout returns with inline registration flow
+ *
+ * NOTE: With inline registration, tickets are created BEFORE payment with attendee info.
+ * This endpoint now just updates status and sends confirmation emails.
  */
 
 import Stripe from 'stripe';
 import { getDatabaseClient } from '../../lib/database.js';
-import { RegistrationTokenService } from '../../lib/registration-token-service.js';
 import { generateOrderId } from '../../lib/order-id-generator.js';
 import transactionService from '../../lib/transaction-service.js';
-import { createOrRetrieveTickets } from '../../lib/ticket-creation-service.js';
+import { getTicketEmailService } from '../../lib/ticket-email-service-brevo.js';
 
 // Initialize Stripe with strict error handling
 if (!process.env.STRIPE_SECRET_KEY) {
@@ -22,9 +23,6 @@ if (!process.env.STRIPE_SECRET_KEY) {
 }
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
-// Note: Ticket creation has been moved to webhook handler only
-// This prevents duplicate tickets and ensures single source of truth
 
 export default async function handler(req, res) {
   // Warm database connection in background to reduce latency
@@ -55,10 +53,8 @@ export default async function handler(req, res) {
       });
     }
 
-    // Retrieve and validate Checkout Session from Stripe (with expanded line items)
-    const fullSession = await stripe.checkout.sessions.retrieve(session_id, {
-      expand: ['line_items', 'line_items.data.price.product']
-    });
+    // Retrieve and validate Checkout Session from Stripe
+    const fullSession = await stripe.checkout.sessions.retrieve(session_id);
 
     // Verify the session is in a successful state
     if (fullSession.payment_status !== 'paid') {
@@ -73,132 +69,102 @@ export default async function handler(req, res) {
       console.log('Checkout session verified as successful:', {
         sessionId: fullSession.id,
         customerEmail: email ? email.replace(/(.).+(@.*)/, '$1***$2') : undefined,
-        amount: fullSession.amount_total / 100,
-        orderId: fullSession.metadata?.orderId
+        amount: fullSession.amount_total / 100
       });
     }
 
-    // Use the centralized ticket creation service for idempotent operations
     console.log(`Processing checkout success for session ${session_id}`);
 
-    let result;
-    let registrationToken = null;
-    let transaction = null;
-    let hasTickets = false;
-    let hasDonations = false;
-
-    // Check if session includes donations
-    const lineItems = fullSession.line_items?.data || [];
-    hasDonations = lineItems.some(item => {
-      const meta = item.price?.product?.metadata || {};
-      return meta.type === 'donation' || meta.donation_category;
+    // Find existing transaction by Stripe session ID
+    const db = await getDatabaseClient();
+    const txResult = await db.execute({
+      sql: 'SELECT * FROM transactions WHERE stripe_session_id = ? LIMIT 1',
+      args: [session_id]
     });
 
-    try {
-      // This will create or retrieve transaction and tickets atomically
-      result = await createOrRetrieveTickets(fullSession);
-
-      transaction = result.transaction;
-      hasTickets = result.ticketCount > 0;
-
-      console.log(`Transaction ${result.created ? 'created' : 'retrieved'}: ${transaction.uuid}`);
-      console.log(`${result.ticketCount} tickets ${result.created ? 'created' : 'found'}`);
-      console.log(`Has donations: ${hasDonations}`);
-
-      // Ensure order number exists
-      if (!transaction.order_number) {
-        console.warn('⚠️ FALLBACK ORDER NUMBER GENERATION TRIGGERED', {
-          reason: 'Transaction created without order_number',
-          sessionId: fullSession.id,
-          transactionId: transaction.id,
-          transactionUuid: transaction.uuid,
-          stripeMode: fullSession.mode,
-          recommendation: 'Investigate why transaction was created without order_number. Normal flow should use order-number-generator.js (ALO-YYYY-NNNN format)',
-          timestamp: new Date().toISOString()
-        });
-
-        transaction.order_number = await generateOrderId();
-        console.log(`Generated fallback order number: ${transaction.order_number}`);
-
-        const db = await getDatabaseClient();
-        const updateResult = await db.execute({
-          sql: 'UPDATE transactions SET order_number = ? WHERE id = ?',
-          args: [transaction.order_number, transaction.id]
-        });
-        // Process update result for consistency
-        processDatabaseResult(updateResult);
-      }
-
-      // Get or generate registration token
-      if (transaction.registration_token) {
-        registrationToken = transaction.registration_token;
-        console.log(`Using existing registration token`);
-      } else {
-        try {
-          const tokenService = new RegistrationTokenService();
-          await tokenService.ensureInitialized();
-          registrationToken = await tokenService.createToken(transaction.id);
-          console.log(`Generated registration token for transaction ${transaction.uuid}`);
-
-          // Update transaction with token
-          const db = await getDatabaseClient();
-          const tokenUpdateResult = await db.execute({
-            sql: 'UPDATE transactions SET registration_token = ? WHERE id = ?',
-            args: [registrationToken, transaction.id]
-          });
-          // Process update result for consistency
-          processDatabaseResult(tokenUpdateResult);
-        } catch (tokenError) {
-          console.error('Failed to generate registration token:', tokenError.message);
-          // Continue without token - not critical for success response
-        }
-      }
-
-    } catch (error) {
-      console.error('Failed to create or retrieve tickets:', error);
-
-      // For critical errors, return error response
-      return res.status(500).json({
-        error: 'Failed to process order',
-        message: 'Please contact support with your session ID',
+    if (!txResult.rows || txResult.rows.length === 0) {
+      console.error('Transaction not found for session:', session_id);
+      return res.status(404).json({
+        error: 'Order not found',
+        message: 'Transaction not found. Please contact support.',
         sessionId: session_id
       });
     }
 
-    // Return success response with registration information and order details
+    const transaction = processDatabaseResult(txResult.rows[0]);
+
+    // Update transaction status to completed
+    await db.execute({
+      sql: `UPDATE transactions
+            SET payment_status = ?, status = ?, completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?`,
+      args: ['completed', 'completed', transaction.id]
+    });
+
+    // Update all tickets for this transaction to completed status
+    await db.execute({
+      sql: `UPDATE tickets
+            SET registration_status = ?, registered_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+            WHERE transaction_id = ? AND registration_status = ?`,
+      args: ['completed', transaction.id, 'pending_payment']
+    });
+
+    console.log(`Updated transaction ${transaction.uuid} to completed status`);
+
+    // Get updated ticket count
+    const ticketResult = await db.execute({
+      sql: 'SELECT COUNT(*) as count FROM tickets WHERE transaction_id = ?',
+      args: [transaction.id]
+    });
+    const hasTickets = Number(ticketResult.rows[0].count) > 0;
+
+    // Check if transaction has donations
+    const donationResult = await db.execute({
+      sql: 'SELECT COUNT(*) as count FROM transaction_items WHERE transaction_id = ? AND item_type = ?',
+      args: [transaction.id, 'donation']
+    });
+    const hasDonations = Number(donationResult.rows[0].count) > 0;
+
+    // Send attendee confirmation emails for completed tickets
+    if (hasTickets) {
+      try {
+        const emailService = getTicketEmailService();
+        const updatedTransaction = await transactionService.getByUUID(transaction.uuid);
+        await emailService.sendTicketConfirmation(updatedTransaction);
+        console.log(`Sent confirmation emails for transaction ${transaction.uuid}`);
+      } catch (emailError) {
+        // Log but don't fail - emails can be resent
+        console.error('Failed to send confirmation emails:', emailError);
+      }
+    }
+
+    // Return success response with order details
     const response = {
       success: true,
-      orderNumber: transaction ? transaction.order_number : null,  // Add order number for user reference
+      orderNumber: transaction.order_number,
       session: {
         id: fullSession.id,
         amount: fullSession.amount_total / 100,
         currency: fullSession.currency,
         customer_email: fullSession.customer_email || fullSession.customer_details?.email,
-        customer_details: fullSession.customer_details, // Include full customer details for form
+        customer_details: fullSession.customer_details,
         metadata: fullSession.metadata
       },
       hasTickets,
       hasDonations,
-      // Include transaction details for better frontend integration (without exposing internal IDs)
-      transaction: transaction ? timeUtils.enhanceApiResponse(processDatabaseResult({
+      transaction: timeUtils.enhanceApiResponse(processDatabaseResult({
         orderNumber: transaction.order_number,
-        status: transaction.status,
-        totalAmount: transaction.total_amount || transaction.amount_cents, // Will be processed by BigInt serializer
+        status: 'completed',
+        paymentStatus: 'completed',
+        totalAmount: transaction.total_amount,
         customerEmail: transaction.customer_email,
         customerName: transaction.customer_name,
         created_at: transaction.created_at,
-        updated_at: transaction.updated_at
-      }), ['created_at', 'updated_at'], { includeDeadline: true, deadlineHours: 24 }) : null,
-      // Add Mountain Time information
+        updated_at: new Date().toISOString()
+      }), ['created_at', 'updated_at']),
       timezone: 'America/Denver',
       currentTime: timeUtils.getCurrentTime()
     };
-
-    // Add registration information if token exists
-    if (registrationToken) {
-      response.registrationToken = registrationToken;
-      response.registrationUrl = `/pages/core/register-tickets.html?token=${registrationToken}`;
-    }
 
     return res.status(200).json(response);
   } catch (error) {
