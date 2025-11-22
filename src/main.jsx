@@ -10,7 +10,7 @@ if (rootElement) {
 
     // Lazy load components based on data attribute
     const components = {
-        // 'AboutPage': () => import('./pages/AboutPage'),
+        'AboutPage': () => import('./pages/AboutPage'),
         // 'CheckoutForm': () => import('./components/checkout/CheckoutForm'),
     };
 
