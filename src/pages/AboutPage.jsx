@@ -1,28 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { AppProviders } from '../providers/AppProviders';
 
+// Form validation patterns - defined outside component to avoid recreation on every render
+const NAME_PATTERN = /^[\p{L}\p{M}\s'\-\.]{2,100}$/u;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const SPAM_PATTERNS = [
+    /^test$/i,
+    /^asdf+$/i,
+    /^qwerty$/i,
+    /^\d+$/,
+    /^(.)\1{4,}$/,
+    /^http/i
+];
+const DISPOSABLE_DOMAINS = [
+    '10minutemail.com', 'guerrillamail.com', 'mailinator.com',
+    'temp-mail.org', 'throwaway.email', 'yopmail.com', 'tempmail.com',
+    'trashmail.com', 'getnada.com', 'maildrop.cc'
+];
+
 function AboutPageContent() {
     const [submitButtonState, setSubmitButtonState] = useState({
         disabled: true,
         text: 'SUBMIT APPLICATION'
     });
-
-    // Form validation patterns
-    const NAME_PATTERN = /^[\p{L}\p{M}\s'\-\.]{2,100}$/u;
-    const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const SPAM_PATTERNS = [
-        /^test$/i,
-        /^asdf+$/i,
-        /^qwerty$/i,
-        /^\d+$/,
-        /^(.)\1{4,}$/,
-        /^http/i
-    ];
-    const DISPOSABLE_DOMAINS = [
-        '10minutemail.com', 'guerrillamail.com', 'mailinator.com',
-        'temp-mail.org', 'throwaway.email', 'yopmail.com', 'tempmail.com',
-        'trashmail.com', 'getnada.com', 'maildrop.cc'
-    ];
 
     const [formErrors, setFormErrors] = useState({
         firstName: null,
