@@ -187,6 +187,22 @@ async function build() {
     const parallelDuration = Date.now() - parallelStartTime;
     console.log(`✅ Parallel tasks completed (${parallelDuration}ms)`);
 
+    // Step 2.5: Build React components (if React entry point exists)
+    const reactEntryPoint = path.join(process.cwd(), 'src', 'main.jsx');
+    if (existsSync(reactEntryPoint)) {
+      console.log('');
+      console.log('📋 Step 2.5: Building React components...');
+
+      // Run Vite build first
+      await execCommand('npm', ['run', 'build:vite'], 'React Vite Build');
+
+      // Then inject assets into HTML
+      await execCommand('npm', ['run', 'build:inject'], 'React Asset Injection');
+    } else {
+      console.log('');
+      console.log('⏭️  Step 2.5: No React components detected, skipping Vite build');
+    }
+
     // Step 3: Run ticket generation (depends on bootstrap.json from Step 2)
     console.log('');
     console.log('📋 Step 3: Running ticket generation...');
@@ -219,11 +235,17 @@ async function build() {
       await saveChecksums(checksums);
 
       // Save Vercel output cache metadata
+      const completedSteps = ['migrations', 'bootstrap', 'embed-docs', 'css-bundling'];
+      if (existsSync(path.join(process.cwd(), 'src', 'main.jsx'))) {
+        completedSteps.push('react-build', 'react-injection');
+      }
+      completedSteps.push('ticket-generation');
+
       await saveCacheMetadata({
         buildDuration: totalDuration,
         environment: env,
         platform: isVercel ? 'Vercel' : 'Local',
-        completedSteps: ['migrations', 'bootstrap', 'embed-docs', 'css-bundling', 'ticket-generation']
+        completedSteps
       });
 
       // Display cache statistics

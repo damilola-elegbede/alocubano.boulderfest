@@ -134,4 +134,7 @@
         initTeamLightbox();
     }
 
+    // Expose function globally for React components to re-initialize after rendering
+    window.initTeamLightbox = initTeamLightbox;
+
 })();
