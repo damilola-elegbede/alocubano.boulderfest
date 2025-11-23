@@ -122,6 +122,13 @@ function AboutPageContent() {
         });
     }, [formValues]);
 
+    // Initialize team member photo lightbox after component renders
+    useEffect(() => {
+        if (typeof window.initTeamLightbox === 'function') {
+            window.initTeamLightbox();
+        }
+    }, []);
+
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
 
