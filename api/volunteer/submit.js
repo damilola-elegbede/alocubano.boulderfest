@@ -5,6 +5,7 @@
 
 import { getBrevoService } from "../../lib/brevo-service.js";
 import { setSecureCorsHeaders } from '../../lib/cors-config.js';
+import { CSRFProtection } from '../../lib/csrf-protection.js';
 import { generateVolunteerAcknowledgementEmail } from '../../lib/email-templates/volunteer-acknowledgement.js';
 import { validateVolunteerSubmission } from '../../lib/validators/form-validators.js';
 import {
@@ -14,6 +15,9 @@ import {
   formatAreasOfInterest,
   formatAvailability
 } from '../../lib/volunteer-helpers.js';
+
+// CSRF protection for origin validation
+const csrfProtection = new CSRFProtection();
 
 // Rate limiting storage (in production, use Redis or similar)
 const rateLimitMap = new Map();
@@ -82,6 +86,39 @@ export default async function handler(req, res) {
     const rateLimitResponse = rateLimit(req, res);
     if (rateLimitResponse) {
       return rateLimitResponse;
+    }
+
+    // Origin validation (CSRF protection for public forms)
+    // Verifies request comes from our domain, not a malicious third-party site
+    const origin = req.headers.origin || req.headers.referer;
+    const allowedOrigins = [
+      'https://alocubanoboulderfest.com',
+      'https://www.alocubanoboulderfest.com',
+      '*.vercel.app',  // Allow Vercel preview deployments
+      'http://localhost:3000',  // Local development
+      'http://localhost:4173',  // Vite preview
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:4173'
+    ];
+
+    // Skip origin validation in test mode or development without origin
+    const isTestMode = process.env.E2E_TEST_MODE === 'true' || process.env.NODE_ENV === 'test';
+    const isDevelopment = process.env.NODE_ENV === 'development';
+
+    if (!isTestMode && !isDevelopment) {
+      if (!origin) {
+        console.warn('Volunteer submission rejected: missing origin header');
+        return res.status(403).json({
+          error: 'Request origin validation failed'
+        });
+      }
+
+      if (!csrfProtection.validateOrigin(origin, allowedOrigins)) {
+        console.warn('Volunteer submission rejected: invalid origin', { origin: origin?.substring(0, 100) });
+        return res.status(403).json({
+          error: 'Request origin validation failed'
+        });
+      }
     }
 
     // Validate request body
