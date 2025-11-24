@@ -113,13 +113,14 @@ function AboutPageContent() {
     };
 
     // Check if mandatory fields are filled
+    // Keep submit disabled while submitting; otherwise derive from mandatory fields
     useEffect(() => {
         const { firstName, lastName, email } = formValues;
         const allFilled = firstName.trim() && lastName.trim() && email.trim();
-        setSubmitButtonState({
-            disabled: !allFilled,
-            text: 'SUBMIT APPLICATION'
-        });
+        setSubmitButtonState(prev => ({
+            ...prev,
+            disabled: prev.text === 'SUBMITTING...' ? true : !allFilled,
+        }));
     }, [formValues]);
 
     // Initialize team member photo lightbox after component renders
@@ -205,7 +206,7 @@ function AboutPageContent() {
                     days: [],
                     message: ''
                 });
-                setSubmitButtonState({ disabled: false, text: 'SUBMIT APPLICATION' });
+                setSubmitButtonState(prev => ({ ...prev, text: 'SUBMIT APPLICATION' }));
             } else {
                 setFormErrors({ firstName: null, lastName: null, email: null });
 
@@ -217,7 +218,7 @@ function AboutPageContent() {
                     alert('Unable to submit application. Please check your information and try again.');
                 }
 
-                setSubmitButtonState({ disabled: false, text: 'SUBMIT APPLICATION' });
+                setSubmitButtonState(prev => ({ ...prev, text: 'SUBMIT APPLICATION' }));
             }
         } catch (error) {
             console.error('Error submitting form:', error);
@@ -228,7 +229,7 @@ function AboutPageContent() {
                 : 'Network error. Please check your internet connection and try again.\n\nIf this problem persists, please email us at alocubanoboulderfest@gmail.com';
 
             alert(errorMessage);
-            setSubmitButtonState({ disabled: false, text: 'SUBMIT APPLICATION' });
+            setSubmitButtonState(prev => ({ ...prev, text: 'SUBMIT APPLICATION' }));
         }
     };
 
