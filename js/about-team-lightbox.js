@@ -11,6 +11,7 @@
     'use strict';
 
     // Team member data with image paths and metadata
+    // IMPORTANT: Order must match DOM order in AboutPage.jsx
     const teamMembers = [
         {
             id: 'marcela',
@@ -25,9 +26,15 @@
             image: '/images/team/damilola.jpeg'
         },
         {
+            id: 'yolanda',
+            name: 'Yolanda Meiler',
+            title: 'Secretary',
+            image: '/images/team/yolanda.jpeg'
+        },
+        {
             id: 'analis',
             name: 'Analis Ledesma',
-            title: 'Secretary',
+            title: 'Board Member',
             image: '/images/team/analis.jpeg'
         },
         {
@@ -35,12 +42,6 @@
             name: 'Donal Solick',
             title: 'Board Member',
             image: '/images/team/donal.png'
-        },
-        {
-            id: 'yolanda',
-            name: 'Yolanda Meiler',
-            title: 'Board Member',
-            image: '/images/team/yolanda.jpeg'
         }
     ];
 
@@ -56,6 +57,21 @@
             return;
         }
 
+        // Get all team member photo elements FIRST
+        // This prevents creating a Lightbox instance before React has rendered
+        const teamPhotos = document.querySelectorAll('.team-member-photo');
+
+        if (teamPhotos.length === 0) {
+            console.warn('No team member photos found');
+            return;
+        }
+
+        // Prevent re-initialization if lightbox already exists
+        // This avoids the race condition where multiple instances are created
+        if (lightbox) {
+            return;
+        }
+
         // Initialize lightbox with advanced mode for navigation between team members
         lightbox = new Lightbox({
             lightboxId: 'team-lightbox',
@@ -63,14 +79,6 @@
             showCounter: false,
             advanced: true
         });
-
-        // Get all team member photo elements
-        const teamPhotos = document.querySelectorAll('.team-member-photo');
-
-        if (teamPhotos.length === 0) {
-            console.warn('No team member photos found');
-            return;
-        }
 
         // Add click event listeners to each photo
         teamPhotos.forEach((photo, index) => {
