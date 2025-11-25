@@ -57,11 +57,13 @@ function CheckoutPageContent() {
 
         try {
             // PR 8 will add payment flow here
-            // For now, just log the checkout data
-            console.log('Checkout data (PR 8 will process):', {
-                customerInfo,
-                cart,
-            });
+            // Development logging only - will be replaced with actual payment flow
+            if (import.meta.env.DEV) {
+                console.log('Checkout data (PR 8 will process):', {
+                    customerInfo,
+                    cart,
+                });
+            }
 
             // Reset button state after "processing"
             setSubmitButtonState({ disabled: false, text: 'PROCEED TO PAYMENT' });

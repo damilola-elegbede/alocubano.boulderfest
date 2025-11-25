@@ -81,7 +81,8 @@ export default function OrderSummary({ cart, isLoading = false }) {
     };
 
     // Get grand total from cart totals or calculate
-    const grandTotal = totals.grandTotal || totals.total || 0;
+    // Use nullish coalescing (??) to preserve valid zero values for free tickets
+    const grandTotal = totals.grandTotal ?? totals.total ?? 0;
 
     return (
         <div className="order-summary" data-testid="order-summary">
