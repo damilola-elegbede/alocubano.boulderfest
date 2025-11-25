@@ -130,16 +130,178 @@ Create `src/pages/AboutPage.jsx`.
 ## Phase 2: Critical Features (Checkout)
 **Goal**: High-risk migration with strict API contracts.
 
-### PR 6: Checkout API (`feat: checkout api contract`)
-*   **Action**: Define Zod schema `src/api/schemas/checkout.ts`.
-*   **Database**: Use existing `lib/database.js` (Knex query builder optional, NO migrations).
+---
+
+### PR 6: Checkout API Contract (`feat: checkout api contract`)
+
+**Objective**: Define Zod schemas for checkout validation with JSDoc type annotations.
+
+**Branch**: `feat/checkout-api-contract-pr6`
+
+#### 1. Installation
+
+```bash
+npm install zod --save
+```
+
+#### 2. Schema Definitions
+
+Create `src/api/schemas/checkout.js`:
+
+```javascript
+import { z } from 'zod';
+
+/**
+ * @typedef {z.infer<typeof CartItemSchema>} CartItem
+ */
+export const CartItemSchema = z.object({
+  name: z.string().min(1).max(200),
+  price: z.number().positive(),
+  quantity: z.number().int().positive().max(100),
+  type: z.enum(['ticket', 'donation']),
+  ticketType: z.string().optional(),
+  eventDate: z.string().optional(),
+  eventId: z.number().optional(),
+  description: z.string().max(500).optional(),
+});
+
+/**
+ * @typedef {z.infer<typeof CustomerInfoSchema>} CustomerInfo
+ */
+export const CustomerInfoSchema = z.object({
+  email: z.string().email().max(254),
+  firstName: z.string().min(2).max(100).optional(),
+  lastName: z.string().min(2).max(100).optional(),
+  phone: z.string().max(50).optional(),
+});
+
+/**
+ * @typedef {z.infer<typeof CheckoutRequestSchema>} CheckoutRequest
+ */
+export const CheckoutRequestSchema = z.object({
+  cartItems: z.array(CartItemSchema).min(1).max(50),
+  customerInfo: CustomerInfoSchema.optional(),
+  testMode: z.boolean().optional(),
+});
+```
+
+#### 3. Validation Helper
+
+Create `src/api/helpers/validate.js`:
+
+```javascript
+export function validateRequest(schema, data) {
+  const result = schema.safeParse(data);
+  if (result.success) {
+    return { success: true, data: result.data };
+  }
+  return {
+    success: false,
+    errors: result.error.issues.map(issue => ({
+      path: issue.path.join('.'),
+      message: issue.message,
+    })),
+  };
+}
+```
+
+#### 4. Testing
+
+Create `tests/unit/api/schemas/checkout.test.js` with 60+ unit tests covering:
+- Schema validation (valid/invalid inputs)
+- Edge cases (empty arrays, max lengths, special characters)
+- Validation helper functions
+
+#### 5. Scope Boundaries
+
+**IN SCOPE:**
+- ✅ Install Zod dependency
+- ✅ Define all checkout-related schemas
+- ✅ Create validation helper function
+- ✅ Add JSDoc type annotations
+- ✅ Comprehensive unit tests
+
+**OUT OF SCOPE (deferred to PR 8):**
+- ❌ Modifying existing API endpoints
+- ❌ Integrating schemas into payment flow
+
+---
 
 ### PR 7: Checkout Component (`feat: react checkout form`)
-*   **State**: `react-hook-form` + `zodResolver`.
-*   **Cart**: Use `useCart` hook to sync with `global-cart.js`.
 
-### PR 8: Integration & Switch
-*   **Rollback Strategy**: Feature Flag in `scripts/dev-server.js` or `vercel.json` to route `/checkout` back to legacy handler if needed.
+**Objective**: Create React checkout form using react-hook-form with Zod validation.
+
+**Branch**: `feat/react-checkout-form-pr7`
+
+#### 1. Installation
+
+```bash
+npm install react-hook-form @hookform/resolvers --save
+```
+
+#### 2. Component Structure
+
+```
+src/
+├── pages/
+│   └── CheckoutPage.jsx
+├── components/
+│   └── checkout/
+│       ├── CustomerInfoForm.jsx
+│       ├── OrderSummary.jsx
+│       ├── PaymentMethodSelector.jsx
+        *Note: PaymentMethodSelector in PR 7 is UI-only (radio buttons for Stripe/PayPal). It manages selection state but does NOT load external SDKs or process payments.*
+```
+
+#### 3. Integration
+
+- **Cart**: Use `useCart` hook from PR 3
+- **Theme**: Use `useTheme` hook from PR 3
+- **Validation**: Use Zod schemas from PR 6 with zodResolver
+
+#### 4. Scope Boundaries
+
+**IN SCOPE:**
+- ✅ Install react-hook-form + resolvers
+- ✅ Create CheckoutPage and subcomponents
+- ✅ Integrate with cart context
+- ✅ Form validation with Zod schemas
+- ✅ Comprehensive tests
+
+**OUT OF SCOPE (deferred to PR 8):**
+- ❌ Full payment flow integration
+- ❌ Stripe/PayPal SDK loading in React
+
+---
+
+### PR 8: Integration & Switch (`feat: checkout integration`)
+
+**Objective**: Wire up React checkout to payment APIs and enable feature flag.
+
+**Branch**: `feat/checkout-integration-pr8`
+
+#### 1. API Integration
+
+Update API endpoints to use Zod validation:
+
+```javascript
+import { validateRequest } from '../../src/api/helpers/validate.js';
+import { CheckoutRequestSchema } from '../../src/api/schemas/checkout.js';
+
+export default async function handler(req, res) {
+  const validation = validateRequest(CheckoutRequestSchema, req.body);
+  if (!validation.success) {
+    return res.status(400).json({ errors: validation.errors });
+  }
+  // Continue with validated data...
+}
+```
+
+#### 2. Rollback Strategy
+
+- Feature flag in `vercel.json` or environment: `REACT_CHECKOUT_ENABLED`
+- Legacy `js/components/payment-selector.js` remains functional
+- Can switch back by setting `REACT_CHECKOUT_ENABLED=false`
 
 ---
 
