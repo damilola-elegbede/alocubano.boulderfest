@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Inline theme detection to prevent FOUC -->
+    <script>
+      (function() {
+        // Detect admin pages
+        const path = window.location.pathname.toLowerCase();
+        const isAdmin = path.includes('/admin') || path.includes('pages/admin');
+
+        if (isAdmin) {
+          // Admin pages always use dark theme
+          document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+          // Main site: check user preference
+          let stored = null;
+          try {
+            stored = localStorage.getItem('theme-preference');
+          } catch {
+            // localStorage might be disabled
+          }
+
+          const preference = stored || 'system';
+          let theme = preference;
+
+          if (preference === 'system') {
+            // Detect system preference
+            theme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+              ? 'dark'
+              : 'light';
+          }
+
+          document.documentElement.setAttribute('data-theme', theme);
+        }
+      })();
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Register Tickets - A Lo Cubano Boulder Fest</title>
+    <meta
+      name="description"
+      content="Complete your ticket registration for A Lo Cubano Boulder Fest. Provide attendee information before proceeding to payment."
+    />
+
+    <!-- Favicons -->
+    <link
+      rel="icon"
+      type="image/png"
+      href="/images/favicons/favicon-32x32.png"
+    />
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico" />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/images/favicons/favicon-16x16.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/images/favicons/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="192x192"
+      href="/images/favicons/favicon-192x192.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="192x192"
+      href="/images/favicons/favicon-192x192.png"
+    />
+
+    <!-- Preconnect for faster font loading -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- Preload critical fonts -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Playfair+Display:ital,wght@0,400;0,900;1,400;1,900&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Playfair+Display:ital,wght@0,400;0,900;1,400;1,900&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" media="print" onload="this.media='all'">
+    <noscript>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Playfair+Display:ital,wght@0,400;0,900;1,400;1,900&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap">
+    </noscript>
+
+    <!-- Theme Management - Early inclusion to prevent FOUC -->
+    <script type="module" src="/js/theme-manager.js"></script>
+
+    <!-- Critical CSS (render-blocking) -->
+    <link rel="stylesheet" href="/css/bundle-critical.css" />
+
+    <!-- Deferred CSS (lazy-loaded) -->
+    <link rel="stylesheet" href="/css/bundle-deferred.css" media="print" onload="this.media='all'">
+    <noscript>
+      <link rel="stylesheet" href="/css/bundle-deferred.css">
+    </noscript>
+
+    <!-- Checkout Registration CSS -->
+    <link rel="stylesheet" href="/css/checkout-registration.css" />
+  </head>
+  <body class="typographic">
+    <header class="header">
+      <div class="container">
+        <div class="grid">
+          <div class="header-left">
+            <a href="/home" class="logo-link" aria-label="Go to home page">
+              <img
+                src="/images/logo.png"
+                alt="A Lo Cubano Boulder Fest Logo"
+                class="site-logo"
+                data-light-src="/images/logo.png"
+                data-dark-src="/images/logo-dark.png"
+              />
+              <div class="logo-text">
+                <span class="logo-main">A LO CUBANO</span>
+                <span class="logo-separator">|</span>
+                <span class="logo-sub">Boulder Fest</span>
+              </div>
+            </a>
+          </div>
+          <nav class="main-nav">
+            <button
+              class="menu-toggle"
+              aria-label="Toggle menu"
+              aria-expanded="false"
+              aria-controls="main-navigation"
+            >
+              <div class="menu-icon">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </button>
+            <ul class="nav-list" id="main-navigation">
+              <li>
+                <a href="/home" class="nav-link" data-text="Home">Home</a>
+              </li>
+              <li>
+                <a href="/about" class="nav-link" data-text="About">About</a>
+              </li>
+              <li class="nav-item has-dropdown">
+                <button
+                  class="nav-trigger"
+                  aria-expanded="false"
+                  aria-haspopup="true"
+                  data-dropdown="events"
+                  data-text="Events"
+                >
+                  Events
+                  <span class="dropdown-arrow" aria-hidden="true">▼</span>
+                </button>
+                <ul
+                  class="dropdown-menu"
+                  aria-hidden="true"
+                  role="menu"
+                  data-dropdown-content="events"
+                >
+                  <li class="dropdown-category" role="group">
+                    <span class="dropdown-category-title" role="presentation"
+                      >Boulder Fest</span
+                    >
+                    <ul class="dropdown-submenu">
+                      <li>
+                        <a
+                          href="/boulder-fest-2026"
+                          class="dropdown-link"
+                          role="menuitem"
+                          data-event="boulder-fest-2026"
+                          data-event-status="upcoming"
+                          >2026 Festival</a
+                        >
+                      </li>
+                      <li>
+                        <a
+                          href="/boulder-fest-2025"
+                          class="dropdown-link"
+                          role="menuitem"
+                          data-event="boulder-fest-2025"
+                          data-event-status="current"
+                          >2025 Festival</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                  <li class="dropdown-category" role="group">
+                    <span class="dropdown-category-title" role="presentation"
+                      >Weekenders</span
+                    >
+                    <ul class="dropdown-submenu">
+                      <li>
+                        <a
+                          href="/weekender-2025-11"
+                          class="dropdown-link"
+                          role="menuitem"
+                          data-event="weekender-2025-11"
+                          data-event-status="upcoming"
+                          >November 2025</a
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+              <li>
+                <a href="/tickets" class="nav-link" data-text="Tickets"
+                  >Tickets</a
+                >
+              </li>
+              <li>
+                <a href="/donations" class="nav-link" data-text="Donate"
+                  >Donate</a
+                >
+              </li>
+              <li>
+                <a href="/contact" class="nav-link" data-text="Contact"
+                  >Contact</a
+                >
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- Hero Section -->
+      <section class="checkout-hero">
+        <div class="container">
+          <h1 class="checkout-title">Complete Your Registration</h1>
+          <p class="checkout-subtitle">Please provide attendee information for each ticket</p>
+        </div>
+      </section>
+
+      <!-- Registration Form Section -->
+      <section class="registration-section">
+        <div class="container">
+          <!-- Error Message Container -->
+          <div id="error-message" class="error-banner" role="alert" aria-live="assertive" style="display: none;">
+            <div class="error-content">
+              <svg class="error-icon" viewBox="0 0 24 24" width="24" height="24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+              </svg>
+              <div class="error-text">
+                <p class="error-message-text"></p>
+              </div>
+            </div>
+            <button class="error-dismiss" aria-label="Dismiss error">×</button>
+          </div>
+
+          <!-- Registration Form -->
+          <form id="registration-form" class="registration-form">
+            <!-- Same Info Checkbox -->
+            <div class="same-info-section">
+              <label class="checkbox-label">
+                <input type="checkbox" id="same-info-checkbox" class="checkbox-input" />
+                <span class="checkbox-text">Use same information for all tickets</span>
+              </label>
+            </div>
+
+            <!-- Customer Info Section (shown when "same info" is checked) -->
+            <div id="customer-info-section" class="customer-info-section" style="display: none;">
+              <h2 class="section-heading">Your Information</h2>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="customer-first-name" class="form-label">First Name *</label>
+                  <input
+                    type="text"
+                    id="customer-first-name"
+                    name="customer-first-name"
+                    class="form-input"
+                    required
+                    pattern="[a-zA-Z\s'\-]{1,50}"
+                    maxlength="50"
+                    autocomplete="given-name"
+                  />
+                  <span class="field-error" role="alert"></span>
+                </div>
+
+                <div class="form-group">
+                  <label for="customer-last-name" class="form-label">Last Name *</label>
+                  <input
+                    type="text"
+                    id="customer-last-name"
+                    name="customer-last-name"
+                    class="form-input"
+                    required
+                    pattern="[a-zA-Z\s'\-]{1,50}"
+                    maxlength="50"
+                    autocomplete="family-name"
+                  />
+                  <span class="field-error" role="alert"></span>
+                </div>
+
+                <div class="form-group">
+                  <label for="customer-email" class="form-label">Email *</label>
+                  <input
+                    type="email"
+                    id="customer-email"
+                    name="customer-email"
+                    class="form-input"
+                    required
+                    autocomplete="email"
+                  />
+                  <span class="field-error" role="alert"></span>
+                </div>
+
+                <div class="form-group">
+                  <label for="customer-phone" class="form-label">Phone (Optional)</label>
+                  <input
+                    type="tel"
+                    id="customer-phone"
+                    name="customer-phone"
+                    class="form-input"
+                    autocomplete="tel"
+                  />
+                  <span class="field-error" role="alert"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tickets Container (generated by JavaScript) -->
+            <div id="tickets-container" class="tickets-container">
+              <!-- Ticket forms will be inserted here by JavaScript -->
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="form-actions">
+              <a href="/tickets" class="btn-secondary">Back to Tickets</a>
+              <button type="submit" id="continue-button" class="btn-primary" disabled>
+                <span class="button-text">Continue to Payment</span>
+                <span class="button-spinner" style="display: none;">
+                  <svg class="spinner" viewBox="0 0 24 24" width="20" height="20">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" opacity="0.25"/>
+                    <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round"/>
+                  </svg>
+                </span>
+              </button>
+            </div>
+          </form>
+
+          <!-- Loading Overlay -->
+          <div id="loading-overlay" class="loading-overlay" style="display: none;">
+            <div class="loading-content">
+              <svg class="loading-spinner" viewBox="0 0 50 50">
+                <circle cx="25" cy="25" r="20" stroke="currentColor" stroke-width="3" fill="none" opacity="0.25"/>
+                <path d="M25 5a20 20 0 0 1 20 20" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round"/>
+              </svg>
+              <p class="loading-text">Processing your registration...</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer-typographic">
+      <div class="container">
+        <p class="footer-credits">
+          YOUR PASS TO THE DANCE FLOOR •
+          <a
+            href="mailto:alocubanoboulderfest@gmail.com?subject=A Lo Cubano Boulder Fest Inquiry"
+            style="color: inherit; text-decoration: underline"
+            >alocubanoboulderfest@gmail.com</a
+          >
+        </p>
+        <div class="footer-social">
+          <a
+            href="https://www.instagram.com/alocubano.boulderfest/"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="social-link-type"
+            aria-label="Follow us on Instagram"
+          >
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+              <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+            </svg>
+          </a>
+          <a
+            href="https://chat.whatsapp.com/KadIVdb24RWKdIKGtipnLH"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="social-link-type"
+            aria-label="Join us on WhatsApp"
+          >
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"
+              ></path>
+            </svg>
+          </a>
+        </div>
+        <div id="theme-toggle-container" class="footer-theme-toggle"></div>
+      </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script defer src="/js/navigation.js"></script>
+    <script defer src="/js/main.js"></script>
+    <script src="/js/typography.js"></script>
+    <script src="/js/logo-switcher.js"></script>
+
+    <!-- Theme Management -->
+    <script type="module">
+      import { initializeThemeToggle } from '/js/theme-toggle.js';
+      import themeManager from '/js/theme-manager.js';
+
+      // Initialize theme system
+      document.addEventListener('DOMContentLoaded', () => {
+        themeManager.initializeTheme();
+        initializeThemeToggle('#theme-toggle-container');
+      });
+    </script>
+
+    <!-- Checkout Registration -->
+    <script type="module" src="/js/checkout-registration.js"></script>
+  </body>
+</html>

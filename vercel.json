@@ -16,7 +16,7 @@
     },
     "api/admin/**/*.js": {
       "maxDuration": 15,
-      "includeFiles": "lib/{database,auth,session-manager,audit-logger,logger,crypto-utils,test-data-cleanup,test-mode-utils,cors-config,ticket-id-generator,order-number-generator,registration-token-service,reminder-scheduler,time-utils}.js"
+      "includeFiles": "lib/{database,auth,session-manager,audit-logger,logger,crypto-utils,test-data-cleanup,test-mode-utils,cors-config,ticket-id-generator,order-number-generator,time-utils}.js"
     },
     "api/payments/**/*.js": {
       "maxDuration": 30,
@@ -25,10 +25,6 @@
     "api/tickets/**/*.js": {
       "maxDuration": 30,
       "includeFiles": "lib/{database,ticket-service,qr-service,qr-token-service,logger,wallet-service,apple-wallet-service,google-wallet-service,google-wallet-hero-generator,ticket-color-service,test-mode-utils}.js"
-    },
-    "api/registration/**/*.js": {
-      "maxDuration": 20,
-      "includeFiles": "lib/{database,registration-service,email-service,logger}.js"
     },
     "api/health/**/*.js": {
       "maxDuration": 5,
@@ -82,10 +78,6 @@
     {
       "path": "/api/email/process-retry-queue",
       "schedule": "*/15 * * * *"
-    },
-    {
-      "path": "/api/cron/process-reminders",
-      "schedule": "0 * * * *"
     },
     {
       "path": "/api/cron/cleanup-expired-reservations",

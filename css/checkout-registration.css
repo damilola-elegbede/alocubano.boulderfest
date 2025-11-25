@@ -1,0 +1,485 @@
+/* Checkout Registration Page Styles */
+
+/* Hero Section */
+.checkout-hero {
+  background: linear-gradient(135deg, var(--color-blue, #5b6bb5), var(--color-red, #cc2936));
+  padding: var(--space-3xl, 3rem) var(--space-xl, 2rem);
+  text-align: center;
+  margin-bottom: var(--space-3xl, 3rem);
+}
+
+.checkout-title {
+  font-family: var(--font-display, 'Bebas Neue', sans-serif);
+  font-size: var(--font-size-4xl, 3rem);
+  color: var(--color-white, #ffffff);
+  margin: 0 0 var(--space-md, 1rem) 0;
+  letter-spacing: var(--letter-spacing-wide, 0.05em);
+  text-transform: uppercase;
+}
+
+.checkout-subtitle {
+  font-family: var(--font-serif, 'Playfair Display', serif);
+  font-size: var(--font-size-lg, 1.125rem);
+  color: var(--color-white, #ffffff);
+  margin: 0;
+  opacity: 0.95;
+}
+
+/* Registration Section */
+.registration-section {
+  padding: 0 var(--space-xl, 2rem) var(--space-4xl, 4rem);
+}
+
+.registration-section .container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Error Banner */
+.error-banner {
+  background: var(--color-error-light, #fef2f2);
+  border: 2px solid var(--color-error, #cc2936);
+  border-radius: 8px;
+  padding: var(--space-lg, 1.5rem);
+  margin-bottom: var(--space-2xl, 2rem);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md, 1rem);
+}
+
+.error-content {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md, 1rem);
+  flex: 1;
+}
+
+.error-icon {
+  fill: var(--color-error, #cc2936);
+  flex-shrink: 0;
+}
+
+.error-text {
+  flex: 1;
+}
+
+.error-message-text {
+  color: var(--color-error, #cc2936);
+  font-weight: 600;
+  margin: 0;
+  font-size: var(--font-size-base, 1rem);
+}
+
+.error-dismiss {
+  background: none;
+  border: none;
+  color: var(--color-error, #cc2936);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: opacity 0.2s ease;
+}
+
+.error-dismiss:hover {
+  opacity: 0.7;
+}
+
+.error-retry {
+  background: var(--color-error, #cc2936);
+  color: var(--color-white, #ffffff);
+  border: none;
+  padding: var(--space-xs, 0.5rem) var(--space-md, 1rem);
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: var(--font-size-sm, 0.875rem);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.2s ease;
+  margin-left: auto;
+}
+
+.error-retry:hover {
+  background: var(--color-secondary-hover, #b8242f);
+  transform: translateY(-1px);
+}
+
+/* Same Info Section */
+.same-info-section {
+  background: var(--color-background-secondary, #f5f5f5);
+  padding: var(--space-lg, 1.5rem);
+  border-radius: 8px;
+  margin-bottom: var(--space-2xl, 2rem);
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: var(--font-size-base, 1rem);
+  color: var(--color-text-primary, #000000);
+  user-select: none;
+}
+
+.checkbox-input {
+  margin-right: var(--space-md, 1rem);
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  accent-color: var(--color-primary, #5b6bb5);
+}
+
+.checkbox-text {
+  font-weight: 500;
+}
+
+/* Customer Info Section */
+.customer-info-section {
+  background: var(--color-surface, #ffffff);
+  border: 2px solid var(--color-border, #dddddd);
+  border-radius: 8px;
+  padding: var(--space-2xl, 2rem);
+  margin-bottom: var(--space-2xl, 2rem);
+}
+
+.section-heading {
+  font-family: var(--font-display, 'Bebas Neue', sans-serif);
+  font-size: var(--font-size-2xl, 1.5rem);
+  color: var(--color-text-primary, #000000);
+  margin: 0 0 var(--space-xl, 2rem) 0;
+  letter-spacing: var(--letter-spacing-wide, 0.05em);
+  text-transform: uppercase;
+}
+
+/* Tickets Container */
+.tickets-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl, 2rem);
+  margin-bottom: var(--space-2xl, 2rem);
+}
+
+/* Ticket Fieldset */
+.ticket-fieldset {
+  background: var(--color-surface, #ffffff);
+  border: 2px solid var(--color-border, #dddddd);
+  border-radius: 8px;
+  padding: var(--space-xl, 2rem);
+}
+
+.ticket-legend {
+  font-family: var(--font-display, 'Bebas Neue', sans-serif);
+  font-size: var(--font-size-xl, 1.25rem);
+  color: var(--color-text-primary, #000000);
+  padding: 0 var(--space-sm, 0.75rem);
+  display: flex;
+  align-items: center;
+  gap: var(--space-md, 1rem);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-lg, 1.5rem);
+}
+
+.ticket-number {
+  color: var(--color-primary, #5b6bb5);
+  font-weight: 700;
+}
+
+.ticket-info {
+  flex: 1;
+  min-width: 200px;
+}
+
+.ticket-price {
+  color: var(--color-red, #cc2936);
+  font-weight: 700;
+}
+
+/* Form Grid */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-lg, 1.5rem);
+}
+
+.form-group-full {
+  grid-column: 1 / -1;
+}
+
+/* Form Group */
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Form Label */
+.form-label {
+  font-family: var(--font-sans, 'Space Mono', monospace);
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: 600;
+  color: var(--color-text-primary, #000000);
+  margin-bottom: var(--space-xs, 0.5rem);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Form Input */
+.form-input {
+  width: 100%;
+  min-height: 44px; /* Mobile touch target */
+  padding: var(--space-sm, 0.75rem) var(--space-md, 1rem);
+  font-family: var(--font-sans, 'Space Mono', monospace);
+  font-size: 16px; /* Prevent iOS zoom */
+  color: var(--color-input-text, var(--color-text-primary, #000000));
+  background: var(--color-input-bg, var(--color-surface, #ffffff));
+  border: 2px solid var(--color-input-border, var(--color-border, #dddddd));
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--color-primary, #5b6bb5);
+  box-shadow: 0 0 0 3px rgba(91, 107, 181, 0.1);
+}
+
+.form-input.error {
+  border-color: var(--color-error, #cc2936);
+}
+
+.form-input.error:focus {
+  box-shadow: 0 0 0 3px rgba(204, 41, 54, 0.1);
+}
+
+/* Field Error */
+.field-error {
+  color: var(--color-error, #cc2936);
+  font-size: var(--font-size-sm, 0.875rem);
+  margin-top: var(--space-xs, 0.5rem);
+  display: none;
+}
+
+/* Form Actions */
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-lg, 1.5rem);
+  margin-top: var(--space-3xl, 3rem);
+}
+
+/* Buttons */
+.btn-primary,
+.btn-secondary {
+  min-height: 44px; /* Mobile touch target */
+  padding: var(--space-md, 1rem) var(--space-2xl, 2rem);
+  font-family: var(--font-display, 'Bebas Neue', sans-serif);
+  font-size: var(--font-size-lg, 1.125rem);
+  font-weight: 700;
+  letter-spacing: var(--letter-spacing-wide, 0.05em);
+  text-transform: uppercase;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm, 0.75rem);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--color-blue, #5b6bb5), var(--color-red, #cc2936));
+  color: var(--color-white, #ffffff);
+  box-shadow: 0 4px 12px rgba(91, 107, 181, 0.3);
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(91, 107, 181, 0.4);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--color-text-primary, #000000);
+  border: 2px solid var(--color-border, #dddddd);
+}
+
+.btn-secondary:hover {
+  background: var(--color-background-secondary, #f5f5f5);
+  border-color: var(--color-text-primary, #000000);
+}
+
+/* Button Spinner */
+.button-spinner {
+  display: none;
+}
+
+.spinner {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Loading Overlay */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.loading-content {
+  background: var(--color-surface, #ffffff);
+  padding: var(--space-3xl, 3rem);
+  border-radius: 12px;
+  text-align: center;
+  max-width: 320px;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  color: var(--color-primary, #5b6bb5);
+  animation: spin 0.8s linear infinite;
+  margin-bottom: var(--space-lg, 1.5rem);
+}
+
+.loading-text {
+  font-family: var(--font-sans, 'Space Mono', monospace);
+  font-size: var(--font-size-base, 1rem);
+  color: var(--color-text-primary, #000000);
+  margin: 0;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .checkout-hero {
+    padding: var(--space-2xl, 2rem) var(--space-md, 1rem);
+  }
+
+  .checkout-title {
+    font-size: var(--font-size-3xl, 2rem);
+  }
+
+  .checkout-subtitle {
+    font-size: var(--font-size-base, 1rem);
+  }
+
+  .registration-section {
+    padding: 0 var(--space-md, 1rem) var(--space-3xl, 3rem);
+  }
+
+  .customer-info-section,
+  .ticket-fieldset {
+    padding: var(--space-lg, 1.5rem);
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-md, 1rem);
+  }
+
+  .form-group-full {
+    grid-column: 1;
+  }
+
+  .ticket-legend {
+    font-size: var(--font-size-lg, 1.125rem);
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .form-actions {
+    flex-direction: column-reverse;
+    gap: var(--space-md, 1rem);
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .checkbox-input {
+    width: 24px;
+    height: 24px;
+  }
+
+  .loading-content {
+    padding: var(--space-2xl, 2rem);
+    margin: 0 var(--space-md, 1rem);
+  }
+}
+
+/* Dark Mode Support */
+[data-theme="dark"] .ticket-fieldset,
+[data-theme="dark"] .customer-info-section {
+  background: var(--color-surface, #1a1a1a);
+  border-color: var(--color-border, #333333);
+}
+
+[data-theme="dark"] .same-info-section {
+  background: var(--color-surface, #1a1a1a);
+}
+
+[data-theme="dark"] .error-banner {
+  background: rgba(204, 41, 54, 0.1);
+}
+
+[data-theme="dark"] .loading-content {
+  background: var(--color-surface, #1a1a1a);
+}
+
+/* Accessibility */
+.form-input:focus-visible {
+  outline: 3px solid var(--color-primary, #5b6bb5);
+  outline-offset: 2px;
+}
+
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible {
+  outline: 3px solid var(--color-primary, #5b6bb5);
+  outline-offset: 2px;
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .form-input,
+  .btn-primary,
+  .btn-secondary,
+  .error-dismiss,
+  .error-retry {
+    transition: none;
+  }
+
+  .spinner,
+  .loading-spinner {
+    animation: none;
+  }
+}
