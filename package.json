@@ -88,7 +88,8 @@
     "sqlite": "^5.1.1",
     "stripe": "^18.5.0",
     "thirty-two": "^1.0.2",
-    "uuid": "^11.1.0"
+    "uuid": "^11.1.0",
+    "zod": "^4.1.13"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.10.2",
