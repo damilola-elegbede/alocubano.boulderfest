@@ -95,7 +95,7 @@
 
     <!-- INJECTED VITE ASSETS -->
 
-    <script type="module" src="/dist/assets/main-0vRcS5b2.js"></script>
+    <script type="module" src="/dist/assets/main-Dw3soSpN.js"></script>
     <!-- END INJECTED VITE ASSETS -->
   </head>
   <body class="typographic">
@@ -310,5 +310,18 @@
     <script defer src="/js/main.js"></script>
     <script src="/js/typography.js"></script>
     <script type="module" src="/js/global-cart.js"></script>
+
+    <!-- Theme Management -->
+    <script type="module">
+      import { initializeThemeToggle } from '/js/theme-toggle.js';
+      import themeManager from '/js/theme-manager.js';
+
+      // Initialize theme system
+      document.addEventListener('DOMContentLoaded', () => {
+        themeManager.initializeTheme();
+        initializeThemeToggle('#theme-toggle-container');
+      });
+    </script>
+    <script src="/js/logo-switcher.js"></script>
   </body>
 </html>

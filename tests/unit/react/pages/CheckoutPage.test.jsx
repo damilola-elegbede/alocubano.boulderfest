@@ -19,7 +19,7 @@ describe('CheckoutPage', () => {
 
     beforeEach(() => {
         // Mock window.globalCartManager (from AboutPage.test.jsx pattern)
-        // Note: Cart prices are in dollars for display (not cents)
+        // Note: Cart prices are in CENTS (will be converted to dollars by OrderSummary)
         window.globalCartManager = {
             getState: vi.fn(() => ({
                 tickets: {
@@ -28,7 +28,7 @@ describe('CheckoutPage', () => {
                         name: 'Full Pass',
                         eventName: 'A Lo Cubano Boulder Fest 2026',
                         eventDate: '2026-05-15',
-                        price: 75, // dollars
+                        price: 7500, // cents - $75.00
                         quantity: 2,
                         eventId: 1,
                     },
@@ -36,7 +36,7 @@ describe('CheckoutPage', () => {
                 donations: [],
                 totals: {
                     itemCount: 2,
-                    grandTotal: 150, // dollars
+                    grandTotal: 15000, // cents - $150.00
                 },
             })),
             addTicket: vi.fn(),
@@ -90,11 +90,6 @@ describe('CheckoutPage', () => {
             expect(screen.getByText('CHECKOUT')).toBeInTheDocument();
         });
 
-        it('should render CustomerInfoForm section', () => {
-            render(<CheckoutPage />);
-            expect(screen.getByText('Customer Information')).toBeInTheDocument();
-        });
-
         it('should render OrderSummary section', () => {
             render(<CheckoutPage />);
             expect(screen.getByText('Order Summary')).toBeInTheDocument();
@@ -119,6 +114,11 @@ describe('CheckoutPage', () => {
             expect(screen.getByTestId('payment-method-stripe')).toBeInTheDocument();
             expect(screen.getByTestId('payment-method-paypal')).toBeInTheDocument();
         });
+
+        it('should render Tickets category header', () => {
+            render(<CheckoutPage />);
+            expect(screen.getByText('Tickets')).toBeInTheDocument();
+        });
     });
 
     describe('Action Buttons', () => {
@@ -132,20 +132,10 @@ describe('CheckoutPage', () => {
             expect(screen.getByTestId('cancel-checkout')).toBeInTheDocument();
         });
 
-        it('should have Proceed to Payment button disabled initially', () => {
+        it('should have Proceed to Payment button disabled initially (no payment method)', () => {
             render(<CheckoutPage />);
             const submitButton = screen.getByTestId('proceed-to-payment');
             expect(submitButton).toBeDisabled();
-        });
-    });
-
-    describe('Form Integration', () => {
-        it('should render all customer info form fields', () => {
-            render(<CheckoutPage />);
-            expect(screen.getByLabelText(/FIRST NAME/i)).toBeInTheDocument();
-            expect(screen.getByLabelText(/LAST NAME/i)).toBeInTheDocument();
-            expect(screen.getByLabelText(/EMAIL/i)).toBeInTheDocument();
-            expect(screen.getByLabelText(/PHONE/i)).toBeInTheDocument();
         });
     });
 
@@ -180,26 +170,19 @@ describe('CheckoutPage', () => {
     });
 
     describe('Payment Flow', () => {
-        it('should disable payment method selector when customer info not provided', () => {
+        it('should enable payment method selector (CustomerInfoForm removed)', () => {
             render(<CheckoutPage />);
 
-            // Payment method buttons should be disabled until customer info is provided
+            // Payment method buttons should be enabled since CustomerInfoForm was removed
             const stripeButton = screen.getByTestId('payment-method-stripe');
-            expect(stripeButton).toBeDisabled();
+            expect(stripeButton).not.toBeDisabled();
         });
 
-        it('should show help text when form is incomplete', () => {
+        it('should show help text when no payment method selected', () => {
             render(<CheckoutPage />);
 
-            // Should show help text when no customer info
-            expect(screen.getByText(/Fill in your information above/i)).toBeInTheDocument();
-        });
-
-        it('should show payment method required message after customer info is submitted', async () => {
-            render(<CheckoutPage />);
-
-            // Note: Full interaction testing would require filling the form
-            // which is tested in CustomerInfoForm tests
+            // Should show help text when no payment method
+            expect(screen.getByText(/Select a payment method/i)).toBeInTheDocument();
         });
     });
 
@@ -209,9 +192,6 @@ describe('CheckoutPage', () => {
 
             const mainHeading = screen.getByText('CHECKOUT');
             expect(mainHeading.tagName).toBe('H2');
-
-            const customerInfoHeading = screen.getByText('Customer Information');
-            expect(customerInfoHeading.tagName).toBe('H3');
 
             const orderSummaryHeading = screen.getByText('Order Summary');
             expect(orderSummaryHeading.tagName).toBe('H3');
@@ -225,8 +205,9 @@ describe('CheckoutPage', () => {
             expect(container).toBeInTheDocument();
         });
 
-        it('should display cart total from useCart', () => {
+        it('should display cart total from useCart (cents converted to dollars)', () => {
             render(<CheckoutPage />);
+            // Cart total is 15000 cents = $150.00
             expect(screen.getByTestId('order-total')).toHaveTextContent('$150.00');
         });
     });
@@ -242,6 +223,33 @@ describe('CheckoutPage', () => {
             render(<CheckoutPage />);
 
             expect(screen.getByText('Secure Payment Processing')).toBeInTheDocument();
+        });
+    });
+
+    describe('Simplified Checkout Flow', () => {
+        it('should not render CustomerInfoForm (removed)', () => {
+            render(<CheckoutPage />);
+
+            // CustomerInfoForm has been removed - customer info is captured by payment processors
+            expect(screen.queryByText('Customer Information')).not.toBeInTheDocument();
+        });
+
+        it('should enable submit after selecting payment method', async () => {
+            const user = userEvent.setup();
+            render(<CheckoutPage />);
+
+            // Initially disabled (no payment method)
+            const submitButton = screen.getByTestId('proceed-to-payment');
+            expect(submitButton).toBeDisabled();
+
+            // Select a payment method
+            const stripeButton = screen.getByTestId('payment-method-stripe');
+            await user.click(stripeButton);
+
+            // Now should be enabled
+            await waitFor(() => {
+                expect(submitButton).not.toBeDisabled();
+            });
         });
     });
 });

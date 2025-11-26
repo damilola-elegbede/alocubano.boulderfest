@@ -228,11 +228,14 @@ export function usePayment() {
     /**
      * Main checkout handler - routes to appropriate payment processor
      *
+     * Customer info is optional - payment processors (Stripe/PayPal) capture
+     * customer details through their hosted checkout flows.
+     *
      * @param {Object} cart - Cart state from useCart
-     * @param {Object} customerInfo - Customer information from form
+     * @param {Object} [customerInfo] - Optional pre-filled customer information
      * @returns {Promise<Object>} Result with redirect URL or error
      */
-    const processCheckout = useCallback(async (cart, customerInfo) => {
+    const processCheckout = useCallback(async (cart, customerInfo = null) => {
         if (!paymentMethod) {
             setError('Please select a payment method');
             return { success: false, error: 'Please select a payment method' };

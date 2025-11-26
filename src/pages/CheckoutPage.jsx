@@ -1,8 +1,11 @@
 /**
  * CheckoutPage - React checkout page with payment integration
  *
- * Main checkout page combining CustomerInfoForm, OrderSummary, and
- * PaymentMethodSelector. Handles payment processing via Stripe and PayPal.
+ * Main checkout page combining OrderSummary and PaymentMethodSelector.
+ * Handles payment processing via Stripe and PayPal.
+ *
+ * Customer info is captured by payment processors (Stripe/PayPal).
+ * Registration flow (coming later) will capture per-ticket attendee info.
  *
  * Follows AboutPage.jsx patterns with AppProviders wrapper.
  *
@@ -13,7 +16,6 @@ import React, { useState, useEffect } from 'react';
 import { AppProviders } from '../providers/AppProviders';
 import { useCart } from '../hooks/useCart';
 import { usePayment } from '../hooks/usePayment';
-import CustomerInfoForm from '../components/checkout/CustomerInfoForm';
 import OrderSummary from '../components/checkout/OrderSummary';
 import PaymentMethodSelector from '../components/checkout/PaymentMethodSelector';
 
@@ -29,7 +31,6 @@ function CheckoutPageContent() {
     } = usePayment();
 
     // Form state
-    const [customerInfo, setCustomerInfo] = useState(null);
     const [submitButtonState, setSubmitButtonState] = useState({
         disabled: true,
         text: 'PROCEED TO PAYMENT',
@@ -45,36 +46,29 @@ function CheckoutPageContent() {
         }
     }, [paymentError]);
 
-    // Update button state based on customer info, cart, and payment method
+    // Update button state based on cart and payment method
     useEffect(() => {
-        const hasCustomerInfo = customerInfo !== null;
         const hasCartItems = cart?.totals?.itemCount > 0;
         const hasPaymentMethod = paymentMethod !== null;
-        const canProceed = hasCustomerInfo && hasCartItems && hasPaymentMethod && !isProcessing;
+        const canProceed = hasCartItems && hasPaymentMethod && !isProcessing;
 
         setSubmitButtonState((prev) => ({
             ...prev,
             disabled: isProcessing ? true : !canProceed,
             text: isProcessing ? 'PROCESSING...' : 'PROCEED TO PAYMENT',
         }));
-    }, [customerInfo, cart, paymentMethod, isProcessing]);
-
-    // Handle customer info form submission
-    const handleCustomerInfoSubmit = (data) => {
-        setCustomerInfo(data);
-        setGeneralError(null);
-        clearError();
-    };
+    }, [cart, paymentMethod, isProcessing]);
 
     // Handle checkout button click
     const handleProceedToPayment = async () => {
-        if (!customerInfo || !cart?.totals?.itemCount || !paymentMethod) {
+        if (!cart?.totals?.itemCount || !paymentMethod) {
             return;
         }
 
         setGeneralError(null);
 
-        const result = await processCheckout(cart, customerInfo);
+        // Customer info will be captured by payment processor (Stripe/PayPal)
+        const result = await processCheckout(cart);
 
         if (!result.success) {
             setGeneralError(result.error || 'Payment processing failed. Please try again.');
@@ -103,7 +97,6 @@ function CheckoutPageContent() {
     const getButtonHelpText = () => {
         if (isProcessing) return null;
         if (isCartEmpty) return 'Add items to your cart to continue';
-        if (!customerInfo) return 'Fill in your information above';
         if (!paymentMethod) return 'Select a payment method';
         return null;
     };
@@ -130,16 +123,11 @@ function CheckoutPageContent() {
                             <OrderSummary cart={cart} isLoading={isLoading} />
                         </div>
 
-                        {/* Customer Info & Payment Section */}
+                        {/* Payment Section */}
                         <div className="checkout-form-section">
-                            <CustomerInfoForm
-                                onValidSubmit={handleCustomerInfoSubmit}
-                                disabled={isProcessing}
-                            />
-
                             {/* Payment Method Selection */}
                             <PaymentMethodSelector
-                                disabled={isProcessing || !customerInfo}
+                                disabled={isProcessing}
                                 onChange={handlePaymentMethodChange}
                             />
 
