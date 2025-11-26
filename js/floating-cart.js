@@ -7,6 +7,26 @@ import { getPaymentSelector } from './components/payment-selector.js';
 import { setSafeHTML, escapeHtml } from './utils/dom-sanitizer.js';
 import { getAvailabilityService } from './lib/availability-service.js';
 
+/**
+ * Check if legacy checkout should be used (React is default)
+ * @returns {boolean} true if legacy checkout modal should be used
+ */
+function isLegacyCheckoutEnabled() {
+    // URL param override for testing (highest priority)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('legacy_checkout')) {
+        return urlParams.get('legacy_checkout') === 'true';
+    }
+
+    // Check for global config (set by server/build)
+    if (typeof window.LEGACY_CHECKOUT_ENABLED !== 'undefined') {
+        return window.LEGACY_CHECKOUT_ENABLED === true;
+    }
+
+    // Default: React checkout is enabled (legacy disabled)
+    return false;
+}
+
 export function initializeFloatingCart(cartManager) {
     // Check if already initialized
     if (document.querySelector('.floating-cart-container')) {
@@ -440,19 +460,26 @@ async function handleCheckoutClick(cartManager) {
         }
     }
 
-    // Show payment method selector
+    // Close cart panel first for better UX
+    const panel = document.querySelector('.floating-cart-panel');
+    const backdrop = document.querySelector('.cart-backdrop');
+    if (panel && panel.classList.contains('open')) {
+        panel.classList.remove('open');
+        backdrop.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    // Feature flag: React checkout (default) or legacy modal
+    if (!isLegacyCheckoutEnabled()) {
+        // React checkout is default - redirect to React checkout page
+        window.location.href = '/checkout';
+        return;
+    }
+
+    // Legacy path: Show payment method selector modal
     const paymentSelector = getPaymentSelector();
 
     try {
-    // Close cart panel first for better UX
-        const panel = document.querySelector('.floating-cart-panel');
-        const backdrop = document.querySelector('.cart-backdrop');
-        if (panel && panel.classList.contains('open')) {
-            panel.classList.remove('open');
-            backdrop.classList.remove('active');
-            document.body.style.overflow = '';
-        }
-
         // Show payment selector and let it handle the rest
         await paymentSelector.show((selectedMethod) => {
             // Track payment method selection

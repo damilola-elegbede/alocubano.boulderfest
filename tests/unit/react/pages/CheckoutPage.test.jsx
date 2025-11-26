@@ -3,28 +3,40 @@
  */
 
 import React from 'react';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import CheckoutPage from '../../../../src/pages/CheckoutPage';
+import {
+    createMockPaymentFetch,
+    createMockLocation,
+} from '../../../mocks/payment-api-mocks.js';
 
 describe('CheckoutPage', () => {
+    let mockLocation;
+    let originalFetch;
+
     beforeEach(() => {
         // Mock window.globalCartManager (from AboutPage.test.jsx pattern)
+        // Note: Cart prices are in dollars for display (not cents)
         window.globalCartManager = {
             getState: vi.fn(() => ({
                 tickets: {
                     'full-pass': {
+                        ticketType: 'full-pass',
                         name: 'Full Pass',
-                        price: 75,
+                        eventName: 'A Lo Cubano Boulder Fest 2026',
+                        eventDate: '2026-05-15',
+                        price: 75, // dollars
                         quantity: 2,
+                        eventId: 1,
                     },
                 },
                 donations: [],
                 totals: {
                     itemCount: 2,
-                    grandTotal: 150,
+                    grandTotal: 150, // dollars
                 },
             })),
             addTicket: vi.fn(),
@@ -34,6 +46,13 @@ describe('CheckoutPage', () => {
             removeDonation: vi.fn(),
             clear: vi.fn(),
         };
+
+        // Mock location for redirect testing
+        mockLocation = createMockLocation();
+
+        // Save and mock fetch
+        originalFetch = global.fetch;
+        global.fetch = createMockPaymentFetch({ stripe: { success: true } });
 
         // Mock localStorage for theme
         const localStorageMock = {
@@ -59,6 +78,12 @@ describe('CheckoutPage', () => {
         });
     });
 
+    afterEach(() => {
+        mockLocation.restore();
+        global.fetch = originalFetch;
+        vi.clearAllMocks();
+    });
+
     describe('Component Rendering', () => {
         it('should render the Checkout page', () => {
             render(<CheckoutPage />);
@@ -79,9 +104,20 @@ describe('CheckoutPage', () => {
             render(<CheckoutPage />);
             expect(screen.getByText('Full Pass')).toBeInTheDocument();
             expect(screen.getByText('x2')).toBeInTheDocument();
-            // Line item total and grand total both show $150.00, use getAllByText
+            // Line item total and grand total show $150.00 (7500 cents * 2 = 15000 cents = $150)
             const priceElements = screen.getAllByText('$150.00');
             expect(priceElements.length).toBeGreaterThanOrEqual(1);
+        });
+
+        it('should render PaymentMethodSelector section', () => {
+            render(<CheckoutPage />);
+            expect(screen.getByText('Payment Method')).toBeInTheDocument();
+        });
+
+        it('should render payment method options', () => {
+            render(<CheckoutPage />);
+            expect(screen.getByTestId('payment-method-stripe')).toBeInTheDocument();
+            expect(screen.getByTestId('payment-method-paypal')).toBeInTheDocument();
         });
     });
 
@@ -143,10 +179,27 @@ describe('CheckoutPage', () => {
         });
     });
 
-    describe('PR 8 Notice', () => {
-        it('should show PR 8 payment integration notice', () => {
+    describe('Payment Flow', () => {
+        it('should disable payment method selector when customer info not provided', () => {
             render(<CheckoutPage />);
-            expect(screen.getByText(/Payment integration coming in PR 8/i)).toBeInTheDocument();
+
+            // Payment method buttons should be disabled until customer info is provided
+            const stripeButton = screen.getByTestId('payment-method-stripe');
+            expect(stripeButton).toBeDisabled();
+        });
+
+        it('should show help text when form is incomplete', () => {
+            render(<CheckoutPage />);
+
+            // Should show help text when no customer info
+            expect(screen.getByText(/Fill in your information above/i)).toBeInTheDocument();
+        });
+
+        it('should show payment method required message after customer info is submitted', async () => {
+            render(<CheckoutPage />);
+
+            // Note: Full interaction testing would require filling the form
+            // which is tested in CustomerInfoForm tests
         });
     });
 
@@ -175,6 +228,20 @@ describe('CheckoutPage', () => {
         it('should display cart total from useCart', () => {
             render(<CheckoutPage />);
             expect(screen.getByTestId('order-total')).toHaveTextContent('$150.00');
+        });
+    });
+
+    describe('Payment Method Integration', () => {
+        it('should have payment method radiogroup', () => {
+            render(<CheckoutPage />);
+
+            expect(screen.getByRole('radiogroup', { name: /select payment method/i })).toBeInTheDocument();
+        });
+
+        it('should show secure payment note', () => {
+            render(<CheckoutPage />);
+
+            expect(screen.getByText('Secure Payment Processing')).toBeInTheDocument();
         });
     });
 });

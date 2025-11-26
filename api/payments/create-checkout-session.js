@@ -8,6 +8,8 @@ import { setSecureCorsHeaders } from '../../lib/cors-config.js';
 import { validateTicketAvailability, reserveTickets, releaseReservation } from '../../lib/ticket-availability-service.js';
 import { logger } from '../../lib/logger.js';
 import { sanitizeProductName, sanitizeProductDescription } from '../../lib/payment-sanitization.js';
+import { CheckoutRequestSchema } from '../../src/api/schemas/checkout.js';
+import { validateRequestWithResponse } from '../../src/api/helpers/validate.js';
 
 // Check if we're in test mode
 const isTestMode = process.env.NODE_ENV === 'test' || process.env.INTEGRATION_TEST_MODE === 'true';
@@ -69,7 +71,13 @@ export default async function handler(req, res) {
   // Stripe initialization check is no longer needed since we fail immediately at module level
 
   try {
-    const { cartItems, customerInfo } = req.body;
+    // Validate request body with Zod schema
+    const validation = validateRequestWithResponse(CheckoutRequestSchema, req.body, res);
+    if (!validation.valid) {
+      return; // Response already sent by validateRequestWithResponse
+    }
+
+    const { cartItems, customerInfo, testMode } = validation.data;
 
     // Log incoming request in development
     if (process.env.NODE_ENV !== 'production') {
@@ -78,22 +86,9 @@ export default async function handler(req, res) {
         customerInfo: customerInfo,
         hasCartItems: !!cartItems,
         isArray: Array.isArray(cartItems),
-        itemCount: cartItems?.length
+        itemCount: cartItems?.length,
+        testMode: testMode
       });
-    }
-
-    // Validate required fields
-    if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
-      return res.status(400).json({ error: 'Cart items required' });
-    }
-
-    // Customer info is optional - Stripe Checkout will collect it
-    // Only validate email if provided
-    if (customerInfo?.email) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(customerInfo.email)) {
-        return res.status(400).json({ error: 'Invalid email format' });
-      }
     }
 
     // Validate ticket availability BEFORE creating Stripe session

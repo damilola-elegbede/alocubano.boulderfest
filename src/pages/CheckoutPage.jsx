@@ -1,11 +1,10 @@
 /**
- * CheckoutPage - React checkout page wrapper
+ * CheckoutPage - React checkout page with payment integration
  *
- * Main checkout page combining CustomerInfoForm and OrderSummary.
+ * Main checkout page combining CustomerInfoForm, OrderSummary, and
+ * PaymentMethodSelector. Handles payment processing via Stripe and PayPal.
+ *
  * Follows AboutPage.jsx patterns with AppProviders wrapper.
- *
- * Note: PaymentMethodSelector and CheckoutActions are deferred to PR 8.
- * This page is not mounted in production yet - preparation for future integration.
  *
  * @module src/pages/CheckoutPage
  */
@@ -13,11 +12,21 @@
 import React, { useState, useEffect } from 'react';
 import { AppProviders } from '../providers/AppProviders';
 import { useCart } from '../hooks/useCart';
+import { usePayment } from '../hooks/usePayment';
 import CustomerInfoForm from '../components/checkout/CustomerInfoForm';
 import OrderSummary from '../components/checkout/OrderSummary';
+import PaymentMethodSelector from '../components/checkout/PaymentMethodSelector';
 
 function CheckoutPageContent() {
     const { cart, isLoading, isInitialized } = useCart();
+    const {
+        paymentMethod,
+        isProcessing,
+        error: paymentError,
+        isReady: isPaymentReady,
+        processCheckout,
+        clearError,
+    } = usePayment();
 
     // Form state
     const [customerInfo, setCustomerInfo] = useState(null);
@@ -29,48 +38,48 @@ function CheckoutPageContent() {
     // General form error (for payment errors, etc.)
     const [generalError, setGeneralError] = useState(null);
 
-    // Update button state based on customer info and cart
+    // Sync payment errors to general error
+    useEffect(() => {
+        if (paymentError) {
+            setGeneralError(paymentError);
+        }
+    }, [paymentError]);
+
+    // Update button state based on customer info, cart, and payment method
     useEffect(() => {
         const hasCustomerInfo = customerInfo !== null;
         const hasCartItems = cart?.totals?.itemCount > 0;
+        const hasPaymentMethod = paymentMethod !== null;
+        const canProceed = hasCustomerInfo && hasCartItems && hasPaymentMethod && !isProcessing;
 
         setSubmitButtonState((prev) => ({
             ...prev,
-            disabled: prev.text === 'PROCESSING...' ? true : !(hasCustomerInfo && hasCartItems),
+            disabled: isProcessing ? true : !canProceed,
+            text: isProcessing ? 'PROCESSING...' : 'PROCEED TO PAYMENT',
         }));
-    }, [customerInfo, cart]);
+    }, [customerInfo, cart, paymentMethod, isProcessing]);
 
     // Handle customer info form submission
     const handleCustomerInfoSubmit = (data) => {
         setCustomerInfo(data);
         setGeneralError(null);
+        clearError();
     };
 
     // Handle checkout button click
     const handleProceedToPayment = async () => {
-        if (!customerInfo || !cart?.totals?.itemCount) {
+        if (!customerInfo || !cart?.totals?.itemCount || !paymentMethod) {
             return;
         }
 
-        setSubmitButtonState({ disabled: true, text: 'PROCESSING...' });
         setGeneralError(null);
 
-        try {
-            // PR 8 will add payment flow here
-            // Development logging only - will be replaced with actual payment flow
-            if (import.meta.env.DEV) {
-                console.log('Checkout data (PR 8 will process):', {
-                    customerInfo,
-                    cart,
-                });
-            }
+        const result = await processCheckout(cart, customerInfo);
 
-            // Reset button state after "processing"
-            setSubmitButtonState({ disabled: false, text: 'PROCEED TO PAYMENT' });
-        } catch (error) {
-            setGeneralError(error.message || 'An error occurred. Please try again.');
-            setSubmitButtonState({ disabled: false, text: 'PROCEED TO PAYMENT' });
+        if (!result.success) {
+            setGeneralError(result.error || 'Payment processing failed. Please try again.');
         }
+        // On success, processCheckout handles the redirect
     };
 
     // Handle cancel
@@ -81,8 +90,25 @@ function CheckoutPageContent() {
         }
     };
 
+    // Clear error when payment method changes
+    const handlePaymentMethodChange = () => {
+        setGeneralError(null);
+        clearError();
+    };
+
     // Check if cart is empty
     const isCartEmpty = !cart || (cart.totals?.itemCount || 0) === 0;
+
+    // Check if form is complete (for button state message)
+    const getButtonHelpText = () => {
+        if (isProcessing) return null;
+        if (isCartEmpty) return 'Add items to your cart to continue';
+        if (!customerInfo) return 'Fill in your information above';
+        if (!paymentMethod) return 'Select a payment method';
+        return null;
+    };
+
+    const helpText = getButtonHelpText();
 
     return (
         <main>
@@ -104,17 +130,23 @@ function CheckoutPageContent() {
                             <OrderSummary cart={cart} isLoading={isLoading} />
                         </div>
 
-                        {/* Customer Info Section */}
+                        {/* Customer Info & Payment Section */}
                         <div className="checkout-form-section">
                             <CustomerInfoForm
                                 onValidSubmit={handleCustomerInfoSubmit}
-                                disabled={submitButtonState.text === 'PROCESSING...'}
+                                disabled={isProcessing}
+                            />
+
+                            {/* Payment Method Selection */}
+                            <PaymentMethodSelector
+                                disabled={isProcessing || !customerInfo}
+                                onChange={handlePaymentMethodChange}
                             />
 
                             {/* Action Buttons */}
                             <div
                                 className="form-actions-type"
-                                style={{ marginTop: 'var(--space-xl)' }}
+                                style={{ marginTop: 'var(--space-lg)' }}
                             >
                                 <button
                                     type="button"
@@ -130,12 +162,26 @@ function CheckoutPageContent() {
                                     {submitButtonState.text}
                                 </button>
 
+                                {/* Help text for incomplete form */}
+                                {helpText && (
+                                    <p
+                                        style={{
+                                            color: 'var(--color-text-muted)',
+                                            fontSize: 'var(--font-size-sm)',
+                                            textAlign: 'center',
+                                            marginTop: 'var(--space-sm)',
+                                        }}
+                                    >
+                                        {helpText}
+                                    </p>
+                                )}
+
                                 <button
                                     type="button"
                                     className="form-button-type"
                                     data-testid="cancel-checkout"
                                     onClick={handleCancel}
-                                    disabled={submitButtonState.text === 'PROCESSING...'}
+                                    disabled={isProcessing}
                                     style={{
                                         marginTop: 'var(--space-md)',
                                         background: 'transparent',
@@ -152,6 +198,7 @@ function CheckoutPageContent() {
                                 <div
                                     className="form-error general-error"
                                     data-testid="checkout-error"
+                                    role="alert"
                                     style={{
                                         display: 'block',
                                         color: '#dc2626',
@@ -184,18 +231,6 @@ function CheckoutPageContent() {
                                     Your cart is empty. Please add items before checkout.
                                 </div>
                             )}
-
-                            {/* PR 8 Notice */}
-                            <p
-                                style={{
-                                    color: 'var(--color-text-muted)',
-                                    fontSize: 'var(--font-size-sm)',
-                                    textAlign: 'center',
-                                    marginTop: 'var(--space-lg)',
-                                }}
-                            >
-                                Payment integration coming in PR 8
-                            </p>
                         </div>
                     </div>
                 </div>
