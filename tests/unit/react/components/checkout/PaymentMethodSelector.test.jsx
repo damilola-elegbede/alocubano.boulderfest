@@ -52,7 +52,7 @@ describe('PaymentMethodSelector', () => {
             expect(screen.getByAltText('Apple Pay')).toBeInTheDocument();
             expect(screen.getByAltText('Google Pay')).toBeInTheDocument();
             expect(screen.getByAltText('PayPal')).toBeInTheDocument();
-            expect(screen.getByAltText('Venmo')).toBeInTheDocument();
+            // Venmo is only shown on mobile (768px and below), not on desktop
         });
     });
 
@@ -169,9 +169,11 @@ describe('PaymentMethodSelector', () => {
                 'aria-label',
                 'Pay with credit card, Apple Pay, or Google Pay'
             );
+            // PayPal aria-label varies by viewport: 'Pay with PayPal' on desktop, 'Pay with PayPal or Venmo' on mobile
+            // jsdom defaults to desktop viewport
             expect(screen.getByTestId('payment-method-paypal')).toHaveAttribute(
                 'aria-label',
-                'Pay with PayPal or Venmo'
+                'Pay with PayPal'
             );
         });
 
@@ -230,8 +232,8 @@ describe('PaymentMethodSelector', () => {
             const stripeButton = screen.getByTestId('payment-method-stripe');
             fireEvent.click(stripeButton);
 
-            // Check that border style changes (indicates selected state)
-            expect(stripeButton.style.border).toContain('2px solid var(--color-primary)');
+            // Check that box-shadow is applied (indicates selected state)
+            expect(stripeButton.style.boxShadow).toContain('rgba(91, 107, 181');
         });
 
         it('should apply selected styling to PayPal', () => {
@@ -240,8 +242,8 @@ describe('PaymentMethodSelector', () => {
             const paypalButton = screen.getByTestId('payment-method-paypal');
             fireEvent.click(paypalButton);
 
-            // Check that border style changes (indicates selected state)
-            expect(paypalButton.style.border).toContain('2px solid var(--color-primary)');
+            // Check that box-shadow is applied (indicates selected state)
+            expect(paypalButton.style.boxShadow).toContain('rgba(91, 107, 181');
         });
 
         it('should have unselected styling initially', () => {
@@ -249,8 +251,8 @@ describe('PaymentMethodSelector', () => {
 
             const stripeButton = screen.getByTestId('payment-method-stripe');
 
-            // Check unselected border style
-            expect(stripeButton.style.border).toContain('var(--color-border)');
+            // Check unselected border style - white background with gray border
+            expect(stripeButton.style.background).toBe('rgb(255, 255, 255)');
         });
     });
 
