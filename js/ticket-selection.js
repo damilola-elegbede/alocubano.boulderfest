@@ -560,8 +560,16 @@ class TicketSelection {
 
         this.updateDisplay();
 
-        // Read eventId from card's data attribute (each ticket may have different event)
-        const cardEventId = card.dataset.eventId ? parseInt(card.dataset.eventId) : null;
+        // Read eventId from card's data attribute - REQUIRED for all tickets
+        if (!card.dataset.eventId) {
+            console.error(`Missing data-event-id attribute on ticket card: ${ticketType}`);
+            throw new Error(`Ticket ${ticketName} is missing required eventId. Please contact support.`);
+        }
+        const cardEventId = parseInt(card.dataset.eventId, 10);
+        if (!Number.isFinite(cardEventId)) {
+            console.error(`Invalid data-event-id on ticket card: ${card.dataset.eventId}`);
+            throw new Error(`Ticket ${ticketName} has invalid eventId. Please contact support.`);
+        }
 
         // Look up event name from events service
         const eventName = await this.getEventNameForCard(card);
@@ -664,8 +672,16 @@ class TicketSelection {
 
         this.updateDisplay();
 
-        // Read eventId from card's data attribute (each ticket may have different event)
-        const cardEventId = card.dataset.eventId ? parseInt(card.dataset.eventId) : null;
+        // Read eventId from card's data attribute - REQUIRED for all tickets
+        if (!card.dataset.eventId) {
+            console.error(`Missing data-event-id attribute on ticket card: ${ticketType}`);
+            throw new Error(`Ticket ${ticketName} is missing required eventId. Please contact support.`);
+        }
+        const cardEventId = parseInt(card.dataset.eventId, 10);
+        if (!Number.isFinite(cardEventId)) {
+            console.error(`Invalid data-event-id on ticket card: ${card.dataset.eventId}`);
+            throw new Error(`Ticket ${ticketName} has invalid eventId. Please contact support.`);
+        }
 
         // Look up event name from events service
         const eventName = await this.getEventNameForCard(card);

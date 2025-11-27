@@ -248,6 +248,48 @@ describe('usePayment', () => {
             expect(() => result.current.prepareCartItems(cart)).toThrow('Missing ticketType for ticket');
         });
 
+        it('should throw error for missing eventId', () => {
+            const { result } = renderHook(() => usePayment(), { wrapper });
+
+            const cart = {
+                tickets: {
+                    'weekend-pass': {
+                        ticketType: 'weekend-pass',
+                        name: 'Weekend Pass',
+                        eventName: 'A Lo Cubano Boulder Fest 2026',
+                        eventDate: '2026-05-15',
+                        price: 15000,
+                        quantity: 1,
+                        // Missing eventId
+                    },
+                },
+                donations: [],
+            };
+
+            expect(() => result.current.prepareCartItems(cart)).toThrow('Missing eventId for ticket');
+        });
+
+        it('should throw error for invalid eventId', () => {
+            const { result } = renderHook(() => usePayment(), { wrapper });
+
+            const cart = {
+                tickets: {
+                    'weekend-pass': {
+                        ticketType: 'weekend-pass',
+                        name: 'Weekend Pass',
+                        eventName: 'A Lo Cubano Boulder Fest 2026',
+                        eventDate: '2026-05-15',
+                        price: 15000,
+                        quantity: 1,
+                        eventId: 'not-a-number',
+                    },
+                },
+                donations: [],
+            };
+
+            expect(() => result.current.prepareCartItems(cart)).toThrow('Invalid eventId');
+        });
+
         it('should handle empty cart', () => {
             const { result } = renderHook(() => usePayment(), { wrapper });
 

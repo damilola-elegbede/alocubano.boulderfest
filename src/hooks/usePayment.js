@@ -58,7 +58,7 @@ export function usePayment() {
         // Add tickets
         if (cart?.tickets) {
             Object.values(cart.tickets).forEach((ticket) => {
-                // Validate required fields
+                // Validate required fields - all tickets MUST have these
                 if (!ticket.eventName) {
                     throw new Error(`Missing eventName for ticket: ${ticket.name}`);
                 }
@@ -67,6 +67,14 @@ export function usePayment() {
                 }
                 if (!ticket.ticketType) {
                     throw new Error(`Missing ticketType for ticket: ${ticket.name}`);
+                }
+                // eventId is REQUIRED - every ticket must have one from the source HTML
+                if (ticket.eventId == null) {
+                    throw new Error(`Missing eventId for ticket: ${ticket.name}. This indicates a data issue - all tickets must have an eventId.`);
+                }
+                const eventIdNum = Number(ticket.eventId);
+                if (!Number.isFinite(eventIdNum)) {
+                    throw new Error(`Invalid eventId "${ticket.eventId}" for ticket: ${ticket.name}. eventId must be a valid number.`);
                 }
 
                 // Format date for display
@@ -80,9 +88,6 @@ export function usePayment() {
                     ? `${ticket.description}\nEvent Date: ${formattedDate}`
                     : `Event Date: ${formattedDate}`;
 
-                // Coerce eventId to number (API schema expects number or undefined)
-                const eventIdNum = ticket.eventId != null ? Number(ticket.eventId) : undefined;
-
                 cartItems.push({
                     type: 'ticket',
                     ticketType: ticket.ticketType,
@@ -91,7 +96,7 @@ export function usePayment() {
                     price: ticket.price,
                     quantity: ticket.quantity,
                     eventDate: ticket.eventDate,
-                    eventId: Number.isFinite(eventIdNum) ? eventIdNum : undefined,
+                    eventId: eventIdNum,
                     venue: ticket.venue,
                 });
             });
