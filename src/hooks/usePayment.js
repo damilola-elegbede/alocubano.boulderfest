@@ -80,6 +80,9 @@ export function usePayment() {
                     ? `${ticket.description}\nEvent Date: ${formattedDate}`
                     : `Event Date: ${formattedDate}`;
 
+                // Coerce eventId to number (API schema expects number or undefined)
+                const eventIdNum = ticket.eventId != null ? Number(ticket.eventId) : undefined;
+
                 cartItems.push({
                     type: 'ticket',
                     ticketType: ticket.ticketType,
@@ -88,7 +91,7 @@ export function usePayment() {
                     price: ticket.price,
                     quantity: ticket.quantity,
                     eventDate: ticket.eventDate,
-                    eventId: ticket.eventId,
+                    eventId: Number.isFinite(eventIdNum) ? eventIdNum : undefined,
                     venue: ticket.venue,
                 });
             });
