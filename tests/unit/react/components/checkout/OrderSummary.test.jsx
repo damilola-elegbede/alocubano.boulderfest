@@ -56,6 +56,8 @@ describe('OrderSummary', () => {
                         name: 'Full Pass',
                         price: 7500, // 7500 cents = $75.00
                         quantity: 2,
+                        eventId: 1,
+                        eventName: 'Boulder Fest 2026',
                     },
                 },
                 donations: [],
@@ -64,11 +66,14 @@ describe('OrderSummary', () => {
 
             render(<OrderSummary cart={cart} isLoading={false} />);
 
-            expect(screen.getByText('Full Pass')).toBeInTheDocument();
-            expect(screen.getByText('x2')).toBeInTheDocument();
-            // $150.00 appears for both line item total and grand total
-            const priceElements = screen.getAllByText('$150.00');
-            expect(priceElements.length).toBeGreaterThanOrEqual(1);
+            // Tickets are now listed individually (expanded for registration flow)
+            const fullPassElements = screen.getAllByText('Full Pass');
+            expect(fullPassElements.length).toBe(2); // Two separate ticket rows
+            // Each ticket shows individual price $75.00
+            const priceElements = screen.getAllByText('$75.00');
+            expect(priceElements.length).toBe(2);
+            // Grand total shows $150.00
+            expect(screen.getByTestId('order-total')).toHaveTextContent('$150.00');
         });
 
         it('should display multiple ticket types', () => {
@@ -78,11 +83,15 @@ describe('OrderSummary', () => {
                         name: 'Full Pass',
                         price: 7500, // cents
                         quantity: 1,
+                        eventId: 1,
+                        eventName: 'Boulder Fest 2026',
                     },
                     'day-pass': {
                         name: 'Day Pass',
                         price: 4000, // cents
                         quantity: 2,
+                        eventId: 1,
+                        eventName: 'Boulder Fest 2026',
                     },
                 },
                 donations: [],
@@ -91,10 +100,14 @@ describe('OrderSummary', () => {
 
             render(<OrderSummary cart={cart} isLoading={false} />);
 
+            // 1 Full Pass + 2 Day Passes = 3 ticket rows
             expect(screen.getByText('Full Pass')).toBeInTheDocument();
-            expect(screen.getByText('Day Pass')).toBeInTheDocument();
+            const dayPassElements = screen.getAllByText('Day Pass');
+            expect(dayPassElements.length).toBe(2); // Two Day Pass rows (quantity: 2)
             expect(screen.getByText('$75.00')).toBeInTheDocument();
-            expect(screen.getByText('$80.00')).toBeInTheDocument();
+            // Day Pass shows $40.00 each (two rows)
+            const dayPassPrices = screen.getAllByText('$40.00');
+            expect(dayPassPrices.length).toBe(2);
         });
 
         it('should use ticketType as fallback name if name is missing', () => {
@@ -113,13 +126,15 @@ describe('OrderSummary', () => {
             expect(screen.getByText('vip-pass')).toBeInTheDocument();
         });
 
-        it('should show Tickets category header when tickets exist', () => {
+        it('should show event name as category header when tickets exist', () => {
             const cart = {
                 tickets: {
                     'full-pass': {
                         name: 'Full Pass',
                         price: 7500,
                         quantity: 1,
+                        eventId: 1,
+                        eventName: 'Boulder Fest 2026',
                     },
                 },
                 donations: [],
@@ -127,7 +142,8 @@ describe('OrderSummary', () => {
             };
 
             render(<OrderSummary cart={cart} isLoading={false} />);
-            expect(screen.getByText('Tickets')).toBeInTheDocument();
+            // Event name is now the category header instead of generic "Tickets"
+            expect(screen.getByText('Boulder Fest 2026')).toBeInTheDocument();
         });
     });
 
@@ -246,6 +262,8 @@ describe('OrderSummary', () => {
                         name: 'Full Pass',
                         price: 7500, // cents
                         quantity: 1,
+                        eventId: 1,
+                        eventName: 'Boulder Fest 2026',
                     },
                 },
                 donations: [{ id: 1, amount: 25 }], // dollars
@@ -254,8 +272,8 @@ describe('OrderSummary', () => {
 
             render(<OrderSummary cart={cart} isLoading={false} />);
 
-            // Both category headers should appear
-            expect(screen.getByText('Tickets')).toBeInTheDocument();
+            // Event name is now the category header for tickets
+            expect(screen.getByText('Boulder Fest 2026')).toBeInTheDocument();
             expect(screen.getByText('Donations')).toBeInTheDocument();
 
             expect(screen.getByText('Full Pass')).toBeInTheDocument();
@@ -272,6 +290,8 @@ describe('OrderSummary', () => {
                         name: '<script>alert("xss")</script>',
                         price: 5000, // cents
                         quantity: 1,
+                        eventId: 1,
+                        eventName: 'Test Event',
                     },
                 },
                 donations: [],
@@ -280,8 +300,8 @@ describe('OrderSummary', () => {
 
             render(<OrderSummary cart={cart} isLoading={false} />);
 
-            // React auto-escapes text content - verify text shows as literal string
-            const itemRow = screen.getByTestId('order-item-xss');
+            // Tickets are now expanded with key format: `order-item-{ticketType}-{index}`
+            const itemRow = screen.getByTestId('order-item-xss-0');
             expect(itemRow).toBeInTheDocument();
 
             // The script text should be displayed as text, not executed
@@ -300,6 +320,8 @@ describe('OrderSummary', () => {
                         name: 'Pass & Tickets "Special" <Sale>',
                         price: 5000, // cents
                         quantity: 1,
+                        eventId: 1,
+                        eventName: 'Test Event',
                     },
                 },
                 donations: [],
@@ -308,7 +330,8 @@ describe('OrderSummary', () => {
 
             render(<OrderSummary cart={cart} isLoading={false} />);
 
-            const itemRow = screen.getByTestId('order-item-special');
+            // Tickets are now expanded with key format: `order-item-{ticketType}-{index}`
+            const itemRow = screen.getByTestId('order-item-special-0');
             expect(itemRow).toBeInTheDocument();
 
             // React displays special characters as text content
@@ -325,7 +348,7 @@ describe('OrderSummary', () => {
     describe('Component Structure', () => {
         it('should render with data-testid for testing', () => {
             const cart = {
-                tickets: { 'test': { name: 'Test', price: 1000, quantity: 1 } }, // cents
+                tickets: { 'test': { name: 'Test', price: 1000, quantity: 1, eventId: 1, eventName: 'Test Event' } }, // cents
                 donations: [],
                 totals: { grandTotal: 1000 }, // cents
             };
@@ -333,21 +356,24 @@ describe('OrderSummary', () => {
             render(<OrderSummary cart={cart} isLoading={false} />);
 
             expect(screen.getByTestId('order-summary')).toBeInTheDocument();
-            expect(screen.getByTestId('order-item-test')).toBeInTheDocument();
+            // Tickets are now expanded with key format: `order-item-{ticketType}-{index}`
+            expect(screen.getByTestId('order-item-test-0')).toBeInTheDocument();
             expect(screen.getByTestId('order-total')).toBeInTheDocument();
         });
 
-        it('should display unit price with "each" label', () => {
+        it('should display ticket number info for each ticket', () => {
             const cart = {
                 tickets: {
-                    'pass': { name: 'Pass', price: 7500, quantity: 2 }, // cents
+                    'pass': { name: 'Pass', price: 7500, quantity: 2, eventId: 1, eventName: 'Test Event' }, // cents
                 },
                 donations: [],
                 totals: { grandTotal: 15000 }, // cents
             };
 
             render(<OrderSummary cart={cart} isLoading={false} />);
-            expect(screen.getByText('$75.00 each')).toBeInTheDocument();
+            // Each ticket shows "Ticket 1 of 2", "Ticket 2 of 2"
+            expect(screen.getByText('Ticket 1 of 2')).toBeInTheDocument();
+            expect(screen.getByText('Ticket 2 of 2')).toBeInTheDocument();
         });
 
         it('should display donation description', () => {

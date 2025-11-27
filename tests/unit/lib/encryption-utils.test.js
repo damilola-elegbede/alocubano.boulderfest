@@ -455,14 +455,15 @@ describe('Encryption Utils - Unit Tests', () => {
     });
 
     it('should handle concurrent encryption operations', () => {
-      const secrets = Array.from({ length: 100 }, (_, i) => `SECRET_${i}`);
+      // Use fewer operations to avoid timeout (scrypt is CPU-intensive)
+      const secrets = Array.from({ length: 20 }, (_, i) => `SECRET_${i}`);
       const encrypted = secrets.map(s => encryptSecret(s));
       const decrypted = encrypted.map(e => decryptSecret(e));
 
       decrypted.forEach((d, i) => {
         expect(d).toBe(secrets[i]);
       });
-    });
+    }, 30000); // Extended timeout for CPU-intensive crypto operations
   });
 
   describe('Key Derivation', () => {

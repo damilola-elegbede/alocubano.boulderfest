@@ -87,7 +87,7 @@ describe('CheckoutPage', () => {
     describe('Component Rendering', () => {
         it('should render the Checkout page', () => {
             render(<CheckoutPage />);
-            expect(screen.getByText('CHECKOUT')).toBeInTheDocument();
+            expect(screen.getByText('ORDER CHECKOUT')).toBeInTheDocument();
         });
 
         it('should render OrderSummary section', () => {
@@ -97,16 +97,16 @@ describe('CheckoutPage', () => {
 
         it('should render cart items in order summary', () => {
             render(<CheckoutPage />);
-            expect(screen.getByText('Full Pass')).toBeInTheDocument();
-            expect(screen.getByText('x2')).toBeInTheDocument();
-            // Line item total and grand total show $150.00 (7500 cents * 2 = 15000 cents = $150)
-            const priceElements = screen.getAllByText('$150.00');
-            expect(priceElements.length).toBeGreaterThanOrEqual(1);
+            // Now tickets are listed individually (e.g., "Ticket 1 of 2", "Ticket 2 of 2")
+            const fullPassElements = screen.getAllByText('Full Pass');
+            expect(fullPassElements.length).toBe(2); // Two separate ticket rows
+            // Grand total still shows $150.00 (7500 cents * 2 = 15000 cents = $150)
+            expect(screen.getByTestId('order-total')).toHaveTextContent('$150.00');
         });
 
         it('should render PaymentMethodSelector section', () => {
             render(<CheckoutPage />);
-            expect(screen.getByText('Payment Method')).toBeInTheDocument();
+            expect(screen.getByText('Select Payment Method')).toBeInTheDocument();
         });
 
         it('should render payment method options', () => {
@@ -115,9 +115,10 @@ describe('CheckoutPage', () => {
             expect(screen.getByTestId('payment-method-paypal')).toBeInTheDocument();
         });
 
-        it('should render Tickets category header', () => {
+        it('should render event name as category header', () => {
             render(<CheckoutPage />);
-            expect(screen.getByText('Tickets')).toBeInTheDocument();
+            // Event name is now the category header instead of generic "Tickets"
+            expect(screen.getByText('A Lo Cubano Boulder Fest 2026')).toBeInTheDocument();
         });
     });
 
@@ -181,8 +182,8 @@ describe('CheckoutPage', () => {
         it('should show help text when no payment method selected', () => {
             render(<CheckoutPage />);
 
-            // Should show help text when no payment method
-            expect(screen.getByText(/Select a payment method/i)).toBeInTheDocument();
+            // Should show help text when no payment method (case-sensitive match)
+            expect(screen.getByText('Select a payment method')).toBeInTheDocument();
         });
     });
 
@@ -190,7 +191,7 @@ describe('CheckoutPage', () => {
         it('should have proper heading structure', () => {
             render(<CheckoutPage />);
 
-            const mainHeading = screen.getByText('CHECKOUT');
+            const mainHeading = screen.getByText('ORDER CHECKOUT');
             expect(mainHeading.tagName).toBe('H2');
 
             const orderSummaryHeading = screen.getByText('Order Summary');

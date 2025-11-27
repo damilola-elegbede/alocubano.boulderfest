@@ -29,7 +29,7 @@ describe('PaymentMethodSelector', () => {
         it('should render payment method header', () => {
             renderWithProvider();
 
-            expect(screen.getByText('Payment Method')).toBeInTheDocument();
+            expect(screen.getByText('Select Payment Method')).toBeInTheDocument();
         });
 
         it('should render security note', () => {
@@ -251,8 +251,8 @@ describe('PaymentMethodSelector', () => {
 
             const stripeButton = screen.getByTestId('payment-method-stripe');
 
-            // Check unselected border style - white background with gray border
-            expect(stripeButton.style.background).toBe('rgb(255, 255, 255)');
+            // Check unselected style - recessed gray background for flat/unselected appearance
+            expect(stripeButton.style.background).toBe('rgb(249, 250, 251)');
         });
     });
 
