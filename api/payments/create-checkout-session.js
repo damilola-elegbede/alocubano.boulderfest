@@ -150,7 +150,8 @@ export default async function handler(req, res) {
     // CRITICAL: Reserve tickets atomically BEFORE creating Stripe session
     // This prevents race condition overselling by locking the quantities
     // Generate a temporary session ID for reservation (will be replaced with Stripe session ID)
-    const tempSessionId = `temp_${orderId}`;
+    let tempSessionId;
+    tempSessionId = `temp_${orderId}`;
 
     try {
       const reservationResult = await reserveTickets(cartItems, tempSessionId);
@@ -398,7 +399,7 @@ export default async function handler(req, res) {
   } catch (error) {
     // CRITICAL: Release orphaned reservation if it was created
     // This prevents tickets from being locked for 15 minutes when Stripe session creation fails
-    if (typeof tempSessionId !== 'undefined') {
+    if (tempSessionId) {
       try {
         await releaseReservation(tempSessionId);
         console.log(`Released orphaned reservation for tempSessionId: ${tempSessionId}`);

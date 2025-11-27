@@ -333,7 +333,7 @@ describe('Checkout API Zod Validation', () => {
         });
     });
 
-    describe('formatZodErrors', () => {
+    describe('validateRequest error formatting', () => {
         test('should format single error correctly', () => {
             const invalidRequest = {
                 cartItems: [],

@@ -465,7 +465,7 @@ async function handleCheckoutClick(cartManager) {
     const backdrop = document.querySelector('.cart-backdrop');
     if (panel && panel.classList.contains('open')) {
         panel.classList.remove('open');
-        backdrop.classList.remove('active');
+        backdrop?.classList.remove('active');
         document.body.style.overflow = '';
     }
 

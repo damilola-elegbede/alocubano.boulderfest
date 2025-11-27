@@ -17,6 +17,7 @@
 
 import { useContext, useCallback } from 'react';
 import { PaymentContext, PaymentMethod } from '../contexts/PaymentContext';
+import timeManager from '../../js/time-manager.js';
 
 /**
  * Custom hook for accessing payment context and operations
@@ -329,12 +330,7 @@ export function usePayment() {
  */
 function formatDateForDisplay(dateString) {
     try {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-        });
+        return timeManager.formatDate(dateString);
     } catch {
         return dateString;
     }
