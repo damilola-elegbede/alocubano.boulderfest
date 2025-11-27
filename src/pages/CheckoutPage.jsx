@@ -19,6 +19,41 @@ import { usePayment } from '../hooks/usePayment';
 import OrderSummary from '../components/checkout/OrderSummary';
 import PaymentMethodSelector from '../components/checkout/PaymentMethodSelector';
 
+// Custom button styles for checkout - override default animations
+const checkoutButtonStyles = {
+    proceed: {
+        width: '100%',
+        background: 'var(--color-blue)',
+        color: 'white',
+        border: 'none',
+        padding: 'var(--space-md) var(--space-xl)',
+        fontFamily: 'var(--font-code)',
+        fontSize: 'var(--font-size-sm)',
+        letterSpacing: 'var(--letter-spacing-wide)',
+        textTransform: 'uppercase',
+        cursor: 'pointer',
+        transition: 'transform 0.2s ease',
+    },
+    proceedHover: {
+        transform: 'translateY(-2px)',
+    },
+    cancel: {
+        width: 'auto',
+        padding: 'var(--space-sm) var(--space-lg)',
+        background: 'var(--color-red)',
+        color: 'white',
+        border: 'none',
+        fontFamily: 'var(--font-code)',
+        fontSize: 'var(--font-size-sm)',
+        letterSpacing: 'var(--letter-spacing-wide)',
+        textTransform: 'uppercase',
+        cursor: 'pointer',
+        display: 'block',
+        margin: 'var(--space-md) auto 0',
+        transition: 'transform 0.2s ease',
+    },
+};
+
 function CheckoutPageContent() {
     const { cart, isLoading, isInitialized } = useCart();
     const {
@@ -103,18 +138,23 @@ function CheckoutPageContent() {
 
     const helpText = getButtonHelpText();
 
+    // Hover state for proceed button (raise animation only, no color change)
+    const [isProceedHovered, setIsProceedHovered] = useState(false);
+
     return (
         <main>
             <section className="section-typographic" style={{ padding: 'var(--space-xl) 0' }}>
                 <div className="container">
-                    <h2 className="text-mask">CHECKOUT</h2>
+                    <h2 className="text-mask" style={{ textAlign: 'center' }}>ORDER CHECKOUT</h2>
 
                     <div
                         className="checkout-layout"
                         style={{
-                            display: 'grid',
+                            display: 'flex',
+                            flexDirection: 'column',
                             gap: 'var(--space-xl)',
-                            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                            maxWidth: '480px',
+                            margin: '0 auto',
                             marginTop: 'var(--space-xl)',
                         }}
                     >
@@ -138,11 +178,16 @@ function CheckoutPageContent() {
                             >
                                 <button
                                     type="button"
-                                    className="form-button-type volunteer-submit"
                                     data-testid="proceed-to-payment"
                                     disabled={submitButtonState.disabled || isCartEmpty}
                                     onClick={handleProceedToPayment}
+                                    onMouseEnter={() => setIsProceedHovered(true)}
+                                    onMouseLeave={() => setIsProceedHovered(false)}
                                     style={{
+                                        ...checkoutButtonStyles.proceed,
+                                        ...(isProceedHovered && !submitButtonState.disabled && !isCartEmpty
+                                            ? checkoutButtonStyles.proceedHover
+                                            : {}),
                                         opacity: submitButtonState.disabled || isCartEmpty ? '0.5' : '1',
                                         cursor: submitButtonState.disabled || isCartEmpty ? 'not-allowed' : 'pointer',
                                     }}
@@ -166,16 +211,10 @@ function CheckoutPageContent() {
 
                                 <button
                                     type="button"
-                                    className="form-button-type"
                                     data-testid="cancel-checkout"
                                     onClick={handleCancel}
                                     disabled={isProcessing}
-                                    style={{
-                                        marginTop: 'var(--space-md)',
-                                        background: 'transparent',
-                                        border: '2px solid var(--color-border)',
-                                        color: 'var(--color-text-primary)',
-                                    }}
+                                    style={checkoutButtonStyles.cancel}
                                 >
                                     CANCEL
                                 </button>

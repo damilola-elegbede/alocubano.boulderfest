@@ -15,6 +15,7 @@ import { usePayment } from '../../hooks/usePayment';
 import { PaymentMethod } from '../../contexts/PaymentContext';
 
 // Styles matching the original payment-selector.css modal design
+// Enhanced for maximum visual clarity on selection state
 const styles = {
     container: {
         display: 'flex',
@@ -33,29 +34,60 @@ const styles = {
         margin: 0,
         textAlign: 'center',
     },
-    // Payment button base style - white background for icon visibility
+    prompt: {
+        textAlign: 'center',
+        color: 'var(--color-text-muted)',
+        fontSize: 'var(--font-size-sm)',
+        marginBottom: 'var(--space-sm)',
+        fontStyle: 'italic',
+    },
+    // Payment button base style - recessed/flat appearance when not selected
     button: {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         padding: '28px 20px',
         height: '120px',
-        background: '#ffffff',
-        border: '2px solid #e5e7eb',
+        background: '#f9fafb',
+        border: '3px solid #d1d5db',
         borderRadius: '16px',
         cursor: 'pointer',
         transition: 'all 0.2s ease',
         position: 'relative',
         overflow: 'hidden',
+        boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05)',
     },
+    buttonHover: {
+        borderColor: 'var(--color-primary)',
+        transform: 'translateY(-2px)',
+        boxShadow: '0 4px 12px rgba(91, 107, 181, 0.15)',
+        background: '#ffffff',
+    },
+    // Selected state: bold border + glow ring + elevation + tint + checkmark
     buttonSelected: {
         borderColor: 'var(--color-primary)',
-        boxShadow: '0 4px 12px rgba(91, 107, 181, 0.3)',
+        background: 'linear-gradient(135deg, #f0f4ff 0%, #ffffff 100%)',
+        transform: 'translateY(-4px)',
+        boxShadow: '0 0 0 4px rgba(91, 107, 181, 0.25), 0 8px 20px rgba(91, 107, 181, 0.25)',
     },
     buttonDisabled: {
         opacity: 0.5,
         cursor: 'not-allowed',
         pointerEvents: 'none',
+    },
+    // Checkmark indicator for selected state
+    checkmark: {
+        position: 'absolute',
+        top: '12px',
+        right: '12px',
+        width: '28px',
+        height: '28px',
+        borderRadius: '50%',
+        background: 'var(--color-primary)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        boxShadow: '0 2px 8px rgba(91, 107, 181, 0.4)',
     },
     iconsContainer: {
         display: 'flex',
@@ -106,6 +138,7 @@ const styles = {
 export default function PaymentMethodSelector({ disabled = false, onChange }) {
     const { paymentMethod, setPaymentMethod, isProcessing } = usePayment();
     const [isMobile, setIsMobile] = useState(false);
+    const [hoveredMethod, setHoveredMethod] = useState(null);
 
     // Detect mobile for Venmo display (Venmo is mobile-only)
     useEffect(() => {
@@ -129,12 +162,23 @@ export default function PaymentMethodSelector({ disabled = false, onChange }) {
     };
 
     const isSelected = (method) => paymentMethod === method;
+    const isHovered = (method) => hoveredMethod === method && !isSelected(method);
 
     const getButtonStyle = (method) => ({
         ...styles.button,
+        ...(isHovered(method) ? styles.buttonHover : {}),
         ...(isSelected(method) ? styles.buttonSelected : {}),
         ...(isDisabled ? styles.buttonDisabled : {}),
     });
+
+    // Checkmark SVG for selected state
+    const CheckmarkIcon = () => (
+        <div style={styles.checkmark}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+            </svg>
+        </div>
+    );
 
     return (
         <div
@@ -143,7 +187,14 @@ export default function PaymentMethodSelector({ disabled = false, onChange }) {
             aria-label="Select payment method"
             style={styles.container}
         >
-            <h3 style={styles.header}>Payment Method</h3>
+            <h3 style={styles.header}>Select Payment Method</h3>
+
+            {/* Instructional prompt when no method selected */}
+            {!paymentMethod && (
+                <p style={styles.prompt}>
+                    Tap to select a payment method
+                </p>
+            )}
 
             {/* Stripe Option - Credit Cards & Digital Wallets */}
             <button
@@ -155,8 +206,11 @@ export default function PaymentMethodSelector({ disabled = false, onChange }) {
                 data-testid="payment-method-stripe"
                 disabled={isDisabled}
                 onClick={() => handleSelect(PaymentMethod.STRIPE)}
+                onMouseEnter={() => setHoveredMethod(PaymentMethod.STRIPE)}
+                onMouseLeave={() => setHoveredMethod(null)}
                 style={getButtonStyle(PaymentMethod.STRIPE)}
             >
+                {isSelected(PaymentMethod.STRIPE) && <CheckmarkIcon />}
                 <div className="payment-card-icons" style={styles.iconsContainer}>
                     <img
                         src="/images/payment-icons/card_visa.svg"
@@ -195,8 +249,11 @@ export default function PaymentMethodSelector({ disabled = false, onChange }) {
                 data-testid="payment-method-paypal"
                 disabled={isDisabled}
                 onClick={() => handleSelect(PaymentMethod.PAYPAL)}
+                onMouseEnter={() => setHoveredMethod(PaymentMethod.PAYPAL)}
+                onMouseLeave={() => setHoveredMethod(null)}
                 style={getButtonStyle(PaymentMethod.PAYPAL)}
             >
+                {isSelected(PaymentMethod.PAYPAL) && <CheckmarkIcon />}
                 <div className="payment-card-icons" style={styles.iconsContainer}>
                     <img
                         src="/images/payment-icons/card_paypal.svg"

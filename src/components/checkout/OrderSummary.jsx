@@ -134,6 +134,25 @@ const styles = {
 };
 
 /**
+ * Group tickets by event ID for display
+ * Matches the floating cart grouping behavior
+ */
+const groupTicketsByEvent = (ticketEntries) => {
+    const grouped = {};
+    for (const [ticketType, item] of ticketEntries) {
+        const eventId = item.eventId || 'default';
+        if (!grouped[eventId]) {
+            grouped[eventId] = {
+                eventName: item.eventName || 'Tickets',
+                tickets: [],
+            };
+        }
+        grouped[eventId].tickets.push([ticketType, item]);
+    }
+    return grouped;
+};
+
+/**
  * OrderSummary component
  *
  * @param {Object} props
@@ -213,40 +232,58 @@ export default function OrderSummary({ cart, isLoading = false }) {
 
             {/* Content */}
             <div style={styles.content}>
-                {/* Tickets Category */}
-                {ticketEntries.length > 0 && (
-                    <div style={styles.category}>
-                        <div style={{ ...styles.categoryHeader, ...styles.categoryHeaderTickets }}>
-                            Tickets
-                        </div>
-                        {ticketEntries.map(([ticketType, item], index) => (
-                            <div
-                                key={ticketType}
-                                className="order-item"
-                                data-testid={`order-item-${ticketType}`}
-                                style={{
-                                    ...styles.item,
-                                    ...(index === ticketEntries.length - 1 ? styles.itemLast : {}),
-                                }}
-                            >
-                                <div style={styles.itemInfo}>
-                                    <h4 style={styles.itemName}>
-                                        {item.name || ticketType}
-                                    </h4>
-                                    <p style={styles.itemPrice}>
-                                        ${formatPrice(item.price)} each
-                                    </p>
+                {/* Tickets grouped by Event - each ticket listed separately for registration */}
+                {ticketEntries.length > 0 && (() => {
+                    const eventGroups = groupTicketsByEvent(ticketEntries);
+                    return Object.entries(eventGroups).map(([eventId, group]) => {
+                        // Expand tickets: create individual rows for each quantity
+                        const expandedTickets = [];
+                        group.tickets.forEach(([ticketType, item]) => {
+                            const qty = item.quantity || 1;
+                            for (let i = 0; i < qty; i++) {
+                                expandedTickets.push({
+                                    ticketType,
+                                    item,
+                                    index: i,
+                                    key: `${ticketType}-${i}`,
+                                });
+                            }
+                        });
+
+                        return (
+                            <div key={eventId} style={styles.category}>
+                                <div style={{ ...styles.categoryHeader, ...styles.categoryHeaderTickets }}>
+                                    {group.eventName}
                                 </div>
-                                <div style={styles.itemActions}>
-                                    <span style={styles.qtyDisplay}>x{item.quantity || 1}</span>
-                                    <span style={styles.itemTotal}>
-                                        ${calculateTicketTotal(item.price, item.quantity)}
-                                    </span>
-                                </div>
+                                {expandedTickets.map((ticket, idx) => (
+                                    <div
+                                        key={ticket.key}
+                                        className="order-item"
+                                        data-testid={`order-item-${ticket.key}`}
+                                        style={{
+                                            ...styles.item,
+                                            ...(idx === expandedTickets.length - 1 ? styles.itemLast : {}),
+                                        }}
+                                    >
+                                        <div style={styles.itemInfo}>
+                                            <h4 style={styles.itemName}>
+                                                {ticket.item.name || ticket.ticketType}
+                                            </h4>
+                                            <p style={styles.itemPrice}>
+                                                Ticket {ticket.index + 1} of {ticket.item.quantity}
+                                            </p>
+                                        </div>
+                                        <div style={styles.itemActions}>
+                                            <span style={styles.itemTotal}>
+                                                ${formatPrice(ticket.item.price)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
-                        ))}
-                    </div>
-                )}
+                        );
+                    });
+                })()}
 
                 {/* Donations Category */}
                 {donations.length > 0 && (
