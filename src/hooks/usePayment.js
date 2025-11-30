@@ -155,7 +155,7 @@ export function usePayment() {
                 },
                 body: JSON.stringify({
                     cartItems,
-                    customerInfo,
+                    ...(customerInfo && { customerInfo }),
                 }),
             });
 
@@ -202,7 +202,7 @@ export function usePayment() {
                 },
                 body: JSON.stringify({
                     cartItems,
-                    customerInfo,
+                    ...(customerInfo && { customerInfo }),
                     deviceInfo,
                 }),
             });
