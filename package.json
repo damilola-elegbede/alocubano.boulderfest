@@ -80,7 +80,7 @@
     "node-fetch": "^3.3.2",
     "passkit-generator": "^3.4.0",
     "qrcode": "^1.5.4",
-    "sharp": "^0.34.3",
+    "sharp": "0.34.3",
     "speakeasy": "^2.0.0",
     "sqlite": "^5.1.1",
     "stripe": "^18.5.0",
@@ -112,7 +112,8 @@
     "vercel": "^48.2.9",
     "vite": "^7.2.4",
     "@vitejs/plugin-react": "^4.5.2",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "node-addon-api": "^8.3.0"
   },
   "optionalDependencies": {
     "@libsql/darwin-arm64": "0.5.22",

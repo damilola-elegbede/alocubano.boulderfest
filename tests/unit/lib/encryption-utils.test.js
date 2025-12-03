@@ -577,8 +577,10 @@ describe('Encryption Utils - Unit Tests', () => {
       }
 
       const duration = Date.now() - start;
-      expect(duration).toBeLessThan(10000); // 100 encryptions in < 10 seconds (relaxed for CI variance)
-    });
+      // Increased threshold from 5000ms to 10000ms to account for CI runner variability
+      // scrypt is intentionally CPU-intensive for security; timing varies significantly on shared CI runners
+      expect(duration).toBeLessThan(10000);
+    }, 15000); // Extended test timeout for slow CI runners
 
     it('should decrypt within reasonable time', () => {
       const secret = 'PERFORMANCE_TEST_SECRET';
@@ -588,7 +590,8 @@ describe('Encryption Utils - Unit Tests', () => {
       encrypted.forEach(e => decryptSecret(e));
       const duration = Date.now() - start;
 
-      expect(duration).toBeLessThan(10000); // 100 decryptions in < 10 seconds (relaxed for CI variance)
-    });
+      // Increased threshold from 5000ms to 10000ms to account for CI runner variability
+      expect(duration).toBeLessThan(10000);
+    }, 15000); // Extended test timeout for slow CI runners
   });
 });
