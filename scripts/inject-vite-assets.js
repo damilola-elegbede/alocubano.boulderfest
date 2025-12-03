@@ -30,9 +30,11 @@ const MANIFEST_PATH = path.resolve(__dirname, '../dist/.vite/manifest.json');
 const DEFAULT_TARGET_FILES = [
     path.resolve(__dirname, '../pages/core/about.html'),
     path.resolve(__dirname, '../pages/core/checkout.html'),
+    path.resolve(__dirname, '../pages/core/home.html'),
+    path.resolve(__dirname, '../pages/core/contact.html'),
+    path.resolve(__dirname, '../pages/core/donations.html'),
     // Add more files here as they're migrated:
     // path.resolve(__dirname, '../pages/core/tickets.html'),
-    // path.resolve(__dirname, '../pages/core/donations.html'),
 ];
 
 // ANSI colors for console output

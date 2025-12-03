@@ -161,7 +161,12 @@
     <noscript>
       <link rel="stylesheet" href="/css/bundle-deferred.css">
     </noscript>
-  <!-- payment-modal.css is deprecated - using Stripe Checkout Sessions --></head>
+  <!-- payment-modal.css is deprecated - using Stripe Checkout Sessions -->
+    <!-- INJECTED VITE ASSETS -->
+
+    <script type="module" src="/dist/assets/main-EpkEmgdU.js"></script>
+    <!-- END INJECTED VITE ASSETS -->
+  </head>
   <body class="typographic">
     <header class="header">
       <div class="container">
@@ -295,144 +300,16 @@
     </header>
 
     <main>
-      <!-- Hero Splash Image -->
-      <section class="gallery-hero-splash">
-        <div class="hero-image-container">
-          <img
-            id="hero-splash-image"
-            src=""
-            alt="Community supporters and volunteers making A Lo Cubano Boulder Fest possible, showing the impact of donations"
-            class="hero-splash-img"
-            style="object-position: top center !important"
-          />
+      <!-- React Root for DonationsPage -->
+      <div id="react-root" data-component="DonationsPage"></div>
+
+      <!-- Legacy content removed - now rendered by React DonationsPage component -->
+      <noscript>
+        <div style="padding: 2rem; text-align: center;">
+          <h1>JavaScript Required</h1>
+          <p>This page requires JavaScript to be enabled. Please enable JavaScript in your browser settings and reload the page.</p>
         </div>
-      </section>
-
-      <!-- Donation Content -->
-      <section class="section-typographic">
-        <div class="container">
-          <!-- Mission Text -->
-          <div
-            style="
-              max-width: 700px;
-              margin: 0 auto var(--space-4xl) auto;
-              text-align: center;
-            "
-          >
-            <p
-              class="font-serif"
-              style="font-size: var(--font-size-lg); line-height: 1.8"
-            >
-              As a non-profit organization, we run and are able to create this
-              festival through ticket sales and the generous donations from our
-              community. Your support helps us bring world-class Cuban artists
-              to Boulder and keep this cultural celebration accessible to all.
-            </p>
-          </div>
-
-          <!-- Donation Form -->
-          <div
-            class="donation-form-wrapper donation-form-container"
-            style="max-width: 800px; margin: 0 auto; text-align: center"
-          >
-            <h2
-              id="donation-form-title"
-              class="text-display"
-              style="
-                text-align: center !important;
-                margin-bottom: var(--space-2xl);
-              "
-            >
-              MAKE A DONATION
-            </h2>
-
-            <!-- Donation Selection Interface -->
-            <section class="donation-selection">
-              <h3
-                class="form-label-type font-mono"
-                style="
-                  display: block;
-                  margin-bottom: var(--space-lg);
-                  text-align: center;
-                "
-              >
-                SELECT AMOUNT
-              </h3>
-
-              <div
-                class="donation-amounts"
-                style="
-                  display: flex;
-                  justify-content: center;
-                  flex-wrap: wrap;
-                  gap: var(--space-lg);
-                  margin-bottom: var(--space-xl);
-                "
-              >
-                <div class="donation-card" data-amount="20">
-                  <div class="donation-amount">$20</div>
-                </div>
-
-                <div class="donation-card" data-amount="50">
-                  <div class="donation-amount">$50</div>
-                </div>
-
-                <div class="donation-card" data-amount="100">
-                  <div class="donation-amount">$100</div>
-                </div>
-
-                <div class="donation-card" data-amount="custom">
-                  <div class="donation-amount">CUSTOM</div>
-                </div>
-              </div>
-            </section>
-
-            <form
-              class="donation-form"
-              id="donation-form"
-              method="post"
-              novalidate
-              role="form"
-              aria-labelledby="donation-form-title"
-            >
-              <!-- Submit Button -->
-              <div style="text-align: center">
-                <button
-                  type="button"
-                  id="donate-button"
-                  class="form-button-type"
-                  style="padding: var(--space-lg) var(--space-3xl)"
-                  disabled
-                >
-                  ADD TO CART
-                </button>
-              </div>
-            </form>
-          </div>
-
-          <!-- Tax Info -->
-          <div
-            style="
-              margin-top: var(--space-4xl);
-              text-align: center;
-              padding: var(--space-2xl);
-              background: var(--color-gray-50);
-            "
-          >
-            <p
-              class="font-mono"
-              style="
-                font-size: var(--font-size-sm);
-                color: var(--color-gray-600);
-              "
-            >
-              A Lo Cubano Boulder Fest is a registered 501(c)(3) non-profit
-              organization.<br />
-              All donations are tax-deductible to the extent allowed by law.
-            </p>
-          </div>
-        </div>
-      </section>
+      </noscript>
     </main>
 
     <footer class="footer-typographic">

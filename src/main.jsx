@@ -12,6 +12,9 @@ if (rootElement) {
     const components = {
         'AboutPage': () => import('./pages/AboutPage'),
         'CheckoutPage': () => import('./pages/CheckoutPage'),
+        'HomePage': () => import('./pages/HomePage'),
+        'ContactPage': () => import('./pages/ContactPage'),
+        'DonationsPage': () => import('./pages/DonationsPage'),
     };
 
     if (components[ComponentName]) {

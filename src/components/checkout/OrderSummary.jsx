@@ -310,7 +310,6 @@ export default function OrderSummary({ cart, isLoading = false }) {
                                     </p>
                                 </div>
                                 <div style={styles.itemActions}>
-                                    <span style={styles.qtyDisplay}>x1</span>
                                     <span style={styles.itemTotal}>
                                         ${(donation.amount || 0).toFixed(2)}
                                     </span>
