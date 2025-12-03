@@ -8,6 +8,8 @@ import { setSecureCorsHeaders } from '../../lib/cors-config.js';
 import { validateTicketAvailability, reserveTickets, releaseReservation } from '../../lib/ticket-availability-service.js';
 import { logger } from '../../lib/logger.js';
 import { sanitizeProductName, sanitizeProductDescription } from '../../lib/payment-sanitization.js';
+import { CheckoutRequestSchema } from '../../src/api/schemas/checkout.js';
+import { validateRequestWithResponse } from '../../src/api/helpers/validate.js';
 
 // Check if we're in test mode
 const isTestMode = process.env.NODE_ENV === 'test' || process.env.INTEGRATION_TEST_MODE === 'true';
@@ -69,7 +71,13 @@ export default async function handler(req, res) {
   // Stripe initialization check is no longer needed since we fail immediately at module level
 
   try {
-    const { cartItems, customerInfo } = req.body;
+    // Validate request body with Zod schema
+    const validation = validateRequestWithResponse(CheckoutRequestSchema, req.body, res);
+    if (!validation.valid) {
+      return; // Response already sent by validateRequestWithResponse
+    }
+
+    const { cartItems, customerInfo, testMode } = validation.data;
 
     // Log incoming request in development
     if (process.env.NODE_ENV !== 'production') {
@@ -78,22 +86,9 @@ export default async function handler(req, res) {
         customerInfo: customerInfo,
         hasCartItems: !!cartItems,
         isArray: Array.isArray(cartItems),
-        itemCount: cartItems?.length
+        itemCount: cartItems?.length,
+        testMode: testMode
       });
-    }
-
-    // Validate required fields
-    if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
-      return res.status(400).json({ error: 'Cart items required' });
-    }
-
-    // Customer info is optional - Stripe Checkout will collect it
-    // Only validate email if provided
-    if (customerInfo?.email) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(customerInfo.email)) {
-        return res.status(400).json({ error: 'Invalid email format' });
-      }
     }
 
     // Validate ticket availability BEFORE creating Stripe session
@@ -155,7 +150,8 @@ export default async function handler(req, res) {
     // CRITICAL: Reserve tickets atomically BEFORE creating Stripe session
     // This prevents race condition overselling by locking the quantities
     // Generate a temporary session ID for reservation (will be replaced with Stripe session ID)
-    const tempSessionId = `temp_${orderId}`;
+    let tempSessionId;
+    tempSessionId = `temp_${orderId}`;
 
     try {
       const reservationResult = await reserveTickets(cartItems, tempSessionId);
@@ -403,7 +399,7 @@ export default async function handler(req, res) {
   } catch (error) {
     // CRITICAL: Release orphaned reservation if it was created
     // This prevents tickets from being locked for 15 minutes when Stripe session creation fails
-    if (typeof tempSessionId !== 'undefined') {
+    if (tempSessionId) {
       try {
         await releaseReservation(tempSessionId);
         console.log(`Released orphaned reservation for tempSessionId: ${tempSessionId}`);

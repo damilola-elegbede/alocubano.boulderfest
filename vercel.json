@@ -176,7 +176,7 @@
       "destination": "/pages/core/home"
     },
     {
-      "source": "/(about|tickets|donations|contact|checkout-success|checkout-cancel|my-tickets|success|failure|register-tickets|view-tickets)",
+      "source": "/(about|tickets|donations|contact|checkout|checkout-success|checkout-cancel|my-tickets|success|failure|register-tickets|view-tickets)",
       "destination": "/pages/core/$1"
     },
     {

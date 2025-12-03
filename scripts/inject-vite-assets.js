@@ -29,6 +29,7 @@ const MANIFEST_PATH = path.resolve(__dirname, '../dist/.vite/manifest.json');
 // Default target files - add more as pages are migrated
 const DEFAULT_TARGET_FILES = [
     path.resolve(__dirname, '../pages/core/about.html'),
+    path.resolve(__dirname, '../pages/core/checkout.html'),
     // Add more files here as they're migrated:
     // path.resolve(__dirname, '../pages/core/tickets.html'),
     // path.resolve(__dirname, '../pages/core/donations.html'),

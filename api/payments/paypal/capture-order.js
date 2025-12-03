@@ -15,6 +15,8 @@ import timeUtils from '../../../lib/time-utils.js';
 import { getTicketEmailService } from '../../../lib/ticket-email-service-brevo.js';
 import { detectPaymentProcessor, extractPaymentSourceDetails } from '../../../lib/paypal-payment-source-detector.js';
 import { diagnoseAuthError, getPayPalEnvironmentInfo } from '../../../lib/paypal-config-validator.js';
+import { PayPalCaptureRequestSchema } from '../../../src/api/schemas/checkout.js';
+import { validateRequestWithResponse } from '../../../src/api/helpers/validate.js';
 
 // PayPal API base URL configuration
 const PAYPAL_API_URL =
@@ -55,17 +57,13 @@ async function captureOrderHandler(req, res) {
   }
 
   try {
-    const { orderId } = req.body;
-
-    // Validate required fields
-    if (!orderId || typeof orderId !== 'string') {
-      return res.status(400).json({
-        error: 'Invalid order ID',
-        message: 'PayPal order ID is required',
-        code: 'INVALID_ORDER_ID',
-        timestamp: new Date().toISOString()
-      });
+    // Validate request body with Zod schema
+    const validation = validateRequestWithResponse(PayPalCaptureRequestSchema, req.body, res);
+    if (!validation.valid) {
+      return; // Response already sent by validateRequestWithResponse
     }
+
+    const { orderId, transactionId: clientTransactionId } = validation.data;
 
     // Check if PayPal credentials are configured
     if (!process.env.PAYPAL_CLIENT_ID || !process.env.PAYPAL_CLIENT_SECRET) {

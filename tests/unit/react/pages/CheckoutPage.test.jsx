@@ -3,28 +3,40 @@
  */
 
 import React from 'react';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import CheckoutPage from '../../../../src/pages/CheckoutPage';
+import {
+    createMockPaymentFetch,
+    createMockLocation,
+} from '../../../mocks/payment-api-mocks.js';
 
 describe('CheckoutPage', () => {
+    let mockLocation;
+    let originalFetch;
+
     beforeEach(() => {
         // Mock window.globalCartManager (from AboutPage.test.jsx pattern)
+        // Note: Cart prices are in CENTS (will be converted to dollars by OrderSummary)
         window.globalCartManager = {
             getState: vi.fn(() => ({
                 tickets: {
                     'full-pass': {
+                        ticketType: 'full-pass',
                         name: 'Full Pass',
-                        price: 75,
+                        eventName: 'A Lo Cubano Boulder Fest 2026',
+                        eventDate: '2026-05-15',
+                        price: 7500, // cents - $75.00
                         quantity: 2,
+                        eventId: 1,
                     },
                 },
                 donations: [],
                 totals: {
                     itemCount: 2,
-                    grandTotal: 150,
+                    grandTotal: 15000, // cents - $150.00
                 },
             })),
             addTicket: vi.fn(),
@@ -34,6 +46,13 @@ describe('CheckoutPage', () => {
             removeDonation: vi.fn(),
             clear: vi.fn(),
         };
+
+        // Mock location for redirect testing
+        mockLocation = createMockLocation();
+
+        // Save and mock fetch
+        originalFetch = global.fetch;
+        global.fetch = createMockPaymentFetch({ stripe: { success: true } });
 
         // Mock localStorage for theme
         const localStorageMock = {
@@ -59,15 +78,16 @@ describe('CheckoutPage', () => {
         });
     });
 
+    afterEach(() => {
+        mockLocation.restore();
+        global.fetch = originalFetch;
+        vi.clearAllMocks();
+    });
+
     describe('Component Rendering', () => {
         it('should render the Checkout page', () => {
             render(<CheckoutPage />);
-            expect(screen.getByText('CHECKOUT')).toBeInTheDocument();
-        });
-
-        it('should render CustomerInfoForm section', () => {
-            render(<CheckoutPage />);
-            expect(screen.getByText('Customer Information')).toBeInTheDocument();
+            expect(screen.getByText('ORDER CHECKOUT')).toBeInTheDocument();
         });
 
         it('should render OrderSummary section', () => {
@@ -77,11 +97,28 @@ describe('CheckoutPage', () => {
 
         it('should render cart items in order summary', () => {
             render(<CheckoutPage />);
-            expect(screen.getByText('Full Pass')).toBeInTheDocument();
-            expect(screen.getByText('x2')).toBeInTheDocument();
-            // Line item total and grand total both show $150.00, use getAllByText
-            const priceElements = screen.getAllByText('$150.00');
-            expect(priceElements.length).toBeGreaterThanOrEqual(1);
+            // Now tickets are listed individually (e.g., "Ticket 1 of 2", "Ticket 2 of 2")
+            const fullPassElements = screen.getAllByText('Full Pass');
+            expect(fullPassElements.length).toBe(2); // Two separate ticket rows
+            // Grand total still shows $150.00 (7500 cents * 2 = 15000 cents = $150)
+            expect(screen.getByTestId('order-total')).toHaveTextContent('$150.00');
+        });
+
+        it('should render PaymentMethodSelector section', () => {
+            render(<CheckoutPage />);
+            expect(screen.getByText('Select Payment Method')).toBeInTheDocument();
+        });
+
+        it('should render payment method options', () => {
+            render(<CheckoutPage />);
+            expect(screen.getByTestId('payment-method-stripe')).toBeInTheDocument();
+            expect(screen.getByTestId('payment-method-paypal')).toBeInTheDocument();
+        });
+
+        it('should render event name as category header', () => {
+            render(<CheckoutPage />);
+            // Event name is now the category header instead of generic "Tickets"
+            expect(screen.getByText('A Lo Cubano Boulder Fest 2026')).toBeInTheDocument();
         });
     });
 
@@ -96,20 +133,10 @@ describe('CheckoutPage', () => {
             expect(screen.getByTestId('cancel-checkout')).toBeInTheDocument();
         });
 
-        it('should have Proceed to Payment button disabled initially', () => {
+        it('should have Proceed to Payment button disabled initially (no payment method)', () => {
             render(<CheckoutPage />);
             const submitButton = screen.getByTestId('proceed-to-payment');
             expect(submitButton).toBeDisabled();
-        });
-    });
-
-    describe('Form Integration', () => {
-        it('should render all customer info form fields', () => {
-            render(<CheckoutPage />);
-            expect(screen.getByLabelText(/FIRST NAME/i)).toBeInTheDocument();
-            expect(screen.getByLabelText(/LAST NAME/i)).toBeInTheDocument();
-            expect(screen.getByLabelText(/EMAIL/i)).toBeInTheDocument();
-            expect(screen.getByLabelText(/PHONE/i)).toBeInTheDocument();
         });
     });
 
@@ -143,10 +170,20 @@ describe('CheckoutPage', () => {
         });
     });
 
-    describe('PR 8 Notice', () => {
-        it('should show PR 8 payment integration notice', () => {
+    describe('Payment Flow', () => {
+        it('should enable payment method selector (CustomerInfoForm removed)', () => {
             render(<CheckoutPage />);
-            expect(screen.getByText(/Payment integration coming in PR 8/i)).toBeInTheDocument();
+
+            // Payment method buttons should be enabled since CustomerInfoForm was removed
+            const stripeButton = screen.getByTestId('payment-method-stripe');
+            expect(stripeButton).not.toBeDisabled();
+        });
+
+        it('should show help text when no payment method selected', () => {
+            render(<CheckoutPage />);
+
+            // Should show help text when no payment method (case-sensitive match)
+            expect(screen.getByText('Select a payment method')).toBeInTheDocument();
         });
     });
 
@@ -154,11 +191,8 @@ describe('CheckoutPage', () => {
         it('should have proper heading structure', () => {
             render(<CheckoutPage />);
 
-            const mainHeading = screen.getByText('CHECKOUT');
+            const mainHeading = screen.getByText('ORDER CHECKOUT');
             expect(mainHeading.tagName).toBe('H2');
-
-            const customerInfoHeading = screen.getByText('Customer Information');
-            expect(customerInfoHeading.tagName).toBe('H3');
 
             const orderSummaryHeading = screen.getByText('Order Summary');
             expect(orderSummaryHeading.tagName).toBe('H3');
@@ -172,9 +206,51 @@ describe('CheckoutPage', () => {
             expect(container).toBeInTheDocument();
         });
 
-        it('should display cart total from useCart', () => {
+        it('should display cart total from useCart (cents converted to dollars)', () => {
             render(<CheckoutPage />);
+            // Cart total is 15000 cents = $150.00
             expect(screen.getByTestId('order-total')).toHaveTextContent('$150.00');
+        });
+    });
+
+    describe('Payment Method Integration', () => {
+        it('should have payment method radiogroup', () => {
+            render(<CheckoutPage />);
+
+            expect(screen.getByRole('radiogroup', { name: /select payment method/i })).toBeInTheDocument();
+        });
+
+        it('should show secure payment note', () => {
+            render(<CheckoutPage />);
+
+            expect(screen.getByText('Secure Payment Processing')).toBeInTheDocument();
+        });
+    });
+
+    describe('Simplified Checkout Flow', () => {
+        it('should not render CustomerInfoForm (removed)', () => {
+            render(<CheckoutPage />);
+
+            // CustomerInfoForm has been removed - customer info is captured by payment processors
+            expect(screen.queryByText('Customer Information')).not.toBeInTheDocument();
+        });
+
+        it('should enable submit after selecting payment method', async () => {
+            const user = userEvent.setup();
+            render(<CheckoutPage />);
+
+            // Initially disabled (no payment method)
+            const submitButton = screen.getByTestId('proceed-to-payment');
+            expect(submitButton).toBeDisabled();
+
+            // Select a payment method
+            const stripeButton = screen.getByTestId('payment-method-stripe');
+            await user.click(stripeButton);
+
+            // Now should be enabled
+            await waitFor(() => {
+                expect(submitButton).not.toBeDisabled();
+            });
         });
     });
 });

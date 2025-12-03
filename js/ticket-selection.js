@@ -67,6 +67,26 @@ class TicketSelection {
         }
     }
 
+    /**
+     * Validate and extract eventId from ticket card
+     * @param {HTMLElement} card - The ticket card element
+     * @param {string} ticketName - Ticket name for error messages
+     * @returns {number} The validated eventId
+     * @throws {Error} If eventId is missing or invalid
+     */
+    validateCardEventId(card, ticketName) {
+        if (!card.dataset.eventId) {
+            console.error(`Missing data-event-id attribute on ticket card: ${card.dataset.ticketId}`);
+            throw new Error(`Ticket ${ticketName} is missing required eventId. Please contact support.`);
+        }
+        const eventId = parseInt(card.dataset.eventId, 10);
+        if (!Number.isFinite(eventId)) {
+            console.error(`Invalid data-event-id on ticket card: ${card.dataset.eventId}`);
+            throw new Error(`Ticket ${ticketName} has invalid eventId. Please contact support.`);
+        }
+        return eventId;
+    }
+
     async init() {
         try {
             // Skip loading state for static tickets
@@ -458,6 +478,7 @@ class TicketSelection {
     }
 
     async handleQuantityChange(event) {
+        try {
         console.log('🎫 [DIAGNOSTIC] handleQuantityChange called');
         event.stopPropagation();
         const btn = event.target;
@@ -560,8 +581,7 @@ class TicketSelection {
 
         this.updateDisplay();
 
-        // Read eventId from card's data attribute (each ticket may have different event)
-        const cardEventId = card.dataset.eventId ? parseInt(card.dataset.eventId) : null;
+        const cardEventId = this.validateCardEventId(card, ticketName);
 
         // Look up event name from events service
         const eventName = await this.getEventNameForCard(card);
@@ -582,9 +602,19 @@ class TicketSelection {
                 detail: eventDetail
             })
         );
+            } catch (error) {
+            console.error('Error in handleQuantityChange:', error);
+            // Show user-friendly error message
+            const errorMessage = error.message || 'An error occurred. Please try again.';
+            const card = event.target?.closest('.ticket-card') || document.querySelector('.ticket-card');
+            if (card) {
+                this.showAvailabilityError(card, errorMessage);
+            }
+        }
     }
 
     async handleAddToCartClick(event) {
+        try {
         event.stopPropagation();
         const btn = event.target;
         const ticketType = btn.dataset.ticketId;
@@ -664,8 +694,7 @@ class TicketSelection {
 
         this.updateDisplay();
 
-        // Read eventId from card's data attribute (each ticket may have different event)
-        const cardEventId = card.dataset.eventId ? parseInt(card.dataset.eventId) : null;
+        const cardEventId = this.validateCardEventId(card, ticketName);
 
         // Look up event name from events service
         const eventName = await this.getEventNameForCard(card);
@@ -697,6 +726,26 @@ class TicketSelection {
             btn.setAttribute('data-action-state', 'ready');
             btn.style.backgroundColor = 'var(--color-blue)';
         }, 1000);
+            } catch (error) {
+            console.error('Error in handleAddToCartClick:', error);
+            // Show user-friendly error message  
+            const errorMessage = error.message || 'An error occurred. Please try again.';
+            const btn = event.target;
+            const card = btn?.closest('.ticket-card') || document.querySelector('.ticket-card');
+            if (card) {
+                this.showAvailabilityError(card, errorMessage);
+            }
+            // Reset button state
+            if (btn) {
+                btn.textContent = 'Add to Cart';
+                btn.setAttribute('data-action-state', 'error');
+                btn.style.backgroundColor = 'var(--color-red, #dc3545)';
+                setTimeout(() => {
+                    btn.setAttribute('data-action-state', 'ready');
+                    btn.style.backgroundColor = 'var(--color-blue)';
+                }, 2000);
+            }
+        }
     }
 
     handleTicketCardClick(event) {

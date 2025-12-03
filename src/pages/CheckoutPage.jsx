@@ -1,11 +1,13 @@
 /**
- * CheckoutPage - React checkout page wrapper
+ * CheckoutPage - React checkout page with payment integration
  *
- * Main checkout page combining CustomerInfoForm and OrderSummary.
+ * Main checkout page combining OrderSummary and PaymentMethodSelector.
+ * Handles payment processing via Stripe and PayPal.
+ *
+ * Customer info is captured by payment processors (Stripe/PayPal).
+ * Registration flow (coming later) will capture per-ticket attendee info.
+ *
  * Follows AboutPage.jsx patterns with AppProviders wrapper.
- *
- * Note: PaymentMethodSelector and CheckoutActions are deferred to PR 8.
- * This page is not mounted in production yet - preparation for future integration.
  *
  * @module src/pages/CheckoutPage
  */
@@ -13,14 +15,57 @@
 import React, { useState, useEffect } from 'react';
 import { AppProviders } from '../providers/AppProviders';
 import { useCart } from '../hooks/useCart';
-import CustomerInfoForm from '../components/checkout/CustomerInfoForm';
+import { usePayment } from '../hooks/usePayment';
 import OrderSummary from '../components/checkout/OrderSummary';
+import PaymentMethodSelector from '../components/checkout/PaymentMethodSelector';
+
+// Custom button styles for checkout - override default animations
+const checkoutButtonStyles = {
+    proceed: {
+        width: '100%',
+        background: 'var(--color-blue)',
+        color: 'white',
+        border: 'none',
+        padding: 'var(--space-md) var(--space-xl)',
+        fontFamily: 'var(--font-code)',
+        fontSize: 'var(--font-size-sm)',
+        letterSpacing: 'var(--letter-spacing-wide)',
+        textTransform: 'uppercase',
+        cursor: 'pointer',
+        transition: 'transform 0.2s ease',
+    },
+    proceedHover: {
+        transform: 'translateY(-2px)',
+    },
+    cancel: {
+        width: 'auto',
+        padding: 'var(--space-sm) var(--space-lg)',
+        background: 'var(--color-red)',
+        color: 'white',
+        border: 'none',
+        fontFamily: 'var(--font-code)',
+        fontSize: 'var(--font-size-sm)',
+        letterSpacing: 'var(--letter-spacing-wide)',
+        textTransform: 'uppercase',
+        cursor: 'pointer',
+        display: 'block',
+        margin: 'var(--space-md) auto 0',
+        transition: 'transform 0.2s ease',
+    },
+};
 
 function CheckoutPageContent() {
     const { cart, isLoading, isInitialized } = useCart();
+    const {
+        paymentMethod,
+        isProcessing,
+        error: paymentError,
+        isReady: isPaymentReady,
+        processCheckout,
+        clearError,
+    } = usePayment();
 
     // Form state
-    const [customerInfo, setCustomerInfo] = useState(null);
     const [submitButtonState, setSubmitButtonState] = useState({
         disabled: true,
         text: 'PROCEED TO PAYMENT',
@@ -29,48 +74,41 @@ function CheckoutPageContent() {
     // General form error (for payment errors, etc.)
     const [generalError, setGeneralError] = useState(null);
 
-    // Update button state based on customer info and cart
+    // Sync payment errors to general error
     useEffect(() => {
-        const hasCustomerInfo = customerInfo !== null;
+        if (paymentError) {
+            setGeneralError(paymentError);
+        }
+    }, [paymentError]);
+
+    // Update button state based on cart and payment method
+    useEffect(() => {
         const hasCartItems = cart?.totals?.itemCount > 0;
+        const hasPaymentMethod = paymentMethod !== null;
+        const canProceed = hasCartItems && hasPaymentMethod && !isProcessing;
 
         setSubmitButtonState((prev) => ({
             ...prev,
-            disabled: prev.text === 'PROCESSING...' ? true : !(hasCustomerInfo && hasCartItems),
+            disabled: isProcessing ? true : !canProceed,
+            text: isProcessing ? 'PROCESSING...' : 'PROCEED TO PAYMENT',
         }));
-    }, [customerInfo, cart]);
-
-    // Handle customer info form submission
-    const handleCustomerInfoSubmit = (data) => {
-        setCustomerInfo(data);
-        setGeneralError(null);
-    };
+    }, [cart, paymentMethod, isProcessing]);
 
     // Handle checkout button click
     const handleProceedToPayment = async () => {
-        if (!customerInfo || !cart?.totals?.itemCount) {
+        if (!cart?.totals?.itemCount || !paymentMethod) {
             return;
         }
 
-        setSubmitButtonState({ disabled: true, text: 'PROCESSING...' });
         setGeneralError(null);
 
-        try {
-            // PR 8 will add payment flow here
-            // Development logging only - will be replaced with actual payment flow
-            if (import.meta.env.DEV) {
-                console.log('Checkout data (PR 8 will process):', {
-                    customerInfo,
-                    cart,
-                });
-            }
+        // Customer info will be captured by payment processor (Stripe/PayPal)
+        const result = await processCheckout(cart);
 
-            // Reset button state after "processing"
-            setSubmitButtonState({ disabled: false, text: 'PROCEED TO PAYMENT' });
-        } catch (error) {
-            setGeneralError(error.message || 'An error occurred. Please try again.');
-            setSubmitButtonState({ disabled: false, text: 'PROCEED TO PAYMENT' });
+        if (!result.success) {
+            setGeneralError(result.error || 'Payment processing failed. Please try again.');
         }
+        // On success, processCheckout handles the redirect
     };
 
     // Handle cancel
@@ -81,21 +119,42 @@ function CheckoutPageContent() {
         }
     };
 
+    // Clear error when payment method changes
+    const handlePaymentMethodChange = () => {
+        setGeneralError(null);
+        clearError();
+    };
+
     // Check if cart is empty
     const isCartEmpty = !cart || (cart.totals?.itemCount || 0) === 0;
+
+    // Check if form is complete (for button state message)
+    const getButtonHelpText = () => {
+        if (isProcessing) return null;
+        if (isCartEmpty) return 'Add items to your cart to continue';
+        if (!paymentMethod) return 'Select a payment method';
+        return null;
+    };
+
+    const helpText = getButtonHelpText();
+
+    // Hover state for proceed button (raise animation only, no color change)
+    const [isProceedHovered, setIsProceedHovered] = useState(false);
 
     return (
         <main>
             <section className="section-typographic" style={{ padding: 'var(--space-xl) 0' }}>
                 <div className="container">
-                    <h2 className="text-mask">CHECKOUT</h2>
+                    <h2 className="text-mask" style={{ textAlign: 'center' }}>ORDER CHECKOUT</h2>
 
                     <div
                         className="checkout-layout"
                         style={{
-                            display: 'grid',
+                            display: 'flex',
+                            flexDirection: 'column',
                             gap: 'var(--space-xl)',
-                            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                            maxWidth: '480px',
+                            margin: '0 auto',
                             marginTop: 'var(--space-xl)',
                         }}
                     >
@@ -104,25 +163,31 @@ function CheckoutPageContent() {
                             <OrderSummary cart={cart} isLoading={isLoading} />
                         </div>
 
-                        {/* Customer Info Section */}
+                        {/* Payment Section */}
                         <div className="checkout-form-section">
-                            <CustomerInfoForm
-                                onValidSubmit={handleCustomerInfoSubmit}
-                                disabled={submitButtonState.text === 'PROCESSING...'}
+                            {/* Payment Method Selection */}
+                            <PaymentMethodSelector
+                                disabled={isProcessing}
+                                onChange={handlePaymentMethodChange}
                             />
 
                             {/* Action Buttons */}
                             <div
                                 className="form-actions-type"
-                                style={{ marginTop: 'var(--space-xl)' }}
+                                style={{ marginTop: 'var(--space-lg)' }}
                             >
                                 <button
                                     type="button"
-                                    className="form-button-type volunteer-submit"
                                     data-testid="proceed-to-payment"
                                     disabled={submitButtonState.disabled || isCartEmpty}
                                     onClick={handleProceedToPayment}
+                                    onMouseEnter={() => setIsProceedHovered(true)}
+                                    onMouseLeave={() => setIsProceedHovered(false)}
                                     style={{
+                                        ...checkoutButtonStyles.proceed,
+                                        ...(isProceedHovered && !submitButtonState.disabled && !isCartEmpty
+                                            ? checkoutButtonStyles.proceedHover
+                                            : {}),
                                         opacity: submitButtonState.disabled || isCartEmpty ? '0.5' : '1',
                                         cursor: submitButtonState.disabled || isCartEmpty ? 'not-allowed' : 'pointer',
                                     }}
@@ -130,18 +195,26 @@ function CheckoutPageContent() {
                                     {submitButtonState.text}
                                 </button>
 
+                                {/* Help text for incomplete form */}
+                                {helpText && (
+                                    <p
+                                        style={{
+                                            color: 'var(--color-text-muted)',
+                                            fontSize: 'var(--font-size-sm)',
+                                            textAlign: 'center',
+                                            marginTop: 'var(--space-sm)',
+                                        }}
+                                    >
+                                        {helpText}
+                                    </p>
+                                )}
+
                                 <button
                                     type="button"
-                                    className="form-button-type"
                                     data-testid="cancel-checkout"
                                     onClick={handleCancel}
-                                    disabled={submitButtonState.text === 'PROCESSING...'}
-                                    style={{
-                                        marginTop: 'var(--space-md)',
-                                        background: 'transparent',
-                                        border: '2px solid var(--color-border)',
-                                        color: 'var(--color-text-primary)',
-                                    }}
+                                    disabled={isProcessing}
+                                    style={checkoutButtonStyles.cancel}
                                 >
                                     CANCEL
                                 </button>
@@ -152,6 +225,7 @@ function CheckoutPageContent() {
                                 <div
                                     className="form-error general-error"
                                     data-testid="checkout-error"
+                                    role="alert"
                                     style={{
                                         display: 'block',
                                         color: '#dc2626',
@@ -184,18 +258,6 @@ function CheckoutPageContent() {
                                     Your cart is empty. Please add items before checkout.
                                 </div>
                             )}
-
-                            {/* PR 8 Notice */}
-                            <p
-                                style={{
-                                    color: 'var(--color-text-muted)',
-                                    fontSize: 'var(--font-size-sm)',
-                                    textAlign: 'center',
-                                    marginTop: 'var(--space-lg)',
-                                }}
-                            >
-                                Payment integration coming in PR 8
-                            </p>
                         </div>
                     </div>
                 </div>

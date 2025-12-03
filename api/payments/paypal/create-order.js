@@ -16,6 +16,8 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 import { generateOrderNumber } from '../../../lib/order-number-generator.js';
 import { sanitizeProductName, sanitizeProductDescription } from '../../../lib/payment-sanitization.js';
+import { PayPalOrderRequestSchema } from '../../../src/api/schemas/checkout.js';
+import { validateRequestWithResponse } from '../../../src/api/helpers/validate.js';
 
 // Maximum request body size (100KB)
 const MAX_BODY_SIZE = 100 * 1024;
@@ -58,10 +60,16 @@ async function createOrderHandler(req, res) {
   let transactionId;
 
   try {
-    const { cartItems, customerInfo, testMode = false } = req.body;
+    // Validate request body with Zod schema
+    const validation = validateRequestWithResponse(PayPalOrderRequestSchema, req.body, res);
+    if (!validation.valid) {
+      return; // Response already sent by validateRequestWithResponse
+    }
+
+    const { cartItems, customerInfo, deviceInfo } = validation.data;
 
     // Detect test mode from various sources
-    const isRequestTestMode = testMode ||
+    const isRequestTestMode =
       isTestMode(req) ||
       req.headers['x-test-mode'] === 'true' ||
       cartItems?.some(item => item.isTestItem || item.name?.startsWith('TEST'));
@@ -69,6 +77,7 @@ async function createOrderHandler(req, res) {
     console.log('PayPal: Request payload:', {
       cartItems,
       customerInfo,
+      deviceInfo,
       testMode: isRequestTestMode
     });
 
@@ -76,18 +85,6 @@ async function createOrderHandler(req, res) {
       cartItems: cartItems?.length,
       isRequestTestMode
     }, req);
-
-    // Validate required fields
-    if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
-      return res.status(400).json({ error: 'Cart items required' });
-    }
-
-    // Validate cart items limit (prevent abuse)
-    if (cartItems.length > 50) {
-      return res.status(400).json({
-        error: 'Too many items in cart (maximum 50)'
-      });
-    }
 
     // Calculate total and validate items
     let totalAmount = 0;
