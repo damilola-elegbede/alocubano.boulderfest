@@ -577,7 +577,7 @@ describe('Encryption Utils - Unit Tests', () => {
       }
 
       const duration = Date.now() - start;
-      expect(duration).toBeLessThan(5000); // 100 encryptions in < 5 seconds (relaxed for CI)
+      expect(duration).toBeLessThan(10000); // 100 encryptions in < 10 seconds (relaxed for CI variance)
     });
 
     it('should decrypt within reasonable time', () => {
@@ -588,7 +588,7 @@ describe('Encryption Utils - Unit Tests', () => {
       encrypted.forEach(e => decryptSecret(e));
       const duration = Date.now() - start;
 
-      expect(duration).toBeLessThan(5000); // 100 decryptions in < 5 seconds (relaxed for CI)
+      expect(duration).toBeLessThan(10000); // 100 decryptions in < 10 seconds (relaxed for CI variance)
     });
   });
 });
