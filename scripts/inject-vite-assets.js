@@ -28,13 +28,47 @@ const MANIFEST_PATH = path.resolve(__dirname, '../dist/.vite/manifest.json');
 
 // Default target files - add more as pages are migrated
 const DEFAULT_TARGET_FILES = [
+    // Core pages
     path.resolve(__dirname, '../pages/core/about.html'),
     path.resolve(__dirname, '../pages/core/checkout.html'),
     path.resolve(__dirname, '../pages/core/home.html'),
     path.resolve(__dirname, '../pages/core/contact.html'),
     path.resolve(__dirname, '../pages/core/donations.html'),
-    // Add more files here as they're migrated:
-    // path.resolve(__dirname, '../pages/core/tickets.html'),
+
+    // Event pages - Boulder Fest 2025
+    path.resolve(__dirname, '../pages/events/boulder-fest-2025/index.html'),
+    path.resolve(__dirname, '../pages/events/boulder-fest-2025/artists.html'),
+    path.resolve(__dirname, '../pages/events/boulder-fest-2025/schedule.html'),
+    path.resolve(__dirname, '../pages/events/boulder-fest-2025/gallery.html'),
+
+    // Event pages - Boulder Fest 2026
+    path.resolve(__dirname, '../pages/events/boulder-fest-2026/index.html'),
+    path.resolve(__dirname, '../pages/events/boulder-fest-2026/artists.html'),
+    path.resolve(__dirname, '../pages/events/boulder-fest-2026/schedule.html'),
+    path.resolve(__dirname, '../pages/events/boulder-fest-2026/gallery.html'),
+
+    // Event pages - Weekender November 2025
+    path.resolve(__dirname, '../pages/events/weekender-2025-11/index.html'),
+    path.resolve(__dirname, '../pages/events/weekender-2025-11/artists.html'),
+    path.resolve(__dirname, '../pages/events/weekender-2025-11/schedule.html'),
+    path.resolve(__dirname, '../pages/events/weekender-2025-11/gallery.html'),
+
+    // Admin pages
+    path.resolve(__dirname, '../pages/admin/login.html'),
+    path.resolve(__dirname, '../pages/admin/dashboard.html'),
+    path.resolve(__dirname, '../pages/admin/registrations.html'),
+    path.resolve(__dirname, '../pages/admin/tickets.html'),
+    path.resolve(__dirname, '../pages/admin/donations.html'),
+    path.resolve(__dirname, '../pages/admin/analytics.html'),
+    path.resolve(__dirname, '../pages/admin/audit-logs.html'),
+    path.resolve(__dirname, '../pages/admin/mfa-settings.html'),
+    path.resolve(__dirname, '../pages/admin/manual-entry.html'),
+    path.resolve(__dirname, '../pages/admin/api-endpoints.html'),
+    path.resolve(__dirname, '../pages/admin/database-dashboard.html'),
+    path.resolve(__dirname, '../pages/admin/test.html'),
+    path.resolve(__dirname, '../pages/admin/ticket-detail.html'),
+    path.resolve(__dirname, '../pages/admin/index.html'),
+    path.resolve(__dirname, '../pages/admin/checkin.html'),
 ];
 
 // ANSI colors for console output
