@@ -116,14 +116,13 @@
     "markdownlint-cli": "^0.45.0",
     "nodemon": "^3.1.10",
     "prettier": "^3.6.2",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
     "vercel": "^48.2.9",
     "vite": "^7.2.4",
     "vitest": "^3.2.4"
   },
   "optionalDependencies": {
-    "ngrok": "^5.0.0-beta.2",
     "@libsql/darwin-arm64": "0.5.22",
     "@libsql/darwin-x64": "0.5.22",
     "@libsql/linux-arm-gnueabihf": "0.5.22",
@@ -138,6 +137,7 @@
     "@rollup/rollup-linux-x64-gnu": "^4.50.0",
     "@rollup/rollup-win32-x64-msvc": "^4.50.0",
     "ioredis": "^5.7.0",
+    "ngrok": "^5.0.0-beta.2",
     "redis": "^4.7.1"
   }
 }
