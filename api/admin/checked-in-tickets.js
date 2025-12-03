@@ -19,16 +19,17 @@ async function handler(req, res) {
 
     db = await getDatabaseClient();
 
-    if (req.method !== 'GET') {
-      res.setHeader('Allow', 'GET');
+    // Accept GET for normal queries, POST for session filter with many scan log IDs (avoids URL length limits)
+    if (req.method !== 'GET' && req.method !== 'POST') {
+      res.setHeader('Allow', 'GET, POST');
       return res.status(405).end('Method Not Allowed');
     }
 
-    // Get query parameters
-    const filter = req.query?.filter || 'total';
-    const eventId = safeParseInt(req.query?.eventId);
-    const page = Math.max(1, safeParseInt(req.query?.page) || 1);
-    const limit = Math.min(100, Math.max(1, safeParseInt(req.query?.limit) || 50));
+    // Get parameters from query string or POST body
+    const filter = req.query?.filter || req.body?.filter || 'total';
+    const eventId = safeParseInt(req.query?.eventId || req.body?.eventId);
+    const page = Math.max(1, safeParseInt(req.query?.page || req.body?.page) || 1);
+    const limit = Math.min(100, Math.max(1, safeParseInt(req.query?.limit || req.body?.limit) || 50));
     const offset = (page - 1) * limit;
 
     console.log('[CHECKED-IN-TICKETS] Parsed parameters', {

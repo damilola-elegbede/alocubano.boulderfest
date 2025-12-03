@@ -1225,13 +1225,20 @@ function CheckinPageContent() {
             }));
 
             try {
-                let url = `/api/admin/checked-in-tickets?filter=${filter}&page=${page}&limit=50`;
+                let data;
+                const baseUrl = `/api/admin/checked-in-tickets?filter=${filter}&page=${page}&limit=50`;
 
+                // Use POST for session filter with scan log IDs to avoid URL length limits
                 if (filter === 'session' && sessionScanLogIds.length > 0) {
-                    url += `&scanLogIds=${sessionScanLogIds.join(',')}`;
+                    data = await post('/api/admin/checked-in-tickets', {
+                        filter,
+                        page,
+                        limit: 50,
+                        scanLogIds: sessionScanLogIds,
+                    });
+                } else {
+                    data = await get(baseUrl);
                 }
-
-                const data = await get(url);
 
                 setTicketsOverlay((prev) => ({
                     ...prev,

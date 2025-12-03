@@ -213,11 +213,13 @@ function AdminPortalPageContent() {
     }, []);
 
     /**
-     * View CSRF token
+     * View CSRF token - logs to console for security instead of alert
      */
     const handleViewCSRF = useCallback(() => {
         if (csrfToken) {
-            alert(`CSRF Token (first 20 chars): ${csrfToken.substring(0, 20)}...`);
+            // Log to console instead of alert to avoid exposing token in UI
+            console.log('CSRF Token available (check DevTools for debugging)');
+            alert('CSRF token is available. Check browser console for details.');
         } else {
             alert('CSRF token not available');
         }

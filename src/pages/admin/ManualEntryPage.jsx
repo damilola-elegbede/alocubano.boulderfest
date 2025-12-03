@@ -281,11 +281,12 @@ function ManualEntryPageContent() {
         // Validate
         const trimmedCustomerFirst = customerFirstName.trim();
         const trimmedCustomerLast = customerLastName.trim();
+        const trimmedCustomerEmail = customerEmail.trim();
         const trimmedAttendeeFirst = attendeeFirstName.trim();
         const trimmedAttendeeLast = attendeeLastName.trim();
         const trimmedAttendeeEmail = attendeeEmail.trim();
 
-        if (!trimmedCustomerFirst || !trimmedCustomerLast || !customerEmail || !paymentMethod) {
+        if (!trimmedCustomerFirst || !trimmedCustomerLast || !trimmedCustomerEmail || !paymentMethod) {
             addAlert('error', 'Please fill in all customer information fields');
             return;
         }
@@ -324,7 +325,7 @@ function ManualEntryPageContent() {
                     },
                 ],
                 paymentMethod,
-                customerEmail,
+                customerEmail: trimmedCustomerEmail,
                 customerName: `${trimmedCustomerFirst} ${trimmedCustomerLast}`,
                 customerFirstName: trimmedCustomerFirst,
                 customerLastName: trimmedCustomerLast,

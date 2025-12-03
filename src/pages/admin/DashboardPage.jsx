@@ -256,12 +256,12 @@ function RegistrationsSection({ registrations, loading, onSearch, filters }) {
     const [paymentFilter, setPaymentFilter] = useState('');
     const [checkinFilter, setCheckinFilter] = useState('');
 
-    const handleSearch = () => {
+    const handleSearch = (overrideSearch, overrideStatus, overridePayment, overrideCheckin) => {
         onSearch({
-            search: searchTerm,
-            status: statusFilter,
-            paymentMethod: paymentFilter,
-            checkedIn: checkinFilter,
+            search: overrideSearch !== undefined ? overrideSearch : searchTerm,
+            status: overrideStatus !== undefined ? overrideStatus : statusFilter,
+            paymentMethod: overridePayment !== undefined ? overridePayment : paymentFilter,
+            checkedIn: overrideCheckin !== undefined ? overrideCheckin : checkinFilter,
         });
     };
 
@@ -288,7 +288,7 @@ function RegistrationsSection({ registrations, loading, onSearch, filters }) {
                     placeholder="Search by name, email, or ticket ID..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    onKeyPress={handleKeyPress}
+                    onKeyDown={handleKeyPress}
                     data-testid="search-registrations"
                     style={{ flex: 1, minWidth: '250px' }}
                 />
@@ -296,8 +296,10 @@ function RegistrationsSection({ registrations, loading, onSearch, filters }) {
                     className="admin-form-select"
                     value={statusFilter}
                     onChange={(e) => {
-                        setStatusFilter(e.target.value);
-                        handleSearch();
+                        const newValue = e.target.value;
+                        setStatusFilter(newValue);
+                        // Use the new value directly to avoid race condition
+                        handleSearch(undefined, newValue);
                     }}
                     data-testid="ticket-type-filter"
                     style={{ minWidth: '120px' }}
@@ -311,8 +313,10 @@ function RegistrationsSection({ registrations, loading, onSearch, filters }) {
                     className="admin-form-select"
                     value={paymentFilter}
                     onChange={(e) => {
-                        setPaymentFilter(e.target.value);
-                        handleSearch();
+                        const newValue = e.target.value;
+                        setPaymentFilter(newValue);
+                        // Use the new value directly to avoid race condition
+                        handleSearch(undefined, undefined, newValue);
                     }}
                     style={{ minWidth: '150px' }}
                 >
@@ -325,8 +329,10 @@ function RegistrationsSection({ registrations, loading, onSearch, filters }) {
                     className="admin-form-select"
                     value={checkinFilter}
                     onChange={(e) => {
-                        setCheckinFilter(e.target.value);
-                        handleSearch();
+                        const newValue = e.target.value;
+                        setCheckinFilter(newValue);
+                        // Use the new value directly to avoid race condition
+                        handleSearch(undefined, undefined, undefined, newValue);
                     }}
                     style={{ minWidth: '150px' }}
                 >

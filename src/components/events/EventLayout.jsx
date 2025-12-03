@@ -8,7 +8,7 @@
  * - Event footer
  *
  * Usage:
- *   import { EventLayout } from '../components/events/EventLayout';
+ *   import EventLayout from '../components/events/EventLayout';
  *
  *   function ArtistsPageContent() {
  *     return (

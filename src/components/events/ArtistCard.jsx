@@ -98,7 +98,7 @@ export default function ArtistCard({ artist }) {
                 >
                     {description.map((line, index) => (
                         <React.Fragment key={index}>
-                            // {line}
+                            {line}
                             {index < description.length - 1 && <br />}
                         </React.Fragment>
                     ))}

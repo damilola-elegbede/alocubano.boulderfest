@@ -69,6 +69,15 @@ function TransferModal({ ticket, isOpen, onClose, onTransfer }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
+    // Reset form state when modal opens
+    React.useEffect(() => {
+        if (isOpen) {
+            setNewEmail('');
+            setNewName('');
+            setError(null);
+        }
+    }, [isOpen]);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -394,7 +403,7 @@ function TicketsPageContent() {
                         placeholder="Search by name, email, or ticket ID..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                         style={{ flex: 1, minWidth: '250px' }}
                     />
                     <select

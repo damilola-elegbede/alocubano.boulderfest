@@ -118,22 +118,13 @@ function AuditLogsPageContent() {
     );
 
     /**
-     * Initial load
+     * Initial load and reload when filters change
      */
     useEffect(() => {
         if (isAuthenticated) {
             loadLogs(1);
         }
-    }, [isAuthenticated, loadLogs]);
-
-    /**
-     * Reload when filters change
-     */
-    useEffect(() => {
-        if (isAuthenticated) {
-            loadLogs(1);
-        }
-    }, [actionFilter, dateFilter, successFilter]);
+    }, [isAuthenticated, loadLogs, actionFilter, dateFilter, successFilter]);
 
     /**
      * Export logs

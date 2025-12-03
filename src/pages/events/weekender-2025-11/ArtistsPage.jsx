@@ -147,7 +147,7 @@ function ArtistsPageContent() {
                                                         color: 'var(--color-gray-600)',
                                                     }}
                                                 >
-                                                    // {specialty}
+                                                    {specialty}
                                                 </li>
                                             ))}
                                         </ul>
