@@ -227,6 +227,12 @@
 
     <!-- Theme Management - Early inclusion to prevent FOUC -->
     <script type="module" src="/js/theme-manager.js"></script>
+
+    <!-- INJECTED VITE ASSETS -->
+
+    <script type="module" src="/dist/assets/main-C3rY6In_.js"></script>
+    <!-- END INJECTED VITE ASSETS -->
+
     <!-- Critical CSS (render-blocking) -->
     <link rel="stylesheet" href="/css/bundle-critical.css" />
 
@@ -368,6 +374,9 @@
     </header>
 
     <main>
+      <!-- React Mount Point -->
+      <div id="react-root" data-component="ContactPage"></div>
+
       <!-- Hero Splash Image -->
       <section class="gallery-hero-splash">
         <div class="hero-image-container">

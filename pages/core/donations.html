@@ -161,7 +161,12 @@
     <noscript>
       <link rel="stylesheet" href="/css/bundle-deferred.css">
     </noscript>
-  <!-- payment-modal.css is deprecated - using Stripe Checkout Sessions --></head>
+  <!-- payment-modal.css is deprecated - using Stripe Checkout Sessions -->
+    <!-- INJECTED VITE ASSETS -->
+
+    <script type="module" src="/dist/assets/main-C3rY6In_.js"></script>
+    <!-- END INJECTED VITE ASSETS -->
+  </head>
   <body class="typographic">
     <header class="header">
       <div class="container">
@@ -295,6 +300,9 @@
     </header>
 
     <main>
+      <!-- React Root for DonationsPage -->
+      <div id="react-root" data-component="DonationsPage"></div>
+
       <!-- Hero Splash Image -->
       <section class="gallery-hero-splash">
         <div class="hero-image-container">
