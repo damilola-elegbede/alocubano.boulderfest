@@ -226,7 +226,6 @@ export default function DonationSelector() {
                         className={`form-button-type ${showCelebration ? 'donation-celebration' : ''}`}
                         style={{ padding: 'var(--space-lg) var(--space-3xl)' }}
                         disabled={isButtonDisabled}
-                        aria-disabled={isButtonDisabled}
                     >
                         {effectiveAmount > 0 ? `ADD TO CART - $${effectiveAmount}` : 'ADD TO CART'}
                     </button>

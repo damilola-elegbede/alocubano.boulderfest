@@ -30,10 +30,10 @@ function HomePageContent() {
                             </h2>
                         </div>
                         <div className="text-block-mono">
-                            // MAY 15-17, 2026<br />
-                            // BOULDER, COLORADO<br />
-                            // WORLD CLASS CUBAN ARTISTS<br />
-                            // UNLIMITED MEMORIES
+                            <span>// MAY 15-17, 2026</span><br />
+                            <span>// BOULDER, COLORADO</span><br />
+                            <span>// WORLD CLASS CUBAN ARTISTS</span><br />
+                            <span>// UNLIMITED MEMORIES</span>
                         </div>
                     </div>
                 </div>

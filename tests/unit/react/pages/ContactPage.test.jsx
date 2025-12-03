@@ -188,8 +188,8 @@ describe('ContactPage', () => {
             const h1s = screen.getAllByRole('heading', { level: 1 });
             const h2s = screen.getAllByRole('heading', { level: 2 });
 
-            // Should have h1 for main title and newsletter section
-            expect(h1s.length).toBeGreaterThan(0);
+            // Should have exactly one h1 for main title
+            expect(h1s.length).toBe(1);
             // Should have h2 for each contact item
             expect(h2s.length).toBeGreaterThanOrEqual(4);
         });

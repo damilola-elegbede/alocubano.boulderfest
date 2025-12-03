@@ -169,7 +169,7 @@ function ContactPageContent() {
                                 }}
                             >
                                 <div>
-                                    <h1>Hear from us!</h1>
+                                    <h2>Hear from us!</h2>
                                     <p>
                                         Be the first to know about festival updates, artist
                                         announcements, and exclusive pre-sale ticket access.
