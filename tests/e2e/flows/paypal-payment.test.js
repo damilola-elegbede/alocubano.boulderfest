@@ -632,7 +632,7 @@ test.describe('PayPal Payment Flow', () => {
     const currentUrl = page.url();
 
     // Verify HTTPS (if not localhost)
-    if (!currentUrl.includes('localhost') && !currentUrl.includes('127.0.0.1') && !currentUrl.includes('ngrok')) {
+    if (!currentUrl.includes('localhost') && !currentUrl.includes('127.0.0.1')) {
       expect(currentUrl).toMatch(/^https:/);
     }
 

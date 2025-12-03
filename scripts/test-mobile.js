@@ -81,9 +81,8 @@ async function testMobileCheckin() {
   console.log("\n📱 To test on mobile:");
   console.log("1. Start server: npm start");
   console.log("2. For HTTPS (required for camera):");
-  console.log("   - Use ngrok: ngrok http 8080");
   console.log(
-    "   - Or use local-ssl-proxy: local-ssl-proxy --source 8443 --target 8080",
+    "   - Use local-ssl-proxy: local-ssl-proxy --source 8443 --target 8080",
   );
   console.log("3. Open on mobile: https://YOUR-URL/admin/checkin");
   console.log("4. Login with admin credentials");

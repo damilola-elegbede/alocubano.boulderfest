@@ -123,8 +123,7 @@ jobs:
         run: |
           echo "📦 Installing minimal dependencies for unit tests..."
 
-          # Install with npm ci, skipping ALL postinstall scripts to prevent ngrok download failures
-          # ngrok's postinstall tries to download binaries which fails with HTTP 503 in CI
+          # Install with npm ci, skipping postinstall scripts for faster CI
           npm ci --ignore-scripts --prefer-offline --no-audit --no-fund
 
           # Only install the specific LibSQL binary we need
@@ -165,7 +164,6 @@ jobs:
           # Remove packages not needed for unit tests (saves ~77MB)
           rm -rf node_modules/playwright* 2>/dev/null || true
           rm -rf node_modules/lighthouse* 2>/dev/null || true
-          rm -rf node_modules/ngrok* 2>/dev/null || true
           rm -rf node_modules/vercel 2>/dev/null || true
           rm -rf node_modules/@axe-core 2>/dev/null || true
           rm -rf node_modules/puppeteer* 2>/dev/null || true

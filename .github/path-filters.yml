@@ -99,8 +99,6 @@ tests-unit:
 tests-e2e:
   - 'tests/e2e/**'
   - 'playwright*.config.js'
-  - 'scripts/e2e-with-ngrok.js'
-  - 'scripts/validate-e2e-setup.js'
   - 'scripts/vercel-dev-wrapper.js'
 
 tests-config:

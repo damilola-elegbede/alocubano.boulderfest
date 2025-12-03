@@ -15,7 +15,6 @@ const detectDevelopment = () => {
         window.location.hostname === 'localhost' ||
         window.location.hostname === '127.0.0.1' ||
         window.location.hostname.includes('vercel.app') ||
-        window.location.hostname.includes('ngrok') ||
         window.location.port !== '' ||
         window.location.search.includes('debug=true') ||
         localStorage.getItem('debug') === 'true'
