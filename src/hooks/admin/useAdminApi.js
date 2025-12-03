@@ -85,7 +85,9 @@ export function useAdminApi() {
                 throw new Error(data.error || `Request failed: ${response.status}`);
             }
 
-            const data = await response.json();
+            // Handle empty or non-JSON responses gracefully
+            const text = await response.text();
+            const data = text ? JSON.parse(text) : {};
             return data;
         } catch (err) {
             setError(err.message);

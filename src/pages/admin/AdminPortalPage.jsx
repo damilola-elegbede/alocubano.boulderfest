@@ -231,7 +231,8 @@ function AdminPortalPageContent() {
     const handleOpenSheets = useCallback(() => {
         window.open(
             'https://docs.google.com/spreadsheets/d/1wJ_KSJJpJtXl9fEqIhJVUDNTXHDCVJKfYKMnJITZyGs',
-            '_blank'
+            '_blank',
+            'noopener,noreferrer'
         );
     }, []);
 

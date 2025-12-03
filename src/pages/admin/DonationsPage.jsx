@@ -221,7 +221,7 @@ function DonationsPageContent() {
         if (isAuthenticated) {
             loadDonations(1);
         }
-    }, [statusFilter, processorFilter, dateFilter, hideTestDonations]);
+    }, [isAuthenticated, loadDonations, statusFilter, processorFilter, dateFilter, hideTestDonations]);
 
     /**
      * Table columns
