@@ -506,6 +506,164 @@ sips -Z 800 images/artists/artist-name.png  # Max dimension 800px
 
 ---
 
+## Phase 8: Rollback (if needed)
+
+If deployment fails or issues are discovered after deployment, rollback in reverse order.
+
+### When to Rollback
+
+- Deployment verification fails
+- Critical bugs discovered after deployment
+- Incorrect event configuration detected
+- Need to make major changes and restart
+
+### Rollback Steps
+
+**Execute in this order:**
+
+1. **Revert bootstrap.json** - Remove event and ticket type entries
+   ```bash
+   git checkout HEAD~1 -- config/bootstrap.json
+   # OR manually delete the event and ticket_types entries
+   ```
+
+2. **Revert vercel.json** - Remove rewrites
+   ```bash
+   git checkout HEAD~1 -- vercel.json
+   # OR manually delete the rewrite rules for the weekender
+   ```
+
+3. **Delete event pages directory**
+   ```bash
+   rm -rf pages/events/weekender-{YEAR}-{MONTH}/
+   ```
+
+4. **Revert navigation dropdown updates**
+   ```bash
+   # Use git to revert all modified HTML files
+   git checkout HEAD~1 -- pages/core/*.html
+   git checkout HEAD~1 -- pages/events/*/index.html pages/events/*/artists.html
+   git checkout HEAD~1 -- pages/events/*/schedule.html pages/events/*/gallery.html
+   ```
+
+5. **Revert tickets.html** - Remove event section
+   ```bash
+   git checkout HEAD~1 -- pages/core/tickets.html
+   # OR manually delete the event section
+   ```
+
+6. **Revert events-service.js** - Remove fallback data
+   ```bash
+   git checkout HEAD~1 -- js/lib/events-service.js
+   # OR manually delete the fallback event entry
+   ```
+
+7. **Delete uploaded images**
+   ```bash
+   rm -f images/hero/weekender-{YEAR}-{MONTH}-hero.jpg
+   rm -f images/artists/{artist-name}.png
+   ```
+
+### Quick Rollback Commands
+
+**For uncommitted changes:**
+```bash
+git checkout -- .
+git clean -fd  # Remove untracked files/directories
+```
+
+**For committed changes:**
+```bash
+# Revert the last commit
+git revert HEAD
+
+# Revert a specific commit
+git revert <commit-hash>
+
+# Revert multiple commits
+git revert HEAD~3..HEAD
+```
+
+**Verification after rollback:**
+```bash
+npm run lint     # Check for syntax errors
+npm test         # Run tests
+git status       # Verify clean state
+```
+
+---
+
+## Phase 9: Archive Previous Weekender
+
+As monthly Weekender events accumulate, archive past events to keep navigation clean.
+
+**When to archive:** Archive a weekender when ALL of these are true:
+1. The event has COMPLETED (end_date has passed)
+2. At least 3 newer weekenders exist
+3. The event is more than 6 months old
+4. Navigation dropdown has 4+ weekender entries
+
+### Step 9.1: Update Previous Event Status
+
+**File:** `config/bootstrap.json`
+
+Update completed weekender event:
+
+```json
+{
+  "id": 3,
+  "name": "November Salsa Weekender 2025",
+  "status": "completed",
+  "is_featured": false,
+  "is_visible": false,
+  "display_order": 5
+}
+```
+
+**Archival checklist:**
+- [ ] Event end_date has passed (status should be "completed")
+- [ ] At least 3 newer weekender events exist
+- [ ] Event is more than 6 months old
+- [ ] Navigation dropdown has 4+ weekender entries
+
+### Step 9.2: Update Navigation Dropdown
+
+Remove older weekenders from navigation or move to a "Past Events" section:
+
+```html
+<!-- Keep only recent 2-3 weekenders in main navigation -->
+<li class="dropdown-category" role="group">
+  <span class="dropdown-category-title" role="presentation">Weekenders</span>
+  <ul class="dropdown-submenu">
+    <li>
+      <a href="/weekender-2026-03" class="dropdown-link" data-event-status="current">March 2026</a>
+    </li>
+    <li>
+      <a href="/weekender-2025-11" class="dropdown-link" data-event-status="past">November 2025</a>
+    </li>
+    <!-- Older events removed from nav but pages still accessible -->
+  </ul>
+</li>
+```
+
+**Note:** Event pages remain accessible via direct URL even after navigation removal.
+
+### Step 9.3: Update display_order Values
+
+Adjust display_order for remaining events to maintain proper sorting:
+
+```json
+{
+  "id": 5,
+  "name": "March Salsa Weekender 2026",
+  "display_order": 2,
+  "is_featured": true,
+  "is_visible": true
+}
+```
+
+---
+
 ## Verification Checklist
 
 After completing all phases:
@@ -541,6 +699,7 @@ After completing all phases:
   - [ ] Navigation dropdown shows event
   - [ ] Tickets page shows event section
   - [ ] Admin dashboard shows event in selector
+- [ ] Archival guidance documented for future cleanup (Phase 9)
 
 ---
 
@@ -557,64 +716,8 @@ After completing all phases:
 | 6.1 | `js/lib/events-service.js` | Add fallback data |
 | 7.1 | `images/hero/` | Add hero image |
 | 7.2 | `images/artists/` | Add artist image (optional) |
-
----
-
-## Phase 8: Archive Previous Weekender (when needed)
-
-As monthly Weekender events accumulate, archive past events to keep navigation clean.
-
-**Concrete archival rule:** Archive a weekender when ALL of these are true:
-1. The event has COMPLETED (end_date has passed)
-2. At least 3 newer weekenders exist
-3. The event is more than 6 months old
-
-### Step 8.1: Update Previous Event Status
-
-**File:** `config/bootstrap.json`
-
-Update completed weekender event:
-
-```json
-{
-  "id": 3,
-  "name": "November Salsa Weekender 2025",
-  "status": "completed",
-  "is_featured": false,
-  "is_visible": true,
-  "display_order": 5
-}
-```
-
-**When to archive (checklist):**
-- [ ] Event end_date has passed (status should be "completed")
-- [ ] At least 3 newer weekender events exist
-- [ ] Event is more than 6 months old
-- [ ] Navigation dropdown has 4+ weekender entries
-
-**Keep visible in navigation:** Most recent 3 weekenders only
-
-### Step 8.2: Update Navigation Dropdown
-
-Remove older weekenders from navigation or move to a "Past Events" section:
-
-```html
-<!-- Keep only recent 2-3 weekenders in main navigation -->
-<li class="dropdown-category" role="group">
-  <span class="dropdown-category-title" role="presentation">Weekenders</span>
-  <ul class="dropdown-submenu">
-    <li>
-      <a href="/weekender-2026-03" class="dropdown-link" data-event-status="current">March 2026</a>
-    </li>
-    <li>
-      <a href="/weekender-2025-11" class="dropdown-link" data-event-status="past">November 2025</a>
-    </li>
-    <!-- Older events removed from nav but pages still accessible -->
-  </ul>
-</li>
-```
-
-**Note:** Event pages remain accessible via direct URL even after navigation removal.
+| 8.x | Various | Rollback steps (if needed) |
+| 9.x | `config/bootstrap.json`, navigation | Archive previous event |
 
 ---
 
