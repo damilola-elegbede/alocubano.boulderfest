@@ -430,8 +430,8 @@ After completing all phases:
 - [ ] Run `npm run lint` - no errors
 - [ ] Run `npm test` - tests pass
 - [ ] Deploy to preview and verify:
-  - [ ] Event page loads correctly at `/weekender-{year}-{month}`
-  - [ ] Subpages load correctly (`/artists`, `/schedule`, `/gallery`)
+  - [ ] Event page loads at `/weekender-{year}-{month}`
+  - [ ] Subpages load (`/artists`, `/schedule`, `/gallery`)
   - [ ] Navigation dropdown shows event
   - [ ] Tickets page shows event section
   - [ ] Admin dashboard shows event in selector
@@ -451,6 +451,56 @@ After completing all phases:
 | 6.1 | `js/lib/events-service.js` | Add fallback data |
 | 7.1 | `images/hero/` | Add hero image |
 | 7.2 | `images/artists/` | Add artist image (optional) |
+
+---
+
+## Phase 8: Archive Previous Weekender (when needed)
+
+As monthly Weekender events accumulate, archive past events to keep navigation clean.
+
+### Step 8.1: Update Previous Event Status
+
+**File:** `config/bootstrap.json`
+
+Update completed weekender event:
+
+```json
+{
+  "id": 3,
+  "name": "November Salsa Weekender 2025",
+  "status": "completed",
+  "is_featured": false,
+  "is_visible": true,
+  "display_order": 5
+}
+```
+
+**When to archive:**
+- After 2-3 newer weekender events have been created
+- When navigation dropdown becomes cluttered
+- Keep most recent 2-3 weekenders visible in navigation
+
+### Step 8.2: Update Navigation Dropdown
+
+Remove older weekenders from navigation or move to a "Past Events" section:
+
+```html
+<!-- Keep only recent 2-3 weekenders in main navigation -->
+<li class="dropdown-category" role="group">
+  <span class="dropdown-category-title" role="presentation">Weekenders</span>
+  <ul class="dropdown-submenu">
+    <li>
+      <a href="/weekender-2026-03" class="dropdown-link" data-event-status="current">March 2026</a>
+    </li>
+    <li>
+      <a href="/weekender-2025-11" class="dropdown-link" data-event-status="past">November 2025</a>
+    </li>
+    <!-- Older events removed from nav but pages still accessible -->
+  </ul>
+</li>
+```
+
+**Note:** Event pages remain accessible via direct URL even after navigation removal.
 
 ---
 

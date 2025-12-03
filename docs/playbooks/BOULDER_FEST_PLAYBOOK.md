@@ -229,6 +229,8 @@ Copy the template, then find and replace:
 | `2026-05-17` | `2027-05-16` |
 | Hero image path | `/images/hero/boulder-fest-2027-hero.jpg` |
 
+**Case-sensitivity note:** Be careful when replacing year values—the slug `boulder-fest-2026` uses lowercase, while display text `Boulder Fest 2026` uses title case. Use case-sensitive find/replace or perform multiple passes to avoid partial matches.
+
 **Key sections to verify after copy:**
 - `<title>` tag
 - `<meta name="description">` content
@@ -444,6 +446,16 @@ Add artist images as they're confirmed.
 
 **File:** `lib/ticket-config.js`
 
+**When to use ticket-config.js:**
+- When backend services need per-day date mappings (e.g., Friday/Saturday/Sunday passes)
+- When ticket creation service needs explicit venue/address data beyond bootstrap.json
+- For custom date logic in wallet passes or email templates
+
+**When NOT needed:**
+- If bootstrap.json provides all required event data
+- For simple events without multi-day passes
+- When frontend-only features are sufficient
+
 Add to EVENT_CONFIG if custom date logic needed:
 
 ```javascript
@@ -515,11 +527,25 @@ After completing all phases:
 - [ ] Run `npm run lint` - no errors
 - [ ] Run `npm test` - tests pass
 - [ ] Deploy to preview and verify:
-  - [ ] Event page loads correctly at `/boulder-fest-{year}`
-  - [ ] Subpages load correctly (`/artists`, `/schedule`, `/gallery`)
+  - [ ] Event page loads at `/boulder-fest-{year}`
+  - [ ] Subpages load (`/artists`, `/schedule`, `/gallery`)
   - [ ] Navigation dropdown shows event
   - [ ] Tickets page shows event section
   - [ ] Admin dashboard shows event in selector
+
+### Rollback Steps (if deployment fails)
+
+If deployment verification fails, rollback in reverse order:
+
+1. **Revert bootstrap.json** - Remove event and ticket type entries
+2. **Revert vercel.json** - Remove rewrites and redirects
+3. **Delete event pages** - Remove `pages/events/boulder-fest-{year}/` directory
+4. **Revert navigation** - Remove dropdown entries from all updated pages (use git)
+5. **Revert tickets.html** - Remove event section
+6. **Revert events-service.js** - Remove fallback data
+7. **Delete assets** - Remove hero/artist images if uploaded
+
+**Quick rollback:** `git checkout -- .` reverts all uncommitted changes. For committed changes, use `git revert <commit-hash>`.
 
 ---
 
