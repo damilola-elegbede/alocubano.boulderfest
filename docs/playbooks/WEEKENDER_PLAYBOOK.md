@@ -42,7 +42,14 @@ Before starting, gather the following information:
 
 **File:** `config/bootstrap.json`
 
-Add new event object to the `events` array:
+Add new event object to the `events` array.
+
+**Event ID:** Always use MAX existing ID + 1 (never fill gaps). Run:
+```bash
+grep '"id":' config/bootstrap.json | grep -v '"-' | sort -t: -k2 -n | tail -1
+```
+
+**Event name format:** Suggested format is `"{Month} Salsa Weekender {YEAR}"` but can be customized (e.g., "Spring Salsa Intensive 2026" or "Cuban Dance Weekend 2026"). Keep it descriptive and consistent with branding.
 
 ```json
 {
@@ -131,18 +138,20 @@ Add to the `ticket_types` array:
 
 **File:** `vercel.json`
 
-Add to the `rewrites` array:
+Add to the `rewrites` array, **placing entries near other weekender rewrites**:
 
 ```json
 {
-  "source": "/weekender-2026-03",
-  "destination": "/pages/events/weekender-2026-03/index"
+  "source": "/weekender-{YEAR}-{MONTH}",
+  "destination": "/pages/events/weekender-{YEAR}-{MONTH}/index"
 },
 {
-  "source": "/weekender-2026-03/(artists|schedule|gallery)",
-  "destination": "/pages/events/weekender-2026-03/$1"
+  "source": "/weekender-{YEAR}-{MONTH}/(artists|schedule|gallery)",
+  "destination": "/pages/events/weekender-{YEAR}-{MONTH}/$1"
 }
 ```
+
+**Replace `{YEAR}` and `{MONTH}` with actual values (e.g., `2026` and `03`).**
 
 ---
 
@@ -170,32 +179,82 @@ mkdir -p pages/events/weekender-2026-03
 **Template:** `pages/events/weekender-2025-11/index.html`
 **Target:** `pages/events/weekender-2026-03/index.html`
 
-Copy the template, then find and replace:
+Copy the template, then find and replace using YOUR event's actual values:
 
 | Find | Replace With |
 |------|-------------|
-| `weekender-2025-11` | `weekender-2026-03` |
-| `November 2025` | `March 2026` |
-| `November 8, 2025` | `March 14, 2026` |
-| `2025-11-08` | `2026-03-14` |
-| `NOVEMBER 2025 WEEKENDER` | `MARCH 2026 WEEKENDER` |
-| Hero image path | `/images/hero/weekender-2026-03-hero.jpg` |
-| Featured artist name | New artist name (if different) |
-| Featured artist image | `/images/artists/{new-artist}.png` |
-| Pasito.fun link | New event link |
-| Facebook link | New event link |
+| `weekender-{PREV_YEAR}-{PREV_MONTH}` | `weekender-{YOUR_YEAR}-{YOUR_MONTH}` |
+| `{Prev Month Name} {PREV_YEAR}` | `{Your Month Name} {YOUR_YEAR}` |
+| `{Prev Full Date}` (e.g., "November 8, 2025") | `{Your Full Date}` (e.g., "April 11, 2026") |
+| `{PREV_ISO_DATE}` (e.g., "2025-11-08") | `{YOUR_ISO_DATE}` (e.g., "2026-04-11") |
+| `{PREV MONTH UPPER} {PREV_YEAR} WEEKENDER` | `{YOUR MONTH UPPER} {YOUR_YEAR} WEEKENDER` |
+| Hero image path | `/images/hero/weekender-{YOUR_YEAR}-{YOUR_MONTH}-hero.jpg` |
+| Featured artist name | New artist name (or remove section if no artist) |
+| Featured artist image | `/images/artists/{new-artist}.png` (or remove if no artist) |
+| Pasito.fun link | New event link (or remove if none) |
+| Facebook link | New event link (or remove if none) |
+
+**Example for April 2026 Weekender:**
+| Find | Replace With |
+|------|-------------|
+| `weekender-2025-11` | `weekender-2026-04` |
+| `November 2025` | `April 2026` |
+| `November 8, 2025` | `April 11, 2026` |
+| `2025-11-08` | `2026-04-11` |
+| `NOVEMBER 2025 WEEKENDER` | `APRIL 2026 WEEKENDER` |
+
+**Recommended approach:** Use `sed` for bulk replacement:
+```bash
+cd pages/events/weekender-{YOUR_YEAR}-{YOUR_MONTH}
+sed -i '' 's/weekender-2025-11/weekender-2026-04/g' *.html
+sed -i '' 's/November 2025/April 2026/g' *.html
+sed -i '' 's/November 8, 2025/April 11, 2026/g' *.html
+# Then manually update artist/external links
+```
 
 **Key sections to verify after copy:**
-- `<title>` tag: "March 2026 Weekender - A Lo Cubano"
+- `<title>` tag: "{Month} {YEAR} Weekender - A Lo Cubano"
 - `<meta name="description">` content
 - Hero image `<img src="...">`
-- Event subnav links (`/weekender-2026-03`, `/weekender-2026-03/artists`, etc.)
-- Main heading with featured artist: "Featuring [Artist Name]!"
+- Event subnav links (`/weekender-{YEAR}-{MONTH}`, etc.)
+- Main heading with featured artist: "Featuring [Artist Name]!" (or update if no artist)
 - Featured artist section (image + description)
 - "When and Where" section with correct date/time
 - External links (Pasito.fun, Facebook)
-- Footer text ("MARCH 2026 WEEKENDER")
-- Navigation dropdown (add March 2026 entry)
+- Footer text ("{MONTH UPPER} {YEAR} WEEKENDER")
+- Navigation dropdown (add new entry)
+
+### Handling Events WITHOUT a Featured Artist
+
+If the weekender has no featured guest artist:
+
+**Option A: Remove featured artist section entirely**
+```html
+<!-- DELETE this entire section -->
+<section class="featured-artist">
+  ...
+</section>
+```
+
+**Option B: Replace with generic content**
+```html
+<section class="workshop-highlights">
+  <h2>Workshop Highlights</h2>
+  <p>Join our talented local instructors for an afternoon of Cuban salsa workshops,
+     covering technique, partner work, and styling.</p>
+</section>
+```
+
+**Update the main heading:**
+```html
+<!-- FROM: -->
+<h1>Featuring Carlos Rodriguez!</h1>
+
+<!-- TO: -->
+<h1>Cuban Salsa Workshops & Social</h1>
+```
+
+**Update the meta description** to not mention a specific artist.
 
 ### Step 3.3: Copy and Customize artists.html
 
@@ -226,7 +285,14 @@ Same find/replace pattern. Gallery can initially show shared A Lo Cubano photos.
 
 **Files to update (navigation dropdown appears in):**
 
-Core pages:
+**Discovery command:** Find all files with navigation:
+```bash
+grep -rl "dropdown-category" pages/ --include="*.html" | sort
+```
+
+**Complete file list (as of current codebase):**
+
+Core pages (7 files):
 - `pages/core/home.html`
 - `pages/core/about.html`
 - `pages/core/tickets.html`
@@ -235,11 +301,20 @@ Core pages:
 - `pages/core/checkout.html`
 - `pages/core/failure.html`
 
+Additional core pages that MAY have navigation (verify):
+- `pages/core/checkout-cancel.html`
+- `pages/core/success.html`
+- `pages/core/my-tickets.html`
+- `pages/core/register-tickets.html`
+- `pages/core/view-tickets.html`
+
 Event pages (all 4 files in each directory):
-- `pages/events/boulder-fest-2025/`
-- `pages/events/boulder-fest-2026/`
-- `pages/events/weekender-2025-11/`
-- All new event pages
+- `pages/events/boulder-fest-2025/` (4 files)
+- `pages/events/boulder-fest-2026/` (4 files)
+- `pages/events/weekender-2025-11/` (4 files)
+- All new event pages you create
+
+**Total: ~20-25 files depending on which core pages have navigation.**
 
 **Navigation dropdown structure:**
 
@@ -277,6 +352,8 @@ Add under "Weekenders" category:
 - `upcoming` - Future event
 - `current` - Currently active/most relevant
 - `past` - Completed event (optional, can be removed from nav)
+
+**Ordering rule:** Newer events appear FIRST (top of submenu). When adding April 2026, place it ABOVE March 2026 in the dropdown.
 
 ---
 
@@ -381,22 +458,51 @@ Add to `_loadFallbackEvents()` fallback array:
 
 ### Step 7.1: Add Hero Image
 
-**File:** `images/hero/weekender-2026-03-hero.jpg`
+**File:** `images/hero/weekender-{YEAR}-{MONTH}-hero.jpg`
 
-Requirements:
-- High resolution (recommended: 1920x1080 or larger)
-- Landscape orientation
-- Cuban salsa/workshop theme
-- Will be cropped with `object-position: top center`
+**Requirements:**
+- **Dimensions:** 1920x1080 minimum (larger is fine, will be scaled)
+- **Orientation:** Landscape (wider than tall)
+- **Theme:** Cuban salsa/workshop imagery
+- **Cropping:** Will be cropped with `object-position: top center` - keep important content in upper portion
+- **Format:** JPEG preferred for photos (smaller file size than PNG)
+
+**Optimization (REQUIRED before upload):**
+```bash
+# Check current file size
+ls -lh images/hero/weekender-{YEAR}-{MONTH}-hero.jpg
+
+# Target: Under 500KB for fast loading
+# If too large, compress with sips:
+sips -s format jpeg -s formatOptions 80 input.jpg --out images/hero/weekender-{YEAR}-{MONTH}-hero.jpg
+
+# Or use online tool: squoosh.app, tinypng.com
+```
+
+**File size limits:**
+- Hero images: < 500KB (ideally < 300KB)
+- Artist images: < 200KB each
 
 ### Step 7.2: Add Featured Artist Image (if applicable)
 
-**File:** `images/artists/{artist-name}.png`
+**File:** `images/artists/{artist-name-lowercase}.png`
 
-Requirements:
-- Square or portrait orientation
-- Professional photo
-- PNG with transparent background preferred
+**Requirements:**
+- **Dimensions:** 400x400 minimum (square or portrait)
+- **Format:** PNG preferred (supports transparency), JPEG acceptable
+- **Naming:** Use lowercase with hyphens (e.g., `carlos-rodriguez.png`)
+
+**Convert from other formats if needed:**
+```bash
+# Convert JPG to PNG
+sips -s format png input.jpg --out images/artists/artist-name.png
+
+# Resize if too large
+sips -Z 800 images/artists/artist-name.png  # Max dimension 800px
+
+# Compress if over 200KB
+# Use squoosh.app or tinypng.com for PNG compression
+```
 
 ---
 
@@ -458,6 +564,11 @@ After completing all phases:
 
 As monthly Weekender events accumulate, archive past events to keep navigation clean.
 
+**Concrete archival rule:** Archive a weekender when ALL of these are true:
+1. The event has COMPLETED (end_date has passed)
+2. At least 3 newer weekenders exist
+3. The event is more than 6 months old
+
 ### Step 8.1: Update Previous Event Status
 
 **File:** `config/bootstrap.json`
@@ -475,10 +586,13 @@ Update completed weekender event:
 }
 ```
 
-**When to archive:**
-- After 2-3 newer weekender events have been created
-- When navigation dropdown becomes cluttered
-- Keep most recent 2-3 weekenders visible in navigation
+**When to archive (checklist):**
+- [ ] Event end_date has passed (status should be "completed")
+- [ ] At least 3 newer weekender events exist
+- [ ] Event is more than 6 months old
+- [ ] Navigation dropdown has 4+ weekender entries
+
+**Keep visible in navigation:** Most recent 3 weekenders only
 
 ### Step 8.2: Update Navigation Dropdown
 
@@ -550,3 +664,206 @@ draft → upcoming → active → completed → archived (optional)
 | 10 | October |
 | 11 | November |
 | 12 | December |
+
+---
+
+## Appendix A: Advanced Scenarios
+
+### A.1: Custom Venue (Non-Avalon Ballroom)
+
+If the weekender uses a different venue:
+
+**Step 1: Update bootstrap.json event object:**
+```json
+{
+  "venue_name": "Dairy Arts Center",
+  "venue_address": "2590 Walnut Street",
+  "venue_city": "Boulder",
+  "venue_state": "CO",
+  "venue_zip": "80302"
+}
+```
+
+**Step 2: Update all venue references in event pages:**
+```bash
+# Find all Avalon references
+grep -r "Avalon" pages/events/weekender-{YEAR}-{MONTH}/ --include="*.html"
+
+# Replace venue name
+sed -i '' 's/Avalon Ballroom/Dairy Arts Center/g' pages/events/weekender-{YEAR}-{MONTH}/*.html
+sed -i '' 's/6185 Arapahoe Road/2590 Walnut Street/g' pages/events/weekender-{YEAR}-{MONTH}/*.html
+```
+
+**Step 3: Update tickets.html venue references:**
+- `data-venue` attribute on ticket cards
+- `.venue-name` element content
+
+**Step 4: Update events-service.js fallback:**
+```javascript
+venue: {
+    name: 'Dairy Arts Center',
+    address: '2590 Walnut Street',
+    city: 'Boulder',
+    state: 'CO',
+    zip: '80302'
+}
+```
+
+---
+
+### A.2: Two-Day Weekender
+
+If the weekender spans 2 days (e.g., Saturday-Sunday):
+
+**Step 1: Set different start_date and end_date in bootstrap.json:**
+```json
+{
+  "start_date": "2026-08-08",
+  "end_date": "2026-08-09"
+}
+```
+
+**Step 2: Consider additional ticket types:**
+```json
+{
+  "id": "weekender-2026-08-saturday",
+  "name": "Saturday Only",
+  "event_date": "2026-08-08",
+  "price_cents": 4500
+},
+{
+  "id": "weekender-2026-08-sunday",
+  "name": "Sunday Only",
+  "event_date": "2026-08-09",
+  "price_cents": 4500
+}
+```
+
+**Step 3: Update tickets.html** to show date range: "August 8-9, 2026"
+
+**Step 4: Update schedule.html** with both days' schedules.
+
+---
+
+### A.3: Custom Event Name (Non-Standard Naming)
+
+If using a custom name like "Holiday Salsa Social" instead of "December Weekender":
+
+**Naming consistency:**
+- **Slug:** Keep standard format: `weekender-2026-12` (for routing consistency)
+- **Directory:** Keep standard: `weekender-2026-12/`
+- **Display name:** Use custom: "Holiday Salsa Social 2026"
+- **Event name in bootstrap.json:** Use custom: "Holiday Salsa Social 2026"
+
+**Update these locations with custom name:**
+- bootstrap.json `name` field
+- Event page titles and headings
+- Navigation dropdown display text
+- Tickets page section title
+- events-service.js `name` and `displayName`
+
+**Keep standard slug for:**
+- URL paths (/weekender-2026-12)
+- vercel.json rewrites
+- Ticket IDs (weekender-2026-12-full)
+- Directory naming
+
+---
+
+### A.4: No External Links (Pasito.fun, Facebook)
+
+If the weekender has no external event listings:
+
+**Option A: Remove the entire "More Info" section:**
+```html
+<!-- DELETE this entire section from index.html -->
+<section class="more-info-section">
+  <h2>More Info</h2>
+  <div class="external-links">
+    <a href="https://pasito.fun/...">View on Pasito.fun</a>
+    <a href="https://facebook.com/...">Facebook Event</a>
+  </div>
+</section>
+```
+
+**Option B: Keep section with different content:**
+```html
+<section class="more-info-section">
+  <h2>More Info</h2>
+  <p>Check back here for updates and announcements!</p>
+  <p>Questions? Contact us at <a href="mailto:alocubanoboulderfest@gmail.com">alocubanoboulderfest@gmail.com</a></p>
+</section>
+```
+
+---
+
+### A.5: Multiple Featured Artists
+
+If the weekender has 2-3 featured artists instead of one:
+
+**Update index.html featured section:**
+```html
+<section class="featured-artists">
+  <h2>Featured Instructors</h2>
+  <div class="artists-grid">
+    <div class="artist-feature">
+      <img src="/images/artists/artist-1.png" alt="Artist 1">
+      <h3>Artist Name 1</h3>
+      <p>Bio text...</p>
+    </div>
+    <div class="artist-feature">
+      <img src="/images/artists/artist-2.png" alt="Artist 2">
+      <h3>Artist Name 2</h3>
+      <p>Bio text...</p>
+    </div>
+    <div class="artist-feature">
+      <img src="/images/artists/artist-3.png" alt="Artist 3">
+      <h3>Artist Name 3</h3>
+      <p>Bio text...</p>
+    </div>
+  </div>
+</section>
+```
+
+**Update main heading:**
+```html
+<!-- FROM: -->
+<h1>Featuring Carlos Rodriguez!</h1>
+
+<!-- TO: -->
+<h1>Featuring World-Class Instructors!</h1>
+```
+
+**Upload all artist images** to `images/artists/`.
+
+---
+
+### A.6: Troubleshooting Lint/Test Failures
+
+If `npm run lint` fails:
+```bash
+# See specific errors
+npm run lint 2>&1 | head -50
+
+# Common fixes:
+# - HTML validation errors: Check for missing closing tags
+# - ESLint errors: Check for unused variables, missing semicolons
+# - Markdown lint: Check heading hierarchy
+
+# Run specific linter
+npx htmlhint pages/events/weekender-{YEAR}-{MONTH}/*.html
+npx eslint js/lib/events-service.js
+```
+
+If `npm test` fails:
+```bash
+# Run specific test file
+npm test -- tests/unit/specific-test.test.js
+
+# Common fixes:
+# - Update expected values in tests if event IDs changed
+# - Check bootstrap.json is valid JSON
+# - Verify ticket IDs match between bootstrap.json and tests
+```
+
+**Don't bypass with --no-verify.** Fix the issues instead.

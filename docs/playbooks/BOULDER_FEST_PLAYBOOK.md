@@ -64,7 +64,7 @@ Add new event object to the `events` array:
 ```
 
 **Key decisions:**
-- `id`: Use next available positive integer (check existing max ID + 1)
+- `id`: **Always use MAX existing ID + 1** (never fill gaps). Run: `grep '"id":' config/bootstrap.json | grep -v '"-' | sort -t: -k2 -n | tail -1` to find current max.
 - `slug`: Format `boulderfest-YYYY`
 - `type`: Always `"festival"` for Boulder Fest
 - `status`: Start as `"upcoming"`, cron job auto-transitions to `"active"` on start_date
@@ -148,47 +148,51 @@ Add ticket types to the `ticket_types` array:
 
 **File:** `vercel.json`
 
-Add to the `rewrites` array:
+Add to the `rewrites` array, **placing entries near other boulder-fest rewrites** (after the boulder-fest-2026 entries):
 
 ```json
 {
-  "source": "/boulder-fest-2027",
-  "destination": "/pages/events/boulder-fest-2027/index"
+  "source": "/boulder-fest-{YEAR}",
+  "destination": "/pages/events/boulder-fest-{YEAR}/index"
 },
 {
-  "source": "/boulder-fest-2027/(artists|schedule|gallery)",
-  "destination": "/pages/events/boulder-fest-2027/$1"
+  "source": "/boulder-fest-{YEAR}/(artists|schedule|gallery)",
+  "destination": "/pages/events/boulder-fest-{YEAR}/$1"
 }
 ```
+
+**Replace `{YEAR}` with actual year (e.g., `2027`).**
 
 ### Step 2.2: Add Redirects (optional convenience redirects)
 
 **File:** `vercel.json`
 
-Add to the `redirects` array:
+Add to the `redirects` array (place near other boulder-fest redirects):
 
 ```json
 {
-  "source": "/2027-artists",
-  "destination": "/boulder-fest-2027/artists",
+  "source": "/{YEAR}-artists",
+  "destination": "/boulder-fest-{YEAR}/artists",
   "permanent": true
 },
 {
-  "source": "/2027-schedule",
-  "destination": "/boulder-fest-2027/schedule",
+  "source": "/{YEAR}-schedule",
+  "destination": "/boulder-fest-{YEAR}/schedule",
   "permanent": true
 },
 {
-  "source": "/2027-gallery",
-  "destination": "/boulder-fest-2027/gallery",
+  "source": "/{YEAR}-gallery",
+  "destination": "/boulder-fest-{YEAR}/gallery",
   "permanent": true
 },
 {
-  "source": "/boulder-fest-2027/tickets",
+  "source": "/boulder-fest-{YEAR}/tickets",
   "destination": "/tickets",
   "permanent": true
 }
 ```
+
+**Replace `{YEAR}` with actual year (e.g., `2027`).**
 
 ---
 
@@ -198,12 +202,19 @@ Add to the `redirects` array:
 
 **IMPORTANT:** All new event pages MUST be created by copying existing templates to maintain consistency.
 
-| Page Type | Template Source |
-|-----------|-----------------|
+**Which template to use:**
+- **Recommended:** Always copy from the **most recent year's** event (e.g., 2027 when creating 2028)
+- **Reason:** Most recent templates have latest styling, navigation structure, and features
+- **Exception:** If the most recent year has unusual customizations, use the previous year instead
+
+| Page Type | Template Source (for 2027) |
+|-----------|---------------------------|
 | index.html | `pages/events/boulder-fest-2026/index.html` |
 | artists.html | `pages/events/boulder-fest-2026/artists.html` |
 | schedule.html | `pages/events/boulder-fest-2026/schedule.html` |
 | gallery.html | `pages/events/boulder-fest-2026/gallery.html` |
+
+**Template inheritance chain:** 2026 → 2027 → 2028 → ... (each copies from previous)
 
 ### Step 3.1: Create Event Directory
 
@@ -216,20 +227,38 @@ mkdir -p pages/events/boulder-fest-2027
 **Template:** `pages/events/boulder-fest-2026/index.html`
 **Target:** `pages/events/boulder-fest-2027/index.html`
 
-Copy the template, then find and replace:
+Copy the template, then find and replace using YOUR event's actual values:
 
+| Find | Replace With |
+|------|-------------|
+| `boulder-fest-{PREV_YEAR}` | `boulder-fest-{YOUR_YEAR}` |
+| `Boulder Fest {PREV_YEAR}` | `Boulder Fest {YOUR_YEAR}` |
+| `{PREV_YEAR}` (in dates) | `{YOUR_YEAR}` |
+| `{PREV_DATE_RANGE}` (e.g., "May 15-17, 2026") | `{YOUR_DATE_RANGE}` (e.g., "May 16-18, 2027") |
+| `{PREV_START_DATE}` (e.g., "2026-05-15") | `{YOUR_START_DATE}` (e.g., "2027-05-16") |
+| `{PREV_DAY2_DATE}` (e.g., "2026-05-16") | `{YOUR_DAY2_DATE}` (e.g., "2027-05-17") |
+| `{PREV_END_DATE}` (e.g., "2026-05-17") | `{YOUR_END_DATE}` (e.g., "2027-05-18") |
+| Hero image path | `/images/hero/boulder-fest-{YOUR_YEAR}-hero.jpg` |
+
+**Example for Boulder Fest 2027 (May 16-18, 2027):**
 | Find | Replace With |
 |------|-------------|
 | `boulder-fest-2026` | `boulder-fest-2027` |
 | `Boulder Fest 2026` | `Boulder Fest 2027` |
-| `2026` (in dates) | `2027` |
-| `May 15-17, 2026` | `May 14-16, 2027` |
-| `2026-05-15` | `2027-05-14` |
-| `2026-05-16` | `2027-05-15` |
-| `2026-05-17` | `2027-05-16` |
-| Hero image path | `/images/hero/boulder-fest-2027-hero.jpg` |
+| `May 15-17, 2026` | `May 16-18, 2027` |
+| `2026-05-15` | `2027-05-16` |
+| `2026-05-16` | `2027-05-17` |
+| `2026-05-17` | `2027-05-18` |
 
 **Case-sensitivity note:** Be careful when replacing year values—the slug `boulder-fest-2026` uses lowercase, while display text `Boulder Fest 2026` uses title case. Use case-sensitive find/replace or perform multiple passes to avoid partial matches.
+
+**Recommended approach:** Use `sed` for bulk replacement:
+```bash
+cd pages/events/boulder-fest-{YOUR_YEAR}
+sed -i '' 's/boulder-fest-2026/boulder-fest-2027/g' *.html
+sed -i '' 's/Boulder Fest 2026/Boulder Fest 2027/g' *.html
+# Then manually update specific dates
+```
 
 **Key sections to verify after copy:**
 - `<title>` tag
@@ -278,7 +307,14 @@ Same find/replace pattern. Gallery can initially show shared A Lo Cubano photos 
 
 **Files to update (navigation dropdown appears in):**
 
-Core pages:
+**Discovery command:** Find all files with navigation:
+```bash
+grep -rl "dropdown-category" pages/ --include="*.html" | sort
+```
+
+**Complete file list (as of current codebase):**
+
+Core pages (7 files):
 - `pages/core/home.html`
 - `pages/core/about.html`
 - `pages/core/tickets.html`
@@ -287,11 +323,32 @@ Core pages:
 - `pages/core/checkout.html`
 - `pages/core/failure.html`
 
+Additional core pages that MAY have navigation (verify):
+- `pages/core/checkout-cancel.html`
+- `pages/core/success.html`
+- `pages/core/my-tickets.html`
+- `pages/core/register-tickets.html`
+- `pages/core/view-tickets.html`
+
 Event pages (all 4 files in each directory):
-- `pages/events/boulder-fest-2025/`
-- `pages/events/boulder-fest-2026/`
-- `pages/events/weekender-2025-11/`
-- All new event pages
+- `pages/events/boulder-fest-2025/` (4 files)
+- `pages/events/boulder-fest-2026/` (4 files)
+- `pages/events/weekender-2025-11/` (4 files)
+- All new event pages you create
+
+**Total: ~20-25 files depending on which core pages have navigation.**
+
+**Bulk update approach:**
+```bash
+# List all files needing updates
+FILES=$(grep -rl "dropdown-category" pages/ --include="*.html")
+
+# For each file, add the new event entry after existing Boulder Fest entries
+for file in $FILES; do
+  echo "Updating: $file"
+  # Manual edit or use sed for pattern replacement
+done
+```
 
 **Navigation dropdown structure to add:**
 
@@ -329,6 +386,8 @@ Event pages (all 4 files in each directory):
 - `current` - Currently active/most relevant
 - `past` - Completed event (optional, can be removed from nav)
 
+**Ordering rule:** Newer events appear FIRST (top of submenu). When adding Boulder Fest 2027, place it ABOVE Boulder Fest 2026 in the dropdown.
+
 ---
 
 ## Phase 5: Tickets Page
@@ -337,52 +396,104 @@ Event pages (all 4 files in each directory):
 
 **File:** `pages/core/tickets.html`
 
-Add new event section with ticket cards:
+Add new event section with ticket cards.
+
+**Recommended approach:** Copy an existing Boulder Fest event section from tickets.html, then find/replace the year and dates. This is faster and less error-prone than building from scratch.
+
+```bash
+# Extract Boulder Fest 2026 section as template
+grep -n "data-event-id=\"3\"" pages/core/tickets.html | head -5  # Find section boundaries
+```
+
+**Full ticket card structure (copy this template for each ticket type):**
 
 ```html
-<!-- Boulder Fest 2027 Section -->
-<div class="event-section" data-event-id="4">
-  <div class="event-section-header" data-event-id="4">
-    <h2 class="event-title">Boulder Fest 2027</h2>
-    <div class="event-details">
-      <span class="event-dates">May 14-16, 2027</span>
-      <span class="event-venue">Avalon Ballroom, Boulder, CO</span>
+<!-- Event Section Header -->
+<h2 class="event-title" data-event-id="{EVENT_ID}">Boulder Fest {YEAR}</h2>
+<p class="event-subtitle">May {START_DAY}-{END_DAY}, {YEAR} • Avalon Ballroom, Boulder, CO</p>
+
+<div class="ticket-options-grid" data-event-id="{EVENT_ID}">
+
+  <!-- Single Ticket Card (repeat for each ticket type) -->
+  <div class="flip-card ticket-disabled" data-ticket-status="coming-soon" aria-disabled="true">
+    <div class="flip-card-inner" style="pointer-events: none;">
+      <!-- Front of card -->
+      <div class="flip-card-front ticket-card vertical-design"
+           data-ticket-id="boulderfest-{YEAR}-early-bird-full"
+           data-ticket-type="boulderfest-{YEAR}-early-bird-full"
+           data-event-id="{EVENT_ID}"
+           data-price="0.00"
+           data-name="Early Bird Full Pass"
+           data-venue="Avalon Ballroom">
+
+        <div class="ticket-status-banner coming-soon">
+          <span class="sr-only">COMING SOON</span>
+        </div>
+
+        <div class="ticket-header">
+          <div class="event-label">EVENT</div>
+          <div class="event-name">A Lo Cubano Boulder Fest {YEAR}</div>
+        </div>
+
+        <div class="ticket-body">
+          <div class="ticket-type-section">
+            <div class="field-label">Ticket Type</div>
+            <div class="ticket-type">EARLY BIRD FULL PASS</div>
+            <div class="ticket-color-indicator" style="display: flex; justify-content: center; margin: 6px 0;">
+              <span class="ticket-color-circle" style="display: inline-block; width: 18px; height: 18px; border-radius: 50%; background: rgb(169, 169, 169);"></span>
+            </div>
+            <div class="ticket-price">TBA</div>
+          </div>
+
+          <div class="ticket-details">
+            <div class="detail-row">
+              <div class="field-label">Date</div>
+              <div class="detail-value">May {START_DAY}-{END_DAY}, {YEAR}</div>
+            </div>
+          </div>
+
+          <div class="ticket-footer">
+            <div class="venue-section">
+              <div class="field-label">Venue</div>
+              <div class="venue-name">Avalon Ballroom</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Back of card -->
+      <div class="flip-card-back">
+        <div class="card-back-content">
+          <h3>Early Bird Full Pass Details</h3>
+          <p>Special early pricing for full festival access</p>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="ticket-options-grid" data-event-id="4">
-    <!-- Early Bird Full Pass -->
-    <div class="ticket-card"
-         data-ticket-id="boulderfest-2027-early-bird-full"
-         data-event-id="4"
-         data-price="TBD"
-         data-name="Early Bird Full Pass"
-         data-venue="Avalon Ballroom"
-         data-ticket-status="coming-soon">
-      <!-- Card content -->
-    </div>
+  <!-- Repeat for: regular-full, friday-pass, saturday-pass, sunday-pass -->
 
-    <!-- Full Festival Pass -->
-    <div class="ticket-card"
-         data-ticket-id="boulderfest-2027-regular-full"
-         data-event-id="4"
-         data-price="TBD"
-         data-name="Full Festival Pass"
-         data-venue="Avalon Ballroom"
-         data-ticket-status="coming-soon">
-      <!-- Card content -->
-    </div>
-
-    <!-- Day Passes: Friday, Saturday, Sunday -->
-    <!-- Similar structure for each -->
-  </div>
 </div>
 ```
 
 **Important data attributes:**
-- `data-event-id` - Must match bootstrap.json event ID
-- `data-ticket-id` - Must match bootstrap.json ticket type ID
-- `data-ticket-status` - `coming-soon`, `available`, `unavailable`, `sold-out`
+- `data-event-id` - Must match bootstrap.json event ID (integer)
+- `data-ticket-id` - Must match bootstrap.json ticket type ID (string)
+- `data-ticket-type` - Same as data-ticket-id
+- `data-ticket-status` - Controls visual state: `coming-soon`, `available`, `unavailable`, `sold-out`
+- `data-price` - Price in dollars (e.g., "150.00") or "0.00" for TBA
+
+**Status banner classes:**
+- `coming-soon` - Gray banner, disabled
+- `available` - No banner, clickable
+- `unavailable` - Red banner, disabled
+- `sold-out` - Red "SOLD OUT" banner, disabled
+
+**Ticket colors by type (from bootstrap.json ticket_type_colors):**
+- Full Pass / Early Bird: `rgb(169, 169, 169)` (silver)
+- Friday: `rgb(255, 140, 0)` (orange)
+- Saturday: `rgb(255, 215, 0)` (gold)
+- Sunday: `rgb(30, 144, 255)` (blue)
 
 ---
 
@@ -424,17 +535,48 @@ Add to `_loadFallbackEvents()` fallback array:
 
 ### Step 7.1: Add Hero Image
 
-**File:** `images/hero/boulder-fest-2027-hero.jpg`
+**File:** `images/hero/boulder-fest-{YEAR}-hero.jpg`
 
-Requirements:
-- High resolution (recommended: 1920x1080 or larger)
-- Landscape orientation
-- Cuban salsa/festival theme
-- Will be cropped with `object-position: top center`
+**Requirements:**
+- **Dimensions:** 1920x1080 minimum (larger is fine, will be scaled)
+- **Orientation:** Landscape (wider than tall)
+- **Theme:** Cuban salsa/festival imagery
+- **Cropping:** Will be cropped with `object-position: top center` - keep important content in upper portion
+- **Format:** JPEG preferred for photos (smaller file size than PNG)
+
+**Optimization (REQUIRED before upload):**
+```bash
+# Check current file size
+ls -lh images/hero/boulder-fest-{YEAR}-hero.jpg
+
+# Target: Under 500KB for fast loading
+# If too large, compress with ImageMagick or sips:
+sips -s format jpeg -s formatOptions 80 input.jpg --out images/hero/boulder-fest-{YEAR}-hero.jpg
+
+# Or use online tool: squoosh.app, tinypng.com
+```
+
+**File size limits:**
+- Hero images: < 500KB (ideally < 300KB)
+- Artist images: < 200KB each
 
 ### Step 7.2: Artist Images (when available)
 
 **Directory:** `images/artists/`
+
+**Requirements:**
+- **Dimensions:** 400x400 minimum (square or portrait)
+- **Format:** PNG preferred (supports transparency), JPEG acceptable
+- **Naming:** `{artist-name-lowercase}.png` (e.g., `marcela-dance.png`)
+
+**Convert from other formats:**
+```bash
+# Convert JPG to PNG (if needed for consistency)
+sips -s format png input.jpg --out images/artists/artist-name.png
+
+# Resize if too large
+sips -Z 800 images/artists/artist-name.png  # Max dimension 800px
+```
 
 Add artist images as they're confirmed.
 
@@ -456,7 +598,20 @@ Add artist images as they're confirmed.
 - For simple events without multi-day passes
 - When frontend-only features are sufficient
 
-Add to EVENT_CONFIG if custom date logic needed:
+**What breaks WITHOUT ticket-config.js entry:**
+- ⚠️ Wallet passes may show generic dates instead of specific day (Friday/Saturday/Sunday)
+- ⚠️ Email confirmations may lack detailed venue information
+- ⚠️ Day-pass tickets won't have correct individual dates on the ticket
+
+**What still works WITHOUT ticket-config.js:**
+- ✅ Ticket purchasing and checkout
+- ✅ Basic ticket display on tickets page
+- ✅ Admin dashboard and check-in
+- ✅ Event pages and navigation
+
+**Recommendation:** For Boulder Fest (multi-day with day passes), ALWAYS add ticket-config.js entry.
+
+Add to EVENT_CONFIG:
 
 ```javascript
 "boulder-fest-2027": {
@@ -477,11 +632,18 @@ Add to EVENT_CONFIG if custom date logic needed:
 
 ## Phase 9: Archive Previous Year
 
+**When to archive:** Archive the previous year's event AFTER the new event is created AND the previous event has COMPLETED (end_date has passed). Do NOT archive an event that is still `upcoming` or `active`.
+
+**Timing example:**
+- Boulder Fest 2026 ends May 17, 2026
+- Boulder Fest 2027 created in January 2027
+- Archive Boulder Fest 2026 in January 2027 (after it has completed)
+
 ### Step 9.1: Update Previous Event Status
 
 **File:** `config/bootstrap.json`
 
-Update previous year's event:
+Update previous year's event (only after it has completed):
 
 ```json
 {
@@ -594,3 +756,199 @@ draft → upcoming → active → completed → archived (optional)
 | Ticket ID | `boulderfest-YYYY-{type}` | `boulderfest-2027-friday-pass` |
 | Hero Image | `boulder-fest-YYYY-hero.jpg` | `boulder-fest-2027-hero.jpg` |
 | Display Name | "Boulder Fest YYYY Tickets" | "Boulder Fest 2027 Tickets" |
+
+---
+
+## Appendix A: Advanced Scenarios
+
+### A.1: Custom Venue (Non-Avalon Ballroom)
+
+If the festival uses a different venue:
+
+**Step 1: Update bootstrap.json event object:**
+```json
+{
+  "venue_name": "Boulder Theater",
+  "venue_address": "2032 14th Street",
+  "venue_city": "Boulder",
+  "venue_state": "CO",
+  "venue_zip": "80302"
+}
+```
+
+**Step 2: Update all venue references in event pages:**
+```bash
+# Find all Avalon references
+grep -r "Avalon" pages/events/boulder-fest-{YEAR}/ --include="*.html"
+
+# Replace venue name
+sed -i '' 's/Avalon Ballroom/Boulder Theater/g' pages/events/boulder-fest-{YEAR}/*.html
+sed -i '' 's/6185 Arapahoe Road/2032 14th Street/g' pages/events/boulder-fest-{YEAR}/*.html
+```
+
+**Step 3: Update tickets.html venue references:**
+- `data-venue` attribute on ticket cards
+- `.venue-name` element content
+
+**Step 4: Update ticket-config.js:**
+```javascript
+"boulder-fest-{YEAR}": {
+    venue: "Boulder Theater",
+    address: "2032 14th Street, Boulder, CO 80302",
+    // ... other config
+}
+```
+
+**Step 5: Update events-service.js fallback:**
+```javascript
+venue: {
+    name: 'Boulder Theater',
+    address: '2032 14th Street',
+    city: 'Boulder',
+    state: 'CO',
+    zip: '80302'
+}
+```
+
+---
+
+### A.2: 4-Day Festival (Variable Days)
+
+If the festival is 4 days (e.g., Thursday-Sunday):
+
+**Step 1: Add extra ticket type to bootstrap.json:**
+```json
+{
+  "id": "boulderfest-{YEAR}-thursday-pass",
+  "event_id": {EVENT_ID},
+  "name": "Thursday Pass",
+  "description": "Thursday workshops and social dance",
+  "event_date": "{THURSDAY_DATE}",
+  "event_time": "16:00",
+  "price_cents": null,
+  "status": "coming-soon",
+  "display_order": 3
+}
+```
+Adjust display_order for other day passes (Friday=4, Saturday=5, Sunday=6).
+
+**Step 2: Add Thursday color to bootstrap.json ticket_type_colors (if not exists):**
+```json
+{
+  "pattern": "thursday",
+  "color_name": "Thursday",
+  "color_rgb": "rgb(138, 43, 226)",
+  "circle_emoji": "⬤",
+  "display_order": 4,
+  "description": "Blue-violet for Thursday passes"
+}
+```
+
+**Step 3: Update schedule.html** to include Thursday section.
+
+**Step 4: Update tickets.html** to include Thursday ticket card.
+
+**Step 5: Update ticket-config.js** with Thursday date:
+```javascript
+dates: {
+    thursday: "{YEAR}-05-16",
+    friday: "{YEAR}-05-17",
+    saturday: "{YEAR}-05-18",
+    sunday: "{YEAR}-05-19",
+}
+```
+
+---
+
+### A.3: Immediately Available Tickets (Not Coming Soon)
+
+If tickets are available immediately at launch:
+
+**Step 1: Set status and price in bootstrap.json:**
+```json
+{
+  "id": "boulderfest-{YEAR}-early-bird-full",
+  "price_cents": 15000,
+  "status": "available"
+}
+```
+
+**Step 2: Update ticket card HTML in tickets.html:**
+```html
+<!-- Change wrapper class -->
+<div class="flip-card" data-ticket-status="available" aria-disabled="false">
+  <div class="flip-card-inner">
+    <!-- Remove disabled banner, remove pointer-events: none -->
+    <div class="flip-card-front ticket-card vertical-design"
+         data-ticket-id="boulderfest-{YEAR}-early-bird-full"
+         data-price="150.00"
+         ...>
+      <!-- NO status banner for available tickets -->
+      ...
+      <div class="ticket-price">$150.00</div>
+      ...
+    </div>
+  </div>
+</div>
+```
+
+**Key differences from coming-soon:**
+- Remove `ticket-disabled` class from outer div
+- Remove `style="pointer-events: none;"` from flip-card-inner
+- Remove the `ticket-status-banner` div entirely
+- Set `data-price` to actual dollar amount
+- Update `.ticket-price` text content
+
+---
+
+### A.4: Partial Artist Roster
+
+If some artists are confirmed and others TBD:
+
+**In artists.html:**
+```html
+<!-- Confirmed artist -->
+<div class="artist-card">
+  <img src="/images/artists/marcela-dance.png" alt="Marcela">
+  <h3>Marcela</h3>
+  <p>World-renowned Cuban salsa instructor...</p>
+</div>
+
+<!-- TBD artist placeholder -->
+<div class="artist-card artist-tbd">
+  <div class="artist-placeholder">
+    <span class="tbd-icon">?</span>
+  </div>
+  <h3>Guest Artist TBA</h3>
+  <p>More instructors to be announced soon!</p>
+</div>
+```
+
+**Update later:** When artist is confirmed, replace the TBD card with real content.
+
+---
+
+### A.5: Troubleshooting Lint/Test Failures
+
+If `npm run lint` fails:
+```bash
+# See specific errors
+npm run lint 2>&1 | head -50
+
+# Common fixes:
+# - HTML validation errors: Check for missing closing tags
+# - ESLint errors: Check for unused variables, missing semicolons
+# - Markdown lint: Check heading hierarchy
+```
+
+If `npm test` fails:
+```bash
+# Run specific test file
+npm test -- tests/unit/specific-test.test.js
+
+# Common fixes:
+# - Update expected values in tests if event IDs changed
+# - Check bootstrap.json is valid JSON
+```
+
+**Don't bypass with --no-verify.** Fix the issues instead.
