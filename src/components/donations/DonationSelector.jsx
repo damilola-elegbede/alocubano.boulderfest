@@ -96,20 +96,20 @@ export default function DonationSelector() {
             confetti.className = 'confetti-piece';
             confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
             confetti.style.left = Math.random() * 120 + 'vw';
-            confetti.style.animationDelay = Math.random() * 2 + 's';
-            confetti.style.animationDuration = Math.random() * 2 + 3 + 's';
+            confetti.style.animationDelay = Math.random() * 0.5 + 's';
+            confetti.style.animationDuration = Math.random() * 1 + 2 + 's';
             document.body.appendChild(confetti);
             confettiElements.push(confetti);
         }
 
-        // Cleanup confetti after animation
+        // Cleanup confetti after animation (max delay 0.5s + max duration 3s + buffer)
         const cleanup = setTimeout(() => {
             confettiElements.forEach(el => {
                 if (el.parentNode) {
                     el.parentNode.removeChild(el);
                 }
             });
-        }, 6000);
+        }, 4000);
 
         return () => {
             clearTimeout(cleanup);
