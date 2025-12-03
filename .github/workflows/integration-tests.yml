@@ -104,7 +104,7 @@ jobs:
         run: |
           echo "📦 Installing minimal dependencies for integration tests..."
 
-          # Install with --ignore-scripts to prevent ngrok download failures (HTTP 503 errors)
+          # Install with --ignore-scripts to skip postinstall scripts
           # Skip heavy dev dependencies not needed for integration tests
           # This saves ~77MB and 2+ minutes of installation time
           npm ci --ignore-scripts --prefer-offline --no-audit --no-fund \
@@ -130,7 +130,6 @@ jobs:
           # These are only needed for E2E tests, local dev, or deployment
           rm -rf node_modules/playwright* 2>/dev/null || true
           rm -rf node_modules/lighthouse* 2>/dev/null || true
-          rm -rf node_modules/ngrok* 2>/dev/null || true
           rm -rf node_modules/vercel 2>/dev/null || true
           rm -rf node_modules/@axe-core 2>/dev/null || true
           rm -rf node_modules/puppeteer* 2>/dev/null || true

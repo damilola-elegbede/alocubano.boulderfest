@@ -44,7 +44,7 @@ npm test                       # Run unit tests (fast execution)
 npm run test:e2e               # Run E2E tests (Vercel Preview Deployments)
 
 # Start development
-npm run vercel:dev             # Development server with ngrok tunnel
+npm run vercel:dev             # Development server
 ```
 
 ## Installation Steps
@@ -275,7 +275,7 @@ npm run migrate:up
 Start the development server to verify installation:
 
 ```bash
-# Start development server with ngrok tunnel (recommended)
+# Start development server (recommended)
 npm run vercel:dev
 
 # Alternative: Start development server locally
@@ -385,7 +385,7 @@ The project uses essential commands for all development needs:
 
 ```bash
 # Core Development
-npm run vercel:dev             # Development server with ngrok tunnel
+npm run vercel:dev             # Development server
 npm start                      # Alias for npm run vercel:dev
 npm run build                  # Production build
 npm run vercel:preview         # Vercel preview deployment
@@ -884,7 +884,7 @@ The project focuses on the commands you actually need:
 
 ```bash
 # Core Development
-npm run vercel:dev             # Development server with ngrok tunnel
+npm run vercel:dev             # Development server
 npm start                      # Alias for npm run vercel:dev
 npm run build                  # Production build
 npm run vercel:preview         # Vercel preview deployment

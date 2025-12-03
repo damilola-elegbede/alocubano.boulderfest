@@ -73,7 +73,7 @@ alocubano.boulderfest/
 ├── index.html (Main home page)
 ├── vercel.json (Deployment configuration)
 ├── scripts/
-│   ├── start-with-ngrok.js (Development server with ngrok)
+│   ├── dev-server.js (Development server)
 │   ├── migrate.js (Database migration system)
 │   ├── upload-backup-to-blob.js (Backup upload to Vercel Blob)
 │   ├── cleanup-old-backups.js (Cleanup old backups)
@@ -275,7 +275,7 @@ The project uses essential commands for all development needs:
 
 ```bash
 # Core Development
-npm run vercel:dev             # Development server with ngrok tunnel
+npm run vercel:dev             # Development server
 npm run build                  # Production build
 npm run vercel:preview         # Vercel preview deployment
 
@@ -619,7 +619,7 @@ The project focuses on the commands you actually need:
 
 ```bash
 # Core Development
-npm run vercel:dev             # Development server with ngrok tunnel
+npm run vercel:dev             # Development server
 npm start                      # Alias for npm run vercel:dev
 npm run build                  # Production build
 npm run vercel:preview         # Vercel preview deployment

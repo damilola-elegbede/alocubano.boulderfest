@@ -33,7 +33,7 @@ npm test && git commit
 
 ```bash
 # Development
-npm start                       # Development server with ngrok
+npm start                       # Development server
 npm run build                   # Production build
 npm run vercel:preview          # Preview deployment
 

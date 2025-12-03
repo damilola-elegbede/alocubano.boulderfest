@@ -10,7 +10,7 @@
  * - Automatic port detection from environment variables
  * - Fallback port scanning for common ports
  * - Retry logic with exponential backoff
- * - Works with CI, local development, and ngrok environments
+ * - Works with CI and local development environments
  */
 
 import { exec } from "child_process";

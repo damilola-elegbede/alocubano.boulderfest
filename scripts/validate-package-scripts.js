@@ -104,8 +104,7 @@ function validatePackageScripts() {
   const e2eScripts = Object.keys(scripts).filter(key => key.includes('test:e2e'));
   const modernE2eCount = e2eScripts.filter(script =>
     !scripts[script].includes('DEPRECATED') &&
-    !script.includes(':ci') &&
-    !script.includes(':ngrok')
+    !script.includes(':ci')
   ).length;
 
   if (modernE2eCount > 0) {
@@ -201,7 +200,7 @@ function validatePackageScripts() {
   }
 
   console.log('\n💡 MIGRATION GUIDANCE:');
-  console.log('  - Use npm run dev for development (with ngrok)');
+  console.log('  - Use npm run dev for development');
   console.log('  - Use npm run test:unit for unit tests');
   console.log('  - Use npm run test:e2e for E2E tests (Vercel Preview Deployments)');
   console.log('  - Deprecated commands show warnings and redirect to new ones');

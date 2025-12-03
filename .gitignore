@@ -127,11 +127,6 @@ deployment-check-report.json
 api/test-*.js
 api/debug-*.js
 
-# ngrok files and logs
-.ngrok2/
-ngrok.log
-ngrok.yml
-
 # Backup files
 *.backup
 *.bak

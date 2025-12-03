@@ -53,7 +53,7 @@ class VercelDevWrapper {
       console.log('\n💡 Try alternative startup methods:');
       console.log('  npm run serve:simple    # Simple HTTP server');
       console.log('  npm run start:clean     # Clean Vercel startup');
-      console.log('  npm start               # Start with ngrok');
+      console.log('  npm start               # Start development server');
       process.exit(1);
     }
   }
