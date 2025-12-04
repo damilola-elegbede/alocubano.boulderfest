@@ -273,12 +273,18 @@ export default async function handler(req, res) {
         if (item.type === 'ticket') {
 
           // Set event metadata for tickets - no defaults
+          // Include attendee info for inline checkout registration
           lineItem.price_data.product_data.metadata = {
             type: 'ticket',
             ticket_type: item.ticketType,  // No default - must be explicit
             event_date: item.eventDate,     // No default - must be explicit
             event_id: item.eventId || '',   // Pass event ID through if present
-            venue: item.venue || ''          // Pass venue through if present
+            venue: item.venue || '',         // Pass venue through if present
+            // Inline checkout registration: Include attendee info if provided
+            // These fields enable pre-registration during checkout
+            attendee_first_name: item.attendee?.firstName || '',
+            attendee_last_name: item.attendee?.lastName || '',
+            attendee_email: item.attendee?.email || ''
           };
         } else if (item.type === 'donation') {
           lineItem.price_data.product_data.metadata = {

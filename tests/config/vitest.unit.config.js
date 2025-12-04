@@ -24,6 +24,14 @@ export default defineConfig({
     // Use node environment for maximum speed in unit tests
     environment: 'node',
 
+    // Configure jsdom environment options for tests that override with @vitest-environment jsdom
+    environmentOptions: {
+      jsdom: {
+        // Provide URL for localStorage to work properly
+        url: 'http://localhost:3000',
+      },
+    },
+
     // Unit-only mode environment variables
     env: {
       UNIT_ONLY_MODE: 'true',
@@ -55,7 +63,9 @@ export default defineConfig({
     teardownTimeout: Number(process.env.VITEST_CLEANUP_TIMEOUT || 2000),
 
     // Unit test specific setup (UNIT-ONLY)
+    // setup-jsdom.js MUST come first to fix localStorage before any modules load
     setupFiles: [
+      './tests/setup-jsdom.js',       // JSDOM localStorage/sessionStorage fix (MUST BE FIRST)
       './tests/setup-unit.js',        // General unit test setup
       './tests/setup-happy-dom.js',   // Happy-DOM environment setup for frontend tests
       './tests/setup-react.js'        // React Testing Library setup

@@ -420,8 +420,19 @@ async function captureOrderHandler(req, res) {
             const isTestTicket = ticket.isTestItem || ticket.name?.includes('TEST') || false;
 
             // Parse customer name for default attendee info
-            const firstName = customerName ? customerName.split(' ')[0] : 'Guest';
-            const lastName = customerName ? customerName.split(' ').slice(1).join(' ') || '' : 'Attendee';
+            const defaultFirstName = customerName ? customerName.split(' ')[0] : 'Guest';
+            const defaultLastName = customerName ? customerName.split(' ').slice(1).join(' ') || '' : 'Attendee';
+
+            // Use attendee data from cart item if present (inline checkout registration)
+            // Falls back to purchaser info (default behavior for legacy flow)
+            const attendeeFirstName = ticket.attendee?.firstName || defaultFirstName;
+            const attendeeLastName = ticket.attendee?.lastName || defaultLastName;
+            const attendeeEmail = ticket.attendee?.email || null;
+
+            // If attendee email is present from inline checkout, mark as pre-registered
+            const hasInlineRegistration = !!attendeeEmail;
+            const registrationStatus = hasInlineRegistration ? 'completed' : 'pending';
+            const registeredAt = hasInlineRegistration ? now.toISOString() : null;
 
             // Build ticket metadata
             const ticketMetadata = JSON.stringify({
@@ -431,17 +442,18 @@ async function captureOrderHandler(req, res) {
                 timestamp: now.toISOString(),
                 paypal_order_id: paypalOrderId
               },
-              source: 'paypal'
+              source: 'paypal',
+              inline_registration: hasInlineRegistration
             });
 
             await db.execute({
               sql: `INSERT INTO tickets
                     (ticket_id, transaction_id, ticket_type, ticket_type_id, event_id,
                      event_date, price_cents,
-                     attendee_first_name, attendee_last_name,
-                     registration_status, registration_deadline,
+                     attendee_first_name, attendee_last_name, attendee_email,
+                     registration_status, registration_deadline, registered_at,
                      status, created_at, is_test, ticket_metadata)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
               args: [
                 ticketId,
                 transactionId,
@@ -450,10 +462,12 @@ async function captureOrderHandler(req, res) {
                 eventId,
                 eventDate,
                 priceCents,
-                isTestTicket ? `TEST-${firstName}` : firstName, // attendee_first_name
-                isTestTicket ? `TEST-${lastName}` : lastName, // attendee_last_name
-                'pending', // registration_status
+                isTestTicket ? `TEST-${attendeeFirstName}` : attendeeFirstName, // attendee_first_name
+                isTestTicket ? `TEST-${attendeeLastName}` : attendeeLastName, // attendee_last_name
+                attendeeEmail, // attendee_email (NEW: for inline registration)
+                registrationStatus, // 'completed' if inline registration, 'pending' otherwise
                 registrationDeadline.toISOString(),
+                registeredAt, // NEW: Set if inline registration
                 'valid', // status
                 now.toISOString(),
                 isTestTicket ? 1 : 0, // is_test

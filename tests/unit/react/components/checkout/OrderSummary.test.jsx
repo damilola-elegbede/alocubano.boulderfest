@@ -300,8 +300,8 @@ describe('OrderSummary', () => {
 
             render(<OrderSummary cart={cart} isLoading={false} />);
 
-            // Tickets are now expanded with key format: `order-item-{ticketType}-{index}`
-            const itemRow = screen.getByTestId('order-item-xss-0');
+            // Tickets are now expanded with key format: `order-item-{ticketType}-{eventId}-{index}`
+            const itemRow = screen.getByTestId('order-item-xss-1-0');
             expect(itemRow).toBeInTheDocument();
 
             // The script text should be displayed as text, not executed
@@ -330,8 +330,8 @@ describe('OrderSummary', () => {
 
             render(<OrderSummary cart={cart} isLoading={false} />);
 
-            // Tickets are now expanded with key format: `order-item-{ticketType}-{index}`
-            const itemRow = screen.getByTestId('order-item-special-0');
+            // Tickets are now expanded with key format: `order-item-{ticketType}-{eventId}-{index}`
+            const itemRow = screen.getByTestId('order-item-special-1-0');
             expect(itemRow).toBeInTheDocument();
 
             // React displays special characters as text content
@@ -356,8 +356,8 @@ describe('OrderSummary', () => {
             render(<OrderSummary cart={cart} isLoading={false} />);
 
             expect(screen.getByTestId('order-summary')).toBeInTheDocument();
-            // Tickets are now expanded with key format: `order-item-{ticketType}-{index}`
-            expect(screen.getByTestId('order-item-test-0')).toBeInTheDocument();
+            // Tickets are now expanded with key format: `order-item-{ticketType}-{eventId}-{index}`
+            expect(screen.getByTestId('order-item-test-1-0')).toBeInTheDocument();
             expect(screen.getByTestId('order-total')).toBeInTheDocument();
         });
 

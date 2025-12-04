@@ -68,7 +68,11 @@ function isAdminPage() {
  * @returns {string} 'system', 'light', or 'dark' for main site, null if not set
  */
 function getStoredPreference() {
-    if (typeof localStorage === 'undefined' || isAdminPage()) {
+    // Check if localStorage is available and has getItem function
+    // (some test environments like jsdom may have incomplete implementations)
+    if (typeof localStorage === 'undefined' ||
+        typeof localStorage.getItem !== 'function' ||
+        isAdminPage()) {
         return null;
     }
 
@@ -155,7 +159,8 @@ function setTheme(theme) {
     }
 
     // Store preference and invalidate cache
-    if (typeof localStorage !== 'undefined') {
+    // Check for full localStorage API (some test environments have partial implementations)
+    if (typeof localStorage !== 'undefined' && typeof localStorage.setItem === 'function') {
         localStorage.setItem(STORAGE_KEY, theme);
         cachedStoredPreference = theme;
         lastStorageAccess = performance.now();

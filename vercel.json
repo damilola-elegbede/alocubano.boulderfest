@@ -26,10 +26,6 @@
       "maxDuration": 30,
       "includeFiles": "lib/{database,ticket-service,qr-service,qr-token-service,logger,wallet-service,apple-wallet-service,google-wallet-service,google-wallet-hero-generator,ticket-color-service,test-mode-utils}.js"
     },
-    "api/registration/**/*.js": {
-      "maxDuration": 20,
-      "includeFiles": "lib/{database,registration-service,email-service,logger}.js"
-    },
     "api/health/**/*.js": {
       "maxDuration": 5,
       "includeFiles": "lib/database.js"
@@ -82,10 +78,6 @@
     {
       "path": "/api/email/process-retry-queue",
       "schedule": "*/15 * * * *"
-    },
-    {
-      "path": "/api/cron/process-reminders",
-      "schedule": "0 * * * *"
     },
     {
       "path": "/api/cron/cleanup-expired-reservations",
@@ -176,7 +168,7 @@
       "destination": "/pages/core/home"
     },
     {
-      "source": "/(about|tickets|donations|contact|checkout|checkout-success|checkout-cancel|my-tickets|success|failure|register-tickets|view-tickets)",
+      "source": "/(about|tickets|donations|contact|checkout|checkout-success|checkout-cancel|my-tickets|success|failure|view-tickets)",
       "destination": "/pages/core/$1"
     },
     {
@@ -221,6 +213,11 @@
     }
   ],
   "redirects": [
+    {
+      "source": "/register-tickets",
+      "destination": "/view-tickets",
+      "permanent": true
+    },
     {
       "source": "/about-festival",
       "destination": "/about",

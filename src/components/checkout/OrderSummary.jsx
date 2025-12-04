@@ -2,13 +2,15 @@
  * OrderSummary - React component for displaying cart contents
  *
  * Displays tickets and donations from the cart context with totals.
- * Read-only component for checkout flow.
+ * Now includes inline attendee registration forms for each ticket.
  * Styled to match the floating cart visual appearance.
  *
  * @module src/components/checkout/OrderSummary
  */
 
 import React from 'react';
+import TicketAttendeeForm from './TicketAttendeeForm';
+import { generateTicketKey } from '../../utils/attendee-validation';
 
 // Styles matching floating cart CSS
 const styles = {
@@ -158,8 +160,23 @@ const groupTicketsByEvent = (ticketEntries) => {
  * @param {Object} props
  * @param {Object} props.cart - Cart state from useCart hook
  * @param {boolean} props.isLoading - Whether cart is still loading
+ * @param {Object} props.attendeeData - Attendee data keyed by ticket identifier
+ * @param {Object} props.attendeeErrors - Validation errors keyed by ticket identifier
+ * @param {Function} props.onAttendeeChange - Callback for attendee data changes
+ * @param {Function} props.onCopyToAll - Callback for "Copy to all" action
+ * @param {number} props.ticketCount - Total number of tickets in cart
+ * @param {boolean} props.disabled - Whether forms are disabled
  */
-export default function OrderSummary({ cart, isLoading = false }) {
+export default function OrderSummary({
+    cart,
+    isLoading = false,
+    attendeeData = {},
+    attendeeErrors = {},
+    onAttendeeChange,
+    onCopyToAll,
+    ticketCount = 0,
+    disabled = false,
+}) {
     // Loading state
     if (isLoading) {
         return (
@@ -232,20 +249,28 @@ export default function OrderSummary({ cart, isLoading = false }) {
 
             {/* Content */}
             <div style={styles.content}>
-                {/* Tickets grouped by Event - each ticket listed separately for registration */}
+                {/* Tickets grouped by Event - each ticket listed separately with attendee form */}
                 {ticketEntries.length > 0 && (() => {
                     const eventGroups = groupTicketsByEvent(ticketEntries);
+                    let globalTicketIndex = 0; // Track overall ticket index for "Copy to all"
+
                     return Object.entries(eventGroups).map(([eventId, group]) => {
                         // Expand tickets: create individual rows for each quantity
                         const expandedTickets = [];
                         group.tickets.forEach(([ticketType, item]) => {
                             const qty = item.quantity || 1;
                             for (let i = 0; i < qty; i++) {
+                                // Ensure item has ticketType for key generation
+                                // (ticketType comes from the cart key, may not be on item itself)
+                                const itemWithType = { ...item, ticketType: item.ticketType || ticketType };
+                                // Generate consistent ticket key using the utility function
+                                const ticketKey = generateTicketKey(itemWithType, i);
                                 expandedTickets.push({
                                     ticketType,
-                                    item,
+                                    item: itemWithType,
                                     index: i,
-                                    key: `${ticketType}-${i}`,
+                                    key: ticketKey,
+                                    globalIndex: globalTicketIndex++,
                                 });
                             }
                         });
@@ -256,28 +281,43 @@ export default function OrderSummary({ cart, isLoading = false }) {
                                     {group.eventName}
                                 </div>
                                 {expandedTickets.map((ticket, idx) => (
-                                    <div
-                                        key={ticket.key}
-                                        className="order-item"
-                                        data-testid={`order-item-${ticket.key}`}
-                                        style={{
-                                            ...styles.item,
-                                            ...(idx === expandedTickets.length - 1 ? styles.itemLast : {}),
-                                        }}
-                                    >
-                                        <div style={styles.itemInfo}>
-                                            <h4 style={styles.itemName}>
-                                                {ticket.item.name || ticket.ticketType}
-                                            </h4>
-                                            <p style={styles.itemPrice}>
-                                                Ticket {ticket.index + 1} of {ticket.item.quantity}
-                                            </p>
+                                    <div key={ticket.key}>
+                                        <div
+                                            className="order-item"
+                                            data-testid={`order-item-${ticket.key}`}
+                                            style={{
+                                                ...styles.item,
+                                                borderBottom: '1px solid var(--color-border)',
+                                            }}
+                                        >
+                                            <div style={styles.itemInfo}>
+                                                <h4 style={styles.itemName}>
+                                                    {ticket.item.name || ticket.ticketType}
+                                                </h4>
+                                                <p style={styles.itemPrice}>
+                                                    Ticket {ticket.index + 1} of {ticket.item.quantity}
+                                                </p>
+                                            </div>
+                                            <div style={styles.itemActions}>
+                                                <span style={styles.itemTotal}>
+                                                    ${formatPrice(ticket.item.price)}
+                                                </span>
+                                            </div>
                                         </div>
-                                        <div style={styles.itemActions}>
-                                            <span style={styles.itemTotal}>
-                                                ${formatPrice(ticket.item.price)}
-                                            </span>
-                                        </div>
+                                        {/* Attendee form for this ticket */}
+                                        {onAttendeeChange && (
+                                            <TicketAttendeeForm
+                                                ticketKey={ticket.key}
+                                                ticketIndex={ticket.globalIndex + 1}
+                                                ticketName={ticket.item.name || ticket.ticketType}
+                                                attendee={attendeeData[ticket.key] || {}}
+                                                errors={attendeeErrors[ticket.key] || {}}
+                                                onChange={onAttendeeChange}
+                                                disabled={disabled}
+                                                showCopyAll={ticket.globalIndex === 0 && ticketCount > 1}
+                                                onCopyToAll={onCopyToAll}
+                                            />
+                                        )}
                                     </div>
                                 ))}
                             </div>
