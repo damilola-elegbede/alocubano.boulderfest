@@ -81,6 +81,12 @@ function initTeamLightbox() {
 
     // Add click event listeners to each photo
     teamPhotos.forEach((photo, index) => {
+        // Bounds check: skip if index exceeds teamMembers array
+        if (index >= teamMembers.length) {
+            debugWarn(`Team photo at index ${index} has no matching teamMembers entry`);
+            return;
+        }
+
         // Add click event
         photo.addEventListener('click', () => {
             openTeamMemberLightbox(index);

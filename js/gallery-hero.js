@@ -15,7 +15,7 @@ const HERO_IMAGES = {
     about: '/images/hero/about.jpg',
     artists: '/images/hero/boulder-fest-2026-hero.jpg',
     schedule: '/images/hero/boulder-fest-2025-hero.jpg',
-    gallery: '/images/hero/weekender-2026-09-hero.jpg',
+    gallery: '/images/hero/gallery.jpg',
     tickets: '/images/hero/tickets.jpg',
     donations: '/images/hero/donations.jpg',
     contact: '/images/hero/contact.jpg',
@@ -82,8 +82,8 @@ function getHeroImagePath(pageId) {
     if (pageId === 'boulder-fest-2025') {
         return '/images/hero/boulder-fest-2025-hero.jpg';
     }
-    if (pageId === 'weekender-2026-09') {
-        return '/images/hero/weekender-2026-09-hero.jpg';
+    if (pageId === 'weekender-2025-11') {
+        return '/images/hero/weekender-2025-11-hero.jpg';
     }
 
     return HERO_IMAGES[pageId] || HERO_IMAGES['default'];
@@ -170,18 +170,18 @@ function getHeroAltText(pageId) {
         return 'Boulder Fest 2025 - Cuban salsa festival in Boulder, Colorado';
     }
 
-    if (pageId === 'weekender-2026-09') {
+    if (pageId === 'weekender-2025-11') {
         const path = window.location.pathname;
         if (path.includes('artists')) {
-            return 'September 2026 Weekender Artists - Intimate Cuban salsa intensive instructors';
+            return 'November 2025 Weekender Artists - Intimate Cuban salsa intensive instructors';
         }
         if (path.includes('schedule')) {
-            return 'September 2026 Weekender Schedule - Intensive workshop sessions';
+            return 'November 2025 Weekender Schedule - Intensive workshop sessions';
         }
         if (path.includes('gallery')) {
-            return 'September 2026 Weekender Gallery - Intimate weekend memories';
+            return 'November 2025 Weekender Gallery - Intimate weekend memories';
         }
-        return 'September 2026 Weekender - Intimate Cuban salsa weekend intensive';
+        return 'November 2025 Weekender - Intimate Cuban salsa weekend intensive';
     }
 
     const altTexts = {
