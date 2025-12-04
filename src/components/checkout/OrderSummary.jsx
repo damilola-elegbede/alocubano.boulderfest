@@ -280,46 +280,77 @@ export default function OrderSummary({
                                 <div style={{ ...styles.categoryHeader, ...styles.categoryHeaderTickets }}>
                                     {group.eventName}
                                 </div>
-                                {expandedTickets.map((ticket, idx) => (
-                                    <div key={ticket.key}>
+                                {/* Responsive grid: 1 column on mobile, 2 columns on desktop for multiple tickets */}
+                                <div
+                                    style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: expandedTickets.length > 1
+                                            ? 'repeat(auto-fit, minmax(300px, 1fr))'
+                                            : '1fr',
+                                        gap: 'var(--space-md)',
+                                    }}
+                                >
+                                    {expandedTickets.map((ticket, idx) => (
                                         <div
-                                            className="order-item"
+                                            key={ticket.key}
                                             data-testid={`order-item-${ticket.key}`}
                                             style={{
-                                                ...styles.item,
-                                                borderBottom: '1px solid var(--color-border)',
+                                                background: 'var(--color-surface)',
+                                                borderRadius: '8px',
+                                                border: '1px solid var(--color-border)',
+                                                overflow: 'hidden',
                                             }}
                                         >
-                                            <div style={styles.itemInfo}>
-                                                <h4 style={styles.itemName}>
+                                            {/* Compact ticket header */}
+                                            <div
+                                                style={{
+                                                    display: 'flex',
+                                                    justifyContent: 'space-between',
+                                                    alignItems: 'center',
+                                                    padding: 'var(--space-sm) var(--space-md)',
+                                                    borderBottom: '1px solid var(--color-border)',
+                                                    background: 'var(--color-surface-elevated)',
+                                                }}
+                                            >
+                                                <span
+                                                    style={{
+                                                        fontSize: 'var(--font-size-sm)',
+                                                        fontWeight: 600,
+                                                        fontFamily: 'var(--font-display)',
+                                                        color: 'var(--color-text-primary)',
+                                                        letterSpacing: 'var(--letter-spacing-wide)',
+                                                        textTransform: 'uppercase',
+                                                    }}
+                                                >
                                                     {ticket.item.name || ticket.ticketType}
-                                                </h4>
-                                                <p style={styles.itemPrice}>
-                                                    Ticket {ticket.index + 1} of {ticket.item.quantity}
-                                                </p>
-                                            </div>
-                                            <div style={styles.itemActions}>
-                                                <span style={styles.itemTotal}>
+                                                </span>
+                                                <span
+                                                    style={{
+                                                        fontSize: 'var(--font-size-sm)',
+                                                        fontFamily: 'var(--font-code)',
+                                                        color: 'var(--color-text-secondary)',
+                                                    }}
+                                                >
                                                     ${formatPrice(ticket.item.price)}
                                                 </span>
                                             </div>
+                                            {/* Attendee form embedded in card */}
+                                            {onAttendeeChange && (
+                                                <TicketAttendeeForm
+                                                    ticketKey={ticket.key}
+                                                    ticketIndex={ticket.globalIndex + 1}
+                                                    ticketName={null}
+                                                    attendee={attendeeData[ticket.key] || {}}
+                                                    errors={attendeeErrors[ticket.key] || {}}
+                                                    onChange={onAttendeeChange}
+                                                    disabled={disabled}
+                                                    showCopyAll={ticket.globalIndex === 0 && ticketCount > 1}
+                                                    onCopyToAll={onCopyToAll}
+                                                />
+                                            )}
                                         </div>
-                                        {/* Attendee form for this ticket */}
-                                        {onAttendeeChange && (
-                                            <TicketAttendeeForm
-                                                ticketKey={ticket.key}
-                                                ticketIndex={ticket.globalIndex + 1}
-                                                ticketName={ticket.item.name || ticket.ticketType}
-                                                attendee={attendeeData[ticket.key] || {}}
-                                                errors={attendeeErrors[ticket.key] || {}}
-                                                onChange={onAttendeeChange}
-                                                disabled={disabled}
-                                                showCopyAll={ticket.globalIndex === 0 && ticketCount > 1}
-                                                onCopyToAll={onCopyToAll}
-                                            />
-                                        )}
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
                         );
                     });

@@ -13,16 +13,12 @@
  * @module src/components/checkout/TicketAttendeeForm
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 
 // Styles for mobile-friendly attendee form
 const styles = {
   container: {
     padding: 'var(--space-md)',
-    marginTop: 'var(--space-sm)',
-    background: 'var(--color-surface)',
-    borderRadius: '8px',
-    border: '1px solid var(--color-border)',
   },
   title: {
     fontFamily: 'var(--font-display)',
@@ -122,6 +118,13 @@ export function TicketAttendeeForm({
   showCopyAll = false,
   onCopyToAll,
 }) {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  // Calculate completion status
+  const isComplete = attendee.firstName && attendee.lastName &&
+                     attendee.email && !errors.firstName &&
+                     !errors.lastName && !errors.email;
+
   const handleChange = (field) => (e) => {
     onChange(ticketKey, field, e.target.value);
   };
@@ -138,94 +141,158 @@ export function TicketAttendeeForm({
     ...(disabled ? styles.inputDisabled : {}),
   });
 
+  const handleToggleCollapse = () => {
+    if (isComplete) {
+      setIsCollapsed(!isCollapsed);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (isComplete && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      setIsCollapsed(!isCollapsed);
+    }
+  };
+
   return (
     <div style={styles.container} data-testid={`attendee-form-${ticketKey}`}>
-      <div style={styles.title}>
-        Attendee {ticketIndex} {ticketName && `- ${ticketName}`}
-      </div>
-
-      <div style={styles.field}>
-        <label htmlFor={`${ticketKey}-firstName`} style={styles.label}>
-          First Name *
-        </label>
-        <input
-          id={`${ticketKey}-firstName`}
-          type="text"
-          value={attendee.firstName || ''}
-          onChange={handleChange('firstName')}
-          disabled={disabled}
-          placeholder="Enter first name"
-          autoComplete="given-name"
-          style={getInputStyle(!!errors.firstName)}
-          aria-invalid={!!errors.firstName}
-          aria-describedby={errors.firstName ? `${ticketKey}-firstName-error` : undefined}
-        />
-        {errors.firstName && (
-          <div id={`${ticketKey}-firstName-error`} style={styles.errorText} role="alert">
-            {errors.firstName}
+      <div
+        style={{
+          ...styles.title,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          cursor: isComplete ? 'pointer' : 'default',
+        }}
+        onClick={handleToggleCollapse}
+        onKeyDown={handleKeyDown}
+        role={isComplete ? 'button' : undefined}
+        tabIndex={isComplete ? 0 : undefined}
+        aria-expanded={isComplete ? !isCollapsed : undefined}
+      >
+        <span>
+          Attendee {ticketIndex} {ticketName && `- ${ticketName}`}
+          {isCollapsed && isComplete && (
+            <span
+              style={{
+                marginLeft: '8px',
+                fontSize: 'var(--font-size-xs)',
+                color: 'var(--color-text-muted)',
+                fontWeight: 400,
+              }}
+            >
+              ({attendee.firstName} {attendee.lastName})
+            </span>
+          )}
+        </span>
+        {isComplete && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="#22c55e" aria-hidden="true">
+              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+            </svg>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="var(--color-text-muted)"
+              aria-hidden="true"
+              style={{
+                transform: isCollapsed ? 'rotate(0deg)' : 'rotate(180deg)',
+                transition: 'transform 0.2s ease',
+              }}
+            >
+              <path d="M7 10l5 5 5-5z"/>
+            </svg>
           </div>
         )}
       </div>
 
-      <div style={styles.field}>
-        <label htmlFor={`${ticketKey}-lastName`} style={styles.label}>
-          Last Name *
-        </label>
-        <input
-          id={`${ticketKey}-lastName`}
-          type="text"
-          value={attendee.lastName || ''}
-          onChange={handleChange('lastName')}
-          disabled={disabled}
-          placeholder="Enter last name"
-          autoComplete="family-name"
-          style={getInputStyle(!!errors.lastName)}
-          aria-invalid={!!errors.lastName}
-          aria-describedby={errors.lastName ? `${ticketKey}-lastName-error` : undefined}
-        />
-        {errors.lastName && (
-          <div id={`${ticketKey}-lastName-error`} style={styles.errorText} role="alert">
-            {errors.lastName}
+      {!isCollapsed && (
+        <>
+          <div style={styles.field}>
+            <label htmlFor={`${ticketKey}-firstName`} style={styles.label}>
+              First Name *
+            </label>
+            <input
+              id={`${ticketKey}-firstName`}
+              type="text"
+              value={attendee.firstName || ''}
+              onChange={handleChange('firstName')}
+              disabled={disabled}
+              placeholder="Enter first name"
+              autoComplete="given-name"
+              style={getInputStyle(!!errors.firstName)}
+              aria-invalid={!!errors.firstName}
+              aria-describedby={errors.firstName ? `${ticketKey}-firstName-error` : undefined}
+            />
+            {errors.firstName && (
+              <div id={`${ticketKey}-firstName-error`} style={styles.errorText} role="alert">
+                {errors.firstName}
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      <div style={styles.field}>
-        <label htmlFor={`${ticketKey}-email`} style={styles.label}>
-          Email Address *
-        </label>
-        <input
-          id={`${ticketKey}-email`}
-          type="email"
-          value={attendee.email || ''}
-          onChange={handleChange('email')}
-          disabled={disabled}
-          placeholder="Enter email address"
-          autoComplete="email"
-          style={getInputStyle(!!errors.email)}
-          aria-invalid={!!errors.email}
-          aria-describedby={errors.email ? `${ticketKey}-email-error` : undefined}
-        />
-        {errors.email && (
-          <div id={`${ticketKey}-email-error`} style={styles.errorText} role="alert">
-            {errors.email}
+          <div style={styles.field}>
+            <label htmlFor={`${ticketKey}-lastName`} style={styles.label}>
+              Last Name *
+            </label>
+            <input
+              id={`${ticketKey}-lastName`}
+              type="text"
+              value={attendee.lastName || ''}
+              onChange={handleChange('lastName')}
+              disabled={disabled}
+              placeholder="Enter last name"
+              autoComplete="family-name"
+              style={getInputStyle(!!errors.lastName)}
+              aria-invalid={!!errors.lastName}
+              aria-describedby={errors.lastName ? `${ticketKey}-lastName-error` : undefined}
+            />
+            {errors.lastName && (
+              <div id={`${ticketKey}-lastName-error`} style={styles.errorText} role="alert">
+                {errors.lastName}
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      {showCopyAll && (
-        <div style={styles.copyAllContainer}>
-          <input
-            id={`${ticketKey}-copyAll`}
-            type="checkbox"
-            onChange={handleCopyToAll}
-            disabled={disabled}
-            style={styles.checkbox}
-          />
-          <label htmlFor={`${ticketKey}-copyAll`} style={styles.checkboxLabel}>
-            Use this info for all tickets
-          </label>
-        </div>
+          <div style={styles.field}>
+            <label htmlFor={`${ticketKey}-email`} style={styles.label}>
+              Email Address *
+            </label>
+            <input
+              id={`${ticketKey}-email`}
+              type="email"
+              value={attendee.email || ''}
+              onChange={handleChange('email')}
+              disabled={disabled}
+              placeholder="Enter email address"
+              autoComplete="email"
+              style={getInputStyle(!!errors.email)}
+              aria-invalid={!!errors.email}
+              aria-describedby={errors.email ? `${ticketKey}-email-error` : undefined}
+            />
+            {errors.email && (
+              <div id={`${ticketKey}-email-error`} style={styles.errorText} role="alert">
+                {errors.email}
+              </div>
+            )}
+          </div>
+
+          {showCopyAll && (
+            <div style={styles.copyAllContainer}>
+              <input
+                id={`${ticketKey}-copyAll`}
+                type="checkbox"
+                onChange={handleCopyToAll}
+                disabled={disabled}
+                style={styles.checkbox}
+              />
+              <label htmlFor={`${ticketKey}-copyAll`} style={styles.checkboxLabel}>
+                Use this info for all tickets
+              </label>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

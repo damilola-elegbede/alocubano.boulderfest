@@ -316,12 +316,12 @@ describe('CheckoutPage', () => {
             expect(firstNameInputs.length).toBe(2);
         });
 
-        it('should show ticket count info', () => {
+        it('should show attendee form for each ticket', () => {
             render(<CheckoutPage />);
 
-            // Should show "Ticket 1 of 2" and "Ticket 2 of 2"
-            expect(screen.getByText('Ticket 1 of 2')).toBeInTheDocument();
-            expect(screen.getByText('Ticket 2 of 2')).toBeInTheDocument();
+            // Each ticket renders as separate form with attendee number
+            expect(screen.getByText(/Attendee 1/)).toBeInTheDocument();
+            expect(screen.getByText(/Attendee 2/)).toBeInTheDocument();
         });
 
         it('should show help text for attendee validation', async () => {

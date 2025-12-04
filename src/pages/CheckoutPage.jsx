@@ -272,11 +272,46 @@ function CheckoutPageContent() {
                             display: 'flex',
                             flexDirection: 'column',
                             gap: 'var(--space-xl)',
-                            maxWidth: '480px',
+                            maxWidth: '720px',
                             margin: '0 auto',
                             marginTop: 'var(--space-xl)',
                         }}
                     >
+                        {/* Progress indicator for multi-ticket purchases */}
+                        {hasTickets && ticketCount > 1 && (
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: 'var(--space-sm)',
+                                    padding: 'var(--space-sm) var(--space-md)',
+                                    background: attendeesValid
+                                        ? 'rgba(34, 197, 94, 0.1)'
+                                        : 'var(--color-surface-elevated)',
+                                    borderRadius: '8px',
+                                    border: attendeesValid
+                                        ? '1px solid rgba(34, 197, 94, 0.3)'
+                                        : '1px solid var(--color-border)',
+                                }}
+                            >
+                                {attendeesValid && (
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="#22c55e">
+                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                                    </svg>
+                                )}
+                                <span
+                                    style={{
+                                        fontFamily: 'var(--font-code)',
+                                        fontSize: 'var(--font-size-sm)',
+                                        color: attendeesValid ? '#22c55e' : 'var(--color-text-secondary)',
+                                    }}
+                                >
+                                    {ticketCount - attendeeValidation.missingCount} of {ticketCount} attendees completed
+                                </span>
+                            </div>
+                        )}
+
                         {/* Order Summary Section */}
                         <div className="checkout-summary-section">
                             <OrderSummary

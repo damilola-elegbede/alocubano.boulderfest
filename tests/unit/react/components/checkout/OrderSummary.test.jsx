@@ -306,7 +306,8 @@ describe('OrderSummary', () => {
 
             // The script text should be displayed as text, not executed
             // React escapes content automatically, so textContent shows the original text
-            const itemName = itemRow.querySelector('h4');
+            // Ticket header is now a span in consolidated card layout
+            const itemName = itemRow.querySelector('span');
             expect(itemName.textContent).toBe('<script>alert("xss")</script>');
 
             // innerHTML should have escaped version (React escapes automatically)
@@ -335,7 +336,8 @@ describe('OrderSummary', () => {
             expect(itemRow).toBeInTheDocument();
 
             // React displays special characters as text content
-            const itemName = itemRow.querySelector('h4');
+            // Ticket header is now a span in consolidated card layout
+            const itemName = itemRow.querySelector('span');
             expect(itemName.textContent).toBe('Pass & Tickets "Special" <Sale>');
 
             // innerHTML should have escaped versions (React auto-escapes)
@@ -361,7 +363,7 @@ describe('OrderSummary', () => {
             expect(screen.getByTestId('order-total')).toBeInTheDocument();
         });
 
-        it('should display ticket number info for each ticket', () => {
+        it('should display each ticket as a separate card', () => {
             const cart = {
                 tickets: {
                     'pass': { name: 'Pass', price: 7500, quantity: 2, eventId: 1, eventName: 'Test Event' }, // cents
@@ -371,9 +373,14 @@ describe('OrderSummary', () => {
             };
 
             render(<OrderSummary cart={cart} isLoading={false} />);
-            // Each ticket shows "Ticket 1 of 2", "Ticket 2 of 2"
-            expect(screen.getByText('Ticket 1 of 2')).toBeInTheDocument();
-            expect(screen.getByText('Ticket 2 of 2')).toBeInTheDocument();
+            // Each ticket renders as separate card with its own test id
+            expect(screen.getByTestId('order-item-pass-1-0')).toBeInTheDocument();
+            expect(screen.getByTestId('order-item-pass-1-1')).toBeInTheDocument();
+            // Both cards show ticket name and price
+            const passElements = screen.getAllByText('Pass');
+            expect(passElements.length).toBe(2);
+            const priceElements = screen.getAllByText('$75.00');
+            expect(priceElements.length).toBe(2);
         });
 
         it('should display donation description', () => {
