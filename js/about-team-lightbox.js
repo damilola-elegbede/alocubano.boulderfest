@@ -10,6 +10,18 @@
 (function() {
     'use strict';
 
+    // Debug flag - check multiple sources for flexibility
+    const DEBUG_ENABLED = (function() {
+        if (typeof window === 'undefined') return false;
+        if (window.__CONSOLE_LOG_DEBUG_ENABLED__) return true;
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('debug') === 'true') return true;
+        if (localStorage.getItem('CONSOLE_LOG_DEBUG_ENABLED') === '1') return true;
+        return false;
+    })();
+    const debugLog = (...args) => { if (DEBUG_ENABLED) console.log(...args); };
+    const debugWarn = (...args) => { if (DEBUG_ENABLED) console.warn(...args); };
+
     // Team member data with image paths and metadata
     // IMPORTANT: Order must match DOM order in AboutPage.jsx
     const teamMembers = [
@@ -53,7 +65,7 @@
     function initTeamLightbox() {
         // Check if Lightbox component is available
         if (typeof Lightbox === 'undefined') {
-            console.warn('Lightbox component not available on about page');
+            debugWarn('Lightbox component not available on about page');
             return;
         }
 
@@ -62,7 +74,7 @@
         const teamPhotos = document.querySelectorAll('.team-member-photo');
 
         if (teamPhotos.length === 0) {
-            console.warn('No team member photos found');
+            debugWarn('No team member photos found');
             return;
         }
 
@@ -101,7 +113,7 @@
             });
         });
 
-        console.log(`Team lightbox initialized with ${teamPhotos.length} photos`);
+        debugLog(`Team lightbox initialized with ${teamPhotos.length} photos`);
     }
 
     /**

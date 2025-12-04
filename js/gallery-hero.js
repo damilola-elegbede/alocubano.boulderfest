@@ -2,7 +2,19 @@
 (function() {
     'use strict';
 
-    console.log(
+    // Debug flag - check multiple sources for flexibility
+    const DEBUG_ENABLED = (function() {
+        if (typeof window === 'undefined') return false;
+        if (window.__CONSOLE_LOG_DEBUG_ENABLED__) return true;
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('debug') === 'true') return true;
+        if (localStorage.getItem('CONSOLE_LOG_DEBUG_ENABLED') === '1') return true;
+        return false;
+    })();
+    const debugLog = (...args) => { if (DEBUG_ENABLED) console.log(...args); };
+    const debugWarn = (...args) => { if (DEBUG_ENABLED) console.warn(...args); };
+
+    debugLog(
         '🎬 Gallery hero module loading (static version)... DOM state:',
         document.readyState
     );
@@ -89,19 +101,19 @@
 
     // Initialize hero image
     function initializeHero() {
-        console.log('🚀 Gallery hero initializing (static version)...');
+        debugLog('🚀 Gallery hero initializing (static version)...');
 
         const heroElement = document.getElementById('hero-splash-image');
         if (!heroElement) {
-            console.log('No hero image element found');
+            debugLog('No hero image element found');
             return;
         }
 
         const pageId = getCurrentPageId();
         const heroImagePath = getHeroImagePath(pageId);
 
-        console.log(`📍 Current page: ${pageId}`);
-        console.log(`🖼️ Hero image path: ${heroImagePath}`);
+        debugLog(`📍 Current page: ${pageId}`);
+        debugLog(`🖼️ Hero image path: ${heroImagePath}`);
 
         // Set the hero image source
         heroElement.src = heroImagePath;
@@ -109,7 +121,7 @@
 
         // Add loading state management
         heroElement.addEventListener('load', function() {
-            console.log('✅ Hero image loaded successfully:', this.src);
+            debugLog('✅ Hero image loaded successfully:', this.src);
 
             // Remove loading class and add loaded class to parent container
             const container = this.closest('.gallery-hero-splash');
@@ -121,11 +133,11 @@
 
         // Error handling
         heroElement.addEventListener('error', function() {
-            console.warn('⚠️ Hero image failed to load:', this.src);
+            debugWarn('⚠️ Hero image failed to load:', this.src);
 
             // Fallback to default hero image if not already using it
             if (!this.src.includes('hero-default.jpg')) {
-                console.log('🔄 Falling back to default hero image');
+                debugLog('🔄 Falling back to default hero image');
                 this.src = HERO_IMAGES['default'];
                 this.alt = 'A Lo Cubano Boulder Fest';
             } else {
@@ -133,7 +145,7 @@
             }
         });
 
-        console.log('🎬 Static hero image initialized');
+        debugLog('🎬 Static hero image initialized');
     }
 
     // Get appropriate alt text for hero image
@@ -198,10 +210,10 @@
 
     // Initialize when DOM is ready
     if (document.readyState === 'loading') {
-        console.log('⏳ DOM still loading, waiting for DOMContentLoaded...');
+        debugLog('⏳ DOM still loading, waiting for DOMContentLoaded...');
         document.addEventListener('DOMContentLoaded', initializeHero);
     } else {
-        console.log('✅ DOM already loaded');
+        debugLog('✅ DOM already loaded');
         initializeHero();
     }
 })();

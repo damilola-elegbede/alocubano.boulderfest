@@ -500,7 +500,8 @@
         }
 
         // Real-time validation on blur (when user leaves field)
-        firstNameInput.addEventListener('blur', function() {
+        // Use optional chaining to prevent errors if React hasn't rendered yet
+        firstNameInput?.addEventListener('blur', function() {
           const error = validateName(this.value, 'First name', 'firstName');
           if (error) {
             showFieldError('firstName', error);
@@ -509,7 +510,7 @@
           }
         });
 
-        lastNameInput.addEventListener('blur', function() {
+        lastNameInput?.addEventListener('blur', function() {
           const error = validateName(this.value, 'Last name', 'lastName');
           if (error) {
             showFieldError('lastName', error);
@@ -518,7 +519,7 @@
           }
         });
 
-        emailInput.addEventListener('blur', function() {
+        emailInput?.addEventListener('blur', function() {
           const error = validateEmailField(this.value);
           if (error) {
             showFieldError('email', error);
@@ -528,21 +529,21 @@
         });
 
         // Clear errors as user types
-        firstNameInput.addEventListener('input', function() {
+        firstNameInput?.addEventListener('input', function() {
           if (this.value.trim().length > 0) {
             clearFieldError('firstName');
           }
           checkMandatoryFields();
         });
 
-        lastNameInput.addEventListener('input', function() {
+        lastNameInput?.addEventListener('input', function() {
           if (this.value.trim().length > 0) {
             clearFieldError('lastName');
           }
           checkMandatoryFields();
         });
 
-        emailInput.addEventListener('input', function() {
+        emailInput?.addEventListener('input', function() {
           if (this.value.trim().length > 0) {
             clearFieldError('email');
           }
@@ -551,6 +552,9 @@
 
         // Function to check if all mandatory fields are filled
         function checkMandatoryFields() {
+          // Guard against null inputs if React hasn't rendered yet
+          if (!firstNameInput || !lastNameInput || !emailInput) return;
+
           const firstName = firstNameInput.value.trim();
           const lastName = lastNameInput.value.trim();
           const email = emailInput.value.trim();
@@ -567,7 +571,7 @@
           }
         }
 
-        // Initial check on page load
+        // Initial check on page load (will safely no-op if inputs don't exist yet)
         checkMandatoryFields();
       });
 
