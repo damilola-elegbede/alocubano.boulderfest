@@ -4,6 +4,10 @@ import path from 'path';
 
 export default defineConfig({
     base: "/dist/",
+    define: {
+        // Inject debug flag at build time (default: false)
+        '__CONSOLE_LOG_DEBUG_ENABLED__': JSON.stringify(process.env.CONSOLE_LOG_DEBUG_ENABLED === '1')
+    },
     plugins: [react()],
     build: {
         // Output to a distinct directory to avoid cluttering root

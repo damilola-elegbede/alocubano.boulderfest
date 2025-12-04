@@ -6,6 +6,7 @@ import { getStripePaymentHandler } from './lib/stripe-integration.js';
 import { getPaymentSelector } from './components/payment-selector.js';
 import { setSafeHTML, escapeHtml } from './utils/dom-sanitizer.js';
 import { getAvailabilityService } from './lib/availability-service.js';
+import { debugLog } from './lib/debug.js';
 
 /**
  * Check if legacy checkout should be used (React is default)
@@ -82,18 +83,18 @@ export function initializeFloatingCart(cartManager) {
     // Ensure cart panel starts in closed state (no .open class)
     if (elements.panel) {
         elements.panel.classList.remove('open');
-        console.log('🔧 DEBUG: Removed .open class from panel on init');
+        debugLog('🔧 DEBUG: Removed .open class from panel on init');
     }
     if (elements.backdrop) {
         elements.backdrop.classList.remove('active');
-        console.log('🔧 DEBUG: Removed .active class from backdrop on init');
+        debugLog('🔧 DEBUG: Removed .active class from backdrop on init');
     }
 
     // Debug: Check initial transform
     setTimeout(() => {
         const computedTransform = getComputedStyle(elements.panel).transform;
         const hasOpenClass = elements.panel.classList.contains('open');
-        console.log('🔍 DEBUG: Initial cart state:', {
+        debugLog('🔍 DEBUG: Initial cart state:', {
             panelTransform: computedTransform,
             hasOpenClass,
             backdropActive: elements.backdrop.classList.contains('active')
@@ -504,10 +505,10 @@ async function handleCheckoutClick(cartManager) {
 
 // determineCartVisibility function removed - no longer needed without floating button
 function toggleCartPanel(elements, isOpen, cartManager) {
-    console.log('🔧 DEBUG: toggleCartPanel called with isOpen =', isOpen);
+    debugLog('🔧 DEBUG: toggleCartPanel called with isOpen =', isOpen);
 
     if (isOpen) {
-        console.log('🔧 DEBUG: Opening cart panel...');
+        debugLog('🔧 DEBUG: Opening cart panel...');
         elements.panel.classList.add('open');
         elements.backdrop.classList.add('active');
         document.body.style.overflow = 'hidden';
@@ -522,15 +523,15 @@ function toggleCartPanel(elements, isOpen, cartManager) {
             });
         }
     } else {
-        console.log('🔧 DEBUG: Closing cart panel...');
+        debugLog('🔧 DEBUG: Closing cart panel...');
         elements.panel.classList.remove('open');
         elements.backdrop.classList.remove('active');
         document.body.style.overflow = '';
 
         // Debug: Confirm classes removed
         setTimeout(() => {
-            console.log('🔍 DEBUG: After close - panel has .open?', elements.panel.classList.contains('open'));
-            console.log('🔍 DEBUG: After close - transform:', getComputedStyle(elements.panel).transform);
+            debugLog('🔍 DEBUG: After close - panel has .open?', elements.panel.classList.contains('open'));
+            debugLog('🔍 DEBUG: After close - transform:', getComputedStyle(elements.panel).transform);
         }, 50);
 
         // Panel slides off-screen via CSS transform - no need to hide container
