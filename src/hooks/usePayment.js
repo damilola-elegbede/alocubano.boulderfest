@@ -95,7 +95,9 @@ export function usePayment() {
                 const qty = ticket.quantity || 1;
                 for (let i = 0; i < qty; i++) {
                     // Generate consistent ticket key for looking up attendee data
-                    const ticketKey = `${ticket.ticketType}-${eventIdNum || 'default'}-${i}`;
+                    // Note: eventIdNum is already validated as a finite number (line 78-80),
+                    // so we use it directly without fallback to match generateTicketKey pattern
+                    const ticketKey = `${ticket.ticketType}-${eventIdNum}-${i}`;
                     const attendee = attendeeData[ticketKey] || null;
 
                     cartItems.push({

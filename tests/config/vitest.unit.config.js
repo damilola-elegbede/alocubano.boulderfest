@@ -48,7 +48,6 @@ export default defineConfig({
       APPLE_PASS_KEY: 'dGVzdC1hcHBsZS1wYXNzLWtleQ==', // base64 encoded 'test-apple-pass-key'
       APPLE_PASS_CERT: 'dGVzdC1jZXJ0aWZpY2F0ZQ==', // base64 encoded 'test-certificate'
       INTERNAL_API_KEY: 'test-internal-api-key-32-chars-min',
-      REGISTRATION_SECRET: 'test-registration-secret-key-minimum-32-chars-long',
       TEST_ADMIN_PASSWORD: 'test-admin-password-123',
       ADMIN_PASSWORD: '$2b$10$test.bcrypt.hash.for.testing.purposes.only',
 

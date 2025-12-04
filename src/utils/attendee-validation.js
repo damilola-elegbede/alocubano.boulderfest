@@ -19,14 +19,14 @@ export function validateAttendee(attendee) {
   if (!attendee?.firstName || attendee.firstName.trim() === '') {
     errors.firstName = 'First name is required';
   } else if (!NAME_REGEX.test(attendee.firstName.trim())) {
-    errors.firstName = 'Please enter a valid first name (2-50 characters, letters only)';
+    errors.firstName = 'Please enter a valid first name (2-50 characters)';
   }
 
   // Validate last name
   if (!attendee?.lastName || attendee.lastName.trim() === '') {
     errors.lastName = 'Last name is required';
   } else if (!NAME_REGEX.test(attendee.lastName.trim())) {
-    errors.lastName = 'Please enter a valid last name (2-50 characters, letters only)';
+    errors.lastName = 'Please enter a valid last name (2-50 characters)';
   }
 
   // Validate email
@@ -73,6 +73,12 @@ export function validateAllAttendees(cart, attendeeData) {
             lastName: 'Last name is required',
             email: 'Email is required'
           };
+        } else {
+          // Attendee exists but email is missing - validate and capture errors
+          const { valid, errors } = validateAttendee(attendee);
+          if (!valid) {
+            allErrors[ticketKey] = errors;
+          }
         }
       } else {
         const { valid, errors } = validateAttendee(attendee);
