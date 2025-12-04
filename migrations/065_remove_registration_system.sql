@@ -24,6 +24,3 @@ WHERE status IN ('scheduled', 'pending');
 -- Note: NOT dropping tables to preserve historical data
 -- registration_reminders table kept for audit trail
 -- registration_emails table kept for delivery records
-
--- Add comment to track migration purpose
--- This can be queried for documentation purposes

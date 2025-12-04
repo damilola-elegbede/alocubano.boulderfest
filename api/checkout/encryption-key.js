@@ -9,11 +9,20 @@
  * - Keys are derived per-session (different session = different key)
  * - Server secret never exposed to client
  * - Keys are short-lived (1 hour expiration recommendation)
+ * - Rate limited to prevent key enumeration
  *
  * @module api/checkout/encryption-key
  */
 
 import crypto from 'crypto';
+import { withRateLimit } from '../utils/rate-limiter.js';
+
+// Rate limiting configuration - prevent key enumeration attacks
+const RATE_LIMIT_CONFIG = {
+    windowMs: 60000,     // 1 minute window
+    max: 30,             // 30 requests per minute per IP
+    message: 'Too many encryption key requests. Please wait a moment before trying again.'
+};
 
 /**
  * Derives an encryption key from the server secret and session ID
@@ -48,7 +57,7 @@ function deriveEncryptionKey(sessionId) {
  * - sessionId: The session ID used (generated if not provided)
  * - expiresIn: Recommended key lifetime in seconds
  */
-export default async function handler(req, res) {
+async function handler(req, res) {
     // Only allow GET requests
     if (req.method !== 'GET') {
         return res.status(405).json({
@@ -93,3 +102,5 @@ export default async function handler(req, res) {
         });
     }
 }
+
+export default withRateLimit(handler, RATE_LIMIT_CONFIG);

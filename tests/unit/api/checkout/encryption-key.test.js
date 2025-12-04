@@ -38,6 +38,8 @@ describe('api/checkout/encryption-key', () => {
         return {
             method: options.method || 'GET',
             query: options.query || {},
+            headers: options.headers || { 'x-forwarded-for': '127.0.0.1' },
+            connection: { remoteAddress: '127.0.0.1' },
         };
     }
 
@@ -45,6 +47,7 @@ describe('api/checkout/encryption-key', () => {
         const res = {
             statusCode: 200,
             body: null,
+            headers: {},
             status: vi.fn(function (code) {
                 this.statusCode = code;
                 return this;
@@ -52,6 +55,9 @@ describe('api/checkout/encryption-key', () => {
             json: vi.fn(function (data) {
                 this.body = data;
                 return this;
+            }),
+            setHeader: vi.fn(function (name, value) {
+                this.headers[name] = value;
             }),
         };
         return res;
