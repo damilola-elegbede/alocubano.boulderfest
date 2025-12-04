@@ -280,13 +280,11 @@ export default function OrderSummary({
                                 <div style={{ ...styles.categoryHeader, ...styles.categoryHeaderTickets }}>
                                     {group.eventName}
                                 </div>
-                                {/* Responsive grid: 1 column on mobile, 2 columns on desktop for multiple tickets */}
+                                {/* Single column layout - checkout is a linear flow */}
                                 <div
                                     style={{
-                                        display: 'grid',
-                                        gridTemplateColumns: expandedTickets.length > 1
-                                            ? 'repeat(auto-fit, minmax(300px, 1fr))'
-                                            : '1fr',
+                                        display: 'flex',
+                                        flexDirection: 'column',
                                         gap: 'var(--space-md)',
                                     }}
                                 >

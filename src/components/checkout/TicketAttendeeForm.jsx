@@ -120,9 +120,13 @@ export function TicketAttendeeForm({
 }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  // Calculate completion status
+  // Email validation regex (same as attendee-validation.js)
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  // Calculate completion status - requires valid email format, not just any text
+  const hasValidEmail = attendee.email && EMAIL_REGEX.test(attendee.email.trim());
   const isComplete = attendee.firstName && attendee.lastName &&
-                     attendee.email && !errors.firstName &&
+                     hasValidEmail && !errors.firstName &&
                      !errors.lastName && !errors.email;
 
   const handleChange = (field) => (e) => {
