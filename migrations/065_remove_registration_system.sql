@@ -16,9 +16,9 @@ WHERE registration_status = 'pending';
 -- Step 2: Cancel all pending/scheduled registration reminders
 -- Preserves data for audit trail, just marks as cancelled
 -- These reminders are no longer needed since registration happens at checkout
+-- Note: Table doesn't have updated_at column, only update status
 UPDATE registration_reminders
-SET status = 'cancelled',
-    updated_at = CURRENT_TIMESTAMP
+SET status = 'cancelled'
 WHERE status IN ('scheduled', 'pending');
 
 -- Note: NOT dropping tables to preserve historical data
