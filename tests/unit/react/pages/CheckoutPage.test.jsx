@@ -319,9 +319,9 @@ describe('CheckoutPage', () => {
         it('should show attendee form for each ticket', () => {
             render(<CheckoutPage />);
 
-            // Each ticket renders as separate form with attendee number
-            expect(screen.getByText(/Attendee 1/)).toBeInTheDocument();
-            expect(screen.getByText(/Attendee 2/)).toBeInTheDocument();
+            // Each ticket renders with "Register Ticket" button
+            const registerButtons = screen.getAllByText(/Register Ticket/i);
+            expect(registerButtons.length).toBe(2);
         });
 
         it('should show help text for attendee validation', async () => {

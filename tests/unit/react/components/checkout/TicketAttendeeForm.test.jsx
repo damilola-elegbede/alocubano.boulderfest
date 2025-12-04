@@ -6,6 +6,7 @@
  * Tests for TicketAttendeeForm component
  *
  * Tests inline attendee registration form for checkout.
+ * Updated for simplified UI: yellow "Register Ticket" button, green "Registered" status.
  */
 
 import React from 'react';
@@ -30,7 +31,7 @@ describe('TicketAttendeeForm', () => {
     vi.clearAllMocks();
   });
 
-  describe('Rendering', () => {
+  describe('Rendering - Unregistered State', () => {
     it('should render form with all required fields', () => {
       render(<TicketAttendeeForm {...defaultProps} />);
 
@@ -39,24 +40,10 @@ describe('TicketAttendeeForm', () => {
       expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
     });
 
-    it('should display ticket index and name in title', () => {
+    it('should display "Register Ticket" button when form is incomplete', () => {
       render(<TicketAttendeeForm {...defaultProps} />);
 
-      expect(screen.getByText(/attendee 1/i)).toBeInTheDocument();
-      expect(screen.getByText(/general admission/i)).toBeInTheDocument();
-    });
-
-    it('should display existing attendee data', () => {
-      const attendee = {
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john@example.com',
-      };
-      render(<TicketAttendeeForm {...defaultProps} attendee={attendee} />);
-
-      expect(screen.getByDisplayValue('John')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('Doe')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('john@example.com')).toBeInTheDocument();
+      expect(screen.getByText(/register ticket/i)).toBeInTheDocument();
     });
 
     it('should show validation errors', () => {
@@ -80,6 +67,44 @@ describe('TicketAttendeeForm', () => {
       render(<TicketAttendeeForm {...defaultProps} showCopyAll={true} />);
 
       expect(screen.getByText(/use this info for all tickets/i)).toBeInTheDocument();
+    });
+  });
+
+  describe('Rendering - Registered State', () => {
+    const completeAttendee = {
+      firstName: 'John',
+      lastName: 'Doe',
+      email: 'john@example.com',
+    };
+
+    it('should show "Registered" status when form is complete', () => {
+      render(<TicketAttendeeForm {...defaultProps} attendee={completeAttendee} />);
+
+      expect(screen.getByText(/registered/i)).toBeInTheDocument();
+      expect(screen.queryByText(/register ticket/i)).not.toBeInTheDocument();
+    });
+
+    it('should display attendee name and email when complete', () => {
+      render(<TicketAttendeeForm {...defaultProps} attendee={completeAttendee} />);
+
+      expect(screen.getByText('John Doe')).toBeInTheDocument();
+      expect(screen.getByText('john@example.com')).toBeInTheDocument();
+    });
+
+    it('should not show form fields when complete', () => {
+      render(<TicketAttendeeForm {...defaultProps} attendee={completeAttendee} />);
+
+      expect(screen.queryByLabelText(/first name/i)).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/last name/i)).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/email/i)).not.toBeInTheDocument();
+    });
+
+    it('should show green checkmark icon when registered', () => {
+      render(<TicketAttendeeForm {...defaultProps} attendee={completeAttendee} />);
+
+      // Check for SVG checkmark presence (the checkmark icon)
+      const svg = document.querySelector('svg');
+      expect(svg).toBeInTheDocument();
     });
   });
 
@@ -171,6 +196,40 @@ describe('TicketAttendeeForm', () => {
       expect(screen.getByLabelText(/first name/i)).toHaveAttribute('autocomplete', 'given-name');
       expect(screen.getByLabelText(/last name/i)).toHaveAttribute('autocomplete', 'family-name');
       expect(screen.getByLabelText(/email/i)).toHaveAttribute('autocomplete', 'email');
+    });
+  });
+
+  describe('Form Completion Logic', () => {
+    it('should not be complete with only first name', () => {
+      render(<TicketAttendeeForm {...defaultProps} attendee={{ firstName: 'John' }} />);
+
+      expect(screen.getByText(/register ticket/i)).toBeInTheDocument();
+      expect(screen.queryByText(/registered/i)).not.toBeInTheDocument();
+    });
+
+    it('should not be complete with invalid email', () => {
+      render(
+        <TicketAttendeeForm
+          {...defaultProps}
+          attendee={{ firstName: 'John', lastName: 'Doe', email: 'invalid' }}
+        />
+      );
+
+      expect(screen.getByText(/register ticket/i)).toBeInTheDocument();
+      expect(screen.queryByText(/registered/i)).not.toBeInTheDocument();
+    });
+
+    it('should not be complete when there are errors', () => {
+      render(
+        <TicketAttendeeForm
+          {...defaultProps}
+          attendee={{ firstName: 'John', lastName: 'Doe', email: 'john@example.com' }}
+          errors={{ firstName: 'Name too short' }}
+        />
+      );
+
+      // With errors present, form should not show as complete
+      expect(screen.getByText(/register ticket/i)).toBeInTheDocument();
     });
   });
 });
