@@ -12,10 +12,11 @@
  * @module src/pages/CheckoutPage
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { AppProviders } from '../providers/AppProviders';
 import { useCart } from '../hooks/useCart';
 import { usePayment } from '../hooks/usePayment';
+import { useAttendeeStorage } from '../hooks/useAttendeeStorage';
 import OrderSummary from '../components/checkout/OrderSummary';
 import PaymentMethodSelector from '../components/checkout/PaymentMethodSelector';
 import {
@@ -71,6 +72,18 @@ function CheckoutPageContent() {
         clearError,
     } = usePayment();
 
+    // Get cart session ID for encryption key derivation
+    const cartSessionId = cart?.metadata?.sessionId || 'default-session';
+
+    // Encrypted attendee storage hook
+    const {
+        saveAttendees,
+        loadAttendees,
+        clearAttendees,
+        isReady: isStorageReady,
+        hasStoredData,
+    } = useAttendeeStorage(cartSessionId);
+
     // Form state
     const [submitButtonState, setSubmitButtonState] = useState({
         disabled: true,
@@ -81,12 +94,50 @@ function CheckoutPageContent() {
     // Structure: { [ticketKey]: { firstName, lastName, email } }
     const [attendeeData, setAttendeeData] = useState({});
 
+    // Track if we've attempted to restore data (prevent infinite loops)
+    const hasRestoredRef = useRef(false);
+
     // Attendee validation errors - keyed by ticket identifier
     // Structure: { [ticketKey]: { firstName?, lastName?, email? } }
     const [attendeeErrors, setAttendeeErrors] = useState({});
 
     // General form error (for payment errors, etc.)
     const [generalError, setGeneralError] = useState(null);
+
+    // Restore attendee data from encrypted storage on mount
+    useEffect(() => {
+        async function restoreAttendeeData() {
+            if (!isStorageReady || hasRestoredRef.current) return;
+            hasRestoredRef.current = true;
+
+            if (hasStoredData) {
+                try {
+                    const savedData = await loadAttendees();
+                    if (savedData && Object.keys(savedData).length > 0) {
+                        setAttendeeData(savedData);
+                        console.log('Restored attendee data from encrypted storage');
+                    }
+                } catch (err) {
+                    console.warn('Failed to restore attendee data:', err);
+                }
+            }
+        }
+        restoreAttendeeData();
+    }, [isStorageReady, hasStoredData, loadAttendees]);
+
+    // Auto-save attendee data when it changes
+    useEffect(() => {
+        if (!isStorageReady) return;
+
+        // Debounce saves to avoid excessive writes
+        const timeoutId = setTimeout(() => {
+            if (Object.keys(attendeeData).length > 0) {
+                saveAttendees(attendeeData);
+            }
+        }, 500);
+
+        return () => clearTimeout(timeoutId);
+    }, [attendeeData, isStorageReady, saveAttendees]);
 
     // Sync payment errors to general error
     useEffect(() => {
@@ -217,7 +268,11 @@ function CheckoutPageContent() {
         // and merges attendeeData using ticket keys
         const result = await processCheckout(cart, attendeeData);
 
-        if (!result.success) {
+        if (result.success) {
+            // Clear encrypted attendee data on successful checkout initiation
+            // (actual payment happens on Stripe/PayPal page)
+            clearAttendees();
+        } else {
             setGeneralError(result.error || 'Payment processing failed. Please try again.');
         }
         // On success, processCheckout handles the redirect
