@@ -10,7 +10,7 @@ function ContactPageContent() {
                 <div className="hero-image-container">
                     <img
                         id="hero-splash-image"
-                        src=""
+                        src="/images/hero/contact.jpg"
                         alt="Connect with A Lo Cubano Boulder Fest team and community through various contact channels"
                         className="hero-splash-img"
                         style={{ objectPosition: 'top center' }}

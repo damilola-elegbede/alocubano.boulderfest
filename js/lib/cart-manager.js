@@ -208,9 +208,9 @@ export class CartManager extends EventTarget {
             // Determine if this should be a test item (global testMode or explicit isTestItem)
             const shouldBeTestItem = this.testMode || isTestItem;
 
-            // Adjust ticket type and name for test items
-            const actualTicketType = shouldBeTestItem ? `TEST-${ticketType}` : ticketType;
-            const actualName = shouldBeTestItem ? `TEST - ${name}` : name;
+            // Use ticket type and name directly (test mode determined by event/ticket names)
+            const actualTicketType = ticketType;
+            const actualName = name;
 
             // Update state
             if (!this.state.tickets[actualTicketType]) {
@@ -338,14 +338,14 @@ export class CartManager extends EventTarget {
         // Determine if this should be a test item (global testMode or explicit isTestItem)
         const shouldBeTestItem = this.testMode || isTestItem;
 
-        // Adjust ticket type for test items
-        const actualTicketType = shouldBeTestItem ? `TEST-${ticketType}` : ticketType;
+        // Use ticket type directly (test mode determined by event/ticket names)
+        const actualTicketType = ticketType;
 
         return this.queueOperation('upsertTicket', async() => {
             const isNew = !this.state.tickets[actualTicketType];
 
-            // Adjust name for test items
-            const actualName = shouldBeTestItem ? `TEST - ${name}` : name;
+            // Use name directly (test mode determined by event/ticket names)
+            const actualName = name;
 
             // Update state - handles both new and existing tickets
             if (isNew) {
@@ -432,8 +432,8 @@ export class CartManager extends EventTarget {
         const idPrefix = shouldBeTestItem ? 'test_donation_' : 'donation_';
         const donationId = `${idPrefix}${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
-        // Create donation name with test prefix if test item
-        const donationName = shouldBeTestItem ? 'TEST - Festival Support' : 'Festival Support';
+        // Use standard name (test mode determined by event names)
+        const donationName = 'Festival Support';
 
         const donation = {
             id: donationId,
