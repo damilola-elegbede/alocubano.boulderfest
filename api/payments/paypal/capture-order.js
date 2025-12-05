@@ -462,8 +462,8 @@ async function captureOrderHandler(req, res) {
                 eventId,
                 eventDate,
                 priceCents,
-                isTestTicket ? `TEST-${attendeeFirstName}` : attendeeFirstName, // attendee_first_name
-                isTestTicket ? `TEST-${attendeeLastName}` : attendeeLastName, // attendee_last_name
+                attendeeFirstName, // attendee_first_name
+                attendeeLastName, // attendee_last_name
                 attendeeEmail, // attendee_email (NEW: for inline registration)
                 registrationStatus, // 'completed' if inline registration, 'pending' otherwise
                 registrationDeadline.toISOString(),

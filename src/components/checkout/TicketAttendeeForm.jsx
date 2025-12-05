@@ -15,7 +15,7 @@
  * @module src/components/checkout/TicketAttendeeForm
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 // Styles for mobile-friendly attendee form
 const styles = {
@@ -200,8 +200,37 @@ export function TicketAttendeeForm({
                      hasValidEmail && !errors.firstName &&
                      !errors.lastName && !errors.email;
 
-  // Show form when incomplete OR when editing
-  const showForm = !isComplete || isEditing;
+  // Debounce the completion - wait 1s after form becomes complete before collapsing
+  // This prevents the form from collapsing while user is still typing
+  const [debouncedComplete, setDebouncedComplete] = useState(false);
+  const debounceTimerRef = useRef(null);
+
+  useEffect(() => {
+    // Clear any existing timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    if (isComplete) {
+      // Form is complete - start 1s timer before collapsing
+      debounceTimerRef.current = setTimeout(() => {
+        setDebouncedComplete(true);
+      }, 1000);
+    } else {
+      // Form is incomplete - immediately show form (no delay on expand)
+      setDebouncedComplete(false);
+    }
+
+    // Cleanup timer on unmount
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [isComplete]);
+
+  // Show form when incomplete (debounced) OR when editing
+  const showForm = !debouncedComplete || isEditing;
 
   const handleChange = (field) => (e) => {
     onChange(ticketKey, field, e.target.value);
