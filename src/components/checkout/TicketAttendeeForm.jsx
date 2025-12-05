@@ -15,7 +15,7 @@
  * @module src/components/checkout/TicketAttendeeForm
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 
 // Styles for mobile-friendly attendee form
 const styles = {
@@ -83,6 +83,22 @@ const styles = {
     border: 'none',
     cursor: 'pointer',
     marginTop: '8px',
+  },
+  // Save button - appears when form is complete but not yet saved
+  saveButton: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    background: 'var(--color-success, #22c55e)',
+    color: '#fff',
+    padding: '8px 16px',
+    borderRadius: '4px',
+    fontFamily: 'var(--font-sans)',
+    fontSize: '14px',
+    fontWeight: 600,
+    border: 'none',
+    cursor: 'pointer',
+    marginTop: '12px',
   },
   // Form row for side-by-side fields
   formRow: {
@@ -189,6 +205,8 @@ export function TicketAttendeeForm({
 }) {
   // Edit mode state - allows editing after form is complete
   const [isEditing, setIsEditing] = useState(false);
+  // Saved state - tracks if user has explicitly saved this attendee's info
+  const [isSaved, setIsSaved] = useState(false);
 
   // Email validation regex for completion check - requires 2+ char TLD
   // This prevents premature form collapse (e.g., user@gmail.c should NOT trigger completion)
@@ -200,37 +218,8 @@ export function TicketAttendeeForm({
                      hasValidEmail && !errors.firstName &&
                      !errors.lastName && !errors.email;
 
-  // Debounce the completion - wait 1s after form becomes complete before collapsing
-  // This prevents the form from collapsing while user is still typing
-  const [debouncedComplete, setDebouncedComplete] = useState(false);
-  const debounceTimerRef = useRef(null);
-
-  useEffect(() => {
-    // Clear any existing timer
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
-
-    if (isComplete) {
-      // Form is complete - start 1s timer before collapsing
-      debounceTimerRef.current = setTimeout(() => {
-        setDebouncedComplete(true);
-      }, 1000);
-    } else {
-      // Form is incomplete - immediately show form (no delay on expand)
-      setDebouncedComplete(false);
-    }
-
-    // Cleanup timer on unmount
-    return () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-    };
-  }, [isComplete]);
-
-  // Show form when incomplete (debounced) OR when editing
-  const showForm = !debouncedComplete || isEditing;
+  // Show form when not saved OR when editing
+  const showForm = !isSaved || isEditing;
 
   const handleChange = (field) => (e) => {
     onChange(ticketKey, field, e.target.value);
@@ -243,12 +232,21 @@ export function TicketAttendeeForm({
   };
 
   const handleEditClick = () => {
+    setIsSaved(false);
     setIsEditing(true);
+  };
+
+  const handleSaveClick = () => {
+    // Only save if form is complete
+    if (isComplete) {
+      setIsSaved(true);
+    }
   };
 
   const handleDoneClick = () => {
     // Only close edit mode if form is still complete
     if (isComplete) {
+      setIsSaved(true);
       setIsEditing(false);
     }
   };
@@ -393,6 +391,18 @@ export function TicketAttendeeForm({
               />
               <span style={styles.checkboxLabel}>Use this info for all tickets</span>
             </label>
+          )}
+
+          {/* Save button - appears when form is complete but not yet saved */}
+          {isComplete && !isSaved && !isEditing && (
+            <button
+              type="button"
+              onClick={handleSaveClick}
+              style={styles.saveButton}
+              disabled={disabled}
+            >
+              Save
+            </button>
           )}
 
           {/* Done button when editing - only show if form is complete */}
