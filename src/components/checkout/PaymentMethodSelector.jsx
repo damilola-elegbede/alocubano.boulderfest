@@ -160,6 +160,17 @@ export default function PaymentMethodSelector({ disabled = false, onChange }) {
     const handleSelect = (method) => {
         if (isDisabled) return;
 
+        // Toggle: if already selected, unselect (return to no selection)
+        if (paymentMethod === method) {
+            console.log(`🔄 [PaymentSelector] Toggling off ${method}`);
+            setPaymentMethod(null);
+            if (onChange) {
+                onChange(null);
+            }
+            return;
+        }
+
+        console.log(`✅ [PaymentSelector] Selected ${method}`);
         setPaymentMethod(method);
         if (onChange) {
             onChange(method);
