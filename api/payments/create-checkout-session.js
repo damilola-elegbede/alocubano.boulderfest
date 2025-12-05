@@ -271,6 +271,14 @@ export default async function handler(req, res) {
 
         // Add metadata for different item types
         if (item.type === 'ticket') {
+          // DEBUG: Log attendee data being stored in Stripe metadata
+          console.log('🔍 [checkout-session] Storing attendee in Stripe metadata:', {
+            ticketType: item.ticketType,
+            attendeeProvided: !!item.attendee,
+            attendeeFirstName: item.attendee?.firstName,
+            attendeeLastName: item.attendee?.lastName,
+            attendeeEmail: item.attendee?.email
+          });
 
           // Set event metadata for tickets - no defaults
           // Include attendee info for inline checkout registration

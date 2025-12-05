@@ -190,8 +190,9 @@ export function TicketAttendeeForm({
   // Edit mode state - allows editing after form is complete
   const [isEditing, setIsEditing] = useState(false);
 
-  // Email validation regex (same as attendee-validation.js)
-  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  // Email validation regex for completion check - requires 2+ char TLD
+  // This prevents premature form collapse (e.g., user@gmail.c should NOT trigger completion)
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
 
   // Calculate completion status - requires valid email format, not just any text
   const hasValidEmail = attendee.email && EMAIL_REGEX.test(attendee.email.trim());

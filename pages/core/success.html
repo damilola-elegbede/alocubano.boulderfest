@@ -869,6 +869,12 @@
         // (attendee info is already captured during checkout - no registration needed)
         if (isTicketPurchase && viewTicketsContainer) {
           viewTicketsContainer.style.display = 'block';
+
+          // Set the registration token on the View Tickets button
+          const viewTicketsBtn = document.getElementById('view-tickets-btn');
+          if (viewTicketsBtn && data.registrationToken) {
+            viewTicketsBtn.href = `/view-tickets?token=${data.registrationToken}`;
+          }
         }
 
         // Clear the cart and end checkout session as instructed by the API
