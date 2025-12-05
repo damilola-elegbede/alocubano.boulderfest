@@ -4,6 +4,8 @@ import path from 'path';
 
 export default defineConfig({
     plugins: [react()],
+    // Base path for assets - must match the deployment location
+    base: '/dist/',
     build: {
         // Output to a distinct directory to avoid cluttering root
         outDir: 'dist',
