@@ -202,6 +202,8 @@ const groupTicketsByEvent = (ticketEntries) => {
  * @param {Object} props.attendeeErrors - Validation errors keyed by ticket identifier
  * @param {Function} props.onAttendeeChange - Callback for attendee data changes
  * @param {Function} props.onCopyToAll - Callback for "Copy to all" action
+ * @param {Function} props.onClearCopied - Callback for clearing copied attendee data
+ * @param {boolean} props.copyAllChecked - Whether "Copy to all" is currently checked
  * @param {number} props.ticketCount - Total number of tickets in cart
  * @param {boolean} props.disabled - Whether forms are disabled
  * @param {number} props.completedCount - Number of registered tickets (optional)
@@ -213,6 +215,8 @@ export default function OrderSummary({
     attendeeErrors = {},
     onAttendeeChange,
     onCopyToAll,
+    onClearCopied,
+    copyAllChecked = false,
     ticketCount = 0,
     disabled = false,
     completedCount,
@@ -365,6 +369,8 @@ export default function OrderSummary({
                                                 disabled={disabled}
                                                 showCopyAll={ticket.globalIndex === 0 && ticketCount > 1}
                                                 onCopyToAll={onCopyToAll}
+                                                onClearCopied={onClearCopied}
+                                                copyAllChecked={copyAllChecked}
                                             />
                                         )}
                                     </div>

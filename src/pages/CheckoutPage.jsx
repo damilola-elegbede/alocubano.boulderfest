@@ -101,6 +101,9 @@ function CheckoutPageContent() {
     // Structure: { [ticketKey]: { firstName?, lastName?, email? } }
     const [attendeeErrors, setAttendeeErrors] = useState({});
 
+    // Track if "Copy to all" checkbox is checked
+    const [copyAllChecked, setCopyAllChecked] = useState(false);
+
     // General form error (for payment errors, etc.)
     const [generalError, setGeneralError] = useState(null);
 
@@ -246,7 +249,22 @@ function CheckoutPageContent() {
         setAttendeeData(newAttendeeData);
         // Clear all attendee errors since we just populated all fields
         setAttendeeErrors({});
+        // Mark checkbox as checked
+        setCopyAllChecked(true);
     }, [attendeeData, cart?.tickets]);
+
+    // Handle clearing copied attendee data when "Copy to all" is unchecked
+    const handleClearCopied = useCallback((sourceTicketKey) => {
+        // Keep only the source ticket's data, clear all others
+        const sourceAttendee = attendeeData[sourceTicketKey];
+        const newAttendeeData = sourceAttendee
+            ? { [sourceTicketKey]: sourceAttendee }
+            : {};
+
+        setAttendeeData(newAttendeeData);
+        // Mark checkbox as unchecked
+        setCopyAllChecked(false);
+    }, [attendeeData]);
 
     // Handle checkout button click
     const handleProceedToPayment = async () => {
@@ -341,6 +359,8 @@ function CheckoutPageContent() {
                                 attendeeErrors={attendeeErrors}
                                 onAttendeeChange={handleAttendeeChange}
                                 onCopyToAll={handleCopyToAll}
+                                onClearCopied={handleClearCopied}
+                                copyAllChecked={copyAllChecked}
                                 ticketCount={ticketCount}
                                 disabled={isProcessing}
                             />

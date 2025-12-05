@@ -190,7 +190,9 @@ const styles = {
  * @param {Function} props.onChange - Callback when attendee data changes (ticketKey, field, value)
  * @param {boolean} props.disabled - Whether the form is disabled
  * @param {boolean} props.showCopyAll - Whether to show the "Copy to all" checkbox
- * @param {Function} props.onCopyToAll - Callback when "Copy to all" is clicked
+ * @param {Function} props.onCopyToAll - Callback when "Copy to all" is checked
+ * @param {Function} props.onClearCopied - Callback when "Copy to all" is unchecked
+ * @param {boolean} props.copyAllChecked - Whether the "Copy to all" checkbox is checked
  */
 export function TicketAttendeeForm({
   ticketKey,
@@ -202,6 +204,8 @@ export function TicketAttendeeForm({
   disabled = false,
   showCopyAll = false,
   onCopyToAll,
+  onClearCopied,
+  copyAllChecked = false,
 }) {
   // Edit mode state - allows editing after form is complete
   const [isEditing, setIsEditing] = useState(false);
@@ -225,9 +229,15 @@ export function TicketAttendeeForm({
     onChange(ticketKey, field, e.target.value);
   };
 
-  const handleCopyToAll = (e) => {
-    if (e.target.checked && onCopyToAll) {
-      onCopyToAll(ticketKey);
+  const handleCopyToAllChange = (e) => {
+    if (e.target.checked) {
+      if (onCopyToAll) {
+        onCopyToAll(ticketKey);
+      }
+    } else {
+      if (onClearCopied) {
+        onClearCopied(ticketKey);
+      }
     }
   };
 
@@ -289,7 +299,8 @@ export function TicketAttendeeForm({
               <input
                 id={`${ticketKey}-copyAll`}
                 type="checkbox"
-                onChange={handleCopyToAll}
+                checked={copyAllChecked}
+                onChange={handleCopyToAllChange}
                 disabled={disabled}
                 style={styles.checkbox}
               />
@@ -385,7 +396,8 @@ export function TicketAttendeeForm({
               <input
                 id={`${ticketKey}-copyAll`}
                 type="checkbox"
-                onChange={handleCopyToAll}
+                checked={copyAllChecked}
+                onChange={handleCopyToAllChange}
                 disabled={disabled}
                 style={styles.checkbox}
               />
