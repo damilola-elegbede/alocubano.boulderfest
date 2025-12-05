@@ -10,6 +10,31 @@
 import { z } from 'zod';
 
 // =============================================================================
+// Attendee Schema (for inline checkout registration)
+// =============================================================================
+
+/**
+ * Schema for attendee information during checkout
+ * Enables pre-registration during checkout instead of post-purchase
+ * @typedef {z.infer<typeof AttendeeSchema>} Attendee
+ */
+export const AttendeeSchema = z.object({
+  firstName: z
+    .string()
+    .max(100, 'First name must be 100 characters or less')
+    .optional(),
+  lastName: z
+    .string()
+    .max(100, 'Last name must be 100 characters or less')
+    .optional(),
+  email: z
+    .string()
+    .email('Invalid email format')
+    .max(254, 'Email must be 254 characters or less')
+    .optional(),
+}).optional();
+
+// =============================================================================
 // Cart Item Schema
 // =============================================================================
 
@@ -50,6 +75,20 @@ export const CartItemSchema = z.object({
     .string()
     .max(500, 'Description must be 500 characters or less')
     .optional(),
+  // Venue information
+  venue: z
+    .string()
+    .max(200, 'Venue must be 200 characters or less')
+    .optional(),
+  // Inline checkout registration: attendee info for pre-registration during checkout
+  // This allows collecting attendee details at checkout instead of post-purchase
+  attendee: AttendeeSchema,
+  // Donation-specific fields
+  category: z
+    .string()
+    .max(50, 'Category must be 50 characters or less')
+    .optional(),
+  isTestItem: z.boolean().optional(),
 });
 
 // =============================================================================

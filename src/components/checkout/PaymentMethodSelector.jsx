@@ -181,11 +181,13 @@ export default function PaymentMethodSelector({ disabled = false, onChange }) {
     const isHovered = (method) => hoveredMethod === method && !isSelected(method);
 
     const getButtonStyle = (method) => {
-        // When one method is selected, grey out the other
-        const otherSelected = paymentMethod !== null && !isSelected(method);
+        // Grey out when: (1) no method selected yet, OR (2) the other method is selected
+        // This makes it clear the user needs to make a selection
+        const shouldGreyOut = paymentMethod === null || (paymentMethod !== null && !isSelected(method));
         return {
             ...styles.button,
-            ...(otherSelected ? styles.buttonUnselected : {}),
+            // Apply grey style unless hovering (show interactivity) or selected
+            ...(shouldGreyOut && !isHovered(method) ? styles.buttonUnselected : {}),
             ...(isHovered(method) ? styles.buttonHover : {}),
             ...(isSelected(method) ? styles.buttonSelected : {}),
             ...(isDisabled ? styles.buttonDisabled : {}),
