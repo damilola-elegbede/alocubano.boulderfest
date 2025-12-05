@@ -259,8 +259,8 @@ export function TicketAttendeeForm({
 
   return (
     <div style={styles.container} data-testid={`attendee-form-${ticketKey}`}>
-      {/* Registered state (not editing) - show status, name/email, and optionally copy to all */}
-      {isComplete && !isEditing ? (
+      {/* Registered state (saved and not editing) - show status, name/email, and optionally copy to all */}
+      {isSaved && !isEditing ? (
         <>
           <div style={styles.registeredStatus}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
