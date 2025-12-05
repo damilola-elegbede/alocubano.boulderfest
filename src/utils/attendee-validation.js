@@ -3,9 +3,9 @@
  * Validates attendee information for inline checkout registration
  */
 
-// Validation patterns
+// Validation patterns - exported for reuse in other components
 const NAME_REGEX = /^[a-zA-ZÀ-ÿ\s\-'.]{2,50}$/;
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
  * Validates a single attendee's information

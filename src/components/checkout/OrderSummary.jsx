@@ -10,7 +10,7 @@
 
 import React from 'react';
 import TicketAttendeeForm from './TicketAttendeeForm';
-import { generateTicketKey } from '../../utils/attendee-validation';
+import { generateTicketKey, EMAIL_REGEX } from '../../utils/attendee-validation';
 
 // Simplified styles - no container boxes, line separators only
 const styles = {
@@ -281,11 +281,22 @@ export default function OrderSummary({
     const grandTotalDollars = grandTotalCents / 100;
 
     // Calculate completed count if not provided
-    const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    // Only count attendees for tickets that are currently in the cart (not removed tickets)
     let calculatedCompletedCount = 0;
     if (completedCount === undefined) {
-        // Count tickets with complete attendee data
-        Object.values(attendeeData).forEach(attendee => {
+        // Build set of valid ticket keys from current cart
+        const validTicketKeys = new Set();
+        ticketEntries.forEach(([ticketType, item]) => {
+            const qty = item.quantity || 1;
+            for (let i = 0; i < qty; i++) {
+                const itemWithType = { ...item, ticketType: item.ticketType || ticketType };
+                validTicketKeys.add(generateTicketKey(itemWithType, i));
+            }
+        });
+
+        // Count only attendees whose tickets are still in the cart
+        Object.entries(attendeeData).forEach(([ticketKey, attendee]) => {
+            if (!validTicketKeys.has(ticketKey)) return; // Skip removed tickets
             const hasValidEmail = attendee.email && EMAIL_REGEX.test(attendee.email.trim());
             if (attendee.firstName && attendee.lastName && hasValidEmail) {
                 calculatedCompletedCount++;

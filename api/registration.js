@@ -8,11 +8,44 @@ import { getRegistrationTokenService } from "../lib/registration-token-service.j
 import { getDatabaseClient } from "../lib/database.js";
 import { processDatabaseResult } from "../lib/bigint-serializer.js";
 import { getTicketColorService } from "../lib/ticket-color-service.js";
+import { withRateLimit } from "../lib/rate-limiter.js";
 import jwt from 'jsonwebtoken';
 
-export default async function handler(req, res) {
-  // Set CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
+// Rate limit: 30 requests per minute per IP
+const RATE_LIMIT_CONFIG = {
+  windowMs: 60 * 1000,
+  maxRequests: 30,
+  identifier: 'registration'
+};
+
+// Allowed CORS origins - production domain and preview deployments
+const ALLOWED_ORIGINS = [
+  'https://alocubano.com',
+  'https://www.alocubano.com',
+  /^https:\/\/alocubano-boulderfest-[a-z0-9]+\.vercel\.app$/
+];
+
+function getCorsOrigin(requestOrigin) {
+  if (!requestOrigin) return null;
+  for (const allowed of ALLOWED_ORIGINS) {
+    if (allowed instanceof RegExp) {
+      if (allowed.test(requestOrigin)) return requestOrigin;
+    } else if (allowed === requestOrigin) {
+      return requestOrigin;
+    }
+  }
+  // Allow localhost in development
+  if (requestOrigin.startsWith('http://localhost:')) return requestOrigin;
+  return null;
+}
+
+async function handler(req, res) {
+  // Set CORS headers - restrict to allowed origins
+  const origin = req.headers.origin;
+  const allowedOrigin = getCorsOrigin(origin);
+  if (allowedOrigin) {
+    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+  }
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
@@ -40,7 +73,8 @@ export default async function handler(req, res) {
 
     // Verify JWT without consuming (allow page refresh)
     // The token contains: { tid, txn, type: 'registration', iat, exp }
-    const decoded = jwt.verify(token, tokenService.secret);
+    // SECURITY: Explicitly specify algorithm to prevent algorithm confusion attacks
+    const decoded = jwt.verify(token, tokenService.secret, { algorithms: ['HS256'] });
 
     if (decoded.type !== 'registration' || !decoded.txn) {
       console.log('[Registration] Invalid token type or missing txn');
@@ -53,6 +87,7 @@ export default async function handler(req, res) {
     const db = await getDatabaseClient();
 
     // Fetch tickets for this transaction
+    // SECURITY: Do NOT select qr_token - it's a sensitive credential for ticket scanning
     let sql = `
       SELECT
         t.ticket_id,
@@ -65,7 +100,6 @@ export default async function handler(req, res) {
         t.registration_deadline,
         t.scan_count,
         t.max_scan_count,
-        t.qr_token,
         tx.customer_email as purchaser_email,
         tx.created_at as purchase_date
       FROM tickets t
@@ -134,3 +168,6 @@ export default async function handler(req, res) {
     res.status(500).json({ error: 'Failed to fetch tickets' });
   }
 }
+
+// Export with rate limiting wrapper
+export default withRateLimit(handler, RATE_LIMIT_CONFIG);

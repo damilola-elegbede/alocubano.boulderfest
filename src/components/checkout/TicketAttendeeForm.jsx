@@ -16,6 +16,7 @@
  */
 
 import React, { useState } from 'react';
+import { EMAIL_REGEX } from '../../utils/attendee-validation';
 
 // Styles for mobile-friendly attendee form
 const styles = {
@@ -212,11 +213,8 @@ export function TicketAttendeeForm({
   // Saved state - tracks if user has explicitly saved this attendee's info
   const [isSaved, setIsSaved] = useState(false);
 
-  // Email validation regex for completion check - requires 2+ char TLD
-  // This prevents premature form collapse (e.g., user@gmail.c should NOT trigger completion)
-  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
-
   // Calculate completion status - requires valid email format, not just any text
+  // Uses EMAIL_REGEX from attendee-validation.js for consistency
   const hasValidEmail = attendee.email && EMAIL_REGEX.test(attendee.email.trim());
   const isComplete = attendee.firstName && attendee.lastName &&
                      hasValidEmail && !errors.firstName &&
