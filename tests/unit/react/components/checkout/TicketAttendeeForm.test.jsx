@@ -70,29 +70,59 @@ describe('TicketAttendeeForm', () => {
     });
   });
 
-  describe('Rendering - Registered State', () => {
+  describe('Rendering - Complete Form (Pre-Save)', () => {
     const completeAttendee = {
       firstName: 'John',
       lastName: 'Doe',
       email: 'john@example.com',
     };
 
-    it('should show "Registered" status when form is complete', () => {
+    it('should show Save button when form is complete but not saved', () => {
       render(<TicketAttendeeForm {...defaultProps} attendee={completeAttendee} />);
+
+      expect(screen.getByRole('button', { name: /save/i })).toBeInTheDocument();
+      expect(screen.queryByText(/registered/i)).not.toBeInTheDocument();
+    });
+
+    it('should still show form fields when complete but not saved', () => {
+      render(<TicketAttendeeForm {...defaultProps} attendee={completeAttendee} />);
+
+      expect(screen.getByLabelText(/first name/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/last name/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+    });
+  });
+
+  describe('Rendering - Registered State (After Save)', () => {
+    const completeAttendee = {
+      firstName: 'John',
+      lastName: 'Doe',
+      email: 'john@example.com',
+    };
+
+    it('should show "Registered" status after clicking Save', () => {
+      render(<TicketAttendeeForm {...defaultProps} attendee={completeAttendee} />);
+
+      // Click Save button
+      fireEvent.click(screen.getByRole('button', { name: /save/i }));
 
       expect(screen.getByText(/registered/i)).toBeInTheDocument();
       expect(screen.queryByText(/register ticket/i)).not.toBeInTheDocument();
     });
 
-    it('should display attendee name and email when complete', () => {
+    it('should display attendee name and email after Save', () => {
       render(<TicketAttendeeForm {...defaultProps} attendee={completeAttendee} />);
+
+      fireEvent.click(screen.getByRole('button', { name: /save/i }));
 
       expect(screen.getByText('John Doe')).toBeInTheDocument();
       expect(screen.getByText('john@example.com')).toBeInTheDocument();
     });
 
-    it('should not show form fields when complete', () => {
+    it('should not show form fields after Save', () => {
       render(<TicketAttendeeForm {...defaultProps} attendee={completeAttendee} />);
+
+      fireEvent.click(screen.getByRole('button', { name: /save/i }));
 
       expect(screen.queryByLabelText(/first name/i)).not.toBeInTheDocument();
       expect(screen.queryByLabelText(/last name/i)).not.toBeInTheDocument();
@@ -101,6 +131,8 @@ describe('TicketAttendeeForm', () => {
 
     it('should show green checkmark icon when registered', () => {
       render(<TicketAttendeeForm {...defaultProps} attendee={completeAttendee} />);
+
+      fireEvent.click(screen.getByRole('button', { name: /save/i }));
 
       // Check for SVG checkmark presence (the checkmark icon)
       const svg = document.querySelector('svg');
