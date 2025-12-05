@@ -162,25 +162,6 @@
         color: var(--color-text-secondary);
       }
 
-      /* Countdown timer */
-      .countdown-timer {
-        font-family: var(--font-code);
-        font-size: var(--font-size-sm);
-        color: var(--color-text-secondary);
-        text-transform: uppercase;
-        letter-spacing: var(--letter-spacing-wider);
-        margin-bottom: var(--space-2xl);
-        padding: var(--space-md) var(--space-lg);
-        background: var(--color-surface);
-        border: 1px solid var(--color-border);
-        display: inline-block;
-        border-radius: 4px;
-      }
-
-      .countdown-seconds {
-        font-weight: bold;
-        color: var(--color-red);
-      }
 
       .success-details {
         background: var(--color-surface);
@@ -265,64 +246,6 @@
         color: var(--color-red);
       }
 
-      /* Registration section styling */
-      .ticket-field-group {
-        background: var(--color-background, #fff);
-        border: 1px solid var(--color-border, #e0e0e0);
-        border-radius: 8px;
-        padding: var(--space-lg);
-        margin-bottom: var(--space-lg);
-      }
-
-      .ticket-field-group h4 {
-        color: var(--color-primary, #5b6bb5);
-        margin-bottom: var(--space-md);
-        font-size: var(--font-size-lg);
-      }
-
-      .form-group {
-        margin-bottom: var(--space-md);
-      }
-
-      .form-group label {
-        display: block;
-        color: var(--color-text-primary);
-        font-weight: 600;
-        margin-bottom: var(--space-xs);
-      }
-
-      .form-group input {
-        width: 100%;
-        padding: var(--space-sm) var(--space-md);
-        border: 1px solid var(--color-border, #ccc);
-        border-radius: 4px;
-        font-size: var(--font-size-base);
-        background: var(--color-background);
-        color: var(--color-text-primary);
-      }
-
-      .form-group input:focus {
-        outline: none;
-        border-color: var(--color-primary);
-        box-shadow: 0 0 0 3px rgba(91, 107, 181, 0.1);
-      }
-
-      .form-group input[readonly] {
-        background: var(--color-gray-light, #f5f5f5);
-        color: var(--color-text-secondary);
-      }
-      /* Registration-related styles removed - handled on separate page */
-
-      @keyframes pulse {
-        0%, 100% {
-          transform: scale(1);
-        }
-        50% {
-          transform: scale(1.05);
-        }
-      }
-
-      /* Registration button styles removed */
 
       .loading-state {
         display: flex;
@@ -356,11 +279,6 @@
 
         .success-message {
           font-size: var(--font-size-base);
-        }
-
-        .countdown-timer {
-          font-size: var(--font-size-xs);
-          padding: var(--space-sm) var(--space-md);
         }
 
         .success-actions {
@@ -550,9 +468,6 @@
             Boulder Fest.
           </p>
 
-          <div class="countdown-timer" id="countdown-timer" style="display: none;">
-            Redirecting to registration in <span class="countdown-seconds" id="countdown-seconds">30</span> seconds...
-          </div>
 
           <!-- Thank you for donation message -->
           <div id="donation-thank-you" style="display: none; margin: var(--space-lg) 0; padding: var(--space-lg); background: transparent; border-radius: var(--radius-md); border: 2px solid var(--color-success, #047857);">
@@ -564,10 +479,6 @@
             </p>
           </div>
 
-          <!-- Register Now button moved here for better visibility -->
-          <div style="margin-bottom: var(--space-xl); display: none;" id="register-now-container">
-            <a href="#" id="register-now-btn" class="success-btn accent" aria-label="Register your tickets now to complete attendee information">Register Now</a>
-          </div>
 
           <div class="success-details" id="order-details" style="display: none">
             <h3>Order Details</h3>
@@ -577,6 +488,11 @@
           </div>
 
           <!-- Registration will be handled on separate page -->
+
+          <!-- View Tickets button shown only for ticket purchases -->
+          <div id="view-tickets-container" style="margin-bottom: var(--space-xl); display: none;">
+            <a href="/view-tickets" id="view-tickets-btn" class="success-btn accent" aria-label="View your tickets and access wallet passes">View Your Tickets</a>
+          </div>
 
           <div class="success-actions">
             <a href="/home" class="success-btn">Return to Home</a>
@@ -682,63 +598,7 @@
       const orderId = document.getElementById("order-id");
       const orderAmount = document.getElementById("order-amount");
       const orderEmail = document.getElementById("order-email");
-      const countdownTimer = document.getElementById("countdown-timer");
-      const countdownSeconds = document.getElementById("countdown-seconds");
-      const registerNowBtn = document.getElementById("register-now-btn");
-      const registerNowContainer = document.getElementById("register-now-container");
-
-      // Countdown timer variables
-      let countdownInterval;
-      let remainingSeconds = 30;
-      let registrationUrl = null;
-
-      // Start countdown timer
-      function startCountdown() {
-        // Show countdown timer
-        if (countdownTimer) {
-          countdownTimer.style.display = 'inline-block';
-        }
-
-        countdownInterval = setInterval(() => {
-          remainingSeconds--;
-          if (countdownSeconds) {
-            countdownSeconds.textContent = remainingSeconds;
-          }
-
-          if (remainingSeconds <= 0) {
-            clearInterval(countdownInterval);
-            // Use registrationUrl if available, otherwise fallback to home
-            // Validate URL before redirect to prevent XSS
-            let redirectUrl = '/home';
-            if (registrationUrl && (registrationUrl.startsWith('/') || registrationUrl.startsWith('./'))) {
-              redirectUrl = registrationUrl;
-            }
-            window.location.href = redirectUrl;
-          }
-        }, 1000);
-      }
-
-      // Stop countdown timer
-      function stopCountdown() {
-        if (countdownInterval) {
-          clearInterval(countdownInterval);
-        }
-        if (countdownTimer) {
-          countdownTimer.style.display = 'none';
-        }
-      }
-
-      // Handle register now button click
-      function handleRegisterNow(event) {
-        event.preventDefault(); // Prevent default link behavior
-        // Validate URL before redirect to prevent XSS
-        if (registrationUrl && (registrationUrl.startsWith('/') || registrationUrl.startsWith('./'))) {
-          stopCountdown();
-          window.location.href = registrationUrl;
-        } else {
-          console.error('Invalid registration URL, cannot redirect');
-        }
-      }
+      const viewTicketsContainer = document.getElementById("view-tickets-container");
 
       // Detect payment method
       function detectPaymentMethod() {
@@ -921,12 +781,20 @@
         loadingState.style.display = "none";
         successContainer.style.display = "flex";
 
-        // Update main message with payment method context
+        // Determine if this is a ticket purchase
+        const isTicketPurchase = data.hasTickets ||
+                                data.order?.orderType === "tickets" ||
+                                hasTickets(data.order?.items);
+
+        // Update main message with payment method and purchase type context
         let successMessage = data.message || 'Payment successful! Thank you for your purchase.';
-        if (data.paymentMethod === 'paypal') {
-          successMessage = `PayPal payment successful! Thank you for your purchase. Your transaction has been completed securely through PayPal.`;
+        if (isTicketPurchase) {
+          // Tickets are now fully registered at checkout
+          successMessage = `Payment successful! Your tickets are ready. We've sent a confirmation email with your ticket details. See you at A Lo Cubano Boulder Fest!`;
+        } else if (data.paymentMethod === 'paypal') {
+          successMessage = `PayPal payment successful! Thank you for your support. Your transaction has been completed securely through PayPal.`;
         } else if (data.paymentMethod === 'stripe') {
-          successMessage = `Credit card payment successful! Thank you for your purchase. Your transaction has been processed securely.`;
+          successMessage = `Payment successful! Thank you for your support. Your transaction has been processed securely.`;
         }
 
         if (mainMessage) {
@@ -989,23 +857,6 @@
           }
         }
 
-        // Check if this is a ticket purchase (multiple ways to detect)
-        const isTicketPurchase = data.hasTickets ||
-                                data.order?.orderType === "tickets" ||
-                                hasTickets(data.order?.items) ||
-                                data.registrationUrl ||
-                                data.registrationToken;
-
-        // Debug logging for ticket purchase detection
-        console.log('Ticket purchase detection:', {
-          isTicketPurchase,
-          hasTickets: data.hasTickets,
-          orderType: data.order?.orderType,
-          hasTicketsInItems: hasTickets(data.order?.items),
-          hasRegistrationUrl: !!data.registrationUrl,
-          hasRegistrationToken: !!data.registrationToken
-        });
-
         // Show donation thank you message if donations are included
         if (Boolean(data.hasDonations)) {
           const donationThankYou = document.getElementById('donation-thank-you');
@@ -1014,44 +865,16 @@
           }
         }
 
-        // Handle registration for ticket purchases
-        if (isTicketPurchase) {
-          // Set registration URL - use provided URL or fallback to registration page
-          if (data.registrationUrl) {
-            // Sanitize URL from API response to prevent XSS
-            // Only accept URLs that start with / or are relative paths
-            const url = String(data.registrationUrl);
-            if (url.startsWith('/') || url.startsWith('./')) {
-              registrationUrl = url;
-            } else {
-              console.warn('Invalid registration URL from API, using fallback');
-              registrationUrl = '/register-tickets';
-            }
-          } else if (data.registrationToken) {
-            // Sanitize and encode the registration token for URL use
-            const encodedToken = encodeURIComponent(String(data.registrationToken));
-            registrationUrl = `/register-tickets?token=${encodedToken}`;
-          } else {
-            // Fallback to basic registration page
-            registrationUrl = '/register-tickets';
+        // Show View Tickets button for ticket purchases
+        // (attendee info is already captured during checkout - no registration needed)
+        if (isTicketPurchase && viewTicketsContainer) {
+          viewTicketsContainer.style.display = 'block';
+
+          // Set the registration token on the View Tickets button
+          const viewTicketsBtn = document.getElementById('view-tickets-btn');
+          if (viewTicketsBtn && data.registrationToken) {
+            viewTicketsBtn.href = `/view-tickets?token=${data.registrationToken}`;
           }
-
-          console.log('Using registration URL:', registrationUrl);
-
-          // Show register now button with its container
-          if (registerNowBtn && registerNowContainer) {
-            // Validate URL before setting href to prevent XSS
-            if (registrationUrl && (registrationUrl.startsWith('/') || registrationUrl.startsWith('./'))) {
-              registerNowBtn.href = registrationUrl;
-              registerNowContainer.style.display = 'block';
-              registerNowBtn.addEventListener('click', handleRegisterNow);
-            } else {
-              console.error('Invalid registration URL, cannot display register button');
-            }
-          }
-
-          // Start countdown timer for ticket purchases
-          startCountdown();
         }
 
         // Clear the cart and end checkout session as instructed by the API

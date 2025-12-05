@@ -46,8 +46,8 @@ const styles = {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '28px 20px',
-        height: '120px',
+        padding: '20px',
+        height: '90px',
         background: '#f9fafb',
         border: '3px solid #d1d5db',
         borderRadius: '16px',
@@ -74,6 +74,11 @@ const styles = {
         opacity: 0.5,
         cursor: 'not-allowed',
         pointerEvents: 'none',
+    },
+    // Unselected state when another method is selected - grey overlay
+    buttonUnselected: {
+        filter: 'grayscale(70%)',
+        opacity: 0.6,
     },
     // Checkmark indicator for selected state
     checkmark: {
@@ -155,6 +160,17 @@ export default function PaymentMethodSelector({ disabled = false, onChange }) {
     const handleSelect = (method) => {
         if (isDisabled) return;
 
+        // Toggle: if already selected, unselect (return to no selection)
+        if (paymentMethod === method) {
+            console.log(`🔄 [PaymentSelector] Toggling off ${method}`);
+            setPaymentMethod(null);
+            if (onChange) {
+                onChange(null);
+            }
+            return;
+        }
+
+        console.log(`✅ [PaymentSelector] Selected ${method}`);
         setPaymentMethod(method);
         if (onChange) {
             onChange(method);
@@ -164,12 +180,19 @@ export default function PaymentMethodSelector({ disabled = false, onChange }) {
     const isSelected = (method) => paymentMethod === method;
     const isHovered = (method) => hoveredMethod === method && !isSelected(method);
 
-    const getButtonStyle = (method) => ({
-        ...styles.button,
-        ...(isHovered(method) ? styles.buttonHover : {}),
-        ...(isSelected(method) ? styles.buttonSelected : {}),
-        ...(isDisabled ? styles.buttonDisabled : {}),
-    });
+    const getButtonStyle = (method) => {
+        // Grey out when: (1) no method selected yet, OR (2) the other method is selected
+        // This makes it clear the user needs to make a selection
+        const shouldGreyOut = paymentMethod === null || (paymentMethod !== null && !isSelected(method));
+        return {
+            ...styles.button,
+            // Apply grey style unless hovering (show interactivity) or selected
+            ...(shouldGreyOut && !isHovered(method) ? styles.buttonUnselected : {}),
+            ...(isHovered(method) ? styles.buttonHover : {}),
+            ...(isSelected(method) ? styles.buttonSelected : {}),
+            ...(isDisabled ? styles.buttonDisabled : {}),
+        };
+    };
 
     // Checkmark SVG for selected state
     const CheckmarkIcon = () => (

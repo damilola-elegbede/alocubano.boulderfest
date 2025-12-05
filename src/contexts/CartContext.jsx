@@ -55,11 +55,11 @@ export function CartProvider({ children }) {
         }
 
         // Listen to cart events
-        window.addEventListener('cart:initialized', handleCartInitialized);
+        document.addEventListener('cart:initialized', handleCartInitialized);
         document.addEventListener('cart:updated', handleCartUpdated);
 
         return () => {
-            window.removeEventListener('cart:initialized', handleCartInitialized);
+            document.removeEventListener('cart:initialized', handleCartInitialized);
             document.removeEventListener('cart:updated', handleCartUpdated);
         };
     }, []);

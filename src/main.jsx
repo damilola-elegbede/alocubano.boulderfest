@@ -1,3 +1,52 @@
+// =============================================================================
+// Chunk Load Error Recovery
+// =============================================================================
+// Handles stale cache after deployments by auto-reloading when chunks fail to load.
+// This prevents 404 errors when users have cached HTML referencing old chunk hashes.
+//
+// Flow:
+// 1. Listen for script load errors in capture phase
+// 2. If a chunk from /dist/assets/ fails (404), reload page once
+// 3. sessionStorage flag prevents infinite reload loops
+// =============================================================================
+
+console.log('🔧 [ChunkRecovery] Installing chunk load error handler');
+
+window.addEventListener('error', (event) => {
+  // Check if it's a chunk load error (script loading failed from our assets)
+  const isScriptError = event.target?.tagName === 'SCRIPT';
+  const isOurChunk = event.target?.src?.includes('/dist/assets/');
+
+  if (isScriptError && isOurChunk) {
+    const chunkUrl = event.target.src;
+    console.error('❌ [ChunkRecovery] Chunk load failed:', chunkUrl);
+    console.log('📋 [ChunkRecovery] This usually means the HTML is cached with stale chunk references');
+
+    // Only reload once to prevent infinite loops
+    if (!sessionStorage.getItem('chunk-reload-attempted')) {
+      console.log('🔄 [ChunkRecovery] Attempting page reload to get fresh HTML...');
+      sessionStorage.setItem('chunk-reload-attempted', 'true');
+      window.location.reload();
+    } else {
+      console.error('🚫 [ChunkRecovery] Reload already attempted. Please hard refresh (Cmd+Shift+R or Ctrl+Shift+R)');
+    }
+  }
+}, true); // Use capture phase to catch script errors before they bubble
+
+// Clear the reload flag when page loads successfully with all chunks
+window.addEventListener('load', () => {
+  if (sessionStorage.getItem('chunk-reload-attempted')) {
+    console.log('✅ [ChunkRecovery] Page loaded successfully after reload, clearing flag');
+    sessionStorage.removeItem('chunk-reload-attempted');
+  }
+});
+
+console.log('✅ [ChunkRecovery] Error handler installed');
+
+// =============================================================================
+// React Application
+// =============================================================================
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 

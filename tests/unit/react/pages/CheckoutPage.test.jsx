@@ -6,7 +6,7 @@ import React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import '@testing-library/jest-dom';
+// Note: @testing-library/jest-dom is imported in tests/setup-react.js
 import CheckoutPage from '../../../../src/pages/CheckoutPage';
 import {
     createMockPaymentFetch,
@@ -180,6 +180,14 @@ describe('CheckoutPage', () => {
         });
 
         it('should show help text when no payment method selected', () => {
+            // Use donation-only cart to test payment method help text
+            // (tickets would show attendee validation message instead)
+            window.globalCartManager.getState.mockReturnValue({
+                tickets: {},
+                donations: [{ id: 1, amount: 50, name: 'Test Donation' }],
+                totals: { itemCount: 1, grandTotal: 5000 },
+            });
+
             render(<CheckoutPage />);
 
             // Should show help text when no payment method (case-sensitive match)
@@ -235,7 +243,14 @@ describe('CheckoutPage', () => {
             expect(screen.queryByText('Customer Information')).not.toBeInTheDocument();
         });
 
-        it('should enable submit after selecting payment method', async () => {
+        it('should enable submit after selecting payment method (donation-only cart)', async () => {
+            // Use donation-only cart (no attendee validation required)
+            window.globalCartManager.getState.mockReturnValue({
+                tickets: {},
+                donations: [{ id: 1, amount: 50, name: 'Test Donation' }],
+                totals: { itemCount: 1, grandTotal: 5000 },
+            });
+
             const user = userEvent.setup();
             render(<CheckoutPage />);
 
@@ -247,9 +262,85 @@ describe('CheckoutPage', () => {
             const stripeButton = screen.getByTestId('payment-method-stripe');
             await user.click(stripeButton);
 
-            // Now should be enabled
+            // Now should be enabled (donation-only cart doesn't require attendee info)
             await waitFor(() => {
                 expect(submitButton).not.toBeDisabled();
+            });
+        });
+
+        it('should require attendee info for tickets before enabling submit', async () => {
+            const user = userEvent.setup();
+            render(<CheckoutPage />);
+
+            // Initially button should be disabled (no payment method AND no attendee info)
+            const submitButton = screen.getByTestId('proceed-to-payment');
+            expect(submitButton).toBeDisabled();
+
+            // Select a payment method
+            const stripeButton = screen.getByTestId('payment-method-stripe');
+            await user.click(stripeButton);
+
+            // Button should still be disabled (attendee info required for tickets)
+            // Need to wait for state update
+            await waitFor(() => {
+                expect(screen.getByTestId('proceed-to-payment')).toBeDisabled();
+            });
+
+            // Fill in attendee info for first ticket (key format: ticketType-eventId-index)
+            const firstNameInputs = screen.getAllByLabelText(/first name/i);
+            const lastNameInputs = screen.getAllByLabelText(/last name/i);
+            const emailInputs = screen.getAllByLabelText(/email/i);
+
+            // Fill in info for both tickets (quantity: 2)
+            await user.type(firstNameInputs[0], 'John');
+            await user.type(lastNameInputs[0], 'Doe');
+            await user.type(emailInputs[0], 'john@example.com');
+
+            await user.type(firstNameInputs[1], 'Jane');
+            await user.type(lastNameInputs[1], 'Doe');
+            await user.type(emailInputs[1], 'jane@example.com');
+
+            // Now should be enabled
+            await waitFor(() => {
+                expect(screen.getByTestId('proceed-to-payment')).not.toBeDisabled();
+            });
+        });
+    });
+
+    describe('Inline Attendee Registration', () => {
+        it('should render attendee forms for each ticket', () => {
+            render(<CheckoutPage />);
+
+            // With 2 tickets, should have 2 sets of attendee forms
+            const firstNameInputs = screen.getAllByLabelText(/first name/i);
+            expect(firstNameInputs.length).toBe(2);
+        });
+
+        it('should show attendee form for each ticket', () => {
+            render(<CheckoutPage />);
+
+            // Each ticket renders with "Register Ticket" button
+            const registerButtons = screen.getAllByText(/Register Ticket/i);
+            expect(registerButtons.length).toBe(2);
+        });
+
+        it('should show help text for attendee validation', async () => {
+            const user = userEvent.setup();
+            render(<CheckoutPage />);
+
+            // Initially shows "Select a payment method" help text
+            // There are two elements - one in PaymentMethodSelector and one as button help text
+            const helpTexts = screen.getAllByText(/Select a payment method/i);
+            expect(helpTexts.length).toBeGreaterThanOrEqual(1);
+
+            // Select a payment method to reveal attendee validation help text
+            const stripeButton = screen.getByTestId('payment-method-stripe');
+            await user.click(stripeButton);
+
+            // Now should show attendee-related help text since tickets require attendee info
+            await waitFor(() => {
+                const attendeeHelpText = screen.getByText(/Enter attendee info for/i);
+                expect(attendeeHelpText).toBeInTheDocument();
             });
         });
     });

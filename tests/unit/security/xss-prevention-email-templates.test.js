@@ -15,7 +15,6 @@ import { describe, it, expect } from 'vitest';
 import { generateVolunteerAcknowledgementEmail } from '../../../lib/email-templates/volunteer-acknowledgement.js';
 import { generateAttendeeConfirmationEmail } from '../../../lib/email-templates/attendee-confirmation.js';
 import { generateOrderConfirmationEmail } from '../../../lib/email-templates/order-confirmation.js';
-import { generateRegistrationReminderEmail } from '../../../lib/email-templates/registration-reminder.js';
 import { wrapInBaseLayout } from '../../../lib/email-templates/base-layout.js';
 
 describe('XSS Prevention in Email Templates', () => {
@@ -143,31 +142,6 @@ describe('XSS Prevention in Email Templates', () => {
       expect(html).not.toContain('<img src=x onerror=alert(1)>');
       expect(html).toContain('&lt;script&gt;');
       expect(html).toContain('&lt;img');
-    });
-  });
-
-  describe('Registration Reminder Email', () => {
-    const baseData = {
-      customerName: 'John Doe',
-      orderNumber: 'ORD-123',
-      orderDate: 'Jan 1, 2026',
-      totalTickets: 2,
-      ticketsList: '<div>Tickets</div>',
-      viewTicketsUrl: 'https://example.com/tickets',
-      registrationDeadline: 'Jan 8, 2026'
-    };
-
-    it('should escape XSS in all text fields', () => {
-      const html = generateRegistrationReminderEmail({
-        ...baseData,
-        customerName: '<body onload="alert(1)">',
-        orderNumber: '<iframe src="javascript:alert(1)"></iframe>'
-      });
-
-      expect(html).not.toContain('<body onload="alert(1)">');
-      expect(html).not.toContain('<iframe src="javascript:alert(1)"></iframe>');
-      expect(html).toContain('&lt;body');
-      expect(html).toContain('&lt;iframe');
     });
   });
 

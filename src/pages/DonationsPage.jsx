@@ -18,7 +18,7 @@ function DonationsPageContent() {
                 <div className="hero-image-container">
                     <img
                         id="hero-splash-image"
-                        src=""
+                        src="/images/hero/donations.jpg"
                         alt="Community supporters and volunteers making A Lo Cubano Boulder Fest possible, showing the impact of donations"
                         className="hero-splash-img"
                         style={{ objectPosition: 'top center' }}

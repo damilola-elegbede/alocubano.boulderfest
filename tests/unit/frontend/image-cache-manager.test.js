@@ -10,15 +10,30 @@ import ImageCacheManager from '../../../public/js/image-cache-manager.js';
 
 describe('ImageCacheManager', () => {
   let manager;
+  // Store mock function references for use in tests
+  let mockLocalStorage;
+  let mockSessionStorage;
 
   beforeEach(() => {
-    // Mock localStorage and sessionStorage directly
-    vi.spyOn(localStorage, 'getItem').mockReturnValue(null);
-    vi.spyOn(localStorage, 'setItem').mockReturnValue(undefined);
-    vi.spyOn(localStorage, 'removeItem').mockReturnValue(undefined);
-    vi.spyOn(sessionStorage, 'getItem').mockReturnValue(null);
-    vi.spyOn(sessionStorage, 'setItem').mockReturnValue(undefined);
-    vi.spyOn(sessionStorage, 'removeItem').mockReturnValue(undefined);
+    // Create complete mock storage implementations
+    mockLocalStorage = {
+      _data: {},
+      getItem: vi.fn((key) => mockLocalStorage._data[key] || null),
+      setItem: vi.fn((key, value) => { mockLocalStorage._data[key] = value; }),
+      removeItem: vi.fn((key) => { delete mockLocalStorage._data[key]; }),
+      clear: vi.fn(() => { mockLocalStorage._data = {}; }),
+    };
+    mockSessionStorage = {
+      _data: {},
+      getItem: vi.fn((key) => mockSessionStorage._data[key] || null),
+      setItem: vi.fn((key, value) => { mockSessionStorage._data[key] = value; }),
+      removeItem: vi.fn((key) => { delete mockSessionStorage._data[key]; }),
+      clear: vi.fn(() => { mockSessionStorage._data = {}; }),
+    };
+
+    // Replace global storage with mocks
+    Object.defineProperty(globalThis, 'localStorage', { value: mockLocalStorage, writable: true });
+    Object.defineProperty(globalThis, 'sessionStorage', { value: mockSessionStorage, writable: true });
 
     // Mock fetch
     global.fetch = vi.fn();
@@ -42,18 +57,18 @@ describe('ImageCacheManager', () => {
 
     it('should load image data cache from localStorage', () => {
       const cachedData = { 'test-id': { url: 'test.jpg', timestamp: Date.now() } };
-      localStorage.getItem.mockReturnValue(JSON.stringify(cachedData));
+      mockLocalStorage._data['alocubano_image_data_cache_v3'] = JSON.stringify(cachedData);
 
       const newManager = new ImageCacheManager();
 
-      expect(localStorage.getItem).toHaveBeenCalledWith(
+      expect(mockLocalStorage.getItem).toHaveBeenCalledWith(
         'alocubano_image_data_cache_v3'
       );
       expect(newManager.imageDataCache).toEqual(cachedData);
     });
 
     it('should handle corrupt cache data gracefully', () => {
-      localStorage.getItem.mockReturnValue('invalid-json');
+      mockLocalStorage._data['alocubano_image_data_cache_v3'] = 'invalid-json';
 
       const newManager = new ImageCacheManager();
 
@@ -159,7 +174,7 @@ describe('ImageCacheManager', () => {
         width: 600
       });
 
-      expect(localStorage.setItem).toHaveBeenCalledWith(
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
         'alocubano_image_data_cache_v3',
         expect.any(String)
       );
@@ -309,7 +324,7 @@ describe('ImageCacheManager', () => {
 
     it('should load assignments from sessionStorage', async () => {
       const assignments = { home: { id: 'img1', name: 'Image 1' } };
-      sessionStorage.getItem.mockReturnValue(JSON.stringify(assignments));
+      mockSessionStorage._data['alocubano_image_cache_v3'] = JSON.stringify(assignments);
 
       await manager.ensureSessionAssignments();
 
@@ -345,7 +360,7 @@ describe('ImageCacheManager', () => {
 
       await manager.ensureSessionAssignments();
 
-      expect(sessionStorage.setItem).toHaveBeenCalledWith(
+      expect(mockSessionStorage.setItem).toHaveBeenCalledWith(
         'alocubano_image_cache_v3',
         expect.any(String)
       );
@@ -457,16 +472,16 @@ describe('ImageCacheManager', () => {
 
       expect(manager.imageDataCache).toEqual({});
       expect(manager.sessionAssignments).toBeNull();
-      expect(localStorage.removeItem).toHaveBeenCalledWith(
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(
         'alocubano_image_data_cache_v3'
       );
-      expect(sessionStorage.removeItem).toHaveBeenCalledWith(
+      expect(mockSessionStorage.removeItem).toHaveBeenCalledWith(
         'alocubano_image_cache_v3'
       );
     });
 
     it('should handle clear errors gracefully', () => {
-      localStorage.removeItem.mockImplementation(() => {
+      mockLocalStorage.removeItem.mockImplementation(() => {
         throw new Error('Clear failed');
       });
 

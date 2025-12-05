@@ -71,16 +71,7 @@ npm run verify-structure        # Verify project structure
 - Payments via Stripe Checkout and PayPal (with Venmo support) for tickets + donations
 - Wallet passes for Apple/Google with JWT auth
 - Admin panel with bcrypt auth and JWT sessions
-- Registration system with adaptive reminder scheduling
-
-### Registration Reminder System
-Adaptive scheduling based on time until deadline:
-- **24+ hours**: 4 reminders (1hr, 12hr, 12hr before, 6hr before)
-- **6-24 hours**: 3 reminders (10%, 50%, 20% before)
-- **1-6 hours**: 2 reminders (10%, halfway)
-- **< 1 hour**: 1 reminder (10%)
-
-Test transactions (e.g., $0.50) automatically excluded.
+- Inline checkout registration (attendee info captured at checkout)
 
 ### Theme System
 - **Admin pages**: Always dark theme
@@ -168,7 +159,6 @@ TURSO_AUTH_TOKEN=
 # Admin & Auth
 ADMIN_PASSWORD=                # bcrypt hash
 ADMIN_SECRET=                  # JWT secret (min 32 chars)
-REGISTRATION_SECRET=           # JWT secret (min 32 chars)
 WALLET_AUTH_SECRET=            # JWT secret for wallet auth
 
 # Wallet Passes
@@ -208,8 +198,7 @@ Vercel auto-generates when you add cron config to vercel.json. Used to authentic
 **Email**: subscribe, unsubscribe, brevo-webhook
 **Payments (Stripe)**: create-checkout-session, stripe-webhook, checkout-success
 **Payments (PayPal)**: paypal/create-order, paypal/capture-order, paypal/webhook
-**Tickets**: [ticketId], validate, register, apple-wallet/[ticketId], google-wallet/[ticketId]
-**Registration**: [token], batch, health
+**Tickets**: [ticketId], validate, apple-wallet/[ticketId], google-wallet/[ticketId]
 **Admin**: login, dashboard, registrations, donations
 **Gallery**: gallery, gallery/years, featured-photos
 **Cache**: cache (GET/POST/DELETE)
@@ -404,7 +393,7 @@ window.errorNotifier.show('Test', { type: 'network', duration: 0 });
 
 ```
 /
-├── api/                # Serverless functions (admin/, email/, payments/, tickets/, registration/, health/)
+├── api/                # Serverless functions (admin/, email/, payments/, tickets/, health/)
 ├── lib/                # Shared services (async singletons)
 ├── pages/              # HTML pages
 ├── js/                 # Frontend JavaScript (theme-manager.js, theme-toggle.js, global-cart.js, floating-cart.js)

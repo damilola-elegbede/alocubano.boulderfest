@@ -63,7 +63,7 @@ describe('Cart Test Items Management', () => {
   });
 
   describe('Test Ticket Management', () => {
-    it('should add test tickets with TEST prefix', async () => {
+    it('should add test tickets without TEST prefix (test mode determined by event/ticket names)', async () => {
       const ticketData = {
         ticketType: 'general',
         price: 50,
@@ -76,10 +76,10 @@ describe('Cart Test Items Management', () => {
       await cartManager.addTicket(ticketData);
       const state = cartManager.getState();
 
-      expect(state.tickets['TEST-general']).toBeDefined();
-      expect(state.tickets['TEST-general'].name).toBe('TEST - General Admission');
-      expect(state.tickets['TEST-general'].isTestItem).toBe(true);
-      expect(state.tickets['TEST-general'].originalTicketType).toBe('general');
+      // No TEST- prefix - test mode is determined by event/ticket names
+      expect(state.tickets['general']).toBeDefined();
+      expect(state.tickets['general'].name).toBe('General Admission');
+      expect(state.tickets['general'].isTestItem).toBe(true);
       expect(state.metadata.testMode).toBe(true);
     });
 
@@ -99,7 +99,6 @@ describe('Cart Test Items Management', () => {
       expect(state.tickets['general']).toBeDefined();
       expect(state.tickets['general'].name).toBe('General Admission');
       expect(state.tickets['general'].isTestItem).toBe(false);
-      expect(state.tickets['TEST-general']).toBeUndefined();
     });
 
     it('should force test mode when testMode is enabled globally', async () => {
@@ -118,9 +117,10 @@ describe('Cart Test Items Management', () => {
       await cartManager.addTicket(ticketData);
       const state = cartManager.getState();
 
-      expect(state.tickets['TEST-vip']).toBeDefined();
-      expect(state.tickets['TEST-vip'].name).toBe('TEST - VIP Access');
-      expect(state.tickets['TEST-vip'].isTestItem).toBe(true);
+      // No TEST- prefix - test mode is determined by event/ticket names
+      expect(state.tickets['vip']).toBeDefined();
+      expect(state.tickets['vip'].name).toBe('VIP Access');
+      expect(state.tickets['vip'].isTestItem).toBe(true);
     });
 
     it('should handle upsert with test items', async () => {
@@ -136,9 +136,10 @@ describe('Cart Test Items Management', () => {
       await cartManager.upsertTicket(ticketData);
       const state = cartManager.getState();
 
-      expect(state.tickets['TEST-workshop']).toBeDefined();
-      expect(state.tickets['TEST-workshop'].quantity).toBe(3);
-      expect(state.tickets['TEST-workshop'].isTestItem).toBe(true);
+      // No TEST- prefix - test mode is determined by event/ticket names
+      expect(state.tickets['workshop']).toBeDefined();
+      expect(state.tickets['workshop'].quantity).toBe(3);
+      expect(state.tickets['workshop'].isTestItem).toBe(true);
 
       // Update quantity
       await cartManager.upsertTicket({
@@ -147,7 +148,7 @@ describe('Cart Test Items Management', () => {
       });
 
       const updatedState = cartManager.getState();
-      expect(updatedState.tickets['TEST-workshop'].quantity).toBe(5);
+      expect(updatedState.tickets['workshop'].quantity).toBe(5);
     });
 
     it('should track analytics with test mode information', async () => {
@@ -165,9 +166,10 @@ describe('Cart Test Items Management', () => {
         isTestItem: true
       });
 
+      // No TEST- prefix in analytics - test mode is determined by event/ticket names
       expect(mockAnalytics.trackCartEvent).toHaveBeenCalledWith('ticket_added', {
-        ticketType: 'TEST-general',
-        originalTicketType: 'general',
+        ticketType: 'general',
+        originalTicketType: 'general',  // Same as ticketType since no TEST- prefix
         quantity: 1,
         price: 50,
         total: 50,
@@ -178,12 +180,13 @@ describe('Cart Test Items Management', () => {
   });
 
   describe('Test Donation Management', () => {
-    it('should add test donations with TEST prefix', async () => {
+    it('should add test donations without TEST prefix (test mode determined by event names)', async () => {
       await cartManager.addDonation(25, true);
       const state = cartManager.getState();
 
       const donation = state.donations[0];
-      expect(donation.name).toBe('TEST - Festival Support');
+      // No TEST - prefix - test mode is determined by event names
+      expect(donation.name).toBe('Festival Support');
       expect(donation.isTestItem).toBe(true);
       expect(donation.id).toMatch(/^test_donation_/);
       expect(state.metadata.testMode).toBe(true);
@@ -206,7 +209,8 @@ describe('Cart Test Items Management', () => {
       const state = cartManager.getState();
 
       const donation = state.donations[0];
-      expect(donation.name).toBe('TEST - Festival Support');
+      // No TEST - prefix - test mode is determined by event names
+      expect(donation.name).toBe('Festival Support');
       expect(donation.isTestItem).toBe(true);
       expect(donation.id).toMatch(/^test_donation_/);
     });
@@ -258,19 +262,19 @@ describe('Cart Test Items Management', () => {
 
       const state = cartManager.getState();
 
-      // Check tickets
+      // Check tickets - no TEST- prefix, test mode determined by event names
       expect(state.tickets['general']).toBeDefined();
       expect(state.tickets['general'].isTestItem).toBe(false);
-      expect(state.tickets['TEST-vip']).toBeDefined();
-      expect(state.tickets['TEST-vip'].isTestItem).toBe(true);
+      expect(state.tickets['vip']).toBeDefined();
+      expect(state.tickets['vip'].isTestItem).toBe(true);
 
-      // Check donations
+      // Check donations - no TEST - prefix
       expect(state.donations).toHaveLength(2);
       const productionDonation = state.donations.find(d => d.isTestItem === false);
       const testDonation = state.donations.find(d => d.isTestItem === true);
 
       expect(productionDonation.name).toBe('Festival Support');
-      expect(testDonation.name).toBe('TEST - Festival Support');
+      expect(testDonation.name).toBe('Festival Support');
 
       // Cart should be in test mode due to test items
       expect(state.metadata.testMode).toBe(true);
@@ -369,16 +373,9 @@ describe('Cart Test Items Management', () => {
   });
 
   describe('Data Isolation', () => {
-    it('should separate test and production items in state', async () => {
-      await cartManager.addTicket({
-        ticketType: 'general',
-        price: 50,
-        name: 'General Admission',
-        eventId: 'event-1',
-        quantity: 1,
-        isTestItem: false
-      });
-
+    it('should track test items via isTestItem flag (no separate keys)', async () => {
+      // Without TEST- prefix, same ticket type can only exist once
+      // Test mode is tracked via isTestItem flag
       await cartManager.addTicket({
         ticketType: 'general',
         price: 50,
@@ -390,11 +387,10 @@ describe('Cart Test Items Management', () => {
 
       const state = cartManager.getState();
 
-      // Should have both items with different keys
+      // Only one item with general key
       expect(state.tickets['general']).toBeDefined();
-      expect(state.tickets['TEST-general']).toBeDefined();
-      expect(state.tickets['general'].isTestItem).toBe(false);
-      expect(state.tickets['TEST-general'].isTestItem).toBe(true);
+      expect(state.tickets['general'].isTestItem).toBe(true);
+      expect(state.tickets['general'].name).toBe('General Admission');
     });
 
     it('should handle removal of test items correctly', async () => {
@@ -408,12 +404,14 @@ describe('Cart Test Items Management', () => {
       });
 
       let state = cartManager.getState();
-      expect(state.tickets['TEST-general']).toBeDefined();
+      // No TEST- prefix - items stored under original ticketType
+      expect(state.tickets['general']).toBeDefined();
+      expect(state.tickets['general'].isTestItem).toBe(true);
 
-      await cartManager.removeTicket('TEST-general');
+      await cartManager.removeTicket('general');
 
       state = cartManager.getState();
-      expect(state.tickets['TEST-general']).toBeUndefined();
+      expect(state.tickets['general']).toBeUndefined();
     });
   });
 });

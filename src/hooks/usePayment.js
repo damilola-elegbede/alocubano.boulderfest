@@ -51,12 +51,13 @@ export function usePayment() {
      * Follows the pattern from js/components/payment-selector.js
      *
      * @param {Object} cart - Cart state from useCart
+     * @param {Object} attendeeData - Optional attendee data keyed by ticket identifier
      * @returns {Array} Array of cart items for API
      */
-    const prepareCartItems = useCallback((cart) => {
+    const prepareCartItems = useCallback((cart, attendeeData = {}) => {
         const cartItems = [];
 
-        // Add tickets
+        // Add tickets - expand quantity > 1 into individual items with attendee data
         if (cart?.tickets) {
             Object.values(cart.tickets).forEach((ticket) => {
                 // Validate required fields - all tickets MUST have these
@@ -89,17 +90,30 @@ export function usePayment() {
                     ? `${ticket.description}\nEvent Date: ${formattedDate}`
                     : `Event Date: ${formattedDate}`;
 
-                cartItems.push({
-                    type: 'ticket',
-                    ticketType: ticket.ticketType,
-                    name: productName,
-                    description: description,
-                    price: ticket.price,
-                    quantity: ticket.quantity,
-                    eventDate: ticket.eventDate,
-                    eventId: eventIdNum,
-                    venue: ticket.venue,
-                });
+                // Expand tickets: create individual cart items for each quantity
+                // This allows each ticket to have its own attendee info
+                const qty = ticket.quantity || 1;
+                for (let i = 0; i < qty; i++) {
+                    // Generate consistent ticket key for looking up attendee data
+                    // Note: eventIdNum is already validated as a finite number (line 78-80),
+                    // so we use it directly without fallback to match generateTicketKey pattern
+                    const ticketKey = `${ticket.ticketType}-${eventIdNum}-${i}`;
+                    const attendee = attendeeData[ticketKey] || null;
+
+                    cartItems.push({
+                        type: 'ticket',
+                        ticketType: ticket.ticketType,
+                        name: productName,
+                        description: description,
+                        price: ticket.price, // Each ticket has the unit price
+                        quantity: 1, // Individual ticket
+                        eventDate: ticket.eventDate,
+                        eventId: eventIdNum,
+                        venue: ticket.venue,
+                        // Include attendee data for inline checkout registration
+                        attendee: attendee,
+                    });
+                }
             });
         }
 
@@ -241,10 +255,10 @@ export function usePayment() {
      * customer details through their hosted checkout flows.
      *
      * @param {Object} cart - Cart state from useCart
-     * @param {Object} [customerInfo] - Optional pre-filled customer information
+     * @param {Object} [attendeeData] - Optional attendee data for inline checkout registration
      * @returns {Promise<Object>} Result with redirect URL or error
      */
-    const processCheckout = useCallback(async (cart, customerInfo = null) => {
+    const processCheckout = useCallback(async (cart, attendeeData = {}) => {
         if (!paymentMethod) {
             setError('Please select a payment method');
             return { success: false, error: 'Please select a payment method' };
@@ -258,15 +272,17 @@ export function usePayment() {
         startProcessing();
 
         try {
-            // Prepare cart items for API
-            const cartItems = prepareCartItems(cart);
+            // Prepare cart items for API, including attendee data for inline registration
+            const cartItems = prepareCartItems(cart, attendeeData);
 
             let result;
 
+            // customerInfo is null - payment processors capture customer details
+            // Attendee data is already included in cartItems for inline registration
             if (paymentMethod === PaymentMethod.STRIPE) {
-                result = await processStripeCheckout(cartItems, customerInfo);
+                result = await processStripeCheckout(cartItems, null);
             } else if (paymentMethod === PaymentMethod.PAYPAL) {
-                result = await processPayPalCheckout(cartItems, customerInfo);
+                result = await processPayPalCheckout(cartItems, null);
             } else {
                 throw new Error(`Invalid payment method: ${paymentMethod}`);
             }

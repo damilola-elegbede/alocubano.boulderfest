@@ -3,12 +3,14 @@
  * Configures mocks and utilities for frontend DOM tests
  *
  * This file runs for tests with @vitest-environment happy-dom
+ * Note: setup-jsdom.js handles jsdom-specific fixes separately
  */
 import { afterEach } from 'vitest';
 
 // Only run this setup for Happy-DOM environment tests
 // Skip if running in node environment (default)
 if (typeof document !== 'undefined' && typeof window !== 'undefined') {
+
   /**
    * Global fetch mock for CSS and static assets
    * Happy-DOM automatically tries to fetch external resources (CSS, images, etc.)
@@ -99,9 +101,13 @@ if (typeof document !== 'undefined' && typeof window !== 'undefined') {
     // Reset document title
     document.title = '';
 
-    // Clear localStorage and sessionStorage
-    localStorage.clear();
-    sessionStorage.clear();
+    // Clear localStorage and sessionStorage (with safety check for different DOM implementations)
+    if (typeof localStorage !== 'undefined' && typeof localStorage.clear === 'function') {
+      localStorage.clear();
+    }
+    if (typeof sessionStorage !== 'undefined' && typeof sessionStorage.clear === 'function') {
+      sessionStorage.clear();
+    }
   });
 
   console.log('🎨 Happy-DOM test environment ready with mocked fetch');

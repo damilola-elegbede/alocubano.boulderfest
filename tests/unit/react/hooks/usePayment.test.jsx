@@ -159,13 +159,24 @@ describe('usePayment', () => {
 
             const cartItems = result.current.prepareCartItems(cart);
 
-            expect(cartItems).toHaveLength(1);
+            // Tickets are expanded: quantity 2 becomes 2 individual items
+            // This supports inline checkout registration where each ticket has its own attendee
+            expect(cartItems).toHaveLength(2);
             expect(cartItems[0]).toMatchObject({
                 type: 'ticket',
                 ticketType: 'weekend-pass',
                 name: 'A Lo Cubano Boulder Fest 2026-Weekend Pass',
                 price: 15000,
-                quantity: 2,
+                quantity: 1, // Individual ticket
+                eventDate: '2026-05-15',
+                eventId: 1,
+            });
+            expect(cartItems[1]).toMatchObject({
+                type: 'ticket',
+                ticketType: 'weekend-pass',
+                name: 'A Lo Cubano Boulder Fest 2026-Weekend Pass',
+                price: 15000,
+                quantity: 1, // Individual ticket
                 eventDate: '2026-05-15',
                 eventId: 1,
             });

@@ -2,15 +2,17 @@
  * OrderSummary - React component for displaying cart contents
  *
  * Displays tickets and donations from the cart context with totals.
- * Read-only component for checkout flow.
- * Styled to match the floating cart visual appearance.
+ * Now includes inline attendee registration forms for each ticket.
+ * Simplified design with no container boxes - just line separators.
  *
  * @module src/components/checkout/OrderSummary
  */
 
 import React from 'react';
+import TicketAttendeeForm from './TicketAttendeeForm';
+import { generateTicketKey, EMAIL_REGEX } from '../../utils/attendee-validation';
 
-// Styles matching floating cart CSS
+// Simplified styles - no container boxes, line separators only
 const styles = {
     container: {
         background: 'var(--color-surface)',
@@ -58,6 +60,35 @@ const styles = {
     categoryHeaderDonations: {
         color: 'var(--color-red)',
     },
+    // Ticket item - no box, just line separator
+    ticketItem: {
+        padding: '16px 0',
+        borderBottom: '1px solid var(--color-border)',
+    },
+    ticketItemLast: {
+        borderBottom: 'none',
+    },
+    // Ticket header with 20px text
+    ticketHeader: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    ticketName: {
+        fontFamily: 'var(--font-display)',
+        fontSize: '20px',
+        fontWeight: 700,
+        color: 'var(--color-text-primary)',
+        textTransform: 'uppercase',
+        letterSpacing: '0.05em',
+    },
+    ticketPrice: {
+        fontFamily: 'var(--font-code)',
+        fontSize: '20px',
+        fontWeight: 700,
+        color: 'var(--color-text-primary)',
+    },
+    // Donation items
     item: {
         display: 'flex',
         justifyContent: 'space-between',
@@ -87,20 +118,6 @@ const styles = {
         fontFamily: 'var(--font-code)',
         margin: 0,
     },
-    itemActions: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px',
-        flexShrink: 0,
-    },
-    qtyDisplay: {
-        minWidth: '24px',
-        textAlign: 'center',
-        fontWeight: 700,
-        fontSize: '16px',
-        fontFamily: 'var(--font-code)',
-        color: 'var(--color-text-primary)',
-    },
     itemTotal: {
         fontWeight: 700,
         fontSize: 'var(--font-size-base)',
@@ -108,6 +125,29 @@ const styles = {
         color: 'var(--color-text-primary)',
         minWidth: '80px',
         textAlign: 'right',
+    },
+    // Status line at bottom
+    statusLine: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '16px 0',
+        marginTop: '16px',
+        borderTop: '1px solid var(--color-border)',
+    },
+    statusText: {
+        fontFamily: 'var(--font-sans)',
+        fontSize: '14px',
+        color: 'var(--color-text-secondary)',
+    },
+    statusCount: {
+        fontFamily: 'var(--font-sans)',
+        fontSize: '14px',
+        fontWeight: 600,
+        color: 'var(--color-text-primary)',
+    },
+    statusComplete: {
+        color: 'var(--color-success, #22c55e)',
     },
     footer: {
         padding: 'var(--space-lg)',
@@ -158,8 +198,29 @@ const groupTicketsByEvent = (ticketEntries) => {
  * @param {Object} props
  * @param {Object} props.cart - Cart state from useCart hook
  * @param {boolean} props.isLoading - Whether cart is still loading
+ * @param {Object} props.attendeeData - Attendee data keyed by ticket identifier
+ * @param {Object} props.attendeeErrors - Validation errors keyed by ticket identifier
+ * @param {Function} props.onAttendeeChange - Callback for attendee data changes
+ * @param {Function} props.onCopyToAll - Callback for "Copy to all" action
+ * @param {Function} props.onClearCopied - Callback for clearing copied attendee data
+ * @param {boolean} props.copyAllChecked - Whether "Copy to all" is currently checked
+ * @param {number} props.ticketCount - Total number of tickets in cart
+ * @param {boolean} props.disabled - Whether forms are disabled
+ * @param {number} props.completedCount - Number of registered tickets (optional)
  */
-export default function OrderSummary({ cart, isLoading = false }) {
+export default function OrderSummary({
+    cart,
+    isLoading = false,
+    attendeeData = {},
+    attendeeErrors = {},
+    onAttendeeChange,
+    onCopyToAll,
+    onClearCopied,
+    copyAllChecked = false,
+    ticketCount = 0,
+    disabled = false,
+    completedCount,
+}) {
     // Loading state
     if (isLoading) {
         return (
@@ -213,15 +274,40 @@ export default function OrderSummary({ cart, isLoading = false }) {
         return (priceInCents / 100).toFixed(2);
     };
 
-    const calculateTicketTotal = (priceInCents, quantity) => {
-        return ((priceInCents || 0) * (quantity || 1) / 100).toFixed(2);
-    };
-
     // Get grand total from cart totals or calculate
     // Use nullish coalescing (??) to preserve valid zero values for free tickets
     // Grand total is in cents for tickets, need to convert to dollars
     const grandTotalCents = totals.grandTotal ?? totals.total ?? 0;
     const grandTotalDollars = grandTotalCents / 100;
+
+    // Calculate completed count if not provided
+    // Only count attendees for tickets that are currently in the cart (not removed tickets)
+    let calculatedCompletedCount = 0;
+    if (completedCount === undefined) {
+        // Build set of valid ticket keys from current cart
+        const validTicketKeys = new Set();
+        ticketEntries.forEach(([ticketType, item]) => {
+            const qty = item.quantity || 1;
+            for (let i = 0; i < qty; i++) {
+                const itemWithType = { ...item, ticketType: item.ticketType || ticketType };
+                validTicketKeys.add(generateTicketKey(itemWithType, i));
+            }
+        });
+
+        // Count only attendees whose tickets are still in the cart
+        Object.entries(attendeeData).forEach(([ticketKey, attendee]) => {
+            if (!validTicketKeys.has(ticketKey)) return; // Skip removed tickets
+            const hasValidEmail = attendee.email && EMAIL_REGEX.test(attendee.email.trim());
+            if (attendee.firstName && attendee.lastName && hasValidEmail) {
+                calculatedCompletedCount++;
+            }
+        });
+    } else {
+        calculatedCompletedCount = completedCount;
+    }
+
+    const hasTickets = ticketEntries.length > 0;
+    const allComplete = hasTickets && calculatedCompletedCount === ticketCount;
 
     return (
         <div className="order-summary" data-testid="order-summary" style={styles.container}>
@@ -232,20 +318,28 @@ export default function OrderSummary({ cart, isLoading = false }) {
 
             {/* Content */}
             <div style={styles.content}>
-                {/* Tickets grouped by Event - each ticket listed separately for registration */}
+                {/* Tickets grouped by Event - each ticket listed separately with attendee form */}
                 {ticketEntries.length > 0 && (() => {
                     const eventGroups = groupTicketsByEvent(ticketEntries);
+                    let globalTicketIndex = 0; // Track overall ticket index for "Copy to all"
+
                     return Object.entries(eventGroups).map(([eventId, group]) => {
                         // Expand tickets: create individual rows for each quantity
                         const expandedTickets = [];
                         group.tickets.forEach(([ticketType, item]) => {
                             const qty = item.quantity || 1;
                             for (let i = 0; i < qty; i++) {
+                                // Ensure item has ticketType for key generation
+                                // (ticketType comes from the cart key, may not be on item itself)
+                                const itemWithType = { ...item, ticketType: item.ticketType || ticketType };
+                                // Generate consistent ticket key using the utility function
+                                const ticketKey = generateTicketKey(itemWithType, i);
                                 expandedTickets.push({
                                     ticketType,
-                                    item,
+                                    item: itemWithType,
                                     index: i,
-                                    key: `${ticketType}-${i}`,
+                                    key: ticketKey,
+                                    globalIndex: globalTicketIndex++,
                                 });
                             }
                         });
@@ -255,29 +349,41 @@ export default function OrderSummary({ cart, isLoading = false }) {
                                 <div style={{ ...styles.categoryHeader, ...styles.categoryHeaderTickets }}>
                                     {group.eventName}
                                 </div>
+                                {/* Tickets with line separators only - no boxes */}
                                 {expandedTickets.map((ticket, idx) => (
                                     <div
                                         key={ticket.key}
-                                        className="order-item"
                                         data-testid={`order-item-${ticket.key}`}
                                         style={{
-                                            ...styles.item,
-                                            ...(idx === expandedTickets.length - 1 ? styles.itemLast : {}),
+                                            ...styles.ticketItem,
+                                            ...(idx === expandedTickets.length - 1 ? styles.ticketItemLast : {}),
                                         }}
                                     >
-                                        <div style={styles.itemInfo}>
-                                            <h4 style={styles.itemName}>
+                                        {/* Ticket header - 20px text */}
+                                        <div style={styles.ticketHeader}>
+                                            <span style={styles.ticketName}>
                                                 {ticket.item.name || ticket.ticketType}
-                                            </h4>
-                                            <p style={styles.itemPrice}>
-                                                Ticket {ticket.index + 1} of {ticket.item.quantity}
-                                            </p>
-                                        </div>
-                                        <div style={styles.itemActions}>
-                                            <span style={styles.itemTotal}>
+                                            </span>
+                                            <span style={styles.ticketPrice}>
                                                 ${formatPrice(ticket.item.price)}
                                             </span>
                                         </div>
+                                        {/* Attendee form */}
+                                        {onAttendeeChange && (
+                                            <TicketAttendeeForm
+                                                ticketKey={ticket.key}
+                                                ticketIndex={ticket.globalIndex + 1}
+                                                ticketName={null}
+                                                attendee={attendeeData[ticket.key] || {}}
+                                                errors={attendeeErrors[ticket.key] || {}}
+                                                onChange={onAttendeeChange}
+                                                disabled={disabled}
+                                                showCopyAll={ticket.globalIndex === 0 && ticketCount > 1}
+                                                onCopyToAll={onCopyToAll}
+                                                onClearCopied={onClearCopied}
+                                                copyAllChecked={copyAllChecked}
+                                            />
+                                        )}
                                     </div>
                                 ))}
                             </div>
@@ -309,13 +415,26 @@ export default function OrderSummary({ cart, isLoading = false }) {
                                         One-time contribution
                                     </p>
                                 </div>
-                                <div style={styles.itemActions}>
+                                <div>
                                     <span style={styles.itemTotal}>
                                         ${(donation.amount || 0).toFixed(2)}
                                     </span>
                                 </div>
                             </div>
                         ))}
+                    </div>
+                )}
+
+                {/* Status Line - at bottom of content, before total */}
+                {hasTickets && ticketCount > 0 && (
+                    <div style={styles.statusLine}>
+                        <span style={styles.statusText}>Attendee Registration</span>
+                        <span style={{
+                            ...styles.statusCount,
+                            ...(allComplete ? styles.statusComplete : {}),
+                        }}>
+                            {calculatedCompletedCount} of {ticketCount} completed
+                        </span>
                     </div>
                 )}
             </div>

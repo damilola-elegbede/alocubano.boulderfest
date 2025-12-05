@@ -13,9 +13,15 @@
  * Pattern: Coexists with setup-unit.js and setup-happy-dom.js in unified config
  */
 
+// IMPORTANT: Import expect from vitest FIRST and make it global
+// This is required because @testing-library/jest-dom tries to call expect.extend()
+import { expect, afterEach } from 'vitest';
+
+// Make expect globally available for jest-dom
+globalThis.expect = expect;
+
 import '@testing-library/jest-dom';
 import { cleanup } from '@testing-library/react';
-import { afterEach } from 'vitest';
 
 // Automatically cleanup after each test
 // This ensures that each test has a clean DOM state

@@ -61,15 +61,19 @@ async function initializeGlobalCart() {
         // Set up global debugging
         setupGlobalDebugging(cartManager);
 
+        // Set global cart references BEFORE emitting event (prevents race condition)
+        if (typeof window !== 'undefined') {
+            window.globalCartManager = cartManager;
+            window.cartManager = cartManager; // Also set as cartManager for E2E tests
+        }
+
         // Emit initialization event for components that need to sync
         document.dispatchEvent(new CustomEvent('cart:initialized', {
             detail: cartManager.getState()
         }));
 
-        // Set global cart debug for easy access
+        // E2E debug logging
         if (typeof window !== 'undefined') {
-            window.globalCartManager = cartManager;
-            window.cartManager = cartManager; // Also set as cartManager for E2E tests
 
             if (isE2ETest) {
                 console.log('✅ Global Cart Initialization Complete!', {

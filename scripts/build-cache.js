@@ -40,7 +40,8 @@ const TRACKED_DIRS = [
   'docs',
   'js',
   'css',
-  'config'
+  'config',
+  'src'
 ];
 
 /**

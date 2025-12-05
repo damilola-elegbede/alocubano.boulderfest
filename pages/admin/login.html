@@ -375,6 +375,11 @@
 
     <!-- Theme Manager for Dark Mode -->
     <script type="module" src="/js/theme-manager.js"></script>
+  
+    <!-- INJECTED VITE ASSETS -->
+
+    <script type="module" src="/dist/assets/main-BfoDxb1i.js"></script>
+    <!-- END INJECTED VITE ASSETS -->
   </head>
   <body>
     <div class="login-container">
@@ -491,7 +496,7 @@
             const urlParams = new URLSearchParams(window.location.search);
             const returnUrl = urlParams.get('returnUrl');
             const safeReturnUrl = sanitizeReturnUrl(returnUrl);
-            window.location.href = safeReturnUrl || '/pages/admin/dashboard.html';
+            window.location.href = safeReturnUrl || '/admin/dashboard';
           }
         } catch (error) {
           // Not authenticated, stay on login page
@@ -527,7 +532,7 @@
             const urlParams = new URLSearchParams(window.location.search);
             const returnUrl = urlParams.get('returnUrl');
             const safeReturnUrl = sanitizeReturnUrl(returnUrl);
-            window.location.href = safeReturnUrl || '/pages/admin/dashboard.html';
+            window.location.href = safeReturnUrl || '/admin/dashboard';
           } else {
             // Show error - use textContent for safe display
             errorDiv.textContent = data.error;

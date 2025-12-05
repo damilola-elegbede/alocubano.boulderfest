@@ -205,8 +205,6 @@ describe('CartContext', () => {
 
     describe('Cleanup', () => {
         it('should cleanup event listeners on unmount', () => {
-            const windowAddSpy = vi.spyOn(window, 'addEventListener');
-            const windowRemoveSpy = vi.spyOn(window, 'removeEventListener');
             const documentAddSpy = vi.spyOn(document, 'addEventListener');
             const documentRemoveSpy = vi.spyOn(document, 'removeEventListener');
 
@@ -218,14 +216,10 @@ describe('CartContext', () => {
 
             unmount();
 
-            // Verify window listener cleanup (cart:initialized only)
-            expect(windowRemoveSpy).toHaveBeenCalledWith('cart:initialized', expect.any(Function));
-
-            // Verify document listener cleanup (cart:updated)
+            // Verify document listener cleanup (both events now on document)
+            expect(documentRemoveSpy).toHaveBeenCalledWith('cart:initialized', expect.any(Function));
             expect(documentRemoveSpy).toHaveBeenCalledWith('cart:updated', expect.any(Function));
 
-            windowAddSpy.mockRestore();
-            windowRemoveSpy.mockRestore();
             documentAddSpy.mockRestore();
             documentRemoveSpy.mockRestore();
         });

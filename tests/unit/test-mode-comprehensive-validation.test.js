@@ -149,7 +149,7 @@ describe('Test Mode Comprehensive Validation', () => {
           testMode: true,
           data: {
             amount: 50,
-            name: 'TEST - Festival Support',
+            name: 'Festival Support',
             isTestItem: true,
             addedVia: 'admin_test_api',
             adminUser: 'test-admin'
@@ -159,7 +159,8 @@ describe('Test Mode Comprehensive Validation', () => {
         expect(mockDonationResponse.success).toBe(true);
         expect(mockDonationResponse.data.amount).toBe(50);
         expect(mockDonationResponse.data.isTestItem).toBe(true);
-        expect(mockDonationResponse.data.name).toContain('TEST');
+        // Name should not have TEST prefix - test mode is determined by event/ticket names
+        expect(mockDonationResponse.data.name).toBe('Festival Support');
 
         console.log('✅ Test donation structure validation passed');
       });
@@ -195,8 +196,8 @@ describe('Test Mode Comprehensive Validation', () => {
       });
     });
 
-    describe('Email Generation with [TEST] Prefixes', () => {
-      it('should generate test email with proper prefixes', () => {
+    describe('Email Generation for Test Transactions', () => {
+      it('should generate test email without [TEST] prefix (test mode determined by event/ticket names)', () => {
         const testEmailData = {
           to: 'test@example.com',
           subject: 'Festival Ticket Confirmation',
@@ -210,20 +211,17 @@ describe('Test Mode Comprehensive Validation', () => {
           }
         };
 
-        // Validate test email structure
-        const expectedSubject = '[TEST] Festival Ticket Confirmation';
+        // Validate test email structure - no [TEST] prefix added to subject
+        // Test mode is determined by event names being labeled as "test" events
         expect(testEmailData.isTestMode).toBe(true);
         expect(testEmailData.templateData.transactionId).toContain('test_');
         expect(testEmailData.templateData.tickets[0].isTestItem).toBe(true);
 
-        // Simulate email subject transformation
-        const finalSubject = testEmailData.isTestMode
-          ? `[TEST] ${testEmailData.subject}`
-          : testEmailData.subject;
+        // Email subject should NOT have [TEST] prefix - test mode is visible via event/ticket names
+        const finalSubject = testEmailData.subject;
+        expect(finalSubject).toBe('Festival Ticket Confirmation');
 
-        expect(finalSubject).toBe(expectedSubject);
-
-        console.log('✅ Test email prefix validation passed');
+        console.log('✅ Test email structure validation passed (no [TEST] prefix)');
       });
     });
 
@@ -251,14 +249,15 @@ describe('Test Mode Comprehensive Validation', () => {
       });
     });
 
-    describe('Wallet Pass Generation with Test Indicators', () => {
-      it('should generate Apple Wallet pass with test indicators', () => {
+    describe('Wallet Pass Generation for Test Transactions', () => {
+      it('should generate Apple Wallet pass (test mode determined by event/ticket names)', () => {
         const testWalletData = {
           ticketId: 'test_ticket_123',
           isTestMode: true,
           passData: {
-            description: '[TEST] A Lo Cubano Boulder Fest',
-            organizationName: 'A Lo Cubano Boulder Fest (TEST)',
+            // No [TEST] prefix - test mode is visible via the event name itself
+            description: 'A Lo Cubano Boulder Fest',
+            organizationName: 'A Lo Cubano Boulder Fest',
             serialNumber: 'test_ticket_123',
             backgroundColor: '#2c3e50',
             foregroundColor: '#ffffff',
@@ -266,14 +265,15 @@ describe('Test Mode Comprehensive Validation', () => {
           }
         };
 
-        // Validate wallet pass test indicators
+        // Validate wallet pass structure - no [TEST] markers needed
+        // Test mode is determined by event/ticket names being labeled as "test"
         expect(testWalletData.isTestMode).toBe(true);
-        expect(testWalletData.passData.description).toContain('[TEST]');
-        expect(testWalletData.passData.organizationName).toContain('(TEST)');
         expect(testWalletData.passData.serialNumber).toContain('test_');
         expect(testWalletData.passData.testMode).toBe(true);
+        // Description should NOT have [TEST] prefix
+        expect(testWalletData.passData.description).toBe('A Lo Cubano Boulder Fest');
 
-        console.log('✅ Test wallet pass structure validated');
+        console.log('✅ Test wallet pass structure validated (no [TEST] prefix)');
       });
     });
   });
