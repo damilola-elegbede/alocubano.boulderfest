@@ -75,6 +75,11 @@ const styles = {
         cursor: 'not-allowed',
         pointerEvents: 'none',
     },
+    // Unselected state when another method is selected - grey overlay
+    buttonUnselected: {
+        filter: 'grayscale(70%)',
+        opacity: 0.6,
+    },
     // Checkmark indicator for selected state
     checkmark: {
         position: 'absolute',
@@ -164,12 +169,17 @@ export default function PaymentMethodSelector({ disabled = false, onChange }) {
     const isSelected = (method) => paymentMethod === method;
     const isHovered = (method) => hoveredMethod === method && !isSelected(method);
 
-    const getButtonStyle = (method) => ({
-        ...styles.button,
-        ...(isHovered(method) ? styles.buttonHover : {}),
-        ...(isSelected(method) ? styles.buttonSelected : {}),
-        ...(isDisabled ? styles.buttonDisabled : {}),
-    });
+    const getButtonStyle = (method) => {
+        // When one method is selected, grey out the other
+        const otherSelected = paymentMethod !== null && !isSelected(method);
+        return {
+            ...styles.button,
+            ...(otherSelected ? styles.buttonUnselected : {}),
+            ...(isHovered(method) ? styles.buttonHover : {}),
+            ...(isSelected(method) ? styles.buttonSelected : {}),
+            ...(isDisabled ? styles.buttonDisabled : {}),
+        };
+    };
 
     // Checkmark SVG for selected state
     const CheckmarkIcon = () => (

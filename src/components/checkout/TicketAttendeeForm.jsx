@@ -7,14 +7,15 @@
  * Features:
  * - Mobile-friendly with 44px touch targets
  * - Inline validation errors
- * - "Copy to all tickets" option for first ticket
+ * - "Copy to all tickets" option for first ticket (visible even after registration)
+ * - Edit functionality to modify registered attendee info
  * - Accessible with proper labels and ARIA attributes
  * - Yellow "Register Ticket" button for unregistered, green "Registered" for complete
  *
  * @module src/components/checkout/TicketAttendeeForm
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 
 // Styles for mobile-friendly attendee form
 const styles = {
@@ -39,9 +40,9 @@ const styles = {
     cursor: 'default',
     marginBottom: '12px',
   },
-  // Green "Registered" status display
+  // Green "Registered" status display - now a flex container for edit button
   registeredStatus: {
-    display: 'inline-flex',
+    display: 'flex',
     alignItems: 'center',
     gap: '6px',
     color: 'var(--color-success, #22c55e)',
@@ -51,6 +52,37 @@ const styles = {
     textTransform: 'uppercase',
     letterSpacing: '0.05em',
     marginBottom: '8px',
+  },
+  // Edit button - appears next to "Registered" status
+  editButton: {
+    marginLeft: 'auto',
+    background: 'transparent',
+    border: 'none',
+    color: 'var(--color-blue, #5b6bb5)',
+    fontSize: '13px',
+    fontWeight: 600,
+    cursor: 'pointer',
+    textDecoration: 'underline',
+    textTransform: 'none',
+    padding: '0',
+  },
+  // Done button - appears when editing
+  doneButton: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    background: 'var(--color-success, #22c55e)',
+    color: '#fff',
+    padding: '6px 14px',
+    borderRadius: '4px',
+    fontFamily: 'var(--font-sans)',
+    fontSize: '13px',
+    fontWeight: 600,
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+    border: 'none',
+    cursor: 'pointer',
+    marginTop: '8px',
   },
   // Form row for side-by-side fields
   formRow: {
@@ -155,6 +187,9 @@ export function TicketAttendeeForm({
   showCopyAll = false,
   onCopyToAll,
 }) {
+  // Edit mode state - allows editing after form is complete
+  const [isEditing, setIsEditing] = useState(false);
+
   // Email validation regex (same as attendee-validation.js)
   const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -163,6 +198,9 @@ export function TicketAttendeeForm({
   const isComplete = attendee.firstName && attendee.lastName &&
                      hasValidEmail && !errors.firstName &&
                      !errors.lastName && !errors.email;
+
+  // Show form when incomplete OR when editing
+  const showForm = !isComplete || isEditing;
 
   const handleChange = (field) => (e) => {
     onChange(ticketKey, field, e.target.value);
@@ -174,6 +212,17 @@ export function TicketAttendeeForm({
     }
   };
 
+  const handleEditClick = () => {
+    setIsEditing(true);
+  };
+
+  const handleDoneClick = () => {
+    // Only close edit mode if form is still complete
+    if (isComplete) {
+      setIsEditing(false);
+    }
+  };
+
   const getInputStyle = (hasError) => ({
     ...styles.input,
     ...(hasError ? styles.inputError : {}),
@@ -182,26 +231,59 @@ export function TicketAttendeeForm({
 
   return (
     <div style={styles.container} data-testid={`attendee-form-${ticketKey}`}>
-      {/* Show "Register Ticket" button or "Registered" status */}
-      {isComplete ? (
+      {/* Registered state (not editing) - show status, name/email, and optionally copy to all */}
+      {isComplete && !isEditing ? (
         <>
           <div style={styles.registeredStatus}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
             </svg>
             Registered
+            <button
+              type="button"
+              onClick={handleEditClick}
+              style={styles.editButton}
+              disabled={disabled}
+              aria-label="Edit attendee information"
+            >
+              Edit
+            </button>
           </div>
           <div style={styles.attendeeDisplay}>
             <span style={styles.attendeeName}>{attendee.firstName} {attendee.lastName}</span>
             <br />
             <span style={styles.attendeeEmail}>{attendee.email}</span>
           </div>
+
+          {/* Copy to All - visible even after registration for first ticket */}
+          {showCopyAll && (
+            <label style={styles.copyAllContainer}>
+              <input
+                id={`${ticketKey}-copyAll`}
+                type="checkbox"
+                onChange={handleCopyToAll}
+                disabled={disabled}
+                style={styles.checkbox}
+              />
+              <span style={styles.checkboxLabel}>Use this info for all tickets</span>
+            </label>
+          )}
         </>
       ) : (
         <>
-          <div style={styles.registerButton}>
-            Register Ticket
-          </div>
+          {/* Incomplete or editing state - show form */}
+          {isEditing ? (
+            <div style={styles.registeredStatus}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+              </svg>
+              Editing...
+            </div>
+          ) : (
+            <div style={styles.registerButton}>
+              Register Ticket
+            </div>
+          )}
 
           {/* Form: First Name + Last Name side by side */}
           <div style={styles.formRow}>
@@ -269,7 +351,8 @@ export function TicketAttendeeForm({
             )}
           </div>
 
-          {showCopyAll && (
+          {/* Copy to All - only shows for first ticket when form is visible */}
+          {showCopyAll && !isEditing && (
             <label style={styles.copyAllContainer}>
               <input
                 id={`${ticketKey}-copyAll`}
@@ -280,6 +363,18 @@ export function TicketAttendeeForm({
               />
               <span style={styles.checkboxLabel}>Use this info for all tickets</span>
             </label>
+          )}
+
+          {/* Done button when editing - only show if form is complete */}
+          {isEditing && isComplete && (
+            <button
+              type="button"
+              onClick={handleDoneClick}
+              style={styles.doneButton}
+              disabled={disabled}
+            >
+              Done
+            </button>
           )}
         </>
       )}
