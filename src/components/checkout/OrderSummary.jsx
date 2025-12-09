@@ -417,7 +417,7 @@ export default function OrderSummary({
                                 </div>
                                 <div>
                                     <span style={styles.itemTotal}>
-                                        ${(donation.amount || 0).toFixed(2)}
+                                        ${((donation.amount || 0) / 100).toFixed(2)}
                                     </span>
                                 </div>
                             </div>

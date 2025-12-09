@@ -305,9 +305,9 @@ describe('Cart Test Items Management', () => {
       const state = cartManager.getState();
       const totals = state.totals;
 
-      expect(totals.tickets).toBe(200); // (50*2) + (100*1)
-      expect(totals.donations).toBe(100); // 25 + 75
-      expect(totals.total).toBe(300);
+      expect(totals.tickets).toBe(200); // (50*2) + (100*1) in cents
+      expect(totals.donations).toBe(10000); // (25 + 75) * 100 in cents
+      expect(totals.total).toBe(10200); // 200 + 10000 in cents
       expect(totals.itemCount).toBe(3); // 2 + 1 tickets
       expect(totals.donationCount).toBe(2);
     });

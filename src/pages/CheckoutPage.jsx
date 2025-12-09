@@ -181,7 +181,7 @@ function CheckoutPageContent() {
 
     // Update button state based on cart, payment method, and attendee validation
     useEffect(() => {
-        const hasCartItems = cart?.totals?.itemCount > 0;
+        const hasCartItems = (cart?.totals?.itemCount || 0) + (cart?.totals?.donationCount || 0) > 0;
         const hasPaymentMethod = paymentMethod !== null;
 
         // Require attendee info for tickets (not for donations-only)
@@ -268,7 +268,7 @@ function CheckoutPageContent() {
 
     // Handle checkout button click
     const handleProceedToPayment = async () => {
-        if (!cart?.totals?.itemCount || !paymentMethod) {
+        if (isCartEmpty || !paymentMethod) {
             return;
         }
 
@@ -310,8 +310,8 @@ function CheckoutPageContent() {
         clearError();
     };
 
-    // Check if cart is empty
-    const isCartEmpty = !cart || (cart.totals?.itemCount || 0) === 0;
+    // Check if cart is empty (include both tickets and donations)
+    const isCartEmpty = !cart || ((cart.totals?.itemCount || 0) + (cart.totals?.donationCount || 0)) === 0;
 
     // Check if form is complete (for button state message)
     const getButtonHelpText = () => {

@@ -9,7 +9,7 @@ function HomePageContent() {
                 <div className="hero-image-container">
                     <img
                         id="hero-splash-image"
-                        src=""
+                        src="/images/hero/home.jpg"
                         alt="Dynamic festival photo showcasing A Lo Cubano Boulder Fest celebration with dancers, musicians, and Cuban culture"
                         className="hero-splash-img"
                         style={{ objectPosition: 'top center' }}
