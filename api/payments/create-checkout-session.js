@@ -263,10 +263,8 @@ export default async function handler(req, res) {
             name: sanitizeProductName(item.name),  // Sanitized: "Event-Ticket" (max 250 chars)
             description: sanitizeProductDescription(item.description, 'stripe')  // Sanitized with database description + date (max 500 chars)
           },
-          // Donations are stored in dollars, tickets in cents
-          unit_amount: item.type === 'donation'
-            ? Math.round(item.price * 100)  // Convert dollars to cents
-            : Math.round(item.price)         // Already in cents
+          // Both tickets and donations are stored in cents
+          unit_amount: Math.round(item.price)
         };
 
         // Add metadata for different item types

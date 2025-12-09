@@ -223,16 +223,16 @@ class DonationSelection {
         colors[Math.floor(Math.random() * colors.length)];
             confetti.style.left = Math.random() * 120 + 'vw'; // Spread wider than screen
             confetti.style.animationDelay = Math.random() * 2 + 's'; // Staggered for performance
-            confetti.style.animationDuration = Math.random() * 2 + 3 + 's'; // Longer duration
+            confetti.style.animationDuration = Math.random() * 2 + 8 + 's'; // 8-10s duration
 
             document.body.appendChild(confetti);
 
-            // Remove confetti piece after animation
+            // Remove confetti piece after animation completes
             setTimeout(() => {
                 if (confetti.parentNode) {
                     confetti.parentNode.removeChild(confetti);
                 }
-            }, 6000);
+            }, 12000);
         }
     }
 

@@ -2078,7 +2078,7 @@
     opacity: 1;
   }
   100% {
-    transform: translateY(100vh) rotateZ(360deg);
+    transform: translateY(150vh) rotateZ(360deg);
     opacity: 0;
   }
 }
@@ -2092,7 +2092,7 @@
     opacity: 1;
   }
   100% {
-    transform: translateY(100vh) rotateZ(360deg) rotateY(720deg);
+    transform: translateY(150vh) rotateZ(360deg) rotateY(720deg);
     opacity: 0;
   }
 }
