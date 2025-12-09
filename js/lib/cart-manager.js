@@ -425,8 +425,8 @@ export class CartManager extends EventTarget {
         // Determine if this should be a test item (global testMode or explicit isTestItem)
         const shouldBeTestItem = this.testMode || isTestItem;
 
-        // Store donation amount in dollars (same as ticket prices)
-        const donationAmount = Math.round(amount * 100) / 100; // Round to 2 decimal places
+        // Store donation amount in cents (same as ticket prices)
+        const donationAmount = Math.round(amount * 100); // Convert dollars to cents
 
         // Create donation ID with test prefix if test item
         const idPrefix = shouldBeTestItem ? 'test_donation_' : 'donation_';

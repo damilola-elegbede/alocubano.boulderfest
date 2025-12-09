@@ -862,7 +862,7 @@ export function createDonationItemElement(donation) {
 
     const price = document.createElement('p');
     price.className = 'cart-item-price';
-    price.textContent = `$${donation.amount.toFixed(2)}`;
+    price.textContent = `$${(donation.amount / 100).toFixed(2)}`; // Convert cents to dollars
     info.appendChild(price);
 
     const removeBtn = document.createElement('button');
