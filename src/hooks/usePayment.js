@@ -264,7 +264,7 @@ export function usePayment() {
             return { success: false, error: 'Please select a payment method' };
         }
 
-        if (!cart || (cart.totals?.itemCount || 0) === 0) {
+        if (!cart || ((cart.totals?.itemCount || 0) + (cart.totals?.donationCount || 0)) === 0) {
             setError('Your cart is empty');
             return { success: false, error: 'Your cart is empty' };
         }

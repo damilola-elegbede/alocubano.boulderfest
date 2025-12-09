@@ -268,7 +268,7 @@ function CheckoutPageContent() {
 
     // Handle checkout button click
     const handleProceedToPayment = async () => {
-        if (!cart?.totals?.itemCount || !paymentMethod) {
+        if (isCartEmpty || !paymentMethod) {
             return;
         }
 
