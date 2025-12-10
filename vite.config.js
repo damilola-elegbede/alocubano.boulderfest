@@ -3,14 +3,13 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 
 export default defineConfig({
-    base: "/dist/",
+    // Base path for assets - must match the deployment location
+    base: '/dist/',
     define: {
         // Inject debug flag at build time (default: false)
         '__CONSOLE_LOG_DEBUG_ENABLED__': JSON.stringify(process.env.CONSOLE_LOG_DEBUG_ENABLED === '1')
     },
     plugins: [react()],
-    // Base path for assets - must match the deployment location
-    base: '/dist/',
     build: {
         // Output to a distinct directory to avoid cluttering root
         outDir: 'dist',

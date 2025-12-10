@@ -2039,6 +2039,9 @@
         if (pathname.includes('weekender-2026-09')) {
             return 'weekender-2026-09';
         }
+        if (pathname.includes('weekender-2025-11')) {
+            return 'weekender-2025-11';
+        }
         if (
             pathname.includes('boulder-fest-2025') ||
       pathname.includes('gallery-2025')

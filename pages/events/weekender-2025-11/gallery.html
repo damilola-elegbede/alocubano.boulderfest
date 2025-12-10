@@ -334,32 +334,64 @@
 
       <!-- Gallery Header -->
       <section class="section-typographic" style="padding: var(--space-xl) 0">
-        <div class="container">
-          <div class="text-composition">
-            <div class="text-block-large">
-              <h1 class="hero__title text-mask">
-                Event Gallery
-              </h1>
-              <h2 class="hero__subtitle" style="text-align: center;">
-                Memories and moments from A Lo Cubano Weekender November 2025
-              </h2>
-            </div>
-          </div>
+        <div class="container" style="text-align: center;">
+          <h2 class="hero__subtitle">
+            Memories and moments from A Lo Cubano Weekender November 2025
+          </h2>
         </div>
       </section>
 
       <!-- Gallery Content -->
-      <section class="section-typographic" style="padding: var(--space-xl) 0">
+      <section
+        class="section-typographic gallery-detail-section"
+        id="traditional-gallery"
+        data-gallery-event="weekender-2025-11"
+        data-gallery-year="2025"
+        style="padding: var(--space-xl) 0"
+      >
         <div class="container">
-
-          <!-- Coming Soon Message -->
-          <div style="text-align: center; padding: var(--space-3xl) var(--space-xl);">
-            <h3 style="font-family: var(--font-display); font-size: var(--font-size-2xl); margin: 0 0 var(--space-lg); color: var(--color-red);">Coming Soon</h3>
-            <p style="color: var(--color-gray-600); line-height: 1.6; font-size: var(--font-size-lg);">
-              Photos of the event will be loaded here.
-            </p>
+          <!-- Loading State -->
+          <div class="gallery-loading" id="gallery-detail-loading">
+            <div class="gallery-loading-spinner"></div>
+            <p class="font-mono">Loading event memories...</p>
           </div>
 
+          <!-- Gallery Content (populated by gallery-detail.js) -->
+          <div id="gallery-detail-content" style="display: none;">
+            <!-- Workshops section - will be populated -->
+            <div class="gallery-section" id="workshops-section" style="display: none;">
+              <h2 class="text-display gallery-category-title">WORKSHOPS</h2>
+              <div class="gallery-grid gallery-detail-grid" id="workshops-gallery"></div>
+            </div>
+
+            <!-- Socials section - empty for this event but included for consistency -->
+            <div class="gallery-section" id="socials-section" style="display: none;">
+              <h2 class="text-display gallery-category-title">SOCIALS</h2>
+              <div class="gallery-grid gallery-detail-grid" id="socials-gallery"></div>
+            </div>
+
+            <!-- Performances section -->
+            <div class="gallery-section" id="performances-section" style="display: none;">
+              <h2 class="text-display gallery-category-title">PERFORMANCES</h2>
+              <div class="gallery-grid gallery-detail-grid" id="performances-gallery"></div>
+            </div>
+
+            <!-- Other section -->
+            <div class="gallery-section" id="other-section" style="display: none;">
+              <h2 class="text-display gallery-category-title">OTHER</h2>
+              <div class="gallery-grid gallery-detail-grid" id="other-gallery"></div>
+            </div>
+          </div>
+
+          <!-- Static fallback for when no images are available yet -->
+          <div class="gallery-grid-static" id="gallery-detail-static" style="display: none;">
+            <div class="gallery-static-content">
+              <h2 class="text-display gallery-static-title">NOVEMBER 2025 GALLERY</h2>
+              <p class="font-serif gallery-static-description">
+                Photos from this event will be available soon.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -372,6 +404,14 @@
     <script defer src="/js/navigation.js"></script>
     <script src="/js/typography.js"></script>
     <script type="module" src="/js/global-cart.js"></script>
+
+    <!-- Performance Optimization Modules -->
+    <script src="/js/prefetch-manager.js"></script>
+    <script src="/js/progressive-loader.js"></script>
+    <script src="/js/cache-warmer.js"></script>
+
+    <!-- Gallery Detail Script -->
+    <script defer src="/js/gallery-detail.js"></script>
 
     <!-- Theme Management -->
     <script type="module">
