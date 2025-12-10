@@ -367,6 +367,7 @@ export async function testRequest(method, path, data = null, headers = {}) {
     '/api/volunteer/submit': 'api/volunteer/submit',
     '/api/payments/create-checkout-session': 'api/payments/create-checkout-session',
     '/api/payments/stripe-webhook': 'api/payments/stripe-webhook',
+    '/api/tickets': 'api/tickets/index',
     '/api/tickets/validate': 'api/tickets/validate',
     '/api/tickets/register': 'api/tickets/register',
     '/api/registration': 'api/registration/index',
