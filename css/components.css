@@ -2112,7 +2112,7 @@
   }
 }
 
-/* Confetti Animation - Realistic Drop with Flutter */
+/* Confetti Animation - Smooth Drop */
 .confetti-piece {
   --confetti-drift: 0px;
   position: fixed;
@@ -2121,128 +2121,47 @@
   background: #ff0080;
   top: -20px;
   z-index: 10002; /* Above overlay (10000) and modal (10001) */
-  animation: confettiDrop1 ease-in-out forwards;
+  animation: confettiDrop linear forwards;
   pointer-events: none;
-  transform-style: preserve-3d;
-  backface-visibility: visible;
+  will-change: transform;
 }
 
 /* Shape variations */
 .confetti-piece:nth-child(odd) {
   width: 8px;
   height: 12px;
-  animation-name: confettiDrop2;
 }
 
 .confetti-piece:nth-child(3n) {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  animation-name: confettiDrop3;
 }
 
 .confetti-piece:nth-child(4n) {
   width: 14px;
   height: 6px;
-  animation-name: confettiDrop1;
 }
 
 .confetti-piece:nth-child(5n) {
   width: 12px;
   height: 5px;
   border-radius: 2px;
-  animation-name: confettiDrop2;
 }
 
 .confetti-piece:nth-child(6n) {
   width: 8px;
   height: 8px;
-  animation-name: confettiDrop3;
 }
 
-/* Animation variant 1 - Sway right first */
-@keyframes confettiDrop1 {
+/* Smooth falling animation - browser interpolates between keyframes */
+@keyframes confettiDrop {
   0% {
-    transform: translateY(0) translateX(0) rotateX(0) rotateY(0) rotateZ(0);
+    transform: translateY(0) translateX(0) rotate(0deg);
     opacity: 1;
-  }
-  15% {
-    transform: translateY(22vh) translateX(calc(var(--confetti-drift) * 0.5)) rotateX(60deg) rotateY(90deg) rotateZ(45deg);
-  }
-  30% {
-    transform: translateY(45vh) translateX(calc(var(--confetti-drift) * -0.3)) rotateX(120deg) rotateY(180deg) rotateZ(90deg);
-  }
-  45% {
-    transform: translateY(67vh) translateX(calc(var(--confetti-drift) * 0.7)) rotateX(200deg) rotateY(270deg) rotateZ(150deg);
-  }
-  60% {
-    transform: translateY(90vh) translateX(calc(var(--confetti-drift) * -0.4)) rotateX(280deg) rotateY(360deg) rotateZ(220deg);
-    opacity: 1;
-  }
-  75% {
-    transform: translateY(112vh) translateX(calc(var(--confetti-drift) * 0.6)) rotateX(320deg) rotateY(450deg) rotateZ(280deg);
   }
   100% {
-    transform: translateY(150vh) translateX(calc(var(--confetti-drift) * -0.2)) rotateX(360deg) rotateY(540deg) rotateZ(360deg);
-    opacity: 0;
-  }
-}
-
-/* Animation variant 2 - Sway left first */
-@keyframes confettiDrop2 {
-  0% {
-    transform: translateY(0) translateX(0) rotateX(0) rotateY(0) rotateZ(0);
-    opacity: 1;
-  }
-  12% {
-    transform: translateY(18vh) translateX(calc(var(--confetti-drift) * -0.6)) rotateX(45deg) rotateY(120deg) rotateZ(-30deg);
-  }
-  28% {
-    transform: translateY(42vh) translateX(calc(var(--confetti-drift) * 0.4)) rotateX(90deg) rotateY(240deg) rotateZ(60deg);
-  }
-  42% {
-    transform: translateY(63vh) translateX(calc(var(--confetti-drift) * -0.8)) rotateX(180deg) rotateY(360deg) rotateZ(120deg);
-  }
-  58% {
-    transform: translateY(87vh) translateX(calc(var(--confetti-drift) * 0.5)) rotateX(270deg) rotateY(480deg) rotateZ(200deg);
-    opacity: 1;
-  }
-  78% {
-    transform: translateY(117vh) translateX(calc(var(--confetti-drift) * -0.3)) rotateX(315deg) rotateY(600deg) rotateZ(280deg);
-  }
-  100% {
-    transform: translateY(150vh) translateX(calc(var(--confetti-drift) * 0.2)) rotateX(360deg) rotateY(720deg) rotateZ(360deg);
-    opacity: 0;
-  }
-}
-
-/* Animation variant 3 - Wider sway with more tumble */
-@keyframes confettiDrop3 {
-  0% {
-    transform: translateY(0) translateX(0) rotateX(0) rotateY(0) rotateZ(0);
-    opacity: 1;
-  }
-  10% {
-    transform: translateY(15vh) translateX(calc(var(--confetti-drift) * 0.8)) rotateX(30deg) rotateY(60deg) rotateZ(20deg);
-  }
-  25% {
-    transform: translateY(37vh) translateX(calc(var(--confetti-drift) * -0.6)) rotateX(100deg) rotateY(180deg) rotateZ(-40deg);
-  }
-  40% {
-    transform: translateY(60vh) translateX(calc(var(--confetti-drift) * 0.9)) rotateX(180deg) rotateY(300deg) rotateZ(80deg);
-  }
-  55% {
-    transform: translateY(82vh) translateX(calc(var(--confetti-drift) * -0.7)) rotateX(240deg) rotateY(420deg) rotateZ(160deg);
-    opacity: 1;
-  }
-  70% {
-    transform: translateY(105vh) translateX(calc(var(--confetti-drift) * 0.5)) rotateX(300deg) rotateY(540deg) rotateZ(240deg);
-  }
-  85% {
-    transform: translateY(127vh) translateX(calc(var(--confetti-drift) * -0.4)) rotateX(340deg) rotateY(660deg) rotateZ(300deg);
-  }
-  100% {
-    transform: translateY(150vh) translateX(calc(var(--confetti-drift) * 0.3)) rotateX(360deg) rotateY(720deg) rotateZ(360deg);
+    transform: translateY(120vh) translateX(var(--confetti-drift)) rotate(720deg);
     opacity: 0;
   }
 }
