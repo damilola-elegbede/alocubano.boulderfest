@@ -257,7 +257,7 @@ class DonationSelection {
         // Debounce: skip if confetti is already active
         if (this.confettiActive) return;
         this.confettiActive = true;
-        setTimeout(() => { this.confettiActive = false; }, 10000);
+        setTimeout(() => { this.confettiActive = false; }, 7000);
 
         const colors = [
             '#002590', // Cuban flag blue
@@ -269,7 +269,7 @@ class DonationSelection {
             '#002590', // Extra blue (weighted)
             '#CE1126' // Extra red (weighted)
         ];
-        const confettiCount = 30; // Celebratory but not overwhelming
+        const confettiCount = 100; // Full celebration, spans page vertically
 
         for (let i = 0; i < confettiCount; i++) {
             const confetti = document.createElement('div');
@@ -278,7 +278,7 @@ class DonationSelection {
         colors[Math.floor(Math.random() * colors.length)];
             confetti.style.left = Math.random() * 100 + 'vw';
             confetti.style.animationDelay = Math.random() * 0.5 + 's'; // Quicker stagger
-            confetti.style.animationDuration = Math.random() * 3 + 6 + 's'; // 6-9s duration (3x slower)
+            confetti.style.animationDuration = Math.random() * 2 + 4 + 's'; // 4-6s duration
 
             document.body.appendChild(confetti);
 
@@ -287,7 +287,7 @@ class DonationSelection {
                 if (confetti.parentNode) {
                     confetti.parentNode.removeChild(confetti);
                 }
-            }, 12000);
+            }, 8000);
         }
     }
 
