@@ -19,6 +19,21 @@ git commit --no-verify
 npm test && git commit
 ```
 
+**Empty String Handling** - NEVER use `value || null` for user input or form data. Use utility functions from `lib/value-utils.js`:
+
+```javascript
+import { optionalField, requiredField } from '../lib/value-utils.js';
+
+// ✅ CORRECT - Use utility functions
+firstName: optionalField(data.firstName),
+adminUser: requiredField(req.admin?.id, 'adminUser'),
+
+// ❌ INCORRECT - Silently converts empty strings to null
+firstName: data.firstName || null,
+```
+
+See `docs/CODE_STANDARDS.md` for full details on when `|| null` is acceptable (env vars, cache lookups, database rows).
+
 ## File Organization
 
 **ALL temporary files MUST go in `.tmp/` directory** with subdirectories: plans/, reports/, analysis/, scripts/, data/, drafts/, tests/, logs/, exports/

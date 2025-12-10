@@ -7,6 +7,7 @@ import { getQRTokenService } from "../../lib/qr-token-service.js";
 import { processDatabaseResult, sanitizeBigInt } from "../../lib/bigint-serializer.js";
 import { getTicketColorService } from "../../lib/ticket-color-service.js";
 import timeUtils from "../../lib/time-utils.js";
+import { optionalField } from "../../lib/value-utils.js";
 
 /**
  * Detect if a ticket is a test ticket
@@ -233,15 +234,15 @@ async function logScanAttempt(db, scanData) {
         args: [
           scanData.ticketId,
           scanData.scanStatus,
-          scanData.scanLocation || null,
-          scanData.deviceInfo || null,
+          optionalField(scanData.scanLocation),
+          optionalField(scanData.deviceInfo),
           scanData.ipAddress,
-          scanData.userAgent || null,
+          optionalField(scanData.userAgent),
           scanData.validationSource,
           scanData.tokenType,
-          scanData.failureReason || null,
+          optionalField(scanData.failureReason),
           scanData.requestId,
-          scanData.scanDurationMs || null,
+          optionalField(scanData.scanDurationMs),
           scanData.securityFlags ? JSON.stringify(scanData.securityFlags) : null
         ]
       });
@@ -513,8 +514,8 @@ async function logValidation(db, params) {
       token: params.token,
       source: params.source,
       ip: params.ip,
-      deviceInfo: params.deviceInfo || null,
-      failureReason: params.failureReason || null
+      deviceInfo: optionalField(params.deviceInfo),
+      failureReason: optionalField(params.failureReason)
     };
 
     // Retry loop for database locked errors
@@ -528,7 +529,7 @@ async function logValidation(db, params) {
             ) VALUES (?, ?, ?)
           `,
           args: [
-            params.ticketId || null,
+            optionalField(params.ticketId),
             params.result,
             JSON.stringify(metadata)
           ]
@@ -569,8 +570,8 @@ async function auditValidationAttempt(params) {
       action: action,
       targetType: 'ticket_validation',
       targetId: params.ticketId || 'unknown',
-      beforeValue: params.beforeState || null,
-      afterValue: params.afterState || null,
+      beforeValue: optionalField(params.beforeState),
+      afterValue: optionalField(params.afterState),
       changedFields: params.changedFields || [],
       adminUser: null, // QR validations are typically user-initiated
       sessionId: null,
@@ -584,8 +585,8 @@ async function auditValidationAttempt(params) {
         max_scan_count: params.maxScanCount,
         validation_time_ms: params.validationTimeMs,
         device_info: params.deviceInfo,
-        geolocation: params.geolocation || null,
-        failure_reason: params.failureReason || null,
+        geolocation: optionalField(params.geolocation),
+        failure_reason: optionalField(params.failureReason),
         security_flags: params.securityFlags || {}
       },
       severity: severity
@@ -1059,7 +1060,7 @@ async function handler(req, res) {
       beforeState: {
         scan_count: ticket.scan_count - 1,
         status: ticket.status,
-        qr_access_method: ticket.qr_access_method || null
+        qr_access_method: optionalField(ticket.qr_access_method)
       },
       afterState: {
         scan_count: ticket.scan_count,
@@ -1263,7 +1264,7 @@ async function handler(req, res) {
     try {
       if (db) {
         await logValidation(db, {
-          ticketId: ticketId || null,
+          ticketId: optionalField(ticketId),
           token: token ? '[REDACTED]' : 'invalid',
           result: 'invalid', // Use schema-compliant enum value
           failureReason: safeErrorMessage,
@@ -1279,7 +1280,7 @@ async function handler(req, res) {
     auditValidationAttempt({
       requestId: requestId,
       success: false,
-      ticketId: ticketId || null,
+      ticketId: optionalField(ticketId),
       beforeState: null,
       afterState: null,
       changedFields: [],

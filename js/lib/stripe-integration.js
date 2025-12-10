@@ -3,6 +3,8 @@
  * Handles client-side payment processing with Stripe Elements
  */
 
+import { optionalField } from './value-utils.js';
+
 // Stripe v3 doesn't support ES modules, so we need to load it globally
 
 class StripePaymentHandler {
@@ -279,9 +281,9 @@ class StripePaymentHandler {
                     billing_details: {
                         name: `${customerInfo.firstName} ${customerInfo.lastName}`,
                         email: customerInfo.email,
-                        phone: customerInfo.phone || null,
+                        phone: optionalField(customerInfo.phone),
                         address: {
-                            postal_code: customerInfo.postalCode || null
+                            postal_code: optionalField(customerInfo.postalCode)
                         }
                     }
                 }

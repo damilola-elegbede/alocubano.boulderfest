@@ -6,6 +6,7 @@ import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
 import { withHighSecurityAudit } from "../../lib/admin-audit-middleware.js";
 import { processDatabaseResult } from "../../lib/bigint-serializer.js";
 import timeUtils from "../../lib/time-utils.js";
+import { optionalField } from "../../lib/value-utils.js";
 
 async function handler(req, res) {
   let db;
@@ -180,7 +181,7 @@ async function handler(req, res) {
           Math.round(numAmount * 100),
           'USD',
           email,
-          name || null,
+          optionalField(name),
           JSON.stringify({ manual: true, created_by: 'admin' }),
           'stripe_checkout', // Use valid payment method
           new Date().toISOString()

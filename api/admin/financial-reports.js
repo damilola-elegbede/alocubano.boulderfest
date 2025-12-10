@@ -20,6 +20,7 @@ import financialReconciliationService from "../../lib/financial-reconciliation-s
 import financialAuditQueries from "../../lib/financial-audit-queries.js";
 import auditService from "../../lib/audit-service.js";
 import { logger } from "../../lib/logger.js";
+import { optionalField } from "../../lib/value-utils.js";
 
 /**
  * Parse and validate date parameters
@@ -157,7 +158,7 @@ async function handler(req, res) {
         legalBasis: 'legitimate_interest',
         retentionPeriod: '7_years',
         adminUser: req.admin?.username || req.admin?.email || 'admin',
-        sessionId: req.sessionId || null,
+        sessionId: optionalField(req.sessionId),
         ipAddress: clientIP,
         userAgent: req.headers['user-agent'],
         severity: 'info',
