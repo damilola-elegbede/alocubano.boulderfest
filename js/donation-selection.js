@@ -179,8 +179,11 @@ class DonationSelection {
         const donateBtn = document.getElementById('donate-button');
         if (donateBtn) {
             donateBtn.classList.add('donation-celebration');
-            setTimeout(() => donateBtn.classList.remove('donation-celebration'), 600);
+            setTimeout(() => donateBtn.classList.remove('donation-celebration'), 400);
         }
+
+        // Create fly-to-cart animation
+        this.createFlyToCartAnimation(amount);
 
         // Create confetti celebration
         this.createConfetti();
@@ -195,35 +198,87 @@ class DonationSelection {
 
         document.body.appendChild(celebrationMessage);
 
-        // Remove after animation completes
+        // Remove after animation completes (1.5s animation)
         setTimeout(() => {
             if (celebrationMessage.parentNode) {
                 celebrationMessage.parentNode.removeChild(celebrationMessage);
             }
-        }, 2000);
+        }, 1500);
+    }
+
+    createFlyToCartAnimation(amount) {
+        const donateBtn = document.getElementById('donate-button');
+        const cartIcon = document.querySelector('.nav-cart-icon');
+
+        if (!donateBtn || !cartIcon) return;
+
+        const btnRect = donateBtn.getBoundingClientRect();
+        const cartRect = cartIcon.getBoundingClientRect();
+
+        // Create flying element
+        const flyItem = document.createElement('div');
+        flyItem.className = 'fly-to-cart-item';
+        flyItem.textContent = `$${amount}`;
+
+        // Position at button center
+        const startX = btnRect.left + btnRect.width / 2;
+        const startY = btnRect.top + btnRect.height / 2;
+
+        flyItem.style.left = `${startX}px`;
+        flyItem.style.top = `${startY}px`;
+
+        document.body.appendChild(flyItem);
+
+        // Calculate end position (cart icon center)
+        const endX = cartRect.left + cartRect.width / 2;
+        const endY = cartRect.top + cartRect.height / 2;
+
+        // Animate using CSS custom properties
+        flyItem.style.setProperty('--fly-x', `${endX - startX}px`);
+        flyItem.style.setProperty('--fly-y', `${endY - startY}px`);
+
+        // Trigger animation
+        requestAnimationFrame(() => {
+            flyItem.classList.add('flying');
+        });
+
+        // Dispatch cart-item-arrived event and remove element
+        setTimeout(() => {
+            document.dispatchEvent(new CustomEvent('cart-item-arrived', {
+                detail: { type: 'donation', amount }
+            }));
+            if (flyItem.parentNode) {
+                flyItem.parentNode.removeChild(flyItem);
+            }
+        }, 300);
     }
 
     createConfetti() {
+        // Debounce: skip if confetti is already active
+        if (this.confettiActive) return;
+        this.confettiActive = true;
+        setTimeout(() => { this.confettiActive = false; }, 3000);
+
         const colors = [
-            '#FF0080', // Hot pink
-            '#00FF00', // Lime green
-            '#FF4500', // Orange red
-            '#FFD700', // Gold
-            '#00CED1', // Dark turquoise
-            '#FF1493', // Deep pink
-            '#0000FF', // Pure blue
-            '#FF00FF' // Magenta
+            '#002590', // Cuban flag blue
+            '#CE1126', // Cuban flag red
+            '#FFFFFF', // White
+            '#FFD700', // Gold accent
+            '#5B6BB5', // Site blue (lighter)
+            '#CC2936', // Site red
+            '#002590', // Extra blue (weighted)
+            '#CE1126' // Extra red (weighted)
         ];
-        const confettiCount = 150; // Much more dense
+        const confettiCount = 30; // Celebratory but not overwhelming
 
         for (let i = 0; i < confettiCount; i++) {
             const confetti = document.createElement('div');
             confetti.className = 'confetti-piece';
             confetti.style.backgroundColor =
         colors[Math.floor(Math.random() * colors.length)];
-            confetti.style.left = Math.random() * 120 + 'vw'; // Spread wider than screen
-            confetti.style.animationDelay = Math.random() * 2 + 's'; // Staggered for performance
-            confetti.style.animationDuration = Math.random() * 2 + 8 + 's'; // 8-10s duration
+            confetti.style.left = Math.random() * 100 + 'vw';
+            confetti.style.animationDelay = Math.random() * 0.5 + 's'; // Quicker stagger
+            confetti.style.animationDuration = Math.random() * 1 + 2 + 's'; // 2-3s duration
 
             document.body.appendChild(confetti);
 
@@ -232,7 +287,7 @@ class DonationSelection {
                 if (confetti.parentNode) {
                     confetti.parentNode.removeChild(confetti);
                 }
-            }, 12000);
+            }, 4000);
         }
     }
 
