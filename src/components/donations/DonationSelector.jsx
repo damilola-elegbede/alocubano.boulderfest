@@ -96,6 +96,11 @@ export default function DonationSelector() {
             confetti.className = 'confetti-piece';
             confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
             confetti.style.left = Math.random() * 120 + 'vw';
+            // Variable width/height for natural look (6-14px range)
+            const width = Math.random() * 8 + 6;
+            const height = Math.random() * 8 + 6;
+            confetti.style.width = width + 'px';
+            confetti.style.height = height + 'px';
             confetti.style.animationDelay = Math.random() * 0.5 + 's';
             confetti.style.animationDuration = Math.random() * 2 + 5 + 's';
             document.body.appendChild(confetti);
