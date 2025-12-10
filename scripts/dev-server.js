@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Custom Development Server with Vercel Rewrite Support
+ * Custom Development Server with Vercel Rewrite Support + Vite HMR
  *
  * Solves Vercel CLI 48+ bug where vercel.json rewrites don't work in local dev.
  *
@@ -11,6 +11,7 @@
  * - Applies redirects and headers from vercel.json
  * - Proxies /api routes to Vercel dev (for serverless functions)
  * - Serves static files
+ * - **NEW**: Vite HMR for React pages (pages with react-root)
  */
 
 import express from 'express';
@@ -20,6 +21,7 @@ import { readFileSync, existsSync } from 'fs';
 import { execSync, spawn } from 'child_process';
 import http from 'http';
 import dotenv from 'dotenv';
+import { createServer as createViteServer } from 'vite';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -89,7 +91,29 @@ try {
   process.exit(1);
 }
 
-// Step 4: Create Express app
+// Step 4: Create Vite dev server for HMR
+let vite;
+try {
+  vite = await createViteServer({
+    root: rootDir,
+    server: {
+      middlewareMode: true,
+      hmr: {
+        port: 5174 // Use different port for HMR websocket
+      }
+    },
+    appType: 'custom',
+    // Override base for dev mode (no /dist/ prefix needed)
+    base: '/'
+  });
+  log('✅', 'Vite dev server created (HMR enabled)', colors.green);
+} catch (error) {
+  log('❌', `Failed to create Vite dev server: ${error.message}`, colors.red);
+  log('💡', 'React pages will not have HMR support', colors.yellow);
+  vite = null;
+}
+
+// Step 5: Create Express app
 const app = express();
 
 // Middleware: Parse JSON bodies for POST requests
@@ -120,6 +144,12 @@ app.use((req, res, next) => {
   next();
 });
 
+// Middleware: Use Vite middleware for HMR assets (/@vite, /src, etc.)
+if (vite) {
+  app.use(vite.middlewares);
+  log('✅', 'Vite middleware attached for HMR', colors.green);
+}
+
 // Apply redirects from vercel.json
 const redirects = vercelConfig.redirects || [];
 redirects.forEach(redirect => {
@@ -134,6 +164,41 @@ log('✅', `Applied ${redirects.length} redirects from vercel.json`, colors.gree
 // Apply rewrites from vercel.json (excluding API routes)
 const rewrites = vercelConfig.rewrites || [];
 let rewriteCount = 0;
+
+/**
+ * Transform HTML for React pages by injecting Vite HMR client
+ * Replaces build-time asset injection with dev-time Vite client
+ */
+async function transformHtmlForVite(html, url) {
+  if (!vite) return html;
+
+  // Check if this page has a react-root (needs Vite HMR)
+  if (!html.includes('id="react-root"')) {
+    return html;
+  }
+
+  // Remove any existing injected Vite assets (from build)
+  html = html.replace(
+    /<!-- INJECTED VITE ASSETS -->[\s\S]*?<!-- END INJECTED VITE ASSETS -->/g,
+    '<!-- VITE DEV MODE - Assets injected by Vite HMR -->'
+  );
+
+  // Use Vite's transformIndexHtml to inject HMR client and module preloads
+  try {
+    html = await vite.transformIndexHtml(url, html);
+
+    // Vite's transform doesn't add our main.jsx entry, so add it manually
+    // Insert before </head>
+    const entryScript = '<script type="module" src="/src/main.jsx"></script>';
+    if (!html.includes('/src/main.jsx')) {
+      html = html.replace('</head>', `  ${entryScript}\n  </head>`);
+    }
+  } catch (error) {
+    log('⚠️', `Vite transform failed for ${url}: ${error.message}`, colors.yellow);
+  }
+
+  return html;
+}
 
 rewrites.forEach(rewrite => {
   // Skip identity rewrites for /api and static assets
@@ -150,7 +215,7 @@ rewrites.forEach(rewrite => {
   // E.g., "/(about|tickets)" -> /^\/(about|tickets)$/
   const sourcePattern = new RegExp('^' + rewrite.source + '$');
 
-  app.get(sourcePattern, (req, res) => {
+  app.get(sourcePattern, async (req, res) => {
     // Replace capture groups in destination ($1, $2, etc.)
     let destination = rewrite.destination;
     const matches = req.path.match(sourcePattern);
@@ -186,7 +251,20 @@ rewrites.forEach(rewrite => {
 
     const finalPath = path.resolve(filePath);
     if (existsSync(finalPath)) {
-      res.sendFile(finalPath);
+      // Read HTML and transform for Vite HMR if it's a React page
+      if (finalPath.endsWith('.html') && vite) {
+        try {
+          let html = readFileSync(finalPath, 'utf-8');
+          html = await transformHtmlForVite(html, req.originalUrl);
+          res.setHeader('Content-Type', 'text/html');
+          res.send(html);
+        } catch (error) {
+          log('⚠️', `Error transforming ${path.basename(finalPath)}: ${error.message}`, colors.yellow);
+          res.sendFile(finalPath);
+        }
+      } else {
+        res.sendFile(finalPath);
+      }
     } else {
       res.status(404).send('Not Found');
     }
@@ -311,6 +389,11 @@ app.listen(DEV_PORT, () => {
   log('  ✅', 'Headers from vercel.json', colors.green);
   log('  ⏳', 'API proxy (Vercel dev building in background...)', colors.yellow);
   log('  ✅', 'Environment variables from Vercel', colors.green);
+  if (vite) {
+    log('  ✅', 'Vite HMR for React pages (hot reloading enabled)', colors.green);
+  } else {
+    log('  ⚠️', 'Vite HMR unavailable (React pages need build)', colors.yellow);
+  }
   console.log('');
   log('💡', 'Press Ctrl+C to stop', colors.yellow);
   console.log('');
@@ -324,24 +407,34 @@ app.listen(DEV_PORT, () => {
 });
 
 // Cleanup on exit
-process.on('SIGINT', () => {
+async function cleanup() {
   console.log('');
   log('🛑', 'Shutting down...', colors.yellow);
+
+  // Close Vite server
+  if (vite) {
+    try {
+      await vite.close();
+      log('  ✓', 'Vite server closed', colors.green);
+    } catch (error) {
+      // Ignore errors on cleanup
+    }
+  }
+
   // Kill the entire process group
   try {
     process.kill(-vercelDev.pid);
   } catch (error) {
     // Fallback to regular kill if process group kill fails
-    vercelDev.kill();
+    try {
+      vercelDev.kill();
+    } catch {
+      // Ignore if already dead
+    }
   }
-  process.exit(0);
-});
 
-process.on('SIGTERM', () => {
-  try {
-    process.kill(-vercelDev.pid);
-  } catch (error) {
-    vercelDev.kill();
-  }
   process.exit(0);
-});
+}
+
+process.on('SIGINT', cleanup);
+process.on('SIGTERM', cleanup);

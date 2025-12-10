@@ -34,6 +34,7 @@ const DEFAULT_TARGET_FILES = [
     path.resolve(__dirname, '../pages/core/home.html'),
     path.resolve(__dirname, '../pages/core/contact.html'),
     path.resolve(__dirname, '../pages/core/donations.html'),
+    path.resolve(__dirname, '../pages/core/my-tickets.html'),
 
     // Event pages - Boulder Fest 2025
     path.resolve(__dirname, '../pages/events/boulder-fest-2025/index.html'),
