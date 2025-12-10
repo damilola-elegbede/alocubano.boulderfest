@@ -175,7 +175,7 @@ class DonationSelection {
     }
 
     showCelebratoryAnimation(amount) {
-    // Add celebration animation to the donate button
+        // Add celebration animation to the donate button
         const donateBtn = document.getElementById('donate-button');
         if (donateBtn) {
             donateBtn.classList.add('donation-celebration');
@@ -188,22 +188,46 @@ class DonationSelection {
         // Create confetti celebration
         this.createConfetti();
 
-        // Create celebration message
+        // Create overlay (70% dark background)
+        const overlay = document.createElement('div');
+        overlay.className = 'celebration-overlay';
+        document.body.appendChild(overlay);
+
+        // Create persistent celebration message with buttons
         const celebrationMessage = document.createElement('div');
         celebrationMessage.className = 'celebration-message';
         celebrationMessage.innerHTML = `
-      🎉 Thank You!<br>
-      $${amount} added to cart
-    `;
+            <div class="celebration-content">
+                🎉 Thank You!<br>
+                $${amount} added to cart
+            </div>
+            <div class="celebration-message-buttons">
+                <button class="celebration-btn celebration-btn-primary" data-action="cart">Go to Cart</button>
+                <button class="celebration-btn celebration-btn-secondary" data-action="continue">Continue</button>
+            </div>
+        `;
 
         document.body.appendChild(celebrationMessage);
 
-        // Remove after animation completes (1.5s animation)
-        setTimeout(() => {
-            if (celebrationMessage.parentNode) {
-                celebrationMessage.parentNode.removeChild(celebrationMessage);
+        // Handle button clicks
+        const handleAction = (action) => {
+            overlay.remove();
+            celebrationMessage.remove();
+
+            if (action === 'cart') {
+                // Open the floating cart
+                const cartToggle = document.querySelector('.nav-cart-icon');
+                if (cartToggle) cartToggle.click();
             }
-        }, 1500);
+            // 'continue' just closes the modal
+        };
+
+        celebrationMessage.querySelectorAll('.celebration-btn').forEach(btn => {
+            btn.addEventListener('click', () => handleAction(btn.dataset.action));
+        });
+
+        // Close on overlay click
+        overlay.addEventListener('click', () => handleAction('continue'));
     }
 
     createFlyToCartAnimation(amount) {
@@ -260,14 +284,14 @@ class DonationSelection {
         setTimeout(() => { this.confettiActive = false; }, 7000);
 
         const colors = [
-            '#002590', // Cuban flag blue
-            '#CE1126', // Cuban flag red
-            '#FFFFFF', // White
-            '#FFD700', // Gold accent
-            '#5B6BB5', // Site blue (lighter)
-            '#CC2936', // Site red
-            '#002590', // Extra blue (weighted)
-            '#CE1126' // Extra red (weighted)
+            '#FF6B6B', // Coral red
+            '#4ECDC4', // Teal
+            '#45B7D1', // Sky blue
+            '#96CEB4', // Sage green
+            '#FFEAA7', // Pale yellow
+            '#DDA0DD', // Plum
+            '#98D8C8', // Mint
+            '#F7DC6F'  // Gold
         ];
         const confettiCount = 100; // Full celebration, spans page vertically
 
