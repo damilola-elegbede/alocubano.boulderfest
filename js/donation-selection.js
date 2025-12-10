@@ -293,7 +293,7 @@ class DonationSelection {
         // Debounce: skip if confetti is already active
         if (this.confettiActive) return;
         this.confettiActive = true;
-        setTimeout(() => { this.confettiActive = false; }, 7000);
+        setTimeout(() => { this.confettiActive = false; }, 8000);
 
         const colors = [
             '#FF6B6B', // Coral red
