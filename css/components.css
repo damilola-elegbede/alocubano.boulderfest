@@ -2177,7 +2177,7 @@
 /* Fly to Cart Animation */
 .fly-to-cart-item {
   position: fixed;
-  z-index: 10000;
+  z-index: 10001; /* Above overlay (10000), below confetti (10002) */
   pointer-events: none;
   font-family: var(--font-display);
   font-size: var(--font-size-lg);
