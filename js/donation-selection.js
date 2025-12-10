@@ -316,7 +316,7 @@ class DonationSelection {
         colors[Math.floor(Math.random() * colors.length)];
             confetti.style.left = Math.random() * 100 + 'vw';
             confetti.style.animationDelay = Math.random() * 0.5 + 's'; // Quicker stagger
-            confetti.style.animationDuration = Math.random() * 2 + 4 + 's'; // 4-6s duration
+            confetti.style.animationDuration = Math.random() * 2 + 6 + 's'; // 6-8s duration
 
             document.body.appendChild(confetti);
 
