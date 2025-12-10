@@ -11,7 +11,6 @@ import { getDatabaseClient } from '../../../lib/database.js';
 import { generateTicketId } from '../../../lib/ticket-id-generator.js';
 import { generateOrderNumber } from '../../../lib/order-number-generator.js';
 import { RegistrationTokenService } from '../../../lib/registration-token-service.js';
-import { scheduleRegistrationReminders } from '../../../lib/reminder-scheduler.js';
 import timeUtils from '../../../lib/time-utils.js';
 import auditService from '../../../lib/audit-service.js';
 
@@ -243,13 +242,8 @@ export default async function handler(req, res) {
     const registrationToken = await tokenService.createToken(transactionId);
     console.log('Registration token generated with expiry:', tokenExpirySeconds, 'seconds');
 
-    // Schedule test reminders (every 5 minutes for 30 minutes)
-    const reminderCount = await scheduleRegistrationReminders(
-      transactionId,
-      registrationDeadline,
-      true // isTestTransaction
-    );
-    console.log(`Scheduled ${reminderCount} test reminders`);
+    // Note: Registration reminders removed - inline checkout now captures attendee info at purchase
+    const reminderCount = 0;
 
     // Log test ticket creation to audit service (non-blocking)
     const clientIP = req.headers['x-forwarded-for'] || req.connection?.remoteAddress;
