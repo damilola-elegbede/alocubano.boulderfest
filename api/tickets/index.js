@@ -4,6 +4,40 @@ import tokenService from "../../lib/token-service.js";
 import { formatTicketType, TOKEN_ACTIONS } from "../../lib/ticket-config.js";
 import { processDatabaseResult } from "../../lib/bigint-serializer.js";
 import timeUtils from "../../lib/time-utils.js";
+import jwt from "jsonwebtoken";
+
+/**
+ * Verify JWT token created by verify-code.js for ticket viewing
+ * These tokens are signed with REGISTRATION_SECRET and have purpose: 'ticket_viewing'
+ */
+function verifyTicketViewingJwt(token) {
+  const secret = process.env.REGISTRATION_SECRET;
+  if (!secret) {
+    return { valid: false, error: 'Server configuration error' };
+  }
+
+  try {
+    const payload = jwt.verify(token, secret, {
+      algorithms: ['HS256'],
+      issuer: 'alocubano-tickets'
+    });
+
+    // Verify this is a ticket viewing token
+    if (payload.purpose !== 'ticket_viewing') {
+      return { valid: false, error: 'Invalid token purpose' };
+    }
+
+    return { valid: true, email: payload.email };
+  } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      return { valid: false, error: 'Session expired' };
+    }
+    if (error.name === 'JsonWebTokenError') {
+      return { valid: false, error: 'Invalid token' };
+    }
+    return { valid: false, error: 'Token verification failed' };
+  }
+}
 
 export default async function handler(req, res) {
   let db;
@@ -31,10 +65,34 @@ export default async function handler(req, res) {
       }
 
       if (token) {
-        // Get tickets by access token (secure method)
+        // First, try to validate as JWT token (from verify-code.js)
+        // JWT tokens are used by the my-tickets page after email verification
+        const jwtResult = verifyTicketViewingJwt(token);
+
+        if (jwtResult.valid) {
+          // JWT is valid - fetch tickets by the verified email
+          const tickets = await ticketService.getTicketsByEmail(jwtResult.email);
+          const enhancedTickets = timeUtils.enhanceApiResponse(tickets,
+            ['created_at', 'updated_at', 'event_date', 'registered_at', 'registration_deadline', 'checked_in_at'],
+            { includeDeadline: false }
+          );
+          return res.status(200).json({
+            tickets: enhancedTickets.map((ticket) => ({
+              ...ticket,
+              formatted_type: formatTicketType(ticket.ticket_type)
+            }))
+          });
+        }
+
+        // If JWT validation failed with a definitive error (expired, wrong purpose), return 401
+        if (jwtResult.error === 'Session expired' || jwtResult.error === 'Invalid token purpose') {
+          return res.status(401).json({ error: jwtResult.error });
+        }
+
+        // Fall back to database access token validation
+        // This handles tokens stored in access_tokens table (different token system)
         try {
           const tickets = await ticketService.getTicketsByAccessToken(token);
-          // Enhance with Mountain Time fields
           const enhancedTickets = timeUtils.enhanceApiResponse(tickets,
             ['created_at', 'updated_at', 'event_date', 'registered_at', 'registration_deadline', 'checked_in_at'],
             { includeDeadline: false }
