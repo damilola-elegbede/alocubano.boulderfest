@@ -38,6 +38,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>My Tickets - A Lo Cubano Boulder Fest</title>
+    <meta
+      name="description"
+      content="View and manage your tickets for A Lo Cubano Boulder Fest. Access QR codes, add to wallet, and transfer tickets."
+    />
     <!-- Favicons -->
     <link
       rel="icon"
@@ -71,60 +75,33 @@
 
     <!-- Critical resource preloading -->
     <script>
-      // Inline critical path optimization - Event hero images with responsive variants
+      // Inline critical path optimization - Hero image preload
       (function () {
-        // Check if optimized variants exist for event heroes
         const heroPath = "/images/hero/tickets.jpg";
-        const isEventHero = false;
 
-        if (isEventHero) {
-          // Preload optimized variants for event heroes (WebP first, then JPEG fallback)
-          const isMobile = window.innerWidth <= 768;
-          const variant = isMobile ? "mobile" : "desktop";
-          const baseName = "tickets";
-
-          // Preload WebP variant
-          const webpPreload = document.createElement("link");
-          webpPreload.rel = "preload";
-          webpPreload.as = "image";
-          webpPreload.href = `/images/hero-optimized/${variant}/${baseName}.webp`;
-          webpPreload.type = "image/webp";
-          document.head.appendChild(webpPreload);
-
-          // Preload AVIF variant for supported browsers
-          if (typeof window !== "undefined" && "OffscreenCanvas" in window) {
-            const avifPreload = document.createElement("link");
-            avifPreload.rel = "preload";
-            avifPreload.as = "image";
-            avifPreload.href = `/images/hero-optimized/${variant}/${baseName}.avif`;
-            avifPreload.type = "image/avif";
-            document.head.appendChild(avifPreload);
+        if ('connection' in navigator) {
+          const conn = navigator.connection;
+          if (conn.saveData || conn.effectiveType === 'slow-2g' || conn.effectiveType === '2g') {
+            return; // Skip preload on slow connections
           }
-
-          // Fallback JPEG preload
-          const jpegPreload = document.createElement("link");
-          jpegPreload.rel = "preload";
-          jpegPreload.as = "image";
-          jpegPreload.href = `/images/hero-optimized/${variant}/${baseName}.jpg`;
-          jpegPreload.type = "image/jpeg";
-          document.head.appendChild(jpegPreload);
-        } else {
-          // Standard hero image preload for top-level pages
-          const heroPreload = document.createElement("link");
-          heroPreload.rel = "preload";
-          heroPreload.as = "image";
-          heroPreload.href = heroPath;
-          document.head.appendChild(heroPreload);
         }
+
+        const heroPreload = document.createElement("link");
+        heroPreload.rel = "preload";
+        heroPreload.as = "image";
+        heroPreload.href = heroPath;
+        heroPreload.fetchpriority = "high";
+        document.head.appendChild(heroPreload);
       })();
     </script>
 
     <!-- Performance optimizations -->
-
     <link rel="preconnect" href="https://wallet.apple.com">
     <link rel="preconnect" href="https://pay.google.com">
 
-    
+    <!-- DNS prefetch for external resources -->
+    <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="//fonts.gstatic.com" />
     <!-- Preconnect to Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -138,37 +115,6 @@
 
     <!-- Theme Management - Early inclusion to prevent FOUC -->
     <script type="module" src="/js/theme-manager.js"></script>
-
-    <!-- Time Management - Mountain Time support -->
-    <script type="module" src="/js/time-manager.js"></script>
-
-    <!-- Performance optimization system -->
-    <script type="module" src="/js/qr-cache-manager.js"></script>
-    <script type="module" src="/js/wallet-lazy-loader.js"></script>
-    <script type="module" src="/js/performance-integration.js"></script>
-
-    <!-- Hero Image Preload -->
-    <script>
-      // Inline critical path optimization - Event hero images
-      (function() {
-        const heroPath = "/images/hero/tickets.jpg";
-
-        if ('connection' in navigator) {
-          const conn = navigator.connection;
-          if (conn.saveData || conn.effectiveType === 'slow-2g' || conn.effectiveType === '2g') {
-            return; // Skip preload on slow connections
-          }
-        }
-
-        const heroPreload = document.createElement('link');
-        heroPreload.rel = 'preload';
-        heroPreload.as = 'image';
-        heroPreload.href = heroPath;
-        heroPreload.fetchpriority = 'high';
-        document.head.appendChild(heroPreload);
-      })();
-    </script>
-
     <!-- Critical CSS (render-blocking) -->
     <link rel="stylesheet" href="/css/bundle-critical.css" />
 
@@ -176,7 +122,11 @@
     <link rel="stylesheet" href="/css/bundle-deferred.css" media="print" onload="this.media='all'">
     <noscript>
       <link rel="stylesheet" href="/css/bundle-deferred.css">
-    </noscript><style>
+    </noscript>
+
+    <!-- My Tickets specific styles -->
+    <style>
+      /* Ticket lookup container */
       .ticket-lookup {
         max-width: 600px;
         margin: 50px auto;
@@ -186,188 +136,10 @@
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
       }
 
-      .ticket-list {
-        max-width: 960px;
-        margin: 0 auto;
-        margin-top: 30px;
-        padding: var(--space-2xl) var(--space-lg);
-      }
-
-      /* Ticket Card - matching view-tickets template */
-      .ticket-card {
-        background: var(--color-surface);
-        border: 1px solid var(--color-border);
-        border-radius: 12px;
-        padding: var(--space-xl);
-        margin-bottom: var(--space-xl);
-        position: relative;
-        cursor: default !important; /* Override components.css cursor: pointer */
-        border-left: 4px solid var(--color-primary);
-      }
-
-      /* Override clickable appearance from components.css */
-      .ticket-card:hover {
-        transform: none !important;
-        box-shadow: none !important;
-      }
-
-      .ticket-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 4px;
-        height: 100%;
-        background: var(--color-success);
-      }
-
-      .ticket-header-row {
-        display: grid;
-        grid-template-columns: 1fr auto 1fr;
-        align-items: center;
-        gap: var(--space-lg);
+      /* Verification form styles */
+      .verification-step p {
         margin-bottom: var(--space-lg);
-      }
-
-      .ticket-header-left {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-md);
-        align-items: flex-start;
-      }
-
-      .ticket-header-center {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-      }
-
-      .ticket-header-right {
-        display: flex;
-        justify-content: flex-end;
-        align-items: flex-start;
-      }
-
-      .ticket-type {
-        font-family: var(--font-display);
-        font-size: var(--text-2xl);
-        color: var(--color-text-primary);
-      }
-
-      .ticket-id {
-        font-family: var(--font-mono);
-        font-size: var(--text-xs);
         color: var(--color-text-secondary);
-        margin-top: var(--space-xs);
-      }
-
-      .ticket-status-badge {
-        padding: var(--space-xs) var(--space-md);
-        border-radius: 20px;
-        font-family: var(--font-mono);
-        font-size: var(--text-xs);
-        font-weight: 600;
-        text-transform: uppercase;
-        background: var(--color-success-light);
-        color: var(--color-success-700);
-        border: 1px solid var(--color-success);
-      }
-
-      .attendee-info {
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: var(--space-lg);
-        margin-bottom: var(--space-xl);
-      }
-
-      .info-group {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-xs);
-      }
-
-      .info-group.left-align {
-        text-align: left;
-      }
-
-      .info-group.center-align {
-        text-align: center;
-      }
-
-      .info-group.right-align {
-        text-align: right;
-      }
-
-      .info-label {
-        font-family: var(--font-mono);
-        font-size: var(--text-xs);
-        color: var(--color-primary);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-      }
-
-      .info-value {
-        font-family: var(--font-body);
-        font-size: var(--text-base);
-        color: var(--color-text-primary);
-        font-weight: 500;
-      }
-
-      .wallet-section {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--space-md);
-        padding-top: var(--space-lg);
-        justify-content: center;
-      }
-
-      .wallet-button {
-        display: inline-block;
-        text-decoration: none;
-        transition: opacity 0.2s ease;
-      }
-
-      .wallet-button:hover {
-        opacity: 0.8;
-      }
-
-      .ticket-divider {
-        height: 1px;
-        background: var(--color-border);
-        margin: var(--space-2xl) 0;
-      }
-
-      /* Transfer button centered */
-      .transfer-action {
-        display: flex;
-        justify-content: center;
-        margin-top: var(--space-lg);
-        padding-top: var(--space-lg);
-      }
-
-      /* Mobile responsiveness */
-      @media (max-width: 768px) {
-        .ticket-header-row {
-          grid-template-columns: 1fr;
-          gap: var(--space-md);
-        }
-
-        .ticket-header-center,
-        .ticket-header-right {
-          justify-content: center;
-        }
-
-        .attendee-info {
-          grid-template-columns: 1fr;
-        }
-
-        .wallet-section {
-          flex-direction: column;
-        }
-
-        .wallet-button {
-          min-width: 100%;
-        }
       }
 
       .lookup-form {
@@ -378,25 +150,79 @@
       .lookup-form input {
         flex: 1;
         padding: 12px;
-        border: 1px solid #ddd;
+        border: 1px solid var(--color-border);
         border-radius: 5px;
         font-size: 16px;
+        background: var(--color-surface);
+        color: var(--color-text-primary);
       }
 
-      .lookup-form button {
+      .verification-form .form-group {
+        margin-bottom: var(--space-md);
+      }
+
+      .verification-form .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: var(--color-text-primary);
+      }
+
+      .verification-form .form-actions {
+        display: flex;
+        gap: var(--space-md);
+        flex-wrap: wrap;
+      }
+
+      .code-expiry-info {
+        font-family: var(--font-mono);
+        font-size: var(--text-sm);
+        color: var(--color-warning);
+      }
+
+      .highlight-email {
+        font-weight: 600;
+        color: var(--color-primary);
+      }
+
+      /* Button styles */
+      .btn-primary {
         padding: 12px 30px;
-        background: var(--color-primary, #667eea);
-        color: var(--color-text-on-primary, white);
+        background: var(--color-primary);
+        color: var(--color-text-on-primary);
         border: none;
         border-radius: 5px;
         cursor: pointer;
         font-size: 16px;
+        font-weight: 500;
+        transition: background 0.2s ease;
       }
 
-      .lookup-form button:hover {
-        background: var(--color-primary-dark, #5a67d8);
+      .btn-primary:hover {
+        background: var(--color-primary-hover);
       }
 
+      .btn-primary:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .btn-secondary {
+        padding: 12px 20px;
+        background: var(--color-background-secondary);
+        color: var(--color-text-primary);
+        border: 1px solid var(--color-border);
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      .btn-secondary:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      /* Message styles */
       .message {
         padding: 15px;
         border-radius: 5px;
@@ -404,281 +230,44 @@
       }
 
       .message.error {
-        background: var(--color-danger-light, #f8d7da);
-        color: var(--color-danger-dark, #721c24);
+        background: var(--color-danger-light);
+        color: var(--color-danger-dark);
+      }
+
+      .message.success {
+        background: var(--color-success-light);
+        color: var(--color-success-dark);
       }
 
       .message.info {
-        background: var(--color-info-lighter, #d1ecf1);
-        color: var(--color-info-darker, #0c5460);
+        background: var(--color-info-lighter);
+        color: var(--color-info-darker);
       }
 
-      .loading {
-        text-align: center;
-        padding: 20px;
-        color: var(--color-text-secondary, #666);
+      .message.warning {
+        background: var(--color-warning-light);
+        color: var(--color-warning-dark);
       }
 
-      .btn-small {
-        display: inline-block;
-        padding: 6px 12px;
-        margin: 0 5px 5px 0;
-        border: none;
-        border-radius: 4px;
-        background: var(--color-primary, #667eea);
-        color: var(--color-text-on-primary, white);
-        font-size: 12px;
-        cursor: pointer;
-        text-decoration: none;
-      }
+      /* Mobile responsiveness */
+      @media (max-width: 768px) {
+        .lookup-form {
+          flex-direction: column;
+        }
 
-      .btn-small:hover {
-        background: var(--color-primary-dark, #5a67d8);
-      }
+        .verification-form .form-actions {
+          flex-direction: column;
+        }
 
-      .btn-small.btn-warning {
-        background: var(--color-warning, #ed8936);
-      }
-
-      .btn-small.btn-warning:hover {
-        background: var(--color-warning-dark, #dd6b20);
-      }
-
-      .btn-small.btn-danger {
-        background: var(--color-danger, #e53e3e);
-      }
-
-      .btn-small.btn-danger:hover {
-        background: var(--color-danger-dark, #c53030);
-      }
-
-      .ticket-actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-      }
-
-      /* Modal Styles */
-      .modal {
-        display: none;
-        position: fixed;
-        z-index: 1000;
-        /* Positioning handled by base.css: left: 50%, top: 50%, transform: translate(-50%, -50%) */
-      }
-
-      .modal-content {
-        background-color: var(--color-surface-elevated);
-        margin: 5% auto;
-        padding: 30px;
-        border-radius: 10px;
-        max-width: 600px;
-        width: 90%;
-        position: relative;
-      }
-
-      .modal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-      }
-
-      .close {
-        color: var(--color-text-secondary);
-        font-size: 28px;
-        font-weight: bold;
-        cursor: pointer;
-        background: none;
-        border: none;
-      }
-
-      .close:hover {
-        color: var(--color-text-primary);
-      }
-
-      .qr-code-display {
-        text-align: center;
-        padding: 20px;
-        background: var(--color-background-secondary);
-        border-radius: 8px;
-        margin: 20px 0;
-      }
-
-      .qr-code-data {
-        word-break: break-all;
-        font-family: monospace;
-        font-size: 10px;
-        margin-top: 10px;
-        color: var(--color-text-secondary, #666);
-      }
-
-      .form-group {
-        margin-bottom: 15px;
-      }
-
-      .form-group label {
-        display: block;
-        margin-bottom: 5px;
-        font-weight: bold;
-        color: var(--color-text-primary, #333);
-      }
-
-      .form-group input {
-        width: 100%;
-        padding: 10px;
-        border: 1px solid var(--color-border);
-        border-radius: 5px;
-        font-size: 14px;
-        background: var(--color-background);
-        color: var(--color-text-primary);
-      }
-
-      .modal-actions {
-        display: flex;
-        gap: 10px;
-        justify-content: flex-end;
-        margin-top: 20px;
-      }
-
-      .btn-primary {
-        background: var(--color-primary);
-        color: var(--color-text-on-primary);
-        border: none;
-        padding: 10px 20px;
-        border-radius: 5px;
-        cursor: pointer;
-      }
-
-      .btn-secondary {
-        background: var(--color-text-secondary);
-        color: var(--color-white);
-        border: none;
-        padding: 10px 20px;
-        border-radius: 5px;
-        cursor: pointer;
-      }
-
-      /* Transfer Modal - Website Style */
-      #transferModal .modal-content {
-        max-width: 600px;
-        background: var(--color-surface-elevated);
-      }
-
-      #transferModal .modal-header {
-        justify-content: space-between;
-        padding-bottom: var(--space-md);
-        border-bottom: 1px solid var(--color-border);
-        margin-bottom: var(--space-lg);
-      }
-
-      #transferModal .modal-header h2 {
-        font-family: var(--font-display);
-        font-size: var(--text-xl);
-        color: var(--color-text-primary);
-        margin: 0;
-      }
-
-      #transferModal .close {
-        color: var(--color-text-secondary);
-        font-size: 28px;
-        font-weight: bold;
-        cursor: pointer;
-        background: none;
-        border: none;
-        transition: color 0.2s ease;
-        line-height: 1;
-        padding: 0;
-      }
-
-      #transferModal .close:hover {
-        color: var(--color-text-primary);
-      }
-
-      #transferModal form p {
-        margin: 0 0 var(--space-lg);
-        color: var(--color-text-secondary);
-        font-size: 14px;
-        line-height: 1.5;
-      }
-
-      #transferModal .form-group {
-        margin-bottom: var(--space-md);
-      }
-
-      #transferModal .form-group label {
-        display: block;
-        margin-bottom: 8px;
-        font-weight: 500;
-        color: var(--color-text-primary);
-        font-size: 14px;
-      }
-
-      #transferModal .form-group input {
-        width: 100%;
-        padding: 12px;
-        border: 1px solid var(--color-border);
-        border-radius: 4px;
-        background: var(--color-surface);
-        color: var(--color-text-primary);
-        font-size: 16px; /* Prevent iOS zoom */
-        transition: border-color 0.2s ease;
-      }
-
-      #transferModal .form-group input:focus {
-        outline: none;
-        border-color: var(--color-primary);
-        box-shadow: 0 0 0 3px rgba(0, 42, 143, 0.1);
-      }
-
-      #transferModal .modal-actions {
-        display: flex;
-        gap: var(--space-md);
-        justify-content: flex-end;
-        margin-top: var(--space-lg);
-        flex-wrap: nowrap; /* Prevent button wrapping */
-      }
-
-      #transferModal .btn-secondary,
-      #transferModal .btn-primary {
-        padding: 12px 24px;
-        border-radius: 4px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        border: none;
-        font-size: 14px;
-        min-height: 44px; /* Touch target */
-        flex-shrink: 0; /* Prevent button shrinking */
-        white-space: nowrap; /* Keep button text on one line */
-      }
-
-      #transferModal .btn-secondary {
-        background: var(--color-background-secondary);
-        color: var(--color-text-primary);
-        border: 1px solid var(--color-border);
-      }
-
-      #transferModal .btn-secondary:hover {
-        background: var(--color-background-tertiary);
-        border-color: var(--color-border-medium);
-      }
-
-      #transferModal .btn-primary {
-        background: var(--color-primary);
-        color: var(--color-white);
-      }
-
-      #transferModal .btn-primary:hover {
-        background: var(--color-primary-hover);
-        transform: translateY(-1px);
-        box-shadow: 0 2px 8px rgba(0, 42, 143, 0.2);
-      }
-
-      #transferModal .btn-primary:active,
-      #transferModal .btn-secondary:active {
-        transform: translateY(0);
+        .verification-form .form-actions button {
+          width: 100%;
+        }
       }
     </style>
+
+    <!-- INJECTED VITE ASSETS -->
+    <!-- Vite assets will be injected here at build time -->
+    <!-- END INJECTED VITE ASSETS -->
   </head>
   <body class="typographic">
     <header class="header">
@@ -801,7 +390,7 @@
             </ul>
             <div class="nav-cart-item">
               <button class="nav-cart-button" aria-label="View cart" data-testid="view-cart">
-                <svg class="nav-cart-icon" viewBox="0 0 24 24" width="20" height="20">
+                <svg class="nav-cart-icon" viewBox="0 0 24 24">
                   <path d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12L8.1 13h7.45c.75 0 1.41-.41 1.75-1.03L21.7 4H5.21l-.94-2H1zm16 16c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
                 </svg>
                 <span class="nav-cart-badge" style="display: none;" data-testid="cart-counter">0</span>
@@ -813,129 +402,17 @@
     </header>
 
     <main>
-      <!-- Hero Splash Image -->
-      <section class="gallery-hero-splash">
-        <div class="hero-image-container">
-          <img
-            id="hero-splash-image"
-            src="/images/hero/tickets.jpg"
-            alt="Excited festival attendees enjoying A Lo Cubano Boulder Fest events"
-            class="hero-splash-img"
-            style="object-position: top center !important"
-          />
+      <!-- React Root for MyTicketsPage -->
+      <div id="react-root" data-component="MyTicketsPage"></div>
+
+      <!-- Legacy content removed - now rendered by React MyTicketsPage component -->
+      <noscript>
+        <div style="padding: 2rem; text-align: center;">
+          <h1>JavaScript Required</h1>
+          <p>This page requires JavaScript to be enabled. Please enable JavaScript in your browser settings and reload the page.</p>
         </div>
-      </section>
-
-      <section class="section-typographic">
-          <div class="ticket-lookup" style="max-width: 960px; margin: 0 auto; padding: 0 var(--space-lg);">
-      <h1>My Tickets</h1>
-
-      <!-- Step 1: Email Input -->
-      <div id="emailStep" class="verification-step">
-        <p>
-          Enter your email address to receive a verification code.
-        </p>
-        <form class="lookup-form" id="emailForm">
-          <input
-            type="email"
-            id="emailInput"
-            placeholder="Enter your email address"
-            required
-            aria-label="Email address"
-          />
-          <button type="submit" class="btn-primary">Send Code</button>
-        </form>
-      </div>
-
-      <!-- Step 2: Code Verification -->
-      <div id="codeStep" class="verification-step" style="display: none;">
-        <p>
-          <strong>Check your email!</strong> We've sent a 6-digit verification code to <span id="emailDisplay" class="highlight-email"></span>
-        </p>
-        <p class="code-expiry-info">
-          Code expires in <span id="expiryTimer">5:00</span> minutes
-        </p>
-        <form class="verification-form" id="codeForm">
-          <div class="form-group">
-            <label for="codeInput">Verification Code</label>
-            <input
-              type="text"
-              id="codeInput"
-              placeholder="000000"
-              required
-              maxlength="6"
-              pattern="[0-9]{6}"
-              inputmode="numeric"
-              autocomplete="one-time-code"
-              aria-label="6-digit verification code"
-            />
-          </div>
-          <div class="form-actions">
-            <button type="submit" class="btn-primary">Verify Code</button>
-            <button type="button" id="resendCodeBtn" class="btn-secondary" disabled>
-              Resend Code (<span id="resendTimer">60</span>s)
-            </button>
-          </div>
-        </form>
-        <button type="button" id="changeEmailBtn" class="btn-link">Use different email</button>
-      </div>
-
-      <!-- Step 3: Authenticated View -->
-      <div id="authenticatedView" style="display: none;">
-        <div class="session-info">
-          <p>Viewing tickets for <span id="authenticatedEmail" class="highlight-email"></span></p>
-          <button type="button" id="logoutBtn" class="btn-link">Sign out</button>
-        </div>
-      </div>
-
-      <div id="messageContainer"></div>
-      <div id="ticketContainer"></div>
-          </div>
-      </section>
+      </noscript>
     </main>
-
-    <!-- Transfer Modal -->
-    <div id="transferModal" class="modal" role="dialog" aria-labelledby="transferModalTitle" aria-modal="true">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2 id="transferModalTitle">Transfer Ticket</h2>
-          <button class="close close-transfer-modal" aria-label="Close transfer modal">
-            &times;
-          </button>
-        </div>
-        <form id="transferForm">
-          <p>
-            Transfer this ticket to another attendee. Both parties will receive email notifications.
-          </p>
-          <div class="form-group">
-            <label for="transferEmail">New Attendee Email *</label>
-            <input type="email" id="transferEmail" required aria-required="true" autocomplete="email" />
-          </div>
-          <div class="form-group">
-            <label for="transferFirstName">First Name *</label>
-            <input type="text" id="transferFirstName" required aria-required="true" autocomplete="given-name" />
-          </div>
-          <div class="form-group">
-            <label for="transferLastName">Last Name</label>
-            <input type="text" id="transferLastName" autocomplete="family-name" />
-          </div>
-          <div class="form-group">
-            <label for="transferPhone">Phone</label>
-            <input type="tel" id="transferPhone" autocomplete="tel" />
-          </div>
-          <div class="modal-actions">
-            <button
-              type="button"
-              class="btn-secondary"
-              onclick="closeModal('transferModal')"
-            >
-              Cancel
-            </button>
-            <button type="submit" class="btn-primary">Transfer Ticket</button>
-          </div>
-        </form>
-      </div>
-    </div>
 
     <footer class="footer-typographic">
       <div class="container">
@@ -999,636 +476,11 @@
       </div>
     </footer>
 
-    <script type="module">
-      import { setSafeTextContent, displayMessage, createElementWithContent, escapeHtml } from '/js/lib/dom-security.js';
-      import timeManager from '/js/time-manager.js';
-
-      // State management
-      let currentEmail = '';
-      let currentAccessToken = '';
-      let expiryInterval = null;
-      let resendInterval = null;
-      let currentTickets = [];
-      let currentTicketId = null;
-
-      // Modal management functions (module scope)
-      function openModal(modalId) {
-        console.log('[Transfer Debug] openModal called with:', modalId);
-        const modalElement = document.getElementById(modalId);
-        console.log('[Transfer Debug] Modal element found?', !!modalElement);
-        if (modalElement) {
-          modalElement.style.display = "block";
-          modalElement.classList.add("show");
-          console.log('[Transfer Debug] Modal display set to block and show class added');
-        } else {
-          console.error('[Transfer Debug] Modal element NOT FOUND:', modalId);
-        }
-      }
-
-      function closeModal(modalId) {
-        console.log('[Transfer Debug] closeModal called with:', modalId);
-        const modalElement = document.getElementById(modalId);
-        if (modalElement) {
-          modalElement.classList.remove("show");
-          // Delay hiding to allow fade-out animation
-          setTimeout(() => {
-            modalElement.style.display = "none";
-          }, 300);
-        }
-        if (modalId === "transferModal") {
-          document.getElementById("transferForm").reset();
-        }
-      }
-
-      // Check for existing session
-      const storedToken = localStorage.getItem('ticketAccessToken');
-      const storedEmail = localStorage.getItem('ticketAccessEmail');
-      const tokenExpiry = localStorage.getItem('ticketAccessTokenExpiry');
-
-      if (storedToken && storedEmail && tokenExpiry) {
-        const now = Date.now();
-        if (now < parseInt(tokenExpiry)) {
-          // Token still valid
-          currentAccessToken = storedToken;
-          currentEmail = storedEmail;
-          showAuthenticatedView();
-          loadTickets();
-        } else {
-          // Token expired, clear storage
-          clearSession();
-        }
-      }
-
-      // Close button for transfer modal
-      document.querySelector('.close-transfer-modal').addEventListener('click', () => {
-        closeModal('transferModal');
-      });
-
-      // Email form submission
-      document.getElementById("emailForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        await sendVerificationCode();
-      });
-
-      // Code form submission
-      document.getElementById("codeForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        await verifyCode();
-      });
-
-      // Resend code button
-      document.getElementById("resendCodeBtn").addEventListener("click", async () => {
-        await sendVerificationCode(true);
-      });
-
-      // Change email button
-      document.getElementById("changeEmailBtn").addEventListener("click", () => {
-        resetToEmailStep();
-      });
-
-      // Logout button
-      document.getElementById("logoutBtn").addEventListener("click", () => {
-        clearSession();
-        resetToEmailStep();
-        showMessage('You have been signed out.', 'info');
-      });
-
-      // Session management
-      function clearSession() {
-        localStorage.removeItem('ticketAccessToken');
-        localStorage.removeItem('ticketAccessEmail');
-        localStorage.removeItem('ticketAccessTokenExpiry');
-        currentAccessToken = '';
-        currentEmail = '';
-        currentTickets = [];
-      }
-
-      function saveSession(token, email, expiresIn) {
-        const expiry = Date.now() + (expiresIn * 1000);
-        localStorage.setItem('ticketAccessToken', token);
-        localStorage.setItem('ticketAccessEmail', email);
-        localStorage.setItem('ticketAccessTokenExpiry', expiry.toString());
-        currentAccessToken = token;
-        currentEmail = email;
-      }
-
-      // UI state management
-      function showEmailStep() {
-        document.getElementById('emailStep').style.display = 'block';
-        document.getElementById('codeStep').style.display = 'none';
-        document.getElementById('authenticatedView').style.display = 'none';
-      }
-
-      function showCodeStep() {
-        document.getElementById('emailStep').style.display = 'none';
-        document.getElementById('codeStep').style.display = 'block';
-        document.getElementById('authenticatedView').style.display = 'none';
-        document.getElementById('codeInput').focus();
-      }
-
-      function showAuthenticatedView() {
-        document.getElementById('emailStep').style.display = 'none';
-        document.getElementById('codeStep').style.display = 'none';
-        document.getElementById('authenticatedView').style.display = 'block';
-        setSafeTextContent(document.getElementById('authenticatedEmail'), currentEmail);
-      }
-
-      function resetToEmailStep() {
-        showEmailStep();
-        document.getElementById('emailInput').value = '';
-        document.getElementById('codeInput').value = '';
-        clearMessage();
-        document.getElementById('ticketContainer').innerHTML = '';
-        if (expiryInterval) clearInterval(expiryInterval);
-        if (resendInterval) clearInterval(resendInterval);
-      }
-
-      // Verification flow
-      async function sendVerificationCode(isResend = false) {
-        const email = document.getElementById('emailInput').value.trim();
-        if (!email) {
-          showMessage('Please enter your email address.', 'error');
-          return;
-        }
-
-        currentEmail = email;
-
-        const btn = isResend ? document.getElementById('resendCodeBtn') : document.querySelector('#emailForm button[type="submit"]');
-        const originalText = btn.textContent;
-        btn.disabled = true;
-        btn.textContent = 'Sending...';
-
-        try {
-          const response = await fetch('/api/tickets/verify-email', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email })
-          });
-
-          const data = await response.json();
-
-          if (!response.ok) {
-            throw new Error(data.error || 'Failed to send verification code');
-          }
-
-          setSafeTextContent(document.getElementById('emailDisplay'), email);
-          showCodeStep();
-          startExpiryTimer(data.expiresIn || 300); // 5 minutes default
-          startResendTimer();
-          showMessage('Verification code sent! Check your email.', 'success');
-        } catch (error) {
-          console.error('Error sending verification code:', error);
-          showMessage(error.message, 'error');
-        } finally {
-          btn.disabled = false;
-          btn.textContent = originalText;
-        }
-      }
-
-      async function verifyCode() {
-        const code = document.getElementById('codeInput').value.trim();
-        if (!code || !/^\d{6}$/.test(code)) {
-          showMessage('Please enter a valid 6-digit code.', 'error');
-          return;
-        }
-
-        const btn = document.querySelector('#codeForm button[type="submit"]');
-        const originalText = btn.textContent;
-        btn.disabled = true;
-        btn.textContent = 'Verifying...';
-
-        try {
-          const response = await fetch('/api/tickets/verify-code', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: currentEmail, code })
-          });
-
-          const data = await response.json();
-
-          if (!response.ok) {
-            throw new Error(data.error || 'Invalid verification code');
-          }
-
-          // Save session
-          saveSession(data.accessToken, currentEmail, data.expiresIn || 3600);
-
-          // Clear timers
-          if (expiryInterval) clearInterval(expiryInterval);
-          if (resendInterval) clearInterval(resendInterval);
-
-          // Show authenticated view and load tickets
-          showAuthenticatedView();
-          await loadTickets();
-          showMessage('Verification successful! Loading your tickets...', 'success');
-
-        } catch (error) {
-          console.error('Error verifying code:', error);
-          showMessage(error.message, 'error');
-        } finally {
-          btn.disabled = false;
-          btn.textContent = originalText;
-        }
-      }
-
-      // Timer management
-      function startExpiryTimer(seconds) {
-        if (expiryInterval) clearInterval(expiryInterval);
-
-        let remaining = seconds;
-        const timerEl = document.getElementById('expiryTimer');
-
-        const updateTimer = () => {
-          const minutes = Math.floor(remaining / 60);
-          const secs = remaining % 60;
-          setSafeTextContent(timerEl, `${minutes}:${secs.toString().padStart(2, '0')}`);
-
-          if (remaining <= 0) {
-            clearInterval(expiryInterval);
-            showMessage('Verification code expired. Please request a new code.', 'warning');
-          }
-          remaining--;
-        };
-
-        updateTimer();
-        expiryInterval = setInterval(updateTimer, 1000);
-      }
-
-      function startResendTimer() {
-        if (resendInterval) clearInterval(resendInterval);
-
-        let remaining = 60;
-        const btn = document.getElementById('resendCodeBtn');
-        const timerEl = document.getElementById('resendTimer');
-        btn.disabled = true;
-
-        const updateTimer = () => {
-          setSafeTextContent(timerEl, remaining.toString());
-
-          if (remaining <= 0) {
-            clearInterval(resendInterval);
-            btn.disabled = false;
-            // Restore original HTML structure to preserve timer span for next use
-            btn.innerHTML = 'Resend Code (<span id="resendTimer">60</span>s)';
-          }
-          remaining--;
-        };
-
-        updateTimer();
-        resendInterval = setInterval(updateTimer, 1000);
-      }
-
-      // Load tickets with authentication
-      async function loadTickets() {
-        const ticketContainer = document.getElementById('ticketContainer');
-
-        ticketContainer.innerHTML = '';
-        const loadingElement = createElementWithContent('div', 'Loading your tickets...', {
-          className: 'loading'
-        });
-        ticketContainer.appendChild(loadingElement);
-
-        try {
-          const response = await fetch(`/api/tickets?email=${encodeURIComponent(currentEmail)}`, {
-            headers: {
-              'Authorization': `Bearer ${currentAccessToken}`
-            }
-          });
-
-          const data = await response.json();
-
-          if (!response.ok) {
-            if (response.status === 401) {
-              // Token expired
-              clearSession();
-              resetToEmailStep();
-              showMessage('Your session has expired. Please sign in again.', 'warning');
-              return;
-            }
-            throw new Error(data.error || 'Failed to load tickets');
-          }
-
-          currentTickets = data.tickets || [];
-
-          if (currentTickets.length === 0) {
-            ticketContainer.innerHTML = '<p class="no-tickets">No tickets found for this email.</p>';
-            return;
-          }
-
-          displayTickets(currentTickets);
-        } catch (error) {
-          console.error('Error loading tickets:', error);
-          showMessage(error.message, 'error');
-          ticketContainer.innerHTML = '';
-        }
-      }
-
-      function displayTickets(tickets) {
-        const ticketContainer = document.getElementById("ticketContainer");
-
-        // Filter tickets to only show those belonging to the verified email
-        const verifiedEmail = currentEmail;
-        const filteredTickets = verifiedEmail
-          ? tickets.filter(ticket => ticket.attendee_email === verifiedEmail)
-          : tickets;
-
-        const ticketsHtml = filteredTickets
-          .map((ticket, index) => {
-            // Keep raw values for API calls and JavaScript, escape for HTML display
-            const ticketIdRaw = ticket.ticket_id || ''; // For API calls, JS onclick, data attributes
-            const ticketId = escapeHtml(ticketIdRaw);   // For HTML text display only
-            const ticketType = escapeHtml(ticket.formatted_type || formatTicketType(ticket.ticket_type || ''));
-            const ticketStatus = escapeHtml(ticket.status || '');
-            const attendeeFirstName = escapeHtml(ticket.attendee_first_name || '');
-            const attendeeLastName = escapeHtml(ticket.attendee_last_name || '');
-            const attendeeEmail = escapeHtml(ticket.attendee_email || '');
-            const formattedDate = escapeHtml(ticket.formatted_date || timeManager.formatDate(ticket.event_date, true) || '');
-            const scansRemaining = ticket.scans_remaining !== undefined ? ticket.scans_remaining : (3 - (ticket.scan_count || 0));
-            const scanCount = ticket.scan_count || 0;
-
-            // Color circle (36px diameter) - simplified from view-tickets
-            const colorRgb = ticket.color_rgb || null;
-            const colorCircle = colorRgb
-              ? `<span aria-hidden="true" style="display: inline-block; width: 36px; height: 36px; border-radius: 50%; background: ${colorRgb};"></span>`
-              : '';
-
-            // Status badge
-            const statusBadge = ticketStatus === 'valid' ?
-              '<span class="ticket-status-badge">✓ Valid</span>' :
-              ticketStatus === 'used' ?
-              '<span class="ticket-status-badge" style="background: var(--color-info-light); color: var(--color-info-700); border-color: var(--color-info);">Used</span>' :
-              '<span class="ticket-status-badge" style="background: var(--color-warning-light); color: var(--color-warning-700); border-color: var(--color-warning);">'+ticketStatus+'</span>';
-
-            return `
-                    <div class="ticket-card" id="ticket-${escapeHtml(ticketIdRaw)}" data-ticket-id="${escapeHtml(ticketIdRaw)}">
-                        <!-- Header Row: Type/ID | Color Circle | Status -->
-                        <div class="ticket-header-row">
-                            <div class="ticket-header-left">
-                                <div class="info-group left-align">
-                                    <span class="info-label">TICKET TYPE</span>
-                                    <span class="info-value">${ticketType}</span>
-                                </div>
-                                <div class="info-group left-align">
-                                    <span class="info-label">TICKET ID</span>
-                                    <span class="info-value ticket-id">${ticketId}</span>
-                                </div>
-                            </div>
-                            <div class="ticket-header-center">
-                                ${colorCircle}
-                            </div>
-                            <div class="ticket-header-right">
-                                ${statusBadge}
-                            </div>
-                        </div>
-
-                        <!-- Attendee Info: Name | Email | Date -->
-                        <div class="attendee-info">
-                            <div class="info-group left-align">
-                                <span class="info-label">Attendee Name</span>
-                                <span class="info-value attendee-display" id="display-${escapeHtml(ticketIdRaw)}">
-                                    ${attendeeFirstName} ${attendeeLastName}
-                                </span>
-                            </div>
-                            <div class="info-group center-align">
-                                <span class="info-label">Email</span>
-                                <span class="info-value" id="email-display-${escapeHtml(ticketIdRaw)}">${attendeeEmail}</span>
-                            </div>
-                            <div class="info-group right-align">
-                                <span class="info-label">Event Date</span>
-                                <span class="info-value">${formattedDate}</span>
-                            </div>
-                        </div>
-
-                        <!-- QR Code Section (Inline) -->
-                        <div style="margin: var(--space-xl) 0; padding: var(--space-lg); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 8px; text-align: center;">
-                            <h3 style="font-family: var(--font-display); font-size: var(--text-lg); margin-bottom: var(--space-md); color: var(--color-text-primary);">Your Entry QR Code</h3>
-                            <div style="padding: var(--space-md); background: white; border-radius: 8px; display: inline-block;">
-                                <img src="/api/tickets/qr-image?ticketId=${encodeURIComponent(ticketIdRaw)}"
-                                     alt="Ticket QR Code for ${ticketId}"
-                                     style="width: 200px; height: 200px; display: block;"
-                                     onerror="console.error('Failed to load QR code image')">
-                            </div>
-                            <p style="margin-top: var(--space-md); font-family: var(--font-body); color: var(--color-text-secondary); font-size: var(--text-sm);">
-                                📱 Screenshot this QR code or scan at entry
-                            </p>
-                            <div style="margin-top: var(--space-sm); font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-text-secondary);">
-                                Scans remaining: ${scansRemaining}
-                            </div>
-                        </div>
-
-                        <!-- Wallet Buttons (Inline) -->
-                        <div class="wallet-section">
-                            <p style="text-align: center; width: 100%; margin-bottom: var(--space-md); font-family: var(--font-body); color: var(--color-text-secondary);">Or add to your mobile wallet:</p>
-                            <a href="/api/tickets/apple-wallet/${escapeHtml(ticketIdRaw)}" class="wallet-button" aria-label="Add ticket ${ticketId} to Apple Wallet">
-                                <img src="${window.location.origin}/images/add-to-wallet-apple.svg" alt="Add to Apple Wallet" style="height: 40px; width: auto;">
-                            </a>
-                            <a href="/api/tickets/google-wallet/${escapeHtml(ticketIdRaw)}" class="wallet-button" aria-label="Add ticket ${ticketId} to Google Wallet">
-                                <img src="${window.location.origin}/images/add-to-wallet-google.png" alt="Add to Google Wallet" style="height: 40px; width: auto;">
-                            </a>
-                        </div>
-
-                        <!-- Transfer Button (Centered) -->
-                        ${currentAccessToken ? `
-                        <div class="transfer-action">
-                            <button class="btn-small btn-primary btn-transfer" data-ticket-id="${escapeHtml(ticketIdRaw)}">
-                                Transfer Ticket
-                            </button>
-                        </div>
-                        ` : ''}
-                    </div>
-                    <!-- Divider between ticket cards -->
-                    ${index < tickets.length - 1 ? '<div style="margin: var(--space-xl) 0; border-top: 1px solid var(--color-border);"></div>' : ''}
-                `;
-          })
-          .join("");
-
-        ticketContainer.innerHTML = `
-                <div class="ticket-list">
-                    <h2 style="margin-bottom: var(--space-xl);">You have ${filteredTickets.length} ticket${filteredTickets.length === 1 ? '' : 's'}</h2>
-                    ${ticketsHtml}
-                </div>
-            `;
-
-        // Add event listeners for transfer buttons
-        console.log('[Transfer Debug] Searching for .btn-transfer buttons...');
-        const transferButtons = document.querySelectorAll('.btn-transfer');
-        console.log('[Transfer Debug] Found', transferButtons.length, 'transfer buttons');
-
-        transferButtons.forEach((btn, index) => {
-          console.log('[Transfer Debug] Attaching listener to button', index, 'with ticket ID:', btn.dataset.ticketId);
-          btn.addEventListener('click', () => {
-            const ticketId = btn.dataset.ticketId;
-            console.log('[Transfer Debug] Transfer button clicked! Ticket ID:', ticketId);
-            console.log('[Transfer Debug] openModal function exists?', typeof openModal);
-            currentTicketId = ticketId;
-            openModal("transferModal");
-            console.log('[Transfer Debug] openModal called');
-          });
-        });
-
-        // No longer need lazy-loaded wallet buttons - they're inline now
-        // Preload QR codes for first few tickets
-        requestAnimationFrame(() => {
-          const firstFewTickets = filteredTickets.slice(0, 3);
-          firstFewTickets.forEach(ticket => {
-            if (ticket.qr_token) {
-              window.qrCacheManager.preloadQRCode(ticket.qr_token);
-            }
-          });
-        });
-      }
-
-      function formatTicketType(type) {
-        const typeMap = {
-          "vip-pass": "VIP Pass",
-          "weekend-pass": "Weekend Pass",
-          "friday-pass": "Friday Pass",
-          "saturday-pass": "Saturday Pass",
-          "sunday-pass": "Sunday Pass",
-          "workshop-beginner": "Beginner Workshop",
-          "workshop-intermediate": "Intermediate Workshop",
-          "workshop-advanced": "Advanced Workshop",
-          workshop: "Workshop",
-          "social-dance": "Social Dance",
-          "general-admission": "General Admission",
-        };
-        return typeMap[type] || type;
-      }
-
-      // Message helpers
-      function showMessage(message, type = 'info') {
-        const messageContainer = document.getElementById("messageContainer");
-        displayMessage(messageContainer, escapeHtml(message), type, {
-          clearPrevious: true,
-          autoHide: type === 'success' || type === 'info',
-          hideDelay: 5000
-        });
-      }
-
-      function clearMessage() {
-        document.getElementById("messageContainer").innerHTML = '';
-      }
-
-      // Inline editing functions
-      // Edit functions removed - use Transfer Ticket to update attendee info
-
-      // Modal management (functions moved to global scope at end of file)
-
-      // Close modal when clicking outside
-      document.addEventListener('click', function (event) {
-        const modals = document.querySelectorAll(".modal");
-        modals.forEach((modal) => {
-          if (event.target === modal) {
-            closeModal(modal.id);
-          }
-        });
-      });
-
-      // Ticket management functions (initiateTransfer moved to module scope)
-
-      // Handle transfer form submission
-      document
-        .getElementById("transferForm")
-        .addEventListener("submit", function (e) {
-          e.preventDefault();
-          const newAttendee = {
-            email: document.getElementById("transferEmail").value,
-            firstName: document.getElementById("transferFirstName").value,
-            lastName: document.getElementById("transferLastName").value,
-            phone: document.getElementById("transferPhone").value,
-          };
-          performTicketTransfer(currentTicketId, newAttendee);
-          closeModal("transferModal");
-        });
-
-      async function performTicketTransfer(ticketId, newAttendee) {
-        try {
-          if (!currentEmail) {
-            throw new Error("Unable to determine current user. Please refresh the page and try again.");
-          }
-
-          // First get action token
-          const tokenResponse = await fetch("/api/tickets/action-token", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              action: "transfer",
-              targetId: ticketId,
-              email: currentEmail,
-            }),
-          });
-
-          const tokenData = await tokenResponse.json();
-          if (!tokenResponse.ok) throw new Error(tokenData.error);
-
-          // Perform transfer
-          const transferResponse = await fetch("/api/tickets/transfer", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              ticketId,
-              actionToken: tokenData.actionToken,
-              newAttendee,
-            }),
-          });
-
-          const transferData = await transferResponse.json();
-          if (!transferResponse.ok) throw new Error(transferData.error);
-
-          showMessage("Ticket transferred successfully!", 'success');
-          closeModal("transferModal");
-          loadTickets();
-        } catch (error) {
-          showMessage('Transfer failed: ' + error.message, 'error');
-        }
-      }
-
-      async function performTicketCancel(ticketId, reason) {
-        try {
-          if (!currentEmail) {
-            throw new Error("Unable to determine current user. Please refresh the page and try again.");
-          }
-
-          // First get action token
-          const tokenResponse = await fetch("/api/tickets/action-token", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              action: "cancel",
-              targetId: ticketId,
-              email: currentEmail,
-            }),
-          });
-
-          const tokenData = await tokenResponse.json();
-          if (!tokenResponse.ok) throw new Error(tokenData.error);
-
-          // Perform cancellation
-          const cancelResponse = await fetch("/api/tickets/cancel", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              ticketId,
-              actionToken: tokenData.actionToken,
-              reason: reason || 'Customer request',
-            }),
-          });
-
-          const cancelData = await cancelResponse.json();
-          if (!cancelResponse.ok) throw new Error(cancelData.error);
-
-          showMessage("Ticket cancelled successfully!", 'success');
-          loadTickets();
-        } catch (error) {
-          showMessage('Cancellation failed: ' + error.message, 'error');
-        }
-      }
-
-      function formatDate(dateStr) {
-        if (!dateStr) return "May 15-17, 2026 (Mountain Time)";
-        return timeManager.formatDate(dateStr, true) + " (Mountain Time)";
-      }
-    </script>
+    <script defer src="/js/navigation.js"></script>
+    <script type="module" src="/js/gallery-hero.js"></script>
+
+    <!-- Global Cart System -->
+    <script type="module" src="/js/global-cart.js"></script>
 
     <!-- Theme Management -->
     <script type="module">
@@ -1641,15 +493,6 @@
         initializeThemeToggle('#theme-toggle-container');
       });
     </script>
-
-    <!-- Navigation and Gallery Scripts -->
-    <script defer src="/js/navigation.js"></script>
-    <script type="module" src="/js/gallery-hero.js"></script>
-
-    <!-- Global Cart System -->
-    <script type="module" src="/js/global-cart.js"></script>
-
-    <!-- Logo Switcher -->
     <script src="/js/logo-switcher.js"></script>
   </body>
 </html>

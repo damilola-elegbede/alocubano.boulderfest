@@ -8,7 +8,7 @@ import { getRegistrationTokenService } from "../lib/registration-token-service.j
 import { getDatabaseClient } from "../lib/database.js";
 import { processDatabaseResult } from "../lib/bigint-serializer.js";
 import { getTicketColorService } from "../lib/ticket-color-service.js";
-import { withRateLimit } from "../lib/rate-limiter.js";
+import { withRateLimit } from "./utils/rate-limiter.js";
 import jwt from 'jsonwebtoken';
 
 // Rate limit: 30 requests per minute per IP

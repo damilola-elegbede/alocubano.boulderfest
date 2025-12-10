@@ -65,6 +65,7 @@ if (rootElement) {
         'HomePage': () => import('./pages/HomePage'),
         'ContactPage': () => import('./pages/ContactPage'),
         'DonationsPage': () => import('./pages/DonationsPage'),
+        'MyTicketsPage': () => import('./pages/MyTicketsPage'),
 
         // Event pages - Boulder Fest 2025
         'BoulderFest2025Overview': () => import('./pages/events/boulder-fest-2025/OverviewPage'),

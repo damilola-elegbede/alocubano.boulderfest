@@ -73,6 +73,15 @@ export function initializeHeaderCart(cartManager) {
         });
     }
 
+    // Listen for cart-item-arrived events to trigger bounce animation
+    document.addEventListener('cart-item-arrived', () => {
+        const cartIcon = document.querySelector('.nav-cart-icon');
+        if (cartIcon) {
+            cartIcon.classList.add('cart-bounce');
+            setTimeout(() => cartIcon.classList.remove('cart-bounce'), 400);
+        }
+    });
+
     // Initial update
     updateCartDisplay();
 

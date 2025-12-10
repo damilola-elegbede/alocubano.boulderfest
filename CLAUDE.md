@@ -55,11 +55,13 @@ npm run verify-structure        # Verify project structure
 ## Architecture Overview
 
 ### Frontend
-- Vanilla JavaScript ES6 modules - no frameworks
+- Hybrid architecture: React components + vanilla JavaScript ES6 modules
+- React pages: Donations, Checkout, Contact, MyTickets, Admin portal (mounted via `data-component` attribute on `#react-root`)
+- Vanilla JS: Navigation, theme toggle, gallery, cart UI, shared utilities
 - Typography-forward design (Bebas Neue, Playfair Display, Space Mono)
 - Virtual gallery with Google Drive integration and lazy loading
 - Floating cart with intelligent page-specific visibility
-- Donations system with preset/custom amounts
+- Donations system with preset/custom amounts and confetti celebration
 - Mobile-first: 44px touch targets, WCAG AA contrast, slide-in navigation
 - Hybrid theme system: user-controlled (main) + fixed dark (admin)
 - Error notifications with retry functionality

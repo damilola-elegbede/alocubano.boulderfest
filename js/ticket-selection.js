@@ -562,6 +562,11 @@ class TicketSelection {
         btn.classList.add('cart-updating');
         quantitySpan.classList.add('updating');
 
+        // Fly-to-cart animation (only on increase)
+        if (action === 'increase') {
+            this.createFlyToCartAnimation(btn, price);
+        }
+
         setTimeout(() => {
             btn.classList.remove('cart-updating');
             quantitySpan.classList.remove('updating');
@@ -721,6 +726,9 @@ class TicketSelection {
         btn.setAttribute('data-action-state', 'added');
         btn.style.backgroundColor = 'var(--color-green, #28a745)';
 
+        // Fly-to-cart animation
+        this.createFlyToCartAnimation(btn, price);
+
         setTimeout(() => {
             btn.textContent = 'Add to Cart';
             btn.setAttribute('data-action-state', 'ready');
@@ -764,6 +772,60 @@ class TicketSelection {
             const plusBtn = card.querySelector('.qty-btn.plus');
             plusBtn.click();
         }
+    }
+
+    /**
+     * Creates a fly-to-cart animation for tickets
+     * @param {HTMLElement} sourceBtn - The button that triggered the action
+     * @param {number} price - Price in cents
+     */
+    createFlyToCartAnimation(sourceBtn, price) {
+        const cartIcon = document.querySelector('.nav-cart-icon');
+
+        if (!sourceBtn || !cartIcon) return;
+
+        // Check for reduced motion preference
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+        const btnRect = sourceBtn.getBoundingClientRect();
+        const cartRect = cartIcon.getBoundingClientRect();
+
+        // Create flying element with price
+        const flyItem = document.createElement('div');
+        flyItem.className = 'fly-to-cart-item';
+        flyItem.textContent = `$${Math.round(price / 100)}`; // Price in dollars
+
+        // Position at button center
+        const startX = btnRect.left + btnRect.width / 2;
+        const startY = btnRect.top + btnRect.height / 2;
+
+        flyItem.style.left = `${startX}px`;
+        flyItem.style.top = `${startY}px`;
+
+        document.body.appendChild(flyItem);
+
+        // Calculate end position (cart icon center)
+        const endX = cartRect.left + cartRect.width / 2;
+        const endY = cartRect.top + cartRect.height / 2;
+
+        // Set CSS custom properties for animation
+        flyItem.style.setProperty('--fly-x', `${endX - startX}px`);
+        flyItem.style.setProperty('--fly-y', `${endY - startY}px`);
+
+        // Trigger animation
+        requestAnimationFrame(() => {
+            flyItem.classList.add('flying');
+        });
+
+        // Dispatch cart-item-arrived event and remove element
+        setTimeout(() => {
+            document.dispatchEvent(new CustomEvent('cart-item-arrived', {
+                detail: { type: 'ticket', price }
+            }));
+            if (flyItem.parentNode) {
+                flyItem.parentNode.removeChild(flyItem);
+            }
+        }, 600);
     }
 
     updateDisplay() {

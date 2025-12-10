@@ -175,55 +175,151 @@ class DonationSelection {
     }
 
     showCelebratoryAnimation(amount) {
-    // Add celebration animation to the donate button
+        // Add celebration animation to the donate button
         const donateBtn = document.getElementById('donate-button');
         if (donateBtn) {
             donateBtn.classList.add('donation-celebration');
-            setTimeout(() => donateBtn.classList.remove('donation-celebration'), 600);
+            setTimeout(() => donateBtn.classList.remove('donation-celebration'), 400);
         }
+
+        // Create fly-to-cart animation
+        this.createFlyToCartAnimation(amount);
 
         // Create confetti celebration
         this.createConfetti();
 
-        // Create celebration message
+        // Create overlay (70% dark background)
+        const overlay = document.createElement('div');
+        overlay.className = 'celebration-overlay';
+        document.body.appendChild(overlay);
+
+        // Create persistent celebration message with buttons
         const celebrationMessage = document.createElement('div');
         celebrationMessage.className = 'celebration-message';
         celebrationMessage.innerHTML = `
-      🎉 Thank You!<br>
-      $${amount} added to cart
-    `;
+            <div class="celebration-title">🎉 Thank You!</div>
+            <div class="celebration-content">$${amount} added to cart</div>
+            <div class="celebration-message-buttons">
+                <button class="celebration-btn celebration-btn-primary" data-action="cart">Go to Cart</button>
+                <button class="celebration-btn celebration-btn-secondary" data-action="continue">Continue</button>
+            </div>
+        `;
 
         document.body.appendChild(celebrationMessage);
 
-        // Remove after animation completes
-        setTimeout(() => {
-            if (celebrationMessage.parentNode) {
-                celebrationMessage.parentNode.removeChild(celebrationMessage);
+        // Handle button clicks
+        const handleAction = (action) => {
+            overlay.remove();
+            celebrationMessage.remove();
+
+            if (action === 'cart') {
+                // Open the floating cart using global API
+                if (window.floatingCartAPI && window.floatingCartAPI.open) {
+                    window.floatingCartAPI.open();
+                } else {
+                    // Fallback: click the cart icon
+                    const cartToggle = document.querySelector('.nav-cart-icon');
+                    if (cartToggle) cartToggle.click();
+                }
             }
-        }, 2000);
+            // 'continue' just closes the modal and resumes donation page
+        };
+
+        celebrationMessage.querySelectorAll('.celebration-btn').forEach(btn => {
+            btn.addEventListener('click', () => handleAction(btn.dataset.action));
+        });
+
+        // Close on overlay click
+        overlay.addEventListener('click', () => handleAction('continue'));
+    }
+
+    createFlyToCartAnimation(amount) {
+        const donateBtn = document.getElementById('donate-button');
+        const cartIcon = document.querySelector('.nav-cart-icon');
+
+        if (!donateBtn || !cartIcon) return;
+
+        // Respect reduced motion preference
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            // Skip animation, just dispatch event immediately
+            document.dispatchEvent(new CustomEvent('cart-item-arrived', {
+                detail: { type: 'donation', amount }
+            }));
+            return;
+        }
+
+        const btnRect = donateBtn.getBoundingClientRect();
+        const cartRect = cartIcon.getBoundingClientRect();
+
+        // Create flying element
+        const flyItem = document.createElement('div');
+        flyItem.className = 'fly-to-cart-item';
+        flyItem.textContent = `$${amount}`;
+
+        // Position at button center
+        const startX = btnRect.left + btnRect.width / 2;
+        const startY = btnRect.top + btnRect.height / 2;
+
+        flyItem.style.left = `${startX}px`;
+        flyItem.style.top = `${startY}px`;
+
+        document.body.appendChild(flyItem);
+
+        // Calculate end position (cart icon center)
+        const endX = cartRect.left + cartRect.width / 2;
+        const endY = cartRect.top + cartRect.height / 2;
+
+        // Animate using CSS custom properties
+        flyItem.style.setProperty('--fly-x', `${endX - startX}px`);
+        flyItem.style.setProperty('--fly-y', `${endY - startY}px`);
+
+        // Trigger animation
+        requestAnimationFrame(() => {
+            flyItem.classList.add('flying');
+        });
+
+        // Dispatch cart-item-arrived event and remove element
+        setTimeout(() => {
+            document.dispatchEvent(new CustomEvent('cart-item-arrived', {
+                detail: { type: 'donation', amount }
+            }));
+            if (flyItem.parentNode) {
+                flyItem.parentNode.removeChild(flyItem);
+            }
+        }, 600);
     }
 
     createConfetti() {
+        // Debounce: skip if confetti is already active
+        if (this.confettiActive) return;
+        this.confettiActive = true;
+        setTimeout(() => { this.confettiActive = false; }, 8000);
+
         const colors = [
-            '#FF0080', // Hot pink
-            '#00FF00', // Lime green
-            '#FF4500', // Orange red
-            '#FFD700', // Gold
-            '#00CED1', // Dark turquoise
-            '#FF1493', // Deep pink
-            '#0000FF', // Pure blue
-            '#FF00FF' // Magenta
+            '#FF6B6B', // Coral red
+            '#4ECDC4', // Teal
+            '#45B7D1', // Sky blue
+            '#96CEB4', // Sage green
+            '#FFEAA7', // Pale yellow
+            '#DDA0DD', // Plum
+            '#98D8C8', // Mint
+            '#F7DC6F'  // Gold
         ];
-        const confettiCount = 150; // Much more dense
+        const confettiCount = 100;
 
         for (let i = 0; i < confettiCount; i++) {
             const confetti = document.createElement('div');
             confetti.className = 'confetti-piece';
             confetti.style.backgroundColor =
-        colors[Math.floor(Math.random() * colors.length)];
-            confetti.style.left = Math.random() * 120 + 'vw'; // Spread wider than screen
-            confetti.style.animationDelay = Math.random() * 2 + 's'; // Staggered for performance
-            confetti.style.animationDuration = Math.random() * 2 + 8 + 's'; // 8-10s duration
+                colors[Math.floor(Math.random() * colors.length)];
+            confetti.style.left = Math.random() * 100 + 'vw';
+            // Burst effect: tight delay window so pieces fall together
+            confetti.style.animationDelay = Math.random() * 0.3 + 's';
+            // Realistic duration: 3-5 seconds
+            confetti.style.animationDuration = Math.random() * 2 + 3 + 's';
+            // Random drift direction for flutter (-40px to +40px)
+            const drift = (Math.random() - 0.5) * 80;
+            confetti.style.setProperty('--confetti-drift', drift + 'px');
 
             document.body.appendChild(confetti);
 
@@ -232,7 +328,7 @@ class DonationSelection {
                 if (confetti.parentNode) {
                     confetti.parentNode.removeChild(confetti);
                 }
-            }, 12000);
+            }, 8000);
         }
     }
 
