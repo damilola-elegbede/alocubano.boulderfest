@@ -293,7 +293,7 @@ class DonationSelection {
         // Debounce: skip if confetti is already active
         if (this.confettiActive) return;
         this.confettiActive = true;
-        setTimeout(() => { this.confettiActive = false; }, 8000);
+        setTimeout(() => { this.confettiActive = false; }, 12000);
 
         const colors = [
             '#FF6B6B', // Coral red
@@ -313,8 +313,8 @@ class DonationSelection {
             confetti.style.backgroundColor =
         colors[Math.floor(Math.random() * colors.length)];
             confetti.style.left = Math.random() * 100 + 'vw';
-            confetti.style.animationDelay = Math.random() * 0.5 + 's'; // Quicker stagger
-            confetti.style.animationDuration = Math.random() * 2 + 6 + 's'; // 6-8s duration
+            confetti.style.animationDelay = Math.random() * 2 + 's'; // Staggered start over 2s
+            confetti.style.animationDuration = Math.random() * 2 + 8 + 's'; // 8-10s duration
 
             document.body.appendChild(confetti);
 
@@ -323,7 +323,7 @@ class DonationSelection {
                 if (confetti.parentNode) {
                     confetti.parentNode.removeChild(confetti);
                 }
-            }, 8000);
+            }, 12000);
         }
     }
 
