@@ -197,10 +197,8 @@ class DonationSelection {
         const celebrationMessage = document.createElement('div');
         celebrationMessage.className = 'celebration-message';
         celebrationMessage.innerHTML = `
-            <div class="celebration-content">
-                🎉 Thank You!<br>
-                $${amount} added to cart
-            </div>
+            <div class="celebration-title">🎉 Thank You!</div>
+            <div class="celebration-content">$${amount} added to cart</div>
             <div class="celebration-message-buttons">
                 <button class="celebration-btn celebration-btn-primary" data-action="cart">Go to Cart</button>
                 <button class="celebration-btn celebration-btn-secondary" data-action="continue">Continue</button>
