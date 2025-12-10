@@ -184,7 +184,7 @@ npm start
 ### API Verification
 
 ```bash
-curl "http://localhost:3000/api/gallery?eventId={event-name}"
+curl "http://localhost:3000/api/gallery?event={event-name}"
 ```
 
 Expected response:

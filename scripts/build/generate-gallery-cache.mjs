@@ -12,19 +12,8 @@ const __dirname = path.dirname(__filename);
 // Load credentials from .env.local
 dotenv.config({ path: ".env.local" });
 
-// Skip if no Google credentials are available (e.g., in CI/CD)
-if (
-  !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL ||
-  !process.env.GOOGLE_PRIVATE_KEY
-) {
-  console.log(
-    "Skipping gallery cache generation: Google credentials not found",
-  );
-  console.log(
-    "This is expected in CI/CD environments where credentials aren't available",
-  );
-  process.exit(0);
-}
+// Note: Credential check moved to main() function which creates placeholder files
+// when credentials are missing (for CI/CD environments)
 
 // --- Configuration ---
 // Event-based gallery configuration - list of event names to cache
@@ -46,7 +35,7 @@ const LEGACY_GALLERY_CONFIG = {
   2024: null, // Historical data if available
   2023: null, // Historical data if available
 };
-const OUTPUT_DIR = path.join(__dirname, "..", "public", "gallery-data");
+const OUTPUT_DIR = path.join(__dirname, "..", "..", "public", "gallery-data");
 
 // --- Google Drive Authentication ---
 const auth = new google.auth.GoogleAuth({
