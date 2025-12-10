@@ -2110,7 +2110,7 @@
   height: 16px;
   background: #ff0080;
   top: -20px;
-  z-index: 9999;
+  z-index: 10002; /* Above overlay (10000) and modal (10001) */
   animation: confettiFall linear forwards;
   pointer-events: none;
 }

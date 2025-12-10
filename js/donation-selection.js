@@ -215,11 +215,16 @@ class DonationSelection {
             celebrationMessage.remove();
 
             if (action === 'cart') {
-                // Open the floating cart
-                const cartToggle = document.querySelector('.nav-cart-icon');
-                if (cartToggle) cartToggle.click();
+                // Open the floating cart using global API
+                if (window.floatingCartAPI && window.floatingCartAPI.open) {
+                    window.floatingCartAPI.open();
+                } else {
+                    // Fallback: click the cart icon
+                    const cartToggle = document.querySelector('.nav-cart-icon');
+                    if (cartToggle) cartToggle.click();
+                }
             }
-            // 'continue' just closes the modal
+            // 'continue' just closes the modal and resumes donation page
         };
 
         celebrationMessage.querySelectorAll('.celebration-btn').forEach(btn => {
@@ -235,6 +240,15 @@ class DonationSelection {
         const cartIcon = document.querySelector('.nav-cart-icon');
 
         if (!donateBtn || !cartIcon) return;
+
+        // Respect reduced motion preference
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            // Skip animation, just dispatch event immediately
+            document.dispatchEvent(new CustomEvent('cart-item-arrived', {
+                detail: { type: 'donation', amount }
+            }));
+            return;
+        }
 
         const btnRect = donateBtn.getBoundingClientRect();
         const cartRect = cartIcon.getBoundingClientRect();

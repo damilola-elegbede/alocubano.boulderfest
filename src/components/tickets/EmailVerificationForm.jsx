@@ -91,7 +91,7 @@ export default function EmailVerificationForm({
                     <span className="highlight-email">{email}</span>
                 </p>
                 <p className="code-expiry-info">
-                    Code expires in <span id="expiryTimer">{formatTime(expirySeconds)}</span> minutes
+                    Code expires in <span id="expiryTimer">{formatTime(expirySeconds)}</span>
                 </p>
                 <form className="verification-form" onSubmit={handleCodeSubmit}>
                     <div className="form-group">

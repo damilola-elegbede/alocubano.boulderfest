@@ -43,6 +43,14 @@ export function useTicketSession() {
     const [accessToken, setAccessToken] = useState(null);
     const [sessionTimeRemaining, setSessionTimeRemaining] = useState(null);
 
+    // Clear session state (internal helper) - defined first so checkSession can use it
+    const clearSessionData = useCallback(() => {
+        setAccessToken(null);
+        setEmail(null);
+        setIsAuthenticated(false);
+        setSessionTimeRemaining(null);
+    }, []);
+
     // Check session validity
     const checkSession = useCallback(() => {
         try {
@@ -72,15 +80,7 @@ export function useTicketSession() {
             clearSessionData();
             return false;
         }
-    }, []);
-
-    // Clear session state (internal helper)
-    const clearSessionData = useCallback(() => {
-        setAccessToken(null);
-        setEmail(null);
-        setIsAuthenticated(false);
-        setSessionTimeRemaining(null);
-    }, []);
+    }, [clearSessionData]);
 
     // Save new session
     const saveSession = useCallback((token, userEmail, expiresInSeconds) => {

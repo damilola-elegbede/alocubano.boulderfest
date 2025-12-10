@@ -11,25 +11,7 @@
 
 import React from 'react';
 import { useTimeManager } from '../../hooks/useTimeManager';
-
-// Ticket type display names
-const TICKET_TYPE_LABELS = {
-    'vip-pass': 'VIP Pass',
-    'weekend-pass': 'Weekend Pass',
-    'friday-pass': 'Friday Pass',
-    'saturday-pass': 'Saturday Pass',
-    'sunday-pass': 'Sunday Pass',
-    'workshop-beginner': 'Beginner Workshop',
-    'workshop-intermediate': 'Intermediate Workshop',
-    'workshop-advanced': 'Advanced Workshop',
-    'workshop': 'Workshop',
-    'social-dance': 'Social Dance',
-    'general-admission': 'General Admission'
-};
-
-function formatTicketType(type) {
-    return TICKET_TYPE_LABELS[type] || type;
-}
+import { formatTicketType } from '../../../lib/ticket-config.js';
 
 export default function TicketCard({ ticket, onTransfer, showTransfer = false }) {
     const { formatDate } = useTimeManager();
@@ -362,7 +344,8 @@ export default function TicketCard({ ticket, onTransfer, showTransfer = false })
                             background: 'var(--color-primary)',
                             color: 'var(--color-text-on-primary)',
                             fontSize: '12px',
-                            cursor: 'pointer'
+                            cursor: 'pointer',
+                            minHeight: '44px'
                         }}
                     >
                         Transfer Ticket

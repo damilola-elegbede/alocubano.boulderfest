@@ -56,13 +56,14 @@ function MyTicketsPageContent() {
 
     // Load tickets when authenticated
     const loadTickets = useCallback(async () => {
-        if (!isAuthenticated || !email || !accessToken) return;
+        if (!isAuthenticated || !accessToken) return;
 
         setIsLoadingTickets(true);
         setTicketsError(null);
 
         try {
-            const response = await fetch(`/api/tickets?email=${encodeURIComponent(email)}`, {
+            // Use token-based endpoint (secure) instead of email query param
+            const response = await fetch(`/api/tickets?token=${encodeURIComponent(accessToken)}`, {
                 headers: {
                     'Authorization': `Bearer ${accessToken}`
                 }
@@ -72,7 +73,7 @@ function MyTicketsPageContent() {
 
             if (!response.ok) {
                 if (response.status === 401) {
-                    // Token expired
+                    // Token expired or invalid
                     clearSession();
                     resetFlow();
                     setMessage({ type: 'warning', text: 'Your session has expired. Please sign in again.' });
@@ -81,19 +82,15 @@ function MyTicketsPageContent() {
                 throw new Error(data.error || 'Failed to load tickets');
             }
 
-            // Filter tickets to only show those belonging to the verified email
-            const filteredTickets = (data.tickets || []).filter(
-                ticket => ticket.attendee_email === email
-            );
-
-            setTickets(filteredTickets);
+            // Token-based query already returns only tickets for this user
+            setTickets(data.tickets || []);
         } catch (err) {
             console.error('Error loading tickets:', err);
             setTicketsError(err.message);
         } finally {
             setIsLoadingTickets(false);
         }
-    }, [isAuthenticated, email, accessToken, clearSession, resetFlow]);
+    }, [isAuthenticated, accessToken, clearSession, resetFlow]);
 
     // Load tickets on authentication
     useEffect(() => {
