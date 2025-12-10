@@ -293,7 +293,7 @@ class DonationSelection {
         // Debounce: skip if confetti is already active
         if (this.confettiActive) return;
         this.confettiActive = true;
-        setTimeout(() => { this.confettiActive = false; }, 12000);
+        setTimeout(() => { this.confettiActive = false; }, 8000);
 
         const colors = [
             '#FF6B6B', // Coral red
@@ -305,16 +305,21 @@ class DonationSelection {
             '#98D8C8', // Mint
             '#F7DC6F'  // Gold
         ];
-        const confettiCount = 100; // Full celebration, spans page vertically
+        const confettiCount = 100;
 
         for (let i = 0; i < confettiCount; i++) {
             const confetti = document.createElement('div');
             confetti.className = 'confetti-piece';
             confetti.style.backgroundColor =
-        colors[Math.floor(Math.random() * colors.length)];
+                colors[Math.floor(Math.random() * colors.length)];
             confetti.style.left = Math.random() * 100 + 'vw';
-            confetti.style.animationDelay = Math.random() * 2 + 's'; // Staggered start over 2s
-            confetti.style.animationDuration = Math.random() * 2 + 8 + 's'; // 8-10s duration
+            // Burst effect: tight delay window so pieces fall together
+            confetti.style.animationDelay = Math.random() * 0.3 + 's';
+            // Realistic duration: 3-5 seconds
+            confetti.style.animationDuration = Math.random() * 2 + 3 + 's';
+            // Random drift direction for flutter (-40px to +40px)
+            const drift = (Math.random() - 0.5) * 80;
+            confetti.style.setProperty('--confetti-drift', drift + 'px');
 
             document.body.appendChild(confetti);
 
@@ -323,7 +328,7 @@ class DonationSelection {
                 if (confetti.parentNode) {
                     confetti.parentNode.removeChild(confetti);
                 }
-            }, 12000);
+            }, 8000);
         }
     }
 
