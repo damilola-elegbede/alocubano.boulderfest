@@ -104,6 +104,10 @@ function CheckoutPageContent() {
     // Track if "Copy to all" checkbox is checked
     const [copyAllChecked, setCopyAllChecked] = useState(false);
 
+    // Track which tickets have been explicitly saved
+    // Structure: { [ticketKey]: boolean }
+    const [savedTickets, setSavedTickets] = useState({});
+
     // General form error (for payment errors, etc.)
     const [generalError, setGeneralError] = useState(null);
 
@@ -220,6 +224,14 @@ function CheckoutPageContent() {
         });
     }, []);
 
+    // Handle when a single ticket is saved
+    const handleTicketSave = useCallback((ticketKey) => {
+        setSavedTickets((prev) => ({
+            ...prev,
+            [ticketKey]: true,
+        }));
+    }, []);
+
     // Handle "Copy to all tickets" functionality
     const handleCopyToAll = useCallback((sourceTicketKey) => {
         const sourceAttendee = attendeeData[sourceTicketKey];
@@ -227,6 +239,7 @@ function CheckoutPageContent() {
 
         // Get all ticket keys from cart
         const newAttendeeData = { ...attendeeData };
+        const newSavedTickets = { ...savedTickets };
 
         // Convert cart.tickets to items array
         const ticketItems = cart?.tickets
@@ -243,10 +256,13 @@ function CheckoutPageContent() {
                 const ticketKey = generateTicketKey(item, i);
                 // Copy source attendee data to all tickets
                 newAttendeeData[ticketKey] = { ...sourceAttendee };
+                // Mark all tickets as saved
+                newSavedTickets[ticketKey] = true;
             }
         });
 
         setAttendeeData(newAttendeeData);
+        setSavedTickets(newSavedTickets);
         // Clear all attendee errors since we just populated all fields
         setAttendeeErrors({});
         // Mark checkbox as checked
@@ -255,7 +271,7 @@ function CheckoutPageContent() {
         if (isStorageReady) {
             saveAttendees(newAttendeeData);
         }
-    }, [attendeeData, cart?.tickets, isStorageReady, saveAttendees]);
+    }, [attendeeData, savedTickets, cart?.tickets, isStorageReady, saveAttendees]);
 
     // Handle clearing copied attendee data when "Copy to all" is unchecked
     const handleClearCopied = useCallback((sourceTicketKey) => {
@@ -266,13 +282,15 @@ function CheckoutPageContent() {
             : {};
 
         setAttendeeData(newAttendeeData);
+        // Clear saved state for all tickets except source
+        setSavedTickets({ [sourceTicketKey]: savedTickets[sourceTicketKey] });
         // Mark checkbox as unchecked
         setCopyAllChecked(false);
         // Immediately save to ensure persistence (don't rely solely on debounced effect)
         if (isStorageReady) {
             saveAttendees(newAttendeeData);
         }
-    }, [attendeeData, isStorageReady, saveAttendees]);
+    }, [attendeeData, savedTickets, isStorageReady, saveAttendees]);
 
     // Handle checkout button click
     const handleProceedToPayment = async () => {
@@ -371,6 +389,8 @@ function CheckoutPageContent() {
                                 copyAllChecked={copyAllChecked}
                                 ticketCount={ticketCount}
                                 disabled={isProcessing}
+                                savedTickets={savedTickets}
+                                onTicketSave={handleTicketSave}
                             />
                         </div>
 

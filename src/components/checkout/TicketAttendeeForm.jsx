@@ -194,6 +194,8 @@ const styles = {
  * @param {Function} props.onCopyToAll - Callback when "Copy to all" is checked
  * @param {Function} props.onClearCopied - Callback when "Copy to all" is unchecked
  * @param {boolean} props.copyAllChecked - Whether the "Copy to all" checkbox is checked
+ * @param {boolean} props.isSavedExternal - External saved state from parent (for copy-all functionality)
+ * @param {Function} props.onSave - Callback when Save is clicked (ticketKey)
  */
 export function TicketAttendeeForm({
   ticketKey,
@@ -207,11 +209,16 @@ export function TicketAttendeeForm({
   onCopyToAll,
   onClearCopied,
   copyAllChecked = false,
+  isSavedExternal = false,
+  onSave,
 }) {
   // Edit mode state - allows editing after form is complete
   const [isEditing, setIsEditing] = useState(false);
-  // Saved state - tracks if user has explicitly saved this attendee's info
-  const [isSaved, setIsSaved] = useState(false);
+  // Internal saved state - can be overridden by isSavedExternal prop
+  const [isSavedInternal, setIsSavedInternal] = useState(false);
+
+  // Use external saved state if provided, otherwise use internal state
+  const isSaved = isSavedExternal || isSavedInternal;
 
   // Calculate completion status - requires valid email format, not just any text
   // Uses EMAIL_REGEX from attendee-validation.js for consistency
@@ -240,22 +247,30 @@ export function TicketAttendeeForm({
   };
 
   const handleEditClick = () => {
-    setIsSaved(false);
+    setIsSavedInternal(false);
     setIsEditing(true);
   };
 
   const handleSaveClick = () => {
     // Only save if form is complete
     if (isComplete) {
-      setIsSaved(true);
+      setIsSavedInternal(true);
+      // Notify parent of save
+      if (onSave) {
+        onSave(ticketKey);
+      }
     }
   };
 
   const handleDoneClick = () => {
     // Only close edit mode if form is still complete
     if (isComplete) {
-      setIsSaved(true);
+      setIsSavedInternal(true);
       setIsEditing(false);
+      // Notify parent of save
+      if (onSave) {
+        onSave(ticketKey);
+      }
     }
   };
 
@@ -290,21 +305,6 @@ export function TicketAttendeeForm({
             <br />
             <span style={styles.attendeeEmail}>{attendee.email}</span>
           </div>
-
-          {/* Copy to All - visible even after registration for first ticket */}
-          {showCopyAll && (
-            <label style={styles.copyAllContainer}>
-              <input
-                id={`${ticketKey}-copyAll`}
-                type="checkbox"
-                checked={copyAllChecked}
-                onChange={handleCopyToAllChange}
-                disabled={disabled}
-                style={styles.checkbox}
-              />
-              <span style={styles.checkboxLabel}>Use this info for all tickets</span>
-            </label>
-          )}
         </>
       ) : (
         <>

@@ -207,6 +207,8 @@ const groupTicketsByEvent = (ticketEntries) => {
  * @param {number} props.ticketCount - Total number of tickets in cart
  * @param {boolean} props.disabled - Whether forms are disabled
  * @param {number} props.completedCount - Number of registered tickets (optional)
+ * @param {Object} props.savedTickets - Object tracking which tickets are saved
+ * @param {Function} props.onTicketSave - Callback when a ticket is saved
  */
 export default function OrderSummary({
     cart,
@@ -220,6 +222,8 @@ export default function OrderSummary({
     ticketCount = 0,
     disabled = false,
     completedCount,
+    savedTickets = {},
+    onTicketSave,
 }) {
     // Loading state
     if (isLoading) {
@@ -382,6 +386,8 @@ export default function OrderSummary({
                                                 onCopyToAll={onCopyToAll}
                                                 onClearCopied={onClearCopied}
                                                 copyAllChecked={copyAllChecked}
+                                                isSavedExternal={savedTickets[ticket.key] || false}
+                                                onSave={onTicketSave}
                                             />
                                         )}
                                     </div>
