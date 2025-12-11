@@ -305,6 +305,21 @@ export function TicketAttendeeForm({
             <br />
             <span style={styles.attendeeEmail}>{attendee.email}</span>
           </div>
+
+          {/* Copy to All - visible after registration for first ticket */}
+          {showCopyAll && (
+            <label style={styles.copyAllContainer}>
+              <input
+                id={`${ticketKey}-copyAll-saved`}
+                type="checkbox"
+                checked={copyAllChecked}
+                onChange={handleCopyToAllChange}
+                disabled={disabled}
+                style={styles.checkbox}
+              />
+              <span style={styles.checkboxLabel}>Use this info for all tickets</span>
+            </label>
+          )}
         </>
       ) : (
         <>
@@ -388,6 +403,18 @@ export function TicketAttendeeForm({
             )}
           </div>
 
+          {/* Save button - appears when form is complete but not yet saved */}
+          {isComplete && !isSaved && !isEditing && (
+            <button
+              type="button"
+              onClick={handleSaveClick}
+              style={styles.saveButton}
+              disabled={disabled}
+            >
+              Save
+            </button>
+          )}
+
           {/* Copy to All - only shows for first ticket when form is visible */}
           {showCopyAll && !isEditing && (
             <label style={styles.copyAllContainer}>
@@ -401,18 +428,6 @@ export function TicketAttendeeForm({
               />
               <span style={styles.checkboxLabel}>Use this info for all tickets</span>
             </label>
-          )}
-
-          {/* Save button - appears when form is complete but not yet saved */}
-          {isComplete && !isSaved && !isEditing && (
-            <button
-              type="button"
-              onClick={handleSaveClick}
-              style={styles.saveButton}
-              disabled={disabled}
-            >
-              Save
-            </button>
           )}
 
           {/* Done button when editing - only show if form is complete */}
