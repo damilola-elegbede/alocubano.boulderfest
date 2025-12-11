@@ -9,6 +9,7 @@ import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
 import timeUtils from "../../lib/time-utils.js";
 import { processDatabaseResult } from "../../lib/bigint-serializer.js";
 import { getTicketColorService } from "../../lib/ticket-color-service.js";
+import { optionalField } from "../../lib/value-utils.js";
 
 async function handler(req, res) {
   // Add cache headers for browser caching (30-second TTL)
@@ -225,16 +226,16 @@ async function handler(req, res) {
         limit: sanitized.limit,
         offset: sanitized.offset,
         hasMore: sanitized.offset + sanitized.limit < countResult.rows[0].total,
-        eventId: sanitized.eventId || null,
+        eventId: optionalField(sanitized.eventId),
         hasEventFiltering: {
           tickets: ticketsHasEventId
         },
         filters: {
-          eventId: sanitized.eventId || null,
-          searchTerm: sanitized.searchTerm || null,
-          status: sanitized.status || null,
-          ticketType: sanitized.ticketType || null,
-          paymentMethod: sanitized.paymentMethod || null,
+          eventId: optionalField(sanitized.eventId),
+          searchTerm: optionalField(sanitized.searchTerm),
+          status: optionalField(sanitized.status),
+          ticketType: optionalField(sanitized.ticketType),
+          paymentMethod: optionalField(sanitized.paymentMethod),
           checkedIn: sanitized.checkedIn !== undefined ? sanitized.checkedIn : null
         },
         timezone: 'America/Denver',

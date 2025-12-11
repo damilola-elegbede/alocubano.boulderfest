@@ -9,6 +9,7 @@ import { withSecurityHeaders } from '../../lib/security-headers-serverless.js';
 import { withAdminAudit } from '../../lib/admin-audit-middleware.js';
 import { processDatabaseResult } from '../../lib/bigint-serializer.js';
 import timeUtils from '../../lib/time-utils.js';
+import { optionalField } from '../../lib/value-utils.js';
 
 async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -51,13 +52,13 @@ async function handler(req, res) {
 
     // Build query filters
     const filters = {
-      eventType: eventType || null,
-      adminUser: adminUser || null,
-      severity: severity || null,
-      startDate: startDate || null,
-      endDate: endDate || null,
-      action: action || null,
-      targetType: targetType || null,
+      eventType: optionalField(eventType),
+      adminUser: optionalField(adminUser),
+      severity: optionalField(severity),
+      startDate: optionalField(startDate),
+      endDate: optionalField(endDate),
+      action: optionalField(action),
+      targetType: optionalField(targetType),
       limit: parsedLimit,
       offset: parsedOffset,
       orderBy: orderBy,
@@ -90,10 +91,10 @@ async function handler(req, res) {
         eventType: eventType || 'all',
         adminUser: adminUser || 'all',
         severity: severity || 'all',
-        startDate: startDate || null,
-        endDate: endDate || null,
-        action: action || null,
-        targetType: targetType || null
+        startDate: optionalField(startDate),
+        endDate: optionalField(endDate),
+        action: optionalField(action),
+        targetType: optionalField(targetType)
       },
       stats: {
         last24Hours: stats,

@@ -25,6 +25,7 @@ import auditService from '../../lib/audit-service.js';
 import { createOrRetrieveTickets } from '../../lib/ticket-creation-service.js';
 import { fulfillReservation, releaseReservation } from '../../lib/ticket-availability-service.js';
 import { extractTestModeFromStripeSession } from '../../lib/test-mode-utils.js';
+import { optionalField } from '../../lib/value-utils.js';
 
 // Lazy initialization pattern - validate environment variables when handler is called
 // This allows integration tests to import the module without errors
@@ -208,7 +209,7 @@ export default async function handler(req, res) {
           if (paymentMethod && typeof paymentMethod === 'object' && paymentMethod.card) {
             paymentMethodData.card_brand = paymentMethod.card.brand;
             paymentMethodData.card_last4 = paymentMethod.card.last4;
-            paymentMethodData.payment_wallet = paymentMethod.card.wallet?.type || null;
+            paymentMethodData.payment_wallet = optionalField(paymentMethod.card.wallet?.type);
           }
 
           console.log('Payment method details:', paymentMethodData);
@@ -612,7 +613,7 @@ export default async function handler(req, res) {
           action: 'DISPUTE_CREATED',
           amountCents: dispute.amount || 0,
           currency: dispute.currency?.toUpperCase() || 'USD',
-          transactionReference: transaction?.uuid || null,
+          transactionReference: optionalField(transaction?.uuid),
           paymentStatus: 'disputed',
           targetType: 'dispute',
           targetId: dispute.id,

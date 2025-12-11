@@ -17,6 +17,7 @@ import { getDatabaseClient } from "../../../lib/database.js";
 import auditService from "../../../lib/audit-service.js";
 import { detectPaymentProcessor, extractPaymentSourceDetails } from "../../../lib/paypal-payment-source-detector.js";
 import { diagnoseAuthError, getPayPalEnvironmentInfo } from "../../../lib/paypal-config-validator.js";
+import { optionalField } from "../../../lib/value-utils.js";
 
 // PayPal webhook verification URL
 const PAYPAL_API_URL = process.env.PAYPAL_API_URL || 'https://api-m.sandbox.paypal.com';
@@ -140,11 +141,11 @@ async function storeWebhookEvent(event, verificationResult, transactionId = null
     // Extract event details
     const eventId = event.id;
     const eventType = event.event_type;
-    const webhookId = process.env.PAYPAL_WEBHOOK_ID || null;
+    const webhookId = optionalField(process.env.PAYPAL_WEBHOOK_ID);
 
     // Extract PayPal resource information
     const resource = event.resource || {};
-    const paypalOrderId = resource.invoice_id || resource.custom_id || resource.id || null;
+    const paypalOrderId = resource.invoice_id || resource.custom_id || resource.id || null; // Keep fallback chain for IDs
     const paypalCaptureId = resource.id && eventType.includes('CAPTURE') ? resource.id : null;
 
     // Determine verification and processing status
@@ -614,7 +615,7 @@ export default async function handler(req, res) {
         error_message: err.message,
         error_stack: err.stack,
         event_type: event?.event_type || 'unknown',
-        webhook_event_id: event?.id || null
+        webhook_event_id: optionalField(event?.id)
       },
       severity: 'error'
     });

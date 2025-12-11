@@ -17,6 +17,7 @@ import { detectPaymentProcessor, extractPaymentSourceDetails } from '../../../li
 import { diagnoseAuthError, getPayPalEnvironmentInfo } from '../../../lib/paypal-config-validator.js';
 import { PayPalCaptureRequestSchema } from '../../../src/api/schemas/checkout.js';
 import { validateRequestWithResponse } from '../../../src/api/helpers/validate.js';
+import { optionalField } from '../../../lib/value-utils.js';
 
 // PayPal API base URL configuration
 const PAYPAL_API_URL =
@@ -246,7 +247,7 @@ async function captureOrderHandler(req, res) {
 
       // Extract PayPal capture details
       const captureId = capture.id;
-      const payerId = captureResult.payer?.payer_id || null;
+      const payerId = optionalField(captureResult.payer?.payer_id);
 
       // Update transaction with capture details, status, and customer info
       await db.execute({
@@ -284,7 +285,7 @@ async function captureOrderHandler(req, res) {
 
       // Extract additional PayPal details
       const captureId = capture.id;
-      const payerId = captureResult.payer?.payer_id || null;
+      const payerId = optionalField(captureResult.payer?.payer_id);
       const billingAddress = captureResult.payer?.address ? JSON.stringify(captureResult.payer.address) : null;
 
       // Determine transaction type
@@ -427,7 +428,7 @@ async function captureOrderHandler(req, res) {
             // Falls back to purchaser info (default behavior for legacy flow)
             const attendeeFirstName = ticket.attendee?.firstName || defaultFirstName;
             const attendeeLastName = ticket.attendee?.lastName || defaultLastName;
-            const attendeeEmail = ticket.attendee?.email || null;
+            const attendeeEmail = optionalField(ticket.attendee?.email);
 
             // If attendee email is present from inline checkout, mark as pre-registered
             const hasInlineRegistration = !!attendeeEmail;

@@ -4,6 +4,7 @@ import { TOKEN_ACTIONS } from "../../lib/ticket-config.js";
 import { getDatabaseClient } from "../../lib/database.js";
 import timeUtils from "../../lib/time-utils.js";
 import { maskEmail } from "../../lib/volunteer-helpers.js";
+import { optionalField } from "../../lib/value-utils.js";
 
 export default async function handler(req, res) {
   // Initialize database client
@@ -143,8 +144,8 @@ export default async function handler(req, res) {
         originalTicket.attendee_last_name,
         sanitizedAttendee.email,
         sanitizedAttendee.firstName,
-        sanitizedAttendee.lastName || null,
-        sanitizedAttendee.phone || null,
+        optionalField(sanitizedAttendee.lastName),
+        optionalField(sanitizedAttendee.phone),
         originalOwnerEmail
       ]
     });
