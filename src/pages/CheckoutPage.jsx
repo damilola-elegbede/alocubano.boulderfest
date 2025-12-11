@@ -251,7 +251,11 @@ function CheckoutPageContent() {
         setAttendeeErrors({});
         // Mark checkbox as checked
         setCopyAllChecked(true);
-    }, [attendeeData, cart?.tickets]);
+        // Immediately save to ensure persistence (don't rely solely on debounced effect)
+        if (isStorageReady) {
+            saveAttendees(newAttendeeData);
+        }
+    }, [attendeeData, cart?.tickets, isStorageReady, saveAttendees]);
 
     // Handle clearing copied attendee data when "Copy to all" is unchecked
     const handleClearCopied = useCallback((sourceTicketKey) => {
@@ -264,7 +268,11 @@ function CheckoutPageContent() {
         setAttendeeData(newAttendeeData);
         // Mark checkbox as unchecked
         setCopyAllChecked(false);
-    }, [attendeeData]);
+        // Immediately save to ensure persistence (don't rely solely on debounced effect)
+        if (isStorageReady) {
+            saveAttendees(newAttendeeData);
+        }
+    }, [attendeeData, isStorageReady, saveAttendees]);
 
     // Handle checkout button click
     const handleProceedToPayment = async () => {
