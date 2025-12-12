@@ -306,13 +306,17 @@ class DonationSelection {
             '#F7DC6F'  // Gold
         ];
         const confettiCount = 100;
+        const isMobile = window.innerWidth < 768;
 
         for (let i = 0; i < confettiCount; i++) {
             const confetti = document.createElement('div');
             confetti.className = 'confetti-piece';
             confetti.style.backgroundColor =
                 colors[Math.floor(Math.random() * colors.length)];
-            confetti.style.left = Math.random() * 100 + 'vw';
+            // Desktop: middle 60% of screen, Mobile: full width
+            confetti.style.left = isMobile
+                ? Math.random() * 100 + 'vw'
+                : 20 + Math.random() * 60 + 'vw';
             // Burst effect: tight delay window so pieces fall together
             confetti.style.animationDelay = Math.random() * 0.3 + 's';
             // Realistic duration: 3-5 seconds

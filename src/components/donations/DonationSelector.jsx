@@ -90,12 +90,16 @@ export default function DonationSelector() {
         ];
         const confettiCount = 200;
         const confettiElements = [];
+        const isMobile = window.innerWidth < 768;
 
         for (let i = 0; i < confettiCount; i++) {
             const confetti = document.createElement('div');
             confetti.className = 'confetti-piece';
             confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-            confetti.style.left = Math.random() * 120 + 'vw';
+            // Desktop: middle 60% of screen, Mobile: full width
+            confetti.style.left = isMobile
+                ? Math.random() * 100 + 'vw'
+                : 20 + Math.random() * 60 + 'vw';
             // Variable width/height for natural look (6-14px range)
             const width = Math.random() * 8 + 6;
             const height = Math.random() * 8 + 6;
