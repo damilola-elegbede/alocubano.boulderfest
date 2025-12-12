@@ -2165,9 +2165,9 @@
     transform: translateY(-20px) translateX(var(--confetti-drift)) rotate(180deg) scale(1);
     opacity: 1;
   }
-  /* Fall phase */
+  /* Fall phase - 300vh ensures confetti falls past any scrollable content */
   100% {
-    transform: translateY(120vh) translateX(calc(var(--confetti-drift) * 1.5)) rotate(720deg) scale(1);
+    transform: translateY(300vh) translateX(calc(var(--confetti-drift) * 1.5)) rotate(720deg) scale(1);
     opacity: 0;
   }
 }
