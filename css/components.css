@@ -2154,14 +2154,20 @@
   height: 8px;
 }
 
-/* Smooth falling animation - browser interpolates between keyframes */
+/* Burst-and-fall animation - explodes outward from center, then falls */
 @keyframes confettiDrop {
   0% {
-    transform: translateY(0) translateX(0) rotate(0deg);
+    transform: translateY(0) translateX(0) rotate(0deg) scale(0.5);
     opacity: 1;
   }
+  /* Burst outward phase */
+  15% {
+    transform: translateY(-20px) translateX(var(--confetti-drift)) rotate(180deg) scale(1);
+    opacity: 1;
+  }
+  /* Fall phase */
   100% {
-    transform: translateY(120vh) translateX(var(--confetti-drift)) rotate(720deg);
+    transform: translateY(120vh) translateX(calc(var(--confetti-drift) * 1.5)) rotate(720deg) scale(1);
     opacity: 0;
   }
 }

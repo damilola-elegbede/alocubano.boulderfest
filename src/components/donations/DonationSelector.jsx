@@ -96,22 +96,26 @@ export default function DonationSelector() {
             const confetti = document.createElement('div');
             confetti.className = 'confetti-piece';
             confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-            // Desktop: middle 60% of screen, Mobile: full width
-            confetti.style.left = isMobile
-                ? Math.random() * 100 + 'vw'
-                : 20 + Math.random() * 60 + 'vw';
+            // Start from center, burst outward via CSS --confetti-drift
+            confetti.style.left = '50vw';
+            // Drift determines burst direction: desktop ±30vw, mobile ±50vw
+            const driftRange = isMobile ? 100 : 60;
+            const drift = (Math.random() - 0.5) * driftRange;
+            confetti.style.setProperty('--confetti-drift', drift + 'vw');
             // Variable width/height for natural look (6-14px range)
             const width = Math.random() * 8 + 6;
             const height = Math.random() * 8 + 6;
             confetti.style.width = width + 'px';
             confetti.style.height = height + 'px';
-            confetti.style.animationDelay = Math.random() * 0.5 + 's';
-            confetti.style.animationDuration = Math.random() * 2 + 5 + 's';
+            // Tight burst delay for explosive effect
+            confetti.style.animationDelay = Math.random() * 0.3 + 's';
+            // Max 5 seconds (3-5s range)
+            confetti.style.animationDuration = Math.random() * 2 + 3 + 's';
             document.body.appendChild(confetti);
             confettiElements.push(confetti);
         }
 
-        // Cleanup confetti after animation (max delay 0.5s + max duration 7s + buffer)
+        // Cleanup confetti after animation (max delay 0.3s + max duration 5s + buffer)
         const cleanup = setTimeout(() => {
             confettiElements.forEach(el => {
                 if (el.parentNode) {
