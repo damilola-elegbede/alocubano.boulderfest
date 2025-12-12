@@ -126,10 +126,10 @@ export default function DonationSelector() {
         setSelectedAmount(null);
         setCustomAmount('');
 
-        // Hide celebration after animation
+        // Hide celebration after confetti animation completes (max 7s)
         setTimeout(() => {
             setShowCelebration(false);
-        }, 2000);
+        }, 7000);
     }, [effectiveAmount, addDonation, createFlyToCartAnimation]);
 
     // Create confetti effect
