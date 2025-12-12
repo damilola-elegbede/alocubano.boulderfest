@@ -161,20 +161,20 @@ export default function DonationSelector() {
             confetti.style.height = height + 'px';
             // Tight burst delay for explosive effect
             confetti.style.animationDelay = Math.random() * 0.3 + 's';
-            // Max 5 seconds (3-5s range)
-            confetti.style.animationDuration = Math.random() * 2 + 3 + 's';
+            // 5-7 seconds for leisurely fall
+            confetti.style.animationDuration = Math.random() * 2 + 5 + 's';
             document.body.appendChild(confetti);
             confettiElements.push(confetti);
         }
 
-        // Cleanup confetti after animation (max delay 0.3s + max duration 5s + buffer)
+        // Cleanup confetti after animation (max delay 0.3s + max duration 7s + buffer)
         const cleanup = setTimeout(() => {
             confettiElements.forEach(el => {
                 if (el.parentNode) {
                     el.parentNode.removeChild(el);
                 }
             });
-        }, 8000);
+        }, 10000);
 
         return () => {
             clearTimeout(cleanup);
