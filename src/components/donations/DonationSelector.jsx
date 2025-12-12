@@ -60,11 +60,63 @@ export default function DonationSelector() {
         }
     }, [handleCardClick]);
 
+    // Create fly-to-cart animation
+    const createFlyToCartAnimation = useCallback((amount) => {
+        const donateBtn = document.getElementById('donate-button');
+        const cartIcon = document.querySelector('.nav-cart-icon');
+
+        if (!donateBtn || !cartIcon) return;
+
+        // Respect reduced motion preference
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            return;
+        }
+
+        const btnRect = donateBtn.getBoundingClientRect();
+        const cartRect = cartIcon.getBoundingClientRect();
+
+        // Create flying element
+        const flyItem = document.createElement('div');
+        flyItem.className = 'fly-to-cart-item';
+        flyItem.textContent = `$${amount}`;
+
+        // Position at button center
+        const startX = btnRect.left + btnRect.width / 2;
+        const startY = btnRect.top + btnRect.height / 2;
+        flyItem.style.left = `${startX}px`;
+        flyItem.style.top = `${startY}px`;
+
+        document.body.appendChild(flyItem);
+
+        // Calculate end position (cart icon center)
+        const endX = cartRect.left + cartRect.width / 2;
+        const endY = cartRect.top + cartRect.height / 2;
+
+        // Set CSS custom properties for animation
+        flyItem.style.setProperty('--fly-x', `${endX - startX}px`);
+        flyItem.style.setProperty('--fly-y', `${endY - startY}px`);
+
+        // Trigger animation
+        requestAnimationFrame(() => {
+            flyItem.classList.add('flying');
+        });
+
+        // Remove element after animation (600ms)
+        setTimeout(() => {
+            if (flyItem.parentNode) {
+                flyItem.parentNode.removeChild(flyItem);
+            }
+        }, 600);
+    }, []);
+
     const handleDonate = useCallback(() => {
         if (effectiveAmount <= 0) return;
 
         // Add to cart
         addDonation(effectiveAmount, false);
+
+        // Create fly-to-cart animation
+        createFlyToCartAnimation(effectiveAmount);
 
         // Show celebration
         setCelebrationAmount(effectiveAmount);
@@ -78,15 +130,15 @@ export default function DonationSelector() {
         setTimeout(() => {
             setShowCelebration(false);
         }, 2000);
-    }, [effectiveAmount, addDonation]);
+    }, [effectiveAmount, addDonation, createFlyToCartAnimation]);
 
     // Create confetti effect
     useEffect(() => {
         if (!showCelebration) return;
 
         const colors = [
-            '#FF0080', '#00FF00', '#FF4500', '#FFD700',
-            '#00CED1', '#FF1493', '#0000FF', '#FF00FF'
+            '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4',
+            '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F'
         ];
         const confettiCount = 200;
         const confettiElements = [];
