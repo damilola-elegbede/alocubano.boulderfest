@@ -16,113 +16,6 @@
   padding: 10px 0;
 }
 
-/* Mobile responsive - stack cards vertically */
-@media (max-width: 768px) {
-  .ticket-options-grid {
-    grid-template-columns: 1fr;
-    gap: var(--space-md, 1rem);
-  }
-
-  /* Condensed flip card height for mobile - fits 2-3 cards on screen */
-  .flip-card {
-    height: 340px;
-    padding: 6px 0;
-  }
-
-  .flip-card-front, .flip-card-back {
-    top: 6px;
-    height: calc(100% - 12px);
-  }
-
-  /* Compact ticket card content on mobile */
-  .flip-card .ticket-card.vertical-design {
-    padding: var(--space-md, 1rem);
-  }
-
-  /* Smaller event header on mobile */
-  .flip-card .ticket-card .event-header {
-    padding: var(--space-sm, 0.5rem) var(--space-md, 1rem);
-    margin-bottom: var(--space-sm, 0.5rem);
-  }
-
-  .flip-card .ticket-card .event-label {
-    font-size: 10px;
-  }
-
-  .flip-card .ticket-card .event-name {
-    font-size: var(--font-size-lg, 1.125rem);
-  }
-
-  /* Compact ticket type */
-  .flip-card .ticket-card .ticket-type-label {
-    font-size: 9px;
-    margin-bottom: 2px;
-  }
-
-  .flip-card .ticket-card .ticket-type-name {
-    font-size: var(--font-size-xl, 1.25rem);
-    margin-bottom: var(--space-xs, 0.25rem);
-  }
-
-  /* Smaller price display */
-  .flip-card .ticket-card .price-amount {
-    font-size: var(--font-size-2xl, 1.5rem);
-  }
-
-  /* Compact date/venue section */
-  .flip-card .ticket-card .date-label,
-  .flip-card .ticket-card .venue-label {
-    font-size: 9px;
-  }
-
-  .flip-card .ticket-card .date-value,
-  .flip-card .ticket-card .venue-value {
-    font-size: var(--font-size-sm, 0.875rem);
-  }
-
-  /* Compact quantity selector */
-  .flip-card .qty-selector {
-    margin-top: var(--space-sm, 0.5rem);
-    padding-top: var(--space-sm, 0.5rem);
-  }
-
-  .flip-card .qty-btn {
-    width: 36px;
-    height: 36px;
-    font-size: 18px;
-  }
-
-  .flip-card .qty-display {
-    font-size: var(--font-size-lg, 1.125rem);
-    min-width: 32px;
-  }
-
-  /* Reduce color dot size */
-  .flip-card .ticket-card .color-dot {
-    width: 12px;
-    height: 12px;
-  }
-}
-
-/* Extra small screens - even more compact */
-@media (max-width: 480px) {
-  .flip-card {
-    height: 320px;
-  }
-
-  .flip-card .ticket-card.vertical-design {
-    padding: var(--space-sm, 0.5rem) var(--space-md, 1rem);
-  }
-
-  .flip-card .ticket-card .ticket-type-name {
-    font-size: var(--font-size-lg, 1.125rem);
-  }
-
-  .flip-card .ticket-card .price-amount {
-    font-size: var(--font-size-xl, 1.25rem);
-  }
-}
-
 /* Flip card container */
 .flip-card {
   background-color: transparent;
@@ -410,21 +303,6 @@
   font-weight: 400;
 }
 
-/* Mobile responsive for event headers */
-@media (max-width: 768px) {
-  .event-title {
-    font-size: var(--font-size-2xl, 2rem);
-  }
-
-  .event-details {
-    font-size: var(--font-size-base, 1rem);
-  }
-
-  .event-section {
-    margin: var(--space-2xl, 2.5rem) 0 var(--space-lg, 1.5rem) 0;
-  }
-}
-
 /* ========================================
    Ticket Status Banners
    ======================================== */
@@ -584,8 +462,112 @@
   color: var(--color-red-light, #f87171);
 }
 
-/* Responsive adjustments for status banners */
+/* ========================================
+   MOBILE RESPONSIVE STYLES
+   All media queries at the end to ensure proper cascade
+   ======================================== */
+
+/* Mobile responsive - stack cards vertically */
 @media (max-width: 768px) {
+  .ticket-options-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-md, 1rem);
+  }
+
+  /* Condensed flip card height for mobile - fits 2-3 cards on screen */
+  .flip-card {
+    height: 340px;
+    padding: 6px 0;
+  }
+
+  .flip-card-front, .flip-card-back {
+    top: 6px;
+    height: calc(100% - 12px);
+  }
+
+  /* Compact ticket card content on mobile */
+  .flip-card .ticket-card.vertical-design {
+    padding: var(--space-md, 1rem);
+  }
+
+  /* Smaller event header on mobile */
+  .flip-card .ticket-card .event-header {
+    padding: var(--space-sm, 0.5rem) var(--space-md, 1rem);
+    margin-bottom: var(--space-sm, 0.5rem);
+  }
+
+  .flip-card .ticket-card .event-label {
+    font-size: 10px;
+  }
+
+  .flip-card .ticket-card .event-name {
+    font-size: var(--font-size-lg, 1.125rem);
+  }
+
+  /* Compact ticket type */
+  .flip-card .ticket-card .ticket-type-label {
+    font-size: 9px;
+    margin-bottom: 2px;
+  }
+
+  .flip-card .ticket-card .ticket-type-name {
+    font-size: var(--font-size-xl, 1.25rem);
+    margin-bottom: var(--space-xs, 0.25rem);
+  }
+
+  /* Smaller price display */
+  .flip-card .ticket-card .price-amount {
+    font-size: var(--font-size-2xl, 1.5rem);
+  }
+
+  /* Compact date/venue section */
+  .flip-card .ticket-card .date-label,
+  .flip-card .ticket-card .venue-label {
+    font-size: 9px;
+  }
+
+  .flip-card .ticket-card .date-value,
+  .flip-card .ticket-card .venue-value {
+    font-size: var(--font-size-sm, 0.875rem);
+  }
+
+  /* Compact quantity selector */
+  .flip-card .qty-selector {
+    margin-top: var(--space-sm, 0.5rem);
+    padding-top: var(--space-sm, 0.5rem);
+  }
+
+  .flip-card .qty-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+  }
+
+  .flip-card .qty-display {
+    font-size: var(--font-size-lg, 1.125rem);
+    min-width: 32px;
+  }
+
+  /* Reduce color dot size */
+  .flip-card .ticket-card .color-dot {
+    width: 12px;
+    height: 12px;
+  }
+
+  /* Event section mobile adjustments */
+  .event-title {
+    font-size: var(--font-size-2xl, 2rem);
+  }
+
+  .event-details {
+    font-size: var(--font-size-base, 1rem);
+  }
+
+  .event-section {
+    margin: var(--space-2xl, 2.5rem) 0 var(--space-lg, 1.5rem) 0;
+  }
+
+  /* Status banner mobile adjustments */
   .ticket-status-banner {
     font-size: var(--font-size-base, 1rem);
     padding: var(--space-xs, 0.375rem);
@@ -604,5 +586,24 @@
     /* Adjusted to stay completely within white card border on mobile */
     top: 28px;
     left: -41px;
+  }
+}
+
+/* Extra small screens - even more compact */
+@media (max-width: 480px) {
+  .flip-card {
+    height: 320px;
+  }
+
+  .flip-card .ticket-card.vertical-design {
+    padding: var(--space-sm, 0.5rem) var(--space-md, 1rem);
+  }
+
+  .flip-card .ticket-card .ticket-type-name {
+    font-size: var(--font-size-lg, 1.125rem);
+  }
+
+  .flip-card .ticket-card .price-amount {
+    font-size: var(--font-size-xl, 1.25rem);
   }
 }
