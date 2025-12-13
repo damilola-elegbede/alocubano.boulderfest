@@ -24,7 +24,7 @@
 import { getDatabasePerformanceService } from "../../lib/performance/database-performance-service.js";
 import authService from "../../lib/auth-service.js";
 import { withSecurityHeaders } from "../../lib/security-headers.js";
-import { getRateLimitService } from "../../lib/rate-limit-service.js";
+import { getRateLimiter } from "../../lib/security/rate-limiter.js";
 import auditService from "../../lib/audit-service.js";
 
 async function handler(req, res) {
@@ -34,20 +34,18 @@ async function handler(req, res) {
   }
 
   // Apply rate limiting
-  const rateLimitResult = await getRateLimitService().checkLimit(
-    req,
-    'performance-dashboard',
-    {
-      maxAttempts: 50,
-      windowMs: 60000 // 50 requests per minute
-    }
-  );
+  const rateLimiter = getRateLimiter();
+  const rateLimitResult = await rateLimiter.checkRateLimit(req, 'general', {
+    clientType: 'ip'
+  });
 
   if (!rateLimitResult.allowed) {
     res.setHeader('Retry-After', rateLimitResult.retryAfter);
-    res.setHeader('X-RateLimit-Limit', '50');
-    res.setHeader('X-RateLimit-Remaining', '0');
-    res.setHeader('X-RateLimit-Reset', rateLimitResult.resetTime);
+    res.setHeader('X-RateLimit-Limit', '60');
+    res.setHeader('X-RateLimit-Remaining', rateLimitResult.remaining || 0);
+    if (rateLimitResult.resetTime) {
+      res.setHeader('X-RateLimit-Reset', new Date(rateLimitResult.resetTime).toISOString());
+    }
     return res.status(429).json({
       error: 'Too many requests. Please try again later.',
       retryAfter: rateLimitResult.retryAfter

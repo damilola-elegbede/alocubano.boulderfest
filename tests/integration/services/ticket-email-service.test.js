@@ -6,7 +6,7 @@
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { getDbClient } from '../../setup-integration.js';
 import { generateTestEmail } from '../handler-test-helper.js';
-import { getTicketEmailService } from '../../../lib/ticket-email-service-brevo.js';
+import { getTicketEmailService } from '../../../lib/ticket-email-service.js';
 import { getBrevoService, resetBrevoService } from '../../../lib/brevo-service.js';
 import timeUtils from '../../../lib/time-utils.js';
 

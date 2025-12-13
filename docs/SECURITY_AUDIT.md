@@ -307,10 +307,13 @@ Request ID generation uses crypto.randomBytes which is appropriate, but could be
 
 ### Excellent Security Implementations
 
-1. **Comprehensive Rate Limiting Service** (`/lib/rate-limit-service.js`)
-   - Proper IP extraction and validation
-   - IPv4 and IPv6 support
-   - Configurable limits per endpoint
+1. **Advanced Distributed Rate Limiter** (`/lib/security/rate-limiter.js`)
+   - Redis-backed distributed rate limiting with memory fallback
+   - Sliding-window algorithm for accurate rate limiting
+   - Progressive penalties with exponential backoff
+   - Abuse pattern detection and alerting
+   - Endpoint-specific configurations (payment, auth, email, qrValidation, general)
+   - Whitelist/blacklist support with comprehensive analytics
 
 2. **Strong Security Headers** (`/lib/security-headers.js`)
    - Comprehensive CSP policy

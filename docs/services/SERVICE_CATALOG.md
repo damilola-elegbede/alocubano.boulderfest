@@ -39,7 +39,7 @@ Last Updated: 2025-10-08
 
 - **Database**: `database.js` - LibSQL client with Turso support
 - **Security**: `auth-service.js`, `csrf-service.js`
-- **Email**: `brevo-service.js`, `ticket-email-service-brevo.js`
+- **Email**: `brevo-service.js`, `ticket-email-service.js`
 - **Payments**: Stripe (production), PayPal (future), donations system
 
 ## Service Categories
@@ -94,7 +94,7 @@ async createOrRetrieveTickets(fullSession, paymentMethodData = null)
 - Logs security alerts for validation failures
 - Creates tickets with `flagged_for_review` status on validation errors
 
-**Dependencies**: `database.js`, `ticket-id-generator.js`, `order-id-generator.js`, `transaction-service.js`, `registration-token-service.js`, `reminder-scheduler.js`, `ticket-email-service-brevo.js`, `audit-service.js`, `security-alert-service.js`
+**Dependencies**: `database.js`, `ticket-id-generator.js`, `order-id-generator.js`, `transaction-service.js`, `registration-token-service.js`, `reminder-scheduler.js`, `ticket-email-service.js`, `audit-service.js`, `security-alert-service.js`
 
 **Usage Example**:
 
@@ -369,7 +369,7 @@ if (validation.valid) {
 
 ---
 
-#### `ticket-email-service-brevo.js`
+#### `ticket-email-service.js`
 
 **Purpose**: Sends ticket confirmation emails via Brevo with Mountain Time formatting.
 
@@ -422,7 +422,7 @@ class TicketEmailService {
 **Usage Example**:
 
 ```javascript
-import { getTicketEmailService } from './lib/ticket-email-service-brevo.js';
+import { getTicketEmailService } from './lib/ticket-email-service.js';
 
 const emailService = getTicketEmailService();
 await emailService.ensureInitialized();
@@ -891,29 +891,6 @@ const isValid = csrfService.validateToken(submittedToken, storedToken);
 
 ---
 
-#### `csrf-protection.js`
-
-**Purpose**: High-level CSRF protection middleware with automatic token management.
-
-**Complexity**: Low
-
-**Public API**:
-
-```javascript
-function csrfProtection(handler) -> protectedHandler
-```
-
-**Key Features**:
-
-- Automatic token generation and validation
-- Cookie-based token storage
-- GET request bypass
-- Error responses for invalid tokens
-
-**Dependencies**: `csrf-service.js`
-
----
-
 #### `fraud-detection-service.js`
 
 **Purpose**: Detects suspicious patterns in transactions and ticket purchases.
@@ -1322,9 +1299,139 @@ await cacheService.invalidateTicketCache();
 
 ---
 
-#### `rate-limiter.js`
+#### `security/rate-limiter.js` (PRIMARY)
 
-**Purpose**: In-memory rate limiting with progressive backoff for failed attempts.
+**Purpose**: Advanced distributed rate limiter with Redis backend and comprehensive security features.
+
+**Complexity**: High
+
+**Public API**:
+
+```javascript
+class AdvancedRateLimiter {
+  async checkRateLimit(req, endpoint, options)           -> { allowed, remaining, resetTime, retryAfter, clientId, endpoint, performanceMs, penaltyMultiplier }
+  async applyPenalty(clientId, endpoint)                 -> void
+  async getPenaltyMultiplier(clientId, endpoint)         -> number
+  async addToWhitelist(ip, reason)                       -> void
+  async addToBlacklist(ip, reason)                       -> void
+  getAnalytics()                                         -> { blocked, allowed, penalties, alerts, ... }
+  getEndpointConfigs()                                   -> ENDPOINT_CONFIGS
+  cleanupFallbackStore()                                 -> void
+  async close()                                          -> void
+}
+
+function getRateLimiter(options)                         -> AdvancedRateLimiter
+```
+
+**Key Features**:
+
+- Redis-backed distributed tracking across serverless instances (with memory fallback)
+- Sliding window algorithm for accurate rate limiting
+- Endpoint-specific configurations (payment, qrValidation, auth, email, general)
+- Progressive penalties with exponential backoff (up to 32x multiplier)
+- Abuse pattern detection and alerting
+- Whitelist/blacklist support with CIDR notation
+- Comprehensive analytics tracking (blocked, allowed, penalties, alerts)
+- <5ms performance impact per request
+- Fail-open behavior when Redis unavailable
+
+**Endpoint Configurations**:
+
+- **payment**: 5 req/min per IP, 10 req/hour per user, progressive penalties
+- **qrValidation**: 100 req/min per device, no penalties
+- **auth**: 5 attempts/min, lockout after 10 failures, 1-hour lockout, 32x max penalty
+- **email**: 10 req/hour per IP, progressive penalties
+- **general**: 60 req/min per IP, progressive penalties
+
+**Input Parameters**:
+
+- `req` (object) - Request object with headers for client identification
+- `endpoint` (string) - Endpoint type ('payment', 'auth', 'email', 'qrValidation', 'general')
+- `options` (object) - `{ clientType: 'ip'|'user'|'device', ... }`
+
+**Return Values**:
+
+```javascript
+// Allowed
+{
+  allowed: true,
+  remaining: 59,
+  resetTime: 1707859200000,
+  clientId: 'ip:192.168.1.100',
+  endpoint: 'general',
+  performanceMs: 3
+}
+
+// Rate limited
+{
+  allowed: false,
+  reason: 'rate_limit_exceeded',
+  retryAfter: 300,  // seconds
+  clientId: 'ip:192.168.1.100',
+  endpoint: 'payment',
+  penaltyMultiplier: 2,
+  performanceMs: 4
+}
+
+// Blacklisted
+{
+  allowed: false,
+  reason: 'blacklisted',
+  retryAfter: 86400,
+  clientId: 'ip:192.168.1.100',
+  endpoint: 'general'
+}
+```
+
+**Error Handling**:
+
+- Fails open for availability (allows request on error)
+- Redis connection errors handled gracefully with memory fallback
+- Cleanup runs every 5 minutes for memory store
+
+**Dependencies**: `ioredis` (optional, graceful degradation if unavailable)
+
+**Usage Example**:
+
+```javascript
+import { getRateLimiter } from './lib/security/rate-limiter.js';
+
+const rateLimiter = getRateLimiter();
+
+// Check rate limit for payment endpoint
+const result = await rateLimiter.checkRateLimit(req, 'payment', {
+  clientType: 'ip'
+});
+
+if (!result.allowed) {
+  res.setHeader('Retry-After', result.retryAfter);
+  res.status(429).json({
+    error: 'Rate limit exceeded',
+    retryAfter: result.retryAfter,
+    reason: result.reason
+  });
+  return;
+}
+
+// Get analytics
+const analytics = rateLimiter.getAnalytics();
+console.log(`Blocked: ${analytics.blocked}, Allowed: ${analytics.allowed}`);
+```
+
+**Performance Notes**:
+
+- <5ms overhead per request with Redis
+- Memory fallback adds ~1ms overhead
+- Sliding-window provides accurate rate limiting (note: `performanceMs` field only returned for active rate-limit evaluations, not whitelist/blacklist/error bypass paths)
+- Progressive penalties: 1x → 2x → 4x → 8x → 16x → 32x
+- Analytics tracked in real-time
+- Alert thresholds: payment=50, auth=20, email=100, general=500
+
+---
+
+#### `domain/email/RateLimiter.js` (DOMAIN-SPECIFIC)
+
+**Purpose**: Email-specific rate limiting with multiple algorithm support.
 
 **Complexity**: Medium
 
@@ -1332,133 +1439,29 @@ await cacheService.invalidateTicketCache();
 
 ```javascript
 class RateLimiter {
-  async checkRateLimit(identifier, isAdmin)              -> { allowed, remaining, resetTime, retryAfter }
-  reset(identifier)                                      -> void
-  destroy()                                              -> void
-}
-
-function getRateLimiter()                                -> RateLimiter
-```
-
-**Key Features**:
-
-- Sliding window rate limiting (15-minute window)
-- Exponential backoff for repeated violations (2^n multiplier)
-- Automatic cleanup every 5 minutes
-- Admin bypass support
-- Per-endpoint granularity (IP + endpoint)
-
-**Input Parameters**:
-
-- `identifier` (object) - `{ ip, endpoint }` for rate limit key
-
-**Return Values**:
-
-```javascript
-// Allowed
-{ allowed: true, remaining: 2, resetTime: Date('2025-10-08T12:15:00Z') }
-
-// Rate limited
-{
-  allowed: false,
-  remaining: 0,
-  resetTime: Date('2025-10-08T12:15:00Z'),
-  retryAfter: 900  // seconds
-}
-```
-
-**Error Handling**:
-
-- None - in-memory only, no external dependencies
-
-**Dependencies**: None
-
-**Usage Example**:
-
-```javascript
-import { getRateLimiter } from './lib/rate-limiter.js';
-
-const rateLimiter = getRateLimiter();
-
-// Check rate limit
-const result = await rateLimiter.checkRateLimit({
-  ip: req.ip,
-  endpoint: req.path
-}, false);
-
-if (!result.allowed) {
-  res.status(429).json({
-    error: 'Too many requests',
-    retryAfter: result.retryAfter
-  });
-  return;
-}
-
-// Process request...
-```
-
-**Performance Notes**:
-
-- Default: 3 attempts per 15 minutes
-- Progressive backoff: 15m → 30m → 60m → 120m (2^n multiplier)
-- Cleanup runs every 5 minutes (removes stale entries)
-- Violations cleared after 1 hour of no activity
-
----
-
-#### `rate-limit-service.js`
-
-**Purpose**: Enhanced rate limiting service with database persistence.
-
-**Complexity**: Medium
-
-**Public API**:
-
-```javascript
-class RateLimitService {
-  async checkLimit(identifier, limit, windowMs)          -> { allowed, remaining, resetAt }
-  async recordAttempt(identifier)                        -> void
-  async resetLimit(identifier)                           -> void
-  async getAttempts(identifier)                          -> attempts[]
+  checkRateLimit(identifier, options)                    -> { allowed, limit, remaining, resetTime, retryAfter }
+  incrementCounter(identifier, options)                  -> { allowed, limit, remaining }
+  checkSlidingWindowRateLimit(identifier, options)       -> { allowed, limit, remaining, retryAfter, timestamps }
+  incrementSlidingWindow(identifier, options)            -> { allowed, limit, remaining }
+  checkTokenBucket(identifier, options)                  -> { allowed, tokens, capacity, retryAfter }
+  static extractIdentifier(req, options)                 -> identifier
+  static createMiddleware(options)                       -> middleware
+  cleanExpiredEntries(keyPrefix)                         -> deletedCount
 }
 ```
 
 **Key Features**:
 
-- Database-backed rate limiting (persistent)
-- Configurable limits and windows
-- Attempt history tracking
-- Manual reset capability
+- Fixed window rate limiting (15-minute default)
+- Sliding window rate limiting (more accurate)
+- Token bucket algorithm (smooth rate limiting)
+- Middleware creator for easy integration
+- Automatic cleanup of expired entries
+- Memory usage statistics
 
-**Dependencies**: `database.js`
+**Dependencies**: None (in-memory only)
 
----
-
-#### `redis-rate-limiter.js`
-
-**Purpose**: Redis-based distributed rate limiting (for multi-instance deployments).
-
-**Complexity**: Medium
-
-**Public API**:
-
-```javascript
-class RedisRateLimiter {
-  async checkLimit(key, limit, windowMs)                 -> { allowed, remaining, resetAt }
-  async increment(key, windowMs)                         -> count
-  async reset(key)                                       -> success
-}
-```
-
-**Key Features**:
-
-- Distributed rate limiting across multiple instances
-- Redis TTL-based automatic expiry
-- Atomic increment operations
-
-**Dependencies**: `redis`
-
-**Note**: Not currently in use (Vercel serverless doesn't support Redis natively)
+**Note**: Use for email-specific rate limiting. For general API rate limiting, use `security/rate-limiter.js`
 
 ---
 
@@ -2295,7 +2298,7 @@ class AsyncService {
 - `database.js` (DatabaseService)
 - `auth-service.js` (AuthService)
 - `brevo-service.js` (BrevoService)
-- `ticket-email-service-brevo.js` (TicketEmailService)
+- `ticket-email-service.js` (TicketEmailService)
 - `registration-token-service.js` (RegistrationTokenService)
 - `cache-service.js` (CacheService)
 
@@ -2410,7 +2413,7 @@ class MyService {
 
 - `brevo-service.js` (mocks Brevo API)
 - `qr-token-service.js` (uses test secret)
-- `ticket-email-service-brevo.js` (skips email sends)
+- `ticket-email-service.js` (skips email sends)
 
 ---
 
@@ -2429,7 +2432,7 @@ class MyService {
 | `rate-limiter.js` | Infrastructure | None | RateLimiter class | Medium |
 | `qr-token-service.js` | Business | jsonwebtoken, qrcode, database | QRTokenService class | Medium |
 | `registration-token-service.js` | Business | jsonwebtoken | RegistrationTokenService class | Medium |
-| `ticket-email-service-brevo.js` | Email | brevo-service, time-utils, qr-token-service | TicketEmailService class | High |
+| `ticket-email-service.js` | Email | brevo-service, time-utils, qr-token-service | TicketEmailService class | High |
 
 ### Critical Services
 
@@ -2442,14 +2445,14 @@ Services that are critical path for main workflows:
 3. `ticket-creation-service.js` - Create tickets atomically
 4. `qr-token-service.js` - Generate QR tokens
 5. `registration-token-service.js` - Generate registration token
-6. `ticket-email-service-brevo.js` - Send confirmation email
+6. `ticket-email-service.js` - Send confirmation email
 7. `reminder-scheduler.js` - Schedule registration reminders
 
 #### Registration Flow
 
 1. `registration-token-service.js` - Validate registration token
 2. `database.js` - Update ticket attendee information
-3. `ticket-email-service-brevo.js` - Send registration confirmation
+3. `ticket-email-service.js` - Send registration confirmation
 4. `brevo-service.js` - Add to ticket holders list
 
 #### Payment Processing
@@ -2462,7 +2465,7 @@ Services that are critical path for main workflows:
 #### Email Delivery
 
 1. `brevo-service.js` - Send via Brevo API
-2. `ticket-email-service-brevo.js` - Format ticket emails
+2. `ticket-email-service.js` - Format ticket emails
 3. `time-utils.js` - Mountain Time formatting
 
 ### Service Initialization
@@ -2475,7 +2478,7 @@ Services requiring initialization before use:
 | `auth-service.js` | Yes | Yes | Yes |
 | `brevo-service.js` | Yes | Yes | Yes |
 | `cache-service.js` | Yes | Yes | Yes |
-| `ticket-email-service-brevo.js` | Yes | Yes | Yes |
+| `ticket-email-service.js` | Yes | Yes | Yes |
 | `registration-token-service.js` | Yes | Yes | Yes |
 | `qr-token-service.js` | No | No | Yes |
 | `rate-limiter.js` | No | No | Yes |
@@ -2503,7 +2506,7 @@ graph TD
   transaction[transaction-service.js]
   ticketCreation[ticket-creation-service.js]
   brevo[brevo-service.js]
-  ticketEmail[ticket-email-service-brevo.js]
+  ticketEmail[ticket-email-service.js]
   auth[auth-service.js]
   qrToken[qr-token-service.js]
   regToken[registration-token-service.js]

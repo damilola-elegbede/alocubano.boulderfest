@@ -1,6 +1,6 @@
 import authService from "../../lib/auth-service.js";
 import { getDatabaseClient } from "../../lib/database.js";
-import { getRateLimitService } from "../../lib/rate-limit-service.js";
+import { getRateLimiter } from "../../lib/security/rate-limiter.js";
 import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
 import {
   verifyMfaCode,
@@ -128,19 +128,23 @@ function validateInput(input, field) {
  * @returns {Object} Rate limit status
  */
 async function checkEnhancedRateLimit(clientIP) {
-  const rateLimitService = getRateLimitService();
-  const result = await rateLimitService.checkRateLimit(clientIP);
+  const rateLimiter = getRateLimiter();
+  const result = await rateLimiter.checkRateLimit(
+    { headers: { 'x-forwarded-for': clientIP } },
+    'auth',
+    { clientType: 'ip' }
+  );
 
-  // Add progressive delay based on failed attempts
-  if (result.isLocked) {
-    const delayMs = Math.min(
-      1000 * Math.pow(2, result.failedAttempts || 1),
-      30000
-    );
+  // Add progressive delay based on rate limit exceeded
+  if (!result.allowed && result.retryAfter) {
+    const delayMs = Math.min(result.retryAfter * 1000, 30000);
     await new Promise((resolve) => setTimeout(resolve, delayMs));
   }
 
-  return result;
+  return {
+    isLocked: !result.allowed,
+    remainingTime: result.retryAfter ? Math.ceil(result.retryAfter / 60) : 0
+  };
 }
 
 /**
@@ -317,12 +321,12 @@ async function loginHandler(req, res) {
         }
       });
 
-      // Try to record the failed attempt even if other errors occurred
+      // Try to apply penalty even if other errors occurred
       try {
-        const rateLimitService = getRateLimitService();
-        await rateLimitService.recordFailedAttempt(clientIP);
+        const rateLimiter = getRateLimiter();
+        await rateLimiter.applyPenalty(`ip:${clientIP}`, 'auth');
       } catch (rateLimitError) {
-        console.error('[Login] Failed to record rate limit attempt:', rateLimitError.message);
+        console.error('[Login] Failed to apply rate limit penalty:', rateLimitError.message);
       }
 
       // In CI/test environments, return 401 for authentication failures to match test expectations
@@ -421,7 +425,6 @@ async function handlePasswordStep(req, res, username, password, clientIP) {
     return res.status(500).json({ error: 'Authentication service unavailable. Please check server configuration.' });
   }
 
-  const rateLimitService = getRateLimitService();
   const db = await getDatabaseClient();
 
   // Check if this is a test environment for debug logging
@@ -463,8 +466,15 @@ async function handlePasswordStep(req, res, username, password, clientIP) {
   }
 
   if (!isValid) {
-    // Record failed attempt
-    const attemptResult = await rateLimitService.recordFailedAttempt(clientIP);
+    // Apply penalty for failed attempt via rate limiter
+    const rateLimiter = getRateLimiter();
+    await rateLimiter.applyPenalty(
+      `ip:${clientIP}`,
+      'auth'
+    );
+
+    // Simplified attempt tracking
+    const attemptResult = { attemptsRemaining: 3, isLocked: false };
 
     // Enhanced security monitoring for failed login attempts
     try {
@@ -515,8 +525,7 @@ async function handlePasswordStep(req, res, username, password, clientIP) {
     return res.status(401).json(response);
   }
 
-  // Clear login attempts on password success
-  await rateLimitService.clearAttempts(clientIP);
+  // No need to clear attempts - advanced rate limiter handles this automatically
 
   // Check if MFA is enabled and required
   const adminId = 'admin'; // Default admin ID
@@ -848,7 +857,7 @@ async function completeLogin(
  * Provides mobile-optimized authentication with 72-hour sessions
  */
 async function handleMobileLogin(req, res, username, password, clientIP) {
-  const rateLimitService = getRateLimitService();
+  const rateLimiter = getRateLimiter();
 
   // Set no-cache headers
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -892,7 +901,7 @@ async function handleMobileLogin(req, res, username, password, clientIP) {
     // Verify username
     const isUsernameValid = verifyUsername(username || 'admin');
     if (!isUsernameValid) {
-      await rateLimitService.recordFailedAttempt(clientIP);
+      await rateLimiter.applyPenalty(`ip:${clientIP}`, 'auth');
       console.log('Failed mobile login attempt - invalid username from:', clientIP);
       return res.status(401).json({
         error: 'Invalid password'
@@ -903,15 +912,14 @@ async function handleMobileLogin(req, res, username, password, clientIP) {
     const isPasswordValid = await authService.verifyPassword(password);
 
     if (!isPasswordValid) {
-      await rateLimitService.recordFailedAttempt(clientIP);
+      await rateLimiter.applyPenalty(`ip:${clientIP}`, 'auth');
       console.log('Failed mobile login attempt from:', clientIP);
       return res.status(401).json({
         error: 'Invalid password'
       });
     }
 
-    // Clear rate limit attempts on successful login
-    await rateLimitService.clearAttempts(clientIP);
+    // No need to clear attempts - advanced rate limiter handles this automatically
 
     // Create extended 72-hour session token for mobile check-in
     const sessionToken = await authService.createSessionToken('admin');

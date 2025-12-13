@@ -15,14 +15,9 @@
  */
 
 import crypto from 'crypto';
-import { withRateLimit } from '../utils/rate-limiter.js';
+import { withRateLimit } from '../../middleware/rate-limit.js';
 
-// Rate limiting configuration - prevent key enumeration attacks
-const RATE_LIMIT_CONFIG = {
-    windowMs: 60000,     // 1 minute window
-    max: 30,             // 30 requests per minute per IP
-    message: 'Too many encryption key requests. Please wait a moment before trying again.'
-};
+// Note: Rate limiting is now handled by the consolidated middleware/rate-limit.js
 
 /**
  * Derives an encryption key from the server secret and session ID
@@ -103,4 +98,7 @@ async function handler(req, res) {
     }
 }
 
-export default withRateLimit(handler, RATE_LIMIT_CONFIG);
+// Use stricter rate limit for encryption key endpoint (security-sensitive)
+// Default 'general' (60 req/min) allows key enumeration attacks
+// Use auth rate limit (20 req/min) for better security
+export default withRateLimit(handler, 'auth');

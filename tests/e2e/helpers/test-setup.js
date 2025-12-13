@@ -6,7 +6,7 @@
  * Now with improved graceful degradation and resilient environment handling.
  */
 
-import { validateSecretsForTestFile, quickValidateBasicSecrets } from '../secret-validator.js';
+import { validateSecretsForTestFile, quickValidateBasicSecrets } from './secret-validator.js';
 
 /**
  * Setup function to be called at the beginning of each test file

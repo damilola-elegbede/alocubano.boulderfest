@@ -5,7 +5,7 @@
  */
 
 import { getDatabaseClient } from "../../lib/database.js";
-import { getTicketEmailService } from "../../lib/ticket-email-service-brevo.js";
+import { getTicketEmailService } from "../../lib/ticket-email-service.js";
 import { getBrevoClient } from "../../lib/brevo-client.js";
 import { setSecureCorsHeaders } from '../../lib/cors-config.js';
 

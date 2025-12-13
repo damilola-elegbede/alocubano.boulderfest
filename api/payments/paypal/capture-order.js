@@ -5,14 +5,14 @@
  */
 
 import { setCorsHeaders } from '../../utils/cors.js';
-import { withRateLimit } from '../../utils/rate-limiter.js';
+import { withRateLimit } from '../../../middleware/rate-limit.js';
 import { getDatabaseClient } from '../../../lib/database.js';
 import { RegistrationTokenService } from '../../../lib/registration-token-service.js';
 import { generateOrderNumber } from '../../../lib/order-number-generator.js';
 import { generateTicketId } from '../../../lib/ticket-id-generator.js';
 import { processDatabaseResult } from '../../../lib/bigint-serializer.js';
 import timeUtils from '../../../lib/time-utils.js';
-import { getTicketEmailService } from '../../../lib/ticket-email-service-brevo.js';
+import { getTicketEmailService } from '../../../lib/ticket-email-service.js';
 import { detectPaymentProcessor, extractPaymentSourceDetails } from '../../../lib/paypal-payment-source-detector.js';
 import { diagnoseAuthError, getPayPalEnvironmentInfo } from '../../../lib/paypal-config-validator.js';
 import { PayPalCaptureRequestSchema } from '../../../src/api/schemas/checkout.js';
@@ -23,12 +23,7 @@ import { optionalField } from '../../../lib/value-utils.js';
 const PAYPAL_API_URL =
   process.env.PAYPAL_API_URL || 'https://api-m.sandbox.paypal.com';
 
-// Rate limiting configuration
-const RATE_LIMIT_CONFIG = {
-  windowMs: 60000, // 1 minute
-  max: 20, // 20 capture attempts per minute per IP
-  message: 'Too many capture attempts. Please wait before trying again.'
-};
+// Note: Rate limiting is now handled by the consolidated middleware/rate-limit.js
 
 /**
  * Handles a PayPal order capture request, finalizes payment processing, creates or updates the corresponding transaction and tickets, generates a registration token if applicable, sends confirmation email(s), and responds with a detailed success or error payload.
@@ -631,4 +626,4 @@ async function captureOrderHandler(req, res) {
 }
 
 // Export handler with rate limiting
-export default withRateLimit(captureOrderHandler, RATE_LIMIT_CONFIG);
+export default withRateLimit(captureOrderHandler, 'payment');

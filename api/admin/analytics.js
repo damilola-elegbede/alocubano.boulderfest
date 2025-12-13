@@ -1,7 +1,7 @@
 import analyticsService from "../../lib/analytics-service.js";
 import authService from "../../lib/auth-service.js";
 import { withSecurityHeaders } from "../../lib/security-headers-serverless.js";
-import { getRateLimitService } from "../../lib/rate-limit-service.js";
+import { getRateLimiter } from "../../lib/security/rate-limiter.js";
 import { getDatabaseClient } from "../../lib/database.js";
 import { withAdminAudit } from "../../lib/admin-audit-middleware.js";
 import { processDatabaseResult } from "../../lib/bigint-serializer.js";
@@ -261,9 +261,9 @@ async function handler(req, res) {
   }
 
   // Apply rate limiting
-  const rateLimitResult = await getRateLimitService().checkLimit(req, 'analytics', {
-    maxAttempts: 100,
-    windowMs: 60000 // 100 requests per minute
+  const rateLimiter = getRateLimiter();
+  const rateLimitResult = await rateLimiter.checkRateLimit(req, 'general', {
+    clientType: 'ip'
   });
 
   if (!rateLimitResult.allowed) {
