@@ -4,6 +4,7 @@
  * Build Script - A Lo Cubano Boulder Fest
  *
  * Orchestrates the complete build process including:
+ * - CSS bundle generation
  * - Documentation embedding
  * - Database migrations (Vercel only)
  * - Database bootstrapping
@@ -29,7 +30,15 @@ console.log('Platform:', isVercel ? 'Vercel' : 'Local');
 console.log('');
 
 try {
-  // Step 1: Embed documentation
+  // Step 1: Bundle CSS files
+  console.log('🎨 Bundling CSS files...');
+  const cssStart = Date.now();
+  execSync('npm run build:css', { stdio: 'inherit' });
+  const cssTime = Date.now() - cssStart;
+  console.log(`✅ CSS bundles created (${cssTime}ms)`);
+  console.log('');
+
+  // Step 2: Embed documentation
   console.log('📚 Embedding documentation...');
   const startTime = Date.now();
   execSync('node scripts/embed-docs.cjs', { stdio: 'inherit' });
@@ -37,7 +46,7 @@ try {
   console.log(`📚 Documentation embedded (${embedTime}ms)`);
   console.log('');
 
-  // Step 2: Run migrations (Vercel or local with database)
+  // Step 3: Run migrations (Vercel or local with database)
   if (isVercel) {
     console.log('🗄️  Running database migrations...');
     const migrateStart = Date.now();
@@ -55,7 +64,7 @@ try {
     console.log('');
   }
 
-  // Step 3: Bootstrap database
+  // Step 4: Bootstrap database
   console.log('📋 Bootstrapping database...');
   const bootstrapStart = Date.now();
   execSync('npm run bootstrap', { stdio: 'inherit' });
@@ -63,14 +72,14 @@ try {
   console.log(`✅ Database bootstrapped (${bootstrapTime}ms)`);
   console.log('');
 
-  // Step 4: Generate static tickets
+  // Step 5: Generate static tickets
   console.log('🎫 Generating static tickets...');
   const ticketStart = Date.now();
   execSync('node scripts/generate-ticket-html.js', { stdio: 'inherit' });
   const ticketTime = Date.now() - ticketStart;
   console.log(`✅ Static tickets generated (${ticketTime}ms)`);
 
-  // Step 5: Sync gallery (Vercel only)
+  // Step 6: Sync gallery (Vercel only)
   if (isVercel) {
     console.log('');
     console.log('🖼️  Syncing gallery images to Vercel Blob...');
@@ -91,7 +100,7 @@ try {
     console.log('🔧 Progress: Applying Vercel-specific optimizations');
     console.log('🚀 Progress: Preparing deployment package');
   } else {
-    // Step 6: Verify structure (local only)
+    // Step 7: Verify structure (local only)
     console.log('');
     console.log('📋 Running structure verification...');
     execSync('npm run verify-structure', { stdio: 'inherit' });
