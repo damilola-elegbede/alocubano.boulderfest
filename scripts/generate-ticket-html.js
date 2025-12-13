@@ -109,10 +109,12 @@ function generateEventHeader(event) {
 
 /**
  * Generate quantity selector HTML
+ * @param {boolean} forAccordion - If true, generates accordion header version
  */
-function generateQuantitySelector() {
+function generateQuantitySelector(forAccordion = false) {
+  const baseClass = forAccordion ? 'accordion-qty-selector' : 'quantity-selector';
   return `
-    <div class="quantity-selector">
+    <div class="${baseClass}">
       <button
         class="qty-btn minus"
         data-action="decrease"
@@ -136,7 +138,32 @@ function generateQuantitySelector() {
 }
 
 /**
- * Generate ticket card HTML
+ * Generate accordion header HTML for mobile view
+ */
+function generateAccordionHeader(ticketType, ticketColor, priceDisplay, isAvailable) {
+  const ticketName = escapeHtml(ticketType.name || '');
+
+  return `
+    <div class="ticket-accordion-header"
+         role="button"
+         tabindex="0"
+         aria-expanded="false"
+         aria-label="${ticketName} ticket, ${priceDisplay}. Tap to ${isAvailable ? 'view details and add to cart' : 'view details'}">
+      <span class="accordion-color-dot" style="background: ${ticketColor};" aria-hidden="true"></span>
+      <span class="accordion-ticket-name">${ticketName}</span>
+      <span class="accordion-ticket-price">${priceDisplay}</span>
+      ${isAvailable ? generateQuantitySelector(true) : ''}
+      <span class="accordion-chevron" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+    </div>
+  `;
+}
+
+/**
+ * Generate ticket card HTML wrapped in accordion container for mobile
  */
 function generateTicketCard(ticketType, event) {
   const isComingSoon = ticketType.status === 'coming-soon';
@@ -189,7 +216,11 @@ function generateTicketCard(ticketType, event) {
   const eventName = escapeHtml(event.name);
   const venueName = escapeHtml(event.venue_name);
 
-  return `
+  // Generate accordion header for mobile
+  const accordionHeader = generateAccordionHeader(ticketType, ticketColor, priceDisplay, isAvailable);
+
+  // Generate the flip card (shown in accordion body on mobile, directly on desktop)
+  const flipCard = `
     <div class="flip-card ${disabledClass}" data-ticket-status="${ticketType.status}" ${ariaDisabled}>
       <div class="flip-card-inner" style="${pointerEvents}">
         <!-- Front of card -->
@@ -244,6 +275,22 @@ function generateTicketCard(ticketType, event) {
             ${isAvailable ? '<button class="flip-back-btn" aria-label="Flip back to front">← Back</button>' : ''}
           </div>
         </div>
+      </div>
+    </div>
+  `;
+
+  // Wrap in accordion container
+  return `
+    <div class="ticket-accordion ${disabledClass}"
+         data-ticket-id="${ticketType.id}"
+         data-ticket-type="${ticketType.id}"
+         data-event-id="${event.id}"
+         data-price="${ticketType.price_cents ? (ticketType.price_cents / 100).toFixed(2) : '0.00'}"
+         data-name="${escapeHtml(ticketType.name)}"
+         style="--ticket-color: ${ticketColor};">
+      ${accordionHeader}
+      <div class="ticket-accordion-body">
+        ${flipCard}
       </div>
     </div>
   `;

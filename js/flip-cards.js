@@ -2,21 +2,140 @@
  * Flip Card Functionality for Tickets
  * Handles click-to-flip animation and interaction
  * Uses event delegation to support dynamically generated cards
+ *
+ * Mobile: Accordion pattern - tap header to expand, then tap card to flip
+ * Desktop: Direct flip cards
  */
 
 class FlipCardManager {
     constructor() {
+        this.mobileBreakpoint = 768;
         this.init();
     }
 
     init() {
         this.bindEvents();
+        this.bindAccordionEvents();
+        this.syncQuantitiesFromCart();
+    }
+
+    /**
+     * Check if we're on mobile (accordion mode)
+     */
+    isMobile() {
+        return window.innerWidth <= this.mobileBreakpoint;
+    }
+
+    /**
+     * Bind accordion-specific events for mobile
+     */
+    bindAccordionEvents() {
+        const container = document.querySelector('.tickets-container') ||
+                         document.querySelector('#dynamic-ticket-container') ||
+                         document.body;
+
+        // Accordion header click - expand/collapse
+        container.addEventListener('click', (e) => {
+            const header = e.target.closest('.ticket-accordion-header');
+            if (!header) return;
+
+            // Don't toggle if clicking on quantity buttons
+            if (e.target.closest('.accordion-qty-selector .qty-btn')) {
+                return;
+            }
+
+            const accordion = header.closest('.ticket-accordion');
+            if (!accordion) return;
+
+            // Don't expand disabled accordions (but allow existing expansion)
+            if (accordion.classList.contains('ticket-disabled') && !accordion.classList.contains('expanded')) {
+                return;
+            }
+
+            this.toggleAccordion(accordion);
+        });
+
+        // Keyboard support for accordion headers
+        container.addEventListener('keydown', (e) => {
+            const header = e.target.closest('.ticket-accordion-header');
+            if (!header) return;
+
+            if (e.key === 'Enter' || e.key === ' ') {
+                // Don't trigger if focus is on a button inside
+                if (e.target.matches('button')) return;
+
+                e.preventDefault();
+                const accordion = header.closest('.ticket-accordion');
+                if (accordion && !accordion.classList.contains('ticket-disabled')) {
+                    this.toggleAccordion(accordion);
+                }
+            }
+        });
+
+        // Sync accordion quantity with card quantity
+        container.addEventListener('click', (e) => {
+            const qtyBtn = e.target.closest('.accordion-qty-selector .qty-btn');
+            if (!qtyBtn) return;
+
+            // The cart manager handles the actual quantity change
+            // We just need to sync the display after a short delay
+            setTimeout(() => {
+                this.syncAccordionQuantity(qtyBtn.closest('.ticket-accordion'));
+            }, 50);
+        });
+
+        console.log('FlipCardManager: Accordion events bound');
+    }
+
+    /**
+     * Toggle accordion expanded state
+     */
+    toggleAccordion(accordion) {
+        const isExpanded = accordion.classList.contains('expanded');
+        const header = accordion.querySelector('.ticket-accordion-header');
+
+        if (isExpanded) {
+            accordion.classList.remove('expanded');
+            header?.setAttribute('aria-expanded', 'false');
+        } else {
+            accordion.classList.add('expanded');
+            header?.setAttribute('aria-expanded', 'true');
+        }
+
+        console.log(`Accordion ${accordion.dataset.ticketId} ${isExpanded ? 'collapsed' : 'expanded'}`);
+    }
+
+    /**
+     * Sync quantity display between accordion header and flip card
+     */
+    syncAccordionQuantity(accordion) {
+        if (!accordion) return;
+
+        // Get the quantity from the flip card inside
+        const cardQty = accordion.querySelector('.flip-card .quantity-selector .quantity');
+        const accordionQty = accordion.querySelector('.accordion-qty-selector .quantity');
+
+        if (cardQty && accordionQty) {
+            accordionQty.textContent = cardQty.textContent;
+        }
+    }
+
+    /**
+     * Sync all accordion quantities from cart on load
+     */
+    syncQuantitiesFromCart() {
+        // Wait for cart manager to be ready
+        setTimeout(() => {
+            document.querySelectorAll('.ticket-accordion').forEach(accordion => {
+                this.syncAccordionQuantity(accordion);
+            });
+        }, 100);
     }
 
     bindEvents() {
         // Use event delegation on the container for dynamically added cards
-        const container = document.querySelector('.tickets-container') || 
-                         document.querySelector('#dynamic-ticket-container') || 
+        const container = document.querySelector('.tickets-container') ||
+                         document.querySelector('#dynamic-ticket-container') ||
                          document.body;
 
         console.log('FlipCardManager: Binding events with delegation on', container);
@@ -34,6 +153,15 @@ class FlipCardManager {
             // Don't flip if clicking on interactive elements
             if (this.shouldPreventFlip(e.target)) {
                 return;
+            }
+
+            // On mobile, only allow flip if accordion is expanded
+            if (this.isMobile()) {
+                const accordion = card.closest('.ticket-accordion');
+                if (accordion && !accordion.classList.contains('expanded')) {
+                    // Accordion is collapsed, don't flip (user should tap header)
+                    return;
+                }
             }
 
             const ticketType = card.dataset.ticketType || 'unknown';

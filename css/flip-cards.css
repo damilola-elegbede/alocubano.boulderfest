@@ -463,6 +463,324 @@
 }
 
 /* ========================================
+   MOBILE ACCORDION STYLES
+   Collapsible tickets on mobile, full cards on desktop
+   ======================================== */
+
+/* Accordion container - wraps header + body */
+.ticket-accordion {
+  position: relative;
+  overflow: visible;
+}
+
+/* Desktop: Hide accordion header, show flip card directly */
+@media (min-width: 769px) {
+  .ticket-accordion-header {
+    display: none !important;
+  }
+
+  .ticket-accordion-body {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}
+
+/* Mobile accordion styles */
+@media (max-width: 768px) {
+  /* Accordion container */
+  .ticket-accordion {
+    background: var(--color-surface, #ffffff);
+    border: 1px solid var(--color-border, #e5e7eb);
+    border-radius: 12px;
+    margin-bottom: var(--space-md, 1rem);
+    overflow: hidden;
+    transition: box-shadow 0.3s ease;
+  }
+
+  .ticket-accordion:hover {
+    box-shadow: 0 4px 12px var(--shadow-color, rgba(0, 0, 0, 0.1));
+  }
+
+  /* Cuban-inspired left border accent */
+  .ticket-accordion::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(180deg, var(--ticket-color, #5b6bb5) 0%, #cc2936 100%);
+    border-radius: 12px 0 0 12px;
+  }
+
+  /* Disabled accordion styling */
+  .ticket-accordion.ticket-disabled {
+    opacity: 0.6;
+    filter: grayscale(40%);
+  }
+
+  .ticket-accordion.ticket-disabled .ticket-accordion-header {
+    cursor: default;
+  }
+
+  /* Accordion header - always visible on mobile */
+  .ticket-accordion-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm, 0.5rem);
+    padding: var(--space-md, 1rem) var(--space-md, 1rem) var(--space-md, 1rem) calc(var(--space-md, 1rem) + 4px);
+    cursor: pointer;
+    min-height: 60px;
+    background: var(--color-surface, #ffffff);
+    transition: background-color 0.2s ease;
+  }
+
+  .ticket-accordion-header:hover {
+    background: var(--color-surface-hover, #f9fafb);
+  }
+
+  .ticket-accordion-header:active {
+    background: var(--color-surface-active, #f3f4f6);
+  }
+
+  /* Color dot */
+  .accordion-color-dot {
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Ticket name */
+  .accordion-ticket-name {
+    flex: 1;
+    font-family: var(--font-display, 'Bebas Neue', sans-serif);
+    font-size: var(--font-size-lg, 1.125rem);
+    color: var(--color-text-primary, #1f2937);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Ticket price */
+  .accordion-ticket-price {
+    font-family: var(--font-mono, 'Space Mono', monospace);
+    font-size: var(--font-size-base, 1rem);
+    font-weight: 700;
+    color: var(--color-red, #dc2626);
+    white-space: nowrap;
+  }
+
+  /* Accordion quantity selector - compact version */
+  .accordion-qty-selector {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs, 0.25rem);
+    background: var(--color-surface-secondary, #f3f4f6);
+    border-radius: 8px;
+    padding: 2px;
+  }
+
+  .accordion-qty-selector .qty-btn {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    border: none;
+    background: var(--color-white, #ffffff);
+    color: var(--color-text-primary, #1f2937);
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+
+  .accordion-qty-selector .qty-btn:hover {
+    background: var(--color-primary, #3b82f6);
+    color: var(--color-white, #ffffff);
+  }
+
+  .accordion-qty-selector .qty-btn:active {
+    transform: scale(0.95);
+  }
+
+  .accordion-qty-selector .quantity {
+    font-family: var(--font-mono, 'Space Mono', monospace);
+    font-size: var(--font-size-base, 1rem);
+    font-weight: 600;
+    min-width: 28px;
+    text-align: center;
+    color: var(--color-text-primary, #1f2937);
+  }
+
+  /* Chevron icon */
+  .accordion-chevron {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    color: var(--color-text-secondary, #6b7280);
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+  }
+
+  .ticket-accordion.expanded .accordion-chevron {
+    transform: rotate(180deg);
+  }
+
+  /* Accordion body - expandable */
+  .ticket-accordion-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease-out;
+  }
+
+  .ticket-accordion.expanded .ticket-accordion-body {
+    max-height: 600px; /* Enough for full card with animation */
+  }
+
+  /* Flip card inside accordion - restore full height */
+  .ticket-accordion-body .flip-card {
+    height: 500px; /* Full card height when expanded */
+    padding: var(--space-sm, 0.5rem) var(--space-md, 1rem) var(--space-md, 1rem);
+  }
+
+  .ticket-accordion-body .flip-card-front,
+  .ticket-accordion-body .flip-card-back {
+    height: calc(100% - 12px);
+  }
+
+  /* Hide quantity selector inside card when in accordion (it's in the header) */
+  .ticket-accordion .flip-card .quantity-selector {
+    display: none;
+  }
+
+  /* Tap hint on collapsed accordion */
+  .ticket-accordion:not(.expanded) .ticket-accordion-header::after {
+    content: 'Tap to expand';
+    position: absolute;
+    bottom: 4px;
+    right: var(--space-md, 1rem);
+    font-family: var(--font-body, 'Playfair Display', serif);
+    font-size: 10px;
+    color: var(--color-text-muted, #9ca3af);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .ticket-accordion:not(.expanded):hover .ticket-accordion-header::after {
+    opacity: 1;
+  }
+
+  /* Focus styles for accessibility */
+  .ticket-accordion-header:focus-visible {
+    outline: 3px solid var(--color-focus, var(--color-blue));
+    outline-offset: -3px;
+    border-radius: 12px 12px 0 0;
+  }
+}
+
+/* Extra small screens - even more compact accordion */
+@media (max-width: 480px) {
+  .ticket-accordion-header {
+    padding: var(--space-sm, 0.5rem) var(--space-sm, 0.5rem) var(--space-sm, 0.5rem) calc(var(--space-sm, 0.5rem) + 4px);
+    gap: var(--space-xs, 0.25rem);
+    min-height: 52px;
+  }
+
+  .accordion-color-dot {
+    width: 16px;
+    height: 16px;
+    min-width: 16px;
+  }
+
+  .accordion-ticket-name {
+    font-size: var(--font-size-base, 1rem);
+  }
+
+  .accordion-ticket-price {
+    font-size: var(--font-size-sm, 0.875rem);
+  }
+
+  .accordion-qty-selector .qty-btn {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    font-size: 14px;
+  }
+
+  .accordion-qty-selector .quantity {
+    font-size: var(--font-size-sm, 0.875rem);
+    min-width: 24px;
+  }
+
+  .accordion-chevron {
+    width: 20px;
+    height: 20px;
+  }
+
+  .accordion-chevron svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .ticket-accordion-body .flip-card {
+    height: 460px;
+    padding: var(--space-xs, 0.25rem) var(--space-sm, 0.5rem) var(--space-sm, 0.5rem);
+  }
+}
+
+/* Dark theme support for accordion */
+[data-theme="dark"] .ticket-accordion {
+  background: var(--color-surface-dark, #1f2937);
+  border-color: var(--color-border-dark, #374151);
+}
+
+[data-theme="dark"] .ticket-accordion-header {
+  background: var(--color-surface-dark, #1f2937);
+}
+
+[data-theme="dark"] .ticket-accordion-header:hover {
+  background: var(--color-surface-hover-dark, #374151);
+}
+
+[data-theme="dark"] .accordion-ticket-name {
+  color: var(--color-text-primary-dark, #f9fafb);
+}
+
+[data-theme="dark"] .accordion-qty-selector {
+  background: var(--color-surface-secondary-dark, #374151);
+}
+
+[data-theme="dark"] .accordion-qty-selector .qty-btn {
+  background: var(--color-surface-dark, #1f2937);
+  color: var(--color-text-primary-dark, #f9fafb);
+}
+
+[data-theme="dark"] .accordion-qty-selector .quantity {
+  color: var(--color-text-primary-dark, #f9fafb);
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .ticket-accordion-body {
+    transition: none;
+  }
+
+  .accordion-chevron {
+    transition: none;
+  }
+}
+
+/* ========================================
    MOBILE RESPONSIVE STYLES
    All media queries at the end to ensure proper cascade
    ======================================== */
