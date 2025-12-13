@@ -2171,7 +2171,7 @@
   }
   /* Fall phase - 110vh ensures confetti falls to bottom of viewport */
   100% {
-    transform: translateY(110vh) translateX(calc(var(--confetti-drift) * 1.5)) rotate(720deg) scale(1);
+    transform: translateY(110vh) translateX(var(--confetti-drift)) rotate(720deg) scale(1);
     opacity: 0;
   }
 }

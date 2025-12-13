@@ -112,6 +112,11 @@ export default function DonationSelector() {
     const handleDonate = useCallback(() => {
         if (effectiveAmount <= 0) return;
 
+        // Guard: Don't show success UI if cart manager isn't available
+        if (!window.globalCartManager) {
+            return;
+        }
+
         // Add to cart
         addDonation(effectiveAmount, false);
 
