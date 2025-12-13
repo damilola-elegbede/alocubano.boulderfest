@@ -599,12 +599,12 @@
   }
 
   .ticket-accordion.expanded .ticket-accordion-body {
-    max-height: 600px; /* Enough for full card with animation */
+    max-height: 660px; /* Accommodate 560px card + padding */
   }
 
   /* Flip card inside accordion - restore full height */
   .ticket-accordion-body .flip-card {
-    height: 500px; /* Full card height when expanded */
+    height: 560px; /* Match desktop card height to show qty selector */
     padding: var(--space-sm, 0.5rem) var(--space-md, 1rem) var(--space-md, 1rem);
   }
 
@@ -671,7 +671,7 @@
   }
 
   .ticket-accordion-body .flip-card {
-    height: 460px;
+    height: 520px; /* Shorter for small screens but shows qty selector */
     padding: var(--space-xs, 0.25rem) var(--space-sm, 0.5rem) var(--space-sm, 0.5rem);
   }
 }
