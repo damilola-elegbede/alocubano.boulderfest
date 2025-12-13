@@ -22,14 +22,17 @@ import {
  * @returns {boolean} True if origin is allowed
  */
 function validateOrigin(originHeader, allowedOrigins) {
-  if (!originHeader || !Array.isArray(allowedOrigins) || allowedOrigins.length === 0) {
+  // Handle array headers (Node.js can pass string[])
+  const headerValue = Array.isArray(originHeader) ? originHeader[0] : originHeader;
+  if (typeof headerValue !== 'string' || !headerValue || !Array.isArray(allowedOrigins) || allowedOrigins.length === 0) {
     return false;
   }
   let originUrl;
   try {
-    originUrl = new URL(originHeader);
+    // Accept both Origin ("https://x.com") and Referer ("https://x.com/path") and normalize to origin
+    originUrl = new URL(headerValue);
   } catch {
-    // If Referer is a full URL with path, or malformed, reject
+    // Malformed URL -> reject
     return false;
   }
   const origin = `${originUrl.protocol}//${originUrl.host}`;

@@ -309,7 +309,7 @@ Request ID generation uses crypto.randomBytes which is appropriate, but could be
 
 1. **Advanced Distributed Rate Limiter** (`/lib/security/rate-limiter.js`)
    - Redis-backed distributed rate limiting with memory fallback
-   - Sliding window algorithm for accurate rate limiting
+   - Sliding-window algorithm for accurate rate limiting
    - Progressive penalties with exponential backoff
    - Abuse pattern detection and alerting
    - Endpoint-specific configurations (payment, auth, email, qrValidation, general)

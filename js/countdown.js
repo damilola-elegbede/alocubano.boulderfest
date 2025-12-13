@@ -47,21 +47,25 @@ class CountdownTimer {
     let date;
 
     if (typeof targetDate === 'string') {
-      // If string doesn't include timezone, assume Mountain Time
-      if (!targetDate.includes('T') || (!targetDate.includes('-') && !targetDate.includes('+'))) {
-        // Add Mountain Time offset for proper interpretation
-        // Use -07:00 for DST (Mar-Nov) or -06:00 for Standard Time (Nov-Mar)
-        const now = new Date();
-        const isDST = this._isDaylightSavingTime(now);
-        const offset = isDST ? '-07:00' : '-06:00';
+      // Check if string has explicit timezone (Z or +/-HH:MM at end)
+      const hasExplicitTimezone = /(Z|[+-]\d{2}:\d{2})$/i.test(targetDate);
 
-        if (targetDate.includes('T')) {
-          date = new Date(targetDate + offset);
-        } else {
-          date = new Date(targetDate + 'T00:00:00' + offset);
-        }
-      } else {
+      if (hasExplicitTimezone) {
         date = new Date(targetDate);
+      } else {
+        // No explicit timezone - assume Mountain Time
+        // Parse the date parts to determine DST for the TARGET date, not current date
+        const [datePart, timePart = '00:00:00'] = targetDate.split('T');
+        const [year, month, day] = datePart.split('-').map(Number);
+        const [hour = 0] = timePart.split(':').map(Number);
+
+        // Check DST for the target date, not today
+        const isDST = this._isDaylightSavingTime({ year, month, day, hour });
+        // Mountain Daylight Time (MDT) is UTC-6, Mountain Standard Time (MST) is UTC-7
+        const offset = isDST ? '-06:00' : '-07:00';
+
+        const normalized = targetDate.includes('T') ? targetDate : `${targetDate}T00:00:00`;
+        date = new Date(`${normalized}${offset}`);
       }
     } else if (targetDate instanceof Date) {
       date = targetDate;
@@ -79,22 +83,36 @@ class CountdownTimer {
   /**
    * Check if a date is in Daylight Saving Time for Mountain Time
    * @private
-   * @param {Date} date - Date to check
+   * @param {Object|Date} dateOrParts - Date object or {year, month, day, hour} parts
    * @returns {boolean} True if date is in DST
    */
-  _isDaylightSavingTime(date) {
-    // DST in US: Second Sunday in March to First Sunday in November
-    const year = date.getFullYear();
+  _isDaylightSavingTime(dateOrParts) {
+    // US DST: Second Sunday in March @ 02:00 to First Sunday in November @ 02:00 (local)
+    let year, month, day, hour;
 
-    // Second Sunday in March
-    const march = new Date(year, 2, 1);
-    const dstStart = new Date(year, 2, (14 - march.getDay()) % 7 + 8);
+    if (dateOrParts instanceof Date) {
+      year = dateOrParts.getFullYear();
+      month = dateOrParts.getMonth() + 1; // Convert to 1-based
+      day = dateOrParts.getDate();
+      hour = dateOrParts.getHours();
+    } else {
+      ({ year, month, day, hour = 0 } = dateOrParts);
+    }
 
-    // First Sunday in November
-    const november = new Date(year, 10, 1);
-    const dstEnd = new Date(year, 10, (7 - november.getDay()) % 7 + 1);
+    // Calculate second Sunday in March
+    const march1Dow = new Date(Date.UTC(year, 2, 1)).getUTCDay();
+    const dstStartDay = ((7 - march1Dow) % 7) + 8; // Second Sunday in March
 
-    return date >= dstStart && date < dstEnd;
+    // Calculate first Sunday in November
+    const nov1Dow = new Date(Date.UTC(year, 10, 1)).getUTCDay();
+    const dstEndDay = ((7 - nov1Dow) % 7) + 1; // First Sunday in November
+
+    // Check if date is in DST period
+    if (month < 3 || month > 11) return false;
+    if (month > 3 && month < 11) return true;
+    if (month === 3) return day > dstStartDay || (day === dstStartDay && hour >= 2);
+    // month === 11
+    return day < dstEndDay || (day === dstEndDay && hour < 2);
   }
 
   /**
@@ -149,22 +167,25 @@ class CountdownTimer {
    * @param {HTMLElement} elements.minutes - Minutes display element
    * @param {HTMLElement} elements.seconds - Seconds display element
    * @param {HTMLElement} [elements.timezone] - Timezone display element
+   * @param {Object} [timeRemaining] - Pre-calculated time remaining (avoids recalculation)
+   * @param {Object} [formatted] - Pre-formatted countdown values (avoids recalculation)
    */
-  updateDisplay(elements) {
-    const timeRemaining = this.getTimeRemaining();
-    const formatted = this.formatCountdown(timeRemaining);
+  updateDisplay(elements, timeRemaining = null, formatted = null) {
+    // Use provided values or calculate fresh
+    const time = timeRemaining || this.getTimeRemaining();
+    const fmt = formatted || this.formatCountdown(time);
 
     if (elements.days) {
-      elements.days.textContent = formatted.days;
+      elements.days.textContent = fmt.days;
     }
     if (elements.hours) {
-      elements.hours.textContent = formatted.hours;
+      elements.hours.textContent = fmt.hours;
     }
     if (elements.minutes) {
-      elements.minutes.textContent = formatted.minutes;
+      elements.minutes.textContent = fmt.minutes;
     }
     if (elements.seconds) {
-      elements.seconds.textContent = formatted.seconds;
+      elements.seconds.textContent = fmt.seconds;
     }
 
     // Update timezone display if requested and element exists
@@ -173,18 +194,8 @@ class CountdownTimer {
       elements.timezone.textContent = `(Mountain Time - ${timezoneInfo.abbreviation})`;
     }
 
-    // Call custom update callback
-    if (this.options.onUpdate) {
-      this.options.onUpdate(timeRemaining, formatted);
-    }
-
-    // Handle countdown completion
-    if (timeRemaining.expired) {
-      this.stop();
-      if (this.options.onComplete) {
-        this.options.onComplete();
-      }
-    }
+    // Note: Callbacks (onUpdate/onComplete) are triggered by start() interval,
+    // NOT here, to prevent infinite recursion when onUpdate calls updateDisplay.
   }
 
   /**
@@ -269,9 +280,17 @@ export function createCountdown(targetDate, elementIds, options = {}) {
   const timer = new CountdownTimer(targetDate, {
     ...options,
     onUpdate: (timeRemaining, formatted) => {
-      timer.updateDisplay(elements);
+      // Pass pre-calculated values to avoid infinite recursion
+      timer.updateDisplay(elements, timeRemaining, formatted);
       if (options.onUpdate) {
         options.onUpdate(timeRemaining, formatted);
+      }
+    },
+    onComplete: () => {
+      // Final display update on completion
+      timer.updateDisplay(elements);
+      if (options.onComplete) {
+        options.onComplete();
       }
     }
   });
@@ -297,13 +316,16 @@ export function createBoulderFest2026Countdown(elementIds, options = {}) {
 
 /**
  * Utility function to create countdown for Weekender November 2025
+ * @deprecated This event has passed (Nov 15, 2025). Use createBoulderFest2026Countdown instead.
  * @param {Object} elementIds - Element IDs for countdown display
  * @param {Object} [options] - Additional options
- * @returns {CountdownTimer} Countdown timer instance
+ * @returns {CountdownTimer} Countdown timer instance (will show "expired")
  */
 export function createWeekender2025Countdown(elementIds, options = {}) {
-  // November 15, 2025 at 7:00 PM Mountain Time (example event start)
+  // Note: This event has passed. Left for historical reference.
+  // November 15, 2025 at 7:00 PM Mountain Time
   // November is during Standard Time, so use -07:00 (MST offset)
+  console.warn('createWeekender2025Countdown: This event has passed. Use createBoulderFest2026Countdown instead.');
   return createCountdown('2025-11-15T19:00:00-07:00', elementIds, options);
 }
 

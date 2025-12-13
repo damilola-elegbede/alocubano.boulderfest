@@ -98,4 +98,7 @@ async function handler(req, res) {
     }
 }
 
-export default withRateLimit(handler, 'general');
+// Use stricter rate limit for encryption key endpoint (security-sensitive)
+// Default 'general' (60 req/min) allows key enumeration attacks
+// Use auth rate limit (20 req/min) for better security
+export default withRateLimit(handler, 'auth');

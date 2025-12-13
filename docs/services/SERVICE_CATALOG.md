@@ -1422,7 +1422,7 @@ console.log(`Blocked: ${analytics.blocked}, Allowed: ${analytics.allowed}`);
 
 - <5ms overhead per request with Redis
 - Memory fallback adds ~1ms overhead
-- Sliding window provides accurate rate limiting
+- Sliding-window provides accurate rate limiting (note: `performanceMs` field only returned for active rate-limit evaluations, not whitelist/blacklist/error bypass paths)
 - Progressive penalties: 1x → 2x → 4x → 8x → 16x → 32x
 - Analytics tracked in real-time
 - Alert thresholds: payment=50, auth=20, email=100, general=500
