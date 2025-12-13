@@ -559,3 +559,96 @@
     animation: none;
   }
 }
+
+/* ============================================
+   Mobile Ticket Card - Collapsible Accordion
+   ============================================ */
+
+/* Slide-down animation for ticket expansion */
+@keyframes ticketSlideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    max-height: 600px;
+    transform: translateY(0);
+  }
+}
+
+/* Mobile ticket card compact styles */
+@media (max-width: 768px) {
+  .ticket-card-mobile {
+    padding: var(--space-md);
+    margin-bottom: var(--space-sm);
+    border-left: 4px solid;
+    border-image: linear-gradient(180deg, #5b6bb5, #cc2936) 1;
+    cursor: pointer;
+    transition: box-shadow 0.2s ease, transform 0.1s ease;
+  }
+
+  .ticket-card-mobile:hover {
+    box-shadow: 0 4px 12px var(--shadow-color);
+  }
+
+  .ticket-card-mobile:active {
+    transform: scale(0.99);
+  }
+
+  .ticket-card-mobile:focus-visible {
+    outline: 3px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  /* Color dot sizing */
+  .ticket-card-mobile .ticket-color-dot {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+  }
+
+  /* QR code sizing */
+  .ticket-card-mobile .ticket-qr-code {
+    width: 150px;
+    height: 150px;
+  }
+
+  /* Chevron animation */
+  .ticket-card-mobile .ticket-chevron {
+    transition: transform 0.3s ease;
+  }
+
+  .ticket-card-mobile.ticket-card-expanded .ticket-chevron {
+    transform: rotate(180deg);
+  }
+
+  /* Expanded content animation */
+  .ticket-card-mobile .ticket-card-content {
+    animation: ticketSlideDown 0.3s ease;
+  }
+}
+
+/* Even more compact for very small screens */
+@media (max-width: 480px) {
+  .ticket-card-mobile {
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .ticket-card-mobile .ticket-qr-code {
+    width: 140px;
+    height: 140px;
+  }
+}
+
+/* Reduced motion support for ticket animation */
+@media (prefers-reduced-motion: reduce) {
+  .ticket-card-mobile .ticket-card-content {
+    animation: none;
+  }
+
+  .ticket-card-mobile .ticket-chevron {
+    transition: none;
+  }
+}
