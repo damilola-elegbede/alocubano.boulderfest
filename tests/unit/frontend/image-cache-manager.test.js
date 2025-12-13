@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import ImageCacheManager from '../../../public/js/image-cache-manager.js';
+import ImageCacheManager from '../../../js/image-cache-manager.js';
 
 describe('ImageCacheManager', () => {
   let manager;

@@ -508,3 +508,6 @@ window.ImageCacheManager = new ImageCacheManager();
 console.log(
     '🚀 ImageCacheManager v3 initialized with format-aware caching support'
 );
+
+// Export class for testing and ES module usage
+export default ImageCacheManager;
