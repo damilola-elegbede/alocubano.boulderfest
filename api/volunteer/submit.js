@@ -5,7 +5,6 @@
 
 import { getBrevoService } from "../../lib/brevo-service.js";
 import { setSecureCorsHeaders } from '../../lib/cors-config.js';
-import { CSRFProtection } from '../../lib/csrf-protection.js';
 import { generateVolunteerAcknowledgementEmail } from '../../lib/email-templates/volunteer-acknowledgement.js';
 import { validateVolunteerSubmission } from '../../lib/validators/form-validators.js';
 import {
@@ -16,8 +15,40 @@ import {
   formatAvailability
 } from '../../lib/volunteer-helpers.js';
 
-// CSRF protection for origin validation
-const csrfProtection = new CSRFProtection();
+/**
+ * Validate request origin against allowed origins list
+ * @param {string} originHeader - Origin or Referer header value
+ * @param {string[]} allowedOrigins - Array of allowed origins (supports wildcards like *.vercel.app)
+ * @returns {boolean} True if origin is allowed
+ */
+function validateOrigin(originHeader, allowedOrigins) {
+  if (!originHeader || !Array.isArray(allowedOrigins) || allowedOrigins.length === 0) {
+    return false;
+  }
+  let originUrl;
+  try {
+    originUrl = new URL(originHeader);
+  } catch {
+    // If Referer is a full URL with path, or malformed, reject
+    return false;
+  }
+  const origin = `${originUrl.protocol}//${originUrl.host}`;
+  const host = originUrl.hostname;
+
+  return allowedOrigins.some((allowed) => {
+    // Support full origin entries like https://app.example.com
+    if (/^https?:\/\//i.test(allowed)) {
+      return allowed.toLowerCase() === origin.toLowerCase();
+    }
+    // Support exact host match: example.com or app.example.com
+    if (!allowed.startsWith('*.')) {
+      return host.toLowerCase() === allowed.toLowerCase();
+    }
+    // Wildcard subdomains: *.example.com -> match foo.example.com but not example.com
+    const domain = allowed.slice(2).toLowerCase();
+    return host.toLowerCase().endsWith(`.${domain}`);
+  });
+}
 
 // Rate limiting storage (in production, use Redis or similar)
 const rateLimitMap = new Map();
@@ -113,7 +144,7 @@ export default async function handler(req, res) {
         });
       }
 
-      if (!csrfProtection.validateOrigin(origin, allowedOrigins)) {
+      if (!validateOrigin(origin, allowedOrigins)) {
         console.warn('Volunteer submission rejected: invalid origin', { origin: origin?.substring(0, 100) });
         return res.status(403).json({
           error: 'Request origin validation failed'

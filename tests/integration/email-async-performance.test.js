@@ -7,7 +7,7 @@
 import { describe, test, expect, vi, beforeAll, afterAll } from 'vitest';
 import { createOrRetrieveTickets } from '../../lib/ticket-creation-service.js';
 import { getDatabaseClient } from '../../lib/database.js';
-import * as ticketEmailServiceModule from '../../lib/ticket-email-service-brevo.js';
+import * as ticketEmailServiceModule from '../../lib/ticket-email-service.js';
 
 describe('Async Email Performance Tests', () => {
   let db;

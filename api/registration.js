@@ -8,15 +8,10 @@ import { getRegistrationTokenService } from "../lib/registration-token-service.j
 import { getDatabaseClient } from "../lib/database.js";
 import { processDatabaseResult } from "../lib/bigint-serializer.js";
 import { getTicketColorService } from "../lib/ticket-color-service.js";
-import { withRateLimit } from "./utils/rate-limiter.js";
+import { withRateLimit } from "../middleware/rate-limit.js";
 import jwt from 'jsonwebtoken';
 
-// Rate limit: 30 requests per minute per IP
-const RATE_LIMIT_CONFIG = {
-  windowMs: 60 * 1000,
-  maxRequests: 30,
-  identifier: 'registration'
-};
+// Note: Rate limiting is now handled by the consolidated middleware/rate-limit.js
 
 // Allowed CORS origins - production domain and preview deployments
 const ALLOWED_ORIGINS = [
@@ -170,4 +165,4 @@ async function handler(req, res) {
 }
 
 // Export with rate limiting wrapper
-export default withRateLimit(handler, RATE_LIMIT_CONFIG);
+export default withRateLimit(handler, 'general');

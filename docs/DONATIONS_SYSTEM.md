@@ -33,7 +33,7 @@ The donations system provides integrated donation collection alongside ticket pu
 │     ├── Record donation items                               │
 │     └── Track donation metadata                             │
 │                                                              │
-│  5. Email Confirmation (lib/ticket-email-service-brevo.js)   │
+│  5. Email Confirmation (lib/ticket-email-service.js)   │
 │     ├── Include donation in receipt                         │
 │     ├── Acknowledgment message                              │
 │     └── Tax receipt information                             │
@@ -293,7 +293,7 @@ export default async function handler(req, res) {
 }
 ```
 
-### Email Templates (lib/ticket-email-service-brevo.js)
+### Email Templates (lib/ticket-email-service.js)
 
 ```javascript
 prepareDonationData(transaction, tickets) {

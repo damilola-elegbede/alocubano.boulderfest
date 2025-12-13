@@ -10,7 +10,7 @@ import csrfService from "../../lib/csrf-service.js";
 import { getDatabaseClient } from "../../lib/database.js";
 import { processDatabaseResult } from "../../lib/bigint-serializer.js";
 import timeUtils from "../../lib/time-utils.js";
-import { getTicketEmailService } from "../../lib/ticket-email-service-brevo.js";
+import { getTicketEmailService } from "../../lib/ticket-email-service.js";
 import { maskEmail } from "../../lib/volunteer-helpers.js";
 
 /**

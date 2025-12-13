@@ -3,7 +3,7 @@
  * Creates a PayPal order with database storage and test mode support
  */
 
-import { withRateLimit } from '../../utils/rate-limiter.js';
+import { withRateLimit } from '../../../middleware/rate-limit.js';
 import { setSecureCorsHeaders } from '../../../lib/cors-config.js';
 import { getDatabaseClient } from '../../../lib/database.js';
 import { createPayPalOrder } from '../../../lib/paypal-service.js';
@@ -22,12 +22,7 @@ import { validateRequestWithResponse } from '../../../src/api/helpers/validate.j
 // Maximum request body size (100KB)
 const MAX_BODY_SIZE = 100 * 1024;
 
-// Rate limiting configuration
-const RATE_LIMIT_CONFIG = {
-  windowMs: 60000, // 1 minute
-  max: 10, // 10 requests per minute per IP
-  message: 'Too many payment attempts. Please wait a moment before trying again.'
-};
+// Note: Rate limiting is now handled by the consolidated middleware/rate-limit.js
 
 async function createOrderHandler(req, res) {
   console.log('=== PayPal Create Order Handler Started ===');
@@ -347,4 +342,4 @@ async function createOrderHandler(req, res) {
 }
 
 // Export handler with rate limiting
-export default withRateLimit(createOrderHandler, RATE_LIMIT_CONFIG);
+export default withRateLimit(createOrderHandler, 'payment');

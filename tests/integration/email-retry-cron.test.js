@@ -6,7 +6,7 @@
 import { describe, test, expect, vi, beforeAll, afterAll, beforeEach } from 'vitest';
 import { getDatabaseClient } from '../../lib/database.js';
 import processEmailQueueHandler from '../../api/email/process-retry-queue.js';
-import * as ticketEmailServiceModule from '../../lib/ticket-email-service-brevo.js';
+import * as ticketEmailServiceModule from '../../lib/ticket-email-service.js';
 
 describe('Email Retry Cron Tests', () => {
   let db;

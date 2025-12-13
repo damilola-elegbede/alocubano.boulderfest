@@ -19,7 +19,7 @@ import { describe, test, expect, beforeAll, afterAll, beforeEach, vi } from 'vit
 import { getDatabaseClient } from '../../lib/database.js';
 import { createOrRetrieveTickets } from '../../lib/ticket-creation-service.js';
 import { reserveTickets, fulfillReservation } from '../../lib/ticket-availability-service.js';
-import * as ticketEmailServiceModule from '../../lib/ticket-email-service-brevo.js';
+import * as ticketEmailServiceModule from '../../lib/ticket-email-service.js';
 
 describe('Async Operations Integration', () => {
   let db;

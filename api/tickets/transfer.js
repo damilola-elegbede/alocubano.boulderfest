@@ -87,7 +87,7 @@ export default async function handler(req, res) {
     );
 
     // Send email notifications to both parties
-    const ticketEmailService = await import('../../lib/ticket-email-service-brevo.js');
+    const ticketEmailService = await import('../../lib/ticket-email-service.js');
     const emailService = ticketEmailService.default;
 
     const transferDate = timeUtils.formatDateTime(new Date());
