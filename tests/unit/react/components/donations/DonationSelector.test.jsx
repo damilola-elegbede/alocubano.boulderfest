@@ -43,10 +43,14 @@ describe('DonationSelector', () => {
                 dispatchEvent: vi.fn(),
             })),
         });
+
+        // Mock globalCartManager - required for donation submission flow
+        window.globalCartManager = { initialized: true };
     });
 
     afterEach(() => {
         vi.clearAllMocks();
+        delete window.globalCartManager;
     });
 
     describe('Component Rendering', () => {

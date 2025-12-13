@@ -60,11 +60,68 @@ export default function DonationSelector() {
         }
     }, [handleCardClick]);
 
+    // Create fly-to-cart animation
+    const createFlyToCartAnimation = useCallback((amount) => {
+        const donateBtn = document.getElementById('donate-button');
+        const cartIcon = document.querySelector('.nav-cart-icon');
+
+        if (!donateBtn || !cartIcon) return;
+
+        // Respect reduced motion preference
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            return;
+        }
+
+        const btnRect = donateBtn.getBoundingClientRect();
+        const cartRect = cartIcon.getBoundingClientRect();
+
+        // Create flying element
+        const flyItem = document.createElement('div');
+        flyItem.className = 'fly-to-cart-item';
+        flyItem.textContent = `$${amount}`;
+
+        // Position at button center
+        const startX = btnRect.left + btnRect.width / 2;
+        const startY = btnRect.top + btnRect.height / 2;
+        flyItem.style.left = `${startX}px`;
+        flyItem.style.top = `${startY}px`;
+
+        document.body.appendChild(flyItem);
+
+        // Calculate end position (cart icon center)
+        const endX = cartRect.left + cartRect.width / 2;
+        const endY = cartRect.top + cartRect.height / 2;
+
+        // Set CSS custom properties for animation
+        flyItem.style.setProperty('--fly-x', `${endX - startX}px`);
+        flyItem.style.setProperty('--fly-y', `${endY - startY}px`);
+
+        // Trigger animation
+        requestAnimationFrame(() => {
+            flyItem.classList.add('flying');
+        });
+
+        // Remove element after animation (600ms)
+        setTimeout(() => {
+            if (flyItem.parentNode) {
+                flyItem.parentNode.removeChild(flyItem);
+            }
+        }, 600);
+    }, []);
+
     const handleDonate = useCallback(() => {
         if (effectiveAmount <= 0) return;
 
+        // Guard: Don't show success UI if cart manager isn't available
+        if (!window.globalCartManager) {
+            return;
+        }
+
         // Add to cart
         addDonation(effectiveAmount, false);
+
+        // Create fly-to-cart animation
+        createFlyToCartAnimation(effectiveAmount);
 
         // Show celebration
         setCelebrationAmount(effectiveAmount);
@@ -74,47 +131,55 @@ export default function DonationSelector() {
         setSelectedAmount(null);
         setCustomAmount('');
 
-        // Hide celebration after animation
+        // Hide celebration after confetti animation completes (max 7s)
         setTimeout(() => {
             setShowCelebration(false);
-        }, 2000);
-    }, [effectiveAmount, addDonation]);
+        }, 7000);
+    }, [effectiveAmount, addDonation, createFlyToCartAnimation]);
 
     // Create confetti effect
     useEffect(() => {
         if (!showCelebration) return;
 
         const colors = [
-            '#FF0080', '#00FF00', '#FF4500', '#FFD700',
-            '#00CED1', '#FF1493', '#0000FF', '#FF00FF'
+            '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4',
+            '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F'
         ];
         const confettiCount = 200;
         const confettiElements = [];
+        const isMobile = window.innerWidth < 768;
 
         for (let i = 0; i < confettiCount; i++) {
             const confetti = document.createElement('div');
             confetti.className = 'confetti-piece';
             confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-            confetti.style.left = Math.random() * 120 + 'vw';
+            // Start from center, burst outward via CSS --confetti-drift
+            confetti.style.left = '50vw';
+            // Drift determines burst direction: desktop ±30vw, mobile ±50vw
+            const driftRange = isMobile ? 100 : 60;
+            const drift = (Math.random() - 0.5) * driftRange;
+            confetti.style.setProperty('--confetti-drift', drift + 'vw');
             // Variable width/height for natural look (6-14px range)
             const width = Math.random() * 8 + 6;
             const height = Math.random() * 8 + 6;
             confetti.style.width = width + 'px';
             confetti.style.height = height + 'px';
-            confetti.style.animationDelay = Math.random() * 0.5 + 's';
+            // Tight burst delay for explosive effect
+            confetti.style.animationDelay = Math.random() * 0.3 + 's';
+            // 5-7 seconds for leisurely fall
             confetti.style.animationDuration = Math.random() * 2 + 5 + 's';
             document.body.appendChild(confetti);
             confettiElements.push(confetti);
         }
 
-        // Cleanup confetti after animation (max delay 0.5s + max duration 7s + buffer)
+        // Cleanup confetti after animation (max delay 0.3s + max duration 7s + buffer)
         const cleanup = setTimeout(() => {
             confettiElements.forEach(el => {
                 if (el.parentNode) {
                     el.parentNode.removeChild(el);
                 }
             });
-        }, 8000);
+        }, 10000);
 
         return () => {
             clearTimeout(cleanup);
