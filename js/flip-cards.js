@@ -16,7 +16,6 @@ class FlipCardManager {
     init() {
         this.bindEvents();
         this.bindAccordionEvents();
-        this.syncQuantitiesFromCart();
     }
 
     /**
@@ -38,11 +37,6 @@ class FlipCardManager {
         container.addEventListener('click', (e) => {
             const header = e.target.closest('.ticket-accordion-header');
             if (!header) return;
-
-            // Don't toggle if clicking on quantity buttons
-            if (e.target.closest('.accordion-qty-selector .qty-btn')) {
-                return;
-            }
 
             const accordion = header.closest('.ticket-accordion');
             if (!accordion) return;
@@ -72,18 +66,6 @@ class FlipCardManager {
             }
         });
 
-        // Sync accordion quantity with card quantity
-        container.addEventListener('click', (e) => {
-            const qtyBtn = e.target.closest('.accordion-qty-selector .qty-btn');
-            if (!qtyBtn) return;
-
-            // The cart manager handles the actual quantity change
-            // We just need to sync the display after a short delay
-            setTimeout(() => {
-                this.syncAccordionQuantity(qtyBtn.closest('.ticket-accordion'));
-            }, 50);
-        });
-
         console.log('FlipCardManager: Accordion events bound');
     }
 
@@ -103,33 +85,6 @@ class FlipCardManager {
         }
 
         console.log(`Accordion ${accordion.dataset.ticketId} ${isExpanded ? 'collapsed' : 'expanded'}`);
-    }
-
-    /**
-     * Sync quantity display between accordion header and flip card
-     */
-    syncAccordionQuantity(accordion) {
-        if (!accordion) return;
-
-        // Get the quantity from the flip card inside
-        const cardQty = accordion.querySelector('.flip-card .quantity-selector .quantity');
-        const accordionQty = accordion.querySelector('.accordion-qty-selector .quantity');
-
-        if (cardQty && accordionQty) {
-            accordionQty.textContent = cardQty.textContent;
-        }
-    }
-
-    /**
-     * Sync all accordion quantities from cart on load
-     */
-    syncQuantitiesFromCart() {
-        // Wait for cart manager to be ready
-        setTimeout(() => {
-            document.querySelectorAll('.ticket-accordion').forEach(accordion => {
-                this.syncAccordionQuantity(accordion);
-            });
-        }, 100);
     }
 
     bindEvents() {

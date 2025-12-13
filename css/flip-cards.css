@@ -575,51 +575,6 @@
     white-space: nowrap;
   }
 
-  /* Accordion quantity selector - compact version */
-  .accordion-qty-selector {
-    display: flex;
-    align-items: center;
-    gap: var(--space-xs, 0.25rem);
-    background: var(--color-surface-secondary, #f3f4f6);
-    border-radius: 8px;
-    padding: 2px;
-  }
-
-  .accordion-qty-selector .qty-btn {
-    width: 32px;
-    height: 32px;
-    min-width: 32px;
-    border: none;
-    background: var(--color-white, #ffffff);
-    color: var(--color-text-primary, #1f2937);
-    font-size: 16px;
-    font-weight: 600;
-    border-radius: 6px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-  }
-
-  .accordion-qty-selector .qty-btn:hover {
-    background: var(--color-primary, #3b82f6);
-    color: var(--color-white, #ffffff);
-  }
-
-  .accordion-qty-selector .qty-btn:active {
-    transform: scale(0.95);
-  }
-
-  .accordion-qty-selector .quantity {
-    font-family: var(--font-mono, 'Space Mono', monospace);
-    font-size: var(--font-size-base, 1rem);
-    font-weight: 600;
-    min-width: 28px;
-    text-align: center;
-    color: var(--color-text-primary, #1f2937);
-  }
-
   /* Chevron icon */
   .accordion-chevron {
     display: flex;
@@ -656,11 +611,6 @@
   .ticket-accordion-body .flip-card-front,
   .ticket-accordion-body .flip-card-back {
     height: calc(100% - 12px);
-  }
-
-  /* Hide quantity selector inside card when in accordion (it's in the header) */
-  .ticket-accordion .flip-card .quantity-selector {
-    display: none;
   }
 
   /* Tap hint on collapsed accordion */
@@ -710,18 +660,6 @@
     font-size: var(--font-size-sm, 0.875rem);
   }
 
-  .accordion-qty-selector .qty-btn {
-    width: 28px;
-    height: 28px;
-    min-width: 28px;
-    font-size: 14px;
-  }
-
-  .accordion-qty-selector .quantity {
-    font-size: var(--font-size-sm, 0.875rem);
-    min-width: 24px;
-  }
-
   .accordion-chevron {
     width: 20px;
     height: 20px;
@@ -753,19 +691,6 @@
 }
 
 [data-theme="dark"] .accordion-ticket-name {
-  color: var(--color-text-primary-dark, #f9fafb);
-}
-
-[data-theme="dark"] .accordion-qty-selector {
-  background: var(--color-surface-secondary-dark, #374151);
-}
-
-[data-theme="dark"] .accordion-qty-selector .qty-btn {
-  background: var(--color-surface-dark, #1f2937);
-  color: var(--color-text-primary-dark, #f9fafb);
-}
-
-[data-theme="dark"] .accordion-qty-selector .quantity {
   color: var(--color-text-primary-dark, #f9fafb);
 }
 
