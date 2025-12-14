@@ -12,13 +12,26 @@
  * Desktop: Full expanded view
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTimeManager } from '../../hooks/useTimeManager';
 import { formatTicketType } from '../../../lib/ticket-config.js';
 
 export default function TicketCard({ ticket, onTransfer, showTransfer = false }) {
     const { formatDate } = useTimeManager();
-    const [isExpanded, setIsExpanded] = useState(false);
+    // Desktop: expanded by default, Mobile: collapsed by default
+    const [isExpanded, setIsExpanded] = useState(() => {
+        if (typeof window === 'undefined') return true; // SSR-safe default
+        return window.matchMedia?.('(min-width: 769px)')?.matches ?? true;
+    });
+
+    // Update expanded state on breakpoint changes
+    useEffect(() => {
+        const mq = window.matchMedia?.('(min-width: 769px)');
+        if (!mq) return;
+        const onChange = (e) => setIsExpanded(e.matches);
+        mq.addEventListener?.('change', onChange);
+        return () => mq.removeEventListener?.('change', onChange);
+    }, []);
 
     const {
         ticket_id,
@@ -109,8 +122,7 @@ export default function TicketCard({ ticket, onTransfer, showTransfer = false })
                 marginBottom: 'var(--space-sm)',
                 position: 'relative',
                 cursor: 'pointer',
-                borderLeft: '4px solid',
-                borderImage: 'linear-gradient(180deg, #5b6bb5, #cc2936) 1'
+                borderLeft: '4px solid var(--color-blue, #5b6bb5)'
             }}
         >
             {/* Collapsed Header - Always Visible */}
@@ -327,9 +339,10 @@ export default function TicketCard({ ticket, onTransfer, showTransfer = false })
                         }}>
                             Your Entry QR Code
                         </h3>
+                        {/* QR code needs white background for scanner contrast - intentionally not themed */}
                         <div style={{
                             padding: 'var(--space-sm)',
-                            background: 'white',
+                            background: '#fff',
                             borderRadius: '8px',
                             display: 'inline-block'
                         }}>
@@ -416,7 +429,9 @@ export default function TicketCard({ ticket, onTransfer, showTransfer = false })
                         }}>
                             <button
                                 className="btn-small btn-primary"
-                                onClick={(e) => handleActionClick(e, () => onTransfer(ticket_id))}
+                                onClick={(e) => handleActionClick(e, () => onTransfer?.(ticket_id))}
+                                disabled={!onTransfer}
+                                aria-disabled={!onTransfer}
                                 style={{
                                     padding: 'var(--space-sm) var(--space-md)',
                                     border: 'none',
@@ -424,9 +439,10 @@ export default function TicketCard({ ticket, onTransfer, showTransfer = false })
                                     background: 'var(--color-primary)',
                                     color: 'var(--color-text-on-primary)',
                                     fontSize: 'var(--text-sm)',
-                                    cursor: 'pointer',
+                                    cursor: onTransfer ? 'pointer' : 'not-allowed',
                                     minHeight: '44px',
-                                    minWidth: '140px'
+                                    minWidth: '140px',
+                                    opacity: onTransfer ? 1 : 0.6
                                 }}
                             >
                                 Transfer Ticket

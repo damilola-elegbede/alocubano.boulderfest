@@ -509,7 +509,7 @@
     top: 0;
     bottom: 0;
     width: 4px;
-    background: linear-gradient(180deg, var(--ticket-color, #5b6bb5) 0%, #cc2936 100%);
+    background: linear-gradient(180deg, var(--ticket-color, var(--color-blue, #5b6bb5)) 0%, var(--color-red, #cc2936) 100%);
     border-radius: 12px 0 0 12px;
   }
 
