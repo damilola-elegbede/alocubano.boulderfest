@@ -201,12 +201,9 @@ export default function DonationSelector() {
             // Staggered start creates continuous rain effect
             confetti.style.animationDelay = `${Math.random() * 1.5}s`; // Increased spread of start times
 
-            // Layer-based duration: near=faster, far=slower (depth simulation)
-            // INCREASED DURATIONS for paper feel (slower fall)
-            const baseDuration = confetti.classList.contains('layer-near') ? 4.5
-                : confetti.classList.contains('layer-far') ? 6.5
-                    : 5.5;
-            const duration = baseDuration + Math.random() * 2;
+            // Layer-based duration: 8s base for all layers to fill screen
+            const baseDuration = 8;
+            const duration = baseDuration + Math.random() * 1;
             // Two durations: fall animation, flutter animation (2.5s for smooth sway)
             confetti.style.animationDuration = `${duration}s, 2.5s`;
 
@@ -214,10 +211,10 @@ export default function DonationSelector() {
             confettiElements.push(confetti);
         }
 
-        // Cleanup after longest animation (far layer: 8.5s + 1.5s delay + buffer)
+        // Cleanup after longest animation (9s + 1.5s delay + buffer)
         const cleanup = setTimeout(() => {
             confettiElements.forEach(el => el.parentNode?.removeChild(el));
-        }, 11000);
+        }, 12000);
 
         return () => {
             clearTimeout(cleanup);
@@ -336,12 +333,15 @@ export default function DonationSelector() {
                 </div>
             </form>
 
-            {/* Celebration Message */}
+            {/* Celebration Overlay + Message */}
             {showCelebration && (
-                <div className="celebration-message" role="status" aria-live="polite">
-                    <span role="img" aria-label="celebration">🎉</span> Thank You!<br />
-                    ${celebrationAmount} added to cart
-                </div>
+                <>
+                    <div className="celebration-overlay" />
+                    <div className="celebration-message" role="status" aria-live="polite">
+                        <span role="img" aria-label="celebration">🎉</span> Thank You!<br />
+                        ${celebrationAmount} added to cart
+                    </div>
+                </>
             )}
         </div>
     );
