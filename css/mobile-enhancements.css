@@ -584,7 +584,7 @@
     padding: var(--space-md);
     margin-bottom: var(--space-sm);
     border-left: 4px solid;
-    border-image: linear-gradient(180deg, #5b6bb5, #cc2936) 1;
+    border-image: linear-gradient(180deg, var(--color-blue), var(--color-red)) 1;
     cursor: pointer;
     transition: box-shadow 0.2s ease, transform 0.1s ease;
   }

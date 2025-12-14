@@ -60,9 +60,11 @@ class FlipCardManager {
 
                 e.preventDefault();
                 const accordion = header.closest('.ticket-accordion');
-                if (accordion && !accordion.classList.contains('ticket-disabled')) {
-                    this.toggleAccordion(accordion);
-                }
+                if (!accordion) return;
+                const isDisabled = accordion.classList.contains('ticket-disabled');
+                const isExpanded = accordion.classList.contains('expanded');
+                if (isDisabled && !isExpanded) return; // match click behavior
+                this.toggleAccordion(accordion);
             }
         });
 

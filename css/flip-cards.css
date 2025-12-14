@@ -790,9 +790,14 @@
   }
 
   .flip-card .qty-btn {
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
     font-size: 18px;
+  }
+
+  .flip-card .qty-btn:focus-visible {
+    outline: 3px solid var(--color-focus, var(--color-blue));
+    outline-offset: 2px;
   }
 
   .flip-card .qty-display {

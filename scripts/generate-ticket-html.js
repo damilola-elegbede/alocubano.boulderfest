@@ -141,13 +141,29 @@ function generateQuantitySelector() {
  */
 function generateAccordionHeader(ticketType, ticketColor, priceDisplay) {
   const ticketName = escapeHtml(ticketType.name || '');
+  const isComingSoon = ticketType.status === 'coming-soon';
+  const isUnavailable = ticketType.status === 'unavailable';
+  const isDisabled = isComingSoon || isUnavailable;
+
+  // For disabled tickets, update aria-label and set aria-disabled
+  let ariaLabel = `${ticketName} ticket, ${priceDisplay}. Tap to expand.`;
+  if (isComingSoon) {
+    ariaLabel = `${ticketName} ticket, ${priceDisplay}. Coming soon, not available for purchase.`;
+  } else if (isUnavailable) {
+    ariaLabel = `${ticketName} ticket, ${priceDisplay}. Unavailable for purchase.`;
+  }
+
+  // Set tabindex and aria-disabled based on availability
+  const tabindex = isDisabled ? '-1' : '0';
+  const ariaDisabled = isDisabled ? 'aria-disabled="true"' : '';
 
   return `
     <div class="ticket-accordion-header"
          role="button"
-         tabindex="0"
+         tabindex="${tabindex}"
+         ${ariaDisabled}
          aria-expanded="false"
-         aria-label="${ticketName} ticket, ${priceDisplay}. Tap to expand.">
+         aria-label="${ariaLabel}">
       <span class="accordion-color-dot" style="background: ${ticketColor};" aria-hidden="true"></span>
       <span class="accordion-ticket-name">${ticketName}</span>
       <span class="accordion-ticket-price">${priceDisplay}</span>

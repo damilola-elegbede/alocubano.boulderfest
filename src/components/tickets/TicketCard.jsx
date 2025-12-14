@@ -37,8 +37,9 @@ export default function TicketCard({ ticket, onTransfer, showTransfer = false })
 
     const ticketType = formatted_type || formatTicketType(ticket_type || '');
     const displayDate = formatted_date || formatDate(event_date, true) || '';
-    const remainingScans = scans_remaining !== undefined ? scans_remaining : (3 - scan_count);
-    const attendeeName = `${attendee_first_name} ${attendee_last_name}`;
+    const remainingScansRaw = scans_remaining !== undefined ? scans_remaining : (3 - scan_count);
+    const remainingScans = Math.max(0, remainingScansRaw);
+    const attendeeName = `${attendee_first_name || ''} ${attendee_last_name || ''}`.trim();
 
     // Status badge colors
     const getStatusBadgeStyle = () => {
@@ -71,6 +72,12 @@ export default function TicketCard({ ticket, onTransfer, showTransfer = false })
     };
 
     const handleKeyDown = (e) => {
+        const target = e.target;
+        const isInteractive =
+            target instanceof HTMLElement &&
+            (target.matches('a,button,input,select,textarea,[role="button"]') ||
+             target.closest('a,button,input,select,textarea,[role="button"]'));
+        if (isInteractive) return;
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             handleToggle();
@@ -383,7 +390,7 @@ export default function TicketCard({ ticket, onTransfer, showTransfer = false })
                             <img
                                 src="/images/add-to-wallet-apple.svg"
                                 alt="Add to Apple Wallet"
-                                style={{ height: '36px', width: 'auto' }}
+                                style={{ height: '44px', width: 'auto' }}
                             />
                         </a>
                         <a
@@ -396,7 +403,7 @@ export default function TicketCard({ ticket, onTransfer, showTransfer = false })
                             <img
                                 src="/images/add-to-wallet-google.png"
                                 alt="Add to Google Wallet"
-                                style={{ height: '36px', width: 'auto' }}
+                                style={{ height: '44px', width: 'auto' }}
                             />
                         </a>
                     </div>
