@@ -16,19 +16,6 @@
   padding: 10px 0;
 }
 
-/* Mobile responsive - stack cards vertically */
-@media (max-width: 768px) {
-  .ticket-options-grid {
-    grid-template-columns: 1fr;
-    gap: var(--space-lg, 1.5rem);
-  }
-
-  /* Maintain sufficient height on mobile for vertical design */
-  .flip-card {
-    height: 560px; /* Match desktop height for consistency */
-  }
-}
-
 /* Flip card container */
 .flip-card {
   background-color: transparent;
@@ -316,21 +303,6 @@
   font-weight: 400;
 }
 
-/* Mobile responsive for event headers */
-@media (max-width: 768px) {
-  .event-title {
-    font-size: var(--font-size-2xl, 2rem);
-  }
-
-  .event-details {
-    font-size: var(--font-size-base, 1rem);
-  }
-
-  .event-section {
-    margin: var(--space-2xl, 2.5rem) 0 var(--space-lg, 1.5rem) 0;
-  }
-}
-
 /* ========================================
    Ticket Status Banners
    ======================================== */
@@ -490,8 +462,369 @@
   color: var(--color-red-light, #f87171);
 }
 
-/* Responsive adjustments for status banners */
+/* ========================================
+   MOBILE ACCORDION STYLES
+   Collapsible tickets on mobile, full cards on desktop
+   ======================================== */
+
+/* Accordion container - wraps header + body */
+.ticket-accordion {
+  position: relative;
+  overflow: visible;
+}
+
+/* Desktop: Hide accordion header, show flip card directly */
+@media (min-width: 769px) {
+  .ticket-accordion-header {
+    display: none !important;
+  }
+
+  .ticket-accordion-body {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}
+
+/* Mobile accordion styles */
 @media (max-width: 768px) {
+  /* Accordion container */
+  .ticket-accordion {
+    background: var(--color-surface, #ffffff);
+    border: 1px solid var(--color-border, #e5e7eb);
+    border-radius: 12px;
+    margin-bottom: var(--space-md, 1rem);
+    overflow: hidden;
+    transition: box-shadow 0.3s ease;
+  }
+
+  .ticket-accordion:hover {
+    box-shadow: 0 4px 12px var(--shadow-color, rgba(0, 0, 0, 0.1));
+  }
+
+  /* Cuban-inspired left border accent */
+  .ticket-accordion::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(180deg, var(--ticket-color, var(--color-blue, #5b6bb5)) 0%, var(--color-red, #cc2936) 100%);
+    border-radius: 12px 0 0 12px;
+  }
+
+  /* Disabled accordion styling */
+  .ticket-accordion.ticket-disabled {
+    opacity: 0.6;
+    filter: grayscale(40%);
+  }
+
+  .ticket-accordion.ticket-disabled .ticket-accordion-header {
+    cursor: default;
+  }
+
+  /* Accordion header - always visible on mobile */
+  .ticket-accordion-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm, 0.5rem);
+    padding: var(--space-md, 1rem) var(--space-md, 1rem) var(--space-md, 1rem) calc(var(--space-md, 1rem) + 4px);
+    cursor: pointer;
+    min-height: 60px;
+    background: var(--color-surface, #ffffff);
+    transition: background-color 0.2s ease;
+  }
+
+  .ticket-accordion-header:hover {
+    background: var(--color-surface-hover, #f9fafb);
+  }
+
+  .ticket-accordion-header:active {
+    background: var(--color-surface-active, #f3f4f6);
+  }
+
+  /* Color dot */
+  .accordion-color-dot {
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Ticket name */
+  .accordion-ticket-name {
+    flex: 1;
+    font-family: var(--font-display, 'Bebas Neue', sans-serif);
+    font-size: var(--font-size-lg, 1.125rem);
+    color: var(--color-text-primary, #1f2937);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Ticket price */
+  .accordion-ticket-price {
+    font-family: var(--font-mono, 'Space Mono', monospace);
+    font-size: var(--font-size-base, 1rem);
+    font-weight: 700;
+    color: var(--color-red, #dc2626);
+    white-space: nowrap;
+  }
+
+  /* Chevron icon */
+  .accordion-chevron {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    color: var(--color-text-secondary, #6b7280);
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+  }
+
+  .ticket-accordion.expanded .accordion-chevron {
+    transform: rotate(180deg);
+  }
+
+  /* Accordion body - CSS Grid auto-height animation */
+  .ticket-accordion-body {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.4s ease-out;
+  }
+
+  .ticket-accordion.expanded .ticket-accordion-body {
+    grid-template-rows: 1fr;
+  }
+
+  /* Inner content wrapper for grid sizing */
+  .ticket-accordion-body > * {
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  /* Flip card inside accordion - auto height adapts to content */
+  .ticket-accordion-body .flip-card {
+    height: auto;
+    min-height: 480px;
+    padding: var(--space-sm, 0.5rem) var(--space-md, 1rem) var(--space-md, 1rem);
+  }
+
+  .ticket-accordion-body .flip-card-front,
+  .ticket-accordion-body .flip-card-back {
+    height: auto;
+    min-height: 460px;
+  }
+
+  /* Tap hint on collapsed accordion */
+  .ticket-accordion:not(.expanded) .ticket-accordion-header::after {
+    content: 'Tap to expand';
+    position: absolute;
+    bottom: 4px;
+    right: var(--space-md, 1rem);
+    font-family: var(--font-body, 'Playfair Display', serif);
+    font-size: 10px;
+    color: var(--color-text-muted, #9ca3af);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .ticket-accordion:not(.expanded):hover .ticket-accordion-header::after {
+    opacity: 1;
+  }
+
+  /* Focus styles for accessibility */
+  .ticket-accordion-header:focus-visible {
+    outline: 3px solid var(--color-focus, var(--color-blue));
+    outline-offset: -3px;
+    border-radius: 12px 12px 0 0;
+  }
+}
+
+/* Extra small screens - even more compact accordion */
+@media (max-width: 480px) {
+  .ticket-accordion-header {
+    padding: var(--space-sm, 0.5rem) var(--space-sm, 0.5rem) var(--space-sm, 0.5rem) calc(var(--space-sm, 0.5rem) + 4px);
+    gap: var(--space-xs, 0.25rem);
+    min-height: 52px;
+  }
+
+  .accordion-color-dot {
+    width: 16px;
+    height: 16px;
+    min-width: 16px;
+  }
+
+  .accordion-ticket-name {
+    font-size: var(--font-size-base, 1rem);
+  }
+
+  .accordion-ticket-price {
+    font-size: var(--font-size-sm, 0.875rem);
+  }
+
+  .accordion-chevron {
+    width: 20px;
+    height: 20px;
+  }
+
+  .accordion-chevron svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .ticket-accordion-body .flip-card {
+    height: auto;
+    min-height: 440px; /* Slightly shorter minimum for small screens */
+    padding: var(--space-xs, 0.25rem) var(--space-sm, 0.5rem) var(--space-sm, 0.5rem);
+  }
+}
+
+/* Dark theme support for accordion */
+[data-theme="dark"] .ticket-accordion {
+  background: var(--color-surface-dark, #1f2937);
+  border-color: var(--color-border-dark, #374151);
+}
+
+[data-theme="dark"] .ticket-accordion-header {
+  background: var(--color-surface-dark, #1f2937);
+}
+
+[data-theme="dark"] .ticket-accordion-header:hover {
+  background: var(--color-surface-hover-dark, #374151);
+}
+
+[data-theme="dark"] .accordion-ticket-name {
+  color: var(--color-text-primary-dark, #f9fafb);
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .ticket-accordion-body {
+    transition: none;
+  }
+
+  .accordion-chevron {
+    transition: none;
+  }
+}
+
+/* ========================================
+   MOBILE RESPONSIVE STYLES
+   All media queries at the end to ensure proper cascade
+   ======================================== */
+
+/* Mobile responsive - stack cards vertically */
+@media (max-width: 768px) {
+  .ticket-options-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-md, 1rem);
+  }
+
+  /* Condensed flip card height for mobile - fits 2-3 cards on screen */
+  .flip-card {
+    height: 340px;
+    padding: 6px 0;
+  }
+
+  .flip-card-front, .flip-card-back {
+    top: 6px;
+    height: calc(100% - 12px);
+  }
+
+  /* Compact ticket card content on mobile */
+  .flip-card .ticket-card.vertical-design {
+    padding: var(--space-md, 1rem);
+  }
+
+  /* Smaller event header on mobile */
+  .flip-card .ticket-card .event-header {
+    padding: var(--space-sm, 0.5rem) var(--space-md, 1rem);
+    margin-bottom: var(--space-sm, 0.5rem);
+  }
+
+  .flip-card .ticket-card .event-label {
+    font-size: 10px;
+  }
+
+  .flip-card .ticket-card .event-name {
+    font-size: var(--font-size-lg, 1.125rem);
+  }
+
+  /* Compact ticket type */
+  .flip-card .ticket-card .ticket-type-label {
+    font-size: 9px;
+    margin-bottom: 2px;
+  }
+
+  .flip-card .ticket-card .ticket-type-name {
+    font-size: var(--font-size-xl, 1.25rem);
+    margin-bottom: var(--space-xs, 0.25rem);
+  }
+
+  /* Smaller price display */
+  .flip-card .ticket-card .price-amount {
+    font-size: var(--font-size-2xl, 1.5rem);
+  }
+
+  /* Compact date/venue section */
+  .flip-card .ticket-card .date-label,
+  .flip-card .ticket-card .venue-label {
+    font-size: 9px;
+  }
+
+  .flip-card .ticket-card .date-value,
+  .flip-card .ticket-card .venue-value {
+    font-size: var(--font-size-sm, 0.875rem);
+  }
+
+  /* Compact quantity selector */
+  .flip-card .qty-selector {
+    margin-top: var(--space-sm, 0.5rem);
+    padding-top: var(--space-sm, 0.5rem);
+  }
+
+  .flip-card .qty-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
+  }
+
+  .flip-card .qty-btn:focus-visible {
+    outline: 3px solid var(--color-focus, var(--color-blue));
+    outline-offset: 2px;
+  }
+
+  .flip-card .qty-display {
+    font-size: var(--font-size-lg, 1.125rem);
+    min-width: 32px;
+  }
+
+  /* Reduce color dot size */
+  .flip-card .ticket-card .color-dot {
+    width: 12px;
+    height: 12px;
+  }
+
+  /* Event section mobile adjustments */
+  .event-title {
+    font-size: var(--font-size-2xl, 2rem);
+  }
+
+  .event-details {
+    font-size: var(--font-size-base, 1rem);
+  }
+
+  .event-section {
+    margin: var(--space-2xl, 2.5rem) 0 var(--space-lg, 1.5rem) 0;
+  }
+
+  /* Status banner mobile adjustments */
   .ticket-status-banner {
     font-size: var(--font-size-base, 1rem);
     padding: var(--space-xs, 0.375rem);
@@ -510,5 +843,24 @@
     /* Adjusted to stay completely within white card border on mobile */
     top: 28px;
     left: -41px;
+  }
+}
+
+/* Extra small screens - even more compact */
+@media (max-width: 480px) {
+  .flip-card {
+    height: 320px;
+  }
+
+  .flip-card .ticket-card.vertical-design {
+    padding: var(--space-sm, 0.5rem) var(--space-md, 1rem);
+  }
+
+  .flip-card .ticket-card .ticket-type-name {
+    font-size: var(--font-size-lg, 1.125rem);
+  }
+
+  .flip-card .ticket-card .price-amount {
+    font-size: var(--font-size-xl, 1.25rem);
   }
 }

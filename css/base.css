@@ -26,6 +26,9 @@
  */
 
 :root {
+  /* Progressive enhancement: enable height: auto transitions in Chrome 129+/Edge 129+ */
+  interpolate-size: allow-keywords;
+
   /* Brand Colors from Logo
    * These are the core colors extracted from the festival logo design
    * and should remain consistent across all branding materials */

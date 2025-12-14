@@ -2,21 +2,97 @@
  * Flip Card Functionality for Tickets
  * Handles click-to-flip animation and interaction
  * Uses event delegation to support dynamically generated cards
+ *
+ * Mobile: Accordion pattern - tap header to expand, then tap card to flip
+ * Desktop: Direct flip cards
  */
 
 class FlipCardManager {
     constructor() {
+        this.mobileBreakpoint = 768;
         this.init();
     }
 
     init() {
         this.bindEvents();
+        this.bindAccordionEvents();
+    }
+
+    /**
+     * Check if we're on mobile (accordion mode)
+     */
+    isMobile() {
+        return window.innerWidth <= this.mobileBreakpoint;
+    }
+
+    /**
+     * Bind accordion-specific events for mobile
+     */
+    bindAccordionEvents() {
+        const container = document.querySelector('.tickets-container') ||
+                         document.querySelector('#dynamic-ticket-container') ||
+                         document.body;
+
+        // Accordion header click - expand/collapse
+        container.addEventListener('click', (e) => {
+            const header = e.target.closest('.ticket-accordion-header');
+            if (!header) return;
+
+            const accordion = header.closest('.ticket-accordion');
+            if (!accordion) return;
+
+            // Don't expand disabled accordions (but allow existing expansion)
+            if (accordion.classList.contains('ticket-disabled') && !accordion.classList.contains('expanded')) {
+                return;
+            }
+
+            this.toggleAccordion(accordion);
+        });
+
+        // Keyboard support for accordion headers
+        container.addEventListener('keydown', (e) => {
+            const header = e.target.closest('.ticket-accordion-header');
+            if (!header) return;
+
+            if (e.key === 'Enter' || e.key === ' ') {
+                // Don't trigger if focus is on a button inside
+                if (e.target.matches('button')) return;
+
+                e.preventDefault();
+                const accordion = header.closest('.ticket-accordion');
+                if (!accordion) return;
+                const isDisabled = accordion.classList.contains('ticket-disabled');
+                const isExpanded = accordion.classList.contains('expanded');
+                if (isDisabled && !isExpanded) return; // match click behavior
+                this.toggleAccordion(accordion);
+            }
+        });
+
+        console.log('FlipCardManager: Accordion events bound');
+    }
+
+    /**
+     * Toggle accordion expanded state
+     */
+    toggleAccordion(accordion) {
+        const isExpanded = accordion.classList.contains('expanded');
+        const header = accordion.querySelector('.ticket-accordion-header');
+
+        if (isExpanded) {
+            accordion.classList.remove('expanded');
+            header?.setAttribute('aria-expanded', 'false');
+        } else {
+            accordion.classList.add('expanded');
+            header?.setAttribute('aria-expanded', 'true');
+        }
+
+        console.log(`Accordion ${accordion.dataset.ticketId} ${isExpanded ? 'collapsed' : 'expanded'}`);
     }
 
     bindEvents() {
         // Use event delegation on the container for dynamically added cards
-        const container = document.querySelector('.tickets-container') || 
-                         document.querySelector('#dynamic-ticket-container') || 
+        const container = document.querySelector('.tickets-container') ||
+                         document.querySelector('#dynamic-ticket-container') ||
                          document.body;
 
         console.log('FlipCardManager: Binding events with delegation on', container);
@@ -34,6 +110,15 @@ class FlipCardManager {
             // Don't flip if clicking on interactive elements
             if (this.shouldPreventFlip(e.target)) {
                 return;
+            }
+
+            // On mobile, only allow flip if accordion is expanded
+            if (this.isMobile()) {
+                const accordion = card.closest('.ticket-accordion');
+                if (accordion && !accordion.classList.contains('expanded')) {
+                    // Accordion is collapsed, don't flip (user should tap header)
+                    return;
+                }
             }
 
             const ticketType = card.dataset.ticketType || 'unknown';
