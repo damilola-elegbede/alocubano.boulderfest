@@ -131,10 +131,10 @@ export default function DonationSelector() {
         setSelectedAmount(null);
         setCustomAmount('');
 
-        // Hide celebration message after enjoying premium confetti (5s)
+        // Hide celebration message after confetti completes (8s)
         setTimeout(() => {
             setShowCelebration(false);
-        }, 5000);
+        }, 8000);
     }, [effectiveAmount, addDonation, createFlyToCartAnimation]);
 
     // Create premium Apple-style confetti effect
