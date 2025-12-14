@@ -131,63 +131,95 @@ export default function DonationSelector() {
         setSelectedAmount(null);
         setCustomAmount('');
 
-        // Hide celebration after confetti animation completes (max 3.5s)
+        // Hide celebration message after enjoying premium confetti (5s)
         setTimeout(() => {
             setShowCelebration(false);
-        }, 4000);
+        }, 5000);
     }, [effectiveAmount, addDonation, createFlyToCartAnimation]);
 
-    // Create confetti effect
+    // Create premium Apple-style confetti effect
+    // Features: 3D tumbling, flutter, depth layers, metallic colors
     useEffect(() => {
         if (!showCelebration) return;
 
+        // Premium color palette with metallics and Cuban flag colors
         const colors = [
-            '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4',
-            '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F'
+            '#FFD700', '#C0C0C0', '#B76E79',     // Metallics: gold, silver, rose gold
+            '#FF3B30', '#007AFF', '#34C759',     // Primary: red, blue, green
+            '#FF9500', '#AF52DE', '#5AC8FA',     // Accents: orange, purple, cyan
+            '#002A8F', '#CB1515'                  // Cuban flag: blue, red
         ];
-        const confettiCount = 400;
+
+        const confettiCount = 300;
         const confettiElements = [];
         const isMobile = window.innerWidth < 768;
 
         for (let i = 0; i < confettiCount; i++) {
             const confetti = document.createElement('div');
             confetti.className = 'confetti-piece';
+
+            // Assign depth layer (20% near, 50% mid, 30% far)
+            const layerRoll = Math.random();
+            if (layerRoll < 0.2) {
+                confetti.classList.add('layer-near');
+            } else if (layerRoll < 0.7) {
+                confetti.classList.add('layer-mid');
+            } else {
+                confetti.classList.add('layer-far');
+            }
+
+            // 15% chance of ribbon/streamer shape
+            if (Math.random() < 0.15) {
+                confetti.classList.add('ribbon');
+            }
+
             confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-            // Start from center, burst outward via CSS --confetti-drift
-            confetti.style.left = '50vw';
-            // Drift determines burst direction: desktop ±30vw, mobile ±50vw
-            const driftRange = isMobile ? 100 : 60;
-            const drift = (Math.random() - 0.5) * driftRange;
-            confetti.style.setProperty('--confetti-drift', drift + 'vw');
-            // Variable width/height for natural look (6-14px range)
+
+            // Spread across top of screen (Apple-style rain effect)
+            confetti.style.left = `${Math.random() * 100}vw`;
+
+            // Random drift for natural spread during fall
+            const drift = (Math.random() - 0.5) * (isMobile ? 60 : 40);
+            confetti.style.setProperty('--drift', drift + 'vw');
+
+            // Random flutter intensity for paper-like sway
+            const flutter = Math.random() * 20 + 10;
+            confetti.style.setProperty('--flutter', flutter + 'px');
+
+            // Random 3D rotation amounts for tumbling effect
+            confetti.style.setProperty('--rx', `${Math.random() * 1080}deg`);
+            confetti.style.setProperty('--ry', `${Math.random() * 720}deg`);
+            confetti.style.setProperty('--rz', `${Math.random() * 540}deg`);
+
+            // Variable sizes for visual diversity
             const width = Math.random() * 8 + 6;
-            const height = Math.random() * 8 + 6;
+            const height = Math.random() * 10 + 8;
             confetti.style.width = width + 'px';
             confetti.style.height = height + 'px';
-            // Tight burst delay for explosive effect
-            confetti.style.animationDelay = Math.random() * 0.3 + 's';
-            // 2.5-3.5 seconds for faster fall (doubled speed)
-            confetti.style.animationDuration = Math.random() * 1 + 2.5 + 's';
+
+            // Staggered start creates continuous rain effect
+            confetti.style.animationDelay = `${Math.random() * 0.8}s`;
+
+            // Layer-based duration: near=faster, far=slower (depth simulation)
+            const baseDuration = confetti.classList.contains('layer-near') ? 2.5
+                               : confetti.classList.contains('layer-far') ? 4.5
+                               : 3.5;
+            const duration = baseDuration + Math.random() * 1;
+            // Two durations: fall animation, flutter animation
+            confetti.style.animationDuration = `${duration}s, 0.8s`;
+
             document.body.appendChild(confetti);
             confettiElements.push(confetti);
         }
 
-        // Cleanup confetti after animation (max delay 0.3s + max duration 3.5s + buffer)
+        // Cleanup after longest animation (far layer: 5.5s max + 0.8s delay + buffer)
         const cleanup = setTimeout(() => {
-            confettiElements.forEach(el => {
-                if (el.parentNode) {
-                    el.parentNode.removeChild(el);
-                }
-            });
-        }, 5000);
+            confettiElements.forEach(el => el.parentNode?.removeChild(el));
+        }, 7000);
 
         return () => {
             clearTimeout(cleanup);
-            confettiElements.forEach(el => {
-                if (el.parentNode) {
-                    el.parentNode.removeChild(el);
-                }
-            });
+            confettiElements.forEach(el => el.parentNode?.removeChild(el));
         };
     }, [showCelebration]);
 
