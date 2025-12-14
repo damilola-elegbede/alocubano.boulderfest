@@ -192,18 +192,18 @@ export default function DonationSelector() {
             confetti.style.setProperty('--ry', `${Math.random() * 180}deg`);
             confetti.style.setProperty('--rz', `${Math.random() * 360}deg`);
 
-            // Variable sizes for visual diversity
-            const width = Math.random() * 8 + 6;
-            const height = Math.random() * 10 + 8;
+            // Variable sizes for visual diversity (0.75x)
+            const width = Math.random() * 6 + 4.5;
+            const height = Math.random() * 7.5 + 6;
             confetti.style.width = width + 'px';
             confetti.style.height = height + 'px';
 
             // Staggered start creates continuous rain effect
-            confetti.style.animationDelay = `${Math.random() * 1.5}s`; // Increased spread of start times
+            confetti.style.animationDelay = `${Math.random() * 1}s`;
 
-            // Layer-based duration: 8s base for all layers to fill screen
-            const baseDuration = 8;
-            const duration = baseDuration + Math.random() * 1;
+            // Layer-based duration: 5.3s base (1.5x faster than original 8s)
+            const baseDuration = 5.3;
+            const duration = baseDuration + Math.random() * 0.7;
             // Two durations: fall animation, flutter animation (2.5s for smooth sway)
             confetti.style.animationDuration = `${duration}s, 2.5s`;
 
@@ -211,10 +211,10 @@ export default function DonationSelector() {
             confettiElements.push(confetti);
         }
 
-        // Cleanup after longest animation (9s + 1.5s delay + buffer)
+        // Cleanup after longest animation (6s + 1s delay + buffer)
         const cleanup = setTimeout(() => {
             confettiElements.forEach(el => el.parentNode?.removeChild(el));
-        }, 12000);
+        }, 8000);
 
         return () => {
             clearTimeout(cleanup);
