@@ -131,10 +131,10 @@ export default function DonationSelector() {
         setSelectedAmount(null);
         setCustomAmount('');
 
-        // Hide celebration after confetti animation completes (max 7s)
+        // Hide celebration after confetti animation completes (max 3.5s)
         setTimeout(() => {
             setShowCelebration(false);
-        }, 7000);
+        }, 4000);
     }, [effectiveAmount, addDonation, createFlyToCartAnimation]);
 
     // Create confetti effect
@@ -145,7 +145,7 @@ export default function DonationSelector() {
             '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4',
             '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F'
         ];
-        const confettiCount = 200;
+        const confettiCount = 400;
         const confettiElements = [];
         const isMobile = window.innerWidth < 768;
 
@@ -166,20 +166,20 @@ export default function DonationSelector() {
             confetti.style.height = height + 'px';
             // Tight burst delay for explosive effect
             confetti.style.animationDelay = Math.random() * 0.3 + 's';
-            // 5-7 seconds for leisurely fall
-            confetti.style.animationDuration = Math.random() * 2 + 5 + 's';
+            // 2.5-3.5 seconds for faster fall (doubled speed)
+            confetti.style.animationDuration = Math.random() * 1 + 2.5 + 's';
             document.body.appendChild(confetti);
             confettiElements.push(confetti);
         }
 
-        // Cleanup confetti after animation (max delay 0.3s + max duration 7s + buffer)
+        // Cleanup confetti after animation (max delay 0.3s + max duration 3.5s + buffer)
         const cleanup = setTimeout(() => {
             confettiElements.forEach(el => {
                 if (el.parentNode) {
                     el.parentNode.removeChild(el);
                 }
             });
-        }, 10000);
+        }, 5000);
 
         return () => {
             clearTimeout(cleanup);
