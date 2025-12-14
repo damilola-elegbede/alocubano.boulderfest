@@ -591,26 +591,34 @@
     transform: rotate(180deg);
   }
 
-  /* Accordion body - expandable */
+  /* Accordion body - CSS Grid auto-height animation */
   .ticket-accordion-body {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.4s ease-out;
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.4s ease-out;
   }
 
   .ticket-accordion.expanded .ticket-accordion-body {
-    max-height: 660px; /* Accommodate 560px card + padding */
+    grid-template-rows: 1fr;
   }
 
-  /* Flip card inside accordion - restore full height */
+  /* Inner content wrapper for grid sizing */
+  .ticket-accordion-body > * {
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  /* Flip card inside accordion - auto height adapts to content */
   .ticket-accordion-body .flip-card {
-    height: 560px; /* Match desktop card height to show qty selector */
+    height: auto;
+    min-height: 480px;
     padding: var(--space-sm, 0.5rem) var(--space-md, 1rem) var(--space-md, 1rem);
   }
 
   .ticket-accordion-body .flip-card-front,
   .ticket-accordion-body .flip-card-back {
-    height: calc(100% - 12px);
+    height: auto;
+    min-height: 460px;
   }
 
   /* Tap hint on collapsed accordion */
@@ -671,7 +679,8 @@
   }
 
   .ticket-accordion-body .flip-card {
-    height: 520px; /* Shorter for small screens but shows qty selector */
+    height: auto;
+    min-height: 440px; /* Slightly shorter minimum for small screens */
     padding: var(--space-xs, 0.25rem) var(--space-sm, 0.5rem) var(--space-sm, 0.5rem);
   }
 }
