@@ -150,7 +150,7 @@ export default function DonationSelector() {
             '#002A8F', '#CB1515'                  // Cuban flag: blue, red
         ];
 
-        const confettiCount = 300;
+        const confettiCount = 100; // Apple-style: fewer, more elegant pieces
         const confettiElements = [];
         const isMobile = window.innerWidth < 768;
 
@@ -179,17 +179,18 @@ export default function DonationSelector() {
             confetti.style.left = `${Math.random() * 100}vw`;
 
             // Random drift for natural spread during fall
-            const drift = (Math.random() - 0.5) * (isMobile ? 60 : 40);
+            const drift = (Math.random() - 0.5) * (isMobile ? 40 : 20); // Reduced drift
             confetti.style.setProperty('--drift', drift + 'vw');
 
-            // Random flutter intensity for paper-like sway
-            const flutter = Math.random() * 20 + 10;
+            // Random flutter intensity for subtle paper-like sway
+            const flutter = Math.random() * 8 + 4;
             confetti.style.setProperty('--flutter', flutter + 'px');
 
             // Random 3D rotation amounts for tumbling effect
-            confetti.style.setProperty('--rx', `${Math.random() * 1080}deg`);
-            confetti.style.setProperty('--ry', `${Math.random() * 720}deg`);
-            confetti.style.setProperty('--rz', `${Math.random() * 540}deg`);
+            // Reduced max rotation speed for "floating" feeling
+            confetti.style.setProperty('--rx', `${Math.random() * 360}deg`);
+            confetti.style.setProperty('--ry', `${Math.random() * 180}deg`);
+            confetti.style.setProperty('--rz', `${Math.random() * 360}deg`);
 
             // Variable sizes for visual diversity
             const width = Math.random() * 8 + 6;
@@ -198,24 +199,25 @@ export default function DonationSelector() {
             confetti.style.height = height + 'px';
 
             // Staggered start creates continuous rain effect
-            confetti.style.animationDelay = `${Math.random() * 0.8}s`;
+            confetti.style.animationDelay = `${Math.random() * 1.5}s`; // Increased spread of start times
 
             // Layer-based duration: near=faster, far=slower (depth simulation)
-            const baseDuration = confetti.classList.contains('layer-near') ? 2.5
-                               : confetti.classList.contains('layer-far') ? 4.5
-                               : 3.5;
-            const duration = baseDuration + Math.random() * 1;
-            // Two durations: fall animation, flutter animation
-            confetti.style.animationDuration = `${duration}s, 0.8s`;
+            // INCREASED DURATIONS for paper feel (slower fall)
+            const baseDuration = confetti.classList.contains('layer-near') ? 4.5
+                : confetti.classList.contains('layer-far') ? 6.5
+                    : 5.5;
+            const duration = baseDuration + Math.random() * 2;
+            // Two durations: fall animation, flutter animation (2.5s for smooth sway)
+            confetti.style.animationDuration = `${duration}s, 2.5s`;
 
             document.body.appendChild(confetti);
             confettiElements.push(confetti);
         }
 
-        // Cleanup after longest animation (far layer: 5.5s max + 0.8s delay + buffer)
+        // Cleanup after longest animation (far layer: 8.5s + 1.5s delay + buffer)
         const cleanup = setTimeout(() => {
             confettiElements.forEach(el => el.parentNode?.removeChild(el));
-        }, 7000);
+        }, 11000);
 
         return () => {
             clearTimeout(cleanup);

@@ -2120,9 +2120,9 @@
 /* Base confetti piece with 3D transform support */
 .confetti-piece {
   --drift: 0px;
-  --flutter: 15px;
-  --rx: 720deg;
-  --ry: 540deg;
+  --flutter: 8px;
+  --rx: 360deg;
+  --ry: 180deg;
   --rz: 360deg;
 
   position: fixed;
@@ -2194,7 +2194,10 @@
                scale(1.2);
     opacity: 1;
   }
-  85% {
+  15% {
+    opacity: 1; /* Fade in fully */
+  }
+  90% {
     opacity: 1;
   }
   100% {
@@ -2213,7 +2216,10 @@
                scale(1);
     opacity: 1;
   }
-  85% {
+  15% {
+    opacity: 1;
+  }
+  90% {
     opacity: 1;
   }
   100% {
@@ -2232,7 +2238,10 @@
                scale(0.7);
     opacity: 0.7;
   }
-  85% {
+  15% {
+    opacity: 0.7;
+  }
+  90% {
     opacity: 0.7;
   }
   100% {
@@ -2243,16 +2252,22 @@
   }
 }
 
-/* Flutter animation - side-to-side oscillation for paper-like movement */
+/* Flutter animation - rocking motion for paper-like swaying */
 @keyframes confettiFlutter {
-  0%, 100% {
-    margin-left: 0;
+  0% {
+    transform: translateX(0) rotateZ(0deg);
   }
   25% {
-    margin-left: var(--flutter, 15px);
+    transform: translateX(var(--flutter, 15px)) rotateZ(5deg);
+  }
+  50% {
+    transform: translateX(0) rotateZ(0deg);
   }
   75% {
-    margin-left: calc(var(--flutter, 15px) * -1);
+    transform: translateX(calc(var(--flutter, 15px) * -1)) rotateZ(-5deg);
+  }
+  100% {
+    transform: translateX(0) rotateZ(0deg);
   }
 }
 
