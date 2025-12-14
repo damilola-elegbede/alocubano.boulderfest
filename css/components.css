@@ -2252,22 +2252,13 @@
   }
 }
 
-/* Flutter animation - rocking motion for paper-like swaying */
+/* Flutter animation - subtle side-to-side sway (uses margin-left to avoid transform conflict) */
 @keyframes confettiFlutter {
-  0% {
-    transform: translateX(0) rotateZ(0deg);
-  }
-  25% {
-    transform: translateX(var(--flutter, 15px)) rotateZ(5deg);
+  0%, 100% {
+    margin-left: 0;
   }
   50% {
-    transform: translateX(0) rotateZ(0deg);
-  }
-  75% {
-    transform: translateX(calc(var(--flutter, 15px) * -1)) rotateZ(-5deg);
-  }
-  100% {
-    transform: translateX(0) rotateZ(0deg);
+    margin-left: var(--flutter, 8px);
   }
 }
 
